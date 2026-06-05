@@ -1,0 +1,8 @@
+packages:
+  - "archive app"
+  - "archive-core"
+  - "archive-server"
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true

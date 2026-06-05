@@ -38,7 +38,48 @@ Arch_App/
 
 ## تعليمات سريعة
 
+### 0. تثبيت الحزم باستخدام workspace
+
+من جذر المستودع:
+
+```powershell
+cd "d:\archiveaq\Arch_App"
+pnpm install
+```
+
+هذا سيثبت كل الحزم ويربط `archive app` و `archive-server` بمحتوى `archive-core` المحلي.
+
 ### 1. تشغيل الواجهة الأمامية
+
+يمكنك تشغيل الواجهة الأمامية مباشرة من الجذر:
+
+```powershell
+pnpm run dev
+```
+
+أو من داخل المجلد:
+
+```powershell
+cd "archive app"
+pnpm install
+pnpm run dev
+```
+
+### 2. تشغيل الخادم
+
+يمكنك تشغيل الخادم من الجذر أيضاً:
+
+```powershell
+pnpm run server
+```
+
+أو من داخل المجلد:
+
+```powershell
+cd archive-server
+pnpm install
+pnpm run start
+```
 
 ```bash
 cd "archive app"
