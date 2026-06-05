@@ -3,3 +3,4 @@ archive-core/.git
 archive-server/.git
 repo-git-backups/
 .codex-scan/CLOUD-MediaDB/.git
+node_modules
