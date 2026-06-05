@@ -92,7 +92,7 @@ try {
 
   await runCommand("pnpm exec vite build --mode spa --configLoader runner");
   previewProcess = spawnShell(
-    `pnpm exec vite preview --host ${previewHost} --configLoader runner --port ${previewPort}`
+    `pnpm exec vite preview --host ${previewHost} --configLoader runner --port ${previewPort} --strictPort`
   );
   await waitForServer();
   await runCommand(auditCommand(), { env: { E2E_MODE: "local", E2E_BASE_URL: serverUrl } });

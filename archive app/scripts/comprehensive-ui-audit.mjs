@@ -225,9 +225,10 @@ function makeSettings(timestamp) {
     lastBackupAt: null,
     keyboardShortcuts: {},
     ui: {
-      v1OnboardingCompleted: true,
-      v1TourCompleted: true,
-      onboardingCompleted: true,
+        v1OnboardingCompleted: true,
+        v1TourCompleted: true,
+        v1TourVersion: "2026-06-05-media-workstation",
+        onboardingCompleted: true,
       onboardingSkippedAt: timestamp,
       lastOnboardingStep: "daily-start",
       onboardingSecurityMode: "quick",
@@ -596,6 +597,41 @@ async function runPageMatrix(page) {
   markStep("فتح كل صفحات التطبيق", "passed", `${PAGE_TARGETS.length} صفحة × ${VIEWPORTS.length} أحجام`);
 }
 
+async function runDashboardMobileTouchFlow(browser) {
+  if (E2E_MODE !== "local") {
+    markStep("فحص ضغط أزرار لوحة التحكم على الجوال", "passed", "يعمل في local mode فقط لأن server mode يستخدم جلسة خادم مشتركة");
+    return;
+  }
+
+  const mobileContext = await browser.newContext({
+    acceptDownloads: true,
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    locale: "ar-EG"
+  });
+  const mobilePage = await mobileContext.newPage();
+  mobilePage.setDefaultTimeout(15_000);
+  try {
+    await seedLocalArchive(mobilePage);
+    await navigateAndAssert(mobilePage, "#/dashboard", "مركز التحكم");
+    await mobilePage.getByRole("button", { name: "تخصيص ترتيب لوحة التحكم" }).tap();
+    await mobilePage.locator(".va-command-center-hero").getByRole("button", { name: /إضافة فيديو/ }).tap();
+    await mobilePage.getByRole("heading", { name: /إضافة فيديو/ }).first().waitFor({ state: "visible" });
+    markStep("فحص ضغط أزرار لوحة التحكم على الجوال أثناء التخصيص");
+  } catch (error) {
+    await captureScreenshot(mobilePage, "mobile-touch-dashboard-failure").catch(() => {});
+    const diagnostics = await mobilePage.evaluate(() => ({
+      hash: window.location.hash,
+      activeText: (document.activeElement?.textContent?.trim() || document.activeElement?.getAttribute?.("aria-label") || "").slice(0, 200),
+      topHeading: document.querySelector("h1,h2")?.textContent?.trim() || ""
+    })).catch(() => ({}));
+    throw new Error(`${error.message} Mobile diagnostics: ${JSON.stringify(diagnostics)}`);
+  } finally {
+    await mobileContext.close().catch(() => {});
+  }
+}
+
 async function runTypeFlow(page) {
   const typeName = "نوع فحص شامل";
   await navigateAndAssert(page, "#/types", "إدارة الأنواع والحقول");
@@ -781,6 +817,7 @@ async function main() {
       markStep("زرع جلسة وبيانات اختبار محلية");
     }
     await runPageMatrix(page);
+    await runDashboardMobileTouchFlow(browser);
     await page.setViewportSize({ width: 1440, height: 960 });
     const typeName = await runTypeFlow(page);
     await runAddVideoFlow(page, typeName);

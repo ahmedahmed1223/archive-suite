@@ -13,10 +13,15 @@ const ROW_HEIGHT = 8;
 const MARGIN = [12, 8];
 const BREAKPOINTS = { lg: 1024, md: 768, xs: 0 };
 const COLS = { lg: 12, md: 8, xs: 1 };
+const DRAG_CANCEL_SELECTOR = ".va-dashboard-drag-cancel, button, a, input, textarea, select, label, [role='button'], [role='link'], [contenteditable='true']";
 
 // Convert a measured pixel height into a whole number of grid rows.
 function pxToRows(px) {
   return Math.max(2, Math.ceil((px + MARGIN[1]) / (ROW_HEIGHT + MARGIN[1])));
+}
+
+function stopGridDragStart(event) {
+  event.stopPropagation();
 }
 
 /**
@@ -48,7 +53,12 @@ function GridPanel({ id, title, editing, autoHeight, onMeasure, onToggleHidden, 
             <GripVertical className="h-4 w-4 shrink-0 text-gray-500" />
             <span className="truncate">{title}</span>
           </span>
-          <span className="flex shrink-0 items-center gap-1">
+          <span
+            className="va-dashboard-drag-cancel flex shrink-0 items-center gap-1"
+            onMouseDownCapture={stopGridDragStart}
+            onPointerDownCapture={stopGridDragStart}
+            onTouchStartCapture={stopGridDragStart}
+          >
             <button
               type="button"
               onClick={() => onToggleAuto(id)}
@@ -71,7 +81,15 @@ function GridPanel({ id, title, editing, autoHeight, onMeasure, onToggleHidden, 
           </span>
         </div>
       )}
-      <div ref={contentRef} className="min-h-0 flex-1">{children}</div>
+      <div
+        ref={contentRef}
+        className="va-dashboard-drag-cancel min-h-0 flex-1"
+        onMouseDownCapture={stopGridDragStart}
+        onPointerDownCapture={stopGridDragStart}
+        onTouchStartCapture={stopGridDragStart}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -147,6 +165,7 @@ export function DashboardGrid({ children, titles = {}, layout, editing = false, 
       isResizable={editing}
       isBounded={true}
       draggableHandle=".va-panel-drag"
+      draggableCancel={DRAG_CANCEL_SELECTOR}
       compactType="vertical"
       useCSSTransforms={!prefersReducedMotion}
       onLayoutChange={handleLayoutChange}
