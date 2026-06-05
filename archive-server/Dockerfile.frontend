@@ -1,33 +1,24 @@
-# Frontend image — multi-stage build of the SPA from the archive-app repo,
-# then served by nginx. Built directly from a pinned git ref so the deploy
-# is reproducible without checking the SPA source into archive-server.
-#
-# Build args:
-#   APP_REPO  — public git URL of archive-app
-#   APP_REF   — branch/tag/sha to build (default: main)
-#
-# Output: nginx:alpine serving the single-file dist/index.html on port 80,
-# with /pb/* proxied to the PocketBase service (see nginx/default.conf).
+# Frontend image built from the Archive Suite monorepo.
 
 FROM node:24-alpine AS build
 
-ARG APP_REPO=https://github.com/ahmedahmed1223/archive-app.git
-ARG APP_REF=main
+RUN corepack enable
 
-RUN apk add --no-cache git
-WORKDIR /src
+WORKDIR /app
 
-# Shallow clone the pinned ref — fast and reproducible.
-RUN git clone --depth 1 --branch "${APP_REF}" "${APP_REPO}" app \
- || (git clone "${APP_REPO}" app && cd app && git checkout "${APP_REF}")
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY ["archive app/package.json", "archive app/package.json"]
+COPY archive-core/package.json archive-core/package.json
+COPY archive-server/package.json archive-server/package.json
 
-WORKDIR /src/app
-RUN npm ci --no-audit --no-fund
-# build:spa emits a self-contained dist/index.html (vite-plugin-singlefile).
-RUN npm run build:spa
+RUN pnpm install --frozen-lockfile --filter @archive/app... --filter @archive/core
 
-# --- Runtime stage ---
+COPY archive-core ./archive-core
+COPY ["archive app", "archive app"]
+
+RUN pnpm --filter @archive/app run build:cloud
+
 FROM nginx:1.29-alpine
-COPY --from=build /src/app/dist /usr/share/nginx/html
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=build ["/app/archive app/dist-cloud", "/usr/share/nginx/html"]
+COPY archive-server/nginx/default.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

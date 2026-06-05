@@ -1,6 +1,6 @@
 # دليل النشر على Hostinger VPS
 
-هذا دليل خطوة-بخطوة لنشر `archive-server` على Hostinger VPS. كامل التثبيت
+هذا دليل خطوة-بخطوة لنشر `archive-suite` على Hostinger VPS. كامل التثبيت
 يستغرق ~30 دقيقة لأوّل مرّة، و~3 دقائق للتحديثات اللاحقة.
 
 ## ما تحتاجه قبل البدء
@@ -66,11 +66,11 @@ docker --version
 docker compose version
 ```
 
-## 4. تنزيل archive-server وضبط .env
+## 4. تنزيل Archive Suite وضبط .env
 
 ```bash
-git clone https://github.com/ahmedahmed1223/archive-server.git
-cd archive-server
+git clone https://github.com/ahmedahmed1223/archive-suite.git
+cd archive-suite/archive-server
 ```
 
 ### الطريق الموصى به (Postgres مُجمَّع، إعداد بأمر واحد)
@@ -101,8 +101,10 @@ nano .env
 ```ini
 DOMAIN=archive.example.com
 ACME_EMAIL=you@example.com
-APP_REF=main                 # أو وسم إنتاج مثل v1.0.0
 BACKEND=pocketbase           # أو postgres (مع POSTGRES_PASSWORD قوية)
+ARCHIVE_PUBLIC_DEPLOY=1
+JWT_SECRET=<openssl rand -base64 48>
+ADMIN_PASSWORD=<strong first admin password>
 ```
 
 ## 5. تشغيل الـ stack
@@ -115,7 +117,7 @@ docker compose -f docker-compose.postgres.yml up -d --build
 docker compose up -d --build
 ```
 
-أوّل بناء يستغرق 5-10 دقائق (تنزيل صور + بناء SPA من git + إصدار شهادة TLS).
+أوّل بناء يستغرق 5-10 دقائق (تنزيل صور + بناء SPA من monorepo + إصدار شهادة TLS).
 الـ builds اللاحقة <30 ثانية.
 
 تحقّق:
@@ -164,10 +166,9 @@ docker compose ps   # الحاويات Up مجدّدًا
 ## 8. التحديث إلى إصدار جديد
 
 ```bash
-cd ~/archive-server
+cd ~/archive-suite
 git pull
-# لو APP_REF=main: الـ SPA يُبنى من آخر main تلقائيًّا
-# لو APP_REF=v1.0.0: عدّل .env إلى v1.1.0
+cd archive-server
 docker compose up -d --build --pull
 ```
 
@@ -197,7 +198,7 @@ docker compose up -d --build --pull
 | المشكلة | الفحص | الحلّ |
 |---------|------|------|
 | TLS handshake فشل | `docker compose logs caddy` | تأكّد DNS A record يشير لـ VPS IP قبل بدء caddy، وأنّ منفذ 80 مفتوح للـ HTTP-01 challenge |
-| SPA لا يحمّل | `docker compose logs frontend` | غالبًا فشل بناء — تحقّق `APP_REPO` و`APP_REF` صحيحان |
+| SPA لا يحمّل | `docker compose logs frontend` | غالبًا فشل بناء monorepo — شغّل `pnpm run build:cloud` محليًا وتحقق من Dockerfile.frontend |
 | PocketBase لا يستجيب | `docker compose logs pocketbase` | تحقّق صلاحيات `pb_data` volume |
 | Postgres لا يبدأ | `docker compose -f docker-compose.postgres.yml logs postgres` | أرجح: `POSTGRES_PASSWORD` فارغ في `.env` |
 | نفاد القرص | `df -h` | احذف صور docker القديمة: `docker system prune -a --volumes` (احذر volumes!) |

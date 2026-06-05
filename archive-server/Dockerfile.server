@@ -1,38 +1,22 @@
-# Node.js RPC API server for the Postgres backend.
-#
-# Prisma 7's query engine is server-side (Node), so the SPA can't talk to
-# Postgres directly. This image boots a small RPC server (src/index.js) that:
-#   1. Runs `prisma migrate deploy` so the DB schema is current.
-#   2. Serves /api/rpc — the SPA's cloud-http adapter calls it; each call maps
-#      to one of the 11 @archive/core StorageProvider methods on the Postgres
-#      adapter.
-#
-# Prisma 7's `prisma-client` generator emits TypeScript, so the runtime uses
-# `tsx` (esbuild-based) to execute the generated client without a build step.
+# Node.js RPC API server for the monorepo Postgres backend.
 
 FROM node:24-alpine AS base
 
-# ffmpeg powers the project MP4 export endpoint (/api/projects/export) — bundled
-# in the SAME image, so no separate render service is needed.
-RUN apk add --no-cache ffmpeg
+RUN apk add --no-cache ffmpeg \
+ && corepack enable
 
 WORKDIR /app
 
-# Install runtime deps (omit the Prisma CLI dev tooling — its transitive
-# @hono/node-server advisory never reaches the runtime). tsx + @prisma/client
-# + @prisma/adapter-pg + pg are runtime deps.
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund \
- && npm install --no-save prisma@7
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY ["archive app/package.json", "archive app/package.json"]
+COPY archive-core/package.json archive-core/package.json
+COPY archive-server/package.json archive-server/package.json
 
-COPY prisma ./prisma
-COPY prisma.config.mjs ./
-COPY src ./src
+RUN pnpm install --frozen-lockfile --filter archive-server... --filter @archive/core
 
-# Generate the Prisma 7 client into src/generated/prisma at build time so the
-# runtime image needs no network access.
-RUN npx prisma generate
+COPY archive-core ./archive-core
+COPY archive-server ./archive-server
 
-# migrate deploy applies committed migrations idempotently, then the RPC API
-# starts. DATABASE_URL + BACKEND=postgres come from compose env.
-CMD sh -c "npx prisma migrate deploy && npm run start"
+RUN pnpm --filter archive-server run prisma:generate
+
+CMD ["sh", "-c", "pnpm --filter archive-server run prisma:migrate && pnpm --filter archive-server run start"]

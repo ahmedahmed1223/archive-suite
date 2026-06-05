@@ -165,8 +165,8 @@ export function FileArchiveWizard({
                   اختيار مجلد
                 </FileChoiceLabel>
               </div>
-              <input id={fileInputId} type="file" multiple accept="video/*,.mp4,.webm,.ogg,.mov,.m4v,.avi,.mkv,.wmv" onChange={handleFileInputChange} style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }} />
-              <input id={folderInputId} type="file" multiple webkitdirectory="" directory="" onChange={handleFileInputChange} style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }} />
+              <input id={fileInputId} type="file" aria-label="اختيار ملفات فيديو للاستيراد" multiple accept="video/*,.mp4,.webm,.ogg,.mov,.m4v,.avi,.mkv,.wmv" onChange={handleFileInputChange} style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }} />
+              <input id={folderInputId} type="file" aria-label="اختيار مجلد فيديو للاستيراد" multiple webkitdirectory="" directory="" onChange={handleFileInputChange} style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }} />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">

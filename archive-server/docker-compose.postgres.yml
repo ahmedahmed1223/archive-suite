@@ -2,7 +2,7 @@
 # PostgreSQL as the cloud backend. The PocketBase service is omitted entirely.
 #
 # Usage:
-#   cp .env.example .env       # set DOMAIN + ACME_EMAIL + DATABASE_URL
+#   cp .env.example .env       # set DOMAIN + ACME_EMAIL + POSTGRES_PASSWORD + auth secrets
 #   docker compose -f docker-compose.postgres.yml up -d --build
 #
 # Switching backends later: bring this stack down, copy a snapshot via the
@@ -33,12 +33,14 @@ services:
   # to this service on the internal network.
   server:
     build:
-      context: .
-      dockerfile: Dockerfile.server
+      context: ..
+      dockerfile: archive-server/Dockerfile.server
     container_name: archive-server
     restart: unless-stopped
     environment:
       BACKEND: postgres
+      NODE_ENV: production
+      ARCHIVE_PUBLIC_DEPLOY: ${ARCHIVE_PUBLIC_DEPLOY:-1}
       DATABASE_URL: ${DATABASE_URL:-postgresql://archive:${POSTGRES_PASSWORD}@postgres:5432/archive}
       API_PORT: "8787"
       API_CORS_ORIGIN: ${API_CORS_ORIGIN:-}
@@ -80,11 +82,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      args:
-        APP_REPO: ${APP_REPO:-https://github.com/ahmedahmed1223/archive-app.git}
-        APP_REF: ${APP_REF:-main}
+      context: ..
+      dockerfile: archive-server/Dockerfile.frontend
     container_name: archive-frontend
     restart: unless-stopped
     # Postgres stack proxies /api/* to the Node server (overrides the image's

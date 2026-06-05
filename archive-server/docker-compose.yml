@@ -26,15 +26,12 @@ services:
       - archive
     # No host port — frontend reaches it on the internal docker network.
 
-  # SPA built from archive-app and served by nginx. /pb/* is proxied to
+  # SPA built from the monorepo @archive/app package and served by nginx. /pb/* is proxied to
   # pocketbase so the browser stays on a single origin (no CORS dance).
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      args:
-        APP_REPO: ${APP_REPO:-https://github.com/ahmedahmed1223/archive-app.git}
-        APP_REF: ${APP_REF:-main}
+      context: ..
+      dockerfile: archive-server/Dockerfile.frontend
     container_name: archive-frontend
     restart: unless-stopped
     depends_on:

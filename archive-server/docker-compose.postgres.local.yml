@@ -9,3 +9,7 @@ services:
   frontend:
     ports:
       - "8080:80"
+  server:
+    environment:
+      NODE_ENV: development
+      ARCHIVE_PUBLIC_DEPLOY: "0"

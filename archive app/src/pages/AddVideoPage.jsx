@@ -177,6 +177,7 @@ function LocalFilePicker({ value, onFileSelect, inputId }) {
       id: inputId,
       ref: inputRef,
       type: "file",
+      "aria-label": "اختيار ملف محلي للفيديو",
       onChange: (event) => {
         readFile(event.target.files?.[0]);
         event.target.value = "";

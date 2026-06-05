@@ -68,9 +68,9 @@ docker compose -f docker-compose.postgres.yml up -d --build
 ## النشر على Hostinger VPS (إنتاج)
 
 ```bash
-git clone https://github.com/ahmedahmed1223/archive-server.git
-cd archive-server
-cp .env.example .env       # DOMAIN + ACME_EMAIL (+ POSTGRES_PASSWORD إن اخترت Postgres)
+git clone https://github.com/ahmedahmed1223/archive-suite.git
+cd archive-suite/archive-server
+cp .env.example .env       # DOMAIN + ACME_EMAIL + JWT_SECRET + ADMIN_PASSWORD (+ POSTGRES_PASSWORD إن اخترت Postgres)
 docker compose up -d --build                                  # PocketBase
 # أو:
 docker compose -f docker-compose.postgres.yml up -d --build   # Postgres

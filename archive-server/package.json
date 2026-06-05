@@ -6,7 +6,7 @@
   "description": "Production (server) edition of the Video Archive app: cloud-pocketbase adapters behind @archive/core ports + PocketBase + Docker.",
   "scripts": {
     "start": "tsx src/index.js",
-    "verify": "node scripts/verify-config.mjs && node scripts/verify-server-config.mjs && node scripts/verify-server.mjs && node scripts/verify-postgres-adapter.mjs && node scripts/verify-api.mjs && node scripts/verify-auth.mjs && node scripts/verify-realtime.mjs && node scripts/verify-ai.mjs && node scripts/verify-ai-sdk.mjs && node scripts/verify-export.mjs && node scripts/verify-media.mjs && node scripts/verify-files-dropbox.mjs && node scripts/verify-files-s3.mjs && node scripts/verify-files-azure.mjs && node scripts/verify-files-gdrive.mjs && node scripts/verify-share.mjs && node scripts/verify-admin-config.mjs && node scripts/verify-db-provider.mjs",
+    "verify": "node scripts/verify-config.mjs && node scripts/verify-server-config.mjs && node scripts/verify-server.mjs && node scripts/verify-postgres-adapter.mjs && node scripts/verify-api.mjs && node scripts/verify-auth.mjs && node scripts/verify-realtime.mjs && node scripts/verify-ai.mjs && node scripts/verify-ai-sdk.mjs && node scripts/verify-export.mjs && node scripts/verify-media.mjs && node scripts/verify-files-dropbox.mjs && node scripts/verify-files-s3.mjs && node scripts/verify-files-azure.mjs && node scripts/verify-files-gdrive.mjs && node scripts/verify-share.mjs && node scripts/verify-admin-config.mjs && node scripts/verify-db-provider.mjs && node scripts/verify-deployment.mjs",
     "verify:ai": "node scripts/verify-ai.mjs && node scripts/verify-ai-sdk.mjs",
     "verify:export": "node scripts/verify-export.mjs",
     "verify:media": "node scripts/verify-media.mjs",
@@ -22,7 +22,8 @@
     "verify:api": "node scripts/verify-api.mjs",
     "verify:auth": "node scripts/verify-auth.mjs",
     "verify:db-provider": "node scripts/verify-db-provider.mjs",
-    "check": "npm run verify",
+    "verify:deployment": "node scripts/verify-deployment.mjs",
+    "check": "pnpm run verify",
     "db:provider": "node scripts/set-db-provider.mjs",
     "prisma:generate": "node scripts/set-db-provider.mjs && prisma generate",
     "prisma:migrate": "node scripts/set-db-provider.mjs && prisma migrate deploy",

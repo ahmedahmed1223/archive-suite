@@ -1,0 +1,16 @@
+.git
+.codex-scan
+repo-git-backups
+node_modules
+**/node_modules
+archive app/dist
+archive app/dist-cloud
+archive app/dist-aistudio
+archive app/test-results
+archive app/playwright-report
+archive app/blob-report
+archive-server/src/generated
+archive-server/pocketbase/pb_data
+archive-server/.env
+output
+*.log
