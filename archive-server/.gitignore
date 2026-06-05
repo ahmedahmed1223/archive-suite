@@ -1,0 +1,12 @@
+node_modules
+.vite/
+dist/
+dist-cloud/
+*.log
+.npm-cache/
+pocketbase/pb_data/
+.env
+
+# Prisma 7 generated client — regenerated at build time (prisma generate).
+# Migrations ARE committed (prisma/migrations/), the client is not.
+src/generated/

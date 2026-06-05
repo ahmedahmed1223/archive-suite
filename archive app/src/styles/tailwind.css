@@ -1,0 +1,14 @@
+/*
+ * Tailwind CSS entry — generated live by @tailwindcss/vite at build/dev time.
+ * Replaces the previously committed static `generated-tailwind.css`, which was
+ * a one-time snapshot (last built 2026-05-18) and silently missing every class
+ * added afterwards (notably arbitrary `grid-cols-[…]` layouts), collapsing
+ * multi-column sections to single full-width columns.
+ *
+ * Pinned to tailwindcss@4.3.0 to match the prior snapshot's base/preflight.
+ */
+@import "tailwindcss";
+
+/* Explicitly scan all app source so class names inside react/jsx-runtime
+   jsx()/jsxs() string literals are always detected (augments auto-detection). */
+@source "../**/*.{js,jsx}";

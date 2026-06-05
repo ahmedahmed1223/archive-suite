@@ -1,0 +1,53 @@
+// Postgres schema for the archive cloud backend.
+//
+// Generic-row design: ONE table holds every store's rows, keyed by
+// (store, uid). Mirrors the PocketBase adapter's `{ uid, data, syncVersion,
+// lastModifiedBy }` shape exactly so snapshot/replaceAll work identically
+// on both backends and the SPA's payload format stays unchanged.
+//
+// We give up a little Prisma-level type safety (data is Json) but gain:
+//   - A single migration that fits every store the SPA invents.
+//   - Free support for the archive's dynamic custom-field model — anything
+//     the SPA can put in a record lands in JSONB unchanged.
+//   - GIN-index ready: `CREATE INDEX ON storage_rows USING gin (data jsonb_path_ops)`
+//     can be added in a follow-up migration without touching app code.
+//   - 1:1 parity with the PB adapter so importing a backup between backends
+//     is a no-transform copy.
+
+generator client {
+  // Prisma 7: the Rust-free `prisma-client` provider. It emits TypeScript
+  // (no JS option), so the server runs under `tsx` (see package.json start).
+  // moduleFormat=esm matches the package "type": "module"; importFileExtension
+  // ="js" makes the generated client's internal imports use .js specifiers
+  // that tsx resolves to the sibling .ts files.
+  provider             = "prisma-client"
+  output               = "../src/generated/prisma"
+  runtime              = "nodejs"
+  moduleFormat         = "esm"
+  importFileExtension  = "js"
+}
+
+datasource db {
+  // Prisma 7 keeps the URL in prisma.config.mjs, not in schema.prisma, and does
+  // NOT allow env() in `provider`. So the engine is fixed here at GENERATE time:
+  // `npm run prisma:generate` runs scripts/set-db-provider.mjs first, which
+  // rewrites this line from DATABASE_PROVIDER (postgresql|mysql|sqlite|sqlserver,
+  // default postgresql). Switching engines = set the env var, re-generate +
+  // migrate, restart. Admin config + the SPA already capture the engine + URL.
+  provider = "postgresql"
+}
+
+model StorageRow {
+  store          String
+  uid            String
+  data           Json
+  syncVersion    Int?
+  lastModifiedBy Json?
+
+  // Composite primary key — uid is unique *within* a store, not globally.
+  @@id([store, uid])
+  // Lookups by store alone (getAll, replaceAll's per-store wipe).
+  @@index([store])
+
+  @@map("storage_rows")
+}

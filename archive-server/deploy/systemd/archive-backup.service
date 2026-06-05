@@ -1,0 +1,19 @@
+[Unit]
+Description=Daily backup for archive-server (PocketBase volume + Postgres dump)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=archive
+Group=archive
+# Inherit DOCKER_HOST etc. from the archive user's environment.
+Environment=HOME=/home/archive
+ExecStart=/usr/local/bin/archive-backup.sh
+# Don't hammer the system if a backup takes a while.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=multi-user.target

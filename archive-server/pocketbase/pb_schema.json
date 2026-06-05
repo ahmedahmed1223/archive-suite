@@ -1,0 +1,761 @@
+[
+  {
+    "id": "content_types",
+    "name": "content_types",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "content_types_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "content_types_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "content_types_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "content_types_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_content_types` ON `content_types` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "video_items",
+    "name": "video_items",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "video_items_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "video_items_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "video_items_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "video_items_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_video_items` ON `video_items` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "change_hist",
+    "name": "change_history",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "change_hist_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "change_hist_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "change_hist_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "change_hist_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_change_history` ON `change_history` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "app_settings",
+    "name": "app_settings",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "app_settings_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "app_settings_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "app_settings_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "app_settings_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_app_settings` ON `app_settings` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "backups",
+    "name": "backups",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "backups_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "backups_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "backups_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "backups_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_backups` ON `backups` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "bookmarks",
+    "name": "bookmarks",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "bookmarks_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "bookmarks_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "bookmarks_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "bookmarks_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_bookmarks` ON `bookmarks` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "video_rels",
+    "name": "video_relations",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "video_rels_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "video_rels_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "video_rels_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "video_rels_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_video_relations` ON `video_relations` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "virtual_colls",
+    "name": "virtual_collections",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "virtual_colls_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "virtual_colls_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "virtual_colls_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "virtual_colls_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_virtual_collections` ON `virtual_collections` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "vocabulary",
+    "name": "vocabulary",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "vocabulary_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "vocabulary_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "vocabulary_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "vocabulary_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_vocabulary` ON `vocabulary` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "hier_tags",
+    "name": "hierarchical_tags",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "hier_tags_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "hier_tags_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "hier_tags_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "hier_tags_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_hierarchical_tags` ON `hierarchical_tags` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "options": {}
+  },
+  {
+    "id": "audit_logs",
+    "name": "audit_logs",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "audit_logs_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "audit_logs_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "audit_logs_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "system": false,
+        "id": "audit_logs_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_uid_audit_logs` ON `audit_logs` (`uid`)"
+    ],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "",
+    "options": {}
+  }
+]

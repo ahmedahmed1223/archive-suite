@@ -1,0 +1,374 @@
+/*
+ * Theme v4 — "Glass + Green".
+ * Solid surfaces for dense content (cards, tables); glass reserved for
+ * chrome (sidebar, topbar, modals) — see Task 4. Dark + light, mapped
+ * onto the shared --va-* abstraction layer like v1/v2/v3. Activates only
+ * under <html data-theme-version="v4">.
+ */
+
+:root {
+  /* canvases + solid surfaces (content uses these — NO blur) */
+  --va-4-canvas:    #060b12;
+  --va-4-canvas-2:  #080f1a;
+  --va-4-rail:      #04070e;
+  --va-4-surface:   #0d1626;  /* card/table solid surface */
+  --va-4-surface-2: #131e33;  /* hover / elevated */
+  --va-4-surface-3: #1a2740;
+  --va-4-surface-hot: #0f2a24;
+
+  /* glass tint (chrome only — paired with backdrop-filter in Task 4) */
+  --va-4-glass:      rgba(255, 255, 255, 0.03);
+  --va-4-glass-2:    rgba(255, 255, 255, 0.06);
+
+  --va-4-line-soft:   rgba(148, 163, 184, 0.08);
+  --va-4-line:        rgba(148, 163, 184, 0.14);
+  --va-4-line-strong: rgba(148, 163, 184, 0.24);
+
+  /* text — contrast verified vs --va-4-surface in Task 8 */
+  --va-4-text-strong: #f1f5f9;
+  --va-4-text:        #cbd5e1;
+  --va-4-text-soft:   #b6c2d2;
+  --va-4-text-faint:  #94a3b8;
+
+  --va-4-accent:        #10b981;
+  --va-4-accent-strong: #064e3b;
+  --va-4-success: #10b981;
+  --va-4-amber:   #fbbf24;
+  --va-4-danger:  #f87171;
+
+  --va-4-radius-sm: 0.5rem;
+  --va-4-radius-md: 0.75rem;
+  --va-4-radius-lg: 1rem;
+  --va-4-radius-xl: 1.25rem;
+
+  --va-4-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --va-4-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+html[data-theme-version="v4"] {
+  --va-action:        var(--va-4-accent);
+  --va-action-strong: var(--va-4-accent-strong);
+
+  --va-ink-950: var(--va-4-canvas);
+  --va-ink-925: var(--va-4-rail);
+  --va-ink-900: var(--va-4-surface);
+  --va-ink-850: var(--va-4-surface-2);
+  --va-ink-800: var(--va-4-surface-3);
+  --va-ink-700: var(--va-4-line-strong);
+  --va-ink-600: var(--va-4-text-faint);
+  --va-ink-500: var(--va-4-text-soft);
+
+  --va-line-soft:   var(--va-4-line-soft);
+  --va-line:        var(--va-4-line);
+  --va-line-strong: var(--va-4-line-strong);
+
+  --va-text-strong: var(--va-4-text-strong);
+  --va-text:        var(--va-4-text);
+  --va-text-soft:   var(--va-4-text-soft);
+  --va-text-faint:  var(--va-4-text-faint);
+
+  --va-panel-radius:   var(--va-4-radius-xl);
+  --va-card-radius:    var(--va-4-radius-lg);
+  --va-control-radius: var(--va-4-radius-md);
+
+  color-scheme: dark;
+}
+
+html.light[data-theme-version="v4"] {
+  /* Light is a first-class theme: identity carried by shadows + solid
+     borders, NOT glow (glow collapses on light bg — spec §3). */
+  --va-4-canvas:    #eef2f7;
+  --va-4-canvas-2:  #e8eef4;
+  --va-4-rail:      #ffffff;
+  --va-4-surface:   #ffffff;
+  --va-4-surface-2: #f8fafc;
+  --va-4-surface-3: #eef3f8;
+  --va-4-surface-hot: #ecfdf5;
+
+  --va-4-glass:   rgba(255, 255, 255, 0.80);
+  --va-4-glass-2: #ffffff;
+
+  --va-4-line-soft:   rgba(15, 23, 42, 0.08);
+  --va-4-line:        #dde3eb;
+  --va-4-line-strong: #cbd5e1;
+
+  --va-4-text-strong: #0f172a;
+  --va-4-text:        #1e293b;
+  --va-4-text-soft:   #475569;
+  --va-4-text-faint:  #64748b;
+
+  --va-4-accent:        #059669;
+  --va-4-accent-strong: #047857;
+
+  color-scheme: light;
+}
+
+html[data-theme-version="v4"] body {
+  background: var(--va-4-canvas);
+  color: var(--va-4-text);
+}
+
+/* ---- v4 chrome (glass allowed here only) ---- */
+
+html[data-theme-version="v4"] .va-app-shell {
+  background:
+    radial-gradient(60rem 40rem at 30% -10rem,
+      color-mix(in srgb, var(--va-4-accent) 12%, transparent), transparent 60%),
+    var(--va-4-canvas);
+  color: var(--va-4-text);
+}
+
+/* light mode: drop the glow, lean on the flat canvas (spec §3) */
+html.light[data-theme-version="v4"] .va-app-shell {
+  background: var(--va-4-canvas);
+}
+
+html[data-theme-version="v4"] .va-sidebar {
+  background: color-mix(in srgb, var(--va-4-rail) 92%, transparent);
+  backdrop-filter: blur(20px);
+  border-color: var(--va-4-line);
+}
+
+html[data-theme-version="v4"] .va-sidebar-item-active {
+  background: color-mix(in srgb, var(--va-4-accent) 12%, transparent);
+  color: var(--va-4-text-strong);
+}
+
+/* topbar / page context bar — chrome */
+html[data-theme-version="v4"] .va-topbar,
+html[data-theme-version="v4"] .va-context-bar {
+  background: color-mix(in srgb, var(--va-4-canvas) 70%, transparent);
+  backdrop-filter: blur(16px);
+  border-color: var(--va-4-line);
+}
+
+/* modals / command palette / toast — chrome */
+html[data-theme-version="v4"] .va-modal,
+html[data-theme-version="v4"] .va-command-palette,
+html[data-theme-version="v4"] .va-toast {
+  background: color-mix(in srgb, var(--va-4-surface) 85%, transparent);
+  backdrop-filter: blur(24px);
+  border-color: var(--va-4-line-strong);
+}
+
+/* perf + a11y: kill glow + blur when motion reduced or glass disabled */
+html[data-theme-version="v4"] .va-app-shell[data-motion="reduced"],
+html[data-theme-version="v4"] .va-app-shell[data-motion="off"] {
+  background: var(--va-4-canvas);
+}
+
+html[data-theme-version="v4"] .va-app-shell[data-motion="reduced"] :is(.va-sidebar, .va-topbar, .va-context-bar, .va-modal),
+html[data-theme-version="v4"] .va-app-shell[data-motion="off"] :is(.va-sidebar, .va-topbar, .va-context-bar, .va-modal),
+html[data-theme-version="v4"] .va-app-shell[data-glass="off"] :is(.va-sidebar, .va-topbar, .va-context-bar, .va-modal),
+html[data-theme-version="v4"][data-glass="off"] :is(.va-sidebar, .va-topbar, .va-context-bar, .va-modal) {
+  backdrop-filter: none;
+  background: var(--va-4-surface);
+}
+
+/* ---- v4 content surfaces (SOLID — no backdrop-filter, spec §2.5) ---- */
+
+html[data-theme-version="v4"] :is(
+  .va-card, .va-surface, .va-surface-muted, .va-surface-subtle,
+  .va-surface-deep, .va-surface-raised, .va-table, .va-metric-card,
+  .va-action-card, .va-control-surface, .va-filter-surface,
+  .va-tab-surface, .va-preview-panel, .va-data-card, .va-video-card,
+  .va-command-panel, .va-report-strip, .va-section-toolbar,
+  .va-report-strip-item, .va-risk-action-panel,
+  .va-entity-card, .va-video-list-item, .va-video-tile
+) {
+  background: var(--va-4-surface) !important;   /* solid */
+  backdrop-filter: none !important;
+  border: 1px solid var(--va-4-line) !important;
+  border-radius: var(--va-card-radius);
+  box-shadow: var(--va-4-shadow-sm);
+}
+
+html[data-theme-version="v4"] :is(.va-card, .va-video-card, .va-action-card, .va-entity-card, .va-video-list-item, .va-video-tile):hover {
+  background: var(--va-4-surface-2) !important;
+  border-color: color-mix(in srgb, var(--va-4-accent) 22%, transparent) !important;
+  box-shadow: var(--va-4-shadow-md);
+}
+
+/* primary button + accent glow (single element — cheap) */
+html[data-theme-version="v4"] .va-primary-button {
+  background: var(--va-4-accent-strong) !important;
+  border-color: color-mix(in srgb, var(--va-4-accent-strong) 72%, transparent) !important;
+  color: #fff !important;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--va-4-accent) 30%, transparent);
+}
+
+html[data-theme-version="v4"] .va-primary-button:hover {
+  background: #065f46 !important;
+}
+
+html[data-theme-version="v4"] :is(.va-secondary-button, .va-tool-button) {
+  background: var(--va-4-surface-2) !important;
+  border-color: var(--va-4-line) !important;
+  color: var(--va-4-text) !important;
+}
+
+/* tabular numerals for metadata/durations (spec §2.6 bidi) */
+html[data-theme-version="v4"] .va-num,
+html[data-theme-version="v4"] .va-number-badge {
+  font-variant-numeric: tabular-nums;
+}
+
+/* thumbnail placeholder (no preview): hardcoded dark gradient looked harsh on
+ * light cards. Make it a themed surface gradient that fits both modes. */
+html[data-theme-version="v4"] .va-thumb-placeholder {
+  background: linear-gradient(135deg, var(--va-4-surface-3), var(--va-4-surface)) !important;
+  color: var(--va-4-text-faint) !important;
+}
+
+/* meta/tag chips: were pinned to bg-gray-950/* (dark) and rendered as dark
+ * blobs on light cards. Route to a themed surface so they fit both modes. */
+html[data-theme-version="v4"] .va-chip {
+  background: var(--va-4-surface-2) !important;
+  border-color: var(--va-4-line) !important;
+  color: var(--va-4-text-soft) !important;
+}
+
+/* ---- Dashboard customization grid (react-grid-layout) ---- */
+/* RGL positions items with LTR transforms; the app shell is RTL, so keep the
+ * grid itself LTR internally while panel content stays RTL. */
+.va-dashboard-grid { position: relative; direction: ltr; }
+.va-dashboard-grid .va-dashboard-grid-item { direction: rtl; height: 100%; }
+.va-dashboard-grid .react-grid-item { transition: transform 200ms ease, width 200ms ease, height 200ms ease; }
+.va-dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: color-mix(in srgb, var(--va-action, #10b981) 22%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--va-action, #10b981) 55%, transparent);
+  border-radius: 1rem;
+  opacity: 0.6;
+}
+.va-dashboard-grid-editing .va-dashboard-grid-item {
+  outline: 1px dashed rgba(148, 163, 184, 0.35);
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+.va-dashboard-grid .va-panel-drag { user-select: none; touch-action: none; }
+/* RGL resize handle: mirror to the inline edges and tint it */
+.va-dashboard-grid .react-resizable-handle {
+  background-image: none;
+}
+.va-dashboard-grid-editing .react-resizable-handle::after {
+  border-color: color-mix(in srgb, var(--va-action, #10b981) 70%, #ffffff) !important;
+}
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .va-dashboard-grid .react-grid-item { transition: none !important; }
+}
+html[data-motion="off"] .va-dashboard-grid .react-grid-item,
+html[data-motion="reduced"] .va-dashboard-grid .react-grid-item { transition: none !important; }
+
+/* ---- Auth / entry screens (LockScreen, LoginScreen) ----
+ * They hardcode dark hex backgrounds; combined with the global light-mode
+ * text remaps this produced dark-on-dark (invisible) text in v4 light mode.
+ * Make them theme-aware so they're legible and consistent in both modes. */
+html[data-theme-version="v4"] .va-auth-shell {
+  background: var(--va-4-canvas) !important;
+}
+html[data-theme-version="v4"] .va-auth-card {
+  background: var(--va-4-surface) !important;
+  border-color: var(--va-4-line) !important;
+}
+html[data-theme-version="v4"] .va-auth-shell :is(.text-slate-300, .text-slate-400, .text-emerald-50) {
+  color: var(--va-4-text-soft) !important;
+}
+html[data-theme-version="v4"] .va-auth-shell :is(select, input:not([type="checkbox"])) {
+  background: var(--va-4-surface-2) !important;
+  border-color: var(--va-4-line) !important;
+  color: var(--va-4-text) !important;
+}
+
+/* The onboarding/login shell (.va-onboarding-shell) hard-pins v2 indigo
+ * (--va-2-accent) and a dark hex background. Realign the accent to the v4
+ * emerald and make the wizard's surfaces theme-aware so the startup wizard
+ * is legible and consistent in both light and dark (its inner content uses
+ * utilities that the v4 remaps already adapt). */
+html[data-theme-version="v4"] .va-onboarding-shell {
+  background: var(--va-4-canvas) !important;
+  --va-2-accent: var(--va-4-accent);
+  --va-2-accent-strong: var(--va-4-accent-strong);
+}
+html[data-theme-version="v4"] .va-onboarding-panel,
+html[data-theme-version="v4"] .va-onboarding-panel > footer {
+  background: var(--va-4-surface) !important;
+  border-color: var(--va-4-line) !important;
+}
+/* v1-identity.css ships UNSCOPED .va-onboarding-shell text rules (e.g.
+ * `html.light .va-onboarding-shell .text-white { #f8fafc }`) that assume the
+ * wizard is always dark and out-specify the v4 remaps — leaving light text on
+ * the now-light v4 panel. Restore correct text/button colors for v4 light with
+ * higher specificity. (v1/v2/v3 keep their own onboarding styling untouched.) */
+html.light[data-theme-version="v4"] .va-onboarding-shell .text-white {
+  color: var(--va-4-text-strong) !important;
+}
+html.light[data-theme-version="v4"] .va-onboarding-shell :is(.text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500) {
+  color: var(--va-4-text-soft) !important;
+}
+html.light[data-theme-version="v4"] .va-onboarding-shell :is(.va-secondary-button, .va-tool-button) {
+  background: var(--va-4-surface-2) !important;
+  border-color: var(--va-4-line) !important;
+  color: var(--va-4-text) !important;
+}
+/* The wizard's left rail uses bg-white/0.035 sub-cards that vanish on the
+ * light canvas. Promote them (and the progress nav) to a real surface so they
+ * look like cards, not floating text. */
+html.light[data-theme-version="v4"] .va-onboarding-shell :is(
+  .va-onboarding-progress,
+  header > div.rounded-3xl
+) {
+  background: var(--va-4-surface) !important;
+  border-color: var(--va-4-line) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+/* Inner muted hint cell inside the header strip. */
+html.light[data-theme-version="v4"] .va-onboarding-shell header > div .rounded-2xl {
+  background: var(--va-4-surface-2) !important;
+  border-color: var(--va-4-line) !important;
+}
+
+html[data-theme-version="v4"] .text-white {
+  color: var(--va-4-text-strong) !important;
+}
+
+html[data-theme-version="v4"] :is(.text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500, .text-gray-600) {
+  color: var(--va-4-text-soft) !important;
+}
+
+html[data-theme-version="v4"] :is(.text-emerald-100, .text-emerald-200, .text-emerald-300) {
+  color: #a7f3d0 !important;
+}
+
+html[data-theme-version="v4"] :is(.text-red-100, .text-red-200, .text-red-300) {
+  color: #fecaca !important;
+}
+
+html[data-theme-version="v4"] :is(.text-amber-100, .text-amber-200, .text-amber-300) {
+  color: #fde68a !important;
+}
+
+html[data-theme-version="v4"] :is(.text-blue-100, .text-blue-200, .text-blue-300, .text-cyan-200, .text-cyan-300) {
+  color: #bfdbfe !important;
+}
+
+/* Light mode: the colored-text tints above are tuned for dark surfaces and
+ * fail contrast on light backgrounds (e.g. mint text on the active nav pill,
+ * pink "delete" text). Override with darker AA-passing shades for light. */
+html.light[data-theme-version="v4"] :is(.text-emerald-100, .text-emerald-200, .text-emerald-300) {
+  color: #047857 !important;
+}
+html.light[data-theme-version="v4"] :is(.text-red-100, .text-red-200, .text-red-300) {
+  color: #b91c1c !important;
+}
+html.light[data-theme-version="v4"] :is(.text-amber-100, .text-amber-200, .text-amber-300) {
+  color: #b45309 !important;
+}
+html.light[data-theme-version="v4"] :is(.text-blue-100, .text-blue-200, .text-blue-300, .text-cyan-200, .text-cyan-300) {
+  color: #1d4ed8 !important;
+}
+
+html[data-theme-version="v4"] .va-primary-button,
+html[data-theme-version="v4"] .va-primary-button :is(.text-white, .text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500, .text-gray-600) {
+  color: #fff !important;
+}

@@ -1,0 +1,75 @@
+# Default stack: PocketBase backend + SPA frontend behind nginx + Caddy edge.
+# Best for first-time deployment and for users who want the simplest path.
+#
+# Postgres variant: docker-compose.postgres.yml (added with sub-project B1).
+#
+# Usage:
+#   cp .env.example .env       # edit DOMAIN + ACME_EMAIL for HTTPS
+#   docker compose up -d --build
+#
+# Local dev (HTTP only, no Caddy):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # PocketBase: the data + auth + REST backend. Schema is in pocketbase/pb_schema.json.
+  pocketbase:
+    build:
+      context: ./pocketbase
+      args:
+        PB_VERSION: "0.39.1"
+    container_name: archive-pocketbase
+    restart: unless-stopped
+    volumes:
+      - pb_data:/pb_data
+      - ./pocketbase/pb_schema.json:/pb_schema.json:ro
+    networks:
+      - archive
+    # No host port — frontend reaches it on the internal docker network.
+
+  # SPA built from archive-app and served by nginx. /pb/* is proxied to
+  # pocketbase so the browser stays on a single origin (no CORS dance).
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        APP_REPO: ${APP_REPO:-https://github.com/ahmedahmed1223/archive-app.git}
+        APP_REF: ${APP_REF:-main}
+    container_name: archive-frontend
+    restart: unless-stopped
+    depends_on:
+      - pocketbase
+    networks:
+      - archive
+    # No host port — Caddy is the public entrypoint.
+
+  # Caddy: TLS termination + reverse proxy. Get a real cert automatically
+  # by pointing DNS at the VPS and setting DOMAIN/ACME_EMAIL in .env.
+  # For local dev (without a domain) replace with the dev override.
+  caddy:
+    image: caddy:2.11-alpine
+    container_name: archive-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    networks:
+      - archive
+
+volumes:
+  pb_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  archive:
+    driver: bridge

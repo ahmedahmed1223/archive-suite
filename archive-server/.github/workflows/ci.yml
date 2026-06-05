@@ -1,0 +1,70 @@
+name: CI
+
+# بوابة جودة نسخة السيرفر: تثبيت + اختبارات محوّل cloud-pocketbase (عميل وهمي، بلا خادم حيّ).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # 22 matches the runtime image + satisfies Prisma 7 engines (>=20.19).
+          node-version: "24"
+          cache: npm
+
+      # يجلب @archive/core العام (git) + pocketbase SDK + Prisma 7 + tsx.
+      - name: Install dependencies
+        run: npm ci
+
+      # محوّلا PocketBase/Postgres + RPC API + auth (عملاء وهميون، بلا خوادم حيّة).
+      - name: Verify adapters + API + auth
+        run: npm run verify
+
+  # اختبار تكامل حيّ: Postgres حقيقي يثبت أن البيانات تُحفظ فعليًا في كل PR.
+  integration-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: archive
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: archive
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U archive -d archive"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://archive:test@localhost:5432/archive
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client + apply migrations
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      # يكتب/يقرأ عبر محوّل Postgres الحقيقي ويؤكّد بقاء البيانات.
+      - name: Live Postgres persistence smoke
+        run: npx tsx scripts/smoke-postgres-live.mjs

@@ -1,0 +1,29 @@
+node_modules
+.vite/
+output/
+# Build outputs — never commit. CI, Docker, and Pages all rebuild from source.
+# Committing dist/ caused recurring merge conflicts between concurrent agents.
+dist/
+dist-cloud/
+Base_old/
+.npm-cache/
+.superpowers/
+*.log
+IMPLEMENTATION_STATUS.md
+DESIGN.md
+requirements_and_worklog.md
+ui_audit.md
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+dist-aistudio/
+
+# Local agent tooling
+.claude/
+.tmp/
+# Design audits: keep the markdown deliverables; ignore only the screenshot
+# binaries (1MB+) to avoid repo bloat.
+.design/
