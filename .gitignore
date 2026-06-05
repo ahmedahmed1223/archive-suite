@@ -1,6 +1,39 @@
-﻿archive app/.git
-archive-core/.git
-archive-server/.git
+# Local scans and repository backups.
+.codex-scan/
 repo-git-backups/
-.codex-scan/CLOUD-MediaDB/.git
-node_modules
+
+# Dependencies and package-manager noise.
+node_modules/
+**/node_modules/
+package-lock.json
+**/package-lock.json
+npm-shrinkwrap.json
+**/npm-shrinkwrap.json
+.npm-cache/
+**/.npm-cache/
+
+# Local environment and secrets.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Logs and temporary output.
+*.log
+*.tmp
+.tmp/
+**/.tmp/
+
+# Build/test artifacts.
+dist/
+dist-cloud/
+dist-aistudio/
+**/dist/
+**/dist-cloud/
+**/dist-aistudio/
+**/test-results/
+**/playwright-report/
+**/blob-report/
+**/.vite/

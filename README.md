@@ -61,6 +61,14 @@ pnpm run server
 pnpm run verify
 ```
 
+للتحقق الجزئي أثناء التطوير:
+
+```powershell
+pnpm run verify:app
+pnpm run verify:core
+pnpm run verify:server
+```
+
 ## توصيف الأجزاء
 
 ### `archive app/`
@@ -94,6 +102,7 @@ pnpm run verify
 
 - يعتمد المستودع على `pnpm` workspace.
 - استخدام `pnpm-lock.yaml` لضمان اعتمادية قابلة للتكرار.
+- أسماء الحزم داخل الـ workspace هي `@archive/app` و`@archive/core` و`archive-server`.
 - جميع الحزم تُدار داخل نفس المستودع.
 
 ## للمطورين

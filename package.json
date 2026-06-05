@@ -1,10 +1,20 @@
 {
+  "name": "archive-suite",
+  "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "bootstrap": "pnpm install",
-    "dev": "pnpm --filter \"archive app\" run dev",
+    "dev": "pnpm --filter @archive/app run dev",
+    "dev:app": "pnpm --filter @archive/app run dev",
     "server": "pnpm --filter archive-server run start",
-    "verify": "pnpm --filter \"archive app\" run verify && pnpm --filter archive-core run verify && pnpm --filter archive-server run verify"
+    "build:app": "pnpm --filter @archive/app run build",
+    "build:spa": "pnpm --filter @archive/app run build:spa",
+    "build:cloud": "pnpm --filter @archive/app run build:cloud",
+    "build:aistudio": "pnpm --filter @archive/app run build:aistudio",
+    "verify": "pnpm --filter @archive/app run verify && pnpm --filter @archive/core run verify && pnpm --filter archive-server run verify",
+    "verify:app": "pnpm --filter @archive/app run verify",
+    "verify:core": "pnpm --filter @archive/core run verify",
+    "verify:server": "pnpm --filter archive-server run verify"
   }
 }
