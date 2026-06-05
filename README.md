@@ -39,7 +39,7 @@ Arch_App/
 من جذر المستودع:
 
 ```powershell
-cd "<redacted-local-path>\Arch_App"
+cd ".\Arch_App"
 pnpm install
 ```
 
