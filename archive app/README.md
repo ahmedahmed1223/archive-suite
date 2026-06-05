@@ -28,28 +28,30 @@
 `CLOUD-MediaDB` يُستخدم هنا كمرجع تجربة منتج فقط: وضوح قصة الأرشيف الإعلامي،
 تدفق Dropbox، التعاون، واللغة اليومية للمستخدم. لا ننقل معماريته كما هي؛ لا
 `server.ts` أحادي، ولا Firestore داخل الواجهة، ولا SQLite داخل المستودع كمسار
-إنتاجي بديل. المسار المعتمد هو منافذ `@archive/core`، وواجهة `archive-app`، وخادم
+إنتاجي بديل. المسار المعتمد هو منافذ `@archive/core`، وواجهة `@archive/app`، وخادم
 `archive-server` مع محوّلات تخزين وملفات وAI قابلة للتبديل.
 
 ## الإصدارات
 
 | الإصدار | الاستخدام | البناء |
 |---------|------------|--------|
-| SPA محلية | نسخة محمولة/offline-first بملف واحد | `npm run build:spa` |
-| Cloud SPA | واجهة تتصل بخادم `archive-server` | `npm run build:cloud` |
-| AI Studio | حزمة مهيأة لتشغيل AI Studio | `npm run build:aistudio` |
+| SPA محلية | نسخة محمولة/offline-first بملف واحد | `pnpm run build:spa` |
+| Cloud SPA | واجهة تتصل بخادم `archive-server` | `pnpm run build:cloud` |
+| AI Studio | حزمة مهيأة لتشغيل AI Studio | `pnpm run build:aistudio` |
 
 ## المتطلبات
 
-- Node.js 22.12+ و npm.
+- Node.js 22.12+ و pnpm.
 - للنسخة السحابية: `archive-server` مع Postgres أو PocketBase.
 - اختياريًا: مفاتيح AI وFileStore حسب المزوّدات المطلوبة.
 
 ## التشغيل محليًا
 
-```bash
-npm install
-npm run dev
+من جذر المستودع:
+
+```powershell
+pnpm install
+pnpm run dev
 ```
 
 ثم افتح العنوان الذي يعرضه Vite، عادة:
@@ -60,10 +62,10 @@ http://127.0.0.1:5173/
 
 ## البناء والتحقق
 
-```bash
-npm run verify
-npm run build:spa
-npm run build:cloud
+```powershell
+pnpm run verify:app
+pnpm run build:spa
+pnpm run build:cloud
 ```
 
 `build:spa` ينتج نسخة محمولة مناسبة للرفع كموقع ثابت أو للاستخدام المحلي.
@@ -71,15 +73,15 @@ npm run build:cloud
 
 ## بنية العمل
 
-المشروع جزء من منظومة بثلاثة مستودعات:
+المشروع جزء من `pnpm` workspace موحد:
 
 ```text
-archive-core    # المنافذ والعقود المشتركة
-archive-app     # واجهة React ونسخة SPA/Cloud
-archive-server  # API، التخزين السحابي، AI، المشاركة، والتصدير
+archive-core/    # المنافذ والعقود المشتركة
+archive app/     # واجهة React ونسخة SPA/Cloud، الحزمة @archive/app
+archive-server/  # API، التخزين السحابي، AI، المشاركة، والتصدير
 ```
 
-داخل `archive-app`:
+داخل `archive app/`:
 
 ```text
 src/app/          # shell والتوجيه وسجل الصفحات
@@ -94,13 +96,13 @@ TASKS.md          # سجل المهام التنفيذية القادمة
 
 ## التشغيل السحابي
 
-راجع مستودع `archive-server` لإعداد Postgres/PocketBase وDocker/Caddy وملفات
+راجع مجلد `archive-server/` لإعداد Postgres/PocketBase وDocker/Caddy وملفات
 التخزين وAI. للدليل العملي من الصفر حتى رفع مادة وتفريغها، راجع
 [`docs/FULL_STACK_RUNBOOK.md`](docs/FULL_STACK_RUNBOOK.md). بعد تشغيل الخادم،
 ابنِ الواجهة السحابية:
 
-```bash
-npm run build:cloud
+```powershell
+pnpm run build:cloud
 ```
 
 ## لقطات شاشة
@@ -111,8 +113,8 @@ npm run build:cloud
 
 ## المساهمة
 
-قبل أي تغيير، راجع `AGENTS.md` واختر مهمة من `TASKS.md`. كل مهمة = فرع واحد =
-PR واحد، مع تشغيل `npm run verify` والبناء المناسب قبل الادعاء بالإنجاز.
+قبل أي تغيير، راجع `../AGENTS.md` واختر مهمة من `TASKS.md`. كل مهمة = فرع واحد =
+PR واحد، مع تشغيل `pnpm run verify:app` والبناء المناسب قبل الادعاء بالإنجاز.
 
 ## الترخيص
 
