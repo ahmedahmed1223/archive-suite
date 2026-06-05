@@ -16,6 +16,7 @@ import { startApiServer } from "./api/server.js";
 import { createEventBus } from "./api/eventBus.js";
 import { loginUser, seedAdminIfMissing } from "./auth/authService.js";
 import { resolveServerConfig } from "./config/serverConfig.js";
+import { assertProductionSecrets } from "./config/productionGuard.js";
 
 const BACKEND = process.env.BACKEND || "pocketbase";
 const PORT = Number(process.env.API_PORT || 8787);
@@ -48,6 +49,8 @@ async function buildPrismaClient() {
 }
 
 async function main() {
+  assertProductionSecrets(process.env);
+
   let registration;
 
   if (BACKEND === "postgres") {

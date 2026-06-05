@@ -100,7 +100,7 @@ export function TranscriberPage() {
           jsx(FileAudio, { className: "mx-auto h-10 w-10 text-gray-500" }),
           jsx("p", { className: "mt-2 text-sm font-semibold text-white", children: file ? file.name : "اختر ملف صوت أو فيديو" }),
           jsx("p", { className: "mt-1 text-xs text-gray-500", children: file ? formatFileSize(file.size) : "MP3 · WAV · M4A · MP4 · WEBM …" }),
-          jsx("input", { id: fileInputId, type: "file", accept: "audio/*,video/*", className: "hidden", onChange: (e) => { setFile(e.target.files?.[0] || null); setResult(null); } })
+          jsx("input", { id: fileInputId, type: "file", "aria-label": "اختيار ملف صوت أو فيديو للتفريغ", accept: "audio/*,video/*", className: "hidden", onChange: (e) => { setFile(e.target.files?.[0] || null); setResult(null); } })
         ] }),
 
         jsx("div", { className: "flex justify-end", children: jsxs("button", {

@@ -98,6 +98,7 @@ function LocalFilePicker({ value, onFileSelect }) {
     jsx("input", {
       ref: inputRef,
       type: "file",
+      "aria-label": "اختيار ملف محلي للمادة",
       onChange: (event) => {
         onFileSelect(event.target.files?.[0]);
         event.target.value = "";

@@ -15,6 +15,14 @@
     "verify": "pnpm --filter @archive/app run verify && pnpm --filter @archive/core run verify && pnpm --filter archive-server run verify",
     "verify:app": "pnpm --filter @archive/app run verify",
     "verify:core": "pnpm --filter @archive/core run verify",
-    "verify:server": "pnpm --filter archive-server run verify"
+    "verify:server": "pnpm --filter archive-server run verify",
+    "audit:ui": "pnpm --filter @archive/app run audit:ui",
+    "audit:ui:headed": "pnpm --filter @archive/app run audit:ui:headed",
+    "audit:ui:server": "pnpm --filter @archive/app run audit:ui:server",
+    "audit:all": "pnpm run verify && pnpm run audit:ui",
+    "security:baseline": "node scripts/verify-security-baseline.mjs",
+    "docker:config": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml config",
+    "docker:config:postgres": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.postgres.yml config",
+    "release:verify": "pnpm run verify && pnpm run build:spa && pnpm run build:cloud && pnpm run build:aistudio && pnpm run security:baseline && node scripts/verify-release-readiness.mjs"
   }
 }

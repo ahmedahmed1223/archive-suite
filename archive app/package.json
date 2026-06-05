@@ -12,8 +12,11 @@
     "verify": "node scripts/verify-modules.mjs",
     "visual:matrix": "node scripts/visual-matrix.mjs",
     "test:a11y": "node scripts/run-a11y.mjs",
+    "audit:ui": "node scripts/run-interactive-audit.mjs",
+    "audit:ui:headed": "node scripts/run-interactive-audit.mjs --headed",
+    "audit:ui:server": "node scripts/run-interactive-audit.mjs --server",
     "refactor:status": "node scripts/refactor-status.mjs",
-    "check": "npm run verify && npm run build:spa",
+    "check": "pnpm run verify && pnpm run build:spa",
     "preview": "vite preview --host 127.0.0.1 --configLoader runner"
   },
   "dependencies": {

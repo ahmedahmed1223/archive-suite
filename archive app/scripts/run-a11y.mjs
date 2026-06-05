@@ -74,10 +74,10 @@ process.on('SIGTERM', () => void shutdown(143));
 process.on('SIGHUP', () => void shutdown(129));
 
 try {
-  await runCommand('npx vite build --mode spa --configLoader runner');
-  previewProcess = spawnShell('npx vite preview --host 127.0.0.1 --configLoader runner --port 4173');
+  await runCommand('pnpm exec vite build --mode spa --configLoader runner');
+  previewProcess = spawnShell('pnpm exec vite preview --host 127.0.0.1 --configLoader runner --port 4173');
   await waitForServer();
-  await runCommand('npx playwright test');
+  await runCommand('pnpm exec playwright test');
   await shutdown(0);
 } catch (error) {
   console.error(error);

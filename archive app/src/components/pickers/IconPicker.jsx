@@ -220,7 +220,7 @@ export function IconPicker({
               isUploading ? "جار القراءة..." : "رفع أيقونة محلية"
             ]
           }),
-          jsx("input", { id: `${inputId}-file`, type: "file", accept: "image/png,image/jpeg,image/webp,image/gif,image/svg+xml", onChange: handleImageUpload, style: { display: "none" } }),
+          jsx("input", { id: `${inputId}-file`, type: "file", "aria-label": "اختيار صورة أيقونة", accept: "image/png,image/jpeg,image/webp,image/gif,image/svg+xml", onChange: handleImageUpload, style: { display: "none" } }),
           jsx("p", { className: "mt-2 text-xs text-gray-500", children: "تحفظ الصورة كبيانات محلية خفيفة داخل إعدادات العنصر." })
         ]
       }),

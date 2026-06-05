@@ -184,7 +184,7 @@ export function UploaderPage() {
           busy ? jsx(Loader2, { className: "mx-auto h-10 w-10 animate-spin text-emerald-300" }) : jsx(FileUp, { className: "mx-auto h-10 w-10 text-gray-500" }),
           jsx("p", { className: "mt-2 text-sm font-semibold text-white", children: busy ? "جارٍ الرفع…" : "اختر ملفات للرفع" }),
           jsx("p", { className: "mt-1 text-xs text-gray-500", children: "يمكن اختيار عدة ملفات" }),
-          jsx("input", { id: inputId, type: "file", multiple: true, className: "hidden", disabled: busy, onChange: (e) => upload(e.target.files) })
+          jsx("input", { id: inputId, type: "file", "aria-label": "اختيار ملفات للرفع", multiple: true, className: "hidden", disabled: busy, onChange: (e) => upload(e.target.files) })
         ] })
       ] }),
 

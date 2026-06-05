@@ -9,4 +9,6 @@ services:
     ports:
       - "127.0.0.1:8787:8787"
     environment:
+      NODE_ENV: development
+      ARCHIVE_PUBLIC_DEPLOY: "0"
       API_CORS_ORIGIN: "http://localhost:5173"
