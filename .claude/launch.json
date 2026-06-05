@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "C:\\PROGRA~1\\nodejs\\npm.cmd",
+      "runtimeArgs": ["--prefix", "archive app", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}

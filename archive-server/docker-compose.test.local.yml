@@ -1,0 +1,12 @@
+# Local CRUD-verification override: expose Postgres + the RPC server to the host
+# so the dev SPA (http://localhost:5173) can talk to the real Postgres backend.
+# Not for production. Use with docker-compose.postgres.yml.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:15432:5432"
+  server:
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      API_CORS_ORIGIN: "http://localhost:5173"

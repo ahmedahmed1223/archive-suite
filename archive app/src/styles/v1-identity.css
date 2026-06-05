@@ -1,0 +1,1307 @@
+:root {
+  /* Workspace neutrals — slate-stone scale with subtle warmth.
+   * Tuned so the canvas sits a clear step BELOW surfaces, giving cards
+   * real hierarchy instead of dissolving into the page (Office /
+   * Outlook / Notion vibe rather than coder cave). */
+  --va-ink-950: #131418;   /* canvas (was #08080a, too dark for daily work) */
+  --va-ink-925: #181a1f;   /* sidebar / context bar */
+  --va-ink-900: #1d1f24;   /* primary surface (cards, hero) */
+  --va-ink-850: #232529;   /* secondary surface (sub-cards) */
+  --va-ink-800: #2a2c31;   /* tertiary / elevated */
+  --va-ink-700: #393b41;   /* hover lift */
+  --va-ink-600: #50525a;
+  --va-ink-500: #6a6c75;
+
+  /* Borders. Bumped from 0.06 to 0.10 so cards have visible edges
+   * (the previous value disappeared in bright office lighting). */
+  --va-line-soft: rgba(255, 255, 255, 0.10);
+  --va-line: rgba(255, 255, 255, 0.16);
+  --va-line-strong: rgba(255, 255, 255, 0.24);
+
+  /* Text. Slightly higher contrast for readability across all-day use. */
+  --va-text-strong: #f5f5f7;
+  --va-text: #d1d2d8;
+  --va-text-soft: #9a9ca5;
+  --va-text-faint: #6f7079;
+
+  /* Accent. Default teal kept; the strong stop is refined. */
+  --va-action: var(--va-v1-accent, #14b8a6);
+  --va-action-strong: var(--va-v1-accent-strong, #0d9488);
+  --va-action-soft: color-mix(in srgb, var(--va-action) 12%, transparent);
+
+  /* Radius. Office-software-style — small, confident. */
+  --va-panel-radius: 0.75rem;
+  --va-card-radius: 0.5rem;
+  --va-control-radius: 0.375rem;
+
+  /* Shadows. Lighter for an "elevated paper" feel, not "cinematic float". */
+  --va-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 1px rgba(0, 0, 0, 0.18);
+  --va-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.30);
+  --va-shadow-elevated: 0 4px 8px -2px rgba(0, 0, 0, 0.40), 0 16px 32px -8px rgba(0, 0, 0, 0.40);
+
+  --va-page-gutter: clamp(1rem, 1.5vw, 1.5rem);
+  --va-control-height: 2.25rem;
+
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Tajawal", "Cairo", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+html.dark {
+  --color-bg-primary: var(--va-ink-950);
+  --color-bg-surface: var(--va-ink-900);
+  --color-bg-elevated: var(--va-ink-800);
+  --color-text-primary: var(--va-text-strong);
+  --color-text-secondary: var(--va-text);
+  --color-text-muted: var(--va-text-soft);
+  --color-border: var(--va-line-soft);
+}
+
+html.light {
+  /* Light mode tuned for daily Office-style work — canvas sits below
+   * surfaces so cards have clear, paper-like elevation. Borders
+   * darker than zinc-200 so edges are readable in bright daylight. */
+  --color-bg-primary: #f4f5f7;     /* canvas — soft slate */
+  --color-bg-surface: #ffffff;     /* cards, panels */
+  --color-bg-elevated: #ffffff;    /* modals, drawers */
+  --color-text-primary: #15181f;
+  --color-text-secondary: #3a3e47;
+  --color-text-muted: #6a6e78;
+  --color-border: #d4d6dc;
+}
+
+body {
+  background: var(--va-ink-950);
+  color: var(--va-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html.light body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--va-action) 28%, transparent);
+  color: var(--va-text-strong);
+}
+
+html.light ::selection {
+  color: var(--color-text-primary);
+}
+
+.custom-scrollbar,
+main {
+  scrollbar-color: color-mix(in srgb, var(--va-action) 30%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.va-app-shell {
+  background: var(--va-ink-950);
+  color: var(--va-text);
+}
+
+html.light .va-app-shell {
+  background: var(--color-bg-primary);
+  color: #172033;
+}
+
+/* Accent presets — refined for professional daily-work use.
+ * Each preset balances saturation so the accent reads as
+ * "intentional action" rather than "decorative glow". */
+.va-app-shell[data-accent="teal"] {
+  --va-action: #0d9488;       /* refined teal — was #14b8a6 (more saturated) */
+  --va-action-strong: #0f766e;
+}
+
+.va-app-shell[data-accent="indigo"] {
+  --va-action: #5b5fc7;       /* refined indigo — Linear-like, less neon */
+  --va-action-strong: #4338ca;
+}
+
+.va-app-shell[data-accent="emerald"] {
+  --va-action: #059669;       /* deeper emerald, more office-friendly */
+  --va-action-strong: #047857;
+}
+
+.va-app-shell[data-accent="blue"] {
+  --va-action: #2563eb;       /* Office-365 / Microsoft blue */
+  --va-action-strong: #1d4ed8;
+}
+
+.va-app-shell[data-accent="slate"] {
+  --va-action: #475569;       /* monochrome / quiet accent — Notion-like */
+  --va-action-strong: #334155;
+}
+
+.va-app-shell[data-accent="amber"] {
+  --va-action: #b45309;       /* warm professional amber */
+  --va-action-strong: #92400e;
+}
+
+.va-app-shell[data-accent="rose"] {
+  --va-action: #e11d48;       /* refined rose — was #f43f5e */
+  --va-action-strong: #be123c;
+}
+
+.va-app-shell[data-font-scale="small"] {
+  font-size: 14px;
+}
+
+.va-app-shell[data-font-scale="normal"] {
+  font-size: 16px;
+}
+
+.va-app-shell[data-font-scale="large"] {
+  font-size: 17px;
+}
+
+.va-app-shell[data-font-scale="xlarge"] {
+  font-size: 18px;
+}
+
+.va-app-shell[data-motion="off"] *,
+.va-app-shell[data-motion="off"] *::before,
+.va-app-shell[data-motion="off"] *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+.va-app-shell[data-motion="reduced"] *,
+.va-app-shell[data-motion="reduced"] *::before,
+.va-app-shell[data-motion="reduced"] *::after {
+  animation-duration: 0.12s !important;
+  transition-duration: 0.12s !important;
+}
+
+/* Surface utility classes — replace ad-hoc bg-gray-950/* combinations
+ * so opacity layers follow the theme instead of being hardcoded dark.
+ * Tier scale:
+ *   deep    – darkest control surface (inputs, dialog inner panels)
+ *   muted   – default sub-card / list-row surface
+ *   subtle  – lightest tint, for nested helper surfaces
+ *   raised  – solid panel-like surface (modals, drawers)
+ */
+.va-surface-deep {
+  background: var(--va-ink-950);
+  border-color: var(--va-line-soft);
+}
+.va-surface-muted {
+  background: var(--va-ink-900);
+  border-color: var(--va-line-soft);
+}
+.va-surface-subtle {
+  background: var(--va-ink-850);
+  border-color: var(--va-line-soft);
+}
+.va-surface-raised {
+  background: var(--va-ink-800);
+  border-color: var(--va-line);
+}
+
+/* Virtualization helpers — tell the browser to skip rendering off-screen
+ * archive items so 1000+ entries don't pay the layout / paint cost up
+ * front. Each helper supplies a contain-intrinsic-size so the page
+ * still computes a stable height without a flash of zero-height items
+ * (which would defeat the scrollbar). */
+.va-virtual-grid-cell {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 260px;
+}
+.va-virtual-tile-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 88px;
+}
+.va-virtual-list-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 132px;
+}
+.va-virtual-table-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
+}
+
+/* Column resize handle for Details view. The handle sits on the
+ * leading edge of every <th> (RTL: right edge), only appears on
+ * hover/focus, and turns accent-colored while dragging. */
+.va-column-resize-handle {
+  position: absolute;
+  inset-inline-start: -2px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 2;
+  opacity: 0;
+  background: transparent;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+th:hover > .va-column-resize-handle,
+.va-column-resize-handle:hover,
+.va-column-resize-handle:focus-visible,
+.va-column-resize-handle[data-resizing="true"] {
+  opacity: 1;
+  background: color-mix(in srgb, var(--va-action) 55%, transparent);
+}
+.va-column-resize-handle[data-resizing="true"] {
+  background: var(--va-action);
+}
+html.light .va-surface-deep {
+  background: #f4f4f5;
+  border-color: var(--color-border);
+}
+html.light .va-surface-muted {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border);
+}
+html.light .va-surface-subtle {
+  background: #fafafa;
+  border-color: var(--color-border);
+}
+html.light .va-surface-raised {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border);
+}
+
+.va-app-shell[data-card-style="outlined"] .va-card,
+.va-app-shell[data-card-style="outlined"] .va-data-card,
+.va-app-shell[data-card-style="outlined"] .va-panel-premium,
+.va-app-shell[data-card-style="outlined"] .va-page-hero {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-color: color-mix(in srgb, var(--va-action) 22%, rgba(148, 163, 184, 0.2)) !important;
+}
+
+.va-app-shell[data-card-style="minimal"] .va-card,
+.va-app-shell[data-card-style="minimal"] .va-data-card,
+.va-app-shell[data-card-style="minimal"] .va-page-hero {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  padding-inline: 0 !important;
+}
+
+.va-app-shell[data-density="compact"] {
+  --va-page-gutter: clamp(0.75rem, 1.25vw, 1.1rem);
+  --va-panel-radius: 0.875rem;
+  --va-card-radius: 0.75rem;
+}
+
+.va-app-shell[data-density="compact"] .va-page-shell {
+  padding: var(--va-page-gutter);
+}
+
+.va-app-shell[data-density="compact"] .va-page-hero,
+.va-app-shell[data-density="compact"] .va-card,
+.va-app-shell[data-density="compact"] .va-data-card,
+.va-app-shell[data-density="compact"] .va-control-surface,
+.va-app-shell[data-density="compact"] .va-filter-surface {
+  padding: 0.9rem !important;
+}
+
+.va-app-shell[data-density="compact"] .va-metric-card,
+.va-app-shell[data-density="compact"] .va-action-card {
+  min-height: 5.75rem;
+}
+
+.va-page-shell {
+  padding: var(--va-page-gutter);
+}
+
+.va-motion-page {
+  min-width: 0;
+  transform-origin: top center;
+}
+
+.va-page-hero,
+.va-panel-premium,
+.va-card,
+.va-data-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--va-line-soft) !important;
+  background: var(--va-ink-900) !important;
+  box-shadow: var(--va-shadow-card);
+}
+
+main section[class*="bg-gradient-to-l"][class*="from-gray-900"] {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--va-line-soft) !important;
+  background: var(--va-ink-900) !important;
+  box-shadow: var(--va-shadow-card) !important;
+}
+
+main section[class*="bg-gradient-to-l"][class*="from-gray-900"]::before {
+  content: "";
+  position: absolute;
+  inset-inline: 1rem;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--va-action) 65%, transparent), transparent);
+  pointer-events: none;
+}
+
+main section[class*="bg-gradient-to-l"][class*="from-gray-900"] > * {
+  position: relative;
+  z-index: 1;
+}
+
+main section[class*="bg-gray-900/45"],
+main section[class*="bg-gray-900/50"],
+main div[class*="bg-gray-900/45"],
+main div[class*="bg-gray-900/50"] {
+  border-color: rgba(148, 163, 184, 0.13) !important;
+  background:
+    linear-gradient(180deg, rgba(20, 32, 51, 0.82), rgba(8, 19, 34, 0.62)),
+    var(--va-ink-900) !important;
+}
+
+main button[class*="bg-emerald-700"],
+main button[class*="bg-emerald-600"] {
+  border: 1px solid var(--va-action-strong);
+  background: var(--va-action) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12) inset, 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Accent bridge (consolidated)
+ *
+ * `emerald` IS the accent in this app (not a separate success-green). Hundreds
+ * of icons/chips/borders across the pages use raw Tailwind `*-emerald-*`
+ * classes. Without this block they stay green even when the user picks a
+ * different accent (blue / rose / amber …) — a glaring inconsistency.
+ *
+ * These rules remap the common emerald shades to `--va-action` so the accent
+ * picker themes the WHOLE app, scoped to `main` + the onboarding shell (same
+ * precedent as the button bridge above). New code should prefer the semantic
+ * classes (.va-tone-accent, .va-primary-button) or tokens directly — see
+ * docs/DESIGN-SYSTEM.md for the migration path.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* Foreground (icons, heading accents). 400/300 = the standard accent text. */
+main [class*="text-emerald-400"],
+main [class*="text-emerald-300"],
+main [class*="text-emerald-500"],
+.va-onboarding-shell [class*="text-emerald-400"],
+.va-onboarding-shell [class*="text-emerald-300"] {
+  color: var(--va-action) !important;
+}
+
+/* Lighter accent text (used on accent-tinted backgrounds — chips/badges). */
+main [class*="text-emerald-200"],
+main [class*="text-emerald-100"],
+main [class*="text-emerald-50"],
+.va-onboarding-shell [class*="text-emerald-200"],
+.va-onboarding-shell [class*="text-emerald-100"] {
+  color: color-mix(in srgb, var(--va-action) 28%, #ffffff) !important;
+}
+
+/* Borders — one alpha for the 500 family, slightly stronger for 400. */
+main [class*="border-emerald-500"],
+.va-onboarding-shell [class*="border-emerald-500"] {
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
+}
+main [class*="border-emerald-400"],
+.va-onboarding-shell [class*="border-emerald-400"] {
+  border-color: color-mix(in srgb, var(--va-action) 46%, transparent) !important;
+}
+
+/* Soft tinted backgrounds (chips, badges, hover fills). Covers the /10 /12
+ * /15 /20 opacity variants with one consistent accent tint. The solid
+ * bg-emerald-500 (no slash) also lands here → becomes a solid accent fill. */
+main [class*="bg-emerald-500"],
+main [class*="bg-emerald-400"],
+.va-onboarding-shell [class*="bg-emerald-500"] {
+  background-color: color-mix(in srgb, var(--va-action) 15%, transparent) !important;
+}
+
+/* ── Light-mode parity ──
+ * On light surfaces the accent text needs the darker `--va-action-strong`
+ * stop for contrast; tinted backgrounds stay soft. */
+html.light main [class*="text-emerald-400"],
+html.light main [class*="text-emerald-300"],
+html.light main [class*="text-emerald-500"],
+html.light main [class*="text-emerald-200"],
+html.light main [class*="text-emerald-100"],
+html.light .va-onboarding-shell [class*="text-emerald-300"],
+html.light .va-onboarding-shell [class*="text-emerald-200"] {
+  color: var(--va-action-strong) !important;
+}
+
+main input,
+main select,
+main textarea {
+  border-color: var(--va-line) !important;
+  background-color: var(--va-ink-950) !important;
+  color: var(--va-text-strong) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+main input::placeholder,
+main textarea::placeholder {
+  color: var(--va-text-faint) !important;
+}
+
+main input:focus,
+main select:focus,
+main textarea:focus {
+  background-color: var(--va-ink-950) !important;
+  border-color: var(--va-action) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-action) 18%, transparent);
+  outline: none;
+}
+
+html.light main input,
+html.light main select,
+html.light main textarea {
+  border-color: var(--color-border) !important;
+  background-color: var(--color-bg-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+html.light main input:focus,
+html.light main select:focus,
+html.light main textarea:focus {
+  background-color: var(--color-bg-surface) !important;
+  border-color: var(--va-action) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-action) 18%, transparent);
+}
+
+main :focus-visible,
+.va-onboarding-shell :focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--va-action) 76%, #ffffff);
+  outline-offset: 3px;
+}
+
+html.light main section[class*="bg-gradient-to-l"][class*="from-gray-900"],
+html.light .va-page-hero,
+html.light .va-card,
+html.light .va-data-card,
+html.light .va-control-surface,
+html.light .va-filter-surface,
+html.light .va-tab-surface {
+  border-color: var(--color-border) !important;
+  background: var(--color-bg-surface) !important;
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.06);
+}
+
+html.light main section[class*="bg-gray-900/45"],
+html.light main section[class*="bg-gray-900/50"],
+html.light main div[class*="bg-gray-900/45"],
+html.light main div[class*="bg-gray-900/50"],
+html.light .va-card-subtle,
+html.light .va-action-card,
+html.light .va-metric-card,
+html.light .va-video-card,
+html.light .va-video-list-item,
+html.light .va-preview-panel {
+  border-color: var(--color-border) !important;
+  background: var(--color-bg-surface) !important;
+  color: var(--color-text-primary);
+}
+
+html.light .va-insight-panel,
+html.light .va-ux-empty-state,
+html.light .va-workflow-step,
+html.light .va-floating-action-bar {
+  border-color: var(--color-border) !important;
+  background: var(--color-bg-surface) !important;
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.06);
+}
+
+html.light .va-mixed-token {
+  background: rgba(255, 253, 248, 0.96);
+  color: var(--va-action-strong);
+}
+
+html.light main input,
+html.light main select,
+html.light main textarea {
+  border-color: rgba(120, 113, 108, 0.22) !important;
+  background-color: #fffdf8 !important;
+  color: #172033 !important;
+}
+
+html.light .va-title,
+html.light main h1,
+html.light main h2,
+html.light main h3 {
+  color: #172033 !important;
+}
+
+html.light .va-primary-button,
+html.light .va-action-button,
+html.light main button[class*="bg-emerald-700"],
+html.light main button[class*="bg-emerald-600"] {
+  color: #ffffff !important;
+}
+
+html.light main .text-gray-400,
+html.light main .text-gray-500 {
+  color: #64748b !important;
+}
+
+html.light .va-sidebar {
+  background: var(--color-bg-surface) !important;
+  border-inline-start-color: var(--color-border) !important;
+  box-shadow: -1px 0 0 var(--color-border);
+}
+
+html.light .va-sidebar .text-white,
+html.light .va-sidebar h2 {
+  color: var(--color-text-primary) !important;
+}
+
+html.light .va-sidebar .text-gray-400,
+html.light .va-sidebar .text-gray-500,
+html.light .va-context-bar .text-gray-400,
+html.light .va-context-bar .text-gray-500 {
+  color: var(--color-text-muted) !important;
+}
+
+html.light .va-context-bar {
+  background: var(--color-bg-surface) !important;
+  border-bottom-color: var(--color-border) !important;
+  box-shadow: 0 1px 0 var(--color-border);
+}
+
+html.light .va-secondary-button,
+html.light .va-tool-button {
+  background: rgba(255, 253, 248, 0.92) !important;
+  color: #485466 !important;
+}
+
+.va-page-hero {
+  border-radius: var(--va-panel-radius) !important;
+  padding: clamp(1rem, 2vw, 1.4rem) !important;
+}
+
+.va-page-hero-compact {
+  padding: 0.85rem !important;
+}
+
+.va-page-hero::before,
+.va-card::before,
+.va-panel-premium::before {
+  content: "";
+  position: absolute;
+  inset-inline: 1rem;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--va-action) 65%, transparent), transparent);
+  pointer-events: none;
+}
+
+.va-page-hero > *,
+.va-card > *,
+.va-panel-premium > *,
+.va-data-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.va-card,
+.va-data-card {
+  border-radius: var(--va-card-radius) !important;
+  box-shadow: var(--va-shadow-card);
+}
+
+.va-insight-panel,
+.va-ux-empty-state {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--va-line-soft) !important;
+  background:
+    linear-gradient(180deg, rgba(20, 32, 51, 0.74), rgba(8, 19, 34, 0.56)),
+    rgba(7, 17, 31, 0.64) !important;
+  box-shadow: var(--va-shadow-card);
+}
+
+.va-insight-panel::before,
+.va-ux-empty-state::before {
+  content: "";
+  position: absolute;
+  inset-inline: 1rem;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--va-action) 56%, transparent), transparent);
+  pointer-events: none;
+}
+
+.va-card-subtle {
+  border: 1px solid rgba(148, 163, 184, 0.1) !important;
+  background: rgba(8, 19, 34, 0.56) !important;
+}
+
+.va-entity-card,
+.va-status-badge {
+  isolation: isolate;
+}
+
+.va-title {
+  color: var(--va-text-strong);
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Typography scale (P2) — the 4 DESIGN levels as reusable utilities so pages
+ * stop hardcoding `text-2xl font-bold` / `text-sm text-gray-400`. Sizes/weights
+ * match DESIGN.md: page-title 24/700, section-title 18/700, body 14/400,
+ * label 12/600. Colors come from the text tokens (theme-aware). New code
+ * should prefer these over raw Tailwind type classes.
+ * ───────────────────────────────────────────────────────────────────────── */
+.va-title-page {
+  font-size: 1.5rem;       /* 24px */
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--va-text-strong);
+}
+.va-title-section {
+  font-size: 1.125rem;     /* 18px */
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--va-text-strong);
+}
+.va-body {
+  font-size: 0.875rem;     /* 14px */
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--va-text);
+}
+.va-label {
+  font-size: 0.75rem;      /* 12px */
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--va-text-soft);
+}
+
+.va-muted {
+  color: var(--va-text-soft);
+}
+
+.va-faint {
+  color: var(--va-text-faint);
+}
+
+.va-icon-tile {
+  border: 1px solid color-mix(in srgb, var(--va-action) 26%, transparent) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--va-action) 16%, transparent), rgba(255, 255, 255, 0.02)) !important;
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.va-tone-accent {
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
+  background: color-mix(in srgb, var(--va-action) 14%, transparent) !important;
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff) !important;
+}
+
+.va-accent-text {
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff) !important;
+}
+
+.va-border-bottom-soft {
+  border-bottom: 1px solid var(--va-line-soft);
+}
+
+.va-chip-button {
+  border: 1px solid var(--va-line-soft);
+  background: transparent;
+  color: var(--va-text-soft);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.va-chip-button:hover {
+  border-color: color-mix(in srgb, var(--va-action) 28%, transparent);
+  background: color-mix(in srgb, var(--va-action) 8%, transparent);
+  color: var(--va-text-strong);
+}
+
+.va-chip-button-active {
+  border-color: color-mix(in srgb, var(--va-action) 36%, transparent) !important;
+  background: color-mix(in srgb, var(--va-action) 14%, transparent) !important;
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff) !important;
+}
+
+.va-kbd-token {
+  border: 1px solid var(--va-line-soft);
+  background: var(--va-ink-850);
+  color: var(--va-text);
+}
+
+html.light .va-accent-text {
+  color: var(--va-action-strong) !important;
+}
+
+.va-primary-button,
+.va-action-button {
+  border: 1px solid var(--va-action-strong) !important;
+  background: var(--va-action) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12) inset, 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.va-primary-button:hover,
+.va-action-button:hover {
+  background: color-mix(in srgb, var(--va-action) 90%, #ffffff) !important;
+  border-color: var(--va-action) !important;
+}
+
+.va-primary-button:active,
+.va-action-button:active {
+  background: var(--va-action-strong) !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18) inset;
+}
+
+.va-secondary-button,
+.va-tool-button {
+  border: 1px solid var(--va-line-soft) !important;
+  background: rgba(8, 19, 34, 0.55) !important;
+  color: var(--va-text) !important;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.va-tool-button {
+  min-height: var(--va-control-height) !important;
+}
+
+.va-secondary-button:hover,
+.va-tool-button:hover {
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: #ffffff !important;
+}
+
+.va-metric-card {
+  min-height: 7rem;
+  border-radius: var(--va-card-radius);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background:
+    linear-gradient(180deg, rgba(20, 32, 51, 0.86), rgba(7, 17, 31, 0.72)),
+    var(--va-ink-900);
+  box-shadow: var(--va-shadow-card);
+}
+
+.va-action-card {
+  border: 1px solid rgba(148, 163, 184, 0.12) !important;
+  background: rgba(16, 27, 45, 0.72) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.va-action-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--va-action) 34%, transparent) !important;
+  background: rgba(20, 32, 51, 0.86) !important;
+}
+
+.va-control-surface,
+.va-filter-surface,
+.va-tab-surface {
+  border: 1px solid var(--va-line-soft) !important;
+  background: var(--va-ink-850) !important;
+  box-shadow: var(--va-shadow-card);
+}
+
+.va-workflow-stepper {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: va-step;
+}
+
+.va-workflow-step {
+  min-height: 4.25rem;
+  border-color: rgba(148, 163, 184, 0.12) !important;
+  background: rgba(8, 19, 34, 0.58);
+  color: var(--va-text-soft);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.va-workflow-step-active {
+  border-color: color-mix(in srgb, var(--va-action) 52%, transparent) !important;
+  background: color-mix(in srgb, var(--va-action) 14%, rgba(8, 19, 34, 0.72));
+  color: var(--va-text-strong);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--va-action) 12%, transparent);
+}
+
+.va-workflow-step-done {
+  border-color: color-mix(in srgb, var(--va-action) 26%, transparent) !important;
+  background: color-mix(in srgb, var(--va-action) 8%, rgba(8, 19, 34, 0.62));
+}
+
+.va-workflow-step-warning {
+  border-color: rgba(245, 158, 11, 0.34) !important;
+  background: rgba(245, 158, 11, 0.1);
+  color: #fde68a;
+}
+
+.va-workflow-step-error {
+  border-color: rgba(248, 113, 113, 0.34) !important;
+  background: rgba(248, 113, 113, 0.1);
+  color: #fecaca;
+}
+
+.va-workflow-step-index {
+  display: inline-flex;
+  min-width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--va-action) 28%, transparent);
+  background: color-mix(in srgb, var(--va-action) 12%, transparent);
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.75rem;
+  direction: ltr;
+}
+
+.va-workflow-step button {
+  color: inherit;
+}
+
+.va-workflow-step button:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.va-floating-action-bar {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  width: fit-content;
+  max-width: calc(100vw - 2rem);
+  margin-inline-start: auto;
+  padding: 0.55rem;
+  border: 1px solid var(--va-line);
+  border-radius: var(--va-panel-radius);
+  background: var(--va-ink-850);
+  box-shadow: var(--va-shadow-elevated);
+}
+
+.va-floating-action-bar > * {
+  min-height: 2.5rem;
+}
+
+.va-mixed-token,
+[dir="ltr"].va-mixed-token {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 0.55rem;
+  background: rgba(7, 17, 31, 0.64);
+  padding: 0.05rem 0.38rem;
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.92em;
+  color: color-mix(in srgb, var(--va-action) 64%, #ffffff);
+}
+
+.va-form-field,
+.va-control-surface input,
+.va-control-surface select,
+.va-filter-surface input,
+.va-filter-surface select {
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  background: rgba(7, 17, 31, 0.7) !important;
+  color: #ffffff !important;
+}
+
+.va-form-field:focus,
+.va-control-surface input:focus,
+.va-control-surface select:focus,
+.va-filter-surface input:focus,
+.va-filter-surface select:focus {
+  border-color: color-mix(in srgb, var(--va-action) 54%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-action) 12%, transparent);
+}
+
+.va-skeleton {
+  position: relative;
+  overflow: hidden;
+  min-height: 1rem;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent),
+    rgba(148, 163, 184, 0.11);
+  background-size: 220% 100%, 100% 100%;
+  animation: va-shimmer 1.45s ease-in-out infinite;
+}
+
+@keyframes va-shimmer {
+  from { background-position: 120% 0, 0 0; }
+  to { background-position: -120% 0, 0 0; }
+}
+
+.va-video-card,
+.va-video-list-item,
+.va-preview-panel {
+  border: 1px solid rgba(148, 163, 184, 0.13) !important;
+  background: rgba(13, 24, 40, 0.72) !important;
+  box-shadow: var(--va-shadow-card);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.va-video-card:hover,
+.va-video-list-item:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--va-action) 34%, transparent) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
+}
+
+.va-video-card-selected,
+.va-video-list-item-selected {
+  border-color: color-mix(in srgb, var(--va-action) 56%, transparent) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--va-action) 18%, transparent), var(--va-shadow-card);
+}
+
+.va-chip {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(7, 17, 31, 0.64);
+  color: var(--va-text-soft);
+}
+
+/* Tag chip — pill-style label for displaying metadata tags */
+.va-tag-chip {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(7, 17, 31, 0.72);
+  color: var(--va-text-soft);
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  cursor: default;
+  user-select: text;
+}
+
+.va-tag-chip:hover {
+  border-color: color-mix(in srgb, var(--va-action) 30%, transparent);
+  background: color-mix(in srgb, var(--va-action) 8%, transparent);
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff);
+}
+
+html.light .va-tag-chip {
+  border-color: rgba(120, 113, 108, 0.22);
+  background: rgba(241, 236, 227, 0.65);
+  color: #485466;
+}
+
+html.light .va-tag-chip:hover {
+  border-color: color-mix(in srgb, var(--va-action) 36%, transparent);
+  background: color-mix(in srgb, var(--va-action) 10%, rgba(255,255,255,0.8));
+  color: var(--va-action-strong);
+}
+
+/* Breadcrumb nav */
+.va-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--va-text-faint);
+}
+
+.va-breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--va-control-radius);
+  color: var(--va-text-soft);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.va-breadcrumb-link:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--va-text-strong);
+}
+
+/* Inline stat row — label + value side by side */
+.va-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.75rem;
+  font-size: 0.75rem;
+}
+
+.va-stat-row + .va-stat-row {
+  border-top: 1px solid var(--va-line-soft);
+}
+
+/* ── Collection / tag / vocabulary color-accent cards ── */
+/* The box-shadow inset accent transitions when active state changes.
+   These classes ensure the transition is smooth. */
+.va-entity-card[style*="box-shadow"] {
+  transition: box-shadow 0.2s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+/* Metric badge used inside entity cards (item counts, video counts, etc.) */
+.va-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--va-text-soft);
+  background: rgba(255,255,255,0.04);
+  white-space: nowrap;
+}
+
+/* Category pill — colored category label inside vocabulary/collection cards */
+.va-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.va-sidebar {
+  background: var(--va-ink-925) !important;
+  border-inline-start: 1px solid var(--va-line-soft) !important;
+  box-shadow: -1px 0 0 var(--va-line-soft);
+}
+
+.va-sidebar-brand {
+  background: linear-gradient(180deg, rgba(20, 184, 166, 0.13), rgba(255, 255, 255, 0.02));
+}
+
+.va-sidebar-item {
+  isolation: isolate;
+}
+
+.va-sidebar-item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--va-action) 16%, transparent), transparent);
+  transition: opacity 0.18s ease;
+}
+
+.va-sidebar-item:hover::after,
+.va-sidebar-item-active::after {
+  opacity: 1;
+}
+
+.va-context-bar {
+  background: var(--va-ink-925) !important;
+  border-bottom-color: var(--va-line-soft) !important;
+  box-shadow: 0 1px 0 var(--va-line-soft);
+}
+
+/* Skip-link — only visible on focus. Uses accent token so it follows
+ * teal/indigo instead of being locked to emerald. */
+.va-skip-link {
+  position: absolute;
+  inset-inline-start: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.va-skip-link:focus-visible {
+  position: fixed;
+  inset-inline-start: 0.75rem;
+  inset-block-start: 0.75rem;
+  z-index: 1000;
+  width: auto;
+  height: auto;
+  padding: 0.625rem 1rem;
+  border-radius: var(--va-control-radius);
+  background: var(--va-action);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: var(--va-shadow-elevated);
+}
+
+.va-context-actions button {
+  white-space: nowrap;
+}
+
+.va-context-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem var(--va-page-gutter);
+}
+
+.va-context-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.va-onboarding-shell {
+  background:
+    linear-gradient(145deg, #07111f 0%, #0b1626 50%, #07111f 100%) !important;
+}
+
+.va-onboarding-panel {
+  border: 1px solid rgba(148, 163, 184, 0.14) !important;
+  background:
+    linear-gradient(180deg, rgba(20, 32, 51, 0.92), rgba(11, 22, 38, 0.96)) !important;
+  box-shadow: var(--va-shadow-panel);
+}
+
+.va-onboarding-shell .text-white,
+html.light .va-onboarding-shell .text-white {
+  color: #f8fafc !important;
+}
+
+.va-onboarding-shell .text-gray-200,
+.va-onboarding-shell .text-gray-300,
+.va-onboarding-shell .text-gray-400,
+.va-onboarding-shell .text-gray-500,
+html.light .va-onboarding-shell .text-gray-200,
+html.light .va-onboarding-shell .text-gray-300,
+html.light .va-onboarding-shell .text-gray-400,
+html.light .va-onboarding-shell .text-gray-500 {
+  color: rgba(226, 232, 240, 0.74) !important;
+}
+
+.va-onboarding-shell .va-secondary-button,
+.va-onboarding-shell .va-tool-button,
+html.light .va-onboarding-shell .va-secondary-button,
+html.light .va-onboarding-shell .va-tool-button {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  background: rgba(8, 19, 34, 0.72) !important;
+  color: #e5e7eb !important;
+}
+
+.va-onboarding-shell .va-secondary-button:hover,
+.va-onboarding-shell .va-tool-button:hover,
+html.light .va-onboarding-shell .va-secondary-button:hover,
+html.light .va-onboarding-shell .va-tool-button:hover {
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: #ffffff !important;
+}
+
+.va-onboarding-shell .va-tool-button[aria-pressed="true"],
+html.light .va-onboarding-shell .va-tool-button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--va-action) 42%, transparent) !important;
+  background: color-mix(in srgb, var(--va-action) 18%, rgba(8, 19, 34, 0.9)) !important;
+  color: #ffffff !important;
+}
+
+.va-enter {
+  animation: va-enter 0.28s ease both;
+}
+
+@keyframes va-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .va-enter,
+  .va-skeleton,
+  .va-video-card,
+  .va-video-list-item,
+  .va-action-card,
+  .va-workflow-step,
+  .va-floating-action-bar,
+  .va-motion-page,
+  .va-primary-button,
+  .va-action-button {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
+  main input,
+  main select,
+  main textarea {
+    transition: none !important;
+  }
+
+  .va-skeleton {
+    background-position: 0 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --va-page-gutter: 0.875rem;
+  }
+
+  .va-page-hero,
+  .va-card,
+  .va-data-card,
+  .va-control-surface,
+  .va-filter-surface {
+    border-radius: 0.875rem !important;
+    box-shadow: none;
+  }
+
+  .va-primary-button:hover,
+  .va-action-button:hover,
+  .va-action-card:hover,
+  .va-video-card:hover,
+  .va-video-list-item:hover,
+  .va-workflow-step:hover {
+    transform: none;
+  }
+
+  .va-floating-action-bar {
+    inset-inline: 0.75rem;
+    width: auto;
+    justify-content: stretch;
+  }
+
+  .va-floating-action-bar.archive-desktop-floating-actions {
+    display: none;
+  }
+
+  .va-floating-action-bar > * {
+    flex: 1 1 auto;
+  }
+
+  .va-context-bar-inner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .va-context-actions {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding-bottom: 0.15rem;
+  }
+}

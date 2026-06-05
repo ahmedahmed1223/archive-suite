@@ -1,0 +1,11 @@
+# Local Postgres developer override: expose the SPA directly over HTTP so the
+# app can be tested without trusting Caddy's local HTTPS certificate.
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:15432:5432"
+
+  frontend:
+    ports:
+      - "8080:80"

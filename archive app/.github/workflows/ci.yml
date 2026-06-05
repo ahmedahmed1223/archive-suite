@@ -1,0 +1,33 @@
+name: CI
+
+# بوابات الجودة لنسخة SPA: اختبارات الوحدات + كلا هدفَي البناء على كل PR ودفعٍ إلى main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      # يجلب @archive/core العام عبر وسم git (لا حاجة لرمز مصادقة).
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify modules
+        run: npm run verify
+
+      - name: Build SPA (single-file)
+        run: npm run build:spa
+
+      - name: Build cloud (multi-file)
+        run: npm run build:cloud

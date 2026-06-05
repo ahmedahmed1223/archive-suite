@@ -1,0 +1,144 @@
+# Postgres variant — use INSTEAD of docker-compose.yml when you want
+# PostgreSQL as the cloud backend. The PocketBase service is omitted entirely.
+#
+# Usage:
+#   cp .env.example .env       # set DOMAIN + ACME_EMAIL + DATABASE_URL
+#   docker compose -f docker-compose.postgres.yml up -d --build
+#
+# Switching backends later: bring this stack down, copy a snapshot via the
+# SPA's export, bring docker-compose.yml up, import the snapshot. Snapshot
+# format is identical across both backends — no data loss.
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: archive-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-archive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-archive}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - archive
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-archive} -d ${POSTGRES_DB:-archive}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Runs `prisma migrate deploy` on startup, then serves the RPC API the SPA's
+  # cloud-http adapter calls. nginx (inside the frontend image) proxies /api/*
+  # to this service on the internal network.
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: archive-server
+    restart: unless-stopped
+    environment:
+      BACKEND: postgres
+      DATABASE_URL: ${DATABASE_URL:-postgresql://archive:${POSTGRES_PASSWORD}@postgres:5432/archive}
+      API_PORT: "8787"
+      API_CORS_ORIGIN: ${API_CORS_ORIGIN:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_TTL_SEC: ${JWT_TTL_SEC:-43200}
+      SHARE_EXPIRY_DAYS: ${SHARE_EXPIRY_DAYS:-30}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      RATE_LIMIT_RPC_MAX: ${RATE_LIMIT_RPC_MAX:-600}
+      RATE_LIMIT_LOGIN_MAX: ${RATE_LIMIT_LOGIN_MAX:-10}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      FILE_STORE: ${FILE_STORE:-disk}
+      FILE_STORE_DIR: ${FILE_STORE_DIR:-/app/files}
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_IMPL: ${AI_IMPL:-sdk}
+      TRANSCRIBE_PROVIDER: ${TRANSCRIBE_PROVIDER:-}
+      TRANSCRIBE_API_KEY: ${TRANSCRIBE_API_KEY:-}
+      TRANSCRIBE_MODEL: ${TRANSCRIBE_MODEL:-}
+      TRANSCRIBE_BASE_URL: ${TRANSCRIBE_BASE_URL:-http://whisper:8000/v1}
+      # Persisted server config (admin DB settings, set from the app) lives here
+      # and overrides the env DATABASE_URL on the next boot.
+      SERVER_CONFIG_PATH: /app/config/server-config.json
+    volumes:
+      - server_config:/app/config
+      - server_files:/app/files
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - archive
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8787/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        APP_REPO: ${APP_REPO:-https://github.com/ahmedahmed1223/archive-app.git}
+        APP_REF: ${APP_REF:-main}
+    container_name: archive-frontend
+    restart: unless-stopped
+    # Postgres stack proxies /api/* to the Node server (overrides the image's
+    # default pocketbase conf).
+    volumes:
+      - ./nginx/postgres.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - server
+    networks:
+      - archive
+
+  caddy:
+    image: caddy:2.11-alpine
+    container_name: archive-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    networks:
+      - archive
+
+  # Optional self-hosted Whisper (OpenAI-compatible /v1/audio/transcriptions).
+  # Only starts with: docker compose --profile whisper up -d
+  # Then set TRANSCRIBE_PROVIDER=whisper-local in .env (no API key needed).
+  # CPU image by default; swap the tag for a CUDA build on a GPU VPS.
+  whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: archive-whisper
+    profiles: ["whisper"]
+    restart: unless-stopped
+    environment:
+      WHISPER__MODEL: ${TRANSCRIBE_MODEL:-Systran/faster-whisper-base}
+    volumes:
+      - whisper_models:/root/.cache/huggingface
+    networks:
+      - archive
+
+volumes:
+  postgres_data:
+  server_config:
+  server_files:
+  caddy_data:
+  caddy_config:
+  whisper_models:
+
+networks:
+  archive:
+    driver: bridge

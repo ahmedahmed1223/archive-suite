@@ -1,0 +1,741 @@
+/*
+ * Theme v2 — Linear/Vercel-inspired token layer.
+ * Activated when <html data-theme-version="v2"> is set, which is now
+ * the DEFAULT for users without an explicit choice. Users who picked
+ * "v1" via the Settings picker keep the classic cascade.
+ *
+ * Naming: --va-2-* mirrors v1's --va-* so component code can stay
+ * unchanged.
+ */
+
+:root {
+  /* Dark mode tokens for v2 — read whenever data-theme-version="v2"
+   * (the default). v1 users (explicit classic choice) never read them.
+   *
+   * Palette: cool violet-slate undertone (blue channel sits a step
+   * above red/green) so the "neutrals" read as an intentional,
+   * designed dark — the modern Linear / Vercel / Raycast feel —
+   * rather than a flat neutral gray-black. */
+  --va-2-canvas:        #0a0a0f;
+  --va-2-surface:       #14151d;
+  --va-2-surface-2:     #1b1c26;
+  --va-2-surface-3:     #24262f;
+
+  --va-2-line:          rgba(255, 255, 255, 0.07);
+  --va-2-line-strong:   rgba(255, 255, 255, 0.13);
+
+  --va-2-text-strong:   #f6f7fb;
+  --va-2-text:          #c9ccd6;
+  --va-2-text-soft:     #989cab;
+  --va-2-text-faint:    #6b6f7c;
+
+  /* Accent presets — vivid violet-indigo default, crisper for v2's
+   * cool canvas (reads more "2024 SaaS" than flat indigo-500).
+   * #7673f7 clears WCAG AA (4.82:1) as text on the dark surface, so
+   * accent-colored links / active labels stay legible. */
+  --va-2-accent:        #7673f7;
+  --va-2-accent-strong: #5b50e6;
+  --va-2-accent-soft:   color-mix(in srgb, var(--va-2-accent) 12%, transparent);
+  --va-2-accent-glow:   color-mix(in srgb, var(--va-2-accent) 25%, transparent);
+
+  /* Semantic colors */
+  --va-2-success:       #10b981;
+  --va-2-danger:        #ef4444;
+  --va-2-warning:       #f59e0b;
+  --va-2-info:          #3b82f6;
+
+  /* Radii — larger than v1 */
+  --va-2-radius-sm:     0.5rem;
+  --va-2-radius-md:     0.75rem;
+  --va-2-radius-lg:     1rem;
+  --va-2-radius-xl:     1.25rem;
+  --va-2-radius-2xl:    1.5rem;
+
+  /* Shadows — multi-layered, optional colored glow */
+  --va-2-shadow-sm:     0 1px 2px rgba(0,0,0,0.40);
+  --va-2-shadow-md:     0 4px 8px -2px rgba(0,0,0,0.40),
+                        0 2px 4px -1px rgba(0,0,0,0.30);
+  --va-2-shadow-lg:     0 20px 40px -16px rgba(0,0,0,0.50),
+                        0 8px 16px -4px rgba(0,0,0,0.40);
+  --va-2-shadow-glow:   0 20px 40px -20px var(--va-2-accent-glow);
+
+  /* Typography scale — major third 1.250 */
+  --va-2-text-xs:       0.75rem;
+  --va-2-text-sm:       0.875rem;
+  --va-2-text-base:     1rem;
+  --va-2-text-lg:       1.125rem;
+  --va-2-text-xl:       1.25rem;
+  --va-2-text-2xl:      1.5rem;
+  --va-2-text-3xl:      1.875rem;
+  --va-2-text-4xl:      2.25rem;
+
+  /* Motion */
+  --va-2-duration-instant: 80ms;
+  --va-2-duration-fast:    160ms;
+  --va-2-duration-base:    240ms;
+  --va-2-duration-slow:    400ms;
+}
+
+/* Light-mode overrides — same names, lighter values. Canvas + raised
+ * surfaces carry a faint cool-blue tint so the light theme reads as
+ * "designed" rather than stark office-white. */
+html.light {
+  --va-2-canvas:        #f4f6fa;
+  --va-2-surface:       #ffffff;
+  --va-2-surface-2:     #f6f8fc;
+  --va-2-surface-3:     #ffffff;
+
+  --va-2-line:          rgba(15, 23, 42, 0.09);
+  --va-2-line-strong:   rgba(15, 23, 42, 0.17);
+
+  --va-2-text-strong:   #0d0f16;
+  --va-2-text:          #21262f;
+  --va-2-text-soft:     #474d58;
+  --va-2-text-faint:    #767c88;
+
+  --va-2-accent:        #5650e8;
+  --va-2-accent-strong: #473dd6;
+  --va-2-shadow-sm:     0 1px 2px rgba(15,17,21,0.06);
+  --va-2-shadow-md:     0 4px 12px -2px rgba(15,17,21,0.08),
+                        0 2px 4px -1px rgba(15,17,21,0.04);
+  --va-2-shadow-lg:     0 20px 40px -16px rgba(15,17,21,0.12),
+                        0 8px 16px -4px rgba(15,17,21,0.08);
+}
+
+/*
+ * Token re-bind: when v2 is active, the v1 names (--va-action etc.)
+ * point to v2 values so components reading the v1 tokens
+ * automatically pick up v2 colors. This is the entire mechanism
+ * that makes existing components inherit v2 visuals without code
+ * changes.
+ */
+html[data-theme-version="v2"] {
+  --va-action:          var(--va-2-accent);
+  --va-action-strong:   var(--va-2-accent-strong);
+  --va-action-soft:     var(--va-2-accent-soft);
+
+  --va-ink-950:         var(--va-2-canvas);
+  --va-ink-925:         var(--va-2-surface);
+  --va-ink-900:         var(--va-2-surface);
+  --va-ink-850:         var(--va-2-surface-2);
+  --va-ink-800:         var(--va-2-surface-3);
+  --va-ink-700:         var(--va-2-line-strong);
+  --va-ink-600:         var(--va-2-text-faint);
+  --va-ink-500:         var(--va-2-text-soft);
+
+  --va-line-soft:       var(--va-2-line);
+  --va-line:            var(--va-2-line-strong);
+  --va-line-strong:     var(--va-2-line-strong);
+
+  --va-text-strong:     var(--va-2-text-strong);
+  --va-text:            var(--va-2-text);
+  --va-text-soft:       var(--va-2-text-soft);
+  --va-text-faint:      var(--va-2-text-faint);
+
+  --va-shadow-card:     var(--va-2-shadow-sm);
+  --va-shadow-panel:    var(--va-2-shadow-md);
+  --va-shadow-elevated: var(--va-2-shadow-lg);
+
+  --va-panel-radius:    var(--va-2-radius-lg);
+  --va-card-radius:     var(--va-2-radius-md);
+  --va-control-radius:  var(--va-2-radius-md);
+}
+
+/* v2 accent preset re-tunes — same preset names, brighter values. */
+html[data-theme-version="v2"] .va-app-shell[data-accent="teal"] {
+  --va-2-accent:        #14b8a6;
+  --va-2-accent-strong: #0d9488;
+}
+html[data-theme-version="v2"] .va-app-shell[data-accent="indigo"] {
+  --va-2-accent:        #7673f7;
+  --va-2-accent-strong: #5b50e6;
+}
+html[data-theme-version="v2"] .va-app-shell[data-accent="emerald"] {
+  --va-2-accent:        #10b981;
+  --va-2-accent-strong: #059669;
+}
+html[data-theme-version="v2"] .va-app-shell[data-accent="blue"] {
+  --va-2-accent:        #3b82f6;
+  --va-2-accent-strong: #2563eb;
+}
+html[data-theme-version="v2"] .va-app-shell[data-accent="slate"] {
+  --va-2-accent:        #64748b;
+  --va-2-accent-strong: #475569;
+}
+html[data-theme-version="v2"] .va-app-shell[data-accent="amber"] {
+  --va-2-accent:        #f59e0b;
+  --va-2-accent-strong: #d97706;
+}
+html[data-theme-version="v2"] .va-app-shell[data-accent="rose"] {
+  --va-2-accent:        #f43f5e;
+  --va-2-accent-strong: #e11d48;
+}
+
+/* ===================================================================
+ * Component classes (PR B) — opt-in v2 visual treatments.
+ * Components apply these in PR D when themeVersion === "v2".
+ * Until then they're inert (no element references them).
+ * =================================================================== */
+
+/* Surfaces with a subtle top-light gradient for depth. */
+.va-2-surface {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 50%),
+    var(--va-2-surface);
+  border: 1px solid var(--va-2-line);
+  border-radius: var(--va-2-radius-lg);
+}
+.va-2-surface-elevated {
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--va-2-accent) 4%, transparent), transparent 40%),
+    var(--va-2-surface-2);
+  border: 1px solid var(--va-2-line);
+  border-radius: var(--va-2-radius-lg);
+  box-shadow: var(--va-2-shadow-md);
+}
+
+/* Card — top-light gradient, hover lifts 2px with shadow. */
+.va-2-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 30%),
+    var(--va-2-surface);
+  border: 1px solid var(--va-2-line);
+  border-radius: var(--va-2-radius-lg);
+  padding: 1.25rem;
+  transition: transform var(--va-2-duration-fast) ease,
+              border-color var(--va-2-duration-fast) ease,
+              box-shadow var(--va-2-duration-fast) ease;
+}
+.va-2-card:hover {
+  border-color: var(--va-2-line-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--va-2-shadow-md);
+}
+
+/* Entity card — adds an accent stripe on the leading (RTL: right) edge.
+ * Components pass --va-2-entity-accent inline for per-item colors. */
+.va-2-entity-card {
+  position: relative;
+}
+.va-2-entity-card::before {
+  content: "";
+  position: absolute;
+  inset-inline-end: 0;
+  top: 1rem;
+  bottom: 1rem;
+  width: 3px;
+  /* Logical radius: round the inner (inline-start) corners so the
+   * stripe stays flush with the card's leading edge in both LTR
+   * and RTL. */
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+  background: var(--va-2-entity-accent, var(--va-2-accent));
+  opacity: 0.6;
+}
+
+/* Buttons — primary (gradient + glow), secondary (outlined),
+ * ghost (transparent), danger (semantic red gradient). */
+.va-2-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(180deg, var(--va-2-accent), var(--va-2-accent-strong));
+  color: #ffffff;
+  border: none;
+  border-radius: var(--va-2-radius-md);
+  padding: 0.625rem 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.011em;
+  box-shadow: var(--va-2-shadow-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: transform var(--va-2-duration-fast) ease,
+              box-shadow var(--va-2-duration-fast) ease;
+}
+.va-2-primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 25px 50px -20px var(--va-2-accent-glow),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.va-2-primary-button:active {
+  transform: translateY(0) scale(0.98);
+}
+.va-2-primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.va-2-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--va-2-surface-2);
+  color: var(--va-2-text-strong);
+  border: 1px solid var(--va-2-line-strong);
+  border-radius: var(--va-2-radius-md);
+  padding: 0.625rem 1.25rem;
+  font-weight: 600;
+  transition: background var(--va-2-duration-fast) ease,
+              border-color var(--va-2-duration-fast) ease;
+}
+.va-2-secondary-button:hover {
+  background: var(--va-2-surface-3);
+  border-color: var(--va-2-accent);
+}
+
+.va-2-ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: var(--va-2-text-soft);
+  border: none;
+  border-radius: var(--va-2-radius-sm);
+  padding: 0.5rem;
+  transition: background var(--va-2-duration-fast) ease,
+              color var(--va-2-duration-fast) ease;
+}
+.va-2-ghost-button:hover {
+  background: var(--va-2-surface-2);
+  color: var(--va-2-text-strong);
+}
+
+.va-2-danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(180deg, var(--va-2-danger), #dc2626);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--va-2-radius-md);
+  padding: 0.625rem 1.25rem;
+  font-weight: 600;
+  transition: transform var(--va-2-duration-fast) ease;
+}
+.va-2-danger-button:hover {
+  transform: translateY(-1px);
+}
+
+/* Inputs — sunk-in feel (canvas deeper than surrounding surface),
+ * accent focus ring. */
+.va-2-input {
+  width: 100%;
+  background: var(--va-2-canvas);
+  color: var(--va-2-text-strong);
+  border: 1px solid var(--va-2-line);
+  border-radius: var(--va-2-radius-md);
+  padding: 0.625rem 0.875rem;
+  min-height: 2.5rem;
+  transition: border-color var(--va-2-duration-fast) ease,
+              box-shadow var(--va-2-duration-fast) ease;
+}
+.va-2-input::placeholder {
+  color: var(--va-2-text-faint);
+}
+.va-2-input:hover {
+  border-color: var(--va-2-line-strong);
+}
+.va-2-input:focus {
+  border-color: var(--va-2-accent);
+  box-shadow: 0 0 0 3px var(--va-2-accent-glow);
+  outline: none;
+}
+
+/* Chips/badges — base + 4 semantic variants. Each uses color-mix
+ * so the tint reads correctly across all 7 accent presets. */
+.va-2-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: var(--va-2-surface-2);
+  border: 1px solid var(--va-2-line);
+  border-radius: var(--va-2-radius-sm);
+  padding: 0.25rem 0.625rem;
+  font-size: var(--va-2-text-xs);
+  font-weight: 500;
+  color: var(--va-2-text-soft);
+}
+.va-2-chip-accent {
+  background: color-mix(in srgb, var(--va-2-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--va-2-accent) 25%, transparent);
+  color: color-mix(in srgb, var(--va-2-accent) 35%, #ffffff);
+}
+.va-2-chip-success {
+  background: color-mix(in srgb, var(--va-2-success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--va-2-success) 25%, transparent);
+  color: color-mix(in srgb, var(--va-2-success) 35%, #ffffff);
+}
+.va-2-chip-danger {
+  background: color-mix(in srgb, var(--va-2-danger) 12%, transparent);
+  border-color: color-mix(in srgb, var(--va-2-danger) 25%, transparent);
+  color: color-mix(in srgb, var(--va-2-danger) 35%, #ffffff);
+}
+.va-2-chip-warning {
+  background: color-mix(in srgb, var(--va-2-warning) 12%, transparent);
+  border-color: color-mix(in srgb, var(--va-2-warning) 25%, transparent);
+  color: color-mix(in srgb, var(--va-2-warning) 38%, #ffffff);
+}
+.va-2-chip-info {
+  background: color-mix(in srgb, var(--va-2-info) 12%, transparent);
+  border-color: color-mix(in srgb, var(--va-2-info) 25%, transparent);
+  color: color-mix(in srgb, var(--va-2-info) 35%, #ffffff);
+}
+
+/* Light-mode chip text needs darker mix (white mix is invisible). */
+html.light .va-2-chip-accent { color: color-mix(in srgb, var(--va-2-accent) 60%, #000000); }
+html.light .va-2-chip-success { color: color-mix(in srgb, var(--va-2-success) 55%, #000000); }
+html.light .va-2-chip-danger { color: color-mix(in srgb, var(--va-2-danger) 55%, #000000); }
+html.light .va-2-chip-warning { color: color-mix(in srgb, var(--va-2-warning) 55%, #000000); }
+html.light .va-2-chip-info { color: color-mix(in srgb, var(--va-2-info) 55%, #000000); }
+
+/* ===================================================================
+ * PR D — v2 component enhancements (attribute-scoped).
+ * Active only under html[data-theme-version="v2"]. v1 untouched.
+ * Uses !important to override v1's !important declarations.
+ * =================================================================== */
+
+/* Primary buttons — gradient fill + glow + hover lift. */
+html[data-theme-version="v2"] .va-primary-button,
+html[data-theme-version="v2"] .va-action-button {
+  background: linear-gradient(180deg, var(--va-2-accent), var(--va-2-accent-strong)) !important;
+  border-color: transparent !important;
+  border-radius: var(--va-2-radius-md) !important;
+  box-shadow: var(--va-2-shadow-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  transition: transform var(--va-2-duration-fast) ease, box-shadow var(--va-2-duration-fast) ease !important;
+}
+html[data-theme-version="v2"] .va-primary-button:hover,
+html[data-theme-version="v2"] .va-action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 25px 50px -20px var(--va-2-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+html[data-theme-version="v2"] .va-primary-button:active,
+html[data-theme-version="v2"] .va-action-button:active {
+  transform: translateY(0) scale(0.985);
+}
+
+/* Secondary + tool buttons — refined radius + accent hover border. */
+html[data-theme-version="v2"] .va-secondary-button,
+html[data-theme-version="v2"] .va-tool-button {
+  border-radius: var(--va-2-radius-md) !important;
+  transition: background var(--va-2-duration-fast) ease, border-color var(--va-2-duration-fast) ease !important;
+}
+html[data-theme-version="v2"] .va-secondary-button:hover,
+html[data-theme-version="v2"] .va-tool-button:hover {
+  border-color: color-mix(in srgb, var(--va-2-accent) 45%, transparent) !important;
+}
+
+/* Cards — top-light gradient overlay + hover lift + larger radius. */
+html[data-theme-version="v2"] .va-card,
+html[data-theme-version="v2"] .va-data-card,
+html[data-theme-version="v2"] .va-video-card,
+html[data-theme-version="v2"] .va-action-card,
+html[data-theme-version="v2"] .va-preview-panel {
+  border-radius: var(--va-2-radius-lg) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 30%),
+    var(--va-2-surface) !important;
+  transition: transform var(--va-2-duration-fast) ease,
+              border-color var(--va-2-duration-fast) ease,
+              box-shadow var(--va-2-duration-fast) ease !important;
+}
+html[data-theme-version="v2"] .va-card:hover,
+html[data-theme-version="v2"] .va-data-card:hover,
+html[data-theme-version="v2"] .va-video-card:hover,
+html[data-theme-version="v2"] .va-action-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--va-2-line-strong) !important;
+  box-shadow: var(--va-2-shadow-md) !important;
+}
+
+/* Metric cards — keep their existing gradient base but add v2 radius
+ * and a soft accent-tinted top light. */
+html[data-theme-version="v2"] .va-metric-card {
+  border-radius: var(--va-2-radius-lg) !important;
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--va-2-accent) 5%, transparent), transparent 45%),
+    linear-gradient(180deg, var(--va-2-surface-2), var(--va-2-surface)) !important;
+}
+
+/* Page hero — cinematic multi-layer gradient. */
+html[data-theme-version="v2"] .va-page-hero,
+html[data-theme-version="v2"] .va-page-hero-compact,
+html[data-theme-version="v2"] .va-panel-premium {
+  border-radius: var(--va-2-radius-xl) !important;
+  background:
+    radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--va-2-accent) 10%, transparent), transparent 40%),
+    linear-gradient(160deg, var(--va-2-surface-2), var(--va-2-surface) 60%) !important;
+}
+
+/* Tinted surfaces — subtle gradient for depth. */
+html[data-theme-version="v2"] .va-filter-surface,
+html[data-theme-version="v2"] .va-control-surface,
+html[data-theme-version="v2"] .va-tab-surface {
+  border-radius: var(--va-2-radius-lg) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 50%),
+    var(--va-2-surface) !important;
+}
+
+/* Sidebar active item — full gradient pill instead of edge bar. */
+html[data-theme-version="v2"] .va-sidebar-item-active {
+  border-radius: var(--va-2-radius-md) !important;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--va-2-accent) 22%, transparent),
+    color-mix(in srgb, var(--va-2-accent) 12%, transparent)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Inputs — accent focus glow ring on main-area inputs. Scoped to
+ * `main`, which in this app also contains the lock / login /
+ * onboarding gate screens — so they get the v2 focus ring too when
+ * v2 is active. That's intentional: a consistent focus style across
+ * every input once the user has opted into v2. */
+html[data-theme-version="v2"] main input:not([type="checkbox"]):not([type="radio"]):focus,
+html[data-theme-version="v2"] main textarea:focus,
+html[data-theme-version="v2"] main select:focus {
+  border-color: var(--va-2-accent) !important;
+  box-shadow: 0 0 0 3px var(--va-2-accent-glow) !important;
+  outline: none !important;
+}
+
+/* Chips / tags / badges — larger radius, refined border. */
+html[data-theme-version="v2"] .va-chip,
+html[data-theme-version="v2"] .va-tag-chip,
+html[data-theme-version="v2"] .va-category-pill,
+html[data-theme-version="v2"] .va-status-badge,
+html[data-theme-version="v2"] .va-count-badge {
+  border-radius: var(--va-2-radius-sm) !important;
+}
+
+/* Floating action bar — elevated v2 surface with shadow. */
+html[data-theme-version="v2"] .va-floating-action-bar {
+  border-radius: var(--va-2-radius-xl) !important;
+  box-shadow: var(--va-2-shadow-lg) !important;
+}
+
+/* ===================================================================
+ * PR E — motion + light-mode polish (v2-scoped).
+ * =================================================================== */
+
+/* Spring-like easing curve for v2 interactions. Overshoots slightly
+ * for a lively-but-controlled feel (Linear-style). */
+html[data-theme-version="v2"] {
+  --va-2-ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --va-2-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Apply spring easing to the lift interactions added in PR D. */
+html[data-theme-version="v2"] .va-primary-button,
+html[data-theme-version="v2"] .va-action-button,
+html[data-theme-version="v2"] .va-card,
+html[data-theme-version="v2"] .va-data-card,
+html[data-theme-version="v2"] .va-video-card,
+html[data-theme-version="v2"] .va-action-card {
+  transition-timing-function: var(--va-2-ease-spring) !important;
+}
+
+/* Page-enter — a slightly larger, smoother rise than v1. Honors the
+ * global data-motion="off"/"reduced" rules already in v1-identity.css. */
+html[data-theme-version="v2"] .va-motion-page {
+  animation: va-2-page-enter var(--va-2-duration-base) var(--va-2-ease-out) both;
+}
+@keyframes va-2-page-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* data-motion lives on the .va-app-shell div (not <html>), and
+ * data-theme-version lives on <html>. Correct nesting: html[v2] is
+ * an ancestor of .va-app-shell[off] is an ancestor of the page. */
+html[data-theme-version="v2"] .va-app-shell[data-motion="off"] .va-motion-page,
+html[data-theme-version="v2"] .va-app-shell[data-motion="reduced"] .va-motion-page {
+  animation: none;
+}
+
+/* Glassmorphism modal backdrops + cards for v2. The base overlay
+ * already blurs 10px; v2 deepens it and tints the card surface. */
+html[data-theme-version="v2"] .va-dialog-overlay {
+  background: rgba(2, 6, 23, 0.55) !important;
+  backdrop-filter: blur(20px) saturate(1.1) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.1) !important;
+}
+html[data-theme-version="v2"] .va-dialog-card,
+html[data-theme-version="v2"] [data-slot="dialog-content"],
+html[data-theme-version="v2"] [data-slot="alert-dialog-content"] {
+  border-radius: var(--va-2-radius-2xl) !important;
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--va-2-accent) 6%, transparent), transparent 45%),
+    var(--va-2-surface-2) !important;
+  border: 1px solid var(--va-2-line-strong) !important;
+  box-shadow: var(--va-2-shadow-lg) !important;
+}
+
+/* Dialog entry — scale + rise with spring easing. */
+html[data-theme-version="v2"] .va-dialog-card {
+  animation: va-2-dialog-in var(--va-2-duration-base) var(--va-2-ease-out) both;
+}
+@keyframes va-2-dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* The dialog card is portaled to document.body — OUTSIDE
+ * .va-app-shell — so the data-motion ancestor selector can't reach
+ * it. The OS-level prefers-reduced-motion media query (below) is the
+ * reliable cross-portal signal; the in-app motion-off case for this
+ * brief 240ms one-shot is acceptable to leave (framer-motion dialogs
+ * already honor useReducedMotion on their own JS-driven entries). */
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-version="v2"] .va-motion-page,
+  html[data-theme-version="v2"] .va-dialog-card {
+    animation: none !important;
+  }
+}
+
+/* Light-mode v2 corrections — the white top-light gradients read as
+ * nothing on a white canvas, so in light mode we drop them and lean
+ * on borders + soft shadows for depth instead. */
+html.light[data-theme-version="v2"] .va-card,
+html.light[data-theme-version="v2"] .va-data-card,
+html.light[data-theme-version="v2"] .va-video-card,
+html.light[data-theme-version="v2"] .va-action-card,
+html.light[data-theme-version="v2"] .va-preview-panel,
+html.light[data-theme-version="v2"] .va-filter-surface,
+html.light[data-theme-version="v2"] .va-control-surface,
+html.light[data-theme-version="v2"] .va-tab-surface {
+  background: var(--va-2-surface) !important;
+  box-shadow: var(--va-2-shadow-sm);
+}
+html.light[data-theme-version="v2"] .va-card:hover,
+html.light[data-theme-version="v2"] .va-data-card:hover,
+html.light[data-theme-version="v2"] .va-video-card:hover,
+html.light[data-theme-version="v2"] .va-action-card:hover {
+  box-shadow: var(--va-2-shadow-md) !important;
+}
+
+/* Light-mode hero — softer accent radial over white. */
+html.light[data-theme-version="v2"] .va-page-hero,
+html.light[data-theme-version="v2"] .va-page-hero-compact,
+html.light[data-theme-version="v2"] .va-panel-premium {
+  background:
+    radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--va-2-accent) 8%, transparent), transparent 42%),
+    var(--va-2-surface-2) !important;
+}
+
+/* Light-mode modal backdrop — lighter scrim, same blur. */
+html.light[data-theme-version="v2"] .va-dialog-overlay {
+  background: rgba(15, 17, 21, 0.28) !important;
+}
+
+/*
+ * First-run / replay onboarding renders as a deliberate dark "setup"
+ * backdrop. Re-pin the v2 tokens to their dark values *scoped to the
+ * wizard* so theme-aware .va-* controls inside (buttons, password field,
+ * surfaces) resolve to the same dark palette as the wizard chrome — even
+ * when the app theme is light. This removes the dark-shell / light-controls
+ * clash (the reported dark/light "bleed") without per-element edits, since
+ * the v1-alias tokens are defined with var(--va-2-*) and re-resolve here.
+ */
+.va-onboarding-shell {
+  --va-2-canvas:        #07111f;
+  --va-2-surface:       #0b1626;
+  --va-2-surface-2:     #122033;
+  --va-2-surface-3:     #1a2c44;
+  --va-2-line:          rgba(255, 255, 255, 0.08);
+  --va-2-line-strong:   rgba(255, 255, 255, 0.16);
+  --va-2-text-strong:   #f6f7fb;
+  --va-2-text:          #c9ccd6;
+  --va-2-text-soft:     #98a0b0;
+  --va-2-text-faint:    #6b7484;
+  --va-2-accent:        #7673f7;
+  --va-2-accent-strong: #5b50e6;
+}
+
+/*
+ * Light-mode text bleed fix. ~339 `text-white` literals across the app were
+ * written for the dark-first design; on a light themed surface they render
+ * white-on-white (invisible) — the reported dark/light "bleed" (e.g. the
+ * DataCenter metric values). Remap *naked* white text (text that sits
+ * directly on a themed surface and carries no background of its own) to the
+ * strong text token in light mode. Buttons (`.va-primary-button` sets
+ * `color:#fff !important`), links, and any element with its own `bg-*`
+ * (chips/badges on a colored fill) are excluded so they keep white text.
+ */
+html.light[data-theme-version="v2"] :is(
+  .va-card, .va-metric-card, .va-data-card, .va-surface-muted, .va-surface-subtle,
+  .va-surface-deep, .va-surface-raised, .va-control-surface, .va-filter-surface,
+  .va-video-card, .va-action-card, .va-preview-panel, .va-tab-surface, .va-page-hero,
+  .va-page-hero-compact, .va-panel-premium, .va-card-subtle
+) .text-white:not([class*="bg-"]):not(button):not(a) {
+  color: var(--va-2-text-strong);
+}
+
+/*
+ * Light-mode accent-text fix. Active states of grouped/segmented controls,
+ * tabs, badges and chips use a LIGHT accent text (text-emerald-100/200,
+ * text-amber-*, text-blue-*, text-red-*) over a LIGHT accent tint
+ * (bg-emerald-500/15 …). That pairing reads fine on the dark canvas but is
+ * light-on-light (≈1:1, invisible — icons included, since they inherit
+ * currentColor) in light mode. Remap the light accent text utilities to a
+ * darker accent shade in light mode; the dark text stays legible on the
+ * light tint. Solid accent buttons keep white via their own
+ * `color:#fff !important`, so they are unaffected.
+ */
+html.light[data-theme-version="v2"] :is(.text-emerald-100, .text-emerald-200, .text-emerald-300) { color: #047857; }
+html.light[data-theme-version="v2"] :is(.text-amber-100, .text-amber-200, .text-amber-300)       { color: #b45309; }
+html.light[data-theme-version="v2"] :is(.text-red-100, .text-red-200, .text-red-300)             { color: #b91c1c; }
+html.light[data-theme-version="v2"] :is(.text-blue-100, .text-blue-200, .text-blue-300)          { color: #1d4ed8; }
+html.light[data-theme-version="v2"] :is(.text-cyan-200, .text-cyan-300)                          { color: #0e7490; }
+
+/* Restore light accent text inside the force-dark onboarding/login shell:
+   html is .light there too, so the remap above would darken accent text to
+   dark-on-dark. The shell is dark, so light accent text is correct. */
+html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-emerald-100, .text-emerald-200, .text-emerald-300) { color: #6ee7b7; }
+html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-amber-100, .text-amber-200, .text-amber-300)       { color: #fcd34d; }
+html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-red-100, .text-red-200, .text-red-300)             { color: #fca5a5; }
+html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-blue-100, .text-blue-200, .text-blue-300)          { color: #93c5fd; }
+html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-cyan-200, .text-cyan-300)                          { color: #67e8f9; }
+
+/*
+ * Range slider (Windows-Explorer-style grid density control). Themed track +
+ * accent thumb, works in both light and dark. accent-color handles the fill
+ * in modern Chromium/Edge; the explicit thumb/track rules keep it consistent.
+ */
+/* Global range slider — routed through the SHARED token layer so every
+ * theme identity (v1/v2/v3/v4) colors it with its own accent instead of
+ * leaking v2 indigo. (Previously hard-pinned to --va-2-* which bled into
+ * v3/v4.) */
+.va-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--va-line-strong);
+  accent-color: var(--va-action);
+  cursor: pointer;
+  outline: none;
+}
+.va-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 999px;
+  background: var(--va-action);
+  border: 2px solid var(--va-ink-900);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+.va-range::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 999px;
+  background: var(--va-action);
+  border: 2px solid var(--va-ink-900);
+  cursor: pointer;
+}
+.va-range:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--va-action) 55%, transparent);
+}

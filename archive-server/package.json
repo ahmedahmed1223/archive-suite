@@ -1,0 +1,59 @@
+{
+  "name": "archive-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Production (server) edition of the Video Archive app: cloud-pocketbase adapters behind @archive/core ports + PocketBase + Docker.",
+  "scripts": {
+    "start": "tsx src/index.js",
+    "verify": "node scripts/verify-config.mjs && node scripts/verify-server-config.mjs && node scripts/verify-server.mjs && node scripts/verify-postgres-adapter.mjs && node scripts/verify-api.mjs && node scripts/verify-auth.mjs && node scripts/verify-realtime.mjs && node scripts/verify-ai.mjs && node scripts/verify-ai-sdk.mjs && node scripts/verify-export.mjs && node scripts/verify-media.mjs && node scripts/verify-files-dropbox.mjs && node scripts/verify-files-s3.mjs && node scripts/verify-files-azure.mjs && node scripts/verify-files-gdrive.mjs && node scripts/verify-share.mjs && node scripts/verify-admin-config.mjs && node scripts/verify-db-provider.mjs",
+    "verify:ai": "node scripts/verify-ai.mjs && node scripts/verify-ai-sdk.mjs",
+    "verify:export": "node scripts/verify-export.mjs",
+    "verify:media": "node scripts/verify-media.mjs",
+    "verify:dropbox": "node scripts/verify-files-dropbox.mjs",
+    "verify:s3": "node scripts/verify-files-s3.mjs",
+    "verify:azure": "node scripts/verify-files-azure.mjs",
+    "verify:gdrive": "node scripts/verify-files-gdrive.mjs",
+    "verify:share": "node scripts/verify-share.mjs",
+    "verify:config": "node scripts/verify-config.mjs",
+    "verify:admin": "node scripts/verify-admin-config.mjs",
+    "verify:pocketbase": "node scripts/verify-server.mjs",
+    "verify:postgres": "node scripts/verify-postgres-adapter.mjs",
+    "verify:api": "node scripts/verify-api.mjs",
+    "verify:auth": "node scripts/verify-auth.mjs",
+    "verify:db-provider": "node scripts/verify-db-provider.mjs",
+    "check": "npm run verify",
+    "db:provider": "node scripts/set-db-provider.mjs",
+    "prisma:generate": "node scripts/set-db-provider.mjs && prisma generate",
+    "prisma:migrate": "node scripts/set-db-provider.mjs && prisma migrate deploy",
+    "prisma:migrate:dev": "node scripts/set-db-provider.mjs && prisma migrate dev"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.81",
+    "@ai-sdk/google": "^3.0.80",
+    "@ai-sdk/groq": "^3.0.39",
+    "@ai-sdk/mistral": "^3.0.37",
+    "@ai-sdk/openai": "^3.0.67",
+    "@ai-sdk/openai-compatible": "^2.0.48",
+    "@archive/core": "github:ahmedahmed1223/archive-core#v1.2.1",
+    "@aws-sdk/client-s3": "^3.1058.0",
+    "@aws-sdk/s3-request-presigner": "^3.1058.0",
+    "@azure/storage-blob": "^12.31.0",
+    "@googleapis/drive": "^20.2.0",
+    "@openrouter/ai-sdk-provider": "^2.9.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "ai": "^6.0.193",
+    "bcryptjs": "^3.0.3",
+    "google-auth-library": "^10.6.2",
+    "pocketbase": "^0.27.0",
+    "tsx": "^4.22.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -1,0 +1,46 @@
+# Caddyfile — automatic HTTPS via Let's Encrypt + reverse proxy to the
+# frontend nginx. DOMAIN and ACME_EMAIL come from the .env file via docker
+# compose env interpolation.
+#
+# For local-only (no public DNS), set DOMAIN=localhost in .env and Caddy
+# will use its internal CA — browsers will warn unless you trust it.
+
+{
+	# Operator email for ACME (renewal warnings, key recovery).
+	email {$ACME_EMAIL}
+
+	# Sensible defaults for security headers — applied to all sites below.
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Hardened headers — same posture as the nginx config inside the frontend
+	# container, applied at the edge so they survive any internal hop.
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "interest-cohort=()"
+		# Caddy already sets Server: header; remove it to reduce fingerprinting.
+		-Server
+	}
+
+	# Everything is fronted by the SPA nginx, which itself proxies /pb/* to
+	# pocketbase. So Caddy only needs to hand off to one upstream.
+	reverse_proxy frontend:80 {
+		header_up Host {host}
+		header_up X-Real-IP {remote}
+		header_up X-Forwarded-For {remote}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	# Generous request body — bulk imports can be large.
+	request_body {
+		max_size 256MB
+	}
+}

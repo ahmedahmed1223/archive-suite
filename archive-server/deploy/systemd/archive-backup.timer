@@ -1,0 +1,12 @@
+[Unit]
+Description=Run archive-backup.service daily at 03:15 UTC
+Requires=archive-backup.service
+
+[Timer]
+# 03:15 UTC = quiet hour for most timezones, after the daily activity window.
+OnCalendar=*-*-* 03:15:00 UTC
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target

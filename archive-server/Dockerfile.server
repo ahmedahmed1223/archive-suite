@@ -1,0 +1,38 @@
+# Node.js RPC API server for the Postgres backend.
+#
+# Prisma 7's query engine is server-side (Node), so the SPA can't talk to
+# Postgres directly. This image boots a small RPC server (src/index.js) that:
+#   1. Runs `prisma migrate deploy` so the DB schema is current.
+#   2. Serves /api/rpc — the SPA's cloud-http adapter calls it; each call maps
+#      to one of the 11 @archive/core StorageProvider methods on the Postgres
+#      adapter.
+#
+# Prisma 7's `prisma-client` generator emits TypeScript, so the runtime uses
+# `tsx` (esbuild-based) to execute the generated client without a build step.
+
+FROM node:24-alpine AS base
+
+# ffmpeg powers the project MP4 export endpoint (/api/projects/export) — bundled
+# in the SAME image, so no separate render service is needed.
+RUN apk add --no-cache ffmpeg
+
+WORKDIR /app
+
+# Install runtime deps (omit the Prisma CLI dev tooling — its transitive
+# @hono/node-server advisory never reaches the runtime). tsx + @prisma/client
+# + @prisma/adapter-pg + pg are runtime deps.
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund \
+ && npm install --no-save prisma@7
+
+COPY prisma ./prisma
+COPY prisma.config.mjs ./
+COPY src ./src
+
+# Generate the Prisma 7 client into src/generated/prisma at build time so the
+# runtime image needs no network access.
+RUN npx prisma generate
+
+# migrate deploy applies committed migrations idempotently, then the RPC API
+# starts. DATABASE_URL + BACKEND=postgres come from compose env.
+CMD sh -c "npx prisma migrate deploy && npm run start"
