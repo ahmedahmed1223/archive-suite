@@ -24,7 +24,7 @@ import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { motion } from "framer-motion";
 
-import { appConfirm } from "../components/common/ConfirmDialog.js";
+import { showConfirm } from "../components/common/ConfirmDialog.js";
 import { EmptyState } from "../components/common/EmptyState.jsx";
 import { EntityFormModal } from "../components/common/EntityFormModal.jsx";
 import { PageHero } from "../components/ui/V1Primitives.jsx";
@@ -524,8 +524,14 @@ export function ProjectsPage() {
   };
 
   const removeProject = async (project) => {
-    const confirmed = await appConfirm(`هل تريد حذف المشروع "${project.name}"؟ لن تُحذف الفيديوهات نفسها.`, {
-      title: "حذف مشروع", kind: "danger", confirmLabel: "حذف"
+    const itemCount = activeItems.filter((item) => item.project === project.id).length;
+    const confirmed = await showConfirm({
+      level: 2,
+      title: "حذف مشروع",
+      message: itemCount > 0
+        ? `سيتم حذف المشروع "${project.name}" والبيانات المرتبطة به (${itemCount} عنصر مرتبط).\nلن تُحذف ملفات الفيديو نفسها.`
+        : `سيتم حذف المشروع "${project.name}" وبياناته. لن تُحذف ملفات الفيديو نفسها.`,
+      confirmPhrase: project.name
     });
     if (!confirmed) return;
     try {

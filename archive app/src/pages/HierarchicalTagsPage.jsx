@@ -19,7 +19,7 @@ import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { motion } from "framer-motion";
 
-import { appConfirm } from "../components/common/ConfirmDialog.js";
+import { appConfirm, showConfirm } from "../components/common/ConfirmDialog.js";
 import { EmptyState } from "../components/common/EmptyState.jsx";
 import { MotionPage, PageHero } from "../components/ui/V1Primitives.jsx";
 import {
@@ -278,10 +278,10 @@ export function HierarchicalTagsPage() {
     const message = descendantCount
       ? `سيتم حذف "${tag.name}" و${descendantCount} وسم فرعي. هل تريد المتابعة؟`
       : `هل تريد حذف الوسم "${tag.name}"؟`;
-    const confirmed = await appConfirm(message, {
+    const confirmed = await showConfirm({
+      level: 1,
       title: "حذف وسم هرمي",
-      kind: "danger",
-      confirmLabel: "حذف"
+      message
     });
     if (!confirmed) return;
     try {
@@ -302,10 +302,10 @@ export function HierarchicalTagsPage() {
   };
 
   const deleteUnusedTag = async (tag) => {
-    const confirmed = await appConfirm(`الوسم "${tag.name}" غير مستخدم في المواد الحالية. هل تريد حذفه؟`, {
+    const confirmed = await showConfirm({
+      level: 1,
       title: "حذف وسم غير مستخدم",
-      kind: "danger",
-      confirmLabel: "حذف"
+      message: `الوسم "${tag.name}" غير مستخدم في المواد الحالية. هل تريد حذفه؟`
     });
     if (!confirmed) return;
     try {
