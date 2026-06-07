@@ -44,7 +44,19 @@ async function buildPrismaClient() {
     );
   }
   const { PrismaPg } = await import("@prisma/adapter-pg");
-  const adapter = new PrismaPg({ connectionString: databaseUrl });
+  const poolConfig = {
+    connectionString: databaseUrl,
+    max: 20,                    // maximum number of pooled connections
+    idleTimeoutMillis: 30_000,  // close idle connections after 30 s
+    connectionTimeoutMillis: 5_000 // throw if a new connection takes > 5 s
+  };
+  // eslint-disable-next-line no-console
+  console.log(
+    `[archive-api] pg pool config — max: ${poolConfig.max}, ` +
+    `idleTimeout: ${poolConfig.idleTimeoutMillis}ms, ` +
+    `connectionTimeout: ${poolConfig.connectionTimeoutMillis}ms`
+  );
+  const adapter = new PrismaPg(poolConfig);
   return new PrismaClient({ adapter });
 }
 
