@@ -64,9 +64,10 @@ async function main() {
   assertProductionSecrets(process.env);
 
   let registration;
+  let prisma = null;
 
   if (BACKEND === "postgres") {
-    const prisma = await buildPrismaClient();
+    prisma = await buildPrismaClient();
     registration = registerCloudProviders({ backend: "postgres", prisma });
     // Surface connection problems early with a clear message.
     await registration.provider.open();
@@ -109,7 +110,7 @@ async function main() {
     );
   }
 
-  startApiServer({
+  const server = startApiServer({
     port: PORT,
     backend: registration.backend,
     corsOrigin: CORS_ORIGIN,
@@ -123,6 +124,44 @@ async function main() {
     // Realtime fan-out: pushes broadcast to SSE clients on /api/sync/events.
     eventBus: createEventBus()
   });
+
+  // Graceful shutdown: drain in-flight connections before exiting so Docker
+  // stop and Kubernetes pod evictions don't hard-kill active requests.
+  let isShuttingDown = false;
+
+  async function shutdown(signal) {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    // eslint-disable-next-line no-console
+    console.log(`[shutdown] Received ${signal}. Draining connections...`);
+
+    // Stop accepting new connections; wait for in-flight requests to finish.
+    server.close(async () => {
+      // eslint-disable-next-line no-console
+      console.log("[shutdown] HTTP server closed.");
+
+      // Disconnect Prisma when using the Postgres backend.
+      if (prisma) {
+        await prisma.$disconnect().catch(() => {});
+        // eslint-disable-next-line no-console
+        console.log("[shutdown] Prisma disconnected.");
+      }
+
+      // eslint-disable-next-line no-console
+      console.log("[shutdown] Done.");
+      process.exit(0);
+    });
+
+    // Force-exit after 10 s if draining hangs (e.g. stalled SSE clients).
+    setTimeout(() => {
+      // eslint-disable-next-line no-console
+      console.error("[shutdown] Force-exit after timeout.");
+      process.exit(1);
+    }, 10_000).unref();
+  }
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT",  () => shutdown("SIGINT"));
 }
 
 main().catch((error) => {
