@@ -147,7 +147,8 @@ export function ArchivePageHero(props) {
     changeGridRows,
     changePageSize,
     openImport,
-    openAdd
+    openAdd,
+    confirmEmptyTrash
   } = props;
 
   const [mobileControlsOpen, setMobileControlsOpen] = React.useState(false);
@@ -340,6 +341,19 @@ export function ArchivePageHero(props) {
                 icon: jsx(RefreshCw, { className: "h-4 w-4" }),
                 children: "مسح"
               }),
+              showDeleted && confirmEmptyTrash && jsxs("button", {
+                type: "button",
+                onClick: () => {
+                  const deletedCount = videoItems.filter((item) => item.isDeleted).length;
+                  confirmEmptyTrash(deletedCount);
+                },
+                className: "inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/15",
+                title: "حذف نهائي لجميع عناصر سلة المحذوفات",
+                children: [
+                  jsx(Trash2, { className: "h-3.5 w-3.5" }),
+                  "إفراغ السلة"
+                ]
+              }),
               jsxs("button", {
                 type: "button",
                 onClick: openAdd,
@@ -454,7 +468,17 @@ export function ArchivePageHero(props) {
                     sortDirection,
                     onChange: handleSortChange
                   }),
-                  (hasFilters || showDeleted) && jsx(ToolbarButton, { onClick: resetMobileFilters, icon: jsx(RefreshCw, { className: "h-4 w-4" }), children: "مسح الفلاتر" })
+                  (hasFilters || showDeleted) && jsx(ToolbarButton, { onClick: resetMobileFilters, icon: jsx(RefreshCw, { className: "h-4 w-4" }), children: "مسح الفلاتر" }),
+                  showDeleted && confirmEmptyTrash && jsxs("button", {
+                    type: "button",
+                    onClick: () => {
+                      setMobileControlsOpen(false);
+                      const deletedCount = videoItems.filter((item) => item.isDeleted).length;
+                      confirmEmptyTrash(deletedCount);
+                    },
+                    className: "inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/15",
+                    children: [jsx(Trash2, { className: "h-3.5 w-3.5" }), "إفراغ السلة"]
+                  })
                 ]
               }),
               jsxs("div", {

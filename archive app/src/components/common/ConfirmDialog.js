@@ -2,6 +2,254 @@ import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { jsx, jsxs } from "react/jsx-runtime";
 
+// ─── Tiered Destructive Confirm Dialog ────────────────────────────────────────
+//
+// Level 1 — Standard delete (amber): simple confirmation.
+// Level 2 — Destructive delete (orange): user must type confirmPhrase.
+// Level 3 — Critical/irreversible (red): 5-second countdown + type "حذف نهائي".
+//
+// API:
+//   showConfirm({ level, title, message, confirmPhrase?, onConfirm })
+//
+// Backward-compat: appConfirm / appAlert / appPrompt continue to work unchanged.
+
+const LEVEL_STYLES = {
+  1: {
+    border: "border-amber-500/35",
+    header: "text-amber-100",
+    icon: "⚠",
+    iconColor: "text-amber-400",
+    iconBg: "border-amber-500/30 bg-amber-500/10",
+    confirm: "border-amber-500/40 bg-amber-600 hover:bg-amber-500 text-white",
+    countdown: null,
+  },
+  2: {
+    border: "border-orange-500/35",
+    header: "text-orange-100",
+    icon: "⚠",
+    iconColor: "text-orange-400",
+    iconBg: "border-orange-500/30 bg-orange-500/10",
+    confirm: "border-orange-500/40 bg-orange-600 hover:bg-orange-500 text-white",
+    countdown: null,
+  },
+  3: {
+    border: "border-red-500/35",
+    header: "text-red-100",
+    icon: "⊗",
+    iconColor: "text-red-400",
+    iconBg: "border-red-500/30 bg-red-500/10",
+    confirm: "border-red-500/40 bg-red-600 hover:bg-red-500 text-white",
+    countdown: 5,
+  },
+};
+
+const LEVEL_3_PHRASE = "حذف نهائي";
+
+function TieredDialogModal({ config, onResolve }) {
+  const { level = 1, title, message, confirmPhrase } = config;
+  const styles = LEVEL_STYLES[level] || LEVEL_STYLES[1];
+
+  // Level 2: typed phrase to unlock confirm button
+  const [typed, setTyped] = React.useState("");
+
+  // Level 3: countdown timer
+  const targetPhrase = level === 3 ? LEVEL_3_PHRASE : confirmPhrase;
+  const [secondsLeft, setSecondsLeft] = React.useState(
+    styles.countdown !== null ? styles.countdown : 0
+  );
+  const inputRef = React.useRef(null);
+  const confirmRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (styles.countdown === null) return undefined;
+    if (secondsLeft <= 0) return undefined;
+    const id = window.setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [secondsLeft, styles.countdown]);
+
+  const countdownDone = styles.countdown === null || secondsLeft <= 0;
+
+  // Level 2 and 3: require typed phrase
+  const phraseOk =
+    level === 1
+      ? true
+      : typed.trim() === (targetPhrase || "").trim();
+
+  const confirmEnabled = countdownDone && phraseOk;
+
+  React.useEffect(() => {
+    const target = level >= 2 ? inputRef.current : confirmRef.current;
+    if (target) window.requestAnimationFrame(() => target.focus());
+  }, [level]);
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (event.key === "Escape") onResolve(false);
+      if (event.key === "Enter" && confirmEnabled) onResolve(true);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  });
+
+  return jsx("div", {
+    className: "va-dialog-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4 backdrop-blur-md",
+    style: { background: "rgba(3, 7, 18, 0.72)" },
+    dir: "rtl",
+    onClick: (event) => { if (event.target === event.currentTarget) onResolve(false); },
+    children: jsxs("section", {
+      role: "alertdialog",
+      "aria-modal": "true",
+      "aria-labelledby": "va-tiered-dialog-title",
+      className: `va-card va-dialog-panel w-full max-w-md rounded-2xl border ${styles.border} bg-gray-900/95 p-5 text-right text-white shadow-2xl`,
+      onClick: (event) => event.stopPropagation(),
+      children: [
+        // Header row
+        jsxs("div", {
+          className: "flex items-start gap-3",
+          children: [
+            jsx("span", {
+              className: `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-lg ${styles.iconColor} ${styles.iconBg}`,
+              "aria-hidden": "true",
+              children: styles.icon
+            }),
+            jsxs("div", {
+              className: "min-w-0 flex-1",
+              children: [
+                jsx("h2", {
+                  id: "va-tiered-dialog-title",
+                  className: `text-base font-bold ${styles.header}`,
+                  children: title || "تأكيد الإجراء"
+                }),
+                jsx("p", {
+                  className: "mt-2 whitespace-pre-wrap text-sm leading-7 text-gray-300",
+                  dir: "auto",
+                  style: { unicodeBidi: "plaintext", overflowWrap: "anywhere" },
+                  children: message
+                })
+              ]
+            })
+          ]
+        }),
+
+        // Level 2: type item name
+        level === 2 && targetPhrase && jsxs("div", {
+          className: "mt-4",
+          children: [
+            jsxs("label", {
+              htmlFor: "va-tiered-phrase-input",
+              className: "block text-xs text-gray-400 mb-1.5",
+              children: ["اكتب «", jsx("span", { className: "font-semibold text-orange-300", children: targetPhrase }), "» للتأكيد"]
+            }),
+            jsx("input", {
+              id: "va-tiered-phrase-input",
+              ref: inputRef,
+              type: "text",
+              value: typed,
+              onChange: (event) => setTyped(event.target.value),
+              dir: "auto",
+              autoComplete: "off",
+              spellCheck: "false",
+              className: "mt-1 min-h-10 w-full rounded-xl border border-white/10 bg-gray-950/45 px-3 text-sm text-white outline-none focus:border-orange-500/50",
+              placeholder: targetPhrase
+            })
+          ]
+        }),
+
+        // Level 3: type "حذف نهائي" and countdown
+        level === 3 && jsxs("div", {
+          className: "mt-4",
+          children: [
+            // Countdown warning badge
+            !countdownDone && jsxs("div", {
+              className: "mb-3 flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm text-red-200",
+              children: [
+                jsx("span", { className: "font-bold tabular-nums text-red-300", children: secondsLeft }),
+                jsx("span", { children: "ثوانٍ قبل تفعيل زر الحذف" })
+              ]
+            }),
+            jsxs("label", {
+              htmlFor: "va-tiered-phrase-input",
+              className: "block text-xs text-gray-400 mb-1.5",
+              children: ["اكتب «", jsx("span", { className: "font-semibold text-red-300", children: LEVEL_3_PHRASE }), "» للتأكيد"]
+            }),
+            jsx("input", {
+              id: "va-tiered-phrase-input",
+              ref: inputRef,
+              type: "text",
+              value: typed,
+              onChange: (event) => setTyped(event.target.value),
+              dir: "auto",
+              autoComplete: "off",
+              spellCheck: "false",
+              className: "mt-1 min-h-10 w-full rounded-xl border border-white/10 bg-gray-950/45 px-3 text-sm text-white outline-none focus:border-red-500/50",
+              placeholder: LEVEL_3_PHRASE
+            })
+          ]
+        }),
+
+        // Action buttons
+        jsxs("div", {
+          className: "mt-5 flex flex-wrap justify-start gap-2",
+          children: [
+            jsx("button", {
+              type: "button",
+              onClick: () => onResolve(false),
+              className: "va-secondary-button min-h-10 rounded-xl border border-white/10 bg-gray-950/55 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/5",
+              children: "إلغاء"
+            }),
+            jsx("button", {
+              ref: confirmRef,
+              type: "button",
+              disabled: !confirmEnabled,
+              onClick: () => { if (confirmEnabled) onResolve(true); },
+              className: `min-h-10 rounded-xl border px-4 py-2 text-sm font-semibold transition-opacity ${styles.confirm} disabled:cursor-not-allowed disabled:opacity-40`,
+              children: level === 3 && !countdownDone
+                ? `انتظر (${secondsLeft}ث)`
+                : level === 1 ? "تأكيد" : "حذف نهائياً"
+            })
+          ]
+        })
+      ]
+    })
+  });
+}
+
+/**
+ * Show a tiered destructive-action confirmation dialog.
+ *
+ * @param {object} config
+ * @param {1|2|3} config.level - Severity tier
+ * @param {string} config.title - Dialog title
+ * @param {string} config.message - Body text
+ * @param {string} [config.confirmPhrase] - Phrase user must type (Level 2 only)
+ * @param {Function} [config.onConfirm] - Called if confirmed (optional; also returns Promise<boolean>)
+ * @returns {Promise<boolean>}
+ */
+export function showConfirm(config) {
+  if (typeof document === "undefined" || typeof window === "undefined" || !document.body) {
+    console.warn("[showConfirm] called in non-browser context");
+    return Promise.resolve(false);
+  }
+  return new Promise((resolve) => {
+    const host = document.createElement("div");
+    host.className = "va-dialog-host";
+    document.body.append(host);
+    const root = createRoot(host);
+
+    const cleanup = (result) => {
+      root.unmount();
+      host.remove();
+      if (result && typeof config.onConfirm === "function") {
+        config.onConfirm();
+      }
+      resolve(result);
+    };
+
+    root.render(jsx(TieredDialogModal, { config, onResolve: cleanup }));
+  });
+}
+// ─── End Tiered Destructive Confirm Dialog ────────────────────────────────────
+
 function normalizeDialogInput(message, options = {}) {
   const fromObject = typeof message === "object" && message !== null ? message : {};
   const finalOptions = { ...options, ...fromObject };

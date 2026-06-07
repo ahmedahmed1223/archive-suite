@@ -21,7 +21,7 @@ import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { motion } from "framer-motion";
 
-import { appConfirm } from "../components/common/ConfirmDialog.js";
+import { appConfirm, showConfirm } from "../components/common/ConfirmDialog.js";
 import { EmptyState } from "../components/common/EmptyState.jsx";
 import { MotionPage, PageHero } from "../components/ui/V1Primitives.jsx";
 import { reportError } from "../utils/errorReporting.js";
@@ -300,10 +300,10 @@ export function VocabularyPage() {
   };
 
   const deleteEntry = async (entry) => {
-    const confirmed = await appConfirm(`هل تريد حذف المصطلح "${entry.term}"؟`, {
+    const confirmed = await showConfirm({
+      level: 1,
       title: "حذف مصطلح",
-      kind: "danger",
-      confirmLabel: "حذف"
+      message: `هل أنت متأكد من حذف المصطلح "${entry.term}"؟`
     });
     if (!confirmed) return;
     try {

@@ -5,7 +5,7 @@ import {
   writeAppRoute
 } from "../../services/router/index.js";
 import { useAppStore } from "../../stores/index.js";
-import { appConfirm } from "../../components/common/ConfirmDialog.js";
+import { appConfirm, showConfirm } from "../../components/common/ConfirmDialog.js";
 import {
   createArchiveRouteParams,
   getArchiveActiveFilterCount,
@@ -83,6 +83,7 @@ export function useArchivePageState() {
     bulkAddTags,
     bulkMoveToCollection,
     addItemsToCollection,
+    emptyTrash,
     projects = [],
     showToast,
     showNotification
@@ -492,6 +493,21 @@ export function useArchivePageState() {
     showToast?.("تم نقل العنصر إلى سلة المحذوفات", "info");
   }, [deleteVideoItem, showToast]);
 
+  const confirmEmptyTrash = React.useCallback(async (deletedCount) => {
+    const confirmed = await showConfirm({
+      level: 3,
+      title: "إفراغ سلة المحذوفات",
+      message: `سيتم حذف ${deletedCount} عنصر بشكل نهائي وغير قابل للتراجع.\nلن يمكن استعادة هذه العناصر بعد التأكيد.`
+    });
+    if (!confirmed) return;
+    try {
+      await emptyTrash?.();
+      showToast?.("تم إفراغ سلة المحذوفات نهائياً", "success");
+    } catch (error) {
+      showToast?.(error?.message || "تعذر إفراغ سلة المحذوفات", "error");
+    }
+  }, [emptyTrash, showToast]);
+
   const typeLabel = React.useCallback(
     (item) => typeById.get(item.type)?.name || item.type || "",
     [typeById]
@@ -619,6 +635,7 @@ export function useArchivePageState() {
     openItem,
     openImport,
     openProjects,
-    confirmDelete
+    confirmDelete,
+    confirmEmptyTrash
   };
 }

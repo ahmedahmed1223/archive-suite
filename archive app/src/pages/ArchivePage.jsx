@@ -85,7 +85,7 @@ export function ArchivePage() {
     showFileImportWizard, setShowFileImportWizard,
     contextMenu, setContextMenu,
     savedViews, currentFiltersForSave, applySavedView, saveCurrentView, removeView, canSaveCurrentView,
-    openAdd, openItem, openImport, confirmDelete
+    openAdd, openItem, openImport, confirmDelete, confirmEmptyTrash
   } = state;
   const [mediaJobs, setMediaJobs] = React.useState([]);
   const [mediaBusy, setMediaBusy] = React.useState(false);
@@ -237,7 +237,7 @@ export function ArchivePage() {
   return jsxs(MotionPage, {
     className: "space-y-6 p-4 sm:p-6 pb-24",
     children: [
-      jsx(ArchivePageHero, { ...state, openImport, openAdd }),
+      jsx(ArchivePageHero, { ...state, openImport, openAdd, confirmEmptyTrash }),
       jsx(FileArchiveWizard, {
         open: showFileImportWizard,
         onOpenChange: setShowFileImportWizard,
