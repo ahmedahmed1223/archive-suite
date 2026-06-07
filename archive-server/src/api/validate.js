@@ -39,14 +39,40 @@ function assertArray(value, label) {
 const VALIDATORS = {
   open: () => {},
   get: ([store, key]) => { assertStore(store); assertKeyDefined(key); },
-  getAll: ([store]) => { assertStore(store); },
+  getAll: ([store, opts]) => {
+    assertStore(store);
+    if (opts !== undefined && opts !== null) {
+      assertObject(opts, "pagination opts");
+      if (opts.cursor !== undefined && opts.cursor !== null && typeof opts.cursor !== "string") {
+        throw bad("cursor must be a string.");
+      }
+      if (opts.limit !== undefined && opts.limit !== null) {
+        if (typeof opts.limit !== "number" || !Number.isInteger(opts.limit) || opts.limit < 1) {
+          throw bad("limit must be a positive integer.");
+        }
+      }
+    }
+  },
   put: ([store, record]) => { assertStore(store); assertObject(record, "record"); },
   add: ([store, record]) => { assertStore(store); assertObject(record, "record"); },
   delete: ([store, key]) => { assertStore(store); assertKeyDefined(key); },
   clear: ([store]) => { assertStore(store); },
   putBatch: ([store, items]) => { assertStore(store); assertArray(items, "items"); },
   deleteBatch: ([store, keys]) => { assertStore(store); assertArray(keys, "keys"); },
-  snapshot: () => {},
+  snapshot: ([opts] = []) => {
+    if (opts !== undefined && opts !== null) {
+      assertObject(opts, "snapshot opts");
+      if (opts.store !== undefined && opts.store !== null) assertStore(opts.store);
+      if (opts.cursor !== undefined && opts.cursor !== null && typeof opts.cursor !== "string") {
+        throw bad("cursor must be a string.");
+      }
+      if (opts.limit !== undefined && opts.limit !== null) {
+        if (typeof opts.limit !== "number" || !Number.isInteger(opts.limit) || opts.limit < 1) {
+          throw bad("limit must be a positive integer.");
+        }
+      }
+    }
+  },
   replaceAll: ([payload]) => { assertObject(payload, "payload"); }
 };
 
