@@ -54,9 +54,28 @@ export function createPostgresStorageProvider(prisma, options = {}) {
       return fromRow(found);
     },
 
-    async getAll(store) {
-      const rows = await row.findMany({ where: { store } });
-      return rows.map(fromRow);
+    async getAll(store, opts) {
+      // opts = { cursor?: string, limit?: number }
+      // When limit is absent, return all rows (backward compat).
+      if (!opts || opts.limit === undefined || opts.limit === null) {
+        const rows = await row.findMany({ where: { store }, orderBy: { uid: "asc" } });
+        return rows.map(fromRow);
+      }
+      const { cursor, limit } = opts;
+      const where = cursor
+        ? { store, uid: { gt: cursor } }
+        : { store };
+      // Fetch one extra row to determine whether there are more pages.
+      const rows = await row.findMany({
+        where,
+        orderBy: { uid: "asc" },
+        take: limit + 1
+      });
+      const hasMore = rows.length > limit;
+      const pageRows = hasMore ? rows.slice(0, limit) : rows;
+      const data = pageRows.map(fromRow);
+      const nextCursor = hasMore ? pageRows[pageRows.length - 1].uid : null;
+      return { data, nextCursor, hasMore };
     },
 
     async put(store, record) {
@@ -130,7 +149,33 @@ export function createPostgresStorageProvider(prisma, options = {}) {
 
     // ── Whole-dataset operations ──────────────────────────────────────
 
-    async snapshot() {
+    async snapshot(opts) {
+      // opts = { store?: string, cursor?: string, limit?: number }
+      // When opts contains a limit, returns a partial snapshot of one store
+      // with pagination metadata. Without opts (or no limit), returns the full
+      // dataset across all stores (existing behavior).
+      if (opts && opts.limit !== undefined && opts.limit !== null) {
+        // Paginated partial snapshot — single store required.
+        const { store: domainKey, cursor, limit } = opts;
+        if (!domainKey) throw Object.assign(new Error("store is required for paginated snapshot"), { statusCode: 400 });
+        const storeName = SNAPSHOT_COLLECTION_BY_DOMAIN_KEY[domainKey];
+        if (!storeName) throw Object.assign(new Error(`Unknown store: ${domainKey}`), { statusCode: 400 });
+        const where = cursor ? { store: storeName, uid: { gt: cursor } } : { store: storeName };
+        const rows = await row.findMany({ where, orderBy: { uid: "asc" }, take: limit + 1 });
+        const hasMore = rows.length > limit;
+        const pageRows = hasMore ? rows.slice(0, limit) : rows;
+        const data = pageRows.map(fromRow).filter(Boolean);
+        const nextCursor = hasMore ? pageRows[pageRows.length - 1].uid : null;
+        return {
+          exportedAt: new Date().toISOString(),
+          version: "2.0",
+          store: domainKey,
+          data,
+          nextCursor,
+          hasMore
+        };
+      }
+
       const out = {
         exportedAt: new Date().toISOString(),
         version: "2.0"
@@ -139,7 +184,7 @@ export function createPostgresStorageProvider(prisma, options = {}) {
       // unrelated stores into memory on Postgres-side. The SPA only reads
       // these specific keys so we don't gain anything from a single big query.
       for (const [domainKey, store] of Object.entries(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY)) {
-        const rows = await row.findMany({ where: { store } });
+        const rows = await row.findMany({ where: { store }, orderBy: { uid: "asc" } });
         out[domainKey] = rows.map(fromRow).filter((value) => value !== undefined);
       }
       const settingsRow = await row.findUnique({

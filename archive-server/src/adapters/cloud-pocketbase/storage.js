@@ -57,9 +57,29 @@ export function createPocketBaseStorageProvider(client, options = {}) {
       return fromPbRecord(row);
     },
 
-    async getAll(store) {
-      const rows = await client.collection(store).getFullList();
-      return rows.map(fromPbRecord);
+    async getAll(store, opts) {
+      // opts = { cursor?: string, limit?: number }
+      // When limit is absent, return all rows (backward compat).
+      if (!opts || opts.limit === undefined || opts.limit === null) {
+        const rows = await client.collection(store).getFullList({ sort: "+uid" });
+        return rows.map(fromPbRecord);
+      }
+      const { cursor, limit } = opts;
+      // Build filter: records with uid > cursor (alphabetic order).
+      const filter = cursor
+        ? `uid > "${cursor.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+        : "";
+      // Fetch one extra row to detect whether there are more pages.
+      const result = await client.collection(store).getList(1, limit + 1, {
+        sort: "+uid",
+        filter: filter || undefined
+      });
+      const pbRows = result.items || [];
+      const hasMore = pbRows.length > limit;
+      const pageRows = hasMore ? pbRows.slice(0, limit) : pbRows;
+      const data = pageRows.map(fromPbRecord);
+      const nextCursor = hasMore ? pageRows[pageRows.length - 1].uid : null;
+      return { data, nextCursor, hasMore };
     },
 
     async put(store, record) {
@@ -112,14 +132,46 @@ export function createPocketBaseStorageProvider(client, options = {}) {
 
     // Whole-dataset operations (best-effort batches — PB has no cross-collection
     // transaction so we cannot mirror IndexedDB's atomic rollback).
-    async snapshot() {
+    async snapshot(opts) {
+      // opts = { store?: string, cursor?: string, limit?: number }
+      // When opts contains a limit, returns a partial snapshot of one store
+      // with pagination metadata. Without opts (or no limit), returns the full
+      // dataset across all stores (existing behavior).
+      if (opts && opts.limit !== undefined && opts.limit !== null) {
+        // Paginated partial snapshot — single store required.
+        const { store: domainKey, cursor, limit } = opts;
+        if (!domainKey) throw Object.assign(new Error("store is required for paginated snapshot"), { statusCode: 400 });
+        const collection = SNAPSHOT_COLLECTION_BY_DOMAIN_KEY[domainKey];
+        if (!collection) throw Object.assign(new Error(`Unknown store: ${domainKey}`), { statusCode: 400 });
+        const filter = cursor
+          ? `uid > "${cursor.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+          : "";
+        const result = await client.collection(collection).getList(1, limit + 1, {
+          sort: "+uid",
+          filter: filter || undefined
+        });
+        const pbRows = result.items || [];
+        const hasMore = pbRows.length > limit;
+        const pageRows = hasMore ? pbRows.slice(0, limit) : pbRows;
+        const data = pageRows.map(fromPbRecord).filter(Boolean);
+        const nextCursor = hasMore ? pageRows[pageRows.length - 1].uid : null;
+        return {
+          exportedAt: new Date().toISOString(),
+          version: "2.0",
+          store: domainKey,
+          data,
+          nextCursor,
+          hasMore
+        };
+      }
+
       const out = {
         exportedAt: new Date().toISOString(),
         version: "2.0"
       };
       for (const [domainKey, collection] of Object.entries(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY)) {
         try {
-          const rows = await client.collection(collection).getFullList();
+          const rows = await client.collection(collection).getFullList({ sort: "+uid" });
           out[domainKey] = rows.map(fromPbRecord).filter((value) => value !== undefined);
         } catch {
           // Missing collection on a fresh server is not an error — surface an
