@@ -11,6 +11,7 @@ import {
   FileText,
   Gauge,
   HardDrive,
+  History,
   Image as ImageIcon,
   Info,
   Loader2,
@@ -35,6 +36,7 @@ import { motion } from "framer-motion";
 import { appConfirm } from "../components/common/ConfirmDialog.js";
 import { TagAutocomplete } from "../components/forms/TagAutocomplete.jsx";
 import { MobileActionBar, MotionPage, ResponsiveTabs, UXEmptyState } from "../components/ui/index.js";
+import { RecordVersionHistory } from "../components/records/RecordVersionHistory.jsx";
 import { reportError } from "../utils/errorReporting.js";
 import {
   MEDIA_PREVIEW_STATUS,
@@ -601,6 +603,7 @@ export function DetailPage() {
     { id: "data", label: "البيانات", icon: FileText },
     { id: "comments", label: "التعليقات", icon: MessageSquare },
     { id: "history", label: "التاريخ", icon: Clock3 },
+    { id: "versions", label: "السجل التاريخي", icon: History },
     { id: "media", label: "الوسائط", icon: HardDrive },
     { id: "ai", label: "AI", icon: Sparkles },
     { id: "relations", label: "العلاقات", icon: Gauge }
@@ -1138,6 +1141,9 @@ export function DetailPage() {
               ]
             }) }, related.item.id)) })
           ] }) : null,
+          activeDetailTab === "versions" && item?.id
+            ? jsx("section", { className: "rounded-xl va-surface-subtle border", dir: "rtl", "aria-label": "السجل التاريخي للسجل", children: jsx(RecordVersionHistory, { recordId: item.id, store: "videoItems" }) })
+            : null,
           activeDetailTab === "history" && itemHistory.length ? jsxs("section", { children: [
             jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Clock3, { className: "h-4 w-4 va-accent-text" }), "سجل التعديلات"] }),
             jsx("ul", { className: "mt-3 space-y-2", children: itemHistory.slice(0, 12).map((record) => jsxs("li", { className: "rounded-xl va-surface-subtle border p-3", children: [

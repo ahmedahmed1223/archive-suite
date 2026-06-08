@@ -124,6 +124,22 @@ model ArchiveItem {
   @@map("typed_archive_items")
 }
 
+/// Version history snapshot for any record (store + uid pair).
+/// Written fire-and-forget after every put() call; read by the DetailPage
+/// "السجل التاريخي" tab and the /api/records/:uid/versions REST endpoint.
+model RecordVersion {
+  id        BigInt   @id @default(autoincrement())
+  store     String
+  recordUid String   @map("record_uid")
+  version   Int      @default(1)
+  snapshot  Json
+  userId    String?  @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([store, recordUid])
+  @@map("record_versions")
+}
+
 /// Content type registry (replaces hardcoded type lists)
 model ContentType {
   id          String   @id @default(cuid())

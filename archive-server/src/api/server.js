@@ -622,13 +622,14 @@ export function createApiServer({
       if (overLimit(res, "rpc", req)) return undefined;
       // Enforce Bearer auth when a secret is configured.
       if (!requireAuth(req, res)) return undefined;
-      // Extract JWT claims for audit logging (token already verified above).
+      // Extract JWT claims for audit logging and RBAC enforcement.
+      // When auth is disabled rpcClaims is null so dispatchRpc skips RBAC.
       const rpcClaims = authRequired
         ? (() => { try { return verifyJwt(bearerToken(req), resolvedAuthSecret) || {}; } catch { return {}; } })()
-        : { sub: "anonymous", username: "anonymous", role: "owner" };
+        : null;
       try {
         const body = await readJsonBody(req);
-        const result = await dispatch(body);
+        const result = await dispatch(body, { user: rpcClaims });
         auditLog({
           method: body?.method,
           args: Array.isArray(body?.args) ? body.args : [],
@@ -1161,6 +1162,36 @@ export function createApiServer({
       }
     }
 
+    // POST /api/export — export archive records as csv, xlsx, or json
+    if (req.method === "POST" && url.split("?")[0] === "/api/export") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      if (!requireAuth(req, res)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const format = ["csv", "xlsx", "zip"].includes(body.format) ? body.format : "csv";
+        const store = typeof body.store === "string" && body.store ? body.store : "videoItems";
+        const ids = Array.isArray(body.ids) ? body.ids.slice(0, 10000) : null;
+
+        const { exportRecords } = await import("../export/exportService.js");
+        const result = await exportRecords(resolveStorage(), { format, store, ids });
+
+        res.writeHead(200, {
+          "Content-Type": result.contentType,
+          "Content-Disposition": `attachment; filename="${result.filename}"`,
+          "Content-Length": result.buffer.length,
+          "X-API-Version": "1.0",
+        });
+        res.end(result.buffer);
+      } catch (err) {
+        if (err.statusCode === 401) {
+          return send(res, 401, { ok: false, error: "Unauthorized" });
+        }
+        logger.error({ err }, "export failed");
+        return send(res, 500, { ok: false, error: "export_failed" });
+      }
+      return undefined;
+    }
+
     // POST /api/ai/suggest-tags — non-blocking tag + category suggestions for a
     // record being created/edited. Body: { name, summary, transcription, categories }.
     // Returns { tags: string[], categoryIds: string[] }.
@@ -1181,6 +1212,71 @@ export function createApiServer({
       }
     }
 
+    // ── Bulk record operations ────────────────────────────────────────────────
+    // POST /api/records/bulk — apply an action to multiple records in one request.
+    // Body: { action, ids, store?, tags?, type?, project? }
+    // Actions: addTags | removeTags | setType | setProject | delete
+    if (req.method === "POST" && url.split("?")[0] === "/api/records/bulk") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      if (!requireAuth(req, res)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const ALLOWED_ACTIONS = ["addTags", "removeTags", "setType", "setProject", "delete"];
+        if (!ALLOWED_ACTIONS.includes(body.action)) {
+          return send(res, 400, { ok: false, error: "invalid_action" });
+        }
+        if (!Array.isArray(body.ids) || body.ids.length === 0 || body.ids.length > 500) {
+          return send(res, 400, { ok: false, error: "ids must be array of 1-500" });
+        }
+        const store = typeof body.store === "string" && body.store ? body.store : "videoItems";
+        const provider = resolveStorage();
+        const ids = body.ids.map(String);
+        let affected = 0;
+
+        if (body.action === "delete") {
+          // deleteBatch(store, keys) — keys are the uid strings
+          await provider.deleteBatch(store, ids);
+          affected = ids.length;
+        } else {
+          // Fetch all records, apply mutation only to matched ids, then put back
+          const allRecords = await provider.getAll(store).catch(() => []);
+          const idSet = new Set(ids);
+          // getAll returns plain domain objects; key field is "id"
+          const toUpdate = Array.isArray(allRecords)
+            ? allRecords.filter((r) => r && idSet.has(String(r.id ?? r.uid ?? "")))
+            : [];
+
+          const updated = toUpdate.map((record) => {
+            const d = { ...record };
+            if (body.action === "addTags") {
+              const existing = new Set(Array.isArray(d.tags) ? d.tags : []);
+              (body.tags ?? []).forEach((t) => existing.add(String(t).trim().toLowerCase()));
+              d.tags = [...existing];
+            } else if (body.action === "removeTags") {
+              const toRemove = new Set((body.tags ?? []).map((t) => String(t).trim().toLowerCase()));
+              d.tags = (Array.isArray(d.tags) ? d.tags : []).filter((t) => !toRemove.has(t));
+            } else if (body.action === "setType") {
+              d.type = String(body.type ?? "");
+            } else if (body.action === "setProject") {
+              d.project = String(body.project ?? "");
+            }
+            return d;
+          });
+
+          // putBatch(store, items) — items are plain domain objects
+          if (updated.length) await provider.putBatch(store, updated);
+          affected = updated.length;
+        }
+
+        return send(res, 200, { ok: true, affected });
+      } catch (error) {
+        const statusCode = error?.statusCode || 500;
+        if (statusCode >= 500) captureException(error, { endpoint: "records/bulk", reqId: req.id });
+        logger.error({ err: error }, "bulk operation failed");
+        return send(res, statusCode, { ok: false, error: error?.message || "bulk_failed" });
+      }
+    }
+
     // Prometheus scrape endpoint — no auth (protected at network level; bind to
     // localhost in docker-compose so it is never reachable from the public internet).
     if (req.method === "GET" && pathname === "/metrics") {
@@ -1188,6 +1284,54 @@ export function createApiServer({
       res.writeHead(200, { "Content-Type": getContentType() });
       res.end(output);
       return;
+    }
+
+    // ── Record version history ──────────────────────────────────────────────
+    // GET  /api/records/:uid/versions?store=videoItems
+    //   Returns the saved snapshots list (without snapshot body) so the
+    //   DetailPage "السجل التاريخي" tab can render the version timeline.
+    if (req.method === "GET" && /^\/api\/records\/[^/]+\/versions$/.test(url.split("?")[0])) {
+      if (!requireAuth(req, res)) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "السجل التاريخي غير متاح في هذا الإعداد." });
+      try {
+        const uid = url.split("?")[0].split("/")[3];
+        const store = requestUrl.searchParams.get("store") ?? "videoItems";
+        const versions = await prisma.recordVersion.findMany({
+          where: { store, recordUid: uid },
+          orderBy: { version: "desc" },
+          take: 50,
+          select: { id: true, version: true, userId: true, createdAt: true },
+        });
+        return send(res, 200, { ok: true, versions });
+      } catch (err) {
+        logger.error({ err }, "versions list failed");
+        return send(res, 500, { ok: false, error: "versions_failed" });
+      }
+    }
+
+    // POST /api/records/:uid/restore/:version?store=videoItems
+    //   Fetches the stored snapshot and calls resolveStorage().put() to
+    //   overwrite the current record. Requires editor privileges.
+    if (req.method === "POST" && /^\/api\/records\/[^/]+\/restore\/\d+$/.test(url.split("?")[0])) {
+      if (!requireEditor(req, res)) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "الاستعادة غير متاحة في هذا الإعداد." });
+      try {
+        const parts = url.split("?")[0].split("/");
+        const uid = parts[3];
+        const version = parseInt(parts[5], 10);
+        const store = requestUrl.searchParams.get("store") ?? "videoItems";
+        const versionRow = await prisma.recordVersion.findFirst({
+          where: { store, recordUid: uid, version },
+        });
+        if (!versionRow) {
+          return send(res, 404, { ok: false, error: "version_not_found" });
+        }
+        await resolveStorage().put(store, versionRow.snapshot);
+        return send(res, 200, { ok: true, restoredVersion: version });
+      } catch (err) {
+        logger.error({ err }, "version restore failed");
+        return send(res, 500, { ok: false, error: "restore_failed" });
+      }
     }
 
     return send(res, 404, { ok: false, error: "Not found" });

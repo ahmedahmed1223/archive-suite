@@ -760,4 +760,24 @@ html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-cyan-200, .te
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--va-action) 55%, transparent);
 }
 
+/* Onboarding wizard glassmorphic panel */
+.va-onboarding-panel,
+[class*="onboarding"] .wizard-panel,
+.va-wizard-panel {
+  background: color-mix(in oklch, var(--va-surface, var(--va-2-surface)) 85%, transparent);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid color-mix(in oklch, var(--va-action, var(--va-2-accent)) 15%, var(--va-line, var(--va-2-line)));
+  transition: border-color 0.4s ease, background 0.4s ease;
+}
+
+/* Smooth step transition */
+.va-step-content {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.va-step-content[data-entering] {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
 } /* end @layer v2-identity */
