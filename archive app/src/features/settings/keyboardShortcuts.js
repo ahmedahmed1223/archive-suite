@@ -3,10 +3,10 @@ import { getEffectiveKeyboardShortcuts as getEffectiveKeyboardShortcutsUtil } fr
 export const SHORTCUT_DISABLED = "disabled";
 
 export const SHORTCUT_ACTIONS = [
-  { id: "openSearch", label: "فتح البحث المتقدم", category: "التنقل", defaultKeys: "Ctrl+K", options: ["Ctrl+K", "Alt+K", "disabled"] },
+  { id: "openSearch", label: "فتح البحث المتقدم", category: "التنقل", defaultKeys: "Alt+K", options: ["Ctrl+K", "Alt+K", "disabled"] },
   { id: "quickAdd", label: "إنشاء سريع", category: "التنقل", defaultKeys: "Alt+A", options: ["Alt+A", "Ctrl+Shift+A", "disabled"] },
   { id: "showShortcuts", label: "عرض اختصارات لوحة المفاتيح", category: "التنقل", defaultKeys: "Ctrl+/", options: ["Ctrl+/", "Alt+/", "disabled"] },
-  { id: "openCommandPalette", label: "فتح لوحة الأوامر", category: "التنقل", defaultKeys: "Ctrl+Shift+K", options: ["Ctrl+Shift+K", "Ctrl+P", "Alt+P", "disabled"] },
+  { id: "openCommandPalette", label: "فتح لوحة الأوامر", category: "التنقل", defaultKeys: "Ctrl+K", options: ["Ctrl+K", "Ctrl+P", "Alt+P", "disabled"] },
   { id: "toggleNotifications", label: "فتح مركز الإشعارات", category: "التنقل", defaultKeys: "Ctrl+Shift+M", options: ["Ctrl+Shift+M", "Alt+M", "disabled"] },
   { id: "openBackup", label: "فتح النسخ الاحتياطي", category: "التنقل", defaultKeys: "Ctrl+B", options: ["Ctrl+B", "Alt+B", "disabled"] },
   { id: "openDashboard", label: "فتح مركز التحكم", category: "التنقل", defaultKeys: "Ctrl+D", options: ["Ctrl+D", "Alt+D", "disabled"] },
