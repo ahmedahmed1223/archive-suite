@@ -2,7 +2,7 @@
 
 > **المصدر:** 9 تقارير فحص (HTML) في `D:\archiveaq\Reports`.
 > **المنهجية:** كل بند في التقارير تم التحقق منه مقابل الكود الفعلي في هذا المستودع. أُبقيت فقط المهام الحقيقية المتبقية؛ والبنود المُنفّذة بالفعل أو غير الدقيقة في التقارير وُثّقت في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
-> **آخر تحديث:** 8 يونيو 2026. إضافة القسم 12 من 4 تقارير فحص معمّق جديدة (87–107 ثغرة). Tasks 70 (Webhooks) و71 (Email Notifications) مكتملان. Task 73 (Setup Wizard) قيد التنفيذ. القسم 13: 17 مهمة جديدة من وثيقة مقترحات الميزات 2026 (27 ميزة، 5 محاور).
+> **آخر تحديث:** 8 يونيو 2026. Tasks #74–#77 (P0 security + K8s) مكتملة. Tasks #78–#79 (P1) قيد التنفيذ.
 
 ## مفتاح الأولويات
 
@@ -437,48 +437,48 @@
 
 ### 12.1 أمان — P0 حرج (ثغرات مباشرة)
 
-- [ ] `[P0]` ⏱️S **إصلاح حقن SQL عبر `Prisma.raw()` في `getByField`** — الحقول غير `uid`/`id` تُدرج مباشرة في استعلام خام بلا تعقيم.
+- [x] `[P0]` ⏱️S **إصلاح حقن SQL عبر `Prisma.raw()` في `getByField`** — الحقول غير `uid`/`id` تُدرج مباشرة في استعلام خام بلا تعقيم.
   - الملف: `archive-server/src/adapters/cloud-postgres-prisma/storage.js:305`
   - الإصلاح: ابنِ whitelist للحقول المسموحة (`uid`, `id`, `ownerId`, `email`) وارفض أي حقل خارجها قبل بناء الاستعلام.
   - المصدر: deep-audit-v2 (SEC-02)، critical.
 
-- [ ] `[P0]` ⏱️S **تأمين نقطة `/api/ocr`** — بلا `requireAuth()` ولا حد لحجم الطلب؛ يقبل رفع ملفات غير محدودة الحجم من أي زائر.
+- [x] `[P0]` ⏱️S **تأمين نقطة `/api/ocr`** — بلا `requireAuth()` ولا حد لحجم الطلب؛ يقبل رفع ملفات غير محدودة الحجم من أي زائر.
   - الملف: `archive-server/src/api/ocrHandler.js:9,20-21`
   - الإصلاح: أضف `requireAuth()` أول شيء في المعالج + حد `20MB` على `busboy`/`multer` + rate limit مخصص (5 طلبات/دقيقة للمستخدم).
   - المصدر: deep-audit-v2 (SEC-03)، critical.
 
-- [ ] `[P0]` ⏱️S **إصلاح XSS في قالب بريد إعادة تعيين كلمة المرور** — `username` و`resetLink` غير مُعقَّمَين في قالب `emailService.js`.
+- [x] `[P0]` ⏱️S **إصلاح XSS في قالب بريد إعادة تعيين كلمة المرور** — `username` و`resetLink` غير مُعقَّمَين في قالب `emailService.js`.
   - الملف: `archive-server/src/email/emailService.js`
   - الإصلاح: استخدم دالة `escapeHtml()` على كل متغير يُدرج في HTML. مرجع: `notificationService.js` (Task 71) يُعقَّم بشكل صحيح.
   - المصدر: deep-audit-v2 (S3)، critical.
 
-- [ ] `[P0]` ⏱️M **توليد QR code للـ TOTP محليًا** — الكود يُرسل سر TOTP إلى `api.qrserver.com` خارجي عند كل تفعيل 2FA.
+- [x] `[P0]` ⏱️M **توليد QR code للـ TOTP محليًا** — الكود يُرسل سر TOTP إلى `api.qrserver.com` خارجي عند كل تفعيل 2FA.
   - الملف: `archive-server/src/auth/totpService.js:47`
   - الإصلاح: `npm install qrcode` واستبدل الطلب الخارجي بـ `qrcode.toDataURL(otpauthUrl)` — ينتج data-URI محليًا بلا اتصال خارج.
   - المصدر: deep-audit-v2 (S4)، critical.
 
-- [ ] `[P0]` ⏱️S **معالجة استعلامات pgvector بـ Parameterized SQL** — `vectorStr` يُبنى بتسلسل نصي يدوي في خدمة التضمينات.
+- [x] `[P0]` ⏱️S **معالجة استعلامات pgvector بـ Parameterized SQL** — `vectorStr` يُبنى بتسلسل نصي يدوي في خدمة التضمينات.
   - الملف: `archive-server/src/ai/embeddingService.js`
   - الإصلاح: استبدل السلسلة النصية بـ Prisma template literal:
     `await prisma.$queryRaw\`SELECT * FROM embeddings ORDER BY embedding <=> ${vector}::vector LIMIT ${limit}\``
   - المصدر: deep-audit-v2 (S5)، critical.
 
-- [ ] `[P0]` ⏱️S **التحقق من JWT في `searchHandler` عبر `verifyJwt()`** — الكود يُحلّل حمولة التوكن بـ `JSON.parse(atob(payload))` متجاوزًا التحقق من التوقيع.
+- [x] `[P0]` ⏱️S **التحقق من JWT في `searchHandler` عبر `verifyJwt()`** — الكود يُحلّل حمولة التوكن بـ `JSON.parse(atob(payload))` متجاوزًا التحقق من التوقيع.
   - الملف: `archive-server/src/api/searchHandler.js`
   - الإصلاح: استبدل بـ `const payload = await verifyJwt(token)` المستوردة من `src/auth/jwt.js`.
   - المصدر: deep-audit-v2 (S6)، critical.
 
-- [ ] `[P0]` ⏱️S **إصلاح إعادة تعيين كلمة المرور — دمج بدل استبدال السجل** — `put("users", {id, passwordHash})` يحلّ محل سجل المستخدم كاملًا بحقلين فقط.
+- [x] `[P0]` ⏱️S **إصلاح إعادة تعيين كلمة المرور — دمج بدل استبدال السجل** — `put("users", {id, passwordHash})` يحلّ محل سجل المستخدم كاملًا بحقلين فقط.
   - الملف: `archive-server/src/api/server.js:547` (مسار `/api/reset-password`)
   - الإصلاح: احضر المستخدم الحالي أولًا ثم ادمج: `await storage.put("users", { ...existingUser, passwordHash: newHash })`.
   - المصدر: deep-audit-v2 (S7)، critical.
 
-- [ ] `[P0]` ⏱️S **إصلاح IDOR في خادم الحضور (Presence)** — أي مستخدم مصادَق يمكنه البث على أي `recordId` دون تحقق من صلاحية وصوله للسجل.
+- [x] `[P0]` ⏱️S **إصلاح IDOR في خادم الحضور (Presence)** — أي مستخدم مصادَق يمكنه البث على أي `recordId` دون تحقق من صلاحية وصوله للسجل.
   - الملف: `archive-server/src/presence/presenceServer.js:78-91`
   - الإصلاح: قبل إضافة المستخدم لغرفة `recordId` تحقق أنه يملك صلاحية قراءة ذلك السجل عبر `checkPermission(userId, recordId)`.
   - المصدر: deep-audit-v2 (S8)، critical.
 
-- [ ] `[P0]` ⏱️M **نقل JWT Blacklist وResetTokenStore إلى Redis** — القوائم in-memory تُفقد عند إعادة التشغيل وغير متوافقة مع HPA متعدد النسخ.
+- [x] `[P0]` ⏱️M **نقل JWT Blacklist وResetTokenStore إلى Redis** — القوائم in-memory تُفقد عند إعادة التشغيل وغير متوافقة مع HPA متعدد النسخ.
   - الملفات: `archive-server/src/auth/tokenBlacklist.js`، `archive-server/src/auth/resetTokenStore.js`
   - الإصلاح: استخدم Redis Sets مع `SETEX`/`EXPIRE` بـ TTL مساوٍ لانتهاء صلاحية التوكن؛ استخدم Redis client الموجود في `src/cache/`.
   - المصدر: deep-audit-v2 (S1/S2)، critical.
@@ -487,17 +487,17 @@
 
 ### 12.2 أمان — P0 البنية التحتية (K8s)
 
-- [ ] `[P0]` ⏱️M **إضافة `securityContext` لجميع K8s Deployments** — الحاويات تعمل كـ root بدون قيود kernel.
+- [x] `[P0]` ⏱️M **إضافة `securityContext` لجميع K8s Deployments** — الحاويات تعمل كـ root بدون قيود kernel.
   - الملف: `archive-server/k8s/*.yaml` (جميع Deployments)
   - الإصلاح: أضف لكل container: `runAsNonRoot: true`، `runAsUser: 1000`، `readOnlyRootFilesystem: true`، `allowPrivilegeEscalation: false`، `capabilities.drop: ["ALL"]`.
   - المصدر: deep-audit-v2 (K8s-01)، critical.
 
-- [ ] `[P0]` ⏱️M **تطبيق `NetworkPolicy` لعزل الخدمات في K8s** — افتراضيًا أي Pod يتواصل مع أي Pod آخر.
+- [x] `[P0]` ⏱️M **تطبيق `NetworkPolicy` لعزل الخدمات في K8s** — افتراضيًا أي Pod يتواصل مع أي Pod آخر.
   - الملف: `archive-server/k8s/network-policy.yaml` (جديد)
   - الإصلاح: سياسة deny-all افتراضية + allow-list صريح: `app -> postgres` و`app -> redis` فقط.
   - المصدر: deep-audit-v2 (K8s-02).
 
-- [ ] `[P0]` ⏱️S **استبدال قيم `CHANGE_ME` في K8s Secrets** — `k8s/secret.yaml` يحتوي على قيم `CHANGE_ME` ثابتة في المستودع.
+- [x] `[P0]` ⏱️S **استبدال قيم `CHANGE_ME` في K8s Secrets** — `k8s/secret.yaml` يحتوي على قيم `CHANGE_ME` ثابتة في المستودع.
   - الملف: `archive-server/k8s/secret.yaml`
   - الإصلاح: احذف القيم الافتراضية؛ استخدم Kubernetes ExternalSecrets أو Helm `--set` عند النشر؛ أضف فحص في `productionGuard.js`.
   - المصدر: deep-audit-v2 (K8s-03)، critical.
