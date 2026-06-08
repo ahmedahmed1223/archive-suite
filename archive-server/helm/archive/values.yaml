@@ -27,7 +27,7 @@ namespace:
 # ---------------------------------------------------------------------------
 postgres:
   enabled: true
-  image: postgres:18-alpine
+  image: postgres:17-alpine
   storage: 10Gi
   storageClass: ""   # Empty = cluster default StorageClass
   database: archive

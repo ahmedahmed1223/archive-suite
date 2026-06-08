@@ -127,9 +127,15 @@ export const archiveActionKeys = [
   "clearSelection"
 ];
 
+// Guard against concurrent loadAllData calls (React StrictMode double-invoke,
+// simultaneous storage-event + startup, etc.).
+let _loadAllDataInFlight = false;
+
 export function createArchiveActions({ set, get, getAuthStore }) {
   return {
     loadAllData: async () => {
+      if (_loadAllDataInFlight) return;
+      _loadAllDataInFlight = true;
       set({ isLoading: true });
       try {
         const settingsDoc = await dbGet(STORES.SETTINGS, "app_settings").catch(() => null);
@@ -174,6 +180,8 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       } catch (error) {
         set({ isLoading: false, sqliteError: error?.message || "تعذر تحميل البيانات من IndexedDB" });
         get().showToast(error?.message || "تعذر تحميل البيانات", "error");
+      } finally {
+        _loadAllDataInFlight = false;
       }
     },
     setSearchQuery: (searchQuery) => set({ searchQuery }),

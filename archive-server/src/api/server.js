@@ -255,7 +255,8 @@ export function createApiServer({
   const limiters = rateLimit === null ? null : {
     rpc: createRateLimiter({ max: rateLimit.rpcMax ?? 600, windowMs: rateLimit.windowMs ?? 60_000 }),
     login: createRateLimiter({ max: rateLimit.loginMax ?? 10, windowMs: rateLimit.windowMs ?? 60_000 }),
-    reset: createRateLimiter({ max: rateLimit.resetMax ?? 5, windowMs: rateLimit.windowMs ?? 60_000 })
+    reset: createRateLimiter({ max: rateLimit.resetMax ?? 5, windowMs: rateLimit.windowMs ?? 60_000 }),
+    totpDisable: createRateLimiter({ max: 3, windowMs: 15 * 60_000 })
   };
 
   function overLimit(res, bucket, req) {
@@ -665,6 +666,7 @@ export function createApiServer({
     // DELETE /api/auth/totp — disable 2FA. Requires the current TOTP code to
     // prevent account takeover if a session token is stolen.
     if (req.method === "DELETE" && url === "/api/auth/totp") {
+      if (overLimit(res, "totpDisable", req)) return undefined;
       const claims = requireAuthClaims(req, res);
       if (!claims) return undefined;
       try {

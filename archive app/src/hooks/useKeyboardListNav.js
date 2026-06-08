@@ -7,12 +7,18 @@
  *   - Escape: clear selection
  *   - Home/End: jump to first/last item
  */
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export function useKeyboardListNav({ items = [], onSelect, onActivate, multiSelect = true } = {}) {
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const containerRef = useRef(null);
+
+  // Keep refs to the latest callbacks so handlers never capture stale closures.
+  const onSelectRef = useRef(onSelect);
+  const onActivateRef = useRef(onActivate);
+  useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
+  useEffect(() => { onActivateRef.current = onActivate; }, [onActivate]);
 
   const moveFocus = useCallback((direction) => {
     setFocusedIndex((prev) => {
@@ -38,24 +44,24 @@ export function useKeyboardListNav({ items = [], onSelect, onActivate, multiSele
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      onSelect?.(id, next.has(id));
+      onSelectRef.current?.(id, next.has(id));
       return next;
     });
-  }, [onSelect]);
+  }, []);
 
   const selectAll = useCallback(() => {
     const all = new Set(items.map((item) => item.id));
     setSelectedIds(all);
-    items.forEach((item) => onSelect?.(item.id, true));
-  }, [items, onSelect]);
+    items.forEach((item) => onSelectRef.current?.(item.id, true));
+  }, [items]);
 
   const clearSelection = useCallback(() => {
     setSelectedIds((prev) => {
-      prev.forEach((id) => onSelect?.(id, false));
+      prev.forEach((id) => onSelectRef.current?.(id, false));
       return new Set();
     });
     setFocusedIndex(-1);
-  }, [onSelect]);
+  }, []);
 
   // Keyboard handler to attach to the container
   const onKeyDown = useCallback((e) => {
@@ -79,7 +85,7 @@ export function useKeyboardListNav({ items = [], onSelect, onActivate, multiSele
       case "Enter":
         e.preventDefault();
         if (focusedIndex >= 0 && focusedIndex < items.length) {
-          onActivate?.(items[focusedIndex], focusedIndex);
+          onActivateRef.current?.(items[focusedIndex], focusedIndex);
         }
         break;
       case " ":
@@ -102,7 +108,7 @@ export function useKeyboardListNav({ items = [], onSelect, onActivate, multiSele
       default:
         break;
     }
-  }, [focusedIndex, items, moveFocus, toggleSelect, selectAll, clearSelection, onActivate, multiSelect]);
+  }, [focusedIndex, items, moveFocus, toggleSelect, selectAll, clearSelection, multiSelect]);
 
   return {
     containerRef,

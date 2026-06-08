@@ -20,5 +20,8 @@ ENV OCR_LANG=ar
 ENV OCR_USE_GPU=false
 ENV MAX_FILE_SIZE_MB=20
 
+RUN useradd -r -u 1000 ocruser && chown -R ocruser:ocruser /app
+USER 1000:1000
+
 EXPOSE 8788
 CMD ["python", "main.py"]

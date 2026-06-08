@@ -14,7 +14,7 @@ export function PresenceIndicator({ viewers = [], currentUserId }) {
             title={v.username}
             className="w-6 h-6 rounded-full bg-emerald-700 border-2 border-gray-900 flex items-center justify-center text-xs text-white font-medium"
           >
-            {(v.username || "?")[0].toUpperCase()}
+            {(v.username?.trim() || "?").charAt(0).toUpperCase()}
           </div>
         ))}
         {others.length > 3 && (

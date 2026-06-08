@@ -11,6 +11,12 @@ RUN wget -O /tmp/pb.zip \
  && unzip /tmp/pb.zip -d /pb \
  && rm /tmp/pb.zip
 
+RUN addgroup -S pbgroup && adduser -S pbuser -G pbgroup \
+ && mkdir -p /pb_data \
+ && chown pbuser:pbgroup /pb_data /pb
+
+USER pbuser
+
 EXPOSE 8090
 # Data persists in /pb_data (mounted volume). Schema is imported by the operator
 # (see README) — the server does not mutate its own schema at runtime.

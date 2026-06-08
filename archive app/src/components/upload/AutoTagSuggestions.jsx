@@ -24,10 +24,11 @@ export function AutoTagSuggestions({ name = "", summary = "", categories = [], o
       return undefined;
     }
 
+    const controller = new AbortController();
+
     // Debounce: wait 800 ms after user stops typing before firing the request.
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
-      const controller = new AbortController();
       setLoading(true);
       setError(null);
       try {
@@ -47,10 +48,12 @@ export function AutoTagSuggestions({ name = "", summary = "", categories = [], o
       } finally {
         setLoading(false);
       }
-      return () => controller.abort();
     }, 800);
 
-    return () => clearTimeout(timerRef.current);
+    return () => {
+      clearTimeout(timerRef.current);
+      controller.abort();
+    };
   }, [name, summary]);
 
   const accept = (tag) => {
