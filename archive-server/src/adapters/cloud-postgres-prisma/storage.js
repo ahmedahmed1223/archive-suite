@@ -306,6 +306,10 @@ export function createPostgresStorageProvider(prisma, options = {}) {
     },
 
     async getByField(store, field, value) {
+      // Defense-in-depth: validate field name before any Prisma.raw interpolation.
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/.test(field)) {
+        throw Object.assign(new Error(`Invalid field name: ${field}`), { statusCode: 400 });
+      }
       // For the special case where `field` is the primary key column (uid/id),
       // use the unique index directly — fastest path.
       if (field === "uid" || field === "id") {
