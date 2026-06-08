@@ -10,6 +10,7 @@
  */
 
 import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export const DB_NAME = 'VideoArchiveDB';
 export const DB_VERSION = 5;
@@ -52,6 +53,7 @@ function makeSettings(timestamp: string) {
     ui: {
       v1OnboardingCompleted: true,
       v1TourCompleted: true,
+      v1TourVersion: '2026-06-05-media-workstation',
       onboardingCompleted: true,
       onboardingSkippedAt: null,
       lastOnboardingStep: 'daily-start',
@@ -68,6 +70,7 @@ function makeSettings(timestamp: string) {
       deviceId: 'e2e-device',
       deviceName: 'E2E Runner',
       themeVersion: 'v3',
+      helpAutoOpenPending: false
     },
     notifications: {
       durationMs: 5500,
@@ -226,7 +229,19 @@ export async function seedLocalArchive(page: Page) {
 }
 
 /** Navigate to a seeded page and wait for the sidebar nav to appear. */
+export async function openMobileSidebar(page: Page) {
+  const menuButton = page.getByRole('button', { name: /^(فتح القائمة الجانبية|إغلاق القائمة الجانبية)$/ });
+  if (await menuButton.count()) {
+    const nav = page.getByRole('navigation', { name: 'القائمة الجانبية' }).first();
+    if (!(await nav.isVisible({ timeout: 500 }).catch(() => false))) {
+      await menuButton.first().click();
+      await expect(nav).toBeVisible({ timeout: 15_000 });
+    }
+  }
+}
+
 export async function goToPage(page: Page, route: string) {
   await page.goto(`/${route}`, { waitUntil: 'domcontentloaded' });
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await openMobileSidebar(page);
 }

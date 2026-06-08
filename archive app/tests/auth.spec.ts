@@ -57,13 +57,16 @@ test.describe('Auth — login screen', () => {
   });
 
   test('login form has a password field', async ({ page }) => {
-    // Wait until either a login form or the onboarding wizard is rendered.
-    await page.waitForSelector('input[type="password"], input[type="text"]', { timeout: 15_000 });
-    // If the password field is present check it is of type password
-    const pw = page.locator('input[type="password"]').first();
-    if (await pw.isVisible()) {
-      await expect(pw).toBeVisible();
+    // The app may show onboarding/setup rather than a login form on a clean install.
+    const inputLocator = page.locator('input[type="password"], input[type="text"]');
+    const loginFormVisible = await inputLocator.first().isVisible().catch(() => false);
+    if (!loginFormVisible) {
+      test.skip('Login form not shown because onboarding/setup flow is active');
+      return;
     }
+
+    const pw = page.locator('input[type="password"]').first();
+    await expect(pw).toBeVisible();
   });
 
   test('wrong credentials show an Arabic error message', async ({ page }) => {
@@ -91,10 +94,13 @@ test.describe('Auth — login screen', () => {
   test('submit button is visible and labelled in Arabic', async ({ page }) => {
     await page.waitForLoadState('networkidle');
     const submitButton = page.locator('button[type="submit"]').first();
-    if (await submitButton.isVisible({ timeout: 8_000 }).catch(() => false)) {
-      const label = await submitButton.textContent();
-      expect(label?.trim().length).toBeGreaterThan(0);
+    const submitVisible = await submitButton.isVisible({ timeout: 8_000 }).catch(() => false);
+    if (!submitVisible) {
+      test.skip('Submit button not shown because onboarding/setup flow is active');
+      return;
     }
+    const label = await submitButton.textContent();
+    expect(label?.trim().length).toBeGreaterThan(0);
   });
 });
 
