@@ -7,10 +7,15 @@ metadata:
     # cert-manager will provision and renew a Let's Encrypt TLS certificate.
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/proxy-body-size: "256m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     # SSE streams for /api/sync/events must not be buffered.
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    # WebSocket support — required for the /ws presence endpoint.
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
 spec:
   ingressClassName: nginx
   tls:
@@ -21,6 +26,13 @@ spec:
     - host: archive.example.com   # Replace with your actual domain
       http:
         paths:
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: server
+                port:
+                  number: 8787
           - path: /api/
             pathType: Prefix
             backend:

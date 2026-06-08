@@ -10,3 +10,6 @@ pocketbase/pb_data/
 # Prisma 7 generated client — regenerated at build time (prisma generate).
 # Migrations ARE committed (prisma/migrations/), the client is not.
 src/generated/
+
+# k6 load test results
+load-tests/results/*.json

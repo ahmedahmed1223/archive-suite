@@ -8,3 +8,4 @@ export * from "./commandPaletteViewModel.js";
 export * from "./shortcutDialogViewModel.js";
 export { ErrorMessage } from "./ErrorMessage.jsx";
 export { OfflineBanner } from "./OfflineBanner.jsx";
+export { Pagination } from "./Pagination.jsx";

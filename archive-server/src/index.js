@@ -18,6 +18,10 @@ import { loginUser, seedAdminIfMissing } from "./auth/authService.js";
 import { resolveServerConfig } from "./config/serverConfig.js";
 import { assertProductionSecrets } from "./config/productionGuard.js";
 import { logger } from "./logger.js";
+import { startBackupScheduler, stopBackupScheduler } from "./backup/backupScheduler.js";
+import { initMetrics } from "./monitoring/metrics.js";
+import { initRedis, closeRedis } from "./cache/redisCache.js";
+import { startPresenceServer } from "./collaboration/presenceServer.js";
 
 const BACKEND = process.env.BACKEND || "pocketbase";
 const PORT = Number(process.env.API_PORT || 8787);
@@ -62,6 +66,14 @@ async function buildPrismaClient() {
 async function main() {
   assertProductionSecrets(process.env);
 
+  // Initialise Prometheus metrics early so all subsequent startup activity
+  // (DB open, seed, etc.) is covered. Gracefully degrades if prom-client is absent.
+  await initMetrics();
+
+  // Initialise optional Redis cache. No-op when REDIS_URL is absent — the app
+  // runs perfectly without it; Redis only adds a caching layer on top.
+  await initRedis();
+
   let registration;
   let prisma = null;
 
@@ -80,6 +92,9 @@ async function main() {
   } else {
     throw new Error(`Unknown BACKEND "${BACKEND}" — expected "postgres" or "pocketbase".`);
   }
+
+  // Start scheduled backups (no-op when BACKUP_ENABLED is unset).
+  startBackupScheduler(getStorageProvider());
 
   // Auth wiring. When JWT_SECRET is set, /api/rpc requires a Bearer token and
   // /api/auth/login issues one (verified against the users store). Optionally
@@ -120,6 +135,10 @@ async function main() {
     eventBus: createEventBus()
   });
 
+  // Attach WebSocket presence server to the same HTTP server instance.
+  // The ws library hooks into the http upgrade event — no port change needed.
+  startPresenceServer(server);
+
   // Graceful shutdown: drain in-flight connections before exiting so Docker
   // stop and Kubernetes pod evictions don't hard-kill active requests.
   let isShuttingDown = false;
@@ -128,6 +147,9 @@ async function main() {
     if (isShuttingDown) return;
     isShuttingDown = true;
     logger.info({ signal }, "Received signal, draining connections...");
+
+    // Stop the backup scheduler before draining HTTP.
+    stopBackupScheduler();
 
     // Stop accepting new connections; wait for in-flight requests to finish.
     server.close(async () => {
@@ -138,6 +160,9 @@ async function main() {
         await prisma.$disconnect().catch(() => {});
         logger.info("Prisma disconnected.");
       }
+
+      // Close Redis connection gracefully (no-op when Redis was not enabled).
+      await closeRedis();
 
       logger.info("Shutdown complete.");
       process.exit(0);

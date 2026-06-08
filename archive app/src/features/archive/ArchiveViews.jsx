@@ -378,6 +378,7 @@ export function ArchivePagination({ currentPage, totalPages, onPageChange }) {
         type: "button",
         onClick: () => onPageChange(currentPage - 1),
         disabled: currentPage <= 1,
+        "aria-label": "الصفحة السابقة",
         className: `${buttonBase} border-white/10 text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40`,
         children: [jsx(ChevronRight, { className: "h-4 w-4" }), "السابق"]
       }),
@@ -388,9 +389,11 @@ export function ArchivePagination({ currentPage, totalPages, onPageChange }) {
           onClick: () => onPageChange(slot),
           className: `${buttonBase} ${slot === currentPage ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-white"}`,
           "aria-current": slot === currentPage ? "page" : undefined,
+          "aria-label": `صفحة ${slot}`,
           children: formatNumber(slot)
         }, slot) : jsx("span", {
           className: "inline-flex min-h-9 min-w-9 items-center justify-center px-2 text-gray-600",
+          "aria-hidden": "true",
           children: jsx(MoreHorizontal, { className: "h-4 w-4" })
         }, slot))
       }),
@@ -398,6 +401,7 @@ export function ArchivePagination({ currentPage, totalPages, onPageChange }) {
         type: "button",
         onClick: () => onPageChange(currentPage + 1),
         disabled: currentPage >= totalPages,
+        "aria-label": "الصفحة التالية",
         className: `${buttonBase} border-white/10 text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40`,
         children: ["التالي", jsx(ChevronLeft, { className: "h-4 w-4" })]
       })

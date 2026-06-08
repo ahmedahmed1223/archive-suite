@@ -28,6 +28,11 @@ import {
   mergeFileStoreConfig, testDatabaseConnection
 } from "./adminConfig.js";
 import { createRateLimiter, clientIp } from "./rateLimit.js";
+import { listBackups, runBackup } from "../backup/backupScheduler.js";
+import {
+  getMetricsOutput, getContentType,
+  incActiveRequests, decActiveRequests, recordRequest
+} from "../monitoring/metrics.js";
 import { handleOcr } from "./ocrHandler.js";
 import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
 import bcrypt from "bcryptjs";
@@ -355,6 +360,27 @@ export function createApiServer({
     res.setHeader("X-Request-Id", req.id);
     const reqLog = logger.child({ reqId: req.id, method: req.method, url: req.url });
     reqLog.debug({ ip: clientIp(req) }, "incoming request");
+
+    // Prometheus: track active requests and record duration on response finish.
+    // SSE connections never call res.end, so we also listen for req close as a
+    // fallback to keep the active-request gauge accurate.
+    incActiveRequests();
+    const reqStart = Date.now();
+    let metricsRecorded = false;
+    function recordMetrics() {
+      if (metricsRecorded) return;
+      metricsRecorded = true;
+      decActiveRequests();
+      recordRequest(req.method, new URL(req.url || "/", "http://localhost").pathname, res.statusCode, (Date.now() - reqStart) / 1000);
+    }
+    const _origEnd = res.end.bind(res);
+    res.end = function metricsEnd(...args) {
+      res.end = _origEnd;
+      const result = _origEnd(...args);
+      recordMetrics();
+      return result;
+    };
+    req.on("close", recordMetrics);
 
     // Dev CORS: the SPA on :8080 calling the API on another port. In prod the
     // nginx /api proxy keeps everything same-origin so this stays unset.
@@ -1108,6 +1134,54 @@ export function createApiServer({
       if (overLimit(res, "rpc", req)) return undefined;
       if (!requireAuth(req, res)) return undefined;
       return handleSearch(req, res, { provider: resolveStorage(), prisma });
+    }
+
+    // ── Admin: backup management (admin/owner only) ──────────────────────────
+    // GET  /api/admin/backups     — list all backup files with metadata.
+    // POST /api/admin/backups/run — trigger an immediate backup.
+    if (req.method === "GET" && url.split("?")[0] === "/api/admin/backups") {
+      if (!requireAdmin(req, res)) return undefined;
+      return send(res, 200, { ok: true, backups: listBackups() });
+    }
+
+    if (req.method === "POST" && url.split("?")[0] === "/api/admin/backups/run") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      if (!requireAdmin(req, res)) return undefined;
+      try {
+        const result = await runBackup(resolveStorage());
+        return send(res, 200, { ok: true, message: "تمت النسخة الاحتياطية بنجاح.", result });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Backup failed" });
+      }
+    }
+
+    // POST /api/ai/suggest-tags — non-blocking tag + category suggestions for a
+    // record being created/edited. Body: { name, summary, transcription, categories }.
+    // Returns { tags: string[], categoryIds: string[] }.
+    if (req.method === "POST" && url.split("?")[0] === "/api/ai/suggest-tags") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      if (!requireAuth(req, res)) return undefined;
+      try {
+        const provider = aiResolveProvider();
+        if (typeof provider?.suggestTags !== "function") {
+          return send(res, 503, { ok: false, error: "خدمة اقتراح الوسوم غير مُهيّأة على الخادم." });
+        }
+        const body = await readJsonBody(req);
+        const { name, summary, transcription, categories } = body || {};
+        const result = await provider.suggestTags({ name, summary, transcription, categories });
+        return send(res, 200, { ok: true, tags: result?.tags ?? [], categoryIds: result?.categoryIds ?? [] });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Tag suggestion failed" });
+      }
+    }
+
+    // Prometheus scrape endpoint — no auth (protected at network level; bind to
+    // localhost in docker-compose so it is never reachable from the public internet).
+    if (req.method === "GET" && pathname === "/metrics") {
+      const output = await getMetricsOutput();
+      res.writeHead(200, { "Content-Type": getContentType() });
+      res.end(output);
+      return;
     }
 
     return send(res, 404, { ok: false, error: "Not found" });

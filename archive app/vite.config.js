@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
+import { visualizer } from "rollup-plugin-visualizer";
 
 // Three build targets share one source tree (ports + adapters keep feature
 // code backend-agnostic):
@@ -17,11 +18,14 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 //
 // Use `vite build` for spa, `vite build --mode cloud`, or
 // `vite build --mode aistudio` — the `--mode` flag works cross-platform.
+//
+// Run `pnpm analyze` or `vite build --mode analyze` to generate dist/bundle-stats.html
 export default defineConfig(({ mode }) => {
+  const isAnalyze = mode === "analyze";
   const target = mode === "cloud" ? "cloud" : mode === "aistudio" ? "aistudio" : "spa";
   const isCloud = target === "cloud";
   const isAistudio = target === "aistudio";
-  const inlineSingleFile = !isCloud;
+  const inlineSingleFile = !isCloud && !isAnalyze;
   const outDir = isCloud ? "dist-cloud" : isAistudio ? "dist-aistudio" : "dist";
 
   return {
@@ -29,7 +33,17 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       // Single-file inlining for SPA + AI Studio; cloud target keeps chunked assets.
-      ...(inlineSingleFile ? [viteSingleFile({ removeViteModuleLoader: true })] : [])
+      ...(inlineSingleFile ? [viteSingleFile({ removeViteModuleLoader: true })] : []),
+      // Bundle analysis — only active when `--mode analyze` is passed.
+      ...(isAnalyze
+        ? [visualizer({
+            filename: "dist/bundle-stats.html",
+            open: false,
+            gzipSize: true,
+            brotliSize: true,
+            template: "treemap",
+          })]
+        : []),
     ],
     define: {
       __VITE_TARGET__: JSON.stringify(target),
