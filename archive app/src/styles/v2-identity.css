@@ -102,6 +102,8 @@ html.light {
                         0 8px 16px -4px rgba(15,17,21,0.08);
 }
 
+@layer v2-identity {
+
 /*
  * Token re-bind: when v2 is active, the v1 names (--va-action etc.)
  * point to v2 values so components reading the v1 tokens
@@ -395,22 +397,22 @@ html.light .va-2-chip-info { color: color-mix(in srgb, var(--va-2-info) 55%, #00
 /* ===================================================================
  * PR D — v2 component enhancements (attribute-scoped).
  * Active only under html[data-theme-version="v2"]. v1 untouched.
- * Uses !important to override v1's !important declarations.
+ * Uses to override v1's declarations.
  * =================================================================== */
 
 /* Primary buttons — gradient fill + glow + hover lift. */
 html[data-theme-version="v2"] .va-primary-button,
 html[data-theme-version="v2"] .va-action-button {
-  background: linear-gradient(180deg, var(--va-2-accent), var(--va-2-accent-strong)) !important;
-  border-color: transparent !important;
-  border-radius: var(--va-2-radius-md) !important;
-  box-shadow: var(--va-2-shadow-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
-  transition: transform var(--va-2-duration-fast) ease, box-shadow var(--va-2-duration-fast) ease !important;
+  background: linear-gradient(180deg, var(--va-2-accent), var(--va-2-accent-strong));
+  border-color: transparent;
+  border-radius: var(--va-2-radius-md);
+  box-shadow: var(--va-2-shadow-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: transform var(--va-2-duration-fast) ease, box-shadow var(--va-2-duration-fast) ease;
 }
 html[data-theme-version="v2"] .va-primary-button:hover,
 html[data-theme-version="v2"] .va-action-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 25px 50px -20px var(--va-2-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 25px 50px -20px var(--va-2-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 html[data-theme-version="v2"] .va-primary-button:active,
 html[data-theme-version="v2"] .va-action-button:active {
@@ -420,12 +422,12 @@ html[data-theme-version="v2"] .va-action-button:active {
 /* Secondary + tool buttons — refined radius + accent hover border. */
 html[data-theme-version="v2"] .va-secondary-button,
 html[data-theme-version="v2"] .va-tool-button {
-  border-radius: var(--va-2-radius-md) !important;
-  transition: background var(--va-2-duration-fast) ease, border-color var(--va-2-duration-fast) ease !important;
+  border-radius: var(--va-2-radius-md);
+  transition: background var(--va-2-duration-fast) ease, border-color var(--va-2-duration-fast) ease;
 }
 html[data-theme-version="v2"] .va-secondary-button:hover,
 html[data-theme-version="v2"] .va-tool-button:hover {
-  border-color: color-mix(in srgb, var(--va-2-accent) 45%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-2-accent) 45%, transparent);
 }
 
 /* Cards — top-light gradient overlay + hover lift + larger radius. */
@@ -434,59 +436,59 @@ html[data-theme-version="v2"] .va-data-card,
 html[data-theme-version="v2"] .va-video-card,
 html[data-theme-version="v2"] .va-action-card,
 html[data-theme-version="v2"] .va-preview-panel {
-  border-radius: var(--va-2-radius-lg) !important;
+  border-radius: var(--va-2-radius-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 30%),
-    var(--va-2-surface) !important;
+    var(--va-2-surface);
   transition: transform var(--va-2-duration-fast) ease,
               border-color var(--va-2-duration-fast) ease,
-              box-shadow var(--va-2-duration-fast) ease !important;
+              box-shadow var(--va-2-duration-fast) ease;
 }
 html[data-theme-version="v2"] .va-card:hover,
 html[data-theme-version="v2"] .va-data-card:hover,
 html[data-theme-version="v2"] .va-video-card:hover,
 html[data-theme-version="v2"] .va-action-card:hover {
   transform: translateY(-2px);
-  border-color: var(--va-2-line-strong) !important;
-  box-shadow: var(--va-2-shadow-md) !important;
+  border-color: var(--va-2-line-strong);
+  box-shadow: var(--va-2-shadow-md);
 }
 
 /* Metric cards — keep their existing gradient base but add v2 radius
  * and a soft accent-tinted top light. */
 html[data-theme-version="v2"] .va-metric-card {
-  border-radius: var(--va-2-radius-lg) !important;
+  border-radius: var(--va-2-radius-lg);
   background:
     radial-gradient(circle at top, color-mix(in srgb, var(--va-2-accent) 5%, transparent), transparent 45%),
-    linear-gradient(180deg, var(--va-2-surface-2), var(--va-2-surface)) !important;
+    linear-gradient(180deg, var(--va-2-surface-2), var(--va-2-surface));
 }
 
 /* Page hero — cinematic multi-layer gradient. */
 html[data-theme-version="v2"] .va-page-hero,
 html[data-theme-version="v2"] .va-page-hero-compact,
 html[data-theme-version="v2"] .va-panel-premium {
-  border-radius: var(--va-2-radius-xl) !important;
+  border-radius: var(--va-2-radius-xl);
   background:
     radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--va-2-accent) 10%, transparent), transparent 40%),
-    linear-gradient(160deg, var(--va-2-surface-2), var(--va-2-surface) 60%) !important;
+    linear-gradient(160deg, var(--va-2-surface-2), var(--va-2-surface) 60%);
 }
 
 /* Tinted surfaces — subtle gradient for depth. */
 html[data-theme-version="v2"] .va-filter-surface,
 html[data-theme-version="v2"] .va-control-surface,
 html[data-theme-version="v2"] .va-tab-surface {
-  border-radius: var(--va-2-radius-lg) !important;
+  border-radius: var(--va-2-radius-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 50%),
-    var(--va-2-surface) !important;
+    var(--va-2-surface);
 }
 
 /* Sidebar active item — full gradient pill instead of edge bar. */
 html[data-theme-version="v2"] .va-sidebar-item-active {
-  border-radius: var(--va-2-radius-md) !important;
+  border-radius: var(--va-2-radius-md);
   background: linear-gradient(180deg,
     color-mix(in srgb, var(--va-2-accent) 22%, transparent),
-    color-mix(in srgb, var(--va-2-accent) 12%, transparent)) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+    color-mix(in srgb, var(--va-2-accent) 12%, transparent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Inputs — accent focus glow ring on main-area inputs. Scoped to
@@ -497,9 +499,9 @@ html[data-theme-version="v2"] .va-sidebar-item-active {
 html[data-theme-version="v2"] main input:not([type="checkbox"]):not([type="radio"]):focus,
 html[data-theme-version="v2"] main textarea:focus,
 html[data-theme-version="v2"] main select:focus {
-  border-color: var(--va-2-accent) !important;
-  box-shadow: 0 0 0 3px var(--va-2-accent-glow) !important;
-  outline: none !important;
+  border-color: var(--va-2-accent);
+  box-shadow: 0 0 0 3px var(--va-2-accent-glow);
+  outline: none;
 }
 
 /* Chips / tags / badges — larger radius, refined border. */
@@ -508,13 +510,13 @@ html[data-theme-version="v2"] .va-tag-chip,
 html[data-theme-version="v2"] .va-category-pill,
 html[data-theme-version="v2"] .va-status-badge,
 html[data-theme-version="v2"] .va-count-badge {
-  border-radius: var(--va-2-radius-sm) !important;
+  border-radius: var(--va-2-radius-sm);
 }
 
 /* Floating action bar — elevated v2 surface with shadow. */
 html[data-theme-version="v2"] .va-floating-action-bar {
-  border-radius: var(--va-2-radius-xl) !important;
-  box-shadow: var(--va-2-shadow-lg) !important;
+  border-radius: var(--va-2-radius-xl);
+  box-shadow: var(--va-2-shadow-lg);
 }
 
 /* ===================================================================
@@ -535,7 +537,7 @@ html[data-theme-version="v2"] .va-card,
 html[data-theme-version="v2"] .va-data-card,
 html[data-theme-version="v2"] .va-video-card,
 html[data-theme-version="v2"] .va-action-card {
-  transition-timing-function: var(--va-2-ease-spring) !important;
+  transition-timing-function: var(--va-2-ease-spring);
 }
 
 /* Page-enter — a slightly larger, smoother rise than v1. Honors the
@@ -552,25 +554,25 @@ html[data-theme-version="v2"] .va-motion-page {
  * an ancestor of .va-app-shell[off] is an ancestor of the page. */
 html[data-theme-version="v2"] .va-app-shell[data-motion="off"] .va-motion-page,
 html[data-theme-version="v2"] .va-app-shell[data-motion="reduced"] .va-motion-page {
-  animation: none;
+  animation: none !important;
 }
 
 /* Glassmorphism modal backdrops + cards for v2. The base overlay
  * already blurs 10px; v2 deepens it and tints the card surface. */
 html[data-theme-version="v2"] .va-dialog-overlay {
-  background: rgba(2, 6, 23, 0.55) !important;
-  backdrop-filter: blur(20px) saturate(1.1) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.1) !important;
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
 }
 html[data-theme-version="v2"] .va-dialog-card,
 html[data-theme-version="v2"] [data-slot="dialog-content"],
 html[data-theme-version="v2"] [data-slot="alert-dialog-content"] {
-  border-radius: var(--va-2-radius-2xl) !important;
+  border-radius: var(--va-2-radius-2xl);
   background:
     radial-gradient(circle at top, color-mix(in srgb, var(--va-2-accent) 6%, transparent), transparent 45%),
-    var(--va-2-surface-2) !important;
-  border: 1px solid var(--va-2-line-strong) !important;
-  box-shadow: var(--va-2-shadow-lg) !important;
+    var(--va-2-surface-2);
+  border: 1px solid var(--va-2-line-strong);
+  box-shadow: var(--va-2-shadow-lg);
 }
 
 /* Dialog entry — scale + rise with spring easing. */
@@ -605,14 +607,14 @@ html.light[data-theme-version="v2"] .va-preview-panel,
 html.light[data-theme-version="v2"] .va-filter-surface,
 html.light[data-theme-version="v2"] .va-control-surface,
 html.light[data-theme-version="v2"] .va-tab-surface {
-  background: var(--va-2-surface) !important;
+  background: var(--va-2-surface);
   box-shadow: var(--va-2-shadow-sm);
 }
 html.light[data-theme-version="v2"] .va-card:hover,
 html.light[data-theme-version="v2"] .va-data-card:hover,
 html.light[data-theme-version="v2"] .va-video-card:hover,
 html.light[data-theme-version="v2"] .va-action-card:hover {
-  box-shadow: var(--va-2-shadow-md) !important;
+  box-shadow: var(--va-2-shadow-md);
 }
 
 /* Light-mode hero — softer accent radial over white. */
@@ -621,12 +623,12 @@ html.light[data-theme-version="v2"] .va-page-hero-compact,
 html.light[data-theme-version="v2"] .va-panel-premium {
   background:
     radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--va-2-accent) 8%, transparent), transparent 42%),
-    var(--va-2-surface-2) !important;
+    var(--va-2-surface-2);
 }
 
 /* Light-mode modal backdrop — lighter scrim, same blur. */
 html.light[data-theme-version="v2"] .va-dialog-overlay {
-  background: rgba(15, 17, 21, 0.28) !important;
+  background: rgba(15, 17, 21, 0.28);
 }
 
 /*
@@ -660,7 +662,7 @@ html.light[data-theme-version="v2"] .va-dialog-overlay {
  * DataCenter metric values). Remap *naked* white text (text that sits
  * directly on a themed surface and carries no background of its own) to the
  * strong text token in light mode. Buttons (`.va-primary-button` sets
- * `color:#fff !important`), links, and any element with its own `bg-*`
+ * `color:#fff`), links, and any element with its own `bg-*`
  * (chips/badges on a colored fill) are excluded so they keep white text.
  */
 html.light[data-theme-version="v2"] :is(
@@ -681,7 +683,7 @@ html.light[data-theme-version="v2"] :is(
  * currentColor) in light mode. Remap the light accent text utilities to a
  * darker accent shade in light mode; the dark text stays legible on the
  * light tint. Solid accent buttons keep white via their own
- * `color:#fff !important`, so they are unaffected.
+ * `color:#fff`, so they are unaffected.
  */
 html.light[data-theme-version="v2"] :is(.text-emerald-100, .text-emerald-200, .text-emerald-300) { color: #047857; }
 html.light[data-theme-version="v2"] :is(.text-amber-100, .text-amber-200, .text-amber-300)       { color: #b45309; }
@@ -697,6 +699,24 @@ html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-amber-100, .t
 html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-red-100, .text-red-200, .text-red-300)             { color: #fca5a5; }
 html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-blue-100, .text-blue-200, .text-blue-300)          { color: #93c5fd; }
 html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-cyan-200, .text-cyan-300)                          { color: #67e8f9; }
+
+/* Custom premium classes for onboarding option cards */
+.va-onboarding-shell .va-onboarding-option {
+  border: 1px solid var(--va-line-soft);
+  background: var(--va-ink-900);
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.va-onboarding-shell .va-onboarding-option:hover {
+  border-color: color-mix(in srgb, var(--va-action) 35%, transparent);
+  background: var(--va-ink-850);
+  transform: translateY(-2px);
+}
+.va-onboarding-shell .va-onboarding-option-active {
+  border-color: var(--va-action);
+  background: color-mix(in srgb, var(--va-action) 12%, transparent);
+  color: #ffffff;
+  box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--va-action) 15%, transparent);
+}
 
 /*
  * Range slider (Windows-Explorer-style grid density control). Themed track +
@@ -739,3 +759,5 @@ html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-cyan-200, .te
 .va-range:focus-visible {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--va-action) 55%, transparent);
 }
+
+} /* end @layer v2-identity */

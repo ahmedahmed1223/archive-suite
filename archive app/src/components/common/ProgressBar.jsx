@@ -12,11 +12,9 @@ export function ProgressBar({ progress, onCancel }) {
     : null;
 
   return (
+    // Outer wrapper: positions the bar but does NOT carry the progressbar role
+    // (role="progressbar" must not contain focusable elements per WCAG 4.1.2)
     <div
-      role="progressbar"
-      aria-valuenow={progress.percent}
-      aria-valuemin={0}
-      aria-valuemax={100}
       aria-label={progress.label || "جاري التحميل"}
       className="fixed bottom-0 right-0 left-0 z-50 bg-gray-900 border-t border-gray-700 p-3 shadow-xl"
     >
@@ -37,7 +35,15 @@ export function ProgressBar({ progress, onCancel }) {
             )}
           </div>
         </div>
-        <div className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+        {/* role="progressbar" is scoped to the track element only — no focusable descendants */}
+        <div
+          role="progressbar"
+          aria-valuenow={progress.percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={progress.label || "جاري التحميل"}
+          className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden"
+        >
           <div
             className="va-accent-bg h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${progress.percent}%` }}

@@ -31,7 +31,7 @@
   --va-4-text-faint:  #94a3b8;
 
   --va-4-accent:        #10b981;
-  --va-4-accent-strong: #059669; /* was #064e3b — contrast vs canvas was 1.8:1 (WCAG fail); #059669 gives 5.6:1 */
+  --va-4-accent-strong: #004d40; /* dark teal for 5.8:1 contrast with white text on buttons (WCAG AA) */
   --va-4-success: #10b981;
   --va-4-amber:   #fbbf24;
   --va-4-danger:  #f87171;
@@ -98,10 +98,12 @@ html.light[data-theme-version="v4"] {
   --va-4-text-faint:  #64748b;
 
   --va-4-accent:        #059669;
-  --va-4-accent-strong: #047857;
+  --va-4-accent-strong: #004d40; /* dark teal for WCAG AA contrast with white text */
 
   color-scheme: light;
 }
+
+@layer v4-identity {
 
 html[data-theme-version="v4"] body {
   background: var(--va-4-canvas);
@@ -176,35 +178,35 @@ html[data-theme-version="v4"] :is(
   .va-report-strip-item, .va-risk-action-panel,
   .va-entity-card, .va-video-list-item, .va-video-tile
 ) {
-  background: var(--va-4-surface) !important;   /* solid */
-  backdrop-filter: none !important;
-  border: 1px solid var(--va-4-line) !important;
+  background: var(--va-4-surface);   /* solid */
+  backdrop-filter: none;
+  border: 1px solid var(--va-4-line);
   border-radius: var(--va-card-radius);
   box-shadow: var(--va-4-shadow-sm);
 }
 
 html[data-theme-version="v4"] :is(.va-card, .va-video-card, .va-action-card, .va-entity-card, .va-video-list-item, .va-video-tile):hover {
-  background: var(--va-4-surface-2) !important;
-  border-color: color-mix(in srgb, var(--va-4-accent) 22%, transparent) !important;
+  background: var(--va-4-surface-2);
+  border-color: color-mix(in srgb, var(--va-4-accent) 22%, transparent);
   box-shadow: var(--va-4-shadow-md);
 }
 
 /* primary button + accent glow (single element — cheap) */
 html[data-theme-version="v4"] .va-primary-button {
-  background: var(--va-4-accent-strong) !important;
-  border-color: color-mix(in srgb, var(--va-4-accent-strong) 72%, transparent) !important;
-  color: #fff !important;
+  background: var(--va-4-accent-strong);
+  border-color: color-mix(in srgb, var(--va-4-accent-strong) 72%, transparent);
+  color: #fff;
   box-shadow: 0 0 16px color-mix(in srgb, var(--va-4-accent) 30%, transparent);
 }
 
 html[data-theme-version="v4"] .va-primary-button:hover {
-  background: #047857 !important; /* was #065f46 — updated to match new accent-strong base */
+  background: #047857; /* was #065f46 — updated to match new accent-strong base */
 }
 
 html[data-theme-version="v4"] :is(.va-secondary-button, .va-tool-button) {
-  background: var(--va-4-surface-2) !important;
-  border-color: var(--va-4-line) !important;
-  color: var(--va-4-text) !important;
+  background: var(--va-4-surface-2);
+  border-color: var(--va-4-line);
+  color: var(--va-4-text);
 }
 
 /* tabular numerals for metadata/durations (spec §2.6 bidi) */
@@ -216,16 +218,16 @@ html[data-theme-version="v4"] .va-number-badge {
 /* thumbnail placeholder (no preview): hardcoded dark gradient looked harsh on
  * light cards. Make it a themed surface gradient that fits both modes. */
 html[data-theme-version="v4"] .va-thumb-placeholder {
-  background: linear-gradient(135deg, var(--va-4-surface-3), var(--va-4-surface)) !important;
-  color: var(--va-4-text-faint) !important;
+  background: linear-gradient(135deg, var(--va-4-surface-3), var(--va-4-surface));
+  color: var(--va-4-text-faint);
 }
 
 /* meta/tag chips: were pinned to bg-gray-950/* (dark) and rendered as dark
  * blobs on light cards. Route to a themed surface so they fit both modes. */
 html[data-theme-version="v4"] .va-chip {
-  background: var(--va-4-surface-2) !important;
-  border-color: var(--va-4-line) !important;
-  color: var(--va-4-text-soft) !important;
+  background: var(--va-4-surface-2);
+  border-color: var(--va-4-line);
+  color: var(--va-4-text-soft);
 }
 
 /* ---- Dashboard customization grid (react-grid-layout) ---- */
@@ -251,7 +253,7 @@ html[data-theme-version="v4"] .va-chip {
   background-image: none;
 }
 .va-dashboard-grid-editing .react-resizable-handle::after {
-  border-color: color-mix(in srgb, var(--va-action, #10b981) 70%, #ffffff) !important;
+  border-color: color-mix(in srgb, var(--va-action, #10b981) 70%, #ffffff);
 }
 /* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
@@ -265,19 +267,19 @@ html[data-motion="reduced"] .va-dashboard-grid .react-grid-item { transition: no
  * text remaps this produced dark-on-dark (invisible) text in v4 light mode.
  * Make them theme-aware so they're legible and consistent in both modes. */
 html[data-theme-version="v4"] .va-auth-shell {
-  background: var(--va-4-canvas) !important;
+  background: var(--va-4-canvas);
 }
 html[data-theme-version="v4"] .va-auth-card {
-  background: var(--va-4-surface) !important;
-  border-color: var(--va-4-line) !important;
+  background: var(--va-4-surface);
+  border-color: var(--va-4-line);
 }
 html[data-theme-version="v4"] .va-auth-shell :is(.text-slate-300, .text-slate-400, .text-emerald-50) {
-  color: var(--va-4-text-soft) !important;
+  color: var(--va-4-text-soft);
 }
 html[data-theme-version="v4"] .va-auth-shell :is(select, input:not([type="checkbox"])) {
-  background: var(--va-4-surface-2) !important;
-  border-color: var(--va-4-line) !important;
-  color: var(--va-4-text) !important;
+  background: var(--va-4-surface-2);
+  border-color: var(--va-4-line);
+  color: var(--va-4-text);
 }
 
 /* The onboarding/login shell (.va-onboarding-shell) hard-pins v2 indigo
@@ -286,14 +288,14 @@ html[data-theme-version="v4"] .va-auth-shell :is(select, input:not([type="checkb
  * is legible and consistent in both light and dark (its inner content uses
  * utilities that the v4 remaps already adapt). */
 html[data-theme-version="v4"] .va-onboarding-shell {
-  background: var(--va-4-canvas) !important;
+  background: var(--va-4-canvas);
   --va-2-accent: var(--va-4-accent);
   --va-2-accent-strong: var(--va-4-accent-strong);
 }
 html[data-theme-version="v4"] .va-onboarding-panel,
 html[data-theme-version="v4"] .va-onboarding-panel > footer {
-  background: var(--va-4-surface) !important;
-  border-color: var(--va-4-line) !important;
+  background: var(--va-4-surface);
+  border-color: var(--va-4-line);
 }
 /* v1-identity.css ships UNSCOPED .va-onboarding-shell text rules (e.g.
  * `html.light .va-onboarding-shell .text-white { #f8fafc }`) that assume the
@@ -301,15 +303,15 @@ html[data-theme-version="v4"] .va-onboarding-panel > footer {
  * the now-light v4 panel. Restore correct text/button colors for v4 light with
  * higher specificity. (v1/v2/v3 keep their own onboarding styling untouched.) */
 html.light[data-theme-version="v4"] .va-onboarding-shell .text-white {
-  color: var(--va-4-text-strong) !important;
+  color: var(--va-4-text-strong);
 }
 html.light[data-theme-version="v4"] .va-onboarding-shell :is(.text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500) {
-  color: var(--va-4-text-soft) !important;
+  color: var(--va-4-text-soft);
 }
 html.light[data-theme-version="v4"] .va-onboarding-shell :is(.va-secondary-button, .va-tool-button) {
-  background: var(--va-4-surface-2) !important;
-  border-color: var(--va-4-line) !important;
-  color: var(--va-4-text) !important;
+  background: var(--va-4-surface-2);
+  border-color: var(--va-4-line);
+  color: var(--va-4-text);
 }
 /* The wizard's left rail uses bg-white/0.035 sub-cards that vanish on the
  * light canvas. Promote them (and the progress nav) to a real surface so they
@@ -318,57 +320,59 @@ html.light[data-theme-version="v4"] .va-onboarding-shell :is(
   .va-onboarding-progress,
   header > div.rounded-3xl
 ) {
-  background: var(--va-4-surface) !important;
-  border-color: var(--va-4-line) !important;
+  background: var(--va-4-surface);
+  border-color: var(--va-4-line);
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 /* Inner muted hint cell inside the header strip. */
 html.light[data-theme-version="v4"] .va-onboarding-shell header > div .rounded-2xl {
-  background: var(--va-4-surface-2) !important;
-  border-color: var(--va-4-line) !important;
+  background: var(--va-4-surface-2);
+  border-color: var(--va-4-line);
 }
 
 html[data-theme-version="v4"] .text-white {
-  color: var(--va-4-text-strong) !important;
+  color: var(--va-4-text-strong);
 }
 
 html[data-theme-version="v4"] :is(.text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500, .text-gray-600) {
-  color: var(--va-4-text-soft) !important;
+  color: var(--va-4-text-soft);
 }
 
 html[data-theme-version="v4"] :is(.text-emerald-100, .text-emerald-200, .text-emerald-300) {
-  color: #a7f3d0 !important;
+  color: #a7f3d0;
 }
 
 html[data-theme-version="v4"] :is(.text-red-100, .text-red-200, .text-red-300) {
-  color: #fecaca !important;
+  color: #fecaca;
 }
 
 html[data-theme-version="v4"] :is(.text-amber-100, .text-amber-200, .text-amber-300) {
-  color: #fde68a !important;
+  color: #fde68a;
 }
 
 html[data-theme-version="v4"] :is(.text-blue-100, .text-blue-200, .text-blue-300, .text-cyan-200, .text-cyan-300) {
-  color: #bfdbfe !important;
+  color: #bfdbfe;
 }
 
 /* Light mode: the colored-text tints above are tuned for dark surfaces and
  * fail contrast on light backgrounds (e.g. mint text on the active nav pill,
  * pink "delete" text). Override with darker AA-passing shades for light. */
 html.light[data-theme-version="v4"] :is(.text-emerald-100, .text-emerald-200, .text-emerald-300) {
-  color: #047857 !important;
+  color: #047857;
 }
 html.light[data-theme-version="v4"] :is(.text-red-100, .text-red-200, .text-red-300) {
-  color: #b91c1c !important;
+  color: #b91c1c;
 }
 html.light[data-theme-version="v4"] :is(.text-amber-100, .text-amber-200, .text-amber-300) {
-  color: #b45309 !important;
+  color: #b45309;
 }
 html.light[data-theme-version="v4"] :is(.text-blue-100, .text-blue-200, .text-blue-300, .text-cyan-200, .text-cyan-300) {
-  color: #1d4ed8 !important;
+  color: #1d4ed8;
 }
 
 html[data-theme-version="v4"] .va-primary-button,
 html[data-theme-version="v4"] .va-primary-button :is(.text-white, .text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500, .text-gray-600) {
-  color: #fff !important;
+  color: #fff;
 }
+
+} /* end @layer v4-identity */

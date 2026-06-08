@@ -69,6 +69,8 @@ html.light {
   --color-border: #d4d6dc;
 }
 
+@layer v1-identity {
+
 body {
   background: var(--va-ink-950);
   color: var(--va-text);
@@ -271,20 +273,20 @@ html.light .va-surface-raised {
 .va-app-shell[data-card-style="outlined"] .va-data-card,
 .va-app-shell[data-card-style="outlined"] .va-panel-premium,
 .va-app-shell[data-card-style="outlined"] .va-page-hero {
-  background: transparent !important;
-  backdrop-filter: none !important;
-  box-shadow: none !important;
-  border-color: color-mix(in srgb, var(--va-action) 22%, rgba(148, 163, 184, 0.2)) !important;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--va-action) 22%, rgba(148, 163, 184, 0.2));
 }
 
 .va-app-shell[data-card-style="minimal"] .va-card,
 .va-app-shell[data-card-style="minimal"] .va-data-card,
 .va-app-shell[data-card-style="minimal"] .va-page-hero {
-  background: transparent !important;
-  backdrop-filter: none !important;
-  box-shadow: none !important;
-  border-color: transparent !important;
-  padding-inline: 0 !important;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+  border-color: transparent;
+  padding-inline: 0;
 }
 
 .va-app-shell[data-density="compact"] {
@@ -302,7 +304,7 @@ html.light .va-surface-raised {
 .va-app-shell[data-density="compact"] .va-data-card,
 .va-app-shell[data-density="compact"] .va-control-surface,
 .va-app-shell[data-density="compact"] .va-filter-surface {
-  padding: 0.9rem !important;
+  padding: 0.9rem;
 }
 
 .va-app-shell[data-density="compact"] .va-metric-card,
@@ -325,17 +327,17 @@ html.light .va-surface-raised {
 .va-data-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--va-line-soft) !important;
-  background: var(--va-ink-900) !important;
+  border: 1px solid var(--va-line-soft);
+  background: var(--va-ink-900);
   box-shadow: var(--va-shadow-card);
 }
 
 main section[class*="bg-gradient-to-l"][class*="from-gray-900"] {
   position: relative;
   overflow: hidden;
-  border-color: var(--va-line-soft) !important;
-  background: var(--va-ink-900) !important;
-  box-shadow: var(--va-shadow-card) !important;
+  border-color: var(--va-line-soft);
+  background: var(--va-ink-900);
+  box-shadow: var(--va-shadow-card);
 }
 
 main section[class*="bg-gradient-to-l"][class*="from-gray-900"]::before {
@@ -357,17 +359,17 @@ main section[class*="bg-gray-900/45"],
 main section[class*="bg-gray-900/50"],
 main div[class*="bg-gray-900/45"],
 main div[class*="bg-gray-900/50"] {
-  border-color: rgba(148, 163, 184, 0.13) !important;
+  border-color: rgba(148, 163, 184, 0.13);
   background:
     linear-gradient(180deg, rgba(20, 32, 51, 0.82), rgba(8, 19, 34, 0.62)),
-    var(--va-ink-900) !important;
+    var(--va-ink-900);
 }
 
 main button[class*="bg-emerald-700"],
 main button[class*="bg-emerald-600"] {
   border: 1px solid var(--va-action-strong);
-  background: var(--va-action) !important;
-  color: #ffffff !important;
+  background: var(--va-action);
+  color: #ffffff;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12) inset, 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
@@ -392,7 +394,7 @@ main [class*="text-emerald-300"],
 main [class*="text-emerald-500"],
 .va-onboarding-shell [class*="text-emerald-400"],
 .va-onboarding-shell [class*="text-emerald-300"] {
-  color: var(--va-action) !important;
+  color: var(--va-action);
 }
 
 /* Lighter accent text (used on accent-tinted backgrounds — chips/badges). */
@@ -401,17 +403,17 @@ main [class*="text-emerald-100"],
 main [class*="text-emerald-50"],
 .va-onboarding-shell [class*="text-emerald-200"],
 .va-onboarding-shell [class*="text-emerald-100"] {
-  color: color-mix(in srgb, var(--va-action) 28%, #ffffff) !important;
+  color: color-mix(in srgb, var(--va-action) 28%, #ffffff);
 }
 
 /* Borders — one alpha for the 500 family, slightly stronger for 400. */
 main [class*="border-emerald-500"],
 .va-onboarding-shell [class*="border-emerald-500"] {
-  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent);
 }
 main [class*="border-emerald-400"],
 .va-onboarding-shell [class*="border-emerald-400"] {
-  border-color: color-mix(in srgb, var(--va-action) 46%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-action) 46%, transparent);
 }
 
 /* Soft tinted backgrounds (chips, badges, hover fills). Covers the /10 /12
@@ -420,7 +422,7 @@ main [class*="border-emerald-400"],
 main [class*="bg-emerald-500"],
 main [class*="bg-emerald-400"],
 .va-onboarding-shell [class*="bg-emerald-500"] {
-  background-color: color-mix(in srgb, var(--va-action) 15%, transparent) !important;
+  background-color: color-mix(in srgb, var(--va-action) 15%, transparent);
 }
 
 /* ── Light-mode parity ──
@@ -433,28 +435,28 @@ html.light main [class*="text-emerald-200"],
 html.light main [class*="text-emerald-100"],
 html.light .va-onboarding-shell [class*="text-emerald-300"],
 html.light .va-onboarding-shell [class*="text-emerald-200"] {
-  color: var(--va-action-strong) !important;
+  color: var(--va-action-strong);
 }
 
 main input,
 main select,
 main textarea {
-  border-color: var(--va-line) !important;
-  background-color: var(--va-ink-950) !important;
-  color: var(--va-text-strong) !important;
+  border-color: var(--va-line);
+  background-color: var(--va-ink-950);
+  color: var(--va-text-strong);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 main input::placeholder,
 main textarea::placeholder {
-  color: var(--va-text-faint) !important;
+  color: var(--va-text-faint);
 }
 
 main input:focus,
 main select:focus,
 main textarea:focus {
-  background-color: var(--va-ink-950) !important;
-  border-color: var(--va-action) !important;
+  background-color: var(--va-ink-950);
+  border-color: var(--va-action);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-action) 18%, transparent);
   outline: none;
 }
@@ -462,16 +464,16 @@ main textarea:focus {
 html.light main input,
 html.light main select,
 html.light main textarea {
-  border-color: var(--color-border) !important;
-  background-color: var(--color-bg-surface) !important;
-  color: var(--color-text-primary) !important;
+  border-color: var(--color-border);
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-primary);
 }
 
 html.light main input:focus,
 html.light main select:focus,
 html.light main textarea:focus {
-  background-color: var(--color-bg-surface) !important;
-  border-color: var(--va-action) !important;
+  background-color: var(--color-bg-surface);
+  border-color: var(--va-action);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-action) 18%, transparent);
 }
 
@@ -488,8 +490,8 @@ html.light .va-data-card,
 html.light .va-control-surface,
 html.light .va-filter-surface,
 html.light .va-tab-surface {
-  border-color: var(--color-border) !important;
-  background: var(--color-bg-surface) !important;
+  border-color: var(--color-border);
+  background: var(--color-bg-surface);
   color: var(--color-text-primary);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.06);
 }
@@ -504,8 +506,8 @@ html.light .va-metric-card,
 html.light .va-video-card,
 html.light .va-video-list-item,
 html.light .va-preview-panel {
-  border-color: var(--color-border) !important;
-  background: var(--color-bg-surface) !important;
+  border-color: var(--color-border);
+  background: var(--color-bg-surface);
   color: var(--color-text-primary);
 }
 
@@ -513,8 +515,8 @@ html.light .va-insight-panel,
 html.light .va-ux-empty-state,
 html.light .va-workflow-step,
 html.light .va-floating-action-bar {
-  border-color: var(--color-border) !important;
-  background: var(--color-bg-surface) !important;
+  border-color: var(--color-border);
+  background: var(--color-bg-surface);
   color: var(--color-text-primary);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.06);
 }
@@ -527,67 +529,67 @@ html.light .va-mixed-token {
 html.light main input,
 html.light main select,
 html.light main textarea {
-  border-color: rgba(120, 113, 108, 0.22) !important;
-  background-color: #fffdf8 !important;
-  color: #172033 !important;
+  border-color: rgba(120, 113, 108, 0.22);
+  background-color: #fffdf8;
+  color: #172033;
 }
 
 html.light .va-title,
 html.light main h1,
 html.light main h2,
 html.light main h3 {
-  color: #172033 !important;
+  color: #172033;
 }
 
 html.light .va-primary-button,
 html.light .va-action-button,
 html.light main button[class*="bg-emerald-700"],
 html.light main button[class*="bg-emerald-600"] {
-  color: #ffffff !important;
+  color: #ffffff;
 }
 
 html.light main .text-gray-400,
 html.light main .text-gray-500 {
-  color: #64748b !important;
+  color: #64748b;
 }
 
 html.light .va-sidebar {
-  background: var(--color-bg-surface) !important;
-  border-inline-start-color: var(--color-border) !important;
+  background: var(--color-bg-surface);
+  border-inline-start-color: var(--color-border);
   box-shadow: -1px 0 0 var(--color-border);
 }
 
 html.light .va-sidebar .text-white,
 html.light .va-sidebar h2 {
-  color: var(--color-text-primary) !important;
+  color: var(--color-text-primary);
 }
 
 html.light .va-sidebar .text-gray-400,
 html.light .va-sidebar .text-gray-500,
 html.light .va-context-bar .text-gray-400,
 html.light .va-context-bar .text-gray-500 {
-  color: var(--color-text-muted) !important;
+  color: var(--color-text-muted);
 }
 
 html.light .va-context-bar {
-  background: var(--color-bg-surface) !important;
-  border-bottom-color: var(--color-border) !important;
+  background: var(--color-bg-surface);
+  border-bottom-color: var(--color-border);
   box-shadow: 0 1px 0 var(--color-border);
 }
 
 html.light .va-secondary-button,
 html.light .va-tool-button {
-  background: rgba(255, 253, 248, 0.92) !important;
-  color: #485466 !important;
+  background: rgba(255, 253, 248, 0.92);
+  color: #485466;
 }
 
 .va-page-hero {
-  border-radius: var(--va-panel-radius) !important;
-  padding: clamp(1rem, 2vw, 1.4rem) !important;
+  border-radius: var(--va-panel-radius);
+  padding: clamp(1rem, 2vw, 1.4rem);
 }
 
 .va-page-hero-compact {
-  padding: 0.85rem !important;
+  padding: 0.85rem;
 }
 
 .va-page-hero::before,
@@ -612,7 +614,7 @@ html.light .va-tool-button {
 
 .va-card,
 .va-data-card {
-  border-radius: var(--va-card-radius) !important;
+  border-radius: var(--va-card-radius);
   box-shadow: var(--va-shadow-card);
 }
 
@@ -620,10 +622,10 @@ html.light .va-tool-button {
 .va-ux-empty-state {
   position: relative;
   overflow: hidden;
-  border-color: var(--va-line-soft) !important;
+  border-color: var(--va-line-soft);
   background:
     linear-gradient(180deg, rgba(20, 32, 51, 0.74), rgba(8, 19, 34, 0.56)),
-    rgba(7, 17, 31, 0.64) !important;
+    rgba(7, 17, 31, 0.64);
   box-shadow: var(--va-shadow-card);
 }
 
@@ -639,8 +641,8 @@ html.light .va-tool-button {
 }
 
 .va-card-subtle {
-  border: 1px solid rgba(148, 163, 184, 0.1) !important;
-  background: rgba(8, 19, 34, 0.56) !important;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(8, 19, 34, 0.56);
 }
 
 .va-entity-card,
@@ -696,20 +698,20 @@ html.light .va-tool-button {
 }
 
 .va-icon-tile {
-  border: 1px solid color-mix(in srgb, var(--va-action) 26%, transparent) !important;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--va-action) 16%, transparent), rgba(255, 255, 255, 0.02)) !important;
-  color: color-mix(in srgb, var(--va-action) 72%, #ffffff) !important;
+  border: 1px solid color-mix(in srgb, var(--va-action) 26%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--va-action) 16%, transparent), rgba(255, 255, 255, 0.02));
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .va-tone-accent {
-  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
-  background: color-mix(in srgb, var(--va-action) 14%, transparent) !important;
-  color: color-mix(in srgb, var(--va-action) 72%, #ffffff) !important;
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent);
+  background: color-mix(in srgb, var(--va-action) 14%, transparent);
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff);
 }
 
 .va-accent-text {
-  color: color-mix(in srgb, var(--va-action) 72%, #ffffff) !important;
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff);
 }
 
 .va-border-bottom-soft {
@@ -730,9 +732,9 @@ html.light .va-tool-button {
 }
 
 .va-chip-button-active {
-  border-color: color-mix(in srgb, var(--va-action) 36%, transparent) !important;
-  background: color-mix(in srgb, var(--va-action) 14%, transparent) !important;
-  color: color-mix(in srgb, var(--va-action) 72%, #ffffff) !important;
+  border-color: color-mix(in srgb, var(--va-action) 36%, transparent);
+  background: color-mix(in srgb, var(--va-action) 14%, transparent);
+  color: color-mix(in srgb, var(--va-action) 72%, #ffffff);
 }
 
 .va-kbd-token {
@@ -742,7 +744,7 @@ html.light .va-tool-button {
 }
 
 html.light .va-accent-text {
-  color: var(--va-action-strong) !important;
+  color: var(--va-action-strong);
 }
 
 /* ── Semantic accent utility classes ──────────────────────────────────────
@@ -753,73 +755,73 @@ html.light .va-accent-text {
 
 /* Solid accent background (replaces bg-emerald-500, bg-emerald-600) */
 .va-accent-bg {
-  background-color: var(--va-action) !important;
+  background-color: var(--va-action);
 }
 
 /* Soft tinted accent background (replaces bg-emerald-500/10, /15, /20 etc.) */
 .va-accent-bg-soft {
-  background-color: color-mix(in srgb, var(--va-action) 14%, transparent) !important;
+  background-color: color-mix(in srgb, var(--va-action) 14%, transparent);
 }
 
 /* Light accent text on soft/tinted backgrounds (replaces text-emerald-100/200/300) */
 .va-accent-text-on-soft {
-  color: color-mix(in srgb, var(--va-action) 28%, #ffffff) !important;
+  color: color-mix(in srgb, var(--va-action) 28%, #ffffff);
 }
 
 /* Accent-tinted border (replaces border-emerald-500/20, /25, /30, /40 etc.) */
 .va-accent-border {
-  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent);
 }
 
 /* Light-mode corrections for the above */
 html.light .va-accent-bg-soft {
-  background-color: color-mix(in srgb, var(--va-action) 10%, transparent) !important;
+  background-color: color-mix(in srgb, var(--va-action) 10%, transparent);
 }
 html.light .va-accent-text-on-soft {
-  color: var(--va-action-strong) !important;
+  color: var(--va-action-strong);
 }
 html.light .va-accent-border {
-  border-color: color-mix(in srgb, var(--va-action) 28%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-action) 28%, transparent);
 }
 
 .va-primary-button,
 .va-action-button {
-  border: 1px solid var(--va-action-strong) !important;
-  background: var(--va-action) !important;
-  color: #ffffff !important;
+  border: 1px solid var(--va-action-strong);
+  background: var(--va-action);
+  color: #ffffff;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12) inset, 0 1px 2px rgba(0, 0, 0, 0.18);
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .va-primary-button:hover,
 .va-action-button:hover {
-  background: color-mix(in srgb, var(--va-action) 90%, #ffffff) !important;
-  border-color: var(--va-action) !important;
+  background: color-mix(in srgb, var(--va-action) 90%, #ffffff);
+  border-color: var(--va-action);
 }
 
 .va-primary-button:active,
 .va-action-button:active {
-  background: var(--va-action-strong) !important;
+  background: var(--va-action-strong);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18) inset;
 }
 
 .va-secondary-button,
 .va-tool-button {
-  border: 1px solid var(--va-line-soft) !important;
-  background: rgba(8, 19, 34, 0.55) !important;
-  color: var(--va-text) !important;
+  border: 1px solid var(--va-line-soft);
+  background: rgba(8, 19, 34, 0.55);
+  color: var(--va-text);
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
 
 .va-tool-button {
-  min-height: var(--va-control-height) !important;
+  min-height: var(--va-control-height);
 }
 
 .va-secondary-button:hover,
 .va-tool-button:hover {
-  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
-  background: rgba(255, 255, 255, 0.055) !important;
-  color: #ffffff !important;
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent);
+  background: rgba(255, 255, 255, 0.055);
+  color: #ffffff;
 }
 
 .va-metric-card {
@@ -833,23 +835,23 @@ html.light .va-accent-border {
 }
 
 .va-action-card {
-  border: 1px solid rgba(148, 163, 184, 0.12) !important;
-  background: rgba(16, 27, 45, 0.72) !important;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(16, 27, 45, 0.72);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .va-action-card:hover {
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--va-action) 34%, transparent) !important;
-  background: rgba(20, 32, 51, 0.86) !important;
+  border-color: color-mix(in srgb, var(--va-action) 34%, transparent);
+  background: rgba(20, 32, 51, 0.86);
 }
 
 .va-control-surface,
 .va-filter-surface,
 .va-tab-surface {
-  border: 1px solid var(--va-line-soft) !important;
-  background: var(--va-ink-850) !important;
+  border: 1px solid var(--va-line-soft);
+  background: var(--va-ink-850);
   box-shadow: var(--va-shadow-card);
 }
 
@@ -862,32 +864,32 @@ html.light .va-accent-border {
 
 .va-workflow-step {
   min-height: 4.25rem;
-  border-color: rgba(148, 163, 184, 0.12) !important;
+  border-color: rgba(148, 163, 184, 0.12);
   background: rgba(8, 19, 34, 0.58);
   color: var(--va-text-soft);
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
 
 .va-workflow-step-active {
-  border-color: color-mix(in srgb, var(--va-action) 52%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-action) 52%, transparent);
   background: color-mix(in srgb, var(--va-action) 14%, rgba(8, 19, 34, 0.72));
   color: var(--va-text-strong);
   box-shadow: 0 12px 32px color-mix(in srgb, var(--va-action) 12%, transparent);
 }
 
 .va-workflow-step-done {
-  border-color: color-mix(in srgb, var(--va-action) 26%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-action) 26%, transparent);
   background: color-mix(in srgb, var(--va-action) 8%, rgba(8, 19, 34, 0.62));
 }
 
 .va-workflow-step-warning {
-  border-color: rgba(245, 158, 11, 0.34) !important;
+  border-color: rgba(245, 158, 11, 0.34);
   background: rgba(245, 158, 11, 0.1);
   color: #fde68a;
 }
 
 .va-workflow-step-error {
-  border-color: rgba(248, 113, 113, 0.34) !important;
+  border-color: rgba(248, 113, 113, 0.34);
   background: rgba(248, 113, 113, 0.1);
   color: #fecaca;
 }
@@ -959,9 +961,9 @@ html.light .va-accent-border {
 .va-control-surface select,
 .va-filter-surface input,
 .va-filter-surface select {
-  border-color: rgba(148, 163, 184, 0.14) !important;
-  background: rgba(7, 17, 31, 0.7) !important;
-  color: #ffffff !important;
+  border-color: rgba(148, 163, 184, 0.14);
+  background: rgba(7, 17, 31, 0.7);
+  color: #ffffff;
 }
 
 .va-form-field:focus,
@@ -969,7 +971,7 @@ html.light .va-accent-border {
 .va-control-surface select:focus,
 .va-filter-surface input:focus,
 .va-filter-surface select:focus {
-  border-color: color-mix(in srgb, var(--va-action) 54%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-action) 54%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-action) 12%, transparent);
 }
 
@@ -992,8 +994,8 @@ html.light .va-accent-border {
 .va-video-card,
 .va-video-list-item,
 .va-preview-panel {
-  border: 1px solid rgba(148, 163, 184, 0.13) !important;
-  background: rgba(13, 24, 40, 0.72) !important;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  background: rgba(13, 24, 40, 0.72);
   box-shadow: var(--va-shadow-card);
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
@@ -1001,13 +1003,13 @@ html.light .va-accent-border {
 .va-video-card:hover,
 .va-video-list-item:hover {
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--va-action) 34%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-action) 34%, transparent);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
 }
 
 .va-video-card-selected,
 .va-video-list-item-selected {
-  border-color: color-mix(in srgb, var(--va-action) 56%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-action) 56%, transparent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--va-action) 18%, transparent), var(--va-shadow-card);
 }
 
@@ -1120,8 +1122,8 @@ html.light .va-tag-chip:hover {
 }
 
 .va-sidebar {
-  background: var(--va-ink-925) !important;
-  border-inline-start: 1px solid var(--va-line-soft) !important;
+  background: var(--va-ink-925);
+  border-inline-start: 1px solid var(--va-line-soft);
   box-shadow: -1px 0 0 var(--va-line-soft);
 }
 
@@ -1150,8 +1152,8 @@ html.light .va-tag-chip:hover {
 }
 
 .va-context-bar {
-  background: var(--va-ink-925) !important;
-  border-bottom-color: var(--va-line-soft) !important;
+  background: var(--va-ink-925);
+  border-bottom-color: var(--va-line-soft);
   box-shadow: 0 1px 0 var(--va-line-soft);
 }
 
@@ -1200,19 +1202,19 @@ html.light .va-tag-chip:hover {
 
 .va-onboarding-shell {
   background:
-    linear-gradient(145deg, #07111f 0%, #0b1626 50%, #07111f 100%) !important;
+    linear-gradient(145deg, #07111f 0%, #0b1626 50%, #07111f 100%);
 }
 
 .va-onboarding-panel {
-  border: 1px solid rgba(148, 163, 184, 0.14) !important;
+  border: 1px solid rgba(148, 163, 184, 0.14);
   background:
-    linear-gradient(180deg, rgba(20, 32, 51, 0.92), rgba(11, 22, 38, 0.96)) !important;
+    linear-gradient(180deg, rgba(20, 32, 51, 0.92), rgba(11, 22, 38, 0.96));
   box-shadow: var(--va-shadow-panel);
 }
 
 .va-onboarding-shell .text-white,
 html.light .va-onboarding-shell .text-white {
-  color: #f8fafc !important;
+  color: #f8fafc;
 }
 
 .va-onboarding-shell .text-gray-200,
@@ -1223,32 +1225,32 @@ html.light .va-onboarding-shell .text-gray-200,
 html.light .va-onboarding-shell .text-gray-300,
 html.light .va-onboarding-shell .text-gray-400,
 html.light .va-onboarding-shell .text-gray-500 {
-  color: rgba(226, 232, 240, 0.74) !important;
+  color: rgba(226, 232, 240, 0.74);
 }
 
 .va-onboarding-shell .va-secondary-button,
 .va-onboarding-shell .va-tool-button,
 html.light .va-onboarding-shell .va-secondary-button,
 html.light .va-onboarding-shell .va-tool-button {
-  border-color: rgba(148, 163, 184, 0.16) !important;
-  background: rgba(8, 19, 34, 0.72) !important;
-  color: #e5e7eb !important;
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(8, 19, 34, 0.72);
+  color: #e5e7eb;
 }
 
 .va-onboarding-shell .va-secondary-button:hover,
 .va-onboarding-shell .va-tool-button:hover,
 html.light .va-onboarding-shell .va-secondary-button:hover,
 html.light .va-onboarding-shell .va-tool-button:hover {
-  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
-  background: rgba(255, 255, 255, 0.07) !important;
-  color: #ffffff !important;
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent);
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
 }
 
 .va-onboarding-shell .va-tool-button[aria-pressed="true"],
 html.light .va-onboarding-shell .va-tool-button[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--va-action) 42%, transparent) !important;
-  background: color-mix(in srgb, var(--va-action) 18%, rgba(8, 19, 34, 0.9)) !important;
-  color: #ffffff !important;
+  border-color: color-mix(in srgb, var(--va-action) 42%, transparent);
+  background: color-mix(in srgb, var(--va-action) 18%, rgba(8, 19, 34, 0.9));
+  color: #ffffff;
 }
 
 .va-enter {
@@ -1303,7 +1305,7 @@ html.light .va-onboarding-shell .va-tool-button[aria-pressed="true"] {
   .va-data-card,
   .va-control-surface,
   .va-filter-surface {
-    border-radius: 0.875rem !important;
+    border-radius: 0.875rem;
     box-shadow: none;
   }
 
@@ -1342,3 +1344,5 @@ html.light .va-onboarding-shell .va-tool-button[aria-pressed="true"] {
     padding-bottom: 0.15rem;
   }
 }
+
+} /* end @layer v1-identity */

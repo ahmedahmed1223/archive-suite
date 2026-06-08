@@ -29,6 +29,12 @@ export default defineConfig(({ mode }) => {
   const outDir = isCloud ? "dist-cloud" : isAistudio ? "dist-aistudio" : "dist";
 
   return {
+    test: {
+      environment: "jsdom",
+      globals: true,
+      setupFiles: ["./src/test-setup.js"],
+      include: ["src/**/*.test.{js,jsx,ts,tsx}"],
+    },
     plugins: [
       react(),
       tailwindcss(),
