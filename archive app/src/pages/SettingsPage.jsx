@@ -58,6 +58,7 @@ import { FileStoreSettings } from "../features/settings/FileStoreSettings.jsx";
 import { LocalStorageEngineSettings } from "../features/settings/LocalStorageEngineSettings.jsx";
 import { ServerStatusBadge } from "../features/server-status/ServerStatusBadge.jsx";
 import { WebhooksSettings } from "../components/settings/WebhooksSettings.jsx";
+import { FieldPermissionsSettings } from "../components/settings/FieldPermissionsSettings.jsx";
 import { NotificationPreferences } from "../components/settings/NotificationPreferences.jsx";
 import {
   getDefaultSettings,
@@ -1049,6 +1050,13 @@ export function SettingsPage() {
     children: jsx(WebhooksSettings, {})
   });
 
+  const renderPermissions = () => jsx(SettingsCard, {
+    title: "صلاحيات الحقول (Field ACL)",
+    description: "حدّد أي الأدوار تستطيع رؤية كل حقل مخصص. الحقول غير المقيّدة مرئية للجميع. يُطبَّق القيد في جلب السجلات على الخادم.",
+    icon: jsx("span", { className: "text-xs text-gray-400", children: "🔒" }),
+    children: jsx(FieldPermissionsSettings, {})
+  });
+
   const tabContent = {
     general: renderGeneral,
     appearance: renderAppearance,
@@ -1057,6 +1065,7 @@ export function SettingsPage() {
     security: renderSecurity,
     shortcuts: renderShortcuts,
     webhooks: renderWebhooks,
+    permissions: renderPermissions,
     maintenance: renderMaintenance
   };
 

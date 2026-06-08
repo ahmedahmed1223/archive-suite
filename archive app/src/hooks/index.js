@@ -6,3 +6,4 @@ export { useOnlineStatus } from "./useOnlineStatus.js";
 export { useVirtualList } from "./useVirtualList.js";
 export { usePresence } from "./usePresence.js";
 export { useRole } from "./useRole.js";
+export { useTouchSwipe } from "./useTouchSwipe.js";
