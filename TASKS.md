@@ -227,32 +227,32 @@
 - [ ] `[P2]` ⏱️M **jest-axe على مستوى المكوّن** — يكمّل اختبار Playwright a11y الموجود (الذي يعمل على مستوى الصفحة).
   - المصدر: improvement-proposals (FE-2).
 
-- [ ] `[P2]` ⏱️M **توسيع تغطية E2E (Playwright)** — حاليًا ملفّا a11y فقط؛ أضف مسارات وظيفية (رفع، بحث، مشاركة).
+- [x] `[P2]` ⏱️M **توسيع تغطية E2E (Playwright)** — حاليًا ملفّا a11y فقط؛ أضف مسارات وظيفية (رفع، بحث، مشاركة).
   - الملفات: `archive app/tests/`.
   - المصدر: audit-report.
 
-- [ ] `[P3]` ⏱️M **Load testing (k6)** + **Lighthouse CI** للأداء وCore Web Vitals.
+- [x] `[P3]` ⏱️M **Load testing (k6)** + **Lighthouse CI** للأداء وCore Web Vitals.
   - المصدر: comprehensive-audit، audit-report.
 
 ---
 
 ## 6. DevOps والمراقبة
 
-- [ ] `[P2]` ⏱️M **Sentry لتتبّع الأخطاء** (frontend + backend) — يُربط بـ Error Boundaries في القسم 3.
+- [x] `[P2]` ⏱️M **Sentry لتتبّع الأخطاء** (frontend + backend) — يُربط بـ Error Boundaries في القسم 3.
   - المصدر: dev-proposals، audit-report.
 
-- [ ] `[P2]` ⏱️M **Redis caching** — نتائج بحث، sessions، snapshots المشاركة (TTL 5–60 دقيقة).
+- [x] `[P2]` ⏱️M **Redis caching** — نتائج بحث، sessions، snapshots المشاركة (TTL 5–60 دقيقة).
   - المصدر: dev-proposals (P4).
 
 - [x] `[P2]` ⏱️S **Docker multi-stage build + `.dockerignore`** لتقليل حجم الصورة.
   - الملفات: `archive-server/Dockerfile.server`، `Dockerfile.frontend`.
   - المصدر: audit-report.
 
-- [ ] `[P2]` ⏱️M **نسخ احتياطي مجدول من الخادم** — استبقاء (7 يومي / 4 أسبوعي / 3 شهري) + رفع تلقائي + واجهة إدارة.
+- [x] `[P2]` ⏱️M **نسخ احتياطي مجدول من الخادم** — استبقاء (7 يومي / 4 أسبوعي / 3 شهري) + رفع تلقائي + واجهة إدارة.
   - الملفات: `archive-server/deploy/backup-cron.sh` (موجود — يُبنى فوقه)، نقاط `POST /api/admin/backup/schedule`، `GET /api/admin/backup/list`.
   - المصدر: development-plan (1.4)، arabic-report.
 
-- [ ] `[P3]` ⏱️L **Prometheus + Grafana + تنبيهات** و**Helm chart** لـ Kubernetes.
+- [x] `[P3]` ⏱️L **Prometheus + Grafana + تنبيهات** و**Helm chart** لـ Kubernetes.
   - المصدر: dev-proposals (Infra1)، comprehensive-audit، arabic-report.
 
 ---
@@ -270,23 +270,106 @@
 - [x] `[P1]` ⏱️L **مصادقة ثنائية (2FA — TOTP)** + رموز استرداد، إلزامية للمشرفين، «تذكّر هذا الجهاز» 30 يومًا.
   - المصدر: development-plan (1.7).
 
-- [ ] `[P2]` ⏱️L **وسم تلقائي عند الرفع** — تصنيف AI قابل للقبول/الرفض (يستفيد من تكامل AI الموجود).
+- [x] `[P2]` ⏱️L **وسم تلقائي عند الرفع** — تصنيف AI قابل للقبول/الرفض (يستفيد من تكامل AI الموجود).
   - المصدر: dev-proposals (AI1).
 
-- [ ] `[P2]` ⏱️XL **بحث دلالي** — embeddings + pgvector في PostgreSQL.
+- [x] `[P2]` ⏱️XL **بحث دلالي** — embeddings + pgvector في PostgreSQL.
   - المصدر: dev-proposals (AI2).
 
-- [ ] `[P2]` ⏱️XL **تعاون لحظي** — WebSocket presence + كشف تعارض التحرير (حاليًا SSE/polling).
+- [x] `[P2]` ⏱️XL **تعاون لحظي** — WebSocket presence + كشف تعارض التحرير (حاليًا SSE/polling).
   - المصدر: dev-proposals (C1)، development-plan (Phase 3).
 
 - [x] `[P2]` ⏱️L **خط معالجة الصور** — Sharp: WebP، صور مصغّرة، srcset (تقليل 60–70%).
   - المصدر: dev-proposals (P1).
 
-- [ ] `[P3]` ⏱️L **i18n متعدد اللغات** — مكتبة i18next بدل العربي المثبّت في السلاسل.
+- [x] `[P3]` ⏱️L **i18n متعدد اللغات** — مكتبة i18next بدل العربي المثبّت في السلاسل.
   - المصدر: dev-proposals (AI4).
 
-- [ ] `[P3]` ⏱️XL **تطوّر schema مُنمّط** — جداول typed (users, archive_items, content_types) بدل الصف العام JSONB، مع طبقة تجريد للتوافق العكسي.
+- [x] `[P3]` ⏱️XL **تطوّر schema مُنمّط** — جداول typed (users, archive_items, content_types) بدل الصف العام JSONB، مع طبقة تجريد للتوافق العكسي.
   - المصدر: development-plan (1.6).
+
+---
+
+## 9. موجة التطوير الثانية — Wave 2 (مهام جديدة)
+
+> تُضاف بعد اكتمال خطة التدقيق (64 مهمة). تركّز على تعميق الوظائف وتحسين تجربة المستخدم.
+
+### أ. التصدير والعمليات الجماعية
+
+- [ ] `[P1]` ⏱️M **تصدير متقدم (CSV / Excel / ZIP)** — تصدير نتائج البحث أو مجموعة محددة بصيغ متعددة.
+  - نقطة: `POST /api/v1/export` (نوع: `csv|xlsx|zip`، مع تصفية).
+  - الواجهة: زر "تصدير" في شريط الأدوات وصفحة البحث.
+
+- [ ] `[P1]` ⏱️M **عمليات جماعية على السجلات** — تحديد متعدد ثم: تعديل tags / نوع / مشروع / حذف / نقل.
+  - الواجهة: شريط تحديد عائم عند اختيار أكثر من عنصر.
+  - الخلفية: `POST /api/v1/records/bulk` (action + ids + payload).
+
+### ب. الصلاحيات وإدارة المستخدمين
+
+- [ ] `[P1]` ⏱️L **RBAC — أدوار وصلاحيات** (admin / editor / viewer).
+  - `admin`: كل العمليات + إدارة المستخدمين.
+  - `editor`: رفع + تحرير + حذف سجلاته.
+  - `viewer`: قراءة فقط، بحث، تصدير.
+  - الجدول: `user_roles` في schema؛ middleware للتحقق على كل مسار RPC.
+
+- [ ] `[P2]` ⏱️M **إدارة المستخدمين المتقدمة** — دعوة بالبريد، تعطيل حساب، تغيير دور، آخر دخول.
+  - صفحة `UsersPage` موجودة — توسيع وظائفها.
+
+### ج. سجل التغييرات والإصدارات
+
+- [ ] `[P1]` ⏱️L **سجل إصدارات السجل** — تتبّع كل تعديل على حقول السجل مع إمكانية الاستعادة.
+  - جدول: `record_versions` (recordId, version, snapshot JSONB, userId, createdAt).
+  - الواجهة: تبويب "السجل التاريخي" في صفحة التفاصيل.
+
+### د. المجموعات الذكية والبحث المحفوظ
+
+- [ ] `[P2]` ⏱️M **مجموعات ذكية (Smart Collections)** — مجموعات تتحدّث تلقائيًا بناءً على استعلام محفوظ.
+  - جدول: `saved_filters` (query JSONB, ownerId, isLive: bool).
+  - صفحة `CollectionsPage` موجودة — إضافة نوع "ذكي" بجانب الثابت.
+
+### هـ. الإشعارات والتكامل
+
+- [ ] `[P2]` ⏱️M **إشعارات البريد الإلكتروني** — إشعار عند: مشاركة سجل، ذكر مستخدم، اكتمال رفع.
+  - يستخدم nodemailer الموجود؛ جدول `notification_preferences` لإعدادات كل مستخدم.
+
+- [ ] `[P2]` ⏱️M **Webhooks الصادرة** — إرسال حدث HTTP عند: إضافة/تحديث/حذف سجل.
+  - جدول: `webhooks` (url, events[], secret); `POST /api/v1/webhooks` للإدارة.
+  - إعادة المحاولة التلقائية (exponential backoff، 3 مرات).
+
+### و. تحسينات الواجهة
+
+- [ ] `[P2]` ⏱️M **لوحة تحليلات محسّنة** — رسوم بيانية تفاعلية: نمو الأرشيف بالزمن، توزيع الأنواع، أكثر الوسوم استخدامًا.
+  - صفحة `DataCenterPage` موجودة (1267 سطر) — توسيع المخططات.
+
+- [ ] `[P2]` ⏱️S **وضع ملء الشاشة للمعاينة** — عرض المستند/الصورة/الفيديو بملء الشاشة مع تنقّل بالأسهم.
+
+- [ ] `[P3]` ⏱️M **واجهة إدارة API Keys** — إنشاء/إلغاء مفاتيح API لتكامل الخدمات الخارجية.
+  - جدول: `api_keys` (hash, name, scopes[], lastUsed, expiresAt).
+
+- [ ] `[P3]` ⏱️L **حقول بيانات وصفية مخصصة** — إضافة حقول مُعرَّفة من المستخدم (نص/رقم/تاريخ/قائمة) لكل نوع محتوى.
+
+---
+
+## 10. تحسينات تجربة الإعداد الأولي (Onboarding UX)
+
+> خطة مستوردة من `implementation_plan.md` — تحسينات بصرية وتفاعلية على معالج الإعداد.
+
+- [ ] `[P1]` ⏱️S **إصلاح `verify-modules.mjs`** — تصحيح التأكيد في السطر 367: `defaults.openSearch` من `"Ctrl+K"` إلى `"Alt+K"`.
+  - الملف: `archive app/scripts/verify-modules.mjs`.
+
+- [ ] `[P1]` ⏱️M **معاينة مباشرة للثيم واللون في معالج الإعداد** — استدعاء `applyAccentColor` و`setTheme` داخل `useEffect` مرتبط بـ `accentColor` و`themeChoice` لمعاينة فورية أثناء الإعداد.
+  - الملف: `archive app/src/features/onboarding/V1OnboardingWizard.jsx`.
+
+- [ ] `[P1]` ⏱️M **تصميم حديث لخطوات معالج الإعداد**:
+  - خلفية توهّج شبكي (mesh radial glow) بألوان `--va-accent-*` متحركة.
+  - أيقونة ✓ للخطوات المكتملة بدل الرقم + توهّج على الخطوة النشطة.
+  - تحويل `scale` عند التمرير/النقر على بطاقات الاختيار (dynamic `color-mix`).
+  - شريط قوة كلمة المرور بتصميم حديث.
+  - الملف: `archive app/src/features/onboarding/V1OnboardingWizard.jsx`.
+
+- [ ] `[P2]` ⏱️S **تحديث `v2-identity.css`** — أنماط glassmorphic لنافذة الإعداد + tokens انتقالية سلسة.
+
+- [ ] `[P2]` ⏱️S **تحديث `v4-identity.css`** — توحيد تباين الوضعين الفاتح والداكن في نافذة الإعداد.
 
 ---
 

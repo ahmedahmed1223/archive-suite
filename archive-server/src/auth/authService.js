@@ -96,7 +96,9 @@ export async function loginUser({ username, password }, { provider, secret, expi
     }
   }
 
-  const claims = { sub: user.id, username: user.username, role: user.role || "viewer" };
+  // Default to "editor" (not "viewer") for legacy accounts without a role field,
+  // so existing users retain write access after the RBAC upgrade.
+  const claims = { sub: user.id, username: user.username, role: user.role || "editor" };
   const token = signJwt(claims, secret, { expiresInSec });
   log.info({ username: user.username, role: claims.role }, "Login successful.");
   return { token, user: { id: user.id, username: user.username, role: claims.role } };

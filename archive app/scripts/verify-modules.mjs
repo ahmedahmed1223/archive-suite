@@ -364,7 +364,7 @@ run("archive view model", () => {
 
 run("keyboard shortcut helpers", () => {
   const defaults = getDefaultKeyboardShortcuts();
-  assert.equal(defaults.openSearch, "Ctrl+K");
+  assert.equal(defaults.openSearch, "Alt+K");
 
   const shortcuts = getEffectiveKeyboardShortcuts({
     keyboardShortcuts: {

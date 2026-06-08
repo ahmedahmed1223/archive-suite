@@ -142,6 +142,36 @@ export function createPostgresStorageProvider(prisma, options = {}) {
           console.warn("[embeddings] Async embedding update failed:", err.message);
         });
       }
+      // Fire-and-forget: save a version snapshot so users can browse history
+      // and restore previous versions from the DetailPage. Non-blocking —
+      // failures are logged as warnings and never propagate to the caller.
+      // Skipped when RecordVersion model is not yet available (e.g. migration
+      // not yet run in development).
+      const recordUid = record.uid ?? record.id ?? record.data?.uid;
+      if (recordUid && prisma.recordVersion) {
+        setImmediate(async () => {
+          try {
+            const latest = await prisma.recordVersion.findFirst({
+              where: { store, recordUid: String(recordUid) },
+              orderBy: { version: "desc" },
+              select: { version: true },
+            });
+            await prisma.recordVersion.create({
+              data: {
+                store,
+                recordUid: String(recordUid),
+                version: (latest?.version ?? 0) + 1,
+                snapshot: record,
+                userId: record._updatedBy ?? null,
+              },
+            });
+          } catch (err) {
+            // Versioning is non-critical — log but don't throw
+            // eslint-disable-next-line no-console
+            console.warn("[versions] snapshot failed:", err.message);
+          }
+        });
+      }
       return record;
     },
 

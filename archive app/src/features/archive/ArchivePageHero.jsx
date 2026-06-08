@@ -29,6 +29,7 @@ import {
   SegmentedControl,
   ToolbarButton
 } from "./ArchiveViews.jsx";
+import { ExportButton } from "../../components/archive/ExportButton.jsx";
 
 function CompactStat({ label, value, hint }) {
   return jsxs("span", {
@@ -148,7 +149,8 @@ export function ArchivePageHero(props) {
     changePageSize,
     openImport,
     openAdd,
-    confirmEmptyTrash
+    confirmEmptyTrash,
+    storeSelectedItems = []
   } = props;
 
   const [mobileControlsOpen, setMobileControlsOpen] = React.useState(false);
@@ -336,6 +338,7 @@ export function ArchivePageHero(props) {
                 icon: jsx(Upload, { className: "h-4 w-4" }),
                 children: "استيراد"
               }),
+              jsx(ExportButton, { selectedIds: storeSelectedItems }),
               (hasFilters || showDeleted) && jsx(ToolbarButton, {
                 onClick: resetFilters,
                 icon: jsx(RefreshCw, { className: "h-4 w-4" }),

@@ -375,4 +375,16 @@ html[data-theme-version="v4"] .va-primary-button :is(.text-white, .text-gray-200
   color: #fff;
 }
 
+/* Ensure onboarding wizard looks clean in both light and dark modes */
+html[data-theme-version="v4"] .va-onboarding-panel,
+html[data-theme-version="v4"] [class*="onboarding"] .wizard-panel {
+  background: color-mix(in oklch, var(--va-4-bg, var(--va-4-canvas)) 90%, transparent);
+  border-color: color-mix(in oklch, var(--va-4-accent) 20%, var(--va-4-line));
+}
+
+html[data-theme-version="v4"].dark .va-onboarding-panel,
+html[data-theme-version="v4"].dark [class*="onboarding"] .wizard-panel {
+  background: color-mix(in oklch, var(--va-4-surface) 80%, transparent);
+}
+
 } /* end @layer v4-identity */

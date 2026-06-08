@@ -191,11 +191,14 @@ function OptionButton({ active, children, onClick }) {
     type: "button",
     onClick,
     "aria-pressed": active,
-    className: `va-tool-button h-full min-h-[88px] w-full rounded-2xl border p-4 text-right transition-all ${
+    className: `va-tool-button h-full min-h-[88px] w-full rounded-2xl border p-4 text-right transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] ${
       active
-        ? "va-accent-border va-accent-bg-soft text-white shadow-lg shadow-emerald-500/10"
-        : "border-white/10 bg-white/[0.035] text-gray-300 hover:border-emerald-500/25 hover:bg-white/[0.06]"
+        ? "va-accent-border va-accent-bg-soft text-white"
+        : "border-white/10 bg-white/[0.035] text-gray-300 hover:border-white/20 hover:bg-white/[0.06]"
     }`,
+    style: active ? {
+      boxShadow: "0 0 0 2px var(--va-accent-500, var(--va-action)), 0 4px 12px color-mix(in oklch, var(--va-accent-500, var(--va-action)) 20%, transparent)"
+    } : {},
     children
   });
 }
@@ -439,6 +442,16 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [goBack, goNext, onCancel, open, replayMode]);
 
+  // Live accent color preview — apply immediately as the user picks a color
+  React.useEffect(() => {
+    applyAccentColor(accentColor);
+  }, [accentColor]);
+
+  // Live theme preview — apply immediately as the user picks a theme
+  React.useEffect(() => {
+    setTheme(themeChoice);
+  }, [themeChoice, setTheme]);
+
   const handlePointerDown = (event) => {
     if (isInteractiveTarget(event.target)) return;
     pointerStartXRef.current = event.clientX;
@@ -614,10 +627,20 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             jsx("p", { className: "text-sm text-gray-300", children: "قوة كلمة المرور" }),
             jsx("p", { className: "text-xs", style: { color: passwordStrength.color }, children: passwordStrength.label })
           ] }),
-          jsx("div", { className: "flex min-w-32 flex-1 gap-1", dir: "rtl", children: [1, 2, 3, 4].map((level) => jsx("span", {
-            className: "h-2 flex-1 rounded-full",
-            style: { backgroundColor: passwordStrength.score >= level ? passwordStrength.color : "rgba(255,255,255,0.08)" }
-          }, level)) })
+          jsx("div", { className: "flex min-w-32 flex-1 gap-1", dir: "rtl", children: [1, 2, 3, 4].map((level) => {
+            const strengthPercent = (passwordStrength.score / 4) * 100;
+            const fillColor = passwordStrength.score >= level
+              ? (strengthPercent < 40
+                  ? "#ef4444"
+                  : strengthPercent < 70
+                  ? "#f59e0b"
+                  : "var(--va-action, #10b981)")
+              : "rgba(255,255,255,0.08)";
+            return jsx("span", {
+              className: "h-2 flex-1 rounded-full",
+              style: { backgroundColor: fillColor, transition: "background-color 0.3s ease" }
+            }, level);
+          }) })
         ] }),
         password.length > 0 && passwordPolicyErrors.length > 0 && jsx("p", { className: "text-xs leading-6 text-amber-300/90", children: passwordPolicyErrors[0] }),
         confirmPassword && jsx("p", { className: `text-sm ${passwordMatches ? "va-accent-text" : "text-red-300"}`, children: passwordMatches ? "كلمة المرور متطابقة" : "كلمة المرور غير متطابقة" })
@@ -940,6 +963,17 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     "aria-modal": true,
     "aria-label": replayMode ? "معالج البداية" : "معالج أول تشغيل",
     children: jsxs("div", { className: "mx-auto grid min-h-[calc(100vh-2rem)] w-full min-w-0 max-w-6xl content-center gap-4 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-stretch", children: [
+      /* Decorative mesh background glows */
+      jsx("div", { "aria-hidden": "true", className: "pointer-events-none fixed inset-0 overflow-hidden -z-10", children: jsxs(React.Fragment, { children: [
+        jsx("div", {
+          className: "absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-20 blur-3xl transition-colors duration-700",
+          style: { background: "radial-gradient(circle, var(--va-accent-400, var(--va-action)), transparent 70%)" }
+        }),
+        jsx("div", {
+          className: "absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-10 blur-3xl transition-colors duration-700",
+          style: { background: "radial-gradient(circle, var(--va-accent-600, var(--va-action)), transparent 70%)" }
+        })
+      ] }) }),
       jsxs("header", { className: "w-full min-w-0 space-y-3 lg:flex lg:h-full lg:flex-col", children: [
         jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3 rounded-3xl border border-white/10 bg-white/[0.035] p-4 sm:p-5 lg:flex-1 lg:flex-col", children: [
           jsxs("div", { className: "min-w-0", children: [
