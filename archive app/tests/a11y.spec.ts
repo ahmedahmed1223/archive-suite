@@ -268,7 +268,12 @@ async function openSeededPage(page: Page, route: string, heading: string) {
   await page.goto(`/${route}`, { waitUntil: 'domcontentloaded' });
   await page.reload({ waitUntil: 'domcontentloaded' });
   if (route === '#/dashboard') {
-    await expect(page.getByRole('navigation', { name: 'القائمة الجانبية' }).first()).toBeVisible({ timeout: 15_000 });
+    const nav = page.getByRole('navigation', { name: 'القائمة الجانبية' }).first();
+    const menuButton = page.getByRole('button', { name: /^(فتح القائمة الجانبية|إغلاق القائمة الجانبية)$/ });
+    if (await menuButton.count()) {
+      await menuButton.first().click();
+    }
+    await expect(nav).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: /^مركز التحكم$/ }).first().click();
   }
   await expect(page.getByRole('heading', { name: new RegExp(heading) }).first()).toBeVisible({ timeout: 15_000 });
