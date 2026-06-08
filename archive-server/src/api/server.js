@@ -28,6 +28,7 @@ import {
   mergeFileStoreConfig, testDatabaseConnection
 } from "./adminConfig.js";
 import { createRateLimiter, clientIp } from "./rateLimit.js";
+import { captureException } from "../monitoring/sentryService.js";
 import { listBackups, runBackup } from "../backup/backupScheduler.js";
 import {
   getMetricsOutput, getContentType,
@@ -638,6 +639,7 @@ export function createApiServer({
         return send(res, 200, { ok: true, result });
       } catch (error) {
         const statusCode = error?.statusCode || 500;
+        if (statusCode >= 500) captureException(error, { endpoint: "rpc", reqId: req.id });
         return send(res, statusCode, { ok: false, error: error?.message || "RPC failed" });
       }
     }
@@ -652,7 +654,9 @@ export function createApiServer({
         const result = await aiDispatch(body);
         return send(res, 200, { ok: true, result });
       } catch (error) {
-        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "AI request failed" });
+        const statusCode = error?.statusCode || 500;
+        if (statusCode >= 500) captureException(error, { endpoint: "ai/rpc", reqId: req.id });
+        return send(res, statusCode, { ok: false, error: error?.message || "AI request failed" });
       }
     }
 
@@ -704,7 +708,9 @@ export function createApiServer({
         await new Promise((resolve) => { stream.on("close", resolve); stream.on("error", resolve); });
         return undefined;
       } catch (error) {
-        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Export failed" });
+        const statusCode = error?.statusCode || 500;
+        if (statusCode >= 500) captureException(error, { endpoint: "projects/export", reqId: req.id });
+        return send(res, statusCode, { ok: false, error: error?.message || "Export failed" });
       } finally {
         if (outFile) { try { (await import("node:fs")).unlinkSync(outFile); } catch { /* temp cleanup best-effort */ } }
       }
