@@ -36,9 +36,9 @@ export function getDefaultSettings() {
       desktopEnabled: false
     },
     keyboardShortcuts: {
-      openSearch: "Ctrl+K",
+      openSearch: "Alt+K",
       showShortcuts: "Ctrl+/",
-      openCommandPalette: "Ctrl+Shift+K",
+      openCommandPalette: "Ctrl+K",
       toggleNotifications: "Ctrl+Shift+M",
       openBackup: "Ctrl+B",
       openDashboard: "Ctrl+D",
