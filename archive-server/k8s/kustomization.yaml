@@ -15,3 +15,4 @@ resources:
   - frontend-service.yaml
   - ingress.yaml
   - hpa.yaml
+  - network-policy.yaml
