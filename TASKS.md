@@ -2,7 +2,7 @@
 
 > **المصدر:** 9 تقارير فحص (HTML) في `D:\archiveaq\Reports`.
 > **المنهجية:** كل بند في التقارير تم التحقق منه مقابل الكود الفعلي في هذا المستودع. أُبقيت فقط المهام الحقيقية المتبقية؛ والبنود المُنفّذة بالفعل أو غير الدقيقة في التقارير وُثّقت في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
-> **آخر تحديث:** 8 يونيو 2026. إضافة القسم 12 من 4 تقارير فحص معمّق جديدة (87–107 ثغرة). Tasks 70 (Webhooks) و71 (Email Notifications) مكتملان. Task 73 (Setup Wizard) قيد التنفيذ.
+> **آخر تحديث:** 8 يونيو 2026. إضافة القسم 12 من 4 تقارير فحص معمّق جديدة (87–107 ثغرة). Tasks 70 (Webhooks) و71 (Email Notifications) مكتملان. Task 73 (Setup Wizard) قيد التنفيذ. القسم 13: 17 مهمة جديدة من وثيقة مقترحات الميزات 2026 (27 ميزة، 5 محاور).
 
 ## مفتاح الأولويات
 
@@ -704,3 +704,159 @@
   - الملف: `archive-server/src/cache/redisClient.js`
   - الإصلاح: استبدل `client.keys(pattern)` بـ async iterator عبر `client.scan(0, { MATCH: pattern, COUNT: 100 })`.
   - المصدر: deep-audit-v2 (INFRA-04).
+
+---
+
+## 13. مقترحات الميزات 2026 — مهام جديدة
+
+> **المصدر:** `D:\archiveaq\Reports\archive-suite-feature-proposals-2026.md` — 27 ميزة عبر 5 محاور.
+> **المنهجية:** البنود الـ 10 المُغطّاة بالفعل في أقسام سابقة (TagAutocomplete→#79، touch gestures→#79، PWA basic→#39، setup wizard→#73، ثغرات أمان→#74-76، مراقبة→#57، بحث→#14+#52، i18n→#58، a11y→#22+#49) لم تُضف هنا. فقط المهام الحقيقية الجديدة مدرجة.
+> **التأثير المتوقع:** رفع درجة التدقيق الشامل من 69.7 إلى 85+.
+
+---
+
+### 13.1 P0 — رفع الملفات ومشغل الوسائط
+
+- [ ] `[P0]` ⏱️XL **رفع الملفات الفعلي مع رفع مقسم وطابور في الخلفية** — النظام يخزن بيانات وصفية فقط، لا يرفع ملفات حقيقية.
+  - الملفات الجديدة: `archive app/src/store/uploadSlice.js`، `archive app/src/hooks/useChunkedUpload.js`، `archive app/src/components/upload/UploadQueue.jsx`.
+  - التغييرات: `archive app/src/pages/AddVideoPage.jsx`، `archive app/src/components/modals/FileArchiveWizard.jsx`.
+  - التنفيذ: رفع مقسم (5MB chunks) عبر `FileStore.putBlob()`؛ استئناف تلقائي بعد انقطاع الإنترنت؛ طابور خلفي يسمح للمستخدم بمواصلة العمل أثناء الرفع؛ شريط تقدم دقيق (نسبة الملف + إجمالي الطابور)؛ كشف التكرارات بـ SHA-256 checksum.
+  - الجهد: 6-8 أسابيع. يدعم جميع مزودي التخزين (S3/Azure/GDrive/Dropbox).
+  - المصدر: feature-proposals-2026 (محور 1 — ميزة #1).
+
+- [ ] `[P0]` ⏱️XL **مشغل فيديو احترافي مع دعم ترجمة SRT/VTT** — المشغل الحالي `<video controls>` افتراضي بلا تخصيص.
+  - الملفات الجديدة: `archive app/src/components/media/VideoPlayer.jsx`، `archive app/src/components/media/SubtitleRenderer.jsx`، `archive app/src/features/media/subtitleParser.js`، `archive app/src/features/media/transcriptToSrt.js`.
+  - التنفيذ: شريط تقدم مخصص مع معاينة مصغرات (thumbnails)؛ دعم SRT/VTT مع عرض على الفيديو وتخصيص الخط واللون؛ تحكم بالسرعة (0.5x–2x)؛ اختصارات لوحة مفاتيح (Space/←→/↑↓/F)؛ Picture-in-Picture؛ تحويل ناتج Whisper تلقائياً إلى SRT؛ مزامنة مع `TranscriptSyncWorkbench`.
+  - الجهد: 6-8 أسابيع. يرفع درجة مرحلة الميديا من 58 إلى 85+.
+  - المصدر: feature-proposals-2026 (محور 4 — ميزة #20).
+
+- [ ] `[P0]` ⏱️XL **محرر خط زمني بصري للمونتاج مع موجة صوتية** — المحرر الحالي يعتمد على إدخال أرقام بلا معاينة بصرية.
+  - الملفات الجديدة: `archive app/src/features/projects/TimelineEditor.jsx`، `WaveformTrack.jsx`، `VideoTrack.jsx`، `SubtitleTrack.jsx`، `TransitionsPanel.jsx`، `ExportDialog.jsx`.
+  - تغييرات: `archive-server/src/export/ffmpegPlan.js`.
+  - التنفيذ: عرض موجة صوتية عبر `wavesurfer.js`؛ سحب حواف المقاطع لتعديل نقاط البداية/النهاية؛ معاينة فورية؛ مسارات متعددة (فيديو + صوت + ترجمة)؛ تصدير محسّن مع اختيار الدقة/الترميز/الجودة؛ انتقالات بسيطة (crossfade/cut/dissolve)؛ Undo/Redo.
+  - الجهد: 8-10 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 4 — ميزة #21).
+
+---
+
+### 13.2 P1 — الأمان والاستقرار
+
+- [ ] `[P1]` ⏱️L **تشفير النسخ الاحتياطية AES-256-GCM + تحقق SHA-256 تلقائي** — النسخ غير مشفرة وغير مُتحقق منها.
+  - الملفات: `archive-server/src/backup/backupScheduler.js`، صفحة `DataCenterPage.jsx`.
+  - التنفيذ: تشفير AES-256-GCM لكل نسخة تلقائياً؛ حساب SHA-256 checksum بعد كل نسخة والتحقق قبل الاستعادة؛ تخزين بعيد اختياري (S3/Cloudflare R2) مع تشفير أثناء النقل؛ واجهة استعادة تطلب كلمة مرور التشفير؛ تنبيه عند فشل التحقق.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 2 — ميزة #13).
+
+- [ ] `[P1]` ⏱️L **حدود الموارد متعددة الطبقات (IP + User + Endpoint)** — Rate limiting موجود على IP فقط، لا حدود للمستخدم ولا لنقاط النهاية الفردية.
+  - الملفات: `archive-server/src/api/rateLimit.js`، `archive-server/src/api/server.js`.
+  - التنفيذ: طبقة 1 — IP (100 طلب/دقيقة)؛ طبقة 2 — User (60 طلب/دقيقة)؛ طبقة 3 — per-endpoint (OCR: 10/دقيقة، AI: 30/دقيقة)؛ حد تزامن FFmpeg قابل للإعداد (`MEDIA_JOB_CONCURRENCY`)؛ Queue مهام FFmpeg بأولويات (probe > thumbnail > transcode).
+  - الجهد: 2-3 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 3 — ميزة #16).
+
+---
+
+### 13.3 P1 — تجربة المستخدم اليومية
+
+- [ ] `[P1]` ⏱️L **التعديل المضمّن في عرض الجدول (InlineCellEditor)** — كل تعديل يتطلب فتح صفحة التفاصيل والعودة.
+  - الملفات الجديدة: `archive app/src/components/views/InlineCellEditor.jsx`.
+  - تغييرات: `archive app/src/components/views/TableView.jsx`.
+  - التنفيذ: نقر مزدوج لتحرير أي خلية مباشرة؛ Tab/Shift+Tab للتنقل بين الخلايا؛ حفظ تلقائي عند Enter أو مغادرة الخلية؛ Ctrl+Z للتراجع عبر `undoManager` الموجود؛ محررات حسب نوع الحقل (نص/قائمة/تاريخ/تقييم/وسوم). يقلل نقرات التعديل من 5+ إلى 2.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 1 — ميزة #3). ملاحظة: P2 placeholder موجود في §12.7 — هذه الميزة الكاملة.
+
+- [ ] `[P1]` ⏱️L **Service Worker ذكي — Workbox strategies + Background Sync كامل** — SW الحالي cache-first بسيط (Task #39). هذه ترقية لـ Workbox كامل.
+  - الملف: `archive app/public/sw.js`، `archive app/vite.config.js`.
+  - التنفيذ: `precacheAndRoute` لـ app shell؛ `StaleWhileRevalidate` لـ `/api/`؛ `CacheFirst` للصور والخطوط؛ `BackgroundSync Queue` لعمليات الكتابة أوفلاين تُرسل عند عودة الاتصال؛ `Periodic Background Sync` للمزامنة التلقائية. التطبيق يعمل أوفلاين بشكل كامل (تصفح + إنشاء + تعديل).
+  - الجهد: 2-3 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 1 — ميزة #5).
+
+- [ ] `[P1]` ⏱️L **تنقل سفلي ذكي للجوال (Smart Bottom Tabs)** — الشريط الجانبي يتخفّى على الجوال بلا بديل تنقل سفلي.
+  - الملفات الجديدة: `archive app/src/components/layout/BottomTabBar.jsx`.
+  - تغييرات: `archive app/src/components/layout/MobileActionBar.jsx` → ترقية أو استبدال.
+  - التنفيذ: 4-5 أقسام رئيسية تتكيف مع الاستخدام (الأكثر استخداماً أولاً)؛ سحب لإعادة الترتيب؛ ضغط مطوّل لفتح الأقسام الفرعية؛ `safe-area-inset-bottom` للـ notch؛ يحل محل `MobileActionBar`.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 1 — ميزة #6).
+
+- [ ] `[P1]` ⏱️M **إصلاح تبديل الباكند فوري بلا إعادة تشغيل** — تبديل الباكند (محلي↔سحابي) يتطلب إعادة تشغيل التطبيق.
+  - الملفات: `archive app/src/app/App.jsx` أو `registerByBackendChoice.js`، صفحة الإعدادات.
+  - التنفيذ: عند تغيير `backendChoice` → `flushPendingWrites()` → `registerByBackendChoice()` ديناميكياً → `loadAllData()` من الباكند الجديد → `showToast("تم التبديل بنجاح")`؛ مؤشر "جاري التبديل…" أثناء العملية.
+  - الجهد: 1-2 أسبوع.
+  - المصدر: feature-proposals-2026 (محور 1 — ميزة #8).
+
+---
+
+### 13.4 P1 — التشغيل والنشر والبنية التحتية
+
+- [ ] `[P1]` ⏱️L **لوحة تحكم صحة السيرفر المدمجة (ServerStatusPage)** — لا توجد واجهة لحالة السيرفر؛ يتطلب CLI.
+  - الملفات الجديدة: `archive app/src/pages/ServerStatusPage.jsx`.
+  - تغييرات: `archive-server/src/api/server.js` (توسيع `/api/health`).
+  - التنفيذ: مؤشرات حية (CPU/ذاكرة/قرص/اتصالات DB)؛ حالة حاويات Docker (running/stopped/restarting)؛ آخر نسخة احتياطية + زر "نسخ احتياطي الآن"؛ تنبيهات (قرص 90%، ذاكرة عالية، فشل نسخ احتياطي)؛ سجل آخر 50 عملية؛ أزرار تشغيل/إيقاف/إعادة للحاويات (admin only).
+  - الصلاحية: admin+ للاطلاع، owner للتشغيل.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 2 — ميزة #10).
+
+- [ ] `[P1]` ⏱️M **أتمتة استيراد مخطط PocketBase عبر Admin API** — الإعداد الحالي يتطلب 8+ خطوات يدوية لاستيراد المخطط.
+  - الملفات الجديدة: `scripts/pb-init.mjs`.
+  - تغييرات: `deploy/setup.sh`، `scripts/setup.mjs`.
+  - التنفيذ: عند اختيار PocketBase في wizard → إنشاء حساب المسؤول برمجياً عبر PocketBase Admin API → استيراد المخطط تلقائياً → التحقق من كل خطوة. يحول من 8 خطوات يدوية إلى 0.
+  - الجهد: 1-2 أسبوع.
+  - المصدر: feature-proposals-2026 (محور 2 — ميزة #11).
+
+- [ ] `[P1]` ⏱️L **طابور مهام وسائط مستمر — BullMQ + Redis** — مهام FFmpeg في الذاكرة فقط، تُفقد عند إعادة تشغيل السيرفر.
+  - الملفات: `archive-server/src/media/mediaJobs.js` → استبدال `createInMemoryMediaJobStore`.
+  - التنفيذ: `Queue('media-jobs', { connection: redisConnection })`؛ `Worker` بـ concurrency قابل للإعداد (`MEDIA_JOB_CONCURRENCY`)؛ المهام تنجو من إعادة التشغيل؛ أولويات (probe > thumbnail > transcode)؛ إعادة محاولة تلقائية عند الفشل؛ متابعة تقدم المهمة من أي جلسة.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 3 — ميزة #17).
+
+- [ ] `[P1]` ⏱️L **استعادة النسخ الاحتياطية من الواجهة مع استعادة جزئية** — لا واجهة للاستعادة؛ يدوي عبر CLI فقط.
+  - الملفات: `archive app/src/pages/DataCenterPage.jsx`، `archive-server/src/backup/backupScheduler.js`.
+  - الملف الجديد: `POST /api/admin/backup/restore`.
+  - التنفيذ: قائمة النسخ المتاحة مع التاريخ والحجم؛ معاينة محتوى النسخة (عدد السجلات/المخازن) قبل الاستعادة؛ استعادة جزئية (اختيار مخازن محددة)؛ تأكيد مزدوج مع كتابة النص؛ حماية من استعادة نسخة أقدم على بيانات أحدث.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 3 — ميزة #19).
+
+---
+
+### 13.5 P2 — ميزات مبتكرة جديدة
+
+- [ ] `[P2]` ⏱️L **نشر سحابي بنقرة واحدة — Railway / DigitalOcean / Render** — لا أزرار Deploy-to-Cloud في README.
+  - الملفات: `README.md`، ملفات `railway.json`/`render.yaml`/`do-app-spec.yaml` جديدة.
+  - التنفيذ: أزرار "Deploy to Railway/DigitalOcean/Render" في README؛ 4 متغيرات فقط (DOMAIN, ADMIN_EMAIL, ADMIN_PASSWORD, JWT_SECRET)؛ المنصة تتولى البناء والنشر Docker Compose؛ يفتح سوق غير تقني جديد.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 2 — ميزة #12).
+
+- [ ] `[P2]` ⏱️XL **مساعد ذكي مدمج (AI Copilot) — لوحة جانبية قابلة للطي** — مزودو AI متاحون لكن معزولون في صفحة منفصلة.
+  - الملفات الجديدة: `archive app/src/components/ai/AICopilotPanel.jsx`، `archive app/src/components/ai/AICopilotButton.jsx`.
+  - التنفيذ: اقتراحات ذكية أثناء إدخال العنوان/الوصف؛ توليد وسوم تلقائية من المحتوى؛ تلخيص عنصر أو مجموعة بنقرة؛ إجابة أسئلة بالعربية عن المحتوى المؤرشف؛ توليد تقارير ذكية (إحصائيات/أنماط/توصيات)؛ لوحة جانبية قابلة للطي لا تعيق العمل.
+  - الصلاحية: admin + editor.
+  - الجهد: 6-8 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 4 — ميزة #22).
+
+- [ ] `[P2]` ⏱️L **سير عمل المراجعة والموافقة (Draft → Review → Approved → Published)** — لا حالات للمحتوى؛ أي مستخدم بإذن تعديل يمكنه نشر مباشرة.
+  - الملفات: حقل `status` في `StorageRow.data`؛ `archive app/src/components/review/ReviewWorkflow.jsx`؛ تكامل مع نظام RBAC الموجود.
+  - التنفيذ: 4 حالات (مسودة/قيد المراجعة/معتمد/منشور)؛ إشعارات للمراجعين عند تقديم عنصر؛ تعليقات مراجعة منظمة مع طلب تعديلات؛ سجل مراجعة كامل؛ تكامل مع ACL + Comments.
+  - الجهد: 4-6 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 4 — ميزة #24).
+
+- [ ] `[P2]` ⏱️L **صفحة مساعدة تفاعلية مع جولة إرشادية react-joyride** — صفحة المساعدة الحالية أساسية بلا توجيه.
+  - الملفات: `archive app/src/pages/HelpPage.jsx` (موجود → ترقية)؛ `archive app/src/components/onboarding/OnboardingTour.jsx` جديد.
+  - التنفيذ: جولة إرشادية (onboarding tour) عبر `react-joyride` للمستخدمين الجدد؛ دليل استخدام تفاعلي مع لقطات شاشة؛ بحث في المحتوى التعليمي؛ تلميحات سياقية (tooltips) على كل ميزة؛ اختصارات لوحة مفاتيح قابلة للاكتشاف.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: feature-proposals-2026 (محور 5 — ميزة #27).
+
+---
+
+### ملاحظة: بنود مُغطّاة في أقسام سابقة
+
+| الميزة | تغطيها |
+|--------|--------|
+| توحيد TagAutocomplete (#2) | Task #79 (pending) |
+| إيماءات اللمس للجوال (#4) | Task #79 (pending) |
+| PWA Service Worker أساسي (#5 — جزء) | Task #39 (completed) |
+| معالج إعداد الويب (#9) | Task #73 (in_progress) |
+| إصلاح الثغرات الحرجة (#14) | Tasks #74-#76 (pending) |
+| مصادقة إلزامية (#15) | Task #73 (in_progress) |
+| مراقبة متقدمة (#18) | Task #57 (completed) |
+| تحسين البحث الدلالي (#23) | Tasks #14 + #52 (completed) |
+| استخراج i18n (#25) | Task #58 (completed) |
+| تحسين Accessibility (#26) | Tasks #22 + #49 (completed) |
