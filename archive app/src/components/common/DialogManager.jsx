@@ -130,8 +130,7 @@ function DialogBackdrop({ children, zIndex, isTop, onBackdropClick }) {
       onClick={(e) => {
         if (e.target === e.currentTarget && onBackdropClick) onBackdropClick();
       }}
-      aria-modal="true"
-      role="presentation"
+      role="none"
     >
       {children}
     </div>
@@ -200,7 +199,7 @@ function FocusTrap({ children }) {
     };
   }, []);
 
-  return <div ref={ref}>{children}</div>;
+  return <div ref={ref} role="dialog" aria-modal="true">{children}</div>;
 }
 
 // ─── useDialog ────────────────────────────────────────────────────────────────

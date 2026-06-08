@@ -70,6 +70,7 @@ function PdfViewer({ url, pageCount }) {
         const doc = await pdfjsLib.getDocument(url).promise;
         if (cancelled) return;
 
+        if (cancelled) return;
         pdfDocRef.current = doc;
         setTotalPages(doc.numPages);
         await renderPage(doc, 1);

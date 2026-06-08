@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { History, RotateCcw, Loader2 } from "lucide-react";
+import { History, RotateCcw, Loader2, AlertTriangle } from "lucide-react";
 import { useAppStore } from "../../stores/index.js";
 
 function formatDate(iso) {
@@ -24,6 +24,7 @@ export function RecordVersionHistory({ recordId, store = "videoItems", onRestore
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [restoring, setRestoring] = useState(null);
+  const [confirmVersion, setConfirmVersion] = useState(null);
   const showToast = useAppStore((s) => s.showToast);
 
   useEffect(() => {
@@ -41,7 +42,11 @@ export function RecordVersionHistory({ recordId, store = "videoItems", onRestore
   }, [recordId, store]);
 
   async function handleRestore(version) {
-    if (!window.confirm(`استعادة النسخة ${version}؟ سيُستبدل المحتوى الحالي.`)) return;
+    if (confirmVersion !== version) {
+      setConfirmVersion(version);
+      return;
+    }
+    setConfirmVersion(null);
     setRestoring(version);
     try {
       const res = await fetch(
@@ -99,20 +104,43 @@ export function RecordVersionHistory({ recordId, store = "videoItems", onRestore
                 )}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => handleRestore(v.version)}
-              disabled={restoring === v.version}
-              aria-label={`استعادة النسخة ${v.version}`}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs text-gray-300 transition-colors disabled:opacity-50 shrink-0"
-            >
-              {restoring === v.version ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <RotateCcw className="w-3 h-3" />
-              )}
-              استعادة
-            </button>
+            {confirmVersion === v.version ? (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-xs text-amber-400 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  متأكد؟
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleRestore(v.version)}
+                  className="px-2 py-1 rounded text-xs bg-amber-600 hover:bg-amber-500 text-white"
+                >
+                  نعم
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmVersion(null)}
+                  className="px-2 py-1 rounded text-xs bg-gray-700 hover:bg-gray-600 text-gray-300"
+                >
+                  لا
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleRestore(v.version)}
+                disabled={restoring === v.version}
+                aria-label={`استعادة النسخة ${v.version}`}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs text-gray-300 transition-colors disabled:opacity-50 shrink-0"
+              >
+                {restoring === v.version ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-3 h-3" />
+                )}
+                استعادة
+              </button>
+            )}
           </li>
         ))}
       </ol>

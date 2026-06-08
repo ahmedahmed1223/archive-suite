@@ -502,16 +502,16 @@
   - الإصلاح: احذف القيم الافتراضية؛ استخدم Kubernetes ExternalSecrets أو Helm `--set` عند النشر؛ أضف فحص في `productionGuard.js`.
   - المصدر: deep-audit-v2 (K8s-03)، critical.
 
-- [ ] `[P0]` ⏱️S **تشغيل حاويات PocketBase وOCR كمستخدم غير جذر** — صور الخدمات الجانبية تعمل كـ root.
-  - الملفات: `archive-server/Dockerfile.pocketbase`، `services/ocr/Dockerfile`
-  - الإصلاح: أضف `USER 1000:1000` بعد تعيين أذونات الملفات في كل Dockerfile.
+- [x] `[P0]` ⏱️S **تشغيل حاويات PocketBase وOCR كمستخدم غير جذر** — صور الخدمات الجانبية تعمل كـ root.
+  - الملفات: `archive-server/pocketbase/Dockerfile`، `archive-server/ocr-service/Dockerfile`
+  - الإصلاح: أُضيف مستخدم `pbuser`/`ocruser` مع `USER` directive في كل Dockerfile.
   - المصدر: deep-audit-v2 (K8s-04).
 
 ---
 
 ### 12.3 أمان — P1 عالٍ
 
-- [ ] `[P1]` ⏱️S **إصلاح مصادقة WebSocket — استخدام السر الصحيح** — `presenceServer.js` يستخدم متغير JWT خاطئ للتحقق من توكنات الاتصال.
+- [x] `[P1]` ⏱️S **إصلاح مصادقة WebSocket — استخدام السر الصحيح** — `presenceServer.js` يستخدم `JWT_AUTH_SECRET || JWT_SECRET` بشكل صحيح.
   - الملف: `archive-server/src/presence/presenceServer.js`
   - الإصلاح: تأكد من استخدام `JWT_AUTH_SECRET` الصحيح عند التحقق من توكن WebSocket.
   - المصدر: deep-audit-v2.
@@ -521,12 +521,12 @@
   - الإصلاح: عند تفعيل TOTP أنتج 8 رموز استرداد (16 حرفًا عشوائيًا مُهاشَة في DB) تُعرض مرة واحدة. أضف مسار `/api/totp/recover` يتحقق ويستهلك الرمز.
   - المصدر: deep-audit-v2.
 
-- [ ] `[P1]` ⏱️S **Rate Limit على تعطيل TOTP** — لا يوجد تقييد على `/api/totp/disable` مما يُتيح brute-force.
+- [x] `[P1]` ⏱️S **Rate Limit على تعطيل TOTP** — لا يوجد تقييد على `/api/totp/disable` مما يُتيح brute-force.
   - الملف: `archive-server/src/api/server.js` (مسار `/api/totp/disable`)
   - الإصلاح: أضف rate limit مخصص (3 محاولات فاشلة/15 دقيقة) على هذا المسار.
   - المصدر: deep-audit-v2.
 
-- [ ] `[P1]` ⏱️S **تثبيت `APP_BASE_URL` من متغيرات البيئة** — بناء رابط الاسترداد من ترويسة `Host`/`Origin` يُتيح Open Redirect.
+- [x] `[P1]` ⏱️S **تثبيت `APP_BASE_URL` من متغيرات البيئة** — بناء رابط الاسترداد من ترويسة `Host`/`Origin` يُتيح Open Redirect.
   - الملف: `archive-server/src/api/server.js` أو `emailService.js` (مسار `/api/forgot-password`)
   - الإصلاح: استخدم `process.env.APP_BASE_URL` فقط؛ أضفه لـ `.env.example` وـ `productionGuard.js`.
   - المصدر: deep-audit-v2.
@@ -555,32 +555,32 @@
   - الإصلاح: احفظ معرّف `setTimeout` وأضف `return () => clearTimeout(id)` كـ cleanup لـ `useEffect`.
   - المصدر: deep-audit-v2 (FE-02).
 
-- [ ] `[P1]` ⏱️S **`useKeyboardListNav` — Stale Closure** — الـ callback يُصبح قديمًا مع تغيّر البيانات.
+- [x] `[P1]` ⏱️S **`useKeyboardListNav` — Stale Closure** — الـ callback يُصبح قديمًا مع تغيّر البيانات.
   - الملف: `archive app/src/hooks/useKeyboardListNav.js`
   - الإصلاح: استخدم `useRef` للاحتفاظ بآخر نسخة من callback: `const cbRef = useRef(cb); useEffect(() => { cbRef.current = cb; }, [cb]);`.
   - المصدر: deep-audit-v2 (FE-03).
 
-- [ ] `[P1]` ⏱️S **`DialogManager` — `role="presentation"` يتعارض مع `aria-modal`** — يُلغي الدلالة الدلالية ويكسر شجرة Accessibility.
+- [x] `[P1]` ⏱️S **`DialogManager` — `role="presentation"` يتعارض مع `aria-modal`** — يُلغي الدلالة الدلالية ويكسر شجرة Accessibility.
   - الملف: `archive app/src/components/ui/DialogManager.jsx`
   - الإصلاح: احذف `role="presentation"` من العنصر الخارجي (overlay)؛ استخدم `role="dialog"` مع `aria-modal="true"` على الحاوية الداخلية فقط.
   - المصدر: deep-audit-v2 (FE-04).
 
-- [ ] `[P1]` ⏱️S **`AutoTagSuggestions` — تنظيف `AbortController` خاطئ** — `controller.abort()` يُستدعى في `finally` قبل اكتمال المعالجة.
+- [x] `[P1]` ⏱️S **`AutoTagSuggestions` — تنظيف `AbortController` خاطئ** — `controller.abort()` يُستدعى في `finally` قبل اكتمال المعالجة.
   - الملف: `archive app/src/components/tags/AutoTagSuggestions.jsx`
   - الإصلاح: انقل `abort()` لـ `useEffect` cleanup فقط: `return () => controller.abort()`.
   - المصدر: deep-audit-v2 (FE-05).
 
-- [ ] `[P1]` ⏱️S **`DocumentViewer` — Race Condition عند تصيير PDF** — تحميل ملفات متعددة بسرعة يعرض نتيجة رد خاطئ.
+- [x] `[P1]` ⏱️S **`DocumentViewer` — Race Condition عند تصيير PDF** — تحميل ملفات متعددة بسرعة يعرض نتيجة رد خاطئ.
   - الملف: `archive app/src/components/viewer/DocumentViewer.jsx`
   - الإصلاح: استخدم `AbortController` لإلغاء الطلب السابق عند تغيير الملف؛ أو احتفظ بـ `requestId` وتجاهل responses القديمة.
   - المصدر: deep-audit-v2 (FE-06).
 
-- [ ] `[P1]` ⏱️S **`RecordVersionHistory` — `window.confirm` يكسر PWA** — لا يعمل في وضع PWA Standalone.
+- [x] `[P1]` ⏱️S **`RecordVersionHistory` — `window.confirm` يكسر PWA** — لا يعمل في وضع PWA Standalone.
   - الملف: `archive app/src/components/records/RecordVersionHistory.jsx`
   - الإصلاح: استبدل `window.confirm(...)` بـ `DialogManager` المخصص (Task 19).
   - المصدر: deep-audit-v2 (FE-07).
 
-- [ ] `[P1]` ⏱️S **`PresenceIndicator` — يُعطب عند `username` فارغ** — `username?.charAt(0)` يُلقي استثناءً عند سلسلة فارغة.
+- [x] `[P1]` ⏱️S **`PresenceIndicator` — يُعطب عند `username` فارغ** — `username?.charAt(0)` يُلقي استثناءً عند سلسلة فارغة.
   - الملف: `archive app/src/components/collaboration/PresenceIndicator.jsx`
   - الإصلاح: استخدم `(username?.trim() || '?').charAt(0).toUpperCase()`.
   - المصدر: deep-audit-v2 (FE-08).
@@ -589,12 +589,12 @@
 
 ### 12.5 قاعدة البيانات والمتجر — P1
 
-- [ ] `[P1]` ⏱️S **تغيير فهرس pgvector من IVFFlat إلى HNSW** — `IVFFlat` يفشل في الإنشاء على جدول فارغ.
+- [x] `[P1]` ⏱️S **تغيير فهرس pgvector من IVFFlat إلى HNSW** — `IVFFlat` يفشل في الإنشاء على جدول فارغ.
   - الملفات: migration الـ pgvector في `archive-server/prisma/migrations/`، `archive-server/src/ai/embeddingService.js`
   - الإصلاح: migration جديدة: `CREATE INDEX USING hnsw (embedding vector_cosine_ops)` — يعمل على جداول فارغة.
   - المصدر: deep-audit-v2 (DB-01).
 
-- [ ] `[P1]` ⏱️S **إزالة `DEFAULT ''` من عمود `passwordHash`** — القيمة الافتراضية الفارغة تُتيح إنشاء مستخدمين بكلمة مرور فارغة.
+- [x] `[P1]` ⏱️S **إزالة `DEFAULT ''` من عمود `passwordHash`** — القيمة الافتراضية الفارغة تُتيح إنشاء مستخدمين بكلمة مرور فارغة.
   - الملف: `archive-server/prisma/migrations/` (migration typed_users)
   - الإصلاح: migration جديدة تحذف `DEFAULT ''` وتضيف `NOT NULL` صريحًا.
   - المصدر: deep-audit-v2 (DB-02).
@@ -604,7 +604,7 @@
   - الإصلاح: استبدل بدمج عميق انتقائي: احتفظ بمفاتيح root غير المُعدَّلة وادمج القواميس المتداخلة (`metadata`، `tags`) بدل استبدالها كاملًا.
   - المصدر: deep-audit-v2 (FE-BE-01).
 
-- [ ] `[P1]` ⏱️S **إصلاح `loadAllData` — Race Condition في React StrictMode** — `useEffect` المزدوج يُشغّل تحميلين متزامنين يتعارضان في الحالة.
+- [x] `[P1]` ⏱️S **إصلاح `loadAllData` — Race Condition في React StrictMode** — `useEffect` المزدوج يُشغّل تحميلين متزامنين يتعارضان في الحالة.
   - الملف: `archive app/src/app/archiveSlice.js`
   - الإصلاح: استخدم `useRef` كـ guard: `if (loadingRef.current) return; loadingRef.current = true;`.
   - المصدر: deep-audit-v2 (FE-BE-02).
@@ -685,7 +685,7 @@
 
 ### 12.8 البنية التحتية — P3
 
-- [ ] `[P3]` ⏱️S **إصلاح إصدار صورة Postgres** — `postgres:18-alpine` غير موجود؛ أحدث إصدار مستقر هو 17.
+- [x] `[P3]` ⏱️S **إصلاح إصدار صورة Postgres** — `postgres:18-alpine` غير موجود؛ أحدث إصدار مستقر هو 17.
   - الملفات: `docker-compose.yml`، `docker-compose.prod.yml`، `archive-server/k8s/postgres-deployment.yaml`
   - الإصلاح: استبدل `postgres:18-alpine` بـ `postgres:17-alpine`.
   - المصدر: deep-audit-v2 (INFRA-01).

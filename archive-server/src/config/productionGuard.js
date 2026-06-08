@@ -47,5 +47,16 @@ export function assertProductionSecrets(env = process.env) {
     );
   }
 
+  // Advisory warning: missing APP_BASE_URL.
+  // Without it, password-reset links are built from the incoming Host header,
+  // which is attacker-controlled and enables open-redirect phishing.
+  if (!String(env.APP_BASE_URL || "").trim()) {
+    log.warn(
+      "APP_BASE_URL is not set. Password-reset links will be derived from the " +
+      "incoming request Host header, which can be spoofed. " +
+      "Set APP_BASE_URL=https://your-domain.example.com in .env."
+    );
+  }
+
   return { required: true, missing: [] };
 }
