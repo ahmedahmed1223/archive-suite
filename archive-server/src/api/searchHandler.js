@@ -17,6 +17,7 @@
 import { createLogger } from "../logger.js";
 import { cacheGet, cacheSet, TTL } from "../cache/redisCache.js";
 import { semanticSearch } from "../ai/embeddingService.js";
+import { verifyJwt } from "../auth/jwt.js";
 
 const log = createLogger("search");
 
@@ -44,21 +45,20 @@ export function normalizeArabic(text) {
  * Auth is already verified upstream by requireAuth(); this is only used to
  * scope cache keys so different users cannot see each other's cached results.
  */
-function extractUserSub(req) {
+function extractUserSub(req, authSecret) {
+  if (!authSecret) return "anon";
   try {
     const header = req.headers?.authorization || req.headers?.Authorization || "";
     const match = /^Bearer\s+(.+)$/i.exec(String(header));
     if (!match) return "anon";
-    const [, payload] = match[1].split(".");
-    if (!payload) return "anon";
-    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    return String(claims?.sub || "anon");
+    const payload = verifyJwt(match[1], authSecret);
+    return String(payload?.sub || "anon");
   } catch {
     return "anon";
   }
 }
 
-export async function handleSearch(req, res, { provider, prisma } = {}) {
+export async function handleSearch(req, res, { provider, prisma, authSecret } = {}) {
   const url = new URL(req.url, "http://localhost");
   const q = (url.searchParams.get("q") || "").trim();
   const store = url.searchParams.get("store") || "archive_items";
@@ -103,7 +103,7 @@ export async function handleSearch(req, res, { provider, prisma } = {}) {
 
   // Cache-aside: check Redis before hitting the DB. The key includes the userId
   // so different users never share cached results (privacy + correctness).
-  const userId = extractUserSub(req);
+  const userId = extractUserSub(req, authSecret);
   const cacheKey = `search:${userId}:${normalized}:${store}:${cursor ?? ""}:${limit}`;
   const cached = await cacheGet(cacheKey);
   if (cached) {

@@ -621,7 +621,7 @@ export function createApiServer({
       const claims = requireAuthClaims(req, res);
       if (!claims) return undefined;
       try {
-        const { secret, otpauthUrl, qrUrl } = generateTotpSecret(claims.username);
+        const { secret, otpauthUrl, qrUrl } = await generateTotpSecret(claims.username);
         await resolveStorage().put("users", { id: claims.sub, totpSecretPending: secret });
         return send(res, 200, { ok: true, otpauthUrl, qrUrl, message: "امسح رمز QR بتطبيق المصادقة ثم أدخل الرمز للتأكيد." });
       } catch (error) {
@@ -1217,7 +1217,7 @@ export function createApiServer({
     if (url.split("?")[0] === "/api/search" && req.method === "GET") {
       if (overLimit(res, "rpc", req)) return undefined;
       if (!requireAuth(req, res)) return undefined;
-      return handleSearch(req, res, { provider: resolveStorage(), prisma });
+      return handleSearch(req, res, { provider: resolveStorage(), prisma, authSecret: resolvedAuthSecret });
     }
 
     // ── Admin: backup management (admin/owner only) ──────────────────────────

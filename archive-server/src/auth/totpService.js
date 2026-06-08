@@ -14,6 +14,7 @@
  */
 import * as OTPAuth from "otpauth";
 import { randomBytes } from "node:crypto";
+import QRCode from "qrcode";
 
 const ISSUER = process.env.TOTP_ISSUER || "Archive Suite";
 const WINDOW = 1; // Allow ±1 time step (30 s window each side)
@@ -22,7 +23,7 @@ const WINDOW = 1; // Allow ±1 time step (30 s window each side)
  * Generate a new TOTP secret for a user.
  * Returns { secret (base32), otpauthUrl, qrUrl }.
  */
-export function generateTotpSecret(username) {
+export async function generateTotpSecret(username) {
   // Build a 32-character base32 secret from 20 random bytes.
   // base64 output contains A-Z, a-z, 0-9, +, /, = — replace non-base32
   // chars with 'A' so the result is a valid base32 string.
@@ -42,9 +43,8 @@ export function generateTotpSecret(username) {
   });
 
   const otpauthUrl = totp.toString();
-  // QR code URL using a free service (user can also enter secret manually).
-  // For production, self-host with the `qrcode` npm package instead.
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(otpauthUrl)}`;
+  // Generate QR code locally — never send the otpauth:// URI to an external service.
+  const qrUrl = await QRCode.toDataURL(otpauthUrl, { width: 200, margin: 1 });
   return { secret: totp.secret.base32, otpauthUrl, qrUrl };
 }
 
