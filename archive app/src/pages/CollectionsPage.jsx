@@ -15,10 +15,13 @@ import {
   Share2,
   Sparkles,
   Trash2,
-  Video
+  Video,
+  Zap,
+  BookmarkPlus
 } from "lucide-react";
 import * as React from "react";
-import { jsx, jsxs } from "react/jsx-runtime";
+import { jsx, jsxs, Fragment } from "react/jsx-runtime";
+import { SavedFilterCard } from "../components/collections/SavedFilterCard.jsx";
 import { motion } from "framer-motion";
 
 import { appConfirm } from "../components/common/ConfirmDialog.js";
@@ -312,6 +315,68 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
   });
 }
 
+// ── SaveFilterModal ───────────────────────────────────────────────────────
+// Small inline modal to name and save the current search query as a
+// saved filter / smart collection.
+function SaveFilterModal({ onSave, onCancel, initialQuery }) {
+  const [name, setName] = React.useState("");
+  const [isLive, setIsLive] = React.useState(true);
+  const nameId = React.useId();
+  const isLiveId = React.useId();
+  const nameRef = React.useRef(null);
+  React.useEffect(() => {
+    window.requestAnimationFrame(() => nameRef.current?.focus());
+  }, []);
+  return jsx(EntityFormModal, {
+    title: "حفظ البحث الحالي",
+    icon: jsx(BookmarkPlus, { className: "h-4 w-4" }),
+    onCancel,
+    onSubmit: () => name.trim() && onSave(name.trim(), isLive),
+    canSubmit: Boolean(name.trim()),
+    submitLabel: "حفظ كمجموعة",
+    isEditing: false,
+    children: jsxs("div", {
+      className: "grid gap-3",
+      children: [
+        jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
+          jsx("label", { htmlFor: nameId, className: "block", children: "اسم المجموعة" }),
+          jsx("input", {
+            id: nameId,
+            ref: nameRef,
+            value: name,
+            onChange: (e) => setName(e.target.value),
+            className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+            placeholder: "مثال: أرشيف أكتوبر 2026"
+          })
+        ] }),
+        jsxs("label", {
+          htmlFor: isLiveId,
+          className: "flex items-center gap-3 cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 hover:bg-white/8 transition-colors",
+          children: [
+            jsx("input", {
+              id: isLiveId,
+              type: "checkbox",
+              checked: isLive,
+              onChange: (e) => setIsLive(e.target.checked),
+              className: "h-4 w-4 accent-cyan-400"
+            }),
+            jsxs("span", { className: "flex-1 text-sm", children: [
+              jsx("span", { className: "font-medium text-white", children: "مجموعة ذكية (حية)" }),
+              jsx("span", { className: "block text-xs text-gray-500 mt-0.5", children: "يُعاد تشغيل الاستعلام تلقائياً في كل زيارة" })
+            ] }),
+            jsx(Zap, { className: "h-4 w-4 text-cyan-400 shrink-0" })
+          ]
+        }),
+        initialQuery && jsx("p", {
+          className: "rounded-lg border border-white/10 bg-gray-950/40 px-3 py-2 text-xs text-gray-500 font-mono truncate",
+          title: JSON.stringify(initialQuery),
+          children: `استعلام: "${typeof initialQuery === "string" ? initialQuery : JSON.stringify(initialQuery)}"`
+        })
+      ]
+    })
+  });
+}
+
 export function CollectionsPage() {
   const {
     virtualCollections = [],
@@ -333,6 +398,77 @@ export function CollectionsPage() {
   const [selectedCollectionId, setSelectedCollectionId] = React.useState(virtualCollections[0]?.id || null);
   const [editingCollection, setEditingCollection] = React.useState(null);
   const [showForm, setShowForm] = React.useState(false);
+
+  // ── Smart Collections / Saved Filters state ──────────────────────────────
+  const [savedFilters, setSavedFilters] = React.useState([]);
+  const [loadingFilters, setLoadingFilters] = React.useState(false);
+  const [showSaveFilterModal, setShowSaveFilterModal] = React.useState(false);
+
+  const fetchSavedFilters = React.useCallback(async () => {
+    setLoadingFilters(true);
+    try {
+      const res = await fetch("/api/saved-filters", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedFilters(data.filters || []);
+      }
+    } catch {
+      // Non-critical — silently skip if backend doesn't support it
+    } finally {
+      setLoadingFilters(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchSavedFilters();
+  }, [fetchSavedFilters]);
+
+  const handleSaveFilter = async (name, isLive) => {
+    try {
+      const res = await fetch("/api/saved-filters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name, query: query || {}, isLive }),
+      });
+      if (res.ok) {
+        setShowSaveFilterModal(false);
+        await fetchSavedFilters();
+        showToast?.(`تم حفظ المجموعة الذكية: ${name}`, "success");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast?.(err.error || "تعذّر حفظ المجموعة", "error");
+      }
+    } catch {
+      showToast?.("تعذّر حفظ المجموعة", "error");
+    }
+  };
+
+  const handleDeleteSavedFilter = async (id) => {
+    try {
+      const res = await fetch(`/api/saved-filters/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.ok) {
+        setSavedFilters((prev) => prev.filter((f) => f.id !== id));
+        showToast?.("تم حذف المجموعة الذكية", "info");
+      }
+    } catch {
+      showToast?.("تعذّر حذف المجموعة", "error");
+    }
+  };
+
+  const handleOpenSavedFilter = (filter) => {
+    // Navigate to the archive/search view using the saved query.
+    // The query is stored as a string or object — we set the collections
+    // search field if it's a plain string, otherwise serialize it.
+    const queryStr = typeof filter.query === "string"
+      ? filter.query
+      : (filter.query?.text || filter.query?.q || "");
+    setQuery(queryStr);
+    showToast?.(`تم تطبيق مجموعة: ${filter.name}`, "info");
+  };
 
   const typeById = React.useMemo(() => new Map(contentTypes.map((type) => [type.id, type])), [contentTypes]);
   const typeLabel = React.useCallback((item) => typeById.get(item?.type)?.name || "", [typeById]);
@@ -448,7 +584,21 @@ export function CollectionsPage() {
         icon: jsx(FolderOpen, { className: "h-6 w-6 va-accent-text" }),
         title: "المجموعات",
         description: "تنظيم يدوي وذكي للعناصر مع معاينة مباشرة وإدارة سريعة للمحتوى داخل كل مجموعة.",
-        actions: jsxs("button", { type: "button", onClick: startCreate, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مجموعة جديدة"] })
+        actions: jsxs("div", { className: "flex items-center gap-2", children: [
+          jsxs("button", {
+            type: "button",
+            onClick: () => setShowSaveFilterModal(true),
+            className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/20 transition-colors",
+            title: "حفظ البحث الحالي كمجموعة ذكية",
+            children: [jsx(BookmarkPlus, { className: "h-4 w-4" }), "حفظ البحث"]
+          }),
+          jsxs("button", { type: "button", onClick: startCreate, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مجموعة جديدة"] })
+        ] })
+      }),
+      showSaveFilterModal && jsx(SaveFilterModal, {
+        initialQuery: query || null,
+        onCancel: () => setShowSaveFilterModal(false),
+        onSave: handleSaveFilter,
       }),
       showForm && jsx(CollectionForm, {
         collection: editingCollection,
@@ -528,7 +678,46 @@ export function CollectionsPage() {
           onShare: shareCollection,
           shareEnabled
         })
-      ] })
+      ] }),
+      // ── Smart Collections (Saved Filters) section ─────────────────────────
+      jsxs("section", {
+        className: "space-y-3",
+        children: [
+          jsxs("div", { className: "flex items-center justify-between gap-3", children: [
+            jsxs("div", { className: "flex items-center gap-2", children: [
+              jsx(Zap, { className: "h-4 w-4 text-cyan-400" }),
+              jsx("h2", { className: "text-base font-bold text-white", children: "المجموعات الذكية المحفوظة" }),
+              savedFilters.length > 0 && jsx("span", {
+                className: "rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[10px] font-medium text-cyan-300",
+                children: formatNumber(savedFilters.length)
+              })
+            ] }),
+            jsxs("button", {
+              type: "button",
+              onClick: () => setShowSaveFilterModal(true),
+              className: "inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-2.5 py-1.5 text-xs font-medium text-cyan-300 hover:bg-cyan-500/15 transition-colors",
+              children: [jsx(Plus, { className: "h-3 w-3" }), "حفظ البحث الحالي"]
+            })
+          ] }),
+          loadingFilters ? jsx("p", { className: "text-xs text-gray-500 py-2", children: "جارٍ التحميل..." }) :
+          savedFilters.length === 0 ? jsxs("div", {
+            className: "rounded-xl border border-dashed border-cyan-500/20 bg-cyan-500/5 px-4 py-6 text-center",
+            children: [
+              jsx(Zap, { className: "mx-auto h-8 w-8 text-cyan-500/40 mb-2" }),
+              jsx("p", { className: "text-sm font-semibold text-gray-400", children: "لا توجد مجموعات ذكية بعد" }),
+              jsx("p", { className: "text-xs text-gray-600 mt-1", children: "احفظ بحثاً لإنشاء مجموعة ذكية تتحدّث تلقائياً." })
+            ]
+          }) :
+          jsx("div", {
+            className: "grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+            children: savedFilters.map((filter) => jsx(SavedFilterCard, {
+              filter,
+              onDelete: handleDeleteSavedFilter,
+              onOpen: handleOpenSavedFilter,
+            }, filter.id))
+          })
+        ]
+      })
     ]
   });
 }

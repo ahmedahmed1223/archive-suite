@@ -11,7 +11,7 @@ import { handleSearch } from "./searchHandler.js";
 import { exportTimelineToMp4 } from "../export/mp4.js";
 import { createInMemoryMediaJobStore, createMediaJobWorker, montageOutputKey, storeMontageOutput } from "../media/mediaJobs.js";
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
-import { verifyJwt } from "../auth/jwt.js";
+import { verifyJwt, signJwt } from "../auth/jwt.js";
 import { revokeToken } from "../auth/tokenBlacklist.js";
 import { generateTotpSecret, verifyTotpToken } from "../auth/totpService.js";
 import { mintShareToken, readShareTokenPayload } from "../share/token.js";
@@ -37,8 +37,9 @@ import {
 import { handleOcr } from "./ocrHandler.js";
 import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
 import bcrypt from "bcryptjs";
-import { sendPasswordResetEmail } from "../auth/emailService.js";
+import { sendPasswordResetEmail, sendMail } from "../auth/emailService.js";
 import { createResetToken, consumeResetToken } from "../auth/resetTokenStore.js";
+import { notifyRecordShared } from "../notifications/notificationService.js";
 
 // Minimal dependency-free HTTP server exposing the StorageProvider port to the
 // SPA over a single RPC endpoint. Node's built-in http keeps the runtime image
@@ -465,6 +466,66 @@ export function createApiServer({
       });
     }
 
+    // Setup status — open endpoint that tells the SPA whether first-run setup
+    // is needed (i.e. no users have been created yet). Used by the frontend to
+    // redirect to the FirstRunPage wizard on a fresh install.
+    if (req.method === "GET" && url === "/api/setup/status") {
+      try {
+        const users = await resolveStorage().getAll("users").catch(() => []);
+        return send(res, 200, { needsSetup: users.length === 0 });
+      } catch {
+        return send(res, 200, { needsSetup: false });
+      }
+    }
+
+    // First-run registration — only succeeds when no users exist yet.
+    // After the first admin account is created, returns 403 to prevent
+    // open registration. The wizard (FirstRunPage) posts here on fresh installs.
+    if (req.method === "POST" && url === "/api/auth/register") {
+      if (overLimit(res, "login", req)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const { username, email = "", password } = body || {};
+        if (!username || typeof username !== "string" || username.trim().length < 3) {
+          return send(res, 400, { ok: false, error: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل." });
+        }
+        if (!password || typeof password !== "string" || password.length < 8) {
+          return send(res, 400, { ok: false, error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل." });
+        }
+        const storage = resolveStorage();
+        const existingUsers = await storage.getAll("users").catch(() => []);
+        if (existingUsers.length > 0) {
+          return send(res, 403, { ok: false, error: "التسجيل مغلق — يرجى تسجيل الدخول." });
+        }
+        const passwordHash = await bcrypt.hash(password, 12);
+        const stamp = new Date().toISOString();
+        const newUser = {
+          id: `user_${Date.now().toString(36)}`,
+          username: username.trim().slice(0, 50),
+          email: String(email || "").trim().slice(0, 200),
+          displayName: username.trim().slice(0, 50),
+          role: "admin", // first user is always admin
+          isActive: true,
+          passwordHash,
+          createdAt: stamp,
+          updatedAt: stamp,
+        };
+        await storage.put("users", newUser);
+        authLog.info({ event: "register", username: newUser.username, ip: clientIp(req) }, "AUDIT: first-run admin registered");
+        if (!resolvedAuthSecret) {
+          return send(res, 201, { ok: true, user: { id: newUser.id, username: newUser.username, role: newUser.role } });
+        }
+        const token = signJwt(
+          { sub: newUser.id, username: newUser.username, role: newUser.role },
+          resolvedAuthSecret
+        );
+        return send(res, 201, { ok: true, token, user: { id: newUser.id, username: newUser.username, role: newUser.role } });
+      } catch (err) {
+        logger.error({ err }, "register failed");
+        return send(res, 500, { ok: false, error: "فشل إنشاء الحساب." });
+      }
+    }
+
     // Login — open endpoint that issues a token. 401 on bad credentials.
     if (req.method === "POST" && url === "/api/auth/login") {
       if (overLimit(res, "login", req)) return undefined;
@@ -808,7 +869,8 @@ export function createApiServer({
     }
 
     // Scoped sharing (G6) — mint a signed public share link. Auth + rate-limited.
-    // Body: { scope: { type: "all"|"items"|"collection", ids?: [], label? } }.
+    // Body: { scope: { type: "all"|"items"|"collection", ids?: [], label? },
+    //         sharedWithUserId?: string }  — optional for user-to-user share notifications.
     if (req.method === "POST" && url.split("?")[0] === "/api/share") {
       if (overLimit(res, "rpc", req)) return undefined;
       if (!requireAuth(req, res)) return undefined;
@@ -818,6 +880,21 @@ export function createApiServer({
         const title = body?.title || body?.scope?.label || "";
         const token = mintShareToken({ scope: body?.scope, secret: resolvedShareSecret, expiresInDays, title });
         const payload = readShareTokenPayload(token, resolvedShareSecret);
+        const shareUrl = `${requestOrigin(req)}/api/share/${token}`;
+
+        // Fire-and-forget email to the recipient (if caller specified a target user).
+        if (body?.sharedWithUserId) {
+          const senderClaims = (() => { try { return verifyJwt(bearerToken(req), resolvedAuthSecret); } catch { return null; } })();
+          notifyRecordShared({
+            prisma,
+            sendMail,
+            sharedWithUserId: body.sharedWithUserId,
+            sharedByUsername: senderClaims?.username,
+            recordTitle: title,
+            shareUrl,
+          });
+        }
+
         return send(res, 200, { ok: true, result: { token, path: `/api/share/${token}`, title: payload.title, expiresAt: payload.expiresAt, jti: payload.jti } });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Failed to create share link" });
@@ -1331,6 +1408,185 @@ export function createApiServer({
       } catch (err) {
         logger.error({ err }, "version restore failed");
         return send(res, 500, { ok: false, error: "restore_failed" });
+      }
+    }
+
+    // ── Saved Filters / Smart Collections (Task 69) ──────────────────────────
+    // GET  /api/saved-filters         — list caller's saved filters
+    // POST /api/saved-filters         — create a new saved filter
+    // DELETE /api/saved-filters/:id   — delete a saved filter owned by caller
+
+    if (url === "/api/saved-filters" && req.method === "GET") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "المجموعات الذكية غير متاحة في هذا الإعداد." });
+      try {
+        const filters = await prisma.savedFilter.findMany({
+          where: { ownerId: claims.sub },
+          orderBy: { updatedAt: "desc" },
+        });
+        return send(res, 200, { ok: true, filters });
+      } catch (err) {
+        logger.error({ err }, "saved-filters list failed");
+        return send(res, 500, { ok: false, error: "saved_filters_failed" });
+      }
+    }
+
+    if (url === "/api/saved-filters" && req.method === "POST") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "المجموعات الذكية غير متاحة في هذا الإعداد." });
+      try {
+        const body = await readJsonBody(req);
+        if (!body.name || typeof body.name !== "string" || !body.name.trim()) {
+          return send(res, 400, { ok: false, error: "الاسم مطلوب." });
+        }
+        const filter = await prisma.savedFilter.create({
+          data: {
+            id: randomUUID(),
+            name: String(body.name).trim().slice(0, 100),
+            query: body.query ?? {},
+            isLive: Boolean(body.isLive),
+            ownerId: claims.sub,
+          },
+        });
+        return send(res, 201, { ok: true, filter });
+      } catch (err) {
+        logger.error({ err }, "saved-filters create failed");
+        return send(res, 500, { ok: false, error: "saved_filters_create_failed" });
+      }
+    }
+
+    if (req.method === "DELETE" && /^\/api\/saved-filters\/[^/]+$/.test(url.split("?")[0])) {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "المجموعات الذكية غير متاحة في هذا الإعداد." });
+      try {
+        const id = url.split("?")[0].split("/").pop();
+        await prisma.savedFilter.deleteMany({ where: { id, ownerId: claims.sub } });
+        return send(res, 200, { ok: true });
+      } catch (err) {
+        logger.error({ err }, "saved-filters delete failed");
+        return send(res, 500, { ok: false, error: "saved_filters_delete_failed" });
+      }
+    }
+
+    // ── Webhooks CRUD (Task 70) ────────────────────────────────────────────────
+    // GET  /api/webhooks        — list caller's webhooks
+    // POST /api/webhooks        — register a new webhook
+    // DELETE /api/webhooks/:id  — delete a webhook owned by caller
+
+    if (url === "/api/webhooks" && req.method === "GET") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "Webhooks غير متاح في هذا الإعداد." });
+      try {
+        const hooks = await prisma.webhook.findMany({
+          where: { ownerId: claims.sub },
+          orderBy: { createdAt: "desc" },
+        });
+        return send(res, 200, { ok: true, hooks });
+      } catch (err) {
+        logger.error({ err }, "webhooks list failed");
+        return send(res, 500, { ok: false, error: "webhooks_list_failed" });
+      }
+    }
+
+    if (url === "/api/webhooks" && req.method === "POST") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "Webhooks غير متاح في هذا الإعداد." });
+      try {
+        const body = await readJsonBody(req);
+        if (!body.url || typeof body.url !== "string") {
+          return send(res, 400, { ok: false, error: "url required" });
+        }
+        try { new URL(body.url); } catch {
+          return send(res, 400, { ok: false, error: "invalid url" });
+        }
+        const ALLOWED_EVENTS = ["record.created", "record.updated", "record.deleted", "record.restored"];
+        const events = Array.isArray(body.events)
+          ? body.events.filter(e => ALLOWED_EVENTS.includes(e))
+          : ALLOWED_EVENTS;
+        const secret = body.secret || randomUUID().replace(/-/g, "");
+        const hook = await prisma.webhook.create({
+          data: {
+            url: String(body.url).slice(0, 500),
+            events,
+            secret,
+            active: true,
+            ownerId: claims.sub,
+          },
+        });
+        return send(res, 201, { ok: true, hook });
+      } catch (err) {
+        logger.error({ err }, "webhooks create failed");
+        return send(res, 500, { ok: false, error: "webhooks_create_failed" });
+      }
+    }
+
+    if (req.method === "DELETE" && /^\/api\/webhooks\/[^/]+$/.test(url.split("?")[0])) {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "Webhooks غير متاح في هذا الإعداد." });
+      try {
+        const id = url.split("?")[0].split("/").pop();
+        await prisma.webhook.deleteMany({ where: { id, ownerId: claims.sub } });
+        return send(res, 200, { ok: true });
+      } catch (err) {
+        logger.error({ err }, "webhooks delete failed");
+        return send(res, 500, { ok: false, error: "webhooks_delete_failed" });
+      }
+    }
+
+    // ── Notification preferences ─────────────────────────────────────────────
+    // GET  /api/notification-preferences  — fetch the current user's prefs
+    // PATCH /api/notification-preferences — update one or more boolean prefs
+
+    if (url.split("?")[0] === "/api/notification-preferences" && req.method === "GET") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) {
+        // No Postgres — return safe defaults so the UI still works.
+        return send(res, 200, { ok: true, prefs: { emailOnShare: true, emailOnUpload: false, emailOnMention: true } });
+      }
+      try {
+        const prefs = await prisma.notificationPreference.findUnique({ where: { userId: claims.sub } })
+          ?? { emailOnShare: true, emailOnUpload: false, emailOnMention: true };
+        return send(res, 200, { ok: true, prefs });
+      } catch (err) {
+        logger.warn({ err }, "notification-preferences GET failed");
+        return send(res, 500, { ok: false, error: "failed" });
+      }
+    }
+
+    if (url.split("?")[0] === "/api/notification-preferences" && req.method === "PATCH") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) {
+        return send(res, 501, { ok: false, error: "Notification preferences غير متاحة في هذا الإعداد." });
+      }
+      try {
+        const body = await readJsonBody(req);
+        const data = {};
+        if (typeof body.emailOnShare === "boolean") data.emailOnShare = body.emailOnShare;
+        if (typeof body.emailOnUpload === "boolean") data.emailOnUpload = body.emailOnUpload;
+        if (typeof body.emailOnMention === "boolean") data.emailOnMention = body.emailOnMention;
+        if (Object.keys(data).length === 0) {
+          return send(res, 400, { ok: false, error: "No valid preference fields provided." });
+        }
+        const prefs = await prisma.notificationPreference.upsert({
+          where: { userId: claims.sub },
+          create: { id: randomUUID(), userId: claims.sub, ...data },
+          update: data,
+        });
+        return send(res, 200, { ok: true, prefs });
+      } catch (err) {
+        logger.warn({ err }, "notification-preferences PATCH failed");
+        return send(res, 500, { ok: false, error: "failed" });
       }
     }
 
