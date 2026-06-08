@@ -14,6 +14,7 @@ import { createVocabularyEntryValue, parseVocabularyAliases } from "../vocabular
 import { createVideoItemValue, parseVideoTags } from "./viewModel.js";
 import { reportError } from "../../utils/errorReporting.js";
 import { AutoTagSuggestions } from "../../components/upload/AutoTagSuggestions.jsx";
+import { TagAutocomplete } from "../../components/forms/TagAutocomplete.jsx";
 import { getCloudToken } from "../../bootstrap/cloudSession.js";
 
 const DRAFT_KEY = "videoArchive:quickAddDraft";
@@ -300,7 +301,7 @@ export function QuickAddDialog({ open, onOpenChange }) {
         ] }) : null,
         (mode === "video" || mode === "term") ? jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
           jsx("span", { children: mode === "video" ? "وسوم" : "مرادفات" }),
-          jsx("input", { value: tagsText, onChange: (event) => setTagsText(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", placeholder: mode === "video" ? "مفصولة بفواصل" : "مرادفات مفصولة بفواصل" })
+          jsx(TagAutocomplete, { value: tagsText, onChange: setTagsText, allowed: mode === "video" ? ["tags", "vocabulary"] : [], placeholder: mode === "video" ? "مفصولة بفواصل" : "مرادفات مفصولة بفواصل" })
         ] }) : null,
         mode === "video"
           ? jsx(AutoTagSuggestions, {

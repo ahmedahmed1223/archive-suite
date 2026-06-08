@@ -2,7 +2,7 @@
 
 > **المصدر:** 9 تقارير فحص (HTML) في `D:\archiveaq\Reports`.
 > **المنهجية:** كل بند في التقارير تم التحقق منه مقابل الكود الفعلي في هذا المستودع. أُبقيت فقط المهام الحقيقية المتبقية؛ والبنود المُنفّذة بالفعل أو غير الدقيقة في التقارير وُثّقت في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
-> **آخر تحديث:** 8 يونيو 2026. Tasks #74–#77 (P0 security + K8s) مكتملة. Tasks #78–#79 (P1) قيد التنفيذ.
+> **آخر تحديث:** 8 يونيو 2026. Tasks #74–#78 (P0 security + K8s + frontend bugs) مكتملة. Task #79 (P1 UX) قيد التنفيذ.
 
 ## مفتاح الأولويات
 
@@ -545,12 +545,12 @@
 
 ### 12.4 أخطاء الواجهة الأمامية — P1
 
-- [ ] `[P1]` ⏱️S **`usePresence` — إعادة اتصال بلا Exponential Backoff** — يُعيد الاتصال فورًا عند الانقطاع مما يُغرق الخادم.
+- [x] `[P1]` ⏱️S **`usePresence` — إعادة اتصال بلا Exponential Backoff** — يُعيد الاتصال فورًا عند الانقطاع مما يُغرق الخادم.
   - الملف: `archive app/src/hooks/usePresence.js`
   - الإصلاح: أضف exponential backoff (500ms -> 1s -> 2s -> max 30s مع jitter) عند كل محاولة إعادة اتصال.
   - المصدر: deep-audit-v2 (FE-01).
 
-- [ ] `[P1]` ⏱️S **`useProgress` — `setTimeout` غير مُنظَّف (Memory Leak)** — المؤقت يُطلق `setState` على مكوّن unmounted.
+- [x] `[P1]` ⏱️S **`useProgress` — `setTimeout` غير مُنظَّف (Memory Leak)** — المؤقت يُطلق `setState` على مكوّن unmounted.
   - الملف: `archive app/src/hooks/useProgress.js`
   - الإصلاح: احفظ معرّف `setTimeout` وأضف `return () => clearTimeout(id)` كـ cleanup لـ `useEffect`.
   - المصدر: deep-audit-v2 (FE-02).
@@ -599,7 +599,7 @@
   - الإصلاح: migration جديدة تحذف `DEFAULT ''` وتضيف `NOT NULL` صريحًا.
   - المصدر: deep-audit-v2 (DB-02).
 
-- [ ] `[P1]` ⏱️M **إصلاح `storeCore.js` — Shallow Merge يُضيّع البيانات المتداخلة** — `Object.assign(existing, update)` يحذف الحقول المتداخلة غير المذكورة في التحديث.
+- [x] `[P1]` ⏱️M **إصلاح `storeCore.js` — Shallow Merge يُضيّع البيانات المتداخلة** — `Object.assign(existing, update)` يحذف الحقول المتداخلة غير المذكورة في التحديث.
   - الملف: `archive app/src/store/storeCore.js`
   - الإصلاح: استبدل بدمج عميق انتقائي: احتفظ بمفاتيح root غير المُعدَّلة وادمج القواميس المتداخلة (`metadata`، `tags`) بدل استبدالها كاملًا.
   - المصدر: deep-audit-v2 (FE-BE-01).
@@ -609,7 +609,7 @@
   - الإصلاح: استخدم `useRef` كـ guard: `if (loadingRef.current) return; loadingRef.current = true;`.
   - المصدر: deep-audit-v2 (FE-BE-02).
 
-- [ ] `[P1]` ⏱️S **إصلاح `selectors.js` — مراجع جديدة عند كل استدعاء تُسبب Re-Renders زائدة** — الـ selectors تُنشئ مصفوفات/كائنات جديدة حتى لو البيانات لم تتغيّر.
+- [x] `[P1]` ⏱️S **إصلاح `selectors.js` — مراجع جديدة عند كل استدعاء تُسبب Re-Renders زائدة** — الـ selectors تُنشئ مصفوفات/كائنات جديدة حتى لو البيانات لم تتغيّر.
   - الملف: `archive app/src/store/selectors.js`
   - الإصلاح: اربط الـ selectors بـ `useMemo` مع dependency arrays دقيقة، أو استخدم مكتبة `reselect`.
   - المصدر: deep-audit-v2 (FE-BE-03).
