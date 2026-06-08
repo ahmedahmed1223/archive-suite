@@ -27,6 +27,13 @@
  *    partial snapshot of one store:
  *    { exportedAt, version, store, data: record[], nextCursor: string|null, hasMore: boolean }
  *  replaceAll(payload)          -> Promise<object>   replace all stores; returns write counts
+ *
+ * Optional extension (not in STORAGE_PROVIDER_METHODS — adapters may omit it):
+ *  getByField(store, field, value) -> Promise<record|undefined>
+ *    Returns the first record where record[field] === value.
+ *    Postgres adapter uses an indexed JSONB query; PocketBase adapter
+ *    falls back to getAll() + in-memory filter. Use typeof
+ *    provider.getByField === "function" before calling.
  */
 export const STORAGE_PROVIDER_METHODS = [
   "open", "get", "getAll", "put", "add", "delete", "clear", "putBatch", "deleteBatch",

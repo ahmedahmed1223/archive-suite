@@ -385,6 +385,8 @@ export function SearchPage() {
       }),
       jsxs("section", {
         ref: filtersRef,
+        role: "search",
+        "aria-label": "بحث في الأرشيف",
         className: "va-filter-surface rounded-2xl va-surface-muted border p-4 text-right backdrop-blur-sm",
         children: [
           jsxs("div", {
@@ -398,6 +400,8 @@ export function SearchPage() {
                     value: query,
                     onChange: (event) => setQuery(event.target.value),
                     placeholder: "ابحث في العنوان أو الوسوم أو الملاحظات",
+                    "aria-label": "كلمات البحث",
+                    type: "search",
                     className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none focus:border-emerald-500/50"
                   })
                 ]

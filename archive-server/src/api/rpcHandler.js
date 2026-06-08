@@ -2,11 +2,14 @@ import { getStorageProvider } from "@archive/core";
 
 import { validateRpcArgs } from "./validate.js";
 
-// The 11 StorageProvider port methods, allow-listed so the RPC endpoint can
+// The StorageProvider port methods, allow-listed so the RPC endpoint can
 // never be coerced into calling an arbitrary property on the provider object.
+// getByField is an optional extension — included here so the SPA can call it
+// directly; the provider check below still handles missing implementations.
 export const RPC_METHODS = Object.freeze([
   "open", "get", "getAll", "put", "add", "delete", "clear",
-  "putBatch", "deleteBatch", "snapshot", "replaceAll"
+  "putBatch", "deleteBatch", "snapshot", "replaceAll",
+  "getByField"
 ]);
 
 /**

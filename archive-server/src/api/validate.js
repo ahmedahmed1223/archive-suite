@@ -6,6 +6,9 @@
 // identifier; records must be objects; batch args must be arrays.
 
 const STORE_RE = /^[a-z][a-z0-9_]{0,63}$/; // snake_case collection names
+// Restrict field names for getByField: prevents identifier injection into
+// the Postgres raw query. Must start with a letter or underscore.
+const FIELD_RE = /^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/;
 
 function bad(message) {
   const err = new Error(message);
@@ -73,7 +76,16 @@ const VALIDATORS = {
       }
     }
   },
-  replaceAll: ([payload]) => { assertObject(payload, "payload"); }
+  replaceAll: ([payload]) => { assertObject(payload, "payload"); },
+  getByField: ([store, field, value]) => {
+    assertStore(store);
+    if (typeof field !== "string" || !FIELD_RE.test(field)) {
+      throw bad(`Invalid field name: ${JSON.stringify(field)}`);
+    }
+    if (typeof value !== "string" && typeof value !== "number") {
+      throw bad("value must be a string or number.");
+    }
+  }
 };
 
 /**
