@@ -8,6 +8,15 @@ import { createLogger } from "../logger.js";
 
 const log = createLogger("email");
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 function createTransport() {
   const host = process.env.SMTP_HOST;
   if (!host) return null; // SMTP not configured — emails silently dropped
@@ -60,9 +69,9 @@ export async function sendPasswordResetEmail({ to, resetUrl, username }) {
     html: `
       <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
         <h2 style="color: #059669;">إعادة تعيين كلمة المرور</h2>
-        <p>مرحباً ${username}،</p>
+        <p>مرحباً ${escapeHtml(username)}،</p>
         <p>اضغط على الزر التالي لإعادة تعيين كلمة المرور:</p>
-        <a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#059669;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">
+        <a href="${escapeHtml(resetUrl)}" style="display:inline-block;padding:12px 24px;background:#059669;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">
           إعادة تعيين كلمة المرور
         </a>
         <p style="color:#888;font-size:12px;margin-top:24px;">الرابط صالح لمدة 15 دقيقة فقط.</p>

@@ -15,9 +15,20 @@ export async function handleOcr(req, res) {
 
   // Forward multipart request directly to OCR service using native fetch
   try {
-    // Read body into buffer
+    // Read body into buffer, enforcing a maximum size to prevent memory exhaustion.
+    const MAX_OCR_BYTES = parseInt(process.env.MAX_OCR_BYTES || "", 10) || 20 * 1024 * 1024; // 20 MB
     const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
+    let totalBytes = 0;
+    for await (const chunk of req) {
+      totalBytes += chunk.length;
+      if (totalBytes > MAX_OCR_BYTES) {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "الملف أكبر من الحد المسموح به (20 MB)." }));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    }
     const body = Buffer.concat(chunks);
     const contentType = req.headers["content-type"] || "application/octet-stream";
 
