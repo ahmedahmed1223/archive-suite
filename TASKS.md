@@ -2,7 +2,7 @@
 
 > **المصدر:** 9 تقارير فحص (HTML) في `D:\archiveaq\Reports`.
 > **المنهجية:** كل بند في التقارير تم التحقق منه مقابل الكود الفعلي في هذا المستودع. أُبقيت فقط المهام الحقيقية المتبقية؛ والبنود المُنفّذة بالفعل أو غير الدقيقة في التقارير وُثّقت في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
-> **آخر تحديث:** 8 يونيو 2026. Tasks #74–#78 (P0 security + K8s + frontend bugs) مكتملة. Task #79 (P1 UX) قيد التنفيذ.
+> **آخر تحديث:** 8 يونيو 2026. Tasks #74–#79 (P0 security + K8s + frontend bugs + UX) مكتملة. Section 13 (feature proposals 2026) قيد التنفيذ.
 
 ## مفتاح الأولويات
 
@@ -618,7 +618,7 @@
 
 ### 12.6 تجربة المستخدم — P1
 
-- [ ] `[P1]` ⏱️L **توحيد `TagAutocomplete` في جميع حقول الوسوم** — 4 من أصل 5 مواضع تستخدم `input` عادي.
+- [x] `[P1]` ⏱️L **توحيد `TagAutocomplete` في جميع حقول الوسوم** — 4 من أصل 5 مواضع تستخدم `input` عادي.
   - الملفات:
     - `archive app/src/pages/AddVideoPage.jsx:603`
     - `archive app/src/components/bulk/BulkActionBar.jsx:38-47`
@@ -632,12 +632,12 @@
   - الإصلاح: بعد اكتمال التفريغ أضف زر "حفظ كعنصر أرشيف" يُنشئ `archive_item` بالنص والعنوان والوسوم المستخرجة.
   - المصدر: uiux-user-journey (UJ-04).
 
-- [ ] `[P1]` ⏱️M **إضافة إيماءات اللمس على الجوّال** — لا يوجد swipe أو إجراءات سريعة لمسية.
+- [x] `[P1]` ⏱️M **إضافة إيماءات اللمس على الجوّال** — لا يوجد swipe أو إجراءات سريعة لمسية.
   - الملفات: `archive app/src/components/records/RecordCard.jsx`، `archive app/src/pages/ArchivePage.jsx`
   - الإصلاح: استخدم `@use-gesture/react` أو Pointer Events API: swipe-right للفتح، swipe-left لقائمة الإجراءات، pull-to-refresh.
   - المصدر: uiux-user-journey (UJ-08).
 
-- [ ] `[P1]` ⏱️L **واجهة إدارة Field ACL** — `fieldAcl.js` موجود على الخادم بلا واجهة إدارة.
+- [x] `[P1]` ⏱️L **واجهة إدارة Field ACL** — `fieldAcl.js` موجود على الخادم بلا واجهة إدارة.
   - الملفات: `archive-server/src/permissions/fieldAcl.js`، `archive app/src/components/settings/`
   - الإصلاح: أنشئ `FieldPermissionsSettings.jsx` تعرض لكل `contentType` الحقول مع مستوى وصول per-role (قراءة/كتابة/مخفي).
   - المصدر: deep-audit-2026 (UX-05).
