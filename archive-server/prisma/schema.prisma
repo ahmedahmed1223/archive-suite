@@ -189,11 +189,11 @@ model Webhook {
 /// Per-user email notification preferences.
 /// Created on first access (upsert); defaults match the model defaults.
 model NotificationPreference {
-  id             String  @id @default(uuid())
-  userId         String  @unique @map("user_id")
-  emailOnShare   Boolean @default(true)  @map("email_on_share")
-  emailOnUpload  Boolean @default(false) @map("email_on_upload")
-  emailOnMention Boolean @default(true)  @map("email_on_mention")
+  id        String  @id @default(cuid())
+  userId    String  @unique @map("user_id")
+  onShare   Boolean @default(true)  @map("on_share")
+  onUpload  Boolean @default(false) @map("on_upload")
+  onMention Boolean @default(true)  @map("on_mention")
 
   @@map("notification_preferences")
 }
