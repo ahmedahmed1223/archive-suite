@@ -255,6 +255,29 @@ export function createPostgresStorageProvider(prisma, options = {}) {
       }, txOpts);
     },
 
+    async getByField(store, field, value) {
+      // For the special case where `field` is the primary key column (uid/id),
+      // use the unique index directly — fastest path.
+      if (field === "uid" || field === "id") {
+        const found = await row.findFirst({
+          where: { store, uid: String(value) }
+        });
+        return fromRow(found);
+      }
+      // General case: JSONB field lookup. The raw query lets Postgres use a
+      // functional index on data->>'field' when one exists (e.g. on `username`).
+      // NOTE: field name is validated by the caller (RPC layer) to match
+      // /^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/ — no parameterisation needed for the
+      // identifier itself, but we still use tagged-template literals for the value.
+      const rows = await prisma.$queryRaw`
+        SELECT * FROM "storage_rows"
+        WHERE store = ${store}
+          AND data->>${Prisma.raw(`'${field}'`)} = ${String(value)}
+        LIMIT 1
+      `;
+      return rows[0] ? fromRow(rows[0]) : undefined;
+    },
+
     async replaceAll(payload = {}) {
       if (!payload || typeof payload !== "object") {
         throw new Error("حمولة replaceAll غير صالحة.");

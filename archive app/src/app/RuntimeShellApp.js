@@ -16,38 +16,21 @@ import {
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { jsx, jsxs } from "react/jsx-runtime";
-import { motion } from "framer-motion";
 import {
   PAGE_COMPONENTS } from "./pageRegistry.js";
-import { getPageContextMeta } from "./pageMeta.js";
 import {
-  AppErrorBoundary,
-  CommandPalette,
   DashboardSkeleton,
   ForceChangePasswordDialog,
   LockScreen,
   LoginScreen,
   SplashScreen,
   StartupRecoveryScreen,
-  StatusBar,
-  ToastNotification,
-  UndoRedoBar,
   V1ProductTour,
   createStartupProgressState,
   runStartupSequence,
   undoRedoManager
 } from "./shell/ShellParts.jsx";
-import { NotificationDrawer } from "../components/common/NotificationDrawer.jsx";
-import { QuickAddDialog } from "../features/videos/QuickAddDialog.jsx";
-import { KeyboardShortcutsDialog } from "../components/common/KeyboardShortcutsDialog.jsx";
 import { appConfirm } from "../components/common/ConfirmDialog.js";
-import { ErrorBoundary } from "../components/common/ErrorBoundary.jsx";
-import { DialogProvider } from "../components/common/DialogManager.jsx";
-import { ProgressProvider } from "../contexts/ProgressContext.jsx";
-import {
-  PageContextBar as AppPageContextBar,
-  Sidebar as AppSidebar
-} from "../components/navigation/index.js";
 import { getGlobalShortcutAction } from "../stores/globalShortcuts.js";
 import { applyAccentColor } from "../theme/accentColor.js";
 import {
@@ -57,20 +40,19 @@ import {
   shouldShowV1Tour
 } from "../features/onboarding/index.js";
 import { useServerStatusMonitor } from "../features/server-status/useServerStatusMonitor.js";
-import { OfflineBanner } from "../components/common/OfflineBanner.jsx";
 
-// Register service worker for PWA support (production only)
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(err => {
-      console.warn("SW registration failed:", err);
-    });
-  });
-}
+// ─── Focused sub-modules ──────────────────────────────────────────────────────
+import { AppProviders } from "./AppProviders.jsx";
+import { AppSync } from "./AppSync.jsx";
+import { AppRouter } from "./AppRouter.jsx";
+import { AppNotifications } from "./AppNotifications.jsx";
 
 
 export function App() {
+  // Server status monitor runs unconditionally — must be called before any
+  // early-return gates so the hook order stays stable across renders.
   useServerStatusMonitor();
+
   const {
     isLoading,
     isLocked,
@@ -223,15 +205,6 @@ export function App() {
   }, [setCurrentPage, setSelectedItemId]);
 
   React.useEffect(() => {
-    const handleExternalChange = (event) => {
-      if (event.key !== "videoArchive:lastChange" || !event.newValue) return;
-      loadAllData();
-    };
-    window.addEventListener("storage", handleExternalChange);
-    return () => window.removeEventListener("storage", handleExternalChange);
-  }, [loadAllData]);
-
-  React.useEffect(() => {
     if (isLoading) {
       setAuthState("loading");
       return;
@@ -370,7 +343,7 @@ export function App() {
       await updateSettings({ ui: { ...(settings.ui || {}), startupRecoveryDismissedAt: new Date().toISOString() } });
       await runSystemHealthCheck?.();
     } catch (error) {
-      handleAppError(error, "فتح فحص بدء التشغيل", { message: "تعذر فتح فحص النظام" });
+      handleAppError(error, "فتح فحص بدء التشغيل", { message: "تعذر فتح النظام" });
     }
   }, [setCurrentPage, setSelectedItemId, updateSettings, runSystemHealthCheck, settings.ui]);
 
@@ -507,6 +480,8 @@ export function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  // ─── Startup / auth gates ────────────────────────────────────────────────────
+
   if (showSplash && (isLoading || startupProgress?.running)) {
     return jsx(SplashScreen, {
       steps: startupProgress?.steps,
@@ -574,60 +549,26 @@ export function App() {
     return jsx(LoginScreen, {});
   }
 
-  const PageComponent = PAGE_COMPONENTS[currentPage] || PAGE_COMPONENTS.dashboard;
-  const currentPageTitle = getPageContextMeta(currentPage)?.title || "أرشيف الفيديو";
-
-  return jsxs("div", {
-    dir: "rtl",
-    className: `va-app-shell flex min-h-screen text-right ${resolvedTheme === "dark" ? "bg-gray-950" : "bg-white"}`,
-    "data-density": settings.ui?.visualDensity === "compact" ? "compact" : "comfortable",
-    "data-accent": settings.accentColor || "teal",
-    "data-font-scale": settings.ui?.fontScale || "normal",
-    "data-motion": settings.ui?.motionLevel || "full",
-    "data-card-style": settings.ui?.cardStyle || "filled",
+  // ─── Main authenticated shell ────────────────────────────────────────────────
+  // AppSync handles SW registration + cross-tab storage sync + server-status
+  // AppRouter renders the sidebar + main content area + page transitions
+  // AppNotifications renders all floating overlays (toasts, dialogs, tour, etc.)
+  return jsxs(React.Fragment, {
     children: [
-      jsx(OfflineBanner, {}),
-      jsx("a", {
-        href: "#main-content",
-        className: "va-skip-link",
-        children: "تخطي إلى المحتوى الرئيسي"
+      jsx(AppSync, {}),
+      jsx(AppRouter, {}),
+      jsx(AppNotifications, {
+        showShortcuts,
+        setShowShortcuts,
+        showCommandPalette,
+        setShowCommandPalette,
+        showQuickAdd,
+        setShowQuickAdd,
+        showV1Tour,
+        onCompleteV1Tour: () => completeV1Tour(false),
+        onSkipV1Tour: () => completeV1Tour(true),
+        currentUserRole: currentUser?.role,
       }),
-      jsx(AppSidebar, {}),
-      jsx("main", {
-        id: "main-content",
-        tabIndex: -1,
-        dir: "rtl",
-        // pt on mobile clears the fixed hamburger toggle (top-right) so it never
-        // overlaps the page header/breadcrumb; no offset needed from md+ (no FAB).
-        className: "flex-1 min-w-0 overflow-y-auto max-h-screen text-right pt-16 md:pt-0",
-        role: "main",
-        children: jsx(ErrorBoundary, {
-          children: jsxs(motion.div, {
-            initial: { opacity: 0, y: 8 },
-            animate: { opacity: 1, y: 0 },
-            exit: { opacity: 0, y: -8 },
-            transition: { duration: 0.2 },
-            className: "min-h-screen",
-            children: [
-              jsx("h1", { className: "sr-only", children: currentPageTitle }),
-              jsx(AppPageContextBar, { currentPage, currentPageTitle }),
-              jsx(React.Suspense, {
-                fallback: jsx(DashboardSkeleton, { compact: true }),
-                children: jsx(PageComponent, {})
-              })
-            ]
-          }, currentPage)
-        })
-      }),
-      jsx(ToastNotification, {}),
-      jsx(NotificationDrawer, {}),
-      jsx(UndoRedoBar, {}),
-      jsx(StatusBar, {}),
-      jsx(KeyboardShortcutsDialog, { open: showShortcuts, onOpenChange: setShowShortcuts }),
-      jsx(CommandPalette, { open: showCommandPalette, onOpenChange: setShowCommandPalette, onOpenShortcuts: () => setShowShortcuts(true), onOpenQuickAdd: () => setShowQuickAdd(true) }),
-      jsx(QuickAddDialog, { open: showQuickAdd, onOpenChange: setShowQuickAdd }),
-      jsx(V1ProductTour, { open: showV1Tour, role: currentUser?.role, onComplete: () => completeV1Tour(false), onSkip: () => completeV1Tour(true) }),
-      jsx(ForceChangePasswordDialog, {})
     ]
   });
 }
@@ -638,12 +579,8 @@ export function mountVideoArchive(rootElement = document.getElementById("root"))
   }
 
   return createRoot(rootElement).render(
-    jsx(React.StrictMode, {
-      children: jsx(ErrorBoundary, {
-        children: jsx(DialogProvider, {
-          children: jsx(ProgressProvider, { children: jsx(App, {}) })
-        })
-      })
+    jsx(AppProviders, {
+      children: jsx(App, {})
     })
   );
 }
