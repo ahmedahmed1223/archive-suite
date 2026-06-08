@@ -1,4 +1,5 @@
 import { Prisma } from "../../generated/prisma/client.js";
+import { generateEmbedding, buildEmbeddingText } from "../../ai/embeddingService.js";
 import {
   defaultKeyPathFor,
   toRow,
@@ -122,6 +123,25 @@ export function createPostgresStorageProvider(prisma, options = {}) {
           lastModifiedBy: payload.lastModifiedBy
         }
       });
+      // Fire-and-forget: generate and store an embedding vector for the record.
+      // Non-blocking — failures are logged as warnings, never propagated to the caller.
+      // Skipped silently when OPENAI_API_KEY / AI_API_KEY is absent.
+      const embeddingText = buildEmbeddingText(record);
+      if (embeddingText) {
+        generateEmbedding(embeddingText).then(embedding => {
+          if (embedding) {
+            const vectorStr = `[${embedding.join(",")}]`;
+            return prisma.$executeRaw`
+              UPDATE storage_rows
+              SET embedding = ${vectorStr}::vector
+              WHERE store = ${store} AND uid = ${payload.uid}
+            `;
+          }
+        }).catch(err => {
+          // eslint-disable-next-line no-console
+          console.warn("[embeddings] Async embedding update failed:", err.message);
+        });
+      }
       return record;
     },
 

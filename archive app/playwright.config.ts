@@ -1,64 +1,50 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-/**
- * See https://playwright.dev/docs/test-configuration.
+ * Playwright configuration for Archive Suite E2E tests.
+ *
+ * Run against the Vite preview server (pnpm build:spa && pnpm preview) or
+ * supply E2E_BASE_URL to point at a running dev server.
+ *
+ * See https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
   testDir: './tests',
-  /* Run tests in files in parallel */
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
+  // Single worker avoids IndexedDB race conditions between tests
   workers: 1,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [['list'], ['html', { open: 'never' }]],
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: 'http://127.0.0.1:4173',
+  timeout: 30_000,
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+  reporter: [['list'], ['html', { open: 'never' }]],
+
+  use: {
+    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:4173',
+
+    // RTL Arabic app — set locale so Intl / date formatting is consistent
+    locale: 'ar-SA',
+
+    // Capture artifacts on failure
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
   },
 
-  /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
   ],
 
-  /* The a11y script starts and stops the preview server explicitly on Windows. */
+  /*
+   * The a11y scripts (run-a11y.mjs, run-interactive-audit.mjs) start and
+   * stop the preview server themselves on Windows. For the standard `pnpm e2e`
+   * command, start the preview server first with `pnpm build:spa && pnpm preview`.
+   */
 });
