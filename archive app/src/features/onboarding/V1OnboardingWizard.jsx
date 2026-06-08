@@ -1,4 +1,4 @@
-﻿import {
+import {
   handleAppError
 } from "../../utils/errorHandling.js";
 import {
@@ -10,6 +10,7 @@ import {
 } from "../../stores/index.js";
 import {
   Archive,
+  Check,
   ChevronLeft,
   ChevronRight,
   Cloud,
@@ -69,6 +70,7 @@ import {
 } from "../settings/dbConfigClient.js";
 import { fetchServerHealth } from "../server-status/serverHealthClient.js";
 import { validatePasswordStrength } from "../../utils/passwordHash.js";
+import { applyAccentColor } from "../../theme/accentColor.js";
 
 const STORAGE_ICONS = { local: Laptop, postgres: Server, pocketbase: Cloud };
 const DEFAULT_PORT_BY_ENGINE = { postgresql: "5432", mysql: "3306", sqlserver: "1433" };
@@ -159,43 +161,6 @@ function OnboardingProgressRail({ steps, activeStepIndex, onStepClick }) {
         children: jsx("div", {
           className: "h-full rounded-full va-accent-bg transition-all duration-300",
           style: { width: `${((activeStepIndex + 1) / Math.max(steps.length, 1)) * 100}%` }
-        })
-      }),
-      jsx("ol", {
-        className: "mt-4 hidden space-y-2 lg:block",
-        children: steps.map((step, index) => {
-          const active = index === activeStepIndex;
-          const visited = index <= activeStepIndex;
-          return jsx("li", {
-            children: jsxs("button", {
-              type: "button",
-              disabled: !visited,
-              onClick: () => visited && onStepClick(index),
-              "aria-current": active ? "step" : undefined,
-              className: `flex min-h-[4rem] w-full items-start gap-3 rounded-xl border p-3 text-right transition-colors ${
-                active
-                  ? "va-accent-border va-accent-bg-soft text-white"
-                  : visited
-                    ? "border-white/10 bg-white/[0.025] text-gray-300 hover:bg-white/[0.05]"
-                    : "cursor-not-allowed border-white/5 bg-white/[0.015] text-gray-600"
-              }`,
-              children: [
-                jsx("span", {
-                  className: `mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-[11px] font-semibold ${
-                    active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-white/[0.03]"
-                  }`,
-                  children: formatStepCount(index + 1, steps.length).split(" / ")[0]
-                }),
-                jsxs("span", {
-                  className: "min-w-0",
-                  children: [
-                    jsx("span", { className: "block truncate text-sm font-semibold", children: step.label }),
-                    jsx("span", { className: "mt-1 block line-clamp-2 text-xs leading-5 text-gray-500", children: step.detail })
-                  ]
-                })
-              ]
-            })
-          }, step.id);
         })
       })
     ]

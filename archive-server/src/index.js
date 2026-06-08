@@ -9,6 +9,11 @@
 //
 // Run with: node src/index.js  (Dockerfile.server CMD)
 
+// Sentry must be initialised before any other imports so it can instrument
+// the full module graph. It is a no-op when SENTRY_DSN is not set.
+import { initSentry } from "./monitoring/sentryService.js";
+await initSentry();
+
 import { getStorageProvider } from "@archive/core";
 
 import { registerCloudProviders } from "./bootstrap/registerCloudProviders.js";

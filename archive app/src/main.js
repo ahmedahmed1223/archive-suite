@@ -6,6 +6,30 @@ import "./styles/v2-identity.css";
 import "./styles/v3-identity.css";
 import "./styles/v4-identity.css";
 
+// Sentry — initialise before React renders so the SDK captures errors from the
+// full startup path. The import is static so Vite bundles it, but init() is
+// guarded by the VITE_SENTRY_DSN check so it's a no-op when the DSN is unset.
+import * as Sentry from "@sentry/react";
+
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration({ maskAllText: false, blockAllMedia: false }),
+    ],
+    tracesSampleRate: import.meta.env.MODE === "production" ? 0.1 : 1.0,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+    beforeSend(event) {
+      // Suppress events in development to avoid noise during local work.
+      if (import.meta.env.DEV) return null;
+      return event;
+    },
+  });
+}
+
 // Initialize i18n before rendering — Arabic is the default language.
 import "./i18n/index.js";
 
