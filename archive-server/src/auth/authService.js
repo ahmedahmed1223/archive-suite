@@ -55,8 +55,19 @@ export async function loginUser({ username, password }, { provider, secret, expi
   if (!secret) throw new Error("loginUser requires a JWT secret.");
   if (!username || !password) throw unauthorized("اسم المستخدم وكلمة المرور مطلوبان.");
 
-  const users = await provider.getAll("users").catch(() => []);
-  const user = pickUser(users, username);
+  // Prefer getByField when the provider supports it (Postgres uses an indexed
+  // JSONB query; PocketBase falls back to getAll + in-memory filter internally).
+  // Fall back to getAll + pickUser for providers that don't implement it.
+  let user;
+  const wantedUsername = String(username || "").trim().toLowerCase();
+  if (typeof provider.getByField === "function") {
+    const found = await provider.getByField("users", "username", wantedUsername).catch(() => undefined);
+    // Guard: the field-matched record must also be active (mirrors pickUser logic).
+    user = found?.isActive !== false ? found : undefined;
+  } else {
+    const users = await provider.getAll("users").catch(() => []);
+    user = pickUser(users, username);
+  }
   // Always run a verify (even when user is missing) to avoid user-enumeration
   // timing differences.
   const hash = user?.passwordHash || "$2a$12$0000000000000000000000000000000000000000000000000000";
