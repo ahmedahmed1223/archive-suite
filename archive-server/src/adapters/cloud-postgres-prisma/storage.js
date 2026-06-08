@@ -8,6 +8,7 @@ import {
   SETTINGS_COLLECTION,
   SETTINGS_RECORD_KEY
 } from "./mapping.js";
+import { fireWebhooks } from "../../webhooks/webhookService.js";
 
 // Postgres StorageProvider adapter — satisfies the @archive/core
 // StorageProvider port (11 methods) over a Prisma client. The client is
@@ -114,6 +115,11 @@ export function createPostgresStorageProvider(prisma, options = {}) {
       assertRecordSize(record);
       const keyPath = keyPathFor(store);
       const payload = toRow(store, record, keyPath);
+      // Pre-check existence so webhooks can distinguish create vs update.
+      const existingRow = await row.findUnique({
+        where: { store_uid: { store: payload.store, uid: payload.uid } },
+        select: { uid: true },
+      });
       await row.upsert({
         where: { store_uid: { store: payload.store, uid: payload.uid } },
         create: payload,
@@ -123,6 +129,14 @@ export function createPostgresStorageProvider(prisma, options = {}) {
           lastModifiedBy: payload.lastModifiedBy
         }
       });
+      // Fire-and-forget: fire outgoing webhooks for record.created / record.updated.
+      // Scoped to record.ownerId so each user only receives their own events.
+      fireWebhooks(
+        prisma,
+        existingRow ? "record.updated" : "record.created",
+        { store, uid: payload.uid },
+        record.ownerId
+      );
       // Fire-and-forget: generate and store an embedding vector for the record.
       // Non-blocking — failures are logged as warnings, never propagated to the caller.
       // Skipped silently when OPENAI_API_KEY / AI_API_KEY is absent.
@@ -185,9 +199,15 @@ export function createPostgresStorageProvider(prisma, options = {}) {
 
     async delete(store, key) {
       if (key === undefined || key === null) return;
-      await row.deleteMany({
-        where: { store, uid: String(key) }
-      });
+      // Fetch owner before deletion so the webhook is scoped to that user.
+      const existing = await row.findUnique({
+        where: { store_uid: { store, uid: String(key) } },
+        select: { data: true },
+      }).catch(() => null);
+      const ownerId = existing?.data?.ownerId;
+      await row.deleteMany({ where: { store, uid: String(key) } });
+      // Fire-and-forget: fire outgoing webhooks for record.deleted.
+      fireWebhooks(prisma, "record.deleted", { store, uid: String(key) }, ownerId);
     },
 
     async clear(store) {
