@@ -53,20 +53,27 @@ async function deliverWithRetry(webhook, event, data, logger) {
 }
 
 /**
- * Fire all matching webhooks for an event. Non-blocking (fire-and-forget).
- * @param {object} prisma - Prisma client
- * @param {string} event - e.g. "record.created", "record.updated", "record.deleted"
- * @param {object} data - event payload
- * @param {object} [logger] - optional Pino logger
+ * Fire matching webhooks for an event. Non-blocking (fire-and-forget).
+ *
+ * Webhooks are scoped to the record owner: only hooks registered by the same
+ * user who owns the record are fired. This prevents cross-user event leakage
+ * in multi-tenant deployments. When `ownerId` is omitted (e.g. system events),
+ * all active hooks matching the event are delivered.
+ *
+ * @param {object} prisma    - Prisma client
+ * @param {string} event     - e.g. "record.created", "record.updated", "record.deleted"
+ * @param {object} data      - event payload sent in the webhook body
+ * @param {string} [ownerId] - record owner's user id; scopes delivery to their hooks only
+ * @param {object} [logger]  - optional Pino logger
  */
-export function fireWebhooks(prisma, event, data, logger) {
+export function fireWebhooks(prisma, event, data, ownerId, logger) {
   if (!prisma?.webhook) return; // graceful degradation
 
   setImmediate(async () => {
     try {
-      const hooks = await prisma.webhook.findMany({
-        where: { active: true, events: { has: event } },
-      });
+      const where = { active: true, events: { has: event } };
+      if (ownerId) where.ownerId = ownerId;
+      const hooks = await prisma.webhook.findMany({ where });
       await Promise.allSettled(
         hooks.map(hook => deliverWithRetry(hook, event, data, logger))
       );

@@ -11,7 +11,7 @@ import { handleSearch } from "./searchHandler.js";
 import { exportTimelineToMp4 } from "../export/mp4.js";
 import { createInMemoryMediaJobStore, createMediaJobWorker, montageOutputKey, storeMontageOutput } from "../media/mediaJobs.js";
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
-import { verifyJwt } from "../auth/jwt.js";
+import { verifyJwt, signJwt } from "../auth/jwt.js";
 import { revokeToken } from "../auth/tokenBlacklist.js";
 import { generateTotpSecret, verifyTotpToken } from "../auth/totpService.js";
 import { mintShareToken, readShareTokenPayload } from "../share/token.js";
@@ -475,6 +475,54 @@ export function createApiServer({
         return send(res, 200, { needsSetup: users.length === 0 });
       } catch {
         return send(res, 200, { needsSetup: false });
+      }
+    }
+
+    // First-run registration — only succeeds when no users exist yet.
+    // After the first admin account is created, returns 403 to prevent
+    // open registration. The wizard (FirstRunPage) posts here on fresh installs.
+    if (req.method === "POST" && url === "/api/auth/register") {
+      if (overLimit(res, "login", req)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const { username, email = "", password } = body || {};
+        if (!username || typeof username !== "string" || username.trim().length < 3) {
+          return send(res, 400, { ok: false, error: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل." });
+        }
+        if (!password || typeof password !== "string" || password.length < 8) {
+          return send(res, 400, { ok: false, error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل." });
+        }
+        const storage = resolveStorage();
+        const existingUsers = await storage.getAll("users").catch(() => []);
+        if (existingUsers.length > 0) {
+          return send(res, 403, { ok: false, error: "التسجيل مغلق — يرجى تسجيل الدخول." });
+        }
+        const passwordHash = await bcrypt.hash(password, 12);
+        const stamp = new Date().toISOString();
+        const newUser = {
+          id: `user_${Date.now().toString(36)}`,
+          username: username.trim().slice(0, 50),
+          email: String(email || "").trim().slice(0, 200),
+          displayName: username.trim().slice(0, 50),
+          role: "admin", // first user is always admin
+          isActive: true,
+          passwordHash,
+          createdAt: stamp,
+          updatedAt: stamp,
+        };
+        await storage.put("users", newUser);
+        authLog.info({ event: "register", username: newUser.username, ip: clientIp(req) }, "AUDIT: first-run admin registered");
+        if (!resolvedAuthSecret) {
+          return send(res, 201, { ok: true, user: { id: newUser.id, username: newUser.username, role: newUser.role } });
+        }
+        const token = signJwt(
+          { sub: newUser.id, username: newUser.username, role: newUser.role },
+          resolvedAuthSecret
+        );
+        return send(res, 201, { ok: true, token, user: { id: newUser.id, username: newUser.username, role: newUser.role } });
+      } catch (err) {
+        logger.error({ err }, "register failed");
+        return send(res, 500, { ok: false, error: "فشل إنشاء الحساب." });
       }
     }
 
