@@ -604,8 +604,14 @@ export function createApiServer({
         const data = consumeResetToken(token);
         if (!data) return send(res, 400, { ok: false, error: "رمز إعادة التعيين غير صالح أو منتهي الصلاحية." });
 
+        // Fetch the full user record first — put() is an upsert that replaces the
+        // entire record; writing only { id, passwordHash } would wipe all other fields.
+        const storage = resolveStorage();
+        const existingUser = await storage.get("users", data.userId);
+        if (!existingUser) return send(res, 400, { ok: false, error: "المستخدم غير موجود." });
+
         const passwordHash = await bcrypt.hash(newPassword, 12);
-        await resolveStorage().put("users", { id: data.userId, passwordHash });
+        await storage.put("users", { ...existingUser, passwordHash, updatedAt: new Date().toISOString() });
         return send(res, 200, { ok: true, message: "تم تغيير كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن." });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Password reset failed" });

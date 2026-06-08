@@ -122,7 +122,9 @@ function removeFromPresence(ws, client) {
 function broadcastPresence(recordId) {
   const viewers = presence.get(recordId);
   if (!viewers) return;
-  const list = [...viewers].map(v => ({ userId: v.userId, username: v.username }));
+  // Expose only `username` to other clients — omit `userId` to prevent user-ID
+  // enumeration via arbitrary recordId subscription (IDOR mitigation).
+  const list = [...viewers].map(v => ({ username: v.username }));
   for (const v of viewers) {
     safeSend(v.ws, { type: "presence", recordId, viewers: list });
   }
