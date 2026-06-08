@@ -162,7 +162,7 @@ model SavedFilter {
   id        String   @id @default(cuid())
   name      String
   query     Json
-  isLive    Boolean  @default(false)
+  isLive    Boolean  @default(false) @map("is_live")
   ownerId   String   @map("owner_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
