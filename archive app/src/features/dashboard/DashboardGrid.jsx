@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { Responsive as ResponsiveGridLayout } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -65,7 +65,7 @@ function GridPanel({ id, title, editing, autoHeight, onMeasure, onToggleHidden, 
               aria-pressed={autoHeight}
               title={autoHeight ? "الارتفاع تلقائي — اضغط للتثبيت اليدوي" : "ارتفاع يدوي — اضغط للتلقائي"}
               aria-label={autoHeight ? "تبديل إلى ارتفاع يدوي" : "تبديل إلى ارتفاع تلقائي"}
-              className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border ${autoHeight ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
+              className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border ${autoHeight ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
             >
               {autoHeight ? <MoveVertical className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
             </button>

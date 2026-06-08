@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Workflow, ZoomIn, ZoomOut, Maximize2, Search, X } from "lucide-react";
 
@@ -170,7 +170,7 @@ export function GraphViewPage() {
     className: "space-y-4 p-4 sm:p-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(Workflow, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(Workflow, { className: "h-6 w-6 va-accent-text" }),
         title: "خريطة العلاقات",
         description: "اسحب للتمرير · Ctrl+عجلة للتكبير · انقر عقدة لفتح التفاصيل."
       }),

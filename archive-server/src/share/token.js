@@ -4,6 +4,7 @@
 // forged or have its scope tampered with. A share token carries kind:"share"
 // plus the normalized scope, and a default 30-day expiry.
 
+import { randomUUID } from "node:crypto";
 import { signJwt, verifyJwt } from "../auth/jwt.js";
 import { createShareScope } from "./scope.js";
 
@@ -25,6 +26,7 @@ export function mintShareToken({ scope, secret, expiresInDays = DEFAULT_EXPIRY_D
   const days = Number.isFinite(rawDays) && rawDays > 0 ? Math.min(365, rawDays) : DEFAULT_EXPIRY_DAYS;
   return signJwt({
     kind: "share",
+    jti: randomUUID(),
     scope: normalized,
     title: String(title || "").trim().slice(0, 120)
   }, secret, { expiresInSec: Math.floor(days * 24 * 60 * 60) });
@@ -57,6 +59,7 @@ export function readShareTokenPayload(token, secret) {
   return {
     scope: createShareScope(payload.scope),
     title: String(payload.title || "").trim().slice(0, 120),
-    expiresAt: typeof payload.exp === "number" ? new Date(payload.exp * 1000).toISOString() : ""
+    expiresAt: typeof payload.exp === "number" ? new Date(payload.exp * 1000).toISOString() : "",
+    jti: payload.jti || ""
   };
 }

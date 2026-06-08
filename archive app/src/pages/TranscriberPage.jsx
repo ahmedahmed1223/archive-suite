@@ -1,4 +1,4 @@
-import { useAppStore } from "../stores/index.js";
+﻿import { useAppStore } from "../stores/index.js";
 import { getAiProvider } from "@archive/core";
 import {
   Cloud,
@@ -30,7 +30,7 @@ function ModeButton({ active, onClick, icon, label, hint }) {
     type: "button",
     onClick,
     "aria-pressed": active,
-    className: `flex-1 rounded-xl border p-3 text-right transition-colors ${active ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-100" : "border-white/10 bg-gray-950/35 text-gray-300 hover:bg-white/5"}`,
+    className: `flex-1 rounded-xl border p-3 text-right transition-colors ${active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-300 hover:bg-white/5"}`,
     children: [
       jsxs("span", { className: "flex items-center gap-2 text-sm font-semibold", children: [icon, label] }),
       jsx("span", { className: "mt-1 block text-xs text-gray-500", children: hint })
@@ -85,7 +85,7 @@ export function TranscriberPage() {
     className: "va-page-shell space-y-6 p-4 sm:p-6", dir: "rtl",
     children: [
       jsx(PageHero, {
-        icon: jsx(Wand2, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(Wand2, { className: "h-6 w-6 va-accent-text" }),
         title: "التفريغ الصوتي",
         description: "حوّل ملفات الصوت/الفيديو إلى نصّ بطوابع زمنية — على الخادم السحابي أو محليًّا داخل المتصفّح."
       }),
@@ -120,7 +120,7 @@ export function TranscriberPage() {
         ] }),
         jsx("textarea", { readOnly: true, value: transcriptToText(result), "aria-label": "النص المُفرَّغ", className: "min-h-[140px] w-full va-surface-deep rounded-xl border p-3 text-sm leading-7 text-white outline-none" }),
         segments.length > 0 && jsx("div", { className: "max-h-72 space-y-1 overflow-y-auto", children: segments.map((seg, i) => jsxs("div", { className: "flex gap-3 rounded-lg va-surface-subtle border px-3 py-1.5 text-sm", children: [
-          jsx("span", { className: "shrink-0 font-mono text-xs text-emerald-300", children: secondsToClock(seg.start) }),
+          jsx("span", { className: "shrink-0 font-mono text-xs va-accent-text", children: secondsToClock(seg.start) }),
           jsx("span", { className: "text-gray-200", children: seg.text })
         ] }, i)) })
       ] }) : jsx("div", { className: "rounded-2xl border border-dashed border-white/10 bg-gray-900/30", children: jsx(UXStateBlock, {

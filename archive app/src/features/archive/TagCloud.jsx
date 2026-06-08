@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Tags } from "lucide-react";
 
@@ -50,7 +50,7 @@ export function TagCloud({ videoItems = [], onSelect, activeTag = "", limit = 40
     dir: "rtl",
     children: [
       jsxs("div", { className: "mb-3 flex items-center gap-2", children: [
-        jsx(Tags, { className: "h-4 w-4 text-emerald-400" }),
+        jsx(Tags, { className: "h-4 w-4 va-accent-text" }),
         jsx("h3", { className: "text-sm font-bold text-white", children: title }),
         jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-gray-400", children: formatNumber(tags.length) })
       ] }),
@@ -61,7 +61,7 @@ export function TagCloud({ videoItems = [], onSelect, activeTag = "", limit = 40
           onClick: () => onSelect?.(tag),
           title: `${tag} — ${formatNumber(count)}`,
           "aria-pressed": activeTag === tag,
-          className: `inline-flex items-baseline gap-1 rounded-lg px-1.5 py-0.5 leading-none transition-colors hover:text-emerald-200 ${SIZE_BUCKETS[bucketFor(count, min, max)]} ${activeTag === tag ? "bg-emerald-500/15 text-emerald-100" : "hover:bg-white/5"}`,
+          className: `inline-flex items-baseline gap-1 rounded-lg px-1.5 py-0.5 leading-none transition-colors hover:text-emerald-200 ${SIZE_BUCKETS[bucketFor(count, min, max)]} ${activeTag === tag ? "va-accent-bg-soft va-accent-text-on-soft" : "hover:bg-white/5"}`,
           children: [
             tag,
             jsx("span", { className: "text-[10px] font-normal text-gray-500", children: formatNumber(count) })

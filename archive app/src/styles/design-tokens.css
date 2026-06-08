@@ -1,0 +1,95 @@
+/**
+ * Archive Suite Design Tokens — Single source of truth for spacing, typography, shadows, z-index.
+ *
+ * Usage in CSS:       gap: var(--va-space-4);
+ * Usage in JSX style: style={{ padding: 'var(--va-space-4)' }}
+ *
+ * Scale: 1 unit = 4px (0.25rem). Follows Tailwind's 4px grid.
+ */
+
+/**
+ * Archive Suite Design Tokens
+ * Spacing scale: 4px base unit
+ * Usage: padding: var(--va-space-2); /* 8px */
+ */
+:root {
+  /* Spacing scale (4px base unit) */
+  --va-space-0: 0px;
+  --va-space-px: 1px;
+  --va-space-0-5: 0.125rem;  /* 2px */
+  --va-space-1: 0.25rem;     /* 4px */
+  --va-space-1-5: 0.375rem;  /* 6px */
+  --va-space-2: 0.5rem;      /* 8px */
+  --va-space-2-5: 0.625rem;  /* 10px */
+  --va-space-3: 0.75rem;     /* 12px */
+  --va-space-3-5: 0.875rem;  /* 14px */
+  --va-space-4: 1rem;        /* 16px */
+  --va-space-5: 1.25rem;     /* 20px */
+  --va-space-6: 1.5rem;      /* 24px */
+  --va-space-7: 1.75rem;     /* 28px */
+  --va-space-8: 2rem;        /* 32px */
+  --va-space-9: 2.25rem;     /* 36px */
+  --va-space-10: 2.5rem;     /* 40px */
+  --va-space-11: 2.75rem;    /* 44px */
+  --va-space-12: 3rem;       /* 48px */
+  --va-space-14: 3.5rem;     /* 56px */
+  --va-space-16: 4rem;       /* 64px */
+  --va-space-20: 5rem;       /* 80px */
+  --va-space-24: 6rem;       /* 96px */
+
+  /* Semantic spacing aliases */
+  --va-space-xs: var(--va-space-1);    /* 4px - tight */
+  --va-space-sm: var(--va-space-2);    /* 8px - small */
+  --va-space-md: var(--va-space-4);    /* 16px - medium */
+  --va-space-lg: var(--va-space-6);    /* 24px - large */
+  --va-space-xl: var(--va-space-8);    /* 32px - x-large */
+  --va-space-2xl: var(--va-space-12);  /* 48px - 2x-large */
+  --va-space-3xl: var(--va-space-16);  /* 64px - 3x-large */
+
+  /* Layout-specific */
+  --va-sidebar-width: 15rem;       /* 240px */
+  --va-topbar-height: 3.5rem;      /* 56px */
+  --va-content-max-width: 80rem;   /* 1280px */
+  --va-card-padding: var(--va-space-4);
+  --va-dialog-padding: var(--va-space-6);
+  --va-form-gap: var(--va-space-4);
+  --va-section-gap: var(--va-space-8);
+
+  /* Border radius */
+  --va-radius-sm: 0.25rem;   /* 4px */
+  --va-radius-md: 0.5rem;    /* 8px */
+  --va-radius-lg: 0.75rem;   /* 12px */
+  --va-radius-xl: 1rem;      /* 16px */
+  --va-radius-full: 9999px;
+
+  /* Typography */
+  --va-font-size-xs: 0.75rem;    /* 12px */
+  --va-font-size-sm: 0.875rem;   /* 14px */
+  --va-font-size-base: 1rem;     /* 16px */
+  --va-font-size-lg: 1.125rem;   /* 18px */
+  --va-font-size-xl: 1.25rem;    /* 20px */
+  --va-font-size-2xl: 1.5rem;    /* 24px */
+  --va-font-size-3xl: 1.875rem;  /* 30px */
+
+  /* Shadows */
+  --va-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --va-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --va-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --va-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+  --va-shadow-dialog: 0 25px 50px -12px rgb(0 0 0 / 0.6);
+
+  /* Z-index scale */
+  --va-z-dropdown: 100;
+  --va-z-sticky: 200;
+  --va-z-overlay: 300;
+  --va-z-modal: 400;
+  --va-z-popover: 500;
+  --va-z-tooltip: 600;
+  --va-z-offline-banner: 2000;
+
+  /* Animation */
+  --va-duration-fast: 100ms;
+  --va-duration-base: 150ms;
+  --va-duration-slow: 300ms;
+  --va-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+}

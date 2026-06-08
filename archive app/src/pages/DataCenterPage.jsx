@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../stores/index.js";
 import {
@@ -83,6 +83,7 @@ import {
   formatNumber
 } from "../utils/formatting.js";
 import { reportError } from "../utils/errorReporting.js";
+import { useGlobalProgress } from "../contexts/ProgressContext.jsx";
 
 // Data-safety pipeline — guides the eye through the four phases every
 // destructive op (import/transfer/backup/restore) walks through. The icons
@@ -129,6 +130,8 @@ export function DataCenterPage() {
     showToast,
     showNotification
   } = useAppStore();
+
+  const { start: startProgress, update: updateProgress, finish: finishProgress } = useGlobalProgress();
 
   const [activeTab, setActiveTabState] = React.useState(settings.ui?.lastDataCenterTab || "export");
   const [summaryOpen, setSummaryOpen] = React.useState(false);
@@ -637,13 +640,23 @@ export function DataCenterPage() {
   const handleCreateBackup = async () => {
     setIsWorking(true);
     setOperationMessage("");
+    startProgress({ label: "جاري إنشاء نسخة احتياطية..." });
     try {
+      updateProgress(20, "فحص التخزين والمساحة...");
       const ok = await runPreflight("backup", { records: videoItems.length, estimatedSize });
-      if (!ok) return;
+      if (!ok) {
+        finishProgress();
+        return;
+      }
+      updateProgress(50, "جاري حفظ البيانات...");
       await createBackup?.(`نسخة يدوية ${new Date().toLocaleString("ar")}`);
+      updateProgress(85, "جاري تحديث قائمة النسخ...");
       await loadBackups();
+      updateProgress(100);
+      finishProgress();
       setOperationMessage("تم إنشاء نسخة احتياطية جديدة.");
     } catch (error) {
+      finishProgress();
       const message = error?.message || "فشل إنشاء النسخة الاحتياطية";
       setOperationMessage(message);
       reportError(showNotification, error, { context: "إنشاء نسخة احتياطية", recovery: { label: "إعادة النسخ", run: handleCreateBackup } });
@@ -836,7 +849,7 @@ export function DataCenterPage() {
                 ].map(([label, detail]) => jsxs("div", {
                   className: "rounded-xl border border-white/5 bg-white/[0.03] p-3",
                   children: [
-                    jsx("p", { className: "text-xs font-semibold text-emerald-200", children: label }),
+                    jsx("p", { className: "text-xs font-semibold va-accent-text-on-soft", children: label }),
                     jsx("p", { className: "mt-1 text-[11px] leading-5 text-gray-500", children: detail })
                   ]
                 }, label))
@@ -857,7 +870,7 @@ export function DataCenterPage() {
             type: "button",
             onClick: handleSmartMerge,
             disabled: isWorking,
-            className: "min-h-10 inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-60",
+            className: "min-h-10 inline-flex items-center gap-2 rounded-xl border va-accent-border va-accent-bg-soft px-4 py-2 text-sm font-semibold va-accent-text-on-soft transition-colors hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-60",
             title: "يكتشف التعارضات بين الأجهزة قبل الدمج",
             children: "دمج ذكي مع كشف التعارضات"
           }),
@@ -909,7 +922,7 @@ export function DataCenterPage() {
               jsxs("div", { className: "flex items-center justify-between gap-2", children: [
                 jsx("h4", { className: "text-sm font-semibold text-white", children: "هوية هذا الجهاز" }),
                 deviceId && jsx("span", {
-                  className: "rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-mono text-emerald-200",
+                  className: "rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-[11px] font-mono va-accent-text-on-soft",
                   dir: "ltr",
                   title: deviceId,
                   children: deviceId.split("_").pop().slice(0, 8)
@@ -944,7 +957,7 @@ export function DataCenterPage() {
         ]
       }),
       jsxs("div", {
-        className: "mt-5 rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] p-4",
+        className: "mt-5 rounded-2xl border va-accent-border va-accent-bg/[0.04] p-4",
         children: [
           jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
             jsxs("div", { children: [
@@ -985,7 +998,7 @@ export function DataCenterPage() {
               jsxs("div", { className: "flex flex-col items-end justify-end text-right text-xs text-gray-400", children: [
                 jsxs("span", { className: "rounded-full border border-white/10 bg-gray-950/45 px-2.5 py-1", children: [
                   "تغييرات معلّقة: ",
-                  jsx("strong", { className: "text-emerald-200", children: formatNumber(deltaPlan.total) })
+                  jsx("strong", { className: "va-accent-text-on-soft", children: formatNumber(deltaPlan.total) })
                 ] }),
                 deltaPlan.total > 0 && jsx("span", { className: "mt-1 text-[11px] text-gray-500", children: `${formatNumber(deltaPlan.newCount)} جديد + ${formatNumber(deltaPlan.updatedCount)} محدّث` })
               ] })
@@ -995,10 +1008,10 @@ export function DataCenterPage() {
         ]
       }),
       transferNextStep && jsxs("div", {
-        className: "mt-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm leading-7 text-emerald-100",
+        className: "mt-5 rounded-2xl border va-accent-border va-accent-bg-soft p-4 text-sm leading-7 va-accent-text-on-soft",
         children: [
           jsx("p", { className: "font-semibold", children: "ماذا بعد إنشاء ملف النقل؟" }),
-          jsx("p", { className: "mt-1 text-emerald-100/85", children: transferNextStep })
+          jsx("p", { className: "mt-1 va-accent-text-on-soft", children: transferNextStep })
         ]
       })
     ]
@@ -1046,7 +1059,7 @@ export function DataCenterPage() {
                   jsxs("button", {
                     type: "button",
                     onClick: () => handleRestoreBackup(backup),
-                    className: "inline-flex min-h-9 items-center gap-2 rounded-lg border border-emerald-500/20 px-3 py-1.5 text-sm text-emerald-100 hover:bg-emerald-500/10",
+                    className: "inline-flex min-h-9 items-center gap-2 rounded-lg border va-accent-border px-3 py-1.5 text-sm va-accent-text-on-soft hover:bg-emerald-500/10",
                     children: [jsx(RotateCcw, { className: "h-4 w-4" }), "استعادة"]
                   }),
                   jsxs("button", {
@@ -1083,7 +1096,7 @@ export function DataCenterPage() {
     className: "space-y-6 p-4 pb-36 sm:p-6 sm:pb-40",
     children: [
       jsx(PageHero, {
-        icon: jsx(Database, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(Database, { className: "h-6 w-6 va-accent-text" }),
         title: "مركز البيانات",
         description: "تدفق واحد للتصدير والاستيراد والنقل والنسخ الاحتياطي، بدون تمرير طويل أو خيارات مبعثرة.",
         actions: jsx(StatusBadge, {
@@ -1179,7 +1192,7 @@ export function DataCenterPage() {
               jsxs("div", {
                 className: "flex items-center gap-2",
                 children: [
-                  jsx(Eye, { className: "h-5 w-5 text-emerald-300" }),
+                  jsx(Eye, { className: "h-5 w-5 va-accent-text" }),
                   jsx("h3", { className: "text-sm font-bold text-white", children: "مسار تنفيذ المهمة" })
                 ]
               }),
@@ -1207,7 +1220,7 @@ export function DataCenterPage() {
             children: [
               jsxs("div", {
                 children: [
-                  jsx("p", { className: "text-xs font-semibold text-emerald-300", children: "المهمة الحالية" }),
+                  jsx("p", { className: "text-xs font-semibold va-accent-text", children: "المهمة الحالية" }),
                   jsx("h2", { className: "mt-1 text-2xl font-bold text-white", children: activeTask.label }),
                   jsx("p", { className: "mt-2 max-w-3xl text-sm leading-7 text-gray-500", children: activeTask.detail })
                 ]

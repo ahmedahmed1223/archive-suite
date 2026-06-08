@@ -1,0 +1,142 @@
+# Default values for the Archive Suite Helm chart.
+# Override these in a separate values file or with --set on the CLI.
+
+# ---------------------------------------------------------------------------
+# Container images
+# ---------------------------------------------------------------------------
+image:
+  server:
+    repository: ghcr.io/OWNER/archive-server   # Replace OWNER with your org/user
+    tag: latest
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: ghcr.io/OWNER/archive-frontend  # Replace OWNER with your org/user
+    tag: latest
+    pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# ---------------------------------------------------------------------------
+# Namespace
+# ---------------------------------------------------------------------------
+namespace:
+  create: true
+  name: archive
+
+# ---------------------------------------------------------------------------
+# PostgreSQL (bundled)
+# ---------------------------------------------------------------------------
+postgres:
+  enabled: true
+  image: postgres:18-alpine
+  storage: 10Gi
+  storageClass: ""   # Empty = cluster default StorageClass
+  database: archive
+  user: archive
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+# ---------------------------------------------------------------------------
+# Archive Server (Node.js API)
+# ---------------------------------------------------------------------------
+server:
+  replicaCount: 1
+  port: 8787
+  nodeEnv: production
+  archivePublicDeploy: "1"
+  fileStore: disk
+  fileStoreDir: /app/files
+  filesStorage: 5Gi
+  configStorage: 100Mi
+  storageClass: ""
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  # HPA settings
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+# ---------------------------------------------------------------------------
+# Frontend (nginx SPA)
+# ---------------------------------------------------------------------------
+frontend:
+  replicaCount: 1
+  port: 80
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+# ---------------------------------------------------------------------------
+# Ingress
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: true
+  className: nginx
+  host: archive.example.com   # REQUIRED: replace with your actual domain
+  tls:
+    enabled: true
+    clusterIssuer: letsencrypt-prod
+    secretName: archive-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "256m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+
+# ---------------------------------------------------------------------------
+# Secrets — all values default to empty; set them at install time.
+# Use --set secrets.postgresPassword=... or a separate secrets values file.
+# ---------------------------------------------------------------------------
+secrets:
+  postgresPassword: ""       # REQUIRED — PostgreSQL password
+  jwtSecret: ""              # REQUIRED — min 32 chars
+  jwtAuthSecret: ""          # Optional JWT override for auth tokens
+  jwtShareSecret: ""         # Optional JWT override for share tokens
+  oauthStateSecret: ""       # Required if OAuth integrations are enabled
+  adminPassword: ""          # REQUIRED — initial admin UI password
+
+# ---------------------------------------------------------------------------
+# pgAdmin (optional, disabled by default)
+# ---------------------------------------------------------------------------
+pgadmin:
+  enabled: false
+  image: dpage/pgadmin4:latest
+  email: admin@example.com
+  password: ""               # REQUIRED if pgadmin.enabled = true
+  ingressPath: /pgadmin
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# ---------------------------------------------------------------------------
+# OCR worker (optional, disabled by default)
+# ---------------------------------------------------------------------------
+ocr:
+  enabled: false
+  image: ghcr.io/OWNER/archive-ocr:latest
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"

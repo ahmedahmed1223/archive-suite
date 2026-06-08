@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../stores/index.js";
 import { EntityFormModal } from "../components/common/EntityFormModal.jsx";
@@ -110,7 +110,7 @@ function CollectionCard({ collection, itemCount, active, index, onOpen, onEdit, 
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.18, delay: Math.min(index, 10) * 0.025 },
     onClick: onOpen,
-    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${active ? "border-emerald-500/35 bg-emerald-500/10" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
+    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${active ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
     style: { boxShadow: `inset -3px 0 0 0 ${accentColor}${active ? "88" : "44"}` },
     dir: "rtl",
     children: [
@@ -190,9 +190,9 @@ function CollectionAddPicker({ availableItems, typeLabel, onAddItems }) {
             role: "option",
             "aria-selected": checked,
             onClick: () => toggle(item.id),
-            className: `flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-right text-sm transition-colors ${checked ? "border-emerald-500/40 bg-emerald-500/10 text-white" : "border-white/10 text-gray-300 hover:border-white/25 hover:bg-white/5"}`,
+            className: `flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-right text-sm transition-colors ${checked ? "va-accent-border va-accent-bg-soft text-white" : "border-white/10 text-gray-300 hover:border-white/25 hover:bg-white/5"}`,
             children: [
-              jsx("span", { className: `flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? "border-emerald-400 bg-emerald-500 text-white" : "border-white/25"}`, children: checked ? jsx(Check, { className: "h-3 w-3" }) : null }),
+              jsx("span", { className: `flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? "va-accent-border va-accent-bg text-white" : "border-white/25"}`, children: checked ? jsx(Check, { className: "h-3 w-3" }) : null }),
               jsx("span", { className: "min-w-0 flex-1 truncate", dir: "auto", children: item.title || item.id }),
               label ? jsx("span", { className: "shrink-0 text-[10px] text-gray-500", children: label }) : null
             ]
@@ -271,7 +271,7 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
         shareEnabled && jsxs("button", {
           type: "button",
           onClick: () => onShare?.(collection),
-          className: "inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/20",
+          className: "inline-flex shrink-0 items-center gap-1.5 rounded-xl border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs font-semibold va-accent-text-on-soft hover:bg-emerald-500/20",
           title: "إنشاء رابط مشاركة عام للقراءة فقط",
           children: [jsx(Share2, { className: "h-3.5 w-3.5" }), "مشاركة"]
         })
@@ -445,7 +445,7 @@ export function CollectionsPage() {
     dir: "rtl",
     children: [
       jsx(PageHero, {
-        icon: jsx(FolderOpen, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(FolderOpen, { className: "h-6 w-6 va-accent-text" }),
         title: "المجموعات",
         description: "تنظيم يدوي وذكي للعناصر مع معاينة مباشرة وإدارة سريعة للمحتوى داخل كل مجموعة.",
         actions: jsxs("button", { type: "button", onClick: startCreate, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مجموعة جديدة"] })
@@ -468,7 +468,7 @@ export function CollectionsPage() {
         ].map(([label, value, Icon]) => jsxs("div", { className: "va-metric-card rounded-2xl va-surface-muted border p-4 text-right", children: [
           jsxs("div", { className: "flex items-center justify-between gap-3", children: [
             jsx("span", { className: "text-sm text-gray-500", children: label }),
-            jsx(Icon, { className: "h-5 w-5 text-emerald-400" })
+            jsx(Icon, { className: "h-5 w-5 va-accent-text" })
           ] }),
           jsx("p", { className: "mt-2 text-2xl font-bold text-white", children: formatNumber(value, settings.numberSystem) })
         ] }, label))

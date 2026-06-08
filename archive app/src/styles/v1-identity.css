@@ -745,6 +745,43 @@ html.light .va-accent-text {
   color: var(--va-action-strong) !important;
 }
 
+/* ── Semantic accent utility classes ──────────────────────────────────────
+ * Drop-in replacements for the hard-coded `*-emerald-*` Tailwind classes
+ * that were preventing the accent color picker from working.
+ * Use these in JSX instead of bg-emerald-500/10, text-emerald-100, etc.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* Solid accent background (replaces bg-emerald-500, bg-emerald-600) */
+.va-accent-bg {
+  background-color: var(--va-action) !important;
+}
+
+/* Soft tinted accent background (replaces bg-emerald-500/10, /15, /20 etc.) */
+.va-accent-bg-soft {
+  background-color: color-mix(in srgb, var(--va-action) 14%, transparent) !important;
+}
+
+/* Light accent text on soft/tinted backgrounds (replaces text-emerald-100/200/300) */
+.va-accent-text-on-soft {
+  color: color-mix(in srgb, var(--va-action) 28%, #ffffff) !important;
+}
+
+/* Accent-tinted border (replaces border-emerald-500/20, /25, /30, /40 etc.) */
+.va-accent-border {
+  border-color: color-mix(in srgb, var(--va-action) 32%, transparent) !important;
+}
+
+/* Light-mode corrections for the above */
+html.light .va-accent-bg-soft {
+  background-color: color-mix(in srgb, var(--va-action) 10%, transparent) !important;
+}
+html.light .va-accent-text-on-soft {
+  color: var(--va-action-strong) !important;
+}
+html.light .va-accent-border {
+  border-color: color-mix(in srgb, var(--va-action) 28%, transparent) !important;
+}
+
 .va-primary-button,
 .va-action-button {
   border: 1px solid var(--va-action-strong) !important;

@@ -1,4 +1,4 @@
-import { BookOpen, Briefcase, FolderPlus, Hash, ListPlus, MessageSquarePlus, Sparkles, Tags, Video } from "lucide-react";
+﻿import { BookOpen, Briefcase, FolderPlus, Hash, ListPlus, MessageSquarePlus, Sparkles, Tags, Video } from "lucide-react";
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 
@@ -261,13 +261,13 @@ export function QuickAddDialog({ open, onOpenChange }) {
           role: "tab",
           "aria-selected": active,
           onClick: () => setMode(item.id),
-          className: `inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${active ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-100" : "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"}`,
+          className: `inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"}`,
           children: [jsx(ModeIcon, { className: "h-4 w-4" }), item.label]
         }, item.id);
       }) }) : jsx("p", { className: "rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-100", children: "لا توجد أوامر إنشاء متاحة لصلاحيتك الحالية." }),
       jsxs("section", { className: "rounded-2xl va-surface-subtle border p-4", children: [
         jsxs("div", { className: "mb-3 flex items-center gap-2", children: [
-          jsx("span", { className: "flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-200", children: jsx(Icon, { className: "h-4 w-4" }) }),
+          jsx("span", { className: "flex h-8 w-8 items-center justify-center rounded-lg border va-accent-border va-accent-bg-soft va-accent-text-on-soft", children: jsx(Icon, { className: "h-4 w-4" }) }),
           jsxs("div", { children: [
             jsx("h3", { className: "text-sm font-bold text-white", children: meta.title }),
             mode === "comment" && latestItem ? jsx("p", { className: "text-xs text-gray-500", children: `على: ${latestItem.title || "آخر مادة"}` }) : null,

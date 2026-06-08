@@ -1,4 +1,4 @@
-import {
+﻿import {
   formatDateTime,
   formatNumber
 } from "../utils/formatting.js";
@@ -93,14 +93,14 @@ function SearchResultCard({ item, typeLabel, subtypeLabel, index, onOpen, onOpen
             }),
             jsx("p", { className: "mt-1 text-sm text-gray-500", children: [typeLabel, subtypeLabel].filter(Boolean).join(" / ") || "غير مصنف" }),
             item.notes && jsx("p", { className: "mt-2 line-clamp-2 text-sm leading-relaxed text-gray-400", children: item.notes }),
-            item.transcriptSnippets?.length > 0 && jsxs("div", { className: "mt-3 rounded-xl border border-emerald-500/15 bg-emerald-500/5 p-2.5", children: [
-              jsx("p", { className: "mb-2 text-xs font-bold text-emerald-100", children: "مقتطفات من التفريغ" }),
+            item.transcriptSnippets?.length > 0 && jsxs("div", { className: "mt-3 rounded-xl border va-accent-border va-accent-bg-soft p-2.5", children: [
+              jsx("p", { className: "mb-2 text-xs font-bold va-accent-text-on-soft", children: "مقتطفات من التفريغ" }),
               jsx("div", { className: "space-y-2", children: item.transcriptSnippets.map((snippet) => jsxs("button", {
                 type: "button",
                 onClick: () => onOpenSnippet?.(snippet),
                 className: "block w-full rounded-lg border border-white/10 bg-gray-950/25 p-2 text-right text-xs leading-6 text-gray-300 transition-colors hover:border-emerald-500/25 hover:bg-emerald-500/10",
                 children: [
-                  snippet.timecode && jsxs("span", { className: "mb-1 inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] text-emerald-100", dir: "ltr", children: [jsx(Clock3, { className: "h-3 w-3" }), snippet.timecode] }),
+                  snippet.timecode && jsxs("span", { className: "mb-1 inline-flex items-center gap-1 rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 font-mono text-[11px] va-accent-text-on-soft", dir: "ltr", children: [jsx(Clock3, { className: "h-3 w-3" }), snippet.timecode] }),
                   jsx("span", { className: "block", children: snippet.text })
                 ]
               }, `${snippet.index}-${snippet.seconds ?? "x"}`)) })
@@ -354,7 +354,7 @@ export function SearchPage() {
     className: "space-y-6 p-4 pb-24 sm:p-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(Search, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(Search, { className: "h-6 w-6 va-accent-text" }),
         title: "البحث المتقدم",
         description: "بحث لحظي داخل الأرشيف مع فلاتر مباشرة ونتائج مصغرة بدون مغادرة الصفحة.",
         actions: jsxs(React.Fragment, {
@@ -461,7 +461,7 @@ export function SearchPage() {
               jsx("button", {
                 type: "button",
                 onClick: () => setMissingFieldsOnly((value) => !value),
-                className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${missingFieldsOnly ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100" : "border-white/10 text-gray-300 hover:bg-white/5"}`,
+                className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${missingFieldsOnly ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 text-gray-300 hover:bg-white/5"}`,
                 children: "حقول ناقصة"
               }),
               activeFilterCount > 0 && jsxs("button", {
@@ -527,7 +527,7 @@ export function SearchPage() {
               jsxs("div", {
                 className: "mb-3 flex items-center justify-between gap-2",
                 children: [
-                  jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(Tags, { className: "h-4 w-4 text-emerald-400" }), "عمليات البحث الأخيرة"] }),
+                  jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(Tags, { className: "h-4 w-4 va-accent-text" }), "عمليات البحث الأخيرة"] }),
                   jsx("button", { type: "button", onClick: clearRecentSearches, className: "text-xs text-gray-600 hover:text-gray-400 transition-colors", children: "مسح الكل" })
                 ]
               }),

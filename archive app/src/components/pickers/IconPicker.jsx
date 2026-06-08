@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../../stores/index.js";
 import {
@@ -159,7 +159,7 @@ export function IconPicker({
                 type: "button",
                 onClick: () => applySpec({ type: "lucide", value: item.id, color }, fallbackIcon),
                 className: `flex h-11 items-center justify-center rounded-xl border transition-colors ${
-                  isSelected ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-gray-800/35 text-gray-300 hover:border-white/30 hover:text-white"
+                  isSelected ? "va-accent-border va-accent-bg-soft va-accent-text" : "border-white/10 bg-gray-800/35 text-gray-300 hover:border-white/30 hover:text-white"
                 }`,
                 title: item.label,
                 "aria-label": `اختيار أيقونة ${item.label}`,
@@ -181,7 +181,7 @@ export function IconPicker({
                 applySpec({ type: "emoji", value: icon }, icon);
               },
               className: `h-10 w-10 rounded-lg border text-xl transition-colors ${
-                normalized.type === "emoji" && normalized.value === icon ? "border-emerald-500/60 bg-emerald-500/15" : "border-white/10 bg-gray-800/35 hover:border-white/30"
+                normalized.type === "emoji" && normalized.value === icon ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-800/35 hover:border-white/30"
               }`,
               "aria-label": `اختيار ${icon}`,
               children: icon

@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 import bcrypt from "bcryptjs";
 
 import { signJwt } from "./jwt.js";
+import { createLogger } from "../logger.js";
+
+const log = createLogger("auth");
 
 // Server-side credential verification + login. Verifies against the `users`
 // records the app already stores (bcrypt `passwordHash`, or legacy 64-char
@@ -43,10 +46,12 @@ function pickUser(users, username) {
 
 /**
  * Authenticate { username, password } against the active provider's users.
+ * When the account has TOTP enabled, opts.totpToken must also be provided.
  * @returns {Promise<{token: string, user: {id, username, role}}>}
- * @throws 401 on bad credentials
+ * @throws 401 on bad credentials; code "TOTP_REQUIRED" when 2FA code missing;
+ *         code "TOTP_INVALID" when the code is wrong.
  */
-export async function loginUser({ username, password }, { provider, secret, expiresInSec } = {}) {
+export async function loginUser({ username, password }, { provider, secret, expiresInSec, totpToken } = {}) {
   if (!secret) throw new Error("loginUser requires a JWT secret.");
   if (!username || !password) throw unauthorized("اسم المستخدم وكلمة المرور مطلوبان.");
 
@@ -56,10 +61,33 @@ export async function loginUser({ username, password }, { provider, secret, expi
   // timing differences.
   const hash = user?.passwordHash || "$2a$12$0000000000000000000000000000000000000000000000000000";
   const ok = await verifySecret(password, hash);
-  if (!user || !ok) throw unauthorized("بيانات الدخول غير صحيحة.");
+  if (!user || !ok) {
+    log.warn({ username }, "Failed login attempt.");
+    throw unauthorized("بيانات الدخول غير صحيحة.");
+  }
+
+  // TOTP check — only enforced when the account has 2FA enabled.
+  if (user.totpEnabled && user.totpSecret) {
+    if (!totpToken) {
+      const err = new Error("رمز المصادقة الثنائية مطلوب.");
+      err.statusCode = 401;
+      err.code = "TOTP_REQUIRED";
+      throw err;
+    }
+    const { verifyTotpToken } = await import("./totpService.js");
+    const valid = verifyTotpToken(user.totpSecret, totpToken);
+    if (!valid) {
+      log.warn({ username }, "Failed TOTP attempt.");
+      const err = new Error("رمز المصادقة الثنائية غير صحيح.");
+      err.statusCode = 401;
+      err.code = "TOTP_INVALID";
+      throw err;
+    }
+  }
 
   const claims = { sub: user.id, username: user.username, role: user.role || "viewer" };
   const token = signJwt(claims, secret, { expiresInSec });
+  log.info({ username: user.username, role: claims.role }, "Login successful.");
   return { token, user: { id: user.id, username: user.username, role: claims.role } };
 }
 

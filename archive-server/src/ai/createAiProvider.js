@@ -1,6 +1,9 @@
 import { createSdkAiProvider } from "./sdkProvider.js";
 import { createCloudAiProvider } from "./aiProvider.js";
 import { createTranscriber } from "./transcription.js";
+import { createLogger } from "../logger.js";
+
+const log = createLogger("ai");
 
 // AI implementation selector. Default is the Vercel AI SDK (validated
 // structured output via generateObject + Zod, streaming/tools available). The
@@ -26,8 +29,7 @@ export function createAiProvider(cfg = {}) {
     } catch (error) {
       // SDK couldn't build this provider (unsupported / missing key) — fall back
       // to the hand-rolled client so AI still works where possible.
-      // eslint-disable-next-line no-console
-      console.warn(`[archive-ai] SDK provider unavailable (${error?.message || error}); falling back to manual client.`);
+      log.warn({ err: error }, "SDK provider unavailable; falling back to manual client.");
       base = createCloudAiProvider(cfg);
     }
   }
@@ -42,8 +44,7 @@ export function createAiProvider(cfg = {}) {
         transcribe: ({ blob, mimeType, name } = {}) => transcriber.transcribe(blob, { mimeType, name })
       };
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.warn(`[archive-ai] transcription unavailable (${error?.message || error}).`);
+      log.warn({ err: error }, "Transcription provider unavailable.");
     }
   }
   return base;

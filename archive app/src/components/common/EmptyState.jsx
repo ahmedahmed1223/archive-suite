@@ -64,7 +64,7 @@ export function EmptyState({
           }),
           jsx("div", {
             className: "va-empty-corner absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-lg theme-panel",
-            children: jsx(CirclePlus, { className: "h-4 w-4 text-emerald-500" })
+            children: jsx(CirclePlus, { className: "h-4 w-4 va-accent-text" })
           })
         ]
       }),
@@ -77,7 +77,7 @@ export function EmptyState({
       hintItems.length > 0 && jsx("div", {
         className: "mb-6 flex flex-wrap justify-center gap-2",
         children: hintItems.map((hint) => jsx("span", {
-          className: "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300",
+          className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1 text-xs va-accent-text",
           children: hint
         }, hint))
       }),

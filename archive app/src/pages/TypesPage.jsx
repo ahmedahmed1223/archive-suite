@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../stores/index.js";
 import { useFocusOnMount } from "../components/common/useFocusOnMount.js";
@@ -182,7 +182,7 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
           jsx("h3", { className: "text-sm font-bold text-white", children: "الحقول المخصصة" }),
           fields.length ? jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-medium text-gray-300", children: `${fields.length}` }) : null
         ] }),
-        jsx("span", { className: "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-200", children: "يدعم ملف محلي" })
+        jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-xs va-accent-text-on-soft", children: "يدعم ملف محلي" })
       ] }),
       jsxs("div", { className: "mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_11rem_auto_auto]", children: [
         jsx("input", {
@@ -248,7 +248,7 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
             ] }),
             jsxs("div", { className: "flex shrink-0 items-center gap-1", children: [
               jsx("button", { type: "button", onClick: () => toggleField(field.id, "required"), "aria-pressed": !!field.required, className: `rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${field.required ? "border-amber-500/35 bg-amber-500/15 text-amber-100" : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10"}`, children: field.required ? "مطلوب" : "اختياري" }),
-              jsx("button", { type: "button", onClick: () => setEditingFieldId(editingFieldId === field.id ? null : field.id), "aria-pressed": editingFieldId === field.id, "aria-label": "تحرير الحقل", className: `rounded-lg border p-1.5 transition-colors ${editingFieldId === field.id ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-100" : "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"}`, children: jsx(PenLine, { className: "h-3.5 w-3.5" }) }),
+              jsx("button", { type: "button", onClick: () => setEditingFieldId(editingFieldId === field.id ? null : field.id), "aria-pressed": editingFieldId === field.id, "aria-label": "تحرير الحقل", className: `rounded-lg border p-1.5 transition-colors ${editingFieldId === field.id ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"}`, children: jsx(PenLine, { className: "h-3.5 w-3.5" }) }),
               jsx("button", { type: "button", onClick: () => requestRemoveField(field), "aria-label": `حذف الحقل ${field.label}`, className: "rounded-lg border border-transparent p-1.5 text-red-300 transition-colors hover:border-red-500/25 hover:bg-red-500/10", children: jsx(Trash2, { className: "h-3.5 w-3.5" }) })
             ] })
           ] }),
@@ -301,7 +301,7 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
 function TypeValidationPanel({ validation }) {
   if (!validation?.conflicts?.length) {
     return jsx("p", {
-      className: "rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-6 text-emerald-100",
+      className: "rounded-xl border va-accent-border va-accent-bg-soft p-3 text-xs leading-6 va-accent-text-on-soft",
       role: "status",
       "aria-live": "polite",
       children: "لا توجد تعارضات ظاهرة. راجع الملخص ثم احفظ النوع."
@@ -399,7 +399,7 @@ function TypeEditor({ type, fieldUsage = {}, contentTypes = [], videoItems = [],
 
   return jsxs("section", {
     ref: formRef,
-    className: "space-y-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 text-right",
+    className: "space-y-5 rounded-2xl border va-accent-border va-accent-bg-soft p-5 text-right",
     dir: "rtl",
     children: [
       jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
@@ -435,7 +435,7 @@ function TypeEditor({ type, fieldUsage = {}, contentTypes = [], videoItems = [],
             `الحقول: ${draft.fields?.length || 0}`,
             `حقول مطلوبة: ${(draft.fields || []).filter((field) => field.required || field.requiredToSave).length}`
           ].map((line) => jsx("li", { children: line }, line)) }),
-          jsx("p", { className: "mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-6 text-emerald-100", children: "بعد الحفظ سيظهر هذا النوع في صفحة الإضافة وصفحة التفاصيل بنفس ترتيب الحقول." })
+          jsx("p", { className: "mt-4 rounded-xl border va-accent-border va-accent-bg-soft p-3 text-xs leading-6 va-accent-text-on-soft", children: "بعد الحفظ سيظهر هذا النوع في صفحة الإضافة وصفحة التفاصيل بنفس ترتيب الحقول." })
         ] })
       ] })
     ]
@@ -514,7 +514,7 @@ function TypeCard({ type, count, active, index, onOpen, onEdit, onArchive }) {
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.18, delay: Math.min(index, 10) * 0.025 },
     onClick: onOpen,
-    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${active ? "border-emerald-500/35 bg-emerald-500/10" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
+    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${active ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
     style: { boxShadow: `inset -3px 0 0 0 ${accentColor}${active ? "88" : "44"}` },
     children: [
       jsxs("div", { className: "flex items-start justify-between gap-3", children: [
@@ -622,7 +622,7 @@ export function TypesPage() {
     className: "space-y-6 p-4 sm:p-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(Database, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(Database, { className: "h-6 w-6 va-accent-text" }),
         title: "إدارة الأنواع والحقول",
         description: "أنواع المحتوى والفروع والحقول المخصصة، مع دعم حقل ملف محلي يحفظ metadata فقط.",
         actions: jsxs("button", { type: "button", onClick: () => { setEditingType(null); setShowEditor(true); }, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "نوع جديد"] }),
@@ -658,7 +658,7 @@ export function TypesPage() {
           className: "flex w-full items-center justify-between gap-3 p-4 text-right transition-colors hover:bg-white/5",
           children: [
             jsxs("span", { className: "flex min-w-0 items-center gap-2", children: [
-              jsx(Palette, { className: "h-5 w-5 shrink-0 text-emerald-300" }),
+              jsx(Palette, { className: "h-5 w-5 shrink-0 va-accent-text" }),
               jsx("h2", { className: "text-sm font-bold text-white", children: "رحلة بناء نوع محتوى" }),
               jsx("span", { className: "hidden truncate text-xs text-gray-500 sm:inline", children: "الهوية ← الفروع ← الحقول ← الاستخدام" })
             ] }),
@@ -672,7 +672,7 @@ export function TypesPage() {
           ["الاستخدام", "ظهور منظم في الإضافة والأرشيف"]
         ].map(([label, detail], index) => jsxs("div", { className: "rounded-xl va-surface-subtle border p-3", children: [
           jsxs("div", { className: "flex items-center gap-2", children: [
-            jsx("span", { className: "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/15 text-[10px] font-bold text-emerald-200", children: index + 1 }),
+            jsx("span", { className: "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border va-accent-border va-accent-bg-soft text-[10px] font-bold va-accent-text-on-soft", children: index + 1 }),
             jsx("p", { className: "text-sm font-semibold text-white", children: label })
           ] }),
           jsx("p", { className: "mt-1 text-xs leading-5 text-gray-500", children: detail })

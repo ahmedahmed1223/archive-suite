@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../stores/index.js";
 import { EntityFormModal } from "../components/common/EntityFormModal.jsx";
@@ -178,7 +178,7 @@ function UserCard({ user, currentUser, users, index, recentOpsCount = 0, onEdit,
               jsx("h3", { className: "truncate text-base font-bold text-white", children: user.displayName || user.username }),
               jsx("span", { className: "rounded-full border px-2 py-0.5 text-xs font-medium", style: { borderColor: `${accentColor}45`, backgroundColor: `${accentColor}18`, color: accentColor }, children: role.label }),
               !user.isActive && jsx("span", { className: "rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-xs text-red-200", children: "معطل" }),
-              isCurrent && jsx("span", { className: "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-200", children: "الحالي" })
+              isCurrent && jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-xs va-accent-text-on-soft", children: "الحالي" })
             ] }),
             jsx("p", { className: "mt-1 truncate text-xs text-gray-500 font-mono", dir: "ltr", children: `@${user.username}` }),
             user.email && jsx("p", { className: "mt-0.5 truncate text-xs text-gray-500", dir: "ltr", children: user.email }),
@@ -186,7 +186,7 @@ function UserCard({ user, currentUser, users, index, recentOpsCount = 0, onEdit,
             jsxs("p", {
               className: "mt-1 flex items-center gap-1.5 text-xs text-gray-500",
               children: [
-                jsx(Activity, { className: "h-3.5 w-3.5 text-emerald-300/80" }),
+                jsx(Activity, { className: "h-3.5 w-3.5 va-accent-text/80" }),
                 recentOpsCount > 0
                   ? `${formatNumber(recentOpsCount)} عملية خلال آخر 7 أيام`
                   : "لا توجد عمليات في آخر 7 أيام"
@@ -195,7 +195,7 @@ function UserCard({ user, currentUser, users, index, recentOpsCount = 0, onEdit,
           ] })
         ] }),
         jsxs("div", { className: "flex shrink-0 gap-1", children: [
-          jsx("button", { type: "button", onClick: onToggle, disabled: !canToggle, className: `rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${user.isActive ? "text-gray-300 hover:bg-white/5" : "text-emerald-300 hover:bg-emerald-500/10"}`, children: user.isActive ? "تعطيل" : "تفعيل" }),
+          jsx("button", { type: "button", onClick: onToggle, disabled: !canToggle, className: `rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${user.isActive ? "text-gray-300 hover:bg-white/5" : "va-accent-text hover:bg-emerald-500/10"}`, children: user.isActive ? "تعطيل" : "تفعيل" }),
           jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": `تعديل ${user.displayName || user.username || "المستخدم"}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
           jsx("button", { type: "button", onClick: onDelete, disabled: !canToggle, className: "rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40", "aria-label": `حذف ${user.displayName || user.username || "المستخدم"}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
         ] })
@@ -306,7 +306,7 @@ export function UsersPage() {
     className: "space-y-6 p-4 sm:p-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(Users, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(Users, { className: "h-6 w-6 va-accent-text" }),
         title: "المستخدمون",
         description: "إدارة الحسابات والأدوار مع حماية آخر مدير نشط ومنع تغيير كلمات المرور من صفحة المستخدمين.",
         actions: canManageUsers ? jsxs("button", { type: "button", onClick: () => { setEditingUser(null); setShowForm(true); }, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مستخدم جديد"] }) : null
@@ -338,7 +338,7 @@ export function UsersPage() {
           ] })
         ] }),
         jsxs("div", { role: "group", "aria-label": "تصفية حسب الدور", className: "mt-4 flex flex-wrap gap-2", children: [
-          jsxs("button", { type: "button", onClick: () => setRoleFilter("all"), className: `rounded-xl border px-3 py-2 text-sm gap-2 inline-flex items-center ${roleFilter === "all" ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-100" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5"}`, children: [
+          jsxs("button", { type: "button", onClick: () => setRoleFilter("all"), className: `rounded-xl border px-3 py-2 text-sm gap-2 inline-flex items-center ${roleFilter === "all" ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5"}`, children: [
             "كل الأدوار",
             jsx("span", { className: "rounded-full bg-black/20 px-2 py-0.5 text-xs", children: formatNumber(summary.total) })
           ] }),

@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Archive, ExternalLink, Loader2, ShieldAlert, Tag } from "lucide-react";
@@ -17,7 +17,7 @@ function SharedItemCard({ item, typeName }) {
     children: [
       jsxs("div", { className: "flex items-start justify-between gap-3", children: [
         jsx("h3", { className: "min-w-0 truncate text-base font-bold text-white", children: item.title || "بدون عنوان" }),
-        typeName && jsx("span", { className: "shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-200", children: typeName })
+        typeName && jsx("span", { className: "shrink-0 rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-xs va-accent-text-on-soft", children: typeName })
       ] }),
       item.notes && jsx("p", { className: "mt-2 line-clamp-3 text-sm leading-relaxed text-gray-400", children: item.notes }),
       tags.length > 0 && jsx("div", { className: "mt-3 flex flex-wrap gap-1.5", children: tags.slice(0, 12).map((t, i) => jsxs("span", { className: "inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-gray-300", children: [jsx(Tag, { className: "h-3 w-3 opacity-60" }), t] }, `${t}-${i}`)) })
@@ -54,7 +54,7 @@ export function SharedView({ token, baseUrl = "", fetchImpl }) {
       className: "mx-auto w-full max-w-5xl",
       children: [
         jsxs("header", { className: "mb-6 flex items-center gap-3 border-b border-white/10 pb-5", children: [
-          jsx("span", { className: "flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300", children: jsx(Archive, { className: "h-5 w-5" }) }),
+          jsx("span", { className: "flex h-11 w-11 items-center justify-center rounded-xl va-accent-bg-soft va-accent-text", children: jsx(Archive, { className: "h-5 w-5" }) }),
           jsxs("div", { className: "min-w-0", children: [
             jsx("h1", { className: "truncate text-xl font-bold", children: shareTitle }),
             jsx("p", { className: "mt-1 text-sm text-gray-400", children: expiresText ? `عرض للقراءة فقط — صالح حتى ${expiresText}.` : "عرض للقراءة فقط — مجموعة مختارة من الأرشيف." })

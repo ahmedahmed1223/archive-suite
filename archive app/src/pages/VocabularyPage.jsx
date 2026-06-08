@@ -1,4 +1,4 @@
-import {
+﻿import {
   parseAppRoute,
   writeAppRoute
 } from "../services/router/index.js";
@@ -351,7 +351,7 @@ export function VocabularyPage() {
     className: "space-y-6 p-4 sm:p-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(BookOpen, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(BookOpen, { className: "h-6 w-6 va-accent-text" }),
         title: "القاموس المتحكم به",
         description: "مصطلحات موحدة تظهر في حقول الوسوم والاستدعاء الذكي عند كتابة الرمز @.",
         actions: jsxs("button", { type: "button", onClick: startCreate, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مصطلح جديد"] })
@@ -382,7 +382,7 @@ export function VocabularyPage() {
           jsx("h2", { className: "text-sm font-bold text-white", children: "وسوم بلا مصطلح" }),
           workspace.tagsWithoutTerms.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.tagsWithoutTerms.slice(0, 6).map((tag) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl va-surface-subtle border px-3 py-2", children: [
             jsx("span", { className: "min-w-0 truncate text-sm text-gray-200", children: tag.name }),
-            jsx("button", { type: "button", onClick: () => createTermFromTag(tag), className: "shrink-0 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/15", children: "أنشئ مصطلح" })
+            jsx("button", { type: "button", onClick: () => createTermFromTag(tag), className: "shrink-0 rounded-lg border va-accent-border va-accent-bg-soft px-2 py-1 text-xs font-semibold va-accent-text-on-soft hover:bg-emerald-500/15", children: "أنشئ مصطلح" })
           ] }, tag.id)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: "كل الوسوم لها مقابل قاموسي." })
         ] })
       ] }),

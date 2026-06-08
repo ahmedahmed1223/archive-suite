@@ -1,4 +1,4 @@
-import {
+﻿import {
   handleAppError
 } from "../../utils/errorHandling.js";
 import {
@@ -113,7 +113,7 @@ function OnboardingProgressRail({ steps, activeStepIndex, onStepClick }) {
             className: "min-w-0",
             children: [
               jsx("p", {
-                className: "text-xs font-semibold text-emerald-300",
+                className: "text-xs font-semibold va-accent-text",
                 "aria-live": "polite",
                 children: `الخطوة ${formatStepCount(activeStepIndex + 1, steps.length)}`
               }),
@@ -141,7 +141,7 @@ function OnboardingProgressRail({ steps, activeStepIndex, onStepClick }) {
                 children: jsxs("span", {
                   className: [
                     "block rounded-full transition-all",
-                    active ? "h-3 w-8 bg-emerald-300" : visited ? "h-3 w-3 bg-emerald-500/70" : "h-3 w-3 bg-white/15"
+                    active ? "h-3 w-8 va-accent-bg" : visited ? "h-3 w-3 va-accent-bg-soft" : "h-3 w-3 bg-white/15"
                   ].join(" "),
                   children: [
                     jsx("span", { className: "sr-only", children: `${visited ? "الانتقال إلى" : "خطوة لاحقة"} ${step.label}` })
@@ -157,7 +157,7 @@ function OnboardingProgressRail({ steps, activeStepIndex, onStepClick }) {
         dir: "rtl",
         "aria-hidden": "true",
         children: jsx("div", {
-          className: "h-full rounded-full bg-emerald-400 transition-all duration-300",
+          className: "h-full rounded-full va-accent-bg transition-all duration-300",
           style: { width: `${((activeStepIndex + 1) / Math.max(steps.length, 1)) * 100}%` }
         })
       }),
@@ -174,7 +174,7 @@ function OnboardingProgressRail({ steps, activeStepIndex, onStepClick }) {
               "aria-current": active ? "step" : undefined,
               className: `flex min-h-[4rem] w-full items-start gap-3 rounded-xl border p-3 text-right transition-colors ${
                 active
-                  ? "border-emerald-500/35 bg-emerald-500/12 text-white"
+                  ? "va-accent-border va-accent-bg-soft text-white"
                   : visited
                     ? "border-white/10 bg-white/[0.025] text-gray-300 hover:bg-white/[0.05]"
                     : "cursor-not-allowed border-white/5 bg-white/[0.015] text-gray-600"
@@ -182,7 +182,7 @@ function OnboardingProgressRail({ steps, activeStepIndex, onStepClick }) {
               children: [
                 jsx("span", {
                   className: `mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-[11px] font-semibold ${
-                    active ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-100" : "border-white/10 bg-white/[0.03]"
+                    active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-white/[0.03]"
                   }`,
                   children: formatStepCount(index + 1, steps.length).split(" / ")[0]
                 }),
@@ -228,7 +228,7 @@ function OptionButton({ active, children, onClick }) {
     "aria-pressed": active,
     className: `va-tool-button h-full min-h-[88px] w-full rounded-2xl border p-4 text-right transition-all ${
       active
-        ? "border-emerald-400/45 bg-emerald-500/15 text-white shadow-lg shadow-emerald-500/10"
+        ? "va-accent-border va-accent-bg-soft text-white shadow-lg shadow-emerald-500/10"
         : "border-white/10 bg-white/[0.035] text-gray-300 hover:border-emerald-500/25 hover:bg-white/[0.06]"
     }`,
     children
@@ -573,7 +573,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   const renderStepBody = () => {
     if (activeStep.id === "welcome") {
       return jsxs("div", { className: "space-y-5", children: [
-        jsx("div", { className: "mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300", children: jsx(Video, { className: "h-8 w-8" }) }),
+        jsx("div", { className: "mx-auto flex h-16 w-16 items-center justify-center rounded-2xl va-accent-bg-soft va-accent-text", children: jsx(Video, { className: "h-8 w-8" }) }),
         jsx("h1", { className: "text-2xl font-bold text-white", children: replayMode ? "معالج البداية" : "مرحباً بك في أرشيف الفيديو" }),
         jsx("p", { className: "mx-auto max-w-2xl text-sm leading-7 text-gray-400", children: replayMode ? "يمكنك مراجعة أساسيات الواجهة وتعديل تفضيلات البداية بدون تغيير كلمة المرور." : "سنجهز التطبيق بعد شاشة التحميل مباشرة: الحماية، المدير، المظهر، ثم أول شاشة تناسب عملك اليومي." }),
         jsx("div", { className: "grid auto-rows-fr gap-3 sm:grid-cols-3", children: [
@@ -592,7 +592,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
         jsx("h2", { className: "text-xl font-bold text-white", children: "اختر وضع الحماية" }),
         jsxs("div", { className: "grid auto-rows-fr gap-3 sm:grid-cols-2", children: [
           jsx(OptionButton, { active: securityMode === "secure", onClick: () => setSecurityMode("secure"), children: jsxs("div", { children: [
-            jsx(ShieldCheck, { className: "mb-3 h-6 w-6 text-emerald-300" }),
+            jsx(ShieldCheck, { className: "mb-3 h-6 w-6 va-accent-text" }),
             jsx("p", { className: "font-semibold", children: "الإعداد الآمن" }),
             jsx("p", { className: "mt-2 text-xs leading-6 text-gray-400", children: "تعيين كلمة مرور للمدير قبل فتح التطبيق. هذا هو الخيار الموصى به." })
           ] }) }),
@@ -655,7 +655,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
           }, level)) })
         ] }),
         password.length > 0 && passwordPolicyErrors.length > 0 && jsx("p", { className: "text-xs leading-6 text-amber-300/90", children: passwordPolicyErrors[0] }),
-        confirmPassword && jsx("p", { className: `text-sm ${passwordMatches ? "text-emerald-300" : "text-red-300"}`, children: passwordMatches ? "كلمة المرور متطابقة" : "كلمة المرور غير متطابقة" })
+        confirmPassword && jsx("p", { className: `text-sm ${passwordMatches ? "va-accent-text" : "text-red-300"}`, children: passwordMatches ? "كلمة المرور متطابقة" : "كلمة المرور غير متطابقة" })
       ] });
     }
 
@@ -664,7 +664,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
       const selectedServerPolicy = ONBOARDING_SERVER_UPDATE_OPTIONS.find((option) => option.id === serverUpdatePolicy) || ONBOARDING_SERVER_UPDATE_OPTIONS[0];
       return jsxs("div", { className: "space-y-5", children: [
         jsxs("div", { className: "flex items-start gap-3", children: [
-          jsx("div", { className: "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-emerald-300", children: jsx(Database, { className: "h-6 w-6" }) }),
+          jsx("div", { className: "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border va-accent-border va-accent-bg-soft va-accent-text", children: jsx(Database, { className: "h-6 w-6" }) }),
           jsxs("div", { children: [
             jsx("h2", { className: "text-xl font-bold text-white", children: "أين تريد حفظ بياناتك؟" }),
             jsx("p", { className: "mt-1 text-sm leading-7 text-gray-400", children: "يمكنك تغيير هذا لاحقاً. الافتراضي «هذا الجهاز» يعمل فوراً دون أي إعداد." })
@@ -676,7 +676,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             active: storageChoice === option.id,
             onClick: () => setStorageChoice(option.id),
             children: jsxs("div", { className: "flex items-start gap-3", children: [
-              jsx(Icon, { className: "mt-0.5 h-5 w-5 shrink-0 text-emerald-300" }),
+              jsx(Icon, { className: "mt-0.5 h-5 w-5 shrink-0 va-accent-text" }),
               jsxs("div", { children: [
                 jsx("p", { className: "font-semibold", children: option.label }),
                 jsx("p", { className: "mt-1 text-xs leading-6 text-gray-400", children: option.detail })
@@ -726,7 +726,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                 jsx("h3", { className: "text-base font-bold text-white", children: "إعداد SQL على الخادم" }),
                 jsx("p", { className: "mt-1 text-xs leading-6 text-gray-500", children: "اختياري أثناء المعالج: أدخل رابط قاعدة البيانات لاختباره من الخادم. الحفظ النهائي لإعداد DB يتم من تبويب الصيانة بعد الدخول." })
               ] }),
-              jsx("span", { className: "rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-100", children: "موصى به" })
+              jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1 text-xs va-accent-text-on-soft", children: "موصى به" })
             ] }),
             jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
               jsx("span", { children: "نوع المحرّك" }),
@@ -792,7 +792,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             ] }),
             jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-2", children: [
               jsx(SecondaryButton, { onClick: runStorageConnectionTest, disabled: storageTesting, children: storageTesting ? "جار الاختبار..." : "اختبار الاتصال" }),
-              storageTest && jsx("p", { className: `rounded-xl border px-3 py-2 text-xs leading-6 ${storageTest.ok ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100" : "border-red-500/20 bg-red-500/10 text-red-100"}`, children: storageTest.text })
+              storageTest && jsx("p", { className: `rounded-xl border px-3 py-2 text-xs leading-6 ${storageTest.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-red-500/20 bg-red-500/10 text-red-100"}`, children: storageTest.text })
             ] })
           ]
         }),
@@ -803,7 +803,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
               jsxs("div", { className: "min-w-0", children: [
                 jsxs("h3", { className: "flex items-center gap-2 text-base font-bold text-white", children: [
-                  jsx(Server, { className: "h-5 w-5 text-emerald-300" }),
+                  jsx(Server, { className: "h-5 w-5 va-accent-text" }),
                   "نسخة الخادم والتحديثات"
                 ] }),
                 jsx("p", {
@@ -814,7 +814,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                 })
               ] }),
               jsx("span", {
-                className: "rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-100",
+                className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1 text-xs font-semibold va-accent-text-on-soft",
                 children: selectedServerPolicy.badge
               })
             ] }),
@@ -835,7 +835,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             })
           ]
         }),
-        jsxs("p", { className: "rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-6 text-emerald-100", children: [
+        jsxs("p", { className: "rounded-2xl border va-accent-border va-accent-bg-soft p-3 text-xs leading-6 va-accent-text-on-soft", children: [
           jsx(Sparkles, { className: "ml-1 inline h-3.5 w-3.5" }),
           "البيانات تنتقل بين الأوضاع عبر «التصدير/الاستيراد» في مركز البيانات بنفس الصيغة — لا تفقد شيئاً عند التبديل."
         ] })
@@ -887,7 +887,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
         jsx("div", { className: "grid auto-rows-fr gap-3 sm:grid-cols-2", children: CORE_UI_TOUR_ITEMS.map((item, index) => {
           const Icon = icons[index] || Sparkles;
           return jsxs("div", { className: "rounded-2xl border border-white/10 bg-white/[0.035] p-4", children: [
-            jsx(Icon, { className: "mb-3 h-5 w-5 text-emerald-300" }),
+            jsx(Icon, { className: "mb-3 h-5 w-5 va-accent-text" }),
             jsx("p", { className: "font-semibold text-white", children: item.label }),
             jsx("p", { className: "mt-2 text-xs leading-6 text-gray-400", children: item.detail })
           ] }, item.label);
@@ -898,7 +898,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     if (activeStep.id === "shortcuts") {
       return jsxs("div", { className: "space-y-4", children: [
         jsxs("div", { className: "flex items-start gap-3", children: [
-          jsx("div", { className: "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-emerald-300", children: jsx(Keyboard, { className: "h-6 w-6" }) }),
+          jsx("div", { className: "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border va-accent-border va-accent-bg-soft va-accent-text", children: jsx(Keyboard, { className: "h-6 w-6" }) }),
           jsxs("div", { children: [
             jsx("h2", { className: "text-xl font-bold text-white", children: "اختصارات أساسية" }),
             jsx("p", { className: "mt-1 text-sm leading-7 text-gray-400", children: "تعلّم 4 اختصارات تكفي لتسريع 80% من العمل اليومي. تظهر بقية القائمة بضغطة \"؟\"." })
@@ -908,7 +908,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
           className: "rounded-2xl border border-white/10 bg-white/[0.035] p-4",
           children: [
             jsx("div", { className: "flex flex-wrap items-center gap-1.5", dir: "ltr", children: item.keys.map((key, index) => jsx("kbd", {
-              className: "va-mixed-token rounded-md border border-white/15 bg-white/10 px-2 py-1 text-xs font-mono font-semibold text-emerald-200",
+              className: "va-mixed-token rounded-md border border-white/15 bg-white/10 px-2 py-1 text-xs font-mono font-semibold va-accent-text-on-soft",
               children: key
             }, `${item.label}-${index}`)) }),
             jsx("p", { className: "mt-3 font-semibold text-white", children: item.label }),
@@ -922,7 +922,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
       const icons = { backup: FileDown, import: FileUp, transfer: HardDrive, audit: ScrollText };
       return jsxs("div", { className: "space-y-4", children: [
         jsxs("div", { className: "flex items-start gap-3", children: [
-          jsx("div", { className: "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-emerald-300", children: jsx(Database, { className: "h-6 w-6" }) }),
+          jsx("div", { className: "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border va-accent-border va-accent-bg-soft va-accent-text", children: jsx(Database, { className: "h-6 w-6" }) }),
           jsxs("div", { children: [
             jsx("h2", { className: "text-xl font-bold text-white", children: "حماية البيانات والنقل" }),
             jsx("p", { className: "mt-1 text-sm leading-7 text-gray-400", children: "كل بياناتك محلية. يمكنك نسخها واستيرادها ونقلها لجهاز آخر من مركز البيانات." })
@@ -933,13 +933,13 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
           return jsxs("div", {
             className: "rounded-2xl border border-white/10 bg-white/[0.035] p-4",
             children: [
-              jsx(Icon, { className: "mb-3 h-5 w-5 text-emerald-300" }),
+              jsx(Icon, { className: "mb-3 h-5 w-5 va-accent-text" }),
               jsx("p", { className: "font-semibold text-white", children: topic.label }),
               jsx("p", { className: "mt-2 text-xs leading-6 text-gray-400", children: topic.detail })
             ]
           }, topic.id);
         }) }),
-        jsxs("p", { className: "rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-6 text-emerald-100", children: [
+        jsxs("p", { className: "rounded-2xl border va-accent-border va-accent-bg-soft p-3 text-xs leading-6 va-accent-text-on-soft", children: [
           jsx(Sparkles, { className: "ml-1 inline h-3.5 w-3.5" }),
           "نصيحة: اعمل نسخة احتياطية أسبوعية حتى لا تخسر تعديلاتك في حال تلف الجهاز."
         ] })
@@ -954,7 +954,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
           active: firstTaskChoice === option.id,
           onClick: () => setFirstTaskChoice(option.id),
           children: jsxs("div", { children: [
-            jsx(Icon, { className: "mb-3 h-5 w-5 text-emerald-300" }),
+            jsx(Icon, { className: "mb-3 h-5 w-5 va-accent-text" }),
             jsx("p", { className: "font-semibold", children: option.label }),
             jsx("p", { className: "mt-2 text-xs leading-6 text-gray-400", children: option.detail })
           ] })
@@ -978,7 +978,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
       jsxs("header", { className: "w-full min-w-0 space-y-3 lg:flex lg:h-full lg:flex-col", children: [
         jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3 rounded-3xl border border-white/10 bg-white/[0.035] p-4 sm:p-5 lg:flex-1 lg:flex-col", children: [
           jsxs("div", { className: "min-w-0", children: [
-            jsx("p", { className: "text-xs font-medium text-emerald-300", children: replayMode ? "إعادة تشغيل المعالج" : "الإصدار الأول" }),
+            jsx("p", { className: "text-xs font-medium va-accent-text", children: replayMode ? "إعادة تشغيل المعالج" : "الإصدار الأول" }),
             jsx("h2", { className: "mt-2 text-lg font-bold text-white", children: "أرشيف الفيديو" }),
             jsx("p", { className: "mt-2 max-w-2xl text-xs leading-6 text-gray-400", children: "كل خطوة تظهر كشريحة واحدة واضحة، مع تقدم أفقي واختصارات تناسب العمل من الهاتف أو لوحة المفاتيح." })
           ] }),

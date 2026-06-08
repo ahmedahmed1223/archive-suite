@@ -1,5 +1,4 @@
 import bcrypt from "bcryptjs";
-import CryptoJS from "crypto-js";
 
 /**
  * Password utilities — unified bcrypt-based hashing with backwards
@@ -18,6 +17,17 @@ import CryptoJS from "crypto-js";
  *  - isLegacyHash() lets the auth slice flag the account so the user
  *    is forced to set a new bcrypt hash on the next successful login.
  */
+
+/** SHA-256 via Web Crypto — replaces crypto-js (~150 KB) for a single operation. */
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(String(text || ""))
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 const BCRYPT_COST = 12;
 const SHA_HEX_RE = /^[a-f0-9]{64}$/i;
@@ -40,17 +50,14 @@ export async function hashPassword(password) {
 }
 
 /**
- * Synchronous legacy SHA-256 hash. Retained for two reasons:
- *  - Reading legacy stored hashes for compare (verifyPassword)
- *  - Tests that need a deterministic hash
- *
- * Do not use for new user creation — use hashPassword (bcrypt) instead.
+ * Legacy SHA-256 hash (async, Web Crypto). Retained only for verifying
+ * hashes created before the bcrypt migration — do not use for new accounts.
  *
  * @param {string} password
- * @returns {string}
+ * @returns {Promise<string>}
  */
-export function legacyHashPassword(password) {
-  return CryptoJS.SHA256(String(password || "")).toString();
+export async function legacyHashPassword(password) {
+  return sha256Hex(password);
 }
 
 /**
@@ -76,7 +83,7 @@ export async function verifyPassword(password, storedHash) {
       return await bcrypt.compare(password, storedHash);
     }
     if (SHA_HEX_RE.test(storedHash)) {
-      const candidate = legacyHashPassword(password);
+      const candidate = await legacyHashPassword(password);
       return constantTimeEquals(candidate, storedHash);
     }
     return false;

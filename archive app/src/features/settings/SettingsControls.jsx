@@ -1,4 +1,4 @@
-import {
+﻿import {
   Bot,
   Database,
   Eye,
@@ -112,7 +112,7 @@ export function SegmentedChoices({ label, value, options, onChange, columns = "s
             className: cx(
               "va-tool-button min-h-16 rounded-xl border px-3 py-2 text-right transition-colors",
               selected
-                ? "border-emerald-500/45 bg-emerald-500/15 text-emerald-100"
+                ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
                 : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"
             ),
             "aria-pressed": selected,
@@ -144,7 +144,7 @@ export function ToggleRow({ label, description, checked, onChange }) {
       jsx("span", {
         className: cx(
           "relative h-6 w-11 shrink-0 rounded-full border transition-colors",
-          checked ? "border-emerald-400/40 bg-emerald-500" : "border-white/15 bg-gray-800"
+          checked ? "va-accent-border va-accent-bg" : "border-white/15 bg-gray-800"
         ),
         children: jsx("span", {
           className: cx(
@@ -222,7 +222,7 @@ export function ColorChoices({ value, onChange }) {
             onClick: () => onChange(option.value),
             className: cx(
               "va-tool-button min-h-16 rounded-xl border p-3 text-right transition-colors",
-              selected ? "border-emerald-500/45 bg-emerald-500/15" : "border-white/10 bg-gray-950/35 hover:bg-white/5"
+              selected ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-950/35 hover:bg-white/5"
             ),
             children: [
               jsx("span", { className: "block h-5 w-5 rounded-full", style: { backgroundColor: option.color } }),

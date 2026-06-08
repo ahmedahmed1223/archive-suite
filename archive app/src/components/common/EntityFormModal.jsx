@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { X } from "lucide-react";
 
@@ -77,7 +77,7 @@ export function EntityFormModal({
               id: titleId,
               className: "flex items-center gap-2.5 text-base font-bold text-white",
               children: [
-                icon ? jsx("span", { className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300", children: icon }) : null,
+                icon ? jsx("span", { className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border va-accent-border va-accent-bg-soft va-accent-text", children: icon }) : null,
                 jsx("span", { children: title })
               ]
             }),
@@ -106,7 +106,7 @@ export function EntityFormModal({
               onClick: onSubmitAndNew,
               disabled: !canSubmit,
               title: "حفظ هذا العنصر وبدء إنشاء عنصر جديد مباشرة",
-              className: "va-secondary-button inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold text-emerald-100 disabled:cursor-not-allowed disabled:opacity-40",
+              className: "va-secondary-button inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold va-accent-text-on-soft disabled:cursor-not-allowed disabled:opacity-40",
               children: "حفظ وجديد"
             }) : null,
             (!isEditing && onSubmitAndOpen) ? jsx("button", {

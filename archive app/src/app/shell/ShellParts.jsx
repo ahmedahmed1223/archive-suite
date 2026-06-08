@@ -1,4 +1,4 @@
-import {
+﻿import {
   AlertTriangle,
   Bell,
   CheckCircle2,
@@ -179,7 +179,7 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
         className="va-onboarding-panel w-full max-w-3xl rounded-3xl border border-white/10 bg-[#0b1626]/95 p-7 shadow-2xl shadow-black/30"
       >
         <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl va-accent-bg-soft va-accent-text-on-soft">
             <Sparkles className="h-7 w-7" />
           </span>
           <div>
@@ -191,10 +191,10 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
         <div className="mt-7">
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="font-semibold text-slate-100">{currentStep?.label || "بدء التشغيل"}</span>
-            <span dir="ltr" className="font-mono text-emerald-200">{Math.max(0, Math.min(100, Math.round(progress)))}%</span>
+            <span dir="ltr" className="font-mono va-accent-text-on-soft">{Math.max(0, Math.min(100, Math.round(progress)))}%</span>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10" dir="rtl">
-            <div className="h-full rounded-full bg-emerald-400 transition-all duration-300" style={{ width: `${Math.max(4, Math.min(100, progress))}%` }} />
+            <div className="h-full rounded-full va-accent-bg transition-all duration-300" style={{ width: `${Math.max(4, Math.min(100, progress))}%` }} />
           </div>
         </div>
 
@@ -283,7 +283,7 @@ export function LockScreen() {
   return (
     <main dir="rtl" className="va-auth-shell flex min-h-screen items-center justify-center bg-[#07111f] p-6 text-right text-white">
       <form onSubmit={submit} className="va-auth-card w-full max-w-md rounded-3xl border border-white/10 bg-[#0b1626] p-7">
-        <Lock className="h-10 w-10 text-emerald-300" />
+        <Lock className="h-10 w-10 va-accent-text" />
         <h1 className="mt-4 text-2xl font-bold">التطبيق مقفل</h1>
         <p className="mt-2 text-sm text-slate-400">أدخل كلمة المرور الرئيسية للمتابعة.</p>
         <PasswordField
@@ -328,19 +328,19 @@ export function LoginScreen() {
   return (
     <main dir="rtl" className="va-onboarding-shell va-auth-shell flex min-h-screen items-center justify-center bg-[#07111f] p-6 text-right text-white">
       <section className="va-onboarding-panel va-auth-card grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-[#0b1626] shadow-2xl shadow-black/30 md:grid-cols-[0.9fr_1.1fr]">
-        <aside className="bg-emerald-500/10 p-7">
-          <Sparkles className="h-11 w-11 text-emerald-200" />
+        <aside className="va-accent-bg-soft p-7">
+          <Sparkles className="h-11 w-11 va-accent-text-on-soft" />
           <h1 className="mt-5 text-3xl font-bold">أرشيف الفيديو</h1>
-          <p className="mt-3 text-sm leading-7 text-emerald-50/80">
+          <p className="mt-3 text-sm leading-7 va-accent-text-on-soft">
             دخول سريع وآمن إلى الأرشيف المحلي، مع بقاء بياناتك على هذا الجهاز.
           </p>
-          <button type="button" onClick={openOnboarding} className="mt-6 rounded-xl border border-emerald-300/30 px-4 py-2 text-sm font-semibold text-emerald-50">
+          <button type="button" onClick={openOnboarding} className="mt-6 rounded-xl border va-accent-border px-4 py-2 text-sm font-semibold va-accent-text-on-soft">
             تشغيل معالج البداية
           </button>
         </aside>
         <form onSubmit={submit} className="p-7">
           <div className="flex items-center gap-3">
-            <LogIn className="h-6 w-6 text-emerald-300" />
+            <LogIn className="h-6 w-6 va-accent-text" />
             <h2 className="text-2xl font-bold">تسجيل الدخول</h2>
           </div>
           <label className="mt-6 block text-sm text-slate-300">
@@ -404,7 +404,7 @@ export function ToastNotification() {
             layout
           >
             <div className="flex items-start gap-3">
-              {notification.type === "success" ? <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-300" /> : notification.type === "error" ? <AlertTriangle className="mt-0.5 h-5 w-5 text-red-300" /> : <Info className="mt-0.5 h-5 w-5 text-sky-300" />}
+              {notification.type === "success" ? <CheckCircle2 className="mt-0.5 h-5 w-5 va-accent-text" /> : notification.type === "error" ? <AlertTriangle className="mt-0.5 h-5 w-5 text-red-300" /> : <Info className="mt-0.5 h-5 w-5 text-sky-300" />}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{notification.title || "تنبيه"}</p>
                 <p className="mt-1 text-sm leading-6 text-slate-300">{notification.message}</p>
@@ -708,7 +708,7 @@ export function ForceChangePasswordDialog() {
   return createPortal(
     <div dir="rtl" className="fixed inset-0 z-[9995] flex items-center justify-center bg-black/70 p-4 text-right text-white">
       <form onSubmit={submit} className="va-surface-muted w-full max-w-md rounded-3xl border p-6">
-        <KeyRound className="h-9 w-9 text-emerald-300" />
+        <KeyRound className="h-9 w-9 va-accent-text" />
         <h2 className="mt-4 text-xl font-bold">تغيير كلمة المرور مطلوب</h2>
         <PasswordField
           value={password}
@@ -761,7 +761,7 @@ export function V1ProductTour({ open, role = "viewer", onComplete, onSkip }) {
   return createPortal(
     <div dir="rtl" className="fixed inset-0 z-[9992] flex items-end justify-center bg-black/55 p-4 text-right text-white backdrop-blur-sm sm:items-center">
       <section className="va-surface-muted w-full max-w-lg rounded-3xl border p-6 shadow-2xl">
-        <p className="text-xs font-semibold text-emerald-300">جولة تشغيل {index + 1} / {tourSteps.length}</p>
+        <p className="text-xs font-semibold va-accent-text">جولة تشغيل {index + 1} / {tourSteps.length}</p>
         <h2 className="mt-3 text-2xl font-bold">{step.title}</h2>
         <p className="mt-3 text-sm leading-7 text-gray-300">{step.body}</p>
         <div className="mt-6 flex flex-wrap justify-between gap-3">

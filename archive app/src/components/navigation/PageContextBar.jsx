@@ -22,6 +22,8 @@ import { jsx, jsxs } from "react/jsx-runtime";
 import { ContextMenu } from "../common/ContextMenu.jsx";
 import { getPageContextBarModel } from "./viewModel.js";
 import { ServerStatusBadge } from "../../features/server-status/ServerStatusBadge.jsx";
+import { Breadcrumb } from "./Breadcrumb.jsx";
+import { useBreadcrumbs } from "../../hooks/useBreadcrumbs.js";
 
 
 function ContextButton({ children, onClick, variant = "secondary", className = "", ariaLabel }) {
@@ -50,6 +52,12 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
   const [overflowMenu, setOverflowMenu] = React.useState(null);
   const meta = getPageContextBarModel(currentPage, currentPageTitle);
   const activeCount = videoItems.filter((item) => !item.isDeleted).length;
+  const breadcrumbs = useBreadcrumbs(currentPage);
+
+  const navigateToCrumb = (crumb) => {
+    setSelectedItemId(null);
+    setCurrentPage(crumb.id);
+  };
 
   const goToPage = (page) => {
     setSelectedItemId(null);
@@ -153,7 +161,9 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
                 jsxs("div", {
                   className: "mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-500",
                   children: [
-                    jsx("span", { className: "truncate", children: meta.breadcrumb }),
+                    breadcrumbs.length > 1
+                      ? jsx(Breadcrumb, { crumbs: breadcrumbs, onNavigate: navigateToCrumb })
+                      : jsx("span", { className: "truncate", children: meta.breadcrumb }),
                     jsx("span", {
                       className: "va-number-badge rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-gray-400",
                       children: `${activeCount} عنصر`

@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Sparkles, Check, RotateCcw, Clock } from "lucide-react";
 
@@ -112,18 +112,18 @@ export function ThemeVersionPicker({ value = DEFAULT_THEME_VERSION, onChange, co
             onClick: () => commit(option.id),
             className: `relative rounded-2xl border p-4 text-right transition-all ${
               active
-                ? "border-emerald-400/45 bg-emerald-500/12 text-white shadow-lg shadow-emerald-500/10"
+                ? "va-accent-border va-accent-bg-soft text-white shadow-lg shadow-emerald-500/10"
                 : "border-white/10 bg-white/[0.035] text-gray-300 hover:border-emerald-500/25 hover:bg-white/[0.06]"
             }`,
             children: [
               option.badge && jsx("span", {
-                className: "absolute left-3 top-3 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-200",
+                className: "absolute left-3 top-3 rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-[10px] font-semibold va-accent-text-on-soft",
                 children: option.badge
               }),
               jsxs("div", {
                 className: "flex items-center gap-2",
                 children: [
-                  active && jsx(Check, { className: "h-4 w-4 text-emerald-300" }),
+                  active && jsx(Check, { className: "h-4 w-4 va-accent-text" }),
                   jsx("p", { className: "font-semibold", children: option.title })
                 ]
               }),
@@ -137,16 +137,16 @@ export function ThemeVersionPicker({ value = DEFAULT_THEME_VERSION, onChange, co
         onClick: startPreview,
         className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-white/5",
         children: [
-          jsx(Sparkles, { className: "h-4 w-4 text-emerald-300" }),
+          jsx(Sparkles, { className: "h-4 w-4 va-accent-text" }),
           `معاينة ${DEFAULT_OPTION.title} لمدة ${PREVIEW_SECONDS} ثانية`
         ]
       }),
       previewing && jsxs("div", {
-        className: "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3",
+        className: "flex flex-wrap items-center justify-between gap-3 rounded-xl border va-accent-border va-accent-bg-soft p-3",
         role: "status",
         children: [
           jsxs("span", {
-            className: "inline-flex items-center gap-2 text-sm text-emerald-100",
+            className: "inline-flex items-center gap-2 text-sm va-accent-text-on-soft",
             children: [
               jsx(Clock, { className: "h-4 w-4" }),
               `معاينة ${DEFAULT_OPTION.title} — يعود تلقائيًا خلال ${previewLeft} ثانية`
@@ -158,7 +158,7 @@ export function ThemeVersionPicker({ value = DEFAULT_THEME_VERSION, onChange, co
               jsxs("button", {
                 type: "button",
                 onClick: () => commit(DEFAULT_THEME_VERSION),
-                className: "inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30",
+                className: "inline-flex items-center gap-1.5 rounded-lg va-accent-bg-soft px-3 py-1.5 text-xs font-semibold va-accent-text-on-soft hover:bg-emerald-500/30",
                 children: [jsx(Check, { className: "h-3.5 w-3.5" }), `احتفظ بـ ${DEFAULT_OPTION.title}`]
               }),
               jsxs("button", {

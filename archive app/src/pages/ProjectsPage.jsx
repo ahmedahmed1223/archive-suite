@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../stores/index.js";
 import {
@@ -78,7 +78,7 @@ const KANBAN_META = {
   todo: { label: "للعمل", tone: "border-sky-500/20 bg-sky-500/10 text-sky-100" },
   doing: { label: "قيد التنفيذ", tone: "border-amber-500/20 bg-amber-500/10 text-amber-100" },
   review: { label: "مراجعة", tone: "border-violet-500/20 bg-violet-500/10 text-violet-100" },
-  done: { label: "منجز", tone: "border-emerald-500/20 bg-emerald-500/10 text-emerald-100" }
+  done: { label: "منجز", tone: "va-accent-border va-accent-bg-soft va-accent-text-on-soft" }
 };
 
 // ── rough-cut builder ────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ function RoughCutBuilder({ items, onAdd }) {
     className: "va-surface-muted rounded-xl border p-3",
     children: [
       jsxs("p", { className: "mb-2 flex items-center gap-2 text-sm font-semibold text-gray-300", children: [
-        jsx(Scissors, { className: "h-4 w-4 text-emerald-400" }), "إضافة قصاصة (rough cut)"
+        jsx(Scissors, { className: "h-4 w-4 va-accent-text" }), "إضافة قصاصة (rough cut)"
       ] }),
       jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
         jsxs("div", { className: "space-y-1 text-sm text-gray-300 sm:col-span-2", children: [
@@ -170,7 +170,7 @@ function TaskBuilder({ items, users, onAdd }) {
     className: "va-surface-muted rounded-xl border p-3",
     children: [
       jsxs("p", { className: "mb-2 flex items-center gap-2 text-sm font-semibold text-gray-300", children: [
-        jsx(ClipboardList, { className: "h-4 w-4 text-emerald-400" }), "إضافة مهمة"
+        jsx(ClipboardList, { className: "h-4 w-4 va-accent-text" }), "إضافة مهمة"
       ] }),
       jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
         jsxs("label", { className: "space-y-1 text-sm text-gray-300 sm:col-span-2", htmlFor: titleId, children: [
@@ -248,7 +248,7 @@ function TimelineRow({ cut, index, total, itemsById, onMove, onRemove }) {
   return jsxs("div", {
     className: `grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border p-3 ${valid ? "va-surface-muted" : "border-amber-500/30 bg-amber-500/5"}`,
     children: [
-      jsx("span", { className: "flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 text-xs font-bold text-emerald-200", children: index + 1 }),
+      jsx("span", { className: "flex h-7 w-7 items-center justify-center rounded-lg va-accent-bg-soft text-xs font-bold va-accent-text-on-soft", children: index + 1 }),
       jsxs("div", { className: "min-w-0", children: [
         jsx("p", { className: "truncate text-sm font-semibold text-white", children: title }),
         jsxs("p", { className: "mt-0.5 text-xs text-gray-500", children: [
@@ -275,19 +275,19 @@ function ProjectCard({ project, active, index, onOpen, onDelete }) {
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.18, delay: Math.min(index, 10) * 0.025 },
     onClick: onOpen,
-    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${active ? "border-emerald-500/35 bg-emerald-500/10" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
+    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${active ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
     dir: "rtl",
     children: [
       jsxs("div", { className: "flex items-start justify-between gap-3", children: [
         jsxs("div", { className: "flex min-w-0 items-start gap-3", children: [
-          jsx("span", { className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-200", children: jsx(Clapperboard, { className: "h-5 w-5" }) }),
+          jsx("span", { className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl va-accent-bg-soft va-accent-text-on-soft", children: jsx(Clapperboard, { className: "h-5 w-5" }) }),
           jsxs("div", { className: "min-w-0", children: [
             jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
               jsx("h3", { className: "truncate text-base font-bold text-white", children: project.name || "مشروع بدون اسم" }),
               project.status === "archived" && jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: "مؤرشف" })
             ] }),
             project.description && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-gray-500", children: project.description }),
-            jsxs("span", { className: "mt-2.5 inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-200", children: [
+            jsxs("span", { className: "mt-2.5 inline-flex items-center gap-1 rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-xs font-medium va-accent-text-on-soft", children: [
               jsx(ListVideo, { className: "h-3 w-3 opacity-70" }), `${formatNumber(cuts)} قصاصة · ${formatClock(getProjectDuration(project))}`
             ] })
           ] })
@@ -346,7 +346,7 @@ function ProjectEditor({
         jsx(TaskBuilder, { items, users, onAdd: onAddTask }),
         jsxs("div", { children: [
           jsxs("div", { className: "mb-2 flex items-center justify-between", children: [
-            jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(CheckCircle2, { className: "h-4 w-4 text-emerald-400" }), "لوحة المهام"] }),
+            jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(CheckCircle2, { className: "h-4 w-4 va-accent-text" }), "لوحة المهام"] }),
             jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: `${formatNumber(project.tasks?.length || 0)} مهمة` })
           ] }),
           jsx(KanbanBoard, { project, itemsById, usersById, onMoveTask, onRemoveTask })
@@ -355,7 +355,7 @@ function ProjectEditor({
 
       jsxs("div", { children: [
         jsxs("div", { className: "mb-2 flex items-center justify-between", children: [
-          jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(ListVideo, { className: "h-4 w-4 text-emerald-400" }), "الخطّ الزمني"] }),
+          jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(ListVideo, { className: "h-4 w-4 va-accent-text" }), "الخطّ الزمني"] }),
           jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: `${formatNumber(ordered.length)} قصاصة · ${formatClock(total)}` })
         ] }),
         ordered.length ? jsx("div", { className: "space-y-2", children: ordered.map((cut, i) => jsx(TimelineRow, {
@@ -585,7 +585,7 @@ export function ProjectsPage() {
     dir: "rtl",
     children: [
       jsx(PageHero, {
-        icon: jsx(Clapperboard, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(Clapperboard, { className: "h-6 w-6 va-accent-text" }),
         title: "مشاريع المونتاج",
         description: "اجمع لقطات الأرشيف في خطّ زمني مرتّب بنقاط قص (in/out)، ثم صدّر JSON أو EDL لبرامج المونتاج أو MP4 جاهزًا من الخادم.",
         actions: jsxs("button", { type: "button", onClick: openCreate, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مشروع جديد"] })
@@ -607,7 +607,7 @@ export function ProjectsPage() {
         ].map(([label, value, Icon]) => jsxs("div", { className: "va-metric-card rounded-2xl va-surface-muted border p-4 text-right", children: [
           jsxs("div", { className: "flex items-center justify-between gap-3", children: [
             jsx("span", { className: "text-sm text-gray-500", children: label }),
-            jsx(Icon, { className: "h-5 w-5 text-emerald-400" })
+            jsx(Icon, { className: "h-5 w-5 va-accent-text" })
           ] }),
           jsx("p", { className: "mt-2 text-2xl font-bold text-white", children: value })
         ] }, label))

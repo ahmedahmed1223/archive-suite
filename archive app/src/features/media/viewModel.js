@@ -1,4 +1,4 @@
-// G8 — shared logic for the Uploader and Transcriber pages.
+﻿// G8 — shared logic for the Uploader and Transcriber pages.
 //
 // Pure, storage/AI-agnostic helpers so the pages stay thin and the behavior is
 // unit-tested. The pages inject the registered FileStore / AiProvider (and, for
@@ -183,7 +183,7 @@ export function mergeMediaJobs(jobs = []) {
 
 export function formatMediaJobStatus(job = {}) {
   const status = job.status || "queued";
-  if (status === "done") return { label: "مكتملة", tone: "text-emerald-200", progress: 100 };
+  if (status === "done") return { label: "مكتملة", tone: "va-accent-text-on-soft", progress: 100 };
   if (status === "error") return { label: "فشلت", tone: "text-red-200", progress: Number(job.progress) || 0 };
   if (status === "running") return { label: "قيد التنفيذ", tone: "text-sky-200", progress: Number(job.progress) || 1 };
   return { label: "في الانتظار", tone: "text-amber-200", progress: Number(job.progress) || 0 };

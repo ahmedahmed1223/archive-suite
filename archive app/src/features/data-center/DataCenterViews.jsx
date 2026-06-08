@@ -1,4 +1,4 @@
-import {
+﻿import {
   CheckCircle2,
   ChevronDown,
   Database,
@@ -48,7 +48,7 @@ export function DataMetric({ label, value, hint, icon }) {
             ]
           }),
           jsx("span", {
-            className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-200",
+            className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border va-accent-border va-accent-bg-soft va-accent-text-on-soft",
             children: icon
           })
         ]
@@ -65,7 +65,7 @@ export function TaskChoiceCard({ task, active, onClick, count }) {
     "aria-pressed": active,
     className: `va-action-card grid min-h-[152px] gap-3 rounded-2xl border p-4 text-right transition-colors ${
       active
-        ? "border-emerald-500/40 bg-emerald-500/12 text-[var(--va-text-strong)]"
+        ? "va-accent-border va-accent-bg-soft text-[var(--va-text-strong)]"
         : "border-white/10 bg-gray-950/35 text-[var(--va-text)] hover:border-white/20 hover:bg-white/[0.045]"
     }`,
     children: [
@@ -74,7 +74,7 @@ export function TaskChoiceCard({ task, active, onClick, count }) {
         children: [
           jsx("span", {
             className: `flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
-              active ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-100" : "border-white/10 bg-white/[0.04] text-[var(--va-text-soft)]"
+              active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-white/[0.04] text-[var(--va-text-soft)]"
             }`,
             children: jsx(Icon, { className: "h-5 w-5" })
           }),
@@ -94,7 +94,7 @@ export function TaskChoiceCard({ task, active, onClick, count }) {
         className: "mt-auto flex flex-wrap items-center gap-2 text-[11px]",
         children: [
           jsx("span", {
-            className: `rounded-full border px-2 py-0.5 ${active ? "border-emerald-400/25 bg-emerald-500/15 text-emerald-100" : "border-white/10 bg-white/[0.03] text-gray-500"}`,
+            className: `rounded-full border px-2 py-0.5 ${active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-white/[0.03] text-gray-500"}`,
             children: task.actionLabel
           }),
           jsx("span", {
@@ -112,9 +112,9 @@ export function TaskStageRail({ stages = [] }) {
     className: "grid gap-2 md:grid-cols-4",
     children: stages.map((stage, index) => jsxs("li", {
       className: `rounded-xl border p-3 ${stage.active
-        ? "border-emerald-500/35 bg-emerald-500/12 text-emerald-100"
+        ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
         : stage.done
-          ? "border-emerald-500/20 bg-emerald-500/[0.05] text-[var(--va-text)]"
+          ? "va-accent-border va-accent-bg/[0.05] text-[var(--va-text)]"
           : "border-white/10 bg-gray-950/30 text-[var(--va-text-faint)]"}`,
       children: [
         jsxs("div", {
@@ -169,7 +169,7 @@ export function TabButton({ tab, active, onClick }) {
     onClick,
     className: `va-tool-button inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border px-3 py-2 text-sm transition-colors ${
       active
-        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+        ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
         : "border-white/5 bg-gray-900/40 text-gray-400 hover:border-white/10 hover:bg-white/5 hover:text-white"
     }`,
     children: [
@@ -188,7 +188,7 @@ export function SegmentedButton({ active, children, onClick, danger = false }) {
       active
         ? danger
           ? "border-red-500/40 bg-red-500/15 text-red-100"
-          : "border-emerald-500/35 bg-emerald-500/15 text-emerald-100"
+          : "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
         : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"
     }`,
     children
@@ -233,11 +233,11 @@ export function PreviewSummary({ preview }) {
     className: "space-y-3",
     children: [
       jsxs("div", {
-        className: "rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4",
+        className: "rounded-xl border va-accent-border va-accent-bg-soft p-4",
         children: [
-          jsx("p", { className: "text-sm font-semibold text-emerald-100", children: "تمت قراءة الملف بنجاح" }),
+          jsx("p", { className: "text-sm font-semibold va-accent-text-on-soft", children: "تمت قراءة الملف بنجاح" }),
           jsxs("p", {
-            className: "mt-1 text-xs leading-relaxed text-emerald-200/80",
+            className: "mt-1 text-xs leading-relaxed va-accent-text-on-soft",
             children: [
               preview.fileName,
               " - ",

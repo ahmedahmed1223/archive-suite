@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../../stores/index.js";
 import {
@@ -78,7 +78,7 @@ export function KeyboardShortcutsDialog({ open, onOpenChange }) {
                 jsxs("h2", {
                   className: "flex items-center gap-2 text-base font-semibold",
                   children: [
-                    jsx(Keyboard, { className: "h-5 w-5 text-emerald-400" }),
+                    jsx(Keyboard, { className: "h-5 w-5 va-accent-text" }),
                     "اختصارات لوحة المفاتيح"
                   ]
                 }),
@@ -114,7 +114,7 @@ export function KeyboardShortcutsDialog({ open, onOpenChange }) {
             className: "space-y-4",
             children: categories.map((category) => jsxs("section", {
               children: [
-                jsx("h3", { className: "mb-2 text-sm font-medium text-emerald-400", children: category }),
+                jsx("h3", { className: "mb-2 text-sm font-medium va-accent-text", children: category }),
                 jsx("div", {
                   className: "space-y-1",
                   role: "list",

@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,7 +29,7 @@ const STATUS_LABEL = {
 
 const STATUS_CLASS = {
   identical: "border-white/10 bg-white/[0.03] text-gray-400",
-  "local-only": "border-emerald-500/25 bg-emerald-500/10 text-emerald-200",
+  "local-only": "va-accent-border va-accent-bg-soft va-accent-text-on-soft",
   "incoming-only": "border-cyan-500/25 bg-cyan-500/10 text-cyan-200",
   "both-changed": "border-amber-500/30 bg-amber-500/10 text-amber-200"
 };
@@ -64,7 +64,7 @@ function renderValuePreview(value, kind) {
 function FieldChoiceButton({ active, onClick, icon, label, accent }) {
   const colorClass = active
     ? accent === "emerald"
-      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-100"
+      ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
       : accent === "cyan"
         ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-100"
         : "border-amber-500/40 bg-amber-500/15 text-amber-100"
@@ -95,7 +95,7 @@ function FieldRow({ row, choice, onChange }) {
       ] }),
       !isIdentical && jsxs("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: [
         jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/40 p-2", children: [
-          jsxs("div", { className: "mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-200", children: [
+          jsxs("div", { className: "mb-1 flex items-center gap-1.5 text-[11px] font-semibold va-accent-text-on-soft", children: [
             jsx(HardDrive, { className: "h-3 w-3" }),
             "النسخة المحلية"
           ] }),
@@ -163,7 +163,7 @@ function ConflictItem({ item, choice, onChange }) {
           jsx("button", {
             type: "button",
             onClick: () => onChange(Object.fromEntries(DIFFABLE_FIELDS.map((field) => [field.key, "local"]))),
-            className: "rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-100 hover:bg-emerald-500/15",
+            className: "rounded-lg border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs font-medium va-accent-text-on-soft hover:bg-emerald-500/15",
             children: "اختر كل المحلي"
           }),
           jsx("button", {

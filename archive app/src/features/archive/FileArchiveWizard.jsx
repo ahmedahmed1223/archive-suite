@@ -1,4 +1,4 @@
-import {
+﻿import {
   CheckCircle2,
   FileVideo,
   FolderOpen,
@@ -128,7 +128,7 @@ export function FileArchiveWizard({
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 p-5">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl va-accent-bg-soft va-accent-text-on-soft">
                 <Upload className="h-5 w-5" />
               </span>
               <div>
@@ -145,16 +145,16 @@ export function FileArchiveWizard({
         <div className="grid gap-5 p-5 md:grid-cols-[1fr_320px]">
           <main className="space-y-4">
             <div
-              className="rounded-3xl border border-dashed border-emerald-500/25 bg-emerald-500/10 p-7 text-center"
+              className="rounded-3xl border border-dashed va-accent-border va-accent-bg-soft p-7 text-center"
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => {
                 event.preventDefault();
                 readFiles(event.dataTransfer?.files);
               }}
             >
-              <FileVideo className="mx-auto h-12 w-12 text-emerald-200" />
+              <FileVideo className="mx-auto h-12 w-12 va-accent-text-on-soft" />
               <h3 className="mt-4 text-lg font-bold">اختر ملفات فيديو أو اسحبها هنا</h3>
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-emerald-50/70">
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-7 va-accent-text-on-soft">
                 يمكنك اختيار ملفات منفردة أو مجلد كامل. تظهر معاينة ومكررّات محتملة قبل إنشاء العناصر.
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-3">
@@ -234,7 +234,7 @@ export function FileArchiveWizard({
               <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-[#07111f] px-3 py-2 text-right text-white outline-none focus:border-emerald-500/40" placeholder="اختياري" />
             </label>
             <div className="flex items-start gap-2 rounded-2xl border border-white/10 bg-[#07111f]/70 p-3 text-xs leading-6 text-slate-400">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 va-accent-text" />
               <span>سيتم إنشاء عنصر أرشيف لكل ملف محدد مع حقل metadata باسم <span dir="ltr" className="font-mono text-slate-200">localFile</span>.</span>
             </div>
             <WizardButton

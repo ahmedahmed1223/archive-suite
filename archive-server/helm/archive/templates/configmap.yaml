@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "archive.configmapName" . }}
+  namespace: {{ include "archive.namespace" . }}
+  labels:
+    {{- include "archive.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.server.nodeEnv | quote }}
+  BACKEND: "postgres"
+  API_PORT: {{ .Values.server.port | toString | quote }}
+  ARCHIVE_PUBLIC_DEPLOY: {{ .Values.server.archivePublicDeploy | quote }}
+  POSTGRES_HOST: {{ printf "%s-postgres" (include "archive.fullname" .) | quote }}
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: {{ .Values.postgres.database | quote }}
+  POSTGRES_USER: {{ .Values.postgres.user | quote }}
+  FILE_STORE: {{ .Values.server.fileStore | quote }}
+  FILE_STORE_DIR: {{ .Values.server.fileStoreDir | quote }}

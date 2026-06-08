@@ -1,16 +1,78 @@
+# Version control
 .git
+.gitignore
+.gitattributes
 .codex-scan
 repo-git-backups
+
+# Node modules (rebuilt in Docker)
 node_modules
 **/node_modules
-archive app/dist
-archive app/dist-cloud
-archive app/dist-aistudio
-archive app/test-results
-archive app/playwright-report
-archive app/blob-report
-archive-server/src/generated
-archive-server/pocketbase/pb_data
-archive-server/.env
+
+# Build outputs (rebuilt in Docker)
+**/dist
+**/dist-cloud
+**/dist-aistudio
+**/build
+**/.vite
+
+# Test results
+**/test-results
+**/playwright-report
+**/blob-report
+**/coverage
+
+# Development files
+**/*.md
+**/*.log
+.env
+.env.*
+!.env.example
+**/.env.local
+
+# Editor & OS
+.vscode
+.idea
+*.suo
+*.swp
+**/.DS_Store
+**/Thumbs.db
+
+# Test & CI
+**/__tests__
+**/*.test.*
+**/*.spec.*
+.github
+
+# Monorepo tools
+.changeset
+
+# Docker files themselves (don't include in build context)
+**/Dockerfile*
+**/.dockerignore
+
+# Reports and docs
 output
-*.log
+docs/
+
+# Python (OCR service has its own Docker build)
+archive-server/ocr-service/
+**/__pycache__
+**/*.pyc
+
+# Prisma: keep schema and migrations, exclude generated client
+archive-server/src/generated/
+
+# PocketBase runtime data
+archive-server/pocketbase/pb_data
+
+# Large binary/media assets that don't belong in the server image
+**/*.mp4
+**/*.avi
+**/*.mov
+**/*.mkv
+**/*.zip
+**/*.tar.gz
+
+# pgAdmin local config
+archive-server/deploy/pgadmin-servers.json

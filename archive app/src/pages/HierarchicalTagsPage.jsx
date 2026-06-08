@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../stores/index.js";
 import { EntityFormModal } from "../components/common/EntityFormModal.jsx";
@@ -357,7 +357,7 @@ export function HierarchicalTagsPage() {
     className: "space-y-6 p-4 sm:p-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(FolderTree, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(FolderTree, { className: "h-6 w-6 va-accent-text" }),
         title: "الوسوم الهرمية",
         description: "وسوم جذرية وفرعية تظهر في حقول الوسوم عند كتابة الرمز # مع حفظ المسار الكامل للوسم.",
         actions: jsxs("div", { className: "flex flex-wrap gap-2", children: [
@@ -386,7 +386,7 @@ export function HierarchicalTagsPage() {
           jsx("h2", { className: "text-sm font-bold text-white", children: "مقترحة من المواد" }),
           workspace.suggestions.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.suggestions.slice(0, 5).map((row) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl va-surface-subtle border px-3 py-2", children: [
             jsx("span", { className: "truncate text-sm text-gray-200", children: row.name }),
-            jsx("button", { type: "button", onClick: () => createSuggestedTag(row), className: "shrink-0 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/15", children: "اعتماد" })
+            jsx("button", { type: "button", onClick: () => createSuggestedTag(row), className: "shrink-0 rounded-lg border va-accent-border va-accent-bg-soft px-2 py-1 text-xs font-semibold va-accent-text-on-soft hover:bg-emerald-500/15", children: "اعتماد" })
           ] }, row.key)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: "لا توجد وسوم غير رسمية متكررة." })
         ] }),
         jsxs("div", { className: "rounded-2xl va-surface-muted border p-4 text-right", children: [
