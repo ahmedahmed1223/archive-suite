@@ -14,7 +14,7 @@ const STATE_META = {
   },
   online: {
     label: "متصل",
-    className: "border-emerald-500/25 bg-emerald-500/10 text-emerald-100",
+    className: "va-accent-border va-accent-bg-soft va-accent-text-on-soft border bg-transparent",
     Icon: Activity
   },
   degraded: {

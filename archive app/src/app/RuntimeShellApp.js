@@ -41,6 +41,9 @@ import { NotificationDrawer } from "../components/common/NotificationDrawer.jsx"
 import { QuickAddDialog } from "../features/videos/QuickAddDialog.jsx";
 import { KeyboardShortcutsDialog } from "../components/common/KeyboardShortcutsDialog.jsx";
 import { appConfirm } from "../components/common/ConfirmDialog.js";
+import { ErrorBoundary } from "../components/common/ErrorBoundary.jsx";
+import { DialogProvider } from "../components/common/DialogManager.jsx";
+import { ProgressProvider } from "../contexts/ProgressContext.jsx";
 import {
   PageContextBar as AppPageContextBar,
   Sidebar as AppSidebar
@@ -54,6 +57,16 @@ import {
   shouldShowV1Tour
 } from "../features/onboarding/index.js";
 import { useServerStatusMonitor } from "../features/server-status/useServerStatusMonitor.js";
+import { OfflineBanner } from "../components/common/OfflineBanner.jsx";
+
+// Register service worker for PWA support (production only)
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(err => {
+      console.warn("SW registration failed:", err);
+    });
+  });
+}
 
 
 export function App() {
@@ -573,6 +586,7 @@ export function App() {
     "data-motion": settings.ui?.motionLevel || "full",
     "data-card-style": settings.ui?.cardStyle || "filled",
     children: [
+      jsx(OfflineBanner, {}),
       jsx("a", {
         href: "#main-content",
         className: "va-skip-link",
@@ -587,7 +601,7 @@ export function App() {
         // overlaps the page header/breadcrumb; no offset needed from md+ (no FAB).
         className: "flex-1 min-w-0 overflow-y-auto max-h-screen text-right pt-16 md:pt-0",
         role: "main",
-        children: jsx(AppErrorBoundary, {
+        children: jsx(ErrorBoundary, {
           children: jsxs(motion.div, {
             initial: { opacity: 0, y: 8 },
             animate: { opacity: 1, y: 0 },
@@ -624,7 +638,13 @@ export function mountVideoArchive(rootElement = document.getElementById("root"))
   }
 
   return createRoot(rootElement).render(
-    jsx(React.StrictMode, { children: jsx(App, {}) })
+    jsx(React.StrictMode, {
+      children: jsx(ErrorBoundary, {
+        children: jsx(DialogProvider, {
+          children: jsx(ProgressProvider, { children: jsx(App, {}) })
+        })
+      })
+    })
   );
 }
 

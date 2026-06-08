@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../stores/index.js";
 import {
@@ -86,7 +86,7 @@ function LocalFilePicker({ value, onFileSelect }) {
   return jsxs("div", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/35 p-3", children: [
     jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
       jsxs("div", { className: "flex min-w-0 items-center gap-2 text-sm text-gray-300", children: [
-        jsx(HardDrive, { className: "h-4 w-4 shrink-0 text-emerald-300" }),
+        jsx(HardDrive, { className: "h-4 w-4 shrink-0 va-accent-text" }),
         jsx("span", { className: "truncate", dir: "auto", children: file?.name || "لم يتم اختيار ملف" })
       ] }),
       jsx("button", { type: "button", onClick: () => inputRef.current?.click(), className: "inline-flex min-h-9 items-center justify-center va-primary-button rounded-lg px-3 py-1.5 text-xs font-semibold text-white", children: "استعراض" })
@@ -128,7 +128,7 @@ function GroupedFields({ fields, renderField, gap = "gap-4" }) {
         role: "tab",
         "aria-selected": active === index,
         onClick: () => setActive(index),
-        className: `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${active === index ? "bg-emerald-500/15 text-emerald-100" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
+        className: `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${active === index ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
         children: [group.name, jsx("span", { className: "rounded-full bg-white/10 px-1.5 text-[10px]", children: `${group.fields.length}` })]
       }, group.name)) }) : null,
       jsx("div", { className: `grid ${gap} md:grid-cols-2`, children: visible.map(renderField) })
@@ -188,7 +188,7 @@ function FieldAclControls({ fieldKey, acl, onChange }) {
     jsx("button", {
       type: "button",
       onClick: () => onChange(fieldKey, []),
-      className: `rounded-lg border px-2 py-1 text-[11px] ${unrestricted ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100" : "border-white/10 text-gray-500 hover:bg-white/5"}`,
+      className: `rounded-lg border px-2 py-1 text-[11px] ${unrestricted ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 text-gray-500 hover:bg-white/5"}`,
       children: "كل الأدوار"
     }),
     ...FIELD_ACL_ROLES.map((role) => jsx("button", {
@@ -238,7 +238,7 @@ function TranscriptSyncWorkbench({ segments = [], currentTime = 0, onSeek }) {
 
   if (!segments.length) {
     return jsxs("section", { className: "rounded-2xl va-surface-subtle border p-4 text-right", dir: "rtl", children: [
-      jsxs("h3", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(FileText, { className: "h-4 w-4 text-emerald-300" }), "مشغل التفريغ المتزامن"] }),
+      jsxs("h3", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(FileText, { className: "h-4 w-4 va-accent-text" }), "مشغل التفريغ المتزامن"] }),
       jsx("p", { className: "mt-2 text-sm leading-6 text-gray-500", children: "لا يوجد تفريغ زمني لهذه المادة بعد. أضف تفريغاً في الملاحظات أو metadata.transcript مع timecodes ليتحول إلى قائمة قابلة للقفز." })
     ] });
   }
@@ -246,7 +246,7 @@ function TranscriptSyncWorkbench({ segments = [], currentTime = 0, onSeek }) {
   return jsxs("section", { className: "rounded-2xl va-surface-subtle border p-4 text-right", dir: "rtl", children: [
     jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
       jsxs("div", { className: "min-w-0", children: [
-        jsxs("h3", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(FileText, { className: "h-4 w-4 text-emerald-300" }), "مشغل التفريغ المتزامن"] }),
+        jsxs("h3", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(FileText, { className: "h-4 w-4 va-accent-text" }), "مشغل التفريغ المتزامن"] }),
         jsx("p", { className: "mt-1 text-xs text-gray-500", children: `${formatNumber(segments.length)} مقطع زمني. السطر النشط يتبع وقت التشغيل الحالي.` })
       ] }),
       jsx("span", { dir: "ltr", className: "rounded-full border border-white/10 bg-gray-950/35 px-3 py-1 font-mono text-xs text-gray-300", children: segments.find((segment) => segment.index === activeIndex)?.timecode || "0:00" })
@@ -269,9 +269,9 @@ function TranscriptSyncWorkbench({ segments = [], currentTime = 0, onSeek }) {
         },
         type: "button",
         onClick: () => segment.seconds !== null && segment.seconds !== undefined ? onSeek?.(segment.seconds) : undefined,
-        className: `grid w-full gap-2 rounded-xl border p-3 text-right transition-colors sm:grid-cols-[4.5rem_minmax(0,1fr)] ${active ? "border-emerald-500/35 bg-emerald-500/12 text-white" : "border-white/10 bg-gray-950/25 text-gray-300 hover:border-emerald-500/20 hover:bg-white/5"}`,
+        className: `grid w-full gap-2 rounded-xl border p-3 text-right transition-colors sm:grid-cols-[4.5rem_minmax(0,1fr)] ${active ? "va-accent-border va-accent-bg-soft text-white" : "border-white/10 bg-gray-950/25 text-gray-300 hover:border-emerald-500/20 hover:bg-white/5"}`,
         children: [
-          jsx("span", { dir: "ltr", className: `font-mono text-xs ${active ? "text-emerald-100" : "text-gray-500"}`, children: segment.timecode || "—" }),
+          jsx("span", { dir: "ltr", className: `font-mono text-xs ${active ? "va-accent-text-on-soft" : "text-gray-500"}`, children: segment.timecode || "—" }),
           jsx("span", { className: "text-sm leading-7", children: renderText(segment.text) })
         ]
       }, `${segment.index}-${segment.seconds ?? "none"}`);
@@ -282,7 +282,7 @@ function TranscriptSyncWorkbench({ segments = [], currentTime = 0, onSeek }) {
 
 const PREVIEW_STATE_COPY = {
   [MEDIA_PREVIEW_STATUS.LOADING]: {
-    tone: "text-emerald-200",
+    tone: "va-accent-text-on-soft",
     Icon: Loader2,
     title: "جاري تجهيز المعاينة",
     description: "نحاول قراءة بيانات الفيديو. إذا لم يرد المتصفح خلال ثوانٍ سنعرض خيارات بديلة."
@@ -913,7 +913,7 @@ export function DetailPage() {
         }),
         previewState === MEDIA_PREVIEW_STATUS.PLAYABLE && jsxs("div", { className: "border-t border-white/10 bg-gray-950/40 p-4", dir: "rtl", children: [
           jsxs("div", { className: "mb-3 flex items-center gap-2", children: [
-            jsx(Clock3, { className: "h-4 w-4 text-emerald-300" }),
+            jsx(Clock3, { className: "h-4 w-4 va-accent-text" }),
             jsx("h3", { className: "text-sm font-bold text-white", children: "إشارات مرجعية" }),
             itemBookmarks.length ? jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-gray-300", children: `${itemBookmarks.length}` }) : null
           ] }),
@@ -922,7 +922,7 @@ export function DetailPage() {
             jsx("button", { type: "button", onClick: addCurrentBookmark, className: "va-primary-button shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-white", children: "أضف عند اللحظة الحالية" })
           ] }),
           itemBookmarks.length ? jsx("ul", { className: "mt-3 space-y-1.5", children: itemBookmarks.map((bookmark) => jsxs("li", { className: "flex items-center gap-2 rounded-lg va-surface-muted border p-2", children: [
-            jsx("button", { type: "button", onClick: () => seekToBookmark(bookmark.timestamp), dir: "ltr", className: "shrink-0 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 font-mono text-xs text-emerald-200 transition-colors hover:bg-emerald-500/20", children: formatTimecode(bookmark.timestamp) }),
+            jsx("button", { type: "button", onClick: () => seekToBookmark(bookmark.timestamp), dir: "ltr", className: "shrink-0 rounded-md border va-accent-border va-accent-bg-soft px-2 py-1 font-mono text-xs va-accent-text-on-soft transition-colors hover:bg-emerald-500/20", children: formatTimecode(bookmark.timestamp) }),
             jsx("button", { type: "button", onClick: () => seekToBookmark(bookmark.timestamp), className: "min-w-0 flex-1 truncate text-right text-sm text-gray-200 transition-colors hover:text-white", children: bookmark.label }),
             jsx("button", { type: "button", onClick: () => removeBookmark?.(bookmark.id), "aria-label": "حذف الإشارة", className: "shrink-0 rounded-md p-1 text-red-300 transition-colors hover:bg-red-500/10", children: jsx(Trash2, { className: "h-3.5 w-3.5" }) })
           ] }, bookmark.id)) }) : jsx("p", { className: "mt-2 text-xs text-gray-500", children: "لا توجد إشارات بعد. شغّل الفيديو واضغط «أضف عند اللحظة الحالية»." })
@@ -943,7 +943,7 @@ export function DetailPage() {
             ] }),
             jsxs("div", { className: "flex flex-wrap gap-2", children: [
               jsxs("button", { type: "button", onClick: () => toggleFavorite?.(item.id), className: `inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors ${item.isFavorite ? "border-amber-500/30 bg-amber-500/10 text-amber-200 hover:bg-amber-500/15" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-amber-200"}`, children: [jsx(Star, { className: `h-4 w-4 ${item.isFavorite ? "fill-current" : ""}` }), item.isFavorite ? "إزالة المفضلة" : "مفضلة"] }),
-              jsxs("button", { type: "button", onClick: () => { setActiveDetailTab("data"); setEditing((value) => !value); }, className: `va-secondary-button inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm transition-colors ${editing ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" : "text-gray-300 hover:bg-white/5"}`, children: [jsx(PenLine, { className: "h-4 w-4" }), editing ? "إغلاق التحرير" : "تحرير"] }),
+              jsxs("button", { type: "button", onClick: () => { setActiveDetailTab("data"); setEditing((value) => !value); }, className: `va-secondary-button inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm transition-colors ${editing ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "text-gray-300 hover:bg-white/5"}`, children: [jsx(PenLine, { className: "h-4 w-4" }), editing ? "إغلاق التحرير" : "تحرير"] }),
               jsxs("button", { type: "button", onClick: deleteOrRestore, className: "inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200 transition-colors hover:bg-red-500/15", children: [item.isDeleted ? jsx(RefreshCw, { className: "h-4 w-4" }) : jsx(Trash2, { className: "h-4 w-4" }), item.isDeleted ? "استعادة" : "حذف"] })
             ] })
           ] })
@@ -981,10 +981,10 @@ export function DetailPage() {
         jsx(TranscriptSyncWorkbench, { segments: transcriptSegments, currentTime: playbackTime, onSeek: seekToBookmark }),
         jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
           jsxs("div", { className: "min-w-0", children: [
-            jsxs("h2", { className: "flex items-center gap-2 text-lg font-bold text-white", children: [jsx(Sparkles, { className: "h-5 w-5 text-emerald-400" }), "أدوات ffmpeg"] }),
+            jsxs("h2", { className: "flex items-center gap-2 text-lg font-bold text-white", children: [jsx(Sparkles, { className: "h-5 w-5 va-accent-text" }), "أدوات ffmpeg"] }),
             mediaSourceKey ? jsx("p", { dir: "ltr", className: "mt-1 max-w-xl truncate text-left font-mono text-xs text-gray-500", title: mediaSourceKey, children: mediaSourceKey }) : null
           ] }),
-          mediaUnavailable ? jsx("span", { className: "rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-xs text-amber-100", children: "غير متاح" }) : jsx("span", { className: "rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-100", children: "جاهز" })
+          mediaUnavailable ? jsx("span", { className: "rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-xs text-amber-100", children: "غير متاح" }) : jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1 text-xs va-accent-text-on-soft", children: "جاهز" })
         ] }),
         mediaUnavailable ? jsx("p", { className: "rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm leading-6 text-amber-100", children: mediaUnavailable }) : null,
         jsxs("div", { className: "flex flex-wrap gap-2", children: [
@@ -1006,7 +1006,7 @@ export function DetailPage() {
           jsx(MediaJobsMiniList, { jobs: mediaJobs, onRetry: retryMediaJob })
         ] })
       ] }),
-      activeDetailTab === "data" && editing && draft && jsxs("section", { className: "va-card space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 text-right", children: [
+      activeDetailTab === "data" && editing && draft && jsxs("section", { className: "va-card space-y-4 rounded-2xl border va-accent-border va-accent-bg-soft p-5 text-right", children: [
         jsx("h2", { className: "text-lg font-bold text-white", children: "تحرير التفاصيل" }),
         jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [
           jsxs("label", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("span", { children: "العنوان" }), jsx("input", { value: draft.title || "", onChange: (event) => updateDraft({ title: event.target.value }), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none" })] }),
@@ -1042,7 +1042,7 @@ export function DetailPage() {
       ] }),
       jsxs("section", { className: "space-y-6", children: [
         jsxs("div", { ref: metadataSectionRef, className: `va-card space-y-4 rounded-2xl va-surface-muted border p-5 text-right ${activeDetailTab === "data" ? "" : "hidden"}`, children: [
-          jsxs("h2", { className: "flex items-center gap-2 text-lg font-bold text-white", children: [jsx(FileText, { className: "h-5 w-5 text-emerald-400" }), "البيانات"] }),
+          jsxs("h2", { className: "flex items-center gap-2 text-lg font-bold text-white", children: [jsx(FileText, { className: "h-5 w-5 va-accent-text" }), "البيانات"] }),
           completeness && jsxs("div", { className: "rounded-xl va-surface-muted border p-3", children: [
             jsxs("div", { className: "flex items-center justify-between gap-3", children: [
               jsxs("span", { className: "flex items-center gap-2 text-sm font-semibold", style: { color: COMPLETENESS_TIERS[completeness.tier].color }, children: [
@@ -1057,8 +1057,8 @@ export function DetailPage() {
           canViewNotes && item.notes && jsx("p", { className: "rounded-xl va-surface-muted border p-3 text-sm leading-relaxed text-gray-400", dir: "auto", children: renderTextWithTimestamps(item.notes) }),
           canViewPrimaryLocalFile && item.metadata?.localFile && jsxs("div", { className: "rounded-xl va-surface-muted border p-3", children: [
             jsxs("div", { className: "flex items-center gap-2", children: [
-              jsx(CheckCircle2, { className: "h-4 w-4 text-emerald-300" }),
-              jsx("p", { className: "text-xs font-semibold text-emerald-100", children: "الملف المحلي" })
+              jsx(CheckCircle2, { className: "h-4 w-4 va-accent-text" }),
+              jsx("p", { className: "text-xs font-semibold va-accent-text-on-soft", children: "الملف المحلي" })
             ] }),
             jsx("div", { className: "mt-2 text-sm text-gray-300", children: jsx(ReadonlyField, { field: { type: "localFile" }, value: item.metadata.localFile }) })
           ] }),
@@ -1070,12 +1070,12 @@ export function DetailPage() {
         ] }),
         jsxs("aside", { className: "va-preview-panel space-y-5 rounded-2xl va-surface-muted border p-5 text-right", children: [
           jsxs("section", { className: activeDetailTab === "data" ? "" : "hidden", children: [
-            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Tags, { className: "h-4 w-4 text-emerald-400" }), "الوسوم", canViewTags && item.tags?.length ? jsx("span", { className: "mr-auto rounded-full bg-white/10 px-2 py-0.5 text-xs text-gray-400", children: item.tags.length }) : null] }),
+            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Tags, { className: "h-4 w-4 va-accent-text" }), "الوسوم", canViewTags && item.tags?.length ? jsx("span", { className: "mr-auto rounded-full bg-white/10 px-2 py-0.5 text-xs text-gray-400", children: item.tags.length }) : null] }),
             canViewTags ? (item.tags?.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-1.5", children: item.tags.map((tag) => jsx("span", { className: "va-tag-chip inline-flex items-center rounded-full border border-white/10 bg-gray-900/60 px-2.5 py-1 text-xs text-gray-300 transition-colors hover:border-emerald-500/25 hover:text-emerald-200", children: tag }, tag)) }) : jsx("p", { className: "mt-3 text-sm text-gray-600", children: "لا توجد وسوم." })) : jsx("p", { className: "mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-100", children: "الوسوم محجوبة حسب صلاحيات العرض." })
           ] }),
           jsxs("section", { ref: commentsSectionRef, className: `rounded-xl va-surface-subtle border p-3 ${activeDetailTab === "comments" ? "" : "hidden"}`, children: [
             jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [
-              jsx(MessageSquare, { className: "h-4 w-4 text-emerald-400" }),
+              jsx(MessageSquare, { className: "h-4 w-4 va-accent-text" }),
               "التعليقات",
               jsx("span", { className: "mr-auto rounded-full bg-white/10 px-2 py-0.5 text-xs text-gray-400", children: itemComments.length })
             ] }),
@@ -1118,13 +1118,13 @@ export function DetailPage() {
             }, comment.id)) }) : jsx("p", { className: "mt-3 text-sm text-gray-600", children: "لا توجد تعليقات بعد." })
           ] }),
           activeDetailTab === "ai" && jsxs("section", { className: "rounded-xl va-surface-subtle border p-4", children: [
-            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Sparkles, { className: "h-4 w-4 text-emerald-400" }), "مساعد AI للمادة"] }),
+            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text" }), "مساعد AI للمادة"] }),
             jsx("p", { className: "mt-2 text-sm leading-6 text-gray-500", children: ai.available ? "اختر إجراءً وسيضاف الناتج إلى مسودة التحرير. راجع التغييرات ثم احفظها من تبويب البيانات." : "مزود AI غير متاح حالياً. افتح إعدادات AI أو استخدم الملاحظات اليدوية." }),
             ai.available && jsx("div", { className: "mt-4", children: jsx(AiAssistBar, { available: ai.available, busy: ai.busy, onSummarize: aiSummarize, onSuggestTags: aiSuggestTags, onProofread: aiProofread, show: { summarize: canEditNotes, proofread: canEditNotes, tags: canEditTags } }) }),
-            draft && jsx("p", { className: "mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-6 text-emerald-100", children: editing ? "أنت داخل وضع التحرير. احفظ عند الرضا عن النتيجة." : "سيتم فتح وضع التحرير عند الحاجة للمراجعة والحفظ." })
+            draft && jsx("p", { className: "mt-3 rounded-xl border va-accent-border va-accent-bg-soft p-3 text-xs leading-6 va-accent-text-on-soft", children: editing ? "أنت داخل وضع التحرير. احفظ عند الرضا عن النتيجة." : "سيتم فتح وضع التحرير عند الحاجة للمراجعة والحفظ." })
           ] }),
           activeDetailTab === "relations" && relatedItems.length ? jsxs("section", { children: [
-            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Gauge, { className: "h-4 w-4 text-emerald-400" }), "مواد قد ترتبط بهذا السياق"] }),
+            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Gauge, { className: "h-4 w-4 va-accent-text" }), "مواد قد ترتبط بهذا السياق"] }),
             jsx("ul", { className: "mt-3 space-y-2", children: relatedItems.map((related) => jsx("li", { children: jsxs("button", {
               type: "button",
               onClick: () => setSelectedItemId?.(related.item.id),
@@ -1132,14 +1132,14 @@ export function DetailPage() {
               children: [
                 jsxs("div", { className: "flex items-center justify-between gap-2", children: [
                   jsx("span", { className: "min-w-0 flex-1 truncate text-sm font-semibold text-white", children: related.item.title || "بدون عنوان" }),
-                  jsx("span", { dir: "ltr", className: "shrink-0 font-mono text-[10px] text-emerald-300", children: `${related.percent}%` })
+                  jsx("span", { dir: "ltr", className: "shrink-0 font-mono text-[10px] va-accent-text", children: `${related.percent}%` })
                 ] }),
                 related.reason ? jsx("p", { className: "mt-1 text-[11px] text-gray-500", children: related.reason }) : null
               ]
             }) }, related.item.id)) })
           ] }) : null,
           activeDetailTab === "history" && itemHistory.length ? jsxs("section", { children: [
-            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Clock3, { className: "h-4 w-4 text-emerald-400" }), "سجل التعديلات"] }),
+            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Clock3, { className: "h-4 w-4 va-accent-text" }), "سجل التعديلات"] }),
             jsx("ul", { className: "mt-3 space-y-2", children: itemHistory.slice(0, 12).map((record) => jsxs("li", { className: "rounded-xl va-surface-subtle border p-3", children: [
               jsxs("div", { className: "flex items-center justify-between gap-2", children: [
                 jsx("span", { className: "text-xs text-gray-400", children: formatDateTime(record.timestamp) }),

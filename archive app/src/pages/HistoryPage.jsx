@@ -1,4 +1,4 @@
-import {
+﻿import {
   parseAppRoute,
   writeAppRoute
 } from "../services/router/index.js";
@@ -46,7 +46,7 @@ const ACTION_ICON = {
 };
 
 function toneClasses(tone) {
-  if (tone === "emerald") return "border-emerald-500/20 bg-emerald-500/10 text-emerald-200";
+  if (tone === "emerald") return "va-accent-border va-accent-bg-soft va-accent-text-on-soft";
   if (tone === "blue") return "border-blue-500/20 bg-blue-500/10 text-blue-200";
   if (tone === "red") return "border-red-500/20 bg-red-500/10 text-red-200";
   if (tone === "amber") return "border-amber-500/20 bg-amber-500/10 text-amber-200";
@@ -153,8 +153,8 @@ function HistoryRecord({ record, itemTitle, index, settings }) {
             jsx("p", { className: "mb-1.5 font-semibold text-red-300", children: "القيمة السابقة" }),
             jsx("p", { className: "truncate font-mono text-gray-400", dir: "ltr", children: formatHistoryValue(record.oldValue) })
           ] }),
-          jsxs("div", { className: "min-w-0 rounded-lg border border-emerald-500/15 bg-emerald-500/8 p-2", children: [
-            jsx("p", { className: "mb-1.5 font-semibold text-emerald-300", children: "القيمة الجديدة" }),
+          jsxs("div", { className: "min-w-0 rounded-lg border va-accent-border va-accent-bg-soft p-2", children: [
+            jsx("p", { className: "mb-1.5 font-semibold va-accent-text", children: "القيمة الجديدة" }),
             jsx("p", { className: "truncate font-mono text-gray-400", dir: "ltr", children: formatHistoryValue(record.newValue) })
           ] })
         ]
@@ -249,7 +249,7 @@ export function HistoryPage() {
     className: "space-y-6 p-4 sm:p-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(History, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(History, { className: "h-6 w-6 va-accent-text" }),
         title: "سجل التغييرات",
         description: "مراجعة عمليات الإنشاء والتحديث والحذف والاستعادة مع بحث مباشر وروابط تحفظ حالة الفلترة.",
         actions: changeHistory.length > 0 ? jsxs("button", {

@@ -45,11 +45,32 @@ export function createRateLimiter({ max = 300, windowMs = 60_000 } = {}) {
   return { check, _store: hits };
 }
 
-/** Best-effort client IP behind a reverse proxy (Caddy/nginx set XFF). */
+/**
+ * Best-effort client IP behind a reverse proxy.
+ *
+ * Trust model: Set TRUST_PROXY=1 (default) when the Node server sits behind
+ * a trusted reverse proxy (Caddy/nginx) that sets X-Real-IP / X-Forwarded-For.
+ * Set TRUST_PROXY=0 for direct internet exposure — XFF will be ignored and the
+ * socket address used instead (prevents IP spoofing to bypass rate limits).
+ *
+ * In the standard Docker deployment:
+ *   Client → Caddy (sets X-Real-IP + XFF to client IP) → nginx → Node
+ * X-Real-IP from Caddy is the most reliable source for the client's address.
+ */
 export function clientIp(req) {
-  const xff = req.headers?.["x-forwarded-for"];
-  if (typeof xff === "string" && xff.length) {
-    return xff.split(",")[0].trim();
+  const trustProxy = process.env.TRUST_PROXY !== "0";
+
+  if (trustProxy) {
+    // X-Real-IP is set by the outermost proxy (Caddy) to the actual client.
+    const xri = req.headers?.["x-real-ip"];
+    if (typeof xri === "string" && xri.trim()) return xri.trim();
+
+    // X-Forwarded-For: first entry is client IP as added by the outermost proxy.
+    const xff = req.headers?.["x-forwarded-for"];
+    if (typeof xff === "string" && xff.length) {
+      return xff.split(",")[0].trim();
+    }
   }
+
   return req.socket?.remoteAddress || "unknown";
 }

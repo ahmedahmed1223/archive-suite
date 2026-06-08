@@ -135,9 +135,27 @@ export function appendArchiveExcelPayloadSheet(XLSX, workbook, state) {
   return archivePackage;
 }
 
+// Maximum file size accepted for Excel import (mitigates CVE-2024-22363 ReDoS
+// by limiting worst-case regex work on maliciously large inputs).
+const XLSX_MAX_IMPORT_BYTES = 20 * 1024 * 1024; // 20 MB
+
 export function readArchiveExcelPackage(arrayBuffer, XLSX, options = {}) {
+  // Guard: reject files that are too large.
+  if (arrayBuffer.byteLength > XLSX_MAX_IMPORT_BYTES) {
+    return { valid: false, errors: ["حجم ملف Excel يتجاوز الحد المسموح به (20MB)."] };
+  }
+
+  // Guard: require a valid ZIP/OOXML container (PK\x03\x04 magic bytes).
+  // This blocks XLML (HTML-based Excel) files which are the trigger for
+  // CVE-2024-22363 — they don't have a ZIP signature.
+  const magic = new Uint8Array(arrayBuffer.slice(0, 4));
+  const isOOXML = magic[0] === 0x50 && magic[1] === 0x4b && magic[2] === 0x03 && magic[3] === 0x04;
+  if (!isOOXML) {
+    return { valid: false, errors: ["صيغة ملف Excel غير مدعومة. يُقبل ملف .xlsx فقط (OpenXML)."] };
+  }
+
   try {
-    const wb = XLSX.read(arrayBuffer, { type: "array", cellDates: true });
+    const wb = XLSX.read(arrayBuffer, { type: "array", cellDates: true, dense: true });
     const ws = wb.Sheets?.[EXCEL_ARCHIVE_PAYLOAD_SHEET];
     if (!ws) {
       return { valid: false, errors: ["هذا الملف للعرض والتحليل فقط، ولا يمكن استيراده بأمان في v1 لأنه لا يحتوي حزمة بيانات التطبيق."] };

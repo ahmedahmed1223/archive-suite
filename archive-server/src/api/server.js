@@ -1,13 +1,19 @@
 import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 
 import { getFileStore, getSyncProvider, getAiProvider, getStorageProvider } from "@archive/core";
 
+import { logger, createLogger } from "../logger.js";
+import { auditLog } from "./auditLogger.js";
 import { dispatchRpc } from "./rpcHandler.js";
 import { dispatchAi } from "./aiHandler.js";
+import { handleSearch } from "./searchHandler.js";
 import { exportTimelineToMp4 } from "../export/mp4.js";
 import { createInMemoryMediaJobStore, createMediaJobWorker, montageOutputKey, storeMontageOutput } from "../media/mediaJobs.js";
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
 import { verifyJwt } from "../auth/jwt.js";
+import { revokeToken } from "../auth/tokenBlacklist.js";
+import { generateTotpSecret, verifyTotpToken } from "../auth/totpService.js";
 import { mintShareToken, readShareTokenPayload } from "../share/token.js";
 import { filterSnapshotForShare } from "../share/scope.js";
 import {
@@ -22,16 +28,27 @@ import {
   mergeFileStoreConfig, testDatabaseConnection
 } from "./adminConfig.js";
 import { createRateLimiter, clientIp } from "./rateLimit.js";
+import { handleOcr } from "./ocrHandler.js";
+import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
+import bcrypt from "bcryptjs";
+import { sendPasswordResetEmail } from "../auth/emailService.js";
+import { createResetToken, consumeResetToken } from "../auth/resetTokenStore.js";
 
 // Minimal dependency-free HTTP server exposing the StorageProvider port to the
 // SPA over a single RPC endpoint. Node's built-in http keeps the runtime image
 // tiny and the attack surface small (no Express middleware chain).
 //
 // Routes:
-//   GET  /api/health      → { ok, backend, authRequired }
-//   POST /api/auth/login  → { ok, token, user }   body: { username, password }
-//   POST /api/rpc         → { ok, result } | { ok:false, error }
-//                           body: { method, args }   (Bearer JWT required when authSecret set)
+//   GET    /api/health                  → { ok, backend, authRequired }
+//   POST   /api/auth/login              → { ok, token, user }   body: { username, password[, totpToken] }
+//   POST   /api/auth/logout             → { ok }                (Bearer JWT required)
+//   POST   /api/auth/request-reset      → { ok, message }       body: { username }  (open; rate-limited)
+//   POST   /api/auth/reset-password     → { ok, message }       body: { token, newPassword } (open; rate-limited)
+//   POST   /api/auth/totp/setup         → { ok, otpauthUrl, qrUrl }  (Bearer required)
+//   POST   /api/auth/totp/verify        → { ok }                body: { token }  (Bearer required; activates 2FA)
+//   DELETE /api/auth/totp               → { ok }                body: { token }  (Bearer required; disables 2FA)
+//   POST   /api/rpc                     → { ok, result } | { ok:false, error }
+//                                         body: { method, args }   (Bearer JWT required when authSecret set)
 //
 // Auth: when `authSecret` is provided, /api/rpc requires a valid
 // `Authorization: Bearer <jwt>`. /api/health and /api/auth/login stay open.
@@ -40,6 +57,8 @@ import { createRateLimiter, clientIp } from "./rateLimit.js";
 // its 11 methods to /api/rpc, so the contract never drifts from the port.
 
 const MAX_BODY_BYTES = 256 * 1024 * 1024; // 256MB — matches nginx/Caddy limits.
+
+const authLog = createLogger("auth");
 
 function send(res, statusCode, payload) {
   const body = JSON.stringify(payload);
@@ -206,6 +225,7 @@ export function createApiServer({
   resolveStorage = getStorageProvider,
   shareSecret = authSecret,
   shareExpiryDays = Number(process.env.SHARE_EXPIRY_DAYS) || 30,
+  prisma = null,
   resolveConfig = resolveServerConfig,
   loadConfigFile = loadServerConfigFile,
   saveConfig = saveServerConfigFile,
@@ -213,14 +233,22 @@ export function createApiServer({
   version = process.env.npm_package_version || process.env.APP_VERSION || "0.0.0",
   dropboxOAuthFetch
 } = {}) {
-  const authRequired = Boolean(authSecret);
-  const oauthSecret = authSecret || shareSecret;
+  // Prefer dedicated per-token-type secrets; fall back to the legacy JWT_SECRET
+  // (via authSecret/shareSecret) so existing deployments keep working.
+  const resolvedAuthSecret   = process.env.JWT_AUTH_SECRET    || authSecret;
+  const resolvedShareSecret  = process.env.JWT_SHARE_SECRET   || shareSecret;
+  const resolvedOauthSecret  = process.env.OAUTH_STATE_SECRET || resolvedAuthSecret || resolvedShareSecret;
 
-  // Two buckets: a generous one for RPC, a strict one for login (brute-force
-  // defense). Disabled entirely when rateLimit is null (e.g. some tests).
+  const authRequired = Boolean(resolvedAuthSecret);
+  const oauthSecret = resolvedOauthSecret;
+
+  // Three buckets: a generous one for RPC, a strict one for login (brute-force
+  // defense), and a strict one for password reset requests. Disabled entirely
+  // when rateLimit is null (e.g. some tests).
   const limiters = rateLimit === null ? null : {
     rpc: createRateLimiter({ max: rateLimit.rpcMax ?? 600, windowMs: rateLimit.windowMs ?? 60_000 }),
-    login: createRateLimiter({ max: rateLimit.loginMax ?? 10, windowMs: rateLimit.windowMs ?? 60_000 })
+    login: createRateLimiter({ max: rateLimit.loginMax ?? 10, windowMs: rateLimit.windowMs ?? 60_000 }),
+    reset: createRateLimiter({ max: rateLimit.resetMax ?? 5, windowMs: rateLimit.windowMs ?? 60_000 })
   };
 
   function overLimit(res, bucket, req) {
@@ -237,7 +265,7 @@ export function createApiServer({
       if (!token) {
         const err = new Error("Authentication required."); err.statusCode = 401; throw err;
       }
-      verifyJwt(token, authSecret);
+      verifyJwt(token, resolvedAuthSecret);
       return true;
     } catch (error) {
       send(res, error?.statusCode || 401, { ok: false, error: error?.message || "Unauthorized" });
@@ -252,7 +280,7 @@ export function createApiServer({
       if (!token) {
         const err = new Error("Authentication required."); err.statusCode = 401; throw err;
       }
-      const payload = verifyJwt(token, authSecret);
+      const payload = verifyJwt(token, resolvedAuthSecret);
       if (!["admin", "owner", "editor"].includes(payload?.role)) {
         const err = new Error("Editor privileges required."); err.statusCode = 403; throw err;
       }
@@ -270,7 +298,7 @@ export function createApiServer({
     const token = bearerToken(req);
     try {
       if (!token) { const err = new Error("Authentication required."); err.statusCode = 401; throw err; }
-      const payload = verifyJwt(token, authSecret);
+      const payload = verifyJwt(token, resolvedAuthSecret);
       if (payload?.role !== "admin" && payload?.role !== "owner") {
         const err = new Error("Admin privileges required."); err.statusCode = 403; throw err;
       }
@@ -278,6 +306,20 @@ export function createApiServer({
     } catch (error) {
       send(res, error?.statusCode || 401, { ok: false, error: error?.message || "Unauthorized" });
       return false;
+    }
+  }
+
+  // Returns parsed JWT claims for any authenticated user, or sends 401 and
+  // returns null. Used by TOTP management endpoints.
+  function requireAuthClaims(req, res) {
+    if (!authRequired) return { sub: "anonymous", username: "anonymous", role: "owner" };
+    const token = bearerToken(req);
+    try {
+      if (!token) { const err = new Error("Authentication required."); err.statusCode = 401; throw err; }
+      return verifyJwt(token, resolvedAuthSecret);
+    } catch (error) {
+      send(res, error?.statusCode || 401, { ok: false, error: error?.message || "Unauthorized" });
+      return null;
     }
   }
 
@@ -308,6 +350,12 @@ export function createApiServer({
   }
 
   return createServer(async (req, res) => {
+    // Assign a request ID for correlation across logs.
+    req.id = req.headers["x-request-id"] || randomUUID();
+    res.setHeader("X-Request-Id", req.id);
+    const reqLog = logger.child({ reqId: req.id, method: req.method, url: req.url });
+    reqLog.debug({ ip: clientIp(req) }, "incoming request");
+
     // Dev CORS: the SPA on :8080 calling the API on another port. In prod the
     // nginx /api proxy keeps everything same-origin so this stays unset.
     if (corsOrigin) {
@@ -322,7 +370,54 @@ export function createApiServer({
     }
 
     const requestUrl = new URL(req.url || "/", "http://localhost");
-    const url = requestUrl.pathname;
+    const pathname = requestUrl.pathname;
+
+    // ── API version routing ──────────────────────────────────────────
+    // /api/v1/* is the canonical path going forward.
+    // /api/* (without v1) is kept as a backward-compatible alias and receives
+    // a Sunset header so operators know to migrate before 2028-01-01.
+    let url;
+    let isLegacyPath = false;
+    if (pathname.startsWith("/api/v1/")) {
+      // Canonical versioned path → normalise to /api/* for internal matching
+      url = "/api/" + pathname.slice("/api/v1/".length);
+    } else {
+      // Unversioned path — still works, but is deprecated
+      url = pathname;
+      if (pathname.startsWith("/api/") && pathname !== "/api/") {
+        isLegacyPath = true;
+      }
+    }
+
+    // X-API-Version on every /api/ response
+    if (pathname.startsWith("/api/")) {
+      res.setHeader("X-API-Version", "1.0");
+    }
+    // Sunset + successor-version Link for legacy /api/* callers
+    if (isLegacyPath) {
+      res.setHeader("Sunset", "Sat, 01 Jan 2028 00:00:00 GMT");
+      res.setHeader("Link", `</api/v1${pathname.slice("/api".length)}>; rel="successor-version"`);
+    }
+
+    // ── /api/ discovery endpoint ──────────────────────────────────────────
+    if ((pathname === "/api/" || pathname === "/api/v1/") && req.method === "GET") {
+      return send(res, 200, {
+        version: "1.0",
+        endpoints: {
+          health: "/api/v1/health",
+          rpc: "/api/v1/rpc",
+          search: "/api/v1/search",
+          auth: {
+            login: "/api/v1/auth/login",
+            logout: "/api/v1/auth/logout",
+            requestReset: "/api/v1/auth/request-reset",
+            totp: "/api/v1/auth/totp/setup",
+          },
+          share: "/api/v1/share",
+          ocr: "/api/v1/ocr",
+        },
+      });
+    }
 
     if (req.method === "GET" && (url === "/api/health" || url === "/health")) {
       const config = resolveConfig();
@@ -351,7 +446,9 @@ export function createApiServer({
       }
       try {
         const body = await readJsonBody(req);
+        const { username } = body || {};
         const result = await login(body);
+        authLog.info({ event: "login", username, ip: clientIp(req) }, `AUDIT: login success`);
         return send(res, 200, { ok: true, ...result });
       } catch (error) {
         const statusCode = error?.statusCode || 500;
@@ -359,13 +456,159 @@ export function createApiServer({
       }
     }
 
+    // Logout — revoke the caller's current token so it can no longer be used
+    // even before its `exp` expires. Requires a valid Bearer token.
+    if (req.method === "POST" && url === "/api/auth/logout") {
+      if (!authRequired) return send(res, 200, { ok: true, message: "تم تسجيل الخروج بنجاح." });
+      const token = bearerToken(req);
+      if (!token) return send(res, 401, { ok: false, error: "Authentication required." });
+      try {
+        const claims = verifyJwt(token, resolvedAuthSecret);
+        if (claims?.jti) revokeToken(claims.jti, claims.exp);
+        authLog.info({ event: "logout", sub: claims?.sub, username: claims?.username, ip: clientIp(req) }, `AUDIT: logout`);
+        return send(res, 200, { ok: true, message: "تم تسجيل الخروج بنجاح." });
+      } catch (error) {
+        // If the token is already expired/invalid we still treat it as a
+        // successful logout — the token can't be used anyway.
+        if (error?.code === "TOKEN_REVOKED" || error?.statusCode === 401) {
+          return send(res, 200, { ok: true, message: "تم تسجيل الخروج بنجاح." });
+        }
+        return send(res, error?.statusCode || 401, { ok: false, error: error?.message || "Logout failed" });
+      }
+    }
+
+    // Password reset — step 1: request a reset link by username.
+    // Open endpoint; always returns 200 to prevent username enumeration.
+    if (req.method === "POST" && url === "/api/auth/request-reset") {
+      if (overLimit(res, "reset", req)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const { username } = body;
+        const users = await resolveStorage().getAll("users").catch(() => []);
+        const user = users.find(
+          (u) => u.username?.toLowerCase() === String(username || "").toLowerCase() && u.isActive !== false
+        );
+        // Always return 200 even if user not found (prevent username enumeration)
+        if (user && user.email) {
+          const token = createResetToken(user.id, user.username, user.email);
+          const baseUrl = process.env.APP_BASE_URL || `${requestOrigin(req)}`;
+          const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+          await sendPasswordResetEmail({ to: user.email, resetUrl, username: user.username });
+        }
+        return send(res, 200, { ok: true, message: "إذا كان البريد الإلكتروني مسجلاً، ستصل رسالة خلال دقائق." });
+      } catch (error) {
+        // Still return 200 to prevent enumeration; log internally
+        logger.warn({ err: error?.message }, "request-reset error");
+        return send(res, 200, { ok: true, message: "إذا كان البريد الإلكتروني مسجلاً، ستصل رسالة خلال دقائق." });
+      }
+    }
+
+    // Password reset — step 2: submit the token + new password.
+    // Open endpoint; token is consumed (one-time use) on success.
+    if (req.method === "POST" && url === "/api/auth/reset-password") {
+      if (overLimit(res, "reset", req)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const { token, newPassword } = body;
+        if (!token || !newPassword || newPassword.length < 8) {
+          return send(res, 400, { ok: false, error: "البيانات غير صالحة. كلمة المرور يجب أن تكون 8 أحرف على الأقل." });
+        }
+        const data = consumeResetToken(token);
+        if (!data) return send(res, 400, { ok: false, error: "رمز إعادة التعيين غير صالح أو منتهي الصلاحية." });
+
+        const passwordHash = await bcrypt.hash(newPassword, 12);
+        await resolveStorage().put("users", { id: data.userId, passwordHash });
+        return send(res, 200, { ok: true, message: "تم تغيير كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن." });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Password reset failed" });
+      }
+    }
+
+    // ── 2FA / TOTP management (all require a valid Bearer token) ─────────────
+
+    // POST /api/auth/totp/setup — generate a pending TOTP secret; scan QR then
+    // call /verify to activate it. Does NOT enable 2FA yet.
+    if (req.method === "POST" && url === "/api/auth/totp/setup") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      try {
+        const { secret, otpauthUrl, qrUrl } = generateTotpSecret(claims.username);
+        await resolveStorage().put("users", { id: claims.sub, totpSecretPending: secret });
+        return send(res, 200, { ok: true, otpauthUrl, qrUrl, message: "امسح رمز QR بتطبيق المصادقة ثم أدخل الرمز للتأكيد." });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "TOTP setup failed" });
+      }
+    }
+
+    // POST /api/auth/totp/verify — confirm setup: verify a live code, promote
+    // totpSecretPending → totpSecret, and set totpEnabled = true.
+    if (req.method === "POST" && url === "/api/auth/totp/verify") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      try {
+        const { token: totpCode } = await readJsonBody(req);
+        const user = await resolveStorage().get("users", claims.sub);
+        if (!user?.totpSecretPending) {
+          return send(res, 400, { ok: false, error: "لا يوجد إعداد 2FA معلّق." });
+        }
+        if (!verifyTotpToken(user.totpSecretPending, totpCode)) {
+          return send(res, 400, { ok: false, error: "رمز التحقق غير صحيح." });
+        }
+        await resolveStorage().put("users", {
+          id: claims.sub,
+          totpSecret: user.totpSecretPending,
+          totpSecretPending: null,
+          totpEnabled: true,
+        });
+        return send(res, 200, { ok: true, message: "تم تفعيل المصادقة الثنائية بنجاح." });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "TOTP verify failed" });
+      }
+    }
+
+    // DELETE /api/auth/totp — disable 2FA. Requires the current TOTP code to
+    // prevent account takeover if a session token is stolen.
+    if (req.method === "DELETE" && url === "/api/auth/totp") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      try {
+        const { token: totpCode } = await readJsonBody(req);
+        const user = await resolveStorage().get("users", claims.sub);
+        if (user?.totpEnabled && !verifyTotpToken(user.totpSecret, totpCode)) {
+          return send(res, 400, { ok: false, error: "رمز التحقق غير صحيح. أدخل الرمز الحالي لتعطيل 2FA." });
+        }
+        await resolveStorage().put("users", {
+          id: claims.sub,
+          totpSecret: null,
+          totpSecretPending: null,
+          totpEnabled: false,
+        });
+        return send(res, 200, { ok: true, message: "تم تعطيل المصادقة الثنائية." });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "TOTP disable failed" });
+      }
+    }
+
     if (req.method === "POST" && url === "/api/rpc") {
       if (overLimit(res, "rpc", req)) return undefined;
       // Enforce Bearer auth when a secret is configured.
       if (!requireAuth(req, res)) return undefined;
+      // Extract JWT claims for audit logging (token already verified above).
+      const rpcClaims = authRequired
+        ? (() => { try { return verifyJwt(bearerToken(req), resolvedAuthSecret) || {}; } catch { return {}; } })()
+        : { sub: "anonymous", username: "anonymous", role: "owner" };
       try {
         const body = await readJsonBody(req);
         const result = await dispatch(body);
+        auditLog({
+          method: body?.method,
+          args: Array.isArray(body?.args) ? body.args : [],
+          claims: rpcClaims,
+          ip: clientIp(req),
+          result: result !== null && typeof result === "object" ? { ok: true } : result,
+        });
         return send(res, 200, { ok: true, result });
       } catch (error) {
         const statusCode = error?.statusCode || 500;
@@ -540,11 +783,34 @@ export function createApiServer({
         const body = await readJsonBody(req);
         const expiresInDays = Object.hasOwn(body || {}, "expiresInDays") ? Number(body.expiresInDays) : shareExpiryDays;
         const title = body?.title || body?.scope?.label || "";
-        const token = mintShareToken({ scope: body?.scope, secret: shareSecret, expiresInDays, title });
-        const payload = readShareTokenPayload(token, shareSecret);
-        return send(res, 200, { ok: true, result: { token, path: `/api/share/${token}`, title: payload.title, expiresAt: payload.expiresAt } });
+        const token = mintShareToken({ scope: body?.scope, secret: resolvedShareSecret, expiresInDays, title });
+        const payload = readShareTokenPayload(token, resolvedShareSecret);
+        return send(res, 200, { ok: true, result: { token, path: `/api/share/${token}`, title: payload.title, expiresAt: payload.expiresAt, jti: payload.jti } });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Failed to create share link" });
+      }
+    }
+
+    // Revoke a share link by jti (admin/owner only, Postgres only).
+    // Body: { jti }
+    if (req.method === "POST" && url.split("?")[0] === "/api/share/revoke") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      if (!requireAdmin(req, res)) return undefined;
+      if (!prisma) {
+        return send(res, 501, { ok: false, error: "إلغاء الروابط غير متاح في هذا الإعداد." });
+      }
+      try {
+        const body = await readJsonBody(req);
+        const jti = String(body?.jti || "").trim();
+        if (!jti) return send(res, 400, { ok: false, error: "jti مطلوب." });
+        await prisma.shareRevocation.upsert({
+          where: { jti },
+          create: { jti },
+          update: {}
+        });
+        return send(res, 200, { ok: true, result: { revoked: true, jti } });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Failed to revoke share link" });
       }
     }
 
@@ -554,7 +820,12 @@ export function createApiServer({
       if (overLimit(res, "rpc", req)) return undefined;
       const token = decodeURIComponent(url.split("?")[0].slice("/api/share/".length));
       try {
-        const share = readShareTokenPayload(token, shareSecret);
+        const share = readShareTokenPayload(token, resolvedShareSecret);
+        // Check revocation (Postgres only; no-op on PocketBase).
+        if (prisma && share.jti) {
+          const revoked = await prisma.shareRevocation.findUnique({ where: { jti: share.jti } });
+          if (revoked) return send(res, 401, { ok: false, error: "رابط المشاركة مُلغى." });
+        }
         const snapshot = await resolveStorage().snapshot();
         return send(res, 200, { ok: true, result: filterSnapshotForShare(snapshot, share.scope, share) });
       } catch (error) {
@@ -714,8 +985,34 @@ export function createApiServer({
         const files = resolveFileStore();
         if (req.method === "PUT") {
           const bytes = await readRawBody(req);
-          const result = await files.putBlob(key, bytes, { contentType: req.headers["content-type"] || "" });
-          return send(res, 200, { ok: true, result });
+          const declaredMime = req.headers["content-type"] || "";
+          const detectedMime = detectImageMimeType(bytes) || declaredMime;
+
+          // Run image processing pipeline for supported image types.
+          // Stores srcset-ready WebP variants alongside the original.
+          // Gracefully no-ops if Sharp is unavailable or the file is not an image.
+          let imageMetadata = null;
+          if (PROCESSABLE_IMAGE_TYPES.has(detectedMime)) {
+            const { variants, metadata } = await processImage(bytes, detectedMime);
+            imageMetadata = metadata;
+            // Store each variant under a predictable key: <original-key>@<name>.webp
+            for (const variant of variants) {
+              const variantKey = `${key}@${variant.name}.webp`;
+              try {
+                await files.putBlob(variantKey, variant.buffer, { contentType: "image/webp" });
+              } catch (variantErr) {
+                // Variant storage failures are non-fatal — log and continue.
+                reqLog.warn({ variantKey, err: variantErr?.message }, "Image variant storage failed");
+              }
+            }
+          }
+
+          const result = await files.putBlob(key, bytes, { contentType: declaredMime });
+          return send(res, 200, {
+            ok: true,
+            result,
+            ...(imageMetadata ? { imageMetadata } : {}),
+          });
         }
         if (req.method === "GET") {
           const blob = await files.getBlob(key);
@@ -760,7 +1057,7 @@ export function createApiServer({
         const token = bearerToken(req) || requestUrl.searchParams.get("token");
         try {
           if (!token) { const e = new Error("Authentication required."); e.statusCode = 401; throw e; }
-          verifyJwt(token, authSecret);
+          verifyJwt(token, resolvedAuthSecret);
         } catch (error) {
           return send(res, error?.statusCode || 401, { ok: false, error: error?.message || "Unauthorized" });
         }
@@ -797,6 +1094,22 @@ export function createApiServer({
       }
     }
 
+    // OCR — proxies multipart image uploads to the PaddleOCR microservice.
+    // Requires auth so only logged-in users can submit images for OCR.
+    if (url.split("?")[0] === "/api/ocr" && req.method === "POST") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      if (!requireAuth(req, res)) return undefined;
+      return handleOcr(req, res);
+    }
+
+    // GET /api/v1/search — authenticated full-text search with Arabic normalization
+    // (normaliser maps /api/v1/search → /api/search for internal matching)
+    if (url.split("?")[0] === "/api/search" && req.method === "GET") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      if (!requireAuth(req, res)) return undefined;
+      return handleSearch(req, res, { provider: resolveStorage(), prisma });
+    }
+
     return send(res, 404, { ok: false, error: "Not found" });
   });
 }
@@ -805,8 +1118,7 @@ export function createApiServer({
 export function startApiServer({ port = 8787, host = "0.0.0.0", ...options } = {}) {
   const server = createApiServer(options);
   server.listen(port, host, () => {
-    // eslint-disable-next-line no-console
-    console.log(`[archive-api] listening on http://${host}:${port} (backend: ${options.backend || "unknown"})`);
+    logger.info({ port, host, backend: options.backend || "unknown" }, "archive-api listening");
   });
   return server;
 }

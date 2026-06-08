@@ -50,7 +50,7 @@ function MobileControlButton({ children, onClick, active = false, danger = false
       active
         ? danger
           ? "border-red-500/35 bg-red-500/15 text-red-100"
-          : "border-emerald-500/35 bg-emerald-500/15 text-emerald-100"
+          : "va-accent-border va-accent-bg-soft va-accent-text-on-soft border"
         : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"
     }`,
     children: [
@@ -190,14 +190,14 @@ export function ArchivePageHero(props) {
         type: "button",
         onClick: () => changeTopMode("quick"),
         "aria-pressed": activeTopMode === "quick",
-        className: `rounded-lg px-3 py-1 text-xs font-semibold transition-colors ${mobile ? "flex-1" : ""} ${activeTopMode === "quick" ? "bg-emerald-500/15 text-emerald-100" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
+        className: `rounded-lg px-3 py-1 text-xs font-semibold transition-colors ${mobile ? "flex-1" : ""} ${activeTopMode === "quick" ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
         children: "سريع"
       }),
       jsx("button", {
         type: "button",
         onClick: () => changeTopMode("detailed"),
         "aria-pressed": activeTopMode === "detailed",
-        className: `rounded-lg px-3 py-1 text-xs font-semibold transition-colors ${mobile ? "flex-1" : ""} ${activeTopMode === "detailed" ? "bg-emerald-500/15 text-emerald-100" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
+        className: `rounded-lg px-3 py-1 text-xs font-semibold transition-colors ${mobile ? "flex-1" : ""} ${activeTopMode === "detailed" ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
         children: "تفصيلي"
       })
     ]
@@ -211,7 +211,7 @@ export function ArchivePageHero(props) {
       type: "button",
       onClick: () => changeViewMode(id),
       "aria-pressed": activeViewMode === id,
-      className: `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${mobile ? "flex-1 justify-center" : ""} ${activeViewMode === id ? "bg-emerald-500/15 text-emerald-100" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
+      className: `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${mobile ? "flex-1 justify-center" : ""} ${activeViewMode === id ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
       children: [jsx(Icon, { className: "h-3.5 w-3.5" }), label]
     }, id))
   });
@@ -244,7 +244,7 @@ export function ArchivePageHero(props) {
   });
 
   return jsx(PageHero, {
-    icon: jsx(Archive, { className: "h-6 w-6 text-emerald-400" }),
+    icon: jsx(Archive, { className: "h-6 w-6 va-accent-text" }),
     title: "الأرشيف",
     compact: true,
     actions: jsxs(React.Fragment, {
@@ -257,9 +257,9 @@ export function ArchivePageHero(props) {
           className: "va-tool-button inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 bg-gray-950/35 px-3 py-1.5 text-sm font-semibold text-gray-200 hover:bg-white/5 md:hidden",
           title: "خيارات العرض والفلاتر",
           children: [
-            jsx(SlidersHorizontal, { className: "h-4 w-4 text-emerald-300" }),
+            jsx(SlidersHorizontal, { className: "h-4 w-4 va-accent-text" }),
             "خيارات",
-            activeFilterCount > 0 && jsx("span", { className: "rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] text-emerald-100", children: formatNumber(activeFilterCount) })
+            activeFilterCount > 0 && jsx("span", { className: "rounded-full va-accent-bg-soft px-2 py-0.5 text-[11px] va-accent-text-on-soft", children: formatNumber(activeFilterCount) })
           ]
         }),
         jsxs("button", {
@@ -288,7 +288,7 @@ export function ArchivePageHero(props) {
                 onChange: (event) => setLocalSearch(event.target.value),
                 placeholder: "بحث بالعنوان أو الوسوم أو الملاحظات",
                 "aria-label": "بحث في الأرشيف",
-                className: "min-h-10 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-12 text-sm text-white outline-none focus:border-emerald-500/50"
+                className: "min-h-10 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-12 text-sm text-white outline-none focus:border-[var(--va-action,#10b981)]"
               }),
               jsx("span", {
                 className: "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2",
@@ -320,9 +320,9 @@ export function ArchivePageHero(props) {
                 "aria-controls": mobilePanelId,
                 className: "va-tool-button inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 bg-gray-950/35 px-3 py-1.5 text-xs font-semibold text-gray-200 hover:bg-white/5 md:hidden",
                 children: [
-                  jsx(SlidersHorizontal, { className: "h-4 w-4 text-emerald-300" }),
+                  jsx(SlidersHorizontal, { className: "h-4 w-4 va-accent-text" }),
                   currentViewLabel,
-                  activeFilterCount > 0 && jsx("span", { className: "rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] text-emerald-100", children: formatNumber(activeFilterCount) })
+                  activeFilterCount > 0 && jsx("span", { className: "rounded-full va-accent-bg-soft px-2 py-0.5 text-[11px] va-accent-text-on-soft", children: formatNumber(activeFilterCount) })
                 ]
               }),
               jsx(ToolbarButton, {
@@ -380,7 +380,7 @@ export function ArchivePageHero(props) {
                 setPage(1);
                 setPreviewId(item.id);
               },
-              className: "va-action-card min-w-[12rem] rounded-xl va-surface-subtle border px-3 py-2 text-right hover:border-emerald-500/25 md:min-w-0",
+              className: "va-action-card min-w-[12rem] rounded-xl va-surface-subtle border px-3 py-2 text-right hover:border-[var(--va-action,#10b981)]/25 md:min-w-0",
               children: [
                 jsx("span", { dir: "auto", className: "block truncate text-xs font-semibold text-white", children: item.title || "بدون عنوان" }),
                 jsx("span", { className: "mt-0.5 block truncate text-[11px] text-gray-500", children: item.updatedAt ? `آخر تحديث: ${item.updatedAt.slice(0, 10)}` : "بدون تاريخ" })

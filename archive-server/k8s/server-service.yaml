@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+  namespace: archive
+  labels:
+    app: server
+spec:
+  type: ClusterIP
+  selector:
+    app: server
+  ports:
+    - name: http
+      port: 8787
+      targetPort: 8787
+      protocol: TCP

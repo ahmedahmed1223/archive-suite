@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import path from "node:path";
 
 import {
@@ -8,6 +9,9 @@ import {
   isValidDatabaseUrl,
   normalizeDatabaseEngine
 } from "./secrets.js";
+import { createLogger } from "../logger.js";
+
+const log = createLogger("serverConfig");
 
 // Server-config layer (Phase 2) — the single source of truth for the runtime
 // database target, with precedence: persisted file > env > built-from-POSTGRES_*.
@@ -22,18 +26,36 @@ export const DEFAULT_CONFIG_PATH = process.env.SERVER_CONFIG_PATH || "config/ser
 /** Read the persisted config JSON (returns {} when missing/invalid). */
 export function loadServerConfigFile(file = DEFAULT_CONFIG_PATH) {
   try {
-    const parsed = JSON.parse(readFileSync(file, "utf8"));
+    const raw = readFileSync(file, "utf8");
+    const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
+  } catch (err) {
+    if (err.code !== "ENOENT") {
+      // Log parse/read errors explicitly so operators know the file is corrupt.
+      log.error({ err, file }, "Failed to read config file");
+    }
     return {};
   }
 }
 
-/** Persist the config JSON (creates the directory). Used by the admin API. */
+/**
+ * Persist the config JSON atomically (write to sibling temp file, then rename).
+ * Rename is atomic on POSIX filesystems, so a crash mid-write never leaves a
+ * partially-written config. On Windows, rename over an existing file succeeds
+ * via writeFileSync fall-through if renameSync throws EXDEV.
+ */
 export function saveServerConfigFile(config, file = DEFAULT_CONFIG_PATH) {
   const target = path.resolve(file);
   mkdirSync(path.dirname(target), { recursive: true });
-  writeFileSync(target, JSON.stringify(config ?? {}, null, 2));
+  const tmp = `${target}.tmp.${randomBytes(4).toString("hex")}`;
+  writeFileSync(tmp, JSON.stringify(config ?? {}, null, 2));
+  try {
+    renameSync(tmp, target);
+  } catch {
+    // Fallback for cross-device rename (EXDEV) — not atomic but still correct.
+    writeFileSync(target, JSON.stringify(config ?? {}, null, 2));
+    try { renameSync(tmp, tmp + ".del"); } catch { /* ignore */ }
+  }
   return true;
 }
 

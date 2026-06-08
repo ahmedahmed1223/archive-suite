@@ -25,3 +25,5 @@ export { AUTH_PROVIDER_METHODS, isAuthProvider } from "../storage/ports/AuthProv
 export { SESSION_PROVIDER_METHODS, isSessionProvider } from "../storage/ports/SessionProvider.js";
 export { SYNC_PROVIDER_METHODS, isSyncProvider } from "../storage/ports/SyncProvider.js";
 export { AI_PROVIDER_METHODS, isAiProvider } from "../storage/ports/AiProvider.js";
+
+export { normalizeArabic } from "../utils/arabicNormalize.js";

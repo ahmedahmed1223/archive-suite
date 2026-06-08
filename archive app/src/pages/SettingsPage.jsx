@@ -1,4 +1,4 @@
-import {
+﻿import {
   useTheme
 } from "../theme/useTheme.js";
 import {
@@ -150,7 +150,7 @@ function AppearanceStudioPreview({ draft, numberSystem = "latn" }) {
               jsx("h3", { className: "mt-1 text-base font-bold text-white", children: "محطة أرشيف مصغّرة" })
             ]
           }),
-          jsx("span", { className: "rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-100", children: densityLabel })
+          jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-2 py-1 text-[11px] va-accent-text-on-soft", children: densityLabel })
         ]
       }),
       jsxs("div", {
@@ -159,7 +159,7 @@ function AppearanceStudioPreview({ draft, numberSystem = "latn" }) {
           jsx("aside", {
             className: `rounded-xl border p-2 ${cardTone}`,
             children: ["الأرشيف", "البحث", "المركز"].map((item, index) => jsxs("div", {
-              className: `mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs ${index === 0 ? "bg-emerald-500/15 text-emerald-100" : "text-gray-500"}`,
+              className: `mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs ${index === 0 ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-500"}`,
               children: [
                 jsx("span", { className: "h-2 w-2 rounded-full bg-[var(--va-action)]" }),
                 item
@@ -173,7 +173,7 @@ function AppearanceStudioPreview({ draft, numberSystem = "latn" }) {
                 className: "flex items-center justify-between gap-2",
                 children: [
                   jsx("p", { className: "text-sm font-semibold text-white", children: "مادة قيد المراجعة" }),
-                  jsx("span", { className: "rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-100", children: `${formatNumber(82, numberSystem)}%` })
+                  jsx("span", { className: "rounded-full va-accent-bg-soft px-2 py-0.5 text-[10px] va-accent-text-on-soft", children: `${formatNumber(82, numberSystem)}%` })
                 ]
               }),
               jsx("div", { className: "mt-3 h-2 overflow-hidden rounded-full bg-white/10", children: jsx("div", { className: "h-full w-4/5 rounded-full bg-[var(--va-action)]" }) }),
@@ -459,8 +459,8 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "بداية الإصدار الأول",
         description: "شغّل المعالج من جديد لتدريب مستخدم جديد أو مراجعة الحماية والمظهر وشرح الواجهة.",
-        icon: jsx(Sparkles, { className: "h-5 w-5 text-emerald-400" }),
-        aside: jsx("span", { className: "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200", children: settings.ui?.v1OnboardingCompleted ? "مكتمل" : "لم يكتمل" }),
+        icon: jsx(Sparkles, { className: "h-5 w-5 va-accent-text" }),
+        aside: jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1 text-xs va-accent-text-on-soft", children: settings.ui?.v1OnboardingCompleted ? "مكتمل" : "لم يكتمل" }),
         children: jsxs("div", {
           className: "grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]",
           children: [
@@ -478,7 +478,7 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "الإعدادات اليومية",
         description: "اختيارات عامة تؤثر على طريقة فتح الأرشيف والتعامل مع البيانات.",
-        icon: jsx(Archive, { className: "h-5 w-5 text-emerald-400" }),
+        icon: jsx(Archive, { className: "h-5 w-5 va-accent-text" }),
         children: jsxs("div", {
           className: "grid gap-3 md:grid-cols-2",
           children: [
@@ -502,7 +502,7 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "استوديو المظهر",
         description: "عدّل الثيم واللون والكثافة والخط والبطاقات والشريط الجانبي داخل مسودة واحدة، ثم طبّقها عند الرضا عن المعاينة.",
-        icon: jsx(Sparkles, { className: "h-5 w-5 text-emerald-400" }),
+        icon: jsx(Sparkles, { className: "h-5 w-5 va-accent-text" }),
         aside: jsxs("div", {
           className: "flex flex-wrap gap-2",
           children: [
@@ -586,7 +586,7 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "ملفات مظهر وقوالب جاهزة",
         description: "قوالب شخصية لا تحتوي أسراراً: العرض الافتراضي، عدد العناصر، الكثافة، الشريط، الخط، واللون.",
-        icon: jsx(LayoutGrid, { className: "h-5 w-5 text-emerald-400" }),
+        icon: jsx(LayoutGrid, { className: "h-5 w-5 va-accent-text" }),
         aside: jsxs("div", { className: "flex flex-wrap gap-2", children: [
           jsx("button", { type: "button", onClick: exportAppearanceProfile, className: "rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-300 hover:bg-white/5", children: "تصدير JSON" }),
           jsx("button", { type: "button", onClick: () => appearanceImportRef.current?.click(), className: "rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-300 hover:bg-white/5", children: "استيراد JSON" }),
@@ -605,7 +605,7 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "الأرقام واللغة",
         description: "العربية وRTL هما الأساس، ويمكن اختيار شكل الأرقام في التقارير والسجلات.",
-        icon: jsx(Video, { className: "h-5 w-5 text-emerald-400" }),
+        icon: jsx(Video, { className: "h-5 w-5 va-accent-text" }),
         children: jsxs("div", {
           className: "grid gap-3 md:grid-cols-2",
           children: [
@@ -635,7 +635,7 @@ export function SettingsPage() {
   const renderIcons = () => jsx(SettingsCard, {
     title: "الأيقونات والأغلفة",
     description: "الأيقونات المدمجة والرموز والنصوص والصور الخارجية مدعومة في مدير الأنواع والمجموعات.",
-    icon: jsx(LayoutGrid, { className: "h-5 w-5 text-emerald-400" }),
+    icon: jsx(LayoutGrid, { className: "h-5 w-5 va-accent-text" }),
     children: jsxs("div", {
       className: "grid gap-3 md:grid-cols-2",
       children: [
@@ -666,7 +666,7 @@ export function SettingsPage() {
   const renderSmart = () => jsx(SettingsCard, {
     title: "الاستدعاء الذكي",
     description: "رموز محلية داخل حقول الوسوم والنصوص: القاموس عبر @ والوسوم الهرمية عبر #.",
-    icon: jsx(Tags, { className: "h-5 w-5 text-emerald-400" }),
+    icon: jsx(Tags, { className: "h-5 w-5 va-accent-text" }),
     children: jsxs("div", {
       className: "space-y-3",
       children: [
@@ -695,9 +695,9 @@ export function SettingsPage() {
           className: "rounded-xl va-surface-subtle border p-3 text-sm text-gray-400",
           children: [
             "مثال: ",
-            jsx("span", { className: "font-mono text-emerald-200", dir: "ltr", children: `${settings.autocompleteTriggers?.vocabulary || "@"}م` }),
+            jsx("span", { className: "font-mono va-accent-text-on-soft", dir: "ltr", children: `${settings.autocompleteTriggers?.vocabulary || "@"}م` }),
             " أو ",
-            jsx("span", { className: "font-mono text-emerald-200", dir: "ltr", children: `${settings.autocompleteTriggers?.tags || "#"}رياض` })
+            jsx("span", { className: "font-mono va-accent-text-on-soft", dir: "ltr", children: `${settings.autocompleteTriggers?.tags || "#"}رياض` })
           ]
         })
       ]
@@ -719,9 +719,9 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "حالة مزود الذكاء",
         description: "الحالة هنا توضّح أين تُنفّذ طلبات الذكاء وما الذي يتوقعه المستخدم قبل تشغيل أي إجراء AI.",
-        icon: jsx(Bot, { className: "h-5 w-5 text-emerald-400" }),
+        icon: jsx(Bot, { className: "h-5 w-5 va-accent-text" }),
         aside: jsx("span", {
-          className: cx("rounded-full border px-3 py-1 text-xs", aiStatus.tone === "emerald" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200" : "border-amber-500/20 bg-amber-500/10 text-amber-200"),
+          className: cx("rounded-full border px-3 py-1 text-xs", aiStatus.tone === "emerald" ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-amber-500/20 bg-amber-500/10 text-amber-200"),
           children: aiStatus.label
         }),
         children: jsxs("div", {
@@ -777,7 +777,7 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "إجراءات AI المدعومة الآن",
         description: "هذه القدرات موجودة في منفذ AiProvider، لكنها تعمل فعلياً عندما يكون backend سحابياً ومزوّد الخادم مضبوطاً.",
-        icon: jsx(Sparkles, { className: "h-5 w-5 text-emerald-400" }),
+        icon: jsx(Sparkles, { className: "h-5 w-5 va-accent-text" }),
         children: jsx("div", {
           className: "grid gap-2 sm:grid-cols-2 xl:grid-cols-3",
           children: [
@@ -791,14 +791,14 @@ export function SettingsPage() {
             className: cx(
               "rounded-xl border p-3",
               aiCloudEnabled
-                ? "border-emerald-500/20 bg-emerald-500/10"
+                ? "va-accent-border va-accent-bg-soft"
                 : "border-amber-400/25 bg-amber-500/10"
             ),
             children: [
-              jsx("p", { className: cx("font-mono text-xs", aiCloudEnabled ? "text-emerald-100" : "text-amber-50"), dir: "ltr", children: method }),
-              jsx("p", { className: cx("mt-1 text-xs leading-5", aiCloudEnabled ? "text-emerald-50/80" : "text-amber-50/85"), children: detail }),
+              jsx("p", { className: cx("font-mono text-xs", aiCloudEnabled ? "va-accent-text-on-soft" : "text-amber-50"), dir: "ltr", children: method }),
+              jsx("p", { className: cx("mt-1 text-xs leading-5", aiCloudEnabled ? "va-accent-text-on-soft" : "text-amber-50/85"), children: detail }),
               jsx("p", {
-                className: cx("mt-2 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold", aiCloudEnabled ? "border-emerald-300/30 text-emerald-50" : "border-amber-200/30 text-amber-50"),
+                className: cx("mt-2 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold", aiCloudEnabled ? "va-accent-border va-accent-text-on-soft" : "border-amber-200/30 text-amber-50"),
                 children: aiCloudEnabled ? "متاح عبر Cloud" : "يتطلب Cloud AI"
               })
             ]
@@ -835,7 +835,7 @@ export function SettingsPage() {
   const renderData = () => jsx(SettingsCard, {
     title: "النسخ والبيانات",
     description: "خيارات الحفظ والنسخ. إجراءات الاستيراد والتصدير الفعلية داخل مركز البيانات.",
-    icon: jsx(HardDrive, { className: "h-5 w-5 text-emerald-400" }),
+    icon: jsx(HardDrive, { className: "h-5 w-5 va-accent-text" }),
     children: jsxs("div", {
       className: "space-y-3",
       children: [
@@ -879,7 +879,7 @@ export function SettingsPage() {
   const renderSecurity = () => jsx(SettingsCard, {
     title: "الأمان",
     description: "حماية المدير، مهلة الجلسة، ومحاولات الدخول.",
-    icon: jsx(ShieldCheck, { className: "h-5 w-5 text-emerald-400" }),
+    icon: jsx(ShieldCheck, { className: "h-5 w-5 va-accent-text" }),
     children: jsxs("div", {
       className: "space-y-3",
       children: [
@@ -921,7 +921,7 @@ export function SettingsPage() {
   const renderShortcuts = () => jsx(SettingsCard, {
     title: "اختصارات لوحة المفاتيح",
     description: "مدير كامل حسب الفئة مع منع التعارضات وتعطيل الاختصارات عند الحاجة.",
-    icon: jsx(Keyboard, { className: "h-5 w-5 text-emerald-400" }),
+    icon: jsx(Keyboard, { className: "h-5 w-5 va-accent-text" }),
     children: jsx(ShortcutManager, { settings, onSave: saveSettings, showToast })
   });
 
@@ -940,8 +940,8 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "فحص النظام",
         description: "فحص IndexedDB والمساحة والحالة العامة. SQLite مؤجل لهذه النسخة.",
-        icon: jsx(Database, { className: "h-5 w-5 text-emerald-400" }),
-        aside: jsx("span", { className: cx("rounded-full border px-3 py-1 text-xs", sqliteError ? "border-amber-500/20 bg-amber-500/10 text-amber-200" : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"), children: sqliteError ? "تحقق التخزين" : "IndexedDB محلي" }),
+        icon: jsx(Database, { className: "h-5 w-5 va-accent-text" }),
+        aside: jsx("span", { className: cx("rounded-full border px-3 py-1 text-xs", sqliteError ? "border-amber-500/20 bg-amber-500/10 text-amber-200" : "va-accent-border va-accent-bg-soft va-accent-text-on-soft"), children: sqliteError ? "تحقق التخزين" : "IndexedDB محلي" }),
         children: jsxs("div", {
           className: "space-y-3",
           children: [
@@ -960,7 +960,7 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "الربط الخارجي",
         description: "إعدادات تجريبية للربط المحلي بدون إضافة backend جديد.",
-        icon: jsx(Shield, { className: "h-5 w-5 text-emerald-400" }),
+        icon: jsx(Shield, { className: "h-5 w-5 va-accent-text" }),
         children: jsxs("div", {
           className: "space-y-3",
           children: [
@@ -978,7 +978,7 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "الإشعارات",
         description: "هدوء الإشعارات، مدة الاحتفاظ، وما يظهر كتنبيه عابر أثناء العمل.",
-        icon: jsx(Bell, { className: "h-5 w-5 text-emerald-400" }),
+        icon: jsx(Bell, { className: "h-5 w-5 va-accent-text" }),
         children: jsxs("div", {
           className: "space-y-3",
           children: [
@@ -1027,7 +1027,7 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "المشاركة العامة",
         description: "القيم الافتراضية لروابط المراجعة العامة.",
-        icon: jsx(Archive, { className: "h-5 w-5 text-emerald-400" }),
+        icon: jsx(Archive, { className: "h-5 w-5 va-accent-text" }),
         children: jsx(TextInputRow, {
           label: "مدة صلاحية الرابط بالأيام",
           value: String(settings.sharing?.defaultExpiryDays || 30),
@@ -1053,14 +1053,14 @@ export function SettingsPage() {
     className: "space-y-6 p-4 sm:p-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(Lightbulb, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(Lightbulb, { className: "h-6 w-6 va-accent-text" }),
         title: "الإعدادات",
         description: "إعدادات مقسمة حسب المهمة: عام، أمان، مظهر، بيانات، ذكاء، اختصارات، وصيانة.",
         actions: jsxs("div", {
           className: "flex flex-wrap gap-2",
           children: [
             jsx("span", { className: "rounded-full border border-white/10 bg-gray-950/35 px-3 py-2 text-xs text-gray-400", children: `التبويب: ${tabState.activeLabel}` }),
-            jsx("span", { className: "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200", children: "حفظ مباشر" })
+            jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-2 text-xs va-accent-text-on-soft", children: "حفظ مباشر" })
           ]
         })
       }),

@@ -1,3 +1,5 @@
+@layer app-overrides {
+
 :root {
     --color-bg-primary: #f7f4ee;
     --color-bg-surface: #fffdf8;
@@ -116,12 +118,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    text-align: center !important;
+    text-align: center;
   }
   .va-technical-line {
     direction: ltr;
     unicode-bidi: isolate;
-    text-align: right !important;
+    text-align: right;
   }
   .va-number-badge {
     direction: ltr;
@@ -217,13 +219,13 @@
   }
   .login-screen-shell .text-gray-500,
   .login-screen-shell .text-gray-600 {
-    color: #b8c2d2 !important;
+    color: #b8c2d2;
   }
   .login-screen-shell .text-gray-400 {
-    color: #d1d7e2 !important;
+    color: #d1d7e2;
   }
   .login-screen-shell input::placeholder {
-    color: #94a3b8 !important;
+    color: #94a3b8;
   }
   .login-screen-shell [class*="bg-white/[0.06]"],
   .login-screen-shell [class*="bg-white/5"] {
@@ -232,7 +234,7 @@
   .login-screen-shell {
     background:
       radial-gradient(circle at 72% 18%, color-mix(in srgb, var(--va-action) 14%, transparent), transparent 34rem),
-      linear-gradient(145deg, #07111f, #0b1626 48%, #07111f) !important;
+      linear-gradient(145deg, #07111f, #0b1626 48%, #07111f);
   }
   .va-onboarding-choice strong,
   .va-core-ui-item strong {
@@ -304,10 +306,10 @@
   .va-v1-panel {
     position: relative;
     overflow: hidden;
-    border-color: color-mix(in srgb, var(--va-v1-border) 74%, transparent) !important;
+    border-color: color-mix(in srgb, var(--va-v1-border) 74%, transparent);
     background:
       linear-gradient(180deg, color-mix(in srgb, var(--va-v1-surface) 92%, transparent), color-mix(in srgb, var(--va-v1-bg) 72%, transparent)),
-      var(--va-v1-surface) !important;
+      var(--va-v1-surface);
     box-shadow: 0 18px 50px rgba(0,0,0,.20);
   }
   .va-v1-panel::before {
@@ -323,28 +325,28 @@
     z-index: 1;
   }
   .va-v1-action {
-    border-color: color-mix(in srgb, var(--va-action) 34%, transparent) !important;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--va-action) 16%, transparent), color-mix(in srgb, var(--va-action-strong) 22%, transparent)) !important;
-    color: color-mix(in srgb, var(--va-action) 30%, #ffffff) !important;
+    border-color: color-mix(in srgb, var(--va-action) 34%, transparent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--va-action) 16%, transparent), color-mix(in srgb, var(--va-action-strong) 22%, transparent));
+    color: color-mix(in srgb, var(--va-action) 30%, #ffffff);
   }
   .va-v1-action:hover {
-    border-color: color-mix(in srgb, var(--va-action) 58%, transparent) !important;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--va-action) 22%, transparent), color-mix(in srgb, var(--va-action-strong) 24%, transparent)) !important;
-    color: #fff !important;
+    border-color: color-mix(in srgb, var(--va-action) 58%, transparent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--va-action) 22%, transparent), color-mix(in srgb, var(--va-action-strong) 24%, transparent));
+    color: #fff;
   }
   .va-v1-metric {
     min-height: 96px;
-    border-color: color-mix(in srgb, var(--va-v1-border) 68%, transparent) !important;
+    border-color: color-mix(in srgb, var(--va-v1-border) 68%, transparent);
     /* theme-aware surface (white in light, dark in dark) — was a hardcoded dark gradient */
-    background: color-mix(in srgb, var(--color-bg-elevated) 60%, transparent) !important;
+    background: color-mix(in srgb, var(--color-bg-elevated) 60%, transparent);
   }
   .va-v1-warning {
-    border-color: color-mix(in srgb, var(--va-v1-warning) 42%, transparent) !important;
-    background: linear-gradient(180deg, rgba(245,158,11,.14), rgba(245,158,11,.07)) !important;
+    border-color: color-mix(in srgb, var(--va-v1-warning) 42%, transparent);
+    background: linear-gradient(180deg, rgba(245,158,11,.14), rgba(245,158,11,.07));
   }
   @media (max-width: 640px) {
     .va-v1-panel {
-      border-radius: .875rem !important;
+      border-radius: .875rem;
       box-shadow: none;
     }
     .va-v1-panel::before {
@@ -408,7 +410,7 @@
     a.min-h-10,
     select.min-h-9,
     select.min-h-10 {
-      min-height: 44px !important;
+      min-height: 44px;
     }
   }
   /* Tap highlight — suppress default blue flash on mobile, use accent instead */
@@ -417,7 +419,9 @@
   }
   input[type="checkbox"], input[type="radio"] { accent-color: var(--color-accent); }
   [data-slot="checkbox"], [data-slot="radio-group-item"] { min-width: 1.25rem; min-height: 1.25rem; }
+  /* intentional: overrides Radix UI switch component min-size injected styles */
   [data-slot="switch"] { min-width: 2.75rem !important; min-height: 1.5rem !important; }
+  /* intentional: cancels the universal min-height:44px rule for checkbox/radio inputs inside Radix slots */
   [data-slot="checkbox"] input, [data-slot="radio-group-item"] input { min-width: 0 !important; min-height: 0 !important; }
   .field-toggle-row {
     min-height: 44px;
@@ -503,6 +507,7 @@
   .va-choice-row span {
     flex: 1 1 auto;
   }
+  /* intentional: overrides Radix UI switch-thumb transform for RTL layout */
   [dir="rtl"] [data-slot="switch-thumb"][data-state="checked"] {
     transform: translateX(calc(-100% + 2px)) !important;
   }
@@ -634,9 +639,9 @@
   }
   .va-archive-summary {
     min-height: 44px;
-    border-color: color-mix(in srgb, var(--va-v1-border) 62%, transparent) !important;
+    border-color: color-mix(in srgb, var(--va-v1-border) 62%, transparent);
     /* theme-aware surface — was a hardcoded dark gradient */
-    background: color-mix(in srgb, var(--color-bg-elevated) 55%, transparent) !important;
+    background: color-mix(in srgb, var(--color-bg-elevated) 55%, transparent);
   }
   .va-summary-reset {
     margin-inline-start: auto;
@@ -669,9 +674,9 @@
     }
   }
   @media (min-width: 768px) and (max-width: 1024px) {
-    .w-\[280px\] { width: min(248px, 32vw) !important; }
+    .w-\[280px\] { width: min(248px, 32vw); }
     main > div { max-width: 100%; }
-    .lg\:grid-cols-4 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    .lg\:grid-cols-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
   @media (max-width: 640px) {
     html, body, #root { overflow-x: clip; }
@@ -681,7 +686,7 @@
      * already prevents tables from forcing the body to scroll. */
     .va-empty-state {
       min-height: 18rem;
-      padding-block: 3rem !important;
+      padding-block: 3rem;
     }
     .va-archive-toolbar {
       position: static;
@@ -694,6 +699,7 @@
       margin-inline-start: 0;
     }
     /* Compact page padding on small screens */
+    /* intentional: mobile media-query override of v1-identity non-conditional padding */
     .va-page-shell { padding: .75rem !important; }
     /* Horizontal scroll for filter pill rows */
     .va-filter-pills-row {
@@ -705,7 +711,7 @@
     .va-filter-pills-row::-webkit-scrollbar { display: none; }
     /* Metric cards: 2-column grid on mobile */
     .va-metrics-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     /* Collection details panel: full width below cards list */
     .va-preview-panel {
@@ -792,3 +798,5 @@
   html.light :is(.va-card, .va-entity-card, .va-video-card, .va-preview-panel, .va-control-surface, .va-filter-surface) {
     border-color: color-mix(in srgb, var(--color-border, transparent) 82%, transparent);
   }
+
+} /* end @layer app-overrides */

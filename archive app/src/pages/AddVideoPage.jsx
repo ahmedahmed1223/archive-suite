@@ -1,4 +1,4 @@
-import {
+﻿import {
   useAppStore
 } from "../stores/index.js";
 import {
@@ -132,7 +132,7 @@ function FieldsStep({ fields, metadata, onChange }) {
         role: "tab",
         "aria-selected": active === index,
         onClick: () => setActive(index),
-        className: `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${active === index ? "bg-emerald-500/15 text-emerald-100" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
+        className: `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${active === index ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
         children: [group.name, jsx("span", { className: "rounded-full bg-white/10 px-1.5 text-[10px]", children: `${group.fields.length}` })]
       }, group.name)) }) : null,
       jsx("div", { className: "grid gap-4 md:grid-cols-2", children: visible.map((field) => jsx(FieldRow, { field, value: metadata[fieldKey(field)], onChange }, field.id)) })
@@ -149,7 +149,7 @@ function LocalFilePicker({ value, onFileSelect, inputId }) {
   };
   return jsxs(motion.div, {
     whileHover: { y: -1 },
-    className: `rounded-xl border border-dashed p-3 transition-colors ${dragActive ? "border-emerald-400/50 bg-emerald-500/10" : "border-white/10 bg-gray-950/35"}`,
+    className: `rounded-xl border border-dashed p-3 transition-colors ${dragActive ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-950/35"}`,
     onDragOver: (event) => {
       event.preventDefault();
       setDragActive(true);
@@ -163,7 +163,7 @@ function LocalFilePicker({ value, onFileSelect, inputId }) {
     children: [
     jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
       jsxs("div", { className: "flex min-w-0 items-center gap-2 text-sm text-gray-300", children: [
-        jsx(file ? HardDrive : UploadCloud, { className: "h-4 w-4 shrink-0 text-emerald-300" }),
+        jsx(file ? HardDrive : UploadCloud, { className: "h-4 w-4 shrink-0 va-accent-text" }),
         jsx("span", { className: "truncate", children: file?.name || "لم يتم اختيار ملف" })
       ] }),
       jsx("button", { type: "button", onClick: () => inputRef.current?.click(), className: "inline-flex min-h-9 items-center justify-center va-primary-button rounded-lg px-3 py-1.5 text-xs font-semibold text-white", children: "استعراض" })
@@ -238,7 +238,7 @@ function FieldRow({ field, value, onChange }) {
 function RequiredFieldSummary({ checks = [] }) {
   const missing = checks.filter((check) => !check.ok);
   return jsxs("div", {
-    className: `rounded-xl border p-4 ${missing.length ? "border-amber-500/30 bg-amber-500/10" : "border-emerald-500/25 bg-emerald-500/10"}`,
+    className: `rounded-xl border p-4 ${missing.length ? "border-amber-500/30 bg-amber-500/10" : "va-accent-border va-accent-bg-soft"}`,
     children: [
       jsxs("div", {
         className: "flex flex-wrap items-center justify-between gap-3",
@@ -246,12 +246,12 @@ function RequiredFieldSummary({ checks = [] }) {
           jsxs("div", {
             className: "flex items-center gap-2",
             children: [
-              jsx(ClipboardCheck, { className: `h-4 w-4 ${missing.length ? "text-amber-200" : "text-emerald-200"}` }),
+              jsx(ClipboardCheck, { className: `h-4 w-4 ${missing.length ? "text-amber-200" : "va-accent-text-on-soft"}` }),
               jsx("h3", { className: "text-sm font-bold text-white", children: missing.length ? "قبل الحفظ، أكمل المطلوب" : "جاهز للحفظ" })
             ]
           }),
           jsx("span", {
-            className: `rounded-full border px-2 py-0.5 text-[11px] ${missing.length ? "border-amber-400/30 text-amber-100" : "border-emerald-400/30 text-emerald-100"}`,
+            className: `rounded-full border px-2 py-0.5 text-[11px] ${missing.length ? "border-amber-400/30 text-amber-100" : "va-accent-border va-accent-text-on-soft"}`,
             children: missing.length ? `${missing.length} ناقص` : "مكتمل"
           })
         ]
@@ -259,7 +259,7 @@ function RequiredFieldSummary({ checks = [] }) {
       jsx("div", {
         className: "mt-3 grid gap-2 sm:grid-cols-2",
         children: checks.map((check) => jsxs("div", {
-          className: `flex items-start gap-2 rounded-lg border px-3 py-2 text-xs leading-5 ${check.ok ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100" : "border-white/10 bg-gray-950/30 text-gray-400"}`,
+          className: `flex items-start gap-2 rounded-lg border px-3 py-2 text-xs leading-5 ${check.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/30 text-gray-400"}`,
           children: [
             check.ok ? jsx(CheckCircle2, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }) : jsx(Circle, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }),
             jsxs("span", {
@@ -524,7 +524,7 @@ export function AddVideoPage() {
     className: "space-y-6 p-4 pb-40 sm:p-6 md:pb-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(Video, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(Video, { className: "h-6 w-6 va-accent-text" }),
         title: "إضافة فيديو",
         description: "نموذج متعدد الخطوات لإضافة مادة أرشيفية بدون عرض كل الحقول دفعة واحدة.",
         children: jsxs("div", {
@@ -543,7 +543,7 @@ export function AddVideoPage() {
                         jsx("h2", { className: "mt-1 truncate text-base font-bold text-white", children: currentStep.label })
                       ]
                     }),
-                    jsx(currentStep.icon, { className: "h-5 w-5 shrink-0 text-emerald-300" })
+                    jsx(currentStep.icon, { className: "h-5 w-5 shrink-0 va-accent-text" })
                   ]
                 }),
                 jsx("p", { className: "mt-2 text-xs leading-6 text-gray-500", children: currentStep.detail }),
@@ -551,7 +551,7 @@ export function AddVideoPage() {
                   className: "mt-3 grid grid-cols-4 gap-1",
                   "aria-hidden": true,
                   children: STEPS.map((step, index) => jsx("span", {
-                    className: `h-1.5 rounded-full ${index <= stepIndex ? "bg-emerald-400" : "bg-white/10"}`
+                    className: `h-1.5 rounded-full ${index <= stepIndex ? "va-accent-bg" : "bg-white/10"}`
                   }, step.id))
                 })
               ]
@@ -631,13 +631,13 @@ export function AddVideoPage() {
               jsxs("div", { className: "va-card rounded-2xl va-surface-muted border p-4 text-right", children: [
                 jsxs("div", { className: "flex items-center justify-between gap-3", children: [
                   jsxs("div", { className: "flex items-center gap-2", children: [
-                    jsx(ClipboardCheck, { className: "h-5 w-5 text-emerald-300" }),
+                    jsx(ClipboardCheck, { className: "h-5 w-5 va-accent-text" }),
                     jsx("h2", { className: "text-sm font-bold text-white", children: "جاهزية الحفظ" })
                   ] }),
-                  jsx("span", { dir: "ltr", className: "font-mono text-sm text-emerald-200", children: `${readyPercent}%` })
+                  jsx("span", { dir: "ltr", className: "font-mono text-sm va-accent-text-on-soft", children: `${readyPercent}%` })
                 ] }),
-                jsx("div", { className: "mt-3 h-2 overflow-hidden rounded-full bg-white/10", dir: "rtl", children: jsx(motion.div, { className: "h-full rounded-full bg-emerald-400", initial: false, animate: { width: `${readyPercent}%` }, transition: { duration: 0.28 } }) }),
-                jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: readyChecks.map((check) => jsxs("span", { className: `inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${check.ok ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100" : "border-white/10 bg-gray-950/35 text-gray-500"}`, children: [
+                jsx("div", { className: "mt-3 h-2 overflow-hidden rounded-full bg-white/10", dir: "rtl", children: jsx(motion.div, { className: "h-full rounded-full va-accent-bg", initial: false, animate: { width: `${readyPercent}%` }, transition: { duration: 0.28 } }) }),
+                jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: readyChecks.map((check) => jsxs("span", { className: `inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${check.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-500"}`, children: [
                   check.ok ? jsx(CheckCircle2, { className: "h-3.5 w-3.5" }) : jsx(Circle, { className: "h-3.5 w-3.5" }),
                   check.label
                 ] }, check.id)) })

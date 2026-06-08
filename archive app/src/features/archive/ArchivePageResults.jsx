@@ -7,6 +7,7 @@ import { SkeletonBlock } from "../../components/ui/index.js";
 import { formatNumber } from "../../utils/formatting.js";
 import { parseVideoTags } from "../videos/viewModel.js";
 import { computeCompleteness } from "./completeness.js";
+import { useKeyboardListNav } from "../../hooks/useKeyboardListNav.js";
 import {
   ARCHIVE_GRID_CLASSES,
   ARCHIVE_ITEM_SIZE_LABELS,
@@ -121,10 +122,28 @@ function renderItemsForViewMode(deps) {
     confirmDelete,
     restoreVideoItem,
     gridContainerRef,
-    gridColumns
+    gridColumns,
+    // Keyboard nav state — provided when rendered inside the keyboard container
+    kbFocusedIndex,
+    kbIsSelected
   } = deps;
 
-  const itemActions = (item) => buildItemActionsFor(item, deps);
+  // Returns a class that visually highlights the keyboard-focused item with
+  // an emerald ring so the user always knows where keyboard focus sits.
+  const kbFocusClass = (index) =>
+    kbFocusedIndex === index
+      ? "ring-2 ring-emerald-500 ring-offset-1 ring-offset-gray-950 rounded-2xl"
+      : "";
+
+  const itemActions = (item, index) => {
+    const base = buildItemActionsFor(item, deps);
+    // Merge keyboard selection on top of bulk selection so keyboard-selected
+    // items light up even when bulkMode is not yet active in the store.
+    if (kbIsSelected && kbIsSelected(item.id)) {
+      return { ...base, bulkSelected: true };
+    }
+    return base;
+  };
 
   if (activeViewMode === "tiles") {
     return jsx("div", {
@@ -132,7 +151,9 @@ function renderItemsForViewMode(deps) {
       children: visibleItems.map((item, index) => jsx(AnimatedItem, {
         index,
         itemId: item.id,
-        children: jsx(VideoTileItem, itemActions(item))
+        className: kbFocusClass(index),
+        "data-list-item": "",
+        children: jsx(VideoTileItem, itemActions(item, index))
       }, item.id))
     });
   }
@@ -142,7 +163,9 @@ function renderItemsForViewMode(deps) {
       children: visibleItems.map((item, index) => jsx(AnimatedItem, {
         index,
         itemId: item.id,
-        children: jsx(VideoListItem, itemActions(item))
+        className: kbFocusClass(index),
+        "data-list-item": "",
+        children: jsx(VideoListItem, itemActions(item, index))
       }, item.id))
     });
   }
@@ -155,7 +178,7 @@ function renderItemsForViewMode(deps) {
       showDeleted,
       itemSize: activeItemSize,
       bulkMode,
-      isSelected: isItemSelected,
+      isSelected: (id) => !!(isItemSelected?.(id) || kbIsSelected?.(id)),
       onBulkToggle: (id) => toggleBulkSelect?.(id),
       allSelected: allVisibleSelected,
       onSelectAll: toggleSelectAllVisible,
@@ -178,7 +201,9 @@ function renderItemsForViewMode(deps) {
     children: visibleItems.map((item, index) => jsx(AnimatedItem, {
       index,
       itemId: item.id,
-      children: jsx(VideoCard, itemActions(item))
+      className: kbFocusClass(index),
+      "data-list-item": "",
+      children: jsx(VideoCard, itemActions(item, index))
     }, item.id))
   });
 }
@@ -216,6 +241,8 @@ export function ArchivePageResults(props) {
     subtypeLabel,
     typeById,
     openItem,
+    toggleBulkSelect,
+    setBulkMode,
     virtualCollections,
     projects,
     addItemsToCollection,
@@ -223,6 +250,20 @@ export function ArchivePageResults(props) {
     updateVideoItem,
     showToast
   } = props;
+
+  const handleKbActivate = React.useCallback((item) => openItem?.(item), [openItem]);
+  const handleKbSelect = React.useCallback((id, selected) => {
+    // Enter bulk mode the first time a keyboard selection is made
+    if (selected) setBulkMode?.(true);
+    toggleBulkSelect?.(id);
+  }, [setBulkMode, toggleBulkSelect]);
+
+  const { containerRef, onKeyDown, isFocused, isSelected, toggleSelect, selectedIds, clearSelection, focusedIndex } = useKeyboardListNav({
+    items: visibleItems || [],
+    onActivate: handleKbActivate,
+    onSelect: handleKbSelect,
+    multiSelect: true,
+  });
 
   // Show the skeleton only on the *first* load: once data exists or
   // filters narrowed it to zero, the EmptyState below is the right
@@ -276,11 +317,38 @@ export function ArchivePageResults(props) {
               })
             ]
           }),
-          renderItemsForViewMode(props),
+          jsx("div", {
+            ref: containerRef,
+            onKeyDown,
+            tabIndex: 0,
+            role: "listbox",
+            "aria-multiselectable": "true",
+            "aria-label": "قائمة العناصر المؤرشفة",
+            className: "outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 rounded-2xl",
+            children: renderItemsForViewMode({ ...props, kbFocusedIndex: focusedIndex, kbIsSelected: isSelected })
+          }),
           jsx(ArchivePagination, {
             currentPage,
             totalPages,
             onPageChange: goToPage
+          }),
+          selectedIds.size > 0 && jsx("div", {
+            className: "fixed bottom-20 left-1/2 z-40 -translate-x-1/2 flex items-center gap-3 rounded-full border border-gray-600 bg-gray-800/95 px-4 py-2 shadow-xl backdrop-blur-sm text-sm",
+            dir: "rtl",
+            role: "status",
+            "aria-live": "polite",
+            children: jsxs("span", {
+              className: "flex items-center gap-3 text-white",
+              children: [
+                jsxs("span", { className: "font-semibold", children: [selectedIds.size, " محدد"] }),
+                jsx("button", {
+                  type: "button",
+                  onClick: clearSelection,
+                  className: "rounded-full border border-white/20 px-3 py-0.5 text-xs text-gray-300 hover:bg-white/10 hover:text-white",
+                  children: "إلغاء"
+                })
+              ]
+            })
           })
         ]
       }),

@@ -82,7 +82,7 @@ export function ArchivePageDetailedFilters({
               setFilterType?.("all");
               setFilterSubtype?.("all");
             },
-            className: `inline-flex min-h-9 shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${filterType === "all" ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-100" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"}`,
+            className: `inline-flex min-h-9 shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${filterType === "all" ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"}`,
             children: [
               "كل المواد",
               jsx("span", { className: "rounded-full bg-white/10 px-2 py-0.5 text-xs", children: formatNumber(videoItems.filter((item) => !item.isDeleted).length) }, "count")
@@ -94,7 +94,7 @@ export function ArchivePageDetailedFilters({
               setFilterType?.(type.id);
               setFilterSubtype?.("all");
             },
-            className: `inline-flex min-h-9 shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${filterType === type.id ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-100" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"}`,
+            className: `inline-flex min-h-9 shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${filterType === type.id ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"}`,
             style: filterType === type.id && type.color ? { boxShadow: `inset 0 0 0 1px ${type.color}44` } : undefined,
             children: [
               jsx("span", { className: "text-base", children: type.icon || "📁" }),

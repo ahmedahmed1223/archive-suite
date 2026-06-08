@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 
 import { cx } from "./V1Primitives.jsx";
@@ -29,7 +29,7 @@ export function MobileActionBar({ actions = [], label = "إجراءات الصف
             action.primary
               ? "va-primary-button border-transparent text-white"
               : action.active
-                ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-100"
+                ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
                 : "border-white/10 bg-white/[0.035] text-gray-300 hover:bg-white/[0.07] hover:text-white"
           ),
           title: action.title || action.label,

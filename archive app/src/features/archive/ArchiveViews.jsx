@@ -55,7 +55,7 @@ export function ViewModeSwitch({ value = "grid", onChange, className = "" }) {
       "aria-pressed": value === id,
       title: label,
       "aria-label": `عرض ${label}`,
-      className: `inline-flex h-7 w-8 items-center justify-center rounded-md transition-colors ${value === id ? "bg-emerald-500/20 text-emerald-100" : "text-gray-300 hover:bg-white/5 hover:text-white"}`,
+      className: `inline-flex h-7 w-8 items-center justify-center rounded-md transition-colors ${value === id ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-300 hover:bg-white/5 hover:text-white"}`,
       children: jsx(Icon, { className: "h-4 w-4" })
     }, id))
   });
@@ -120,7 +120,7 @@ export function GridDensitySlider({ gridColumns, gridColumnCount, onChange, clas
 const REVIEW_STATUS_CLASS = {
   "يحتاج مراجعة": "border-amber-500/25 bg-amber-500/10 text-amber-200",
   "قيد المراجعة": "border-blue-500/25 bg-blue-500/10 text-blue-200",
-  "معتمد": "border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
+  "معتمد": "va-accent-border va-accent-bg-soft va-accent-text-on-soft border bg-transparent"
 };
 
 const PREVIEW_STATUS_LABELS = {
@@ -342,7 +342,7 @@ export function ToolbarButton({ children, onClick, active = false, danger = fals
       active
         ? danger
           ? "border-red-500/35 bg-red-500/15 text-red-100"
-          : "border-emerald-500/35 bg-emerald-500/15 text-emerald-100"
+          : "va-accent-border va-accent-bg-soft va-accent-text-on-soft border"
         : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"
     }`,
     children: [
@@ -386,7 +386,7 @@ export function ArchivePagination({ currentPage, totalPages, onPageChange }) {
         children: pageSlots.map((slot) => typeof slot === "number" ? jsx("button", {
           type: "button",
           onClick: () => onPageChange(slot),
-          className: `${buttonBase} ${slot === currentPage ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-100" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-white"}`,
+          className: `${buttonBase} ${slot === currentPage ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-white"}`,
           "aria-current": slot === currentPage ? "page" : undefined,
           children: formatNumber(slot)
         }, slot) : jsx("span", {
@@ -452,9 +452,9 @@ function FileMetaStrip({ item, compact = false }) {
       jsxs("div", {
         className: "flex items-center gap-2 text-xs text-gray-400",
         children: [
-          jsx(HardDrive, { className: "h-3.5 w-3.5 shrink-0 text-emerald-300" }),
+          jsx(HardDrive, { className: "h-3.5 w-3.5 shrink-0 va-accent-text" }),
           jsx("span", { className: "min-w-0 truncate font-medium text-gray-300", dir: "auto", children: file.name || "ملف محلي" }),
-          file.extension && jsx("span", { className: "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] uppercase text-emerald-100", children: file.extension })
+          file.extension && jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-1.5 py-0.5 text-[10px] uppercase va-accent-text-on-soft", children: file.extension })
         ]
       }),
       file.size > 0 && jsx("p", { className: "mt-1 text-[11px] text-gray-600", children: formatFileSize(file.size) }),
@@ -476,7 +476,7 @@ export function SegmentedControl({ label, value, options, onChange }) {
           type: "button",
           onClick: () => onChange(option.value),
           "aria-pressed": value === option.value,
-          className: `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition-colors ${value === option.value ? "bg-emerald-500/15 text-emerald-100" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
+          className: `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition-colors ${value === option.value ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
           children: [option.icon, option.label]
         }, option.value))
       })
@@ -559,7 +559,7 @@ export function VideoCard({ item, typeLabel, subtypeLabel, selected, onPreview, 
             onClick: onRestore,
             title: "استعادة",
             "aria-label": "استعادة",
-            className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/20 text-emerald-100 hover:bg-emerald-500/10",
+            className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border va-accent-border va-accent-text-on-soft hover:opacity-80",
             children: jsx(RotateCcw, { className: "h-4 w-4" })
           }) : jsx("button", {
             type: "button",
@@ -668,7 +668,7 @@ export function VideoTileItem({ item, typeLabel, subtypeLabel, selected, onPrevi
             type: "button",
             onClick: onRestore,
             "aria-label": `استعادة`,
-            className: "rounded-md border border-emerald-500/20 px-2 py-1 text-[11px] text-emerald-100 hover:bg-emerald-500/10",
+            className: "rounded-md border va-accent-border px-2 py-1 text-[11px] va-accent-text-on-soft hover:opacity-80",
             children: jsx(RotateCcw, { className: "h-3 w-3" })
           }) : jsx("button", {
             type: "button",
@@ -749,7 +749,7 @@ export function VideoListItem({ item, typeLabel, subtypeLabel, selected, onPrevi
           showDeleted ? jsx("button", {
             type: "button",
             onClick: onRestore,
-            className: `${size.actionButton} rounded-lg border border-emerald-500/20 text-emerald-100 hover:bg-emerald-500/10`,
+            className: `${size.actionButton} rounded-lg border va-accent-border va-accent-text-on-soft hover:opacity-80`,
             children: "استعادة"
           }) : jsx("button", {
             type: "button",
@@ -844,7 +844,7 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
           children: [
             jsx("button", { type: "button", onClick: () => onOpen(item), className: `va-primary-button rounded-lg font-semibold text-white  ${size.actionButton}`, children: "فتح" }),
             !showDeleted && jsx("button", { type: "button", onClick: () => onFavorite(item), className: `rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 ${size.actionButton}`, children: item.isFavorite ? "إزالة" : "مفضلة" }),
-            showDeleted ? jsx("button", { type: "button", onClick: () => onRestore(item), className: `rounded-lg border border-emerald-500/20 text-emerald-100 hover:bg-emerald-500/10 ${size.actionButton}`, children: "استعادة" }) : jsx("button", { type: "button", onClick: () => onDelete(item), className: `rounded-lg border border-red-500/20 text-red-100 hover:bg-red-500/10 ${size.actionButton}`, children: "حذف" })
+            showDeleted ? jsx("button", { type: "button", onClick: () => onRestore(item), className: `rounded-lg border va-accent-border va-accent-text-on-soft hover:opacity-80 ${size.actionButton}`, children: "استعادة" }) : jsx("button", { type: "button", onClick: () => onDelete(item), className: `rounded-lg border border-red-500/20 text-red-100 hover:bg-red-500/10 ${size.actionButton}`, children: "حذف" })
           ]
         })
       }, column.id);
@@ -947,7 +947,7 @@ export function VideoTableView({ items, previewItem, typeLabel, subtypeLabel, sh
                 ...motionProps,
                 className: `va-virtual-table-row ${selectedRow
                   ? "bg-[color-mix(in_srgb,var(--va-action)_14%,transparent)]"
-                  : previewItem?.id === item.id ? "bg-emerald-500/10" : "hover:bg-white/[0.03]"}`,
+                  : previewItem?.id === item.id ? "va-accent-bg-soft" : "hover:bg-white/[0.03]"}`,
                 children: [
                   bulkMode && jsx("td", {
                     className: size.cell,
@@ -1055,7 +1055,7 @@ export function PreviewPanel({
           jsxs("div", {
             className: "rounded-xl va-surface-muted border p-3",
             children: [
-              jsxs("p", { className: "flex items-center gap-1.5 text-xs font-semibold text-gray-300", children: [jsx(Gauge, { className: "h-3.5 w-3.5 text-emerald-300" }), "جودة التوصيف"] }),
+              jsxs("p", { className: "flex items-center gap-1.5 text-xs font-semibold text-gray-300", children: [jsx(Gauge, { className: "h-3.5 w-3.5 va-accent-text" }), "جودة التوصيف"] }),
               jsx("div", { className: "mt-2 h-1.5 overflow-hidden rounded-full bg-white/10", children: jsx("div", { className: "h-full rounded-full", style: { width: `${completeness.percent}%`, background: tier.color } }) }),
               jsx("p", { className: "mt-2 line-clamp-2 text-[11px] leading-5 text-gray-500", children: completeness.missing.length ? `ينقص: ${completeness.missing.slice(0, 3).join("، ")}` : "الحقول الأساسية مكتملة." })
             ]
@@ -1063,7 +1063,7 @@ export function PreviewPanel({
           jsxs("div", {
             className: "rounded-xl va-surface-muted border p-3",
             children: [
-              jsxs("p", { className: "flex items-center gap-1.5 text-xs font-semibold text-gray-300", children: [jsx(Activity, { className: "h-3.5 w-3.5 text-emerald-300" }), "آخر نشاط"] }),
+              jsxs("p", { className: "flex items-center gap-1.5 text-xs font-semibold text-gray-300", children: [jsx(Activity, { className: "h-3.5 w-3.5 va-accent-text" }), "آخر نشاط"] }),
               jsx("p", { className: "mt-2 text-xs text-gray-500", children: lastActivity ? formatDateTime(lastActivity) : "لا يوجد نشاط مسجل" }),
               item.isFavorite && jsxs("p", { className: "mt-1 inline-flex items-center gap-1 text-[11px] text-amber-200", children: [jsx(Star, { className: "h-3 w-3 fill-current" }), "مفضلة"] })
             ]
@@ -1073,7 +1073,7 @@ export function PreviewPanel({
       (file.name || file.path) && jsxs("div", {
         className: "mt-3 va-surface-muted rounded-xl border p-3",
         children: [
-          jsxs("div", { className: "flex items-center gap-2 text-sm font-semibold text-gray-200", children: [jsx(HardDrive, { className: "h-4 w-4 text-emerald-300" }), jsx("span", { className: "min-w-0 truncate", dir: "auto", children: file.name || "ملف محلي" })] }),
+          jsxs("div", { className: "flex items-center gap-2 text-sm font-semibold text-gray-200", children: [jsx(HardDrive, { className: "h-4 w-4 va-accent-text" }), jsx("span", { className: "min-w-0 truncate", dir: "auto", children: file.name || "ملف محلي" })] }),
           file.size > 0 && jsx("p", { className: "mt-1 text-xs text-gray-600", children: formatFileSize(file.size) }),
           file.path && jsx("p", { className: "mt-2 break-all text-left text-xs text-gray-600", dir: "ltr", children: file.path })
         ]

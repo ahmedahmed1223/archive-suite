@@ -1,4 +1,4 @@
-import { useAppStore } from "../stores/index.js";
+﻿import { useAppStore } from "../stores/index.js";
 import {
   AlertCircle,
   CheckCircle2,
@@ -47,7 +47,7 @@ const SYNC_EVENT_PRESENTATION = {
 };
 
 const TONE_CLASSES = {
-  emerald: "border-emerald-500/25 bg-emerald-500/10 text-emerald-200",
+  emerald: "va-accent-border va-accent-bg-soft va-accent-text-on-soft",
   cyan: "border-cyan-500/25 bg-cyan-500/10 text-cyan-200",
   amber: "border-amber-500/25 bg-amber-500/10 text-amber-200",
   violet: "border-violet-500/25 bg-violet-500/10 text-violet-200"
@@ -122,7 +122,7 @@ function DeviceSummaryCard({ device, eventsByType }) {
   const totalSync = exportCount + importCount;
 
   return jsxs("div", {
-    className: "rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-cyan-500/5 to-transparent p-4",
+    className: "rounded-2xl border va-accent-border bg-gradient-to-br from-emerald-500/10 via-cyan-500/5 to-transparent p-4",
     children: [
       jsxs("div", { className: "flex items-start justify-between gap-3", children: [
         jsxs("div", { className: "min-w-0", children: [
@@ -130,16 +130,16 @@ function DeviceSummaryCard({ device, eventsByType }) {
           jsx("h2", { className: "mt-1 truncate text-base font-bold text-white", children: device.deviceName || "بدون اسم" }),
           jsx("p", { className: "mt-1 truncate text-[11px] font-mono text-gray-500", dir: "ltr", children: device.deviceId || "—" })
         ] }),
-        jsx("span", { className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-200", children: jsx(HardDrive, { className: "h-5 w-5" }) })
+        jsx("span", { className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border va-accent-border va-accent-bg-soft va-accent-text-on-soft", children: jsx(HardDrive, { className: "h-5 w-5" }) })
       ] }),
       jsxs("div", { className: "mt-4 grid grid-cols-3 gap-2", children: [
         jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
           jsx("p", { className: "text-[11px] text-gray-500", children: "إجمالي" }),
           jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(totalSync) })
         ] }),
-        jsxs("div", { className: "rounded-lg border border-emerald-500/15 bg-emerald-500/5 p-2 text-center", children: [
-          jsx("p", { className: "text-[11px] text-emerald-200", children: "صادرة" }),
-          jsx("p", { className: "mt-0.5 text-base font-bold text-emerald-100", children: formatNumber(exportCount) })
+        jsxs("div", { className: "rounded-lg border va-accent-border va-accent-bg-soft p-2 text-center", children: [
+          jsx("p", { className: "text-[11px] va-accent-text-on-soft", children: "صادرة" }),
+          jsx("p", { className: "mt-0.5 text-base font-bold va-accent-text-on-soft", children: formatNumber(exportCount) })
         ] }),
         jsxs("div", { className: "rounded-lg border border-cyan-500/15 bg-cyan-500/5 p-2 text-center", children: [
           jsx("p", { className: "text-[11px] text-cyan-200", children: "واردة" }),
@@ -183,11 +183,11 @@ export function SyncLogPage() {
     className: "space-y-6 p-4 sm:p-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(GitMerge, { className: "h-6 w-6 text-emerald-400" }),
+        icon: jsx(GitMerge, { className: "h-6 w-6 va-accent-text" }),
         title: "سجل المزامنة",
         description: "كل عمليات تصدير ودمج حزم النقل بين الأجهزة، مرتبة بالأحدث أولاً.",
         actions: lastEventAt ? jsxs("span", {
-          className: "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-200",
+          className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs va-accent-text-on-soft",
           children: ["آخر عملية: ", formatDateTime(lastEventAt)]
         }) : jsx("span", {
           className: "rounded-full border border-white/10 bg-gray-950/35 px-3 py-1.5 text-xs text-gray-400",
@@ -207,7 +207,7 @@ export function SyncLogPage() {
           jsx(DeviceSummaryCard, { device, eventsByType }),
           jsxs("div", { className: "rounded-2xl border border-white/10 bg-gray-950/30 p-4 text-xs leading-relaxed text-gray-400", children: [
             jsxs("p", { className: "flex items-center gap-2 font-semibold text-white", children: [
-              jsx(CheckCircle2, { className: "h-4 w-4 text-emerald-300" }),
+              jsx(CheckCircle2, { className: "h-4 w-4 va-accent-text" }),
               "كل البيانات محلية"
             ] }),
             jsx("p", { className: "mt-2", children: "السجل يُحفظ في IndexedDB ولا يُرسَل لأي خادم. يُحفظ آخر 1000 سجل، والأقدم يُحذف تلقائياً." })

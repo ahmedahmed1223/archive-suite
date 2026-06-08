@@ -193,6 +193,17 @@ export function createPocketBaseStorageProvider(client, options = {}) {
         throw new Error("حمولة replaceAll غير صالحة.");
       }
       const counts = {};
+      // ATOMICITY NOTE: PocketBase has no cross-collection transactions, so this
+      // operation is best-effort and non-atomic. Each collection is cleared then
+      // re-populated sequentially; a failure mid-way leaves the database in a
+      // partially-applied state. The caller should take a snapshot() backup
+      // before importing so it can restore if an error occurs.
+      //
+      // If atomicity is required, use the Postgres adapter (cloud-postgres-prisma)
+      // which wraps replaceAll in a single REPEATABLE READ $transaction, giving
+      // full rollback on any failure — identical to the IndexedDB adapter's
+      // atomic guarantee in the browser SPA.
+      //
       // Clear + write each list collection. Best-effort: a failure inside any
       // collection bubbles up so the caller can roll back via a prior snapshot.
       for (const [domainKey, collection] of Object.entries(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY)) {

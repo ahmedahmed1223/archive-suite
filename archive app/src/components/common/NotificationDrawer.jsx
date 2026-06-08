@@ -1,4 +1,4 @@
-import { AlertTriangle, Archive, Bell, CheckCircle2, ExternalLink, Info, Search, Trash2, X } from "lucide-react";
+﻿import { AlertTriangle, Archive, Bell, CheckCircle2, ExternalLink, Info, Search, Trash2, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -32,7 +32,7 @@ const READ_FILTERS = [
 ];
 
 const TYPE_ICON = {
-  success: { Icon: CheckCircle2, tone: "text-emerald-300" },
+  success: { Icon: CheckCircle2, tone: "va-accent-text" },
   error: { Icon: AlertTriangle, tone: "text-red-300" },
   warning: { Icon: AlertTriangle, tone: "text-amber-300" },
   info: { Icon: Info, tone: "text-sky-300" }

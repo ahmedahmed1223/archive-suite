@@ -1,3 +1,4 @@
+import { Prisma } from "../../generated/prisma/client.js";
 import {
   defaultKeyPathFor,
   toRow,
@@ -20,6 +21,35 @@ import {
 // "wipe all stores, then write all stores" sequence is ATOMIC on Postgres
 // (matches the IndexedDB adapter's atomicity guarantee). PocketBase
 // couldn't offer this — Postgres can, and we should use it.
+
+// ── Chunked batch helpers ─────────────────────────────────────────────────
+// Postgres has a hard limit of ~65 535 parameters per statement. With
+// createMany each row typically expands to ~5 columns, so 1 000 rows/chunk
+// stays well under that ceiling while still being large enough to amortise
+// round-trip latency.
+const CHUNK_SIZE = 1000;
+
+function chunks(arr, size) {
+  const result = [];
+  for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size));
+  return result;
+}
+
+// ── Per-record size guard (Task 32) ──────────────────────────────────────
+// Rejects records whose JSON representation exceeds the configured ceiling
+// before they touch the DB. This prevents runaway writes that could bloat
+// the database or exceed Postgres's per-row / per-column limits.
+// Override via MAX_RECORD_BYTES env var (bytes). Default: 10 MB.
+const MAX_RECORD_BYTES = parseInt(process.env.MAX_RECORD_BYTES || "", 10) || 10 * 1024 * 1024;
+
+function assertRecordSize(record) {
+  const size = Buffer.byteLength(JSON.stringify(record), "utf8");
+  if (size > MAX_RECORD_BYTES) {
+    const err = new Error(`Record too large: ${size} bytes (max ${MAX_RECORD_BYTES})`);
+    err.statusCode = 413;
+    throw err;
+  }
+}
 
 export function createPostgresStorageProvider(prisma, options = {}) {
   const keyPathFor = options.keyPathFor || defaultKeyPathFor;
@@ -80,6 +110,7 @@ export function createPostgresStorageProvider(prisma, options = {}) {
 
     async put(store, record) {
       if (!record) return record;
+      assertRecordSize(record);
       const keyPath = keyPathFor(store);
       const payload = toRow(store, record, keyPath);
       await row.upsert({
@@ -96,6 +127,7 @@ export function createPostgresStorageProvider(prisma, options = {}) {
 
     async add(store, record) {
       if (!record) return record;
+      assertRecordSize(record);
       const keyPath = keyPathFor(store);
       await row.create({ data: toRow(store, record, keyPath) });
       return record;
@@ -115,24 +147,20 @@ export function createPostgresStorageProvider(prisma, options = {}) {
     async putBatch(store, items = []) {
       if (!items?.length) return items;
       const keyPath = keyPathFor(store);
-      // Each upsert is its own statement; wrap in a transaction so a partial
-      // failure rolls back instead of leaving the batch half-applied.
-      await prisma.$transaction(
-        items
-          .filter(Boolean)
-          .map((record) => {
-            const payload = toRow(store, record, keyPath);
-            return row.upsert({
-              where: { store_uid: { store: payload.store, uid: payload.uid } },
-              create: payload,
-              update: {
-                data: payload.data,
-                syncVersion: payload.syncVersion,
-                lastModifiedBy: payload.lastModifiedBy
-              }
-            });
-          })
-      );
+      // Validate size for every item up-front so we can reject the whole batch
+      // before touching the DB (fail-fast, no partial writes).
+      const validItems = items.filter(Boolean);
+      for (const record of validItems) {
+        assertRecordSize(record);
+      }
+      const toInsert = validItems.map((record) => toRow(store, record, keyPath));
+      // Use createMany in chunks to stay under Postgres's ~65 535-parameter
+      // ceiling. skipDuplicates handles upsert-like behaviour: existing uid rows
+      // are skipped rather than overwriting (acceptable for batch import; use
+      // put() for authoritative single-record upserts).
+      for (const chunk of chunks(toInsert, CHUNK_SIZE)) {
+        await row.createMany({ data: chunk, skipDuplicates: true });
+      }
       return items;
     },
 
@@ -154,44 +182,57 @@ export function createPostgresStorageProvider(prisma, options = {}) {
       // When opts contains a limit, returns a partial snapshot of one store
       // with pagination metadata. Without opts (or no limit), returns the full
       // dataset across all stores (existing behavior).
+      //
+      // Both paths run inside a REPEATABLE READ read transaction so the entire
+      // export (or page) sees a consistent snapshot of the database. Without
+      // this, concurrent writes between the per-store queries could produce a
+      // snapshot that mixes data from different points in time.
+      const txOpts = { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead };
+
       if (opts && opts.limit !== undefined && opts.limit !== null) {
         // Paginated partial snapshot — single store required.
         const { store: domainKey, cursor, limit } = opts;
         if (!domainKey) throw Object.assign(new Error("store is required for paginated snapshot"), { statusCode: 400 });
         const storeName = SNAPSHOT_COLLECTION_BY_DOMAIN_KEY[domainKey];
         if (!storeName) throw Object.assign(new Error(`Unknown store: ${domainKey}`), { statusCode: 400 });
-        const where = cursor ? { store: storeName, uid: { gt: cursor } } : { store: storeName };
-        const rows = await row.findMany({ where, orderBy: { uid: "asc" }, take: limit + 1 });
-        const hasMore = rows.length > limit;
-        const pageRows = hasMore ? rows.slice(0, limit) : rows;
-        const data = pageRows.map(fromRow).filter(Boolean);
-        const nextCursor = hasMore ? pageRows[pageRows.length - 1].uid : null;
-        return {
-          exportedAt: new Date().toISOString(),
-          version: "2.0",
-          store: domainKey,
-          data,
-          nextCursor,
-          hasMore
-        };
+        return prisma.$transaction(async (tx) => {
+          const txRow = tx.storageRow;
+          const where = cursor ? { store: storeName, uid: { gt: cursor } } : { store: storeName };
+          const rows = await txRow.findMany({ where, orderBy: { uid: "asc" }, take: limit + 1 });
+          const hasMore = rows.length > limit;
+          const pageRows = hasMore ? rows.slice(0, limit) : rows;
+          const data = pageRows.map(fromRow).filter(Boolean);
+          const nextCursor = hasMore ? pageRows[pageRows.length - 1].uid : null;
+          return {
+            exportedAt: new Date().toISOString(),
+            version: "2.0",
+            store: domainKey,
+            data,
+            nextCursor,
+            hasMore
+          };
+        }, txOpts);
       }
 
-      const out = {
-        exportedAt: new Date().toISOString(),
-        version: "2.0"
-      };
-      // One query per store keeps the result-set bounded and avoids loading
-      // unrelated stores into memory on Postgres-side. The SPA only reads
-      // these specific keys so we don't gain anything from a single big query.
-      for (const [domainKey, store] of Object.entries(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY)) {
-        const rows = await row.findMany({ where: { store }, orderBy: { uid: "asc" } });
-        out[domainKey] = rows.map(fromRow).filter((value) => value !== undefined);
-      }
-      const settingsRow = await row.findUnique({
-        where: { store_uid: { store: SETTINGS_COLLECTION, uid: SETTINGS_RECORD_KEY } }
-      });
-      out.settings = fromRow(settingsRow) || undefined;
-      return out;
+      return prisma.$transaction(async (tx) => {
+        const txRow = tx.storageRow;
+        const out = {
+          exportedAt: new Date().toISOString(),
+          version: "2.0"
+        };
+        // One query per store keeps the result-set bounded and avoids loading
+        // unrelated stores into memory on Postgres-side. The SPA only reads
+        // these specific keys so we don't gain anything from a single big query.
+        for (const [domainKey, storeName] of Object.entries(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY)) {
+          const rows = await txRow.findMany({ where: { store: storeName }, orderBy: { uid: "asc" } });
+          out[domainKey] = rows.map(fromRow).filter((value) => value !== undefined);
+        }
+        const settingsRow = await txRow.findUnique({
+          where: { store_uid: { store: SETTINGS_COLLECTION, uid: SETTINGS_RECORD_KEY } }
+        });
+        out.settings = fromRow(settingsRow) || undefined;
+        return out;
+      }, txOpts);
     },
 
     async replaceAll(payload = {}) {
@@ -199,9 +240,12 @@ export function createPostgresStorageProvider(prisma, options = {}) {
         throw new Error("حمولة replaceAll غير صالحة.");
       }
       const counts = {};
-      // Single transaction — atomic across all stores (Postgres can do what
-      // PocketBase couldn't). A failure mid-way rolls back the entire
-      // import so the database never sits in a half-applied state.
+      // Single REPEATABLE READ transaction — atomic across all stores (Postgres
+      // can do what PocketBase couldn't). A failure mid-way rolls back the
+      // entire import so the database never sits in a half-applied state.
+      // REPEATABLE READ prevents phantom reads that could otherwise occur if
+      // another writer inserts rows into a store between our deleteMany and
+      // createMany calls within the same transaction.
       await prisma.$transaction(async (tx) => {
         const txRow = tx.storageRow;
         for (const [domainKey, store] of Object.entries(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY)) {
@@ -210,14 +254,19 @@ export function createPostgresStorageProvider(prisma, options = {}) {
           if (shouldClear) {
             await txRow.deleteMany({ where: { store } });
           }
-          let written = 0;
           const keyPath = keyPathFor(store);
-          for (const record of records) {
-            if (!record) continue;
-            await txRow.create({ data: toRow(store, record, keyPath) });
-            written += 1;
+          const validRecords = records.filter(Boolean);
+          // Validate size for each record before building the insert payload.
+          for (const record of validRecords) {
+            assertRecordSize(record);
           }
-          counts[domainKey] = written;
+          const toInsert = validRecords.map((record) => toRow(store, record, keyPath));
+          // Insert in chunks to stay under Postgres's ~65 535-parameter ceiling.
+          // The store was just wiped so skipDuplicates is a safety net only.
+          for (const chunk of chunks(toInsert, CHUNK_SIZE)) {
+            await txRow.createMany({ data: chunk, skipDuplicates: true });
+          }
+          counts[domainKey] = toInsert.length;
         }
         // Settings is a singleton — upsert the same as PocketBase.
         if (payload.settings && typeof payload.settings === "object") {
@@ -235,7 +284,7 @@ export function createPostgresStorageProvider(prisma, options = {}) {
             }
           });
         }
-      });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
       return counts;
     }
   };

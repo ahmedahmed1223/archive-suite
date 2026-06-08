@@ -1,4 +1,4 @@
-import {
+﻿import {
   Activity,
   CheckSquare,
   Copy,
@@ -45,7 +45,7 @@ import { reportError } from "../utils/errorReporting.js";
 function MediaJobsBoard({ enabled, jobs, busy, onRefresh, onRetry }) {
   return jsxs("section", { className: "rounded-2xl va-surface-muted border p-4 text-right", dir: "rtl", children: [
     jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-      jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Activity, { className: "h-4 w-4 text-emerald-400" }), "مهام الوسائط"] }),
+      jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Activity, { className: "h-4 w-4 va-accent-text" }), "مهام الوسائط"] }),
       jsx("button", { type: "button", onClick: onRefresh, disabled: !enabled || busy, className: "rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5 disabled:opacity-40", children: busy ? "جارٍ التحديث…" : "تحديث" })
     ] }),
     !enabled ? jsx("p", { className: "mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-100", children: "تحتاج مهام الوسائط إلى خادم سحابي وتسجيل دخول بدور editor/admin." }) : null,

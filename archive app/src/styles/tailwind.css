@@ -12,3 +12,21 @@
 /* Explicitly scan all app source so class names inside react/jsx-runtime
    jsx()/jsxs() string literals are always detected (augments auto-detection). */
 @source "../**/*.{js,jsx}";
+
+/*
+ * App cascade layers — declared AFTER the Tailwind import so our identity
+ * layers sit above Tailwind's own utilities layer in the cascade.
+ * Layer order (later = higher precedence):
+ *   app-overrides   — global RTL / layout / a11y fixes
+ *   v1-identity     — base theme (always active)
+ *   v2-identity     — Linear/Vercel variant (html[data-theme-version="v2"])
+ *   v3-identity     — Command-Center variant (html[data-theme-version="v3"])
+ *   v4-identity     — Glass+Green variant    (html[data-theme-version="v4"])
+ *
+ * Because each versioned theme is already attribute-scoped, only the active
+ * theme's layer applies at runtime.  The layer order removes the need for
+ * !important on most property overrides — only truly universal overrides
+ * (motion kill-switch, reduced-motion media, third-party component fixes)
+ * retain !important.
+ */
+@layer app-overrides, v1-identity, v2-identity, v3-identity, v4-identity;

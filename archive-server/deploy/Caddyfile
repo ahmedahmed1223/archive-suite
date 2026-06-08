@@ -26,6 +26,10 @@
 		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "interest-cohort=()"
+		# CSP in Report-Only mode first. The SPA uses vite-plugin-singlefile so
+		# inline scripts/styles are required. Tighten script-src once nonce/hash
+		# support is added to the build. To enforce, rename to Content-Security-Policy.
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
 		# Caddy already sets Server: header; remove it to reduce fingerprinting.
 		-Server
 	}

@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Cloud, ExternalLink, FolderOpen, HardDrive, KeyRound, Loader2, RefreshCw, Save, ShieldCheck } from "lucide-react";
 
@@ -203,13 +203,13 @@ export function FileStoreSettings() {
         ] })
       ] }),
 
-      jsxs("div", { className: `rounded-xl border p-3 text-sm ${listOk ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100" : "border-amber-500/20 bg-amber-500/10 text-amber-100"}`, children: [
+      jsxs("div", { className: `rounded-xl border p-3 text-sm ${listOk ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-amber-500/20 bg-amber-500/10 text-amber-100"}`, children: [
         jsxs("p", { className: "flex items-center gap-2 font-semibold", children: [jsx(ShieldCheck, { className: "h-4 w-4" }), listOk ? "الاتصال يعمل" : "حالة الاتصال" ] }),
         jsx("p", { className: "mt-1 leading-6", children: healthText })
       ] }),
 
       jsx("div", { className: "flex flex-wrap gap-2", children: capabilityRows(status?.capabilities).map((item) => jsx("span", {
-        className: `rounded-full border px-2.5 py-1 text-xs ${item.enabled ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100" : "border-white/10 text-gray-500"}`,
+        className: `rounded-full border px-2.5 py-1 text-xs ${item.enabled ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 text-gray-500"}`,
         children: item.label
       }, item.key)) }),
 

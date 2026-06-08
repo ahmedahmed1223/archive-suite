@@ -17,6 +17,7 @@ import { createEventBus } from "./api/eventBus.js";
 import { loginUser, seedAdminIfMissing } from "./auth/authService.js";
 import { resolveServerConfig } from "./config/serverConfig.js";
 import { assertProductionSecrets } from "./config/productionGuard.js";
+import { logger } from "./logger.js";
 
 const BACKEND = process.env.BACKEND || "pocketbase";
 const PORT = Number(process.env.API_PORT || 8787);
@@ -36,7 +37,7 @@ async function buildPrismaClient() {
   if (!databaseUrl) {
     throw new Error("BACKEND=postgres requires a database URL (DATABASE_URL/POSTGRES_* or a saved server config).");
   }
-  console.info(`[archive] DB target: ${databaseTarget} / ${databaseEngine} (source: ${databaseSource})`);
+  logger.info({ databaseTarget, databaseEngine, databaseSource }, "DB target resolved");
   if (databaseEngine !== "postgresql") {
     throw new Error(
       `DATABASE_PROVIDER=${databaseEngine} is saved, but this runtime image only bundles the PostgreSQL Prisma adapter. ` +
@@ -50,11 +51,9 @@ async function buildPrismaClient() {
     idleTimeoutMillis: 30_000,  // close idle connections after 30 s
     connectionTimeoutMillis: 5_000 // throw if a new connection takes > 5 s
   };
-  // eslint-disable-next-line no-console
-  console.log(
-    `[archive-api] pg pool config — max: ${poolConfig.max}, ` +
-    `idleTimeout: ${poolConfig.idleTimeoutMillis}ms, ` +
-    `connectionTimeout: ${poolConfig.connectionTimeoutMillis}ms`
+  logger.debug(
+    { poolMax: poolConfig.max, idleTimeoutMs: poolConfig.idleTimeoutMillis, connectionTimeoutMs: poolConfig.connectionTimeoutMillis },
+    "pg pool config"
   );
   const adapter = new PrismaPg(poolConfig);
   return new PrismaClient({ adapter });
@@ -71,15 +70,13 @@ async function main() {
     registration = registerCloudProviders({ backend: "postgres", prisma });
     // Surface connection problems early with a clear message.
     await registration.provider.open();
-    // eslint-disable-next-line no-console
-    console.log("[archive-api] Postgres backend ready.");
+    logger.info("Postgres backend ready.");
   } else if (BACKEND === "pocketbase") {
     registration = registerCloudProviders({
       backend: "pocketbase",
       url: process.env.POCKETBASE_URL || "http://127.0.0.1:8090"
     });
-    // eslint-disable-next-line no-console
-    console.log("[archive-api] PocketBase backend ready.");
+    logger.info("PocketBase backend ready.");
   } else {
     throw new Error(`Unknown BACKEND "${BACKEND}" — expected "postgres" or "pocketbase".`);
   }
@@ -96,16 +93,13 @@ async function main() {
       password: process.env.ADMIN_PASSWORD
     });
     if (seed.seeded) {
-      // eslint-disable-next-line no-console
-      console.log(`[archive-api] Seeded first admin "${seed.username}" from env.`);
+      logger.info({ username: seed.username }, "Seeded first admin from env.");
     }
-    login = (body) => loginUser(body, { provider, secret: JWT_SECRET, expiresInSec: TOKEN_TTL_SEC });
-    // eslint-disable-next-line no-console
-    console.log("[archive-api] Auth ENABLED — /api/rpc requires a Bearer token.");
+    login = (body) => loginUser(body, { provider, secret: JWT_SECRET, expiresInSec: TOKEN_TTL_SEC, totpToken: body?.totpToken });
+    logger.info("Auth ENABLED — /api/rpc requires a Bearer token.");
   } else {
-    // eslint-disable-next-line no-console
-    console.warn(
-      "[archive-api] ⚠️  JWT_SECRET is not set — the RPC API is UNAUTHENTICATED. " +
+    logger.warn(
+      "JWT_SECRET is not set — the RPC API is UNAUTHENTICATED. " +
       "Set JWT_SECRET (and ADMIN_USERNAME/ADMIN_PASSWORD) before exposing this server publicly."
     );
   }
@@ -116,6 +110,7 @@ async function main() {
     corsOrigin: CORS_ORIGIN,
     authSecret: JWT_SECRET,
     login,
+    prisma,
     rateLimit: {
       rpcMax: Number(process.env.RATE_LIMIT_RPC_MAX || 600),
       loginMax: Number(process.env.RATE_LIMIT_LOGIN_MAX || 10),
@@ -132,30 +127,25 @@ async function main() {
   async function shutdown(signal) {
     if (isShuttingDown) return;
     isShuttingDown = true;
-    // eslint-disable-next-line no-console
-    console.log(`[shutdown] Received ${signal}. Draining connections...`);
+    logger.info({ signal }, "Received signal, draining connections...");
 
     // Stop accepting new connections; wait for in-flight requests to finish.
     server.close(async () => {
-      // eslint-disable-next-line no-console
-      console.log("[shutdown] HTTP server closed.");
+      logger.info("HTTP server closed.");
 
       // Disconnect Prisma when using the Postgres backend.
       if (prisma) {
         await prisma.$disconnect().catch(() => {});
-        // eslint-disable-next-line no-console
-        console.log("[shutdown] Prisma disconnected.");
+        logger.info("Prisma disconnected.");
       }
 
-      // eslint-disable-next-line no-console
-      console.log("[shutdown] Done.");
+      logger.info("Shutdown complete.");
       process.exit(0);
     });
 
     // Force-exit after 10 s if draining hangs (e.g. stalled SSE clients).
     setTimeout(() => {
-      // eslint-disable-next-line no-console
-      console.error("[shutdown] Force-exit after timeout.");
+      logger.error("Force-exit after shutdown timeout.");
       process.exit(1);
     }, 10_000).unref();
   }
@@ -165,7 +155,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  // eslint-disable-next-line no-console
-  console.error("[archive-api] Fatal startup error:", error?.message || error);
+  logger.error({ err: error }, "Fatal startup error");
   process.exit(1);
 });

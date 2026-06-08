@@ -1,4 +1,4 @@
-import { Check, CheckSquare, FolderInput, Square, Tag as TagIcon, Trash2, Wand2, X } from "lucide-react";
+﻿import { Check, CheckSquare, FolderInput, Square, Tag as TagIcon, Trash2, Wand2, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -158,7 +158,7 @@ export function BulkActionBar({
                 type="button"
                 onClick={onRestore}
                 disabled={busy}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/15 disabled:opacity-50"
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs font-semibold va-accent-text-on-soft hover:bg-emerald-500/15 disabled:opacity-50"
               >
                 استعادة المحدد
               </button>

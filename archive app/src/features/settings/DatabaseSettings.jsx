@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Database, Loader2, PlugZap, Save, ServerCog } from "lucide-react";
 
@@ -94,15 +94,15 @@ export function DatabaseSettings() {
   return jsx(SettingsCard, {
     title: "قاعدة البيانات",
     description: "وجّه الخادم إلى محرك SQL خارجي أو أبقِه على القاعدة المُجمَّعة. يُطبَّق التغيير بعد إعادة تشغيل الخادم وترحيل Prisma المناسب.",
-    icon: jsx(ServerCog, { className: "h-5 w-5 text-emerald-400" }),
-    aside: jsx("span", { className: "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200", children: targetBadge }),
+    icon: jsx(ServerCog, { className: "h-5 w-5 va-accent-text" }),
+    aside: jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1 text-xs va-accent-text-on-soft", children: targetBadge }),
     children: jsxs("div", { className: "space-y-4", dir: "rtl", children: [
       loadErr && jsx("p", { className: "rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-200", children: loadErr }),
       active && jsxs("div", { className: "flex flex-wrap items-center gap-2 rounded-xl va-surface-subtle border p-3 text-sm text-gray-300", children: [
-        jsx(Database, { className: "h-4 w-4 text-emerald-300" }),
+        jsx(Database, { className: "h-4 w-4 va-accent-text" }),
         jsx("span", { className: "text-gray-500", children: "النشط:" }),
-        jsx("span", { className: "rounded border border-white/10 px-2 py-0.5 text-xs text-emerald-100", children: DATABASE_ENGINE_LABELS[active.engine] || active.engine || "SQL" }),
-        jsx("code", { dir: "ltr", className: "rounded bg-black/30 px-2 py-0.5 text-xs text-emerald-200", children: active.url || "—" }),
+        jsx("span", { className: "rounded border border-white/10 px-2 py-0.5 text-xs va-accent-text-on-soft", children: DATABASE_ENGINE_LABELS[active.engine] || active.engine || "SQL" }),
+        jsx("code", { dir: "ltr", className: "rounded bg-black/30 px-2 py-0.5 text-xs va-accent-text-on-soft", children: active.url || "—" }),
         jsxs("span", { className: "text-xs text-gray-600", children: ["(", active.source, ")"] })
       ] }),
 
@@ -117,8 +117,8 @@ export function DatabaseSettings() {
       ] }),
 
       jsxs("div", { className: "inline-flex overflow-hidden rounded-xl border border-white/10", role: "group", "aria-label": "نوع الإدخال", children: [
-        jsx("button", { type: "button", onClick: () => setMode("url"), "aria-pressed": mode === "url", className: `px-3 py-1.5 text-xs font-semibold ${mode === "url" ? "bg-emerald-500/15 text-emerald-100" : "text-gray-400 hover:bg-white/5"}`, children: "رابط كامل" }),
-        jsx("button", { type: "button", onClick: () => setMode("parts"), "aria-pressed": mode === "parts", className: `px-3 py-1.5 text-xs font-semibold ${mode === "parts" ? "bg-emerald-500/15 text-emerald-100" : "text-gray-400 hover:bg-white/5"}`, children: "حقول منفصلة" })
+        jsx("button", { type: "button", onClick: () => setMode("url"), "aria-pressed": mode === "url", className: `px-3 py-1.5 text-xs font-semibold ${mode === "url" ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5"}`, children: "رابط كامل" }),
+        jsx("button", { type: "button", onClick: () => setMode("parts"), "aria-pressed": mode === "parts", className: `px-3 py-1.5 text-xs font-semibold ${mode === "parts" ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5"}`, children: "حقول منفصلة" })
       ] }),
 
       mode === "url"
@@ -139,7 +139,7 @@ export function DatabaseSettings() {
               jsxs("label", { className: "space-y-1 text-sm text-gray-300 sm:col-span-2", children: [jsx("span", { children: "كلمة المرور" }), jsx("input", { type: "password", value: parts.password, onChange: (e) => setPart("password", e.target.value), dir: "ltr", className: `${FIELD} text-start` })] })
             ] }),
 
-      testMsg && jsx("p", { className: `rounded-xl border p-3 text-sm ${testMsg.ok ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200" : "border-red-500/20 bg-red-500/10 text-red-200"}`, children: testMsg.text }),
+      testMsg && jsx("p", { className: `rounded-xl border p-3 text-sm ${testMsg.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-red-500/20 bg-red-500/10 text-red-200"}`, children: testMsg.text }),
 
       jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
         jsxs("button", { type: "button", onClick: runTest, disabled: testing || saving, className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-50", children: [testing ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(PlugZap, { className: "h-4 w-4" }), "اختبار الاتصال"] }),

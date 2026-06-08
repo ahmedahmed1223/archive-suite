@@ -6,6 +6,8 @@
   "description": "Production (server) edition of the Video Archive app: cloud-pocketbase adapters behind @archive/core ports + PocketBase + Docker.",
   "scripts": {
     "start": "tsx src/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "verify": "node scripts/verify-config.mjs && node scripts/verify-server-config.mjs && node scripts/verify-server.mjs && node scripts/verify-postgres-adapter.mjs && node scripts/verify-api.mjs && node scripts/verify-auth.mjs && node scripts/verify-realtime.mjs && node scripts/verify-ai.mjs && node scripts/verify-ai-sdk.mjs && node scripts/verify-export.mjs && node scripts/verify-media.mjs && node scripts/verify-files-dropbox.mjs && node scripts/verify-files-s3.mjs && node scripts/verify-files-azure.mjs && node scripts/verify-files-gdrive.mjs && node scripts/verify-share.mjs && node scripts/verify-admin-config.mjs && node scripts/verify-db-provider.mjs && node scripts/verify-deployment.mjs",
     "verify:ai": "node scripts/verify-ai.mjs && node scripts/verify-ai-sdk.mjs",
     "verify:export": "node scripts/verify-export.mjs",
@@ -47,12 +49,17 @@
     "ai": "^6.0.193",
     "bcryptjs": "^3.0.3",
     "google-auth-library": "^10.6.2",
+    "nodemailer": "^6.9.16",
+    "otpauth": "^9.5.1",
+    "pino": "^9.6.0",
     "pocketbase": "^0.27.0",
     "tsx": "^4.22.4",
+    "sharp": "^0.33.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "prisma": "^7.8.0"
+    "prisma": "^7.8.0",
+    "vitest": "^3.2.0"
   },
   "engines": {
     "node": ">=22.12.0"

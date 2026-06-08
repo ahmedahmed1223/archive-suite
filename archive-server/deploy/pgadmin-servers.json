@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Archive Postgres",
+      "Group": "Archive Suite",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "archive",
+      "Username": "archive",
+      "SSLMode": "prefer",
+      "Comment": "Archive Suite production database"
+    }
+  }
+}

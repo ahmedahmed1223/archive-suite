@@ -1,0 +1,19 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "archive.fullname" . }}-postgres
+  namespace: {{ include "archive.namespace" . }}
+  labels:
+    {{- include "archive.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "archive.componentLabels" (dict "component" "postgres" "ctx" .) | nindent 4 }}
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+{{- end }}

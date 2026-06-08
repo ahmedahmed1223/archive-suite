@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Loader2 } from "lucide-react";
+﻿import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import * as React from "react";
 
@@ -18,7 +18,7 @@ export function SaveIndicator({ state = "idle", message, onRetry, className = ""
     );
   } else if (state === "saved") {
     content = (
-      <span key="saved" className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300">
+      <span key="saved" className="inline-flex items-center gap-1.5 text-xs font-medium va-accent-text">
         <Check className="h-3.5 w-3.5" aria-hidden="true" />
         <span>{message || "تم الحفظ"}</span>
       </span>
@@ -88,7 +88,7 @@ export const staggerItem = {
 
 const toneClasses = {
   accent: "va-tone-accent",
-  emerald: "border-emerald-500/20 bg-emerald-500/10 text-emerald-200",
+  emerald: "va-accent-border va-accent-bg-soft va-accent-text-on-soft",
   cyan: "border-cyan-500/20 bg-cyan-500/10 text-cyan-200",
   amber: "border-amber-500/20 bg-amber-500/10 text-amber-200",
   rose: "border-rose-500/20 bg-rose-500/10 text-rose-200",
@@ -164,9 +164,9 @@ export function Stepper({ steps, activeStepId, className = "" }) {
           className={cx(
             "rounded-xl border px-3 py-2",
             index === activeIndex
-              ? "border-emerald-400/45 bg-emerald-500/15 text-white"
+              ? "va-accent-border va-accent-bg-soft text-white"
               : index < activeIndex
-                ? "border-emerald-500/20 bg-emerald-500/5 text-gray-200"
+                ? "va-accent-border va-accent-bg-soft text-gray-200"
                 : "border-white/5 bg-white/[0.02] text-gray-500"
           )}
         >
@@ -488,9 +488,9 @@ export function UXStateBlock({
 
   if (state === "success") {
     return (
-      <section className={cx("rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-right", className)} role="status" aria-live="polite" dir="rtl">
-        <h3 className="text-sm font-bold text-emerald-100">{title || "تمت العملية"}</h3>
-        {description && <p className="mt-1 text-xs leading-6 text-emerald-100/80">{description}</p>}
+      <section className={cx("rounded-2xl border va-accent-border va-accent-bg-soft p-4 text-right", className)} role="status" aria-live="polite" dir="rtl">
+        <h3 className="text-sm font-bold va-accent-text-on-soft">{title || "تمت العملية"}</h3>
+        {description && <p className="mt-1 text-xs leading-6 va-accent-text-on-soft">{description}</p>}
         {children}
       </section>
     );
@@ -547,10 +547,10 @@ export function ResponsiveTabs({ tabs, activeTab, onChange, ariaLabel = "تبو�
             key={tab.id}
             type="button"
             onClick={() => onChange(tab.id)}
-            className={cx("relative mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-right text-sm transition-colors", selected ? "text-emerald-100" : "text-gray-400 hover:bg-white/5 hover:text-white")}
+            className={cx("relative mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-right text-sm transition-colors", selected ? "va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white")}
             aria-current={selected ? "page" : undefined}
           >
-            {selected && <motion.span layoutId={`${ariaLabel}-active-tab`} className="absolute inset-0 rounded-xl border border-emerald-500/20 bg-emerald-500/10" />}
+            {selected && <motion.span layoutId={`${ariaLabel}-active-tab`} className="absolute inset-0 rounded-xl border va-accent-border va-accent-bg-soft" />}
             {Icon && <Icon className="relative h-4 w-4" />}
             <span className="relative">{tab.label}</span>
           </button>
@@ -568,7 +568,7 @@ export function EntityCard({ title, description, icon, meta, actions, selected =
       onClick={onClick}
       className={cx(
         "va-entity-card va-card-subtle block w-full rounded-2xl border p-4 text-right transition-colors",
-        selected ? "border-emerald-500/35 bg-emerald-500/10" : "border-white/10 bg-gray-950/30 hover:border-emerald-500/25 hover:bg-white/[0.04]",
+        selected ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-950/30 hover:border-emerald-500/25 hover:bg-white/[0.04]",
         className
       )}
       dir="rtl"

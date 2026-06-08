@@ -43,11 +43,24 @@ model StorageRow {
   data           Json
   syncVersion    Int?
   lastModifiedBy Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Composite primary key — uid is unique *within* a store, not globally.
   @@id([store, uid])
   // Lookups by store alone (getAll, replaceAll's per-store wipe).
   @@index([store])
+  // Index for filtering by timestamps
+  @@index([createdAt])
+  // Index for filtering by syncVersion (used in sync operations)
+  @@index([syncVersion])
 
   @@map("storage_rows")
+}
+
+model ShareRevocation {
+  jti       String   @id
+  revokedAt DateTime @default(now())
+
+  @@map("share_revocations")
 }

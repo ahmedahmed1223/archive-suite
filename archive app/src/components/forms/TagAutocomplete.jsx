@@ -272,7 +272,7 @@ export function TagAutocomplete({
     onBlur: () => setTimeout(close, 180),
     placeholder,
     dir,
-    className: `w-full rounded-xl border border-white/10 bg-gray-800/50 px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 ${className}`,
+    className: `w-full rounded-xl border border-white/10 bg-gray-800/50 px-3 py-2 text-sm text-white outline-none transition focus:border-[var(--va-action,#10b981)] focus:ring-2 focus:ring-[var(--va-action,#10b981)]/10 ${className}`,
     autoComplete: "off",
     inputMode,
     ...props
@@ -294,7 +294,7 @@ export function TagAutocomplete({
               jsxs("span", {
                 className: "flex items-center gap-1.5 text-xs text-gray-400",
                 children: [
-                  match.kind === "vocabulary" ? jsx(BookOpen, { className: "h-3.5 w-3.5 text-emerald-400" }) : jsx(Hash, { className: "h-3.5 w-3.5 text-amber-400" }),
+                  match.kind === "vocabulary" ? jsx(BookOpen, { className: "h-3.5 w-3.5 va-accent-text" }) : jsx(Hash, { className: "h-3.5 w-3.5 text-amber-400" }),
                   match.kind === "vocabulary" ? "الفريق ومصطلحات القاموس" : "الوسوم الهرمية والمستخدمة"
                 ]
               }),
@@ -316,7 +316,7 @@ export function TagAutocomplete({
                     onMouseDown: (event) => event.preventDefault(),
                     onClick: () => selectSuggestion(suggestion),
                     className: `flex w-full items-start gap-2 px-3 py-2 text-right text-sm transition-colors ${
-                      highlighted ? "bg-emerald-500/10 text-emerald-100" : "text-gray-300 hover:bg-white/5"
+                      highlighted ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-300 hover:bg-white/5"
                     }`,
                     children: [
                       suggestion.kind === "users" ? jsx(UserRound, { className: "mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-300" }) : suggestion.color && jsx("span", {
