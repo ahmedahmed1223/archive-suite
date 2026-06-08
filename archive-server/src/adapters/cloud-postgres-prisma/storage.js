@@ -130,11 +130,13 @@ export function createPostgresStorageProvider(prisma, options = {}) {
         }
       });
       // Fire-and-forget: fire outgoing webhooks for record.created / record.updated.
-      // Non-blocking — never propagated to the caller.
-      const webhookEvent = existingRow ? "record.updated" : "record.created";
-      // Pass record.ownerId so delivery is scoped to that user's webhooks only.
-      fireWebhooks(prisma, webhookEvent, { store, uid: payload.uid }, record.ownerId);
-
+      // Scoped to record.ownerId so each user only receives their own events.
+      fireWebhooks(
+        prisma,
+        existingRow ? "record.updated" : "record.created",
+        { store, uid: payload.uid },
+        record.ownerId
+      );
       // Fire-and-forget: generate and store an embedding vector for the record.
       // Non-blocking — failures are logged as warnings, never propagated to the caller.
       // Skipped silently when OPENAI_API_KEY / AI_API_KEY is absent.
@@ -203,9 +205,7 @@ export function createPostgresStorageProvider(prisma, options = {}) {
         select: { data: true },
       }).catch(() => null);
       const ownerId = existing?.data?.ownerId;
-      await row.deleteMany({
-        where: { store, uid: String(key) }
-      });
+      await row.deleteMany({ where: { store, uid: String(key) } });
       // Fire-and-forget: fire outgoing webhooks for record.deleted.
       fireWebhooks(prisma, "record.deleted", { store, uid: String(key) }, ownerId);
     },
