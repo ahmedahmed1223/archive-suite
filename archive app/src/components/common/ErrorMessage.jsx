@@ -2,6 +2,7 @@
  * ErrorMessage — displays a categorized error with appropriate icon and retry button.
  */
 import { categorizeError, ERROR_CATEGORIES } from "../../services/errorMessages.js";
+import { useT } from "../../i18n/useT.js";
 
 const CATEGORY_STYLES = {
   [ERROR_CATEGORIES.NETWORK]: { bg: "bg-orange-900/30", border: "border-orange-700", icon: "📡", color: "text-orange-300" },
@@ -14,6 +15,7 @@ const CATEGORY_STYLES = {
 };
 
 export function ErrorMessage({ error, onRetry, className = "" }) {
+  const { t } = useT();
   if (!error) return null;
   const { category, message, retry } = categorizeError(error);
   const styles = CATEGORY_STYLES[category] || CATEGORY_STYLES[ERROR_CATEGORIES.UNKNOWN];
@@ -30,7 +32,7 @@ export function ErrorMessage({ error, onRetry, className = "" }) {
           onClick={onRetry}
           className="text-xs text-gray-400 hover:text-white border border-gray-600 hover:border-gray-400 px-2 py-1 rounded transition-colors whitespace-nowrap flex-shrink-0"
         >
-          إعادة المحاولة
+          {t("actions.retry")}
         </button>
       )}
     </div>

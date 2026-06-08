@@ -14,3 +14,4 @@ data:
   POSTGRES_USER: "archive"
   FILE_STORE: "disk"
   FILE_STORE_DIR: "/app/files"
+  REDIS_URL: ""  # Set to redis://redis-service:6379 to enable caching

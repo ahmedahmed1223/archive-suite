@@ -45,6 +45,10 @@ model StorageRow {
   lastModifiedBy Json?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  // pgvector embedding (1536 dims = text-embedding-3-small).
+  // Nullable — rows without embeddings are skipped in semantic search.
+  // Prisma uses Unsupported for pgvector types since there is no native mapping.
+  embedding      Unsupported("vector(1536)")?
 
   // Composite primary key — uid is unique *within* a store, not globally.
   @@id([store, uid])
@@ -63,4 +67,75 @@ model ShareRevocation {
   revokedAt DateTime @default(now())
 
   @@map("share_revocations")
+}
+
+// ─── Typed Schema Evolution ────────────────────────────────────────────────
+// These typed tables are the foundation for migrating away from the generic
+// StorageRow/JSONB model. They run alongside StorageRow — no breaking change.
+// Dual-write: when TYPED_SCHEMA=true, new records are written to both.
+
+/// Strongly-typed user record (parallel to StorageRow store="users")
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  displayName   String?
+  email         String?   @unique
+  role          String    @default("viewer")
+  isActive      Boolean   @default(true)
+  passwordHash  String
+  totpSecret    String?
+  totpEnabled   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([role])
+  @@index([isActive])
+  @@map("typed_users")
+}
+
+/// Strongly-typed archive item (parallel to StorageRow store="videos"/"documents"/etc.)
+model ArchiveItem {
+  id            String    @id @default(cuid())
+  store         String    // original store name ("videos", "documents", etc.)
+  title         String
+  description   String?
+  documentType  String?   // pdf | image | video | audio | document
+  mimeType      String?
+  fileKey       String?   // storage key for the file
+  fileSizeBytes BigInt?
+  pageCount     Int?
+  tags          String[]  // text array
+  categoryId    String?
+  ocrText       String?
+  summary       String?
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+  syncVersion   Int       @default(0)
+  ownerId       String?   // references typed_users.id
+  metadata      Json?     // flexible overflow for extra fields
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([store])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([store, isDeleted])
+  @@index([categoryId])
+  @@map("typed_archive_items")
+}
+
+/// Content type registry (replaces hardcoded type lists)
+model ContentType {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  label       String   // Arabic display name
+  icon        String?
+  color       String?
+  isBuiltIn   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([isActive])
+  @@map("typed_content_types")
 }

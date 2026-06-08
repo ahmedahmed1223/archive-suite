@@ -6,6 +6,9 @@ import "./styles/v2-identity.css";
 import "./styles/v3-identity.css";
 import "./styles/v4-identity.css";
 
+// Initialize i18n before rendering — Arabic is the default language.
+import "./i18n/index.js";
+
 import { registerByBackendChoice } from "./bootstrap/registerByBackendChoice.js";
 import { startVideoArchive } from "./app/startVideoArchive.js";
 import { useAppStore } from "./stores/index.js";

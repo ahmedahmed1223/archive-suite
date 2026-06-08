@@ -13,6 +13,8 @@ import { createContentTypeValue, createCustomFieldValue, suggestSafeTypeSlug } f
 import { createVocabularyEntryValue, parseVocabularyAliases } from "../vocabulary/viewModel.js";
 import { createVideoItemValue, parseVideoTags } from "./viewModel.js";
 import { reportError } from "../../utils/errorReporting.js";
+import { AutoTagSuggestions } from "../../components/upload/AutoTagSuggestions.jsx";
+import { getCloudToken } from "../../bootstrap/cloudSession.js";
 
 const DRAFT_KEY = "videoArchive:quickAddDraft";
 
@@ -299,7 +301,19 @@ export function QuickAddDialog({ open, onOpenChange }) {
         (mode === "video" || mode === "term") ? jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
           jsx("span", { children: mode === "video" ? "وسوم" : "مرادفات" }),
           jsx("input", { value: tagsText, onChange: (event) => setTagsText(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", placeholder: mode === "video" ? "مفصولة بفواصل" : "مرادفات مفصولة بفواصل" })
-        ] }) : null
+        ] }) : null,
+        mode === "video"
+          ? jsx(AutoTagSuggestions, {
+              name,
+              summary: description,
+              categories: activeTypes,
+              authToken: getCloudToken(),
+              onAccept: (tag) => setTagsText((prev) => {
+                const existing = prev.trim();
+                return existing ? `${existing}، ${tag}` : tag;
+              })
+            })
+          : null
       ] }),
       jsx("p", { className: "text-xs leading-6 text-gray-500", children: "المسودة تحفظ محليًا أثناء الكتابة. استخدم حفظ وفتح للانتقال إلى الصفحة المناسبة بعد الإنشاء." })
     ] })

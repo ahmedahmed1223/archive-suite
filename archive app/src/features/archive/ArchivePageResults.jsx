@@ -8,6 +8,7 @@ import { formatNumber } from "../../utils/formatting.js";
 import { parseVideoTags } from "../videos/viewModel.js";
 import { computeCompleteness } from "./completeness.js";
 import { useKeyboardListNav } from "../../hooks/useKeyboardListNav.js";
+import { useVirtualList } from "../../hooks/useVirtualList.js";
 import {
   ARCHIVE_GRID_CLASSES,
   ARCHIVE_ITEM_SIZE_LABELS,
@@ -265,6 +266,18 @@ export function ArchivePageResults(props) {
     multiSelect: true,
   });
 
+  // Virtual list — only active on mobile (< 768 px) with > 20 items.
+  // itemHeight 120 px matches a standard archive card height in list/grid view.
+  const {
+    containerRef: virtualContainerRef,
+    visibleItems: virtualItems,
+    topSpacerHeight,
+    bottomSpacerHeight,
+    shouldVirtualize,
+    totalCount,
+    visibleCount,
+  } = useVirtualList({ items: visibleItems || [], itemHeight: 120 });
+
   // Show the skeleton only on the *first* load: once data exists or
   // filters narrowed it to zero, the EmptyState below is the right
   // signal (loading would lie). videoItems vs filteredItems matters —
@@ -325,7 +338,25 @@ export function ArchivePageResults(props) {
             "aria-multiselectable": "true",
             "aria-label": "قائمة العناصر المؤرشفة",
             className: "outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 rounded-2xl",
-            children: renderItemsForViewMode({ ...props, kbFocusedIndex: focusedIndex, kbIsSelected: isSelected })
+            children: jsxs("div", {
+              ref: virtualContainerRef,
+              children: [
+                topSpacerHeight > 0 && jsx("div", { style: { height: topSpacerHeight }, "aria-hidden": "true" }),
+                renderItemsForViewMode({
+                  ...props,
+                  // Pass only the virtualized slice of items on mobile; full list elsewhere
+                  visibleItems: virtualItems.map(({ item }) => item),
+                  kbFocusedIndex: focusedIndex,
+                  kbIsSelected: isSelected,
+                }),
+                bottomSpacerHeight > 0 && jsx("div", { style: { height: bottomSpacerHeight }, "aria-hidden": "true" }),
+                shouldVirtualize && jsx("p", {
+                  className: "text-xs text-gray-600 text-center py-1",
+                  "aria-live": "polite",
+                  children: `عرض ${visibleCount} من ${totalCount} عنصر`,
+                }),
+              ]
+            })
           }),
           jsx(ArchivePagination, {
             currentPage,
