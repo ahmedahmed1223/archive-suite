@@ -7,7 +7,7 @@
  *   update(50); // 50% done
  *   finish();
  */
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export function useProgress() {
   const [state, setState] = useState({
@@ -19,6 +19,11 @@ export function useProgress() {
     cancelled: false,
   });
   const cancelRef = useRef(false);
+  // Track the auto-hide timer so it can be cancelled on unmount (memory-leak fix).
+  const hideTimerRef = useRef(null);
+
+  // Cancel any pending auto-hide timer when the component unmounts.
+  useEffect(() => () => clearTimeout(hideTimerRef.current), []);
 
   const start = useCallback(({ label = "" } = {}) => {
     cancelRef.current = false;
@@ -38,8 +43,12 @@ export function useProgress() {
 
   const finish = useCallback(() => {
     setState(prev => ({ ...prev, active: false, percent: 100 }));
-    // Auto-hide after 1.5 seconds
-    setTimeout(() => setState(prev => ({ ...prev, active: false, percent: 0 })), 1500);
+    // Auto-hide after 1.5 s — store the ID so unmount cleanup can cancel it.
+    clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(
+      () => setState(prev => ({ ...prev, active: false, percent: 0 })),
+      1500
+    );
   }, []);
 
   const cancel = useCallback(() => {

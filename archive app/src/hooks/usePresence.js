@@ -15,6 +15,9 @@ export function usePresence({ recordId, authToken, enabled = true } = {}) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef(null);
   const reconnectRef = useRef(null);
+  // Tracks consecutive disconnects for exponential backoff.
+  // Reset to 0 on every successful open so healthy reconnects don't accumulate.
+  const retryCountRef = useRef(0);
 
   const connect = useCallback(() => {
     if (!WS_URL || !authToken || !enabled) return;
@@ -22,6 +25,7 @@ export function usePresence({ recordId, authToken, enabled = true } = {}) {
     wsRef.current = ws;
 
     ws.onopen = () => {
+      retryCountRef.current = 0; // successful connection — reset backoff
       setConnected(true);
       ws.send(JSON.stringify({ type: "auth", token: authToken }));
       if (recordId) ws.send(JSON.stringify({ type: "focus", recordId }));
@@ -39,8 +43,10 @@ export function usePresence({ recordId, authToken, enabled = true } = {}) {
     ws.onclose = () => {
       setConnected(false);
       setViewers([]);
-      // Reconnect after 3s
-      reconnectRef.current = setTimeout(connect, 3000);
+      // Exponential backoff: 1 s → 2 s → 4 s → 8 s → … → 60 s max
+      const delay = Math.min(1000 * 2 ** retryCountRef.current, 60_000);
+      retryCountRef.current += 1;
+      reconnectRef.current = setTimeout(connect, delay);
     };
 
     ws.onerror = () => ws.close();
