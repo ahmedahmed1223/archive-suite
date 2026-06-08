@@ -100,6 +100,8 @@ html.light[data-theme-version="v3"] {
   --va-3-cyan: #027da3;
 }
 
+@layer v3-identity {
+
 html[data-theme-version="v3"] body {
   background:
     linear-gradient(180deg, var(--va-3-canvas), var(--va-3-canvas-2) 56%, var(--va-3-canvas));
@@ -147,53 +149,53 @@ html[data-theme-version="v3"] main {
 html[data-theme-version="v3"] .va-sidebar {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--va-3-accent) 7%, transparent), transparent 18rem),
-    var(--va-3-rail) !important;
-  border-color: var(--va-3-line-soft) !important;
+    var(--va-3-rail);
+  border-color: var(--va-3-line-soft);
   box-shadow: -1px 0 0 rgba(255, 255, 255, 0.02) inset;
 }
 
 html[data-theme-version="v3"] .va-sidebar-brand {
-  border-color: var(--va-3-line-soft) !important;
-  padding-block: 1rem !important;
+  border-color: var(--va-3-line-soft);
+  padding-block: 1rem;
 }
 
 html[data-theme-version="v3"] .va-sidebar-item {
   border: 1px solid transparent;
-  border-radius: var(--va-3-radius-md) !important;
-  min-height: 2.45rem !important;
+  border-radius: var(--va-3-radius-md);
+  min-height: 2.45rem;
 }
 
 html[data-theme-version="v3"] .va-sidebar-item-active {
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--va-3-accent) 18%, transparent), color-mix(in srgb, var(--va-3-cyan) 7%, transparent)) !important;
+    linear-gradient(90deg, color-mix(in srgb, var(--va-3-accent) 18%, transparent), color-mix(in srgb, var(--va-3-cyan) 7%, transparent));
   border-color: color-mix(in srgb, var(--va-3-accent) 32%, transparent);
-  color: var(--va-3-text-strong) !important;
+  color: var(--va-3-text-strong);
   box-shadow: inset -2px 0 0 var(--va-3-accent), var(--va-3-shadow-sm);
 }
 
 html[data-theme-version="v3"] .va-context-bar {
-  background: color-mix(in srgb, var(--va-3-canvas) 84%, transparent) !important;
-  border-color: var(--va-3-line-soft) !important;
+  background: color-mix(in srgb, var(--va-3-canvas) 84%, transparent);
+  border-color: var(--va-3-line-soft);
   backdrop-filter: blur(18px) saturate(1.08);
 }
 
 html[data-theme-version="v3"] .va-context-bar-inner {
-  padding-block: 0.65rem !important;
+  padding-block: 0.65rem;
 }
 
 html[data-theme-version="v3"] :is(.va-page-hero, .va-card, .va-metric-card, .va-action-card, .va-control-surface, .va-filter-surface, .va-tab-surface, .va-preview-panel, .va-data-card, .va-video-card, .va-command-panel, .va-report-strip, .va-section-toolbar, .va-risk-action-panel) {
-  border-color: var(--va-3-line) !important;
-  border-radius: var(--va-3-radius-lg) !important;
+  border-color: var(--va-3-line);
+  border-radius: var(--va-3-radius-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 42%),
-    var(--va-3-surface) !important;
+    var(--va-3-surface);
   box-shadow: var(--va-3-shadow-sm);
 }
 
 html[data-theme-version="v3"] :is(.va-page-hero, .va-command-center-hero) {
   background:
     radial-gradient(circle at 83% 0%, color-mix(in srgb, var(--va-3-accent) 16%, transparent), transparent 42%),
-    linear-gradient(180deg, var(--va-3-surface-2), var(--va-3-surface)) !important;
+    linear-gradient(180deg, var(--va-3-surface-2), var(--va-3-surface));
 }
 
 html[data-theme-version="v3"] .va-command-panel {
@@ -203,59 +205,59 @@ html[data-theme-version="v3"] .va-command-panel {
 html[data-theme-version="v3"] .va-command-panel-highlight {
   background:
     radial-gradient(circle at 72% 0%, color-mix(in srgb, var(--va-3-cyan) 18%, transparent), transparent 40%),
-    linear-gradient(180deg, var(--va-3-surface-hot), var(--va-3-surface)) !important;
+    linear-gradient(180deg, var(--va-3-surface-hot), var(--va-3-surface));
 }
 
 html[data-theme-version="v3"] .va-metric-card {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--va-3-cyan) 7%, transparent), transparent),
-    var(--va-3-surface) !important;
+    var(--va-3-surface);
 }
 
 html[data-theme-version="v3"] .va-action-card:hover,
 html[data-theme-version="v3"] .va-card:hover,
 html[data-theme-version="v3"] .va-video-card:hover {
-  border-color: color-mix(in srgb, var(--va-3-accent) 36%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-3-accent) 36%, transparent);
   box-shadow: var(--va-3-shadow-md), var(--va-3-shadow-glow);
   transform: translateY(-1px);
 }
 
 html[data-theme-version="v3"] .va-primary-button,
 html[data-theme-version="v3"] .va-action-button {
-  background: linear-gradient(180deg, var(--va-3-accent), var(--va-3-accent-strong)) !important;
-  border-color: color-mix(in srgb, var(--va-3-accent) 60%, transparent) !important;
-  border-radius: var(--va-3-radius-md) !important;
-  color: #ffffff !important;
-  box-shadow: var(--va-3-shadow-glow), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  background: linear-gradient(180deg, var(--va-3-accent), var(--va-3-accent-strong));
+  border-color: color-mix(in srgb, var(--va-3-accent) 60%, transparent);
+  border-radius: var(--va-3-radius-md);
+  color: #ffffff;
+  box-shadow: var(--va-3-shadow-glow), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 html[data-theme-version="v3"] .va-secondary-button,
 html[data-theme-version="v3"] .va-tool-button {
-  background: color-mix(in srgb, var(--va-3-surface-2) 82%, transparent) !important;
-  border-color: var(--va-3-line) !important;
-  border-radius: var(--va-3-radius-md) !important;
+  background: color-mix(in srgb, var(--va-3-surface-2) 82%, transparent);
+  border-color: var(--va-3-line);
+  border-radius: var(--va-3-radius-md);
 }
 
 html[data-theme-version="v3"] :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select, .va-command-search-input) {
-  background: color-mix(in srgb, var(--va-3-canvas) 72%, var(--va-3-surface)) !important;
-  border-color: var(--va-3-line) !important;
-  color: var(--va-3-text-strong) !important;
+  background: color-mix(in srgb, var(--va-3-canvas) 72%, var(--va-3-surface));
+  border-color: var(--va-3-line);
+  color: var(--va-3-text-strong);
 }
 
 html[data-theme-version="v3"] main input:not([type="checkbox"]):not([type="radio"]):focus,
 html[data-theme-version="v3"] main textarea:focus,
 html[data-theme-version="v3"] main select:focus,
 html[data-theme-version="v3"] .va-command-search-input:focus {
-  border-color: color-mix(in srgb, var(--va-3-accent) 72%, transparent) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-3-accent) 18%, transparent) !important;
-  outline: none !important;
+  border-color: color-mix(in srgb, var(--va-3-accent) 72%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-3-accent) 18%, transparent);
+  outline: none;
 }
 
 html[data-theme-version="v3"] .va-status-badge,
 html[data-theme-version="v3"] .va-chip,
 html[data-theme-version="v3"] .va-tag-chip,
 html[data-theme-version="v3"] .va-count-badge {
-  border-radius: var(--va-3-radius-sm) !important;
+  border-radius: var(--va-3-radius-sm);
 }
 
 html[data-theme-version="v3"] .va-report-strip {
@@ -270,10 +272,10 @@ html[data-theme-version="v3"] .va-result-preview {
 }
 
 html[data-theme-version="v3"] .va-risk-action-panel {
-  border-color: color-mix(in srgb, var(--va-3-amber) 34%, transparent) !important;
+  border-color: color-mix(in srgb, var(--va-3-amber) 34%, transparent);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--va-3-amber) 8%, transparent), transparent 65%),
-    var(--va-3-surface) !important;
+    var(--va-3-surface);
 }
 
 html[data-theme-version="v3"] .text-white {
@@ -293,11 +295,11 @@ html[data-theme-version="v3"] .text-gray-600 {
 html[data-theme-version="v3"] .va-primary-button .text-white,
 html[data-theme-version="v3"] button.va-primary-button,
 html[data-theme-version="v3"] .va-primary-button {
-  color: #ffffff !important;
+  color: #ffffff;
 }
 
 html[data-theme-version="v3"] .archive-desktop-floating-actions {
-  display: none !important;
+  display: none;
 }
 
 html[data-theme-version="v3"] .va-archive-grid,
@@ -335,7 +337,7 @@ html[data-theme-version="v3"] .va-video-card[data-item-size="xl"] {
 }
 
 html[data-theme-version="v3"] .va-video-card .va-archive-card-main {
-  display: grid !important;
+  display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
 }
@@ -361,7 +363,7 @@ html[data-theme-version="v3"] .va-video-tile {
 
 @media (max-width: 767px) {
   html[data-theme-version="v3"] .va-context-bar-inner {
-    padding-inline: 1rem !important;
+    padding-inline: 1rem;
   }
 
   html[data-theme-version="v3"] .va-command-panel {
@@ -379,3 +381,5 @@ html[data-theme-version="v3"] .va-video-tile {
     animation-duration: 0.01ms !important;
   }
 }
+
+} /* end @layer v3-identity */
