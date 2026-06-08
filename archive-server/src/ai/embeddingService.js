@@ -75,6 +75,9 @@ export async function semanticSearch(prisma, query, { store, limit = 20 } = {}) 
   if (!embedding) return [];
 
   try {
+    if (!Array.isArray(embedding) || !embedding.every(n => typeof n === "number" && isFinite(n))) {
+      throw new Error("Invalid embedding: expected finite number array");
+    }
     const vectorStr = `[${embedding.join(",")}]`;
     const rows = store
       ? await prisma.$queryRaw`
