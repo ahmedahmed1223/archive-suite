@@ -155,3 +155,45 @@ model ContentType {
   @@index([isActive])
   @@map("typed_content_types")
 }
+
+/// Saved search filters / Smart Collections
+/// isLive=true → the SPA re-runs the query on every visit and keeps results fresh.
+model SavedFilter {
+  id        String   @id @default(cuid())
+  name      String
+  query     Json
+  isLive    Boolean  @default(false)
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([ownerId])
+  @@map("saved_filters")
+}
+
+/// Outgoing webhooks — fired on record.created / record.updated / record.deleted.
+/// Each delivery is signed with HMAC-SHA256 using the stored secret.
+model Webhook {
+  id        String   @id @default(uuid())
+  url       String
+  events    String[]
+  secret    String
+  active    Boolean  @default(true)
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([ownerId])
+  @@map("webhooks")
+}
+
+/// Per-user email notification preferences.
+/// Created on first access (upsert); defaults match the model defaults.
+model NotificationPreference {
+  id             String  @id @default(uuid())
+  userId         String  @unique @map("user_id")
+  emailOnShare   Boolean @default(true)  @map("email_on_share")
+  emailOnUpload  Boolean @default(false) @map("email_on_upload")
+  emailOnMention Boolean @default(true)  @map("email_on_mention")
+
+  @@map("notification_preferences")
+}

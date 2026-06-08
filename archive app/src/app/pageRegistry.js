@@ -30,6 +30,7 @@ const ReportsPage         = lazy(() => import("../pages/ReportsPage.jsx"));
 const HelpPage            = lazy(() => import("../pages/HelpPage.jsx"));
 const SyncLogPage         = lazy(() => import("../pages/SyncLogPage.jsx"));
 const GraphViewPage       = lazy(() => import("../pages/GraphViewPage.jsx"));
+const FirstRunPage        = lazy(() => import("../pages/FirstRunPage.jsx"));
 
 export const PAGE_COMPONENTS = {
   dashboard:   DashboardPage,
@@ -51,7 +52,8 @@ export const PAGE_COMPONENTS = {
   users:       UsersPage,
   help:        HelpPage,
   "sync-log":  SyncLogPage,
-  graph:       GraphViewPage
+  graph:       GraphViewPage,
+  firstRun:    FirstRunPage,
 };
 
 export { HEAVY_PAGE_IDS, PAGE_GROUPS };

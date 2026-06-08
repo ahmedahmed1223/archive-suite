@@ -57,6 +57,8 @@ import { DatabaseSettings } from "../features/settings/DatabaseSettings.jsx";
 import { FileStoreSettings } from "../features/settings/FileStoreSettings.jsx";
 import { LocalStorageEngineSettings } from "../features/settings/LocalStorageEngineSettings.jsx";
 import { ServerStatusBadge } from "../features/server-status/ServerStatusBadge.jsx";
+import { WebhooksSettings } from "../components/settings/WebhooksSettings.jsx";
+import { NotificationPreferences } from "../components/settings/NotificationPreferences.jsx";
 import {
   getDefaultSettings,
   mergeAppSettings
@@ -1020,7 +1022,8 @@ export function SettingsPage() {
                 checked: settings.notifications?.toastByType?.[type] !== false,
                 onChange: (enabled) => toggleToastType(type, enabled)
               }, type)) })
-            ] })
+            ] }),
+            jsx("div", { className: "rounded-xl border border-white/10 bg-gray-950/30 p-3", children: jsx(NotificationPreferences, {}) })
           ]
         })
       }),
@@ -1039,6 +1042,13 @@ export function SettingsPage() {
     ]
   });
 
+  const renderWebhooks = () => jsx(SettingsCard, {
+    title: "Webhooks الصادرة",
+    description: "يُطلق الخادم طلب POST إلى العناوين المسجّلة عند إنشاء السجلات أو تحديثها أو حذفها، مع توقيع HMAC-SHA256.",
+    icon: jsx("span", { className: "text-xs font-mono text-gray-400", children: "POST" }),
+    children: jsx(WebhooksSettings, {})
+  });
+
   const tabContent = {
     general: renderGeneral,
     appearance: renderAppearance,
@@ -1046,6 +1056,7 @@ export function SettingsPage() {
     ai: renderAi,
     security: renderSecurity,
     shortcuts: renderShortcuts,
+    webhooks: renderWebhooks,
     maintenance: renderMaintenance
   };
 

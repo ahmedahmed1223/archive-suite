@@ -24,6 +24,26 @@ function createTransport() {
 
 const FROM = process.env.SMTP_FROM || "Archive Suite <noreply@example.com>";
 
+/**
+ * Generic sendMail helper.
+ * Exported for use by notificationService and any other feature that needs to
+ * send a transactional email without going through a dedicated helper function.
+ *
+ * In dev (no SMTP_HOST) the call is a silent no-op that returns { sent: false, dev: true }.
+ *
+ * @param {{ to: string, subject: string, text?: string, html?: string }} opts
+ * @returns {Promise<{ sent: boolean, dev?: boolean }>}
+ */
+export async function sendMail({ to, subject, text, html }) {
+  const transport = createTransport();
+  if (!transport) {
+    log.debug({ to, subject }, "SMTP not configured — email dropped (dev).");
+    return { sent: false, dev: true };
+  }
+  await transport.sendMail({ from: FROM, to, subject, text, html });
+  return { sent: true };
+}
+
 export async function sendPasswordResetEmail({ to, resetUrl, username }) {
   const transport = createTransport();
   if (!transport) {

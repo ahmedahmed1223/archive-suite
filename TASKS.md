@@ -2,7 +2,7 @@
 
 > **المصدر:** 9 تقارير فحص (HTML) في `D:\archiveaq\Reports`.
 > **المنهجية:** كل بند في التقارير تم التحقق منه مقابل الكود الفعلي في هذا المستودع. أُبقيت فقط المهام الحقيقية المتبقية؛ والبنود المُنفّذة بالفعل أو غير الدقيقة في التقارير وُثّقت في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
-> **آخر تحديث:** 8 يونيو 2026. مراجعة شاملة بعد فحص الكود — تم تحديث الحالات لتعكس ما نُفِّذ فعلًا.
+> **آخر تحديث:** 8 يونيو 2026. إضافة القسم 12 من 4 تقارير فحص معمّق جديدة (87–107 ثغرة). Tasks 70 (Webhooks) و71 (Email Notifications) مكتملان. Task 73 (Setup Wizard) قيد التنفيذ.
 
 ## مفتاح الأولويات
 
@@ -350,6 +350,29 @@
 
 ---
 
+## 11. معالج التثبيت والتشغيل (Setup & Installation Wizard)
+
+> هدفه: توجيه أي مستخدم جديد من الصفر — تحميل Docker حتى تشغيل النظام — بخطوات مرقّمة واضحة.
+
+- [ ] `[P1]` ⏱️L **سكريبت إعداد تفاعلي (CLI Wizard)** — `scripts/setup.mjs` يُشغَّل بأمر `pnpm setup` أو `node scripts/setup.mjs`.
+  - **الخطوة 1 — فحص Docker**: يتحقق من وجود `docker` و`docker compose`؛ إن لم يُوجد يعرض رابط التحميل الصحيح حسب نظام التشغيل (Windows/Mac/Linux) ويطلب إعادة التشغيل بعد التثبيت.
+  - **الخطوة 2 — اختيار الوضع**: PocketBase (خفيف، للمطوّر) أو PostgreSQL (إنتاج).
+  - **الخطوة 3 — إعداد البيئة**: يولّد ملف `.env` تلقائياً بأسرار JWT عشوائية آمنة + يسأل عن: اسم المستخدم والبريد وكلمة مرور المشرف، إعدادات SMTP (اختياري).
+  - **الخطوة 4 — تشغيل Docker**: يُنفّذ `docker compose up -d` ويعرض شريط تقدّم.
+  - **الخطوة 5 — فحص الصحة**: يستعلم `GET /api/health` حتى يرد بـ 200 (timeout 120s)، ثم يفتح المتصفح تلقائياً.
+
+- [ ] `[P1]` ⏱️M **صفحة الترحيب للتشغيل الأول** — `FirstRunPage.jsx` تظهر عند عدم وجود مستخدمين في النظام.
+  - تُسجَّل في `pageRegistry.js` وتُفحَص عند البدء.
+  - خطوات: (1) إنشاء حساب المشرف، (2) اختيار الثيم، (3) تعيين لغة التخزين، (4) توجيه للوحة التحكم.
+  - تحل محل التسجيل العشوائي وتُوجِّه المستخدم بشكل واضح.
+
+- [ ] `[P2]` ⏱️M **ملف `INSTALL.md`** — دليل تثبيت سريع بالخطوات الثلاث:
+  1. `git clone` + `cd archive-suite`
+  2. `node scripts/setup.mjs`
+  3. افتح `http://localhost:8787`
+
+---
+
 ## 10. تحسينات تجربة الإعداد الأولي (Onboarding UX)
 
 > خطة مستوردة من `implementation_plan.md` — تحسينات بصرية وتفاعلية على معالج الإعداد.
@@ -397,3 +420,287 @@
 | غياب نسخ احتياطي | سكربت cron موجود (الجدولة/الواجهة فقط مهمة حيّة) | `archive-server/deploy/backup-cron.sh` |
 
 **ملاحظة:** التقارير افترضت بدائل تقنية «مفقودة» (Express، React Router، Zustand، TanStack Query) بينما المشروع يستخدم بدائل مقصودة (Node http مخصص، page manifest، store مخصص، HTTP adapter). هذه اختيارات معمارية وليست فجوات.
+
+---
+
+## 12. نتائج الفحص المعمّق 2026 — مهام جديدة
+
+> **المصدر:** 4 تقارير فحص معمّق أُضيفت بتاريخ 8 يونيو 2026:
+> - `archive-suite-deep-audit-2026.html` (87 ثغرة، 12 مجالًا، 69.7/100)
+> - `archive-suite-deep-audit-v2.html` (107 ثغرة، 17 حرجة)
+> - `archive-suite-uiux-deep-audit-2026.html` (37 نقطة ألم، 64.3/100)
+> - `archive-suite-uiux-user-journey-report.html` (22 نقطة ألم في رحلة المستخدم)
+>
+> جميع البنود التالية غير مُغطّاة في الأقسام السابقة. البنود الموجودة فعلًا في الكود أُضيفت للملحق (القسم 8).
+
+---
+
+### 12.1 أمان — P0 حرج (ثغرات مباشرة)
+
+- [ ] `[P0]` ⏱️S **إصلاح حقن SQL عبر `Prisma.raw()` في `getByField`** — الحقول غير `uid`/`id` تُدرج مباشرة في استعلام خام بلا تعقيم.
+  - الملف: `archive-server/src/adapters/cloud-postgres-prisma/storage.js:305`
+  - الإصلاح: ابنِ whitelist للحقول المسموحة (`uid`, `id`, `ownerId`, `email`) وارفض أي حقل خارجها قبل بناء الاستعلام.
+  - المصدر: deep-audit-v2 (SEC-02)، critical.
+
+- [ ] `[P0]` ⏱️S **تأمين نقطة `/api/ocr`** — بلا `requireAuth()` ولا حد لحجم الطلب؛ يقبل رفع ملفات غير محدودة الحجم من أي زائر.
+  - الملف: `archive-server/src/api/ocrHandler.js:9,20-21`
+  - الإصلاح: أضف `requireAuth()` أول شيء في المعالج + حد `20MB` على `busboy`/`multer` + rate limit مخصص (5 طلبات/دقيقة للمستخدم).
+  - المصدر: deep-audit-v2 (SEC-03)، critical.
+
+- [ ] `[P0]` ⏱️S **إصلاح XSS في قالب بريد إعادة تعيين كلمة المرور** — `username` و`resetLink` غير مُعقَّمَين في قالب `emailService.js`.
+  - الملف: `archive-server/src/email/emailService.js`
+  - الإصلاح: استخدم دالة `escapeHtml()` على كل متغير يُدرج في HTML. مرجع: `notificationService.js` (Task 71) يُعقَّم بشكل صحيح.
+  - المصدر: deep-audit-v2 (S3)، critical.
+
+- [ ] `[P0]` ⏱️M **توليد QR code للـ TOTP محليًا** — الكود يُرسل سر TOTP إلى `api.qrserver.com` خارجي عند كل تفعيل 2FA.
+  - الملف: `archive-server/src/auth/totpService.js:47`
+  - الإصلاح: `npm install qrcode` واستبدل الطلب الخارجي بـ `qrcode.toDataURL(otpauthUrl)` — ينتج data-URI محليًا بلا اتصال خارج.
+  - المصدر: deep-audit-v2 (S4)، critical.
+
+- [ ] `[P0]` ⏱️S **معالجة استعلامات pgvector بـ Parameterized SQL** — `vectorStr` يُبنى بتسلسل نصي يدوي في خدمة التضمينات.
+  - الملف: `archive-server/src/ai/embeddingService.js`
+  - الإصلاح: استبدل السلسلة النصية بـ Prisma template literal:
+    `await prisma.$queryRaw\`SELECT * FROM embeddings ORDER BY embedding <=> ${vector}::vector LIMIT ${limit}\``
+  - المصدر: deep-audit-v2 (S5)، critical.
+
+- [ ] `[P0]` ⏱️S **التحقق من JWT في `searchHandler` عبر `verifyJwt()`** — الكود يُحلّل حمولة التوكن بـ `JSON.parse(atob(payload))` متجاوزًا التحقق من التوقيع.
+  - الملف: `archive-server/src/api/searchHandler.js`
+  - الإصلاح: استبدل بـ `const payload = await verifyJwt(token)` المستوردة من `src/auth/jwt.js`.
+  - المصدر: deep-audit-v2 (S6)، critical.
+
+- [ ] `[P0]` ⏱️S **إصلاح إعادة تعيين كلمة المرور — دمج بدل استبدال السجل** — `put("users", {id, passwordHash})` يحلّ محل سجل المستخدم كاملًا بحقلين فقط.
+  - الملف: `archive-server/src/api/server.js:547` (مسار `/api/reset-password`)
+  - الإصلاح: احضر المستخدم الحالي أولًا ثم ادمج: `await storage.put("users", { ...existingUser, passwordHash: newHash })`.
+  - المصدر: deep-audit-v2 (S7)، critical.
+
+- [ ] `[P0]` ⏱️S **إصلاح IDOR في خادم الحضور (Presence)** — أي مستخدم مصادَق يمكنه البث على أي `recordId` دون تحقق من صلاحية وصوله للسجل.
+  - الملف: `archive-server/src/presence/presenceServer.js:78-91`
+  - الإصلاح: قبل إضافة المستخدم لغرفة `recordId` تحقق أنه يملك صلاحية قراءة ذلك السجل عبر `checkPermission(userId, recordId)`.
+  - المصدر: deep-audit-v2 (S8)، critical.
+
+- [ ] `[P0]` ⏱️M **نقل JWT Blacklist وResetTokenStore إلى Redis** — القوائم in-memory تُفقد عند إعادة التشغيل وغير متوافقة مع HPA متعدد النسخ.
+  - الملفات: `archive-server/src/auth/tokenBlacklist.js`، `archive-server/src/auth/resetTokenStore.js`
+  - الإصلاح: استخدم Redis Sets مع `SETEX`/`EXPIRE` بـ TTL مساوٍ لانتهاء صلاحية التوكن؛ استخدم Redis client الموجود في `src/cache/`.
+  - المصدر: deep-audit-v2 (S1/S2)، critical.
+
+---
+
+### 12.2 أمان — P0 البنية التحتية (K8s)
+
+- [ ] `[P0]` ⏱️M **إضافة `securityContext` لجميع K8s Deployments** — الحاويات تعمل كـ root بدون قيود kernel.
+  - الملف: `archive-server/k8s/*.yaml` (جميع Deployments)
+  - الإصلاح: أضف لكل container: `runAsNonRoot: true`، `runAsUser: 1000`، `readOnlyRootFilesystem: true`، `allowPrivilegeEscalation: false`، `capabilities.drop: ["ALL"]`.
+  - المصدر: deep-audit-v2 (K8s-01)، critical.
+
+- [ ] `[P0]` ⏱️M **تطبيق `NetworkPolicy` لعزل الخدمات في K8s** — افتراضيًا أي Pod يتواصل مع أي Pod آخر.
+  - الملف: `archive-server/k8s/network-policy.yaml` (جديد)
+  - الإصلاح: سياسة deny-all افتراضية + allow-list صريح: `app -> postgres` و`app -> redis` فقط.
+  - المصدر: deep-audit-v2 (K8s-02).
+
+- [ ] `[P0]` ⏱️S **استبدال قيم `CHANGE_ME` في K8s Secrets** — `k8s/secret.yaml` يحتوي على قيم `CHANGE_ME` ثابتة في المستودع.
+  - الملف: `archive-server/k8s/secret.yaml`
+  - الإصلاح: احذف القيم الافتراضية؛ استخدم Kubernetes ExternalSecrets أو Helm `--set` عند النشر؛ أضف فحص في `productionGuard.js`.
+  - المصدر: deep-audit-v2 (K8s-03)، critical.
+
+- [ ] `[P0]` ⏱️S **تشغيل حاويات PocketBase وOCR كمستخدم غير جذر** — صور الخدمات الجانبية تعمل كـ root.
+  - الملفات: `archive-server/Dockerfile.pocketbase`، `services/ocr/Dockerfile`
+  - الإصلاح: أضف `USER 1000:1000` بعد تعيين أذونات الملفات في كل Dockerfile.
+  - المصدر: deep-audit-v2 (K8s-04).
+
+---
+
+### 12.3 أمان — P1 عالٍ
+
+- [ ] `[P1]` ⏱️S **إصلاح مصادقة WebSocket — استخدام السر الصحيح** — `presenceServer.js` يستخدم متغير JWT خاطئ للتحقق من توكنات الاتصال.
+  - الملف: `archive-server/src/presence/presenceServer.js`
+  - الإصلاح: تأكد من استخدام `JWT_AUTH_SECRET` الصحيح عند التحقق من توكن WebSocket.
+  - المصدر: deep-audit-v2.
+
+- [ ] `[P1]` ⏱️M **إضافة رموز استرداد TOTP (Recovery Codes)** — لا يوجد مسار بديل للدخول عند فقدان جهاز TOTP.
+  - الملفات: `archive-server/src/auth/totpService.js`، `server.js` (مسارات `/api/totp/*`)، `archive app/src/components/settings/SecuritySettings.jsx`
+  - الإصلاح: عند تفعيل TOTP أنتج 8 رموز استرداد (16 حرفًا عشوائيًا مُهاشَة في DB) تُعرض مرة واحدة. أضف مسار `/api/totp/recover` يتحقق ويستهلك الرمز.
+  - المصدر: deep-audit-v2.
+
+- [ ] `[P1]` ⏱️S **Rate Limit على تعطيل TOTP** — لا يوجد تقييد على `/api/totp/disable` مما يُتيح brute-force.
+  - الملف: `archive-server/src/api/server.js` (مسار `/api/totp/disable`)
+  - الإصلاح: أضف rate limit مخصص (3 محاولات فاشلة/15 دقيقة) على هذا المسار.
+  - المصدر: deep-audit-v2.
+
+- [ ] `[P1]` ⏱️S **تثبيت `APP_BASE_URL` من متغيرات البيئة** — بناء رابط الاسترداد من ترويسة `Host`/`Origin` يُتيح Open Redirect.
+  - الملف: `archive-server/src/api/server.js` أو `emailService.js` (مسار `/api/forgot-password`)
+  - الإصلاح: استخدم `process.env.APP_BASE_URL` فقط؛ أضفه لـ `.env.example` وـ `productionGuard.js`.
+  - المصدر: deep-audit-v2.
+
+- [ ] `[P1]` ⏱️M **تشفير ملفات النسخ الاحتياطية** — ملفات الـ backup تُحفظ بلا تشفير.
+  - الملف: `archive-server/deploy/backup-cron.sh`
+  - الإصلاح: شفِّر باستخدام `openssl enc -aes-256-cbc -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY`؛ أضف المتغير لـ `.env.example`.
+  - المصدر: deep-audit-2026.
+
+- [ ] `[P1]` ⏱️S **التحقق من سلامة النسخ الاحتياطية** — لا يوجد checksum أو اختبار استرداد دوري.
+  - الملف: `archive-server/deploy/backup-cron.sh`
+  - الإصلاح: احسب `sha256sum` للأرشيف واحفظه في `.sha256` مجاور؛ أضف اختبار restore تجريبي شهريًا على DB مؤقتة.
+  - المصدر: deep-audit-2026.
+
+---
+
+### 12.4 أخطاء الواجهة الأمامية — P1
+
+- [ ] `[P1]` ⏱️S **`usePresence` — إعادة اتصال بلا Exponential Backoff** — يُعيد الاتصال فورًا عند الانقطاع مما يُغرق الخادم.
+  - الملف: `archive app/src/hooks/usePresence.js`
+  - الإصلاح: أضف exponential backoff (500ms -> 1s -> 2s -> max 30s مع jitter) عند كل محاولة إعادة اتصال.
+  - المصدر: deep-audit-v2 (FE-01).
+
+- [ ] `[P1]` ⏱️S **`useProgress` — `setTimeout` غير مُنظَّف (Memory Leak)** — المؤقت يُطلق `setState` على مكوّن unmounted.
+  - الملف: `archive app/src/hooks/useProgress.js`
+  - الإصلاح: احفظ معرّف `setTimeout` وأضف `return () => clearTimeout(id)` كـ cleanup لـ `useEffect`.
+  - المصدر: deep-audit-v2 (FE-02).
+
+- [ ] `[P1]` ⏱️S **`useKeyboardListNav` — Stale Closure** — الـ callback يُصبح قديمًا مع تغيّر البيانات.
+  - الملف: `archive app/src/hooks/useKeyboardListNav.js`
+  - الإصلاح: استخدم `useRef` للاحتفاظ بآخر نسخة من callback: `const cbRef = useRef(cb); useEffect(() => { cbRef.current = cb; }, [cb]);`.
+  - المصدر: deep-audit-v2 (FE-03).
+
+- [ ] `[P1]` ⏱️S **`DialogManager` — `role="presentation"` يتعارض مع `aria-modal`** — يُلغي الدلالة الدلالية ويكسر شجرة Accessibility.
+  - الملف: `archive app/src/components/ui/DialogManager.jsx`
+  - الإصلاح: احذف `role="presentation"` من العنصر الخارجي (overlay)؛ استخدم `role="dialog"` مع `aria-modal="true"` على الحاوية الداخلية فقط.
+  - المصدر: deep-audit-v2 (FE-04).
+
+- [ ] `[P1]` ⏱️S **`AutoTagSuggestions` — تنظيف `AbortController` خاطئ** — `controller.abort()` يُستدعى في `finally` قبل اكتمال المعالجة.
+  - الملف: `archive app/src/components/tags/AutoTagSuggestions.jsx`
+  - الإصلاح: انقل `abort()` لـ `useEffect` cleanup فقط: `return () => controller.abort()`.
+  - المصدر: deep-audit-v2 (FE-05).
+
+- [ ] `[P1]` ⏱️S **`DocumentViewer` — Race Condition عند تصيير PDF** — تحميل ملفات متعددة بسرعة يعرض نتيجة رد خاطئ.
+  - الملف: `archive app/src/components/viewer/DocumentViewer.jsx`
+  - الإصلاح: استخدم `AbortController` لإلغاء الطلب السابق عند تغيير الملف؛ أو احتفظ بـ `requestId` وتجاهل responses القديمة.
+  - المصدر: deep-audit-v2 (FE-06).
+
+- [ ] `[P1]` ⏱️S **`RecordVersionHistory` — `window.confirm` يكسر PWA** — لا يعمل في وضع PWA Standalone.
+  - الملف: `archive app/src/components/records/RecordVersionHistory.jsx`
+  - الإصلاح: استبدل `window.confirm(...)` بـ `DialogManager` المخصص (Task 19).
+  - المصدر: deep-audit-v2 (FE-07).
+
+- [ ] `[P1]` ⏱️S **`PresenceIndicator` — يُعطب عند `username` فارغ** — `username?.charAt(0)` يُلقي استثناءً عند سلسلة فارغة.
+  - الملف: `archive app/src/components/collaboration/PresenceIndicator.jsx`
+  - الإصلاح: استخدم `(username?.trim() || '?').charAt(0).toUpperCase()`.
+  - المصدر: deep-audit-v2 (FE-08).
+
+---
+
+### 12.5 قاعدة البيانات والمتجر — P1
+
+- [ ] `[P1]` ⏱️S **تغيير فهرس pgvector من IVFFlat إلى HNSW** — `IVFFlat` يفشل في الإنشاء على جدول فارغ.
+  - الملفات: migration الـ pgvector في `archive-server/prisma/migrations/`، `archive-server/src/ai/embeddingService.js`
+  - الإصلاح: migration جديدة: `CREATE INDEX USING hnsw (embedding vector_cosine_ops)` — يعمل على جداول فارغة.
+  - المصدر: deep-audit-v2 (DB-01).
+
+- [ ] `[P1]` ⏱️S **إزالة `DEFAULT ''` من عمود `passwordHash`** — القيمة الافتراضية الفارغة تُتيح إنشاء مستخدمين بكلمة مرور فارغة.
+  - الملف: `archive-server/prisma/migrations/` (migration typed_users)
+  - الإصلاح: migration جديدة تحذف `DEFAULT ''` وتضيف `NOT NULL` صريحًا.
+  - المصدر: deep-audit-v2 (DB-02).
+
+- [ ] `[P1]` ⏱️M **إصلاح `storeCore.js` — Shallow Merge يُضيّع البيانات المتداخلة** — `Object.assign(existing, update)` يحذف الحقول المتداخلة غير المذكورة في التحديث.
+  - الملف: `archive app/src/store/storeCore.js`
+  - الإصلاح: استبدل بدمج عميق انتقائي: احتفظ بمفاتيح root غير المُعدَّلة وادمج القواميس المتداخلة (`metadata`، `tags`) بدل استبدالها كاملًا.
+  - المصدر: deep-audit-v2 (FE-BE-01).
+
+- [ ] `[P1]` ⏱️S **إصلاح `loadAllData` — Race Condition في React StrictMode** — `useEffect` المزدوج يُشغّل تحميلين متزامنين يتعارضان في الحالة.
+  - الملف: `archive app/src/app/archiveSlice.js`
+  - الإصلاح: استخدم `useRef` كـ guard: `if (loadingRef.current) return; loadingRef.current = true;`.
+  - المصدر: deep-audit-v2 (FE-BE-02).
+
+- [ ] `[P1]` ⏱️S **إصلاح `selectors.js` — مراجع جديدة عند كل استدعاء تُسبب Re-Renders زائدة** — الـ selectors تُنشئ مصفوفات/كائنات جديدة حتى لو البيانات لم تتغيّر.
+  - الملف: `archive app/src/store/selectors.js`
+  - الإصلاح: اربط الـ selectors بـ `useMemo` مع dependency arrays دقيقة، أو استخدم مكتبة `reselect`.
+  - المصدر: deep-audit-v2 (FE-BE-03).
+
+---
+
+### 12.6 تجربة المستخدم — P1
+
+- [ ] `[P1]` ⏱️L **توحيد `TagAutocomplete` في جميع حقول الوسوم** — 4 من أصل 5 مواضع تستخدم `input` عادي.
+  - الملفات:
+    - `archive app/src/pages/AddVideoPage.jsx:603`
+    - `archive app/src/components/bulk/BulkActionBar.jsx:38-47`
+    - `archive app/src/components/dialogs/QuickAddDialog.jsx:301-303`
+    - `archive app/src/features/wizard/FileArchiveWizard.jsx`
+  - الإصلاح: استبدل حقول الوسوم العادية بـ `<TagAutocomplete value={tags} onChange={setTags} />`.
+  - المصدر: uiux-deep-audit (UX-01).
+
+- [ ] `[P1]` ⏱️M **ربط صفحة التفريغ النصي (Transcription) بالعناصر المؤرشفة** — صفحة التفريغ منفصلة ولا تُنتج `archive_items`.
+  - الملف: `archive app/src/pages/TranscriptionPage.jsx`
+  - الإصلاح: بعد اكتمال التفريغ أضف زر "حفظ كعنصر أرشيف" يُنشئ `archive_item` بالنص والعنوان والوسوم المستخرجة.
+  - المصدر: uiux-user-journey (UJ-04).
+
+- [ ] `[P1]` ⏱️M **إضافة إيماءات اللمس على الجوّال** — لا يوجد swipe أو إجراءات سريعة لمسية.
+  - الملفات: `archive app/src/components/records/RecordCard.jsx`، `archive app/src/pages/ArchivePage.jsx`
+  - الإصلاح: استخدم `@use-gesture/react` أو Pointer Events API: swipe-right للفتح، swipe-left لقائمة الإجراءات، pull-to-refresh.
+  - المصدر: uiux-user-journey (UJ-08).
+
+- [ ] `[P1]` ⏱️L **واجهة إدارة Field ACL** — `fieldAcl.js` موجود على الخادم بلا واجهة إدارة.
+  - الملفات: `archive-server/src/permissions/fieldAcl.js`، `archive app/src/components/settings/`
+  - الإصلاح: أنشئ `FieldPermissionsSettings.jsx` تعرض لكل `contentType` الحقول مع مستوى وصول per-role (قراءة/كتابة/مخفي).
+  - المصدر: deep-audit-2026 (UX-05).
+
+- [ ] `[P1]` ⏱️L **واجهة مستخدم للتعليقات** — نموذج بيانات التعليقات موجود في DB بلا واجهة.
+  - الملفات: `archive app/src/components/records/RecordDetail.jsx`، مسار API جديد `/api/comments`
+  - الإصلاح: أضف قسم تعليقات في تفاصيل السجل: عرض القائمة + إضافة تعليق + حذف تعليق المستخدم نفسه مع RBAC.
+  - المصدر: deep-audit-2026 (FE-09).
+
+---
+
+### 12.7 تجربة المستخدم — P2
+
+- [ ] `[P2]` ⏱️L **تفعيل Inline Editing في عرض الجدول** — عرض الجدول للقراءة فقط، كل تعديل يتطلب فتح نافذة.
+  - الملف: `archive app/src/components/views/TableView.jsx`
+  - الإصلاح: اجعل خلايا الأعمدة البسيطة (العنوان، الوصف، الوسوم) قابلة للنقر للتعديل المباشر.
+  - المصدر: uiux-deep-audit (UX-02).
+
+- [ ] `[P2]` ⏱️S **رفع حد `TagCloud` من 40 إلى 200 وسم مع "عرض المزيد"** — يعرض أول 40 وسمًا فقط.
+  - الملف: `archive app/src/components/tags/TagCloud.jsx`
+  - الإصلاح: حد افتراضي 200 مع انهيار تدريجي (collapse) للوسوم النادرة وزر "عرض المزيد".
+  - المصدر: uiux-deep-audit (UX-03).
+
+- [ ] `[P2]` ⏱️S **مؤشر تقدم لأزرار التصدير** — التصدير يبدأ صامتًا بلا مؤشر مرئي.
+  - الملف: `archive app/src/components/export/ExportButton.jsx`
+  - الإصلاح: أضف حالة `loading` للزر مع شريط تقدم يُحدَّث عبر `useProgress` أو SSE.
+  - المصدر: uiux-user-journey (UJ-06).
+
+- [ ] `[P2]` ⏱️M **إضافة تراجع (Undo) بعد الاستيراد** — السجلات تُضاف بصورة دائمة فور التأكيد بلا إمكانية تراجع.
+  - الملفات: `archive app/src/components/import/ImportDialog.jsx`، مسار `/api/rpc/putBatch`
+  - الإصلاح: احتفظ بـ IDs السجلات المُضافة في state لمدة 30 ثانية مع زر "تراجع" يستدعي `deleteBatch`.
+  - المصدر: uiux-user-journey (UJ-07).
+
+- [ ] `[P2]` ⏱️S **تفعيل Virtual List على سطح المكتب** — مُفعَّل للجوّال فقط رغم أن الحزمة مثبتة.
+  - الملف: `archive app/src/components/lists/ArchiveList.jsx`
+  - الإصلاح: أزل شرط `isMobile` أو اجعل الحد الأدنى للتفعيل 50 عنصرًا على كل الأجهزة.
+  - المصدر: uiux-deep-audit (UX-04).
+
+- [ ] `[P2]` ⏱️M **رسائل خطأ بلغتين (عربي + إنجليزي)** — رسائل الخطأ عربية فقط.
+  - الملف: `archive app/src/utils/errorMessages.js`
+  - الإصلاح: أضف مفاتيح إنجليزية لكل رسالة كـ fallback؛ استخدم `navigator.language` للاختيار. (مرتبط بـ Task 58 — i18n الكاملة).
+  - المصدر: uiux-deep-audit (UX-06).
+
+---
+
+### 12.8 البنية التحتية — P3
+
+- [ ] `[P3]` ⏱️S **إصلاح إصدار صورة Postgres** — `postgres:18-alpine` غير موجود؛ أحدث إصدار مستقر هو 17.
+  - الملفات: `docker-compose.yml`، `docker-compose.prod.yml`، `archive-server/k8s/postgres-deployment.yaml`
+  - الإصلاح: استبدل `postgres:18-alpine` بـ `postgres:17-alpine`.
+  - المصدر: deep-audit-v2 (INFRA-01).
+
+- [ ] `[P3]` ⏱️S **إزالة معلومات الاتصال الحساسة من `pgadmin-servers.json`** — الملف يحتوي host/port/username ثابتة في المستودع.
+  - الملف: `archive-server/deploy/pgadmin-servers.json`
+  - الإصلاح: استبدل القيم الثابتة بمتغيرات بيئة أو أضف الملف لـ `.gitignore` مع نسخة `.example`.
+  - المصدر: deep-audit-v2 (INFRA-02).
+
+- [ ] `[P3]` ⏱️M **تحسين HPA — مقاييس مخصصة بجانب CPU** — HPA يعتمد على CPU فقط ولا يتوسع عند ضغط WebSocket أو I/O.
+  - الملف: `archive-server/k8s/hpa.yaml`
+  - الإصلاح: أضف Custom Metrics: عدد اتصالات WebSocket النشطة + عمق قائمة انتظار الطلبات.
+  - المصدر: deep-audit-v2 (INFRA-03).
+
+- [ ] `[P3]` ⏱️S **استبدال `redis.keys()` بـ `redis.scan()`** — `KEYS` تحجب Redis event loop بالكامل على قواعد بيانات كبيرة.
+  - الملف: `archive-server/src/cache/redisClient.js`
+  - الإصلاح: استبدل `client.keys(pattern)` بـ async iterator عبر `client.scan(0, { MATCH: pattern, COUNT: 100 })`.
+  - المصدر: deep-audit-v2 (INFRA-04).

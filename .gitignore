@@ -19,6 +19,8 @@ npm-shrinkwrap.json
 **/.env.*
 !.env.example
 !**/.env.example
+agents.md
+tasks.md
 
 # Logs and temporary output.
 *.log
@@ -37,3 +39,4 @@ dist-aistudio/
 **/playwright-report/
 **/blob-report/
 **/.vite/
+.claude/
