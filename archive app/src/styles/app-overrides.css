@@ -376,6 +376,20 @@
       grid-template-columns: 1fr;
     }
   }
+  /* ── Screen-reader only utility — visually hides content while keeping it
+   * accessible to assistive technologies (WCAG 2.1 SC 1.3.1). ── */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
   /* ── Smooth scrolling for main content areas ── */
   html { scroll-behavior: smooth; }
   .va-page-shell,

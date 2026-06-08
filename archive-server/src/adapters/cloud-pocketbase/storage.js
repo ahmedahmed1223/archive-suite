@@ -130,6 +130,16 @@ export function createPocketBaseStorageProvider(client, options = {}) {
       return keys;
     },
 
+    async getByField(store, field, value) {
+      // PocketBase fallback: filter in memory. There is no generic JSONB query
+      // API in PocketBase's JS SDK, so we fetch the full list and match locally.
+      // This is acceptable because getByField is used for small collections
+      // (e.g. users) where the in-memory scan cost is negligible.
+      const all = await this.getAll(store);
+      const wanted = String(value);
+      return all.find((r) => String(r?.[field] ?? "") === wanted);
+    },
+
     // Whole-dataset operations (best-effort batches — PB has no cross-collection
     // transaction so we cannot mirror IndexedDB's atomic rollback).
     async snapshot(opts) {

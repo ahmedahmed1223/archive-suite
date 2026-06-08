@@ -132,9 +132,9 @@ export class AppErrorBoundary extends React.Component {
   render() {
     if (!this.state.error) return this.props.children;
     return (
-      <div dir="rtl" className="m-6 rounded-2xl border border-red-500/25 bg-red-500/10 p-6 text-right text-red-100">
+      <div dir="rtl" role="alert" aria-live="assertive" className="m-6 rounded-2xl border border-red-500/25 bg-red-500/10 p-6 text-right text-red-100">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-1 h-5 w-5 shrink-0" />
+          <AlertTriangle className="mt-1 h-5 w-5 shrink-0" aria-hidden="true" />
           <div>
             <h2 className="text-lg font-bold">حدث خطأ في هذه الشاشة</h2>
             <p className="mt-2 text-sm leading-7 text-red-100/80">
@@ -189,11 +189,24 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
         </div>
 
         <div className="mt-7">
-          <div className="flex items-center justify-between gap-3 text-sm">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="flex items-center justify-between gap-3 text-sm"
+          >
             <span className="font-semibold text-slate-100">{currentStep?.label || "بدء التشغيل"}</span>
             <span dir="ltr" className="font-mono va-accent-text-on-soft">{Math.max(0, Math.min(100, Math.round(progress)))}%</span>
           </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10" dir="rtl">
+          <div
+            className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"
+            dir="rtl"
+            role="progressbar"
+            aria-valuenow={Math.max(0, Math.min(100, Math.round(progress)))}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="تقدم بدء التشغيل"
+          >
             <div className="h-full rounded-full va-accent-bg transition-all duration-300" style={{ width: `${Math.max(4, Math.min(100, progress))}%` }} />
           </div>
         </div>
@@ -686,7 +699,13 @@ export function StatusBar() {
   const backgroundOperation = useAppStore((state) => state.backgroundOperation);
   if (!backgroundOperation) return null;
   return (
-    <div dir="rtl" className="va-surface-muted fixed bottom-4 right-1/2 z-[9960] translate-x-1/2 rounded-full border px-4 py-2 text-sm text-gray-200 shadow-xl">
+    <div
+      dir="rtl"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="va-surface-muted fixed bottom-4 right-1/2 z-[9960] translate-x-1/2 rounded-full border px-4 py-2 text-sm text-gray-200 shadow-xl"
+    >
       {backgroundOperation.label || "عملية تعمل في الخلفية"}
     </div>
   );

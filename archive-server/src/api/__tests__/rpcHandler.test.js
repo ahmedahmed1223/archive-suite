@@ -10,6 +10,15 @@ function createMockProvider() {
   return {
     open: vi.fn().mockResolvedValue(undefined),
 
+    getByField: vi.fn().mockImplementation(async (s, field, value) => {
+      for (const record of store.values()) {
+        if (record.__store === s && String(record[field] ?? "") === String(value)) {
+          return record;
+        }
+      }
+      return undefined;
+    }),
+
     get: vi.fn().mockImplementation(async (s, key) =>
       store.get(`${s}:${key}`) ?? null
     ),
@@ -75,6 +84,7 @@ describe("RPC_METHODS constant", () => {
     const expected = [
       "open", "get", "getAll", "put", "add", "delete",
       "clear", "putBatch", "deleteBatch", "snapshot", "replaceAll",
+      "getByField",
     ];
     for (const m of expected) {
       expect(RPC_METHODS).toContain(m);
@@ -242,6 +252,46 @@ describe("dispatchRpc — replaceAll", () => {
       provider
     );
     expect(result).toHaveProperty("written");
+  });
+});
+
+describe("dispatchRpc — getByField", () => {
+  let provider;
+  beforeEach(() => { provider = createMockProvider(); });
+
+  it("dispatches getByField with store, field, and value", async () => {
+    await dispatch({ method: "getByField", args: ["users", "username", "admin"] }, provider);
+    expect(provider.getByField).toHaveBeenCalledWith("users", "username", "admin");
+  });
+
+  it("returns the matched record", async () => {
+    // Seed a record via put so the mock store has something to find.
+    await dispatch({ method: "put", args: ["users", { uid: "u1", username: "admin" }] }, provider);
+    const result = await dispatch({ method: "getByField", args: ["users", "username", "admin"] }, provider);
+    expect(result).toMatchObject({ uid: "u1", username: "admin" });
+  });
+
+  it("returns undefined when no record matches", async () => {
+    const result = await dispatch({ method: "getByField", args: ["users", "username", "nobody"] }, provider);
+    expect(result).toBeUndefined();
+  });
+
+  it("rejects an invalid field name with statusCode 400", async () => {
+    await expect(
+      dispatch({ method: "getByField", args: ["users", "1bad-field", "val"] }, provider)
+    ).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("rejects a non-string/number value with statusCode 400", async () => {
+    await expect(
+      dispatch({ method: "getByField", args: ["users", "username", { injected: true }] }, provider)
+    ).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("rejects an invalid store name with statusCode 400", async () => {
+    await expect(
+      dispatch({ method: "getByField", args: ["", "username", "admin"] }, provider)
+    ).rejects.toMatchObject({ statusCode: 400 });
   });
 });
 

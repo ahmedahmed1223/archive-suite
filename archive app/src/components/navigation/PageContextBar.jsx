@@ -147,8 +147,9 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
     });
   };
 
-  return jsx("div", {
+  return jsx("header", {
     className: "va-context-bar",
+    role: "banner",
     dir: "rtl",
     children: jsxs(React.Fragment, {
       children: [
