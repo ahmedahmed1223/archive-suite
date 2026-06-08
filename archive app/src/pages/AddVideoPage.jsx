@@ -36,6 +36,7 @@ import { useFormSaveState } from "../components/common/useFormSaveState.js";
 import { useAiAssist } from "../features/ai/useAiAssist.js";
 import { AiAssistBar } from "../features/ai/AiAssistBar.jsx";
 import { applyProofread, applySummaryToNotes, buildSuggestPayload, correctionsCount, hasSourceText, mergeTagText } from "../features/ai/viewModel.js";
+import { TagAutocomplete } from "../components/forms/TagAutocomplete.jsx";
 
 
 const STEPS = [
@@ -600,7 +601,7 @@ export function AddVideoPage() {
         currentStep.id === "classify" && jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: typeSelectId, className: "block", children: "نوع المحتوى" }), jsxs("select", { id: typeSelectId, value: typeId, onChange: (event) => setTypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: contentTypes.filter((type) => type.status !== "archived").map((type) => jsx("option", { value: type.id, children: type.name }, type.id)) })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: subtypeSelectId, className: "block", children: "الفرع" }), jsxs("select", { id: subtypeSelectId, value: subtypeId, onChange: (event) => setSubtypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: [jsx("option", { value: "", children: "بدون فرع" }), ...subtypes.map((subtype) => jsx("option", { value: subtype.id, children: subtype.name }, subtype.id))] })] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: tagsId, className: "block", children: "الوسوم" }), jsx("input", { id: tagsId, value: tags, onChange: (event) => setTags(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "وسوم مفصولة بفاصلة، ويمكن استخدام مسارات الوسوم الهرمية" })] })
+          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: tagsId, className: "block", children: "الوسوم" }), jsx(TagAutocomplete, { id: tagsId, value: tags, onChange: setTags, placeholder: "وسوم مفصولة بفاصلة، ويمكن استخدام مسارات الوسوم الهرمية", allowed: ["tags", "vocabulary"] })] })
         ] }),
         currentStep.id === "fields" && jsx(FieldsStep, { fields, metadata, onChange: updateMetadata }),
         currentStep.id === "review" && jsxs("div", {
