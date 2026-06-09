@@ -271,6 +271,27 @@ async function main() {
         if (m) resolvedPort = m[1];
       }
       await waitForHealth(resolvedPort);
+
+      // Auto-init PocketBase schema when pocketbase backend was chosen
+      if (mode === "pocketbase") {
+        const pbUrl      = `http://localhost:${resolvedPort}`;
+        const pbEmail    = process.env.PB_EMAIL    || "admin@archive.local";
+        const pbPassword = process.env.PB_PASSWORD || "";
+        if (pbPassword) {
+          step("6b", "تهيئة مخطط PocketBase تلقائياً");
+          const { spawnSync } = await import("node:child_process");
+          const result = spawnSync(process.execPath, [
+            join(__dirname, "pb-init.mjs"),
+            `--url=${pbUrl}`,
+            `--email=${pbEmail}`,
+            `--password=${pbPassword}`,
+          ], { stdio: "inherit" });
+          if (result.status !== 0) warn("تعذّر تهيئة PocketBase تلقائياً — شغّل يدوياً: node scripts/pb-init.mjs");
+        } else {
+          log(`💡 لتهيئة PocketBase تلقائياً: ${CYAN}node scripts/pb-init.mjs --url=${pbUrl}${RESET}`);
+        }
+      }
+
       await openBrowser(resolvedPort);
     }
 
