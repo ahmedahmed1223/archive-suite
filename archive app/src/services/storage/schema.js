@@ -1,5 +1,5 @@
 export const DB_NAME = "VideoArchiveDB";
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 export const STORES = {
   TYPES: "content_types",
@@ -14,5 +14,9 @@ export const STORES = {
   HTAGS: "hierarchical_tags",
   USERS: "users",
   AUDIT_LOGS: "audit_logs",
-  PROJECTS: "projects"
+  PROJECTS: "projects",
+  TEMPLATES: "templates",
+  DRAFTS: "drafts",
+  WORK_SESSIONS: "work_sessions",
+  BULK_PROGRESS: "bulk_progress"
 };

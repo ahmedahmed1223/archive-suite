@@ -27,6 +27,16 @@ import {
   createAuthStore,
   createSessionStore
 } from "./slices/authSlice.js";
+import {
+  createTemplatesActions,
+  templatesActionKeys,
+  templatesInitialState
+} from "./slices/templatesSlice.js";
+import {
+  autosaveActionKeys,
+  autosaveInitialState,
+  createAutosaveActions
+} from "./slices/autosaveSlice.js";
 
 export { pickStoreActions } from "./storeCore.js";
 export { archiveActionKeys } from "./slices/archiveSlice.js";
@@ -34,17 +44,23 @@ export { settingsActionKeys } from "./slices/settingsSlice.js";
 export { dataTransferActionKeys } from "./slices/dataTransferSlice.js";
 export { uiActionKeys } from "./slices/uiSlice.js";
 export { connectionStatusActionKeys } from "./slices/connectionStatusSlice.js";
+export { templatesActionKeys } from "./slices/templatesSlice.js";
+export { autosaveActionKeys } from "./slices/autosaveSlice.js";
 
 export const useAppStore = createStore((set, get) => ({
   ...archiveInitialState,
   ...settingsInitialState,
   ...uiInitialState,
   ...connectionStatusInitialState,
+  ...templatesInitialState,
+  ...autosaveInitialState,
   ...createUiActions({ set, get }),
   ...createConnectionStatusActions({ set, get }),
   ...createArchiveActions({ set, get, getAuthStore: () => useAuthStore }),
   ...createSettingsActions({ set, get, getAuthStore: () => useAuthStore }),
-  ...createDataTransferActions({ set, get })
+  ...createDataTransferActions({ set, get }),
+  ...createTemplatesActions({ set, get }),
+  ...createAutosaveActions({ set, get })
 }));
 
 export const useAuthStore = createAuthStore({ createStore, useAppStore });
