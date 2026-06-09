@@ -62,6 +62,11 @@ import {
   readingListsActionKeys,
   readingListsInitialState
 } from "./slices/readingListsSlice.js";
+import {
+  createSavedSearchesActions,
+  savedSearchesActionKeys,
+  savedSearchesInitialState
+} from "./slices/savedSearchesSlice.js";
 
 export { pickStoreActions } from "./storeCore.js";
 export { archiveActionKeys } from "./slices/archiveSlice.js";
@@ -76,6 +81,7 @@ export { activityLogActionKeys } from "./slices/activityLogSlice.js";
 export { foldersActionKeys } from "./slices/foldersSlice.js";
 export { favoritesActionKeys } from "./slices/favoritesSlice.js";
 export { readingListsActionKeys } from "./slices/readingListsSlice.js";
+export { savedSearchesActionKeys } from "./slices/savedSearchesSlice.js";
 
 export const useAppStore = createStore((set, get) => ({
   ...archiveInitialState,
@@ -89,6 +95,7 @@ export const useAppStore = createStore((set, get) => ({
   ...foldersInitialState,
   ...favoritesInitialState,
   ...readingListsInitialState,
+  ...savedSearchesInitialState,
   ...createUiActions({ set, get }),
   ...createConnectionStatusActions({ set, get }),
   ...createRelationsActions({ set, get }),
@@ -100,7 +107,8 @@ export const useAppStore = createStore((set, get) => ({
   ...createActivityLogActions({ set, get }),
   ...createFoldersActions({ set, get }),
   ...createFavoritesActions({ set, get }),
-  ...createReadingListsActions({ set, get })
+  ...createReadingListsActions({ set, get }),
+  ...createSavedSearchesActions({ set, get })
 }));
 
 export const useAuthStore = createAuthStore({ createStore, useAppStore });

@@ -34,6 +34,8 @@ const FirstRunPage        = lazy(() => import("../pages/FirstRunPage.jsx"));
 const FavoritesPage       = lazy(() => import("../pages/FavoritesPage.jsx"));
 const ReadingListsPage    = lazy(() => import("../pages/ReadingListsPage.jsx"));
 const ServerStatusPage    = lazy(() => import("../pages/ServerStatusPage.jsx"));
+const DuplicatesPage      = lazy(() => import("../pages/DuplicatesPage.jsx"));
+const SavedSearchesPage   = lazy(() => import("../pages/SavedSearchesPage.jsx"));
 
 export const PAGE_COMPONENTS = {
   dashboard:   DashboardPage,
@@ -60,6 +62,8 @@ export const PAGE_COMPONENTS = {
   favorites:       FavoritesPage,
   "reading-lists":  ReadingListsPage,
   "server-status":  ServerStatusPage,
+  "duplicates":     DuplicatesPage,
+  "saved-searches": SavedSearchesPage,
 };
 
 export { HEAVY_PAGE_IDS, PAGE_GROUPS };

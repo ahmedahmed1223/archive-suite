@@ -21,7 +21,9 @@ export const PAGE_MANIFEST = [
   { id: "sync-log", group: "maintenance", heavy: true, meta: { title: "سجل المزامنة", breadcrumb: "الصيانة / المزامنة", hint: "كل عمليات تصدير ودمج حزم النقل بين الأجهزة مع تفاصيل الـ checksum.", helpSection: "transfer-export" } },
   { id: "favorites", group: "daily", heavy: false, meta: { title: "المفضلة", breadcrumb: "الرئيسية / المفضلة", hint: "العناصر والمجموعات والمجلدات المفضلة للوصول السريع.", helpSection: "dashboard-archive" } },
   { id: "reading-lists", group: "daily", heavy: false, meta: { title: "قوائم المراجعة", breadcrumb: "الرئيسية / قوائم المراجعة", hint: "شاهد لاحقاً وقوائم مراجعة مخصصة لتتبع تقدمك في مراجعة الأرشيف.", helpSection: "dashboard-archive" } },
-  { id: "server-status", group: "maintenance", heavy: false, meta: { title: "حالة السيرفر", breadcrumb: "الصيانة / حالة السيرفر", hint: "مراقبة الاتصال وصحة قاعدة البيانات وزمن الاستجابة ومدة تشغيل السيرفر.", helpSection: "transfer-export" } }
+  { id: "server-status", group: "maintenance", heavy: false, meta: { title: "حالة السيرفر", breadcrumb: "الصيانة / حالة السيرفر", hint: "مراقبة الاتصال وصحة قاعدة البيانات وزمن الاستجابة ومدة تشغيل السيرفر.", helpSection: "transfer-export" } },
+  { id: "duplicates", group: "maintenance", heavy: false, meta: { title: "كشف المكررات", breadcrumb: "الصيانة / المكررات", hint: "فحص الأرشيف بحثاً عن عناصر مكررة بناءً على العنوان والرابط والحجم وبصمة الملف.", helpSection: "transfer-export" } },
+  { id: "saved-searches", group: "daily", heavy: false, meta: { title: "البحوث المحفوظة", breadcrumb: "الرئيسية / البحوث المحفوظة", hint: "احفظ استعلامات البحث وشغّلها بنقرة، أو فعّل تنبيهاً عند ظهور عناصر جديدة مطابقة.", helpSection: "searching" } }
 ];
 
 export const PAGE_CONTEXT_META = Object.fromEntries(
