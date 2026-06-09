@@ -763,11 +763,12 @@
   - الجهد: 2-3 أسابيع.
   - المصدر: feature-proposals-2026 (محور 2 — ميزة #13).
 
-- [ ] `[P1]` ⏱️L **حدود الموارد متعددة الطبقات (IP + User + Endpoint)** — Rate limiting موجود على IP فقط، لا حدود للمستخدم ولا لنقاط النهاية الفردية.
+- [x] `[P1]` ⏱️L **حدود الموارد متعددة الطبقات (IP + User + Endpoint)** ✅ 2026-06-09 — Rate limiting موجود على IP فقط، لا حدود للمستخدم ولا لنقاط النهاية الفردية.
   - الملفات: `archive-server/src/api/rateLimit.js`، `archive-server/src/api/server.js`.
   - التنفيذ: طبقة 1 — IP (100 طلب/دقيقة)؛ طبقة 2 — User (60 طلب/دقيقة)؛ طبقة 3 — per-endpoint (OCR: 10/دقيقة، AI: 30/دقيقة)؛ حد تزامن FFmpeg قابل للإعداد (`MEDIA_JOB_CONCURRENCY`)؛ Queue مهام FFmpeg بأولويات (probe > thumbnail > transcode).
   - الجهد: 2-3 أسابيع.
   - المصدر: feature-proposals-2026 (محور 3 — ميزة #16).
+  - ✅ **تم (2026-06-09):** `rateLimit.js` — أضيف `userKeyFromHeader()` (يستخرج sub من JWT بدون تحقق من التوقيع)؛ `server.js` — 7 limiters (rpc/user/ai/ocr/login/reset/totpDisable)؛ AI endpoints تستخدم `ai` limiter (30/min) + `overLimitUser`؛ OCR يستخدم `ocr` limiter (10/min) + `overLimitUser`؛ rpc IP خُفِّض من 600 إلى 100/min.
 
 ---
 

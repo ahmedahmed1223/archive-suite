@@ -27,7 +27,7 @@ import {
   buildConfigView, validateDbConfig, mergeDbConfig, validateFileStoreConfig,
   mergeFileStoreConfig, testDatabaseConnection
 } from "./adminConfig.js";
-import { createRateLimiter, clientIp } from "./rateLimit.js";
+import { createRateLimiter, clientIp, userKeyFromHeader } from "./rateLimit.js";
 import { captureException } from "../monitoring/sentryService.js";
 import { listBackups, runBackup } from "../backup/backupScheduler.js";
 import {
@@ -252,19 +252,38 @@ export function createApiServer({
   const authRequired = Boolean(resolvedAuthSecret);
   const oauthSecret = resolvedOauthSecret;
 
-  // Three buckets: a generous one for RPC, a strict one for login (brute-force
-  // defense), and a strict one for password reset requests. Disabled entirely
-  // when rateLimit is null (e.g. some tests).
+  // Rate limiters — five layers:
+  //   rpc:        IP-based general RPC cap (100/min)
+  //   user:       per-authenticated-user cap (60/min)
+  //   ai:         per-IP cap for AI endpoints (30/min)
+  //   ocr:        per-IP cap for OCR endpoint (10/min)
+  //   login:      strict IP cap for login (10/min, brute-force defense)
+  //   reset:      strict IP cap for password reset (5/min)
+  //   totpDisable: strict IP cap for TOTP disable (3/15min)
+  // Disabled entirely when rateLimit is null (e.g. some tests).
   const limiters = rateLimit === null ? null : {
-    rpc: createRateLimiter({ max: rateLimit.rpcMax ?? 600, windowMs: rateLimit.windowMs ?? 60_000 }),
-    login: createRateLimiter({ max: rateLimit.loginMax ?? 10, windowMs: rateLimit.windowMs ?? 60_000 }),
-    reset: createRateLimiter({ max: rateLimit.resetMax ?? 5, windowMs: rateLimit.windowMs ?? 60_000 }),
-    totpDisable: createRateLimiter({ max: 3, windowMs: 15 * 60_000 })
+    rpc:         createRateLimiter({ max: rateLimit.rpcMax  ?? 100, windowMs: rateLimit.windowMs ?? 60_000 }),
+    user:        createRateLimiter({ max: rateLimit.userMax ?? 60,  windowMs: rateLimit.windowMs ?? 60_000 }),
+    ai:          createRateLimiter({ max: rateLimit.aiMax   ?? 30,  windowMs: rateLimit.windowMs ?? 60_000 }),
+    ocr:         createRateLimiter({ max: rateLimit.ocrMax  ?? 10,  windowMs: rateLimit.windowMs ?? 60_000 }),
+    login:       createRateLimiter({ max: rateLimit.loginMax ?? 10, windowMs: rateLimit.windowMs ?? 60_000 }),
+    reset:       createRateLimiter({ max: rateLimit.resetMax ?? 5,  windowMs: rateLimit.windowMs ?? 60_000 }),
+    totpDisable: createRateLimiter({ max: 3, windowMs: 15 * 60_000 }),
   };
 
   function overLimit(res, bucket, req) {
     if (!limiters) return false;
     if (limiters[bucket].check(clientIp(req))) return false;
+    send(res, 429, { ok: false, error: "Too many requests — slow down." });
+    return true;
+  }
+
+  // Layer 2: per-user limit (keyed by JWT sub, does not re-verify signature).
+  function overLimitUser(res, req) {
+    if (!limiters) return false;
+    const key = userKeyFromHeader(req);
+    if (!key) return false; // unauthenticated paths skip user limit
+    if (limiters.user.check(key)) return false;
     send(res, 429, { ok: false, error: "Too many requests — slow down." });
     return true;
   }
@@ -801,7 +820,8 @@ export function createApiServer({
     // AI proxy — the SPA's cloud-ai adapter calls this so provider keys stay
     // server-side. Allow-listed methods; 503 when no AI provider is configured.
     if (req.method === "POST" && url === "/api/ai/rpc") {
-      if (overLimit(res, "rpc", req)) return undefined;
+      if (overLimit(res, "ai", req)) return undefined;
+      if (overLimitUser(res, req)) return undefined;
       if (!requireAuth(req, res)) return undefined;
       try {
         const body = await readJsonBody(req);
@@ -818,7 +838,8 @@ export function createApiServer({
     // POSTs the raw audio blob with its Content-Type; we forward to the
     // configured Whisper provider via the registered AiProvider.transcribe.
     if (req.method === "POST" && url.split("?")[0] === "/api/ai/transcribe") {
-      if (overLimit(res, "rpc", req)) return undefined;
+      if (overLimit(res, "ai", req)) return undefined;
+      if (overLimitUser(res, req)) return undefined;
       if (!requireAuth(req, res)) return undefined;
       try {
         const provider = aiResolveProvider();
@@ -1299,7 +1320,8 @@ export function createApiServer({
     // OCR — proxies multipart image uploads to the PaddleOCR microservice.
     // Requires auth so only logged-in users can submit images for OCR.
     if (url.split("?")[0] === "/api/ocr" && req.method === "POST") {
-      if (overLimit(res, "rpc", req)) return undefined;
+      if (overLimit(res, "ocr", req)) return undefined;
+      if (overLimitUser(res, req)) return undefined;
       if (!requireAuth(req, res)) return undefined;
       return handleOcr(req, res);
     }
@@ -1365,7 +1387,8 @@ export function createApiServer({
     // record being created/edited. Body: { name, summary, transcription, categories }.
     // Returns { tags: string[], categoryIds: string[] }.
     if (req.method === "POST" && url.split("?")[0] === "/api/ai/suggest-tags") {
-      if (overLimit(res, "rpc", req)) return undefined;
+      if (overLimit(res, "ai", req)) return undefined;
+      if (overLimitUser(res, req)) return undefined;
       if (!requireAuth(req, res)) return undefined;
       try {
         const provider = aiResolveProvider();

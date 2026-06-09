@@ -46,6 +46,24 @@ export function createRateLimiter({ max = 300, windowMs = 60_000 } = {}) {
 }
 
 /**
+ * Extract a stable user key from an Authorization header for per-user limiting.
+ * Returns null when no token is present or the payload can't be read.
+ * NOTE: does NOT verify the signature — used only for bucketing, auth is
+ * enforced separately by requireAuth / requireEditor.
+ */
+export function userKeyFromHeader(req) {
+  try {
+    const auth = req.headers?.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+    if (!token) return null;
+    const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
+    return payload?.sub ? `u:${payload.sub}` : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Best-effort client IP behind a reverse proxy.
  *
  * Trust model: Set TRUST_PROXY=1 (default) when the Node server sits behind
