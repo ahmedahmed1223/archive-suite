@@ -478,6 +478,8 @@ html.light main textarea:focus {
 }
 
 main :focus-visible,
+.va-sidebar :focus-visible,
+footer :focus-visible,
 .va-onboarding-shell :focus-visible {
   outline: 2px solid color-mix(in srgb, var(--va-action) 76%, #ffffff);
   outline-offset: 3px;

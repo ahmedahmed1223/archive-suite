@@ -209,8 +209,9 @@
   - المصدر: improvement-proposals (UX-4).
   - ✅ **مُنجز مسبقاً + تحديث 2026-06-09:** `services/errorMessages.js` (`categorizeError`) + `utils/errorReporting.js` (`reportError`/`classifyError`) + `components/common/ErrorMessage.jsx` (مكوّن UI بأيقونات وألوان حسب الفئة). ربط `ErrorMessage` بـ `FavoritesPage.jsx` كأول صفحة تستخدمه عملياً لإظهار `favoritesError`.
 
-- [ ] `[P2]` ⏱️M **مؤشرات focus مرئية + pagination مرئي للجداول** (يُربط بـ backend pagination في القسم 2).
+- [x] `[P2]` ⏱️M **مؤشرات focus مرئية + pagination مرئي للجداول** (يُربط بـ backend pagination في القسم 2).
   - المصدر: uiux-report.
+  - ✅ **تم 2026-06-09:** أضيف `.va-sidebar :focus-visible` و`footer :focus-visible` لـ v1-identity.css لتغطية أزرار الشريط الجانبي؛ استُبدل `Pagination` المحلي في `HistoryPage.jsx` بالمشترك `components/common/Pagination.jsx` (a11y كامل + `aria-current` + `totalItems`).
 
 - [ ] `[P3]` ⏱️M **Virtualization لقوائم الموبايل** (>20 عنصرًا) + بنود تجميل منخفضة من تقرير UI/UX (أحجام أيقونات، tooltips، skeletons…).
   - المصدر: uiux-report.
