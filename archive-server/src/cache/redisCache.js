@@ -67,8 +67,15 @@ export async function cacheDel(key) {
 export async function cacheDelPattern(pattern) {
   if (!isAvailable) return;
   try {
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) await redis.del(...keys);
+    // SCAN instead of KEYS: KEYS blocks the Redis event loop for the entire
+    // keyspace scan, stalling every other client on large databases. SCAN
+    // iterates in bounded COUNT-sized chunks without blocking.
+    let cursor = "0";
+    do {
+      const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 100);
+      cursor = next;
+      if (keys.length > 0) await redis.del(...keys);
+    } while (cursor !== "0");
   } catch { /* ignore */ }
 }
 

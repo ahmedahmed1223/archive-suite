@@ -377,7 +377,7 @@
 
 > خطة مستوردة من `implementation_plan.md` — تحسينات بصرية وتفاعلية على معالج الإعداد.
 
-- [ ] `[P1]` ⏱️S **إصلاح `verify-modules.mjs`** — تصحيح التأكيد في السطر 367: `defaults.openSearch` من `"Ctrl+K"` إلى `"Alt+K"`.
+- [x] `[P1]` ⏱️S **إصلاح `verify-modules.mjs`** — تصحيح التأكيد في السطر 367: `defaults.openSearch` من `"Ctrl+K"` إلى `"Alt+K"`.
   - الملف: `archive app/scripts/verify-modules.mjs`.
 
 - [ ] `[P1]` ⏱️M **معاينة مباشرة للثيم واللون في معالج الإعداد** — استدعاء `applyAccentColor` و`setTheme` داخل `useEffect` مرتبط بـ `accentColor` و`themeChoice` لمعاينة فورية أثناء الإعداد.
@@ -690,7 +690,7 @@
   - الإصلاح: استبدل `postgres:18-alpine` بـ `postgres:17-alpine`.
   - المصدر: deep-audit-v2 (INFRA-01).
 
-- [ ] `[P3]` ⏱️S **إزالة معلومات الاتصال الحساسة من `pgadmin-servers.json`** — الملف يحتوي host/port/username ثابتة في المستودع.
+- [x] `[P3]` ⏱️S **إزالة معلومات الاتصال الحساسة من `pgadmin-servers.json`** — الملف يحتوي host/port/username ثابتة في المستودع.
   - الملف: `archive-server/deploy/pgadmin-servers.json`
   - الإصلاح: استبدل القيم الثابتة بمتغيرات بيئة أو أضف الملف لـ `.gitignore` مع نسخة `.example`.
   - المصدر: deep-audit-v2 (INFRA-02).
@@ -700,7 +700,7 @@
   - الإصلاح: أضف Custom Metrics: عدد اتصالات WebSocket النشطة + عمق قائمة انتظار الطلبات.
   - المصدر: deep-audit-v2 (INFRA-03).
 
-- [ ] `[P3]` ⏱️S **استبدال `redis.keys()` بـ `redis.scan()`** — `KEYS` تحجب Redis event loop بالكامل على قواعد بيانات كبيرة.
+- [x] `[P3]` ⏱️S **استبدال `redis.keys()` بـ `redis.scan()`** — `KEYS` تحجب Redis event loop بالكامل على قواعد بيانات كبيرة.
   - الملف: `archive-server/src/cache/redisClient.js`
   - الإصلاح: استبدل `client.keys(pattern)` بـ async iterator عبر `client.scan(0, { MATCH: pattern, COUNT: 100 })`.
   - المصدر: deep-audit-v2 (INFRA-04).
