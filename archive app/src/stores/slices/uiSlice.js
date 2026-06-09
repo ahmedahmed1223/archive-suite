@@ -5,7 +5,7 @@ export const uiInitialState = {
   currentPage: "dashboard",
   selectedItemId: null,
   selectedTypeId: null,
-  sidebarOpen: typeof window !== "undefined" ? window.innerWidth < 768 : false,
+  sidebarOpen: false,
   isLoading: true,
   isLocked: false,
   toast: null,
