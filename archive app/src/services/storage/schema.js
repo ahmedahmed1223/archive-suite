@@ -15,5 +15,6 @@ export const STORES = {
   USERS: "users",
   AUDIT_LOGS: "audit_logs",
   PROJECTS: "projects",
-  ACTIVITY_LOG: "activity_log"
+  ACTIVITY_LOG: "activity_log",
+  FOLDERS: "archive_folders"
 };
