@@ -11,6 +11,8 @@ import {
   ArrowUp,
   Bell,
   BookOpen,
+  Bookmark,
+  Copy,
   ChartColumn,
   ChevronLeft,
   ChevronRight,
@@ -101,7 +103,9 @@ const iconMap = {
   "sync-log": GitMerge,
   favorites:        Star,
   "reading-lists":  ListChecks,
-  "server-status":  Server
+  "server-status":  Server,
+  "duplicates":     Copy,
+  "saved-searches": Bookmark
 };
 
 function useIsMobile() {
