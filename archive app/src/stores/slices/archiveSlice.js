@@ -126,6 +126,7 @@ export const archiveActionKeys = [
   "setSelectedItemId",
   "toggleBulkSelect",
   "selectAllItems",
+  "setSelectedItems",
   "clearSelection"
 ];
 
@@ -195,6 +196,7 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       selectedItems: state.selectedItems.includes(id) ? state.selectedItems.filter((item) => item !== id) : [...state.selectedItems, id]
     })),
     selectAllItems: () => set((state) => ({ selectedItems: state.videoItems.filter((item) => !item.isDeleted).map((item) => item.id) })),
+    setSelectedItems: (ids) => set({ selectedItems: Array.isArray(ids) ? ids : [] }),
     clearSelection: () => set({ selectedItems: [] }),
     addAuditLog: async (eventType, targetId, targetType, details) => {
       const authState = getAuthStore().getState();
