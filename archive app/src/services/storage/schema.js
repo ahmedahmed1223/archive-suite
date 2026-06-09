@@ -9,6 +9,7 @@ export const STORES = {
   BACKUPS: "backups",
   BOOKMARKS: "bookmarks",
   RELATIONS: "video_relations",
+  ITEM_RELATIONS: "item_relations",
   COLLECTIONS: "virtual_collections",
   VOCABULARY: "vocabulary",
   HTAGS: "hierarchical_tags",
