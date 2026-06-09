@@ -653,10 +653,11 @@
   - الإصلاح: أنشئ `FieldPermissionsSettings.jsx` تعرض لكل `contentType` الحقول مع مستوى وصول per-role (قراءة/كتابة/مخفي).
   - المصدر: deep-audit-2026 (UX-05).
 
-- [ ] `[P1]` ⏱️L **واجهة مستخدم للتعليقات** — نموذج بيانات التعليقات موجود في DB بلا واجهة.
-  - الملفات: `archive app/src/components/records/RecordDetail.jsx`، مسار API جديد `/api/comments`
+- [x] `[P1]` ⏱️L **واجهة مستخدم للتعليقات** ✅ مُنجزة مسبقاً — نموذج بيانات التعليقات موجود في DB بلا واجهة.
+  - الملفات: `archive app/src/pages/DetailPage.jsx`
   - الإصلاح: أضف قسم تعليقات في تفاصيل السجل: عرض القائمة + إضافة تعليق + حذف تعليق المستخدم نفسه مع RBAC.
   - المصدر: deep-audit-2026 (FE-09).
+  - ✅ **مُنجزة مسبقاً:** `DetailPage.jsx` يحتوي بالفعل على تبويب "التعليقات" كامل: `addItemComment` / `deleteItemComment` من المتجر؛ `getItemComments` / `canDeleteComment` من viewModel؛ حقل إدخال + قائمة تعليقات + حذف + RBAC.
 
 ---
 
