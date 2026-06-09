@@ -1,11 +1,13 @@
 import { appAlert } from "../components/common/ConfirmDialog.js";
+import { getErrorMessage } from "./errorMessages.js";
 
 export function normalizeAppError(error) {
-  if (!error) return { message: "حدث خطأ غير معروف", originalError: error };
+  const fallback = getErrorMessage("unknownError");
+  if (!error) return { message: fallback, originalError: error };
   if (typeof error === "string") return { message: error, originalError: error };
   return {
     name: error.name || "Error",
-    message: error.message || "حدث خطأ غير معروف",
+    message: error.message || fallback,
     stack: error.stack,
     originalError: error
   };
@@ -19,7 +21,7 @@ export function handleAppError(error, context = "عملية", options = {}) {
     console.error(`[VideoArchive] ${context}:`, normalized.originalError || normalized);
   }
   if (options.alert !== false) {
-    appAlert(message, { title: options.title || "تعذر تنفيذ العملية", kind: "error" });
+    appAlert(message, { title: options.title || getErrorMessage("operationFailed"), kind: "error" });
   }
   return normalized;
 }
