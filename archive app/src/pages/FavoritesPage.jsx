@@ -1,6 +1,7 @@
 import { Star, Trash2 } from "lucide-react";
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
+import { ErrorMessage } from "../components/common/ErrorMessage.jsx";
 import { useAppStore } from "../stores/index.js";
 import { FAVORITE_ENTITY_TYPES } from "../stores/slices/favoritesSlice.js";
 
@@ -51,7 +52,9 @@ function FavoriteRow({ fav, videoItems, onNavigate, onRemove }) {
 export default function FavoritesPage() {
   const {
     favorites,
+    favoritesError,
     removeFavorite,
+    loadFavoritesFromStorage,
     videoItems,
     setCurrentPage,
     setSelectedItemId
@@ -100,6 +103,12 @@ export default function FavoritesPage() {
             ]
           })
         ]
+      }),
+
+      favoritesError && jsx(ErrorMessage, {
+        error: { message: favoritesError },
+        onRetry: loadFavoritesFromStorage,
+        className: "mb-4"
       }),
 
       favorites.length === 0

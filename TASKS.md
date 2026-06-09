@@ -205,8 +205,9 @@
 - [ ] `[P2]` ⏱️M **تنقّل لوحة المفاتيح للقوائم** — أسهم/Enter/Space/Ctrl+A/Delete.
   - المصدر: improvement-proposals (UX-5).
 
-- [ ] `[P2]` ⏱️M **رسائل خطأ مصنّفة وودّية** — شبكة/مصادقة/تحقق/خادم بدل «حدث خطأ غير معروف».
+- [x] `[P2]` ⏱️M **رسائل خطأ مصنّفة وودّية** — شبكة/مصادقة/تحقق/خادم بدل «حدث خطأ غير معروف».
   - المصدر: improvement-proposals (UX-4).
+  - ✅ **مُنجز مسبقاً + تحديث 2026-06-09:** `services/errorMessages.js` (`categorizeError`) + `utils/errorReporting.js` (`reportError`/`classifyError`) + `components/common/ErrorMessage.jsx` (مكوّن UI بأيقونات وألوان حسب الفئة). ربط `ErrorMessage` بـ `FavoritesPage.jsx` كأول صفحة تستخدمه عملياً لإظهار `favoritesError`.
 
 - [ ] `[P2]` ⏱️M **مؤشرات focus مرئية + pagination مرئي للجداول** (يُربط بـ backend pagination في القسم 2).
   - المصدر: uiux-report.
