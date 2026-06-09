@@ -780,4 +780,85 @@ html.light[data-theme-version="v2"] .va-onboarding-shell :is(.text-cyan-200, .te
   transform: translateY(8px);
 }
 
+/* ===================================================================
+ * Setup window glassmorphic enhancements — v2-scoped.
+ * The onboarding shell is intentionally dark-first (deliberate dark
+ * backdrop even in light-mode app). These rules deepen the glass
+ * treatments and smooth step transitions under v2 theme.
+ * =================================================================== */
+
+/* Shell: layered accent glows behind the wizard panel */
+html[data-theme-version="v2"] .va-onboarding-shell {
+  background:
+    radial-gradient(ellipse 90% 55% at 10% 100%, color-mix(in srgb, var(--va-2-accent) 7%, transparent), transparent 55%),
+    radial-gradient(ellipse 65% 45% at 95% 5%,  color-mix(in srgb, var(--va-2-accent) 5%, transparent), transparent 50%),
+    var(--va-2-canvas);
+}
+
+/* Panel: frosted glass with top-light radial and accent-tinted border */
+html[data-theme-version="v2"] .va-onboarding-panel {
+  background:
+    radial-gradient(ellipse 80% 35% at 50% 0%, color-mix(in srgb, var(--va-2-accent) 7%, transparent), transparent 50%),
+    color-mix(in oklch, var(--va-2-surface) 78%, transparent);
+  backdrop-filter: blur(28px) saturate(1.9) brightness(1.06);
+  -webkit-backdrop-filter: blur(28px) saturate(1.9) brightness(1.06);
+  border: 1px solid color-mix(in oklch, var(--va-2-accent) 22%, rgba(255, 255, 255, 0.07));
+  box-shadow:
+    0 28px 72px -20px rgba(0, 0, 0, 0.55),
+    0 6px 20px -6px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transition:
+    border-color 0.4s var(--va-2-ease-out, ease),
+    background   0.4s var(--va-2-ease-out, ease),
+    box-shadow   0.4s var(--va-2-ease-out, ease);
+}
+
+/* Progress nav: lighter glass behind the step dots */
+html[data-theme-version="v2"] .va-onboarding-progress {
+  background: color-mix(in oklch, var(--va-2-surface-2) 65%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: color-mix(in oklch, var(--va-2-accent) 14%, rgba(255, 255, 255, 0.07));
+}
+
+/* Step enter/leave keyframes — inline slide + fade for RTL layout */
+@keyframes va-2-step-in {
+  from { opacity: 0; transform: translateX(-14px) scale(0.985); }
+  to   { opacity: 1; transform: translateX(0)     scale(1); }
+}
+@keyframes va-2-step-out {
+  from { opacity: 1; transform: translateX(0)     scale(1); }
+  to   { opacity: 0; transform: translateX(14px)  scale(0.985); }
+}
+
+html[data-theme-version="v2"] .va-step-content {
+  animation: va-2-step-in var(--va-2-duration-base, 240ms) var(--va-2-ease-out, ease) both;
+}
+html[data-theme-version="v2"] .va-step-content[data-leaving] {
+  animation: va-2-step-out var(--va-2-duration-fast, 160ms) ease both;
+}
+
+/* Smooth transition tokens for interactive controls inside the shell */
+html[data-theme-version="v2"] .va-onboarding-panel button,
+html[data-theme-version="v2"] .va-onboarding-panel input,
+html[data-theme-version="v2"] .va-onboarding-panel select {
+  transition: background     var(--va-2-duration-fast, 160ms) var(--va-2-ease-out, ease),
+              border-color   var(--va-2-duration-fast, 160ms) var(--va-2-ease-out, ease),
+              box-shadow     var(--va-2-duration-fast, 160ms) var(--va-2-ease-out, ease);
+}
+
+/* Reduced motion: collapse blur + disable step animations */
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-version="v2"] .va-onboarding-panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  html[data-theme-version="v2"] .va-step-content,
+  html[data-theme-version="v2"] .va-step-content[data-leaving] {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 } /* end @layer v2-identity */

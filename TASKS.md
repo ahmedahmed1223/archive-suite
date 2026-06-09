@@ -879,3 +879,195 @@
 | تحسين البحث الدلالي (#23) | Tasks #14 + #52 (completed) |
 | استخراج i18n (#25) | Task #58 (completed) |
 | تحسين Accessibility (#26) | Tasks #22 + #49 (completed) |
+
+---
+
+## 14. مقترحات تقارير 2026 — ميزات جديدة وتحسينات الاستخدام اليومي
+
+> **المصادر:**
+> - `D:\archiveaq\Reports\archive-suite-daily-use-proposals.md` — 5 مقترحات للاستخدام اليومي
+> - `D:\archiveaq\Reports\archive-suite-new-feature-proposals.md` — 4 مقترحات تطويرية جديدة
+>
+> **تاريخ الإضافة:** 9 يونيو 2026.
+
+---
+
+### 14.1 P0 — نظام سجل النشاط والتراجع المتقدم (Activity History & Advanced Undo)
+
+- [ ] `[P0]` ⏱️XL **بناء نظام سجل النشاط المركزي مع تراجع متعدد المستويات** — لا يوجد سجل نشاط مركزي؛ التراجع محدود بصفحة التفاصيل فقط؛ لا يمكن التراجع عن الحذف أو التعديلات الجماعية.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/activityLog/viewModel.js` — `createActivityEntry`, `buildDiff`, `describeActivity`
+    - `archive app/src/features/activityLog/undoManager.js` — `withActivityLog`, `undoActivityEntry`, `redoActivityEntry`
+    - `archive app/src/components/activity/ActivityTimeline.jsx` — شريط النشاط الزمني مجمّع حسب اليوم
+    - `archive app/src/components/activity/ActivityEntry.jsx` — عنصر نشاط واحد مع زر تراجع/استعادة
+    - `archive app/src/components/activity/DiffView.jsx` — عرض الفروقات قبل/بعد
+    - `archive app/src/components/activity/ActivityFilterBar.jsx` — فلترة حسب نوع/تاريخ/مستخدم
+    - `archive app/src/pages/ActivityPage.jsx` — صفحة سجل النشاط الكاملة
+    - `archive app/src/stores/slices/activityLogSlice.js`
+  - **تعديل ملفات:**
+    - `archive app/src/services/storage/schema.js` — إضافة store `activity_log`
+    - `archive-server/prisma/schema.prisma` — نموذج `ActivityLog` مع فهارس
+    - `archive app/src/pages/ArchivePage.jsx` — زر "سجل النشاط" في الشريط العلوي
+    - `archive app/src/pages/DetailPage.jsx` — `<ActivityForTarget targetType="item" targetId={id} />`
+    - `archive app/src/components/navigation/Sidebar.jsx` — رابط صفحة السجل
+  - **التنفيذ:** تسجيل كل عملية (create/update/delete/move/bulk_update/restore) مع snapshot قبل/بعد والفرق التفاضلي؛ تراجع متعدد المستويات؛ Redo بعد التراجع؛ فلترة + تجميع حسب اليوم؛ التوسيع فوق `undoManager` الموجود بلا تعارض.
+  - الجهد: 4-6 أسابيع. ~14 ملف جديد/معدَّل.
+  - المصدر: archive-suite-daily-use-proposals (المقترح 1 — P0).
+
+---
+
+### 14.2 P0 — نظام الإشعارات المركزية الذكية (Smart Notification Center)
+
+- [ ] `[P0]` ⏱️XL **بناء مركز إشعارات موحد مع Push API للمتصفح** — الإشعارات الحالية مشتتة؛ العمليات الطويلة (FFmpeg/OCR/backup) تنتهي بصمت بدون إخبار المستخدم.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/notifications/pushManager.js` — `requestNotificationPermission`, `showBrowserNotification`
+    - `archive app/src/components/notifications/NotificationCenter.jsx` — لوحة الإشعارات الرئيسية مع فلترة
+    - `archive app/src/components/notifications/NotificationCard.jsx` — بطاقة إشعار مع شريط تقدم + أزرار إجراء
+    - `archive app/src/components/notifications/NotificationBell.jsx` — جرس الشريط العلوي مع badge عداد
+    - `archive app/src/stores/slices/notificationsSlice.js`
+  - **تعديل ملفات:**
+    - `archive app/src/features/notifications/viewModel.js` — توسيع `createNotification` + `NOTIFICATION_TYPES` + `shouldGroupNotifications`
+    - `archive app/src/services/storage/schema.js` — إضافة `notifications`, `notification_prefs`
+    - `archive app/src/pages/ArchivePage.jsx` — ربط التصدير/الاستيراد بإشعارات التقدم
+    - `archive app/src/components/layout/TopBar.jsx` — إضافة `<NotificationBell>`
+  - **التنفيذ:** 4 فئات (operation/collaboration/system/smart)؛ تجميع ذكي للإشعارات المتشابهة؛ شريط تقدم للعمليات الطويلة؛ Push API للتنبيه حتى لو التطبيق في الخلفية؛ أزرار إجراءات سريعة.
+  - ملاحظة: `viewModel.js` موجود بالفعل في `features/notifications/` لكن يحتاج توسيع جوهري.
+  - الجهد: 3-5 أسابيع. ~9 ملفات جديدة/معدَّلة.
+  - المصدر: archive-suite-daily-use-proposals (المقترح 2 — P0).
+
+---
+
+### 14.3 P0 — نظام المجلدات الهرمي (Folder Tree)
+
+- [ ] `[P0]` ⏱️XL **بناء نظام مجلدات هرمي كمستكشف الملفات** — الأرشيف قائمة مسطحة؛ لا تنظيم هرمي؛ لا يمكن إنشاء بنية مثل `أرشيف 2024/محاضرات/الفصل الأول`.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/folders/viewModel.js` — `createFolderValue`, `buildFolderTree`, `getAllItemsInFolder`
+    - `archive app/src/components/folders/FolderTree.jsx` — شجرة المجلدات (ARIA tree role)
+    - `archive app/src/components/folders/FolderTreeNode.jsx` — عقدة مع توسيع/طي وقائمة سياق
+    - `archive app/src/components/folders/FolderBreadcrumb.jsx` — مسار التنقل
+    - `archive app/src/stores/slices/foldersSlice.js`
+    - `archive app/src/pages/FoldersPage.jsx` (يمكن دمج مع ArchivePage)
+  - **تعديل ملفات:**
+    - `archive app/src/services/storage/schema.js` — store `archive_folders`
+    - `archive-server/prisma/schema.prisma` — نماذج `ArchiveFolder` + `FolderItem`
+    - `archive app/src/pages/ArchivePage.jsx` — `<FolderTree>` في الشريط الجانبي مع تبويب وسوم/مجلدات
+    - `archive app/src/pages/AddVideoPage.jsx` — حقل اختيار المجلد
+    - `archive app/src/pages/DetailPage.jsx` — عرض المسار الكامل للمجلد الحاوي
+  - **التنفيذ:** مجلدات فرعية غير محدودة؛ مسار breadcrumb تفاعلي؛ سحب وإفلات العناصر؛ عداد العناصر + الحجم؛ RTL عربي كامل؛ لا تعارض مع المجموعات الموجودة.
+  - الجهد: 5-7 أسابيع. ~11 ملف جديد/معدَّل.
+  - المصدر: archive-suite-new-feature-proposals (المقترح 1 — P0).
+
+---
+
+### 14.4 P1 — نظام القوالب والتعبئة السريعة (Templates & Quick Fill)
+
+- [ ] `[P1]` ⏱️L **بناء نظام القوالب المرنة لتسريع الإدخال اليومي** — لا قوالب؛ نفس البيانات (نوع/وسوم/مجلد) تُدخَل يدوياً في كل مرة.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/templates/viewModel.js` — `createItemTemplate`, `resolveDynamicFields`, `BUILT_IN_TEMPLATES`
+    - `archive app/src/components/templates/TemplatePicker.jsx` — اختيار القالب عند الإضافة
+    - `archive app/src/components/templates/QuickAddBar.jsx` — شريط الإضافة السريعة (Enter لكل عنصر)
+    - `archive app/src/components/templates/TemplateEditor.jsx` — محرر القوالب المخصصة
+    - `archive app/src/stores/slices/templatesSlice.js`
+  - **تعديل ملفات:**
+    - `archive app/src/pages/AddVideoPage.jsx` — `<TemplatePicker>` قبل النموذج + وضع QuickAdd
+    - `archive app/src/services/storage/schema.js` — store `templates`
+  - **التنفيذ:** حقول ثابتة + ديناميكية (`today()`, `autoNumber()`, `concat()`)؛ 3 قوالب مدمجة (محاضرة/مستند/صوت)؛ وضع الإضافة السريعة لعشرات العناصر متتالية؛ تتبع الاستخدام.
+  - الجهد: 3-4 أسابيع. ~7 ملفات جديدة/معدَّلة.
+  - المصدر: archive-suite-daily-use-proposals (المقترح 3 — P1).
+
+---
+
+### 14.5 P1 — نظام الحفظ التلقائي وجلسات العمل (Auto-save & Work Sessions)
+
+- [ ] `[P1]` ⏱️L **بناء نظام حفظ تلقائي شامل مع استعادة جلسات العمل** — لا حفظ تلقائي؛ مغادرة صفحة الإضافة تُفقد كل البيانات؛ لا استئناف للعمليات الجماعية المنقطعة.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/autosave/viewModel.js` — `createDraft`, `createWorkSession`, `createBulkProgress`
+    - `archive app/src/features/autosave/autosaveEngine.js` — `createAutosaveEngine` (30s interval + beforeunload guard)
+    - `archive app/src/features/autosave/sessionManager.js` — `createSessionManager` (استعادة جلسة <1 ساعة)
+    - `archive app/src/components/autosave/AutosaveIndicator.jsx` — مؤشر حالة (محفوظ / غير محفوظ / جاري)
+    - `archive app/src/components/autosave/DraftRecoveryDialog.jsx` — حوار استعادة المسودة
+    - `archive app/src/components/autosave/SessionRestoreBanner.jsx` — شعار استعادة الجلسة
+    - `archive app/src/components/autosave/BulkProgressPanel.jsx` — لوحة استئناف العمليات الجماعية
+  - **تعديل ملفات:**
+    - `archive app/src/pages/AddVideoPage.jsx` — `startTracking` + `DraftRecoveryDialog`
+    - `archive app/src/pages/DetailPage.jsx` — حفظ تلقائي بمفتاح `edit_item_${id}`
+    - `archive app/src/pages/ArchivePage.jsx` — `SessionManager` + حفظ الفلاتر/التمرير/المجلد
+    - `archive app/src/services/storage/schema.js` — stores: `drafts`, `work_sessions`, `bulk_progress`
+  - **التنفيذ:** حفظ تلقائي كل 30 ثانية؛ تحذير beforeunload؛ استعادة المسودات؛ استئناف العمليات الجماعية المنقطعة.
+  - الجهد: 3-4 أسابيع. ~11 ملف جديد/معدَّل.
+  - المصدر: archive-suite-daily-use-proposals (المقترح 4 — P1).
+
+---
+
+### 14.6 P1 — نظام الارتباطات والعلاقات بين العناصر (Item Relations & Links)
+
+- [ ] `[P1]` ⏱️L **بناء نظام علاقات مرن لربط العناصر بعلاقات ذات معنى** — العناصر معزولة؛ لا طريقة لربط محاضرات سلسلة أو مستند بفيديو معيّن.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/relations/viewModel.js` — `createRelation`, `RELATION_TYPES`, `getItemRelations`, `buildRelationsGraph`
+    - `archive app/src/components/relations/RelationsPanel.jsx` — لوحة العلاقات في صفحة التفاصيل
+    - `archive app/src/components/relations/AddRelationDialog.jsx` — حوار إضافة علاقة مع بحث + نوع
+    - `archive app/src/components/relations/RelationsGraph.jsx` — رسم بياني تفاعلي (D3/cytoscape)
+    - `archive app/src/stores/slices/relationsSlice.js`
+  - **تعديل ملفات:**
+    - `archive app/src/pages/DetailPage.jsx` — إضافة تبويب `<RelationsPanel>`
+    - `archive app/src/pages/ArchivePage.jsx` — زر "عرض العلاقات" + دعم سحب/إفلات
+    - `archive app/src/services/storage/schema.js` — store `item_relations`
+    - `archive-server/prisma/schema.prisma` — نموذج `ItemRelation`
+  - **التنفيذ:** 9 أنواع علاقات (is_part_of/references/related_to/depends_on/copy_of/precedes/follows/contains/alternative_of)؛ علاقات أحادية وثنائية الاتجاه؛ رسم بياني تفاعلي حتى عمق 2؛ إنشاء علاقات بالسحب والإفلات.
+  - الجهد: 4-5 أسابيع. ~9 ملفات جديدة/معدَّلة.
+  - المصدر: archive-suite-daily-use-proposals (المقترح 5 — P1).
+
+---
+
+### 14.7 P1 — نظام المجموعات/الحاويات الافتراضية المُحسّن (Enhanced Virtual Collections)
+
+- [ ] `[P1]` ⏱️XL **ترقية المجموعات من قوائم ثابتة إلى حاويات افتراضية غنية متعددة المصادر** — المجموعات الحالية قوائم ثابتة (itemIds فقط)؛ لا تدعم مصادر متعددة ولا فلترة متقدمة.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/collections/ContainerContentsPanel.jsx` — تبويبات مصادر متعددة
+    - `archive app/src/features/collections/applyFilterRules.js` — فلترة متقدمة متعددة الشروط
+    - `archive app/src/features/collections/cycleDetection.js` — `detectCollectionCycle`
+    - `archive app/src/components/collections/FilterRuleBuilder.jsx` — منشئ قواعد الفلترة المرئي
+  - **تعديل ملفات:**
+    - `archive app/src/features/collections/viewModel.js` — `createVirtualCollectionValue` + `resolveCollectionContents`
+    - `archive app/src/pages/CollectionsPage.jsx` — دعم نوع "mixed" + لوحة المحتويات
+    - `archive app/src/stores/slices/archiveSlice.js` — تحديث وظائف المجموعات
+  - **التنفيذ:** مصادر: عناصر + مجلدات + مجموعات مرجعية + بحوث محفوظة + لقطات فلترة؛ فلترة AND/OR متعددة الشروط؛ منع الحلقات المرجعية؛ عرض مخصص لكل حاوية.
+  - يتطلب: §14.3 (المجلدات) اختياري.
+  - الجهد: 4-6 أسابيع. ~7 ملفات جديدة/معدَّلة.
+  - المصدر: archive-suite-new-feature-proposals (المقترح 2 — P1).
+
+---
+
+### 14.8 P1 — مركز تحكم النظام (System Control Center)
+
+- [ ] `[P1]` ⏱️XL **بناء مركز تحكم موحد للنظام عبر واجهة ويب** — لا واجهة للتحكم بالسيرفر؛ يتطلب CLI بـ25+ أمر؛ لا دعم لنظام Windows خارج Docker.
+  - **الملفات الجديدة:**
+    - `archive-server/src/control/controlAgent.js` — `createControlAgent` (docker/linux-native/windows-native)
+    - `archive-server/src/api/controlRoutes.js` — `/api/control/status|start|stop|restart|logs|apply-config`
+    - `archive-server/src/control/configSync.js` — `syncConfigToPreset`
+    - `archive app/src/pages/SystemControlPage.jsx`
+    - `deploy/install-windows.ps1` — سكربت PowerShell (Docker + Native)
+  - **تعديل ملفات:**
+    - `archive-server/src/api/server.js` — تسجيل controlRoutes بـ `requireAdmin`
+    - `archive app/src/features/onboarding/V1OnboardingWizard.jsx` — ربط بمركز التحكم
+    - `archive app/src/app/pageRegistry.js` — تسجيل SystemControlPage
+  - **التنفيذ:** تشغيل/إيقاف/إعادة تشغيل الخدمات؛ 3 أوضاع (Docker/Linux/Windows)؛ مراقبة CPU/ذاكرة/قرص/DB كل 5 ثوانٍ؛ عرض سجلات الخدمات.
+  - **خطر:** متوسط-عالٍ (صلاحيات نظام التشغيل).
+  - الجهد: 8-12 أسبوعاً.
+  - المصدر: archive-suite-new-feature-proposals (المقترح 3 — P1).
+
+---
+
+### 14.9 P1 — الملء التلقائي لمعالج بدء التشغيل (Onboarding Pre-fill)
+
+- [ ] `[P1]` ⏱️L **قراءة إعدادات .env تلقائياً في معالج بدء التشغيل** — المعالج يبدأ من الصفر حتى لو .env مُعدّ مسبقاً مما يُكرّر الإدخال 9 مرات.
+  - **الملفات الجديدة:**
+    - `archive-server/src/api/presetConfig.js` — `createPresetConfigHandler` (قراءة .env + اختبار DB)
+    - `archive app/src/features/onboarding/PresetConfigScreen.jsx` — شاشة تأكيد الإعدادات المسبقة
+  - **تعديل ملفات:**
+    - `archive app/src/features/onboarding/V1OnboardingWizard.jsx` — `mapPresetToFormValues` + `PresetConfigScreen`
+    - `archive-server/src/api/server.js` — مسار `GET /api/setup/preset-config` (admin فقط)
+  - **التنفيذ:** قراءة .env → ملخص إعدادات مع مؤشرات حالة (DB متصل/غير متصل)؛ تأكيد بنقرة واحدة بدل 9 خطوات؛ أمان: كلمات المرور لا تُرسل للواجهة.
+  - يتطلب: §14.8 اختياري — يعمل مع .env فقط.
+  - الجهد: 3-4 أسابيع. ~4 ملفات جديدة/معدَّلة.
+  - المصدر: archive-suite-new-feature-proposals (المقترح 4 — P1).
