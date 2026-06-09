@@ -52,6 +52,11 @@ import {
   foldersActionKeys,
   foldersInitialState
 } from "./slices/foldersSlice.js";
+import {
+  createFavoritesActions,
+  favoritesActionKeys,
+  favoritesInitialState
+} from "./slices/favoritesSlice.js";
 
 export { pickStoreActions } from "./storeCore.js";
 export { archiveActionKeys } from "./slices/archiveSlice.js";
@@ -64,6 +69,7 @@ export { autosaveActionKeys } from "./slices/autosaveSlice.js";
 export { relationsActionKeys } from "./slices/relationsSlice.js";
 export { activityLogActionKeys } from "./slices/activityLogSlice.js";
 export { foldersActionKeys } from "./slices/foldersSlice.js";
+export { favoritesActionKeys } from "./slices/favoritesSlice.js";
 
 export const useAppStore = createStore((set, get) => ({
   ...archiveInitialState,
@@ -75,6 +81,7 @@ export const useAppStore = createStore((set, get) => ({
   ...relationsInitialState,
   ...activityLogInitialState,
   ...foldersInitialState,
+  ...favoritesInitialState,
   ...createUiActions({ set, get }),
   ...createConnectionStatusActions({ set, get }),
   ...createRelationsActions({ set, get }),
@@ -84,7 +91,8 @@ export const useAppStore = createStore((set, get) => ({
   ...createTemplatesActions({ set, get }),
   ...createAutosaveActions({ set, get }),
   ...createActivityLogActions({ set, get }),
-  ...createFoldersActions({ set, get })
+  ...createFoldersActions({ set, get }),
+  ...createFavoritesActions({ set, get })
 }));
 
 export const useAuthStore = createAuthStore({ createStore, useAppStore });

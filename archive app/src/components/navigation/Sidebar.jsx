@@ -44,6 +44,7 @@ import {
 import * as React from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 
+import { FavoritesSidebarSection } from "../favorites/FavoritesSidebarSection.jsx";
 import { getSidebarNavigationGroups } from "./viewModel.js";
 import { ACTIONS, canPerform } from "../../features/users/permissions.js";
 import { USER_ROLES } from "../../features/users/viewModel.js";
@@ -95,7 +96,8 @@ const iconMap = {
   uploader: CloudUpload,
   transcriber: Wand2,
   reports: ChartColumn,
-  "sync-log": GitMerge
+  "sync-log": GitMerge,
+  favorites: Star
 };
 
 function useIsMobile() {
@@ -318,6 +320,10 @@ export function Sidebar() {
         "aria-label": "القائمة الجانبية",
         children: jsxs(Fragment, {
           children: [
+            !editing && jsx(FavoritesSidebarSection, {
+              collapsed,
+              onNavigate: () => { if (isMobile && sidebarOpen) toggleSidebar(); }
+            }),
             editing && jsxs("div", {
               className: "sticky top-0 z-10 -mx-1 mb-1 flex items-center gap-1.5 rounded-xl border va-accent-border va-accent-bg-soft p-2",
               children: [

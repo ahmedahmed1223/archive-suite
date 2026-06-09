@@ -894,7 +894,7 @@
 
 ### 14.1 P0 — نظام سجل النشاط والتراجع المتقدم (Activity History & Advanced Undo)
 
-- [ ] `[P0]` ⏱️XL **بناء نظام سجل النشاط المركزي مع تراجع متعدد المستويات** — لا يوجد سجل نشاط مركزي؛ التراجع محدود بصفحة التفاصيل فقط؛ لا يمكن التراجع عن الحذف أو التعديلات الجماعية.
+- [x] `[P0]` ⏱️XL **بناء نظام سجل النشاط المركزي مع تراجع متعدد المستويات** — لا يوجد سجل نشاط مركزي؛ التراجع محدود بصفحة التفاصيل فقط؛ لا يمكن التراجع عن الحذف أو التعديلات الجماعية.
   - **الملفات الجديدة:**
     - `archive app/src/features/activityLog/viewModel.js` — `createActivityEntry`, `buildDiff`, `describeActivity`
     - `archive app/src/features/activityLog/undoManager.js` — `withActivityLog`, `undoActivityEntry`, `redoActivityEntry`
@@ -939,7 +939,7 @@
 
 ### 14.3 P0 — نظام المجلدات الهرمي (Folder Tree)
 
-- [ ] `[P0]` ⏱️XL **بناء نظام مجلدات هرمي كمستكشف الملفات** — الأرشيف قائمة مسطحة؛ لا تنظيم هرمي؛ لا يمكن إنشاء بنية مثل `أرشيف 2024/محاضرات/الفصل الأول`.
+- [x] `[P0]` ⏱️XL **بناء نظام مجلدات هرمي كمستكشف الملفات** — الأرشيف قائمة مسطحة؛ لا تنظيم هرمي؛ لا يمكن إنشاء بنية مثل `أرشيف 2024/محاضرات/الفصل الأول`.
   - **الملفات الجديدة:**
     - `archive app/src/features/folders/viewModel.js` — `createFolderValue`, `buildFolderTree`, `getAllItemsInFolder`
     - `archive app/src/components/folders/FolderTree.jsx` — شجرة المجلدات (ARIA tree role)
@@ -961,7 +961,7 @@
 
 ### 14.4 P1 — نظام القوالب والتعبئة السريعة (Templates & Quick Fill)
 
-- [ ] `[P1]` ⏱️L **بناء نظام القوالب المرنة لتسريع الإدخال اليومي** — لا قوالب؛ نفس البيانات (نوع/وسوم/مجلد) تُدخَل يدوياً في كل مرة.
+- [x] `[P1]` ⏱️L **بناء نظام القوالب المرنة لتسريع الإدخال اليومي** — لا قوالب؛ نفس البيانات (نوع/وسوم/مجلد) تُدخَل يدوياً في كل مرة.
   - **الملفات الجديدة:**
     - `archive app/src/features/templates/viewModel.js` — `createItemTemplate`, `resolveDynamicFields`, `BUILT_IN_TEMPLATES`
     - `archive app/src/components/templates/TemplatePicker.jsx` — اختيار القالب عند الإضافة
@@ -979,7 +979,7 @@
 
 ### 14.5 P1 — نظام الحفظ التلقائي وجلسات العمل (Auto-save & Work Sessions)
 
-- [ ] `[P1]` ⏱️L **بناء نظام حفظ تلقائي شامل مع استعادة جلسات العمل** — لا حفظ تلقائي؛ مغادرة صفحة الإضافة تُفقد كل البيانات؛ لا استئناف للعمليات الجماعية المنقطعة.
+- [x] `[P1]` ⏱️L **بناء نظام حفظ تلقائي شامل مع استعادة جلسات العمل** — لا حفظ تلقائي؛ مغادرة صفحة الإضافة تُفقد كل البيانات؛ لا استئناف للعمليات الجماعية المنقطعة.
   - **الملفات الجديدة:**
     - `archive app/src/features/autosave/viewModel.js` — `createDraft`, `createWorkSession`, `createBulkProgress`
     - `archive app/src/features/autosave/autosaveEngine.js` — `createAutosaveEngine` (30s interval + beforeunload guard)
@@ -1001,7 +1001,7 @@
 
 ### 14.6 P1 — نظام الارتباطات والعلاقات بين العناصر (Item Relations & Links)
 
-- [ ] `[P1]` ⏱️L **بناء نظام علاقات مرن لربط العناصر بعلاقات ذات معنى** — العناصر معزولة؛ لا طريقة لربط محاضرات سلسلة أو مستند بفيديو معيّن.
+- [x] `[P1]` ⏱️L **بناء نظام علاقات مرن لربط العناصر بعلاقات ذات معنى** — العناصر معزولة؛ لا طريقة لربط محاضرات سلسلة أو مستند بفيديو معيّن.
   - **الملفات الجديدة:**
     - `archive app/src/features/relations/viewModel.js` — `createRelation`, `RELATION_TYPES`, `getItemRelations`, `buildRelationsGraph`
     - `archive app/src/components/relations/RelationsPanel.jsx` — لوحة العلاقات في صفحة التفاصيل
@@ -1071,3 +1071,712 @@
   - يتطلب: §14.8 اختياري — يعمل مع .env فقط.
   - الجهد: 3-4 أسابيع. ~4 ملفات جديدة/معدَّلة.
   - المصدر: archive-suite-new-feature-proposals (المقترح 4 — P1).
+---
+
+## 15. تقارير UX والسحابة المرفقة — مهام مستخرجة جديدة
+
+> **المصدر:** `archive-suite-cloud-ux-improvements.md` (12 مقترحاً) + `archive-suite-daily-ux-proposals.md` (10 مقترحات).
+> **المنهجية:** حُوِّل كل مقترح إلى مهمة تنفيذية بنفس صيغة المهام القديمة. البنود المتداخلة مع أقسام سابقة أُدرجت هنا كتوسعة أكثر تحديداً، وليست بديلاً للمهام المنجزة أو الجارية.
+> **آخر تحديث:** 9 يونيو 2026.
+
+---
+
+### 15.1 P0 — نظام دليل المستخدم التفاعلي المدمج (Interactive User Guide)
+
+- [ ] `[P0]` ⏱️XL **بناء دليل مستخدم تفاعلي متعدد الطبقات داخل التطبيق** — المستخدم الجديد لا يحصل على جولة إرشادية أو تلميحات سياقية أو مركز مساعدة قابل للبحث، فتظل ميزات مهمة مثل الوسوم الهرمية والبحث المتقدم غير مكتشفة.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/help/InteractiveGuideTour.jsx` — جولة ترحيب مع spotlight وخطوات قابلة للتخطي.
+    - `archive app/src/components/help/ContextualTooltip.jsx` — تلميحات تظهر عند أول استخدام للميزة.
+    - `archive app/src/components/help/HelpCenterSearch.jsx` — بحث داخل محتوى المساعدة.
+    - `archive app/src/features/help/guideRegistry.js` — تعريف خطوات الجولة حسب الصفحة والدور.
+    - `archive app/src/stores/slices/helpPrefsSlice.js` — تخزين حالة التلميحات المكتشفة ومستوى الإزعاج.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/HelpPage.jsx` — ترقية الصفحة إلى مركز مساعدة دائم.
+    - `archive app/src/components/navigation/TopBar.jsx` أو shell التنقل — زر مساعدة دائم.
+    - `archive app/src/features/onboarding/V1OnboardingWizard.jsx` — ربط نهاية الإعداد بجولة الاستخدام.
+  - **التنفيذ:** جولة Onboarding حسب الدور؛ تلميحات لا تتكرر بعد الاستخدام؛ مستويات تلميح (مختصر/مفصل/معطّل)؛ FAQ قابل للتحديث؛ بحث في المساعدة.
+  - الجهد: 4-6 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 1 — P0).
+
+---
+
+### 15.2 P0 — تحسين استقرار المزامنة السحابية (Cloud Sync Stabilization)
+
+- [ ] `[P0]` ⏱️XL **بناء طبقة مزامنة سحابية موثوقة مع كشف تعارضات وطابور مرئي** — المزامنة بين IndexedDB وPrisma قد تخفي التعارضات، ولا تعرض حالة الاتصال أو العمليات المعلقة بشكل واضح.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/sync/conflictResolver.js` — كشف التعارضات بمراجعات وطوابع زمنية.
+    - `archive app/src/components/sync/ConflictResolutionDialog.jsx` — عرض نسختين جنباً إلى جنب مع تمييز الفروقات.
+    - `archive app/src/components/sync/ConnectionStatusIndicator.jsx` — مؤشر متصل/معلّق/تعارض/أوفلاين.
+    - `archive app/src/components/sync/SyncQueueDashboard.jsx` — لوحة عمليات المزامنة المعلقة والفاشلة والمكتملة.
+    - `archive app/src/features/sync/autoSyncEngine.js` — مزامنة تلقائية مع exponential backoff.
+  - **تعديل ملفات:**
+    - `archive app/src/services/storage/registerByBackendChoice.js` — إدخال طبقة المزامنة بين المحلي والسحابي.
+    - `archive app/src/stores/slices/archiveSlice.js` — إضافة revision metadata وعمليات pending.
+    - `archive-server/prisma/schema.prisma` — حقول revision/updatedBy عند الحاجة.
+  - **التنفيذ:** revisions لكل تعديل؛ سجل تعارضات قابل للاسترجاع؛ طابور مرئي مع إعادة محاولة؛ مزامنة تلقائية عند عودة الاتصال؛ إشعارات عند اكتمال المزامنة أو وجود تعارض.
+  - الجهد: 5-7 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 2 — P0).
+
+---
+
+### 15.3 P1 — مركز الإعدادات المتقدمة الموحد (Unified Settings Hub)
+
+- [ ] `[P1]` ⏱️L **توحيد الإعدادات المبعثرة في مركز واحد قابل للبحث والاستيراد/التصدير** — الإعدادات موزعة بين Onboarding وSidebar وDataCenterPage وبعضها غير ظاهر من الواجهة.
+  - **الملفات الجديدة:**
+    - `archive app/src/pages/SettingsHubPage.jsx` — صفحة مركز الإعدادات الموحد.
+    - `archive app/src/features/settings/settingsRegistry.js` — تعريف الفئات والقيم الافتراضية والوصف.
+    - `archive app/src/components/settings/SettingsSearch.jsx` — بحث في أسماء الإعدادات ووصفها.
+    - `archive app/src/components/settings/SettingsImportExport.jsx` — تصدير/استيراد JSON مع استثناء الأسرار.
+    - `archive app/src/components/settings/SettingDiffPreview.jsx` — معاينة اختلافات الاستيراد قبل التطبيق.
+  - **تعديل ملفات:**
+    - `archive app/src/components/navigation/Sidebar.jsx` — توجيه إعدادات Sidebar للمركز الجديد.
+    - `archive app/src/pages/DataCenterPage.jsx` — نقل إعدادات التخزين/النسخ الاحتياطي للمركز أو ربطها به.
+    - `archive app/src/app/pageRegistry.js` — تسجيل صفحة SettingsHubPage.
+  - **التنفيذ:** فئات عام/حساب/أرشفة/بحث/مزامنة/وسائط/أمان/متقدم؛ بحث فوري؛ Smart Defaults مع شرح؛ إعادة أي إعداد للقيمة الافتراضية؛ تعليم واضح للإعدادات التي تحتاج إعادة تشغيل.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 3 — P1).
+
+---
+
+### 15.4 P1 — لوحة المعلومات الرئيسية المحسّنة (Enhanced Dashboard)
+
+- [ ] `[P1]` ⏱️L **بناء لوحة معلومات رئيسية قابلة للتخصيص بدل الدخول المباشر لقائمة الأرشيف** — ArchivePage تعرض قائمة عناصر طويلة بلا ملخص حالة أو إجراءات سريعة أو نشاط حديث.
+  - **الملفات الجديدة:**
+    - `archive app/src/pages/DashboardPage.jsx` — الصفحة الرئيسية الافتراضية القابلة للتعطيل.
+    - `archive app/src/components/dashboard/StatsCards.jsx` — إجمالي العناصر، المجموعات، الوسوم، التخزين، آخر نسخة احتياطية.
+    - `archive app/src/components/dashboard/QuickActionsPanel.jsx` — إضافة/استيراد/تصدير/نسخ احتياطي.
+    - `archive app/src/components/dashboard/RecentActivityPanel.jsx` — آخر العمليات.
+    - `archive app/src/components/dashboard/SmartSuggestionsPanel.jsx` — اقتراحات تنظيمية قابلة للتنفيذ.
+  - **تعديل ملفات:**
+    - `archive app/src/app/pageRegistry.js` — تسجيل DashboardPage كوجهة بدء اختيارية.
+    - `archive app/src/stores/slices/archiveSlice.js` — selectors للإحصائيات والاقتراحات.
+  - **التنفيذ:** بطاقات إحصائية محدثة تلقائياً؛ إجراءات سريعة مرتبة حسب الاستخدام؛ نشاط آخر 5-10 عمليات؛ اقتراحات مثل عناصر بلا وسوم/نسخة احتياطية متأخرة/مكررات؛ إعادة ترتيب أقسام اللوحة بالسحب والإفلات.
+  - الجهد: 3-5 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 4 — P1).
+
+---
+
+### 15.5 P1 — نظام الاختصارات القابلة للتخصيص (Customizable Keyboard Shortcuts)
+
+- [ ] `[P1]` ⏱️L **بناء نظام اختصارات مركزي قابل للتخصيص مع وضع لوحة مفاتيح كامل** — الاعتماد الحالي على الفأرة يبطئ المستخدمين المكثفين، والاختصارات القليلة غير موثقة وغير قابلة للتعديل.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/shortcuts/shortcutRegistry.js` — تعريف الاختصارات حسب السياق.
+    - `archive app/src/hooks/useGlobalShortcuts.js` — التقاط الاختصارات العامة والصفحية.
+    - `archive app/src/components/shortcuts/ShortcutExplorer.jsx` — نافذة Ctrl+/ لعرض اختصارات السياق الحالي.
+    - `archive app/src/pages/ShortcutSettingsPage.jsx` — تعديل واستيراد/تصدير خريطة الاختصارات.
+    - `archive app/src/features/shortcuts/vimMode.js` — وضع Vim الاختياري.
+  - **تعديل ملفات:**
+    - `archive app/src/components/navigation/Sidebar.jsx` — اختصارات التنقل بين الأقسام.
+    - `archive app/src/pages/ArchivePage.jsx` و`DetailPage.jsx` — اختصارات تحديد/حذف/تعديل/التالي/السابق.
+  - **التنفيذ:** منع تعارض الاختصارات؛ عرض الاختصار كتلميح على الأزرار؛ Ctrl+N/Ctrl+K/Ctrl+S/Ctrl+E/Ctrl+B/F2/Delete؛ وضع Vim اختياري؛ حفظ التفضيلات ومزامنتها.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 5 — P1).
+
+---
+
+### 15.6 P0 — تحسين تجربة الإعداد الأولي والتشغيل (Enhanced Onboarding & Setup Experience)
+
+- [ ] `[P0]` ⏱️L **إعادة تصميم الإعداد الأولي حول تجربة فورية ووضع تجريبي قبل الإعداد التقني** — المعالج الحالي يطلب قرارات تقنية قبل أن يرى المستخدم قيمة التطبيق.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/onboarding/InstantTryScreen.jsx` — خيار “ابدأ فوراً” مقابل “إعداد سحابي”.
+    - `archive app/src/features/onboarding/DemoModeSeeder.js` — بيانات نموذجية قابلة للحذف.
+    - `archive app/src/features/onboarding/ProgressiveCloudSetup.jsx` — تهيئة سحابية مبسطة بعد التجربة.
+    - `archive app/src/components/onboarding/SetupErrorMessage.jsx` — رسائل خطأ مفهومة مع تفاصيل تقنية اختيارية.
+  - **تعديل ملفات:**
+    - `archive app/src/features/onboarding/V1OnboardingWizard.jsx` — فصل المسار العادي عن المتقدم.
+    - `archive app/src/services/storage/schema.js` — وسم بيانات demo لمنع اختلاطها بالبيانات الحقيقية.
+  - **التنفيذ:** لحظة قيمة خلال أقل من 30 ثانية؛ بيانات نموذجية؛ إعداد متقدم مخفي خلف رابط واضح؛ تهيئة تدريجية للسحابة بعد الاستكشاف؛ حذف بيانات demo عند الخروج.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 6 — P0).
+
+---
+
+### 15.7 P2 — نظام التخصيص البصري والسمات (Theming & Visual Customization)
+
+- [ ] `[P2]` ⏱️XL **بناء محرر سمات وتخصيص كثافة وتخطيط الواجهة** — التطبيق لا يمنح المستخدم تحكماً كافياً في الألوان والخطوط والكثافة وحجم البطاقات وتخطيط الشريط الجانبي.
+  - **الملفات الجديدة:**
+    - `archive app/src/pages/AppearanceSettingsPage.jsx` — صفحة التخصيص البصري.
+    - `archive app/src/features/theme/themePresets.js` — سمات جاهزة: فاتح/داكن/عالي التباين/باستيل/دافئ.
+    - `archive app/src/components/theme/ThemeEditor.jsx` — محرر ألوان ونصف قطر وظلال وحركة.
+    - `archive app/src/components/theme/DensitySelector.jsx` — Compact/Balanced/Comfortable.
+    - `archive app/src/features/theme/themeExportImport.js` — مشاركة السمات كـ JSON.
+  - **تعديل ملفات:**
+    - `archive app/src/styles/v*-identity.css` — ربط أعمق بمتغيرات CSS الدلالية.
+    - `archive app/src/components/views/*` — دعم حجم البطاقات وكثافة الجداول.
+  - **التنفيذ:** معاينة حية قبل التطبيق؛ سمة مخصصة؛ وضع عالي التباين؛ تخصيص عرض الشريط الجانبي وحجم البطاقات وأعمدة الجدول؛ حفظ محلي ومزامنة سحابية عند التفعيل.
+  - الجهد: 4-6 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 7 — P2).
+
+---
+
+### 15.8 P1 — تحسين نظام التعامل مع الأخطاء والاسترداد (Error Handling & Recovery)
+
+- [ ] `[P1]` ⏱️L **بناء طبقة استرداد أخطاء شاملة فوق رسائل الخطأ الحالية** — الرسائل الودّية وحدها لا تكفي إذا فشلت عملية كتابة أو مزامنة وتركت بيانات معلقة أو حالة غير متسقة.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/errors/recoveryQueue.js` — حفظ عمليات الكتابة الفاشلة لإعادة المحاولة.
+    - `archive app/src/components/errors/ErrorDetailsPanel.jsx` — طبقات الرسالة: مبسطة/حل مقترح/تفاصيل تقنية.
+    - `archive app/src/pages/ErrorLogPage.jsx` — سجل أخطاء مركزي قابل للفلترة.
+    - `archive app/src/features/errors/errorReportBuilder.js` — إنشاء تقرير خطأ مع السياق وبيانات الجهاز.
+    - `archive app/src/features/storage/transactionalWrite.js` — تغليف عمليات متعددة الخطوات بتراجع عند الفشل.
+  - **تعديل ملفات:**
+    - `archive app/src/utils/errorHandling.js` — ربط الرسائل الحالية بالاسترداد والسجل.
+    - `archive app/src/stores/slices/archiveSlice.js` — استخدام transactional writes للعمليات المركبة.
+  - **التنفيذ:** إعادة محاولة عمليات محددة؛ سجل خطأ مع الصفحة والعملية والنوع؛ إبلاغ ذكي عن الخطأ؛ حماية من عنصر بلا ملف أو مجموعة بلا عناصر؛ إشعار “عمليات معلقة”.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 8 — P1).
+
+---
+
+### 15.9 P0 — تحسين رحلة المستخدم في سير العمل المتكرر (Daily Workflow Journey Optimization)
+
+- [ ] `[P0]` ⏱️XL **إزالة احتكاكات الإضافة والتعديل والبحث عبر تدفق عمل متصل** — المستخدم الذي يضيف أو يعدّل عشرات العناصر يضيع وقتاً في فتح صفحات منفصلة وفقدان السياق.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/workflow/ContextualQuickAddBar.jsx` — شريط إضافة سريع قابل للطي من أي صفحة.
+    - `archive app/src/components/workflow/SideEditPanel.jsx` — تعديل سريع دون مغادرة القائمة.
+    - `archive app/src/components/workflow/InlineSearchRefinement.jsx` — تحسين البحث داخل السياق الحالي.
+    - `archive app/src/features/workflow/recentDefaults.js` — تذكّر آخر مجلد/وسوم/نوع.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/ArchivePage.jsx` — دمج QuickAdd وSideEdit.
+    - `archive app/src/pages/AddVideoPage.jsx` — دعم “تفاصيل إضافية” بدلاً من صفحة كاملة عند الحاجة.
+    - `archive app/src/stores/slices/archiveSlice.js` — إنشاء عناصر بإعدادات افتراضية وسياقية.
+  - **التنفيذ:** Enter لإضافة متتابعة؛ لوحة تعديل جانبية؛ حفظ السياق بعد الحفظ؛ اقتراح قيم من آخر استخدام؛ اختصار “إضافة عنصر مشابه”.
+  - الجهد: 5-7 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 9 — P0).
+
+---
+
+### 15.10 P1 — نظام الملاحظات والتعليقات على العناصر (Item Notes & Annotations)
+
+- [ ] `[P1]` ⏱️XL **إضافة ملاحظات شخصية وتعليقات تعاونية مرتبطة بالزمن أو المنطقة داخل العنصر** — العناصر المؤرشفة لا تدعم تدوين ملاحظات زمنية على الفيديو/الصوت أو ملاحظات مرئية على الصور والمستندات.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/notes/notesModel.js` — نموذج الملاحظات والردود والربط الزمني/المكاني.
+    - `archive app/src/components/notes/NotesSidebar.jsx` — لوحة جانبية للملاحظات والتعليقات.
+    - `archive app/src/components/notes/TimelineNoteMarkers.jsx` — علامات على شريط الفيديو/الصوت.
+    - `archive app/src/components/notes/VisualAnnotationLayer.jsx` — تحديد مناطق في الصور/المستندات.
+    - `archive app/src/components/notes/ExportNotesDialog.jsx` — تصدير Markdown/PDF/Text.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/DetailPage.jsx` — تبويب/لوحة ملاحظات.
+    - `archive app/src/components/media/VideoPlayer.jsx` و`DocumentViewer.jsx` — ربط الملاحظات بالنقطة الزمنية أو المنطقة.
+    - `archive-server/prisma/schema.prisma` — جدول notes/comments عند الوضع السحابي.
+  - **التنفيذ:** ملاحظات شخصية؛ تعليقات Threaded؛ @mentions؛ فلترة ملاحظاتي/الكل؛ بحث داخل الملاحظات؛ تصدير مع روابط للعناصر الأصلية.
+  - الجهد: 5-7 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 10 — P1).
+
+---
+
+### 15.11 P1 — المزامنة الانتقائية وذكاء النطاق الترددي (Selective Sync & Bandwidth Intelligence)
+
+- [ ] `[P1]` ⏱️XL **تمكين مزامنة انتقائية حسب المجلد/المجموعة مع سياسات نطاق ترددي وتخزين مؤقت ذكي** — المزامنة الحالية تعمل بمنطق الكل أو لا شيء، وهو غير مناسب للأرشيفات الكبيرة أو الجوال.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/sync/selectiveSyncPolicy.js` — قواعد مزامنة لكل مجلد/مجموعة.
+    - `archive app/src/components/sync/SyncScopeToggle.jsx` — زر “مزامنة محلياً”.
+    - `archive app/src/components/sync/BandwidthSettings.jsx` — WiFi/بيانات جوال/اتصال بطيء.
+    - `archive app/src/features/sync/smartCacheManager.js` — إبقاء الأكثر استخداماً وتنظيف القديم.
+    - `archive app/src/components/sync/PerItemSyncBadge.jsx` — حالة العنصر: محلي/سحابي/جاري/تعارض.
+  - **تعديل ملفات:**
+    - `archive app/src/services/storage/*` — دعم metadata-only وdownload-on-demand.
+    - `archive app/src/pages/CollectionsPage.jsx` و`FoldersPage.jsx` — زر المزامنة للمجموعات والمجلدات.
+  - **التنفيذ:** مزامنة metadata فقط على بيانات الجوال؛ تنزيل ملفات عند الطلب؛ سقف تخزين محلي؛ إبقاء المفضلة دائماً محلية؛ جدولة مزامنة يدوية/كل ساعة/على WiFi فقط.
+  - الجهد: 5-7 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 11 — P1).
+
+---
+
+### 15.12 P2 — لوحة إحصائيات الاستخدام الشخصي وتحليلات الأرشيف (Personal Analytics & Archive Insights)
+
+- [ ] `[P2]` ⏱️XL **بناء لوحة تحليلات شخصية تكشف نمو الأرشيف وصحته وأنماط الاستخدام** — لا توجد رؤية كافية حول النمو الشهري، أكثر الوسوم، العناصر غير المصنفة، المكررات، أو نشاط المستخدم.
+  - **الملفات الجديدة:**
+    - `archive app/src/pages/PersonalAnalyticsPage.jsx` — لوحة التحليلات الشخصية.
+    - `archive app/src/components/analytics/GrowthCharts.jsx` — نمو العناصر والمساحة عبر الزمن.
+    - `archive app/src/components/analytics/TagAnalyticsPanel.jsx` — أكثر الوسوم وتوحيد الوسوم المتشابهة.
+    - `archive app/src/components/analytics/ArchiveHealthScore.jsx` — درجة صحة الأرشيف.
+    - `archive app/src/features/analytics/periodicReports.js` — تقارير أسبوعية/شهرية.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/DataCenterPage.jsx` — ربط التحليلات العامة بالشخصية أو فصلها.
+    - `archive app/src/stores/slices/archiveSlice.js` — selectors للتحليل والإحصاءات.
+  - **التنفيذ:** عناصر مضافة شهرياً/أسبوعياً؛ توزيع الأنواع؛ وسوم مكررة أو ناقصة؛ عناصر بلا وصف/مجموعة/وسوم؛ أكثر العناصر مشاهدة/تعديلاً؛ تقارير دورية بإشعار أو بريد.
+  - الجهد: 4-6 أسابيع.
+  - المصدر: archive-suite-cloud-ux-improvements (المقترح 12 — P2).
+
+---
+
+### 15.13 P0 — لوحة القيادة الشخصية (Personal Dashboard)
+
+- [ ] `[P0]` ⏱️L **إضافة لوحة قيادة شخصية موجهة للاستخدام اليومي مع “يحتاج اهتمامك”** — المستخدم يبدأ من أرشيف مسطح ولا يرى ما أضافه اليوم أو الملفات الناقصة أو العمليات الفاشلة.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/dashboard/PersonalGreeting.jsx` — تحية وسياق زمني ونشاط اليوم/الأسبوع.
+    - `archive app/src/components/dashboard/NeedsAttentionPanel.jsx` — عناصر بلا وصف، ملفات لم تُرفع، عمليات فاشلة، مسودات.
+    - `archive app/src/components/dashboard/MiniStatsPanel.jsx` — إحصائيات مصغرة.
+    - `archive app/src/features/dashboard/actionRanking.js` — ترتيب الإجراءات حسب الاستخدام.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/DashboardPage.jsx` — دمج الطبقة الشخصية فوق لوحة §15.4.
+    - `archive app/src/components/dashboard/QuickActionsPanel.jsx` — إجراءات تتكيف مع عادات المستخدم.
+  - **التنفيذ:** تحية باسم المستخدم؛ أرقام اليوم/الأسبوع؛ إجراءات مباشرة لكل تنبيه؛ آخر نشاط مع تراجع سريع عند الإمكان؛ إحصائيات مصغرة محدثة تلقائياً.
+  - يتطلب: §15.4 أو يُنفّذ كأول نسخة منها.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 1 — P0).
+
+---
+
+### 15.14 P0 — سير عمل الإضافة الموجّه خطوة بخطوة (Guided Add Workflow)
+
+- [ ] `[P0]` ⏱️L **تحويل نموذج الإضافة الطويل إلى معالج 3-4 خطوات حسب نوع المحتوى** — AddVideoPage يعرض حقولاً كثيرة دفعة واحدة، ما يربك المستخدم الجديد ويزيد البيانات الناقصة.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/add/GuidedAddWizard.jsx` — معالج الإضافة الرئيسي.
+    - `archive app/src/components/add/ContentTypeStep.jsx` — اختيار فيديو/صوت/مستند/صورة.
+    - `archive app/src/components/add/BasicInfoStep.jsx` — عنوان/وصف/وسوم.
+    - `archive app/src/components/add/PlacementStep.jsx` — مجلد/مجموعة مع مقترحات.
+    - `archive app/src/components/add/AdvancedDetailsStep.jsx` — حقول اختيارية مطوية.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/AddVideoPage.jsx` — استبدال النموذج الكامل بالمعالج مع وضع متقدم.
+    - `archive app/src/features/templates/*` — تعبئة الخطوات من القوالب إن وُجدت.
+  - **التنفيذ:** حفظ كافٍ بعد الخطوات الأساسية؛ مؤشر تقدم؛ “حفظ ومتابعة لاحقاً”؛ اقتراح المجلد الأخير؛ تأكيد بعد الحفظ مع “إضافة عنصر مشابه”.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 2 — P0).
+
+---
+
+### 15.15 P1 — نظام التنقل السياقي الذكي (Contextual Smart Navigation)
+
+- [ ] `[P1]` ⏱️L **استبدال التنقل الثابت بتنقل يتغير حسب الصفحة والنشاط والجهاز** — الشريط الجانبي يعرض نفس الخيارات دائماً، وصفحة التفاصيل والجوال يحتاجان إجراءات مختلفة.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/navigation/ContextualSidebar.jsx` — sidebar حسب الصفحة.
+    - `archive app/src/components/navigation/DetailNavigationPanel.jsx` — التالي/السابق/إجراءات/علاقات/مشابهات.
+    - `archive app/src/components/navigation/SmartBottomTabs.jsx` — تنقل سفلي للجوال.
+    - `archive app/src/features/navigation/navigationContext.js` — تحديد السياق الحالي.
+  - **تعديل ملفات:**
+    - `archive app/src/components/navigation/Sidebar.jsx` — التحول إلى wrapper ذكي.
+    - `archive app/src/pages/DetailPage.jsx` — تمكين التنقل بين العناصر دون العودة للأرشيف.
+    - `archive app/src/pages/AddVideoPage.jsx` — عرض مسودة العنصر والمقترحات في الشريط.
+  - **التنفيذ:** قسم الأكثر زيارة ومؤخراً في الأرشيف؛ أزرار التالي/السابق في التفاصيل؛ إجراءات سريعة؛ تنقل سفلي ذكي للجوال؛ شريط اختصارات أسفل الشاشة حسب السياق.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 3 — P1).
+
+---
+
+### 15.16 P0 — تجربة البحث الشاملة الموحّدة (Unified Search Experience)
+
+- [ ] `[P0]` ⏱️L **بناء واجهة بحث عالمية Command Palette تعمل من أي صفحة مع نتائج غنية** — البحث الحالي مقيّد بسياق محدود ولا يحفظ السياق أو يعرض نتائج مصنفة بتمييز مطابقات.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/search/GlobalSearchPalette.jsx` — نافذة Ctrl+K أو `/`.
+    - `archive app/src/components/search/SearchSuggestionList.jsx` — اقتراحات عناصر/مجموعات/مجلدات/إجراءات.
+    - `archive app/src/components/search/RichSearchResult.jsx` — نتيجة مع تمييز النص ونوع المحتوى والوسوم.
+    - `archive app/src/features/search/savedSearches.js` — حفظ الاستعلامات المتكررة.
+    - `archive app/src/features/search/contextualSearchHints.js` — اقتراح “بحث في نفس المجلد/المجموعة”.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/ArchivePage.jsx` — ربط البحث القديم بالواجهة العالمية.
+    - `archive-server/src/api/server.js` أو search endpoint الموجود — دعم مقتطفات OCR/transcript عند توفرها.
+  - **التنفيذ:** بحث من أي صفحة؛ تبويبات كل النتائج/فيديو/صوت/مستندات/مجموعات؛ تمييز المطابقات؛ بحث محفوظ ديناميكي؛ نتائج داخل OCR والتفريغ مع رابط للموضع أو الزمن.
+  - الجهد: 4-5 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 4 — P0).
+
+---
+
+### 15.17 P1 — نظام العرض التكيفي (Adaptive View System)
+
+- [ ] `[P1]` ⏱️XL **إضافة عروض Timeline/Map/Kanban وتذكر تفضيلات العرض حسب السياق** — أوضاع الشبكة/القائمة/الجدول ثابتة ولا تتكيف مع عدد العناصر أو نوعها أو شاشة المستخدم.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/views/TimelineView.jsx` — عرض زمني يوم/أسبوع/شهر/سنة.
+    - `archive app/src/components/views/MapView.jsx` — خريطة للعناصر ذات الإحداثيات.
+    - `archive app/src/components/views/KanbanView.jsx` — أعمدة حسب الحالة أو النوع أو حقل تصنيفي.
+    - `archive app/src/components/views/TableColumnCustomizer.jsx` — اختيار وترتيب أعمدة الجدول.
+    - `archive app/src/features/views/viewPreferenceStore.js` — حفظ التفضيلات لكل مجلد/مجموعة.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/ArchivePage.jsx` — اختيار العرض التكيفي وتخزينه.
+    - `archive app/src/components/views/TableView.jsx` — أعمدة مخصصة وحفظ الترتيب.
+  - **التنفيذ:** اختيار تلقائي حسب العدد؛ حفظ العرض والفلاتر والأعمدة؛ Timeline للعناصر المؤرخة؛ Map للعناصر الجغرافية؛ Kanban مع سحب لتغيير الحالة.
+  - الجهد: 4-6 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 5 — P1).
+
+---
+
+### 15.18 P0 — نظام الإجراءات الجماعية المتقدم (Advanced Bulk Actions)
+
+- [ ] `[P0]` ⏱️L **ترقية العمليات الجماعية من تحديد يدوي إلى تحديد شرطي مع معاينة وتراجع** — العمليات الجماعية الأساسية موجودة، لكنها لا تكفي للسيناريوهات الشرطية أو تتبع النجاح والفشل أو التراجع الجزئي.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/bulk/SmartSelectionBuilder.jsx` — تحديد حسب نوع/تاريخ/حالة/وسوم/حجم.
+    - `archive app/src/components/bulk/BulkPreviewDialog.jsx` — معاينة التغييرات والعناصر المتأثرة.
+    - `archive app/src/components/bulk/BulkProgressTracker.jsx` — تقدم ونجاح/فشل لكل عنصر.
+    - `archive app/src/features/bulk/bulkUndoManager.js` — تراجع جماعي.
+    - `archive app/src/pages/BulkOperationsHistoryPage.jsx` — سجل العمليات الجماعية.
+  - **تعديل ملفات:**
+    - `archive app/src/components/bulk/BulkActionBar.jsx` — إضافة التحديد الذكي والمعاينة.
+    - `archive app/src/stores/slices/archiveSlice.js` — حفظ snapshots قبل العملية للتراجع.
+    - `archive-server/src/api/server.js` — إعادة نتيجة تفصيلية per-item في bulk endpoints.
+  - **التنفيذ:** “حدد العناصر بدون وصف/المضافة هذا الأسبوع/الأكبر من 100MB”؛ دمج شروط AND/OR؛ معاينة قبل التنفيذ؛ أخطاء لا توقف كامل العملية؛ إعادة محاولة للفاشل فقط؛ تراجع خلال 30 ثانية وسجل دائم.
+  - يتطلب: يبني فوق مهمة العمليات الجماعية الأساسية المكتملة في §9.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 6 — P0).
+
+---
+
+### 15.19 P1 — تجربة العنصر الأول والتهيئة الموجّهة (First-Item Onboarding)
+
+- [ ] `[P1]` ⏱️L **إضافة تهيئة استخدام بعد الإعداد التقني تقود المستخدم لإضافة وتنظيم أول عنصر** — صفحة الأرشيف الفارغة لا تشرح ما الذي يجب أرشفته أولاً أو كيف تُنظّم المجلدات والوسوم.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/onboarding/FirstItemOnboarding.jsx` — مسار أول 10 دقائق.
+    - `archive app/src/components/onboarding/UseCasePicker.jsx` — اختيار محاضرات/عمل/وسائط/مؤسسي/أخرى.
+    - `archive app/src/features/onboarding/suggestedStructures.js` — قوالب مجلدات ووسوم حسب حالة الاستخدام.
+    - `archive app/src/components/onboarding/FirstItemSuccess.jsx` — تأكيد احتفالي وخطوات تالية.
+  - **تعديل ملفات:**
+    - `archive app/src/features/onboarding/V1OnboardingWizard.jsx` — الانتقال إلى مسار الاستخدام بعد الإعداد.
+    - `archive app/src/pages/ArchivePage.jsx` — حالة فارغة ذكية عند عدم وجود عناصر.
+  - **التنفيذ:** اختيار حالة الاستخدام؛ إنشاء مقترحات مجلدات ووسوم؛ إضافة أول عنصر عبر §15.14؛ شرح الفرق بين المجلدات والمجموعات؛ جولة قصيرة للأدوات؛ إخفاء الخطوات تدريجياً بعد الخبرة.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 7 — P1).
+
+---
+
+### 15.20 P1 — قائمة الأوامر واكتشاف الاختصارات (Command Palette & Shortcut Discovery)
+
+- [ ] `[P1]` ⏱️L **توسيع نظام الاختصارات بقائمة أوامر واكتشاف تدريجي لا يحتاج حفظ الاختصارات** — حتى مع وجود اختصارات، يحتاج المستخدم طريقة لاكتشاف الأوامر وتنفيذها من لوحة المفاتيح.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/command/CommandPalette.jsx` — Ctrl+Shift+P للبحث في الأوامر.
+    - `archive app/src/features/command/commandRegistry.js` — ربط الأوامر بالإجراءات والصلاحيات والسياق.
+    - `archive app/src/components/shortcuts/ShortcutHintBubble.jsx` — تلميح يظهر بعد استخدام الفأرة لعملية لها اختصار.
+    - `archive app/src/features/shortcuts/shortcutLearningState.js` — إيقاف التلميح بعد تعلّم المستخدم.
+  - **تعديل ملفات:**
+    - `archive app/src/features/shortcuts/shortcutRegistry.js` — مشاركة نفس المصدر بين الاختصارات وقائمة الأوامر.
+    - `archive app/src/components/common/Button.jsx` أو مكونات الأزرار المشتركة — عرض التلميحات عند الحاجة.
+  - **التنفيذ:** أوامر عامة وصفحية؛ بحث باسم الأمر؛ عرض الاختصار بجانبه؛ تلميحات تعلم تدريجي تتوقف بعد 3 مرات؛ استيراد/تصدير إعدادات الاختصارات.
+  - يتطلب: §15.5 أو يُدمج معه كمرحلة ثانية.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 8 — P1).
+
+---
+
+### 15.21 P2 — نظام التغذية الراجعة السياقية والتعلم الذاتي (Contextual Feedback & Self-Learning)
+
+- [ ] `[P2]` ⏱️L **بناء طبقة اقتراحات ذكية تساعد المستخدم على تحسين طريقة استخدامه تدريجياً** — النظام لا يرشد المستخدم عند تكرار سلوك غير مثالي مثل إضافة عناصر بلا وسوم أو عدم استخدام المجموعات الذكية.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/feedback/contextualRules.js` — قواعد النصائح حسب السلوك.
+    - `archive app/src/components/feedback/ContextualNudge.jsx` — نصيحة غير مزعجة في اللحظة المناسبة.
+    - `archive app/src/components/feedback/WeeklySuggestionsPanel.jsx` — 2-3 اقتراحات أسبوعية.
+    - `archive app/src/features/feedback/usagePatternAnalyzer.js` — تحليل سلوك المستخدم محلياً.
+    - `archive app/src/stores/slices/feedbackPrefsSlice.js` — عدم الإظهار مرة أخرى وحالة النصائح.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/DashboardPage.jsx` — قسم اقتراحات التحسين.
+    - `archive app/src/components/forms/TagAutocomplete.jsx` و`AddVideoPage.jsx` — تلميحات عند الاستخدام المتكرر بلا وسوم/وصف.
+  - **التنفيذ:** نصائح سياقية مرة واحدة؛ اقتراحات تنظيم أسبوعية؛ مؤشرات استخدام شخصية؛ كشف ميزات متقدمة تدريجياً؛ تعلم من الأخطاء المتكررة لتعديل القيم الافتراضية المقترحة.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 9 — P2).
+
+---
+
+### 15.22 P1 — تجربة عدم الاتصال الشاملة (Comprehensive Offline Experience)
+
+- [ ] `[P1]` ⏱️L **تحويل تجربة الأوفلاين إلى نمط عمل كامل مع طابور تغييرات ومزامنة تعارضات** — وجود PWA أو cache لا يكفي إذا توقفت الإضافة والتعديل والرفع عند فقدان الاتصال أو لم تظهر حالة واضحة للمستخدم.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/offline/OfflineBanner.jsx` — شريط حالة واضح.
+    - `archive app/src/features/offline/offlineQueue.js` — طابور إضافة/تعديل/حذف محلي.
+    - `archive app/src/components/offline/PendingSyncBadge.jsx` — مؤشر على العناصر المعدلة أوفلاين.
+    - `archive app/src/features/offline/connectivityProbe.js` — ping دوري للسيرفر بجانب navigator.onLine.
+    - `archive app/src/features/offline/precachePolicy.js` — تخبئة آخر 100 عنصر ومجلدات محددة.
+  - **تعديل ملفات:**
+    - `archive app/public/sw.js` — ربط العمليات طويلة الأمد بالـ background sync إن أمكن.
+    - `archive app/src/stores/slices/archiveSlice.js` — قبول عمليات كتابة محلية عند الانقطاع.
+    - `archive app/src/features/sync/conflictResolver.js` — استخدام حوار تعارضات §15.2.
+  - **التنفيذ:** تصفح وبحث محلي أوفلاين؛ إضافة/تعديل/حذف في الطابور؛ مزامنة زمنية عند عودة الاتصال؛ حفظ طلبات الرفع/التصدير للمعالجة لاحقاً؛ مؤشرات per-item؛ تخبئة مسبقة للمحتوى الأكثر استخداماً.
+  - الجهد: 4-5 أسابيع.
+  - المصدر: archive-suite-daily-ux-proposals (المقترح 10 — P1).
+
+---
+
+## 16. أفكار الميزات الجديدة — مهام تنفيذية مستخرجة
+
+> المصدر: `archive-suite-new-feature-ideas.md`.
+> المنهجية: حُوّلت الأفكار المقترحة إلى مهام تنفيذية بنفس صيغة ملف المهام. البنود التي لها أصل سابق في الملف الحالي صيغت كتوسعة أو مرحلة تنفيذ إضافية بدل تكرار مباشر.
+
+### 16.1 P1 — المجموعات الذكية التلقائية بقواعد مركبة (Smart Auto-Collections)
+
+- [ ] `[P1]` ⏱️L **توسيع المجموعات الذكية لتُدار بقواعد تلقائية عند إضافة/تعديل العناصر** — المهمة الحالية في §9 تغطي مجموعات مبنية على استعلام محفوظ، لكنها لا تغطي محرّك قواعد حي يربط العناصر تلقائياً عند كل تغيير.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/collections/smartCollectionRules.js` — تعريف DSL القواعد: وسوم، نوع، تاريخ، مجلد، حجم، شروط AND/OR.
+    - `archive app/src/components/collections/SmartCollectionRuleBuilder.jsx` — محرر قواعد بصري.
+    - `archive-server/src/collections/smartCollectionEvaluator.js` — تقييم القواعد في الخادم أو عند المزامنة.
+    - `archive-server/prisma/migrations/*_smart_collection_rules/` — جدول `smart_collection_rules`.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/CollectionsPage.jsx` — تمييز المجموعات الذكية بأيقونة ⚡ وإدارة قواعدها.
+    - `archive app/src/stores/slices/collectionsSlice.js` — إعادة حساب العضوية بعد الإضافة/التعديل.
+    - `archive-server/src/api/server.js` — مسارات إنشاء/تحديث/اختبار القواعد.
+  - **التنفيذ:** قواعد بسيطة ومركبة؛ معاينة عدد العناصر المطابقة قبل الحفظ؛ تطبيق تلقائي عند إضافة عنصر جديد أو تعديل وسومه؛ تحويل مجموعة ذكية لعادية والعكس؛ سجل آخر تشغيل للقاعدة.
+  - يرتبط بـ: §9.د “مجموعات ذكية”.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 1 — P1).
+
+---
+
+### 16.2 P0 — المفضلات والوصول السريع (Favorites & Quick Access)
+
+- [x] `[P0]` ⏱️M **إضافة نظام مفضلات شامل للعناصر والمجموعات والمجلدات والبحث المحفوظ** — لا يوجد حالياً مسار سريع ثابت للوصول للعناصر المتكررة، ما يجعل المستخدم يعيد البحث أو التنقل لنفس المحتوى يومياً.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/favorites/favoritesStore.js` — إدارة المفضلات محلياً وسحابياً.
+    - `archive app/src/components/favorites/FavoriteButton.jsx` — زر نجمة موحد لكل كيان.
+    - `archive app/src/components/favorites/FavoritesSidebarSection.jsx` — قسم أعلى الشريط الجانبي.
+    - `archive app/src/pages/FavoritesPage.jsx` — صفحة مفضلات موحدة.
+    - `archive-server/prisma/migrations/*_favorites/` — جدول `favorites` بنوع الكيان والمالك والترتيب.
+  - **تعديل ملفات:**
+    - `archive app/src/components/navigation/Sidebar.jsx` — عرض المفضلات والأكثر استخداماً.
+    - `archive app/src/pages/ArchivePage.jsx` و`RecordDetailsPage.jsx` — إظهار زر المفضلة.
+    - `archive app/src/features/search/savedSearches.js` — دعم حفظ البحث كمفضلة.
+  - **التنفيذ:** مفضلات يدوية؛ قسم “الأكثر استخداماً” تلقائي حسب الفتح/التعديل؛ ترتيب المفضلات بالسحب؛ مزامنة عبر الأجهزة؛ اختصار لوحة مفاتيح لإضافة/إزالة المفضلة.
+  - الجهد: 1-2 أسبوع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 2 — P0).
+
+---
+
+### 16.3 P1 — كشف المكررات الذكي ودمجها (Smart Duplicate Detection & Merge)
+
+- [ ] `[P1]` ⏱️L **بناء نظام كشف مكررات متعدد الطبقات مع واجهة دمج آمنة** — التحليلات الحالية قد تشير لصحة الأرشيف، لكنها لا تقدم فحصاً عملياً للمكررات ولا عملية دمج قابلة للتراجع.
+  - **الملفات الجديدة:**
+    - `archive-server/src/duplicates/duplicateScanner.js` — فحص hash والحجم والنوع والعنوان.
+    - `archive-server/src/duplicates/mergeService.js` — دمج البيانات الوصفية والملفات المرتبطة.
+    - `archive app/src/pages/DuplicatesPage.jsx` — لوحة مراجعة المكررات.
+    - `archive app/src/components/duplicates/DuplicatePairCard.jsx` — عرض الزوج ودرجة التشابه.
+    - `archive-server/prisma/migrations/*_duplicate_candidates/` — جدول نتائج الفحص وجدول قرارات المستخدم.
+  - **تعديل ملفات:**
+    - `archive-server/src/files/fileStorageService.js` — حفظ hash للملفات الجديدة.
+    - `archive app/src/pages/PersonalAnalyticsPage.jsx` — ربط “صحة الأرشيف” بالمكررات.
+    - `archive app/src/stores/slices/archiveSlice.js` — إجراءات دمج/تجاهل/حذف.
+  - **التنفيذ:** مطابقة تامة عبر hash؛ مطابقة حجم/نوع؛ تشابه عناوين؛ درجة ثقة؛ تشغيل يدوي أو أسبوعي؛ خيارات: دمج، حذف النسخة الأقدم، تجاهل؛ حفظ قرار “ليسا مكررَين”.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 3 — P1).
+
+---
+
+### 16.4 P1 — شاهد لاحقاً وقوائم القراءة/المراجعة (Watch Later & Reading Lists)
+
+- [ ] `[P1]` ⏱️M **إضافة قوائم شخصية مؤقتة لتجميع العناصر المراد الرجوع إليها لاحقاً** — المفضلات لا تكفي لأنها تعبّر عن “مهم دائماً” لا “أريد مراجعته لاحقاً”.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/lists/readingListsSlice.js` — قوائم المستخدم وحالة التقدم.
+    - `archive app/src/components/lists/WatchLaterButton.jsx` — إضافة سريعة للقائمة الافتراضية.
+    - `archive app/src/pages/ReadingListsPage.jsx` — إدارة القوائم.
+    - `archive app/src/components/lists/ReadingListProgressBadge.jsx` — مكتمل/غير مكتمل/قيد القراءة.
+    - `archive-server/prisma/migrations/*_reading_lists/` — جداول `reading_lists` و`reading_list_items`.
+  - **تعديل ملفات:**
+    - `archive app/src/components/cards/RecordCard.jsx` — زر “شاهد لاحقاً”.
+    - `archive app/src/pages/RecordDetailsPage.jsx` — تحديث التقدم عند مشاهدة الفيديو/فتح المستند.
+    - `archive app/src/components/navigation/Sidebar.jsx` — عداد العناصر غير المنتهية.
+  - **التنفيذ:** قائمة افتراضية؛ قوائم مخصصة؛ ترتيب بالسحب؛ نقل تلقائي إلى “مكتمل” عند انتهاء مشاهدة/قراءة؛ فلاتر للمنتهي وغير المنتهي.
+  - الجهد: 1-2 أسبوع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 4 — P1).
+
+---
+
+### 16.5 P1 — الاستيراد من مصادر خارجية (External Source Import)
+
+- [ ] `[P1]` ⏱️XL **بناء منظومة استيراد من يوتيوب وGoogle Drive وروابط الويب والمجلدات المحلية** — الرفع اليدوي وحده يرفع الاحتكاك ويمنع إدخال المحتوى من مصادر الاستخدام اليومية.
+  - **الملفات الجديدة:**
+    - `archive app/src/pages/ImportSourcesPage.jsx` — مركز ربط المصادر.
+    - `archive app/src/components/import/ExternalImportDialog.jsx` — إدخال رابط أو اختيار مصدر.
+    - `archive-server/src/importers/youtubeImporter.js` — حفظ مرجع أو تنزيل اختياري مع بيانات وصفية.
+    - `archive-server/src/importers/googleDriveImporter.js` — استيراد ملفات Drive بعد OAuth.
+    - `archive-server/src/importers/webPageImporter.js` — حفظ صفحة HTML/PDF وmetadata.
+    - `archive-server/src/importers/localFolderManifestImporter.js` — استيراد manifest لمجلدات محلية.
+    - `archive-server/prisma/migrations/*_import_sources/` — إعدادات المصادر وحالة الاستيراد.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/AddVideoPage.jsx` أو AddItemPage — خيار “استيراد من مصدر”.
+    - `archive-server/src/auth/oauthService.js` — نطاقات OAuth للمصادر الخارجية.
+    - `archive-server/src/jobs/jobQueue.js` — تنفيذ الاستيراد كمهام طويلة.
+  - **التنفيذ:** استيراد رابط مفرد؛ استيراد مجلد/دفعة؛ استخراج عنوان ووصف ومؤلف وتاريخ نشر؛ سياسة تنزيل/مرجع فقط؛ معالجة أخطاء الصلاحيات؛ شريط تقدم وسجل عمليات.
+  - ملاحظة: تنزيل محتوى من منصات خارجية يجب أن يحترم شروط الاستخدام وحقوق الوصول؛ لذلك يفضّل دعم “حفظ مرجع + metadata” كخيار افتراضي آمن.
+  - الجهد: 5-7 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 5 — P1).
+
+---
+
+### 16.6 P1 — تاريخ إصدارات العناصر والملفات المرفقة (Item Version History)
+
+- [ ] `[P1]` ⏱️L **توسيع سجل الإصدارات ليشمل الحقول والملفات والمقارنة والاستعادة الجزئية** — §9.ج يغطي snapshot للسجل، وهذه المهمة توسّعه إلى تجربة مستخدم كاملة مع ملفات مشتقة وسياسات احتفاظ.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/versions/VersionTimeline.jsx` — خط زمني للإصدارات.
+    - `archive app/src/components/versions/VersionDiffViewer.jsx` — مقارنة حقول ووسوم ووصف.
+    - `archive app/src/components/versions/RestoreVersionDialog.jsx` — استعادة كاملة أو جزئية.
+    - `archive-server/src/versions/versionRetentionService.js` — تنظيف الإصدارات القديمة حسب السياسة.
+    - `archive-server/prisma/migrations/*_item_versions_extended/` — توسيع `record_versions` لدعم fileRevision وdiff metadata.
+  - **تعديل ملفات:**
+    - `archive-server/src/api/server.js` — نقاط compare/restore/list.
+    - `archive app/src/pages/RecordDetailsPage.jsx` — تبويب “الإصدارات”.
+    - `archive-server/src/files/fileStorageService.js` — الاحتفاظ بنسخ ملفات عند الاستبدال حسب policy.
+  - **التنفيذ:** نسخة عند كل تعديل جوهري؛ عرض من عدّل ومتى وما تغيّر؛ استعادة حقل واحد؛ استعادة ملف سابق؛ مقارنة نسختين؛ سياسة احتفاظ: آخر 10 / آخر 90 يوم / الكل.
+  - يرتبط بـ: §9.ج “سجل إصدارات السجل”.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 6 — P1).
+
+---
+
+### 16.7 P1 — المشاركة والتعاون المحدود بصلاحيات دقيقة (Limited Sharing & Collaboration)
+
+- [ ] `[P1]` ⏱️XL **توسيع المشاركة من روابط snapshot إلى مشاركة عناصر ومجموعات بدعوات وصلاحيات وتعليقات** — روابط المشاركة الحالية لا تكفي لسيناريوهات الفريق ولا توفر صلاحيات مثل تعليق/تعديل/تحميل فقط.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/share/ShareDialog.jsx` — مشاركة عنصر أو مجموعة.
+    - `archive app/src/pages/SharedWithMePage.jsx` — المحتوى المشترك مع المستخدم.
+    - `archive app/src/components/comments/CommentThread.jsx` — تعليقات على العنصر أو المجموعة.
+    - `archive-server/src/share/sharePermissionService.js` — صلاحيات عرض/تحميل/تعليق/تعديل.
+    - `archive-server/src/share/invitationService.js` — دعوات بريدية وروابط مؤقتة.
+    - `archive-server/prisma/migrations/*_sharing_permissions/` — جداول shares, share_invites, comments.
+  - **تعديل ملفات:**
+    - `archive-server/src/share/` — دعم كلمة مرور للرابط، انتهاء صلاحية، إلغاء فوري، صلاحيات دقيقة.
+    - `archive-server/src/api/server.js` — middleware صلاحيات للموارد المشتركة.
+    - `archive app/src/pages/RecordDetailsPage.jsx` و`CollectionsPage.jsx` — أزرار المشاركة والتعليقات.
+  - **التنفيذ:** مشاركة عنصر/مجموعة؛ رابط خاص؛ دعوة مستخدم بالبريد؛ صلاحيات: metadata فقط، عرض، تنزيل، تعليق، تعديل؛ انتهاء صلاحية؛ كلمة مرور اختيارية؛ سجل نشاط المشاركة.
+  - يرتبط بـ: مهام إبطال روابط المشاركة وRBAC في §1 و§9.
+  - الجهد: 5-8 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 7 — P1).
+
+---
+
+### 16.8 P1 — عمليات البحث المحفوظة والتنبيهات التلقائية (Saved Searches & Alerts)
+
+- [ ] `[P1]` ⏱️L **تحويل البحث المحفوظ إلى كيان كامل مع تنبيهات عند ظهور عناصر مطابقة** — البحث المحفوظ مذكور ضمن المجموعات الذكية، لكن لا توجد تجربة مستقلة لحفظه وتشغيله والتنبيه عليه.
+  - **الملفات الجديدة:**
+    - `archive app/src/features/search/savedSearchesSlice.js` — إدارة الاستعلامات المحفوظة.
+    - `archive app/src/components/search/SaveSearchButton.jsx` — حفظ من نتائج البحث.
+    - `archive app/src/pages/SavedSearchesPage.jsx` — إدارة البحث والتنبيهات.
+    - `archive-server/src/search/savedSearchAlertService.js` — فحص العناصر الجديدة المطابقة.
+    - `archive-server/prisma/migrations/*_saved_search_alerts/` — جداول saved_searches وsaved_search_alerts.
+  - **تعديل ملفات:**
+    - `archive app/src/components/navigation/Sidebar.jsx` — قسم “عمليات البحث المحفوظة”.
+    - `archive-server/src/notifications/` — ربط التنبيهات بمركز الإشعارات والبريد الاختياري.
+    - `archive-server/src/api/searchRoutes.js` أو `server.js` — CRUD للبحث المحفوظ.
+  - **التنفيذ:** حفظ استعلام مع اسم وأيقونة؛ تشغيل بنقرة؛ تحويله لتنبيه؛ إشعار عند إضافة عنصر مطابق؛ digest يومي/أسبوعي؛ احترام صلاحيات المستخدم في النتائج.
+  - يرتبط بـ: §9.د و§15.4.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 8 — P1).
+
+---
+
+### 16.9 P2 — تلخيص المحتوى واستخلاص النقاط الرئيسية (Content Summarization & Key Insights)
+
+- [ ] `[P2]` ⏱️XL **إضافة طبقة تلخيص AI للعناصر والمجموعات اعتماداً على OCR والتفريغ الصوتي** — البحث داخل المحتوى يصبح أقوى عندما توجد ملخصات ونقاط رئيسية قابلة للعرض والفهرسة.
+  - **الملفات الجديدة:**
+    - `archive-server/src/ai/summarizationService.js` — توليد ملخص قصير ونقاط وملخص مفصل.
+    - `archive-server/src/ai/groupSummaryService.js` — تلخيص مجموعة عناصر.
+    - `archive app/src/components/ai/SummaryPanel.jsx` — عرض الملخص في صفحة التفاصيل.
+    - `archive app/src/components/cards/SummarySnippet.jsx` — ملخص قصير في بطاقة العنصر.
+    - `archive-server/prisma/migrations/*_content_summaries/` — حقول/جدول summaries مع language/model/status.
+  - **تعديل ملفات:**
+    - `archive-server/src/ai/sdkProvider.js` — حماية prompt وقيود طول.
+    - `archive app/src/pages/RecordDetailsPage.jsx` — زر “تلخيص/تحديث الملخص”.
+    - `archive-server/src/jobs/jobQueue.js` — تشغيل التلخيص كخلفية بعد OCR/Transcription.
+  - **التنفيذ:** ملخص فقرة؛ 5-10 نقاط رئيسية؛ ملخص مفصل بعناوين؛ تلخيص مجموعة؛ تحديث عند تغيير المحتوى؛ دعم العربية؛ عدم تشغيل التفريغ/OCR إلا بموافقة أو إعداد واضح.
+  - يرتبط بـ: §7 “بحث دلالي” و§16.15 “تحويل الصيغ”.
+  - الجهد: 4-6 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 9 — P2).
+
+---
+
+### 16.10 P2 — أتمتة سير العمل بقواعد إذا-ثم (Workflow Automation Rules)
+
+- [ ] `[P2]` ⏱️XL **بناء محرر قواعد أتمتة بصري للأحداث والإجراءات المتكررة** — بدون أتمتة، تبقى خطوات مثل إضافة وسوم أو تشغيل تفريغ أو إرسال تذكير عمليات يدوية سهلة النسيان.
+  - **الملفات الجديدة:**
+    - `archive app/src/pages/AutomationRulesPage.jsx` — إدارة القواعد.
+    - `archive app/src/components/automation/RuleBuilder.jsx` — محرر إذا/ثم.
+    - `archive-server/src/automation/ruleEngine.js` — تقييم الأحداث والشروط.
+    - `archive-server/src/automation/actionRunner.js` — تنفيذ الإجراءات بأمان.
+    - `archive-server/src/automation/ruleExecutionLog.js` — سجل التنفيذ.
+    - `archive-server/prisma/migrations/*_automation_rules/` — جداول rules وexecutions.
+  - **تعديل ملفات:**
+    - `archive-server/src/events/domainEvents.js` — بث أحداث item.created/item.updated/storage.threshold.
+    - `archive-server/src/jobs/jobQueue.js` — جدولة القواعد المؤجلة.
+    - `archive app/src/components/navigation/Sidebar.jsx` — رابط الأتمتة.
+  - **التنفيذ:** أحداث: عنصر أضيف/عُدّل/وُسّم/مساحة تخزين تجاوزت حد؛ إجراءات: أضف وسم، انقل، أرسل إشعار، شغّل OCR/تفريغ، أنشئ نسخة احتياطية؛ تفعيل/تعطيل؛ اختبار القاعدة على عينة؛ سجل تنفيذ قابل للمراجعة.
+  - الجهد: 5-7 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 10 — P2).
+
+---
+
+### 16.11 P2 — الخط الزمني البصري للأرشيف (Visual Archive Timeline)
+
+- [ ] `[P2]` ⏱️L **إضافة عرض خط زمني تفاعلي يكشف توزيع العناصر عبر الزمن** — العرض الزمني مذكور ضمن نظام العرض التكيفي، وهذه مهمة تنفيذ تفصيلية له كصفحة/وضع عرض مستقل.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/views/TimelineView.jsx` — عرض العناصر على محور زمني.
+    - `archive app/src/components/views/TimelineZoomControls.jsx` — يوم/أسبوع/شهر/سنة.
+    - `archive app/src/components/views/TimelineLane.jsx` — صفوف حسب النوع أو المجموعة.
+    - `archive app/src/features/timeline/timelineSelectors.js` — تجميع حسب الزمن.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/ArchivePage.jsx` — إضافة وضع Timeline.
+    - `archive app/src/features/views/viewPreferencesSlice.js` — حفظ تفضيل العرض.
+    - `archive-server/src/api/searchRoutes.js` — endpoint تجميع زمني عند الأحجام الكبيرة.
+  - **التنفيذ:** تكبير/تصغير؛ ألوان/أيقونات حسب النوع؛ حجم النقطة حسب حجم الملف؛ فلاتر وسوم/أنواع/مجموعات؛ خطوط متعددة للمقارنة؛ فتح العنصر من النقطة الزمنية.
+  - يرتبط بـ: §15.10 “نظام العرض التكيفي”.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 11 — P2).
+
+---
+
+### 16.12 P2 — الاقتراحات الذكية والمحتوى المرتبط (Smart Suggestions & Related Content)
+
+- [ ] `[P2]` ⏱️L **إضافة قسم محتوى مرتبط واقتراحات تحسين مبنية على التشابه والسلوك** — الاقتراحات العامة في اللوحة لا تكفي إذا لم تظهر أيضاً داخل صفحة العنصر وفي لحظة اتخاذ القرار.
+  - **الملفات الجديدة:**
+    - `archive-server/src/recommendations/relatedContentService.js` — حساب التشابه بالوسوم/المجموعة/النوع/المحتوى.
+    - `archive app/src/components/recommendations/RelatedContentPanel.jsx` — عناصر مرتبطة في صفحة التفاصيل.
+    - `archive app/src/components/recommendations/ArchiveImprovementSuggestions.jsx` — اقتراحات تنظيف وتنظيم.
+    - `archive app/src/features/recommendations/recommendationFeedback.js` — إخفاء/مفيد/غير مفيد.
+  - **تعديل ملفات:**
+    - `archive app/src/pages/RecordDetailsPage.jsx` — تبويب أو لوحة جانبية للمحتوى المرتبط.
+    - `archive app/src/pages/DashboardPage.jsx` — اقتراحات تحسين على مستوى الأرشيف.
+    - `archive-server/src/ai/summarizationService.js` — استخدام الملخصات كإشارة تشابه عند توفرها.
+  - **التنفيذ:** 5-10 عناصر مشابهة؛ تفسير سبب الاقتراح؛ اقتراح جمع عناصر في مجموعة؛ اقتراح إضافة وصف/وسوم؛ إمكانية تجاهل الاقتراح؛ عدم إظهار اقتراحات مكررة.
+  - يرتبط بـ: §15.21 و§16.9.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 12 — P2).
+
+---
+
+### 16.13 P1 — الالتقاط السريع من الجوال وصندوق الوارد (Mobile Quick Capture)
+
+- [ ] `[P1]` ⏱️XL **بناء تجربة التقاط سريع للجوال عبر PWA مع Inbox للتنظيم لاحقاً** — نموذج الإضافة الكامل غير مناسب للحظات السريعة مثل تصوير وثيقة أو تسجيل ملاحظة صوتية.
+  - **الملفات الجديدة:**
+    - `archive app/src/pages/MobileCapturePage.jsx` — واجهة التقاط مبسطة.
+    - `archive app/src/components/mobile/FloatingCaptureButton.jsx` — زر + عائم للجوال.
+    - `archive app/src/features/capture/captureInboxSlice.js` — عناصر “بريد الوارد”.
+    - `archive app/src/components/capture/CaptureReviewQueue.jsx` — تنظيم العناصر الملتقطة لاحقاً.
+    - `archive app/public/manifest.webmanifest` — shortcuts للتقاط صورة/صوت إن أمكن.
+  - **تعديل ملفات:**
+    - `archive app/src/serviceWorker.js` أو `public/sw.js` — دعم offline capture queue.
+    - `archive app/src/pages/AddVideoPage.jsx` أو AddItemPage — وضع “حفظ الآن وتعديل لاحقاً”.
+    - `archive-server/src/uploads/uploadRoutes.js` — قبول uploads من الطابور المتأخر.
+  - **التنفيذ:** التقاط صورة/فيديو/صوت/ملاحظة نصية؛ عنوان تلقائي بالوقت؛ حفظ في Inbox؛ حقل عنوان واحد فقط؛ تفريغ الملاحظة الصوتية عند توفر الخدمة؛ عمل أوفلاين ثم رفع لاحق.
+  - يرتبط بـ: §15.22 “الأوفلاين الشامل” و§15.8 “تجربة الجوال”.
+  - الجهد: 5-6 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 13 — P1).
+
+---
+
+### 16.14 P1 — العلامات المرجعية الزمنية للفيديو والصوت (Time-Based Bookmarks)
+
+- [ ] `[P1]` ⏱️M **إضافة علامات زمنية داخل مشغل الفيديو/الصوت مع ملاحظات وتصدير** — المحتوى الطويل يحتاج فهرسة داخلية، وليس فقط وسوماً على مستوى العنصر.
+  - **الملفات الجديدة:**
+    - `archive app/src/components/media/TimeBookmarkButton.jsx` — زر إضافة علامة عند الموضع الحالي.
+    - `archive app/src/components/media/TimeBookmarkTimelineMarkers.jsx` — نقاط على شريط التقدم.
+    - `archive app/src/components/media/TimeBookmarkList.jsx` — قائمة العلامات في اللوحة الجانبية.
+    - `archive-server/prisma/migrations/*_time_bookmarks/` — جدول `time_bookmarks`.
+  - **تعديل ملفات:**
+    - `archive app/src/components/media/VideoPlayer.jsx` و`AudioPlayer.jsx` — أحداث position/seek.
+    - `archive app/src/pages/RecordDetailsPage.jsx` — تبويب أو لوحة “العلامات”.
+    - `archive-server/src/api/server.js` — CRUD للعلامات.
+  - **التنفيذ:** إضافة علامة بالوقت الحالي؛ عنوان وملاحظة؛ عرض على شريط التقدم؛ النقر للانتقال؛ ربط تلقائي بفقرة transcript إن وجدت؛ تصدير العلامات كMarkdown/CSV؛ صلاحيات مشاركة العلامات مع العنصر.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 14 — P1).
+
+---
+
+### 16.15 P2 — تحويل المحتوى بين الصيغ والملفات المشتقة (Content Format Conversion)
+
+- [ ] `[P2]` ⏱️L **بناء نظام تحويل صيغ داخلي يحفظ النتائج كملفات مشتقة مرتبطة بالأصل** — وجود FFmpeg وOCR يصبح أكثر قيمة إذا استطاع المستخدم توليد صيغ بديلة من داخل التطبيق.
+  - **الملفات الجديدة:**
+    - `archive-server/src/conversion/conversionService.js` — تحويل فيديو/صوت/صورة/مستند.
+    - `archive-server/src/conversion/conversionJobRunner.js` — تشغيل التحويلات الطويلة.
+    - `archive app/src/components/conversion/ConversionPanel.jsx` — واجهة التحويل في التفاصيل.
+    - `archive app/src/components/conversion/DerivedFilesList.jsx` — الملفات المشتقة المرتبطة بالأصل.
+    - `archive-server/prisma/migrations/*_derived_files/` — جدول `derived_files`.
+  - **تعديل ملفات:**
+    - `archive-server/src/media/ffmpegService.js` — استخراج الصوت وضغط الفيديو وتغيير الصيغة.
+    - `archive-server/src/ocr/` — OCR للصورة/المستند كتحويل قابل للطلب.
+    - `archive app/src/pages/RecordDetailsPage.jsx` — قسم “الملفات المشتقة”.
+    - `archive-server/src/jobs/jobQueue.js` — شريط تقدم وإلغاء.
+  - **التنفيذ:** فيديو → صوت؛ فيديو → صيغة/حجم أصغر؛ صورة → نص OCR؛ صوت → نص transcript؛ مستند → PDF؛ حفظ الناتج كملف مرتبط لا كعنصر جديد؛ سجل تحويلات؛ حذف ملف مشتق دون حذف الأصل.
+  - يرتبط بـ: §7 “خط معالجة الصور” و§16.9 “التلخيص”.
+  - الجهد: 3-5 أسابيع.
+  - المصدر: archive-suite-new-feature-ideas (الميزة 15 — P2).
+
