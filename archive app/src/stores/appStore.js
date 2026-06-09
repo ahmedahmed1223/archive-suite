@@ -24,6 +24,11 @@ import {
   createConnectionStatusActions
 } from "./slices/connectionStatusSlice.js";
 import {
+  createRelationsActions,
+  relationsActionKeys,
+  relationsInitialState
+} from "./slices/relationsSlice.js";
+import {
   createAuthStore,
   createSessionStore
 } from "./slices/authSlice.js";
@@ -34,14 +39,17 @@ export { settingsActionKeys } from "./slices/settingsSlice.js";
 export { dataTransferActionKeys } from "./slices/dataTransferSlice.js";
 export { uiActionKeys } from "./slices/uiSlice.js";
 export { connectionStatusActionKeys } from "./slices/connectionStatusSlice.js";
+export { relationsActionKeys } from "./slices/relationsSlice.js";
 
 export const useAppStore = createStore((set, get) => ({
   ...archiveInitialState,
   ...settingsInitialState,
   ...uiInitialState,
   ...connectionStatusInitialState,
+  ...relationsInitialState,
   ...createUiActions({ set, get }),
   ...createConnectionStatusActions({ set, get }),
+  ...createRelationsActions({ set, get }),
   ...createArchiveActions({ set, get, getAuthStore: () => useAuthStore }),
   ...createSettingsActions({ set, get, getAuthStore: () => useAuthStore }),
   ...createDataTransferActions({ set, get })
