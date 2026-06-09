@@ -168,6 +168,7 @@ export function createArchiveActions({ set, get, getAuthStore }) {
           changeHistory: await dbGetAll(STORES.HISTORY).catch(() => []),
           bookmarks: await dbGetAll(STORES.BOOKMARKS).catch(() => []),
           relations: await dbGetAll(STORES.RELATIONS).catch(() => []),
+          itemRelations: await dbGetAll(STORES.ITEM_RELATIONS).catch(() => []),
           virtualCollections: await dbGetAll(STORES.COLLECTIONS).catch(() => []),
           projects: await dbGetAll(STORES.PROJECTS).catch(() => []),
           vocabulary: await dbGetAll(STORES.VOCABULARY).catch(() => []),

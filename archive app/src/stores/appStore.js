@@ -24,6 +24,11 @@ import {
   createConnectionStatusActions
 } from "./slices/connectionStatusSlice.js";
 import {
+  createRelationsActions,
+  relationsActionKeys,
+  relationsInitialState
+} from "./slices/relationsSlice.js";
+import {
   createAuthStore,
   createSessionStore
 } from "./slices/authSlice.js";
@@ -37,6 +42,16 @@ import {
   autosaveInitialState,
   createAutosaveActions
 } from "./slices/autosaveSlice.js";
+import {
+  activityLogActionKeys,
+  activityLogInitialState,
+  createActivityLogActions
+} from "./slices/activityLogSlice.js";
+import {
+  createFoldersActions,
+  foldersActionKeys,
+  foldersInitialState
+} from "./slices/foldersSlice.js";
 
 export { pickStoreActions } from "./storeCore.js";
 export { archiveActionKeys } from "./slices/archiveSlice.js";
@@ -46,6 +61,9 @@ export { uiActionKeys } from "./slices/uiSlice.js";
 export { connectionStatusActionKeys } from "./slices/connectionStatusSlice.js";
 export { templatesActionKeys } from "./slices/templatesSlice.js";
 export { autosaveActionKeys } from "./slices/autosaveSlice.js";
+export { relationsActionKeys } from "./slices/relationsSlice.js";
+export { activityLogActionKeys } from "./slices/activityLogSlice.js";
+export { foldersActionKeys } from "./slices/foldersSlice.js";
 
 export const useAppStore = createStore((set, get) => ({
   ...archiveInitialState,
@@ -54,13 +72,19 @@ export const useAppStore = createStore((set, get) => ({
   ...connectionStatusInitialState,
   ...templatesInitialState,
   ...autosaveInitialState,
+  ...relationsInitialState,
+  ...activityLogInitialState,
+  ...foldersInitialState,
   ...createUiActions({ set, get }),
   ...createConnectionStatusActions({ set, get }),
+  ...createRelationsActions({ set, get }),
   ...createArchiveActions({ set, get, getAuthStore: () => useAuthStore }),
   ...createSettingsActions({ set, get, getAuthStore: () => useAuthStore }),
   ...createDataTransferActions({ set, get }),
   ...createTemplatesActions({ set, get }),
-  ...createAutosaveActions({ set, get })
+  ...createAutosaveActions({ set, get }),
+  ...createActivityLogActions({ set, get }),
+  ...createFoldersActions({ set, get })
 }));
 
 export const useAuthStore = createAuthStore({ createStore, useAppStore });
