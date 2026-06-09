@@ -1,21 +1,17 @@
 /**
- * Simple virtual list for mobile performance.
+ * Virtual list for performance — active on all devices when list is long.
  * Only renders items near the viewport. Uses scroll/resize listeners.
- * Falls back to rendering all items on desktop or when list is short.
  */
 import { useState, useRef, useEffect } from "react";
 
-const MOBILE_BREAKPOINT = 768;   // px
-const MIN_ITEMS_TO_VIRTUALIZE = 20;
+const MIN_ITEMS_TO_VIRTUALIZE = 50;
 const OVERSCAN = 5;              // extra items above/below viewport
 
 export function useVirtualList({ items = [], itemHeight = 120 } = {}) {
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: items.length });
   const containerRef = useRef(null);
 
-  // Evaluate at call time — hook is stable, this is a snapshot check on each render.
-  const isMobile = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
-  const shouldVirtualize = isMobile && items.length > MIN_ITEMS_TO_VIRTUALIZE;
+  const shouldVirtualize = items.length > MIN_ITEMS_TO_VIRTUALIZE;
 
   useEffect(() => {
     if (!shouldVirtualize || !containerRef.current) {

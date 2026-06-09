@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, ChevronDown, FileText, Table, Archive } from "lucide-react";
+import { Download, ChevronDown, FileText, Loader2, Table, Archive } from "lucide-react";
 import { useAppStore } from "../../stores/index.js";
 import { useLoading } from "../../hooks/useLoading.js";
 
@@ -11,7 +11,7 @@ const FORMATS = [
 
 export function ExportButton({ selectedIds = [] }) {
   const [open, setOpen] = useState(false);
-  const { anyLoading, withLoading } = useLoading();
+  const { anyLoading, isLoading, withLoading } = useLoading();
   const showToast = useAppStore((s) => s.showToast);
 
   async function handleExport(format) {
@@ -55,9 +55,15 @@ export function ExportButton({ selectedIds = [] }) {
         aria-expanded={open}
         className="va-tool-button inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/10 bg-gray-950/35 px-3 py-1.5 text-xs font-semibold text-gray-200 hover:bg-white/5 hover:text-white disabled:opacity-50"
       >
-        <Download className="h-4 w-4" />
-        <span>{selectedIds.length > 0 ? `تصدير (${selectedIds.length})` : "تصدير"}</span>
-        <ChevronDown className="h-3 w-3" />
+        {isLoading("export")
+          ? <Loader2 className="h-4 w-4 animate-spin" />
+          : <Download className="h-4 w-4" />}
+        <span>
+          {isLoading("export")
+            ? "جاري التصدير..."
+            : selectedIds.length > 0 ? `تصدير (${selectedIds.length})` : "تصدير"}
+        </span>
+        {!isLoading("export") && <ChevronDown className="h-3 w-3" />}
       </button>
 
       {open && (

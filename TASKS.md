@@ -111,9 +111,10 @@
   - الملفات: `archive-server/src/config/*`، `adminConfig.js`.
   - المصدر: backend-db-report.
 
-- [ ] `[P2]` ⏱️S **`getByUid()` لبحث المستخدم** — استبدل `getAll("users")` عند كل تسجيل دخول ببحث مستهدف.
+- [x] `[P2]` ⏱️S **`getByUid()` لبحث المستخدم** — استبدل `getAll("users")` عند كل تسجيل دخول ببحث مستهدف.
   - الملفات: `archive-server/src/auth/authService.js`، `StorageProvider`.
   - المصدر: backend-db-report.
+  - ✅ **مُنجز مسبقاً:** `authService.js` يستخدم `provider.getByField("users", "username", ...)` مع fallback لـ `getAll` للمزودين الذين لا يدعمون `getByField`.
 
 - [x] `[P2]` ⏱️M **API versioning** — بادئة `/api/v1/` مع إبقاء المسارات الحالية كـ aliases ورؤوس `Sunset`/`Link`.
   - الملفات: `archive-server/src/api/server.js`.
@@ -540,10 +541,11 @@
   - المصدر: deep-audit-2026.
   - ✅ **تم (2026-06-09):** أضيف دالة `encrypt_file()` في backup-cron.sh تستخدم `openssl enc -aes-256-cbc -pbkdf2 -iter 600000`؛ تُشفَّر الملفات وتُحسب `sha256` للنسخة المشفرة، وتُحذف النسخة الأصلية. مقيّد بوجود `BACKUP_ENCRYPTION_KEY` في البيئة. أضيف المتغير لـ `.env.example` مع تعليمات توليده.
 
-- [ ] `[P1]` ⏱️S **التحقق من سلامة النسخ الاحتياطية** — لا يوجد checksum أو اختبار استرداد دوري.
+- [x] `[P1]` ⏱️S **التحقق من سلامة النسخ الاحتياطية** — لا يوجد checksum أو اختبار استرداد دوري.
   - الملف: `archive-server/deploy/backup-cron.sh`
   - الإصلاح: احسب `sha256sum` للأرشيف واحفظه في `.sha256` مجاور؛ أضف اختبار restore تجريبي شهريًا على DB مؤقتة.
   - المصدر: deep-audit-2026.
+  - ✅ **تم (2026-06-09):** Task #3 — sha256sum sidecar files added.
 
 ---
 
@@ -661,25 +663,28 @@
   - الإصلاح: اجعل خلايا الأعمدة البسيطة (العنوان، الوصف، الوسوم) قابلة للنقر للتعديل المباشر.
   - المصدر: uiux-deep-audit (UX-02).
 
-- [ ] `[P2]` ⏱️S **رفع حد `TagCloud` من 40 إلى 200 وسم مع "عرض المزيد"** — يعرض أول 40 وسمًا فقط.
-  - الملف: `archive app/src/components/tags/TagCloud.jsx`
+- [x] `[P2]` ⏱️S **رفع حد `TagCloud` من 40 إلى 200 وسم مع "عرض المزيد"** — يعرض أول 40 وسمًا فقط.
+  - الملف: `archive app/src/features/archive/TagCloud.jsx`
   - الإصلاح: حد افتراضي 200 مع انهيار تدريجي (collapse) للوسوم النادرة وزر "عرض المزيد".
   - المصدر: uiux-deep-audit (UX-03).
+  - ✅ **تم (2026-06-09):** Task #2.
 
-- [ ] `[P2]` ⏱️S **مؤشر تقدم لأزرار التصدير** — التصدير يبدأ صامتًا بلا مؤشر مرئي.
-  - الملف: `archive app/src/components/export/ExportButton.jsx`
+- [x] `[P2]` ⏱️S **مؤشر تقدم لأزرار التصدير** — التصدير يبدأ صامتًا بلا مؤشر مرئي.
+  - الملف: `archive app/src/components/archive/ExportButton.jsx`
   - الإصلاح: أضف حالة `loading` للزر مع شريط تقدم يُحدَّث عبر `useProgress` أو SSE.
   - المصدر: uiux-user-journey (UJ-06).
+  - ✅ **تم (2026-06-09):** الزر يعرض spinner + "جاري التصدير..." عبر `isLoading("export")`؛ ChevronDown مخفي أثناء التصدير.
 
 - [ ] `[P2]` ⏱️M **إضافة تراجع (Undo) بعد الاستيراد** — السجلات تُضاف بصورة دائمة فور التأكيد بلا إمكانية تراجع.
   - الملفات: `archive app/src/components/import/ImportDialog.jsx`، مسار `/api/rpc/putBatch`
   - الإصلاح: احتفظ بـ IDs السجلات المُضافة في state لمدة 30 ثانية مع زر "تراجع" يستدعي `deleteBatch`.
   - المصدر: uiux-user-journey (UJ-07).
 
-- [ ] `[P2]` ⏱️S **تفعيل Virtual List على سطح المكتب** — مُفعَّل للجوّال فقط رغم أن الحزمة مثبتة.
-  - الملف: `archive app/src/components/lists/ArchiveList.jsx`
+- [x] `[P2]` ⏱️S **تفعيل Virtual List على سطح المكتب** — مُفعَّل للجوّال فقط رغم أن الحزمة مثبتة.
+  - الملف: `archive app/src/hooks/useVirtualList.js`
   - الإصلاح: أزل شرط `isMobile` أو اجعل الحد الأدنى للتفعيل 50 عنصرًا على كل الأجهزة.
   - المصدر: uiux-deep-audit (UX-04).
+  - ✅ **تم (2026-06-09):** حُذف شرط `isMobile`؛ الحد رُفع إلى 50 عنصرًا على جميع الأجهزة.
 
 - [ ] `[P2]` ⏱️M **رسائل خطأ بلغتين (عربي + إنجليزي)** — رسائل الخطأ عربية فقط.
   - الملف: `archive app/src/utils/errorMessages.js`
