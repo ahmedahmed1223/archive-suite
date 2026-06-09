@@ -32,6 +32,8 @@ const SyncLogPage         = lazy(() => import("../pages/SyncLogPage.jsx"));
 const GraphViewPage       = lazy(() => import("../pages/GraphViewPage.jsx"));
 const FirstRunPage        = lazy(() => import("../pages/FirstRunPage.jsx"));
 const FavoritesPage       = lazy(() => import("../pages/FavoritesPage.jsx"));
+const ReadingListsPage    = lazy(() => import("../pages/ReadingListsPage.jsx"));
+const ServerStatusPage    = lazy(() => import("../pages/ServerStatusPage.jsx"));
 
 export const PAGE_COMPONENTS = {
   dashboard:   DashboardPage,
@@ -55,7 +57,9 @@ export const PAGE_COMPONENTS = {
   "sync-log":  SyncLogPage,
   graph:       GraphViewPage,
   firstRun:    FirstRunPage,
-  favorites:   FavoritesPage,
+  favorites:       FavoritesPage,
+  "reading-lists":  ReadingListsPage,
+  "server-status":  ServerStatusPage,
 };
 
 export { HEAVY_PAGE_IDS, PAGE_GROUPS };
