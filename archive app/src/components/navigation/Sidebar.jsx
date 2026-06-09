@@ -166,7 +166,7 @@ export function Sidebar() {
   const isMobile = useIsMobile();
   const isDark = resolvedTheme === "dark";
   React.useLayoutEffect(() => {
-    if (!isMobile || sidebarOpen) return;
+    if (!isMobile || !sidebarOpen) return;
     const handle = window.setTimeout(() => toggleSidebar(), 0);
     return () => window.clearTimeout(handle);
   }, [isMobile, sidebarOpen, toggleSidebar]);
