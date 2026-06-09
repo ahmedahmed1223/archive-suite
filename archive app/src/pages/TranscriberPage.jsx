@@ -1,6 +1,8 @@
 ﻿import { useAppStore } from "../stores/index.js";
 import { getAiProvider } from "@archive/core";
 import {
+  Archive,
+  Check,
   Cloud,
   Copy,
   FileAudio,
@@ -39,7 +41,7 @@ function ModeButton({ active, onClick, icon, label, hint }) {
 }
 
 export function TranscriberPage() {
-  const { showToast, showNotification } = useAppStore();
+  const { showToast, showNotification, addVideoItem } = useAppStore();
   const cloudProvider = React.useMemo(() => { try { return getAiProvider(); } catch { return null; } }, []);
   const hasLocal = typeof window !== "undefined";
   const modes = React.useMemo(() => availableTranscribeModes({ cloudProvider, hasLocal }), [cloudProvider, hasLocal]);
@@ -47,12 +49,30 @@ export function TranscriberPage() {
   const [mode, setMode] = React.useState(() => modes[0] || "local");
   const [file, setFile] = React.useState(null);
   const [result, setResult] = React.useState(null);
+  const [savedItemId, setSavedItemId] = React.useState(null);
   const transcribeAction = useAsyncAction({ label: "التفريغ الصوتي" });
   const busy = transcribeAction.busy;
   const fileInputId = React.useId();
 
+  const saveToArchive = async () => {
+    if (!result || !file) return;
+    const text = transcriptToText(result || {}, { withTimecodes: false });
+    const title = file.name.replace(/\.[^.]+$/, "");
+    const itemType = file.type.startsWith("video/") ? "video" : "audio";
+    try {
+      const saved = await addVideoItem?.({ title, notes: text, type: itemType, tags: [] });
+      if (saved?.id) {
+        setSavedItemId(saved.id);
+        showToast?.("تم الحفظ كعنصر أرشيف", "success");
+      }
+    } catch (err) {
+      reportError(showNotification, err, { context: "حفظ التفريغ كعنصر أرشيف" });
+    }
+  };
+
   const run = async () => {
     if (!file) { showToast?.("اختر ملف صوت أو فيديو أولاً.", "warning"); return; }
+    setSavedItemId(null);
     return transcribeAction.run(async () => {
       setResult(null);
       try {
@@ -113,9 +133,12 @@ export function TranscriberPage() {
       result ? jsxs("section", { className: "space-y-4 rounded-2xl va-surface-muted border p-4", children: [
         jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
           jsxs("h2", { className: "text-base font-bold text-white", children: [`النص (${segments.length} مقطع)`] }),
-          jsxs("div", { className: "flex gap-2", children: [
+          jsxs("div", { className: "flex flex-wrap gap-2", children: [
             jsxs("button", { type: "button", onClick: () => copy(false), className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: [jsx(Copy, { className: "h-3.5 w-3.5" }), "نسخ النص"] }),
-            segments.length > 0 && jsxs("button", { type: "button", onClick: () => copy(true), className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: [jsx(Copy, { className: "h-3.5 w-3.5" }), "نسخ بالطوابع"] })
+            segments.length > 0 && jsxs("button", { type: "button", onClick: () => copy(true), className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: [jsx(Copy, { className: "h-3.5 w-3.5" }), "نسخ بالطوابع"] }),
+            savedItemId
+              ? jsxs("span", { className: "inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs text-green-300", children: [jsx(Check, { className: "h-3.5 w-3.5" }), "تم الحفظ"] })
+              : jsxs("button", { type: "button", onClick: saveToArchive, className: "inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs va-accent-text hover:bg-white/10", children: [jsx(Archive, { className: "h-3.5 w-3.5" }), "حفظ كعنصر أرشيف"] })
           ] })
         ] }),
         jsx("textarea", { readOnly: true, value: transcriptToText(result), "aria-label": "النص المُفرَّغ", className: "min-h-[140px] w-full va-surface-deep rounded-xl border p-3 text-sm leading-7 text-white outline-none" }),
