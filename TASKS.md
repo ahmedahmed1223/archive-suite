@@ -202,8 +202,9 @@
   - الملفات: عبر `archive app/src/components` و`pages` (موجود اختبار Playwright a11y يكشفها).
   - المصدر: uiux-report، improvement-proposals (FE-2).
 
-- [ ] `[P2]` ⏱️M **تنقّل لوحة المفاتيح للقوائم** — أسهم/Enter/Space/Ctrl+A/Delete.
+- [x] `[P2]` ⏱️M **تنقّل لوحة المفاتيح للقوائم** — أسهم/Enter/Space/Ctrl+A/Delete.
   - المصدر: improvement-proposals (UX-5).
+  - ✅ **مُنجز مسبقاً:** `hooks/useKeyboardListNav.js` يدعم ArrowUp/Down, Enter/Space, Ctrl+A, Escape, Home/End؛ مُستخدم في `ArchivePageResults.jsx`.
 
 - [x] `[P2]` ⏱️M **رسائل خطأ مصنّفة وودّية** — شبكة/مصادقة/تحقق/خادم بدل «حدث خطأ غير معروف».
   - المصدر: improvement-proposals (UX-4).
