@@ -27,10 +27,12 @@ import {
   HardDrive,
   History,
   LayoutGrid,
+  ListChecks,
   Menu,
   RotateCcw,
   Save,
   Search,
+  Server,
   Settings2,
   Shield,
   Star,
@@ -97,7 +99,9 @@ const iconMap = {
   transcriber: Wand2,
   reports: ChartColumn,
   "sync-log": GitMerge,
-  favorites: Star
+  favorites:        Star,
+  "reading-lists":  ListChecks,
+  "server-status":  Server
 };
 
 function useIsMobile() {
@@ -161,7 +165,8 @@ export function Sidebar() {
     notificationCenterOpen,
     toggleNotificationCenter,
     settings = {},
-    updateSettings
+    updateSettings,
+    getWatchLaterCount
   } = useAppStore();
   const { currentUser, logout } = useAuthStore();
   const { resolvedTheme } = useTheme();
@@ -173,6 +178,7 @@ export function Sidebar() {
     return () => window.clearTimeout(handle);
   }, [isMobile, sidebarOpen, toggleSidebar]);
   const activeCount = videoItems.filter((item) => !item.isDeleted).length;
+  const watchLaterCount = getWatchLaterCount?.() ?? 0;
   const unreadNotifications = getUnreadNotifications(notificationHistory);
 
   const permittedGroups = getSidebarNavigationGroups()
@@ -228,7 +234,7 @@ export function Sidebar() {
         page,
         active: currentPage === page.id,
         onClick: () => goToPage(page.id),
-        badge: page.id === "archive" ? activeCount : undefined,
+        badge: page.id === "archive" ? activeCount : page.id === "reading-lists" ? (watchLaterCount > 0 ? watchLaterCount : undefined) : undefined,
         collapsed
       }, page.id);
     }

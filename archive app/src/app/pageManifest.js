@@ -19,7 +19,9 @@ export const PAGE_MANIFEST = [
   { id: "transcriber", group: "production", heavy: false, meta: { title: "التفريغ الصوتي", breadcrumb: "الإنتاج / التفريغ", hint: "حوّل الصوت/الفيديو إلى نصّ بطوابع زمنية — سحابيًّا أو محليًّا.", helpSection: "adding-videos" } },
   { id: "reports", group: "production", heavy: true, meta: { title: "التقارير", breadcrumb: "الإنتاج / التقارير", hint: "إحصاءات وسجلات نشاط تساعدك على مراجعة الأرشيف.", helpSection: "reports-settings" } },
   { id: "sync-log", group: "maintenance", heavy: true, meta: { title: "سجل المزامنة", breadcrumb: "الصيانة / المزامنة", hint: "كل عمليات تصدير ودمج حزم النقل بين الأجهزة مع تفاصيل الـ checksum.", helpSection: "transfer-export" } },
-  { id: "favorites", group: "daily", heavy: false, meta: { title: "المفضلة", breadcrumb: "الرئيسية / المفضلة", hint: "العناصر والمجموعات والمجلدات المفضلة للوصول السريع.", helpSection: "dashboard-archive" } }
+  { id: "favorites", group: "daily", heavy: false, meta: { title: "المفضلة", breadcrumb: "الرئيسية / المفضلة", hint: "العناصر والمجموعات والمجلدات المفضلة للوصول السريع.", helpSection: "dashboard-archive" } },
+  { id: "reading-lists", group: "daily", heavy: false, meta: { title: "قوائم المراجعة", breadcrumb: "الرئيسية / قوائم المراجعة", hint: "شاهد لاحقاً وقوائم مراجعة مخصصة لتتبع تقدمك في مراجعة الأرشيف.", helpSection: "dashboard-archive" } },
+  { id: "server-status", group: "maintenance", heavy: false, meta: { title: "حالة السيرفر", breadcrumb: "الصيانة / حالة السيرفر", hint: "مراقبة الاتصال وصحة قاعدة البيانات وزمن الاستجابة ومدة تشغيل السيرفر.", helpSection: "transfer-export" } }
 ];
 
 export const PAGE_CONTEXT_META = Object.fromEntries(

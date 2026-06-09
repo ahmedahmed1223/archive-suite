@@ -25,6 +25,7 @@ import {
   PageContextBar as AppPageContextBar,
   Sidebar as AppSidebar,
 } from "../components/navigation/index.js";
+import { BottomTabBar } from "../components/layout/BottomTabBar.jsx";
 
 export function AppRouter() {
   const currentPage = useAppStore((s) => s.currentPage);
@@ -55,12 +56,13 @@ export function AppRouter() {
         children: "تخطي إلى المحتوى الرئيسي",
       }),
       jsx(AppSidebar, {}),
+      jsx(BottomTabBar, {}),
       jsx("main", {
         id: "main-content",
         tabIndex: -1,
         dir: "rtl",
         className:
-          "flex-1 min-w-0 overflow-y-auto max-h-screen text-right pt-16 md:pt-0",
+          "flex-1 min-w-0 overflow-y-auto max-h-screen text-right pt-16 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pt-0 md:pb-0",
         role: "main",
         children: jsx(ErrorBoundary, {
           children: jsxs(
