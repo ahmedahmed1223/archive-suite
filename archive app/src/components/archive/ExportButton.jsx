@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Download, ChevronDown, FileText, Loader2, Table, Archive } from "lucide-react";
 import { useAppStore } from "../../stores/index.js";
 import { useLoading } from "../../hooks/useLoading.js";
+import { getCloudToken } from "../../bootstrap/cloudSession.js";
 
 const FORMATS = [
   { id: "csv", label: "CSV", icon: FileText, desc: "مناسب للجداول" },
@@ -20,10 +21,12 @@ export function ExportButton({ selectedIds = [] }) {
       const body = { format, store: "videoItems" };
       if (selectedIds.length > 0) body.ids = selectedIds;
 
+      const token = getCloudToken();
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
       const res = await fetch("/api/export", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers,
         body: JSON.stringify(body),
       });
 
