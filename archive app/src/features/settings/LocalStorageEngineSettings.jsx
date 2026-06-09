@@ -7,9 +7,9 @@ import {
   getBackendChoice,
   getBackendUrl,
   getLocalEngine,
-  setBackendChoice,
   shouldForceLocalBackend
 } from "../../bootstrap/backendChoice.js";
+import { switchBackendHot } from "../../bootstrap/switchBackendHot.js";
 import { useAppStore } from "../../stores/index.js";
 import { SettingsCard } from "./SettingsControls.jsx";
 
@@ -21,14 +21,18 @@ const OPTIONS = [
 export function LocalStorageEngineSettings() {
   const { showToast } = useAppStore();
   const [value, setValue] = React.useState(() => getLocalEngine());
+  const [switching, setSwitching] = React.useState(false);
   const forced = shouldForceLocalBackend();
-  const save = (next) => {
-    setValue(next);
-    const ok = setBackendChoice(getBackendChoice(), getBackendUrl(), { localEngine: next });
-    if (ok) {
-      showToast?.("حُفِظ محرّك التخزين المحلي. أعد تحميل التطبيق لتطبيق الاختيار.", "success");
+  const save = async (next) => {
+    if (next === value || switching) return;
+    setSwitching(true);
+    const result = await switchBackendHot(getBackendChoice(), getBackendUrl(), next);
+    setSwitching(false);
+    if (result.ok) {
+      setValue(next);
+      showToast?.("تم تطبيق محرّك التخزين المحلي.", "success");
     } else {
-      showToast?.("تعذّر حفظ اختيار التخزين المحلي.", "error");
+      showToast?.(result.error || "تعذّر تطبيق اختيار التخزين المحلي.", "error");
     }
   };
 
@@ -43,8 +47,8 @@ export function LocalStorageEngineSettings() {
         const active = value === option.id;
         return jsxs("button", {
           type: "button",
-          onClick: () => !forced && save(option.id),
-          disabled: forced,
+          onClick: () => { if (!forced && !switching) save(option.id); },
+          disabled: forced || switching,
           "aria-pressed": active,
           className: `min-h-[6rem] rounded-xl border p-3 text-start transition-colors disabled:opacity-60 ${
             active ? "va-accent-border va-accent-bg-soft text-white" : "border-white/10 va-surface-subtle text-gray-300 hover:bg-white/[0.05]"
