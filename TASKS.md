@@ -62,8 +62,9 @@
   - استخدم آخر قيمة أو اضبط قائمة proxies موثوقة.
   - المصدر: comprehensive-audit (S7).
 
-- [ ] `[P2]` ⏱️S **فحص ثغرة `xlsx` (CVE-2024-22363 — ReDoS)** — تحقق إن كانت الاعتمادية مستخدمة في الـ frontend، واستبدلها/رقّها.
+- [x] `[P2]` ⏱️S **فحص ثغرة `xlsx` (CVE-2024-22363 — ReDoS)** — تحقق إن كانت الاعتمادية مستخدمة في الـ frontend، واستبدلها/رقّها.
   - المصدر: audit-report (CRITICAL).
+  - ✅ **تم التحليل والتخفيف (2026-06-09):** جميع استخدامات xlsx في الـ backend (exportService.js) وكتابة Excel في الـ frontend (ReportsPage, DataCenterPage) هي عمليات **كتابة فقط** — لا تتأثر بثغرة CVE-2024-22363. الاستخدام الوحيد لـ `XLSX.read()` هو في `packageOperations.js` لاستيراد ملفات المستخدم الخاصة، وقد تم تطبيق guard صريح (فحص Magic Bytes ZIP/OOXML في السطر 148) يمنع ملفات XLML (ناقل الهجوم). الثغرة غير قابلة للاستغلال في الوضع الحالي.
 
 - [x] `[P3]` ⏱️S **استبدال `crypto-js` بـ Web Crypto API** إن وُجدت (≈150KB لوظيفة SHA-256 واحدة).
   - المصدر: audit-report (MEDIUM).
@@ -380,15 +381,17 @@
 - [x] `[P1]` ⏱️S **إصلاح `verify-modules.mjs`** — تصحيح التأكيد في السطر 367: `defaults.openSearch` من `"Ctrl+K"` إلى `"Alt+K"`.
   - الملف: `archive app/scripts/verify-modules.mjs`.
 
-- [ ] `[P1]` ⏱️M **معاينة مباشرة للثيم واللون في معالج الإعداد** — استدعاء `applyAccentColor` و`setTheme` داخل `useEffect` مرتبط بـ `accentColor` و`themeChoice` لمعاينة فورية أثناء الإعداد.
+- [x] `[P1]` ⏱️M **معاينة مباشرة للثيم واللون في معالج الإعداد** — استدعاء `applyAccentColor` و`setTheme` داخل `useEffect` مرتبط بـ `accentColor` و`themeChoice` لمعاينة فورية أثناء الإعداد.
   - الملف: `archive app/src/features/onboarding/V1OnboardingWizard.jsx`.
+  - ✅ **مُنجز مسبقاً:** السطران 446-453 في V1OnboardingWizard.jsx يُطبّقان بالفعل المعاينة الفورية عبر `useEffect` لكل من `accentColor` و`themeChoice`.
 
-- [ ] `[P1]` ⏱️M **تصميم حديث لخطوات معالج الإعداد**:
+- [x] `[P1]` ⏱️M **تصميم حديث لخطوات معالج الإعداد**:
   - خلفية توهّج شبكي (mesh radial glow) بألوان `--va-accent-*` متحركة.
   - أيقونة ✓ للخطوات المكتملة بدل الرقم + توهّج على الخطوة النشطة.
   - تحويل `scale` عند التمرير/النقر على بطاقات الاختيار (dynamic `color-mix`).
   - شريط قوة كلمة المرور بتصميم حديث.
   - الملف: `archive app/src/features/onboarding/V1OnboardingWizard.jsx`.
+  - ✅ **تم (2026-06-09):** خلفية mesh glow موجودة مسبقاً (lines 968-977). أيقونات ✓ لـ completed steps + أرقام للخطوات القادمة + glow effect على الخطوة النشطة عبر `shadow-[...]` مع `color-mix`. scale/color-mix في OptionButton موجود. شريط كلمة المرور بالألوان الديناميكية موجود.
 
 - [ ] `[P2]` ⏱️S **تحديث `v2-identity.css`** — أنماط glassmorphic لنافذة الإعداد + tokens انتقالية سلسة.
 
@@ -531,10 +534,11 @@
   - الإصلاح: استخدم `process.env.APP_BASE_URL` فقط؛ أضفه لـ `.env.example` وـ `productionGuard.js`.
   - المصدر: deep-audit-v2.
 
-- [ ] `[P1]` ⏱️M **تشفير ملفات النسخ الاحتياطية** — ملفات الـ backup تُحفظ بلا تشفير.
+- [x] `[P1]` ⏱️M **تشفير ملفات النسخ الاحتياطية** — ملفات الـ backup تُحفظ بلا تشفير.
   - الملف: `archive-server/deploy/backup-cron.sh`
   - الإصلاح: شفِّر باستخدام `openssl enc -aes-256-cbc -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY`؛ أضف المتغير لـ `.env.example`.
   - المصدر: deep-audit-2026.
+  - ✅ **تم (2026-06-09):** أضيف دالة `encrypt_file()` في backup-cron.sh تستخدم `openssl enc -aes-256-cbc -pbkdf2 -iter 600000`؛ تُشفَّر الملفات وتُحسب `sha256` للنسخة المشفرة، وتُحذف النسخة الأصلية. مقيّد بوجود `BACKUP_ENCRYPTION_KEY` في البيئة. أضيف المتغير لـ `.env.example` مع تعليمات توليده.
 
 - [ ] `[P1]` ⏱️S **التحقق من سلامة النسخ الاحتياطية** — لا يوجد checksum أو اختبار استرداد دوري.
   - الملف: `archive-server/deploy/backup-cron.sh`

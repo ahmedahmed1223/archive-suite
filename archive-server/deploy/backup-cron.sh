@@ -17,6 +17,23 @@ TODAY="$(date -u +%Y-%m-%d)"
 DEST="${BACKUP_ROOT}/${TODAY}"
 mkdir -p "${DEST}"
 
+# Optional: encrypt backup files when BACKUP_ENCRYPTION_KEY is set.
+# If unset, backups are stored unencrypted (suitable for trusted-storage setups).
+# Encrypted files get an .enc suffix; the original plaintext is removed after
+# successful encryption so that only the encrypted copy persists on disk.
+encrypt_file() {
+  local file="$1"
+  if [ -z "${BACKUP_ENCRYPTION_KEY:-}" ]; then
+    return 0  # no-op when encryption is not configured
+  fi
+  openssl enc -aes-256-cbc -pbkdf2 -iter 600000 \
+    -pass "env:BACKUP_ENCRYPTION_KEY" \
+    -in "${file}" -out "${file}.enc"
+  sha256sum "${file}.enc" > "${file}.enc.sha256"
+  rm -f "${file}" "${file}.sha256"  # remove plaintext after successful encrypt
+  echo "    🔒 encrypted → $(basename "${file}").enc"
+}
+
 # --- PocketBase backup ---
 if docker ps --format '{{.Names}}' | grep -q '^archive-pocketbase$'; then
   echo "[$(date -u)] Backing up PocketBase volume..."
@@ -25,7 +42,9 @@ if docker ps --format '{{.Names}}' | grep -q '^archive-pocketbase$'; then
     -v "${DEST}:/backup" \
     alpine \
     tar czf "/backup/pocketbase.tar.gz" -C /pb_data .
-  echo "  ✓ pocketbase.tar.gz ($(du -h "${DEST}/pocketbase.tar.gz" | cut -f1))"
+  sha256sum "${DEST}/pocketbase.tar.gz" > "${DEST}/pocketbase.tar.gz.sha256"
+  echo "  ✓ pocketbase.tar.gz ($(du -h "${DEST}/pocketbase.tar.gz" | cut -f1)) + .sha256"
+  encrypt_file "${DEST}/pocketbase.tar.gz"
 fi
 
 # --- Postgres backup ---
@@ -41,7 +60,9 @@ if docker ps --format '{{.Names}}' | grep -q '^archive-postgres$'; then
   docker exec archive-postgres \
     pg_dump -U "${PG_USER}" -d "${PG_DB}" --no-owner --no-privileges \
     | gzip > "${DEST}/postgres.sql.gz"
-  echo "  ✓ postgres.sql.gz ($(du -h "${DEST}/postgres.sql.gz" | cut -f1))"
+  sha256sum "${DEST}/postgres.sql.gz" > "${DEST}/postgres.sql.gz.sha256"
+  echo "  ✓ postgres.sql.gz ($(du -h "${DEST}/postgres.sql.gz" | cut -f1)) + .sha256"
+  encrypt_file "${DEST}/postgres.sql.gz"
 fi
 
 # --- Rotation: drop backups older than RETAIN_DAYS ---

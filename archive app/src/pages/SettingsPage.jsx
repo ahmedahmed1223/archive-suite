@@ -60,6 +60,7 @@ import { ServerStatusBadge } from "../features/server-status/ServerStatusBadge.j
 import { WebhooksSettings } from "../components/settings/WebhooksSettings.jsx";
 import { FieldPermissionsSettings } from "../components/settings/FieldPermissionsSettings.jsx";
 import { NotificationPreferences } from "../components/settings/NotificationPreferences.jsx";
+import { TwoFactorSettings } from "../components/settings/TwoFactorSettings.jsx";
 import {
   getDefaultSettings,
   mergeAppSettings
@@ -916,7 +917,14 @@ export function SettingsPage() {
           ]
         }),
         jsx(ToggleRow, { label: "تفعيل مهلة الجلسة", checked: !!settings.enableSessionTimeout, onChange: (checked) => saveSettings({ enableSessionTimeout: checked }, "تم تحديث مهلة الجلسة") }),
-        jsx(ToggleRow, { label: "تحذيرات المحتوى", checked: !!settings.contentWarningsEnabled, onChange: (checked) => saveSettings({ contentWarningsEnabled: checked }, "تم تحديث تحذيرات المحتوى") })
+        jsx(ToggleRow, { label: "تحذيرات المحتوى", checked: !!settings.contentWarningsEnabled, onChange: (checked) => saveSettings({ contentWarningsEnabled: checked }, "تم تحديث تحذيرات المحتوى") }),
+        jsxs("div", {
+          className: "mt-4 pt-4 border-t border-white/10",
+          children: [
+            jsx("h3", { className: "mb-3 text-sm font-semibold text-white", children: "المصادقة الثنائية (2FA)" }),
+            jsx(TwoFactorSettings, {})
+          ]
+        })
       ]
     })
   });

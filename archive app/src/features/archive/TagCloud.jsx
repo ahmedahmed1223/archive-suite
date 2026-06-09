@@ -9,7 +9,7 @@ import { formatNumber } from "../../utils/formatting.js";
  * font size scales with usage. Clicking a tag calls onSelect(tag) — the host
  * (Search page) uses it to filter. Lightweight: no deps, reads existing tags.
  */
-export function computeTagFrequencies(videoItems = [], { limit = 40 } = {}) {
+export function computeTagFrequencies(videoItems = [], { limit = 200 } = {}) {
   const counts = new Map();
   for (const item of videoItems) {
     if (item?.isDeleted) continue;
@@ -40,9 +40,14 @@ function bucketFor(count, min, max) {
   return Math.min(SIZE_BUCKETS.length - 1, Math.round(ratio * (SIZE_BUCKETS.length - 1)));
 }
 
-export function TagCloud({ videoItems = [], onSelect, activeTag = "", limit = 40, title = "سحابة الوسوم" }) {
+const INITIAL_VISIBLE = 40;
+
+export function TagCloud({ videoItems = [], onSelect, activeTag = "", limit = 200, title = "سحابة الوسوم" }) {
+  const [showAll, setShowAll] = React.useState(false);
   const tags = React.useMemo(() => computeTagFrequencies(videoItems, { limit }), [videoItems, limit]);
   if (!tags.length) return null;
+  const visibleTags = showAll ? tags : tags.slice(0, INITIAL_VISIBLE);
+  const hasMore = tags.length > INITIAL_VISIBLE;
   const max = tags[0].count;
   const min = tags[tags.length - 1].count;
   return jsxs("section", {
@@ -56,7 +61,7 @@ export function TagCloud({ videoItems = [], onSelect, activeTag = "", limit = 40
       ] }),
       jsx("div", {
         className: "flex flex-wrap items-baseline gap-x-3 gap-y-2",
-        children: tags.map(({ tag, count }) => jsxs("button", {
+        children: visibleTags.map(({ tag, count }) => jsxs("button", {
           type: "button",
           onClick: () => onSelect?.(tag),
           title: `${tag} — ${formatNumber(count)}`,
@@ -67,6 +72,14 @@ export function TagCloud({ videoItems = [], onSelect, activeTag = "", limit = 40
             jsx("span", { className: "text-[10px] font-normal text-gray-500", children: formatNumber(count) })
           ]
         }, tag))
+      }),
+      hasMore && jsx("button", {
+        type: "button",
+        onClick: () => setShowAll((v) => !v),
+        className: "mt-2 text-xs va-accent-text hover:underline",
+        children: showAll
+          ? `عرض أقل (${formatNumber(INITIAL_VISIBLE)})`
+          : `عرض المزيد (${formatNumber(tags.length - INITIAL_VISIBLE)} وسم إضافي)`
       })
     ]
   });

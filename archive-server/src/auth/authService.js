@@ -85,14 +85,24 @@ export async function loginUser({ username, password }, { provider, secret, expi
       err.code = "TOTP_REQUIRED";
       throw err;
     }
-    const { verifyTotpToken } = await import("./totpService.js");
-    const valid = verifyTotpToken(user.totpSecret, totpToken);
-    if (!valid) {
-      log.warn({ username }, "Failed TOTP attempt.");
-      const err = new Error("رمز المصادقة الثنائية غير صحيح.");
-      err.statusCode = 401;
-      err.code = "TOTP_INVALID";
-      throw err;
+    const { verifyTotpToken, verifyRecoveryCode } = await import("./totpService.js");
+    const isTotp = verifyTotpToken(user.totpSecret, totpToken);
+    if (!isTotp) {
+      // Fallback: try treating the token as a recovery code.
+      const matchIndex = user.totpRecoveryCodes?.length
+        ? await verifyRecoveryCode(totpToken, user.totpRecoveryCodes)
+        : -1;
+      if (matchIndex === -1) {
+        log.warn({ username }, "Failed TOTP/recovery-code attempt.");
+        const err = new Error("رمز المصادقة الثنائية أو رمز الاسترداد غير صحيح.");
+        err.statusCode = 401;
+        err.code = "TOTP_INVALID";
+        throw err;
+      }
+      // Consume the used recovery code (remove its hash from the stored list).
+      const remaining = user.totpRecoveryCodes.filter((_, i) => i !== matchIndex);
+      await provider.put("users", { id: user.id, totpRecoveryCodes: remaining });
+      log.info({ username, remainingCodes: remaining.length }, "Recovery code consumed at login.");
     }
   }
 

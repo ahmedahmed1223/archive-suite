@@ -13,7 +13,7 @@ import { createInMemoryMediaJobStore, createMediaJobWorker, montageOutputKey, st
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
 import { verifyJwt, signJwt } from "../auth/jwt.js";
 import { revokeToken } from "../auth/tokenBlacklist.js";
-import { generateTotpSecret, verifyTotpToken } from "../auth/totpService.js";
+import { generateTotpSecret, verifyTotpToken, generateRecoveryCodes, verifyRecoveryCode } from "../auth/totpService.js";
 import { mintShareToken, readShareTokenPayload } from "../share/token.js";
 import { filterSnapshotForShare } from "../share/scope.js";
 import {
@@ -479,6 +479,29 @@ export function createApiServer({
       }
     }
 
+    // GET /api/auth/me — returns the current user's profile (id, username, role,
+    // totpEnabled). Requires Bearer auth. Used by the frontend 2FA settings panel.
+    if (req.method === "GET" && url === "/api/auth/me") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      try {
+        const user = await resolveStorage().get("users", claims.sub);
+        if (!user) return send(res, 404, { ok: false, error: "User not found." });
+        return send(res, 200, {
+          ok: true,
+          user: {
+            id: user.id,
+            username: user.username,
+            role: user.role || "editor",
+            totpEnabled: !!user.totpEnabled,
+            totpRecoveryCodesRemaining: user.totpRecoveryCodes?.length ?? 0,
+          },
+        });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Failed." });
+      }
+    }
+
     // First-run registration — only succeeds when no users exist yet.
     // After the first admin account is created, returns 403 to prevent
     // open registration. The wizard (FirstRunPage) posts here on fresh installs.
@@ -651,13 +674,16 @@ export function createApiServer({
         if (!verifyTotpToken(user.totpSecretPending, totpCode)) {
           return send(res, 400, { ok: false, error: "رمز التحقق غير صحيح." });
         }
+        const { plain: recoveryCodes, hashes: recoveryHashes } = await generateRecoveryCodes(8);
         await resolveStorage().put("users", {
           id: claims.sub,
           totpSecret: user.totpSecretPending,
           totpSecretPending: null,
           totpEnabled: true,
+          totpRecoveryCodes: recoveryHashes,
         });
-        return send(res, 200, { ok: true, message: "تم تفعيل المصادقة الثنائية بنجاح." });
+        // Return plain codes once — user must save them; hashes only are kept in DB.
+        return send(res, 200, { ok: true, recoveryCodes, message: "تم تفعيل المصادقة الثنائية بنجاح. احفظ رموز الاسترداد في مكان آمن." });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "TOTP verify failed" });
       }
@@ -680,10 +706,65 @@ export function createApiServer({
           totpSecret: null,
           totpSecretPending: null,
           totpEnabled: false,
+          totpRecoveryCodes: null,
         });
         return send(res, 200, { ok: true, message: "تم تعطيل المصادقة الثنائية." });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "TOTP disable failed" });
+      }
+    }
+
+    // POST /api/auth/totp/recover — consume a single-use recovery code in place
+    // of a TOTP token. On success: removes the used hash and issues a new JWT.
+    // Rate-limited to prevent brute-force against the 8 codes.
+    if (req.method === "POST" && url === "/api/auth/totp/recover") {
+      if (overLimit(res, "totpDisable", req)) return undefined;
+      try {
+        const { username, password, recoveryCode } = await readJsonBody(req);
+        if (!username || !password || !recoveryCode) {
+          return send(res, 400, { ok: false, error: "username و password و recoveryCode مطلوبة." });
+        }
+        // Re-use loginUser but skip TOTP check (we verify the recovery code ourselves).
+        const storage = resolveStorage();
+        const wantedUsername = String(username || "").trim().toLowerCase();
+        let user;
+        if (typeof storage.getByField === "function") {
+          const found = await storage.getByField("users", "username", wantedUsername).catch(() => undefined);
+          user = found?.isActive !== false ? found : undefined;
+        } else {
+          const users = await storage.getAll("users").catch(() => []);
+          user = (users || []).find((u) => String(u?.username || "").trim().toLowerCase() === wantedUsername && u?.isActive !== false);
+        }
+        const { verifySecret } = await import("../auth/authService.js");
+        const hash = user?.passwordHash || "$2a$12$0000000000000000000000000000000000000000000000000000";
+        const passwordOk = await verifySecret(password, hash);
+        if (!user || !passwordOk) {
+          return send(res, 401, { ok: false, error: "بيانات الدخول غير صحيحة." });
+        }
+        if (!user.totpEnabled || !user.totpRecoveryCodes?.length) {
+          return send(res, 400, { ok: false, error: "لا توجد رموز استرداد لهذا الحساب." });
+        }
+        const matchIndex = await verifyRecoveryCode(recoveryCode, user.totpRecoveryCodes);
+        if (matchIndex === -1) {
+          return send(res, 401, { ok: false, error: "رمز الاسترداد غير صحيح." });
+        }
+        // Consume the used code by removing it from the array.
+        const remainingCodes = user.totpRecoveryCodes.filter((_, i) => i !== matchIndex);
+        await storage.put("users", { id: user.id, totpRecoveryCodes: remainingCodes });
+        const { signJwt: sign } = await import("../auth/jwt.js");
+        const authSecret = config.authSecret;
+        if (!authSecret) return send(res, 500, { ok: false, error: "Server misconfigured." });
+        const claims = { sub: user.id, username: user.username, role: user.role || "editor" };
+        const token = sign(claims, authSecret, { expiresInSec: config.jwtExpiresInSec });
+        return send(res, 200, {
+          ok: true,
+          token,
+          user: { id: user.id, username: user.username, role: claims.role },
+          remainingRecoveryCodes: remainingCodes.length,
+          message: remainingCodes.length === 0 ? "تم استخدام آخر رمز استرداد. يُنصح بتعطيل 2FA وإعادة تفعيله لتوليد رموز جديدة." : undefined,
+        });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Recovery failed" });
       }
     }
 

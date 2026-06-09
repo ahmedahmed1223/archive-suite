@@ -15,6 +15,7 @@
 import * as OTPAuth from "otpauth";
 import { randomBytes } from "node:crypto";
 import QRCode from "qrcode";
+import bcrypt from "bcryptjs";
 
 const ISSUER = process.env.TOTP_ISSUER || "Archive Suite";
 const WINDOW = 1; // Allow ±1 time step (30 s window each side)
@@ -46,6 +47,34 @@ export async function generateTotpSecret(username) {
   // Generate QR code locally — never send the otpauth:// URI to an external service.
   const qrUrl = await QRCode.toDataURL(otpauthUrl, { width: 200, margin: 1 });
   return { secret: totp.secret.base32, otpauthUrl, qrUrl };
+}
+
+const RECOVERY_CODE_BYTES = 10; // produces a 20-char hex code split as XXXXX-XXXXX-XXXXX-XXXXX
+
+/**
+ * Generate `count` single-use recovery codes (plain-text) and their bcrypt hashes.
+ * Caller stores the hashes; plain codes are shown to the user once and then discarded.
+ * @returns {Promise<{plain: string[], hashes: string[]}>}
+ */
+export async function generateRecoveryCodes(count = 8) {
+  const plain = Array.from({ length: count }, () => {
+    const hex = randomBytes(RECOVERY_CODE_BYTES).toString("hex").toUpperCase();
+    return `${hex.slice(0, 5)}-${hex.slice(5, 10)}-${hex.slice(10, 15)}-${hex.slice(15, 20)}`;
+  });
+  const hashes = await Promise.all(plain.map((code) => bcrypt.hash(code.replace(/-/g, ""), 10)));
+  return { plain, hashes };
+}
+
+/**
+ * Check a plain-text recovery code against an array of stored bcrypt hashes.
+ * Returns the index of the matched hash, or -1 if none match.
+ * Compares all hashes to avoid leaking which index matched via timing.
+ */
+export async function verifyRecoveryCode(plain, hashes = []) {
+  if (!plain || !hashes.length) return -1;
+  const normalized = String(plain).replace(/[^A-Fa-f0-9]/g, "").toUpperCase();
+  const results = await Promise.all(hashes.map((h) => bcrypt.compare(normalized, h).catch(() => false)));
+  return results.findIndex(Boolean);
 }
 
 /**

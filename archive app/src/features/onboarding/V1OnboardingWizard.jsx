@@ -126,29 +126,30 @@ function OnboardingProgressRail({ steps, activeStepIndex, onStepClick }) {
             ]
           }),
           jsx("div", {
-            className: "flex flex-wrap items-center justify-start gap-1",
+            className: "flex flex-wrap items-center justify-start gap-1.5",
             children: steps.map((step, index) => {
               const active = index === activeStepIndex;
-              const visited = index <= activeStepIndex;
+              const completed = index < activeStepIndex;
+              const reachable = index <= activeStepIndex;
               return jsx("button", {
                 type: "button",
-                disabled: !visited,
-                onClick: () => visited && onStepClick(index),
+                disabled: !reachable,
+                onClick: () => reachable && onStepClick(index),
                 "aria-current": active ? "step" : undefined,
                 className: [
-                  "flex h-11 items-center justify-center rounded-full transition-colors",
-                  active ? "w-9" : "w-6",
-                  visited ? "hover:bg-white/5" : "cursor-not-allowed"
+                  "relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all duration-200",
+                  active
+                    ? "va-accent-bg text-white shadow-[0_0_0_3px_color-mix(in_oklch,var(--va-accent-500,var(--va-action))_30%,transparent),0_0_16px_color-mix(in_oklch,var(--va-accent-500,var(--va-action))_40%,transparent)]"
+                    : completed
+                    ? "va-accent-bg-soft va-accent-text hover:bg-opacity-80"
+                    : "bg-white/10 text-gray-500 cursor-not-allowed"
                 ].join(" "),
-                children: jsxs("span", {
-                  className: [
-                    "block rounded-full transition-all",
-                    active ? "h-3 w-8 va-accent-bg" : visited ? "h-3 w-3 va-accent-bg-soft" : "h-3 w-3 bg-white/15"
-                  ].join(" "),
-                  children: [
-                    jsx("span", { className: "sr-only", children: `${visited ? "الانتقال إلى" : "خطوة لاحقة"} ${step.label}` })
-                  ]
-                })
+                children: [
+                  completed
+                    ? jsx(Check, { className: "h-3.5 w-3.5", strokeWidth: 3 })
+                    : jsx("span", { children: String(index + 1) }),
+                  jsx("span", { className: "sr-only", children: `${reachable ? "الانتقال إلى" : "خطوة لاحقة"} ${step.label}` })
+                ]
               }, step.id);
             })
           })
