@@ -18,7 +18,8 @@ export const PAGE_MANIFEST = [
   { id: "uploader", group: "production", heavy: false, meta: { title: "رفع الملفات", breadcrumb: "الإنتاج / رفع الملفات", hint: "ارفع الوسائط إلى مخزن الملفات (محلي/سحابي) وأدِرها.", helpSection: "transfer-export" } },
   { id: "transcriber", group: "production", heavy: false, meta: { title: "التفريغ الصوتي", breadcrumb: "الإنتاج / التفريغ", hint: "حوّل الصوت/الفيديو إلى نصّ بطوابع زمنية — سحابيًّا أو محليًّا.", helpSection: "adding-videos" } },
   { id: "reports", group: "production", heavy: true, meta: { title: "التقارير", breadcrumb: "الإنتاج / التقارير", hint: "إحصاءات وسجلات نشاط تساعدك على مراجعة الأرشيف.", helpSection: "reports-settings" } },
-  { id: "sync-log", group: "maintenance", heavy: true, meta: { title: "سجل المزامنة", breadcrumb: "الصيانة / المزامنة", hint: "كل عمليات تصدير ودمج حزم النقل بين الأجهزة مع تفاصيل الـ checksum.", helpSection: "transfer-export" } }
+  { id: "sync-log", group: "maintenance", heavy: true, meta: { title: "سجل المزامنة", breadcrumb: "الصيانة / المزامنة", hint: "كل عمليات تصدير ودمج حزم النقل بين الأجهزة مع تفاصيل الـ checksum.", helpSection: "transfer-export" } },
+  { id: "favorites", group: "daily", heavy: false, meta: { title: "المفضلة", breadcrumb: "الرئيسية / المفضلة", hint: "العناصر والمجموعات والمجلدات المفضلة للوصول السريع.", helpSection: "dashboard-archive" } }
 ];
 
 export const PAGE_CONTEXT_META = Object.fromEntries(
