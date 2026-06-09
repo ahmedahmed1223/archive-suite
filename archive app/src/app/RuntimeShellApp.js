@@ -227,6 +227,10 @@ export function App() {
     if (!isLocked) {
       const appStore = useAppStore.getState();
       const hasUsers = appStore.users.some((user) => user.isActive);
+      if (!isPasswordSet && !hasUsers && !settings.onboardingRequired && !settings.initialAdminPassword) {
+        setAuthState("firstRun");
+        return;
+      }
       if (settings.onboardingRequired || settings.initialAdminPassword || (!isPasswordSet && !hasUsers)) {
         setAuthState("setup");
         return;
@@ -543,6 +547,11 @@ export function App() {
 
   if (authState === "locked") {
     return jsx(LockScreen, {});
+  }
+
+  if (authState === "firstRun") {
+    const FirstRunPage = PAGE_COMPONENTS.firstRun;
+    return jsx(React.Suspense, { fallback: jsx(SplashScreen, {}), children: jsx(FirstRunPage, {}) });
   }
 
   if (authState === "login" || authState === "setup") {
