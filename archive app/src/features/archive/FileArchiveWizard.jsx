@@ -12,6 +12,7 @@ import {
   createImportedVideoItem
 } from "./fileImport.js";
 import { formatFileSize, formatNumber } from "../../utils/formatting.js";
+import { useAppStore } from "../../stores/index.js";
 
 function getWizardButtonClass(tone = "neutral", disabled = false) {
   const toneClass = tone === "primary"
@@ -104,16 +105,21 @@ export function FileArchiveWizard({
   const createItems = async () => {
     if (!selectedRows.length) return;
     setIsSaving(true);
+    const addedIds = [];
     try {
       for (const row of selectedRows) {
-        const item = createImportedVideoItem(row, {
-          typeId,
-          subtypeId,
-          notes
-        });
+        const item = createImportedVideoItem(row, { typeId, subtypeId, notes });
+        addedIds.push(item.id);
         await addVideoItem?.(item);
       }
-      showToast?.(`تمت إضافة ${selectedRows.length} ملف إلى الأرشيف`, "success");
+      const { showNotification, bulkDeleteItems } = useAppStore.getState();
+      showNotification?.(
+        `تمت إضافة ${addedIds.length} ملف إلى الأرشيف`,
+        {
+          type: "success",
+          action: { label: "تراجع", run: () => bulkDeleteItems?.(addedIds, { skipUndo: true }) },
+        }
+      );
       onOpenChange?.(false);
     } catch (error) {
       showToast?.(error?.message || "فشل استيراد الملفات", "error");

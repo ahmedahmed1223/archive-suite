@@ -679,10 +679,11 @@
   - المصدر: uiux-user-journey (UJ-06).
   - ✅ **تم (2026-06-09):** الزر يعرض spinner + "جاري التصدير..." عبر `isLoading("export")`؛ ChevronDown مخفي أثناء التصدير.
 
-- [ ] `[P2]` ⏱️M **إضافة تراجع (Undo) بعد الاستيراد** — السجلات تُضاف بصورة دائمة فور التأكيد بلا إمكانية تراجع.
-  - الملفات: `archive app/src/components/import/ImportDialog.jsx`، مسار `/api/rpc/putBatch`
+- [x] `[P2]` ⏱️M **إضافة تراجع (Undo) بعد الاستيراد** ✅ 2026-06-09 — السجلات تُضاف بصورة دائمة فور التأكيد بلا إمكانية تراجع.
+  - الملفات: `archive app/src/features/archive/FileArchiveWizard.jsx`
   - الإصلاح: احتفظ بـ IDs السجلات المُضافة في state لمدة 30 ثانية مع زر "تراجع" يستدعي `deleteBatch`.
   - المصدر: uiux-user-journey (UJ-07).
+  - ✅ **تم (2026-06-09):** `createItems` يجمع IDs قبل الحفظ؛ بعد النجاح يستدعي `showNotification` مع action `{ label: "تراجع", run: () => bulkDeleteItems(ids) }`.
 
 - [x] `[P2]` ⏱️S **تفعيل Virtual List على سطح المكتب** — مُفعَّل للجوّال فقط رغم أن الحزمة مثبتة.
   - الملف: `archive app/src/hooks/useVirtualList.js`
