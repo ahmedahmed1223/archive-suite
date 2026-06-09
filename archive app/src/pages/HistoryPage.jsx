@@ -6,8 +6,6 @@ import {
   useAppStore
 } from "../stores/index.js";
 import {
-  ChevronLeft,
-  ChevronRight,
   CirclePlus,
   Clock,
   FileText,
@@ -23,6 +21,7 @@ import { motion } from "framer-motion";
 
 import { appConfirm } from "../components/common/ConfirmDialog.js";
 import { EmptyState } from "../components/common/EmptyState.jsx";
+import { Pagination } from "../components/common/Pagination.jsx";
 import { MotionPage, PageHero, SkeletonBlock } from "../components/ui/V1Primitives.jsx";
 import {
   HISTORY_ACTIONS,
@@ -78,32 +77,6 @@ function HistoryMetric({ action, label, value, active, onClick }) {
   });
 }
 
-function Pagination({ page, totalPages, onChange }) {
-  if (totalPages <= 1) return null;
-  return jsxs("div", {
-    className: "va-control-surface flex flex-wrap items-center justify-between gap-3 va-surface-muted rounded-2xl border p-3",
-    children: [
-      jsxs("button", {
-        type: "button",
-        disabled: page <= 1,
-        onClick: () => onChange(page - 1),
-        className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40",
-        children: [jsx(ChevronRight, { className: "h-4 w-4" }), "السابق"]
-      }),
-      jsx("p", {
-        className: "text-sm text-gray-500",
-        children: `الصفحة ${formatNumber(page)} من ${formatNumber(totalPages)}`
-      }),
-      jsxs("button", {
-        type: "button",
-        disabled: page >= totalPages,
-        onClick: () => onChange(page + 1),
-        className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40",
-        children: ["التالي", jsx(ChevronLeft, { className: "h-4 w-4" })]
-      })
-    ]
-  });
-}
 
 function HistoryRecord({ record, itemTitle, index, settings }) {
   const tone = getHistoryActionTone(record.action);
@@ -337,7 +310,7 @@ export function HistoryPage() {
             : "ستظهر هنا عمليات الإنشاء والتعديل والحذف بعد استخدام الأرشيف."
         })
       }),
-      jsx(Pagination, { page: currentPage, totalPages, onChange: setPage }),
+      jsx(Pagination, { page: currentPage, totalPages, onPageChange: setPage, totalItems: filteredRecords.length }),
       jsxs("p", { className: "flex items-center gap-2 text-xs text-gray-600", children: [jsx(Clock, { className: "h-3.5 w-3.5" }), "السجل يعرض بيانات محلية محفوظة داخل هذا الجهاز."] })
     ]
   });
