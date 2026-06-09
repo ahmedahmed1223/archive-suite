@@ -1,4 +1,4 @@
-﻿import { Check, CheckSquare, FolderInput, Square, Tag as TagIcon, Trash2, Wand2, X } from "lucide-react";
+﻿import { Check, CheckSquare, FolderInput, FolderPlus, Layers, Square, Tag as TagIcon, Trash2, Wand2, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -15,14 +15,18 @@ export function BulkActionBar({
   onRestore,
   onAddTags,
   onMoveToCollection,
+  onSetType,
+  onSetProject,
   onMediaTranscode,
   onExport,
   collections = [],
+  contentTypes = [],
+  projects = [],
   showRestore = false,
   busy = false
 }) {
   const prefersReducedMotion = useReducedMotion();
-  const [openMenu, setOpenMenu] = React.useState(null); // "tags" | "collection" | null
+  const [openMenu, setOpenMenu] = React.useState(null); // "tags" | "collection" | "type" | "project" | null
 
   const closeMenu = React.useCallback(() => setOpenMenu(null), []);
 
@@ -108,7 +112,7 @@ export function BulkActionBar({
                 title={!collections.length ? "أنشئ مجموعة أولاً" : undefined}
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-gray-200 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <FolderInput className="h-3.5 w-3.5" /> نقل لمجموعة
+                <FolderPlus className="h-3.5 w-3.5" /> نقل لمجموعة
               </button>
               {openMenu === "collection" && (
                 <div
@@ -132,6 +136,74 @@ export function BulkActionBar({
                 </div>
               )}
             </div>
+            {typeof onSetType === "function" && contentTypes.length > 0 && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpenMenu((current) => (current === "type" ? null : "type"))}
+                  disabled={busy}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-gray-200 hover:bg-white/[0.08] disabled:opacity-50"
+                >
+                  <Layers className="h-3.5 w-3.5" /> تغيير النوع
+                </button>
+                {openMenu === "type" && (
+                  <div
+                    role="menu"
+                    className="absolute bottom-full right-0 mb-2 max-h-64 w-56 overflow-auto rounded-xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)] p-1 shadow-xl"
+                  >
+                    {contentTypes.map((ct) => (
+                      <button
+                        key={ct.id}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => { onSetType(ct.id); closeMenu(); }}
+                        className="block w-full truncate rounded-lg px-3 py-2 text-right text-xs text-gray-200 hover:bg-white/[0.06]"
+                      >
+                        {ct.icon ? `${ct.icon} ` : ""}{ct.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {typeof onSetProject === "function" && projects.length > 0 && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpenMenu((current) => (current === "project" ? null : "project"))}
+                  disabled={busy}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-gray-200 hover:bg-white/[0.08] disabled:opacity-50"
+                >
+                  <FolderInput className="h-3.5 w-3.5" /> تغيير المشروع
+                </button>
+                {openMenu === "project" && (
+                  <div
+                    role="menu"
+                    className="absolute bottom-full right-0 mb-2 max-h-64 w-56 overflow-auto rounded-xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)] p-1 shadow-xl"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => { onSetProject(null); closeMenu(); }}
+                      className="block w-full truncate rounded-lg px-3 py-2 text-right text-xs text-gray-400 hover:bg-white/[0.06]"
+                    >
+                      — بلا مشروع
+                    </button>
+                    {projects.map((proj) => (
+                      <button
+                        key={proj.id}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => { onSetProject(proj.id); closeMenu(); }}
+                        className="block w-full truncate rounded-lg px-3 py-2 text-right text-xs text-gray-200 hover:bg-white/[0.06]"
+                      >
+                        {proj.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {typeof onExport === "function" && (
               <button
                 type="button"
