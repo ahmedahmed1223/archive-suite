@@ -791,11 +791,12 @@
   - الجهد: 2-3 أسابيع.
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #6).
 
-- [ ] `[P1]` ⏱️M **إصلاح تبديل الباكند فوري بلا إعادة تشغيل** — تبديل الباكند (محلي↔سحابي) يتطلب إعادة تشغيل التطبيق.
+- [x] `[P1]` ⏱️M **إصلاح تبديل الباكند فوري بلا إعادة تشغيل** — تبديل الباكند (محلي↔سحابي) يتطلب إعادة تشغيل التطبيق.
   - الملفات: `archive app/src/app/App.jsx` أو `registerByBackendChoice.js`، صفحة الإعدادات.
   - التنفيذ: عند تغيير `backendChoice` → `flushPendingWrites()` → `registerByBackendChoice()` ديناميكياً → `loadAllData()` من الباكند الجديد → `showToast("تم التبديل بنجاح")`؛ مؤشر "جاري التبديل…" أثناء العملية.
   - الجهد: 1-2 أسبوع.
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #8).
+  - ✅ **تم (2026-06-09):** `switchBackendHot.js` مُنشأ يُسلسل: persist → `registerByBackendChoice()` → `loadAllData()`؛ `LocalStorageEngineSettings.jsx` محدَّث لاستخدامه بدلاً من `setBackendChoice` + رسالة إعادة التحميل.
 
 ---
 
