@@ -74,7 +74,8 @@ export function ArchivePage() {
   const {
     videoItems, contentTypes, virtualCollections, showToast, showNotification, currentUser, storeSelectedItems,
     addVideoItem, updateVideoItem, toggleFavorite, restoreVideoItem,
-    clearSelection, bulkDeleteItems, bulkRestoreItems, bulkAddTags, bulkMoveToCollection,
+    clearSelection, bulkDeleteItems, bulkRestoreItems, bulkAddTags, bulkMoveToCollection, bulkSetType, bulkSetProject,
+    projects,
     filterType, filterSubtype, setFilterType, setFilterSubtype,
     localSearch, setLocalSearch, showDeleted, showFavoritesOnly,
     resetFilters, activeTopMode,
@@ -281,6 +282,16 @@ export function ArchivePage() {
           if (!storeSelectedItems.length) return;
           await bulkMoveToCollection?.([...storeSelectedItems], collectionId);
         },
+        onSetType: async (typeId) => {
+          if (!storeSelectedItems.length || !typeId) return;
+          await bulkSetType?.([...storeSelectedItems], typeId);
+        },
+        onSetProject: async (projectId) => {
+          if (!storeSelectedItems.length) return;
+          await bulkSetProject?.([...storeSelectedItems], projectId);
+        },
+        contentTypes,
+        projects,
         onMediaTranscode: bulkPrepareMedia,
         busy: mediaBusy
       }),

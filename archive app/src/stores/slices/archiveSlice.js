@@ -116,6 +116,8 @@ export const archiveActionKeys = [
   "bulkRestoreItems",
   "bulkAddTags",
   "bulkMoveToCollection",
+  "bulkSetType",
+  "bulkSetProject",
   "emptyTrash",
   "setSearchQuery",
   "setFilterType",
@@ -475,6 +477,64 @@ export function createArchiveActions({ set, get, getAuthStore }) {
           title: "تم النقل",
           action: { label: "تراجع", run: () => undoRedoManager.undo() }
         });
+      }
+      return true;
+    },
+    bulkSetType: async (ids = [], typeId, options = {}) => {
+      if (!ids.length || !typeId) return false;
+      const idSet = new Set(ids);
+      const previous = get().videoItems.filter((item) => idSet.has(item.id)).map((item) => ({ id: item.id, type: item.type }));
+      const deviceId = getActiveDeviceId(get);
+      const updated = get().videoItems.map((item) => {
+        if (!idSet.has(item.id)) return item;
+        return stampSyncMetadata({ ...item, type: typeId, updatedAt: nowIso() }, { deviceId, previous: item });
+      });
+      set({ videoItems: updated });
+      await persistList(STORES.ITEMS, updated.filter((item) => idSet.has(item.id)));
+      if (!options.skipUndo) {
+        const label = `تغيير نوع ${previous.length} عنصر`;
+        undoRedoManager.push({
+          label,
+          undo: async () => {
+            const reverted = get().videoItems.map((item) => {
+              const orig = previous.find((e) => e.id === item.id);
+              return orig ? stampSyncMetadata({ ...item, type: orig.type, updatedAt: nowIso() }, { deviceId }) : item;
+            });
+            set({ videoItems: reverted });
+            await persistList(STORES.ITEMS, reverted.filter((item) => idSet.has(item.id)));
+          },
+          redo: () => get().bulkSetType(ids, typeId, { skipUndo: true })
+        });
+        get().showNotification?.(label, { type: "success", title: "تم تغيير النوع", action: { label: "تراجع", run: () => undoRedoManager.undo() } });
+      }
+      return true;
+    },
+    bulkSetProject: async (ids = [], projectId, options = {}) => {
+      if (!ids.length) return false;
+      const idSet = new Set(ids);
+      const previous = get().videoItems.filter((item) => idSet.has(item.id)).map((item) => ({ id: item.id, project: item.project ?? null }));
+      const deviceId = getActiveDeviceId(get);
+      const updated = get().videoItems.map((item) => {
+        if (!idSet.has(item.id)) return item;
+        return stampSyncMetadata({ ...item, project: projectId || null, updatedAt: nowIso() }, { deviceId, previous: item });
+      });
+      set({ videoItems: updated });
+      await persistList(STORES.ITEMS, updated.filter((item) => idSet.has(item.id)));
+      if (!options.skipUndo) {
+        const label = `تغيير مشروع ${previous.length} عنصر`;
+        undoRedoManager.push({
+          label,
+          undo: async () => {
+            const reverted = get().videoItems.map((item) => {
+              const orig = previous.find((e) => e.id === item.id);
+              return orig ? stampSyncMetadata({ ...item, project: orig.project, updatedAt: nowIso() }, { deviceId }) : item;
+            });
+            set({ videoItems: reverted });
+            await persistList(STORES.ITEMS, reverted.filter((item) => idSet.has(item.id)));
+          },
+          redo: () => get().bulkSetProject(ids, projectId, { skipUndo: true })
+        });
+        get().showNotification?.(label, { type: "success", title: "تم تغيير المشروع", action: { label: "تراجع", run: () => undoRedoManager.undo() } });
       }
       return true;
     },

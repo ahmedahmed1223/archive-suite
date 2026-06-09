@@ -303,9 +303,10 @@
   - الواجهة: زر "تصدير" في شريط الأدوات وصفحة البحث.
   - ✅ **تم (2026-06-09):** `exportService.js` كان موجودًا، أضيف مسار `POST /api/export` في server.js يستدعيه مباشرة؛ ExportButton.jsx يرسل Bearer token ويستقبل الملف ثنائيًا ويحفظه.
 
-- [ ] `[P1]` ⏱️M **عمليات جماعية على السجلات** — تحديد متعدد ثم: تعديل tags / نوع / مشروع / حذف / نقل.
+- [x] `[P1]` ⏱️M **عمليات جماعية على السجلات** — تحديد متعدد ثم: تعديل tags / نوع / مشروع / حذف / نقل.
   - الواجهة: شريط تحديد عائم عند اختيار أكثر من عنصر.
   - الخلفية: `POST /api/v1/records/bulk` (action + ids + payload).
+  - ✅ **تم (2026-06-09):** `BulkActionBar.jsx` كان موجودًا مع حذف/استعادة/وسوم/مجموعات؛ أضيف `bulkSetType` + `bulkSetProject` في store + قائمة منسدلة للنوع والمشروع في الشريط؛ مسار `POST /api/records/bulk` كان موجودًا مسبقًا.
 
 ### ب. الصلاحيات وإدارة المستخدمين
 
@@ -521,9 +522,10 @@
   - الإصلاح: تأكد من استخدام `JWT_AUTH_SECRET` الصحيح عند التحقق من توكن WebSocket.
   - المصدر: deep-audit-v2.
 
-- [ ] `[P1]` ⏱️M **إضافة رموز استرداد TOTP (Recovery Codes)** — لا يوجد مسار بديل للدخول عند فقدان جهاز TOTP.
+- [x] `[P1]` ⏱️M **إضافة رموز استرداد TOTP (Recovery Codes)** — لا يوجد مسار بديل للدخول عند فقدان جهاز TOTP.
   - الملفات: `archive-server/src/auth/totpService.js`، `server.js` (مسارات `/api/totp/*`)، `archive app/src/components/settings/SecuritySettings.jsx`
   - الإصلاح: عند تفعيل TOTP أنتج 8 رموز استرداد (16 حرفًا عشوائيًا مُهاشَة في DB) تُعرض مرة واحدة. أضف مسار `/api/totp/recover` يتحقق ويستهلك الرمز.
+  - ✅ **تم (2026-06-09):** رموز الاسترداد مُولَّدة بـ `generateRecoveryCodes()` وتظهر مرة واحدة في UI؛ مسار `/api/totp/recover` يتحقق ويستهلك الرمز عبر `verifyRecoveryCode()` في totpService؛ `TwoFactorSettings.jsx` مُنشأ ومُدمج في SettingsPage.
   - المصدر: deep-audit-v2.
 
 - [x] `[P1]` ⏱️S **Rate Limit على تعطيل TOTP** — لا يوجد تقييد على `/api/totp/disable` مما يُتيح brute-force.
