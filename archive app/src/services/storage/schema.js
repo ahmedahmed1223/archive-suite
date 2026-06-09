@@ -16,5 +16,9 @@ export const STORES = {
   AUDIT_LOGS: "audit_logs",
   PROJECTS: "projects",
   ACTIVITY_LOG: "activity_log",
-  FOLDERS: "archive_folders"
+  FOLDERS: "archive_folders",
+  TEMPLATES: "templates",
+  DRAFTS: "drafts",
+  WORK_SESSIONS: "work_sessions",
+  BULK_PROGRESS: "bulk_progress"
 };
