@@ -358,7 +358,7 @@
 
 > هدفه: توجيه أي مستخدم جديد من الصفر — تحميل Docker حتى تشغيل النظام — بخطوات مرقّمة واضحة.
 
-- [ ] `[P1]` ⏱️L **سكريبت إعداد تفاعلي (CLI Wizard)** — `scripts/setup.mjs` يُشغَّل بأمر `pnpm setup` أو `node scripts/setup.mjs`.
+- [x] `[P1]` ⏱️L **سكريبت إعداد تفاعلي (CLI Wizard)** — `scripts/setup.mjs` يُشغَّل بأمر `pnpm setup` أو `node scripts/setup.mjs`.
   - **الخطوة 1 — فحص Docker**: يتحقق من وجود `docker` و`docker compose`؛ إن لم يُوجد يعرض رابط التحميل الصحيح حسب نظام التشغيل (Windows/Mac/Linux) ويطلب إعادة التشغيل بعد التثبيت.
   - **الخطوة 2 — اختيار الوضع**: PocketBase (خفيف، للمطوّر) أو PostgreSQL (إنتاج).
   - **الخطوة 3 — إعداد البيئة**: يولّد ملف `.env` تلقائياً بأسرار JWT عشوائية آمنة + يسأل عن: اسم المستخدم والبريد وكلمة مرور المشرف، إعدادات SMTP (اختياري).
@@ -371,7 +371,7 @@
   - تحل محل التسجيل العشوائي وتُوجِّه المستخدم بشكل واضح.
   - ✅ **تم (2026-06-09):** `FirstRunPage.jsx` كانت موجودة ومسجلة في pageRegistry؛ أضيفت شرط `"firstRun"` في RuntimeShellApp: عندما لا يوجد مستخدمون نشطون ولا كلمة مرور مضبوطة تظهر الصفحة بدلاً من LoginScreen.
 
-- [ ] `[P2]` ⏱️M **ملف `INSTALL.md`** — دليل تثبيت سريع بالخطوات الثلاث:
+- [x] `[P2]` ⏱️M **ملف `INSTALL.md`** — دليل تثبيت سريع بالخطوات الثلاث:
   1. `git clone` + `cd archive-suite`
   2. `node scripts/setup.mjs`
   3. افتح `http://localhost:8787`
@@ -397,9 +397,11 @@
   - الملف: `archive app/src/features/onboarding/V1OnboardingWizard.jsx`.
   - ✅ **تم (2026-06-09):** خلفية mesh glow موجودة مسبقاً (lines 968-977). أيقونات ✓ لـ completed steps + أرقام للخطوات القادمة + glow effect على الخطوة النشطة عبر `shadow-[...]` مع `color-mix`. scale/color-mix في OptionButton موجود. شريط كلمة المرور بالألوان الديناميكية موجود.
 
-- [ ] `[P2]` ⏱️S **تحديث `v2-identity.css`** — أنماط glassmorphic لنافذة الإعداد + tokens انتقالية سلسة.
+- [x] `[P2]` ⏱️S **تحديث `v2-identity.css`** — أنماط glassmorphic لنافذة الإعداد + tokens انتقالية سلسة.
+  - ✅ **مُنجز مسبقاً:** `v2-identity.css` يحتوي على `.va-onboarding-panel` بـ `backdrop-filter: blur(28px) saturate(1.9)`, كيفريمات `va-2-step-in/out`, وتحولات سلسة للأزرار/المدخلات داخل `va-onboarding-panel`.
 
-- [ ] `[P2]` ⏱️S **تحديث `v4-identity.css`** — توحيد تباين الوضعين الفاتح والداكن في نافذة الإعداد.
+- [x] `[P2]` ⏱️S **تحديث `v4-identity.css`** — توحيد تباين الوضعين الفاتح والداكن في نافذة الإعداد.
+  - ✅ **مُنجز مسبقاً:** `v4-identity.css` يحتوي على `html.light[data-theme-version="v4"] .va-onboarding-shell` مع تصحيحات ألوان النصوص والأزرار والأسطح لكلا الوضعين.
 
 ---
 
