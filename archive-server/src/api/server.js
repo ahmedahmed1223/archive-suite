@@ -35,6 +35,7 @@ import {
   incActiveRequests, decActiveRequests, recordRequest
 } from "../monitoring/metrics.js";
 import { handleOcr } from "./ocrHandler.js";
+import { exportRecords } from "../export/exportService.js";
 import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
 import bcrypt from "bcryptjs";
 import { sendPasswordResetEmail, sendMail } from "../auth/emailService.js";
@@ -56,6 +57,8 @@ import { notifyRecordShared } from "../notifications/notificationService.js";
 //   DELETE /api/auth/totp               → { ok }                body: { token }  (Bearer required; disables 2FA)
 //   POST   /api/rpc                     → { ok, result } | { ok:false, error }
 //                                         body: { method, args }   (Bearer JWT required when authSecret set)
+//   POST   /api/export                  → binary file (CSV/XLSX/ZIP)
+//                                         body: { format, store?, ids? }  (Bearer required)
 //
 // Auth: when `authSecret` is provided, /api/rpc requires a valid
 // `Authorization: Bearer <jwt>`. /api/health and /api/auth/login stay open.
@@ -1677,6 +1680,29 @@ export function createApiServer({
         logger.warn({ err }, "notification-preferences PATCH failed");
         return send(res, 500, { ok: false, error: "failed" });
       }
+    }
+
+    // POST /api/export — export records as CSV, XLSX, or ZIP
+    if (req.method === "POST" && url === "/api/export") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      const { format = "csv", store = "videoItems", ids = null } = body || {};
+      const allowed = ["csv", "xlsx", "zip"];
+      if (!allowed.includes(format)) {
+        return send(res, 400, { ok: false, error: `Unsupported format: ${format}. Use csv, xlsx, or zip.` });
+      }
+      const result = await exportRecords(resolveStorage(), { format, store, ids }).catch((err) => {
+        log.error({ err }, "Export failed");
+        return null;
+      });
+      if (!result) return send(res, 500, { ok: false, error: "Export failed." });
+      res.writeHead(200, {
+        "Content-Type": result.contentType,
+        "Content-Disposition": `attachment; filename="${result.filename}"`,
+        "Content-Length": String(result.buffer.length),
+      });
+      res.end(result.buffer);
+      return undefined;
     }
 
     return send(res, 404, { ok: false, error: "Not found" });
