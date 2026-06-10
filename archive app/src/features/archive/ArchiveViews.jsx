@@ -35,6 +35,7 @@ import {
   formatNumber
 } from "../../utils/formatting.js";
 import { normalizeLocalFileValue } from "../videos/viewModel.js";
+import { InlineCellEditor } from "../../components/data/InlineCellEditor.jsx";
 
 export const ARCHIVE_VIEW_MODES = [
   { id: "grid", label: "شبكة", Icon: LayoutGrid },
@@ -793,22 +794,59 @@ function getFileSizeForItem(item) {
   return file?.size > 0 ? formatFileSize(file.size) : null;
 }
 
-function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview, onOpen, onFavorite, onDelete, onRestore, onBulkToggle, typeLabel, subtypeLabel }) {
+function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview, onOpen, onFavorite, onDelete, onRestore, onBulkToggle, typeLabel, subtypeLabel, editingCell, onStartCellEdit, onCommitCellEdit, onCancelCellEdit }) {
+  const isEditingCell = (columnId) => editingCell?.itemId === item.id && editingCell?.columnId === columnId;
+  const canInlineEdit = !showDeleted && !bulkMode && typeof onStartCellEdit === "function";
   switch (column.id) {
-    case "title":
+    case "title": {
+      if (isEditingCell("title")) {
+        return jsx("td", {
+          className: size.cell,
+          style: { minWidth: column.width },
+          children: jsx(InlineCellEditor, {
+            value: item.title || "",
+            fieldType: "text",
+            isEditing: true,
+            placeholder: "عنوان المادة",
+            onSave: (next) => {
+              const trimmed = String(next || "").trim();
+              if (!trimmed || trimmed === item.title) {
+                onCancelCellEdit?.();
+                return;
+              }
+              onCommitCellEdit?.(item, { title: trimmed });
+            },
+            onCancel: onCancelCellEdit
+          })
+        }, column.id);
+      }
       return jsxs("td", {
         className: size.cell,
         style: { minWidth: column.width },
         children: [
-          jsx("button", {
-            type: "button",
-            onClick: () => bulkMode ? onBulkToggle?.(item.id) : onPreview(item),
-            className: "line-clamp-2 text-right font-semibold leading-relaxed text-white hover:text-[color-mix(in_srgb,var(--va-action)_70%,#ffffff)]",
-            children: item.title || "بدون عنوان"
+          jsxs("div", {
+            className: "group/cell flex items-start gap-1.5",
+            children: [
+              jsx("button", {
+                type: "button",
+                onClick: () => bulkMode ? onBulkToggle?.(item.id) : onPreview(item),
+                className: "min-w-0 flex-1 line-clamp-2 text-right font-semibold leading-relaxed text-white hover:text-[color-mix(in_srgb,var(--va-action)_70%,#ffffff)]",
+                children: item.title || "بدون عنوان"
+              }),
+              canInlineEdit && jsx("button", {
+                type: "button",
+                onClick: () => onStartCellEdit(item.id, "title"),
+                "aria-label": `تحرير عنوان ${item.title || "المادة"}`,
+                title: "تحرير العنوان",
+                className: "shrink-0 rounded p-0.5 text-gray-600 opacity-0 transition-opacity hover:text-white focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--va-action)]/40 group-hover/cell:opacity-100",
+                children: jsx(PenLine, { className: "h-3.5 w-3.5", "aria-hidden": "true" })
+              })
+            ]
           }),
           item.isFavorite && jsx("span", { className: "mt-1 inline-flex rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200", children: "مفضلة" })
         ]
       }, column.id);
+    }
     case "type":
       return jsx("td", {
         className: `${size.cell} text-gray-400`,
@@ -817,18 +855,54 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
       }, column.id);
     case "file":
       return jsx("td", { className: size.cell, style: { minWidth: column.width }, children: jsx(FileMetaStrip, { item, compact: true }) }, column.id);
-    case "tags":
+    case "tags": {
+      if (isEditingCell("tags")) {
+        return jsx("td", {
+          className: size.cell,
+          style: { minWidth: column.width },
+          children: jsx(InlineCellEditor, {
+            value: item.tags || [],
+            fieldType: "tags",
+            isEditing: true,
+            placeholder: "وسوم مفصولة بفواصل",
+            onSave: (nextTags) => {
+              const current = item.tags || [];
+              const unchanged = nextTags.length === current.length && nextTags.every((tag, index) => tag === current[index]);
+              if (unchanged) {
+                onCancelCellEdit?.();
+                return;
+              }
+              onCommitCellEdit?.(item, { tags: nextTags });
+            },
+            onCancel: onCancelCellEdit
+          })
+        }, column.id);
+      }
       return jsx("td", {
         className: size.cell,
         style: { minWidth: column.width },
-        children: item.tags?.length ? jsx("div", {
-          className: "flex flex-wrap gap-1.5",
-          children: item.tags.slice(0, size.tags).map((tag) => jsx("span", {
-            className: "va-chip rounded-full border border-white/5 bg-gray-950/45 px-2 py-0.5 text-xs text-gray-400",
-            children: tag
-          }, tag))
-        }) : jsx("span", { className: "text-gray-600", children: "—" })
+        children: jsxs("div", {
+          className: "group/cell flex items-start gap-1.5",
+          children: [
+            item.tags?.length ? jsx("div", {
+              className: "min-w-0 flex-1 flex flex-wrap gap-1.5",
+              children: item.tags.slice(0, size.tags).map((tag) => jsx("span", {
+                className: "va-chip rounded-full border border-white/5 bg-gray-950/45 px-2 py-0.5 text-xs text-gray-400",
+                children: tag
+              }, tag))
+            }) : jsx("span", { className: "min-w-0 flex-1 text-gray-600", children: "—" }),
+            canInlineEdit && jsx("button", {
+              type: "button",
+              onClick: () => onStartCellEdit(item.id, "tags"),
+              "aria-label": `تحرير وسوم ${item.title || "المادة"}`,
+              title: "تحرير الوسوم",
+              className: "shrink-0 rounded p-0.5 text-gray-600 opacity-0 transition-opacity hover:text-white focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--va-action)]/40 group-hover/cell:opacity-100",
+              children: jsx(PenLine, { className: "h-3.5 w-3.5", "aria-hidden": "true" })
+            })
+          ]
+        })
       }, column.id);
+    }
     case "size": {
       const fileSize = getFileSizeForItem(item);
       return jsx("td", { className: `${size.cell} text-xs text-gray-500`, style: { minWidth: column.width }, children: fileSize || "—" }, column.id);
@@ -907,8 +981,18 @@ function ResizableHeader({ column, label, cellClass, onResize }) {
   }, column.id);
 }
 
-export function VideoTableView({ items, previewItem, typeLabel, subtypeLabel, showDeleted, onPreview, onOpen, onFavorite, onDelete, onRestore, itemSize = "comfortable", bulkMode = false, isSelected, onBulkToggle, allSelected, onSelectAll, columns, onColumnResize, disableRowMotion = false }) {
+export function VideoTableView({ items, previewItem, typeLabel, subtypeLabel, showDeleted, onPreview, onOpen, onFavorite, onDelete, onRestore, itemSize = "comfortable", bulkMode = false, isSelected, onBulkToggle, allSelected, onSelectAll, columns, onColumnResize, disableRowMotion = false, onCellSave }) {
   const size = ARCHIVE_TABLE_SIZE[itemSize] || ARCHIVE_TABLE_SIZE.comfortable;
+  // §13.3 inline cell editing — one cell at a time ({ itemId, columnId }).
+  const [editingCell, setEditingCell] = React.useState(null);
+  const handleStartCellEdit = React.useCallback((itemId, columnId) => {
+    setEditingCell({ itemId, columnId });
+  }, []);
+  const handleCancelCellEdit = React.useCallback(() => setEditingCell(null), []);
+  const handleCommitCellEdit = React.useCallback((item, patch) => {
+    setEditingCell(null);
+    onCellSave?.(item, patch);
+  }, [onCellSave]);
   const visibleColumns = (columns && columns.length ? columns : DEFAULT_TABLE_COLUMNS).filter((column) => column.visible !== false);
   const shouldDisableRowMotion = disableRowMotion || itemSize === "xs" || items.length > 48;
   const RowComponent = shouldDisableRowMotion ? "tr" : motion.tr;
@@ -960,7 +1044,11 @@ export function VideoTableView({ items, previewItem, typeLabel, subtypeLabel, sh
                   ...visibleColumns.map((column) => renderTableCell({
                     column, item, size, showDeleted, bulkMode,
                     onPreview, onOpen, onFavorite, onDelete, onRestore, onBulkToggle,
-                    typeLabel, subtypeLabel
+                    typeLabel, subtypeLabel,
+                    editingCell,
+                    onStartCellEdit: onCellSave ? handleStartCellEdit : undefined,
+                    onCommitCellEdit: handleCommitCellEdit,
+                    onCancelCellEdit: handleCancelCellEdit
                   }))
                 ]
               }, item.id);
