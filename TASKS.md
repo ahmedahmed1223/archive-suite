@@ -780,11 +780,12 @@
 
 ### 13.3 P1 — تجربة المستخدم اليومية
 
-- [ ] `[P1]` ⏱️L **التعديل المضمّن في عرض الجدول (InlineCellEditor)** — كل تعديل يتطلب فتح صفحة التفاصيل والعودة.
-  - الملفات الجديدة: `archive app/src/components/views/InlineCellEditor.jsx`.
-  - تغييرات: `archive app/src/components/views/TableView.jsx`.
-  - التنفيذ: نقر مزدوج لتحرير أي خلية مباشرة؛ Tab/Shift+Tab للتنقل بين الخلايا؛ حفظ تلقائي عند Enter أو مغادرة الخلية؛ Ctrl+Z للتراجع عبر `undoManager` الموجود؛ محررات حسب نوع الحقل (نص/قائمة/تاريخ/تقييم/وسوم). يقلل نقرات التعديل من 5+ إلى 2.
-  - الجهد: 3-4 أسابيع.
+- [ ] `[P1]` ⏱️L **التعديل المضمّن في عرض الجدول (InlineCellEditor)** — كل تعديل يتطلب فتح صفحة التفاصيل والعودة. **(المرحلة 1 منجزة ✅)**
+  - الملفات الجديدة: `archive app/src/components/data/InlineCellEditor.jsx` ✅ (مكوّن عام: نص/وسوم/رقم/تاريخ/قائمة، Enter يحفظ، Escape يلغي، blur يحفظ، RTL).
+  - تغييرات: `archive app/src/features/archive/ArchiveViews.jsx` ✅ (ربط InlineCellEditor بخليتي العنوان والوسوم في `VideoTableView` عبر أيقونة قلم؛ خلية واحدة قيد التحرير في كل مرة)، `ArchivePageResults.jsx` ✅ (الحفظ عبر `updateVideoItem` مع سجل التغييرات + toast نجاح/فشل).
+  - ✅ المرحلة 1 (2026-06-10): تحرير العنوان والوسوم مضمّنًا؛ حفظ عند Enter/مغادرة الخلية؛ Escape للإلغاء؛ تجاهل القيم غير المتغيّرة/الفارغة.
+  - ⬜ المتبقي: نقر مزدوج لتحرير أي خلية؛ Tab/Shift+Tab للتنقل بين الخلايا؛ Ctrl+Z للتراجع عبر `undoManager`؛ محرر النوع (قائمة) والتاريخ والتقييم.
+  - الجهد: 3-4 أسابيع (المتبقي ~2-3 أسابيع).
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #3). ملاحظة: P2 placeholder موجود في §12.7 — هذه الميزة الكاملة.
 
 - [ ] `[P1]` ⏱️L **Service Worker ذكي — Workbox strategies + Background Sync كامل** — SW الحالي cache-first بسيط (Task #39). هذه ترقية لـ Workbox كامل.

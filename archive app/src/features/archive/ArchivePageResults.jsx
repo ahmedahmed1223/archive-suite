@@ -122,6 +122,8 @@ function renderItemsForViewMode(deps) {
     toggleFavorite,
     confirmDelete,
     restoreVideoItem,
+    updateVideoItem,
+    showToast,
     gridContainerRef,
     gridColumns,
     // Keyboard nav state — provided when rendered inside the keyboard container
@@ -189,7 +191,17 @@ function renderItemsForViewMode(deps) {
       onOpen: openItem,
       onFavorite: (item) => toggleFavorite?.(item.id),
       onDelete: confirmDelete,
-      onRestore: (item) => restoreVideoItem?.(item.id)
+      onRestore: (item) => restoreVideoItem?.(item.id),
+      // §13.3 inline cell editing — persists title/tags patches through the
+      // store action (permission check + change history + IndexedDB).
+      onCellSave: updateVideoItem ? async (item, patch) => {
+        try {
+          await updateVideoItem({ ...item, ...patch });
+          showToast?.("تم حفظ التعديل", "success");
+        } catch (error) {
+          showToast?.(error?.message || "تعذر حفظ التعديل", "error");
+        }
+      } : undefined
     });
   }
   const explicitColumnsStyle = getGridStyleForColumns(gridColumns);
