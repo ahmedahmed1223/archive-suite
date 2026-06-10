@@ -732,10 +732,16 @@ run("global shortcut action resolver", () => {
   const ctrlK = { ctrlKey: true, metaKey: false, shiftKey: false, altKey: false, key: "k", target: { tagName: "BODY" } };
   const ctrlSlashInInput = { ctrlKey: true, metaKey: false, shiftKey: false, altKey: false, key: "/", target: { tagName: "INPUT" } };
   const ctrlKInInput = { ...ctrlK, target: { tagName: "INPUT" } };
-  assert.equal(getGlobalShortcutAction(ctrlK, {}), "openSearch");
+  assert.equal(getGlobalShortcutAction(ctrlK, {}), "openCommandPalette");
   assert.equal(getGlobalShortcutAction(ctrlSlashInInput, {}), "showShortcuts");
-  assert.equal(getGlobalShortcutAction(ctrlKInInput, {}), null);
-  assert.equal(getGlobalShortcutAction(ctrlK, { keyboardShortcuts: { openSearch: "disabled" } }), null);
+  assert.equal(getGlobalShortcutAction(ctrlKInInput, {}), "openCommandPalette");
+
+  const altK = { ctrlKey: false, metaKey: false, shiftKey: false, altKey: true, key: "k", target: { tagName: "BODY" } };
+  const altKInInput = { ...altK, target: { tagName: "INPUT" } };
+  assert.equal(getGlobalShortcutAction(altK, {}), "openSearch");
+  assert.equal(getGlobalShortcutAction(altKInInput, {}), null);
+
+  assert.equal(getGlobalShortcutAction(ctrlK, { keyboardShortcuts: { openCommandPalette: "disabled" } }), null);
 });
 
 run("shortcut and command dialog view models", () => {
@@ -865,8 +871,8 @@ run("navigation view model", () => {
 run("page migration native status", () => {
   const status = getPageMigrationStatus();
   const summary = getPageMigrationSummary(status);
-  assert.equal(summary.total, 20);
-  assert.equal(summary.native, 20);
+  assert.equal(summary.total, 25);
+  assert.equal(summary.native, 25);
   assert.equal(summary.wrappedPages, 0);
   assert.equal(status.find((page) => page.id === "archive")?.status, "native");
   assert.equal(status.find((page) => page.id === "dashboard")?.status, "native");
@@ -958,10 +964,13 @@ await runAsync("archive import file reader", async () => {
       sheet_to_json: () => excelPackage.rows
     }
   };
+  // The importer guards against CVE-2024-22363 by requiring the ZIP/OOXML
+  // magic bytes (PK\x03\x04) — the fake buffer must carry a valid signature.
+  const fakeOoxmlBuffer = new Uint8Array([0x50, 0x4b, 0x03, 0x04]).buffer;
   const excelResult = await readArchiveImportFile({
     name: "archive.xlsx",
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    arrayBuffer: async () => new ArrayBuffer(0)
+    arrayBuffer: async () => fakeOoxmlBuffer
   }, {
     loadXlsx: async () => fakeXlsx
   });
@@ -1221,7 +1230,13 @@ run("theme accent tokens", () => {
     }
   });
   assert.equal(tokens.accent, "#e11d48");
-  assert.deepEqual(writes[0], ["--app-accent", "#e11d48"]);
+  // Palette scale tokens are written first (drives Tailwind overrides) …
+  assert.deepEqual(writes[0], ["--va-accent-50", "oklch(97.7% 0.013 17.4)"]);
+  // … and the legacy aliases are still written for backward compatibility.
+  assert.deepEqual(
+    writes.find(([key]) => key === "--app-accent"),
+    ["--app-accent", "#e11d48"]
+  );
 });
 
 function createRequest(result) {
