@@ -108,6 +108,7 @@ function renderItemsForViewMode(deps) {
     previewItem,
     typeLabel,
     subtypeLabel,
+    typeOptions,
     showDeleted,
     activeItemSize,
     bulkMode,
@@ -178,6 +179,7 @@ function renderItemsForViewMode(deps) {
       previewItem,
       typeLabel,
       subtypeLabel,
+      typeOptions,
       showDeleted,
       itemSize: activeItemSize,
       bulkMode,
@@ -192,8 +194,8 @@ function renderItemsForViewMode(deps) {
       onFavorite: (item) => toggleFavorite?.(item.id),
       onDelete: confirmDelete,
       onRestore: (item) => restoreVideoItem?.(item.id),
-      // §13.3 inline cell editing — persists title/tags patches through the
-      // store action (permission check + change history + IndexedDB).
+      // §13.3 inline cell editing — persists title/tags/type patches through
+      // the store action (permission check + change history + IndexedDB).
       onCellSave: updateVideoItem ? async (item, patch) => {
         try {
           await updateVideoItem({ ...item, ...patch });
@@ -253,6 +255,7 @@ export function ArchivePageResults(props) {
     typeLabel,
     subtypeLabel,
     typeById,
+    contentTypes,
     openItem,
     toggleBulkSelect,
     setBulkMode,
@@ -263,6 +266,13 @@ export function ArchivePageResults(props) {
     updateVideoItem,
     showToast
   } = props;
+
+  const typeOptions = React.useMemo(
+    () => (contentTypes || [])
+      .filter((type) => type.status !== "archived")
+      .map((type) => ({ value: type.id, label: type.name || type.id })),
+    [contentTypes]
+  );
 
   const handleKbActivate = React.useCallback((item) => openItem?.(item), [openItem]);
   const handleKbSelect = React.useCallback((id, selected) => {
@@ -358,6 +368,7 @@ export function ArchivePageResults(props) {
                   ...props,
                   // Pass only the virtualized slice of items on mobile; full list elsewhere
                   visibleItems: virtualItems.map(({ item }) => item),
+                  typeOptions,
                   kbFocusedIndex: focusedIndex,
                   kbIsSelected: isSelected,
                 }),
