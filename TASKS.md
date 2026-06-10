@@ -2088,3 +2088,63 @@
   - الجهد: 1-2 يوم.
   - المصدر: توجيه المستخدم (10 يونيو 2026) + تشخيص الجلسة.
 
+---
+
+## 20. توجيهات المستخدم — دفعة ثانية (10 يونيو 2026)
+
+> **المصدر:** توجيه المستخدم المباشر. صيغت المهام من نصّ وصل مشوّهاً جزئياً — تُراجع الصياغة مع المستخدم عند بدء التنفيذ.
+
+### 20.1 P1 — Refresh Token + التجديد الصامت (Silent Renewal)
+
+- [ ] `[P1]` ⏱️M **إضافة `POST /api/auth/refresh` وتجديد JWT تلقائياً قبل الانتهاء** — حالياً انتهاء التوكن يقطع جلسة العمل (أرشفة طويلة تنقطع).
+  - **التنفيذ:** refresh token يُخزَّن في HttpOnly cookie (لا localStorage)؛ access token قصير العمر يُجدَّد صامتاً في الخلفية قبل انتهائه؛ إبطال refresh token عند تسجيل الخروج (يرتبط بآلية إبطال JWT الموجودة في §1)؛ rotation عند كل تجديد لكشف إعادة الاستخدام.
+  - **الملفات:** `archive-server/src/auth/*`، `archive-server/src/api/server.js`، `archive app/src/bootstrap/cloudSession.js` (مؤقّت تجديد صامت + إعادة محاولة عند 401).
+  - الجهد: 1-2 أسبوع.
+
+### 20.2 P1 — التنبيهات الذكية (Smart Alerts عبر Web Push)
+
+- [ ] `[P1]` ⏱️M **ربط خدمة الإشعارات بـ Web Push API لإرسال تنبيهات خارج التطبيق** — تُرسل عند: إسناد مهام، اكتشاف مكررات (§16.3)، فشل نسخ احتياطي، تحديث سجل، إغلاق/أرشفة سجل.
+  - **التنفيذ:** اشتراك Push في Service Worker + VAPID keys في الخادم؛ تفضيلات اشتراك لكل نوع تنبيه؛ تجميع التنبيهات المتشابهة.
+  - **الملفات:** `archive-server/src/notifications/notificationService.js` (أو إنشاؤها)، `archive app/public/sw.js`، تكامل مع §18.2 (مركز الإشعارات — هذه قناة التسليم الخارجية له).
+  - الجهد: 2-3 أسابيع.
+
+### 20.3 P1 — نظام Workflow لحالات السجلات (Status Flow + Webhooks)
+
+- [ ] `[P1]` ⏱️L **آلة حالات معرّفة للسجلات: مسودة → تحرير → مراجعة → معتمد → منشور → مؤرشف (+ تواريخ استحقاق)** — انتقالات مضبوطة بالأدوار، وصلاحيات معرّفة لكل انتقال.
+  - **التنفيذ:** تعريف الحالات والانتقالات المسموحة في schema قابل للتهيئة؛ صلاحيات لكل انتقال حسب الدور (admin/editor/viewer)؛ إطلاق webhooks عند كل انتقال حالة (يبني على بنية Webhooks الموجودة في `WebhooksSettings.jsx` وأحداث `record.*` في `server.js`)؛ تواريخ استحقاق مع تنبيهات (تكامل §20.2)؛ سجل انتقالات لكل سجل.
+  - **الملفات:** `archive-server/src/workflow/stateMachine.js` (جديد)، `archive-server/src/api/server.js`، `archive app/src/features/archive/itemStatus.js` (يرتبط بـ §17.17 — الحالات المرئية تُبنى فوق هذا الـ workflow)، `archive app/src/components/workflow/StatusTransitionMenu.jsx`.
+  - يرتبط بـ: §17.17 (شارات الحالة)، §18.1 (سجل النشاط)، §20.2 (تنبيهات الاستحقاق).
+  - الجهد: 3-4 أسابيع.
+
+### 20.4 P1 — تصدير متقدّم: PDF منسّق + قوالب Excel + صيغ أكاديمية
+
+- [ ] `[P1]` ⏱️L **قدرة تصدير منسّقة: تقارير PDF بهوية بصرية (pdf-lib)، قوالب Excel قابلة للتخصيص، وصيغ BibTeX/RIS أكاديمية** — التصدير الحالي CSV/Excel خام عبر XLSX فقط.
+  - **التنفيذ:** تقارير PDF (غلاف + جداول منسّقة + دعم RTL/خط عربي مدمج) عبر مكتبة pdf خفيفة (`pdf-lib`)؛ قوالب Excel معرّفة مسبقاً (أعمدة/تنسيق/شعار) فوق `xlsx` الموجودة؛ تصدير مراجع BibTeX/RIS للاستخدام الأكاديمي (تحويل حقول العنصر إلى مدخلات استشهاد).
+  - **الملفات:** `archive-server/src/export/pdfReport.js` (جديد)، `archive-server/src/export/citationExport.js` (جديد)، توسعة `archive-server/src/export/exportService.js`، خيارات في `DataCenterPage.jsx`/`ReportsPage.jsx`.
+  - **تنبيه:** فحص الخط العربي المدمج (حجم/ترخيص)؛ تعقيم إدخال المستخدم في حقول PDF.
+  - الجهد: 3-4 أسابيع.
+
+### 20.5 P1 — واجهة API عامة بمفاتيح API + تكامل CMS
+
+- [ ] `[P1]` ⏱️L **API عام موثّق بمفاتيح API (منفصلة عن JWT) يتيح للأنظمة الخارجية قراءة البيانات برمجياً + موصلات CMS (WordPress/Drupal) للمزامنة التلقائية** — حالياً الـ RPC داخلي فقط بمصادقة JWT.
+  - **التنفيذ:** إصدار/إبطال API Keys من واجهة الإدارة (تخزين hash فقط)؛ صلاحيات لكل مفتاح (قراءة فقط/نطاقات stores)؛ rate limiting لكل مفتاح؛ توثيق OpenAPI؛ نقاط REST للقراءة بترقيم cursor (يبني على §2 pagination)؛ webhook/موصل WordPress وDrupal للنشر التلقائي عند انتقال الحالة لـ"منشور" (تكامل §20.3).
+  - **الملفات:** `archive-server/src/api/publicApi.js` (جديد)، `archive-server/src/auth/apiKeys.js` (جديد)، `archive app/src/components/settings/ApiKeysSettings.jsx` (جديد)، توثيق `archive-server/docs/public-api.md`.
+  - **تنبيه أمان:** مراجعة security-reviewer إلزامية قبل الدمج (سطح هجوم جديد).
+  - الجهد: 3-4 أسابيع.
+
+### 20.6 P2 — البحث الصوتي (Web Speech API)
+
+- [ ] `[P2]` ⏱️M **السماح بالبحث الصوتي: المستخدم ينطق "محاضرات يونيو 2026" أو "افتح هذا الملف" فيُنفَّذ البحث/الأمر** — عبر Web Speech API (SpeechRecognition) مع دعم العربية.
+  - **التنفيذ:** زر ميكروفون في شريط البحث + لوحة الأوامر (§17.2)؛ تحويل الكلام لاستعلام بحث (مع التطبيع العربي في `archive-core/src/utils/arabicNormalize.js`)؛ أوامر صوتية بسيطة (افتح/ابحث/أضف)؛ fallback مهذّب حيث لا يتوفر SpeechRecognition؛ احترام إذن الميكروفون وعدم التسجيل الدائم.
+  - **الملفات:** `archive app/src/features/search/voiceSearch.js` (جديد)، `archive app/src/components/search/VoiceSearchButton.jsx` (جديد)، تكامل `SearchPage.jsx`.
+  - الجهد: 1-2 أسبوع.
+
+### 20.7 P1 — إصلاح/ترقية خريطة العلاقات (Graph View بـ cytoscape.js)
+
+- [ ] `[P1]` ⏱️M **ترقية `GraphViewPage.jsx` إلى cytoscape.js وإصلاح عدم ظهور الروابط بين العناصر** — المستخدم يبلّغ أن الروابط/العلاقات لا تظهر حالياً في الخريطة.
+  - **التحقيق أولاً:** تشخيص سبب غياب الحواف (بيانات علاقات فارغة؟ خلل رسم؟) قبل إعادة البناء.
+  - **التنفيذ:** ترقية محرك الرسم إلى `cytoscape.js` (layouts: cose/concentric)؛ عقد ملوّنة حسب النوع وحواف حسب نوع العلاقة (وسوم مشتركة/نفس المجموعة/علاقات §18.5 عند تنفيذها)؛ تكبير/سحب؛ نقرة على عقدة → فتح التفاصيل؛ فلترة حسب النوع/الوسم؛ أداء حتى ~5K عقدة (عرض تدريجي).
+  - **الملفات:** `archive app/src/pages/GraphViewPage.jsx`، تبعية `cytoscape` جديدة، `archive app/src/features/graph/buildGraphModel.js` (جديد).
+  - يرتبط بـ: §18.5 (العلاقات)، §11/§12 graph.
+  - الجهد: 2-3 أسابيع.
+
