@@ -570,8 +570,19 @@ async function navigateAndAssert(page, route, heading) {
 }
 
 async function clickConfirm(page, label) {
-  await page.getByRole("dialog").waitFor({ state: "visible" });
-  await page.getByRole("button", { name: label }).last().click();
+  let dialog = page.locator("role=dialog").first();
+  if ((await dialog.count()) === 0) {
+    dialog = page.locator("role=alertdialog").first();
+  }
+  await dialog.waitFor({ state: "visible" });
+
+  const input = dialog.locator("input").first();
+  if ((await input.count()) > 0) {
+    const placeholder = (await input.getAttribute("placeholder")) || label;
+    await input.fill(placeholder);
+  }
+
+  await dialog.getByRole("button", { name: label }).last().click();
 }
 
 async function expectDownload(page, label, action) {
