@@ -765,11 +765,12 @@
 
 - [ ] `[P1]` ⏱️L **تشفير النسخ الاحتياطية AES-256-GCM + تحقق SHA-256 تلقائي** — **(النواة منجزة ✅ — مدمجة 10 يونيو)**
   - **✅ منجز ومُختبَر:** `archive-server/src/backup/backupCrypto.js` (AES-256-GCM بمشتقّ مفتاح scrypt + تنسيق ملف ARCE + SHA-256 checksum write/verify)؛ مدمج في `backupScheduler.js` (يشفّر تلقائياً عند ضبط `BACKUP_ENCRYPTION_KEY`، يحذف plaintext، يكتب checksum، يعلّم `encrypted`)؛ `BACKUP_ENCRYPTION_KEY` موثّق في `.env.example:212`؛ `scripts/verify-backup.mjs` — **12 اختبار يمرّ** (round-trip، كلمة مرور خاطئة، تلف، magic header، checksum).
-  - **⬜ المتبقي (مهام الإكمال):**
-    - واجهة استعادة في `DataCenterPage.jsx` تطلب كلمة مرور التشفير وتستدعي `decryptBackupFile` + `verifyBackupChecksum` قبل الاستعادة (الدوال مُصدَّرة وجاهزة).
-    - تنبيه واضح في الواجهة عند فشل تحقّق checksum.
-    - تخزين بعيد اختياري (S3/Cloudflare R2) مع تشفير أثناء النقل.
-  - الجهد المتبقي: ~1-2 أسبوع.
+  - **✅ مُنجَز (10 يونيو 2026) — مسار الاستعادة كاملاً:**
+    - `restoreBackup()` في `backupScheduler.js`: فحص اسم الملف (منع traversal) → تحقّق SHA-256 (يرفض 409 عند عدم التطابق) → فك تشفير `.enc` بكلمة المرور (400 عند الخطأ/الغياب) → gunzip → `provider.replaceAll`.
+    - Endpoint جديد `POST /api/admin/backups/restore` (admin فقط + rate limit + تسجيل تدقيق `backup.restore` في `auditLogger`).
+    - واجهة استعادة في `BackupManager.jsx`: زر استعادة لكل نسخة، حقل كلمة مرور للنسخ المشفّرة 🔒، تأكيد `appConfirm` تدميري، رسائل خطأ واضحة (checksum/كلمة مرور).
+    - **6 اختبارات جديدة** في `verify-backup.mjs` (round-trip عادي/مشفّر، كلمة مرور خاطئة/غائبة، checksum تالف لا يلمس البيانات، رفض traversal) — السلسلة كاملة 18 suite خضراء.
+  - **⬜ المتبقي (اختياري):** تخزين بعيد (S3/Cloudflare R2) مع تشفير أثناء النقل.
   - المصدر: feature-proposals-2026 (محور 2 — ميزة #13).
 
 - [x] `[P1]` ⏱️L **حدود الموارد متعددة الطبقات (IP + User + Endpoint)** ✅ 2026-06-09 — Rate limiting موجود على IP فقط، لا حدود للمستخدم ولا لنقاط النهاية الفردية.

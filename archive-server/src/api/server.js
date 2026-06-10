@@ -29,7 +29,7 @@ import {
 } from "./adminConfig.js";
 import { createRateLimiter, clientIp, userKeyFromHeader } from "./rateLimit.js";
 import { captureException } from "../monitoring/sentryService.js";
-import { listBackups, runBackup } from "../backup/backupScheduler.js";
+import { listBackups, runBackup, restoreBackup } from "../backup/backupScheduler.js";
 import {
   getMetricsOutput, getContentType,
   incActiveRequests, decActiveRequests, recordRequest
@@ -1350,6 +1350,30 @@ export function createApiServer({
         return send(res, 200, { ok: true, message: "تمت النسخة الاحتياطية بنجاح.", result });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Backup failed" });
+      }
+    }
+
+    // POST /api/admin/backups/restore — restore a stored backup into the live
+    // provider. Body: { filename, passphrase? }. Destructive (replaceAll), so
+    // admin-only + checksum verified + decrypt-with-passphrase for .enc files.
+    if (req.method === "POST" && url.split("?")[0] === "/api/admin/backups/restore") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const adminUser = requireAdmin(req, res);
+      if (!adminUser) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const result = await restoreBackup(resolveStorage(), String(body?.filename || ""), {
+          passphrase: typeof body?.passphrase === "string" ? body.passphrase : ""
+        });
+        auditLog({
+          method: "backup.restore",
+          args: [result.filename],
+          claims: adminUser,
+          ip: clientIp(req)
+        });
+        return send(res, 200, { ok: true, message: "تمت استعادة النسخة الاحتياطية بنجاح.", result });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Restore failed" });
       }
     }
 

@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
+import { appConfirm } from "../common/ConfirmDialog.js";
 
 export function BackupManager({ authToken }) {
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [msg, setMsg] = useState(null);
+  // Restore flow: which backup row is being restored + its passphrase (for .enc).
+  const [restoreTarget, setRestoreTarget] = useState(null);
+  const [passphrase, setPassphrase] = useState("");
+  const [restoring, setRestoring] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -26,6 +31,45 @@ export function BackupManager({ authToken }) {
       if (r.ok) setTimeout(load, 4000);
     } catch { setMsg({ err: true, text: "فشل الاتصال بالخادم" }); }
     finally { setTriggering(false); }
+  };
+
+  const startRestore = (backup) => {
+    setMsg(null);
+    setPassphrase("");
+    setRestoreTarget(backup);
+  };
+
+  const doRestore = async () => {
+    if (!restoreTarget) return;
+    if (restoreTarget.encrypted && !passphrase) {
+      setMsg({ err: true, text: "هذه النسخة مشفّرة — أدخل كلمة مرور التشفير أولاً." });
+      return;
+    }
+    const confirmed = await appConfirm(
+      `ستحلّ بيانات النسخة «${restoreTarget.filename}» محل كل بيانات الأرشيف الحالية. لا يمكن التراجع عن هذه العملية. هل أنت متأكد؟`,
+      { title: "استعادة نسخة احتياطية", kind: "danger", confirmLabel: "استعادة الآن" }
+    );
+    if (!confirmed) return;
+    setRestoring(true);
+    try {
+      const r = await fetch("/api/admin/backups/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ filename: restoreTarget.filename, passphrase })
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) {
+        setMsg({ err: false, text: "تمت الاستعادة بنجاح. أعد تحميل الصفحة لرؤية البيانات المستعادة." });
+        setRestoreTarget(null);
+      } else {
+        setMsg({ err: true, text: d.error || "فشلت الاستعادة." });
+      }
+    } catch {
+      setMsg({ err: true, text: "فشل الاتصال بالخادم أثناء الاستعادة." });
+    } finally {
+      setPassphrase("");
+      setRestoring(false);
+    }
   };
 
   const fmt = bytes => bytes < 1024 ? `${bytes}B` : bytes < 1048576 ? `${(bytes/1024).toFixed(1)}KB` : `${(bytes/1048576).toFixed(2)}MB`;
@@ -51,14 +95,46 @@ export function BackupManager({ authToken }) {
       ) : (
         <div className="space-y-2">
           {backups.map(b => (
-            <div key={b.filename} className="flex items-center justify-between p-3 bg-gray-800/40 rounded-lg border border-gray-700/50">
-              <div>
-                <p className="text-sm font-mono text-gray-200">{b.filename}</p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {new Date(b.createdAt).toLocaleString("ar")} · {fmt(b.sizeBytes)}
-                </p>
+            <div key={b.filename} className="p-3 bg-gray-800/40 rounded-lg border border-gray-700/50 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-mono text-gray-200 truncate" dir="ltr">{b.filename}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {new Date(b.createdAt).toLocaleString("ar")} · {fmt(b.sizeBytes)}
+                    {b.encrypted && <span className="mr-2 text-amber-400">🔒 مشفّرة</span>}
+                  </p>
+                </div>
+                <button
+                  onClick={() => (restoreTarget?.filename === b.filename ? setRestoreTarget(null) : startRestore(b))}
+                  className="shrink-0 px-2.5 py-1 text-xs rounded-lg border border-amber-600/50 text-amber-300 hover:bg-amber-900/30 transition-colors"
+                >
+                  {restoreTarget?.filename === b.filename ? "إلغاء" : "استعادة"}
+                </button>
               </div>
-              <span className="text-xs text-emerald-500">✓</span>
+              {restoreTarget?.filename === b.filename && (
+                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-700/50">
+                  {b.encrypted && (
+                    <input
+                      type="password"
+                      value={passphrase}
+                      onChange={e => setPassphrase(e.target.value)}
+                      placeholder="كلمة مرور التشفير"
+                      autoComplete="off"
+                      className="flex-1 min-w-40 px-2.5 py-1.5 text-xs bg-gray-900/70 border border-gray-700 rounded-lg text-gray-200 outline-none focus:border-amber-500/50"
+                    />
+                  )}
+                  <button
+                    onClick={doRestore}
+                    disabled={restoring || (b.encrypted && !passphrase)}
+                    className="px-3 py-1.5 text-xs bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                  >
+                    {restoring ? "جاري الاستعادة..." : "تأكيد الاستعادة"}
+                  </button>
+                  <p className="w-full text-[11px] text-amber-200/70">
+                    ⚠️ الاستعادة تستبدل كل البيانات الحالية بمحتوى هذه النسخة بعد التحقق من سلامتها (SHA-256).
+                  </p>
+                </div>
+              )}
             </div>
           ))}
         </div>

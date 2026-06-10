@@ -3,6 +3,9 @@ import { randomBytes } from "node:crypto";
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { gzipSync } from "node:zlib";
+
+import { restoreBackup } from "../src/backup/backupScheduler.js";
 
 import {
   writeBackupChecksum,
@@ -219,6 +222,116 @@ run("checksum over .enc file: write + verify roundtrip", async () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// ---------------------------------------------------------------------------
+// restoreBackup (checksum verify → decrypt → gunzip → replaceAll)
+// ---------------------------------------------------------------------------
+
+function makeFakeProvider() {
+  const calls = [];
+  return {
+    calls,
+    async replaceAll(snapshot) {
+      calls.push(snapshot);
+      return { videoItems: (snapshot.videoItems || []).length };
+    }
+  };
+}
+
+function writeGzBackup(dir, snapshot) {
+  const name = `backup-test-${randomBytes(4).toString("hex")}.json.gz`;
+  const fp = join(dir, name);
+  writeFileSync(fp, gzipSync(Buffer.from(JSON.stringify(snapshot), "utf8")));
+  return { fp, name };
+}
+
+run("restoreBackup: plaintext gz round-trip applies replaceAll", async () => {
+  const dir = makeTmpDir();
+  try {
+    const snapshot = { version: "2.0", videoItems: [{ id: "v1" }, { id: "v2" }] };
+    const { fp, name } = writeGzBackup(dir, snapshot);
+    writeBackupChecksum(fp);
+    const provider = makeFakeProvider();
+    const result = await restoreBackup(provider, name, { dir });
+    assert.equal(provider.calls.length, 1);
+    assert.deepEqual(provider.calls[0], snapshot);
+    assert.equal(result.counts.videoItems, 2);
+    assert.equal(result.filename, name);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+run("restoreBackup: encrypted backup restores with the right passphrase", async () => {
+  const dir = makeTmpDir();
+  try {
+    const snapshot = { version: "2.0", videoItems: [{ id: "enc-1" }] };
+    const { fp, name } = writeGzBackup(dir, snapshot);
+    const { encPath } = encryptBackupFile(fp, PASSPHRASE);
+    rmSync(fp);
+    writeBackupChecksum(encPath);
+    const provider = makeFakeProvider();
+    const result = await restoreBackup(provider, `${name}.enc`, { dir, passphrase: PASSPHRASE });
+    assert.deepEqual(provider.calls[0], snapshot);
+    assert.equal(result.counts.videoItems, 1);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+run("restoreBackup: wrong passphrase rejects with 400 and never touches data", async () => {
+  const dir = makeTmpDir();
+  try {
+    const { fp, name } = writeGzBackup(dir, { videoItems: [] });
+    const { encPath } = encryptBackupFile(fp, PASSPHRASE);
+    rmSync(fp);
+    writeBackupChecksum(encPath);
+    const provider = makeFakeProvider();
+    await assert.rejects(
+      () => restoreBackup(provider, `${name}.enc`, { dir, passphrase: "wrong" }),
+      (err) => err.statusCode === 400
+    );
+    assert.equal(provider.calls.length, 0);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+run("restoreBackup: missing passphrase for .enc rejects with 400", async () => {
+  const dir = makeTmpDir();
+  try {
+    const { fp, name } = writeGzBackup(dir, { videoItems: [] });
+    const { encPath } = encryptBackupFile(fp, PASSPHRASE);
+    rmSync(fp);
+    writeBackupChecksum(encPath);
+    await assert.rejects(
+      () => restoreBackup(makeFakeProvider(), `${name}.enc`, { dir }),
+      (err) => err.statusCode === 400 && /مشفّرة/.test(err.message)
+    );
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+run("restoreBackup: checksum mismatch rejects with 409 and never touches data", async () => {
+  const dir = makeTmpDir();
+  try {
+    const { fp, name } = writeGzBackup(dir, { videoItems: [{ id: "v1" }] });
+    writeBackupChecksum(fp);
+    // Corrupt the artifact after the checksum was written.
+    writeFileSync(fp, gzipSync(Buffer.from('{"tampered":true}', "utf8")));
+    const provider = makeFakeProvider();
+    await assert.rejects(
+      () => restoreBackup(provider, name, { dir }),
+      (err) => err.statusCode === 409
+    );
+    assert.equal(provider.calls.length, 0);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+run("restoreBackup: rejects traversal / non-backup filenames with 400", async () => {
+  const dir = makeTmpDir();
+  try {
+    for (const bad of ["../../etc/passwd", "backup-..\\x.json.gz", "notes.txt", "backup-a.json.gz.enc.exe"]) {
+      await assert.rejects(
+        () => restoreBackup(makeFakeProvider(), bad, { dir }),
+        (err) => err.statusCode === 400
+      );
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 // ---------------------------------------------------------------------------

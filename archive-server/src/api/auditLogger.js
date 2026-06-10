@@ -9,9 +9,10 @@ const log = createLogger("audit");
 
 // The operations that require audit logging
 const DESTRUCTIVE_OPS = new Set([
-  "replaceAll",   // wipes + replaces an entire store
-  "delete",       // single record delete
-  "deleteBatch",  // batch delete
+  "replaceAll",      // wipes + replaces an entire store
+  "backup.restore",  // restores a stored backup over the live data (replaceAll)
+  "delete",          // single record delete
+  "deleteBatch",     // batch delete
   "emptyTrash",   // permanent delete of all trashed items
   "put",          // upsert — log role/permission changes only
   "putBatch",     // bulk upsert
