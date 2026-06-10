@@ -106,12 +106,12 @@ function bearer(secret = "sync-secret") {
   return `Bearer ${signJwt({ sub: "u1", username: "admin", role: "admin" }, secret)}`;
 }
 
-run("RPC method allow-list matches the 11-method port", () => {
+run("RPC method allow-list matches the port methods + getByField", () => {
   assert.deepEqual([...RPC_METHODS].sort(), [
     "add", "clear", "delete", "deleteBatch", "get", "getAll",
-    "open", "put", "putBatch", "replaceAll", "snapshot"
+    "getByField", "open", "put", "putBatch", "replaceAll", "snapshot"
   ].sort());
-  assert.equal(RPC_METHODS.length, 11);
+  assert.equal(RPC_METHODS.length, 12);
 });
 
 run("dispatchRpc rejects unknown methods", async () => {
