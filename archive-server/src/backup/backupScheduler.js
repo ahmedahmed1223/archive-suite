@@ -1,10 +1,10 @@
-import { createWriteStream, mkdirSync, readdirSync, statSync, unlinkSync } from "node:fs";
+import { createWriteStream, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { createGzip } from "node:zlib";
+import { createGzip, gunzipSync } from "node:zlib";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { createLogger } from "../logger.js";
-import { writeBackupChecksum, encryptBackupFile } from "./backupCrypto.js";
+import { writeBackupChecksum, encryptBackupFile, verifyBackupChecksum, decryptBackupFile } from "./backupCrypto.js";
 
 const log = createLogger("backup");
 
@@ -12,8 +12,7 @@ export const BACKUP_DIR = process.env.BACKUP_DIR || "backups";
 export const BACKUP_INTERVAL_MS = parseInt(process.env.BACKUP_INTERVAL_HOURS || "24", 10) * 3_600_000;
 
 // Re-export so callers don't need to import backupCrypto directly.
-export { verifyBackupChecksum } from "./backupCrypto.js";
-export { decryptBackupFile } from "./backupCrypto.js";
+export { verifyBackupChecksum, decryptBackupFile };
 
 let schedulerTimer = null;
 
@@ -75,6 +74,74 @@ export async function runBackup(provider) {
     try { unlinkSync(`${filepath}.enc`); } catch { /* ignore */ }
     throw err;
   }
+}
+
+// Restore a stored backup into the live provider via replaceAll().
+// Pipeline: filename sanity → SHA-256 checksum verify → decrypt (.enc) →
+// gunzip → JSON.parse → provider.replaceAll(snapshot).
+// Errors carry statusCode so the HTTP layer can map them cleanly.
+export async function restoreBackup(provider, filename, { passphrase = "", dir = BACKUP_DIR } = {}) {
+  // Strict allow-list: only names runBackup itself produces. Blocks path
+  // traversal and anything else living in BACKUP_DIR.
+  if (typeof filename !== "string" || !/^backup-[\w.-]+\.json\.gz(\.enc)?$/.test(filename) || filename.includes("..")) {
+    const err = new Error("اسم ملف النسخة الاحتياطية غير صالح.");
+    err.statusCode = 400;
+    throw err;
+  }
+  const filePath = join(dir, filename);
+
+  // Integrity first — refuse to restore anything that fails its checksum.
+  let integrity;
+  try {
+    integrity = verifyBackupChecksum(filePath);
+  } catch (e) {
+    const err = new Error(`تعذر التحقق من سلامة النسخة (.sha256 مفقود أو تالف): ${e.message}`);
+    err.statusCode = 409;
+    throw err;
+  }
+  if (!integrity.ok) {
+    const err = new Error("فشل التحقق من سلامة النسخة الاحتياطية (checksum غير مطابق) — لن تتم الاستعادة.");
+    err.statusCode = 409;
+    throw err;
+  }
+
+  // Decrypt if needed, else read the gz directly.
+  let gzData;
+  if (filename.endsWith(".enc")) {
+    if (!passphrase) {
+      const err = new Error("هذه النسخة مشفّرة — كلمة مرور التشفير مطلوبة.");
+      err.statusCode = 400;
+      throw err;
+    }
+    try {
+      gzData = decryptBackupFile(filePath, passphrase);
+    } catch (e) {
+      const err = new Error("فشل فك التشفير — كلمة المرور غير صحيحة أو الملف تالف.");
+      err.statusCode = 400;
+      throw err;
+    }
+  } else {
+    gzData = readFileSync(filePath);
+  }
+
+  let snapshot;
+  try {
+    snapshot = JSON.parse(gunzipSync(gzData).toString("utf8"));
+  } catch (e) {
+    const err = new Error(`تعذر قراءة محتوى النسخة الاحتياطية: ${e.message}`);
+    err.statusCode = 422;
+    throw err;
+  }
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+    const err = new Error("محتوى النسخة الاحتياطية ليس snapshot صالحاً.");
+    err.statusCode = 422;
+    throw err;
+  }
+
+  log.info({ filename }, "Backup restore started.");
+  const counts = await provider.replaceAll(snapshot);
+  log.info({ filename, counts }, "Backup restore completed.");
+  return { filename, counts, checksum: integrity.actual, restoredAt: new Date().toISOString() };
 }
 
 export function listBackups() {
