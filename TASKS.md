@@ -1786,3 +1786,306 @@
   - الجهد: 3-5 أسابيع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 15 — P2).
 
+---
+
+## 17. مقترحات DaisyUI وتحسينات المظهر/UX — مهام مستخرجة جديدة
+
+> **المصدر:** `archive-suite-daisyui-ux-proposals.md` (18 مقترحاً).
+> **المنهجية:** حُوّل كل مقترح إلى مهمة تنفيذية بنفس صيغة الملف. تتمحور حول تبنّي DaisyUI كنظام تصميم موحّد فوق Tailwind v4، وتحسينات مظهر وتجربة شاملة. تتكامل مع §4 (UI/UX) و§15.3 (مركز الإعدادات الموحّد).
+> **آخر تحديث:** 10 يونيو 2026.
+
+---
+
+### 17.1 P1 — الانتقال إلى نظام مكوّنات DaisyUI كأساس تصميمي (DaisyUI Component System Migration)
+
+- [ ] `[P1]` ⏱️XL **تبنّي DaisyUI كنظام تصميم موحّد فوق Tailwind v4 وترحيل المكوّنات تدريجياً** — المكوّنات الحالية مكتوبة بـ CSS مخصص غير موحّد، ما ينتج تبايناً بصرياً ويصعّب الصيانة والتخصيص ودعم السمات.
+  - **التثبيت:** `npx skills add saadeghi/daisyui --agent claude-code --yes` ثم إضافة `daisyui` كـ plugin في `archive app/src/index.css` (Tailwind v4 `@plugin "daisyui";`).
+  - **تعديل ملفات:** `archive app/src/index.css` (أو ملف Tailwind الجذري)، `archive app/src/components/ui/*` (الأزرار، البطاقات، الحقول، النوافذ)، `archive app/tailwind.config.*` إن وُجد.
+  - **التنفيذ التدريجي:** المرحلة 1 المكوّنات الأساسية (`btn`, `input`, `card`)؛ المرحلة 2 المكوّنات المركّبة (`navbar`, `menu`, `drawer`)؛ المرحلة 3 الصفحات الكاملة. دعم RTL أصيل، توحيد الأحجام والمسافات.
+  - يرتبط بـ: §4 (UI/UX)، §17.10 (السمات)، §19.4 (تثبيت daisyUI).
+  - الجهد: 6-8 أسابيع (تدريجي).
+  - المصدر: daisyui-ux-proposals (المقترح 1 — P1).
+
+### 17.2 P1 — لوحة الأوامر الشاملة (Command Palette / Ctrl+K)
+
+- [ ] `[P1]` ⏱️L **بناء لوحة أوامر مركزية (Ctrl+K) للوصول لأي إجراء/صفحة/عنصر/إعداد عبر الكتابة** — التنقل يتطلب حالياً المرور بالقوائم والصفحات.
+  - **الملفات الجديدة:** `archive app/src/components/command/CommandPalette.jsx`، `archive app/src/features/command/commandRegistry.js` (تعريف الأوامر السياقية حسب الصفحة)، `archive app/src/hooks/useCommandPalette.js`.
+  - **تعديل ملفات:** `archive app/src/app/App.jsx` (مزوّد عام + اختصار Ctrl+K)، `archive app/src/app/pageManifest.js` (مصدر للصفحات القابلة للتنقل).
+  - **التنفيذ:** فلترة فورية، تصنيف (أوامر/صفحات/عناصر/إعدادات)، أوامر سياقية حسب الصفحة الحالية، تنقّل بلوحة المفاتيح، عرض الاختصارات.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 2 — P1).
+
+### 17.3 P1 — السحب والإفلات متعدد المناطق (Multi-Zone Drag & Drop)
+
+- [ ] `[P1]` ⏱️L **تعزيز السحب والإفلات عبر كل مناطق التطبيق (قائمة←مجلد، سطح المكتب←صفحة، بين المجموعات)** — السحب والإفلات محدود جداً حالياً.
+  - **الملفات الجديدة:** `archive app/src/features/dnd/dndController.js`، `archive app/src/components/dnd/DropZone.jsx`، `archive app/src/components/dnd/DragPreview.jsx`.
+  - **تعديل ملفات:** `archive app/src/features/archive/ArchiveViews.jsx`، `Sidebar.jsx`، صفحات المجموعات/المجلدات.
+  - **التنفيذ:** إفلات من القائمة على مجلد/مجموعة، رفع ملفات من سطح المكتب لأي مكان، سحب متعدد التحديد مع شارة عدّاد، مؤشّر خط إفلات، تمييز مناطق الإفلات (DaisyUI dragover styling).
+  - يرتبط بـ: §17.16 (Kanban)، §18.5 (العلاقات بالسحب).
+  - الجهد: 3-5 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 3 — P1).
+
+### 17.4 P2 — الانتقالات السلسة والحركات الدقيقة (Smooth Transitions & Micro-Animations)
+
+- [ ] `[P2]` ⏱️M **إضافة انتقالات وحركات سلسة بين الحالات والصفحات والمكوّنات مع احترام `prefers-reduced-motion`** — التبديل الحالي مفاجئ بلا انتقال.
+  - **تعديل ملفات:** shell التنقل/الراوتر (`AppRouter.jsx`)، مكوّنات النوافذ المنبثقة، القوائم؛ استخدام framer-motion (موجود) + سمات DaisyUI.
+  - **التنفيذ:** slide/fade بين الصفحات، scale-up للنوافذ من نقطة النقر، slide-down للعناصر الجديدة، counter animation للأرقام، skeleton أثناء التحميل؛ مفتاح تعطيل في الإعدادات.
+  - يرتبط بـ: §17.8 (Skeleton)، مهارة motion-ui.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 4 — P2).
+
+### 17.5 P2 — التخطيط متعدد الأجزاء / العرض المنقسم (Multi-Pane / Split View)
+
+- [ ] `[P2]` ⏱️XL **إتاحة تقسيم الشاشة إلى أجزاء مستقلة (مثل VS Code) للمقارنة والعمل المتوازي** — يُعرض جزء واحد فقط حالياً في كل لحظة.
+  - **الملفات الجديدة:** `archive app/src/components/layout/SplitView.jsx`، `archive app/src/features/layout/paneManager.js`، `archive app/src/hooks/usePaneLayout.js`.
+  - **التنفيذ:** سحب تبويب لجزء جانبي، حتى 3 أجزاء، مقابض تغيير حجم، تذكّر التخطيط عبر الجلسات، تحوّل لتبويبات على الجوال.
+  - يرتبط بـ: §17.15 (الجوال).
+  - الجهد: 5-7 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 5 — P2).
+
+### 17.6 P1 — القوائم السياقية الذكية (Smart Context Menus)
+
+- [ ] `[P1]` ⏱️M **قوائم نقر-يمين / ضغط-مطوّل غنية وسياقية لكل عنصر/مجلد/وسم/مساحة فارغة** — النقر الأيمن لا يقدّم شيئاً حالياً.
+  - **الملفات الجديدة:** `archive app/src/components/context-menu/ContextMenu.jsx`، `archive app/src/features/context-menu/menuRegistry.js`، `archive app/src/hooks/useContextMenu.js`.
+  - **تعديل ملفات:** `ArchiveViews.jsx`، `Sidebar.jsx`، بطاقات العناصر.
+  - **التنفيذ:** إجراءات حسب نوع الهدف، إجراءات جماعية عند تعدد التحديد، DaisyUI `dropdown` styling، ضغط مطوّل على الجوال، عرض اختصارات.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 6 — P1).
+
+### 17.7 P2 — وضع التركيز والعرض الخالي من الإلهاء (Focus Mode)
+
+- [ ] `[P2]` ⏱️M **وضع تركيز (F11) يخفي العناصر غير الضرورية للتركيز على المحتوى (مشغّل فيديو/قارئ مستند/نموذج إضافة)** — العناصر المحيطة تشتّت أثناء المشاهدة/القراءة.
+  - **الملفات الجديدة:** `archive app/src/features/focus/focusMode.js`، `archive app/src/components/focus/FocusShell.jsx`.
+  - **التنفيذ:** اختصار F11/Escape، إخفاء تلقائي للتحكّمات بعد 3 ثوانٍ، مؤقّت بومودورو اختياري، “عدم الإزعاج”، حفظ حالة التطبيق عند الخروج.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 7 — P2).
+
+### 17.8 P1 — التحميل الهيكلي (Skeleton) والتغذية الراجعة الفورية
+
+- [ ] `[P1]` ⏱️M **استبدال مؤشّرات التحميل الدوّارة بهياكل (skeleton) تحاكي شكل المحتوى + تغذية راجعة فورية لكل تفاعل** — الفجوة بين الفعل والاستجابة تسبب ارتباكاً وضغطات متكررة.
+  - **الملفات الجديدة:** `archive app/src/components/ui/Skeleton.jsx` (DaisyUI `skeleton`)، `archive app/src/components/ui/CardSkeleton.jsx`، `DetailSkeleton.jsx`.
+  - **تعديل ملفات:** `ArchivePageResults.jsx`، `DetailPage.jsx`، الأزرار (حالة `btn-active`/علامة نجاح/اهتزاز عند الفشل).
+  - **التنفيذ:** هياكل بأشكال البطاقات/التفاصيل، fade-in عند اكتمال التحميل، تأكيد بصري فوري لكل ضغطة زر.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 8 — P1).
+
+### 17.9 P1 — البطاقات التكيّفية حسب نوع المحتوى (Adaptive Content Cards)
+
+- [ ] `[P1]` ⏱️M **بطاقات عرض تتكيّف شكلاً ومعلوماتٍ حسب نوع المحتوى (فيديو/صوت/مستند/صورة)** — كل العناصر تظهر بنفس شكل البطاقة حالياً.
+  - **تعديل ملفات:** `ArchiveViews.jsx`، مكوّن بطاقة العنصر، `archive app/src/features/archive/itemCard*`.
+  - **التنفيذ:** بطاقة فيديو (مصغّرة + مدّة + شارة تشغيل)، صوت (موجة + مدّة)، مستند (صفحة أولى + عدد صفحات + صيغة)، صورة (معاينة + أبعاد)؛ ألوان DaisyUI مميّزة لكل نوع؛ توسّع طفيف عند hover.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 9 — P1).
+
+### 17.10 P1 — نظام سمات DaisyUI المتعددة مع محرّر حيّ (Theme System + Live Editor)
+
+- [ ] `[P1]` ⏱️M **توسيع نظام السمات للتوافق مع سمات DaisyUI (30+ سمة جاهزة) + محرّر سمة حيّ** — يعتمد على §17.1.
+  - **الملفات الجديدة:** `archive app/src/features/theme/daisyThemes.js`، `archive app/src/components/settings/ThemeGallery.jsx`، `archive app/src/components/settings/LiveThemeEditor.jsx`.
+  - **تعديل ملفات:** `archive app/src/theme/useTheme.js`، `SettingsPage.jsx` (تبويب السمات).
+  - **التنفيذ:** معاينات مصغّرة لكل سمة، تبديل فوري عبر `data-theme`، محرّر ألوان حيّ، حفظ سمة مخصّصة، جدولة فاتح/داكن حسب `prefers-color-scheme`، تصدير/استيراد JSON.
+  - يرتبط بـ: §17.1، §15.3 (مركز الإعدادات).
+  - الجهد: 2-3 أسابيع (بعد §17.1).
+  - المصدر: daisyui-ux-proposals (المقترح 10 — P1).
+
+### 17.11 P2 — رحلة اكتشاف المحتوى (Content Discovery Journey)
+
+- [ ] `[P2]` ⏱️L **أقسام “استكشف/رائج/عشوائي/الأكثر نشاطاً/المنسيّون” لإحياء المحتوى المؤرشف** — لا توجد طريقة لاكتشاف محتوى لم يبحث عنه المستخدم.
+  - **الملفات الجديدة:** `archive app/src/pages/DiscoverPage.jsx` (DaisyUI `hero` + card grid)، `archive app/src/features/discover/discoveryEngine.js`.
+  - **تعديل ملفات:** `Sidebar.jsx`، `pageManifest.js`.
+  - **التنفيذ:** مُضاف حديثاً، مقترحات حسب آخر مشاهدة، عشوائي (“أفاجئني”)، الأكثر نشاطاً أسبوعياً، المنسيّون (لم يُفتحوا منذ مدة).
+  - الجهد: 3-4 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 11 — P2).
+
+### 17.12 P1 — نظام الإشعارات المنبثقة المحسّن (Toast & Snackbar — DaisyUI)
+
+- [ ] `[P1]` ⏱️M **toast/alert محسّن بـ DaisyUI مع إجراءات سريعة وتراجع وشريط تقدّم** — toasts الحالية بدائية بلا تفاعل.
+  - **الملفات الجديدة:** `archive app/src/components/ui/ToastSystem.jsx` (DaisyUI `toast`/`alert`)، `archive app/src/features/toast/toastStore.js`.
+  - **التنفيذ:** أولوية حسب النوع، تجميع المتشابهة (“3 عناصر أُضيفت”)، إجراء سريع داخل toast (تراجع/تنزيل/إعادة)، إبقاء الأخطاء حتى تُقرأ، DaisyUI `progress` للعمليات الطويلة، سجل إشعارات.
+  - يرتبط بـ: §18.2 (مركز الإشعارات)، `AppNotifications.jsx`.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 12 — P1).
+
+### 17.13 P1 — التنقّل المتكامل مع مسار الخبز الديناميكي (Dynamic Breadcrumb)
+
+- [ ] `[P1]` ⏱️M **مسار خبز محفوص ديناميكي + تاريخ تنقّل (رجوع/تقدّم) + قائمة المواقع الأخيرة** — لا breadcrumb يوضّح الموقع في التسلسل ولا تاريخ تنقّل.
+  - **الملفات الجديدة:** `archive app/src/components/navigation/Breadcrumb.jsx` (DaisyUI `breadcrumbs`)، `archive app/src/features/navigation/navHistory.js`، `RecentLocations.jsx`.
+  - **تعديل ملفات:** `AppRouter.jsx`، `TopBar.jsx`، `pageManifest.js` (مصدر breadcrumb موجود بالحقل `meta.breadcrumb`).
+  - **التنفيذ:** مسار قابل للنقر لكل مستوى، أزرار رجوع/تقدّم عبر تاريخ التنقّل، آخر 10 مواقع، تقلّص ذكي على الجوال.
+  - الجهد: 2-3 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 13 — P1).
+
+### 17.14 P2 — مدجات لوحة المعلومات القابلة للتخصيص (Customizable Dashboard Widgets)
+
+- [ ] `[P2]` ⏱️L **لوحة معلومات قابلة للتخصيص بالكامل عبر مدجات تُضاف/تُزال/تُرتّب/تُكبّر (react-grid-layout موجود)** — اللوحة ثابتة التخطيط حالياً.
+  - **الملفات الجديدة:** `archive app/src/features/dashboard/widgetRegistry.js`، `archive app/src/components/dashboard/WidgetStore.jsx`، `WidgetFrame.jsx`.
+  - **تعديل ملفات:** `DashboardPage.jsx` (يستخدم `react-grid-layout` بالفعل).
+  - **التنفيذ:** متجر مدجات، سحب لإعادة الترتيب، توسيع/تصغير، مدجات قابلة للتهيئة (إحصائيات/نشاط/عشوائي)، DaisyUI `stat`/`timeline`، تخطيط متجاوب.
+  - الجهد: 4-6 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 14 — P2).
+
+### 17.15 P1 — إصلاح شامل لتجربة الجوال المتجاوبة (Mobile-First Responsive Overhaul)
+
+- [ ] `[P1]` ⏱️XL **إعادة تصميم تجربة الجوال بأدوات DaisyUI المتجاوبة مع أولوية المحتوى والإيماءات** — الجوال نسخة مصغّرة من سطح المكتب لا تجربة مصمّمة.
+  - **الملفات الجديدة:** `archive app/src/components/navigation/BottomNav.jsx`، `archive app/src/hooks/useSwipeGesture.js`، `MobileShell.jsx`.
+  - **تعديل ملفات:** shell التنقل، الصفحات الرئيسية (full-screen بدل أجزاء على الجوال)، `index.css` (breakpoints).
+  - **التنفيذ:** تنقل سفلي ثابت بشارة عدّاد، شريط علوي مبسّط، إيماءات سحب (رجوع/تحديث/تبديل عرض)، lazy load، أولوية محتوى مختصرة على الجوال.
+  - يرتبط بـ: §4 (a11y)، §17.5.
+  - الجهد: 5-7 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 15 — P1).
+
+### 17.16 P1 — نظام العرض المتعدد مع تخصيص الأعمدة (Multi-View + Kanban/Gallery)
+
+- [ ] `[P1]` ⏱️L **توسيع خيارات العرض: معرض (Masonry) + كانبان + قائمة مدمجة + قائمة تفاصيل، مع تخصيص الأعمدة لكل عرض** — يُعرض حالياً شبكة أو جدول فقط.
+  - **الملفات الجديدة:** `archive app/src/features/archive/views/GalleryView.jsx`، `KanbanView.jsx`، `CompactView.jsx`، `archive app/src/components/archive/ColumnCustomizer.jsx`.
+  - **تعديل ملفات:** `ArchiveViews.jsx`، `ArchivePageResults.jsx`، تخزين تفضيل العرض (`settingsSlice.js`).
+  - **التنفيذ:** معرض Masonry بحجم صور قابل للضبط، كانبان بأعمدة (مجموعات/أنواع/حالات) مع سحب، تخصيص أعمدة الجدول وترتيبها، DaisyUI `join`+`btn` للتبديل، حفظ التخصيص لكل عرض.
+  - يرتبط بـ: §17.17 (الحالات)، §17.3 (السحب).
+  - الجهد: 4-6 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 16 — P1).
+
+### 17.17 P1 — نظام حالات العناصر المرئية (Visual Item Status System)
+
+- [ ] `[P1]` ⏱️M **حالة مرئية لكل عنصر (جديد/قيد المعالجة/مكتمل/يحتاج مراجعة/مؤرشف) بشارة ولون DaisyUI** — لا يمكن تمييز حالة العنصر بالنظر.
+  - **الملفات الجديدة:** `archive app/src/features/archive/itemStatus.js`، `archive app/src/components/archive/StatusBadge.jsx`.
+  - **تعديل ملفات:** بطاقة العنصر، عمود الحالة في الجدول، `archiveSlice.js`، فلاتر البحث.
+  - **التنفيذ:** badge ملوّن (info/warning/success/error/neutral)، فلترة حسب الحالة، تغيير تلقائي للحالة (عنصر بلا وسم→“يحتاج مراجعة”)، اقتراحات تلقائية.
+  - يرتبط بـ: §17.16، §18.1 (سجل النشاط).
+  - الجهد: 2-3 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 17 — P1).
+
+### 17.18 P2 — مسار التنقّل الموجّه حسب الدور (Role-Based Guided Journey)
+
+- [ ] `[P2]` ⏱️L **تكييف الواجهة حسب دور المستخدم ونمط استخدامه (مسؤول/محرّر/مشاهد) — تخصيص واجهي لا نظام صلاحيات** — نفس الواجهة للجميع حالياً.
+  - **الملفات الجديدة:** `archive app/src/features/onboarding/roleProfiles.js`، `archive app/src/components/onboarding/RoleSelectionStep.jsx`.
+  - **تعديل ملفات:** `V1OnboardingWizard.jsx`، `Sidebar.jsx` (ترتيب الأقسام حسب الاستخدام)، الإعدادات (تبديل الوضع).
+  - **التنفيذ:** سؤال أول دخول عن طريقة الاستخدام، إبراز/إخفاء أدوات حسب الدور، تكيّف مع الجهاز، إعادة ترتيب الشريط حسب الأكثر استخداماً.
+  - يرتبط بـ: §15.1 (الدليل التفاعلي)، §18 (الجلسات).
+  - الجهد: 3-4 أسابيع.
+  - المصدر: daisyui-ux-proposals (المقترح 18 — P2).
+
+---
+
+## 18. مقترحات الاستخدام اليومي — مهام مستخرجة جديدة
+
+> **المصدر:** `archive-suite-daily-use-proposals.md` (5 مقترحات).
+> **المنهجية:** حُوّل كل مقترح إلى مهمة تنفيذية. جميعها تستخدم مخازن IndexedDB جديدة مستقلة (لا تحتاج هجرة بيانات) وتتكامل مع StorageProvider الموجود عبر `put()`/`getAll()`/`delete()`.
+> **آخر تحديث:** 10 يونيو 2026.
+
+---
+
+### 18.1 P0 — سجل النشاط والتراجع المتقدّم (Activity History & Advanced Undo)
+
+- [ ] `[P0]` ⏱️L **سجل نشاط مركزي + تراجع متعدد المستويات يغطّي الإضافة/التعديل/الحذف/النقل/التعديل الجماعي مع Redo** — `undoManager` الحالي يدعم صفحة التفاصيل فقط ولا يغطّي الحذف/النقل/التعديل الجماعي.
+  - **الملفات الجديدة:** `archive app/src/features/activityLog/viewModel.js` (createActivityEntry/buildDiff/describeActivity)، `undoManager.js` (توسعة)، `archive app/src/components/activity/ActivityTimeline.jsx`، `ActivityEntry.jsx`، `DiffView.jsx`، `ActivityFilterBar.jsx`، `archive app/src/pages/ActivityPage.jsx`، `archive app/src/stores/slices/activitySlice.js`.
+  - **تعديل ملفات:** `ArchivePage.jsx`، `DetailPage.jsx`، `Sidebar.jsx`، `archiveSlice.js`، `services/storage/schema.js` (store `activity_log`)، `undoManager`.
+  - **مخطط:** store `activity_log` (IndexedDB) + جدول Prisma `ActivityLog` (before/after/diff JSON، فهارس على timestamp/userId/targetType/action) للباك-إند السحابي.
+  - **التنفيذ:** snapshot before/after + diff، شريط زمني مجمّع حسب اليوم، فلترة حسب النوع/التاريخ/المستخدم، Bulk Undo بضغطة، Redo؛ توسعة `undoManager` لا استبداله.
+  - يرتبط بـ: §17.17 (الحالات)، §1 (سجل التدقيق في الخادم).
+  - الجهد: 4-6 أسابيع.
+  - المصدر: daily-use-proposals (المقترح 1 — P0).
+
+### 18.2 P0 — مركز الإشعارات المركزي الذكي (Smart Notification Center)
+
+- [ ] `[P0]` ⏱️L **مركز إشعارات موحّد يجمع إشعارات العمليات/التعاون/النظام/الذكية مع Push API وتجميع ذكي وإجراءات سريعة** — الإشعارات مبعثرة وبدائية، والعمليات الطويلة (FFmpeg/OCR/تصدير/نسخ احتياطي) لا تعرض حالة التقدّم أو الاكتمال.
+  - **الملفات الجديدة:** `archive app/src/features/notifications/viewModel.js` (createNotification/NOTIFICATION_TYPES/shouldGroupNotifications)، `pushManager.js`، `archive app/src/components/notifications/NotificationCenter.jsx`، `NotificationCard.jsx`، `NotificationBell.jsx`، `archive app/src/stores/slices/notificationsSlice.js`.
+  - **تعديل ملفات:** `ArchivePage.jsx`، `DetailPage.jsx`، أزرار التصدير، `BackupManager`، `TopBar.jsx`، `AppNotifications.jsx`، `schema.js` (stores `notifications`, `notification_prefs`).
+  - **التنفيذ:** أولوية وتصنيف، شريط تقدّم للعمليات الطويلة، Push API في الخلفية، تجميع المتشابهة، إجراءات سريعة داخل البطاقة، تفضيلات الإزعاج.
+  - يرتبط بـ: §17.12 (toast)، §18.1.
+  - الجهد: 3-5 أسابيع.
+  - المصدر: daily-use-proposals (المقترح 2 — P0).
+
+### 18.3 P1 — القوالب والتعبئة السريعة (Templates & Quick Fill)
+
+- [ ] `[P1]` ⏱️M **قوالب مخصّصة لأنواع العناصر المتكرّرة + تعبئة دينامية (today/autoNumber/copyFromLast/concat) + وضع إضافة سريعة** — إضافة عنصر تتطلب إدخال نفس البيانات المتكرّرة في كل مرة.
+  - **الملفات الجديدة:** `archive app/src/features/templates/viewModel.js` (createItemTemplate/resolveDynamicFields/BUILT_IN_TEMPLATES)، `archive app/src/components/templates/TemplatePicker.jsx`، `QuickAddBar.jsx`، `TemplateEditor.jsx`، `archive app/src/stores/slices/templatesSlice.js`.
+  - **تعديل ملفات:** `AddVideoPage.jsx`، `schema.js` (store `templates`).
+  - **التنفيذ:** حقول ثابتة/دينامية/افتراضية، قوالب مدمجة جاهزة، وضع إضافة سريعة متتالية بلا مغادرة النموذج، تتبّع الاستخدام (الأكثر استخداماً أولاً).
+  - يرتبط بـ: §18.4 (الحفظ التلقائي).
+  - الجهد: 3-4 أسابيع.
+  - المصدر: daily-use-proposals (المقترح 3 — P1).
+
+### 18.4 P1 — الحفظ التلقائي وجلسات العمل (Auto-save & Work Sessions)
+
+- [ ] `[P1]` ⏱️M **حفظ تلقائي للمسودات (كل 30 ثانية) + تحذير المغادرة + استعادة المسودة + جلسات عمل تحفظ سياق العرض + حفظ تقدّم العمليات الجماعية** — لا حفظ تلقائي حالياً، وفقدان الاتصال أثناء تعديل جماعي يضيّع العمل.
+  - **الملفات الجديدة:** `archive app/src/features/autosave/viewModel.js`، `autosaveEngine.js`، `sessionManager.js`، `archive app/src/components/autosave/AutosaveIndicator.jsx`، `DraftRecoveryDialog.jsx`، `SessionRestoreBanner.jsx`، `BulkProgressPanel.jsx`، `archive app/src/stores/slices/autosaveSlice.js`.
+  - **تعديل ملفات:** `AddVideoPage.jsx`، `DetailPage.jsx`، `ArchivePage.jsx`، `schema.js` (stores `drafts`, `work_sessions`, `bulk_progress`).
+  - **التنفيذ:** مؤشّر حالة الحفظ، `beforeunload` guard، استعادة المسودة/الجلسة، حفظ موضع التمرير والفلاتر، استئناف العمليات الجماعية بعد الانقطاع.
+  - يرتبط بـ: §18.1، §18.3.
+  - الجهد: 3-4 أسابيع.
+  - المصدر: daily-use-proposals (المقترح 4 — P1).
+
+### 18.5 P1 — الارتباطات والعلاقات بين العناصر (Item Relations & Links)
+
+- [ ] `[P1]` ⏱️L **نظام علاقات ذات معنى بين العناصر (جزء من/يرتبط مع/نسخة من/يعتمد على/يشير إلى/بديل عن/يسبق/يتبع) مع رسم بياني تفاعلي** — العناصر معزولة ولا يمكن ربطها بعلاقة دلالية.
+  - **الملفات الجديدة:** `archive app/src/features/relations/viewModel.js` (createRelation/RELATION_TYPES/getItemRelations/buildRelationsGraph)، `archive app/src/components/relations/RelationsPanel.jsx`، `AddRelationDialog.jsx`، `RelationsGraph.jsx`، `archive app/src/stores/slices/relationsSlice.js`.
+  - **تعديل ملفات:** `DetailPage.jsx`، `ArchivePage.jsx`، `schema.js` (store `item_relations`)؛ Prisma `ItemRelation` (unique على [sourceId,targetId,type]، فهارس) للباك-إند.
+  - **التنفيذ:** علاقات أحادية/ثنائية الاتجاه، تنقّل سريع بين المرتبطين، رسم علاقات (D3/cytoscape)، إنشاء بالسحب، اكتشاف تلقائي للعلاقات المحتملة (نفس الوسم/المجلد).
+  - يرتبط بـ: §16 (المجموعات/المجلدات)، §17.3 (السحب)، §11/§12 graph.
+  - الجهد: 4-5 أسابيع.
+  - المصدر: daily-use-proposals (المقترح 5 — P1).
+
+---
+
+## 19. توجيهات تشغيلية — إصلاحات وإعادة هيكلة مطلوبة (10 يونيو 2026)
+
+> **المصدر:** توجيهات المستخدم المباشرة (10 يونيو 2026).
+> **ملاحظة:** §19.3 و§19.2 عمليتان كبيرتان/خطرتان — تتطلّبان commit للعمل غير المحفوظ أولاً وموافقة صريحة قبل التنفيذ.
+
+---
+
+### 19.1 P0 — حلّ تعارض صفحتَي الإعدادات/النظام (Duplicate Settings Conflict)
+
+- [ ] `[P0]` ⏱️M **توحيد مسارَي الإعداد الأولي المتعارضَين (FirstRunPage ضد V1OnboardingWizard)** — يوجد مساران منفصلان لـ"إعداد النظام أول مرة" في `RuntimeShellApp.js`، يتفرّعان حسب `authState`.
+  - **التشخيص (مؤكَّد بالكود — 10 يونيو 2026):**
+    - مسار 1: `authState==="firstRun"` (يُضبط في `RuntimeShellApp.js:230` عند `!isPasswordSet && !hasUsers && !onboardingRequired && !initialAdminPassword`) → يعرض `FirstRunPage.jsx` (3 خطوات تنشئ المشرف عبر `POST /api/auth/register`).
+    - مسار 2: `authState==="setup"` (`RuntimeShellApp.js:234`) → `shouldShowStartupOnboarding` → `V1OnboardingWizard.jsx` (8 خطوات: تخزين/أمان/مظهر — محايد للباك-إند).
+    - **جذر التعارض:** `onboardingRequired`/`initialAdminPassword` غير موجودَين في `settingsDefaults.js` (falsy افتراضياً)، فالتثبيت النظيف يهبط على `firstRun` → **FirstRunPage** الذي يتطلّب خادماً (`/api/auth/register`) — معطّل في بناء spa/aistudio (بلا خادم). بينما الـ wizard المحايد للباك-إند (الأصح) لا يظهر إلا في حالة `setup` التي لا يصلها التثبيت النظيف.
+  - **الإصلاح الموصى به (يتطلّب تحقّق وقت تشغيل — كود مصادقة حسّاس):** توحيد على `V1OnboardingWizard` كمسار قانوني (يعمل محلي/سحابي/aistudio): توجيه التثبيت النظيف لحالة `setup` بدل `firstRun`، والتأكد من أن خطوة `admin` في الـ wizard + bootstrap تنشئ المشرف محلياً وسحابياً، ثم تقاعد `FirstRunPage` (أو إبقاؤه كنداء register داخل الـ wizard لوضع الخادم فقط).
+  - **⚠️ لماذا لم يُنفَّذ في جلسة 10 يونيو:** تعديل bootstrap المصادقة دون تشغيل التطبيق خطر (قد يحجب الدخول/إنشاء المشرف عبر الأهداف الثلاثة). يلزم اختبار وقت تشغيل (`pnpm dev` + متصفّح) لكل من: تثبيت محلي نظيف، وضع خادم، aistudio.
+  - **الملفات:** `RuntimeShellApp.js:227-254` (آلة authState)، `features/onboarding/viewModel.js:79` (`shouldShowStartupOnboarding`)، `pages/FirstRunPage.jsx`، `app/pageRegistry.js:61` (تسجيل `firstRun`).
+  - يرتبط بـ: §15.3 (مركز الإعدادات الموحّد)، §17.18 (مسار حسب الدور).
+  - الجهد: 1-3 أيام (مع اختبار وقت تشغيل).
+  - المصدر: توجيه المستخدم (10 يونيو 2026) + تشخيص الكود.
+
+### 19.2 P1 — إعادة بناء نسخة AI Studio: دعم Firebase + SQLite ومواءمة أحدث AI Studio
+
+- [ ] `[P1]` ⏱️XL **استبدال هدف بناء `aistudio` ليدعم Firebase وSQLite، ومواءمة نسخة السيرفر مع أحدث AI Studio Apps** — **📋 الخطة الكاملة:** [`archive app/docs/aistudio-firebase-sqlite-plan.md`](archive%20app/docs/aistudio-firebase-sqlite-plan.md) (مُنجَزة 10 يونيو 2026 — مرحلة التخطيط).
+  - **تصحيح بعد تشخيص الكود:**
+    - **SQLite:** المحوّل **موجود بالفعل** (`archive app/src/storage/adapters/local-sqlite/index.js`، و`LOCAL_ENGINES=["indexeddb","sqlite"]`)، لكن AI Studio لا يصله لأن `resolveBackendChoice` (`backendChoice.js:108`) يُجبر `localEngine: indexeddb` ثابتاً. **الإصلاح صغير (المرحلة أ).**
+    - **Firebase:** **غير موجود** — عمل جديد كامل (خيار باك-إند + محوّلات Firestore/Auth/Storage). مناسب لـ AI Studio لأنه يعمل عميل-جانب عبر HTTPS (بخلاف pocketbase/postgres اللذين يحتاجان خادماً لا يصله iframe).
+  - **المراحل:** أ) فتح SQLite لـ AI Studio (S–M، قيمة فورية) → بحث توافق AI Studio (§4 بالخطة) → ب) محوّل Firestore → ج) Firebase Auth/Storage → د) واجهة التهيئة → هـ) تبديل ساخن/ترحيل.
+  - **الملفات:** `backendChoice.js`، `registerByBackendChoice.js`، محوّلات `firebase-*` جديدة، `V1OnboardingWizard.jsx`، `DatabaseSettings.jsx`، `archive-server` (توافق).
+  - الجهد: XL (المرحلة أ وحدها S–M).
+  - المصدر: توجيه المستخدم (10 يونيو 2026) + تشخيص الكود.
+
+### 19.3 P1 — إزالة المسافة من اسم مجلد `archive app` (Folder Rename)
+
+- [ ] `[P1]` ⏱️M **إعادة تسمية مجلد `archive app` → `archive-app` (إزالة المسافة) وتحديث كل المراجع** — المسافة في اسم المجلد تسبّب مشاكل في المسارات والأدوات والسكربتات.
+  - **ملاحظة خطر:** عملية مدمّرة — يجب `git commit` للتعديلات غير المحفوظة أولاً (يوجد حالياً تعديلات غير محفوظة في `archive app`). اسم الحزمة `@archive/app` يُستخدم في كل سكربتات pnpm (لن تتأثر)، لكن المسارات الحرفية ستتأثر.
+  - **تعديل ملفات/خطوات:** `git mv "archive app" archive-app`، `pnpm-workspace.yaml` (`"archive app"`→`archive-app`)، أي مسارات حرفية في الجذر (`package.json` docker:config إن وُجدت)، `playwright.config`، سكربتات `scripts/*.mjs`، الوثائق، CI.
+  - **التحقّق:** `pnpm install` ثم `pnpm verify` + `pnpm build:spa` بعد إعادة التسمية.
+  - الجهد: 1-3 أيام.
+  - المصدر: توجيه المستخدم (10 يونيو 2026).
+
+### 19.4 P1 — تثبيت daisyUI وتحسين المظهر العام (DaisyUI Install + Polish)
+
+- [ ] `[P1]` ⏱️M **تثبيت إضافة daisyUI وتحسين المظهر العام حسب مهارة daisyui/frontend-design** — `npx skills add saadeghi/daisyui --agent claude-code --yes` + إضافة `daisyui` كـ Tailwind v4 plugin + تطبيق سمات وتحسينات بصرية أولية.
+  - **تعديل ملفات:** `archive app/src/index.css` (`@plugin "daisyui";`)، مكوّنات `components/ui/*` الأساسية أولاً.
+  - **التنفيذ:** نقطة انطلاق §17.1 (الترحيل الكامل) + §17.10 (السمات)؛ تطبيق أولي على الأزرار/البطاقات/الحقول والتحقّق البصري.
+  - يرتبط بـ: §17.1، §17.10، مهارة `daisyui`/`frontend-design`.
+  - الجهد: 1-3 أيام (انطلاق) — الترحيل الكامل في §17.1.
+  - المصدر: توجيه المستخدم (10 يونيو 2026).
+
+### 19.5 P1 — جولة إصلاح أخطاء وتنظيف عامة (General Bug-Fix & Cleanup Pass)
+
+- [x] `[P1]` ⏱️S **مُنجَز جزئياً (10 يونيو 2026): إصلاحات سريعة + تشخيص فحص الخادم.**
+  - **✅ أُصلح:** `pnpm-workspace.yaml:9` (`sharp: set this to true or false` → `sharp: true` — sharp@^0.33.5 يُستخدم في `archive-server/src/media/imageProcessor.js`، يحتاج بناءه الأصلي).
+  - **✅ أُصلح:** توليد Prisma client المفقود (`pnpm --filter archive-server prisma:generate` — كان `src/generated/prisma/` غير موجود).
+  - **✅ تحقّق:** `pnpm verify:app` و`verify:core` ينجحان؛ بناء spa + cloud + aistudio الثلاثة ينجح مع daisyUI.
+- [ ] `[P1]` ⏱️M **متبقٍّ: إصلاح فحص الخادم `pnpm verify:server` (إخفاقات سابقة لجلسة daisyUI لا علاقة لها بها):**
+  - **(أ) فجوة node↔tsx:** سكربتات `verify-*.mjs` تُشغَّل بـ `node` لكن Prisma 7 `prisma-client` يولّد TypeScript (`.ts`) بمحددات استيراد `.js` لا يحلّها `node` إلا تحت `tsx` (الخادم يعمل `tsx src/index.js`). الحل: تشغيل السكربتات المعتمِدة على المحوّل تحت `tsx` (أو خطوة tsc تُنتج `.js`).
+  - **(ب) خلل mock:** `verify-postgres-adapter.mjs` يفشل بـ `txRow.createMany is not a function` (5 اختبارات) — كائن المعاملة الوهمي لا يطبّق `createMany`. يلزم مواءمة الـ mock مع كود `replaceAll` في محوّل Postgres.
+  - **الملفات:** `archive-server/package.json` (أمر verify)، `archive-server/scripts/verify-postgres-adapter.mjs`.
+  - الجهد: 1-2 يوم.
+  - المصدر: توجيه المستخدم (10 يونيو 2026) + تشخيص الجلسة.
+
