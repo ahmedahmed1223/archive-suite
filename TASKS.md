@@ -763,10 +763,13 @@
 
 ### 13.2 P1 — الأمان والاستقرار
 
-- [ ] `[P1]` ⏱️L **تشفير النسخ الاحتياطية AES-256-GCM + تحقق SHA-256 تلقائي** — النسخ غير مشفرة وغير مُتحقق منها.
-  - الملفات: `archive-server/src/backup/backupScheduler.js`، صفحة `DataCenterPage.jsx`.
-  - التنفيذ: تشفير AES-256-GCM لكل نسخة تلقائياً؛ حساب SHA-256 checksum بعد كل نسخة والتحقق قبل الاستعادة؛ تخزين بعيد اختياري (S3/Cloudflare R2) مع تشفير أثناء النقل؛ واجهة استعادة تطلب كلمة مرور التشفير؛ تنبيه عند فشل التحقق.
-  - الجهد: 2-3 أسابيع.
+- [ ] `[P1]` ⏱️L **تشفير النسخ الاحتياطية AES-256-GCM + تحقق SHA-256 تلقائي** — **(النواة منجزة ✅ — مدمجة 10 يونيو)**
+  - **✅ منجز ومُختبَر:** `archive-server/src/backup/backupCrypto.js` (AES-256-GCM بمشتقّ مفتاح scrypt + تنسيق ملف ARCE + SHA-256 checksum write/verify)؛ مدمج في `backupScheduler.js` (يشفّر تلقائياً عند ضبط `BACKUP_ENCRYPTION_KEY`، يحذف plaintext، يكتب checksum، يعلّم `encrypted`)؛ `BACKUP_ENCRYPTION_KEY` موثّق في `.env.example:212`؛ `scripts/verify-backup.mjs` — **12 اختبار يمرّ** (round-trip، كلمة مرور خاطئة، تلف، magic header، checksum).
+  - **⬜ المتبقي (مهام الإكمال):**
+    - واجهة استعادة في `DataCenterPage.jsx` تطلب كلمة مرور التشفير وتستدعي `decryptBackupFile` + `verifyBackupChecksum` قبل الاستعادة (الدوال مُصدَّرة وجاهزة).
+    - تنبيه واضح في الواجهة عند فشل تحقّق checksum.
+    - تخزين بعيد اختياري (S3/Cloudflare R2) مع تشفير أثناء النقل.
+  - الجهد المتبقي: ~1-2 أسبوع.
   - المصدر: feature-proposals-2026 (محور 2 — ميزة #13).
 
 - [x] `[P1]` ⏱️L **حدود الموارد متعددة الطبقات (IP + User + Endpoint)** ✅ 2026-06-09 — Rate limiting موجود على IP فقط، لا حدود للمستخدم ولا لنقاط النهاية الفردية.
@@ -1751,18 +1754,13 @@
 
 ### 16.14 P1 — العلامات المرجعية الزمنية للفيديو والصوت (Time-Based Bookmarks)
 
-- [ ] `[P1]` ⏱️M **إضافة علامات زمنية داخل مشغل الفيديو/الصوت مع ملاحظات وتصدير** — المحتوى الطويل يحتاج فهرسة داخلية، وليس فقط وسوماً على مستوى العنصر.
-  - **الملفات الجديدة:**
-    - `archive app/src/components/media/TimeBookmarkButton.jsx` — زر إضافة علامة عند الموضع الحالي.
-    - `archive app/src/components/media/TimeBookmarkTimelineMarkers.jsx` — نقاط على شريط التقدم.
-    - `archive app/src/components/media/TimeBookmarkList.jsx` — قائمة العلامات في اللوحة الجانبية.
-    - `archive-server/prisma/migrations/*_time_bookmarks/` — جدول `time_bookmarks`.
-  - **تعديل ملفات:**
-    - `archive app/src/components/media/VideoPlayer.jsx` و`AudioPlayer.jsx` — أحداث position/seek.
-    - `archive app/src/pages/RecordDetailsPage.jsx` — تبويب أو لوحة “العلامات”.
-    - `archive-server/src/api/server.js` — CRUD للعلامات.
-  - **التنفيذ:** إضافة علامة بالوقت الحالي؛ عنوان وملاحظة؛ عرض على شريط التقدم؛ النقر للانتقال؛ ربط تلقائي بفقرة transcript إن وجدت؛ تصدير العلامات كMarkdown/CSV؛ صلاحيات مشاركة العلامات مع العنصر.
-  - الجهد: 2-3 أسابيع.
+- [ ] `[P1]` ⏱️M **إضافة علامات زمنية داخل مشغل الفيديو/الصوت مع ملاحظات وتصدير** — **(النواة منجزة ✅ — مدمجة 10 يونيو)**
+  - **✅ منجز ومُدمج:** `archive app/src/components/media/TimeBookmarks.jsx` (يصدّر `TimeBookmarkButton` + `TimeBookmarkList`: التقاط الوقت الحالي، عنوان+ملاحظة، نقر للانتقال، حذف، تصدير Markdown/CSV، RTL+a11y)؛ مدمج في `DetailPage.jsx` (التقاط من `videoRef.currentTime`، `seekToBookmark`)؛ الحفظ عبر slice `addBookmark`/`removeBookmark` (`archiveSlice.js:266,281`) إلى مخزن `BOOKMARKS` (IndexedDB + محوّل sqlite + import/export portability).
+  - **⬜ المتبقي (مهام الإكمال):**
+    - علامات على شريط تقدّم المشغّل (`TimeBookmarkTimelineMarkers`) — يعتمد على مشغّل مخصّص (§13.1 #20).
+    - CRUD/مزامنة على الخادم (`archive-server` + جدول prisma `time_bookmarks`) — حالياً محلي + يُزامَن عبر snapshot العام.
+    - ربط تلقائي بفقرة transcript؛ اختبار وحدة لـ slice العلامات.
+  - الجهد المتبقي: ~1 أسبوع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 14 — P1).
 
 ---
