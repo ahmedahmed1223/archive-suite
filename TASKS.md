@@ -2081,12 +2081,10 @@
   - **✅ أُصلح:** `pnpm-workspace.yaml:9` (`sharp: set this to true or false` → `sharp: true` — sharp@^0.33.5 يُستخدم في `archive-server/src/media/imageProcessor.js`، يحتاج بناءه الأصلي).
   - **✅ أُصلح:** توليد Prisma client المفقود (`pnpm --filter archive-server prisma:generate` — كان `src/generated/prisma/` غير موجود).
   - **✅ تحقّق:** `pnpm verify:app` و`verify:core` ينجحان؛ بناء spa + cloud + aistudio الثلاثة ينجح مع daisyUI.
-- [ ] `[P1]` ⏱️M **متبقٍّ: إصلاح فحص الخادم `pnpm verify:server` (إخفاقات سابقة لجلسة daisyUI لا علاقة لها بها):**
-  - **(أ) فجوة node↔tsx:** سكربتات `verify-*.mjs` تُشغَّل بـ `node` لكن Prisma 7 `prisma-client` يولّد TypeScript (`.ts`) بمحددات استيراد `.js` لا يحلّها `node` إلا تحت `tsx` (الخادم يعمل `tsx src/index.js`). الحل: تشغيل السكربتات المعتمِدة على المحوّل تحت `tsx` (أو خطوة tsc تُنتج `.js`).
-  - **(ب) خلل mock:** `verify-postgres-adapter.mjs` يفشل بـ `txRow.createMany is not a function` (5 اختبارات) — كائن المعاملة الوهمي لا يطبّق `createMany`. يلزم مواءمة الـ mock مع كود `replaceAll` في محوّل Postgres.
-  - **الملفات:** `archive-server/package.json` (أمر verify)، `archive-server/scripts/verify-postgres-adapter.mjs`.
-  - الجهد: 1-2 يوم.
-  - المصدر: توجيه المستخدم (10 يونيو 2026) + تشخيص الجلسة.
+- [x] `[P1]` ⏱️M **مُنجَز (10 يونيو 2026): إصلاح فحص الخادم `pnpm verify:server` — السلسلة كاملة خضراء.**
+  - **(أ) فجوة node↔tsx:** ✅ سكربتات `verify-*` تعمل الآن تحت `tsx` في `package.json` (Prisma 7 يولّد `.ts` بمحددات `.js`).
+  - **(ب) خلل mock:** ✅ أُضيف `createMany({data, skipDuplicates})` لـ fake Prisma في `verify-postgres-adapter.mjs`، وعُدّل اختبار rollback ليحقن الفشل في `createMany` (المحوّل لم يعد يستخدم `create` في الاستيراد).
+  - **(ج) تأكيد متقادم:** ✅ اختبار allow-list في `verify-api.mjs` حُدّث ليشمل `getByField` (12 طريقة).
 
 ---
 
@@ -2147,4 +2145,15 @@
   - **الملفات:** `archive app/src/pages/GraphViewPage.jsx`، تبعية `cytoscape` جديدة، `archive app/src/features/graph/buildGraphModel.js` (جديد).
   - يرتبط بـ: §18.5 (العلاقات)، §11/§12 graph.
   - الجهد: 2-3 أسابيع.
+
+### 20.8 P0 — إصلاح مشاكل واجهة التطبيق على شاشات المحمول (Mobile UI Defects)
+
+- [ ] `[P0]` ⏱️L **جولة إصلاح شاملة لعيوب الواجهة على المحمول — المستخدم يبلّغ عن "مشاكل كثيرة في الواجهات والقوائم الرئيسية" على شاشات الهاتف** — هذه مهمة إصلاح عيوب (defects) وليست تحسيناً؛ تسبق إعادة التصميم الكاملة في §17.15.
+  - **المرحلة 1 — جرد العيوب (تشخيص أولاً):** تشغيل التطبيق بأبعاد 320/375/414px (Playwright/أداة المطوّر) وتوثيق كل عيب: قوائم رئيسية مكسورة/متراكبة، عناصر تتجاوز عرض الشاشة (overflow أفقي)، أزرار صغيرة عن هدف اللمس (44px)، الشريط الجانبي/القوائم المنسدلة على اللمس، نوافذ منبثقة أكبر من الشاشة، تراكب لوحة المفاتيح للحقول السفلية، مشاكل RTL على العرض الضيق.
+  - **المرحلة 2 — الإصلاحات:** معالجة العيوب الموثّقة بإصلاحات مضبوطة (breakpoints، `overflow-x` ، أحجام لمس، `safe-area-inset`، z-index للقوائم) دون إعادة تصميم كاملة.
+  - **المرحلة 3 — التحقق:** لقطات Playwright على 320/375/768 قبل/بعد + اختبار لمس فعلي؛ إضافة فحص بصري للعروض الضيقة في `visual-matrix.mjs` لمنع الانحدار.
+  - **الملفات المرجّحة:** `Sidebar.jsx`، `TopBar.jsx`/`PageContextBar.jsx`، `MobileActionBar.jsx`، القوائم المنسدلة، النوافذ المنبثقة، `app-overrides.css`، صفحات الأرشيف/التفاصيل.
+  - يرتبط بـ: §17.15 (إعادة تصميم الجوال الكاملة — هذه الجولة تصلح العيوب الحرجة قبلها)، §13.3 (BottomTabBar المنجز).
+  - الجهد: 1-2 أسبوع.
+  - المصدر: توجيه المستخدم (10 يونيو 2026 — دفعة ثانية).
 
