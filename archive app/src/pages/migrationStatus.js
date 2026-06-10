@@ -20,7 +20,12 @@ export const PAGE_NATIVE_MIGRATION = {
   users: { status: "native", notes: "Page JSX lives in src/pages/UsersPage.jsx with native role filtering, account status controls, and protected admin handling." },
   help: { status: "native", notes: "Page JSX lives in src/pages/HelpPage.jsx; shared UI wrappers and runtime bridges have been removed." },
   "sync-log": { status: "native", notes: "Page JSX lives in src/pages/SyncLogPage.jsx; reads audit_logs for sync.* events and renders per-device summary plus chronological log." },
-  graph: { status: "native", notes: "Page JSX lives in src/pages/GraphViewPage.jsx; lightweight inline SVG relationship graph (shared tags + type) — no d3/recharts." }
+  graph: { status: "native", notes: "Page JSX lives in src/pages/GraphViewPage.jsx; lightweight inline SVG relationship graph (shared tags + type) — no d3/recharts." },
+  favorites: { status: "native", notes: "Page JSX lives in src/pages/FavoritesPage.jsx; favorites and quick-access items driven by the favorites store slice." },
+  "reading-lists": { status: "native", notes: "Page JSX lives in src/pages/ReadingListsPage.jsx; watch-later and reading list queues driven by the reading-lists store slice." },
+  "server-status": { status: "native", notes: "Page JSX lives in src/pages/ServerStatusPage.jsx; server health, storage, and service status from the health endpoint." },
+  duplicates: { status: "native", notes: "Page JSX lives in src/pages/DuplicatesPage.jsx; duplicate detection and merge flows driven by the duplicates feature module." },
+  "saved-searches": { status: "native", notes: "Page JSX lives in src/pages/SavedSearchesPage.jsx; saved searches and alert subscriptions driven by the saved-searches store slice." }
 };
 
 export function getPageMigrationStatus() {
