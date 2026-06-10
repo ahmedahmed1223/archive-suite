@@ -794,7 +794,7 @@ function getFileSizeForItem(item) {
   return file?.size > 0 ? formatFileSize(file.size) : null;
 }
 
-function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview, onOpen, onFavorite, onDelete, onRestore, onBulkToggle, typeLabel, subtypeLabel, editingCell, onStartCellEdit, onCommitCellEdit, onCancelCellEdit }) {
+function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview, onOpen, onFavorite, onDelete, onRestore, onBulkToggle, typeLabel, subtypeLabel, typeOptions, editingCell, onStartCellEdit, onCommitCellEdit, onCancelCellEdit }) {
   const isEditingCell = (columnId) => editingCell?.itemId === item.id && editingCell?.columnId === columnId;
   const canInlineEdit = !showDeleted && !bulkMode && typeof onStartCellEdit === "function";
   switch (column.id) {
@@ -826,6 +826,7 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
         children: [
           jsxs("div", {
             className: "group/cell flex items-start gap-1.5",
+            onDoubleClick: canInlineEdit ? () => onStartCellEdit(item.id, "title") : undefined,
             children: [
               jsx("button", {
                 type: "button",
@@ -847,12 +848,55 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
         ]
       }, column.id);
     }
-    case "type":
+    case "type": {
+      if (isEditingCell("type")) {
+        return jsx("td", {
+          className: size.cell,
+          style: { minWidth: column.width },
+          children: jsx(InlineCellEditor, {
+            value: item.type || "",
+            fieldType: "select",
+            options: typeOptions || [],
+            isEditing: true,
+            placeholder: "اختر النوع",
+            onSave: (nextValue) => {
+              if (!nextValue) {
+                onCancelCellEdit?.();
+                return;
+              }
+              if (nextValue === item.type) {
+                onCancelCellEdit?.();
+                return;
+              }
+              onCommitCellEdit?.(item, { type: nextValue, subtype: "" });
+            },
+            onCancel: onCancelCellEdit
+          })
+        }, column.id);
+      }
       return jsx("td", {
         className: `${size.cell} text-gray-400`,
         style: { minWidth: column.width },
-        children: [typeLabel(item), subtypeLabel(item)].filter(Boolean).join(" / ") || "غير مصنف"
+        children: jsxs("div", {
+          className: "group/cell flex items-center gap-1.5",
+          onDoubleClick: canInlineEdit && typeOptions?.length ? () => onStartCellEdit(item.id, "type") : undefined,
+          children: [
+            jsx("span", {
+              className: "min-w-0 flex-1",
+              children: [typeLabel(item), subtypeLabel(item)].filter(Boolean).join(" / ") || "غير مصنف"
+            }),
+            canInlineEdit && typeOptions?.length > 0 && jsx("button", {
+              type: "button",
+              onClick: () => onStartCellEdit(item.id, "type"),
+              "aria-label": `تحرير نوع ${item.title || "المادة"}`,
+              title: "تحرير النوع",
+              className: "shrink-0 rounded p-0.5 text-gray-600 opacity-0 transition-opacity hover:text-white focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--va-action)]/40 group-hover/cell:opacity-100",
+              children: jsx(PenLine, { className: "h-3.5 w-3.5", "aria-hidden": "true" })
+            })
+          ]
+        })
       }, column.id);
+    }
     case "file":
       return jsx("td", { className: size.cell, style: { minWidth: column.width }, children: jsx(FileMetaStrip, { item, compact: true }) }, column.id);
     case "tags": {
@@ -883,6 +927,7 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
         style: { minWidth: column.width },
         children: jsxs("div", {
           className: "group/cell flex items-start gap-1.5",
+          onDoubleClick: canInlineEdit ? () => onStartCellEdit(item.id, "tags") : undefined,
           children: [
             item.tags?.length ? jsx("div", {
               className: "min-w-0 flex-1 flex flex-wrap gap-1.5",
@@ -981,7 +1026,7 @@ function ResizableHeader({ column, label, cellClass, onResize }) {
   }, column.id);
 }
 
-export function VideoTableView({ items, previewItem, typeLabel, subtypeLabel, showDeleted, onPreview, onOpen, onFavorite, onDelete, onRestore, itemSize = "comfortable", bulkMode = false, isSelected, onBulkToggle, allSelected, onSelectAll, columns, onColumnResize, disableRowMotion = false, onCellSave }) {
+export function VideoTableView({ items, previewItem, typeLabel, subtypeLabel, typeOptions, showDeleted, onPreview, onOpen, onFavorite, onDelete, onRestore, itemSize = "comfortable", bulkMode = false, isSelected, onBulkToggle, allSelected, onSelectAll, columns, onColumnResize, disableRowMotion = false, onCellSave }) {
   const size = ARCHIVE_TABLE_SIZE[itemSize] || ARCHIVE_TABLE_SIZE.comfortable;
   // §13.3 inline cell editing — one cell at a time ({ itemId, columnId }).
   const [editingCell, setEditingCell] = React.useState(null);
@@ -1044,7 +1089,7 @@ export function VideoTableView({ items, previewItem, typeLabel, subtypeLabel, sh
                   ...visibleColumns.map((column) => renderTableCell({
                     column, item, size, showDeleted, bulkMode,
                     onPreview, onOpen, onFavorite, onDelete, onRestore, onBulkToggle,
-                    typeLabel, subtypeLabel,
+                    typeLabel, subtypeLabel, typeOptions,
                     editingCell,
                     onStartCellEdit: onCellSave ? handleStartCellEdit : undefined,
                     onCommitCellEdit: handleCommitCellEdit,

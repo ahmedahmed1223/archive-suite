@@ -74,8 +74,10 @@ import {
   formatMediaJobStatus,
   mediaProbeToDisplayRows,
   mergeMediaJobs,
+  secondsToClock,
   selectSmartThumbnailSecond
 } from "../features/media/viewModel.js";
+import { TimeBookmarkButton, TimeBookmarkList } from "../components/media/TimeBookmarks.jsx";
 
 
 function fieldKey(field) {
@@ -500,7 +502,6 @@ export function DetailPage() {
     [mediaPath, runtimeProtocol]
   );
   const [previewRuntimeState, setPreviewRuntimeState] = React.useState(MEDIA_PREVIEW_STATUS.LOADING);
-  const [bookmarkLabel, setBookmarkLabel] = React.useState("");
   const itemBookmarks = React.useMemo(
     () => (bookmarks || []).filter((bookmark) => bookmark.itemId === item?.id).sort((a, b) => a.timestamp - b.timestamp),
     [bookmarks, item?.id]
@@ -632,15 +633,6 @@ export function DetailPage() {
     }));
   };
 
-  const formatTimecode = (seconds) => {
-    const total = Math.max(0, Math.round(Number(seconds) || 0));
-    const minutes = Math.floor(total / 60);
-    return `${minutes}:${String(total % 60).padStart(2, "0")}`;
-  };
-  const addCurrentBookmark = async () => {
-    await addBookmark?.({ itemId: item.id, timestamp: videoRef.current?.currentTime || 0, label: bookmarkLabel });
-    setBookmarkLabel("");
-  };
   const submitComment = async () => {
     const text = commentDraft.trim();
     if (!text) return;
@@ -682,6 +674,15 @@ export function DetailPage() {
     if (!video) return;
     video.currentTime = nextTime;
     video.play?.().catch(() => {});
+  };
+
+  const addTimeBookmark = async (bookmark) => {
+    try {
+      await addBookmark?.({ itemId: item.id, timestamp: bookmark.time, label: bookmark.title, description: bookmark.note });
+      showToast?.("تمت إضافة العلامة الزمنية", "success");
+    } catch (error) {
+      reportError(showNotification, error, { context: "إضافة علامة زمنية" });
+    }
   };
 
   // G7 — render free text with `MM:SS`/`HH:MM:SS` turned into clickable seek
@@ -914,21 +915,28 @@ export function DetailPage() {
           onEditPath: startPathEdit,
           onMetadataOnly: showMetadataOnly
         }),
-        previewState === MEDIA_PREVIEW_STATUS.PLAYABLE && jsxs("div", { className: "border-t border-white/10 bg-gray-950/40 p-4", dir: "rtl", children: [
-          jsxs("div", { className: "mb-3 flex items-center gap-2", children: [
+        previewState === MEDIA_PREVIEW_STATUS.PLAYABLE && jsxs("div", { className: "border-t border-white/10 bg-gray-950/40 p-4 space-y-3", dir: "rtl", children: [
+          jsxs("h3", { className: "flex items-center gap-2 text-sm font-bold text-white", children: [
             jsx(Clock3, { className: "h-4 w-4 va-accent-text" }),
-            jsx("h3", { className: "text-sm font-bold text-white", children: "إشارات مرجعية" }),
+            "إشارات وعلامات زمنية",
             itemBookmarks.length ? jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-gray-300", children: `${itemBookmarks.length}` }) : null
           ] }),
-          jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-            jsx("input", { value: bookmarkLabel, onChange: (event) => setBookmarkLabel(event.target.value), placeholder: "عنوان الإشارة (اختياري)", className: "min-h-9 flex-1 va-surface-deep rounded-lg border px-3 text-sm text-white outline-none focus:border-emerald-500/40" }),
-            jsx("button", { type: "button", onClick: addCurrentBookmark, className: "va-primary-button shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-white", children: "أضف عند اللحظة الحالية" })
-          ] }),
-          itemBookmarks.length ? jsx("ul", { className: "mt-3 space-y-1.5", children: itemBookmarks.map((bookmark) => jsxs("li", { className: "flex items-center gap-2 rounded-lg va-surface-muted border p-2", children: [
-            jsx("button", { type: "button", onClick: () => seekToBookmark(bookmark.timestamp), dir: "ltr", className: "shrink-0 rounded-md border va-accent-border va-accent-bg-soft px-2 py-1 font-mono text-xs va-accent-text-on-soft transition-colors hover:bg-emerald-500/20", children: formatTimecode(bookmark.timestamp) }),
-            jsx("button", { type: "button", onClick: () => seekToBookmark(bookmark.timestamp), className: "min-w-0 flex-1 truncate text-right text-sm text-gray-200 transition-colors hover:text-white", children: bookmark.label }),
-            jsx("button", { type: "button", onClick: () => removeBookmark?.(bookmark.id), "aria-label": "حذف الإشارة", className: "shrink-0 rounded-md p-1 text-red-300 transition-colors hover:bg-red-500/10", children: jsx(Trash2, { className: "h-3.5 w-3.5" }) })
-          ] }, bookmark.id)) }) : jsx("p", { className: "mt-2 text-xs text-gray-500", children: "لا توجد إشارات بعد. شغّل الفيديو واضغط «أضف عند اللحظة الحالية»." })
+          jsx(TimeBookmarkButton, {
+            getTime: () => videoRef.current?.currentTime ?? 0,
+            onSave: addTimeBookmark
+          }),
+          jsx(TimeBookmarkList, {
+            bookmarks: itemBookmarks.map((bookmark) => ({
+              id: bookmark.id,
+              time: bookmark.timestamp,
+              title: bookmark.label,
+              note: bookmark.description,
+              createdAt: bookmark.createdAt
+            })),
+            onSeek: seekToBookmark,
+            onDelete: removeBookmark,
+            itemTitle: item.title || ""
+          })
         ] }),
         jsxs("div", { className: "p-5", children: [
           jsxs("div", { className: "flex flex-wrap items-start justify-between gap-4", children: [
