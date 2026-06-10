@@ -227,10 +227,13 @@ export function App() {
     if (!isLocked) {
       const appStore = useAppStore.getState();
       const hasUsers = appStore.users.some((user) => user.isActive);
-      if (!isPasswordSet && !hasUsers && !settings.onboardingRequired && !settings.initialAdminPassword) {
-        setAuthState("firstRun");
-        return;
-      }
+      // §19.1: a bare fresh install (no password, no users) used to route to the
+      // legacy `firstRun` → FirstRunPage, which POSTs to /api/auth/register and is
+      // therefore broken in server-less builds (spa/aistudio). The complete,
+      // backend-agnostic first-run is V1OnboardingWizard (the `setup` state): it
+      // lets the user pick storage AND provisions the admin locally via
+      // setMasterPassword/skipPasswordSetup (no server). So all fresh installs now
+      // unify onto `setup`; FirstRunPage is retired as a reachable surface.
       if (settings.onboardingRequired || settings.initialAdminPassword || (!isPasswordSet && !hasUsers)) {
         setAuthState("setup");
         return;
@@ -549,10 +552,9 @@ export function App() {
     return jsx(LockScreen, {});
   }
 
-  if (authState === "firstRun") {
-    const FirstRunPage = PAGE_COMPONENTS.firstRun;
-    return jsx(React.Suspense, { fallback: jsx(SplashScreen, {}), children: jsx(FirstRunPage, {}) });
-  }
+  // §19.1: `firstRun` authState is retired — fresh installs now route to `setup`
+  // (V1OnboardingWizard), which is rendered above via onboardingWizardMode.
+  // FirstRunPage stays in pageRegistry as legacy but is no longer reachable here.
 
   if (authState === "login" || authState === "setup") {
     return jsx(LoginScreen, {});

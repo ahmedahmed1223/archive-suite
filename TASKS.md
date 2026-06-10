@@ -2035,7 +2035,8 @@
 
 ### 19.1 P0 — حلّ تعارض صفحتَي الإعدادات/النظام (Duplicate Settings Conflict)
 
-- [ ] `[P0]` ⏱️M **توحيد مسارَي الإعداد الأولي المتعارضَين (FirstRunPage ضد V1OnboardingWizard)** — يوجد مساران منفصلان لـ"إعداد النظام أول مرة" في `RuntimeShellApp.js`، يتفرّعان حسب `authState`.
+- [x] `[P0]` ⏱️M **مُنجَز (10 يونيو 2026): توحيد مسارَي الإعداد الأولي المتعارضَين** — أُزيل فرع `firstRun` من آلة authState في `RuntimeShellApp.js`؛ التثبيت النظيف يهبط الآن على `setup` → `V1OnboardingWizard` (يختار التخزين + ينشئ المشرف محلياً عبر `setMasterPassword`/`skipPasswordSetup` بلا خادم). `FirstRunPage` تقاعدت كمسار قابل للوصول (تبقى في pageRegistry كإرث). أُزيلت بوابة العرض الميتة. ✅ 37 اختبار يمرّ + بناء spa ينجح. **يُنصح بتحقّق وقت تشغيل** لاحق (تثبيت نظيف عبر spa/aistudio/server).
+  - ~~التشخيص الأصلي:~~ كان يوجد مساران لـ"إعداد النظام أول مرة" يتفرّعان حسب `authState`.
   - **التشخيص (مؤكَّد بالكود — 10 يونيو 2026):**
     - مسار 1: `authState==="firstRun"` (يُضبط في `RuntimeShellApp.js:230` عند `!isPasswordSet && !hasUsers && !onboardingRequired && !initialAdminPassword`) → يعرض `FirstRunPage.jsx` (3 خطوات تنشئ المشرف عبر `POST /api/auth/register`).
     - مسار 2: `authState==="setup"` (`RuntimeShellApp.js:234`) → `shouldShowStartupOnboarding` → `V1OnboardingWizard.jsx` (8 خطوات: تخزين/أمان/مظهر — محايد للباك-إند).
