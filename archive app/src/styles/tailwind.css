@@ -9,6 +9,24 @@
  */
 @import "tailwindcss";
 
+/*
+ * daisyUI 5 — additive component layer (§17.1 / §19.4).
+ * The app's existing v1–v4 identity theme system stays the source of truth for
+ * the shell's look (the visible surfaces are painted by explicit Tailwind bg
+ * utilities on the shell container, not by :root). daisyUI is wired here purely
+ * to make its component classes (btn, card, badge, alert, menu, toast, table,
+ * skeleton, …) available for incremental adoption — verified the app uses none
+ * of those bare class names, so there are zero collisions.
+ *
+ * Themes: light (default) + dark (prefers-color-scheme). Reconciling the daisyUI
+ * theme with the app's own dark/light toggle is tracked in §17.10. `logs: false`
+ * keeps the build output clean.
+ */
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+  logs: false;
+}
+
 /* Explicitly scan all app source so class names inside react/jsx-runtime
    jsx()/jsxs() string literals are always detected (augments auto-detection). */
 @source "../**/*.{js,jsx}";
