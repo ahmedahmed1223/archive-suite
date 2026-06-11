@@ -2049,6 +2049,8 @@
 
 ### 19.2 P1 — إعادة بناء نسخة AI Studio: دعم Firebase + SQLite ومواءمة أحدث AI Studio
 
+> **تحديث 11 يونيو 2026 — توسيع النطاق:** بدل دعم Firebase/SQLite في aistudio فقط، تقرّر **التقارب نحو إصدار واحد شامل**: نسخة cloud هي الإصدار القانوني، كل المحرّكات (IndexedDB/SQLite/Firebase/Postgres/PocketBase) خيارات وقت تشغيل، وspa/aistudio مجرد قوالب تغليف بلا تفرّع سلوكي. **📋 الخطة الحاكمة:** [`archive app/docs/unified-edition-plan.md`](archive%20app/docs/unified-edition-plan.md) (مراحل أ–هـ، ⏱️XL). الخطة أدناه تبقى مرجعاً تفصيلياً لمحوّل Firebase ومواءمة AI Studio.
+
 - [ ] `[P1]` ⏱️XL **استبدال هدف بناء `aistudio` ليدعم Firebase وSQLite، ومواءمة نسخة السيرفر مع أحدث AI Studio Apps** — **📋 الخطة الكاملة:** [`archive app/docs/aistudio-firebase-sqlite-plan.md`](archive%20app/docs/aistudio-firebase-sqlite-plan.md) (مُنجَزة 10 يونيو 2026 — مرحلة التخطيط).
   - **تصحيح بعد تشخيص الكود:**
     - **SQLite:** المحوّل **موجود بالفعل** (`archive app/src/storage/adapters/local-sqlite/index.js`، و`LOCAL_ENGINES=["indexeddb","sqlite"]`)، لكن AI Studio لا يصله لأن `resolveBackendChoice` (`backendChoice.js:108`) يُجبر `localEngine: indexeddb` ثابتاً. **الإصلاح صغير (المرحلة أ).**
@@ -2140,10 +2142,10 @@
 
 ### 20.7 P1 — إصلاح/ترقية خريطة العلاقات (Graph View بـ cytoscape.js)
 
-- [ ] `[P1]` ⏱️M **ترقية `GraphViewPage.jsx` إلى cytoscape.js وإصلاح عدم ظهور الروابط بين العناصر** — المستخدم يبلّغ أن الروابط/العلاقات لا تظهر حالياً في الخريطة.
-  - **التحقيق أولاً:** تشخيص سبب غياب الحواف (بيانات علاقات فارغة؟ خلل رسم؟) قبل إعادة البناء.
-  - **التنفيذ:** ترقية محرك الرسم إلى `cytoscape.js` (layouts: cose/concentric)؛ عقد ملوّنة حسب النوع وحواف حسب نوع العلاقة (وسوم مشتركة/نفس المجموعة/علاقات §18.5 عند تنفيذها)؛ تكبير/سحب؛ نقرة على عقدة → فتح التفاصيل؛ فلترة حسب النوع/الوسم؛ أداء حتى ~5K عقدة (عرض تدريجي).
-  - **الملفات:** `archive app/src/pages/GraphViewPage.jsx`، تبعية `cytoscape` جديدة، `archive app/src/features/graph/buildGraphModel.js` (جديد).
+- [x] `[P1]` ⏱️M **ترقية `GraphViewPage.jsx` إلى cytoscape.js وإصلاح عدم ظهور الروابط بين العناصر** — المستخدم يبلّغ أن الروابط/العلاقات لا تظهر حالياً في الخريطة.
+  - **التحقيق أولاً:** ✅ السبب: المطابقة كانت نصية حرفية (lowercase فقط، بلا تطبيع عربي ولا aliases للوسوم الهرمية)، لا حواف للمجموعات إطلاقاً، وقصّ أول 60 عنصراً بترتيب الإدخال قبل حساب الحواف.
+  - **التنفيذ:** ✅ تم — `cytoscape.js` (cose ≤250 عقدة / concentric فوقها، استيراد كسول)؛ عقد ملوّنة حسب documentType؛ حواف وسوم مشتركة (مطبّعة عربياً + aliases الوسوم الهرمية) + نفس المجموعة بوزن = عدد التداخل؛ تكبير/سحب؛ نقرة → تحديد ونقرة ثانية → التفاصيل؛ فلترة حسب النوع/الوسم؛ سقف 500 عقدة مع «تحميل المزيد». **متبقٍ:** حواف علاقات §18.5 عند تنفيذها؛ أداء ~5K عقدة (عرض تدريجي حقيقي).
+  - **الملفات:** `archive app/src/pages/GraphViewPage.jsx`، تبعية `cytoscape` جديدة، `archive app/src/features/graph/buildGraphModel.js` + `buildGraphModel.test.js` (جديدان، 10 اختبارات).
   - يرتبط بـ: §18.5 (العلاقات)، §11/§12 graph.
   - الجهد: 2-3 أسابيع.
 
