@@ -29,6 +29,7 @@ import {
 } from "../notifications/webPushService.js";
 import { getWorkflowDefinition, applyTransition } from "../workflow/stateMachine.js";
 import { fireWebhooks } from "../webhooks/webhookService.js";
+import { createApiKey, listApiKeys, revokeApiKey, verifyApiKey, API_SCOPES } from "../auth/apiKeyService.js";
 import { generateTotpSecret, verifyTotpToken, generateRecoveryCodes, verifyRecoveryCode } from "../auth/totpService.js";
 import { mintShareToken, readShareTokenPayload } from "../share/token.js";
 import { filterSnapshotForShare } from "../share/scope.js";
@@ -1856,6 +1857,75 @@ export function createApiServer({
         return send(res, 200, { ok: true, prefs });
       } catch (err) {
         logger.warn({ err }, "notification-preferences PATCH failed");
+        return send(res, 500, { ok: false, error: "failed" });
+      }
+    }
+
+    // ── API keys (§20.5) ─────────────────────────────────────────────────────
+    // Management (JWT-authenticated owner):
+    //   GET    /api/api-keys        — list the caller's keys (no secrets)
+    //   POST   /api/api-keys        — create a key (plaintext returned ONCE)
+    //   DELETE /api/api-keys/:id    — revoke a key
+    // Public programmatic read (X-API-Key header):
+    //   GET    /api/public/records?store=video_items — scoped read access
+
+    if (url.split("?")[0] === "/api/api-keys" && req.method === "GET") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "مفاتيح API غير متاحة في هذا الإعداد." });
+      try {
+        return send(res, 200, { ok: true, keys: await listApiKeys(prisma, claims.sub) });
+      } catch (err) {
+        logger.warn({ err: err?.message }, "api-keys list failed");
+        return send(res, 500, { ok: false, error: "failed" });
+      }
+    }
+
+    if (url.split("?")[0] === "/api/api-keys" && req.method === "POST") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "مفاتيح API غير متاحة في هذا الإعداد." });
+      try {
+        const body = await readJsonBody(req);
+        const created = await createApiKey(prisma, {
+          name: body?.name, scopes: body?.scopes, ownerId: claims.sub, expiresAt: body?.expiresAt,
+        });
+        authLog.info({ event: "api_key_create", sub: claims.sub, prefix: created.prefix, ip: clientIp(req) }, "AUDIT: API key created");
+        return send(res, 201, { ok: true, apiKey: created });
+      } catch (err) {
+        return send(res, err?.statusCode || 500, { ok: false, error: err?.message || "failed" });
+      }
+    }
+
+    if (url.split("?")[0].startsWith("/api/api-keys/") && req.method === "DELETE") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "مفاتيح API غير متاحة في هذا الإعداد." });
+      const id = decodeURIComponent(url.split("?")[0].slice("/api/api-keys/".length));
+      try {
+        const removed = await revokeApiKey(prisma, claims.sub, id);
+        if (!removed) return send(res, 404, { ok: false, error: "المفتاح غير موجود." });
+        authLog.info({ event: "api_key_revoke", sub: claims.sub, id, ip: clientIp(req) }, "AUDIT: API key revoked");
+        return send(res, 200, { ok: true });
+      } catch (err) {
+        return send(res, 500, { ok: false, error: "failed" });
+      }
+    }
+
+    if (url.split("?")[0] === "/api/public/records" && req.method === "GET") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const presented = req.headers["x-api-key"] || req.headers["X-API-Key"];
+      const principal = await verifyApiKey(prisma, Array.isArray(presented) ? presented[0] : presented);
+      if (!principal) return send(res, 401, { ok: false, error: "مفتاح API غير صالح أو منتهٍ." });
+      if (!principal.scopes.includes("read")) return send(res, 403, { ok: false, error: "نطاق القراءة غير ممنوح." });
+      try {
+        const params = requestUrl.searchParams;
+        const store = String(params.get("store") || "video_items");
+        const limit = Math.min(Math.max(Number(params.get("limit")) || 50, 1), 200);
+        const all = await resolveStorage().getAll(store).catch(() => []);
+        return send(res, 200, { ok: true, store, count: all.length, records: all.slice(0, limit) });
+      } catch (err) {
         return send(res, 500, { ok: false, error: "failed" });
       }
     }

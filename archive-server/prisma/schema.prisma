@@ -202,6 +202,25 @@ model NotificationPreference {
   @@map("notification_preferences")
 }
 
+/// API key (§20.5) — programmatic read access for external systems,
+/// separate from user JWTs. Only the SHA-256 hash is stored; the plain key
+/// is shown exactly once at creation time.
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  keyHash    String    @unique @map("key_hash")
+  prefix     String
+  scopes     String[]
+  ownerId    String    @map("owner_id")
+  active     Boolean   @default(true)
+  lastUsedAt DateTime? @map("last_used_at")
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([ownerId])
+  @@map("api_keys")
+}
+
 /// Web Push subscription (§20.2) — one row per browser/device endpoint.
 /// Dead endpoints (HTTP 404/410 from the push service) are deleted on send.
 model PushSubscription {
