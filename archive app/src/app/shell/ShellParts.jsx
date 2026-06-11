@@ -402,7 +402,7 @@ export function ToastNotification() {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] left-1/2 z-[9990] flex w-[min(92vw,380px)] -translate-x-1/2 flex-col gap-2 text-right lg:left-4 lg:translate-x-0"
+      className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] left-1/2 z-[9990] flex w-[min(92vw,380px)] -translate-x-1/2 flex-col gap-2 text-right md:bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] lg:left-4 lg:translate-x-0"
     >
       <AnimatePresence initial={false}>
         {topItems.map((notification) => (
@@ -591,7 +591,7 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.2 }}
-        className="mx-auto mt-16 w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)] text-white shadow-2xl"
+        className="mx-auto mt-4 w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)] text-white shadow-2xl sm:mt-16"
         onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -613,7 +613,7 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div ref={listRef} className="max-h-[460px] overflow-auto p-2" role="listbox">
+        <div ref={listRef} className="max-h-[min(460px,calc(100dvh-12rem))] overflow-auto p-2" role="listbox">
           {indexedGroups.map((group) => (
             <section key={group.id} className="py-1">
               <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{group.label}</p>
@@ -664,7 +664,7 @@ export function UndoRedoBar() {
   return (
     <div
       dir="rtl"
-      className="va-surface-muted fixed bottom-4 right-4 z-[9970] flex items-center gap-1 rounded-2xl border p-1.5 text-sm shadow-xl lg:right-[296px]"
+      className="va-surface-muted fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] right-4 z-[9970] flex items-center gap-1 rounded-2xl border p-1.5 text-sm shadow-xl md:bottom-4 lg:right-[296px]"
       role="group"
       aria-label="تراجع وإعادة"
     >
@@ -704,7 +704,7 @@ export function StatusBar() {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="va-surface-muted fixed bottom-4 right-1/2 z-[9960] translate-x-1/2 rounded-full border px-4 py-2 text-sm text-gray-200 shadow-xl"
+      className="va-surface-muted fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] right-1/2 z-[9960] max-w-[92vw] translate-x-1/2 truncate rounded-full border px-4 py-2 text-sm text-gray-200 shadow-xl md:bottom-4"
     >
       {backgroundOperation.label || "عملية تعمل في الخلفية"}
     </div>

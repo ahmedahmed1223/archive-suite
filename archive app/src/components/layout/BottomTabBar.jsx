@@ -21,7 +21,9 @@ export function BottomTabBar() {
   return jsx("nav", {
     "aria-label": "التنقل السريع",
     className: [
-      "fixed bottom-0 right-0 left-0 z-40",
+      // z-30 keeps the tab bar below the sidebar drawer's dim overlay (z-40)
+      // so tabs are not clickable while the drawer is open.
+      "fixed bottom-0 right-0 left-0 z-30",
       "border-t border-white/10 bg-gray-950/95 backdrop-blur-md",
       "pb-[env(safe-area-inset-bottom,0px)]",
       "md:hidden"

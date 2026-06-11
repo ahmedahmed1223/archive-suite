@@ -94,8 +94,15 @@ export function ContextMenu({ menu, onClose }) {
             animate: { opacity: 1, scale: 1, y: 0 },
             exit: { opacity: 0, scale: 0.96 },
             transition: { duration: prefersReducedMotion ? 0 : 0.12, ease: "easeOut" },
-            style: { position: "fixed", left: position.x, top: position.y, minWidth: "12rem", maxWidth: "18rem" },
-            className: "va-surface-raised rounded-lg border p-1 text-sm shadow-xl",
+            style: {
+              position: "fixed",
+              left: position.x,
+              top: position.y,
+              minWidth: "12rem",
+              maxWidth: "min(18rem, calc(100vw - 1rem))",
+              maxHeight: "calc(100dvh - 1rem)"
+            },
+            className: "va-surface-raised overflow-y-auto rounded-lg border p-1 text-sm shadow-xl",
             children: [
               menu.heading && jsx("div", {
                 className: "px-2 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500",
