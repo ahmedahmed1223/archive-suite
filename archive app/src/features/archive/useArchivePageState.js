@@ -101,6 +101,7 @@ export function useArchivePageState() {
   const [localSearch, setLocalSearch] = React.useState(initialRouteState.searchQuery || searchQuery || "");
   const [sortField, setSortField] = React.useState(initialRouteState.sortField || "updatedAt");
   const [sortDirection, setSortDirection] = React.useState(initialRouteState.sortDirection || "desc");
+  const [filterStatus, setFilterStatus] = React.useState(initialRouteState.filterStatus || "all");
   const [showDeleted, setShowDeleted] = React.useState(initialRouteState.showDeleted || false);
   const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(initialRouteState.showFavoritesOnly || false);
   const [showGapsOnly, setShowGapsOnly] = React.useState(false);
@@ -160,6 +161,7 @@ export function useArchivePageState() {
       const nextRouteState = parseArchiveRouteParams(parseAppRoute().params);
       setShowFileImportWizard(Boolean(nextRouteState.openImport));
       if (nextRouteState.viewMode && nextRouteState.viewMode !== viewMode) setViewMode?.(nextRouteState.viewMode);
+      if (nextRouteState.filterStatus !== filterStatus) setFilterStatus(nextRouteState.filterStatus);
       if (nextRouteState.page !== page) setPage(nextRouteState.page);
       if (nextRouteState.pageSize !== listPageSize) setPageSize(nextRouteState.pageSize);
       if (nextRouteState.itemSize !== activeItemSize) setItemSize(nextRouteState.itemSize);
@@ -176,7 +178,7 @@ export function useArchivePageState() {
       window.removeEventListener("popstate", applyRouteFlags);
       window.removeEventListener("videoarchive:archive-import-open", applyImportEvent);
     };
-  }, [activeGridRows, activeItemSize, activeTopMode, gridColumns, listPageSize, page, setViewMode, viewMode]);
+  }, [activeGridRows, activeItemSize, activeTopMode, filterStatus, gridColumns, listPageSize, page, setViewMode, viewMode]);
 
   // Debounce the live search so we don't push every keystroke into
   // recentSearches.
@@ -214,13 +216,14 @@ export function useArchivePageState() {
     videoItems,
     filterType,
     filterSubtype,
+    filterStatus,
     searchQuery: deferredSearch,
     sortField,
     sortDirection,
     showDeleted,
     showFavoritesOnly,
     showGapsOnly
-  }), [filterType, filterSubtype, deferredSearch, showDeleted, showFavoritesOnly, showGapsOnly, sortDirection, sortField, videoItems]);
+  }), [filterStatus, filterType, filterSubtype, deferredSearch, showDeleted, showFavoritesOnly, showGapsOnly, sortDirection, sortField, videoItems]);
   const quickSearchMatches = React.useMemo(
     () => (localSearch.trim() ? filteredItems.slice(0, 5) : []),
     [filteredItems, localSearch]
@@ -238,6 +241,7 @@ export function useArchivePageState() {
     || initialRouteState.searchQuery
     || initialRouteState.filterType !== "all"
     || initialRouteState.filterSubtype !== "all"
+    || initialRouteState.filterStatus !== "all"
     || initialRouteState.showDeleted
     || initialRouteState.showFavoritesOnly
     || initialRouteState.sortField !== "updatedAt"
@@ -253,7 +257,7 @@ export function useArchivePageState() {
       return;
     }
     setPage(1);
-  }, [activePageSize, filterType, filterSubtype, localSearch, showDeleted, showFavoritesOnly, sortDirection, sortField]);
+  }, [activePageSize, filterStatus, filterType, filterSubtype, localSearch, showDeleted, showFavoritesOnly, sortDirection, sortField]);
 
   React.useEffect(() => {
     if (page !== currentPage) setPage(currentPage);
@@ -266,6 +270,7 @@ export function useArchivePageState() {
       searchQuery: localSearch,
       filterType,
       filterSubtype,
+      filterStatus,
       showDeleted,
       showFavoritesOnly,
       sortField,
@@ -280,7 +285,7 @@ export function useArchivePageState() {
       gridColumns: normalizedGridColumns
     });
     writeAppRoute("archive", { params }, settings, true);
-  }, [activeGridRows, activeItemSize, activeTopMode, activeViewMode, currentPage, filterType, filterSubtype, listPageSize, localSearch, normalizedGridColumns, settings, showDeleted, showFavoritesOnly, showFileImportWizard, sortDirection, sortField]);
+  }, [activeGridRows, activeItemSize, activeTopMode, activeViewMode, currentPage, filterStatus, filterType, filterSubtype, listPageSize, localSearch, normalizedGridColumns, settings, showDeleted, showFavoritesOnly, showFileImportWizard, sortDirection, sortField]);
 
   const typeById = React.useMemo(
     () => new Map(contentTypes.map((type) => [type.id, type])),
@@ -293,8 +298,8 @@ export function useArchivePageState() {
   const activeType = typeById.get(filterType);
   const subtypes = activeType?.subtypes || [];
   const previewItem = filteredItems.find((item) => item.id === previewId) || visibleItems[0] || null;
-  const activeFilterCount = getArchiveActiveFilterCount({ searchQuery: localSearch, filterType, filterSubtype, showDeleted, showFavoritesOnly });
-  const hasFilters = hasArchiveContentFilters({ searchQuery: localSearch, filterType, filterSubtype, showFavoritesOnly });
+  const activeFilterCount = getArchiveActiveFilterCount({ searchQuery: localSearch, filterType, filterSubtype, filterStatus, showDeleted, showFavoritesOnly });
+  const hasFilters = hasArchiveContentFilters({ searchQuery: localSearch, filterType, filterSubtype, filterStatus, showFavoritesOnly });
 
   React.useEffect(() => {
     if (filterSubtype !== "all" && !subtypes.some((subtype) => subtype.id === filterSubtype)) {
@@ -417,6 +422,7 @@ export function useArchivePageState() {
     setLocalSearch("");
     setFilterType?.("all");
     setFilterSubtype?.("all");
+    setFilterStatus("all");
     setShowDeleted(false);
     setShowFavoritesOnly(false);
     setShowGapsOnly(false);
@@ -430,13 +436,14 @@ export function useArchivePageState() {
     searchQuery: localSearch,
     filterType,
     filterSubtype,
+    filterStatus,
     showFavoritesOnly,
     showDeleted,
     sortField,
     sortDirection,
     itemSize: activeItemSize,
     viewMode: activeViewMode
-  }), [activeItemSize, activeViewMode, filterSubtype, filterType, localSearch, showDeleted, showFavoritesOnly, sortDirection, sortField]);
+  }), [activeItemSize, activeViewMode, filterStatus, filterSubtype, filterType, localSearch, showDeleted, showFavoritesOnly, sortDirection, sortField]);
 
   const applySavedView = React.useCallback((view) => {
     if (!view?.filters) return;
@@ -445,6 +452,7 @@ export function useArchivePageState() {
     setSearchQuery?.(filters.query || "");
     setFilterType?.(filters.type || "all");
     setFilterSubtype?.(filters.subtype || "all");
+    setFilterStatus(filters.status || "all");
     setShowFavoritesOnly(!!filters.favoritesOnly);
     setShowDeleted(!!filters.showDeleted);
     setSortField(filters.sortField || "updatedAt");
@@ -556,6 +564,8 @@ export function useArchivePageState() {
     setSortField,
     sortDirection,
     setSortDirection,
+    filterStatus,
+    setFilterStatus,
     showDeleted,
     setShowDeleted,
     showFavoritesOnly,

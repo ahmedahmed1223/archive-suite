@@ -38,6 +38,7 @@ import {
   formatNumber
 } from "../../utils/formatting.js";
 import { normalizeLocalFileValue } from "../videos/viewModel.js";
+import { StatusBadge } from "../../components/archive/StatusBadge.jsx";
 import { InlineCellEditor } from "../../components/data/InlineCellEditor.jsx";
 import { DocumentViewer } from "../../components/media/DocumentViewer.jsx";
 
@@ -140,10 +141,10 @@ function ItemBadges({ item, compact = false, completeness = null }) {
   const rating = Number(item.metadata?.rating) || 0;
   const statusClass = reviewStatus ? REVIEW_STATUS_CLASS[reviewStatus] : null;
   const tier = completeness ? COMPLETENESS_TIERS[completeness.tier] : null;
-  if (!statusClass && rating === 0 && !tier) return null;
   return jsxs("div", {
     className: "flex flex-wrap items-center gap-1",
     children: [
+      jsx(StatusBadge, { item, compact }),
       tier && jsxs("span", {
         className: "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
         style: { borderColor: `${tier.color}55`, color: tier.color },
@@ -860,6 +861,7 @@ export function VideoListItem({ item, typeLabel, subtypeLabel, selected, onPrevi
 
 const DEFAULT_TABLE_COLUMNS = [
   { id: "title", visible: true, width: 280 },
+  { id: "status", visible: true, width: 130 },
   { id: "type", visible: true, width: 160 },
   { id: "file", visible: true, width: 200 },
   { id: "tags", visible: true, width: 180 },
@@ -869,6 +871,7 @@ const DEFAULT_TABLE_COLUMNS = [
 
 const COLUMN_LABELS = {
   title: "العنوان",
+  status: "الحالة",
   type: "النوع",
   file: "الملف",
   tags: "الوسوم",
@@ -878,6 +881,22 @@ const COLUMN_LABELS = {
   viewed: "آخر مشاهدة",
   actions: "إجراءات"
 };
+
+function isInlineEditableTableColumn(column, typeOptions = []) {
+  if (!column || column.visible === false) return false;
+  if (column.id === "type") return typeOptions.length > 0;
+  return column.id === "title" || column.id === "tags";
+}
+
+function getAdjacentInlineEditableColumnId(columns, typeOptions, currentColumnId, direction) {
+  const editableColumnIds = columns
+    .filter((column) => isInlineEditableTableColumn(column, typeOptions))
+    .map((column) => column.id);
+  const currentIndex = editableColumnIds.indexOf(currentColumnId);
+  if (currentIndex < 0) return null;
+  const offset = direction === "previous" ? -1 : 1;
+  return editableColumnIds[currentIndex + offset] || null;
+}
 
 function getFileSizeForItem(item) {
   const file = normalizeLocalFileValue(item?.localFile);
@@ -898,13 +917,19 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
             fieldType: "text",
             isEditing: true,
             placeholder: "عنوان المادة",
-            onSave: (next) => {
+            onSave: (next, meta = {}) => {
               const trimmed = String(next || "").trim();
-              if (!trimmed || trimmed === item.title) {
+              if (!trimmed) {
                 onCancelCellEdit?.();
                 return;
               }
-              onCommitCellEdit?.(item, { title: trimmed });
+              const navigationMeta = { ...meta, columnId: "title" };
+              if (trimmed === item.title) {
+                if (meta.navigationDirection) onCommitCellEdit?.(item, null, navigationMeta);
+                else onCancelCellEdit?.();
+                return;
+              }
+              onCommitCellEdit?.(item, { title: trimmed }, navigationMeta);
             },
             onCancel: onCancelCellEdit
           })
@@ -938,6 +963,12 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
         ]
       }, column.id);
     }
+    case "status":
+      return jsx("td", {
+        className: size.cell,
+        style: { minWidth: column.width },
+        children: jsx(StatusBadge, { item, compact: true })
+      }, column.id);
     case "type": {
       if (isEditingCell("type")) {
         return jsx("td", {
@@ -949,16 +980,18 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
             options: typeOptions || [],
             isEditing: true,
             placeholder: "اختر النوع",
-            onSave: (nextValue) => {
+            onSave: (nextValue, meta = {}) => {
               if (!nextValue) {
                 onCancelCellEdit?.();
                 return;
               }
+              const navigationMeta = { ...meta, columnId: "type" };
               if (nextValue === item.type) {
-                onCancelCellEdit?.();
+                if (meta.navigationDirection) onCommitCellEdit?.(item, null, navigationMeta);
+                else onCancelCellEdit?.();
                 return;
               }
-              onCommitCellEdit?.(item, { type: nextValue, subtype: "" });
+              onCommitCellEdit?.(item, { type: nextValue, subtype: "" }, navigationMeta);
             },
             onCancel: onCancelCellEdit
           })
@@ -999,14 +1032,16 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
             fieldType: "tags",
             isEditing: true,
             placeholder: "وسوم مفصولة بفواصل",
-            onSave: (nextTags) => {
+            onSave: (nextTags, meta = {}) => {
               const current = item.tags || [];
               const unchanged = nextTags.length === current.length && nextTags.every((tag, index) => tag === current[index]);
+              const navigationMeta = { ...meta, columnId: "tags" };
               if (unchanged) {
-                onCancelCellEdit?.();
+                if (meta.navigationDirection) onCommitCellEdit?.(item, null, navigationMeta);
+                else onCancelCellEdit?.();
                 return;
               }
-              onCommitCellEdit?.(item, { tags: nextTags });
+              onCommitCellEdit?.(item, { tags: nextTags }, navigationMeta);
             },
             onCancel: onCancelCellEdit
           })
@@ -1118,17 +1153,23 @@ function ResizableHeader({ column, label, cellClass, onResize }) {
 
 export function VideoTableView({ items, previewItem, typeLabel, subtypeLabel, typeOptions, showDeleted, onPreview, onOpen, onFavorite, onDelete, onRestore, itemSize = "comfortable", bulkMode = false, isSelected, onBulkToggle, allSelected, onSelectAll, columns, onColumnResize, disableRowMotion = false, onCellSave }) {
   const size = ARCHIVE_TABLE_SIZE[itemSize] || ARCHIVE_TABLE_SIZE.comfortable;
+  const visibleColumns = React.useMemo(
+    () => (columns && columns.length ? columns : DEFAULT_TABLE_COLUMNS).filter((column) => column.visible !== false),
+    [columns]
+  );
   // §13.3 inline cell editing — one cell at a time ({ itemId, columnId }).
   const [editingCell, setEditingCell] = React.useState(null);
   const handleStartCellEdit = React.useCallback((itemId, columnId) => {
     setEditingCell({ itemId, columnId });
   }, []);
   const handleCancelCellEdit = React.useCallback(() => setEditingCell(null), []);
-  const handleCommitCellEdit = React.useCallback((item, patch) => {
-    setEditingCell(null);
-    onCellSave?.(item, patch);
-  }, [onCellSave]);
-  const visibleColumns = (columns && columns.length ? columns : DEFAULT_TABLE_COLUMNS).filter((column) => column.visible !== false);
+  const handleCommitCellEdit = React.useCallback((item, patch, meta = {}) => {
+    const nextColumnId = meta.navigationDirection
+      ? getAdjacentInlineEditableColumnId(visibleColumns, typeOptions || [], meta.columnId, meta.navigationDirection)
+      : null;
+    setEditingCell(nextColumnId ? { itemId: item.id, columnId: nextColumnId } : null);
+    if (patch) onCellSave?.(item, patch);
+  }, [onCellSave, typeOptions, visibleColumns]);
   const shouldDisableRowMotion = disableRowMotion || itemSize === "xs" || items.length > 48;
   const RowComponent = shouldDisableRowMotion ? "tr" : motion.tr;
 

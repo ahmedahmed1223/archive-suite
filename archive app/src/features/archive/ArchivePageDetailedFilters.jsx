@@ -2,6 +2,7 @@ import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 
 import { formatNumber } from "../../utils/formatting.js";
+import { STATE_META, WORKFLOW_STATES } from "./itemStatus.js";
 
 /**
  * The detailed-mode filter panel that slides in below the hero when
@@ -12,6 +13,7 @@ import { formatNumber } from "../../utils/formatting.js";
 export function ArchivePageDetailedFilters({
   filterType,
   filterSubtype,
+  filterStatus = "all",
   subtypes,
   contentTypes,
   videoItems,
@@ -20,6 +22,7 @@ export function ArchivePageDetailedFilters({
   sortDirection,
   setFilterType,
   setFilterSubtype,
+  setFilterStatus,
   setSortField,
   setSortDirection
 }) {
@@ -27,7 +30,7 @@ export function ArchivePageDetailedFilters({
     className: "va-filter-surface z-20 rounded-2xl va-surface-muted border p-3 text-right backdrop-blur-sm xl:sticky xl:top-3",
     children: [
       jsxs("div", {
-        className: "grid gap-2 xl:grid-cols-[minmax(260px,1fr)_220px_180px_180px]",
+        className: "grid gap-2 xl:grid-cols-[minmax(220px,1fr)_200px_170px_170px_180px]",
         children: [
           jsx("div", { className: "hidden xl:block" }),
           jsxs("select", {
@@ -52,6 +55,16 @@ export function ArchivePageDetailedFilters({
             children: [
               jsx("option", { value: "all", children: "كل الفروع" }),
               ...subtypes.map((subtype) => jsx("option", { value: subtype.id, children: subtype.name || subtype.id }, subtype.id))
+            ]
+          }),
+          jsxs("select", {
+            value: filterStatus,
+            "aria-label": "تصفية حسب الحالة",
+            onChange: (event) => setFilterStatus?.(event.target.value),
+            className: "min-h-10 va-surface-deep rounded-xl border px-3 py-2 text-sm text-white",
+            children: [
+              jsx("option", { value: "all", children: "كل الحالات" }),
+              ...WORKFLOW_STATES.map((state) => jsx("option", { value: state, children: STATE_META[state]?.label || state }, state))
             ]
           }),
           jsxs("select", {

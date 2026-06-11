@@ -1,4 +1,4 @@
-import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Calendar, Heart, Search as SearchIcon, Tag, Trash2, X } from "lucide-react";
+import { Activity, ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Calendar, Heart, Search as SearchIcon, Tag, Trash2, X } from "lucide-react";
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 
@@ -122,16 +122,18 @@ export function ArchiveFilterChips({
   searchQuery,
   filterTypeLabel,
   filterSubtypeLabel,
+  filterStatusLabel,
   showFavoritesOnly,
   showDeleted,
   onClearSearch,
   onClearType,
   onClearSubtype,
+  onClearStatus,
   onClearFavorites,
   onClearDeleted,
   onResetAll
 }) {
-  const hasAny = !!searchQuery || !!filterTypeLabel || !!filterSubtypeLabel || showFavoritesOnly || showDeleted;
+  const hasAny = !!searchQuery || !!filterTypeLabel || !!filterSubtypeLabel || !!filterStatusLabel || showFavoritesOnly || showDeleted;
   if (!hasAny) return null;
   return jsxs("div", {
     className: "flex flex-wrap items-center gap-2 rounded-xl border border-white/5 bg-gray-950/25 px-3 py-2",
@@ -142,6 +144,7 @@ export function ArchiveFilterChips({
       searchQuery && jsx(FilterChip, { icon: jsx(SearchIcon, { className: "h-3 w-3" }), label: `"${searchQuery}"`, onRemove: onClearSearch }),
       filterTypeLabel && jsx(FilterChip, { icon: jsx(Tag, { className: "h-3 w-3" }), label: filterTypeLabel, onRemove: onClearType }),
       filterSubtypeLabel && jsx(FilterChip, { icon: jsx(Tag, { className: "h-3 w-3" }), label: filterSubtypeLabel, onRemove: onClearSubtype }),
+      filterStatusLabel && jsx(FilterChip, { icon: jsx(Activity, { className: "h-3 w-3" }), label: filterStatusLabel, onRemove: onClearStatus }),
       showFavoritesOnly && jsx(FilterChip, { icon: jsx(Heart, { className: "h-3 w-3" }), label: "المفضلة فقط", onRemove: onClearFavorites }),
       showDeleted && jsx(FilterChip, { icon: jsx(Trash2, { className: "h-3 w-3" }), label: "سلة المحذوفات", onRemove: onClearDeleted }),
       jsx("button", {
