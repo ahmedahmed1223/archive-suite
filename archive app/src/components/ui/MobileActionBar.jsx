@@ -9,7 +9,9 @@ export function MobileActionBar({ actions = [], label = "إجراءات الصف
 
   return jsx("nav", {
     className: cx(
-      "fixed inset-x-2 bottom-2 z-[60] rounded-2xl border border-white/10 bg-gray-950/92 p-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] shadow-2xl shadow-black/35 backdrop-blur md:hidden",
+      // bottom offset clears the fixed BottomTabBar (56px + safe-area) so the
+      // page action bar never covers the global navigation tabs on phones.
+      "fixed inset-x-2 bottom-[calc(56px+env(safe-area-inset-bottom,0px)+0.5rem)] z-[35] rounded-2xl border border-white/10 bg-gray-950/92 p-2 shadow-2xl shadow-black/35 backdrop-blur md:hidden",
       className
     ),
     dir: "rtl",
