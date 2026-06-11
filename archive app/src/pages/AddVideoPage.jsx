@@ -37,6 +37,7 @@ import { useAiAssist } from "../features/ai/useAiAssist.js";
 import { AiAssistBar } from "../features/ai/AiAssistBar.jsx";
 import { applyProofread, applySummaryToNotes, buildSuggestPayload, correctionsCount, hasSourceText, mergeTagText } from "../features/ai/viewModel.js";
 import { TagAutocomplete } from "../components/forms/TagAutocomplete.jsx";
+import { TemplatePicker } from "../components/templates/TemplatePicker.jsx";
 
 
 const STEPS = [
@@ -488,6 +489,24 @@ export function AddVideoPage() {
     setCurrentPage?.("archive");
   };
 
+  const [showTemplatePicker, setShowTemplatePicker] = React.useState(false);
+  const incrementTemplateUsage = useAppStore((state) => state.incrementTemplateUsage);
+
+  const applyTemplate = (template, resolved) => {
+    if (resolved.title) setTitle(resolved.title);
+    if (resolved.notes) setNotes(resolved.notes);
+    if (Array.isArray(resolved.tags)) setTags(resolved.tags.join("، "));
+    else if (resolved.tags) setTags(resolved.tags);
+    if (resolved.type) {
+      const matched = contentTypes.find(
+        (t) => t.id === resolved.type || t.name?.toLowerCase() === String(resolved.type).toLowerCase()
+      );
+      if (matched) setTypeId(matched.id);
+    }
+    incrementTemplateUsage?.(template.id);
+    showToast?.(`تم تطبيق قالب "${template.name}"`, "success");
+  };
+
   const [showPanel, setShowPanel] = React.useState(() => {
     try { return localStorage.getItem("videoArchive:addVideoSidePanel") !== "0"; } catch (error) { return true; }
   });
@@ -588,6 +607,7 @@ export function AddVideoPage() {
           })
         ] }),
         currentStep.id === "basic" && jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [
+          jsx("div", { className: "md:col-span-2", children: jsx("button", { type: "button", onClick: () => setShowTemplatePicker(true), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-white/15 px-4 py-2 text-sm text-gray-400 transition-colors hover:border-white/25 hover:text-white", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }), "تطبيق قالب"] }) }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: titleId, className: "block", children: "العنوان" }), jsx("input", { id: titleId, value: title, onChange: (event) => setTitle(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "عنوان الفيديو" })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: pathId, className: "block", children: "الرابط أو المسار" }), jsx("input", { id: pathId, value: path, onChange: (event) => setPath(event.target.value), dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "https:// أو D:\\..." })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [
@@ -672,8 +692,14 @@ export function AddVideoPage() {
         ]
       })
     ]
-    }), mobileActionBar]
-  });
+    }), mobileActionBar,
+    jsx(TemplatePicker, {
+      isOpen: showTemplatePicker,
+      onClose: () => setShowTemplatePicker(false),
+      onApply: applyTemplate,
+      context: { counter: 0, lastValues: {} }
+    })
+  ] });
 }
 
 AddVideoPage.pageId = "add";
