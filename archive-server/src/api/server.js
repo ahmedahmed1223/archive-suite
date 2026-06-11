@@ -336,6 +336,9 @@ export function createApiServer({
     login:       createRateLimiter({ max: rateLimit.loginMax ?? 10, windowMs: rateLimit.windowMs ?? 60_000 }),
     reset:       createRateLimiter({ max: rateLimit.resetMax ?? 5,  windowMs: rateLimit.windowMs ?? 60_000 }),
     totpDisable: createRateLimiter({ max: 3, windowMs: 15 * 60_000 }),
+    // §20.5 — per-API-key cap on the public read endpoint (keyed by key id,
+    // independent of the caller IP so one key can't be amplified across hosts).
+    apiKey:      createRateLimiter({ max: rateLimit.apiKeyMax ?? 120, windowMs: rateLimit.windowMs ?? 60_000 }),
   };
 
   function overLimit(res, bucket, req) {
@@ -1934,6 +1937,10 @@ export function createApiServer({
       const principal = await verifyApiKey(prisma, Array.isArray(presented) ? presented[0] : presented);
       if (!principal) return send(res, 401, { ok: false, error: "مفتاح API غير صالح أو منتهٍ." });
       if (!principal.scopes.includes("read")) return send(res, 403, { ok: false, error: "نطاق القراءة غير ممنوح." });
+      // Per-key throttle — independent of the IP-based cap above.
+      if (limiters && !limiters.apiKey.check(principal.apiKeyId)) {
+        return send(res, 429, { ok: false, error: "تجاوزت حدّ الطلبات لهذا المفتاح." });
+      }
       try {
         const params = requestUrl.searchParams;
         const store = String(params.get("store") || "video_items");

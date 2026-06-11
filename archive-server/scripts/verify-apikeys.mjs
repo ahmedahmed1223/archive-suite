@@ -199,6 +199,34 @@ run("HTTP: write scope requires editor+ (viewer cannot mint write keys)", async 
   }
 });
 
+run("HTTP: public read is throttled per API key (429 past the cap)", async () => {
+  const prisma = fakeApiKeyPrisma();
+  const storage = { async getAll() { return [{ id: "v1" }]; } };
+  // Tiny per-key cap so the test stays fast; other limiters stay generous.
+  const server = createApiServer({
+    backend: "test", authSecret: SECRET, prisma, resolveStorage: () => storage,
+    rateLimit: { apiKeyMax: 3, rpcMax: 1000, windowMs: 60_000 },
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const created = await fetch(`${base}/api/api-keys`, {
+      method: "POST",
+      headers: { Authorization: bearer("u1"), "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "throttled", scopes: ["read"] }),
+    });
+    const { apiKey } = await created.json();
+    const hit = () => fetch(`${base}/api/public/records?store=video_items`, { headers: { "X-API-Key": apiKey.key } });
+
+    assert.equal((await hit()).status, 200);
+    assert.equal((await hit()).status, 200);
+    assert.equal((await hit()).status, 200);
+    assert.equal((await hit()).status, 429, "4th call exceeds the per-key cap");
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
 process.on("beforeExit", () => {
   if (failures > 0) { console.error(`\n${failures} api-key test(s) failed`); process.exit(1); }
   else console.log("\nAll API key tests passed.");
