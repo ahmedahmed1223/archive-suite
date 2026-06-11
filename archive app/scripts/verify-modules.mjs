@@ -49,6 +49,12 @@ import {
   parseSearchRouteParams
 } from "../src/features/search/viewModel.js";
 import {
+  extractSpeechTranscript,
+  getSpeechRecognitionConstructor,
+  isVoiceSearchSupported,
+  parseVoiceSearchIntent
+} from "../src/features/search/voiceSearch.js";
+import {
   createHistoryRouteParams,
   getFilteredHistoryRecords,
   getHistoryActionCounts,
@@ -420,6 +426,27 @@ run("search view model", () => {
   assert.deepEqual(getTranscriptSegments(transcriptItem).map((segment) => segment.seconds), [65, 130]);
   assert.equal(getTranscriptSnippets(transcriptItem, "مهمه")[0].timecode, "1:05");
   assert.equal(getSearchResults({ videoItems: [transcriptItem], query: "مهمة" })[0].transcriptSnippets.length, 1);
+});
+
+run("voice search view model", () => {
+  function StandardRecognition() {}
+  function WebkitRecognition() {}
+  assert.equal(getSpeechRecognitionConstructor({ SpeechRecognition: StandardRecognition }), StandardRecognition);
+  assert.equal(getSpeechRecognitionConstructor({ webkitSpeechRecognition: WebkitRecognition }), WebkitRecognition);
+  assert.equal(isVoiceSearchSupported({ webkitSpeechRecognition: WebkitRecognition }), true);
+  assert.equal(isVoiceSearchSupported({}), false);
+
+  assert.deepEqual(parseVoiceSearchIntent("إبحث عن محاضرات يونيو 2026"), {
+    kind: "search",
+    query: "محاضرات يونيو 2026",
+    normalizedQuery: "محاضرات يونيو 2026",
+    rawTranscript: "إبحث عن محاضرات يونيو 2026",
+    normalizedTranscript: "ابحث عن محاضرات يونيو 2026"
+  });
+  assert.equal(parseVoiceSearchIntent("افتح ملف المقابلة").kind, "open");
+  assert.equal(parseVoiceSearchIntent("أضف مادة جديدة").kind, "add");
+  assert.equal(parseVoiceSearchIntent("صور الأرشيف القديمة").normalizedQuery, "صور الارشيف القديمه");
+  assert.equal(extractSpeechTranscript({ resultIndex: 1, results: [[{ transcript: "x" }], [{ transcript: "تقرير" }]] }), "تقرير");
 });
 
 run("history view model", () => {
