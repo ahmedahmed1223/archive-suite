@@ -4,10 +4,46 @@
  * Renders inside SettingsPage under the Maintenance/Notifications section.
  */
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Mail, Upload, Share2 } from "lucide-react";
+import { Bell, BellRing, Mail, Upload, Share2, AlertTriangle } from "lucide-react";
 import { useAppStore } from "../../stores/index.js";
+import {
+  isPushSupported,
+  getPushSubscriptionState,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "../../services/pushService.js";
 
-const DEFAULT_PREFS = { emailOnShare: true, emailOnUpload: false, emailOnMention: true };
+const DEFAULT_PREFS = {
+  emailOnShare: true, emailOnUpload: false, emailOnMention: true,
+  pushOnShare: true, pushOnUpload: true, pushOnMention: true, pushOnSystem: true,
+};
+
+const PUSH_PREF_ITEMS = [
+  {
+    key: "pushOnShare",
+    icon: Share2,
+    label: "تنبيه عند مشاركة سجل معك",
+    desc: "إشعار فوري على هذا الجهاز عند مشاركة سجل",
+  },
+  {
+    key: "pushOnUpload",
+    icon: Upload,
+    label: "تنبيه عند اكتمال معالجة الرفع",
+    desc: "إشعار فوري عند اكتمال OCR ومعالجة الملف",
+  },
+  {
+    key: "pushOnMention",
+    icon: Bell,
+    label: "تنبيه عند الإشارة إليك",
+    desc: "إشعار فوري عند ذكر اسمك في ملاحظات سجل",
+  },
+  {
+    key: "pushOnSystem",
+    icon: AlertTriangle,
+    label: "تنبيهات النظام",
+    desc: "فشل النسخ الاحتياطي، اكتشاف مكررات، وأحداث النظام",
+  },
+];
 
 const PREF_ITEMS = [
   {
@@ -30,11 +66,99 @@ const PREF_ITEMS = [
   },
 ];
 
+// Shared accessible switch used by both the email and push lists.
+function ToggleSwitch({ checked, label, disabled, onToggle }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onToggle}
+      disabled={disabled}
+      className={[
+        "relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+        "disabled:cursor-not-allowed disabled:opacity-60",
+        checked ? "bg-emerald-600" : "bg-gray-700",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200",
+          checked ? "translate-x-5" : "translate-x-0",
+        ].join(" ")}
+      />
+      <span className="sr-only">{checked ? "مفعّل" : "معطّل"}</span>
+    </button>
+  );
+}
+
+function PrefList({ items, prefs, saving, onToggle }) {
+  return (
+    <ul className="space-y-2">
+      {items.map((item) => {
+        const Icon = item.icon;
+        const checked = prefs[item.key];
+        return (
+          <li
+            key={item.key}
+            className="flex items-center justify-between gap-3 rounded-xl border border-[var(--va-border,rgba(255,255,255,0.1))] bg-[var(--va-surface,rgba(255,255,255,0.03))] p-3"
+          >
+            <div className="flex items-start gap-2 min-w-0">
+              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-white">{item.label}</p>
+                <p className="text-xs leading-5 text-gray-500">{item.desc}</p>
+              </div>
+            </div>
+            <ToggleSwitch
+              checked={checked}
+              label={item.label}
+              disabled={saving}
+              onToggle={() => onToggle(item.key)}
+            />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function NotificationPreferences() {
   const [prefs, setPrefs] = useState(DEFAULT_PREFS);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [push, setPush] = useState({ supported: isPushSupported(), subscribed: false, busy: false });
   const { showToast } = useAppStore((s) => ({ showToast: s.showToast }));
+
+  useEffect(() => {
+    let cancelled = false;
+    getPushSubscriptionState()
+      .then((state) => {
+        if (!cancelled) setPush((p) => ({ ...p, ...state }));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const togglePushSubscription = useCallback(async () => {
+    setPush((p) => ({ ...p, busy: true }));
+    try {
+      if (push.subscribed) {
+        await unsubscribeFromPush();
+        setPush((p) => ({ ...p, subscribed: false, busy: false }));
+        showToast?.("أُلغيت تنبيهات هذا الجهاز", "info");
+      } else {
+        await subscribeToPush();
+        setPush((p) => ({ ...p, subscribed: true, busy: false }));
+        showToast?.("فُعّلت التنبيهات على هذا الجهاز", "success");
+      }
+    } catch (error) {
+      setPush((p) => ({ ...p, busy: false }));
+      showToast?.(error?.message || "فشل تغيير حالة التنبيهات", "error");
+    }
+  }, [push.subscribed, showToast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,53 +210,50 @@ export function NotificationPreferences() {
         </p>
       )}
 
-      <ul className="space-y-2">
-        {PREF_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const checked = prefs[item.key];
-          return (
-            <li
-              key={item.key}
-              className="flex items-center justify-between gap-3 rounded-xl border border-[var(--va-border,rgba(255,255,255,0.1))] bg-[var(--va-surface,rgba(255,255,255,0.03))] p-3"
-            >
-              <div className="flex items-start gap-2 min-w-0">
-                <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white">{item.label}</p>
-                  <p className="text-xs leading-5 text-gray-500">{item.desc}</p>
-                </div>
-              </div>
-
-              {/* Accessible toggle switch */}
-              <button
-                type="button"
-                role="switch"
-                aria-checked={checked}
-                aria-label={item.label}
-                onClick={() => toggle(item.key)}
-                disabled={saving}
-                className={[
-                  "relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
-                  "disabled:cursor-not-allowed disabled:opacity-60",
-                  checked ? "bg-emerald-600" : "bg-gray-700",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200",
-                    checked ? "translate-x-5" : "translate-x-0",
-                  ].join(" ")}
-                />
-                <span className="sr-only">{checked ? "مفعّل" : "معطّل"}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <PrefList items={PREF_ITEMS} prefs={prefs} saving={saving} onToggle={toggle} />
 
       <p className="text-xs leading-5 text-gray-500">
         تطبّق هذه الإعدادات على البريد الإلكتروني المرتبط بحسابك. يتطلّب تكوين SMTP على الخادم.
+      </p>
+
+      {/* Web Push (§20.2) — device-level subscription + per-type preferences */}
+      <h3
+        id="push-notif-heading"
+        className="flex items-center gap-2 pt-2 text-sm font-semibold text-white"
+      >
+        <BellRing className="h-4 w-4 text-[var(--va-action)]" />
+        التنبيهات خارج التطبيق (Web Push)
+      </h3>
+
+      {!push.supported ? (
+        <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
+          هذا المتصفح لا يدعم تنبيهات Web Push.
+        </p>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--va-border,rgba(255,255,255,0.1))] bg-[var(--va-surface,rgba(255,255,255,0.03))] p-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white">تفعيل التنبيهات على هذا الجهاز</p>
+              <p className="text-xs leading-5 text-gray-500">
+                يطلب إذن الإشعارات من المتصفح ويسجّل هذا الجهاز لدى الخادم
+              </p>
+            </div>
+            <ToggleSwitch
+              checked={push.subscribed}
+              label="تفعيل التنبيهات على هذا الجهاز"
+              disabled={push.busy}
+              onToggle={togglePushSubscription}
+            />
+          </div>
+
+          {push.subscribed && (
+            <PrefList items={PUSH_PREF_ITEMS} prefs={prefs} saving={saving} onToggle={toggle} />
+          )}
+        </>
+      )}
+
+      <p className="text-xs leading-5 text-gray-500">
+        تتطلب التنبيهات الخارجية تهيئة مفاتيح VAPID على الخادم، وتعمل حتى عندما يكون التطبيق مغلقًا.
       </p>
     </section>
   );
