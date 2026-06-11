@@ -27,6 +27,8 @@ import {
   removeSubscription as removePushSubscription,
   sendPushToUser
 } from "../notifications/webPushService.js";
+import { getWorkflowDefinition, applyTransition } from "../workflow/stateMachine.js";
+import { fireWebhooks } from "../webhooks/webhookService.js";
 import { generateTotpSecret, verifyTotpToken, generateRecoveryCodes, verifyRecoveryCode } from "../auth/totpService.js";
 import { mintShareToken, readShareTokenPayload } from "../share/token.js";
 import { filterSnapshotForShare } from "../share/scope.js";
@@ -1855,6 +1857,64 @@ export function createApiServer({
       } catch (err) {
         logger.warn({ err }, "notification-preferences PATCH failed");
         return send(res, 500, { ok: false, error: "failed" });
+      }
+    }
+
+    // ── Workflow (§20.3) ─────────────────────────────────────────────────────
+    // GET  /api/workflow/definition — states/labels/transitions for UI menus
+    // POST /api/workflow/transition — move a record to a new state (role-gated)
+
+    if (url.split("?")[0] === "/api/workflow/definition" && req.method === "GET") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      return send(res, 200, { ok: true, definition: getWorkflowDefinition() });
+    }
+
+    if (url.split("?")[0] === "/api/workflow/transition" && req.method === "POST") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const store = String(body?.store || "video_items");
+        const id = String(body?.id || "");
+        if (!id) return send(res, 400, { ok: false, error: "معرّف السجل مطلوب." });
+
+        const storage = resolveStorage();
+        const existing = typeof storage.get === "function"
+          ? await storage.get(store, id)
+          : (await storage.getAll(store).catch(() => [])).find((r) => String(r?.id) === id);
+        if (!existing) return send(res, 404, { ok: false, error: "السجل غير موجود." });
+
+        const { record, entry } = applyTransition(existing, {
+          to: body?.to,
+          role: claims.role || "viewer",
+          userId: claims.sub,
+          username: claims.username,
+          dueDate: body?.dueDate,
+          note: body?.note,
+        });
+        await storage.put(store, record);
+
+        authLog.info(
+          { event: "workflow_transition", store, id, from: entry.from, to: entry.to, sub: claims.sub },
+          "AUDIT: workflow transition"
+        );
+        // Outgoing webhook + push to the record owner (when someone else acted).
+        fireWebhooks(prisma, "record.status_changed", { store, uid: id, from: entry.from, to: entry.to }, record?.ownerId, logger);
+        if (record?.ownerId && record.ownerId !== claims.sub) {
+          sendPushToUser({
+            prisma,
+            userId: record.ownerId,
+            type: "system",
+            title: `تغيّرت حالة السجل — ${record?.title || id}`,
+            body: `من «${entry.from}» إلى «${entry.to}» بواسطة ${claims.username || "مستخدم"}`,
+            tag: `workflow:${id}`,
+          });
+        }
+        return send(res, 200, { ok: true, result: { id, status: record.workflowStatus, dueDate: record.workflowDueDate, entry } });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "فشل تغيير الحالة." });
       }
     }
 
