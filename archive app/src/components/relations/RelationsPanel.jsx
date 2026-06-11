@@ -1,7 +1,8 @@
 import * as React from "react";
 import { ArrowDownLeft, ArrowUpRight, Link2, Plus, Trash2 } from "lucide-react";
 
-import { getRelationLabel } from "../../features/relations/viewModel.js";
+import { getRelationLabel, buildRelationsGraph } from "../../features/relations/viewModel.js";
+import { RelationsGraph } from "./RelationsGraph.jsx";
 
 function getItemTitle(item) {
   return item?.title || item?.name || item?.id || "عنصر غير معروف";
@@ -76,7 +77,8 @@ export function RelationsPanel({
   itemRelations = { outgoing: [], incoming: [] },
   allItems = [],
   onAddRelation,
-  onRemoveRelation
+  onRemoveRelation,
+  onNavigateToItem
 }) {
   const itemsById = React.useMemo(
     () => new Map(allItems.map((item) => [item.id, item])),
@@ -86,6 +88,12 @@ export function RelationsPanel({
   const outgoing = itemRelations.outgoing || [];
   const incoming = itemRelations.incoming || [];
   const isEmpty = outgoing.length === 0 && incoming.length === 0;
+
+  const allRelations = React.useMemo(() => [...outgoing, ...incoming], [outgoing, incoming]);
+  const graph = React.useMemo(
+    () => buildRelationsGraph(itemId, allRelations, allItems, 1),
+    [itemId, allRelations, allItems]
+  );
 
   return (
     <section
@@ -117,6 +125,12 @@ export function RelationsPanel({
         </div>
       ) : (
         <div className="space-y-5">
+          <RelationsGraph
+            graph={graph}
+            centerId={itemId}
+            onNodeClick={(id) => { if (id !== itemId) onNavigateToItem?.(id); }}
+            className="w-full"
+          />
           <RelationSection
             title="علاقات صادرة"
             icon={<ArrowUpRight className="h-4 w-4 text-emerald-400" aria-hidden="true" />}
