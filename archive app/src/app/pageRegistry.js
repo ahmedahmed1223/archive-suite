@@ -24,6 +24,7 @@ const VocabularyPage      = lazy(() => import("../pages/VocabularyPage.jsx"));
 const HierarchicalTagsPage = lazy(() => import("../pages/HierarchicalTagsPage.jsx"));
 const UsersPage           = lazy(() => import("../pages/UsersPage.jsx"));
 const HistoryPage         = lazy(() => import("../pages/HistoryPage.jsx"));
+const ActivityPage        = lazy(() => import("../pages/ActivityPage.jsx"));
 const SettingsPage        = lazy(() => import("../pages/SettingsPage.jsx"));
 const DataCenterPage      = lazy(() => import("../pages/DataCenterPage.jsx"));
 const ReportsPage         = lazy(() => import("../pages/ReportsPage.jsx"));
@@ -47,6 +48,7 @@ export const PAGE_COMPONENTS = {
   settings:    SettingsPage,
   backup:      DataCenterPage,
   history:     HistoryPage,
+  activity:    ActivityPage,
   collections: CollectionsPage,
   projects:    ProjectsPage,
   transcriber: TranscriberPage,

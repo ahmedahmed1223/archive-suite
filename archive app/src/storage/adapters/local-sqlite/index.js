@@ -14,7 +14,8 @@ const DATA_STORES = [
   STORES.VOCABULARY,
   STORES.HTAGS,
   STORES.AUDIT_LOGS,
-  STORES.PROJECTS
+  STORES.PROJECTS,
+  STORES.ACTIVITY_LOG
 ];
 
 const SNAPSHOT_STORES = {
@@ -28,7 +29,8 @@ const SNAPSHOT_STORES = {
   hierarchicalTags: STORES.HTAGS,
   users: STORES.USERS,
   auditLogs: STORES.AUDIT_LOGS,
-  projects: STORES.PROJECTS
+  projects: STORES.PROJECTS,
+  activityLog: STORES.ACTIVITY_LOG
 };
 
 const STORE_KEY_PATHS = {
@@ -375,6 +377,7 @@ function normalizeImportPayload(data = {}) {
     hierarchicalTags: ensureArrayOrEmpty(data, "hierarchicalTags"),
     auditLogs: ensureArrayOrEmpty(data, "auditLogs"),
     projects: ensureArrayOrEmpty(data, "projects"),
+    activityLog: ensureArrayOrEmpty(data, "activityLog"),
     users: Array.isArray(data.users) ? data.users : null,
     settings: data.settings && typeof data.settings === "object" ? data.settings : null
   };

@@ -283,7 +283,7 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       await dbDelete(STORES.BOOKMARKS, id).catch(() => {});
       return true;
     },
-    updateVideoItem: async (item) => {
+    updateVideoItem: async (item, options = {}) => {
       checkPermission(get, getAuthStore, ACTIONS.VIDEO_UPDATE);
       const deviceId = getActiveDeviceId(get);
       const previous = get().videoItems.find((current) => current.id === item.id) || null;
@@ -300,6 +300,26 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       await dbPut(STORES.ITEMS, updated);
       await dbPut(STORES.HISTORY, record);
       get().addAuditLog?.("video.update", updated.id, "video", { title: updated.title });
+      // Activity log (§18.1) — additive and failure-safe: logging must never
+      // break the save. skipActivityLog prevents undo/redo re-application from
+      // generating new activity entries.
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "update",
+            targetType: "item",
+            targetId: updated.id,
+            targetName: updated.title || "",
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            snapshot: { before: previous, after: updated },
+            undoable: Boolean(previous)
+          })).catch(() => {});
+        } catch {
+          // never block the update on activity logging
+        }
+      }
       return updated;
     },
     deleteVideoItem: async (id, options = {}) => {
