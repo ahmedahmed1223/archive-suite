@@ -30,6 +30,7 @@ import { ArchivePageHero } from "../features/archive/ArchivePageHero.jsx";
 import { ArchivePageResults } from "../features/archive/ArchivePageResults.jsx";
 import { useArchivePageState } from "../features/archive/useArchivePageState.js";
 import { useTypeToJump } from "../features/archive/useTypeToJump.js";
+import { STATE_META } from "../features/archive/itemStatus.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 import { resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { createMediaClient } from "../features/media/mediaClient.js";
@@ -76,7 +77,7 @@ export function ArchivePage() {
     addVideoItem, updateVideoItem, toggleFavorite, restoreVideoItem,
     clearSelection, bulkDeleteItems, bulkRestoreItems, bulkAddTags, bulkMoveToCollection, bulkSetType, bulkSetProject,
     projects,
-    filterType, filterSubtype, setFilterType, setFilterSubtype,
+    filterType, filterSubtype, filterStatus, setFilterType, setFilterSubtype, setFilterStatus,
     localSearch, setLocalSearch, showDeleted, showFavoritesOnly,
     resetFilters, activeTopMode,
     setBulkMode,
@@ -300,10 +301,12 @@ export function ArchivePage() {
         searchQuery: localSearch,
         filterTypeLabel: filterType !== "all" ? typeById.get(filterType)?.name || filterType : null,
         filterSubtypeLabel: filterSubtype !== "all" ? typeById.get(filterType)?.subtypes?.find((sub) => sub.id === filterSubtype)?.name || filterSubtype : null,
+        filterStatusLabel: filterStatus !== "all" ? STATE_META[filterStatus]?.label || filterStatus : null,
         showFavoritesOnly, showDeleted,
         onClearSearch: () => setLocalSearch(""),
         onClearType: () => { setFilterType?.("all"); setFilterSubtype?.("all"); },
         onClearSubtype: () => setFilterSubtype?.("all"),
+        onClearStatus: () => setFilterStatus("all"),
         onClearFavorites: () => state.setShowFavoritesOnly(false),
         onClearDeleted: () => state.setShowDeleted(false),
         onResetAll: resetFilters

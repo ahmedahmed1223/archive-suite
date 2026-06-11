@@ -1,7 +1,7 @@
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Bookmark, BookmarkPlus, Download, Trash2, X } from "lucide-react";
-import { secondsToClock } from "../../features/media/viewModel.js";
+import { buildTimeBookmarkMarkers, secondsToClock } from "../../features/media/viewModel.js";
 import { triggerDownload, safeFileName } from "../../features/projects/exportClient.js";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ function downloadText(text, filename, mimeType) {
  *   getTime   () => number   — returns current playback position in seconds
  *   onSave    (bookmark) => void
  */
-export function TimeBookmarkButton({ getTime, onSave }) {
+export function TimeBookmarkButton({ getTime, getSuggestion, onSave }) {
   const [open, setOpen] = React.useState(false);
   const [captured, setCaptured] = React.useState(0);
   const [title, setTitle] = React.useState("");
@@ -70,9 +70,11 @@ export function TimeBookmarkButton({ getTime, onSave }) {
 
   const openForm = () => {
     const t = typeof getTime === "function" ? (getTime() ?? 0) : 0;
-    setCaptured(Math.max(0, Number(t) || 0));
-    setTitle("");
-    setNote("");
+    const nextTime = Math.max(0, Number(t) || 0);
+    const suggestion = typeof getSuggestion === "function" ? getSuggestion(nextTime) : null;
+    setCaptured(nextTime);
+    setTitle(suggestion?.title || "");
+    setNote(suggestion?.note || "");
     setOpen(true);
     // focus title on next paint
     window.requestAnimationFrame(() => titleRef.current?.focus());
@@ -363,6 +365,47 @@ export function TimeBookmarkList({ bookmarks = [], onSeek, onDelete, itemTitle =
             ]
           }, bm.id)
         )
+      })
+    ]
+  });
+}
+
+export function TimeBookmarkTimelineMarkers({ bookmarks = [], duration = 0, currentTime = 0, onSeek }) {
+  const markers = React.useMemo(() => buildTimeBookmarkMarkers(bookmarks, duration), [bookmarks, duration]);
+  const safeDuration = Number(duration);
+  if (!markers.length || !Number.isFinite(safeDuration) || safeDuration <= 0) return null;
+
+  const progress = Math.max(0, Math.min(100, (Number(currentTime) / safeDuration) * 100 || 0));
+
+  return jsxs("div", {
+    dir: "ltr",
+    className: "space-y-1.5",
+    children: [
+      jsxs("div", {
+        className: "relative h-3 rounded-full border border-white/10 bg-black/35",
+        role: "group",
+        "aria-label": "علامات زمنية على خط تشغيل المادة",
+        children: [
+          jsx("div", {
+            className: "absolute inset-y-0 left-0 rounded-full va-accent-bg opacity-25",
+            style: { width: `${progress}%` }
+          }),
+          markers.map((marker) => jsx("button", {
+            type: "button",
+            onClick: () => onSeek?.(marker.time),
+            title: `${secondsToClock(marker.time)} - ${marker.label}`,
+            "aria-label": `الانتقال إلى ${marker.label} عند ${secondsToClock(marker.time)}`,
+            className: "absolute top-1/2 h-4 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/70 va-accent-bg shadow-sm shadow-black/40 transition-transform hover:scale-125 focus:outline-none focus:ring-2 focus:ring-white/70",
+            style: { left: `${marker.percent}%` }
+          }, marker.id))
+        ]
+      }),
+      jsxs("div", {
+        className: "flex items-center justify-between font-mono text-[10px] text-gray-500",
+        children: [
+          jsx("span", { children: secondsToClock(currentTime) }),
+          jsx("span", { children: secondsToClock(safeDuration) })
+        ]
       })
     ]
   });

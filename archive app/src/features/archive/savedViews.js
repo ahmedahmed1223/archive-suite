@@ -28,6 +28,7 @@ export function normalizeSavedView(view) {
       query: view.filters?.query || "",
       type: view.filters?.type || "all",
       subtype: view.filters?.subtype || "all",
+      status: view.filters?.status || "all",
       favoritesOnly: !!view.filters?.favoritesOnly,
       showDeleted: !!view.filters?.showDeleted,
       missingFieldsOnly: !!view.filters?.missingFieldsOnly,
@@ -64,11 +65,12 @@ export function renameSavedView(settings, viewId, name) {
   return getSavedViews(settings).map((entry) => entry.id === viewId ? { ...entry, name: nextName } : entry);
 }
 
-export function captureCurrentFilters({ searchQuery, filterType, filterSubtype, showFavoritesOnly, showDeleted, missingFieldsOnly, dateFrom, dateTo, sortField, sortDirection, itemSize, viewMode }) {
+export function captureCurrentFilters({ searchQuery, filterType, filterSubtype, filterStatus, showFavoritesOnly, showDeleted, missingFieldsOnly, dateFrom, dateTo, sortField, sortDirection, itemSize, viewMode }) {
   return {
     query: searchQuery || "",
     type: filterType || "all",
     subtype: filterSubtype || "all",
+    status: filterStatus || "all",
     favoritesOnly: !!showFavoritesOnly,
     showDeleted: !!showDeleted,
     missingFieldsOnly: !!missingFieldsOnly,
@@ -86,6 +88,7 @@ export function hasMeaningfulFilters(filters) {
   if ((filters.query || "").trim()) return true;
   if (filters.type && filters.type !== "all") return true;
   if (filters.subtype && filters.subtype !== "all") return true;
+  if (filters.status && filters.status !== "all") return true;
   if (filters.favoritesOnly) return true;
   if (filters.showDeleted) return true;
   if (filters.missingFieldsOnly) return true;

@@ -27,10 +27,24 @@ const TRANSITIONS = [
   { from: "archived", to: "editing", roles: ["admin", "owner"] },
 ];
 
+export function isWorkflowState(state) {
+  return WORKFLOW_STATES.includes(state);
+}
+
+function hasExplicitEmptyTags(item) {
+  return Array.isArray(item?.tags) && item.tags.length === 0;
+}
+
+export function deriveInitialItemWorkflowStatus(item = {}) {
+  if (item.isDeleted) return "archived";
+  if (isWorkflowState(item.workflowStatus)) return item.workflowStatus;
+  if (hasExplicitEmptyTags(item)) return "review";
+  return DEFAULT_STATE;
+}
+
 /** Current workflow state of an item; legacy items are drafts. */
 export function getItemState(item) {
-  const state = item?.workflowStatus;
-  return WORKFLOW_STATES.includes(state) ? state : DEFAULT_STATE;
+  return deriveInitialItemWorkflowStatus(item);
 }
 
 /** Badge metadata ({label, color}) for an item's current state. */

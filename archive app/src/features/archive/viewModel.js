@@ -1,11 +1,13 @@
 import { normalizeArabicSearchText } from "../../utils/formatting.js";
 import { itemHasDescriptionGap } from "./completeness.js";
+import { WORKFLOW_STATES, getItemState } from "./itemStatus.js";
 
 const ARCHIVE_SORT_FIELDS = new Set(["title", "createdAt", "updatedAt"]);
 const ARCHIVE_VIEW_MODES = new Set(["grid", "tiles", "list", "table"]);
 const ARCHIVE_ITEM_SIZES = new Set(["xs", "compact", "comfortable", "large", "xl"]);
 const ARCHIVE_PAGE_SIZES = new Set([12, 24, 48, 96]);
 const ARCHIVE_TOP_MODES = new Set(["quick", "detailed"]);
+const ARCHIVE_STATUS_FILTERS = new Set(["all", ...WORKFLOW_STATES]);
 const ARCHIVE_GRID_ROW_MIN = 1;
 const ARCHIVE_GRID_ROW_MAX = 12;
 export const ARCHIVE_GRID_COLUMN_MIN = 1;
@@ -74,6 +76,7 @@ export function getFilteredArchiveItems({
   videoItems = [],
   filterType = "all",
   filterSubtype = "all",
+  filterStatus = "all",
   searchQuery = "",
   sortField = "updatedAt",
   sortDirection = "desc",
@@ -88,6 +91,7 @@ export function getFilteredArchiveItems({
     if (showDeleted ? !item.isDeleted : item.isDeleted) return false;
     if (filterType && filterType !== "all" && item.type !== filterType) return false;
     if (filterSubtype && filterSubtype !== "all" && item.subtype !== filterSubtype) return false;
+    if (filterStatus && filterStatus !== "all" && getItemState(item) !== filterStatus) return false;
     if (showFavoritesOnly && !item.isFavorite) return false;
     if (showGapsOnly && !itemHasDescriptionGap(item)) return false;
     if (!query) return true;
@@ -108,6 +112,7 @@ export function getArchiveActiveFilterCount({
   searchQuery = "",
   filterType = "all",
   filterSubtype = "all",
+  filterStatus = "all",
   showFavoritesOnly = false,
   showDeleted = false
 } = {}) {
@@ -115,6 +120,7 @@ export function getArchiveActiveFilterCount({
     searchQuery.trim(),
     filterType && filterType !== "all",
     filterSubtype && filterSubtype !== "all",
+    filterStatus && filterStatus !== "all",
     showFavoritesOnly,
     showDeleted
   ].filter(Boolean).length;
@@ -125,6 +131,7 @@ export function hasArchiveContentFilters(filters = {}) {
     filters.searchQuery?.trim()
     || filters.filterType && filters.filterType !== "all"
     || filters.filterSubtype && filters.filterSubtype !== "all"
+    || filters.filterStatus && filters.filterStatus !== "all"
     || filters.showFavoritesOnly
   );
 }
@@ -140,6 +147,7 @@ export function createArchiveRouteParams({
   searchQuery = "",
   filterType = "all",
   filterSubtype = "all",
+  filterStatus = "all",
   showDeleted = false,
   showFavoritesOnly = false,
   sortField = "updatedAt",
@@ -157,6 +165,7 @@ export function createArchiveRouteParams({
   if (searchQuery.trim()) params.set("q", searchQuery.trim());
   if (filterType && filterType !== "all") params.set("type", filterType);
   if (filterSubtype && filterSubtype !== "all") params.set("subtype", filterSubtype);
+  if (filterStatus && filterStatus !== "all") params.set("status", filterStatus);
   if (showDeleted) params.set("deleted", "1");
   if (showFavoritesOnly) params.set("favorites", "1");
   if (sortField !== "updatedAt") params.set("sort", sortField);
@@ -181,10 +190,12 @@ export function createArchiveRouteParams({
 
 export function parseArchiveRouteParams(params = new URLSearchParams()) {
   const sortField = params.get("sort") || "updatedAt";
+  const filterStatus = params.get("status") || "all";
   return {
     searchQuery: params.get("q") || "",
     filterType: params.get("type") || "all",
     filterSubtype: params.get("subtype") || "all",
+    filterStatus: ARCHIVE_STATUS_FILTERS.has(filterStatus) ? filterStatus : "all",
     showDeleted: params.get("deleted") === "1",
     showFavoritesOnly: params.get("favorites") === "1",
     sortField: ARCHIVE_SORT_FIELDS.has(sortField) ? sortField : "updatedAt",

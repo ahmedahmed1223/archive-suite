@@ -1,5 +1,8 @@
+import { deriveInitialItemWorkflowStatus } from "../archive/itemStatus.js";
+
 export function createVideoItemValue(partial = {}) {
   const now = new Date().toISOString();
+  const tags = parseVideoTags(partial.tags);
   return {
     id: partial.id || `video_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
     type: partial.type || "",
@@ -10,11 +13,14 @@ export function createVideoItemValue(partial = {}) {
     thumbnail: partial.thumbnail || "",
     metadata: partial.metadata && typeof partial.metadata === "object" ? partial.metadata : {},
     fieldAcl: partial.fieldAcl && typeof partial.fieldAcl === "object" ? partial.fieldAcl : {},
-    tags: parseVideoTags(partial.tags),
+    tags,
     notes: String(partial.notes || "").trim(),
     isFavorite: !!partial.isFavorite,
     isDeleted: !!partial.isDeleted,
     version: partial.version || 1,
+    workflowStatus: deriveInitialItemWorkflowStatus({ ...partial, tags }),
+    ...(partial.workflowDueDate ? { workflowDueDate: partial.workflowDueDate } : {}),
+    ...(Array.isArray(partial.workflowHistory) ? { workflowHistory: partial.workflowHistory } : {}),
     // Sync metadata is owned by stampSyncMetadata in the slice — we
     // only seed safe defaults here so brand-new items have at least
     // an empty trail before they reach the slice's stamp call.

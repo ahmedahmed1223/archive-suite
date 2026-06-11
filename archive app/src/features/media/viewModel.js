@@ -139,6 +139,58 @@ export function selectSmartThumbnailSecond(probe = {}) {
   return Number(Math.max(1, Math.min(duration - 0.25, duration * 0.1)).toFixed(3));
 }
 
+export function buildTimeBookmarkMarkers(bookmarks = [], durationSec = 0) {
+  const duration = Number(durationSec);
+  if (!Number.isFinite(duration) || duration <= 0) return [];
+
+  return (Array.isArray(bookmarks) ? bookmarks : [])
+    .map((bookmark) => {
+      const time = Number(bookmark?.timestamp ?? bookmark?.time);
+      if (!Number.isFinite(time) || time < 0 || time > duration) return null;
+      return {
+        id: String(bookmark.id || `${time}`),
+        time,
+        label: String(bookmark.label || bookmark.title || secondsToClock(time)),
+        percent: Number(((time / duration) * 100).toFixed(3))
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.time - b.time);
+}
+
+function truncateBookmarkTitle(text = "", max = 52) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, Math.max(0, max - 3)).trim()}...`;
+}
+
+export function createTranscriptBookmarkDraft({ time = 0, segments = [] } = {}) {
+  const seconds = Number(time);
+  const candidates = (Array.isArray(segments) ? segments : [])
+    .map((segment, fallbackIndex) => ({
+      ...segment,
+      index: segment.index ?? fallbackIndex,
+      seconds: Number(segment.seconds)
+    }))
+    .filter((segment) => Number.isFinite(segment.seconds) && String(segment.text || "").trim())
+    .sort((a, b) => a.seconds - b.seconds);
+  if (!candidates.length) return null;
+
+  const target = candidates.reduce((active, segment) => {
+    if (segment.seconds <= seconds) return segment;
+    return active;
+  }, candidates[0].seconds > seconds ? candidates[0] : null);
+  if (!target) return null;
+
+  const text = String(target.text || "").replace(/\s+/g, " ").trim();
+  const timecode = target.timecode || secondsToClock(target.seconds);
+  return {
+    title: truncateBookmarkTitle(text),
+    note: `[${timecode}] ${text}`,
+    transcriptSegmentIndex: target.index
+  };
+}
+
 export function createMediaMetadataPatch({
   probe,
   thumbnailKey,

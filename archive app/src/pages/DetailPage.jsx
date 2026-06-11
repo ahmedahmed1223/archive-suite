@@ -74,13 +74,14 @@ import {
   canUseServerMediaTools,
   createMediaMetadataPatch,
   deriveMediaSourceKey,
+  createTranscriptBookmarkDraft,
   formatMediaJobStatus,
   mediaProbeToDisplayRows,
   mergeMediaJobs,
   secondsToClock,
   selectSmartThumbnailSecond
 } from "../features/media/viewModel.js";
-import { TimeBookmarkButton, TimeBookmarkList } from "../components/media/TimeBookmarks.jsx";
+import { TimeBookmarkButton, TimeBookmarkList, TimeBookmarkTimelineMarkers } from "../components/media/TimeBookmarks.jsx";
 
 
 function fieldKey(field) {
@@ -514,6 +515,7 @@ export function DetailPage() {
     [mediaPath, runtimeProtocol]
   );
   const [previewRuntimeState, setPreviewRuntimeState] = React.useState(MEDIA_PREVIEW_STATUS.LOADING);
+  const [playbackDuration, setPlaybackDuration] = React.useState(0);
   const itemBookmarks = React.useMemo(
     () => (bookmarks || []).filter((bookmark) => bookmark.itemId === item?.id).sort((a, b) => a.timestamp - b.timestamp),
     [bookmarks, item?.id]
@@ -541,6 +543,7 @@ export function DetailPage() {
       ? "أدوات ffmpeg تحتاج خادمًا سحابيًا وتسجيل دخول بدور editor/admin."
       : "";
   const mediaInfo = item?.metadata?.media || {};
+  const bookmarkDuration = playbackDuration || Number(mediaInfo.durationSec || item?.duration || 0);
   const mediaRows = React.useMemo(() => mediaProbeToDisplayRows(mediaInfo), [mediaInfo]);
 
   const makeMediaClient = React.useCallback(() => createMediaClient({
@@ -922,7 +925,10 @@ export function DetailPage() {
               src: previewSource,
               controls: true,
               onCanPlay: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.PLAYABLE),
-              onLoadedMetadata: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.PLAYABLE),
+              onLoadedMetadata: (event) => {
+                setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.PLAYABLE);
+                setPlaybackDuration(event.currentTarget.duration || 0);
+              },
               onLoadStart: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.LOADING),
               onTimeUpdate: (event) => setPlaybackTime(event.currentTarget.currentTime || 0),
               onSeeked: (event) => setPlaybackTime(event.currentTarget.currentTime || 0),
@@ -955,7 +961,14 @@ export function DetailPage() {
           ] }),
           jsx(TimeBookmarkButton, {
             getTime: () => videoRef.current?.currentTime ?? 0,
+            getSuggestion: (time) => createTranscriptBookmarkDraft({ time, segments: transcriptSegments }),
             onSave: addTimeBookmark
+          }),
+          jsx(TimeBookmarkTimelineMarkers, {
+            bookmarks: itemBookmarks,
+            duration: bookmarkDuration,
+            currentTime: playbackTime,
+            onSeek: seekToBookmark
           }),
           jsx(TimeBookmarkList, {
             bookmarks: itemBookmarks.map((bookmark) => ({

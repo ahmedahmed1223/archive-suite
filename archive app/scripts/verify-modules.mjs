@@ -1366,6 +1366,20 @@ await runAsync("store action smoke tests", async () => {
   const updated = await useAppStore.getState().updateVideoItem({ ...video, title: "فيديو معدل" });
   assert.equal(updated.title, "فيديو معدل");
 
+  const bookmark = await useAppStore.getState().addBookmark({
+    itemId: video.id,
+    timestamp: -3.4,
+    label: "   ",
+    description: " لقطة مهمة "
+  });
+  assert.equal(bookmark.itemId, video.id);
+  assert.equal(bookmark.timestamp, 0);
+  assert.equal(bookmark.label, "إشارة");
+  assert.equal(bookmark.description, "لقطة مهمة");
+  assert.equal(useAppStore.getState().bookmarks.some((entry) => entry.id === bookmark.id), true);
+  assert.equal(await useAppStore.getState().removeBookmark(bookmark.id), true);
+  assert.equal(useAppStore.getState().bookmarks.some((entry) => entry.id === bookmark.id), false);
+
   const comment = await useAppStore.getState().addItemComment(video.id, "ملاحظة إنتاج");
   assert.equal(comment.targetId, video.id);
   assert.equal(getItemComments(useAppStore.getState().auditLogs, video.id).length, 1);
@@ -2788,7 +2802,9 @@ import {
   secondsToClock, transcriptToText, resolveTranscribeProvider,
   availableTranscribeModes, sanitizeUploadKey, isAudioVideo, describeFileList,
   buildFileBrowserRows, filterFileBrowserRows,
+  buildTimeBookmarkMarkers,
   canUseServerMediaTools, createMediaMetadataPatch, deriveMediaSourceKey,
+  createTranscriptBookmarkDraft,
   formatMediaJobStatus, mergeMediaJobs, mediaProbeToDisplayRows,
   selectSmartThumbnailSecond
 } from "../src/features/media/viewModel.js";
@@ -2852,6 +2868,29 @@ run("media toolkit view model — source keys, metadata patch, jobs", () => {
   assert.equal(deriveMediaSourceKey({ metadata: { fileKey: "files/b.mp4" } }), "files/b.mp4");
   assert.equal(deriveMediaSourceKey({ metadata: { localFile: { path: "C:/Videos/a.mp4" } } }), "");
   assert.equal(selectSmartThumbnailSecond({ durationSec: 90 }), 9);
+  assert.deepEqual(buildTimeBookmarkMarkers([
+    { id: "b1", timestamp: 5, label: "Intro" },
+    { id: "b2", time: 50, title: "Middle" },
+    { id: "bad", timestamp: -10, label: "Bad" },
+    { id: "late", timestamp: 120, label: "Late" }
+  ], 100), [
+    { id: "b1", time: 5, label: "Intro", percent: 5 },
+    { id: "b2", time: 50, label: "Middle", percent: 50 }
+  ]);
+  assert.deepEqual(buildTimeBookmarkMarkers([{ id: "b1", timestamp: 5 }], 0), []);
+  assert.deepEqual(createTranscriptBookmarkDraft({
+    time: 65,
+    segments: [
+      { index: 0, seconds: 0, timecode: "0:00", text: "مقدمة قصيرة" },
+      { index: 1, seconds: 60, timecode: "1:00", text: "هذه فقرة طويلة من التفريغ يجب أن تتحول إلى عنوان مختصر وملاحظة مرتبطة بالعلامة الزمنية." },
+      { index: 2, seconds: 120, timecode: "2:00", text: "فقرة لاحقة" }
+    ]
+  }), {
+    title: "هذه فقرة طويلة من التفريغ يجب أن تتحول إلى عنوان...",
+    note: "[1:00] هذه فقرة طويلة من التفريغ يجب أن تتحول إلى عنوان مختصر وملاحظة مرتبطة بالعلامة الزمنية.",
+    transcriptSegmentIndex: 1
+  });
+  assert.equal(createTranscriptBookmarkDraft({ time: 3, segments: [] }), null);
 
   const patch = createMediaMetadataPatch({
     probe: { durationSec: 90, width: 1920, height: 1080, codec: "h264", bitrate: 800000, hasAudio: true },
@@ -3002,3 +3041,5 @@ console.log("ok: motion stagger capped");
   assert.equal(hasSidebarLayoutDraftChanges(collapsed, getDefaultSidebarLayout(ids)), true);
   console.log("ok: sidebar layout model (pin/hide/reorder/collapse)");
 }
+
+process.exit(0);

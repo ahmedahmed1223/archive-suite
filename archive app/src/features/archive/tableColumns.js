@@ -13,6 +13,7 @@
  */
 export const ARCHIVE_TABLE_COLUMNS = [
   { id: "title", label: "العنوان", default: true, width: 280, minWidth: 180 },
+  { id: "status", label: "الحالة", default: true, width: 130, minWidth: 100 },
   { id: "type", label: "النوع", default: true, width: 160, minWidth: 100 },
   { id: "file", label: "الملف", default: true, width: 200, minWidth: 120 },
   { id: "tags", label: "الوسوم", default: true, width: 180, minWidth: 120 },

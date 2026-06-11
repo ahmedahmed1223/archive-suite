@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getItemState,
   getItemStateMeta,
+  deriveInitialItemWorkflowStatus,
   getAvailableTransitions,
   isOverdue,
 } from "./itemStatus.js";
@@ -11,6 +12,20 @@ describe("getItemState", () => {
     expect(getItemState({})).toBe("draft");
     expect(getItemState({ workflowStatus: "bogus" })).toBe("draft");
     expect(getItemState({ workflowStatus: "review" })).toBe("review");
+  });
+
+  it("derives visible review/archived states for untagged or deleted items", () => {
+    expect(getItemState({ tags: [] })).toBe("review");
+    expect(getItemState({ tags: ["مكتمل"] })).toBe("draft");
+    expect(getItemState({ isDeleted: true, tags: ["قديم"] })).toBe("archived");
+  });
+});
+
+describe("deriveInitialItemWorkflowStatus", () => {
+  it("preserves explicit valid state and suggests review for new untagged items", () => {
+    expect(deriveInitialItemWorkflowStatus({ workflowStatus: "editing", tags: [] })).toBe("editing");
+    expect(deriveInitialItemWorkflowStatus({ tags: [] })).toBe("review");
+    expect(deriveInitialItemWorkflowStatus({ tags: ["منظم"] })).toBe("draft");
   });
 });
 

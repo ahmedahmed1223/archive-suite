@@ -147,10 +147,10 @@ export function InlineCellEditor({
     });
   }
 
-  const commit = () => {
+  const commit = (meta = {}) => {
     if (committedRef.current) return;
     committedRef.current = true;
-    onSave?.(readValue(fieldType, draft));
+    onSave?.(readValue(fieldType, draft), meta);
   };
 
   const cancel = () => {
@@ -163,6 +163,9 @@ export function InlineCellEditor({
     if (event.key === "Enter" && fieldType !== "select") {
       event.preventDefault();
       commit();
+    } else if (event.key === "Tab") {
+      event.preventDefault();
+      commit({ navigationDirection: event.shiftKey ? "previous" : "next" });
     } else if (event.key === "Escape") {
       event.preventDefault();
       cancel();
