@@ -28,6 +28,49 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// ── Web Push (§20.2) ─────────────────────────────────────────────────────────
+// Payload shape (JSON from archive-server webPushService):
+//   { title, body, url, tag, type }
+// `tag` groups similar alerts so the OS replaces instead of stacking them.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { title: event.data ? event.data.text() : "إشعار جديد" };
+  }
+  const title = data.title || "Archive Suite";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || "",
+      tag: data.tag || data.type || "archive",
+      renotify: false,
+      dir: "rtl",
+      lang: "ar",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: data.url || "/" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification?.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+      // Focus an existing app window when one is open; otherwise open a new one.
+      for (const client of windows) {
+        if ("focus" in client) {
+          client.navigate(url).catch(() => {});
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
