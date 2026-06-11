@@ -1949,8 +1949,23 @@ export function createApiServer({
           return send(res, 403, { ok: false, error: "هذا المخزن غير متاح للقراءة العامة." });
         }
         const limit = Math.min(Math.max(Number(params.get("limit")) || 50, 1), 200);
+        const cursor = params.get("cursor") || "";
         const all = await resolveStorage().getAll(store).catch(() => []);
-        return send(res, 200, { ok: true, store, count: all.length, records: all.slice(0, limit) });
+        // Stable keyset pagination: sort by id, return the page strictly after
+        // `cursor`. nextCursor is the last id of the page when more remain.
+        const sorted = [...all].sort((a, b) =>
+          String(a?.id ?? a?.uid ?? "").localeCompare(String(b?.id ?? b?.uid ?? ""))
+        );
+        const startIdx = cursor
+          ? sorted.findIndex((r) => String(r?.id ?? r?.uid ?? "") > cursor)
+          : 0;
+        const begin = startIdx === -1 ? sorted.length : startIdx;
+        const page = sorted.slice(begin, begin + limit);
+        const hasMore = begin + limit < sorted.length;
+        const nextCursor = hasMore && page.length
+          ? String(page[page.length - 1]?.id ?? page[page.length - 1]?.uid ?? "")
+          : null;
+        return send(res, 200, { ok: true, store, count: all.length, records: page, nextCursor });
       } catch (err) {
         return send(res, 500, { ok: false, error: "failed" });
       }
