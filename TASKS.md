@@ -2156,9 +2156,10 @@
 
 ### 20.6 P2 — البحث الصوتي (Web Speech API)
 
-- [ ] `[P2]` ⏱️M **السماح بالبحث الصوتي: المستخدم ينطق "محاضرات يونيو 2026" أو "افتح هذا الملف" فيُنفَّذ البحث/الأمر** — عبر Web Speech API (SpeechRecognition) مع دعم العربية.
+- [x] `[P2]` ⏱️M **السماح بالبحث الصوتي: المستخدم ينطق "محاضرات يونيو 2026" أو "افتح هذا الملف" فيُنفَّذ البحث/الأمر** — عبر Web Speech API (SpeechRecognition) مع دعم العربية.
   - **التنفيذ:** زر ميكروفون في شريط البحث + لوحة الأوامر (§17.2)؛ تحويل الكلام لاستعلام بحث (مع التطبيع العربي في `archive-core/src/utils/arabicNormalize.js`)؛ أوامر صوتية بسيطة (افتح/ابحث/أضف)؛ fallback مهذّب حيث لا يتوفر SpeechRecognition؛ احترام إذن الميكروفون وعدم التسجيل الدائم.
   - **الملفات:** `archive app/src/features/search/voiceSearch.js` (جديد)، `archive app/src/components/search/VoiceSearchButton.jsx` (جديد)، تكامل `SearchPage.jsx`.
+  - ✅ **مُنجز ومتحقق (2026-06-12):** أضيفت وحدة `voiceSearch.js` لاكتشاف `SpeechRecognition`/`webkitSpeechRecognition`، استخراج النص من نتائج المتصفح، وتطبيع أوامر عربية بسيطة (`ابحث`/`افتح`/`أضف`) إلى intents قابلة للتنفيذ. أضيف زر `VoiceSearchButton` داخل شريط بحث `SearchPage`، يعمل بلغة `ar-SA`، لا يسجل إلا عند الضغط، ويعرض fallback عبر toast عند غياب الدعم أو رفض إذن الميكروفون. أوامر البحث تضبط الاستعلام، أمر الفتح يفتح النتيجة الوحيدة أو يضيّق النتائج، وأمر الإضافة ينتقل لصفحة الإضافة. التحقق: اختبار RED/GREEN جديدان (`voiceSearch.test.js`, `VoiceSearchButton.test.jsx`) + حارس `verify-modules` + `pnpm --filter @archive/app run test` (111/111) + `pnpm --filter @archive/app run verify` + `pnpm --filter @archive/app run build:spa`.
   - الجهد: 1-2 أسبوع.
 
 ### 20.7 P1 — إصلاح/ترقية خريطة العلاقات (Graph View بـ cytoscape.js)

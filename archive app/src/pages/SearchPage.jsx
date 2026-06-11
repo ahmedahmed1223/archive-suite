@@ -37,6 +37,7 @@ import {
   createArchiveRouteParams
 } from "../features/archive/viewModel.js";
 import { SavedViewsBar } from "../features/archive/SavedViewsBar.jsx";
+import { VoiceSearchButton } from "../components/search/VoiceSearchButton.jsx";
 import {
   addSavedView,
   captureCurrentFilters,
@@ -181,6 +182,7 @@ export function SearchPage() {
   const [pageSize, setPageSize] = React.useState(initialRouteState.pageSize || 24);
   const [resultMode, setResultMode] = React.useState(initialRouteState.viewMode || "list");
   const [itemSize, setItemSize] = React.useState(initialRouteState.itemSize || "compact");
+  const searchInputRef = React.useRef(null);
   const filtersRef = React.useRef(null);
   const skipInitialPageReset = React.useRef(true);
   const isApplyingRouteState = React.useRef(false);
@@ -290,6 +292,52 @@ export function SearchPage() {
     setCurrentPage?.("detail");
   };
 
+  const handleVoiceIntent = (intent) => {
+    if (intent.kind === "add") {
+      showToast?.("تم التقاط أمر إضافة مادة جديدة.", "info");
+      setCurrentPage?.("add");
+      return;
+    }
+
+    const nextQuery = intent.query || intent.rawTranscript || "";
+    setQuery(nextQuery);
+    setPage(1);
+    searchInputRef.current?.focus?.();
+
+    if (intent.kind === "open") {
+      const matches = getSearchResults({
+        videoItems,
+        query: nextQuery,
+        type,
+        subtype,
+        favoritesOnly,
+        missingFieldsOnly,
+        dateFrom,
+        dateTo
+      });
+      if (matches.length === 1) {
+        openItem(matches[0]);
+        showToast?.("تم فتح النتيجة المطابقة للأمر الصوتي.", "success");
+      } else {
+        showToast?.(matches.length ? "تم تضييق النتائج صوتياً. اختر المادة المطلوبة." : "لم أجد مادة مطابقة للأمر الصوتي.", "info");
+      }
+      return;
+    }
+
+    showToast?.(nextQuery ? `تم البحث صوتياً عن: ${nextQuery}` : "لم ألتقط عبارة بحث واضحة.", nextQuery ? "success" : "warning");
+  };
+
+  const handleVoiceUnsupported = () => {
+    showToast?.("البحث الصوتي غير متاح في هذا المتصفح. استخدم Chrome أو Edge مع إذن الميكروفون.", "warning");
+  };
+
+  const handleVoiceError = (error) => {
+    const message = error === "not-allowed" || error === "service-not-allowed"
+      ? "لم يُمنح إذن الميكروفون للبحث الصوتي."
+      : "تعذر التقاط الصوت. جرّب مرة أخرى من زر الميكروفون.";
+    showToast?.(message, "warning");
+  };
+
   const openInArchive = () => {
     setSearchQuery?.(query);
     setFilterType?.(type);
@@ -397,12 +445,21 @@ export function SearchPage() {
                 children: [
                   jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
                   jsx("input", {
+                    ref: searchInputRef,
                     value: query,
                     onChange: (event) => setQuery(event.target.value),
                     placeholder: "ابحث في العنوان أو الوسوم أو الملاحظات",
                     "aria-label": "كلمات البحث",
                     type: "search",
-                    className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none focus:border-emerald-500/50"
+                    className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-12 pr-10 text-sm text-white outline-none focus:border-emerald-500/50"
+                  }),
+                  jsx("span", {
+                    className: "absolute left-2 top-1/2 -translate-y-1/2",
+                    children: jsx(VoiceSearchButton, {
+                      onIntent: handleVoiceIntent,
+                      onUnsupported: handleVoiceUnsupported,
+                      onError: handleVoiceError
+                    })
                   })
                 ]
               }),
