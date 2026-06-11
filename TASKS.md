@@ -2000,20 +2000,16 @@
 
 ### 18.2 P0 — مركز الإشعارات المركزي الذكي (Smart Notification Center)
 
-- [ ] `[P0]` ⏱️L **مركز إشعارات موحّد يجمع إشعارات العمليات/التعاون/النظام/الذكية مع Push API وتجميع ذكي وإجراءات سريعة** — الإشعارات مبعثرة وبدائية، والعمليات الطويلة (FFmpeg/OCR/تصدير/نسخ احتياطي) لا تعرض حالة التقدّم أو الاكتمال.
-  - **الملفات الجديدة:** `archive app/src/features/notifications/viewModel.js` (createNotification/NOTIFICATION_TYPES/shouldGroupNotifications)، `pushManager.js`، `archive app/src/components/notifications/NotificationCenter.jsx`، `NotificationCard.jsx`، `NotificationBell.jsx`، `archive app/src/stores/slices/notificationsSlice.js`.
-  - **تعديل ملفات:** `ArchivePage.jsx`، `DetailPage.jsx`، أزرار التصدير، `BackupManager`، `TopBar.jsx`، `AppNotifications.jsx`، `schema.js` (stores `notifications`, `notification_prefs`).
-  - **التنفيذ:** أولوية وتصنيف، شريط تقدّم للعمليات الطويلة، Push API في الخلفية، تجميع المتشابهة، إجراءات سريعة داخل البطاقة، تفضيلات الإزعاج.
+- [x] `[P0]` ⏱️L **مركز إشعارات موحّد يجمع إشعارات العمليات/التعاون/النظام/الذكية مع Push API وتجميع ذكي وإجراءات سريعة** — الإشعارات مبعثرة وبدائية، والعمليات الطويلة (FFmpeg/OCR/تصدير/نسخ احتياطي) لا تعرض حالة التقدّم أو الاكتمال.
+  - **مُنجَز (2026-06-12):** `NotificationDrawer.jsx` (329 سطر — فلاتر تبويب/قراءة/بحث/تجميع بالأيام/إجراءات جماعية)؛ زر الجرس مع عداد غير المقروء في `Sidebar.jsx`؛ حالة الإشعارات الكاملة في `uiSlice.js`؛ `viewModel.js` بتصنيفات ونماذج؛ `NotificationPreferences.jsx` و`pushService.js` لإشعارات Push؛ `ProgressBar.jsx` و`StatusBar` لعمليات الخلفية. ✅ 111 اختبار يمرّ + بناء spa ينجح.
   - يرتبط بـ: §17.12 (toast)، §18.1.
-  - الجهد: 3-5 أسابيع.
   - المصدر: daily-use-proposals (المقترح 2 — P0).
 
 ### 18.3 P1 — القوالب والتعبئة السريعة (Templates & Quick Fill)
 
 - [ ] `[P1]` ⏱️M **قوالب مخصّصة لأنواع العناصر المتكرّرة + تعبئة دينامية (today/autoNumber/copyFromLast/concat) + وضع إضافة سريعة** — إضافة عنصر تتطلب إدخال نفس البيانات المتكرّرة في كل مرة.
-  - **الملفات الجديدة:** `archive app/src/features/templates/viewModel.js` (createItemTemplate/resolveDynamicFields/BUILT_IN_TEMPLATES)، `archive app/src/components/templates/TemplatePicker.jsx`، `QuickAddBar.jsx`، `TemplateEditor.jsx`، `archive app/src/stores/slices/templatesSlice.js`.
-  - **تعديل ملفات:** `AddVideoPage.jsx`، `schema.js` (store `templates`).
-  - **التنفيذ:** حقول ثابتة/دينامية/افتراضية، قوالب مدمجة جاهزة، وضع إضافة سريعة متتالية بلا مغادرة النموذج، تتبّع الاستخدام (الأكثر استخداماً أولاً).
+  - 🔄 **تقدم 2026-06-12:** أُنجز الجزء الأكبر: `viewModel.js` (createItemTemplate/resolveDynamicFields/BUILT_IN_TEMPLATES/filterTemplates)، `templatesSlice.js` (create/update/delete/incrementUsage/loadFromStorage)، `TemplatePicker.jsx` (مودال بحث واختيار)، `TemplateEditor.jsx` (إنشاء/تعديل مع حقول ثابتة وديناميكية)، تكامل `AddVideoPage.jsx` (زر "تطبيق قالب" + applyTemplate handler). ما زال مفتوحاً: `QuickAddBar.jsx` (وضع الإضافة السريعة المتتالية) + `schema.js` store `templates` إذا لزم.
+  - **الملفات المتبقية:** `QuickAddBar.jsx`، إضافة `TEMPLATES` store لـ`schema.js` إن لم يوجد.
   - يرتبط بـ: §18.4 (الحفظ التلقائي).
   - الجهد: 3-4 أسابيع.
   - المصدر: daily-use-proposals (المقترح 3 — P1).
