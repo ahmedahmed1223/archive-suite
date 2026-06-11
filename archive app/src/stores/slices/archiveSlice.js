@@ -320,6 +320,13 @@ export function createArchiveActions({ set, get, getAuthStore }) {
           // never block the update on activity logging
         }
       }
+      if (!options.skipUndo && previous) {
+        undoRedoManager.push({
+          label: `تعديل ${updated.title || "عنصر"}`,
+          undo: () => get().updateVideoItem(previous, { skipUndo: true, skipActivityLog: true }),
+          redo: () => get().updateVideoItem(updated, { skipUndo: true, skipActivityLog: true })
+        });
+      }
       return updated;
     },
     deleteVideoItem: async (id, options = {}) => {
