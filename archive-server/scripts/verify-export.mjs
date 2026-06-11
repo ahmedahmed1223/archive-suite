@@ -5,6 +5,8 @@ import path from "node:path";
 
 import { buildFfmpegArgs, ExportError } from "../src/export/ffmpegPlan.js";
 import { exportTimelineToMp4 } from "../src/export/mp4.js";
+import { exportRecords } from "../src/export/exportService.js";
+import { recordToBibtex, recordToRis, makeCiteKey } from "../src/export/citationExport.js";
 import { createApiServer } from "../src/api/server.js";
 import { signJwt } from "../src/auth/jwt.js";
 
@@ -111,6 +113,82 @@ run("HTTP: /api/projects/export streams MP4 (auth + injected exporter)", async (
   } finally {
     await new Promise((r) => server.close(r));
   }
+});
+
+// ── Citation export (§20.4) ──────────────────────────────────────────────────
+
+const citationRecord = {
+  id: "rec_42",
+  data: {
+    title: "تاريخ الأرشيف الرقمي",
+    type: "document",
+    author: "أحمد",
+    tags: ["أرشفة", "بحث"],
+    project: "مشروع التوثيق",
+    summary: "ملخص قصير.",
+    fileUrl: "https://archive.example/rec_42",
+    createdAt: "2026-03-15T10:00:00.000Z",
+  },
+};
+
+run("recordToBibtex — entry type, cite key, escaped fields, year from createdAt", () => {
+  const bib = recordToBibtex(citationRecord);
+  assert.match(bib, /^@misc\{/);
+  assert.match(bib, /title = \{تاريخ الأرشيف الرقمي\}/);
+  assert.match(bib, /author = \{أحمد\}/);
+  assert.match(bib, /year = \{2026\}/);
+  assert.match(bib, /keywords = \{أرشفة, بحث\}/);
+  assert.match(bib, /url = \{https:\/\/archive\.example\/rec_42\}/);
+  assert.match(bib, /note = \{Archive ID: rec_42\}/);
+});
+
+run("recordToBibtex — escapes BibTeX special characters", () => {
+  const bib = recordToBibtex({ id: "x", data: { title: "A & B {100%}", createdAt: "2025" } });
+  assert.match(bib, /A \\& B \\\{100\\%\\\}/);
+});
+
+run("makeCiteKey — ASCII-safe, stable from title+year+id", () => {
+  const key = makeCiteKey({ title: "تاريخ", year: "2026", id: "rec_42" });
+  assert.match(key, /2026/);
+  assert.match(key, /rec42$/);
+  assert.doesNotMatch(key, /\s/);
+});
+
+run("recordToRis — TY/TI/AU/PY/KW/UR/ER lines", () => {
+  const ris = recordToRis(citationRecord);
+  assert.match(ris, /^TY {2}- GEN/m);
+  assert.match(ris, /TI {2}- تاريخ الأرشيف الرقمي/);
+  assert.match(ris, /AU {2}- أحمد/);
+  assert.match(ris, /PY {2}- 2026/);
+  assert.match(ris, /KW {2}- أرشفة/);
+  assert.match(ris, /KW {2}- بحث/);
+  assert.match(ris, /UR {2}- https:\/\/archive\.example\/rec_42/);
+  assert.match(ris, /ER {2}- $/m);
+});
+
+run("exportRecords — bibtex/ris formats produce the right content type + filename", async () => {
+  const provider = { async getAll() { return [citationRecord]; } };
+  const bib = await exportRecords(provider, { format: "bibtex", store: "video_items" });
+  assert.match(bib.contentType, /x-bibtex/);
+  assert.match(bib.filename, /\.bib$/);
+  assert.match(bib.buffer.toString("utf-8"), /@misc\{/);
+
+  const ris = await exportRecords(provider, { format: "ris", store: "video_items" });
+  assert.match(ris.contentType, /x-research-info-systems/);
+  assert.match(ris.filename, /\.ris$/);
+  assert.match(ris.buffer.toString("utf-8"), /TY {2}- GEN/);
+});
+
+run("exportRecords — bibtex skips soft-deleted records", async () => {
+  const provider = {
+    async getAll() {
+      return [citationRecord, { id: "del", data: { title: "محذوف", isDeleted: true, createdAt: "2025" } }];
+    },
+  };
+  const bib = await exportRecords(provider, { format: "bibtex", store: "video_items" });
+  const text = bib.buffer.toString("utf-8");
+  assert.match(text, /تاريخ الأرشيف الرقمي/);
+  assert.doesNotMatch(text, /محذوف/);
 });
 
 process.on("beforeExit", () => {

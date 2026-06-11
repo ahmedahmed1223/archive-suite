@@ -2139,6 +2139,7 @@
 ### 20.4 P1 — تصدير متقدّم: PDF منسّق + قوالب Excel + صيغ أكاديمية
 
 - [ ] `[P1]` ⏱️L **قدرة تصدير منسّقة: تقارير PDF بهوية بصرية (pdf-lib)، قوالب Excel قابلة للتخصيص، وصيغ BibTeX/RIS أكاديمية** — التصدير الحالي CSV/Excel خام عبر XLSX فقط.
+  - 🔄 **تقدم 2026-06-11 (جزء الاستشهادات):** أُنجزت صيغتا BibTeX/RIS عبر `archive-server/src/export/citationExport.js` (دوال نقية: `recordToBibtex`/`recordToRis`/`recordsTo*`/`makeCiteKey`، اشتقاق السنة من `createdAt`، تهريب أحرف BibTeX الخاصة مع إبقاء URL/ID خامًا، تخطّي المحذوف). مدموجتان في `exportRecords` وقائمة سماح `/api/export` (`csv,xlsx,zip,bibtex,ris`). تحقق: 7 اختبارات في `verify-export.mjs` (16/16 مرّت). المتبقي من البند: تقارير PDF بهوية بصرية (pdf-lib + خط عربي) وقوالب Excel قابلة للتخصيص.
   - **التنفيذ:** تقارير PDF (غلاف + جداول منسّقة + دعم RTL/خط عربي مدمج) عبر مكتبة pdf خفيفة (`pdf-lib`)؛ قوالب Excel معرّفة مسبقاً (أعمدة/تنسيق/شعار) فوق `xlsx` الموجودة؛ تصدير مراجع BibTeX/RIS للاستخدام الأكاديمي (تحويل حقول العنصر إلى مدخلات استشهاد).
   - **الملفات:** `archive-server/src/export/pdfReport.js` (جديد)، `archive-server/src/export/citationExport.js` (جديد)، توسعة `archive-server/src/export/exportService.js`، خيارات في `DataCenterPage.jsx`/`ReportsPage.jsx`.
   - **تنبيه:** فحص الخط العربي المدمج (حجم/ترخيص)؛ تعقيم إدخال المستخدم في حقول PDF.

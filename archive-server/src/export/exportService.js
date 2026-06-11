@@ -4,6 +4,7 @@
  * Supports: csv, xlsx, zip (metadata JSON + file attachments stub)
  */
 import { utils as XLSXUtils, write as XLSXWrite } from "xlsx";
+import { recordsToBibtex, recordsToRis } from "./citationExport.js";
 
 /** Build flat row from a storage record for CSV/XLSX export */
 function recordToRow(record) {
@@ -35,6 +36,23 @@ export async function exportRecords(provider, { format = "csv", store = "videoIt
 
   // Exclude deleted records
   records = records.filter(r => !(r.data?.isDeleted ?? r.isDeleted));
+
+  // Academic citation formats operate on the raw records, not the flat rows.
+  if (format === "bibtex") {
+    return {
+      contentType: "application/x-bibtex; charset=utf-8",
+      filename: `archive-citations-${Date.now()}.bib`,
+      buffer: Buffer.from(recordsToBibtex(records), "utf-8"),
+    };
+  }
+
+  if (format === "ris") {
+    return {
+      contentType: "application/x-research-info-systems; charset=utf-8",
+      filename: `archive-citations-${Date.now()}.ris`,
+      buffer: Buffer.from(recordsToRis(records), "utf-8"),
+    };
+  }
 
   const rows = records.map(recordToRow);
 
