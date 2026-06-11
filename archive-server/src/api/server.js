@@ -38,9 +38,9 @@ import { handleOcr } from "./ocrHandler.js";
 import { exportRecords } from "../export/exportService.js";
 import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
 import bcrypt from "bcryptjs";
-import { sendPasswordResetEmail, sendMail } from "../auth/emailService.js";
+import { sendPasswordResetEmail, sendMail as defaultSendMail } from "../auth/emailService.js";
 import { createResetToken, consumeResetToken } from "../auth/resetTokenStore.js";
-import { notifyRecordShared } from "../notifications/notificationService.js";
+import { notifyRecordShared, notifyUploadComplete } from "../notifications/notificationService.js";
 
 // Minimal dependency-free HTTP server exposing the StorageProvider port to the
 // SPA over a single RPC endpoint. Node's built-in http keeps the runtime image
@@ -240,6 +240,7 @@ export function createApiServer({
   loadConfigFile = loadServerConfigFile,
   saveConfig = saveServerConfigFile,
   testDbConnection = testDatabaseConnection,
+  notificationSendMail = defaultSendMail,
   version = process.env.npm_package_version || process.env.APP_VERSION || "0.0.0",
   dropboxOAuthFetch
 } = {}) {
@@ -1000,7 +1001,7 @@ export function createApiServer({
           const senderClaims = (() => { try { return verifyJwt(bearerToken(req), resolvedAuthSecret); } catch { return null; } })();
           notifyRecordShared({
             prisma,
-            sendMail,
+            sendMail: notificationSendMail,
             sharedWithUserId: body.sharedWithUserId,
             sharedByUsername: senderClaims?.username,
             recordTitle: title,
@@ -1202,7 +1203,8 @@ export function createApiServer({
     }
 
     if (url.startsWith("/api/files/")) {
-      if (!requireAuth(req, res)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
       const key = decodeURIComponent(url.slice("/api/files/".length));
       try {
         const files = resolveFileStore();
@@ -1231,6 +1233,12 @@ export function createApiServer({
           }
 
           const result = await files.putBlob(key, bytes, { contentType: declaredMime });
+          notifyUploadComplete({
+            prisma,
+            sendMail: notificationSendMail,
+            userId: claims.sub,
+            recordTitle: key,
+          });
           return send(res, 200, {
             ok: true,
             result,

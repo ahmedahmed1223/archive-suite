@@ -214,8 +214,9 @@
   - المصدر: uiux-report.
   - ✅ **تم 2026-06-09:** أضيف `.va-sidebar :focus-visible` و`footer :focus-visible` لـ v1-identity.css لتغطية أزرار الشريط الجانبي؛ استُبدل `Pagination` المحلي في `HistoryPage.jsx` بالمشترك `components/common/Pagination.jsx` (a11y كامل + `aria-current` + `totalItems`).
 
-- [ ] `[P3]` ⏱️M **Virtualization لقوائم الموبايل** (>20 عنصرًا) + بنود تجميل منخفضة من تقرير UI/UX (أحجام أيقونات، tooltips، skeletons…).
+- [x] `[P3]` ⏱️M **Virtualization لقوائم الموبايل** (>20 عنصرًا) + بنود تجميل منخفضة من تقرير UI/UX (أحجام أيقونات، tooltips، skeletons…).
   - المصدر: uiux-report.
+  - ✅ **مُنجز ومتحقق (2026-06-11):** `useVirtualList` أصبح يفعّل virtualization عند أكثر من 20 عنصرًا على شاشات الموبايل مع الإبقاء على عتبة سطح المكتب الأكبر، وفحص viewport آمن للـ SSR. أضيف `archive app/src/hooks/useVirtualList.test.js` لتغطية 20/21 عنصرًا على الموبايل وسلوك سطح المكتب، ومرّ `pnpm --filter @archive/app run test`.
 
 ---
 
@@ -229,8 +230,9 @@
   - الملفات: `archive-server/src/api/server.js`.
   - المصدر: audit-report.
 
-- [ ] `[P2]` ⏱️M **jest-axe على مستوى المكوّن** — يكمّل اختبار Playwright a11y الموجود (الذي يعمل على مستوى الصفحة).
+- [x] `[P2]` ⏱️M **jest-axe على مستوى المكوّن** — يكمّل اختبار Playwright a11y الموجود (الذي يعمل على مستوى الصفحة).
   - المصدر: improvement-proposals (FE-2).
+  - ✅ **مُنجز ومتحقق (2026-06-11):** `vitest-axe` مضاف في `archive app/package.json`، والـ matcher مسجل في `archive app/src/test-setup.js`، وتوجد تغطية مكونات في `archive app/src/__tests__/a11y/components.a11y.test.jsx`. تم تشغيل `pnpm --filter @archive/app run test:a11y` بنجاح: 21 اختبارًا مرّ.
 
 - [x] `[P2]` ⏱️M **توسيع تغطية E2E (Playwright)** — حاليًا ملفّا a11y فقط؛ أضف مسارات وظيفية (رفع، بحث، مشاركة).
   - الملفات: `archive app/tests/`.
@@ -339,16 +341,18 @@
 - [ ] `[P2]` ⏱️M **إشعارات البريد الإلكتروني** — إشعار عند: مشاركة سجل، ذكر مستخدم، اكتمال رفع.
   - يستخدم nodemailer الموجود؛ جدول `notification_preferences` لإعدادات كل مستخدم.
 
-- [ ] `[P2]` ⏱️M **Webhooks الصادرة** — إرسال حدث HTTP عند: إضافة/تحديث/حذف سجل.
-  - جدول: `webhooks` (url, events[], secret); `POST /api/v1/webhooks` للإدارة.
+- [x] `[P2]` ⏱️M **Webhooks الصادرة** — إرسال حدث HTTP عند: إضافة/تحديث/حذف سجل.
+  - جدول: `webhooks` (url, events[], secret); `POST /api/webhooks` للإدارة.
   - إعادة المحاولة التلقائية (exponential backoff، 3 مرات).
+  - ✅ **مُنجز ومتحقق (2026-06-11):** يوجد model/migration للـ `webhooks`، وواجهة `WebhooksSettings.jsx`، ومسارات `GET/POST/DELETE /api/webhooks` محمية بالمصادقة، و`fireWebhooks` يرسل `record.created`/`record.updated`/`record.deleted` بتوقيع HMAC وإعادة محاولة. أضيف تحقق صريح في `archive-server/scripts/verify-api.mjs`، ومرّ `pnpm --filter archive-server run verify:api`.
 
 ### و. تحسينات الواجهة
 
 - [ ] `[P2]` ⏱️M **لوحة تحليلات محسّنة** — رسوم بيانية تفاعلية: نمو الأرشيف بالزمن، توزيع الأنواع، أكثر الوسوم استخدامًا.
   - صفحة `DataCenterPage` موجودة (1267 سطر) — توسيع المخططات.
 
-- [ ] `[P2]` ⏱️S **وضع ملء الشاشة للمعاينة** — عرض المستند/الصورة/الفيديو بملء الشاشة مع تنقّل بالأسهم.
+- [x] `[P2]` ⏱️S **وضع ملء الشاشة للمعاينة** — عرض المستند/الصورة/الفيديو بملء الشاشة مع تنقّل بالأسهم.
+  - ✅ **مُنجز ومتحقق (2026-06-11):** أُضيفت معاينة مكبرة في `PreviewPanel` مع `role="dialog"` وزر إغلاق وتوسيع وتنقل سابق/لاحق عبر الأسهم و`Escape` للإغلاق، مع دعم مستند/صورة/فيديو عبر `DocumentViewer` عند الحاجة. أضيف اختبار `archive app/src/features/archive/PreviewPanel.fullscreen.test.jsx`، ومرّ `pnpm --filter @archive/app run test -- src/features/archive/PreviewPanel.fullscreen.test.jsx` و`pnpm --filter @archive/app run test`.
 
 - [ ] `[P3]` ⏱️M **واجهة إدارة API Keys** — إنشاء/إلغاء مفاتيح API لتكامل الخدمات الخارجية.
   - جدول: `api_keys` (hash, name, scopes[], lastUsed, expiresAt).
@@ -2022,6 +2026,7 @@
   - **الملفات الجديدة:** `archive app/src/features/relations/viewModel.js` (createRelation/RELATION_TYPES/getItemRelations/buildRelationsGraph)، `archive app/src/components/relations/RelationsPanel.jsx`، `AddRelationDialog.jsx`، `RelationsGraph.jsx`، `archive app/src/stores/slices/relationsSlice.js`.
   - **تعديل ملفات:** `DetailPage.jsx`، `ArchivePage.jsx`، `schema.js` (store `item_relations`)؛ Prisma `ItemRelation` (unique على [sourceId,targetId,type]، فهارس) للباك-إند.
   - **التنفيذ:** علاقات أحادية/ثنائية الاتجاه، تنقّل سريع بين المرتبطين، رسم علاقات (D3/cytoscape)، إنشاء بالسحب، اكتشاف تلقائي للعلاقات المحتملة (نفس الوسم/المجلد).
+  - 🔄 **تقدم 2026-06-11:** تم ربط `RelationsPanel` و`AddRelationDialog` داخل تبويب العلاقات في `DetailPage.jsx` مع تحميل العلاقات الصريحة من store وإضافة/حذف علاقة، مع الحفاظ على اقتراحات العناصر المرتبطة. أضيف `archive app/src/pages/DetailPage.relations.test.jsx` ومرّ `pnpm --filter @archive/app run test`. ما زال البند مفتوحًا لأن الرسم التفاعلي/السحب/Prisma ItemRelation لم تكتمل بعد.
   - يرتبط بـ: §16 (المجموعات/المجلدات)، §17.3 (السحب)، §11/§12 graph.
   - الجهد: 4-5 أسابيع.
   - المصدر: daily-use-proposals (المقترح 5 — P1).
@@ -2166,4 +2171,3 @@
   - يرتبط بـ: §17.15 (إعادة تصميم الجوال الكاملة — هذه الجولة تصلح العيوب الحرجة قبلها)، §13.3 (BottomTabBar المنجز).
   - الجهد: 1-2 أسبوع.
   - المصدر: توجيه المستخدم (10 يونيو 2026 — دفعة ثانية). منجز: 11 يونيو 2026.
-

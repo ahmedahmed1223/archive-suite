@@ -37,6 +37,8 @@ import { appConfirm } from "../components/common/ConfirmDialog.js";
 import { TagAutocomplete } from "../components/forms/TagAutocomplete.jsx";
 import { MobileActionBar, MotionPage, ResponsiveTabs, UXEmptyState } from "../components/ui/index.js";
 import { RecordVersionHistory } from "../components/records/RecordVersionHistory.jsx";
+import { AddRelationDialog } from "../components/relations/AddRelationDialog.jsx";
+import { RelationsPanel } from "../components/relations/RelationsPanel.jsx";
 import { reportError } from "../utils/errorReporting.js";
 import {
   MEDIA_PREVIEW_STATUS,
@@ -46,6 +48,7 @@ import { getFieldsForSelection, groupCustomFields, getVisibleFields, getMissingR
 import { StarRating } from "../components/common/StarRating.jsx";
 import { computeCompleteness, COMPLETENESS_TIERS } from "../features/archive/completeness.js";
 import { getRelatedItems } from "../features/archive/relatedItems.js";
+import { getItemRelations } from "../features/relations/viewModel.js";
 import { parseTimestampSegments, hasTimestamps } from "../features/archive/timestampLinks.js";
 import { getTranscriptSegments } from "../features/search/viewModel.js";
 import { revertItemToChange, describeFieldValue } from "../features/archive/itemHistory.js";
@@ -418,7 +421,11 @@ export function DetailPage() {
     addItemComment,
     deleteItemComment,
     showToast,
-    showNotification
+    showNotification,
+    itemRelations = [],
+    loadRelationsFromStorage,
+    addRelation,
+    removeRelation
   } = useAppStore();
 
   const item = videoItems.find((video) => video.id === selectedItemId) || null;
@@ -429,8 +436,13 @@ export function DetailPage() {
   const [mediaBusy, setMediaBusy] = React.useState("");
   const [mediaJobs, setMediaJobs] = React.useState([]);
   const [activeDetailTab, setActiveDetailTab] = React.useState("data");
+  const [relationDialogOpen, setRelationDialogOpen] = React.useState(false);
   const [playbackTime, setPlaybackTime] = React.useState(0);
   const transcriptSegments = React.useMemo(() => item ? getTranscriptSegments(item) : [], [item]);
+
+  React.useEffect(() => {
+    loadRelationsFromStorage?.();
+  }, [loadRelationsFromStorage]);
 
   React.useEffect(() => {
     setDraft(item ? {
@@ -508,6 +520,10 @@ export function DetailPage() {
   );
   const itemComments = React.useMemo(() => getItemComments(auditLogs, item?.id), [auditLogs, item?.id]);
   const relatedItems = React.useMemo(() => item ? getRelatedItems(item, videoItems, { limit: 6 }) : [], [item, videoItems]);
+  const explicitItemRelations = React.useMemo(
+    () => getItemRelations(item?.id, itemRelations),
+    [item?.id, itemRelations]
+  );
   const itemHistory = React.useMemo(
     () => (changeHistory || []).filter((record) => record.itemId === item?.id && Array.isArray(record.changes) && record.changes.length > 0),
     [changeHistory, item?.id]
@@ -665,6 +681,22 @@ export function DetailPage() {
       showToast?.("تم حذف التعليق", "info");
     } catch (error) {
       reportError(showNotification, error, { context: "حذف تعليق" });
+    }
+  };
+  const handleAddRelation = async (relation) => {
+    try {
+      const created = await addRelation?.(relation);
+      if (created) showToast?.("تمت إضافة العلاقة", "success");
+    } catch (error) {
+      reportError(showNotification, error, { context: "إضافة علاقة" });
+    }
+  };
+  const handleRemoveRelation = async (relationId) => {
+    try {
+      const removed = await removeRelation?.(relationId);
+      if (removed) showToast?.("تم حذف العلاقة", "info");
+    } catch (error) {
+      reportError(showNotification, error, { context: "حذف علاقة" });
     }
   };
   const seekToBookmark = (timestamp) => {
@@ -1134,20 +1166,37 @@ export function DetailPage() {
             ai.available && jsx("div", { className: "mt-4", children: jsx(AiAssistBar, { available: ai.available, busy: ai.busy, onSummarize: aiSummarize, onSuggestTags: aiSuggestTags, onProofread: aiProofread, show: { summarize: canEditNotes, proofread: canEditNotes, tags: canEditTags } }) }),
             draft && jsx("p", { className: "mt-3 rounded-xl border va-accent-border va-accent-bg-soft p-3 text-xs leading-6 va-accent-text-on-soft", children: editing ? "أنت داخل وضع التحرير. احفظ عند الرضا عن النتيجة." : "سيتم فتح وضع التحرير عند الحاجة للمراجعة والحفظ." })
           ] }),
-          activeDetailTab === "relations" && relatedItems.length ? jsxs("section", { children: [
-            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Gauge, { className: "h-4 w-4 va-accent-text" }), "مواد قد ترتبط بهذا السياق"] }),
-            jsx("ul", { className: "mt-3 space-y-2", children: relatedItems.map((related) => jsx("li", { children: jsxs("button", {
-              type: "button",
-              onClick: () => setSelectedItemId?.(related.item.id),
-              className: "w-full rounded-xl va-surface-subtle border p-3 text-right transition-colors hover:border-emerald-500/25",
-              children: [
-                jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-                  jsx("span", { className: "min-w-0 flex-1 truncate text-sm font-semibold text-white", children: related.item.title || "بدون عنوان" }),
-                  jsx("span", { dir: "ltr", className: "shrink-0 font-mono text-[10px] va-accent-text", children: `${related.percent}%` })
-                ] }),
-                related.reason ? jsx("p", { className: "mt-1 text-[11px] text-gray-500", children: related.reason }) : null
-              ]
-            }) }, related.item.id)) })
+          activeDetailTab === "relations" ? jsxs("section", { className: "space-y-4", children: [
+            jsx(RelationsPanel, {
+              itemId: item.id,
+              itemRelations: explicitItemRelations,
+              allItems: videoItems,
+              onAddRelation: () => setRelationDialogOpen(true),
+              onRemoveRelation: handleRemoveRelation
+            }),
+            relatedItems.length ? jsxs("section", { children: [
+              jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Gauge, { className: "h-4 w-4 va-accent-text" }), "مواد قد ترتبط بهذا السياق"] }),
+              jsx("ul", { className: "mt-3 space-y-2", children: relatedItems.map((related) => jsx("li", { children: jsxs("button", {
+                type: "button",
+                onClick: () => setSelectedItemId?.(related.item.id),
+                className: "w-full rounded-xl va-surface-subtle border p-3 text-right transition-colors hover:border-emerald-500/25",
+                children: [
+                  jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+                    jsx("span", { className: "min-w-0 flex-1 truncate text-sm font-semibold text-white", children: related.item.title || "بدون عنوان" }),
+                    jsx("span", { dir: "ltr", className: "shrink-0 font-mono text-[10px] va-accent-text", children: `${related.percent}%` })
+                  ] }),
+                  related.reason ? jsx("p", { className: "mt-1 text-[11px] text-gray-500", children: related.reason }) : null
+                ]
+              }) }, related.item.id)) })
+            ] }) : null,
+            jsx(AddRelationDialog, {
+              isOpen: relationDialogOpen,
+              sourceItem: item,
+              allItems: videoItems,
+              existingRelations: explicitItemRelations.outgoing,
+              onAdd: handleAddRelation,
+              onClose: () => setRelationDialogOpen(false)
+            })
           ] }) : null,
           activeDetailTab === "versions" && item?.id
             ? jsx("section", { className: "rounded-xl va-surface-subtle border", dir: "rtl", "aria-label": "السجل التاريخي للسجل", children: jsx(RecordVersionHistory, { recordId: item.id, store: "videoItems" }) })

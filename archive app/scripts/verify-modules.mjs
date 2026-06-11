@@ -871,8 +871,8 @@ run("navigation view model", () => {
 run("page migration native status", () => {
   const status = getPageMigrationStatus();
   const summary = getPageMigrationSummary(status);
-  assert.equal(summary.total, 25);
-  assert.equal(summary.native, 25);
+  assert.equal(summary.total, 26);
+  assert.equal(summary.native, 26);
   assert.equal(summary.wrappedPages, 0);
   assert.equal(status.find((page) => page.id === "archive")?.status, "native");
   assert.equal(status.find((page) => page.id === "dashboard")?.status, "native");
@@ -882,6 +882,7 @@ run("page migration native status", () => {
   assert.equal(status.find((page) => page.id === "settings")?.status, "native");
   assert.equal(status.find((page) => page.id === "search")?.status, "native");
   assert.equal(status.find((page) => page.id === "history")?.status, "native");
+  assert.equal(status.find((page) => page.id === "activity")?.status, "native");
   assert.equal(status.find((page) => page.id === "collections")?.status, "native");
   assert.equal(status.find((page) => page.id === "vocabulary")?.status, "native");
   assert.equal(status.find((page) => page.id === "htags")?.status, "native");

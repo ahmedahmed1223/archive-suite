@@ -1,17 +1,41 @@
 /**
- * Virtual list for performance — active on all devices when list is long.
+ * Virtual list for performance — active when the current viewport needs it.
  * Only renders items near the viewport. Uses scroll/resize listeners.
  */
 import { useState, useRef, useEffect } from "react";
 
-const MIN_ITEMS_TO_VIRTUALIZE = 50;
+const MOBILE_MIN_ITEMS_TO_VIRTUALIZE = 20;
+const DESKTOP_MIN_ITEMS_TO_VIRTUALIZE = 50;
+const MOBILE_VIEWPORT_QUERY = "(max-width: 767px)";
 const OVERSCAN = 5;              // extra items above/below viewport
+
+function isMobileViewport() {
+  if (typeof window === "undefined") return false;
+  if (typeof window.matchMedia === "function") {
+    return window.matchMedia(MOBILE_VIEWPORT_QUERY).matches;
+  }
+  return window.innerWidth <= 767;
+}
 
 export function useVirtualList({ items = [], itemHeight = 120 } = {}) {
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: items.length });
+  const [isMobile, setIsMobile] = useState(isMobileViewport);
   const containerRef = useRef(null);
 
-  const shouldVirtualize = items.length > MIN_ITEMS_TO_VIRTUALIZE;
+  const minItemsToVirtualize = isMobile ? MOBILE_MIN_ITEMS_TO_VIRTUALIZE : DESKTOP_MIN_ITEMS_TO_VIRTUALIZE;
+  const shouldVirtualize = items.length > minItemsToVirtualize;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const updateViewport = () => setIsMobile(isMobileViewport());
+    updateViewport();
+    window.addEventListener("resize", updateViewport, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+    };
+  }, []);
 
   useEffect(() => {
     if (!shouldVirtualize || !containerRef.current) {

@@ -24,10 +24,19 @@ async function getPrefs(prisma, userId) {
   if (!prisma?.notificationPreference) return { ...DEFAULT_PREFS };
   try {
     const row = await prisma.notificationPreference.findUnique({ where: { userId } });
-    return row ?? { ...DEFAULT_PREFS };
+    return normalizePrefs(row);
   } catch {
     return { ...DEFAULT_PREFS };
   }
+}
+
+function normalizePrefs(row) {
+  if (!row) return { ...DEFAULT_PREFS };
+  return {
+    emailOnShare: typeof row.emailOnShare === "boolean" ? row.emailOnShare : row.onShare ?? DEFAULT_PREFS.emailOnShare,
+    emailOnUpload: typeof row.emailOnUpload === "boolean" ? row.emailOnUpload : row.onUpload ?? DEFAULT_PREFS.emailOnUpload,
+    emailOnMention: typeof row.emailOnMention === "boolean" ? row.emailOnMention : row.onMention ?? DEFAULT_PREFS.emailOnMention,
+  };
 }
 
 /**
@@ -91,7 +100,7 @@ export function notifyUploadComplete({ prisma, sendMail, userId, userEmail, reco
       const prefs = await getPrefs(prisma, userId);
       if (!prefs.emailOnUpload) return;
 
-      const email = userEmail;
+      const email = userEmail || await resolveUserEmail(prisma, userId);
       if (!email) return;
 
       await sendMail({
@@ -112,6 +121,51 @@ export function notifyUploadComplete({ prisma, sendMail, userId, userEmail, reco
       log.debug({ to: email, recordTitle }, "notifyUploadComplete: sent");
     } catch (err) {
       log.warn({ err: err?.message }, "notifyUploadComplete failed");
+    }
+  });
+}
+
+/**
+ * Notify a user that they were mentioned in an archive discussion/comment.
+ *
+ * @param {object} opts
+ * @param {object|null} opts.prisma       - Prisma client (for prefs + user lookup)
+ * @param {Function}    opts.sendMail     - sendMail({ to, subject, text, html })
+ * @param {string}      opts.mentionedUserId
+ * @param {string}      [opts.mentionedByUsername]
+ * @param {string}      [opts.recordTitle]
+ * @param {string}      [opts.context]
+ * @param {string}      [opts.url]
+ */
+export function notifyMention({ prisma, sendMail, mentionedUserId, mentionedByUsername, recordTitle, context, url }) {
+  setImmediate(async () => {
+    try {
+      if (!sendMail || !mentionedUserId) return;
+      const prefs = await getPrefs(prisma, mentionedUserId);
+      if (!prefs.emailOnMention) return;
+
+      const email = await resolveUserEmail(prisma, mentionedUserId);
+      if (!email) return;
+
+      await sendMail({
+        to: email,
+        subject: `تمت الإشارة إليك — ${recordTitle ?? "سجل"}`,
+        text: `أشار إليك ${mentionedByUsername ?? "مستخدم"} في "${recordTitle ?? "سجل"}".${context ? `\n\n${context}` : ""}${url ? `\n\nالرابط: ${url}` : ""}`,
+        html: `
+          <div dir="rtl" style="font-family: system-ui, Arial, sans-serif; max-width: 520px; margin: 0 auto;">
+            <h2 style="color: #059669;">تمت الإشارة إليك</h2>
+            <p>أشار إليك <strong>${escapeHtml(mentionedByUsername ?? "مستخدم")}</strong> في:</p>
+            <p style="font-size: 1.1em; font-weight: 600; margin: 12px 0;">${escapeHtml(recordTitle ?? "سجل")}</p>
+            ${context ? `<p style="padding:12px;background:#f3f4f6;border-radius:8px;">${escapeHtml(context)}</p>` : ""}
+            ${url ? `<a href="${escapeHtml(url)}" style="display:inline-block;margin-top:4px;padding:10px 20px;background:#059669;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">فتح السجل</a>` : ""}
+            <p style="margin-top:24px;color:#6b7280;font-size:0.85em;">Archive Suite — رسالة تلقائية، لا تردّ عليها مباشرةً.</p>
+          </div>
+        `,
+      });
+
+      log.debug({ to: email, recordTitle }, "notifyMention: sent");
+    } catch (err) {
+      log.warn({ err: err?.message }, "notifyMention failed");
     }
   });
 }
