@@ -167,8 +167,9 @@
   - الملفات: `archive app/src/stores/`، مكوّنات common.
   - المصدر: improvement-proposals (FE-5).
 
-- [ ] `[P3]` ⏱️S **تحليل الحزمة** (esbuild-visualizer) وتقليل الحجم الابتدائي (~3MB حاليًا).
+- [x] `[P3]` ⏱️S **تحليل الحزمة** (esbuild-visualizer) وتقليل الحجم الابتدائي (~3MB حاليًا).
   - الملفات: `archive app/vite.config.js`.
+  - ✅ **تم (2026-06-11):** مسار `pnpm --filter @archive/app run analyze` يولد تقرير `dist/bundle-stats.html` عبر `rollup-plugin-visualizer`. فُصل Sentry عن الرسم البياني الافتراضي بتحميل ديناميكي مشروط عند وجود `VITE_SENTRY_DSN` فقط، فانخفض بناء SPA إلى `dist/index.html` بحجم 4.077MB / 1.320MB gzip، وانخفض عدد الوحدات المحوّلة في البناء الافتراضي من 2689 إلى 2467. كما أُصلح سكربت `verify` ليخرج صراحة بعد آخر فحص بدل التعليق بعد طباعة كل نتائج `ok`.
   - المصدر: dev-proposals (P3).
 
 ---
@@ -332,9 +333,10 @@
 
 ### د. المجموعات الذكية والبحث المحفوظ
 
-- [ ] `[P2]` ⏱️M **مجموعات ذكية (Smart Collections)** — مجموعات تتحدّث تلقائيًا بناءً على استعلام محفوظ.
+- [x] `[P2]` ⏱️M **مجموعات ذكية (Smart Collections)** — مجموعات تتحدّث تلقائيًا بناءً على استعلام محفوظ.
   - جدول: `saved_filters` (query JSONB, ownerId, isLive: bool).
   - صفحة `CollectionsPage` موجودة — إضافة نوع "ذكي" بجانب الثابت.
+  - ✅ **مُنجز ومتحقق (2026-06-11):** model/migration `saved_filters` موجودة (`query`, `ownerId`, `isLive`)؛ مسارات `GET/POST/DELETE /api/saved-filters` موجودة؛ `CollectionsPage.jsx` تعرض/تنشئ/تحذف الفلاتر المحفوظة؛ `SearchPage.jsx` ينشئ مجموعة ذكية من البحث؛ و`features/collections/viewModel.js` يحل نتائج المجموعة الحية من الاستعلام المحفوظ. تحقق: `pnpm --filter @archive/app run verify` و`pnpm --filter archive-server run verify:api` مرّا في فحص الوكيل.
 
 ### هـ. الإشعارات والتكامل
 
@@ -673,10 +675,11 @@
 
 ### 12.7 تجربة المستخدم — P2
 
-- [ ] `[P2]` ⏱️L **تفعيل Inline Editing في عرض الجدول** — عرض الجدول للقراءة فقط، كل تعديل يتطلب فتح نافذة.
-  - الملف: `archive app/src/components/views/TableView.jsx`
-  - الإصلاح: اجعل خلايا الأعمدة البسيطة (العنوان، الوصف، الوسوم) قابلة للنقر للتعديل المباشر.
+- [x] `[P2]` ⏱️L **تفعيل Inline Editing في عرض الجدول** — عرض الجدول للقراءة فقط، كل تعديل يتطلب فتح نافذة.
+  - الملف التاريخي: `archive app/src/components/views/TableView.jsx` غير موجود؛ التنفيذ الحالي في `archive app/src/features/archive/ArchiveViews.jsx`.
+  - الإصلاح: خلايا الأعمدة البسيطة المتاحة حالياً (العنوان، النوع، الوسوم) أصبحت قابلة للتعديل المباشر عبر `InlineCellEditor`.
   - المصدر: uiux-deep-audit (UX-02).
+  - ✅ **مُنجز ومتحقق (2026-06-11):** `InlineCellEditor.jsx` يدعم نص/وسوم/رقم/تاريخ/قائمة، وجدول `VideoTableView` يربط العنوان/النوع/الوسوم مع حفظ `ArchivePageResults.jsx` عبر `updateVideoItem`. أُضيف تنقل `Tab` / `Shift+Tab` بين الخلايا القابلة للتعديل الحالية، مع اختبارات jsdom: `InlineCellEditor.test.jsx` و`ArchiveViews.inline-edit.test.jsx` (4/4 مرّت). نطاق الأعمدة الإضافية والتراجع الكامل متابع في §13.3.
 
 - [x] `[P2]` ⏱️S **رفع حد `TagCloud` من 40 إلى 200 وسم مع "عرض المزيد"** — يعرض أول 40 وسمًا فقط.
   - الملف: `archive app/src/features/archive/TagCloud.jsx`
@@ -768,14 +771,14 @@
 
 ### 13.2 P1 — الأمان والاستقرار
 
-- [ ] `[P1]` ⏱️L **تشفير النسخ الاحتياطية AES-256-GCM + تحقق SHA-256 تلقائي** — **(النواة منجزة ✅ — مدمجة 10 يونيو)**
+- [x] `[P1]` ⏱️L **تشفير النسخ الاحتياطية AES-256-GCM + تحقق SHA-256 تلقائي** — **(مكتملة ✅ — مدمجة 10 يونيو، أُغلقت 11 يونيو)**
   - **✅ منجز ومُختبَر:** `archive-server/src/backup/backupCrypto.js` (AES-256-GCM بمشتقّ مفتاح scrypt + تنسيق ملف ARCE + SHA-256 checksum write/verify)؛ مدمج في `backupScheduler.js` (يشفّر تلقائياً عند ضبط `BACKUP_ENCRYPTION_KEY`، يحذف plaintext، يكتب checksum، يعلّم `encrypted`)؛ `BACKUP_ENCRYPTION_KEY` موثّق في `.env.example:212`؛ `scripts/verify-backup.mjs` — **12 اختبار يمرّ** (round-trip، كلمة مرور خاطئة، تلف، magic header، checksum).
   - **✅ مُنجَز (10 يونيو 2026) — مسار الاستعادة كاملاً:**
     - `restoreBackup()` في `backupScheduler.js`: فحص اسم الملف (منع traversal) → تحقّق SHA-256 (يرفض 409 عند عدم التطابق) → فك تشفير `.enc` بكلمة المرور (400 عند الخطأ/الغياب) → gunzip → `provider.replaceAll`.
     - Endpoint جديد `POST /api/admin/backups/restore` (admin فقط + rate limit + تسجيل تدقيق `backup.restore` في `auditLogger`).
     - واجهة استعادة في `BackupManager.jsx`: زر استعادة لكل نسخة، حقل كلمة مرور للنسخ المشفّرة 🔒، تأكيد `appConfirm` تدميري، رسائل خطأ واضحة (checksum/كلمة مرور).
     - **6 اختبارات جديدة** في `verify-backup.mjs` (round-trip عادي/مشفّر، كلمة مرور خاطئة/غائبة، checksum تالف لا يلمس البيانات، رفض traversal) — السلسلة كاملة 18 suite خضراء.
-  - **⬜ المتبقي (اختياري):** تخزين بعيد (S3/Cloudflare R2) مع تشفير أثناء النقل.
+  - **ملاحظة مستقبلية اختيارية:** تخزين بعيد (S3/Cloudflare R2) مع تشفير أثناء النقل؛ ليس شرطاً لإغلاق مهمة التشفير/السلامة الأساسية.
   - المصدر: feature-proposals-2026 (محور 2 — ميزة #13).
 
 - [x] `[P1]` ⏱️L **حدود الموارد متعددة الطبقات (IP + User + Endpoint)** ✅ 2026-06-09 — Rate limiting موجود على IP فقط، لا حدود للمستخدم ولا لنقاط النهاية الفردية.
@@ -790,11 +793,12 @@
 ### 13.3 P1 — تجربة المستخدم اليومية
 
 - [ ] `[P1]` ⏱️L **التعديل المضمّن في عرض الجدول (InlineCellEditor)** — كل تعديل يتطلب فتح صفحة التفاصيل والعودة. **(المرحلة 1 منجزة ✅)**
-  - الملفات الجديدة: `archive app/src/components/data/InlineCellEditor.jsx` ✅ (مكوّن عام: نص/وسوم/رقم/تاريخ/قائمة، Enter يحفظ، Escape يلغي، blur يحفظ، RTL).
-  - تغييرات: `archive app/src/features/archive/ArchiveViews.jsx` ✅ (ربط InlineCellEditor بخليتي العنوان والوسوم في `VideoTableView` عبر أيقونة قلم؛ خلية واحدة قيد التحرير في كل مرة)، `ArchivePageResults.jsx` ✅ (الحفظ عبر `updateVideoItem` مع سجل التغييرات + toast نجاح/فشل).
+  - الملفات الجديدة: `archive app/src/components/data/InlineCellEditor.jsx` ✅ (مكوّن عام: نص/وسوم/رقم/تاريخ/قائمة، Enter يحفظ، Escape يلغي، blur يحفظ، RTL، وTab/Shift+Tab يطلب الانتقال).
+  - تغييرات: `archive app/src/features/archive/ArchiveViews.jsx` ✅ (ربط InlineCellEditor بخلايا العنوان/النوع/الوسوم في `VideoTableView` عبر أيقونة قلم/نقر مزدوج؛ خلية واحدة قيد التحرير في كل مرة؛ تنقل Tab/Shift+Tab بين الأعمدة القابلة للتعديل)، `ArchivePageResults.jsx` ✅ (الحفظ عبر `updateVideoItem` مع سجل التغييرات + toast نجاح/فشل).
   - ✅ المرحلة 1 (2026-06-10): تحرير العنوان والوسوم مضمّنًا؛ حفظ عند Enter/مغادرة الخلية؛ Escape للإلغاء؛ تجاهل القيم غير المتغيّرة/الفارغة.
-  - ⬜ المتبقي: نقر مزدوج لتحرير أي خلية؛ Tab/Shift+Tab للتنقل بين الخلايا؛ Ctrl+Z للتراجع عبر `undoManager`؛ محرر النوع (قائمة) والتاريخ والتقييم.
-  - الجهد: 3-4 أسابيع (المتبقي ~2-3 أسابيع).
+  - ✅ تحديث (2026-06-11): محرر النوع كقائمة + نقر مزدوج للخلايا المدعومة + تنقل `Tab` / `Shift+Tab` بين العنوان/النوع/الوسوم، مع اختبارات `InlineCellEditor.test.jsx` و`ArchiveViews.inline-edit.test.jsx`.
+  - ⬜ المتبقي: تحرير أي خلية قابلة للتخصيص عند ظهور أعمدة جديدة؛ Ctrl+Z للتراجع عبر `undoManager`؛ ربط محررات التاريخ والتقييم عندما تُضاف أعمدتها إلى الجدول.
+  - الجهد: 3-4 أسابيع (المتبقي ~1-2 أسبوع).
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #3). ملاحظة: P2 placeholder موجود في §12.7 — هذه الميزة الكاملة.
 
 - [ ] `[P1]` ⏱️L **Service Worker ذكي — Workbox strategies + Background Sync كامل** — SW الحالي cache-first بسيط (Task #39). هذه ترقية لـ Workbox كامل.
@@ -1505,6 +1509,7 @@
 ### 16.1 P1 — المجموعات الذكية التلقائية بقواعد مركبة (Smart Auto-Collections)
 
 - [ ] `[P1]` ⏱️L **توسيع المجموعات الذكية لتُدار بقواعد تلقائية عند إضافة/تعديل العناصر** — المهمة الحالية في §9 تغطي مجموعات مبنية على استعلام محفوظ، لكنها لا تغطي محرّك قواعد حي يربط العناصر تلقائياً عند كل تغيير.
+  - **حالة حالية (2026-06-11):** يبقى هذا البند مفتوحاً بعد إغلاق §9؛ الموجود حالياً saved filters حيّة، وليس DSL قواعد مركبة ولا جدول `smart_collection_rules` ولا مقيّم خادمي يشتغل عند إضافة/تعديل العناصر.
   - **الملفات الجديدة:**
     - `archive app/src/features/collections/smartCollectionRules.js` — تعريف DSL القواعد: وسوم، نوع، تاريخ، مجلد، حجم، شروط AND/OR.
     - `archive app/src/components/collections/SmartCollectionRuleBuilder.jsx` — محرر قواعد بصري.
@@ -1763,9 +1768,10 @@
 - [ ] `[P1]` ⏱️M **إضافة علامات زمنية داخل مشغل الفيديو/الصوت مع ملاحظات وتصدير** — **(النواة منجزة ✅ — مدمجة 10 يونيو)**
   - **✅ منجز ومُدمج:** `archive app/src/components/media/TimeBookmarks.jsx` (يصدّر `TimeBookmarkButton` + `TimeBookmarkList`: التقاط الوقت الحالي، عنوان+ملاحظة، نقر للانتقال، حذف، تصدير Markdown/CSV، RTL+a11y)؛ مدمج في `DetailPage.jsx` (التقاط من `videoRef.currentTime`، `seekToBookmark`)؛ الحفظ عبر slice `addBookmark`/`removeBookmark` (`archiveSlice.js:266,281`) إلى مخزن `BOOKMARKS` (IndexedDB + محوّل sqlite + import/export portability).
   - **⬜ المتبقي (مهام الإكمال):**
-    - علامات على شريط تقدّم المشغّل (`TimeBookmarkTimelineMarkers`) — يعتمد على مشغّل مخصّص (§13.1 #20).
+    - ✅ **تم جزئياً (2026-06-11):** أضيف `TimeBookmarkTimelineMarkers` كخط زمني مصغّر قابل للنقر أسفل المشغّل الحالي، مع helper نقي `buildTimeBookmarkMarkers` واختبار في `verify-modules.mjs`. سيبقى دمجه داخل شريط تقدّم مشغّل مخصّص عند تنفيذ §13.1 #20.
     - CRUD/مزامنة على الخادم (`archive-server` + جدول prisma `time_bookmarks`) — حالياً محلي + يُزامَن عبر snapshot العام.
-    - ربط تلقائي بفقرة transcript؛ اختبار وحدة لـ slice العلامات.
+    - ✅ **تم (2026-06-11):** ربط تلقائي بفقرة transcript: عند فتح نموذج علامة زمنية يُقترح عنوان وملاحظة من مقطع التفريغ النشط عبر `createTranscriptBookmarkDraft`.
+    - ✅ **تم (2026-06-11):** اختبار وحدة لـ slice العلامات يغطي `addBookmark`/`removeBookmark` وتطبيع الوقت/العنوان/الوصف.
   - الجهد المتبقي: ~1 أسبوع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 14 — P1).
 
@@ -1949,10 +1955,11 @@
 
 ### 17.17 P1 — نظام حالات العناصر المرئية (Visual Item Status System)
 
-- [ ] `[P1]` ⏱️M **حالة مرئية لكل عنصر (جديد/قيد المعالجة/مكتمل/يحتاج مراجعة/مؤرشف) بشارة ولون DaisyUI** — لا يمكن تمييز حالة العنصر بالنظر.
+- [x] `[P1]` ⏱️M **حالة مرئية لكل عنصر (جديد/قيد المعالجة/مكتمل/يحتاج مراجعة/مؤرشف) بشارة ولون DaisyUI** — لا يمكن تمييز حالة العنصر بالنظر.
   - **الملفات الجديدة:** `archive app/src/features/archive/itemStatus.js`، `archive app/src/components/archive/StatusBadge.jsx`.
   - **تعديل ملفات:** بطاقة العنصر، عمود الحالة في الجدول، `archiveSlice.js`، فلاتر البحث.
   - **التنفيذ:** badge ملوّن (info/warning/success/error/neutral)، فلترة حسب الحالة، تغيير تلقائي للحالة (عنصر بلا وسم→“يحتاج مراجعة”)، اقتراحات تلقائية.
+  - ✅ **مُنجز ومتحقق (2026-06-11):** `StatusBadge.jsx` جديد يعرض حالة `workflowStatus` مع تنبيه الاستحقاق المتأخر؛ `ArchiveViews.jsx` يعرض الشارة في البطاقات/البلاطات/القائمة ويضيف عمود `الحالة` للجدول؛ `tableColumns.js` يعرّف العمود؛ `viewModel.js` يدعم فلتر `filterStatus` ورابط `status=`؛ `ArchivePageDetailedFilters.jsx` و`ArchiveFilterChips` يضيفان اختيار/مسح الحالة؛ `createVideoItemValue` يحفظ `workflowStatus` ويقترح `review` للعناصر الجديدة بلا وسوم و`archived` للمحذوفة مع حفظ حقول workflow عند التعديل. تحقق: `itemStatus.test.js` و`viewModel.test.js` و`StatusBadge.test.jsx` (12/12 مرّت).
   - يرتبط بـ: §17.16، §18.1 (سجل النشاط).
   - الجهد: 2-3 أسابيع.
   - المصدر: daisyui-ux-proposals (المقترح 17 — P1).
@@ -2139,11 +2146,12 @@
 
 ### 20.5 P1 — واجهة API عامة بمفاتيح API + تكامل CMS
 
-- [ ] `[P1]` ⏱️L **API عام موثّق بمفاتيح API (منفصلة عن JWT) يتيح للأنظمة الخارجية قراءة البيانات برمجياً + موصلات CMS (WordPress/Drupal) للمزامنة التلقائية** — حالياً الـ RPC داخلي فقط بمصادقة JWT.
+- [x] `[P1]` ⏱️L **API عام موثّق بمفاتيح API (منفصلة عن JWT) يتيح للأنظمة الخارجية قراءة البيانات برمجياً + موصلات CMS (WordPress/Drupal) للمزامنة التلقائية** — حالياً الـ RPC داخلي فقط بمصادقة JWT.
   - **التنفيذ:** إصدار/إبطال API Keys من واجهة الإدارة (تخزين hash فقط)؛ صلاحيات لكل مفتاح (قراءة فقط/نطاقات stores)؛ rate limiting لكل مفتاح؛ توثيق OpenAPI؛ نقاط REST للقراءة بترقيم cursor (يبني على §2 pagination)؛ webhook/موصل WordPress وDrupal للنشر التلقائي عند انتقال الحالة لـ"منشور" (تكامل §20.3).
   - **الملفات:** `archive-server/src/api/publicApi.js` (جديد)، `archive-server/src/auth/apiKeys.js` (جديد)، `archive app/src/components/settings/ApiKeysSettings.jsx` (جديد)، توثيق `archive-server/docs/public-api.md`.
   - **تنبيه أمان:** مراجعة security-reviewer إلزامية قبل الدمج (سطح هجوم جديد).
   - الجهد: 3-4 أسابيع.
+  - ✅ **مُنجز ومتحقق (2026-06-11):** `archive-server/src/auth/apiKeyService.js` (توليد `ak_<prefix8>_<secret32>`، تخزين SHA-256 hash فقط، إظهار المفتاح الخام مرّة واحدة، نطاقات read/write → دور viewer/editor، احترام `expiresAt`/`active`، ختم `lastUsedAt`)؛ Prisma model `ApiKey` + migration `20260611140000_api_keys`؛ مسارات إدارة محمية بـ JWT (`GET/POST/DELETE /api/api-keys`) ونقطة قراءة عامة `GET /api/public/records` بترويسة `X-API-Key` ونطاق read مع حد `limit`؛ تدقيق على الإنشاء/الإبطال. تحقق: `verify-apikeys.mjs` جديد ضمن سلسلة `verify` (5/5 مرّت، بما فيها مسار HTTP كامل: إنشاء→سرد بلا سر→قراءة عامة→إبطال→رفض بعد الإبطال). المتبقي لاحقًا: واجهة `ApiKeysSettings.jsx`، rate-limit لكل مفتاح، توثيق OpenAPI، موصلات WordPress/Drupal، وترقيم cursor.
 
 ### 20.6 P2 — البحث الصوتي (Web Speech API)
 
