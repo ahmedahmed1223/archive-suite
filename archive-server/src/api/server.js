@@ -2056,9 +2056,9 @@ export function createApiServer({
       const claims = requireAuthClaims(req, res);
       if (!claims) return undefined;
       const { format = "csv", store = "videoItems", ids = null } = body || {};
-      const allowed = ["csv", "xlsx", "zip"];
+      const allowed = ["csv", "xlsx", "zip", "bibtex", "ris"];
       if (!allowed.includes(format)) {
-        return send(res, 400, { ok: false, error: `Unsupported format: ${format}. Use csv, xlsx, or zip.` });
+        return send(res, 400, { ok: false, error: `Unsupported format: ${format}. Use csv, xlsx, zip, bibtex, or ris.` });
       }
       const result = await exportRecords(resolveStorage(), { format, store, ids }).catch((err) => {
         log.error({ err }, "Export failed");
