@@ -346,6 +346,9 @@ export function createPostgresStorageProvider(prisma, options = {}) {
       await prisma.$transaction(async (tx) => {
         const txRow = tx.storageRow;
         for (const [domainKey, store] of Object.entries(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY)) {
+          // Partial restore: skip stores not present in the payload so they are
+          // left untouched. A full-snapshot payload always includes all keys.
+          if (!(domainKey in payload)) continue;
           const records = Array.isArray(payload[domainKey]) ? payload[domainKey] : [];
           const shouldClear = domainKey !== "users" || records.length > 0;
           if (shouldClear) {

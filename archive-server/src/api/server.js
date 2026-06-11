@@ -46,7 +46,8 @@ import {
 } from "./adminConfig.js";
 import { createRateLimiter, clientIp, userKeyFromHeader } from "./rateLimit.js";
 import { captureException } from "../monitoring/sentryService.js";
-import { listBackups, runBackup, restoreBackup } from "../backup/backupScheduler.js";
+import { listBackups, runBackup, restoreBackup, previewBackup } from "../backup/backupScheduler.js";
+import { getPresetConfig } from "./presetConfig.js";
 import {
   getMetricsOutput, getContentType,
   incActiveRequests, decActiveRequests, recordRequest
@@ -570,6 +571,23 @@ export function createApiServer({
         return send(res, 200, { needsSetup: users.length === 0 });
       } catch {
         return send(res, 200, { needsSetup: false });
+      }
+    }
+
+    // GET /api/setup/preset-config — returns a non-secret summary of the
+    // server's .env configuration so the onboarding wizard can pre-fill setup
+    // steps and offer a one-click "use existing settings" path.
+    // Only accessible when setup is not yet complete (no users in the DB).
+    if (req.method === "GET" && url === "/api/setup/preset-config") {
+      try {
+        const users = await resolveStorage().getAll("users").catch(() => []);
+        if (users.length > 0) {
+          return send(res, 403, { ok: false, error: "Setup already complete." });
+        }
+        const config = await getPresetConfig();
+        return send(res, 200, { ok: true, config });
+      } catch (err) {
+        return send(res, 500, { ok: false, error: err?.message || "Failed to read preset config." });
       }
     }
 
@@ -1493,21 +1511,41 @@ export function createApiServer({
       }
     }
 
+    // POST /api/admin/backups/preview — read a backup file and return per-store
+    // record counts without modifying any live data. For .enc files the
+    // passphrase must be supplied in the request body.
+    if (req.method === "POST" && url.split("?")[0] === "/api/admin/backups/preview") {
+      if (!requireAdmin(req, res)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const result = await previewBackup(String(body?.filename || ""), {
+          passphrase: typeof body?.passphrase === "string" ? body.passphrase : ""
+        });
+        return send(res, 200, { ok: true, ...result });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Preview failed" });
+      }
+    }
+
     // POST /api/admin/backups/restore — restore a stored backup into the live
-    // provider. Body: { filename, passphrase? }. Destructive (replaceAll), so
-    // admin-only + checksum verified + decrypt-with-passphrase for .enc files.
+    // provider. Body: { filename, passphrase?, stores? }. Destructive (replaceAll),
+    // so admin-only + checksum verified + decrypt-with-passphrase for .enc files.
+    // When `stores` is an array of store keys, only those stores are replaced
+    // (partial restore); all other stores are left untouched.
     if (req.method === "POST" && url.split("?")[0] === "/api/admin/backups/restore") {
       if (overLimit(res, "rpc", req)) return undefined;
       const adminUser = requireAdmin(req, res);
       if (!adminUser) return undefined;
       try {
         const body = await readJsonBody(req);
+        const storesParam = Array.isArray(body?.stores) ? body.stores.filter(s => typeof s === "string") : null;
         const result = await restoreBackup(resolveStorage(), String(body?.filename || ""), {
-          passphrase: typeof body?.passphrase === "string" ? body.passphrase : ""
+          passphrase: typeof body?.passphrase === "string" ? body.passphrase : "",
+          stores: storesParam && storesParam.length > 0 ? storesParam : null
         });
         auditLog({
           method: "backup.restore",
-          args: [result.filename],
+          args: [result.filename, ...(storesParam ? [storesParam.join(",")] : [])],
           claims: adminUser,
           ip: clientIp(req)
         });
