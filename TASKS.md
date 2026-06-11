@@ -2030,7 +2030,7 @@
   - **الملفات الجديدة:** `archive app/src/features/relations/viewModel.js` (createRelation/RELATION_TYPES/getItemRelations/buildRelationsGraph)، `archive app/src/components/relations/RelationsPanel.jsx`، `AddRelationDialog.jsx`، `RelationsGraph.jsx`، `archive app/src/stores/slices/relationsSlice.js`.
   - **تعديل ملفات:** `DetailPage.jsx`، `ArchivePage.jsx`، `schema.js` (store `item_relations`)؛ Prisma `ItemRelation` (unique على [sourceId,targetId,type]، فهارس) للباك-إند.
   - **التنفيذ:** علاقات أحادية/ثنائية الاتجاه، تنقّل سريع بين المرتبطين، رسم علاقات (D3/cytoscape)، إنشاء بالسحب، اكتشاف تلقائي للعلاقات المحتملة (نفس الوسم/المجلد).
-  - 🔄 **تقدم 2026-06-11:** تم ربط `RelationsPanel` و`AddRelationDialog` داخل تبويب العلاقات في `DetailPage.jsx` مع تحميل العلاقات الصريحة من store وإضافة/حذف علاقة، مع الحفاظ على اقتراحات العناصر المرتبطة. أضيف `archive app/src/pages/DetailPage.relations.test.jsx` ومرّ `pnpm --filter @archive/app run test`. ما زال البند مفتوحًا لأن الرسم التفاعلي/السحب/Prisma ItemRelation لم تكتمل بعد.
+  - 🔄 **تقدم 2026-06-12:** أُضيف `RelationsGraph.jsx` (cytoscape تفاعلي، تكبير/تصغير/ملاءمة، lazy import، النقر للتنقل) ودُمج في `RelationsPanel.jsx` فوق قوائم العلاقات. سابقاً (2026-06-11): `RelationsPanel` + `AddRelationDialog` في `DetailPage.jsx`. ما زال مفتوحاً: الرسم بالسحب (Drag-to-link) + Prisma `ItemRelation` schema.
   - يرتبط بـ: §16 (المجموعات/المجلدات)، §17.3 (السحب)، §11/§12 graph.
   - الجهد: 4-5 أسابيع.
   - المصدر: daily-use-proposals (المقترح 5 — P1).
