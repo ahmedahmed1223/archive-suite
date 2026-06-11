@@ -58,6 +58,7 @@ import { FileStoreSettings } from "../features/settings/FileStoreSettings.jsx";
 import { LocalStorageEngineSettings } from "../features/settings/LocalStorageEngineSettings.jsx";
 import { ServerStatusBadge } from "../features/server-status/ServerStatusBadge.jsx";
 import { WebhooksSettings } from "../components/settings/WebhooksSettings.jsx";
+import { ApiKeysSettings } from "../components/settings/ApiKeysSettings.jsx";
 import { FieldPermissionsSettings } from "../components/settings/FieldPermissionsSettings.jsx";
 import { NotificationPreferences } from "../components/settings/NotificationPreferences.jsx";
 import { TwoFactorSettings } from "../components/settings/TwoFactorSettings.jsx";
@@ -1051,11 +1052,22 @@ export function SettingsPage() {
     ]
   });
 
-  const renderWebhooks = () => jsx(SettingsCard, {
-    title: "Webhooks الصادرة",
-    description: "يُطلق الخادم طلب POST إلى العناوين المسجّلة عند إنشاء السجلات أو تحديثها أو حذفها، مع توقيع HMAC-SHA256.",
-    icon: jsx("span", { className: "text-xs font-mono text-gray-400", children: "POST" }),
-    children: jsx(WebhooksSettings, {})
+  const renderWebhooks = () => jsxs("div", {
+    className: "space-y-6",
+    children: [
+      jsx(SettingsCard, {
+        title: "Webhooks الصادرة",
+        description: "يُطلق الخادم طلب POST إلى العناوين المسجّلة عند إنشاء السجلات أو تحديثها أو حذفها، مع توقيع HMAC-SHA256.",
+        icon: jsx("span", { className: "text-xs font-mono text-gray-400", children: "POST" }),
+        children: jsx(WebhooksSettings, {})
+      }),
+      jsx(SettingsCard, {
+        title: "مفاتيح API",
+        description: "مفاتيح برمجية للقراءة الخارجية، منفصلة عن جلسات المستخدم. يظهر المفتاح مرة واحدة فقط عند الإنشاء.",
+        icon: jsx("span", { className: "text-xs font-mono text-gray-400", children: "API" }),
+        children: jsx(ApiKeysSettings, {})
+      })
+    ]
   });
 
   const renderPermissions = () => jsx(SettingsCard, {
