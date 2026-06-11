@@ -8,6 +8,7 @@ import {
   Gauge,
   HardDrive,
   LayoutGrid,
+  Maximize2,
   MoreHorizontal,
   PenLine,
   Plus,
@@ -18,7 +19,8 @@ import {
   Star,
   Tags,
   Trash2,
-  Video
+  Video,
+  X
 } from "lucide-react";
 import { motion } from "framer-motion";
 import * as React from "react";
@@ -26,7 +28,8 @@ import { jsx, jsxs } from "react/jsx-runtime";
 
 import {
   MEDIA_PREVIEW_STATUS,
-  getMediaPreviewDescriptor
+  getMediaPreviewDescriptor,
+  isLocalFilePath
 } from "./mediaPreview.js";
 import { COMPLETENESS_TIERS, computeCompleteness } from "./completeness.js";
 import {
@@ -36,6 +39,7 @@ import {
 } from "../../utils/formatting.js";
 import { normalizeLocalFileValue } from "../videos/viewModel.js";
 import { InlineCellEditor } from "../../components/data/InlineCellEditor.jsx";
+import { DocumentViewer } from "../../components/media/DocumentViewer.jsx";
 
 export const ARCHIVE_VIEW_MODES = [
   { id: "grid", label: "شبكة", Icon: LayoutGrid },
@@ -466,6 +470,92 @@ function FileMetaStrip({ item, compact = false }) {
       file.path && !compact && jsx("p", { className: "mt-1 truncate text-left text-[11px] text-gray-600", dir: "ltr", children: file.path })
     ]
   });
+}
+
+const DOCUMENT_MIME_BY_EXTENSION = {
+  gif: "image/gif",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  pdf: "application/pdf",
+  png: "image/png",
+  svg: "image/svg+xml",
+  webp: "image/webp"
+};
+
+function encodePreviewPathSegments(path) {
+  return path
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+}
+
+function getBrowserPreviewSource(path = "", runtimeProtocol = "") {
+  const value = String(path || "").trim();
+  if (!value) return null;
+  if (/^(https?:|blob:|data:|file:)/i.test(value)) return value;
+  if (isLocalFilePath(value) && /^https?:$/i.test(runtimeProtocol)) return null;
+  const normalized = value.replace(/\\/g, "/");
+  if (/^[a-z]:\//i.test(normalized)) {
+    const drive = normalized.slice(0, 2);
+    const rest = normalized.slice(3);
+    return `file:///${drive}/${encodePreviewPathSegments(rest)}`;
+  }
+  if (normalized.startsWith("/")) {
+    return `file://${encodePreviewPathSegments(normalized)}`;
+  }
+  return normalized;
+}
+
+function getDocumentMimeType(item = {}, file = getArchiveFileMeta(item)) {
+  const explicitMime = item.mimeType || item.fileType || item.contentType || item.metadata?.mimeType || item.metadata?.fileType;
+  if (explicitMime) return explicitMime;
+  return DOCUMENT_MIME_BY_EXTENSION[file.extension] || "application/octet-stream";
+}
+
+function renderPreviewUnavailable({ descriptor, compact = false }) {
+  return jsxs("div", {
+    className: `${compact ? "aspect-video" : "min-h-[45vh]"} flex flex-col items-center justify-center gap-2 px-4 text-center text-gray-500`,
+    children: [
+      jsx(Video, { className: compact ? "h-9 w-9 text-gray-600" : "h-12 w-12 text-gray-600" }),
+      jsx("span", {
+        className: "text-xs leading-5",
+        children: PREVIEW_STATUS_LABELS[descriptor?.status] || "لا توجد معاينة HTML5 لهذا المسار"
+      })
+    ]
+  });
+}
+
+function renderPreviewMedia({ item, compact = false, allowDocuments = false }) {
+  const file = getArchiveFileMeta(item);
+  const runtimeProtocol = typeof window !== "undefined" ? window.location.protocol : "";
+  const descriptor = getMediaPreviewDescriptor(file.path, { runtimeProtocol });
+  const videoSource = descriptor.status === MEDIA_PREVIEW_STATUS.PLAYABLE ? descriptor.source : null;
+
+  if (videoSource) {
+    return jsx("video", {
+      className: compact ? "aspect-video w-full bg-black" : "max-h-[calc(100vh-10rem)] w-full bg-black object-contain",
+      src: videoSource,
+      controls: true,
+      preload: "metadata"
+    });
+  }
+
+  const documentSource = getBrowserPreviewSource(file.path, runtimeProtocol);
+  if (allowDocuments && documentSource && file.path && descriptor.status === MEDIA_PREVIEW_STATUS.UNSUPPORTED_FORMAT) {
+    return jsx("div", {
+      className: compact
+        ? "aspect-video overflow-auto bg-gray-950"
+        : "max-h-[calc(100vh-10rem)] overflow-auto bg-gray-950 p-2",
+      children: jsx(DocumentViewer, {
+        url: documentSource,
+        mimeType: getDocumentMimeType(item, file),
+        fileName: file.name || item.title || "ملف",
+        pageCount: item.pageCount || item.metadata?.pageCount
+      })
+    });
+  }
+
+  return renderPreviewUnavailable({ descriptor, compact });
 }
 
 export function SegmentedControl({ label, value, options, onChange }) {
@@ -1116,8 +1206,50 @@ export function PreviewPanel({
   onQuickEdit,
   onQuickTag,
   onAddToCollection,
-  onOpenProjects
+  onOpenProjects,
+  canPreviewPrevious = false,
+  canPreviewNext = false,
+  onPreviewPrevious,
+  onPreviewNext
 }) {
+  const [isFullscreenPreviewOpen, setIsFullscreenPreviewOpen] = React.useState(false);
+  const closeFullscreenButtonRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!isFullscreenPreviewOpen || !item) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusTimer = window.setTimeout(() => closeFullscreenButtonRef.current?.focus(), 0);
+
+    const handlePreviewKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsFullscreenPreviewOpen(false);
+        return;
+      }
+      if (event.key === "ArrowLeft" && canPreviewPrevious) {
+        event.preventDefault();
+        onPreviewPrevious?.();
+      }
+      if (event.key === "ArrowRight" && canPreviewNext) {
+        event.preventDefault();
+        onPreviewNext?.();
+      }
+    };
+
+    window.addEventListener("keydown", handlePreviewKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener("keydown", handlePreviewKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [canPreviewNext, canPreviewPrevious, isFullscreenPreviewOpen, item, onPreviewNext, onPreviewPrevious]);
+
+  React.useEffect(() => {
+    if (!item) setIsFullscreenPreviewOpen(false);
+  }, [item]);
+
   if (!item) {
     return jsxs("aside", {
       className: "va-preview-panel hidden rounded-2xl border border-dashed border-white/10 bg-gray-950/35 p-5 text-center text-gray-500 xl:sticky xl:top-4 xl:block",
@@ -1129,11 +1261,6 @@ export function PreviewPanel({
     });
   }
 
-  const path = item.path || item.filePath || item.url || "";
-  const descriptor = getMediaPreviewDescriptor(path, {
-    runtimeProtocol: typeof window !== "undefined" ? window.location.protocol : ""
-  });
-  const source = descriptor.status === MEDIA_PREVIEW_STATUS.PLAYABLE ? descriptor.source : null;
   const file = getArchiveFileMeta(item);
   const completeness = computeCompleteness(item, typeDefinition);
   const tier = COMPLETENESS_TIERS[completeness.tier] || COMPLETENESS_TIERS.mid;
@@ -1154,19 +1281,77 @@ export function PreviewPanel({
     dir: "rtl",
     children: [
       jsx("div", {
-        className: "overflow-hidden rounded-xl border border-white/10 bg-gray-950",
-        children: source ? jsx("video", {
-          className: "aspect-video w-full bg-black",
-          src: source,
-          controls: true,
-          preload: "metadata"
-        }) : jsxs("div", {
-          className: "flex aspect-video flex-col items-center justify-center gap-2 px-4 text-center text-gray-500",
-          children: [
-            jsx(Video, { className: "h-9 w-9 text-gray-600" }),
-            jsx("span", { className: "text-xs leading-5", children: PREVIEW_STATUS_LABELS[descriptor.status] || "لا توجد معاينة HTML5 لهذا المسار" })
-          ]
-        })
+        className: "relative overflow-hidden rounded-xl border border-white/10 bg-gray-950",
+        children: [
+          React.cloneElement(renderPreviewMedia({ item, compact: true }), { key: "preview-media" }),
+          jsx("button", {
+            type: "button",
+            onClick: () => setIsFullscreenPreviewOpen(true),
+            className: "absolute left-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-gray-950/75 text-gray-200 shadow-lg shadow-black/30 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
+            "aria-label": "تكبير المعاينة",
+            title: "تكبير المعاينة",
+            children: jsx(Maximize2, { className: "h-4 w-4" })
+          }, "preview-expand")
+        ]
+      }),
+      isFullscreenPreviewOpen && jsxs("div", {
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-label": "معاينة مكبرة",
+        className: "fixed inset-0 z-[2147483000] flex flex-col bg-gray-950/96 p-3 text-right text-white backdrop-blur-md sm:p-5",
+        dir: "rtl",
+        children: [
+          jsxs("header", {
+            className: "flex min-h-12 items-center justify-between gap-3 border-b border-white/10 pb-3",
+            children: [
+              jsxs("div", {
+                className: "min-w-0",
+                children: [
+                  jsx("h2", { className: "truncate text-base font-bold leading-7 text-white sm:text-lg", children: item.title || "بدون عنوان" }),
+                  jsx("p", { className: "truncate text-xs text-gray-400", children: [typeLabel, subtypeLabel].filter(Boolean).join(" / ") || "غير مصنف" })
+                ]
+              }),
+              jsx("button", {
+                ref: closeFullscreenButtonRef,
+                type: "button",
+                onClick: () => setIsFullscreenPreviewOpen(false),
+                className: "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] text-gray-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
+                "aria-label": "إغلاق المعاينة المكبرة",
+                title: "إغلاق",
+                children: jsx(X, { className: "h-5 w-5" })
+              })
+            ]
+          }),
+          jsxs("div", {
+            className: "relative flex min-h-0 flex-1 items-center justify-center py-4",
+            children: [
+              canPreviewPrevious && jsx("button", {
+                type: "button",
+                onClick: onPreviewPrevious,
+                className: "absolute right-0 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl border border-white/15 bg-gray-950/75 text-gray-200 shadow-lg shadow-black/35 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:right-2",
+                "aria-label": "المعاينة السابقة",
+                title: "السابق",
+                children: jsx(ChevronRight, { className: "h-5 w-5" })
+              }),
+              jsx("main", {
+                className: "flex max-h-full w-full items-center justify-center overflow-auto rounded-xl border border-white/10 bg-black/35",
+                children: renderPreviewMedia({ item, allowDocuments: true })
+              }),
+              canPreviewNext && jsx("button", {
+                type: "button",
+                onClick: onPreviewNext,
+                className: "absolute left-0 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl border border-white/15 bg-gray-950/75 text-gray-200 shadow-lg shadow-black/35 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:left-2",
+                "aria-label": "المعاينة التالية",
+                title: "التالي",
+                children: jsx(ChevronLeft, { className: "h-5 w-5" })
+              })
+            ]
+          }),
+          jsx("p", {
+            className: "border-t border-white/10 pt-3 text-center text-xs text-gray-500",
+            children: "Esc للإغلاق، والسهمان الأيمن والأيسر للتنقل بين المعاينات."
+          })
+        ]
       }),
       jsxs("div", {
         className: "mt-3 flex items-start justify-between gap-3",

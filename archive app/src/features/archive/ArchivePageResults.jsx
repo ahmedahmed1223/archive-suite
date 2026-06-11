@@ -257,6 +257,7 @@ export function ArchivePageResults(props) {
     typeById,
     contentTypes,
     openItem,
+    setPreviewId,
     toggleBulkSelect,
     setBulkMode,
     virtualCollections,
@@ -305,6 +306,20 @@ export function ArchivePageResults(props) {
   // signal (loading would lie). videoItems vs filteredItems matters —
   // a fresh import that yields zero filtered hits is still "loaded".
   const showSkeleton = isLoading && filteredItems.length === 0 && !hasFilters && !showDeleted;
+  const previewIndex = React.useMemo(
+    () => (visibleItems || []).findIndex((item) => item.id === previewItem?.id),
+    [previewItem?.id, visibleItems]
+  );
+  const canPreviewPrevious = previewIndex > 0;
+  const canPreviewNext = previewIndex >= 0 && previewIndex < (visibleItems || []).length - 1;
+  const previewPrevious = React.useCallback(() => {
+    if (!canPreviewPrevious) return;
+    setPreviewId?.(visibleItems[previewIndex - 1].id);
+  }, [canPreviewPrevious, previewIndex, setPreviewId, visibleItems]);
+  const previewNext = React.useCallback(() => {
+    if (!canPreviewNext) return;
+    setPreviewId?.(visibleItems[previewIndex + 1].id);
+  }, [canPreviewNext, previewIndex, setPreviewId, visibleItems]);
 
   return jsxs("section", {
     className: "grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]",
@@ -416,6 +431,10 @@ export function ArchivePageResults(props) {
         onOpen: () => previewItem && openItem(previewItem),
         onQuickEdit: () => previewItem && openItem(previewItem),
         onOpenProjects: openProjects,
+        canPreviewPrevious,
+        canPreviewNext,
+        onPreviewPrevious: previewPrevious,
+        onPreviewNext: previewNext,
         onQuickTag: async (item) => {
           if (!item) return;
           const raw = await appPrompt("اكتب الوسوم مفصولة بفواصل. ستضاف إلى المادة الحالية فقط.", {

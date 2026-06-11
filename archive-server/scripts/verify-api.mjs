@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
+import { createServer } from "node:http";
 
 import { dispatchRpc, RPC_METHODS } from "../src/api/rpcHandler.js";
 import { createApiServer } from "../src/api/server.js";
 import { validateRpcArgs } from "../src/api/validate.js";
 import { createRateLimiter } from "../src/api/rateLimit.js";
 import { signJwt } from "../src/auth/jwt.js";
+import { fireWebhooks } from "../src/webhooks/webhookService.js";
 
 // Tests the RPC dispatcher (pure) and the HTTP server (real listen on an
 // ephemeral port) against a fake StorageProvider — no real backend needed.
@@ -102,8 +105,60 @@ function createFakeSyncProvider() {
   };
 }
 
+function createFakeWebhookPrisma() {
+  const hooks = new Map();
+  let nextId = 1;
+  const matchesWhere = (hook, where = {}) => {
+    if (where.ownerId !== undefined && hook.ownerId !== where.ownerId) return false;
+    if (where.id !== undefined && hook.id !== where.id) return false;
+    if (where.active !== undefined && hook.active !== where.active) return false;
+    if (where.events?.has && !hook.events?.includes(where.events.has)) return false;
+    return true;
+  };
+  return {
+    webhook: {
+      async findMany({ where = {}, orderBy } = {}) {
+        const items = [...hooks.values()].filter((hook) => matchesWhere(hook, where));
+        if (orderBy?.createdAt === "desc") {
+          items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        }
+        return items;
+      },
+      async create({ data }) {
+        const hook = {
+          id: `wh_${nextId++}`,
+          createdAt: new Date(Date.now() + nextId),
+          updatedAt: new Date(Date.now() + nextId),
+          ...data
+        };
+        hooks.set(hook.id, hook);
+        return hook;
+      },
+      async deleteMany({ where = {} }) {
+        let count = 0;
+        for (const [id, hook] of hooks) {
+          if (matchesWhere(hook, where)) {
+            hooks.delete(id);
+            count += 1;
+          }
+        }
+        return { count };
+      }
+    }
+  };
+}
+
 function bearer(secret = "sync-secret") {
   return `Bearer ${signJwt({ sub: "u1", username: "admin", role: "admin" }, secret)}`;
+}
+
+async function waitFor(predicate, { timeoutMs = 2500, intervalMs = 25 } = {}) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  assert.fail("timed out waiting for condition");
 }
 
 run("RPC method allow-list matches the port methods + getByField", () => {
@@ -421,6 +476,141 @@ run("HTTP: sync routes push and pull changed items behind auth", async () => {
     assert.deepEqual((await pullFresh.json()).result.items, []);
   } finally {
     await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+run("HTTP: webhook routes list, create, and delete caller hooks behind auth", async () => {
+  const secret = "webhook-secret";
+  const prisma = createFakeWebhookPrisma();
+  const server = createApiServer({
+    backend: "test",
+    authSecret: secret,
+    prisma,
+    rateLimit: null
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const auth = { Authorization: bearer(secret), "Content-Type": "application/json" };
+
+  try {
+    const noAuth = await fetch(`${base}/api/webhooks`);
+    assert.equal(noAuth.status, 401);
+
+    await prisma.webhook.create({
+      data: {
+        url: "https://example.com/other",
+        events: ["record.created"],
+        secret: "other-secret",
+        active: true,
+        ownerId: "someone-else"
+      }
+    });
+
+    const create = await fetch(`${base}/api/webhooks`, {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({
+        url: "https://example.com/archive-hook",
+        events: ["record.created", "record.deleted", "not.allowed"],
+        secret: "provided-secret"
+      })
+    });
+    assert.equal(create.status, 201);
+    const created = await create.json();
+    assert.equal(created.ok, true);
+    assert.equal(created.hook.ownerId, "u1");
+    assert.deepEqual(created.hook.events, ["record.created", "record.deleted"]);
+    assert.equal(created.hook.secret, "provided-secret");
+
+    const list = await fetch(`${base}/api/webhooks`, { headers: { Authorization: bearer(secret) } });
+    assert.equal(list.status, 200);
+    const listed = await list.json();
+    assert.equal(listed.ok, true);
+    assert.deepEqual(listed.hooks.map((hook) => hook.id), [created.hook.id]);
+
+    const del = await fetch(`${base}/api/webhooks/${encodeURIComponent(created.hook.id)}`, {
+      method: "DELETE",
+      headers: { Authorization: bearer(secret) }
+    });
+    assert.equal(del.status, 200);
+    assert.deepEqual(await del.json(), { ok: true });
+
+    const afterDelete = await fetch(`${base}/api/webhooks`, { headers: { Authorization: bearer(secret) } });
+    assert.deepEqual((await afterDelete.json()).hooks, []);
+    assert.equal((await prisma.webhook.findMany({ where: { ownerId: "someone-else" } })).length, 1);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+run("fireWebhooks delivers matching hooks with signature and retry", async () => {
+  const received = [];
+  const receiver = createServer((req, res) => {
+    let body = "";
+    req.setEncoding("utf8");
+    req.on("data", (chunk) => { body += chunk; });
+    req.on("end", () => {
+      received.push({ body, headers: req.headers });
+      res.statusCode = received.length === 1 ? 500 : 204;
+      res.end();
+    });
+  });
+  await new Promise((resolve) => receiver.listen(0, "127.0.0.1", resolve));
+
+  const prisma = createFakeWebhookPrisma();
+  const logs = { warns: [], errors: [] };
+  const logger = {
+    warn: (meta, message) => logs.warns.push({ meta, message }),
+    error: (meta, message) => logs.errors.push({ meta, message })
+  };
+
+  try {
+    const targetUrl = `http://127.0.0.1:${receiver.address().port}/hook`;
+    await prisma.webhook.create({
+      data: {
+        url: targetUrl,
+        events: ["record.created"],
+        secret: "match-secret",
+        active: true,
+        ownerId: "u1"
+      }
+    });
+    await prisma.webhook.create({
+      data: {
+        url: targetUrl,
+        events: ["record.updated"],
+        secret: "wrong-event-secret",
+        active: true,
+        ownerId: "u1"
+      }
+    });
+    await prisma.webhook.create({
+      data: {
+        url: targetUrl,
+        events: ["record.created"],
+        secret: "wrong-owner-secret",
+        active: true,
+        ownerId: "someone-else"
+      }
+    });
+
+    fireWebhooks(prisma, "record.created", { id: "v1", title: "Webhook" }, "u1", logger);
+    await waitFor(() => received.length === 2);
+
+    assert.equal(received.length, 2);
+    assert.equal(received[0].body, received[1].body);
+    const payload = JSON.parse(received[0].body);
+    assert.equal(payload.event, "record.created");
+    assert.equal(payload.webhookId, "wh_1");
+    assert.deepEqual(payload.data, { id: "v1", title: "Webhook" });
+    const expectedSignature = createHmac("sha256", "match-secret").update(received[0].body).digest("hex");
+    assert.equal(received[0].headers["x-webhook-signature"], `sha256=${expectedSignature}`);
+    assert.equal(received[1].headers["x-webhook-signature"], `sha256=${expectedSignature}`);
+    assert.equal(received[0].headers["user-agent"], "ArchiveSuite-Webhook/1.0");
+    assert.equal(logs.warns.length, 1);
+    assert.equal(logs.errors.length, 0);
+  } finally {
+    await new Promise((resolve) => receiver.close(resolve));
   }
 });
 
