@@ -227,6 +227,41 @@ run("HTTP: public read is throttled per API key (429 past the cap)", async () =>
   }
 });
 
+run("HTTP: public read paginates by stable cursor", async () => {
+  const prisma = fakeApiKeyPrisma();
+  const records = [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }, { id: "e" }];
+  const storage = { async getAll() { return records; } };
+  const server = createApiServer({ backend: "test", authSecret: SECRET, prisma, resolveStorage: () => storage, rateLimit: null });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const { apiKey } = await (await fetch(`${base}/api/api-keys`, {
+      method: "POST",
+      headers: { Authorization: bearer("u1"), "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "pager", scopes: ["read"] }),
+    })).json();
+    const page = (cursor) =>
+      fetch(`${base}/api/public/records?store=video_items&limit=2${cursor ? `&cursor=${cursor}` : ""}`, {
+        headers: { "X-API-Key": apiKey.key },
+      }).then((r) => r.json());
+
+    const p1 = await page();
+    assert.deepEqual(p1.records.map((r) => r.id), ["a", "b"]);
+    assert.equal(p1.nextCursor, "b");
+    assert.equal(p1.count, 5);
+
+    const p2 = await page(p1.nextCursor);
+    assert.deepEqual(p2.records.map((r) => r.id), ["c", "d"]);
+    assert.equal(p2.nextCursor, "d");
+
+    const p3 = await page(p2.nextCursor);
+    assert.deepEqual(p3.records.map((r) => r.id), ["e"]);
+    assert.equal(p3.nextCursor, null, "last page has no nextCursor");
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
 process.on("beforeExit", () => {
   if (failures > 0) { console.error(`\n${failures} api-key test(s) failed`); process.exit(1); }
   else console.log("\nAll API key tests passed.");
