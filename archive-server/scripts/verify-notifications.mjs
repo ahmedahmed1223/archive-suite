@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { createApiServer } from "../src/api/server.js";
 import { signJwt } from "../src/auth/jwt.js";
 import { notifyMention, notifyRecordShared, notifyUploadComplete } from "../src/notifications/notificationService.js";
+import { saveSubscription, sendPushToUser } from "../src/notifications/webPushService.js";
 
 let failures = 0;
 function run(name, fn) {
@@ -298,6 +299,178 @@ run("mention email notification resolves recipient email and respects mention pr
   assert.match(sent[0].subject, /Mentioned Record/);
   assert.match(sent[0].text, /@enabled-user please review/);
   assert.match(sent[0].text, /https:\/\/archive\.example\/records\/enabled/);
+});
+
+// ── Web Push (§20.2) ─────────────────────────────────────────────────────────
+
+function createFakePushPrisma({ prefs } = {}) {
+  const subs = new Map(); // endpoint → row
+  return {
+    notificationPreference: {
+      async findUnique({ where }) {
+        return prefs?.get(where.userId) || null;
+      },
+    },
+    pushSubscription: {
+      async upsert({ where, create, update }) {
+        const previous = subs.get(where.endpoint);
+        const row = previous ? { ...previous, ...update } : { id: `ps_${subs.size + 1}`, ...create };
+        subs.set(where.endpoint, row);
+        return row;
+      },
+      async findMany({ where }) {
+        return [...subs.values()].filter((row) => row.userId === where.userId);
+      },
+      async deleteMany({ where }) {
+        let count = 0;
+        for (const [endpoint, row] of subs) {
+          if (where.endpoint && endpoint !== where.endpoint) continue;
+          if (where.userId && row.userId !== where.userId) continue;
+          subs.delete(endpoint);
+          count += 1;
+        }
+        return { count };
+      },
+    },
+    __subs: subs,
+  };
+}
+
+run("saveSubscription validates the payload and upserts by endpoint", async () => {
+  const prisma = createFakePushPrisma();
+  await saveSubscription(prisma, "u1", { endpoint: "https://push.example/e1", keys: { p256dh: "p", auth: "a" } });
+  assert.equal(prisma.__subs.size, 1);
+
+  // Same endpoint re-registers (e.g. another login on the same browser) — still one row.
+  await saveSubscription(prisma, "u2", { endpoint: "https://push.example/e1", keys: { p256dh: "p2", auth: "a2" } });
+  assert.equal(prisma.__subs.size, 1);
+  assert.equal(prisma.__subs.get("https://push.example/e1").userId, "u2");
+
+  await assert.rejects(() => saveSubscription(prisma, "u1", { endpoint: "http://insecure", keys: { p256dh: "p", auth: "a" } }), /غير صالح/);
+  await assert.rejects(() => saveSubscription(prisma, "u1", { endpoint: "https://ok", keys: {} }), /غير صالح/);
+});
+
+run("sendPushToUser delivers to every device and respects per-type prefs", async () => {
+  const prefs = new Map([
+    ["push-on", { pushOnShare: true, pushOnUpload: true, pushOnMention: true, pushOnSystem: true }],
+    ["push-off", { pushOnShare: false, pushOnUpload: true, pushOnMention: true, pushOnSystem: true }],
+  ]);
+  const prisma = createFakePushPrisma({ prefs });
+  await saveSubscription(prisma, "push-on", { endpoint: "https://push.example/d1", keys: { p256dh: "p", auth: "a" } });
+  await saveSubscription(prisma, "push-on", { endpoint: "https://push.example/d2", keys: { p256dh: "p", auth: "a" } });
+  await saveSubscription(prisma, "push-off", { endpoint: "https://push.example/d3", keys: { p256dh: "p", auth: "a" } });
+
+  const delivered = [];
+  const sendImpl = async (subscription, payload) => delivered.push({ endpoint: subscription.endpoint, payload: JSON.parse(payload) });
+
+  // pref off → nothing
+  await new Promise((resolve) => sendPushToUser({ prisma, userId: "push-off", type: "share", title: "Suppressed", sendImpl, onDone: resolve }));
+  assert.equal(delivered.length, 0);
+
+  // pref on → both devices get the same payload
+  await new Promise((resolve) => sendPushToUser({ prisma, userId: "push-on", type: "share", title: "تمت مشاركة سجل معك", url: "/share/x", sendImpl, onDone: resolve }));
+  assert.equal(delivered.length, 2);
+  assert.deepEqual(new Set(delivered.map((d) => d.endpoint)), new Set(["https://push.example/d1", "https://push.example/d2"]));
+  assert.equal(delivered[0].payload.title, "تمت مشاركة سجل معك");
+  assert.equal(delivered[0].payload.url, "/share/x");
+  assert.equal(delivered[0].payload.tag, "share");
+});
+
+run("sendPushToUser aggregates identical alerts and prunes dead endpoints", async () => {
+  const prefs = new Map([["agg-user", { pushOnShare: true, pushOnUpload: true, pushOnMention: true, pushOnSystem: true }]]);
+  const prisma = createFakePushPrisma({ prefs });
+  await saveSubscription(prisma, "agg-user", { endpoint: "https://push.example/live", keys: { p256dh: "p", auth: "a" } });
+  await saveSubscription(prisma, "agg-user", { endpoint: "https://push.example/dead", keys: { p256dh: "p", auth: "a" } });
+
+  const delivered = [];
+  const sendImpl = async (subscription, payload) => {
+    if (subscription.endpoint.endsWith("/dead")) {
+      const err = new Error("Gone");
+      err.statusCode = 410;
+      throw err;
+    }
+    delivered.push(subscription.endpoint);
+  };
+
+  await new Promise((resolve) => sendPushToUser({ prisma, userId: "agg-user", type: "system", title: "نسخ احتياطي فشل", sendImpl, onDone: resolve }));
+  assert.deepEqual(delivered, ["https://push.example/live"]);
+  // 410 endpoint was pruned
+  assert.equal(prisma.__subs.has("https://push.example/dead"), false);
+
+  // identical alert inside the aggregation window → dropped
+  await new Promise((resolve) => sendPushToUser({ prisma, userId: "agg-user", type: "system", title: "نسخ احتياطي فشل", sendImpl, onDone: resolve }));
+  assert.deepEqual(delivered, ["https://push.example/live"]);
+});
+
+run("push HTTP routes: subscribe/unsubscribe persist rows; vapid 501 without keys", async () => {
+  const secret = "notification-secret";
+  const prisma = createFakePushPrisma();
+  const server = createApiServer({ authSecret: secret, prisma, rateLimit: null });
+
+  await withServer(server, async (base) => {
+    // VAPID keys are not configured in this test env → 501 with guidance
+    const keyRes = await fetch(`${base}/api/push/vapid-public-key`, { headers: { Authorization: bearer(secret) } });
+    assert.equal(keyRes.status, 501);
+
+    // subscribe requires auth
+    const anon = await fetch(`${base}/api/push/subscribe`, { method: "POST", body: "{}" });
+    assert.equal(anon.status, 401);
+
+    const sub = await fetch(`${base}/api/push/subscribe`, {
+      method: "POST",
+      headers: { Authorization: bearer(secret), "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription: { endpoint: "https://push.example/http1", keys: { p256dh: "p", auth: "a" } } }),
+    });
+    assert.equal(sub.status, 200);
+    assert.equal(prisma.__subs.size, 1);
+    assert.equal(prisma.__subs.get("https://push.example/http1").userId, "u1");
+
+    const bad = await fetch(`${base}/api/push/subscribe`, {
+      method: "POST",
+      headers: { Authorization: bearer(secret), "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription: { endpoint: "not-a-url" } }),
+    });
+    assert.equal(bad.status, 400);
+
+    const unsub = await fetch(`${base}/api/push/unsubscribe`, {
+      method: "POST",
+      headers: { Authorization: bearer(secret), "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint: "https://push.example/http1" }),
+    });
+    assert.equal(unsub.status, 200);
+    assert.equal(prisma.__subs.size, 0);
+  });
+});
+
+run("notification preferences PATCH accepts pushOn* fields", async () => {
+  const secret = "notification-secret";
+  const prefsByUser = new Map();
+  const prisma = {
+    notificationPreference: {
+      async findUnique({ where }) {
+        return prefsByUser.get(where.userId) || null;
+      },
+      async upsert({ where, create, update }) {
+        const previous = prefsByUser.get(where.userId) || {};
+        const row = { ...previous, ...create, ...update };
+        prefsByUser.set(where.userId, row);
+        return row;
+      },
+    },
+  };
+  const server = createApiServer({ authSecret: secret, prisma, rateLimit: null });
+
+  await withServer(server, async (base) => {
+    const patch = await fetch(`${base}/api/notification-preferences`, {
+      method: "PATCH",
+      headers: { Authorization: bearer(secret), "Content-Type": "application/json" },
+      body: JSON.stringify({ pushOnShare: false, pushOnSystem: false }),
+    });
+    assert.equal(patch.status, 200);
+    const patched = await patch.json();
+    assert.equal(patched.prefs.pushOnShare, false);
+    assert.equal(patched.prefs.pushOnSystem, false);
+  });
 });
 
 process.on("beforeExit", () => {

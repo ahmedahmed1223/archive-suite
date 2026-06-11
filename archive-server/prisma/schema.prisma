@@ -194,6 +194,24 @@ model NotificationPreference {
   emailOnShare   Boolean @default(true)  @map("email_on_share")
   emailOnUpload  Boolean @default(false) @map("email_on_upload")
   emailOnMention Boolean @default(true)  @map("email_on_mention")
+  pushOnShare    Boolean @default(true)  @map("push_on_share")
+  pushOnUpload   Boolean @default(true)  @map("push_on_upload")
+  pushOnMention  Boolean @default(true)  @map("push_on_mention")
+  pushOnSystem   Boolean @default(true)  @map("push_on_system")
 
   @@map("notification_preferences")
+}
+
+/// Web Push subscription (§20.2) — one row per browser/device endpoint.
+/// Dead endpoints (HTTP 404/410 from the push service) are deleted on send.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

@@ -20,6 +20,13 @@ import {
   peekRefreshFamily,
   DEFAULT_REFRESH_EXPIRES_IN_SEC
 } from "../auth/refreshTokenStore.js";
+import {
+  isPushConfigured,
+  getVapidPublicKey,
+  saveSubscription as savePushSubscription,
+  removeSubscription as removePushSubscription,
+  sendPushToUser
+} from "../notifications/webPushService.js";
 import { generateTotpSecret, verifyTotpToken, generateRecoveryCodes, verifyRecoveryCode } from "../auth/totpService.js";
 import { mintShareToken, readShareTokenPayload } from "../share/token.js";
 import { filterSnapshotForShare } from "../share/scope.js";
@@ -1102,6 +1109,14 @@ export function createApiServer({
             recordTitle: title,
             shareUrl,
           });
+          sendPushToUser({
+            prisma,
+            userId: body.sharedWithUserId,
+            type: "share",
+            title: `تمت مشاركة سجل معك — ${title || "سجل جديد"}`,
+            body: senderClaims?.username ? `شاركه معك ${senderClaims.username}` : "",
+            url: shareUrl,
+          });
         }
 
         return send(res, 200, { ok: true, result: { token, path: `/api/share/${token}`, title: payload.title, expiresAt: payload.expiresAt, jti: payload.jti } });
@@ -1333,6 +1348,13 @@ export function createApiServer({
             sendMail: notificationSendMail,
             userId: claims.sub,
             recordTitle: key,
+          });
+          sendPushToUser({
+            prisma,
+            userId: claims.sub,
+            type: "upload",
+            title: `اكتملت معالجة الملف — ${key}`,
+            url: "/",
           });
           return send(res, 200, {
             ok: true,
@@ -1817,6 +1839,10 @@ export function createApiServer({
         if (typeof body.emailOnShare === "boolean") data.emailOnShare = body.emailOnShare;
         if (typeof body.emailOnUpload === "boolean") data.emailOnUpload = body.emailOnUpload;
         if (typeof body.emailOnMention === "boolean") data.emailOnMention = body.emailOnMention;
+        if (typeof body.pushOnShare === "boolean") data.pushOnShare = body.pushOnShare;
+        if (typeof body.pushOnUpload === "boolean") data.pushOnUpload = body.pushOnUpload;
+        if (typeof body.pushOnMention === "boolean") data.pushOnMention = body.pushOnMention;
+        if (typeof body.pushOnSystem === "boolean") data.pushOnSystem = body.pushOnSystem;
         if (Object.keys(data).length === 0) {
           return send(res, 400, { ok: false, error: "No valid preference fields provided." });
         }
@@ -1829,6 +1855,50 @@ export function createApiServer({
       } catch (err) {
         logger.warn({ err }, "notification-preferences PATCH failed");
         return send(res, 500, { ok: false, error: "failed" });
+      }
+    }
+
+    // ── Web Push (§20.2) ─────────────────────────────────────────────────────
+    // GET  /api/push/vapid-public-key — VAPID key for PushManager.subscribe
+    // POST /api/push/subscribe        — store this browser's subscription
+    // POST /api/push/unsubscribe      — drop it again
+
+    if (url.split("?")[0] === "/api/push/vapid-public-key" && req.method === "GET") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!isPushConfigured()) {
+        return send(res, 501, { ok: false, error: "Web Push غير مهيأ على هذا الخادم (VAPID keys)." });
+      }
+      return send(res, 200, { ok: true, key: getVapidPublicKey() });
+    }
+
+    if (url.split("?")[0] === "/api/push/subscribe" && req.method === "POST") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "Web Push غير متاح في هذا الإعداد." });
+      try {
+        const body = await readJsonBody(req);
+        await savePushSubscription(prisma, claims.sub, body?.subscription || body);
+        return send(res, 200, { ok: true });
+      } catch (err) {
+        logger.warn({ err: err?.message }, "push subscribe failed");
+        return send(res, err?.statusCode || 500, { ok: false, error: err?.message || "failed" });
+      }
+    }
+
+    if (url.split("?")[0] === "/api/push/unsubscribe" && req.method === "POST") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      if (!prisma) return send(res, 501, { ok: false, error: "Web Push غير متاح في هذا الإعداد." });
+      try {
+        const body = await readJsonBody(req);
+        await removePushSubscription(prisma, claims.sub, body?.endpoint);
+        return send(res, 200, { ok: true });
+      } catch (err) {
+        logger.warn({ err: err?.message }, "push unsubscribe failed");
+        return send(res, err?.statusCode || 500, { ok: false, error: err?.message || "failed" });
       }
     }
 
