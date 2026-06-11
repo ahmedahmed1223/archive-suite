@@ -32,6 +32,8 @@ export const activityLogActionKeys = [
   "removeActivityEntry",
   "undoLastActivity",
   "redoLastActivity",
+  "undoActivityEntryById",
+  "redoActivityEntryById",
   "setActivityFilters",
   "clearActivityFilters",
   "loadActivityFromStorage",
@@ -82,6 +84,43 @@ export function createActivityLogActions({ set, get }) {
       const updated = { ...target, undone: false, undoneAt: null };
       set((state) => ({
         activityLog: state.activityLog.map((entry) => (entry.id === target.id ? updated : entry))
+      }));
+      await dbPut(STORES.ACTIVITY_LOG, updated).catch(() => {});
+      return updated;
+    },
+    // Phase-1 scope: per-entry undo/redo is supported only for "update" entries
+    // targeting items, by re-applying the stored before/after snapshot through
+    // the regular updateVideoItem path (skipActivityLog avoids a feedback loop).
+    undoActivityEntryById: async (id) => {
+      const entry = get().activityLog.find((current) => current.id === id);
+      if (!entry || !entry.undoable || entry.undone) return null;
+      const before = entry.snapshot?.before;
+      if (entry.action !== "update" || entry.targetType !== "item" || !before?.id) return null;
+      try {
+        await get().updateVideoItem?.(before, { skipActivityLog: true });
+      } catch {
+        return null;
+      }
+      const updated = { ...entry, undone: true, undoneAt: nowIso() };
+      set((state) => ({
+        activityLog: state.activityLog.map((current) => (current.id === id ? updated : current))
+      }));
+      await dbPut(STORES.ACTIVITY_LOG, updated).catch(() => {});
+      return updated;
+    },
+    redoActivityEntryById: async (id) => {
+      const entry = get().activityLog.find((current) => current.id === id);
+      if (!entry || !entry.undoable || !entry.undone) return null;
+      const after = entry.snapshot?.after;
+      if (entry.action !== "update" || entry.targetType !== "item" || !after?.id) return null;
+      try {
+        await get().updateVideoItem?.(after, { skipActivityLog: true });
+      } catch {
+        return null;
+      }
+      const updated = { ...entry, undone: false, undoneAt: null };
+      set((state) => ({
+        activityLog: state.activityLog.map((current) => (current.id === id ? updated : current))
       }));
       await dbPut(STORES.ACTIVITY_LOG, updated).catch(() => {});
       return updated;

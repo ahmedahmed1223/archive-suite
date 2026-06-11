@@ -1982,6 +1982,9 @@
   - يرتبط بـ: §17.17 (الحالات)، §1 (سجل التدقيق في الخادم).
   - الجهد: 4-6 أسابيع.
   - المصدر: daily-use-proposals (المقترح 1 — P0).
+  - **حالة التنفيذ (المرحلة 1 — محلي فقط، 11 يونيو 2026):**
+    - ✅ منجز: `features/activityLog/viewModel.js` (createActivityEntry/buildDiff/describeActivity/filterActivityEntries/groupActivitiesByDay) + اختبارات وحدة (`viewModel.test.js`، 13 اختبار)؛ `features/activityLog/undoManager.js` (توسعة withActivityLog فوق SimpleUndoRedoManager)؛ store `activity_log` في `schema.js` مع مرايا DATA_STORES/SNAPSHOT_STORES/الاستيراد في `services/storage/index.js` و`storage/adapters/local-sqlite/index.js`؛ `stores/slices/activityLogSlice.js` (add/remove/load/clear/filters + undoActivityEntryById/redoActivityEntryById) مركّب في `appStore.js`؛ صفحة `ActivityPage.jsx` + `components/activity/` (ActivityTimeline/ActivityEntry/DiffView/ActivityFilterBar) مسجّلة في pageManifest/pageRegistry (id: `activity`)؛ توثيق نشاط تلقائي في `archiveSlice.updateVideoItem` (snapshot before/after، failure-safe، خيار skipActivityLog).
+    - ⏳ متبقٍ (المرحلة 2): التراجع/الإعادة مقصور حالياً على عمليات «تعديل عنصر» — تعميمه على الحذف/النقل/التعديل الجماعي/الإنشاء؛ توثيق بقية مسارات الكتابة (delete/restore/bulk/move/collections/folders/settings) و`ArchivePage`/`DetailPage`؛ Bulk Undo بضغطة؛ جدول Prisma `ActivityLog` للباك-إند السحابي مع الفهارس؛ فلترة حسب المستخدم/التاريخ في الواجهة (المنطق جاهز في filterActivityEntries)؛ إدخال الصفحة في Sidebar (ملف يملكه وكيل آخر).
 
 ### 18.2 P0 — مركز الإشعارات المركزي الذكي (Smart Notification Center)
 
