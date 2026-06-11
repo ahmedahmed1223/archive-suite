@@ -338,8 +338,9 @@
 
 ### هـ. الإشعارات والتكامل
 
-- [ ] `[P2]` ⏱️M **إشعارات البريد الإلكتروني** — إشعار عند: مشاركة سجل، ذكر مستخدم، اكتمال رفع.
+- [x] `[P2]` ⏱️M **إشعارات البريد الإلكتروني** — إشعار عند: مشاركة سجل، ذكر مستخدم، اكتمال رفع.
   - يستخدم nodemailer الموجود؛ جدول `notification_preferences` لإعدادات كل مستخدم.
+  - ✅ **مُنجز ومتحقق (2026-06-11):** `notificationService.js` يرسل بريدًا عبر nodemailer عند المشاركة (`notifyRecordShared`) والذكر (`notifyMention`) واكتمال الرفع (`notifyUploadComplete`) مع احترام تفضيلات `NotificationPreference` (حقول `emailOn*`)، وواجهة `GET/PATCH /api/notification-preferences`. أضيف `archive-server/scripts/verify-notifications.mjs` (ضمن `verify:api` و`verify`)، ومرّت كل الفحوص.
 
 - [x] `[P2]` ⏱️M **Webhooks الصادرة** — إرسال حدث HTTP عند: إضافة/تحديث/حذف سجل.
   - جدول: `webhooks` (url, events[], secret); `POST /api/webhooks` للإدارة.
@@ -2105,10 +2106,11 @@
 
 ### 20.1 P1 — Refresh Token + التجديد الصامت (Silent Renewal)
 
-- [ ] `[P1]` ⏱️M **إضافة `POST /api/auth/refresh` وتجديد JWT تلقائياً قبل الانتهاء** — حالياً انتهاء التوكن يقطع جلسة العمل (أرشفة طويلة تنقطع).
+- [x] `[P1]` ⏱️M **إضافة `POST /api/auth/refresh` وتجديد JWT تلقائياً قبل الانتهاء** — حالياً انتهاء التوكن يقطع جلسة العمل (أرشفة طويلة تنقطع).
   - **التنفيذ:** refresh token يُخزَّن في HttpOnly cookie (لا localStorage)؛ access token قصير العمر يُجدَّد صامتاً في الخلفية قبل انتهائه؛ إبطال refresh token عند تسجيل الخروج (يرتبط بآلية إبطال JWT الموجودة في §1)؛ rotation عند كل تجديد لكشف إعادة الاستخدام.
   - **الملفات:** `archive-server/src/auth/*`، `archive-server/src/api/server.js`، `archive app/src/bootstrap/cloudSession.js` (مؤقّت تجديد صامت + إعادة محاولة عند 401).
   - الجهد: 1-2 أسبوع.
+  - ✅ **مُنجز ومتحقق (2026-06-11):** وحدة جديدة `archive-server/src/auth/refreshTokenStore.js` (عائلات rotation + كشف إعادة الاستخدام يبطل العائلة كاملة)؛ `POST /api/auth/refresh` يدوّر كوكي `va_refresh` (HttpOnly، `Path=/api/auth`، `SameSite=Strict`، `Secure` على HTTPS) ويصدر access token جديدًا؛ login يزرع الكوكي وlogout يبطل العائلة ويمسحها؛ `REFRESH_EXPIRES_IN_SEC` في `.env.example` (افتراضي 30 يومًا). في العميل: `refreshCloudToken` + `createSilentRenewal` (تجديد قبل الانتهاء بدقيقة، إعادة محاولة عند خطأ شبكة، خروج تلقائي عند 401) موصول في `createCloudSessionProvider`. اختباران HTTP شاملان في `verify-auth.mjs` (مرّا) و7 اختبارات vitest في `cloudSession.refresh.test.js` (مرّت، 73/73).
 
 ### 20.2 P1 — التنبيهات الذكية (Smart Alerts عبر Web Push)
 

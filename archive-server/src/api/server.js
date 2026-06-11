@@ -13,6 +13,13 @@ import { createInMemoryMediaJobStore, createMediaJobWorker, montageOutputKey, st
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
 import { verifyJwt, signJwt } from "../auth/jwt.js";
 import { revokeToken } from "../auth/tokenBlacklist.js";
+import {
+  issueRefreshToken,
+  rotateRefreshToken,
+  revokeRefreshFamily,
+  peekRefreshFamily,
+  DEFAULT_REFRESH_EXPIRES_IN_SEC
+} from "../auth/refreshTokenStore.js";
 import { generateTotpSecret, verifyTotpToken, generateRecoveryCodes, verifyRecoveryCode } from "../auth/totpService.js";
 import { mintShareToken, readShareTokenPayload } from "../share/token.js";
 import { filterSnapshotForShare } from "../share/scope.js";
@@ -49,7 +56,8 @@ import { notifyRecordShared, notifyUploadComplete } from "../notifications/notif
 // Routes:
 //   GET    /api/health                  → { ok, backend, authRequired }
 //   POST   /api/auth/login              → { ok, token, user }   body: { username, password[, totpToken] }
-//   POST   /api/auth/logout             → { ok }                (Bearer JWT required)
+//   POST   /api/auth/refresh            → { ok, token, user }   (HttpOnly refresh cookie; rotates it)
+//   POST   /api/auth/logout             → { ok }                (Bearer JWT required; kills refresh family)
 //   POST   /api/auth/request-reset      → { ok, message }       body: { username }  (open; rate-limited)
 //   POST   /api/auth/reset-password     → { ok, message }       body: { token, newPassword } (open; rate-limited)
 //   POST   /api/auth/totp/setup         → { ok, otpauthUrl, qrUrl }  (Bearer required)
@@ -126,6 +134,44 @@ function bearerToken(req) {
   const header = req.headers?.authorization || req.headers?.Authorization || "";
   const match = /^Bearer\s+(.+)$/i.exec(String(header));
   return match ? match[1].trim() : null;
+}
+
+// ── Refresh-token cookie (§20.1) ──────────────────────────────────────────────
+// HttpOnly + Path=/api/auth keeps the refresh token out of JS and off every
+// non-auth request; SameSite=Strict blocks cross-site sends.
+const REFRESH_COOKIE = "va_refresh";
+
+function parseCookies(req) {
+  const out = {};
+  const header = String(req.headers?.cookie || "");
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    const key = part.slice(0, eq).trim();
+    if (key) out[key] = decodeURIComponent(part.slice(eq + 1).trim());
+  }
+  return out;
+}
+
+function isSecureRequest(req) {
+  if (req.socket?.encrypted) return true;
+  return String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim() === "https";
+}
+
+function refreshCookieHeader(req, token, maxAgeSec) {
+  const attrs = [
+    `${REFRESH_COOKIE}=${encodeURIComponent(token)}`,
+    "HttpOnly",
+    "Path=/api/auth",
+    "SameSite=Strict",
+    `Max-Age=${Math.max(0, Math.floor(maxAgeSec))}`
+  ];
+  if (isSecureRequest(req)) attrs.push("Secure");
+  return attrs.join("; ");
+}
+
+function clearRefreshCookieHeader(req) {
+  return refreshCookieHeader(req, "", 0);
 }
 
 const SAFE_FILE_INFO_KEYS = new Set([
@@ -252,6 +298,7 @@ export function createApiServer({
 
   const authRequired = Boolean(resolvedAuthSecret);
   const oauthSecret = resolvedOauthSecret;
+  const refreshExpiresInSec = Number(process.env.REFRESH_EXPIRES_IN_SEC) || DEFAULT_REFRESH_EXPIRES_IN_SEC;
 
   // Rate limiters — five layers:
   //   rpc:        IP-based general RPC cap (100/min)
@@ -414,6 +461,8 @@ export function createApiServer({
       res.setHeader("Access-Control-Allow-Origin", corsOrigin);
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      // Refresh-token cookie (§20.1) must survive the cross-origin dev setup.
+      res.setHeader("Access-Control-Allow-Credentials", "true");
       if (req.method === "OPTIONS") {
         res.writeHead(204);
         res.end();
@@ -584,6 +633,16 @@ export function createApiServer({
         const { username } = body || {};
         const result = await login(body);
         authLog.info({ event: "login", username, ip: clientIp(req) }, `AUDIT: login success`);
+        // §20.1 — start a refresh-token family in an HttpOnly cookie so the
+        // SPA can silently renew short-lived access tokens.
+        if (resolvedAuthSecret && result?.user?.id) {
+          const refresh = issueRefreshToken(
+            { sub: result.user.id, username: result.user.username, role: result.user.role },
+            resolvedAuthSecret,
+            { expiresInSec: refreshExpiresInSec }
+          );
+          res.setHeader("Set-Cookie", refreshCookieHeader(req, refresh.token, refresh.expiresInSec));
+        }
         return send(res, 200, { ok: true, ...result });
       } catch (error) {
         const statusCode = error?.statusCode || 500;
@@ -591,10 +650,46 @@ export function createApiServer({
       }
     }
 
+    // Refresh (§20.1) — rotate the HttpOnly refresh cookie and issue a fresh
+    // short-lived access token. Reuse of a rotated token kills the family.
+    if (req.method === "POST" && url === "/api/auth/refresh") {
+      if (overLimit(res, "login", req)) return undefined;
+      if (!authRequired) return send(res, 501, { ok: false, error: "Auth is not configured on this server." });
+      const presented = parseCookies(req)[REFRESH_COOKIE];
+      if (!presented) return send(res, 401, { ok: false, error: "لا توجد بطاقة تجديد." });
+      try {
+        const { token: nextRefresh, claims } = rotateRefreshToken(presented, resolvedAuthSecret, {
+          expiresInSec: refreshExpiresInSec
+        });
+        const accessToken = signJwt(
+          { sub: claims.sub, username: claims.username, role: claims.role },
+          resolvedAuthSecret
+        );
+        res.setHeader("Set-Cookie", refreshCookieHeader(req, nextRefresh, refreshExpiresInSec));
+        authLog.info({ event: "refresh", sub: claims.sub, username: claims.username, ip: clientIp(req) }, "AUDIT: token refreshed");
+        return send(res, 200, {
+          ok: true,
+          token: accessToken,
+          user: { id: claims.sub, username: claims.username, role: claims.role }
+        });
+      } catch (error) {
+        res.setHeader("Set-Cookie", clearRefreshCookieHeader(req));
+        if (error?.code === "REFRESH_REUSED") {
+          authLog.warn({ event: "refresh_reuse", ip: clientIp(req) }, "AUDIT: refresh token reuse detected");
+        }
+        return send(res, error?.statusCode || 401, { ok: false, error: error?.message || "Refresh failed" });
+      }
+    }
+
     // Logout — revoke the caller's current token so it can no longer be used
     // even before its `exp` expires. Requires a valid Bearer token.
     if (req.method === "POST" && url === "/api/auth/logout") {
       if (!authRequired) return send(res, 200, { ok: true, message: "تم تسجيل الخروج بنجاح." });
+      // §20.1 — kill the refresh family even if the access token is already
+      // expired, and clear the cookie either way.
+      const presentedRefresh = parseCookies(req)[REFRESH_COOKIE];
+      if (presentedRefresh) revokeRefreshFamily(peekRefreshFamily(presentedRefresh));
+      res.setHeader("Set-Cookie", clearRefreshCookieHeader(req));
       const token = bearerToken(req);
       if (!token) return send(res, 401, { ok: false, error: "Authentication required." });
       try {

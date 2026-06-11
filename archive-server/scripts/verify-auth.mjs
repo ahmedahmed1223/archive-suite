@@ -157,6 +157,109 @@ run("HTTP: /api/auth/login issues a usable token end-to-end", async () => {
   }
 });
 
+run("HTTP: /api/auth/refresh rotates the cookie, reuse kills the family (§20.1)", async () => {
+  const passwordHash = await bcrypt.hash("StrongPass123!", 10);
+  const provider = fakeProviderWithUsers([
+    { id: "a1", username: "admin", role: "admin", isActive: true, passwordHash }
+  ]);
+  const login = (body) => loginUser(body, { provider, secret: SECRET });
+  const server = createApiServer({ backend: "test", authSecret: SECRET, login, dispatch: async () => ({ ok: true }), rateLimit: null });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const cookieOf = (res) => {
+    const setCookie = res.headers.get("set-cookie") || "";
+    const m = /va_refresh=([^;]*)/.exec(setCookie);
+    return m ? decodeURIComponent(m[1]) : "";
+  };
+  try {
+    // 1) login sets an HttpOnly refresh cookie scoped to /api/auth
+    const loginRes = await fetch(`${base}/api/auth/login`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "admin", password: "StrongPass123!" })
+    });
+    assert.equal(loginRes.status, 200);
+    const setCookie = loginRes.headers.get("set-cookie") || "";
+    assert.match(setCookie, /va_refresh=/);
+    assert.match(setCookie, /HttpOnly/i);
+    assert.match(setCookie, /Path=\/api\/auth/i);
+    assert.match(setCookie, /SameSite=Strict/i);
+    const firstRefresh = cookieOf(loginRes);
+    assert.ok(firstRefresh, "login must issue a refresh token cookie");
+
+    // 2) refresh returns a usable access token and a *rotated* cookie
+    const refreshRes = await fetch(`${base}/api/auth/refresh`, {
+      method: "POST", headers: { Cookie: `va_refresh=${encodeURIComponent(firstRefresh)}` }
+    });
+    assert.equal(refreshRes.status, 200);
+    const refreshed = await refreshRes.json();
+    assert.equal(refreshed.ok, true);
+    assert.ok(refreshed.token, "refresh must issue an access token");
+    assert.equal(verifyJwt(refreshed.token, SECRET).sub, "a1");
+    assert.equal(refreshed.user.username, "admin");
+    const secondRefresh = cookieOf(refreshRes);
+    assert.ok(secondRefresh && secondRefresh !== firstRefresh, "refresh token must rotate");
+
+    // 3) no cookie → 401
+    const bare = await fetch(`${base}/api/auth/refresh`, { method: "POST" });
+    assert.equal(bare.status, 401);
+
+    // 4) replaying the rotated-out token → 401 + the whole family dies
+    const replay = await fetch(`${base}/api/auth/refresh`, {
+      method: "POST", headers: { Cookie: `va_refresh=${encodeURIComponent(firstRefresh)}` }
+    });
+    assert.equal(replay.status, 401);
+    const afterReuse = await fetch(`${base}/api/auth/refresh`, {
+      method: "POST", headers: { Cookie: `va_refresh=${encodeURIComponent(secondRefresh)}` }
+    });
+    assert.equal(afterReuse.status, 401, "family must be revoked after reuse detection");
+
+    // 5) an access token is never accepted as a refresh token
+    const access = signJwt({ sub: "a1", role: "admin" }, SECRET);
+    const wrongType = await fetch(`${base}/api/auth/refresh`, {
+      method: "POST", headers: { Cookie: `va_refresh=${encodeURIComponent(access)}` }
+    });
+    assert.equal(wrongType.status, 401);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
+run("HTTP: logout revokes the refresh family and clears the cookie (§20.1)", async () => {
+  const passwordHash = await bcrypt.hash("StrongPass123!", 10);
+  const provider = fakeProviderWithUsers([
+    { id: "a1", username: "admin", role: "admin", isActive: true, passwordHash }
+  ]);
+  const login = (body) => loginUser(body, { provider, secret: SECRET });
+  const server = createApiServer({ backend: "test", authSecret: SECRET, login, dispatch: async () => ({ ok: true }), rateLimit: null });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const loginRes = await fetch(`${base}/api/auth/login`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "admin", password: "StrongPass123!" })
+    });
+    const { token } = await loginRes.json();
+    const m = /va_refresh=([^;]*)/.exec(loginRes.headers.get("set-cookie") || "");
+    const refreshToken = decodeURIComponent(m?.[1] || "");
+    assert.ok(refreshToken);
+
+    const logoutRes = await fetch(`${base}/api/auth/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, Cookie: `va_refresh=${encodeURIComponent(refreshToken)}` }
+    });
+    assert.equal(logoutRes.status, 200);
+    assert.match(logoutRes.headers.get("set-cookie") || "", /Max-Age=0/i);
+
+    // the refresh family is dead — silent renewal must fail with 401
+    const afterLogout = await fetch(`${base}/api/auth/refresh`, {
+      method: "POST", headers: { Cookie: `va_refresh=${encodeURIComponent(refreshToken)}` }
+    });
+    assert.equal(afterLogout.status, 401);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
 run("HTTP: open API (no authSecret) lets /api/rpc through", async () => {
   const dispatch = async () => ({ ok: true });
   const server = createApiServer({ backend: "test", dispatch }); // no authSecret
