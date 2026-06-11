@@ -217,6 +217,9 @@ export function createPocketBaseStorageProvider(client, options = {}) {
       // Clear + write each list collection. Best-effort: a failure inside any
       // collection bubbles up so the caller can roll back via a prior snapshot.
       for (const [domainKey, collection] of Object.entries(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY)) {
+        // Partial restore: skip stores not present in the payload so they are
+        // left untouched. A full-snapshot payload always includes all keys.
+        if (!(domainKey in payload)) continue;
         const records = Array.isArray(payload[domainKey]) ? payload[domainKey] : [];
         // For `users`, the SPA only clears when the import supplies users; we
         // mirror that so a partial import never wipes existing accounts.

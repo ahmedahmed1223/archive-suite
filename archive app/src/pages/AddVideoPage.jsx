@@ -38,6 +38,7 @@ import { AiAssistBar } from "../features/ai/AiAssistBar.jsx";
 import { applyProofread, applySummaryToNotes, buildSuggestPayload, correctionsCount, hasSourceText, mergeTagText } from "../features/ai/viewModel.js";
 import { TagAutocomplete } from "../components/forms/TagAutocomplete.jsx";
 import { TemplatePicker } from "../components/templates/TemplatePicker.jsx";
+import { QuickAddBar } from "../components/templates/QuickAddBar.jsx";
 
 
 const STEPS = [
@@ -490,6 +491,7 @@ export function AddVideoPage() {
   };
 
   const [showTemplatePicker, setShowTemplatePicker] = React.useState(false);
+  const [showQuickAdd, setShowQuickAdd] = React.useState(false);
   const incrementTemplateUsage = useAppStore((state) => state.incrementTemplateUsage);
 
   const applyTemplate = (template, resolved) => {
@@ -607,7 +609,10 @@ export function AddVideoPage() {
           })
         ] }),
         currentStep.id === "basic" && jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [
-          jsx("div", { className: "md:col-span-2", children: jsx("button", { type: "button", onClick: () => setShowTemplatePicker(true), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-white/15 px-4 py-2 text-sm text-gray-400 transition-colors hover:border-white/25 hover:text-white", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }), "تطبيق قالب"] }) }),
+          jsx("div", { className: "md:col-span-2 flex flex-wrap gap-2", children: [
+            jsx("button", { type: "button", onClick: () => setShowTemplatePicker(true), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-white/15 px-4 py-2 text-sm text-gray-400 transition-colors hover:border-white/25 hover:text-white", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }), "تطبيق قالب"] }),
+            jsx("button", { type: "button", onClick: () => setShowQuickAdd(v => !v), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-emerald-500/20 px-4 py-2 text-sm text-emerald-400 transition-colors hover:border-emerald-500/40 hover:text-emerald-300", children: [jsx("span", { className: "text-base leading-none", children: "⚡" }), "إضافة سريعة"] })
+          ] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: titleId, className: "block", children: "العنوان" }), jsx("input", { id: titleId, value: title, onChange: (event) => setTitle(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "عنوان الفيديو" })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: pathId, className: "block", children: "الرابط أو المسار" }), jsx("input", { id: pathId, value: path, onChange: (event) => setPath(event.target.value), dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "https:// أو D:\\..." })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [
@@ -698,6 +703,15 @@ export function AddVideoPage() {
       onClose: () => setShowTemplatePicker(false),
       onApply: applyTemplate,
       context: { counter: 0, lastValues: {} }
+    }),
+    showQuickAdd && jsx("div", {
+      className: "fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl sm:inset-x-6 sm:bottom-6",
+      children: jsx(QuickAddBar, {
+        contentTypes,
+        defaultTypeId: typeId,
+        onDone: (count) => { setShowQuickAdd(false); showToast?.(`تمت إضافة ${count} عنصر`, "success"); },
+        onClose: () => setShowQuickAdd(false)
+      })
     })
   ] });
 }

@@ -71,6 +71,7 @@ import {
 import { fetchServerHealth } from "../server-status/serverHealthClient.js";
 import { validatePasswordStrength } from "../../utils/passwordHash.js";
 import { applyAccentColor } from "../../theme/accentColor.js";
+import { PresetConfigScreen } from "./PresetConfigScreen.jsx";
 
 const STORAGE_ICONS = { local: Laptop, postgres: Server, pocketbase: Cloud };
 const DEFAULT_PORT_BY_ENGINE = { postgresql: "5432", mysql: "3306", sqlserver: "1433" };
@@ -271,6 +272,21 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     return list;
   }, [replayMode, securityMode, forceLocal]);
   const [stepId, setStepId] = React.useState(settings.ui?.lastOnboardingStep && EXTRA_STEPS.some((step) => step.id === settings.ui.lastOnboardingStep) ? settings.ui.lastOnboardingStep : "welcome");
+  const [presetConfig, setPresetConfig] = React.useState(null);
+  const [showPresetScreen, setShowPresetScreen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (mode !== "startup" || replayMode) return;
+    fetch("/api/setup/preset-config")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.ok && data.config?.isFullyConfigured) {
+          setPresetConfig(data.config);
+          setShowPresetScreen(true);
+        }
+      })
+      .catch(() => undefined);
+  }, [mode, replayMode]);
   const activeStepIndex = Math.max(0, steps.findIndex((step) => step.id === stepId));
   const activeStep = steps[activeStepIndex] || steps[0];
   const passwordStrength = getPasswordStrength(password);
@@ -1024,7 +1040,21 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
               children: jsxs("div", {
                 children: [
                   jsx("span", { id: activeSlideTitleId, className: "sr-only", children: activeStep.label }),
-                  renderStepBody(),
+                  showPresetScreen && presetConfig
+                    ? jsx(PresetConfigScreen, {
+                        config: presetConfig,
+                        onUsePreset: () => {
+                          if (presetConfig.backend === "pocketbase" || presetConfig.backend === "postgres") {
+                            setStorageChoice(presetConfig.backend);
+                            if (presetConfig.pocketbaseUrl) setStorageUrl(presetConfig.pocketbaseUrl);
+                          }
+                          setShowPresetScreen(false);
+                          const lastStep = steps[steps.length - 1];
+                          if (lastStep) setStepId(lastStep.id);
+                        },
+                        onManualSetup: () => setShowPresetScreen(false)
+                      })
+                    : renderStepBody(),
                   error && jsxs("div", { className: "mt-5 flex items-start gap-2 rounded-2xl border border-red-500/25 bg-red-500/10 p-4 text-red-100", role: "alert", children: [
                     jsx(TriangleAlert, { className: "mt-0.5 h-5 w-5 shrink-0" }),
                     jsx("p", { className: "text-sm leading-7", children: error })

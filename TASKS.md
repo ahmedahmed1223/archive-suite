@@ -846,7 +846,7 @@
   - الجهد: 3-4 أسابيع.
   - المصدر: feature-proposals-2026 (محور 3 — ميزة #17).
 
-- [ ] `[P1]` ⏱️L **استعادة النسخ الاحتياطية من الواجهة مع استعادة جزئية** — لا واجهة للاستعادة؛ يدوي عبر CLI فقط.
+- [x] `[P1]` ⏱️L **استعادة النسخ الاحتياطية من الواجهة مع استعادة جزئية** — ✅ 2026-06-12: `BackupManager.jsx` أُعيد بناؤه بالكامل: معاينة محتوى النسخة (store counts)، اختيار مخازن فردية (partial restore)، تأكيد مزدوج بكتابة "استعادة"، دعم كلمة مرور للنسخ المشفّرة. `previewBackup()` export جديد في `backupScheduler.js`، `POST /api/admin/backups/preview` endpoint جديد، `stores` filter في `restoreBackup()` + `if (!(domainKey in payload)) continue` في كلا المحوّلَين.
   - الملفات: `archive app/src/pages/DataCenterPage.jsx`، `archive-server/src/backup/backupScheduler.js`.
   - الملف الجديد: `POST /api/admin/backup/restore`.
   - التنفيذ: قائمة النسخ المتاحة مع التاريخ والحجم؛ معاينة محتوى النسخة (عدد السجلات/المخازن) قبل الاستعادة؛ استعادة جزئية (اختيار مخازن محددة)؛ تأكيد مزدوج مع كتابة النص؛ حماية من استعادة نسخة أقدم على بيانات أحدث.
@@ -1079,7 +1079,7 @@
 
 ### 14.9 P1 — الملء التلقائي لمعالج بدء التشغيل (Onboarding Pre-fill)
 
-- [ ] `[P1]` ⏱️L **قراءة إعدادات .env تلقائياً في معالج بدء التشغيل** — المعالج يبدأ من الصفر حتى لو .env مُعدّ مسبقاً مما يُكرّر الإدخال 9 مرات.
+- [x] `[P1]` ⏱️L **قراءة إعدادات .env تلقائياً في معالج بدء التشغيل** ✅ 2026-06-12: `presetConfig.js` (server) يقرأ BACKEND/POCKETBASE_URL/DATABASE_URL/ADMIN_EMAIL ويختبر الاتصال بـ DB؛ `GET /api/setup/preset-config` endpoint (يُحجب بعد اكتمال الإعداد)؛ `PresetConfigScreen.jsx` يعرض ملخص الإعدادات مع مؤشرات الحالة؛ `V1OnboardingWizard.jsx` يجلب الإعداد المسبق عند بدء التشغيل ويعرض شاشة "استخدام الإعدادات المكتشفة" بنقرة واحدة.
   - **الملفات الجديدة:**
     - `archive-server/src/api/presetConfig.js` — `createPresetConfigHandler` (قراءة .env + اختبار DB)
     - `archive app/src/features/onboarding/PresetConfigScreen.jsx` — شاشة تأكيد الإعدادات المسبقة
@@ -1448,7 +1448,7 @@
 
 ### 15.20 P1 — قائمة الأوامر واكتشاف الاختصارات (Command Palette & Shortcut Discovery)
 
-- [ ] `[P1]` ⏱️L **توسيع نظام الاختصارات بقائمة أوامر واكتشاف تدريجي لا يحتاج حفظ الاختصارات** — حتى مع وجود اختصارات، يحتاج المستخدم طريقة لاكتشاف الأوامر وتنفيذها من لوحة المفاتيح.
+- [x] `[P1]` ⏱️L **توسيع نظام الاختصارات بقائمة أوامر واكتشاف تدريجي لا يحتاج حفظ الاختصارات** ✅ 2026-06-12 — ShortcutHintBubble + shortcutLearningState (MAX_SHOWS=3, localStorage "va:shortcut:learned") — حتى مع وجود اختصارات، يحتاج المستخدم طريقة لاكتشاف الأوامر وتنفيذها من لوحة المفاتيح.
   - **الملفات الجديدة:**
     - `archive app/src/components/command/CommandPalette.jsx` — Ctrl+Shift+P للبحث في الأوامر.
     - `archive app/src/features/command/commandRegistry.js` — ربط الأوامر بالإجراءات والصلاحيات والسياق.
@@ -2007,9 +2007,7 @@
 
 ### 18.3 P1 — القوالب والتعبئة السريعة (Templates & Quick Fill)
 
-- [ ] `[P1]` ⏱️M **قوالب مخصّصة لأنواع العناصر المتكرّرة + تعبئة دينامية (today/autoNumber/copyFromLast/concat) + وضع إضافة سريعة** — إضافة عنصر تتطلب إدخال نفس البيانات المتكرّرة في كل مرة.
-  - 🔄 **تقدم 2026-06-12:** أُنجز الجزء الأكبر: `viewModel.js` (createItemTemplate/resolveDynamicFields/BUILT_IN_TEMPLATES/filterTemplates)، `templatesSlice.js` (create/update/delete/incrementUsage/loadFromStorage)، `TemplatePicker.jsx` (مودال بحث واختيار)، `TemplateEditor.jsx` (إنشاء/تعديل مع حقول ثابتة وديناميكية)، تكامل `AddVideoPage.jsx` (زر "تطبيق قالب" + applyTemplate handler). ما زال مفتوحاً: `QuickAddBar.jsx` (وضع الإضافة السريعة المتتالية) + `schema.js` store `templates` إذا لزم.
-  - **الملفات المتبقية:** `QuickAddBar.jsx`، إضافة `TEMPLATES` store لـ`schema.js` إن لم يوجد.
+- [x] `[P1]` ⏱️M **قوالب مخصّصة لأنواع العناصر المتكرّرة + تعبئة دينامية (today/autoNumber/copyFromLast/concat) + وضع إضافة سريعة** ✅ 2026-06-12 (مكتمل بالكامل): `viewModel.js` + `templatesSlice.js` + `TemplatePicker.jsx` + `TemplateEditor.jsx` + تكامل `AddVideoPage.jsx` + `QuickAddBar.jsx` (إضافة سريعة متتالية مع تتبع counter/lastValues للحقول الديناميكية، قائمة العناصر المضافة، اختيار نوع المحتوى، وسوم مشتركة). `schema.js` يحتوي مسبقاً على TEMPLATES store. زر "إضافة سريعة" أُضيف لـ AddVideoPage يُظهر QuickAddBar كـ floating bar.
   - يرتبط بـ: §18.4 (الحفظ التلقائي).
   - الجهد: 3-4 أسابيع.
   - المصدر: daily-use-proposals (المقترح 3 — P1).

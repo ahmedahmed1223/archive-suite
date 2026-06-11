@@ -80,7 +80,7 @@ export async function runBackup(provider) {
 // Pipeline: filename sanity → SHA-256 checksum verify → decrypt (.enc) →
 // gunzip → JSON.parse → provider.replaceAll(snapshot).
 // Errors carry statusCode so the HTTP layer can map them cleanly.
-export async function restoreBackup(provider, filename, { passphrase = "", dir = BACKUP_DIR } = {}) {
+export async function restoreBackup(provider, filename, { passphrase = "", dir = BACKUP_DIR, stores = null } = {}) {
   // Strict allow-list: only names runBackup itself produces. Blocks path
   // traversal and anything else living in BACKUP_DIR.
   if (typeof filename !== "string" || !/^backup-[\w.-]+\.json\.gz(\.enc)?$/.test(filename) || filename.includes("..")) {
@@ -138,10 +138,68 @@ export async function restoreBackup(provider, filename, { passphrase = "", dir =
     throw err;
   }
 
-  log.info({ filename }, "Backup restore started.");
-  const counts = await provider.replaceAll(snapshot);
+  // Filter snapshot to requested stores for partial restore.
+  let restorePayload = snapshot;
+  if (Array.isArray(stores) && stores.length > 0) {
+    restorePayload = {};
+    for (const key of stores) {
+      restorePayload[key] = Array.isArray(snapshot[key]) ? snapshot[key] : [];
+    }
+  }
+
+  log.info({ filename, stores: stores ?? "all" }, "Backup restore started.");
+  const counts = await provider.replaceAll(restorePayload);
   log.info({ filename, counts }, "Backup restore completed.");
   return { filename, counts, checksum: integrity.actual, restoredAt: new Date().toISOString() };
+}
+
+// previewBackup — parse a backup file and return per-store record counts without
+// modifying any live data. For encrypted backups the passphrase is required.
+export async function previewBackup(filename, { passphrase = "", dir = BACKUP_DIR } = {}) {
+  if (typeof filename !== "string" || !/^backup-[\w.-]+\.json\.gz(\.enc)?$/.test(filename) || filename.includes("..")) {
+    const err = new Error("اسم ملف النسخة الاحتياطية غير صالح.");
+    err.statusCode = 400;
+    throw err;
+  }
+  const filePath = join(dir, filename);
+
+  let gzData;
+  if (filename.endsWith(".enc")) {
+    if (!passphrase) {
+      const err = new Error("هذه النسخة مشفّرة — أدخل كلمة مرور التشفير لمعاينتها.");
+      err.statusCode = 400;
+      throw err;
+    }
+    try {
+      gzData = decryptBackupFile(filePath, passphrase);
+    } catch {
+      const err = new Error("فشل فك التشفير — كلمة المرور غير صحيحة أو الملف تالف.");
+      err.statusCode = 400;
+      throw err;
+    }
+  } else {
+    gzData = readFileSync(filePath);
+  }
+
+  let snapshot;
+  try {
+    snapshot = JSON.parse(gunzipSync(gzData).toString("utf8"));
+  } catch (e) {
+    const err = new Error(`تعذر قراءة محتوى النسخة الاحتياطية: ${e.message}`);
+    err.statusCode = 422;
+    throw err;
+  }
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+    const err = new Error("محتوى النسخة الاحتياطية ليس snapshot صالحاً.");
+    err.statusCode = 422;
+    throw err;
+  }
+
+  const stores = {};
+  for (const [key, val] of Object.entries(snapshot)) {
+    stores[key] = Array.isArray(val) ? val.length : typeof val === "object" && val !== null ? 1 : 0;
+  }
+  return { filename, stores };
 }
 
 export function listBackups() {
