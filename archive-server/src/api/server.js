@@ -310,6 +310,15 @@ export function createApiServer({
   const oauthSecret = resolvedOauthSecret;
   const refreshExpiresInSec = Number(process.env.REFRESH_EXPIRES_IN_SEC) || DEFAULT_REFRESH_EXPIRES_IN_SEC;
 
+  // §20.5 security — the public API key endpoint may ONLY read these content
+  // stores. An allowlist (not a denylist) keeps sensitive stores — users,
+  // api_keys, webhooks, notification_preferences, push_subscriptions, config —
+  // unreachable even if a new one is added later. Operators extend it via env.
+  const PUBLIC_READABLE_STORES = new Set(
+    String(process.env.PUBLIC_API_STORES || "video_items,media_items,document_items,audio_items,image_items")
+      .split(",").map((s) => s.trim()).filter(Boolean)
+  );
+
   // Rate limiters — five layers:
   //   rpc:        IP-based general RPC cap (100/min)
   //   user:       per-authenticated-user cap (60/min)
@@ -1888,6 +1897,12 @@ export function createApiServer({
       if (!prisma) return send(res, 501, { ok: false, error: "مفاتيح API غير متاحة في هذا الإعداد." });
       try {
         const body = await readJsonBody(req);
+        // Privilege gate: a key can never grant more than its creator holds.
+        // Only editor/admin/owner may mint a write-scoped key.
+        const wantsWrite = Array.isArray(body?.scopes) && body.scopes.includes("write");
+        if (wantsWrite && !["editor", "admin", "owner"].includes(claims.role)) {
+          return send(res, 403, { ok: false, error: "نطاق الكتابة يتطلّب صلاحية محرّر أو أعلى." });
+        }
         const created = await createApiKey(prisma, {
           name: body?.name, scopes: body?.scopes, ownerId: claims.sub, expiresAt: body?.expiresAt,
         });
@@ -1922,6 +1937,10 @@ export function createApiServer({
       try {
         const params = requestUrl.searchParams;
         const store = String(params.get("store") || "video_items");
+        // Hard gate: never let an API key read auth/config/secret stores.
+        if (!PUBLIC_READABLE_STORES.has(store)) {
+          return send(res, 403, { ok: false, error: "هذا المخزن غير متاح للقراءة العامة." });
+        }
         const limit = Math.min(Math.max(Number(params.get("limit")) || 50, 1), 200);
         const all = await resolveStorage().getAll(store).catch(() => []);
         return send(res, 200, { ok: true, store, count: all.length, records: all.slice(0, limit) });

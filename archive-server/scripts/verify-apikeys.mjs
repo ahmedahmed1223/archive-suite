@@ -144,6 +144,13 @@ run("HTTP: management routes + public read enforce auth and scopes", async () =>
     const noKey = await fetch(`${base}/api/public/records?store=video_items`);
     assert.equal(noKey.status, 401);
 
+    // SECURITY: a non-allowlisted store (e.g. users) must be refused — no
+    // dumping password hashes through the public read endpoint.
+    const sensitive = await fetch(`${base}/api/public/records?store=users`, {
+      headers: { "X-API-Key": apiKey.key },
+    });
+    assert.equal(sensitive.status, 403, "public read must block non-content stores");
+
     // revoke, then the key no longer reads
     const delRes = await fetch(`${base}/api/api-keys/${keys[0].id}`, {
       method: "DELETE", headers: { Authorization: bearer("u1") },
@@ -153,6 +160,40 @@ run("HTTP: management routes + public read enforce auth and scopes", async () =>
       headers: { "X-API-Key": apiKey.key },
     });
     assert.equal(afterRevoke.status, 401);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
+run("HTTP: write scope requires editor+ (viewer cannot mint write keys)", async () => {
+  const prisma = fakeApiKeyPrisma();
+  const server = createApiServer({ backend: "test", authSecret: SECRET, prisma, resolveStorage: () => ({ async getAll() { return []; } }), rateLimit: null });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    // viewer requesting a write-scoped key → 403
+    const denied = await fetch(`${base}/api/api-keys`, {
+      method: "POST",
+      headers: { Authorization: bearer("vu", "viewer"), "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "esc", scopes: ["read", "write"] }),
+    });
+    assert.equal(denied.status, 403);
+
+    // viewer requesting read-only → allowed
+    const ok = await fetch(`${base}/api/api-keys`, {
+      method: "POST",
+      headers: { Authorization: bearer("vu", "viewer"), "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "ro", scopes: ["read"] }),
+    });
+    assert.equal(ok.status, 201);
+
+    // editor requesting write → allowed
+    const editorWrite = await fetch(`${base}/api/api-keys`, {
+      method: "POST",
+      headers: { Authorization: bearer("eu", "editor"), "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "rw", scopes: ["read", "write"] }),
+    });
+    assert.equal(editorWrite.status, 201);
   } finally {
     await new Promise((r) => server.close(r));
   }
