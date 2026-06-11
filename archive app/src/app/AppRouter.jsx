@@ -62,7 +62,7 @@ export function AppRouter() {
         tabIndex: -1,
         dir: "rtl",
         className:
-          "flex-1 min-w-0 overflow-y-auto max-h-screen text-right pt-16 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pt-0 md:pb-0",
+          "flex-1 min-w-0 overflow-y-auto overflow-x-hidden max-h-screen text-right pt-0 sm:pt-16 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pt-0 md:pb-0",
         role: "main",
         children: jsx(ErrorBoundary, {
           children: jsxs(
