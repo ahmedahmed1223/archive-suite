@@ -336,7 +336,9 @@ export function createPostgresStorageProvider(prisma, options = {}) {
       if (!payload || typeof payload !== "object") {
         throw new Error("حمولة replaceAll غير صالحة.");
       }
-      const counts = {};
+      const counts = Object.fromEntries(
+        Object.keys(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY).map((domainKey) => [domainKey, 0])
+      );
       // Single REPEATABLE READ transaction — atomic across all stores (Postgres
       // can do what PocketBase couldn't). A failure mid-way rolls back the
       // entire import so the database never sits in a half-applied state.

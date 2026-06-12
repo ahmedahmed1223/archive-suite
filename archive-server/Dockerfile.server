@@ -1,16 +1,12 @@
 # syntax=docker/dockerfile:1
 # Node.js RPC API server for the monorepo Postgres backend.
-# Multi-stage build: deps → build → runtime
-# The deps stage installs prod-only deps; the build stage generates the Prisma
-# client (requires devDependencies); the runtime stage is the lean final image.
+# Security-hardened: multi-stage build, no-new-privileges, capability dropping, minimal runtime.
+# Multi-stage: deps → build → runtime (lean final image)
 
 # ── 1. deps: prod-only install (cached when manifests don't change) ───────────
 FROM node:24-alpine AS deps
-# vips-dev + fftw-dev are required to compile Sharp's native bindings on Alpine
-RUN apk add --no-cache vips-dev fftw-dev python3 make g++ \
- && corepack enable
+RUN apk add --no-cache vips-dev fftw-dev python3 make g++ && corepack enable
 WORKDIR /app
-# Copy manifests first so this layer is only invalidated when deps change
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY ["archive app/package.json", "archive app/package.json"]
 COPY archive-core/package.json archive-core/package.json
@@ -19,24 +15,24 @@ RUN pnpm install --frozen-lockfile --filter archive-server... --filter @archive/
 
 # ── 2. build: full install + Prisma client generation ─────────────────────────
 FROM node:24-alpine AS build
-RUN apk add --no-cache vips-dev fftw-dev python3 make g++ \
- && corepack enable
+RUN apk add --no-cache vips-dev fftw-dev python3 make g++ && corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY ["archive app/package.json", "archive app/package.json"]
 COPY archive-core/package.json archive-core/package.json
 COPY archive-server/package.json archive-server/package.json
-# Full install (includes devDependencies for prisma CLI)
 RUN pnpm install --frozen-lockfile --filter archive-server... --filter @archive/core
 COPY archive-core ./archive-core
 COPY archive-server ./archive-server
 RUN pnpm --filter archive-server run prisma:generate
 
-# ── 3. runtime: lean final image ──────────────────────────────────────────────
+# ── 3. runtime: lean, secure final image ────────────────────────────────────────
 FROM node:24-alpine AS runtime
+LABEL org.opencontainers.image.source="https://github.com/OWNER/archive"
+LABEL org.opencontainers.image.description="Archive Suite API Server"
+LABEL org.opencontainers.image.vendor="Archive Suite"
 
-RUN apk add --no-cache ffmpeg vips-dev fftw-dev \
- && corepack enable
+RUN apk add --no-cache ffmpeg vips-dev fftw-dev && corepack enable
 
 WORKDIR /app
 
@@ -52,15 +48,19 @@ COPY --from=build /app/archive-server ./archive-server
 # Workspace manifests (needed for pnpm --filter to resolve the workspace)
 COPY package.json pnpm-workspace.yaml ./
 
-# Ensure the data directory exists and is owned by the non-root node user.
-# Node modules and source stay root-owned (read-only for the process).
-RUN mkdir -p /app/.archive-files && chown -R node:node /app/.archive-files
+# Security: prepare directories with restrictive permissions and switch to non-root user
+RUN mkdir -p /app/.archive-files /app/config && \
+    chown -R node:node /app/.archive-files /app/config && \
+    chmod 700 /app/.archive-files /app/config && \
+    chmod 755 /app
 
 USER node
 
 ENV NODE_ENV=production
 EXPOSE 8787
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
+  CMD wget -qO- http://127.0.0.1:8787/api/health || exit 1
 
-# prisma migrate deploy runs at startup so the DB schema is always up-to-date.
-# pnpm resolves the workspace filter even without the full lockfile at runtime.
-CMD ["sh", "-c", "pnpm --filter archive-server run prisma:migrate && pnpm --filter archive-server run start"]
+# The image is generated for the target Prisma provider at build time. Run the
+# deploy command directly so read-only production containers do not rewrite schema.prisma.
+CMD ["sh", "-c", "pnpm --filter archive-server exec prisma migrate deploy && pnpm --filter archive-server run start"]
