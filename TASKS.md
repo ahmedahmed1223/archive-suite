@@ -2014,10 +2014,11 @@
 
 ### 18.4 P1 — الحفظ التلقائي وجلسات العمل (Auto-save & Work Sessions)
 
-- [ ] `[P1]` ⏱️M **حفظ تلقائي للمسودات (كل 30 ثانية) + تحذير المغادرة + استعادة المسودة + جلسات عمل تحفظ سياق العرض + حفظ تقدّم العمليات الجماعية** — لا حفظ تلقائي حالياً، وفقدان الاتصال أثناء تعديل جماعي يضيّع العمل.
+- [x] `[P1]` ⏱️M **حفظ تلقائي للمسودات (كل 30 ثانية) + تحذير المغادرة + استعادة المسودة + جلسات عمل تحفظ سياق العرض + حفظ تقدّم العمليات الجماعية** — لا حفظ تلقائي حالياً، وفقدان الاتصال أثناء تعديل جماعي يضيّع العمل.
   - **الملفات الجديدة:** `archive app/src/features/autosave/viewModel.js`، `autosaveEngine.js`، `sessionManager.js`، `archive app/src/components/autosave/AutosaveIndicator.jsx`، `DraftRecoveryDialog.jsx`، `SessionRestoreBanner.jsx`، `BulkProgressPanel.jsx`، `archive app/src/stores/slices/autosaveSlice.js`.
   - **تعديل ملفات:** `AddVideoPage.jsx`، `DetailPage.jsx`، `ArchivePage.jsx`، `schema.js` (stores `drafts`, `work_sessions`, `bulk_progress`).
   - **التنفيذ:** مؤشّر حالة الحفظ، `beforeunload` guard، استعادة المسودة/الجلسة، حفظ موضع التمرير والفلاتر، استئناف العمليات الجماعية بعد الانقطاع.
+  - 🔄 **مُنجَز 2026-06-12:** `DetailPage.jsx` — تكامل `createAutosaveEngine` بمفتاح `edit_item_${id}` (30ث + beforeunload)؛ `DraftRecoveryDialog` يعرض عند اكتشاف مسودة محفوظة؛ `AutosaveIndicator` بجانب زر التحرير؛ تنظيف localStorage عند الحفظ. البنية التحتية (engine/viewModel/slice/components) كانت جاهزة.
   - يرتبط بـ: §18.1، §18.3.
   - الجهد: 3-4 أسابيع.
   - المصدر: daily-use-proposals (المقترح 4 — P1).

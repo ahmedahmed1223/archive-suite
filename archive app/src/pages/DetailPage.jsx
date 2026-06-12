@@ -39,6 +39,10 @@ import { MobileActionBar, MotionPage, ResponsiveTabs, UXEmptyState } from "../co
 import { RecordVersionHistory } from "../components/records/RecordVersionHistory.jsx";
 import { AddRelationDialog } from "../components/relations/AddRelationDialog.jsx";
 import { RelationsPanel } from "../components/relations/RelationsPanel.jsx";
+import { AutosaveIndicator } from "../components/autosave/AutosaveIndicator.jsx";
+import { DraftRecoveryDialog } from "../components/autosave/DraftRecoveryDialog.jsx";
+import { createAutosaveEngine } from "../features/autosave/autosaveEngine.js";
+import { isDraftExpired } from "../features/autosave/viewModel.js";
 import { reportError } from "../utils/errorReporting.js";
 import {
   MEDIA_PREVIEW_STATUS,
@@ -440,6 +444,11 @@ export function DetailPage() {
   const [relationDialogOpen, setRelationDialogOpen] = React.useState(false);
   const [playbackTime, setPlaybackTime] = React.useState(0);
   const transcriptSegments = React.useMemo(() => item ? getTranscriptSegments(item) : [], [item]);
+  const autosaveEngineRef = React.useRef(null);
+  const draftRef = React.useRef(null);
+  const [autosaveStatus, setAutosaveStatus] = React.useState("idle");
+  const [recoveryDraft, setRecoveryDraft] = React.useState(null);
+  const [showRecoveryDialog, setShowRecoveryDialog] = React.useState(false);
 
   React.useEffect(() => {
     loadRelationsFromStorage?.();
@@ -458,6 +467,45 @@ export function DetailPage() {
       markItemViewed?.(item.id);
     }
   }, [item?.id, item?.isDeleted, markItemViewed]);
+
+  // Keep draftRef in sync so the autosave engine always captures latest state
+  React.useEffect(() => { draftRef.current = draft; }, [draft]);
+
+  // Create autosave engine per item; check for recoverable draft on mount
+  React.useEffect(() => {
+    if (!item?.id) { autosaveEngineRef.current = null; return; }
+    const key = `edit_item_${item.id}`;
+    const storage = {
+      get: (k) => { try { return Promise.resolve(JSON.parse(localStorage.getItem(k) || "null")); } catch { return Promise.resolve(null); } },
+      put: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* quota/private */ } return Promise.resolve(); },
+      delete: (k) => { try { localStorage.removeItem(k); } catch { /* ignore */ } return Promise.resolve(); }
+    };
+    const engine = createAutosaveEngine({ storage, key });
+    autosaveEngineRef.current = engine;
+    try {
+      const stored = JSON.parse(localStorage.getItem(key) || "null");
+      if (stored?.data && !isDraftExpired(stored)) {
+        setRecoveryDraft(stored);
+        setShowRecoveryDialog(true);
+      }
+    } catch { /* ignore malformed */ }
+    return () => { engine.stop(); autosaveEngineRef.current = null; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.id]);
+
+  // Start/stop engine when editing mode changes
+  React.useEffect(() => {
+    const engine = autosaveEngineRef.current;
+    if (!engine) return;
+    if (editing) {
+      engine.start(() => draftRef.current);
+      setAutosaveStatus(engine.getStatus());
+      const pollId = setInterval(() => setAutosaveStatus(engine.getStatus()), 2000);
+      return () => clearInterval(pollId);
+    }
+    engine.stop();
+    setAutosaveStatus("idle");
+  }, [editing]);
 
   const ai = useAiAssist({ showToast });
   const aiSuggestTags = async () => {
@@ -778,6 +826,9 @@ export function DetailPage() {
       await updateVideoItem?.(updated);
       showToast?.("تم حفظ التعديلات", "success");
       setEditing(false);
+      try { localStorage.removeItem(`edit_item_${item.id}`); } catch { /* ignore */ }
+      autosaveEngineRef.current?.stop();
+      setAutosaveStatus("idle");
     } catch (error) {
       reportError(showNotification, error, {
         context: "حفظ التعديلات",
@@ -1000,6 +1051,7 @@ export function DetailPage() {
             jsxs("div", { className: "flex flex-wrap gap-2", children: [
               jsxs("button", { type: "button", onClick: () => toggleFavorite?.(item.id), className: `inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors ${item.isFavorite ? "border-amber-500/30 bg-amber-500/10 text-amber-200 hover:bg-amber-500/15" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-amber-200"}`, children: [jsx(Star, { className: `h-4 w-4 ${item.isFavorite ? "fill-current" : ""}` }), item.isFavorite ? "إزالة المفضلة" : "مفضلة"] }),
               jsxs("button", { type: "button", onClick: () => { setActiveDetailTab("data"); setEditing((value) => !value); }, className: `va-secondary-button inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm transition-colors ${editing ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "text-gray-300 hover:bg-white/5"}`, children: [jsx(PenLine, { className: "h-4 w-4" }), editing ? "إغلاق التحرير" : "تحرير"] }),
+              editing && jsx(AutosaveIndicator, { status: autosaveStatus }),
               jsxs("button", { type: "button", onClick: deleteOrRestore, className: "inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200 transition-colors hover:bg-red-500/15", children: [item.isDeleted ? jsx(RefreshCw, { className: "h-4 w-4" }) : jsx(Trash2, { className: "h-4 w-4" }), item.isDeleted ? "استعادة" : "حذف"] })
             ] })
           ] })
@@ -1266,6 +1318,22 @@ export function DetailPage() {
       ] })
         ] })
       ] }),
+      jsx(DraftRecoveryDialog, {
+        isOpen: showRecoveryDialog,
+        draft: recoveryDraft,
+        onRestore: (data) => {
+          setDraft((current) => ({ ...current, ...data }));
+          setEditing(true);
+          setShowRecoveryDialog(false);
+          setRecoveryDraft(null);
+        },
+        onDiscard: () => {
+          try { localStorage.removeItem(`edit_item_${item.id}`); } catch { /* ignore */ }
+          setShowRecoveryDialog(false);
+          setRecoveryDraft(null);
+        },
+        onClose: () => setShowRecoveryDialog(false)
+      }),
       jsx(MobileActionBar, {
         label: "إجراءات التفاصيل",
         actions: [
