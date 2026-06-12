@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   Activity,
   ArrowRight,
-  Captions,
   CheckCircle2,
   Clock3,
   Copy,
@@ -52,7 +51,7 @@ import {
 } from "../features/archive/mediaPreview.js";
 import { getFieldsForSelection, groupCustomFields, getVisibleFields, getMissingRequiredFields } from "../features/types/viewModel.js";
 import { StarRating } from "../components/common/StarRating.jsx";
-import { SubtitleRenderer } from "../components/media/SubtitleRenderer.jsx";
+import { VideoPlayer } from "../components/media/VideoPlayer.jsx";
 import { segmentsToCues } from "../features/media/subtitleParser.js";
 import { transcriptToSrt } from "../features/media/transcriptToSrt.js";
 import { computeCompleteness, COMPLETENESS_TIERS } from "../features/archive/completeness.js";
@@ -984,44 +983,29 @@ export function DetailPage() {
       jsxs("div", { className: "grid gap-6 xl:grid-cols-[minmax(0,460px)_minmax(0,1fr)] xl:items-start", children: [
         jsxs("div", { className: "space-y-6 xl:sticky xl:top-4 xl:self-start", children: [
       jsxs("section", { className: "va-page-hero overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-l from-gray-900 via-gray-900/95 to-gray-950 text-right shadow-2xl shadow-black/10", children: [
-        previewSource && previewState !== MEDIA_PREVIEW_STATUS.TIMED_OUT ? jsxs("div", {
-          className: "relative aspect-video w-full overflow-hidden bg-black",
-          children: [
-            jsx("video", {
-              ref: videoRef,
-              src: previewSource,
-              controls: true,
-              onCanPlay: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.PLAYABLE),
-              onLoadedMetadata: (event) => {
-                setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.PLAYABLE);
-                setPlaybackDuration(event.currentTarget.duration || 0);
-              },
-              onLoadStart: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.LOADING),
-              onTimeUpdate: (event) => setPlaybackTime(event.currentTarget.currentTime || 0),
-              onSeeked: (event) => setPlaybackTime(event.currentTarget.currentTime || 0),
-              onError: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.TIMED_OUT),
-              className: "h-full w-full object-contain"
-            }),
-            previewState === MEDIA_PREVIEW_STATUS.LOADING && jsx("div", {
-              className: "pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55",
-              children: jsx(MediaPreviewFallback, {
-                state: MEDIA_PREVIEW_STATUS.LOADING,
-                descriptor: previewDescriptor,
-                onCopyPath: copyPath,
-                onEditPath: startPathEdit,
-                onMetadataOnly: showMetadataOnly
-              })
-            }),
-            subtitleCues.length > 0 && jsx(SubtitleRenderer, { cues: subtitleCues, currentTime: playbackTime, enabled: subtitlesOn }),
-            subtitleCues.length > 0 && jsxs("button", {
-              type: "button",
-              onClick: () => setSubtitlesOn((value) => !value),
-              "aria-pressed": subtitlesOn,
-              "aria-label": subtitlesOn ? "إخفاء الترجمة" : "إظهار الترجمة",
-              className: `absolute right-2 top-2 z-10 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold backdrop-blur transition-colors ${subtitlesOn ? "border-[var(--va-action)] bg-black/60 text-white" : "border-white/20 bg-black/40 text-gray-300 hover:text-white"}`,
-              children: [jsx(Captions, { className: "h-3.5 w-3.5" }), "ترجمة"]
-            })
-          ]
+        previewSource && previewState !== MEDIA_PREVIEW_STATUS.TIMED_OUT ? jsx(VideoPlayer, {
+          videoRef,
+          src: previewSource,
+          cues: subtitleCues,
+          subtitlesOn,
+          onToggleSubtitles: () => setSubtitlesOn((value) => !value),
+          onCanPlay: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.PLAYABLE),
+          onLoadedMetadata: (event) => {
+            setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.PLAYABLE);
+            setPlaybackDuration(event.currentTarget.duration || 0);
+          },
+          onLoadStart: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.LOADING),
+          onTimeUpdate: (event) => setPlaybackTime(event.currentTarget.currentTime || 0),
+          onSeeked: (event) => setPlaybackTime(event.currentTarget.currentTime || 0),
+          onError: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.TIMED_OUT),
+          loading: previewState === MEDIA_PREVIEW_STATUS.LOADING,
+          loadingOverlay: jsx(MediaPreviewFallback, {
+            state: MEDIA_PREVIEW_STATUS.LOADING,
+            descriptor: previewDescriptor,
+            onCopyPath: copyPath,
+            onEditPath: startPathEdit,
+            onMetadataOnly: showMetadataOnly
+          })
         }) : jsx(MediaPreviewFallback, {
           state: previewState,
           descriptor: previewDescriptor,

@@ -757,14 +757,15 @@
   - الجهد: 6-8 أسابيع. يدعم جميع مزودي التخزين (S3/Azure/GDrive/Dropbox).
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #1).
 
-- [ ] `[P0]` ⏱️XL **مشغل فيديو احترافي مع دعم ترجمة SRT/VTT** — المشغل الحالي `<video controls>` افتراضي بلا تخصيص. **(المرحلة 1 — أساس الترجمة منجزة ✅ 2026-06-12)**
+- [ ] `[P0]` ⏱️XL **مشغل فيديو احترافي مع دعم ترجمة SRT/VTT** — المشغل الحالي `<video controls>` افتراضي بلا تخصيص. **(المرحلتان 1+2 منجزتان ✅ 2026-06-12)**
   - ✅ **المنجَز (المرحلة 1):**
     - `features/media/subtitleParser.js` — تحليل SRT/WebVTT إلى cues (`parseTimecode`/`parseSubtitles`/`segmentsToCues`/`getActiveCue`)، متساهل مع رؤوس WEBVTT وNOTE وCRLF والترتيب الزمني.
     - `features/media/transcriptToSrt.js` — تحويل ناتج Whisper (segments) إلى SRT/VTT تلقائياً (`formatSrtTimecode`/`formatVttTimecode`/`transcriptToSrt`/`transcriptToVtt`) مع استنتاج نهاية المقطع من بداية التالي ومعالجة فيض التقريب.
     - `components/media/SubtitleRenderer.jsx` — طبقة عرض الترجمة فوق الفيديو مدفوعة بوقت التشغيل المتتبَّع (`aria-live`، أحجام/لون قابلة للتهيئة).
     - ربط في `DetailPage.jsx`: اشتقاق cues من التفريغ الزمني للمادة، طبقة ترجمة + زر تبديل CC فوق الفيديو، وزر «تنزيل الترجمة (SRT)» بجانب مشغل التفريغ المتزامن.
     - الاختبارات: `subtitleParser.test.js` (12) + `transcriptToSrt.test.js` (10) — تمرّ ضمن 193 اختبار / 26 ملف، و`verify` أخضر.
-  - ⬜ **المتبقّي (مراحل لاحقة):** شريط تحكم/تقدّم مخصص مع مصغّرات thumbnails؛ تحكم سرعة 0.5x–2x؛ اختصارات لوحة مفاتيح (Space/←→/↑↓/F/M)؛ Picture-in-Picture؛ استيراد ملف SRT/VTT خارجي وتخصيص الخط/اللون من الواجهة؛ مزامنة أعمق مع `TranscriptSyncWorkbench`.
+  - ✅ **المنجَز (المرحلة 2 — مشغّل مخصص):** `components/media/VideoPlayer.jsx` يلفّ `<video>` بشريط تحكم مخصص (تشغيل/إيقاف، scrubber، صوت + كتم، عرض الوقت)، تحكم سرعة 0.5x–2x، اختصارات لوحة مفاتيح (Space/K، ←/→ ±5ث، ↑/↓ صوت، F ملء الشاشة، M كتم، C ترجمة)، Picture-in-Picture (محروس بـ `pictureInPictureEnabled`)، ملء الشاشة، وطبقة `SubtitleRenderer` + زر CC مدمجة. يُمرَّر `videoRef` للأب فتبقى الإشارات الزمنية والقفز للتفريغ تعمل، وتُسلسَل دوال الحدث (`onTimeUpdate`/`onLoadedMetadata`/…). مدمج في `DetailPage.jsx` بدل `<video controls>` الخام. `verify` + 193 اختبار أخضر (اختبار عرض DetailPage يمرّ مع المشغّل الجديد).
+  - ⬜ **المتبقّي (مراحل لاحقة):** مصغّرات thumbnails على scrubber عند التمرير؛ استيراد ملف SRT/VTT خارجي + تخصيص خط/لون الترجمة من الواجهة؛ مزامنة ثنائية الاتجاه أعمق مع `TranscriptSyncWorkbench`؛ اختبارات تفاعلية للمشغّل (Testing Library).
   - الملفات الجديدة: `archive app/src/components/media/VideoPlayer.jsx`، `archive app/src/components/media/SubtitleRenderer.jsx`، `archive app/src/features/media/subtitleParser.js`، `archive app/src/features/media/transcriptToSrt.js`.
   - التنفيذ: شريط تقدم مخصص مع معاينة مصغرات (thumbnails)؛ دعم SRT/VTT مع عرض على الفيديو وتخصيص الخط واللون؛ تحكم بالسرعة (0.5x–2x)؛ اختصارات لوحة مفاتيح (Space/←→/↑↓/F)؛ Picture-in-Picture؛ تحويل ناتج Whisper تلقائياً إلى SRT؛ مزامنة مع `TranscriptSyncWorkbench`.
   - الجهد: 6-8 أسابيع. يرفع درجة مرحلة الميديا من 58 إلى 85+.
