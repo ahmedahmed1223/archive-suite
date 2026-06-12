@@ -32,6 +32,8 @@ export function VideoPlayer({
   cues = [],
   subtitlesOn = true,
   onToggleSubtitles,
+  captionSize = "md",
+  captionColor = "#ffffff",
   onCanPlay,
   onLoadedMetadata,
   onLoadStart,
@@ -199,7 +201,7 @@ export function VideoPlayer({
         onError={onError}
       />
 
-      <SubtitleRenderer cues={cues} currentTime={current} enabled={subtitlesOn} />
+      <SubtitleRenderer cues={cues} currentTime={current} enabled={subtitlesOn} size={captionSize} color={captionColor} />
 
       {loading && loadingOverlay && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55">

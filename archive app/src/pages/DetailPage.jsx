@@ -52,7 +52,7 @@ import {
 import { getFieldsForSelection, groupCustomFields, getVisibleFields, getMissingRequiredFields } from "../features/types/viewModel.js";
 import { StarRating } from "../components/common/StarRating.jsx";
 import { VideoPlayer } from "../components/media/VideoPlayer.jsx";
-import { segmentsToCues } from "../features/media/subtitleParser.js";
+import { parseSubtitles, segmentsToCues } from "../features/media/subtitleParser.js";
 import { transcriptToSrt } from "../features/media/transcriptToSrt.js";
 import { computeCompleteness, COMPLETENESS_TIERS } from "../features/archive/completeness.js";
 import { getRelatedItems } from "../features/archive/relatedItems.js";
@@ -448,10 +448,13 @@ export function DetailPage() {
   const [relationDialogOpen, setRelationDialogOpen] = React.useState(false);
   const [playbackTime, setPlaybackTime] = React.useState(0);
   const [subtitlesOn, setSubtitlesOn] = React.useState(true);
+  const [importedCues, setImportedCues] = React.useState([]);
+  const [captionSize, setCaptionSize] = React.useState("md");
+  const [captionColor, setCaptionColor] = React.useState("#ffffff");
   const transcriptSegments = React.useMemo(() => item ? getTranscriptSegments(item) : [], [item]);
   // Derive subtitle cues from timed transcript segments: each cue runs until the
   // next timed segment starts (4s fallback for the last one).
-  const subtitleCues = React.useMemo(() => {
+  const transcriptCues = React.useMemo(() => {
     const timed = transcriptSegments.filter((segment) => Number.isFinite(segment.seconds));
     return segmentsToCues(timed.map((segment, index) => ({
       start: segment.seconds,
@@ -459,6 +462,8 @@ export function DetailPage() {
       text: segment.text
     })));
   }, [transcriptSegments]);
+  // An imported SRT/VTT file overrides the transcript-derived cues when present.
+  const subtitleCues = importedCues.length ? importedCues : transcriptCues;
   const autosaveEngineRef = React.useRef(null);
   const draftRef = React.useRef(null);
   const [autosaveStatus, setAutosaveStatus] = React.useState("idle");
@@ -478,6 +483,7 @@ export function DetailPage() {
     } : null);
     setEditing(false);
     setPlaybackTime(0);
+    setImportedCues([]);
     if (item?.id && !item.isDeleted) {
       markItemViewed?.(item.id);
     }
@@ -989,6 +995,8 @@ export function DetailPage() {
           cues: subtitleCues,
           subtitlesOn,
           onToggleSubtitles: () => setSubtitlesOn((value) => !value),
+          captionSize,
+          captionColor,
           onCanPlay: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.PLAYABLE),
           onLoadedMetadata: (event) => {
             setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.PLAYABLE);
@@ -1095,22 +1103,84 @@ export function DetailPage() {
         className: "grid gap-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
       }),
       jsxs("section", { className: `va-card space-y-4 rounded-2xl va-surface-muted border p-5 text-right ${activeDetailTab === "media" ? "" : "hidden"}`, dir: "rtl", children: [
-        subtitleCues.length > 0 && jsxs("button", {
-          type: "button",
-          onClick: () => {
-            const srt = transcriptToSrt({ segments: subtitleCues });
-            const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const anchor = document.createElement("a");
-            anchor.href = url;
-            anchor.download = `${(item.title || "subtitles").replace(/[\\/:*?"<>|]+/g, "_")}.srt`;
-            anchor.click();
-            URL.revokeObjectURL(url);
-            showToast?.("تم تنزيل ملف الترجمة SRT", "success");
-          },
-          className: "inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-200 transition-colors hover:bg-white/5 hover:text-white",
-          children: [jsx(Download, { className: "h-3.5 w-3.5" }), "تنزيل الترجمة (SRT)"]
-        }),
+        jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+          jsxs("label", {
+            className: "inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-200 transition-colors hover:bg-white/5 hover:text-white",
+            children: [
+              jsx(FileText, { className: "h-3.5 w-3.5" }),
+              "تحميل ترجمة (SRT/VTT)",
+              jsx("input", {
+                type: "file",
+                accept: ".srt,.vtt,text/vtt,text/plain",
+                className: "hidden",
+                onChange: (event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const parsed = parseSubtitles(String(reader.result || ""));
+                    if (parsed.length) {
+                      setImportedCues(parsed);
+                      setSubtitlesOn(true);
+                      showToast?.(`تم تحميل ${parsed.length} سطر ترجمة`, "success");
+                    } else {
+                      showToast?.("تعذّر قراءة ملف الترجمة", "error");
+                    }
+                  };
+                  reader.onerror = () => showToast?.("تعذّر قراءة ملف الترجمة", "error");
+                  reader.readAsText(file);
+                }
+              })
+            ]
+          }),
+          importedCues.length > 0 && jsx("button", {
+            type: "button",
+            onClick: () => setImportedCues([]),
+            className: "inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-400 transition-colors hover:bg-white/5 hover:text-white",
+            children: "إزالة الترجمة المستوردة"
+          }),
+          subtitleCues.length > 0 && jsxs("button", {
+            type: "button",
+            onClick: () => {
+              const srt = transcriptToSrt({ segments: subtitleCues });
+              const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
+              const url = URL.createObjectURL(blob);
+              const anchor = document.createElement("a");
+              anchor.href = url;
+              anchor.download = `${(item.title || "subtitles").replace(/[\\/:*?"<>|]+/g, "_")}.srt`;
+              anchor.click();
+              URL.revokeObjectURL(url);
+              showToast?.("تم تنزيل ملف الترجمة SRT", "success");
+            },
+            className: "inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-200 transition-colors hover:bg-white/5 hover:text-white",
+            children: [jsx(Download, { className: "h-3.5 w-3.5" }), "تنزيل الترجمة (SRT)"]
+          }),
+          subtitleCues.length > 0 && jsxs("select", {
+            value: captionSize,
+            onChange: (event) => setCaptionSize(event.target.value),
+            "aria-label": "حجم الترجمة",
+            className: "min-h-9 rounded-xl border border-white/10 bg-gray-950/35 px-2 text-xs text-gray-200",
+            children: [
+              jsx("option", { value: "sm", children: "ترجمة صغيرة" }),
+              jsx("option", { value: "md", children: "ترجمة متوسطة" }),
+              jsx("option", { value: "lg", children: "ترجمة كبيرة" })
+            ]
+          }),
+          subtitleCues.length > 0 && jsxs("label", {
+            className: "inline-flex items-center gap-1.5 text-xs text-gray-400",
+            children: [
+              "لون",
+              jsx("input", {
+                type: "color",
+                value: captionColor,
+                onChange: (event) => setCaptionColor(event.target.value),
+                "aria-label": "لون الترجمة",
+                className: "h-7 w-9 cursor-pointer rounded border border-white/10 bg-transparent"
+              })
+            ]
+          })
+        ] }),
         jsx(TranscriptSyncWorkbench, { segments: transcriptSegments, currentTime: playbackTime, onSeek: seekToBookmark }),
         jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
           jsxs("div", { className: "min-w-0", children: [
