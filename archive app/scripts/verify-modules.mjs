@@ -188,6 +188,10 @@ import {
   parseDurationSeconds
 } from "../src/features/dashboard/viewModel.js";
 import {
+  buildDiscoverySections,
+  getDiscoveryStats
+} from "../src/features/discover/discoveryEngine.js";
+import {
   getDefaultDashboardLayout,
   normalizeDashboardLayout,
   toGridLayout,
@@ -903,10 +907,11 @@ run("navigation view model", () => {
 run("page migration native status", () => {
   const status = getPageMigrationStatus();
   const summary = getPageMigrationSummary(status);
-  assert.equal(summary.total, 26);
-  assert.equal(summary.native, 26);
+  assert.equal(summary.total, 27);
+  assert.equal(summary.native, 27);
   assert.equal(summary.wrappedPages, 0);
   assert.equal(status.find((page) => page.id === "archive")?.status, "native");
+  assert.equal(status.find((page) => page.id === "discover")?.status, "native");
   assert.equal(status.find((page) => page.id === "dashboard")?.status, "native");
   assert.equal(status.find((page) => page.id === "backup")?.status, "native");
   assert.equal(status.find((page) => page.id === "reports")?.status, "native");
@@ -1150,6 +1155,39 @@ run("dashboard view model", () => {
   assert.equal(getDailyFocusItems({ now, stats: { total: 0 }, settings: {} })[0].action, "add");
   assert.equal(hasDashboardLayoutDraftChanges({ draftLayout: ["a"], currentLayout: ["b"] }), true);
   assert.equal(hasDashboardLayoutDraftChanges({ draftLayout: ["a"], currentLayout: ["a"] }), false);
+});
+
+run("content discovery engine", () => {
+  const now = new Date("2026-06-12T12:00:00.000Z");
+  const videoItems = [
+    { id: "fresh", title: "مادة حديثة", createdAt: "2026-06-10T10:00:00.000Z", updatedAt: "2026-06-11T10:00:00.000Z", isFavorite: true },
+    { id: "active", title: "مادة نشطة", createdAt: "2026-05-01T10:00:00.000Z", updatedAt: "2026-05-20T10:00:00.000Z", lastViewedAt: "2026-06-09T10:00:00.000Z" },
+    { id: "forgotten", title: "مادة منسية", createdAt: "2025-01-01T10:00:00.000Z", updatedAt: "2025-01-02T10:00:00.000Z", lastViewedAt: "2025-02-01T10:00:00.000Z" },
+    { id: "deleted", title: "محذوفة", createdAt: "2026-06-12T10:00:00.000Z", isDeleted: true }
+  ];
+  const auditLogs = [
+    { id: "log-1", itemId: "active", timestamp: "2026-06-11T10:00:00.000Z" },
+    { id: "log-2", targetId: "active", timestamp: "2026-06-10T10:00:00.000Z" },
+    { id: "log-3", payload: { itemId: "fresh" }, timestamp: "2026-05-01T10:00:00.000Z" }
+  ];
+
+  const sections = buildDiscoverySections({ videoItems, auditLogs, now, limit: 3, seed: "verify" });
+  assert.deepEqual(sections.map((section) => section.id), ["explore", "trending", "random", "active", "forgotten"]);
+  assert.equal(sections.find((section) => section.id === "active").items[0].id, "active");
+  assert.equal(sections.find((section) => section.id === "forgotten").items[0].id, "forgotten");
+  assert.ok(!sections.some((section) => section.items.some((item) => item.id === "deleted")), "deleted items are excluded");
+
+  const repeated = buildDiscoverySections({ videoItems, auditLogs, now, limit: 3, seed: "verify" });
+  assert.deepEqual(
+    sections.find((section) => section.id === "random").items.map((item) => item.id),
+    repeated.find((section) => section.id === "random").items.map((item) => item.id),
+    "random discovery is deterministic"
+  );
+
+  const stats = getDiscoveryStats({ videoItems, sections });
+  assert.equal(stats.activeCount, 3);
+  assert.equal(stats.sectionCount, 5);
+  assert.equal(stats.surfacedCount, 3);
 });
 
 run("dashboard customization grid layout", () => {

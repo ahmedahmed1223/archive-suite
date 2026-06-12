@@ -2,6 +2,7 @@
   AlertTriangle,
   Bell,
   CheckCircle2,
+  Compass,
   Database,
   Download,
   Command,
@@ -496,6 +497,7 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
   const navigationCommands = React.useMemo(() => [
     { id: "dashboard", label: "مركز التحكم", detail: "العودة للبداية اليومية", icon: Home, kind: "page", group: "page", run: () => setCurrentPage?.("dashboard") },
     { id: "archive", label: "الأرشيف", detail: "تصفح المواد والفلاتر", icon: FolderOpen, kind: "page", group: "page", run: () => setCurrentPage?.("archive") },
+    { id: "discover", label: "الاكتشاف", detail: "استكشف الرائج والعشوائي والمنسي", icon: Compass, kind: "page", group: "page", run: () => setCurrentPage?.("discover") },
     { id: "search", label: "البحث المتقدم", detail: "بحث لحظي مع فلاتر تفصيلية", icon: Search, kind: "page", group: "page", run: () => setCurrentPage?.("search") },
     { id: "projects", label: "المشاريع", detail: "مونتاج ومهام وقصاصات", icon: FolderOpen, kind: "page", group: "page", run: () => setCurrentPage?.("projects") },
     { id: "types", label: "الأنواع والحقول", detail: "إدارة نماذج المواد", icon: Tags, kind: "page", group: "page", run: () => setCurrentPage?.("types") },

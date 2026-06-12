@@ -3,6 +3,7 @@ import { PAGE_MANIFEST } from "../app/pageManifest.js";
 export const PAGE_NATIVE_MIGRATION = {
   dashboard: { status: "native", notes: "Page JSX lives in src/pages/DashboardPage.jsx; shell, store, services, and vendor imports are native." },
   archive: { status: "native", notes: "Page JSX lives in src/pages/ArchivePage.jsx with native grid/list/table modes and a native file import wizard." },
+  discover: { status: "native", notes: "Page JSX lives in src/pages/DiscoverPage.jsx; discovery sections are driven by src/features/discover/discoveryEngine.js." },
   add: { status: "native", notes: "Page JSX lives in src/pages/AddVideoPage.jsx with a native multi-step form and localFile metadata support." },
   detail: { status: "native", notes: "Page JSX lives in src/pages/DetailPage.jsx with native preview, editing, custom fields, and history summary." },
   types: { status: "native", notes: "Page JSX lives in src/pages/TypesPage.jsx with native type, subtype, and custom-field management including localFile." },

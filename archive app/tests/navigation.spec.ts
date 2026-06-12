@@ -11,6 +11,7 @@ import { seedLocalArchive, goToPage } from './helpers/seed';
 const PAGES = [
   { route: '#/dashboard', heading: 'مركز التحكم' },
   { route: '#/archive',   heading: 'الأرشيف' },
+  { route: '#/discover',  heading: 'الاكتشاف' },
   { route: '#/search',    heading: 'البحث' },
   { route: '#/add',       heading: 'إضافة' },
   { route: '#/reports',   heading: 'التقارير' },
