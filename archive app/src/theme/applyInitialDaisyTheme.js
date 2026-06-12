@@ -1,4 +1,5 @@
 import { applyDaisyTheme, getStoredDaisyTheme } from "../features/theme/daisyThemes.js";
+import { applyCustomDaisyTheme, getStoredCustomDaisyTheme } from "../features/theme/customDaisyTheme.js";
 import { THEME_MODE, getStoredSchedule, resolveScheduledTheme, systemPrefersDark } from "../features/theme/themeSchedule.js";
 
 /**
@@ -14,7 +15,9 @@ function resolveBootTheme(prefersDark) {
 }
 
 export function applyInitialDaisyTheme() {
-  return applyDaisyTheme(resolveBootTheme(systemPrefersDark()));
+  const applied = applyDaisyTheme(resolveBootTheme(systemPrefersDark()));
+  applyCustomDaisyTheme(getStoredCustomDaisyTheme());
+  return applied;
 }
 
 /**
@@ -24,7 +27,10 @@ export function applyInitialDaisyTheme() {
 export function watchSystemThemeChange(win = typeof window !== "undefined" ? window : null) {
   if (getStoredSchedule().mode !== THEME_MODE.AUTO || !win?.matchMedia) return () => {};
   const query = win.matchMedia("(prefers-color-scheme: dark)");
-  const handler = (event) => applyDaisyTheme(resolveBootTheme(event.matches));
+  const handler = (event) => {
+    applyDaisyTheme(resolveBootTheme(event.matches));
+    applyCustomDaisyTheme(getStoredCustomDaisyTheme());
+  };
   query.addEventListener?.("change", handler);
   return () => query.removeEventListener?.("change", handler);
 }
