@@ -1912,9 +1912,10 @@
 
 ### 17.12 P1 — نظام الإشعارات المنبثقة المحسّن (Toast & Snackbar — DaisyUI)
 
-- [ ] `[P1]` ⏱️M **toast/alert محسّن بـ DaisyUI مع إجراءات سريعة وتراجع وشريط تقدّم** — toasts الحالية بدائية بلا تفاعل.
+- [x] `[P1]` ⏱️M **toast/alert محسّن بـ DaisyUI مع إجراءات سريعة وتراجع وشريط تقدّم** — toasts الحالية بدائية بلا تفاعل.
   - **الملفات الجديدة:** `archive app/src/components/ui/ToastSystem.jsx` (DaisyUI `toast`/`alert`)، `archive app/src/features/toast/toastStore.js`.
   - **التنفيذ:** أولوية حسب النوع، تجميع المتشابهة (“3 عناصر أُضيفت”)، إجراء سريع داخل toast (تراجع/تنزيل/إعادة)، إبقاء الأخطاء حتى تُقرأ، DaisyUI `progress` للعمليات الطويلة، سجل إشعارات.
+  - 🔄 **مُنجَز:** `uiSlice.showNotification` يدعم `groupKey`/`groupTemplate` (تجميع)، أخطاء persistent تلقائياً، `progress: 0-100`، فرز حسب الأولوية (error>warning>success>info)، `updateNotificationProgress(id, progress)`؛ `ToastNotification` يعرض شارة العدد ×N وشريط تقدّم.
   - يرتبط بـ: §18.2 (مركز الإشعارات)، `AppNotifications.jsx`.
   - الجهد: 2-3 أسابيع.
   - المصدر: daisyui-ux-proposals (المقترح 12 — P1).
