@@ -1919,14 +1919,14 @@
 
 ### 17.10 P1 — نظام سمات DaisyUI المتعددة مع محرّر حيّ (Theme System + Live Editor)
 
-- [ ] `[P1]` ⏱️M **توسيع نظام السمات للتوافق مع سمات DaisyUI (30+ سمة جاهزة) + محرّر سمة حيّ** — يعتمد على §17.1.
+- [x] `[P1]` ⏱️M **توسيع نظام السمات للتوافق مع سمات DaisyUI (30+ سمة جاهزة) + محرّر سمة حيّ** — يعتمد على §17.1.
   - **الملفات الجديدة:** `archive app/src/features/theme/daisyThemes.js`، `archive app/src/components/settings/ThemeGallery.jsx`، `archive app/src/components/settings/LiveThemeEditor.jsx`.
   - **تعديل ملفات:** `archive app/src/theme/useTheme.js`، `SettingsPage.jsx` (تبويب السمات).
   - **التنفيذ:** معاينات مصغّرة لكل سمة، تبديل فوري عبر `data-theme`، محرّر ألوان حيّ، حفظ سمة مخصّصة، جدولة فاتح/داكن حسب `prefers-color-scheme`، تصدير/استيراد JSON.
   - 🔄 **تقدم 2026-06-12:** أُضيفت الملفات المطلوبة فعلياً: `features/theme/daisyThemes.js` (34 سمة جاهزة + normalize/store/apply)، `components/settings/ThemeGallery.jsx` (معرض radio + `theme-controller` + معاينة `data-theme` لكل بطاقة)، و`components/settings/LiveThemeEditor.jsx` (select/range عبر DaisyUI). تم توسيع `@plugin "daisyui"` ليضم السمات الجاهزة، وربط `settings.ui.daisyTheme` بـ `SettingsPage`, `AppRouter`, boot helper `applyInitialDaisyTheme.js`, وتصدير/استيراد ملف المظهر.
-  - ✅ **جدولة فاتح/داكن مُنجَزة 2026-06-12:** أُضيف `features/theme/themeSchedule.js` (محرك نقي: `relativeLuminance`/`getDaisyThemeTone`/`normalizeSchedule`/`resolveScheduledTheme` + تخزين `videoArchive:themeSchedule`) مع `themeSchedule.test.js` (13 اختبار). يدعم وضع `manual` (يحترم اختيار `daisyTheme` الحالي — لا ارتداد للمستخدمين) و`auto` (سمة فاتحة/داكنة حسب `prefers-color-scheme`). رُبط في `theme/applyInitialDaisyTheme.js` مع `watchSystemThemeChange` لتتبّع تبدّل النظام وقت التشغيل.
+  - ✅ **جدولة فاتح/داكن مُنجَزة 2026-06-12:** أُضيف `features/theme/themeSchedule.js` (محرك نقي: `relativeLuminance`/`getDaisyThemeTone`/`normalizeSchedule`/`resolveScheduledTheme` + تخزين `videoArchive:themeSchedule`) مع `themeSchedule.test.js` (12 اختبار). يدعم وضع `manual` (يحترم اختيار `daisyTheme` الحالي — لا ارتداد للمستخدمين) و`auto` (سمة فاتحة/داكنة حسب `prefers-color-scheme`). رُبط في `theme/applyInitialDaisyTheme.js` مع `watchSystemThemeChange` لتتبّع تبدّل النظام وقت التشغيل.
   - 🔄 **تقدم إضافي 2026-06-12:** أضيفت واجهة تبديل `manual/auto` داخل `LiveThemeEditor` باستخدام DaisyUI `toggle` و`select` لاختيار سمة فاتحة وداكنة، وصارت الجدولة جزءاً من مسودة المظهر: تُعاين فورياً، وتُحفظ عبر `storeSchedule()` عند تطبيق المظهر، وتُضمّن في تصدير/استيراد JSON لملف المظهر.
-  - ما زال مفتوحاً: حفظ سمة مخصّصة كاملة (CSS vars).
+  - ✅ **السمة المخصصة مُنجَزة 2026-06-12:** أُضيف `features/theme/customDaisyTheme.js` لحفظ وتطبيع وتطبيق CSS vars كاملة لرموز DaisyUI والتطبيق، مع `customDaisyTheme.test.js` (6 اختبارات). رُبطت الطبقة في boot helper و`AppRouter` و`SettingsPage`، وأضيفت واجهة `toggle` + `input` ألوان داخل `LiveThemeEditor`، وصار ملف المظهر يصدّر/يستورد `customDaisyTheme`.
   - يرتبط بـ: §17.1، §15.3 (مركز الإعدادات).
   - الجهد: 2-3 أسابيع (بعد §17.1).
   - المصدر: daisyui-ux-proposals (المقترح 10 — P1).

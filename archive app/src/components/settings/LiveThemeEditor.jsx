@@ -1,6 +1,11 @@
 import { SlidersHorizontal } from "lucide-react";
 import * as React from "react";
 
+import {
+  CUSTOM_DAISY_THEME_FIELDS,
+  DEFAULT_CUSTOM_DAISY_THEME,
+  normalizeCustomDaisyTheme
+} from "../../features/theme/customDaisyTheme.js";
 import { DAISY_THEME_OPTIONS } from "../../features/theme/daisyThemes.js";
 import { THEME_MODE, normalizeSchedule } from "../../features/theme/themeSchedule.js";
 
@@ -12,12 +17,23 @@ const FONT_SCALE_BY_VALUE = ["small", "normal", "large", "xlarge"];
 export function LiveThemeEditor({ draft, onPatch }) {
   const selectedTheme = DAISY_THEME_OPTIONS.find((theme) => theme.id === draft.daisyTheme) || DAISY_THEME_OPTIONS[0];
   const themeSchedule = normalizeSchedule(draft.themeSchedule);
+  const customTheme = normalizeCustomDaisyTheme(draft.customDaisyTheme);
   const lightThemes = DAISY_THEME_OPTIONS.filter((theme) => theme.tone?.includes("فاتح") || theme.tone?.includes("نهاري") || theme.id === "light");
   const darkThemes = DAISY_THEME_OPTIONS.filter((theme) => theme.tone?.includes("داكن") || theme.id === "dark" || theme.id === "business");
   const patchSchedule = (patch) => onPatch?.({
     themeSchedule: normalizeSchedule({
       ...themeSchedule,
       ...patch
+    })
+  });
+  const patchCustomTheme = (patch) => onPatch?.({
+    customDaisyTheme: normalizeCustomDaisyTheme({
+      ...customTheme,
+      ...patch,
+      vars: {
+        ...customTheme.vars,
+        ...(patch.vars || {})
+      }
     })
   });
 
@@ -115,6 +131,64 @@ export function LiveThemeEditor({ draft, onPatch }) {
             </label>
           </>
         )}
+
+        <div className="md:col-span-2 rounded-xl border border-white/10 bg-base-200/30 p-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <label className="flex min-w-0 items-center justify-between gap-3 sm:flex-1">
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold text-gray-300">سمة CSS مخصصة</span>
+                <span className="mt-1 block text-[11px] leading-5 text-gray-500">
+                  تحفظ متغيرات DaisyUI والتطبيق كطبقة فوق السمة الحالية.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={customTheme.enabled}
+                onChange={(event) => patchCustomTheme({ enabled: event.target.checked })}
+                className="toggle toggle-accent toggle-sm"
+                aria-label="تفعيل السمة المخصصة"
+              />
+            </label>
+            <button
+              type="button"
+              className="btn btn-ghost btn-xs self-start"
+              onClick={() => onPatch?.({ customDaisyTheme: DEFAULT_CUSTOM_DAISY_THEME })}
+            >
+              إعادة ضبط
+            </button>
+          </div>
+
+          {customTheme.enabled && (
+            <div className="mt-3 space-y-3">
+              <label className="space-y-2">
+                <span className="block text-xs font-semibold text-gray-300">اسم السمة</span>
+                <input
+                  type="text"
+                  value={customTheme.name}
+                  onChange={(event) => patchCustomTheme({ name: event.target.value })}
+                  className="input input-sm input-accent w-full rounded-xl"
+                />
+              </label>
+              <div className="grid max-h-72 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+                {CUSTOM_DAISY_THEME_FIELDS.map((field) => (
+                  <label key={field.key} className="rounded-lg border border-white/10 bg-base-100/30 p-2">
+                    <span className="flex items-center justify-between gap-2 text-[11px] font-semibold text-gray-300">
+                      <span>{field.label}</span>
+                      <span className="font-mono text-[10px] text-gray-500">{customTheme.vars[field.key]}</span>
+                    </span>
+                    <input
+                      type="color"
+                      value={customTheme.vars[field.key]}
+                      onChange={(event) => patchCustomTheme({ vars: { [field.key]: event.target.value } })}
+                      className="input input-sm input-accent mt-2 h-9 w-full rounded-xl p-1"
+                      aria-label={`لون ${field.label}`}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <label className="space-y-2">
           <span className="block text-xs font-semibold text-gray-300">الحركة</span>

@@ -21,7 +21,9 @@ import { getPageContextMeta } from "./pageMeta.js";
 import { DashboardSkeleton } from "./shell/ShellParts.jsx";
 import { ErrorBoundary } from "../components/common/ErrorBoundary.jsx";
 import { OfflineBanner } from "../components/common/OfflineBanner.jsx";
+import { applyCustomDaisyTheme, getStoredCustomDaisyTheme } from "../features/theme/customDaisyTheme.js";
 import { applyDaisyTheme, storeDaisyTheme } from "../features/theme/daisyThemes.js";
+import { THEME_MODE, getStoredSchedule, resolveScheduledTheme, systemPrefersDark } from "../features/theme/themeSchedule.js";
 import {
   PageContextBar as AppPageContextBar,
   Sidebar as AppSidebar,
@@ -38,11 +40,17 @@ export function AppRouter() {
   const currentPageTitle =
     getPageContextMeta(currentPage)?.title || "أرشيف الفيديو";
   const daisyTheme = settings.ui?.daisyTheme || "business";
+  const customDaisyTheme = settings.ui?.customDaisyTheme;
 
   React.useEffect(() => {
-    const applied = applyDaisyTheme(daisyTheme);
-    storeDaisyTheme(applied);
-  }, [daisyTheme]);
+    const schedule = getStoredSchedule();
+    const themeToApply = schedule.mode === THEME_MODE.AUTO
+      ? resolveScheduledTheme(schedule, systemPrefersDark())
+      : daisyTheme;
+    applyDaisyTheme(themeToApply);
+    storeDaisyTheme(daisyTheme);
+    applyCustomDaisyTheme(customDaisyTheme || getStoredCustomDaisyTheme());
+  }, [daisyTheme, customDaisyTheme]);
 
   return jsxs("div", {
     dir: "rtl",
