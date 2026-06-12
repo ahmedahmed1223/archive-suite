@@ -357,8 +357,9 @@
 - [x] `[P2]` ⏱️S **وضع ملء الشاشة للمعاينة** — عرض المستند/الصورة/الفيديو بملء الشاشة مع تنقّل بالأسهم.
   - ✅ **مُنجز ومتحقق (2026-06-11):** أُضيفت معاينة مكبرة في `PreviewPanel` مع `role="dialog"` وزر إغلاق وتوسيع وتنقل سابق/لاحق عبر الأسهم و`Escape` للإغلاق، مع دعم مستند/صورة/فيديو عبر `DocumentViewer` عند الحاجة. أضيف اختبار `archive app/src/features/archive/PreviewPanel.fullscreen.test.jsx`، ومرّ `pnpm --filter @archive/app run test -- src/features/archive/PreviewPanel.fullscreen.test.jsx` و`pnpm --filter @archive/app run test`.
 
-- [ ] `[P3]` ⏱️M **واجهة إدارة API Keys** — إنشاء/إلغاء مفاتيح API لتكامل الخدمات الخارجية.
-  - جدول: `api_keys` (hash, name, scopes[], lastUsed, expiresAt).
+- [x] `[P3]` ⏱️M **واجهة إدارة API Keys** — **(مكتملة ✅ — مُنجَزة ضمن §20.5)** إنشاء/إلغاء مفاتيح API لتكامل الخدمات الخارجية.
+  - جدول: `api_keys` (hash, name, scopes[], lastUsed, expiresAt). ✅ مُطبَّق في `archive-server/prisma/schema.prisma` (`model ApiKey` → `@@map("api_keys")`: `keyHash`/`name`/`scopes[]`/`lastUsedAt`/`expiresAt` + `prefix`/`active`/`ownerId`).
+  - الخادم: `archive-server/src/auth/apiKeyService.js` (إصدار/تجزئة/تحقّق/إلغاء بنطاقات scoped). الواجهة: `archive app/src/components/settings/ApiKeysSettings.jsx` (إصدار/قائمة/إلغاء + كشف المفتاح مرة واحدة) + `ApiKeysSettings.test.jsx`، مدمجة في تبويب الإعدادات. مرجع: commits b8155b0 / a8626e3 / c89b801.
 
 - [ ] `[P3]` ⏱️L **حقول بيانات وصفية مخصصة** — إضافة حقول مُعرَّفة من المستخدم (نص/رقم/تاريخ/قائمة) لكل نوع محتوى.
 
