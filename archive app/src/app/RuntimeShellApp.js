@@ -442,6 +442,16 @@ export function App() {
       setViewMode("details");
       return;
     }
+    if (shortcutAction === "viewGallery") {
+      event.preventDefault();
+      setViewMode("gallery");
+      return;
+    }
+    if (shortcutAction === "viewKanban") {
+      event.preventDefault();
+      setViewMode("kanban");
+      return;
+    }
     if (shortcutAction === "deleteSelected") {
       const selectedItems = useAppStore.getState().selectedItems;
       if (selectedItems.length > 0) {

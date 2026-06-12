@@ -1,9 +1,9 @@
 import { normalizeArabicSearchText } from "../../utils/formatting.js";
 import { itemHasDescriptionGap } from "./completeness.js";
-import { WORKFLOW_STATES, getItemState } from "./itemStatus.js";
+import { STATE_META, WORKFLOW_STATES, getItemState } from "./itemStatus.js";
 
 const ARCHIVE_SORT_FIELDS = new Set(["title", "createdAt", "updatedAt"]);
-const ARCHIVE_VIEW_MODES = new Set(["grid", "compact", "list", "details"]);
+const ARCHIVE_VIEW_MODES = new Set(["grid", "gallery", "compact", "list", "details", "kanban"]);
 const ARCHIVE_ITEM_SIZES = new Set(["xs", "compact", "comfortable", "large", "xl"]);
 const ARCHIVE_PAGE_SIZES = new Set([12, 24, 48, 96]);
 const ARCHIVE_TOP_MODES = new Set(["quick", "detailed"]);
@@ -14,6 +14,7 @@ export const ARCHIVE_GRID_COLUMN_MIN = 1;
 export const ARCHIVE_GRID_COLUMN_MAX = 8;
 
 export function normalizeArchiveViewMode(viewMode = "grid") {
+  if (viewMode === "masonry") return "gallery";
   if (viewMode === "tiles") return "compact";
   if (viewMode === "table") return "details";
   return ARCHIVE_VIEW_MODES.has(viewMode) ? viewMode : "grid";
@@ -24,6 +25,20 @@ export function getArchiveRenderViewMode(viewMode = "grid") {
   if (normalized === "compact") return "tiles";
   if (normalized === "details") return "table";
   return normalized;
+}
+
+export function groupArchiveItemsForKanban(items = []) {
+  const groups = new Map(WORKFLOW_STATES.map((state) => [state, []]));
+  items.forEach((item) => {
+    const state = getItemState(item);
+    if (!groups.has(state)) groups.set(state, []);
+    groups.get(state).push(item);
+  });
+  return WORKFLOW_STATES.map((state) => ({
+    id: state,
+    label: STATE_META[state]?.label || state,
+    items: groups.get(state) || []
+  }));
 }
 
 export function normalizeArchiveItemSize(itemSize = "compact") {

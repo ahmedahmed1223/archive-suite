@@ -7,7 +7,7 @@ import { SkeletonBlock } from "../../components/ui/index.js";
 import { formatNumber } from "../../utils/formatting.js";
 import { parseVideoTags } from "../videos/viewModel.js";
 import { computeCompleteness } from "./completeness.js";
-import { getArchiveRenderViewMode } from "./viewModel.js";
+import { getArchiveRenderViewMode, groupArchiveItemsForKanban } from "./viewModel.js";
 import { useKeyboardListNav } from "../../hooks/useKeyboardListNav.js";
 import { useVirtualList } from "../../hooks/useVirtualList.js";
 import {
@@ -103,6 +103,101 @@ function buildItemActionsFor(item, deps) {
   };
 }
 
+function ArchiveGalleryView({ visibleItems, itemActions, kbFocusClass }) {
+  return jsx("div", {
+    className: "columns-1 gap-3 sm:columns-2 xl:columns-3 2xl:columns-4",
+    role: "list",
+    "aria-label": "معرض Masonry لعناصر الأرشيف",
+    children: visibleItems.map((item, index) => jsx(AnimatedItem, {
+      index,
+      itemId: item.id,
+      className: `mb-3 break-inside-avoid ${kbFocusClass(index)}`,
+      "data-list-item": "",
+      disableMotion: index >= 16,
+      children: jsx(VideoCard, itemActions(item, index))
+    }, item.id))
+  });
+}
+
+function ArchiveKanbanView({ visibleItems, itemActions, updateVideoItem, showToast }) {
+  const [draggingId, setDraggingId] = React.useState(null);
+  const columns = React.useMemo(() => groupArchiveItemsForKanban(visibleItems), [visibleItems]);
+  const itemsById = React.useMemo(() => new Map(visibleItems.map((item) => [item.id, item])), [visibleItems]);
+
+  const handleDrop = async (event, columnId) => {
+    event.preventDefault();
+    const itemId = event.dataTransfer?.getData("text/plain") || draggingId;
+    setDraggingId(null);
+    const item = itemsById.get(itemId);
+    const droppedInCurrentColumn = columns
+      .find((column) => column.id === columnId)
+      ?.items.some((columnItem) => columnItem.id === itemId);
+    if (!item || droppedInCurrentColumn) return;
+    if (!updateVideoItem) {
+      showToast?.("تغيير الحالة غير متاح حالياً", "warning");
+      return;
+    }
+    try {
+      await updateVideoItem({ ...item, workflowStatus: columnId });
+      showToast?.("تم نقل العنصر بين أعمدة الكانبان", "success");
+    } catch (error) {
+      showToast?.(error?.message || "تعذر نقل العنصر", "error");
+    }
+  };
+
+  return jsx("div", {
+    className: "overflow-x-auto pb-2",
+    dir: "rtl",
+    children: jsx("div", {
+      className: "grid min-w-[64rem] gap-3 lg:grid-cols-6",
+      role: "list",
+      "aria-label": "كانبان حالات عناصر الأرشيف",
+      children: columns.map((column) => jsxs("section", {
+        className: "card card-sm va-surface-muted min-h-72 rounded-2xl border border-white/10 bg-base-200/40",
+        onDragOver: (event) => event.preventDefault(),
+        onDrop: (event) => handleDrop(event, column.id),
+        role: "listitem",
+        "aria-label": `عمود ${column.label}`,
+        children: [
+          jsxs("header", {
+            className: "card-body gap-2 border-b border-white/10 p-3",
+            children: [
+              jsxs("div", {
+                className: "flex items-center justify-between gap-2",
+                children: [
+                  jsx("h3", { className: "card-title text-sm text-base-content", children: column.label }),
+                  jsx("span", { className: "badge badge-sm badge-soft", children: formatNumber(column.items.length) })
+                ]
+              }),
+              jsx("p", { className: "text-[11px] leading-5 text-base-content/55", children: "اسحب بطاقة هنا لتحديث حالتها." })
+            ]
+          }),
+          jsx("div", {
+            className: "card-body gap-2 p-2",
+            children: column.items.length ? column.items.map((item, index) => jsx("div", {
+              draggable: Boolean(updateVideoItem),
+              onDragStart: (event) => {
+                setDraggingId(item.id);
+                event.dataTransfer?.setData("text/plain", item.id);
+                if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+              },
+              onDragEnd: () => setDraggingId(null),
+              className: draggingId === item.id ? "opacity-55" : "",
+              children: jsx(VideoTileItem, {
+                ...itemActions(item, index),
+                itemSize: "compact"
+              })
+            }, item.id)) : jsx("div", {
+              className: "rounded-xl border border-dashed border-white/10 p-4 text-center text-xs leading-5 text-base-content/45",
+              children: "لا توجد عناصر في هذا العمود."
+            })
+          })
+        ]
+      }, column.id))
+    })
+  });
+}
+
 function renderItemsForViewMode(deps) {
   const {
     activeViewMode,
@@ -152,6 +247,21 @@ function renderItemsForViewMode(deps) {
   };
 
   const renderViewMode = getArchiveRenderViewMode(activeViewMode);
+  if (renderViewMode === "gallery") {
+    return jsx(ArchiveGalleryView, {
+      visibleItems,
+      itemActions,
+      kbFocusClass
+    });
+  }
+  if (renderViewMode === "kanban") {
+    return jsx(ArchiveKanbanView, {
+      visibleItems,
+      itemActions,
+      updateVideoItem,
+      showToast
+    });
+  }
   if (renderViewMode === "tiles") {
     return jsx("div", {
       className: "va-archive-tile-grid grid auto-rows-fr gap-2 sm:grid-cols-2 xl:grid-cols-3",
@@ -323,6 +433,10 @@ export function ArchivePageResults(props) {
     if (!canPreviewNext) return;
     setPreviewId?.(visibleItems[previewIndex + 1].id);
   }, [canPreviewNext, previewIndex, setPreviewId, visibleItems]);
+  const viewSupportsVirtualization = activeViewMode !== "gallery" && activeViewMode !== "kanban";
+  const renderedVisibleItems = viewSupportsVirtualization
+    ? virtualItems.map(({ item }) => item)
+    : visibleItems;
 
   return jsxs("section", {
     className: "grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]",
@@ -360,7 +474,7 @@ export function ArchivePageResults(props) {
                 className: "flex shrink-0 flex-wrap items-center justify-end gap-2",
                 children: [
                   jsx(ItemSizeSlider, { value: activeItemSize, onChange: changeItemSize }),
-                  (activeViewMode === "grid" || activeViewMode === "compact") && jsx(GridDensitySlider, {
+                  (activeViewMode === "grid" || activeViewMode === "gallery" || activeViewMode === "compact") && jsx(GridDensitySlider, {
                     gridColumns,
                     gridColumnCount,
                     onChange: changeGridColumns
@@ -381,17 +495,17 @@ export function ArchivePageResults(props) {
             children: jsxs("div", {
               ref: virtualContainerRef,
               children: [
-                topSpacerHeight > 0 && jsx("div", { style: { height: topSpacerHeight }, "aria-hidden": "true" }),
+                viewSupportsVirtualization && topSpacerHeight > 0 && jsx("div", { style: { height: topSpacerHeight }, "aria-hidden": "true" }),
                 renderItemsForViewMode({
                   ...props,
-                  // Pass only the virtualized slice of items on mobile; full list elsewhere
-                  visibleItems: virtualItems.map(({ item }) => item),
+                  // Pass only the virtualized slice where the layout is linear; masonry/kanban need the full page.
+                  visibleItems: renderedVisibleItems,
                   typeOptions,
                   kbFocusedIndex: focusedIndex,
                   kbIsSelected: isSelected,
                 }),
-                bottomSpacerHeight > 0 && jsx("div", { style: { height: bottomSpacerHeight }, "aria-hidden": "true" }),
-                shouldVirtualize && jsx("p", {
+                viewSupportsVirtualization && bottomSpacerHeight > 0 && jsx("div", { style: { height: bottomSpacerHeight }, "aria-hidden": "true" }),
+                viewSupportsVirtualization && shouldVirtualize && jsx("p", {
                   className: "text-xs text-gray-600 text-center py-1",
                   "aria-live": "polite",
                   children: `عرض ${visibleCount} من ${totalCount} عنصر`,

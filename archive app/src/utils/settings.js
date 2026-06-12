@@ -47,6 +47,8 @@ export function getDefaultSettings() {
       viewGrid: "Ctrl+1",
       viewList: "Ctrl+2",
       viewTable: "Ctrl+3",
+      viewGallery: "Ctrl+4",
+      viewKanban: "Ctrl+5",
       deleteSelected: "Delete",
       lockApp: "Ctrl+Shift+L",
       logout: "Ctrl+Alt+L",

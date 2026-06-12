@@ -127,7 +127,7 @@ export function useArchivePageState() {
   const activeGridRows = normalizeArchiveGridRows(gridRows);
   const normalizedGridColumns = normalizeArchiveGridColumns(gridColumns);
   const resolvedGridColumnCount = normalizedGridColumns === "auto" ? gridColumnCount : normalizedGridColumns;
-  const usesGridPaging = activeViewMode === "grid" || activeViewMode === "compact";
+  const usesGridPaging = activeViewMode === "grid" || activeViewMode === "gallery" || activeViewMode === "compact";
   const activePageSize = usesGridPaging ? Math.max(1, activeGridRows * resolvedGridColumnCount) : listPageSize;
 
   const selectedIdSet = React.useMemo(() => new Set(storeSelectedItems || []), [storeSelectedItems]);
@@ -348,7 +348,7 @@ export function useArchivePageState() {
     setPage(1);
     const patch = { archiveViewMode: normalized };
     if (activeItemSize === "xs") {
-      if (normalized === "grid" || normalized === "compact") {
+      if (normalized === "grid" || normalized === "gallery" || normalized === "compact") {
         setGridRows(12);
         setGridColumnsState(8);
         patch.archiveGridRows = 12;
@@ -367,7 +367,7 @@ export function useArchivePageState() {
     setPage(1);
     const patch = { archiveItemSize: normalized };
     if (normalized === "xs") {
-      if (activeViewMode === "grid" || activeViewMode === "compact") {
+      if (activeViewMode === "grid" || activeViewMode === "gallery" || activeViewMode === "compact") {
         setGridRows(12);
         setGridColumnsState(8);
         patch.archiveGridRows = 12;

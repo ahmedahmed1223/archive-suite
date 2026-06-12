@@ -53,9 +53,11 @@ const TAB_ICONS = {
 
 export const VIEW_OPTIONS = [
   { value: "grid", label: "شبكة", detail: "بطاقات ومعاينة" },
+  { value: "gallery", label: "معرض", detail: "Masonry بصري" },
   { value: "compact", label: "مدمجة", detail: "بلاطات كثيفة" },
   { value: "list", label: "قائمة", detail: "تفاصيل أكثر" },
-  { value: "details", label: "تفاصيل", detail: "جدول قابل للتخصيص" }
+  { value: "details", label: "تفاصيل", detail: "جدول قابل للتخصيص" },
+  { value: "kanban", label: "كانبان", detail: "أعمدة حالات بالسحب" }
 ];
 
 export const DENSITY_OPTIONS = [
