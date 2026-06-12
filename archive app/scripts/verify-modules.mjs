@@ -19,6 +19,7 @@ import {
 import {
   createArchiveRouteParams,
   getArchiveActiveFilterCount,
+  groupArchiveItemsForKanban,
   getArchiveRenderViewMode,
   getArchiveResultRangeText,
   getFilteredArchiveItems,
@@ -374,10 +375,25 @@ run("archive view model", () => {
   assert.equal(parsed.itemSize, "comfortable");
   assert.equal(parsed.gridRows, 6);
   assert.equal(parseArchiveRouteParams(new URLSearchParams("view=missing")).viewMode, "grid");
+  assert.equal(parseArchiveRouteParams(new URLSearchParams("view=masonry")).viewMode, "gallery");
   assert.equal(parseArchiveRouteParams(new URLSearchParams("view=table")).viewMode, "details");
   assert.equal(parseArchiveRouteParams(new URLSearchParams("view=tiles")).viewMode, "compact");
+  assert.equal(parseArchiveRouteParams(new URLSearchParams("view=gallery")).viewMode, "gallery");
+  assert.equal(parseArchiveRouteParams(new URLSearchParams("view=kanban")).viewMode, "kanban");
   assert.equal(getArchiveRenderViewMode("compact"), "tiles");
   assert.equal(getArchiveRenderViewMode("details"), "table");
+  assert.equal(getArchiveRenderViewMode("gallery"), "gallery");
+  assert.equal(getArchiveRenderViewMode("kanban"), "kanban");
+  assert.equal(createArchiveRouteParams({ viewMode: "gallery" }).get("view"), "gallery");
+  assert.equal(createArchiveRouteParams({ viewMode: "kanban" }).get("view"), "kanban");
+  const kanbanGroups = groupArchiveItemsForKanban([
+    { id: "draft-legacy" },
+    { id: "reviewing", workflowStatus: "review" },
+    { id: "deleted", isDeleted: true }
+  ]);
+  assert.deepEqual(kanbanGroups.find((group) => group.id === "draft").items.map((item) => item.id), ["draft-legacy"]);
+  assert.deepEqual(kanbanGroups.find((group) => group.id === "review").items.map((item) => item.id), ["reviewing"]);
+  assert.deepEqual(kanbanGroups.find((group) => group.id === "archived").items.map((item) => item.id), ["deleted"]);
   assert.equal(parseArchiveRouteParams(new URLSearchParams("top=wide&rows=9")).topMode, "quick");
   assert.equal(parseArchiveRouteParams(new URLSearchParams("rows=5")).gridRows, 5);
   assert.equal(normalizeArchiveTopMode("detailed"), "detailed");

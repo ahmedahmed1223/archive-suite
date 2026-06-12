@@ -9,6 +9,8 @@ import {
   Gauge,
   HardDrive,
   Image as ImageIcon,
+  Images,
+  Kanban,
   LayoutGrid,
   Maximize2,
   MoreHorizontal,
@@ -47,12 +49,14 @@ import { DocumentViewer } from "../../components/media/DocumentViewer.jsx";
 
 export const ARCHIVE_VIEW_MODES = [
   { id: "grid", label: "شبكة", Icon: LayoutGrid },
+  { id: "gallery", label: "معرض", Icon: Images },
   { id: "compact", label: "مدمجة", Icon: Rows3 },
   { id: "list", label: "قائمة", Icon: Archive },
-  { id: "details", label: "تفاصيل", Icon: FolderOpen }
+  { id: "details", label: "تفاصيل", Icon: FolderOpen },
+  { id: "kanban", label: "كانبان", Icon: Kanban }
 ];
 
-/** Compact icon-only view-mode switcher (grid / compact / list / details). */
+/** Compact icon-only view-mode switcher for archive view modes. */
 export function ViewModeSwitch({ value = "grid", onChange, className = "" }) {
   return jsx("div", {
     className: `join va-control-surface inline-flex min-h-8 overflow-hidden va-surface-muted rounded-lg border p-0.5 ${className}`,

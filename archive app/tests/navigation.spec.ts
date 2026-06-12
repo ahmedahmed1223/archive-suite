@@ -11,8 +11,10 @@ import { seedLocalArchive, goToPage } from './helpers/seed';
 const PAGES = [
   { route: '#/dashboard', heading: 'مركز التحكم' },
   { route: '#/archive',   heading: 'الأرشيف' },
+  { route: '#/archive?view=gallery', heading: 'الأرشيف' },
   { route: '#/archive?view=compact', heading: 'الأرشيف' },
   { route: '#/archive?view=details', heading: 'الأرشيف' },
+  { route: '#/archive?view=kanban', heading: 'الأرشيف' },
   { route: '#/discover',  heading: 'الاكتشاف' },
   { route: '#/search',    heading: 'البحث' },
   { route: '#/add',       heading: 'إضافة' },
@@ -59,6 +61,18 @@ test.describe('Navigation — hash routing', () => {
       await expect(headingEl).toBeVisible({ timeout: 15_000 });
     });
   }
+
+  test('archive gallery and kanban render their view surfaces', async ({ page }) => {
+    await seedLocalArchive(page);
+
+    await goToPage(page, '#/archive?view=gallery');
+    await expect(page.getByRole('list', { name: 'معرض Masonry لعناصر الأرشيف' })).toBeVisible({ timeout: 15_000 });
+
+    await goToPage(page, '#/archive?view=kanban');
+    const kanban = page.getByRole('list', { name: 'كانبان حالات عناصر الأرشيف' });
+    await expect(kanban).toBeVisible({ timeout: 15_000 });
+    await expect(kanban.locator('section')).toHaveCount(6);
+  });
 });
 
 test.describe('Navigation — browser back/forward', () => {

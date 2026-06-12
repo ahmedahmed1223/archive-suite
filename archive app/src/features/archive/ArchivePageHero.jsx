@@ -2,6 +2,8 @@ import {
   Archive,
   CheckSquare,
   FolderOpen,
+  Images,
+  Kanban,
   LayoutGrid,
   RefreshCw,
   Rows3,
@@ -63,9 +65,11 @@ function MobileControlButton({ children, onClick, active = false, danger = false
 
 const VIEW_MODE_BUTTONS = [
   { id: "grid", label: "شبكة", Icon: LayoutGrid },
+  { id: "gallery", label: "معرض", Icon: Images },
   { id: "compact", label: "مدمجة", Icon: Rows3 },
   { id: "list", label: "قائمة", Icon: Archive },
-  { id: "details", label: "تفاصيل", Icon: FolderOpen }
+  { id: "details", label: "تفاصيل", Icon: FolderOpen },
+  { id: "kanban", label: "كانبان", Icon: Kanban }
 ];
 
 /**
@@ -218,7 +222,7 @@ export function ArchivePageHero(props) {
     }, id))
   });
 
-  const renderSizingControl = () => (activeViewMode === "grid" || activeViewMode === "compact") ? jsx(GridDensitySlider, {
+  const renderSizingControl = () => (activeViewMode === "grid" || activeViewMode === "gallery" || activeViewMode === "compact") ? jsx(GridDensitySlider, {
     gridColumns,
     gridColumnCount,
     onChange: changeGridColumns

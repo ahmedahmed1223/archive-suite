@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { getFilteredArchiveItems, parseArchiveRouteParams, createArchiveRouteParams } from "./viewModel.js";
+import {
+  createArchiveRouteParams,
+  getFilteredArchiveItems,
+  groupArchiveItemsForKanban,
+  parseArchiveRouteParams
+} from "./viewModel.js";
 
 describe("archive workflow status filtering", () => {
   const items = [
@@ -20,5 +25,19 @@ describe("archive workflow status filtering", () => {
     const params = createArchiveRouteParams({ filterStatus: "review" });
     expect(params.get("status")).toBe("review");
     expect(parseArchiveRouteParams(params).filterStatus).toBe("review");
+  });
+
+  it("supports gallery and kanban archive view modes", () => {
+    expect(parseArchiveRouteParams(new URLSearchParams("view=gallery")).viewMode).toBe("gallery");
+    expect(parseArchiveRouteParams(new URLSearchParams("view=kanban")).viewMode).toBe("kanban");
+    expect(parseArchiveRouteParams(new URLSearchParams("view=masonry")).viewMode).toBe("gallery");
+    expect(createArchiveRouteParams({ viewMode: "kanban" }).get("view")).toBe("kanban");
+  });
+
+  it("groups kanban columns by derived workflow status", () => {
+    const groups = groupArchiveItemsForKanban(items);
+    expect(groups.find((group) => group.id === "draft").items.map((item) => item.id)).toEqual(["draft-1"]);
+    expect(groups.find((group) => group.id === "review").items.map((item) => item.id)).toEqual(["review-1"]);
+    expect(groups.find((group) => group.id === "published").items.map((item) => item.id)).toEqual(["published-1"]);
   });
 });
