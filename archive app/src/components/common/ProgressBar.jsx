@@ -16,7 +16,8 @@ export function ProgressBar({ progress, onCancel }) {
     // (role="progressbar" must not contain focusable elements per WCAG 4.1.2)
     <div
       aria-label={progress.label || "جاري التحميل"}
-      className="fixed bottom-0 right-0 left-0 z-50 bg-gray-900 border-t border-gray-700 p-3 shadow-xl"
+      className="fixed right-0 left-0 z-50 bg-gray-900 border-t border-gray-700 p-3 shadow-xl"
+      style={{ bottom: "var(--va-mobile-nav-bottom, 0px)" }}
     >
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-2">
