@@ -32,6 +32,7 @@ import { NotificationDrawer } from "../components/common/NotificationDrawer.jsx"
 import { QuickAddDialog } from "../features/videos/QuickAddDialog.jsx";
 import { KeyboardShortcutsDialog } from "../components/common/KeyboardShortcutsDialog.jsx";
 import { FocusShell } from "../components/focus/FocusShell.jsx";
+import { useBackgroundNotificationBridge } from "../features/notifications/useBackgroundNotificationBridge.js";
 
 export function AppNotifications({
   showShortcuts,
@@ -45,6 +46,7 @@ export function AppNotifications({
   onSkipV1Tour,
   currentUserRole,
 }) {
+  useBackgroundNotificationBridge();
   return jsxs(React.Fragment, {
     children: [
       jsx(ToastNotification, {}),

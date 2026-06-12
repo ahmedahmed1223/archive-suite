@@ -276,7 +276,25 @@ export function NotificationDrawer() {
                                         jsx("p", { className: "text-sm font-semibold text-white", children: item.title || "إشعار" }),
                                         !item.readAt && jsx("span", { className: "mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--va-action)]", "aria-label": "غير مقروء" })
                                       ] }),
-                                      jsx("p", { className: "mt-1 whitespace-pre-wrap text-xs leading-6 text-gray-400", dir: "auto", children: item.message })
+                                      jsx("p", { className: "mt-1 whitespace-pre-wrap text-xs leading-6 text-gray-400", dir: "auto", children: item.message }),
+                                      typeof item.progress === "number" && jsxs("div", {
+                                        className: "mt-2",
+                                        children: [
+                                          jsx("div", {
+                                            className: "h-1.5 w-full overflow-hidden rounded-full bg-white/10",
+                                            role: "progressbar",
+                                            "aria-valuenow": Math.round(item.progress),
+                                            "aria-valuemin": 0,
+                                            "aria-valuemax": 100,
+                                            "aria-label": "تقدّم العملية",
+                                            children: jsx("div", {
+                                              className: "h-full rounded-full bg-[var(--va-action)] transition-[width] duration-300",
+                                              style: { width: `${Math.min(100, Math.max(0, item.progress))}%` }
+                                            })
+                                          }),
+                                          jsxs("p", { className: "mt-1 text-[10px] font-semibold text-gray-500", children: [Math.round(item.progress), "%"] })
+                                        ]
+                                      })
                                     ]
                                   })
                                 ]
