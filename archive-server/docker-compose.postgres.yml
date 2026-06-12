@@ -1,19 +1,32 @@
-# Postgres variant — use INSTEAD of docker-compose.yml when you want
-# PostgreSQL as the cloud backend. The PocketBase service is omitted entirely.
+# Archive Suite Production Stack (Postgres + All Services)
+# Security-hardened with capabilities dropping, read-only filesystems, and resource limits.
 #
 # Usage:
-#   cp .env.example .env       # set DOMAIN + ACME_EMAIL + POSTGRES_PASSWORD + auth secrets
+#   cp .env.example .env
+#   Set required secrets: POSTGRES_PASSWORD, JWT_AUTH_SECRET, ADMIN_PASSWORD, REDIS_PASSWORD, PGADMIN_EMAIL/PASSWORD, GRAFANA_PASSWORD
 #   docker compose -f docker-compose.postgres.yml up -d --build
 #
-# Switching backends later: bring this stack down, copy a snapshot via the
-# SPA's export, bring docker-compose.yml up, import the snapshot. Snapshot
-# format is identical across both backends — no data loss.
+# All optional services are now enabled by default (no profiles needed).
 
 services:
+  # PostgreSQL 17 — production database backend
   postgres:
     image: postgres:17-alpine
     container_name: archive-postgres
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    read_only: true
+    tmpfs:
+      - /var/run/postgresql
+      - /tmp
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-archive}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -27,16 +40,30 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
 
-  # Runs `prisma migrate deploy` on startup, then serves the RPC API the SPA's
-  # cloud-http adapter calls. nginx (inside the frontend image) proxies /api/*
-  # to this service on the internal network.
+  # Node.js API Server — production backend for all operations
   server:
     build:
       context: ..
       dockerfile: archive-server/Dockerfile.server
     container_name: archive-server
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.archive-files
     environment:
       BACKEND: postgres
       NODE_ENV: production
@@ -45,33 +72,38 @@ services:
       API_PORT: "8787"
       API_CORS_ORIGIN: ${API_CORS_ORIGIN:-}
       JWT_SECRET: ${JWT_SECRET:-}
+      JWT_AUTH_SECRET: ${JWT_AUTH_SECRET:-}
+      JWT_SHARE_SECRET: ${JWT_SHARE_SECRET:-}
+      OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-}
       JWT_TTL_SEC: ${JWT_TTL_SEC:-43200}
       SHARE_EXPIRY_DAYS: ${SHARE_EXPIRY_DAYS:-30}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       RATE_LIMIT_RPC_MAX: ${RATE_LIMIT_RPC_MAX:-600}
       RATE_LIMIT_LOGIN_MAX: ${RATE_LIMIT_LOGIN_MAX:-10}
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
-      REDIS_URL: ${REDIS_URL:-}
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD}@redis:6379}
       FILE_STORE: ${FILE_STORE:-disk}
-      FILE_STORE_DIR: ${FILE_STORE_DIR:-/app/files}
+      FILE_STORE_DIR: ${DOCKER_FILE_STORE_DIR:-/app/files}
       AI_PROVIDER: ${AI_PROVIDER:-}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-}
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_IMPL: ${AI_IMPL:-sdk}
-      TRANSCRIBE_PROVIDER: ${TRANSCRIBE_PROVIDER:-}
+      TRANSCRIBE_PROVIDER: ${TRANSCRIBE_PROVIDER:-whisper-local}
       TRANSCRIBE_API_KEY: ${TRANSCRIBE_API_KEY:-}
       TRANSCRIBE_MODEL: ${TRANSCRIBE_MODEL:-}
       TRANSCRIBE_BASE_URL: ${TRANSCRIBE_BASE_URL:-http://whisper:8000/v1}
-      # Persisted server config (admin DB settings, set from the app) lives here
-      # and overrides the env DATABASE_URL on the next boot.
       SERVER_CONFIG_PATH: /app/config/server-config.json
     volumes:
       - server_config:/app/config
       - server_files:/app/files
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      whisper:
         condition: service_healthy
     networks:
       - archive
@@ -81,26 +113,63 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 2G
+        reservations:
+          cpus: '2'
+          memory: 1G
 
+  # React SPA Frontend + nginx reverse proxy
   frontend:
     build:
       context: ..
       dockerfile: archive-server/Dockerfile.frontend
     container_name: archive-frontend
     restart: unless-stopped
-    # Postgres stack proxies /api/* to the Node server (overrides the image's
-    # default pocketbase conf).
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /var/run
+      - /var/cache/nginx
+      - /tmp
     volumes:
       - ./nginx/postgres.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - server
     networks:
       - archive
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
+  # Caddy reverse proxy + TLS termination
   caddy:
     image: caddy:2.11-alpine
     container_name: archive-caddy
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /run
+      - /tmp
     ports:
       - "80:80"
       - "443:443"
@@ -115,57 +184,93 @@ services:
       - frontend
     networks:
       - archive
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
 
-  # Optional Redis cache — caches search results and share snapshots.
-  # Only starts with: docker compose --profile cache up -d
-  # Then set REDIS_URL=redis://redis:6379 in .env (or the server environment).
+  # Redis cache — search results, share snapshots
   redis:
     image: redis:7-alpine
     container_name: archive-redis
-    profiles: ["cache"]
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --save ""
-    ports:
-      - "127.0.0.1:6379:6379"
+    command: ["sh", "-c", "exec redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save \"\" --requirepass \"$${REDIS_PASSWORD}\""]
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    tmpfs:
+      - /tmp
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 3
     networks:
       - archive
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
-  # Optional self-hosted Whisper (OpenAI-compatible /v1/audio/transcriptions).
-  # Only starts with: docker compose --profile whisper up -d
-  # Then set TRANSCRIBE_PROVIDER=whisper-local in .env (no API key needed).
-  # CPU image by default; swap the tag for a CUDA build on a GPU VPS.
+  # Whisper transcription service (OpenAI-compatible API)
   whisper:
     image: fedirz/faster-whisper-server:latest-cpu
     container_name: archive-whisper
-    profiles: ["whisper"]
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     environment:
       WHISPER__MODEL: ${TRANSCRIBE_MODEL:-Systran/faster-whisper-base}
     volumes:
       - whisper_models:/root/.cache/huggingface
     networks:
       - archive
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
 
-  # pgAdmin — web-based Postgres management UI.
-  # Only starts with: docker compose --profile pgadmin up -d
-  # Access at http://localhost:5050 (or behind Caddy: https://DOMAIN/pgadmin)
-  # IMPORTANT: bind to internal network only; never expose port 5050 publicly.
+  # pgAdmin — Postgres web UI
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: archive-pgadmin
-    profiles: ["pgadmin"]
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Set PGADMIN_EMAIL in .env}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?Set PGADMIN_PASSWORD in .env}
       PGADMIN_CONFIG_SERVER_MODE: "True"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "True"
-      # Disable the pgAdmin dashboard query statistics (reduces noise)
       PGADMIN_CONFIG_SESSION_DB_PATH: /var/lib/pgadmin/sessions
     volumes:
       - pgadmin_data:/var/lib/pgadmin
@@ -177,18 +282,27 @@ services:
         condition: service_healthy
     networks:
       - archive
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
-  # To expose pgAdmin through Caddy (recommended over opening port 5050):
-  # Add to Caddyfile:  pgadmin.DOMAIN { reverse_proxy pgadmin:80 }
-  # Then remove the ports: entry from the pgadmin service above.
-
-  # Prometheus — scrapes /metrics from the archive-server every 15 s.
-  # Only starts with: docker compose --profile monitoring up -d
-  # Access at http://localhost:9090 (local-only; never expose publicly).
+  # Prometheus — metrics scraping
   prometheus:
     image: prom/prometheus:v3.0.1
     container_name: archive-prometheus
-    profiles: ["monitoring"]
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -197,41 +311,61 @@ services:
       - --storage.tsdb.retention.time=15d
     ports:
       - "127.0.0.1:9090:9090"
-    restart: unless-stopped
     networks:
       - archive
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
-  # Grafana — dashboards backed by Prometheus.
-  # Only starts with: docker compose --profile monitoring up -d
-  # Access at http://localhost:3000 (local-only; never expose publicly).
-  # Default credentials: admin / ${GRAFANA_PASSWORD:-admin123}
+  # Grafana — dashboards
   grafana:
     image: grafana/grafana:11.4.0
     container_name: archive-grafana
-    profiles: ["monitoring"]
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Set GRAFANA_PASSWORD in .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_HTTPONLY: "true"
+      GF_SECURITY_COOKIE_SAMESITE: "Lax"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
       - "127.0.0.1:3000:3000"
-    depends_on: [prometheus]
-    restart: unless-stopped
+    depends_on:
+      - prometheus
     networks:
       - archive
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
-  # PaddleOCR3 service — Arabic/multilingual OCR for uploaded images.
-  # Start with: docker compose --profile ocr up -d
-  # Then set OCR_SERVICE_URL=http://ocr:8788 in .env
+  # PaddleOCR — Arabic/multilingual text extraction
   ocr:
     build:
       context: ./ocr-service
     container_name: archive-ocr
-    profiles: ["ocr"]
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       OCR_LANG: ${OCR_LANG:-ar}
       OCR_USE_GPU: ${OCR_USE_GPU:-false}
@@ -246,19 +380,41 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
 
 volumes:
   postgres_data:
+    driver: local
   server_config:
+    driver: local
   server_files:
+    driver: local
   caddy_data:
+    driver: local
   caddy_config:
+    driver: local
   whisper_models:
+    driver: local
   pgadmin_data:
+    driver: local
   ocr_models:
+    driver: local
   prometheus_data:
+    driver: local
   grafana_data:
-
+    driver: local
 networks:
   archive:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.9.0/24
+    driver_opts:
+      com.docker.network.driver.mtu: 1450

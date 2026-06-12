@@ -202,7 +202,9 @@ export function createPocketBaseStorageProvider(client, options = {}) {
       if (!payload || typeof payload !== "object") {
         throw new Error("حمولة replaceAll غير صالحة.");
       }
-      const counts = {};
+      const counts = Object.fromEntries(
+        Object.keys(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY).map((domainKey) => [domainKey, 0])
+      );
       // ATOMICITY NOTE: PocketBase has no cross-collection transactions, so this
       // operation is best-effort and non-atomic. Each collection is cleared then
       // re-populated sequentially; a failure mid-way leaves the database in a
