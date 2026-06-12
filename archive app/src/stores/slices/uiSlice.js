@@ -20,6 +20,7 @@ export const uiActionKeys = [
   "goToPage",
   "showNotification",
   "showToast",
+  "updateNotificationProgress",
   "dismissNotification",
   "clearNotifications",
   "clearNotificationHistory",
@@ -51,6 +52,28 @@ export function createUiActions({ set, get }) {
   return {
     showNotification: (message, options = {}) => {
       const type = options.type || "info";
+      const isError = type === "error";
+      const isPersistent = options.persistent !== undefined ? !!options.persistent : isError;
+      const groupKey = options.groupKey || null;
+
+      // Grouping: if same groupKey exists in active notifications, update count instead of adding
+      if (groupKey) {
+        const state = get();
+        const existing = (state.notifications || []).find((n) => n.groupKey === groupKey);
+        if (existing) {
+          const newCount = (existing.count || 1) + 1;
+          const groupedMessage = options.groupTemplate
+            ? String(options.groupTemplate).replace("{count}", newCount)
+            : `${newCount} ${String(message || "").replace(/^(\d+\s*)/, "")}`.trim();
+          set((st) => ({
+            notifications: (st.notifications || []).map((n) =>
+              n.groupKey === groupKey ? { ...n, count: newCount, message: groupedMessage, updatedAt: nowIso() } : n
+            )
+          }));
+          return existing.id;
+        }
+      }
+
       const notification = normalizeNotification({
         id: options.id || generateId("notification"),
         title: options.title || (type === "error" ? "خطأ" : type === "warning" ? "تنبيه" : type === "success" ? "تم بنجاح" : "معلومة"),
@@ -59,19 +82,29 @@ export function createUiActions({ set, get }) {
         category: options.category || "system",
         targetLabel: options.targetLabel || "",
         createdAt: nowIso(),
-        persistent: !!options.persistent,
+        persistent: isPersistent,
+        count: 1,
+        groupKey,
+        progress: typeof options.progress === "number" ? Math.min(100, Math.max(0, options.progress)) : undefined,
         action: options.action && typeof options.action.run === "function"
           ? { label: String(options.action.label || "إجراء"), run: options.action.run, dismissOnRun: options.action.dismissOnRun !== false }
           : null
       });
       const visibleToast = shouldShowNotificationToast(get().settings || {}, notification);
       const retentionDays = get().settings?.notifications?.retentionDays || 30;
-      set((state) => ({
-        toast: visibleToast ? { message: notification.message, type } : state.toast,
-        notifications: visibleToast ? [notification, ...(state.notifications || [])].slice(0, 6) : (state.notifications || []),
-        notificationHistory: pruneNotificationHistory([notification, ...(state.notificationHistory || [])], retentionDays).slice(0, 160)
-      }));
-      if (visibleToast && !notification.persistent) {
+
+      const PRIORITY = { error: 0, warning: 1, success: 2, info: 3 };
+      set((state) => {
+        const base = state.notifications || [];
+        const merged = visibleToast ? [notification, ...base] : base;
+        const sorted = merged.slice(0, 6).sort((a, b) => (PRIORITY[a.type] ?? 3) - (PRIORITY[b.type] ?? 3));
+        return {
+          toast: visibleToast ? { message: notification.message, type } : state.toast,
+          notifications: sorted,
+          notificationHistory: pruneNotificationHistory([notification, ...(state.notificationHistory || [])], retentionDays).slice(0, 160)
+        };
+      });
+      if (visibleToast && !isPersistent) {
         scheduleNotificationDismiss(
           () => get().dismissNotification(notification.id),
           options.durationMs || get().settings.notifications?.durationMs || 5500
@@ -79,6 +112,11 @@ export function createUiActions({ set, get }) {
       }
       return notification.id;
     },
+    updateNotificationProgress: (id, progress) => set((state) => ({
+      notifications: (state.notifications || []).map((n) =>
+        n.id === id ? { ...n, progress: Math.min(100, Math.max(0, progress)) } : n
+      )
+    })),
     showToast: (message, type = "info") => get().showNotification(message, { type }),
     dismissNotification: (id) => set((state) => ({
       notifications: state.notifications.filter((item) => item.id !== id),

@@ -392,6 +392,20 @@ export function LoginScreen() {
   );
 }
 
+const TOAST_ICON = {
+  success: <CheckCircle2 className="mt-0.5 h-5 w-5 va-accent-text" />,
+  error: <AlertTriangle className="mt-0.5 h-5 w-5 text-red-300" />,
+  warning: <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-300" />,
+  info: <Info className="mt-0.5 h-5 w-5 text-sky-300" />
+};
+
+const TOAST_PROGRESS_COLOR = {
+  success: "bg-[var(--va-action)]",
+  error: "bg-red-400",
+  warning: "bg-amber-400",
+  info: "bg-sky-400"
+};
+
 export function ToastNotification() {
   const notifications = useAppStore((state) => state.notifications || []);
   const dismissNotification = useAppStore((state) => state.dismissNotification);
@@ -413,13 +427,20 @@ export function ToastNotification() {
             exit={{ opacity: 0, x: -24, scale: 0.96, transition: { duration: 0.18 } }}
             transition={{ duration: 0.2 }}
             role={notification.type === "error" ? "alert" : undefined}
-            className="pointer-events-auto rounded-2xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)]/95 p-4 text-white shadow-2xl shadow-black/25 backdrop-blur"
+            className="pointer-events-auto overflow-hidden rounded-2xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)]/95 text-white shadow-2xl shadow-black/25 backdrop-blur"
             layout
           >
-            <div className="flex items-start gap-3">
-              {notification.type === "success" ? <CheckCircle2 className="mt-0.5 h-5 w-5 va-accent-text" /> : notification.type === "error" ? <AlertTriangle className="mt-0.5 h-5 w-5 text-red-300" /> : <Info className="mt-0.5 h-5 w-5 text-sky-300" />}
+            <div className="flex items-start gap-3 p-4">
+              {TOAST_ICON[notification.type] || TOAST_ICON.info}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{notification.title || "تنبيه"}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">{notification.title || "تنبيه"}</p>
+                  {notification.count > 1 && (
+                    <span className="rounded-full border border-white/15 bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white/70">
+                      ×{notification.count}
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 text-sm leading-6 text-slate-300">{notification.message}</p>
                 {notification.action && (
                   <button
@@ -438,6 +459,14 @@ export function ToastNotification() {
                 <X className="h-4 w-4" />
               </button>
             </div>
+            {typeof notification.progress === "number" && (
+              <div className="h-1 w-full bg-white/10">
+                <div
+                  className={`h-full transition-all duration-300 ${TOAST_PROGRESS_COLOR[notification.type] || TOAST_PROGRESS_COLOR.info}`}
+                  style={{ width: `${notification.progress}%` }}
+                />
+              </div>
+            )}
           </motion.div>
         ))}
       </AnimatePresence>
