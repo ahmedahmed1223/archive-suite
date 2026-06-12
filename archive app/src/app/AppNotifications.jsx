@@ -31,6 +31,7 @@ import {
 import { NotificationDrawer } from "../components/common/NotificationDrawer.jsx";
 import { QuickAddDialog } from "../features/videos/QuickAddDialog.jsx";
 import { KeyboardShortcutsDialog } from "../components/common/KeyboardShortcutsDialog.jsx";
+import { FocusShell } from "../components/focus/FocusShell.jsx";
 
 export function AppNotifications({
   showShortcuts,
@@ -71,6 +72,7 @@ export function AppNotifications({
         onSkip: onSkipV1Tour,
       }),
       jsx(ForceChangePasswordDialog, {}),
+      jsx(FocusShell, {}),
     ],
   });
 }

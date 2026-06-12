@@ -400,6 +400,11 @@ export function App() {
       setCurrentPage("dashboard");
       return;
     }
+    if (shortcutAction === "toggleFocusMode") {
+      event.preventDefault();
+      useAppStore.getState().toggleFocusMode();
+      return;
+    }
     if (shortcutAction === "logout") {
       event.preventDefault();
       logout();

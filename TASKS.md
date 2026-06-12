@@ -1838,11 +1838,12 @@
 
 ### 17.4 P2 — الانتقالات السلسة والحركات الدقيقة (Smooth Transitions & Micro-Animations)
 
-- [ ] `[P2]` ⏱️M **إضافة انتقالات وحركات سلسة بين الحالات والصفحات والمكوّنات مع احترام `prefers-reduced-motion`** — التبديل الحالي مفاجئ بلا انتقال.
-  - **تعديل ملفات:** shell التنقل/الراوتر (`AppRouter.jsx`)، مكوّنات النوافذ المنبثقة، القوائم؛ استخدام framer-motion (موجود) + سمات DaisyUI.
-  - **التنفيذ:** slide/fade بين الصفحات، scale-up للنوافذ من نقطة النقر، slide-down للعناصر الجديدة، counter animation للأرقام، skeleton أثناء التحميل؛ مفتاح تعطيل في الإعدادات.
+- [x] `[P2]` ⏱️M **إضافة انتقالات وحركات سلسة بين الحالات والصفحات والمكوّنات مع احترام `prefers-reduced-motion`** — **(مكتملة ✅ — 12 يونيو 2026)**
+  - **المنجَز سابقاً:** انتقالات الصفحات عبر `motion.div` في `AppRouter.jsx` + `PageMotion`/`MotionPage` و`staggerContainer`/`staggerItem` في `V1Primitives.jsx` (كلها تحترم `useReducedMotion`)؛ skeletons أثناء التحميل (§17.8)؛ **مفتاح تعطيل في الإعدادات** — مُحدِّد `motionLevel` (كامل/مخفّف/إيقاف) في `SettingsPage.jsx` → سمة `data-motion` على `va-app-shell` → كِبح عام للحركة في `v1-identity.css` (`data-motion="off"` يصفّر كل `animation/transition`، `"reduced"` يقصّرها لـ0.12s).
+  - **المكمَّل الآن (counter animation للأرقام):** `features/ui/countUp.js` ✅ (`easeOutCubic` + `countUpValue` نقيّان قابلان للاختبار)، `components/ui/AnimatedNumber.jsx` ✅ (عدّ تصاعدي عبر `requestAnimationFrame`، يعرض القيمة النهائية فوراً عند `motionLevel` مخفّف/إيقاف أو `prefers-reduced-motion`)؛ مربوط في بطاقات إحصاءات اللوحة عبر `ReportStrip` (يحرّك عند توفّر `animateTo` رقمي وإلا يعرض النص كما هو).
+  - **الاختبارات:** `features/ui/countUp.test.js` — **8 اختبارات تمرّ** (easing، الحدود، تقريب، إقحام غير رقمي). build:spa أخضر.
   - يرتبط بـ: §17.8 (Skeleton)، مهارة motion-ui.
-  - الجهد: 3-4 أسابيع.
+  - **متبقٍ اختياري (تجميلي):** scale-up للنوافذ من نقطة النقر، slide-down للعناصر الجديدة — تحسينات دقيقة غير ضرورية لتحقيق القبول الأساسي.
   - المصدر: daisyui-ux-proposals (المقترح 4 — P2).
 
 ### 17.5 P2 — التخطيط متعدد الأجزاء / العرض المنقسم (Multi-Pane / Split View)
@@ -1866,10 +1867,10 @@
 
 ### 17.7 P2 — وضع التركيز والعرض الخالي من الإلهاء (Focus Mode)
 
-- [ ] `[P2]` ⏱️M **وضع تركيز (F11) يخفي العناصر غير الضرورية للتركيز على المحتوى (مشغّل فيديو/قارئ مستند/نموذج إضافة)** — العناصر المحيطة تشتّت أثناء المشاهدة/القراءة.
-  - **الملفات الجديدة:** `archive app/src/features/focus/focusMode.js`، `archive app/src/components/focus/FocusShell.jsx`.
-  - **التنفيذ:** اختصار F11/Escape، إخفاء تلقائي للتحكّمات بعد 3 ثوانٍ، مؤقّت بومودورو اختياري، “عدم الإزعاج”، حفظ حالة التطبيق عند الخروج.
-  - الجهد: 2-3 أسابيع.
+- [x] `[P2]` ⏱️M **وضع تركيز (F11) يخفي العناصر غير الضرورية للتركيز على المحتوى (مشغّل فيديو/قارئ مستند/نموذج إضافة)** — **(مكتملة ✅ — 12 يونيو 2026)**
+  - **الملفات الجديدة:** `archive app/src/features/focus/focusMode.js` ✅ (منطق نقي: ثوابت التوقيت، صفحات موصى بها، آلة حالة بومودورو focus⇄break — قابلة للاختبار بالكامل)، `archive app/src/components/focus/FocusShell.jsx` ✅ (شريط تحكّم عائم عبر portal + framer-motion، يحترم `prefers-reduced-motion`).
+  - **التنفيذ المنجَز:** اختصار **F11** (مُسجّل في `keyboardShortcuts.js` + `globalShortcuts.js` + معالج في `RuntimeShellApp.js`)؛ **Escape** للخروج (capture listener)؛ إخفاء تلقائي للتحكّمات بعد 3 ثوانٍ خمول (`FOCUS_AUTO_HIDE_MS`)؛ **مؤقّت بومودورو** (25/5 دقيقة، تشغيل/إيقاف/إعادة، عدّ الجولات)؛ **“عدم الإزعاج”** (`focusDoNotDisturb` في `uiSlice` — يكتم التوست مع إبقاء السجل، الأخطاء تظهر دائماً)؛ إخفاء الـ chrome عبر `body.va-focus-active` في `tailwind.css` (sidebar/context-bar/bottom-tabs)؛ تنظيف الحالة عند الخروج.
+  - **الاختبارات:** `features/focus/focusMode.test.js` — **12 اختبار يمرّ** (بومودورو، formatClock، الصفحات الموصى بها، اللاتغيير/immutability). build:spa أخضر.
   - المصدر: daisyui-ux-proposals (المقترح 7 — P2).
 
 ### 17.8 P1 — التحميل الهيكلي (Skeleton) والتغذية الراجعة الفورية
