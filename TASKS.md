@@ -1907,6 +1907,17 @@
   - الجهد: 2-3 أسابيع (بعد §17.1).
   - المصدر: daisyui-ux-proposals (المقترح 10 — P1).
 
+### 17.10.1 P1 — توحيد الثيمات على DaisyUI كنظام وحيد افتراضي (Theme Consolidation)
+
+- [ ] `[P1]` ⏱️L **إزالة أنظمة الهوية `v1–v4` وجعل DaisyUI النظام الوحيد الافتراضي، مع جعل التباين عبر قوالب لونية (سمات DaisyUI) بدل إصدارات هوية منفصلة** — حالياً يتعايش 4 أنظمة `data-theme-version` (v1–v4) فوق DaisyUI، ما يُضاعف CSS ويُربك التخصيص. الهدف: ثيم أساسي واحد (DaisyUI) + قوالب لونية.
+  - **يبني على §17.10 (مُنجَز جزئياً):** `features/theme/daisyThemes.js` (34 سمة)، `ThemeGallery.jsx`، `LiveThemeEditor.jsx`، و`settings.ui.daisyTheme` مربوطة في `SettingsPage`/`AppRouter`/`applyInitialDaisyTheme.js` موجودة بالفعل.
+  - **الإزالة:** `styles/v1-identity.css`، `v2-identity.css`، `v3-identity.css`، `v4-identity.css`؛ سمة `data-theme-version` من `AppRouter.jsx` وأي مُطبِّق؛ `features/settings/ThemeVersionPicker.jsx` ومنطق اختيار الإصدار؛ مفاتيح `themeVersion`/`v4` الافتراضية في `stores/settingsDefaults.js` و`theme/useTheme.js`.
+  - **النقل:** ترحيل الرموز البصرية المتبقية في طبقات v1–v4 (ألوان الأسطح/الحدود/التركيز الخاصة بكل إصدار) إلى رموز DaisyUI (`--color-base-*`/`--color-primary`…) أو طبقة `va-*` موحّدة واحدة فوق DaisyUI؛ الحفاظ على `data-accent`/`data-density`/`data-font-scale`/`data-motion`/`data-card-style` كمحاور تخصيص مستقلة عن السمة.
+  - **الافتراضي:** ضبط سمة DaisyUI افتراضية واحدة (مثل `dark` أو سمة مخصّصة للعلامة) في `settingsDefaults` + `@plugin "daisyui"` (`--default`)؛ هجرة إعدادات المستخدمين الحاليين من `themeVersion` إلى `daisyTheme` عبر migration في تحميل الإعدادات.
+  - **التحقق:** `verify-modules.mjs` (لا مراجع متبقية لـ`data-theme-version`/`v*-identity`)، `build:spa` أخضر، اختبارات `useTheme`/الإعدادات، فحص بصري للصفحات الرئيسية في الوضعين فاتح/داكن.
+  - **مخاطرة:** عالية — تمسّ كل سطح بصري؛ يجب فحص بصري شامل (Playwright matrix 320/768/1024/1440). يُنفَّذ في **جلسة جديدة نظيفة** على فرع مخصّص.
+  - يرتبط بـ: §17.10، §17.1 (تبنّي DaisyUI)، §15.7 (محرر السمات)، §15.3 (مركز الإعدادات).
+
 ### 17.11 P2 — رحلة اكتشاف المحتوى (Content Discovery Journey)
 
 - [x] `[P2]` ⏱️L **أقسام “استكشف/رائج/عشوائي/الأكثر نشاطاً/المنسيّون” لإحياء المحتوى المؤرشف** — لا توجد طريقة لاكتشاف محتوى لم يبحث عنه المستخدم.
