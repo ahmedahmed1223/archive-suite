@@ -20,11 +20,14 @@ import {
   VolumeX,
 } from "lucide-react";
 import { secondsToClock } from "../../features/media/viewModel.js";
+import { previewPercentFromPointer, previewTimeFromPointer } from "../../features/media/scrubberPreview.js";
 import { SubtitleRenderer } from "./SubtitleRenderer.jsx";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 const SEEK_STEP = 5;
 const VOLUME_STEP = 0.1;
+const PREVIEW_W = 160;
+const PREVIEW_H = 90;
 
 export function VideoPlayer({
   videoRef,
@@ -46,6 +49,10 @@ export function VideoPlayer({
   const internalRef = useRef(null);
   const ref = videoRef || internalRef;
   const containerRef = useRef(null);
+  const scrubberRef = useRef(null);
+  const previewVideoRef = useRef(null);
+  const previewCanvasRef = useRef(null);
+  const previewSeekRaf = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -54,15 +61,57 @@ export function VideoPlayer({
   const [rate, setRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSpeed, setShowSpeed] = useState(false);
+  const [preview, setPreview] = useState(null); // { time, percent } while hovering the scrubber
 
   const hasSubtitles = Array.isArray(cues) && cues.length > 0;
   const pipSupported =
     typeof document !== "undefined" && document.pictureInPictureEnabled;
+  const canPreview = Boolean(src) && duration > 0;
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  useEffect(() => () => cancelAnimationFrame(previewSeekRaf.current), []);
+
+  const drawPreviewFrame = useCallback(() => {
+    const video = previewVideoRef.current;
+    const canvas = previewCanvasRef.current;
+    if (!video || !canvas) return;
+    try {
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    } catch {
+      /* frame not decodable yet — leave the previous thumbnail */
+    }
+  }, []);
+
+  const updatePreview = useCallback((clientX) => {
+    const node = scrubberRef.current;
+    if (!node || duration <= 0) return;
+    const rect = node.getBoundingClientRect();
+    const time = previewTimeFromPointer({ clientX, rect, duration });
+    const halfWidthPercent = rect.width ? (PREVIEW_W / 2 / rect.width) * 100 : 0;
+    const percent = previewPercentFromPointer({ clientX, rect, marginPercent: halfWidthPercent });
+    setPreview({ time, percent });
+    const previewVideo = previewVideoRef.current;
+    if (previewVideo && Number.isFinite(time)) {
+      cancelAnimationFrame(previewSeekRaf.current);
+      previewSeekRaf.current = requestAnimationFrame(() => {
+        try {
+          previewVideo.currentTime = time;
+        } catch {
+          /* not seekable yet */
+        }
+      });
+    }
+  }, [duration]);
+
+  const clearPreview = useCallback(() => {
+    cancelAnimationFrame(previewSeekRaf.current);
+    setPreview(null);
   }, []);
 
   const togglePlay = useCallback(() => {
@@ -214,19 +263,59 @@ export function VideoPlayer({
         className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-6 opacity-0 transition-opacity duration-200 focus-within:opacity-100 group-hover:opacity-100"
         dir="ltr"
       >
-        <input
-          type="range"
-          min={0}
-          max={duration || 0}
-          step="any"
-          value={Math.min(current, duration || 0)}
-          onChange={(e) => {
-            const video = ref.current;
-            if (video) video.currentTime = Number(e.target.value);
-          }}
-          aria-label="شريط التقدم"
-          className="h-1.5 w-full cursor-pointer accent-[var(--va-action)]"
-        />
+        <div
+          className="relative"
+          onMouseMove={(e) => canPreview && updatePreview(e.clientX)}
+          onMouseLeave={clearPreview}
+        >
+          {canPreview && preview && (
+            <div
+              className="pointer-events-none absolute bottom-5 z-20 -translate-x-1/2 flex flex-col items-center gap-1"
+              style={{ left: `${preview.percent}%` }}
+              data-testid="scrubber-preview"
+              aria-hidden="true"
+            >
+              <canvas
+                ref={previewCanvasRef}
+                width={PREVIEW_W}
+                height={PREVIEW_H}
+                className="rounded-md border border-white/20 bg-black shadow-xl"
+                style={{ width: PREVIEW_W, height: PREVIEW_H }}
+              />
+              <span className="rounded bg-black/80 px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-white">
+                {secondsToClock(preview.time)}
+              </span>
+            </div>
+          )}
+          <input
+            ref={scrubberRef}
+            type="range"
+            min={0}
+            max={duration || 0}
+            step="any"
+            value={Math.min(current, duration || 0)}
+            onChange={(e) => {
+              const video = ref.current;
+              if (video) video.currentTime = Number(e.target.value);
+            }}
+            aria-label="شريط التقدم"
+            className="h-1.5 w-full cursor-pointer accent-[var(--va-action)]"
+          />
+          {canPreview && (
+            <video
+              ref={previewVideoRef}
+              src={src}
+              muted
+              preload="metadata"
+              crossOrigin="anonymous"
+              className="hidden"
+              aria-hidden="true"
+              tabIndex={-1}
+              onSeeked={drawPreviewFrame}
+              onLoadedData={drawPreviewFrame}
+            />
+          )}
+        </div>
         <div className="flex items-center gap-2 text-white">
           <button type="button" onClick={togglePlay} aria-label={isPlaying ? "إيقاف مؤقت" : "تشغيل"} className="rounded-md p-1.5 hover:bg-white/15">
             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
