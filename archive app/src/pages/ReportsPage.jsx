@@ -19,6 +19,8 @@ import {
   downloadArchiveBlob
 } from "../services/data-portability/index.js";
 import { computeCompleteness } from "../features/archive/completeness.js";
+import { computeTopTags } from "../features/analytics/topTags.js";
+import { InteractiveCharts } from "../components/analytics/InteractiveCharts.jsx";
 import {
   FormSection,
   MetricCard,
@@ -178,6 +180,8 @@ export function ReportsPage() {
     });
     return Array.from(counts.entries()).map(([label, value]) => ({ id: label, label, value })).sort((a, b) => b.value - a.value);
   }, [activeItems]);
+
+  const topTags = React.useMemo(() => computeTopTags(activeItems, 10), [activeItems]);
 
   const userProductivity = React.useMemo(() => {
     const counts = new Map();
@@ -353,6 +357,13 @@ export function ReportsPage() {
         <MetricCard label="تقدير التخزين" value={formatFileSize(estimatedStorage)} hint="تقدير داخلي للبيانات الوصفية" icon={<ChartColumn className="h-5 w-5" aria-hidden="true" />} tone="violet" />
         <MetricCard label="عمليات الفريق" value={formatNumber(auditLogs.length, settings.numberSystem)} hint="من سجل المراجعة" icon={<Users className="h-5 w-5" aria-hidden="true" />} tone="cyan" />
       </section>
+
+      <FormSection
+        icon={<ChartColumn className="h-5 w-5" style={{ color: "var(--va-action)" }} aria-hidden="true" />}
+        title="الرسوم التفاعلية"
+      >
+        <InteractiveCharts growth={monthlyDistribution} types={typeDistribution} tags={topTags} />
+      </FormSection>
 
       <section className="grid gap-6 xl:grid-cols-2">
         <FormSection

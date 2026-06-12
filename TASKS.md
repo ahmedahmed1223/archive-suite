@@ -351,8 +351,10 @@
 
 ### و. تحسينات الواجهة
 
-- [ ] `[P2]` ⏱️M **لوحة تحليلات محسّنة** — رسوم بيانية تفاعلية: نمو الأرشيف بالزمن، توزيع الأنواع، أكثر الوسوم استخدامًا.
-  - صفحة `DataCenterPage` موجودة (1267 سطر) — توسيع المخططات.
+- [x] `[P2]` ⏱️M **لوحة تحليلات محسّنة** — **(مكتملة ✅ — 12 يونيو 2026)** رسوم بيانية تفاعلية: نمو الأرشيف بالزمن، توزيع الأنواع، أكثر الوسوم استخدامًا.
+  - **المنجَز:** أُضيفت `recharts@^3` (متوافقة React 19)؛ `components/analytics/InteractiveCharts.jsx` (AreaChart للنمو الشهري + PieChart حلقي لتوزيع الأنواع + BarChart أفقي لأكثر الوسوم، مع `ResponsiveContainer`/Tooltip وحالات فارغة وألوان متوافقة مع الهوية)؛ helper نقي `features/analytics/topTags.js` (تجميع تكرار الوسوم، تجاهل المحذوف، قصّ/تطبيع، كسر التعادل أبجديًا)؛ مدمجة في `ReportsPage.jsx` ضمن قسم «الرسوم التفاعلية» فوق قوائم الأشرطة النصية الموجودة (تبقى كتفصيل يمكن الوصول إليه).
+  - **الاختبارات:** `features/analytics/topTags.test.js` — **6 اختبارات تمرّ**. الحزمة تنمو ~120KB gzip (recharts) داخل صفحة التقارير (محمّلة عبر lazy). build:spa أخضر، 137/137 اختبار.
+  - يلاحَظ: البيانات (`monthlyDistribution`/`typeDistribution`) كانت محسوبة مسبقًا في ReportsPage؛ هذه المهمة رقّتها من أشرطة نصية إلى رسوم تفاعلية.
 
 - [x] `[P2]` ⏱️S **وضع ملء الشاشة للمعاينة** — عرض المستند/الصورة/الفيديو بملء الشاشة مع تنقّل بالأسهم.
   - ✅ **مُنجز ومتحقق (2026-06-11):** أُضيفت معاينة مكبرة في `PreviewPanel` مع `role="dialog"` وزر إغلاق وتوسيع وتنقل سابق/لاحق عبر الأسهم و`Escape` للإغلاق، مع دعم مستند/صورة/فيديو عبر `DocumentViewer` عند الحاجة. أضيف اختبار `archive app/src/features/archive/PreviewPanel.fullscreen.test.jsx`، ومرّ `pnpm --filter @archive/app run test -- src/features/archive/PreviewPanel.fullscreen.test.jsx` و`pnpm --filter @archive/app run test`.
@@ -1766,11 +1768,11 @@
 
 ### 16.14 P1 — العلامات المرجعية الزمنية للفيديو والصوت (Time-Based Bookmarks)
 
-- [ ] `[P1]` ⏱️M **إضافة علامات زمنية داخل مشغل الفيديو/الصوت مع ملاحظات وتصدير** — **(النواة منجزة ✅ — مدمجة 10 يونيو)**
+- [x] `[P1]` ⏱️M **إضافة علامات زمنية داخل مشغل الفيديو/الصوت مع ملاحظات وتصدير** — **(مكتملة ✅ — 12 يونيو 2026)**
   - **✅ منجز ومُدمج:** `archive app/src/components/media/TimeBookmarks.jsx` (يصدّر `TimeBookmarkButton` + `TimeBookmarkList`: التقاط الوقت الحالي، عنوان+ملاحظة، نقر للانتقال، حذف، تصدير Markdown/CSV، RTL+a11y)؛ مدمج في `DetailPage.jsx` (التقاط من `videoRef.currentTime`، `seekToBookmark`)؛ الحفظ عبر slice `addBookmark`/`removeBookmark` (`archiveSlice.js:266,281`) إلى مخزن `BOOKMARKS` (IndexedDB + محوّل sqlite + import/export portability).
   - **⬜ المتبقي (مهام الإكمال):**
     - ✅ **تم جزئياً (2026-06-11):** أضيف `TimeBookmarkTimelineMarkers` كخط زمني مصغّر قابل للنقر أسفل المشغّل الحالي، مع helper نقي `buildTimeBookmarkMarkers` واختبار في `verify-modules.mjs`. سيبقى دمجه داخل شريط تقدّم مشغّل مخصّص عند تنفيذ §13.1 #20.
-    - CRUD/مزامنة على الخادم (`archive-server` + جدول prisma `time_bookmarks`) — حالياً محلي + يُزامَن عبر snapshot العام.
+    - ✅ **محسوم معماريًا (2026-06-12):** لا حاجة لجدول prisma مخصّص `time_bookmarks`. مخزن `BOOKMARKS` مُسجَّل ضمن `DATA_STORES` في `services/storage/index.js`، فيُحفظ ويُزامَن على الخادم عبر طبقة التخزين الموحّدة `storage_rows` (`store`+`uid`+`data` JSON) ودوال RPC `putBatch`/`deleteBatch`/`getAll`/`snapshot`/`replaceAll` — تمامًا كبقية المجموعات (items/types/relations) على محوّلَي Postgres وPocketBase. إنشاء جدول منفصل كان سيجعل العلامات الكيان الوحيد الذي يتجاوز الطبقة الموحّدة (هجرة زائدة + مسار مزامنة ثانٍ)، فتُرك عمدًا.
     - ✅ **تم (2026-06-11):** ربط تلقائي بفقرة transcript: عند فتح نموذج علامة زمنية يُقترح عنوان وملاحظة من مقطع التفريغ النشط عبر `createTranscriptBookmarkDraft`.
     - ✅ **تم (2026-06-11):** اختبار وحدة لـ slice العلامات يغطي `addBookmark`/`removeBookmark` وتطبيع الوقت/العنوان/الوصف.
   - الجهد المتبقي: ~1 أسبوع.
