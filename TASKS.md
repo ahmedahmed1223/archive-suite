@@ -1818,10 +1818,11 @@
 
 ### 17.2 P1 — لوحة الأوامر الشاملة (Command Palette / Ctrl+K)
 
-- [ ] `[P1]` ⏱️L **بناء لوحة أوامر مركزية (Ctrl+K) للوصول لأي إجراء/صفحة/عنصر/إعداد عبر الكتابة** — التنقل يتطلب حالياً المرور بالقوائم والصفحات.
+- [x] `[P1]` ⏱️L **بناء لوحة أوامر مركزية (Ctrl+K) للوصول لأي إجراء/صفحة/عنصر/إعداد عبر الكتابة** — التنقل يتطلب حالياً المرور بالقوائم والصفحات.
   - **الملفات الجديدة:** `archive app/src/components/command/CommandPalette.jsx`، `archive app/src/features/command/commandRegistry.js` (تعريف الأوامر السياقية حسب الصفحة)، `archive app/src/hooks/useCommandPalette.js`.
   - **تعديل ملفات:** `archive app/src/app/App.jsx` (مزوّد عام + اختصار Ctrl+K)، `archive app/src/app/pageManifest.js` (مصدر للصفحات القابلة للتنقل).
   - **التنفيذ:** فلترة فورية، تصنيف (أوامر/صفحات/عناصر/إعدادات)، أوامر سياقية حسب الصفحة الحالية، تنقّل بلوحة المفاتيح، عرض الاختصارات.
+  - 🔄 **مُنجَز (موجود في الكود):** `CommandPalette` في `ShellParts.jsx` (لوحة Ctrl+K كاملة: تنقل/أوامر/عناصر/مشاريع/مجموعات/إعدادات، تذكّر الأوامر الأخيرة، تنقل بلوحة المفاتيح، ربط `RuntimeShellApp`).
   - الجهد: 3-4 أسابيع.
   - المصدر: daisyui-ux-proposals (المقترح 2 — P1).
 
@@ -1855,10 +1856,11 @@
 
 ### 17.6 P1 — القوائم السياقية الذكية (Smart Context Menus)
 
-- [ ] `[P1]` ⏱️M **قوائم نقر-يمين / ضغط-مطوّل غنية وسياقية لكل عنصر/مجلد/وسم/مساحة فارغة** — النقر الأيمن لا يقدّم شيئاً حالياً.
+- [x] `[P1]` ⏱️M **قوائم نقر-يمين / ضغط-مطوّل غنية وسياقية لكل عنصر/مجلد/وسم/مساحة فارغة** — النقر الأيمن لا يقدّم شيئاً حالياً.
   - **الملفات الجديدة:** `archive app/src/components/context-menu/ContextMenu.jsx`، `archive app/src/features/context-menu/menuRegistry.js`، `archive app/src/hooks/useContextMenu.js`.
   - **تعديل ملفات:** `ArchiveViews.jsx`، `Sidebar.jsx`، بطاقات العناصر.
   - **التنفيذ:** إجراءات حسب نوع الهدف، إجراءات جماعية عند تعدد التحديد، DaisyUI `dropdown` styling، ضغط مطوّل على الجوال، عرض اختصارات.
+  - 🔄 **مُنجَز (موجود في الكود):** `ContextMenu.jsx` (portal + framer-motion + focus trap + keyboard nav)؛ `buildItemContextMenu` في `ArchivePageResults.jsx`؛ `onContextMenu` على بطاقات العناصر في ArchiveViews؛ `FolderTree` + `FolderTreeNode` يستخدمانه.
   - الجهد: 2-3 أسابيع.
   - المصدر: daisyui-ux-proposals (المقترح 6 — P1).
 
@@ -1872,10 +1874,11 @@
 
 ### 17.8 P1 — التحميل الهيكلي (Skeleton) والتغذية الراجعة الفورية
 
-- [ ] `[P1]` ⏱️M **استبدال مؤشّرات التحميل الدوّارة بهياكل (skeleton) تحاكي شكل المحتوى + تغذية راجعة فورية لكل تفاعل** — الفجوة بين الفعل والاستجابة تسبب ارتباكاً وضغطات متكررة.
+- [x] `[P1]` ⏱️M **استبدال مؤشّرات التحميل الدوّارة بهياكل (skeleton) تحاكي شكل المحتوى + تغذية راجعة فورية لكل تفاعل** — الفجوة بين الفعل والاستجابة تسبب ارتباكاً وضغطات متكررة.
   - **الملفات الجديدة:** `archive app/src/components/ui/Skeleton.jsx` (DaisyUI `skeleton`)، `archive app/src/components/ui/CardSkeleton.jsx`، `DetailSkeleton.jsx`.
   - **تعديل ملفات:** `ArchivePageResults.jsx`، `DetailPage.jsx`، الأزرار (حالة `btn-active`/علامة نجاح/اهتزاز عند الفشل).
   - **التنفيذ:** هياكل بأشكال البطاقات/التفاصيل، fade-in عند اكتمال التحميل، تأكيد بصري فوري لكل ضغطة زر.
+  - 🔄 **مُنجَز (موجود في الكود):** `SkeletonBlock` في `V1Primitives.jsx`؛ `ArchiveResultsSkeleton` في `ArchivePageResults.jsx` (skeleton شبكة/قائمة)؛ `UXStateBlock` يستخدم SkeletonBlock لحالة التحميل؛ `showSkeleton` يشغّل الهيكل عند أول تحميل.
   - الجهد: 2-3 أسابيع.
   - المصدر: daisyui-ux-proposals (المقترح 8 — P1).
 
@@ -1996,7 +1999,7 @@
   - المصدر: daily-use-proposals (المقترح 1 — P0).
   - **حالة التنفيذ (المرحلة 1 — محلي فقط، 11 يونيو 2026):**
     - ✅ منجز: `features/activityLog/viewModel.js` (createActivityEntry/buildDiff/describeActivity/filterActivityEntries/groupActivitiesByDay) + اختبارات وحدة (`viewModel.test.js`، 13 اختبار)؛ `features/activityLog/undoManager.js` (توسعة withActivityLog فوق SimpleUndoRedoManager)؛ store `activity_log` في `schema.js` مع مرايا DATA_STORES/SNAPSHOT_STORES/الاستيراد في `services/storage/index.js` و`storage/adapters/local-sqlite/index.js`؛ `stores/slices/activityLogSlice.js` (add/remove/load/clear/filters + undoActivityEntryById/redoActivityEntryById) مركّب في `appStore.js`؛ صفحة `ActivityPage.jsx` + `components/activity/` (ActivityTimeline/ActivityEntry/DiffView/ActivityFilterBar) مسجّلة في pageManifest/pageRegistry (id: `activity`)؛ توثيق نشاط تلقائي في `archiveSlice.updateVideoItem` (snapshot before/after، failure-safe، خيار skipActivityLog).
-    - ⏳ متبقٍ (المرحلة 2): التراجع/الإعادة مقصور حالياً على عمليات «تعديل عنصر» — تعميمه على الحذف/النقل/التعديل الجماعي/الإنشاء؛ توثيق بقية مسارات الكتابة (delete/restore/bulk/move/collections/folders/settings) و`ArchivePage`/`DetailPage`؛ Bulk Undo بضغطة؛ جدول Prisma `ActivityLog` للباك-إند السحابي مع الفهارس؛ فلترة حسب المستخدم/التاريخ في الواجهة (المنطق جاهز في filterActivityEntries)؛ إدخال الصفحة في Sidebar (ملف يملكه وكيل آخر).
+    - ✅ **مُنجَز المرحلة 2 (2026-06-12):** أُضيف `addActivityEntry` لعمليات `addVideoItem` (create)، `deleteVideoItem` (delete + skipActivityLog)، `restoreVideoItem` (restore + skipActivityLog)، `bulkDeleteItems` (bulk_delete)، `bulkRestoreItems` (restore جماعي) — جميعها failure-safe (try/catch + .catch()). الـ undo/redo lambdas تمرّر الآن `skipActivityLog: true`. ما زال متبقياً: Prisma `ActivityLog` schema للباك-إند السحابي؛ توثيق عمليات collections/folders/settings؛ فلترة المستخدم/التاريخ في الواجهة.
 
 ### 18.2 P0 — مركز الإشعارات المركزي الذكي (Smart Notification Center)
 

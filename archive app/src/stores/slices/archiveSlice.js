@@ -261,6 +261,19 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       await dbPut(STORES.ITEMS, value);
       await dbPut(STORES.HISTORY, record);
       get().addAuditLog?.("video.create", value.id, "video", { title: value.title });
+      try {
+        const authState = getAuthStore().getState();
+        await Promise.resolve(get().addActivityEntry?.({
+          action: "create",
+          targetType: "item",
+          targetId: value.id,
+          targetName: value.title || "",
+          userId: authState.currentUser?.id || "system",
+          userName: authState.currentUser?.username || "النظام",
+          snapshot: { before: null, after: value },
+          undoable: false
+        })).catch(() => {});
+      } catch { /* never block */ }
       return value;
     },
     addBookmark: async ({ itemId, timestamp, label, description } = {}) => {
@@ -338,11 +351,26 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       set((state) => ({ videoItems: state.videoItems.map((item) => item.id === id ? updated : item) }));
       await dbPut(STORES.ITEMS, updated);
       get().addAuditLog?.("video.delete", id, "video", { title: target.title });
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "delete",
+            targetType: "item",
+            targetId: id,
+            targetName: target.title || "",
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            snapshot: { before: target, after: null },
+            undoable: true
+          })).catch(() => {});
+        } catch { /* never block */ }
+      }
       if (!options.skipUndo) {
         undoRedoManager.push({
           label: `حذف ${target.title || "فيديو"}`,
-          undo: () => get().restoreVideoItem(id, { skipUndo: true }),
-          redo: () => get().deleteVideoItem(id, { skipUndo: true })
+          undo: () => get().restoreVideoItem(id, { skipUndo: true, skipActivityLog: true }),
+          redo: () => get().deleteVideoItem(id, { skipUndo: true, skipActivityLog: true })
         });
         get().showNotification?.(`تم حذف ${target.title || "الفيديو"}`, {
           type: "info",
@@ -361,11 +389,26 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       set((state) => ({ videoItems: state.videoItems.map((item) => item.id === id ? updated : item) }));
       await dbPut(STORES.ITEMS, updated);
       get().addAuditLog?.("video.restore", id, "video", { title: target.title });
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "restore",
+            targetType: "item",
+            targetId: id,
+            targetName: target.title || "",
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            snapshot: { before: target, after: updated },
+            undoable: true
+          })).catch(() => {});
+        } catch { /* never block */ }
+      }
       if (!options.skipUndo) {
         undoRedoManager.push({
           label: `استعادة ${target.title || "فيديو"}`,
-          undo: () => get().deleteVideoItem(id, { skipUndo: true }),
-          redo: () => get().restoreVideoItem(id, { skipUndo: true })
+          undo: () => get().deleteVideoItem(id, { skipUndo: true, skipActivityLog: true }),
+          redo: () => get().restoreVideoItem(id, { skipUndo: true, skipActivityLog: true })
         });
       }
       return true;
@@ -402,6 +445,21 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       set({ videoItems: updated, selectedItems: [] });
       await persistList(STORES.ITEMS, updated.filter((item) => idSet.has(item.id)));
       get().addAuditLog?.("video.bulkDelete", null, "video", { count: previous.length, ids });
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "bulk_delete",
+            targetType: "item",
+            targetId: ids[0] || null,
+            targetName: `${previous.length} عنصر`,
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            relatedIds: ids,
+            undoable: true
+          })).catch(() => {});
+        } catch { /* never block */ }
+      }
       if (!options.skipUndo) {
         const label = `حذف ${previous.length} فيديو`;
         undoRedoManager.push({
@@ -411,7 +469,7 @@ export function createArchiveActions({ set, get, getAuthStore }) {
             set({ videoItems: restored });
             await persistList(STORES.ITEMS, restored.filter((item) => idSet.has(item.id)));
           },
-          redo: () => get().bulkDeleteItems(ids, { skipUndo: true })
+          redo: () => get().bulkDeleteItems(ids, { skipUndo: true, skipActivityLog: true })
         });
         get().showNotification?.(label, {
           type: "info",
@@ -431,12 +489,27 @@ export function createArchiveActions({ set, get, getAuthStore }) {
         : item);
       set({ videoItems: updated, selectedItems: [] });
       await persistList(STORES.ITEMS, updated.filter((item) => idSet.has(item.id)));
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "restore",
+            targetType: "item",
+            targetId: ids[0] || null,
+            targetName: `${previous.length} عنصر`,
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            relatedIds: ids,
+            undoable: true
+          })).catch(() => {});
+        } catch { /* never block */ }
+      }
       if (!options.skipUndo) {
         const label = `استعادة ${previous.length} فيديو`;
         undoRedoManager.push({
           label,
-          undo: () => get().bulkDeleteItems(ids, { skipUndo: true }),
-          redo: () => get().bulkRestoreItems(ids, { skipUndo: true })
+          undo: () => get().bulkDeleteItems(ids, { skipUndo: true, skipActivityLog: true }),
+          redo: () => get().bulkRestoreItems(ids, { skipUndo: true, skipActivityLog: true })
         });
         get().showNotification?.(label, {
           type: "info",
