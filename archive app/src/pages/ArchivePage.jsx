@@ -327,7 +327,7 @@ export function ArchivePage() {
         onRetry: retryMediaJob
       }),
       jsx(ArchivePageResults, { ...state, buildItemContextMenu }),
-      jsx(MobileActionBar, {
+      !state.previewItem && jsx(MobileActionBar, {
         label: "إجراءات الأرشيف",
         actions: [
           { id: "filters", label: "فلاتر", icon: SlidersHorizontal, active: activeTopMode === "detailed", onClick: () => state.changeTopMode?.(activeTopMode === "detailed" ? "quick" : "detailed") },

@@ -68,7 +68,8 @@ export function BulkActionBar({
           exit={{ y: prefersReducedMotion ? 0 : 30, opacity: 0 }}
           transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
           dir="rtl"
-          className="fixed bottom-4 left-1/2 z-[9960] flex w-[min(96vw,720px)] -translate-x-1/2 flex-col gap-2 rounded-2xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)]/95 p-3 text-white shadow-2xl shadow-black/35 backdrop-blur"
+          className="fixed left-1/2 z-[9960] flex w-[min(96vw,720px)] -translate-x-1/2 flex-col gap-2 rounded-2xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)]/95 p-3 text-white shadow-2xl shadow-black/35 backdrop-blur"
+          style={{ bottom: "var(--va-mobile-action-bar-bottom)" }}
           role="region"
           aria-label="إجراءات جماعية"
         >

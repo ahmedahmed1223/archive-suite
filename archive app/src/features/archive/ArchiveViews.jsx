@@ -1387,7 +1387,7 @@ export function PreviewPanel({
   });
 
   return jsxs("aside", {
-    className: "va-preview-panel fixed inset-x-2 bottom-2 z-30 max-h-[82vh] overflow-y-auto rounded-2xl border border-white/10 bg-gray-900/95 p-3 text-right shadow-2xl shadow-black/45 backdrop-blur-sm xl:sticky xl:top-4 xl:z-auto xl:h-fit xl:max-h-[calc(100vh-2rem)] xl:p-4",
+    className: "va-preview-panel fixed inset-x-2 bottom-[calc(var(--va-mobile-nav-bottom)+0.5rem)] z-30 max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-gray-900/95 p-3 text-right shadow-2xl shadow-black/45 backdrop-blur-sm xl:sticky xl:top-4 xl:bottom-auto xl:z-auto xl:h-fit xl:max-h-[calc(100vh-2rem)] xl:p-4",
     dir: "rtl",
     children: [
       jsx("div", {

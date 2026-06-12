@@ -31,6 +31,12 @@
     --space-8: 2rem;
     --radius-control: 0.5rem;
     --radius-panel: 0.75rem;
+    --va-bottom-tabs-height: 56px;
+    --va-mobile-action-bar-height: 4.75rem;
+    --va-mobile-chrome-gap: 0.75rem;
+    --va-mobile-nav-bottom: calc(var(--va-bottom-tabs-height) + env(safe-area-inset-bottom, 0px));
+    --va-mobile-action-bar-bottom: calc(var(--va-mobile-nav-bottom) + var(--va-mobile-chrome-gap));
+    --va-mobile-floating-bottom: calc(var(--va-mobile-nav-bottom) + var(--va-mobile-action-bar-height) + var(--va-mobile-chrome-gap));
   }
   html.dark {
     --color-bg-primary: #07111f;
@@ -714,6 +720,13 @@
     .w-\[280px\] { width: min(248px, 32vw); }
     main > div { max-width: 100%; }
     .lg\:grid-cols-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (min-width: 768px) {
+    :root {
+      --va-mobile-nav-bottom: 0px;
+      --va-mobile-action-bar-bottom: 1rem;
+      --va-mobile-floating-bottom: 1rem;
+    }
   }
   @media (max-width: 640px) {
     html, body, #root { overflow-x: clip; }

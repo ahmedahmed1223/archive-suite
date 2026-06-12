@@ -11,28 +11,13 @@
 
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import { DB_NAME, DB_VERSION, STORES as STORE_MAP } from '../../src/services/storage/schema.js';
 
-export const DB_NAME = 'VideoArchiveDB';
-export const DB_VERSION = 5;
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 export const TEST_USER_ID = 'user_e2e_admin';
 export const TEST_ITEM_ID = 'video_e2e_1';
 
-const STORES = [
-  'content_types',
-  'video_items',
-  'change_history',
-  'app_settings',
-  'backups',
-  'bookmarks',
-  'video_relations',
-  'virtual_collections',
-  'vocabulary',
-  'hierarchical_tags',
-  'users',
-  'audit_logs',
-  'projects',
-] as const;
+const STORES = Object.values(STORE_MAP);
 
 const DATA_STORES = STORES.filter((s) => s !== 'app_settings');
 
@@ -230,11 +215,12 @@ export async function seedLocalArchive(page: Page) {
 
 /** Navigate to a seeded page and wait for the sidebar nav to appear. */
 export async function openMobileSidebar(page: Page) {
-  const menuButton = page.getByRole('button', { name: /^(فتح القائمة الجانبية|إغلاق القائمة الجانبية)$/ });
-  if (await menuButton.count()) {
+  const menuButton = page.getByRole('button', { name: /^(فتح القائمة الجانبية|إغلاق القائمة الجانبية|فتح القائمة الكاملة)$/ }).first();
+  const buttonVisible = await menuButton.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false);
+  if (buttonVisible) {
     const nav = page.getByRole('navigation', { name: 'القائمة الجانبية' }).first();
     if (!(await nav.isVisible({ timeout: 500 }).catch(() => false))) {
-      await menuButton.first().click();
+      await menuButton.click();
       await expect(nav).toBeVisible({ timeout: 15_000 });
     }
   }

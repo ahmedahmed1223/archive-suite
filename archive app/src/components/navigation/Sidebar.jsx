@@ -176,11 +176,6 @@ export function Sidebar() {
   const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
   const isDark = resolvedTheme === "dark";
-  React.useLayoutEffect(() => {
-    if (!isMobile || !sidebarOpen) return;
-    const handle = window.setTimeout(() => toggleSidebar(), 0);
-    return () => window.clearTimeout(handle);
-  }, [isMobile, sidebarOpen, toggleSidebar]);
   const activeCount = videoItems.filter((item) => !item.isDeleted).length;
   const watchLaterCount = getWatchLaterCount?.() ?? 0;
   const unreadNotifications = getUnreadNotifications(notificationHistory);
