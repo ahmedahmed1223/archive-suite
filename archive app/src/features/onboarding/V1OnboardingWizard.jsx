@@ -61,6 +61,7 @@ import {
 } from "../../bootstrap/backendChoice.js";
 import { getCloudToken, loginToCloud } from "../../bootstrap/cloudSession.js";
 import { PasswordField } from "../../components/common/PasswordField.jsx";
+import { RoleSelectionStep } from "../../components/onboarding/RoleSelectionStep.jsx";
 import {
   DATABASE_ENGINES,
   DATABASE_ENGINE_LABELS,
@@ -72,6 +73,7 @@ import { fetchServerHealth } from "../server-status/serverHealthClient.js";
 import { validatePasswordStrength } from "../../utils/passwordHash.js";
 import { applyAccentColor } from "../../theme/accentColor.js";
 import { PresetConfigScreen } from "./PresetConfigScreen.jsx";
+import { normalizeRoleProfileId } from "./roleProfiles.js";
 
 const STORAGE_ICONS = { local: Laptop, postgres: Server, pocketbase: Cloud };
 const DEFAULT_PORT_BY_ENGINE = { postgresql: "5432", mysql: "3306", sqlserver: "1433" };
@@ -84,7 +86,10 @@ const FIRST_TASK_OPTIONS = [
 ];
 
 const EXTRA_STEPS = [
-  ...ONBOARDING_STEPS,
+  ...ONBOARDING_STEPS.flatMap((step) => step.id === "security"
+    ? [step, { id: "role", label: "نمط الاستخدام", detail: "تخصيص المسارات المبرزة حسب طريقة عملك." }]
+    : [step]
+  ),
   { id: "first-task", label: "البداية", detail: "اختيار أول شاشة بعد الإعداد." }
 ];
 
@@ -241,6 +246,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   const [themeChoice, setThemeChoice] = React.useState(() => normalizeOnboardingThemeChoice(settings.ui?.onboardingThemeChoice || settings.theme || "dark"));
   const [accentColor, setAccentColor] = React.useState(() => normalizeOnboardingAccentChoice(settings.accentColor || "teal"));
   const [visualDensity, setVisualDensity] = React.useState(settings.ui?.visualDensity === "compact" ? "compact" : "comfortable");
+  const [roleProfile, setRoleProfile] = React.useState(() => normalizeRoleProfileId(settings.ui?.roleProfile || "editor"));
   const [firstTaskChoice, setFirstTaskChoice] = React.useState(settings.ui?.firstTaskChoice || "dashboard");
   const [serverUpdatePolicy, setServerUpdatePolicy] = React.useState(() => normalizeOnboardingServerUpdatePolicy(settings.ui?.serverUpdatePolicy || "stable"));
   // Backend choice is read from localStorage (set by a previous run) so the
@@ -385,11 +391,12 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
         lastOnboardingStep: nextStepId,
         onboardingSecurityMode: securityMode,
         onboardingThemeChoice: themeChoice,
+        roleProfile,
         firstTaskChoice,
         serverUpdatePolicy
       }
     });
-  }, [firstTaskChoice, replayMode, securityMode, serverUpdatePolicy, settings.ui, themeChoice, updateSettings]);
+  }, [firstTaskChoice, replayMode, roleProfile, securityMode, serverUpdatePolicy, settings.ui, themeChoice, updateSettings]);
 
   const moveToStepIndex = React.useCallback((nextIndex, direction = "next", { validate = true } = {}) => {
     const boundedIndex = Math.max(0, Math.min(steps.length - 1, nextIndex));
@@ -505,6 +512,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
       themeChoice,
       accentColor,
       visualDensity,
+      roleProfile,
       firstTaskChoice,
       serverUpdatePolicy,
       replayMode,
@@ -556,7 +564,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
         showToast?.("تم تفعيل البدء السريع بدون كلمة مرور. يمكنك إضافة الحماية لاحقاً من الإعدادات.", "warning");
       }
 
-      onComplete?.({ replayMode, securityMode, firstTaskChoice, serverUpdatePolicy });
+      onComplete?.({ replayMode, securityMode, roleProfile, firstTaskChoice, serverUpdatePolicy });
     } catch (errorObject) {
       handleAppError(errorObject, "معالج بدء التشغيل", { message: "تعذر إكمال معالج البداية" });
       setError("تعذر إكمال المعالج. راجع فحص النظام أو حاول مرة أخرى.");
@@ -662,6 +670,13 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
         password.length > 0 && passwordPolicyErrors.length > 0 && jsx("p", { className: "text-xs leading-6 text-amber-300/90", children: passwordPolicyErrors[0] }),
         confirmPassword && jsx("p", { className: `text-sm ${passwordMatches ? "va-accent-text" : "text-red-300"}`, children: passwordMatches ? "كلمة المرور متطابقة" : "كلمة المرور غير متطابقة" })
       ] });
+    }
+
+    if (activeStep.id === "role") {
+      return jsx(RoleSelectionStep, {
+        value: roleProfile,
+        onChange: setRoleProfile
+      });
     }
 
     if (activeStep.id === "storage") {

@@ -31,6 +31,7 @@ import {
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { MotionPage, PageHero, SaveIndicator } from "../components/ui/index.js";
+import { RoleSelectionStep } from "../components/onboarding/RoleSelectionStep.jsx";
 import { useFormSaveState } from "../components/common/useFormSaveState.js";
 import { resolveBackendChoice } from "../bootstrap/backendChoice.js";
 
@@ -84,6 +85,7 @@ import {
   NOTIFICATION_CATEGORY_LABELS
 } from "../features/notifications/viewModel.js";
 import { reportError } from "../utils/errorReporting.js";
+import { normalizeRoleProfileId } from "../features/onboarding/roleProfiles.js";
 
 const THEME_VERSION_SAVE_MESSAGES = {
   v1: "تم تفعيل النمط الكلاسيكي",
@@ -520,6 +522,20 @@ export function SettingsPage() {
               description: "يستخدم كنقطة بداية للصفحات الجديدة."
             })
           ]
+        })
+      }),
+      jsx(SettingsCard, {
+        title: "نمط الاستخدام الموجّه",
+        description: "غيّر ترتيب المسارات والتوصيات حسب طريقة عملك اليومية. لا يغير هذا صلاحيات الحساب.",
+        icon: jsx(Users, { className: "h-5 w-5 va-accent-text" }),
+        aside: jsx("span", {
+          className: "badge badge-soft badge-info",
+          children: "تخصيص واجهي"
+        }),
+        children: jsx(RoleSelectionStep, {
+          compact: true,
+          value: normalizeRoleProfileId(settings.ui?.roleProfile || currentUser?.role || "editor"),
+          onChange: (value) => patchUi({ roleProfile: value }, "تم تحديث نمط الاستخدام")
         })
       })
     ]

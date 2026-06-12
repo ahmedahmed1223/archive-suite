@@ -4,6 +4,7 @@ import {
   ONBOARDING_STEPS,
   ONBOARDING_THEME_OPTIONS
 } from "./flow.js";
+import { normalizeRoleProfileId } from "./roleProfiles.js";
 
 export const PRODUCT_TOUR_VERSION = "2026-06-05-media-workstation";
 
@@ -44,6 +45,7 @@ export function createOnboardingUiPatch({
   stepId = "welcome",
   securityMode = "secure",
   themeChoice = "dark",
+  roleProfile = "editor",
   firstTaskChoice = "dashboard",
   serverUpdatePolicy = "stable",
   completed = false,
@@ -54,6 +56,7 @@ export function createOnboardingUiPatch({
     lastOnboardingStep: getOnboardingStep(stepId).id,
     onboardingSecurityMode: normalizeOnboardingSecurityMode(securityMode),
     onboardingThemeChoice: normalizeOnboardingThemeChoice(themeChoice),
+    roleProfile: normalizeRoleProfileId(roleProfile),
     serverUpdatePolicy: normalizeOnboardingServerUpdatePolicy(serverUpdatePolicy),
     firstTaskChoice: firstTaskChoice || "dashboard",
     v1OnboardingCompleted: Boolean(completed),
@@ -85,6 +88,7 @@ export function createOnboardingCompletionPatch({
   themeChoice = "dark",
   accentColor = "teal",
   visualDensity = "comfortable",
+  roleProfile = "editor",
   firstTaskChoice = "dashboard",
   serverUpdatePolicy = "stable",
   replayMode = false,
@@ -100,6 +104,7 @@ export function createOnboardingCompletionPatch({
     onboardingThemeChoice: normalizedThemeChoice,
     onboardingCoreUiSeenAt: now,
     onboardingSkippedAt: normalizedSecurityMode === "quick" ? now : null,
+    roleProfile: normalizeRoleProfileId(roleProfile),
     firstTaskChoice: firstTaskChoice || "dashboard",
     serverUpdatePolicy: normalizeOnboardingServerUpdatePolicy(serverUpdatePolicy),
     lastOnboardingStep: replayMode ? "replay-completed" : "completed",

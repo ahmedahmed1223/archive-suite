@@ -16,6 +16,7 @@ const PAGES = [
   { route: '#/add',       heading: 'إضافة' },
   { route: '#/reports',   heading: 'التقارير' },
   { route: '#/settings',  heading: 'الإعدادات' },
+  { route: '#/help',      heading: 'المساعدة' },
 ] as const;
 
 test.describe('Navigation — sidebar', () => {

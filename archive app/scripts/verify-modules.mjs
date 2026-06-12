@@ -166,6 +166,14 @@ import {
   shouldShowV1Tour
 } from "../src/features/onboarding/viewModel.js";
 import {
+  getRoleProfile,
+  getRoleProfileQuietPages,
+  getRoleProfileStepPages,
+  normalizeRoleProfileId,
+  orderPageIdsForRoleProfile,
+  resolveRoleProfileId
+} from "../src/features/onboarding/roleProfiles.js";
+import {
   getPageContextBarModel,
   getPrimaryPageAction,
   getSidebarNavigationGroups
@@ -867,6 +875,7 @@ run("onboarding view model", () => {
     lastOnboardingStep: "interface",
     onboardingSecurityMode: "quick",
     onboardingThemeChoice: "system",
+    roleProfile: "editor",
     serverUpdatePolicy: "stable",
     firstTaskChoice: "add-video",
     v1OnboardingCompleted: true,
@@ -888,6 +897,7 @@ run("onboarding view model", () => {
     onboardingThemeChoice: "light",
     onboardingCoreUiSeenAt: "2026-01-01T00:00:00.000Z",
     onboardingSkippedAt: "2026-01-01T00:00:00.000Z",
+    roleProfile: "editor",
     firstTaskChoice: "create-type",
     serverUpdatePolicy: "preview",
     lastOnboardingStep: "completed",
@@ -895,6 +905,18 @@ run("onboarding view model", () => {
     onboardingReplayCompletedAt: null,
     firstTaskChoiceUsed: false
   });
+  assert.equal(normalizeRoleProfileId("admin"), "admin");
+  assert.equal(normalizeRoleProfileId("unknown"), "editor");
+  assert.equal(resolveRoleProfileId({ settings: { ui: { roleProfile: "viewer" } }, currentUser: { role: "admin" } }), "viewer");
+  assert.equal(resolveRoleProfileId({ settings: { ui: {} }, currentUser: { role: "admin" } }), "admin");
+  assert.equal(getRoleProfile("viewer").startPage, "search");
+  assert.deepEqual(getRoleProfileStepPages("editor"), ["add", "types", "discover"]);
+  assert.ok(getRoleProfileQuietPages("viewer").includes("settings"), "viewer profile soft-hides advanced tools");
+  assert.equal(getRoleProfileQuietPages("admin").length, 0, "admin profile keeps all permitted tools visible");
+  assert.deepEqual(
+    orderPageIdsForRoleProfile(["settings", "archive", "discover", "add"], "editor"),
+    ["add", "archive", "discover", "settings"]
+  );
 });
 
 run("navigation view model", () => {
@@ -3020,6 +3042,7 @@ await import("./verify-modules.theme-v2.mjs");
 // --- v4 theme version registration ---
 assert.equal(DEFAULT_THEME_VERSION, "v4", "v4 is the default theme version");
 assert.equal(defaultSettings().ui.themeVersion, "v4", "settings default mirrors v4");
+assert.equal(defaultSettings().ui.roleProfile, "editor", "settings default has guided role profile");
 assert.equal(getDefaultSettings().ui.themeVersion, "v4", "app settings default mirrors v4");
 assert.equal(normalizeThemeVersion("v4"), "v4", "v4 must be a valid theme version");
 assert.equal(normalizeThemeVersion("v3"), "v3", "v3 still valid");

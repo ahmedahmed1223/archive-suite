@@ -17,6 +17,7 @@ export function defaultSettings() {
       serverUpdatePolicy: "stable",
       visualDensity: "comfortable",
       daisyTheme: "business",
+      roleProfile: "editor",
       startupMode: "balanced",
       lastSettingsTab: "general",
       lastDataCenterTab: "export",
