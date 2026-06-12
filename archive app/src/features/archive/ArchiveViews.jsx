@@ -4,12 +4,15 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  FileText,
   FolderOpen,
   Gauge,
   HardDrive,
+  Image as ImageIcon,
   LayoutGrid,
   Maximize2,
   MoreHorizontal,
+  Music,
   PenLine,
   Plus,
   RotateCcw,
@@ -415,10 +418,34 @@ export function ArchivePagination({ currentPage, totalPages, onPageChange }) {
   });
 }
 
+const AUDIO_EXTENSIONS = new Set([".mp3", ".wav", ".ogg", ".flac", ".aac", ".m4a", ".wma", ".opus", ".m4b", ".aiff"]);
+const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg", ".bmp", ".tiff", ".heic", ".heif"]);
+const DOCUMENT_EXTENSIONS = new Set([".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md", ".rtf", ".odt", ".csv", ".epub"]);
+const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".ogg", ".ogv", ".mov", ".m4v", ".mkv", ".avi", ".wmv", ".flv"]);
+
+function getContentKind(item) {
+  const raw = String(item?.path || item?.filePath || item?.url || "").split("?")[0].toLowerCase();
+  const dotIdx = raw.lastIndexOf(".");
+  const ext = dotIdx >= 0 ? raw.slice(dotIdx) : "";
+  if (ext) {
+    if (AUDIO_EXTENSIONS.has(ext)) return "audio";
+    if (IMAGE_EXTENSIONS.has(ext)) return "image";
+    if (DOCUMENT_EXTENSIONS.has(ext)) return "document";
+    if (VIDEO_EXTENSIONS.has(ext)) return "video";
+  }
+  const hint = String(item?.type || "").toLowerCase();
+  if (/audio|sound|music|podcast/.test(hint)) return "audio";
+  if (/image|photo|picture|graphic/.test(hint)) return "image";
+  if (/doc|pdf|text|report|sheet|slide|book/.test(hint)) return "document";
+  if (/video|film|clip|movie/.test(hint)) return "video";
+  return "unknown";
+}
+
 function VideoThumb({ item }) {
-  const descriptor = getMediaPreviewDescriptor(item.path || item.filePath || item.url || "", {
-    runtimeProtocol: typeof window !== "undefined" ? window.location.protocol : ""
-  });
+  const kind = getContentKind(item);
+  const runtimeProtocol = typeof window !== "undefined" ? window.location.protocol : "";
+
+  const descriptor = getMediaPreviewDescriptor(item.path || item.filePath || item.url || "", { runtimeProtocol });
   if (descriptor.status === MEDIA_PREVIEW_STATUS.PLAYABLE && descriptor.source) {
     return jsx("video", {
       className: "h-full w-full object-cover",
@@ -426,6 +453,48 @@ function VideoThumb({ item }) {
       preload: "metadata",
       muted: true,
       playsInline: true
+    });
+  }
+
+  if (kind === "image") {
+    const imgSrc = item.path || item.filePath || item.url || item.thumbnail || "";
+    const isBlocked = isLocalFilePath(imgSrc) && /^https?:$/i.test(runtimeProtocol);
+    if (imgSrc && !isBlocked && /^(https?:|blob:|data:|file:)/i.test(imgSrc)) {
+      return jsx("img", {
+        className: "h-full w-full object-cover",
+        src: imgSrc,
+        alt: item.title || "",
+        loading: "lazy"
+      });
+    }
+    return jsxs("div", {
+      className: "va-thumb-placeholder flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-emerald-900/40 to-gray-950 text-emerald-400",
+      children: [
+        jsx(ImageIcon, { className: "h-9 w-9" }),
+        jsx("span", { className: "mt-2 max-w-[75%] truncate text-xs text-emerald-500/70", dir: "auto", children: item.title || "صورة" })
+      ]
+    });
+  }
+
+  if (kind === "audio") {
+    return jsxs("div", {
+      className: "va-thumb-placeholder flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-violet-900/40 to-gray-950 text-violet-400",
+      children: [
+        jsx(Music, { className: "h-9 w-9" }),
+        jsx("span", { className: "mt-2 max-w-[75%] truncate text-xs text-violet-500/70", dir: "auto", children: item.title || "مقطع صوتي" })
+      ]
+    });
+  }
+
+  if (kind === "document") {
+    const file = getArchiveFileMeta(item);
+    return jsxs("div", {
+      className: "va-thumb-placeholder flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-blue-900/40 to-gray-950 text-blue-400",
+      children: [
+        jsx(FileText, { className: "h-9 w-9" }),
+        file.extension && jsx("span", { className: "mt-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] uppercase text-blue-300", children: file.extension }),
+        jsx("span", { className: "mt-1 max-w-[75%] truncate text-xs text-blue-500/70", dir: "auto", children: item.title || "وثيقة" })
+      ]
     });
   }
 
