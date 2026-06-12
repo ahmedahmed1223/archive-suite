@@ -20,6 +20,7 @@ import {
   Clapperboard,
   CloudUpload,
   CircleQuestionMark,
+  Compass,
   Database,
   Eye,
   EyeOff,
@@ -84,6 +85,7 @@ const SIDEBAR_PAGE_PERMISSIONS = {
 const iconMap = {
   dashboard: LayoutGrid,
   archive: Archive,
+  discover: Compass,
   add: CirclePlus,
   search: Search,
   collections: FolderOpen,

@@ -12,6 +12,7 @@ import {
 
 const DashboardPage       = lazy(() => import("../pages/DashboardPage.jsx"));
 const ArchivePage         = lazy(() => import("../pages/ArchivePage.jsx"));
+const DiscoverPage        = lazy(() => import("../pages/DiscoverPage.jsx"));
 const AddVideoPage        = lazy(() => import("../pages/AddVideoPage.jsx"));
 const DetailPage          = lazy(() => import("../pages/DetailPage.jsx"));
 const TypesPage           = lazy(() => import("../pages/TypesPage.jsx"));
@@ -41,6 +42,7 @@ const SavedSearchesPage   = lazy(() => import("../pages/SavedSearchesPage.jsx"))
 export const PAGE_COMPONENTS = {
   dashboard:   DashboardPage,
   archive:     ArchivePage,
+  discover:    DiscoverPage,
   add:         AddVideoPage,
   detail:      DetailPage,
   types:       TypesPage,
