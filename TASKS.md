@@ -1962,6 +1962,7 @@
   - **الملفات الجديدة:** `archive app/src/features/archive/views/GalleryView.jsx`، `KanbanView.jsx`، `CompactView.jsx`، `archive app/src/components/archive/ColumnCustomizer.jsx`.
   - **تعديل ملفات:** `ArchiveViews.jsx`، `ArchivePageResults.jsx`، تخزين تفضيل العرض (`settingsSlice.js`).
   - **التنفيذ:** معرض Masonry بحجم صور قابل للضبط، كانبان بأعمدة (مجموعات/أنواع/حالات) مع سحب، تخصيص أعمدة الجدول وترتيبها، DaisyUI `join`+`btn` للتبديل، حفظ التخصيص لكل عرض.
+  - 🔄 **تقدم 2026-06-12:** أُضيفت أسماء العرض الرسمية `compact` و`details` مع توافق خلفي لقيم `tiles/table` القديمة، وأصبح تبديل أوضاع الأرشيف يستخدم DaisyUI `join` + `btn`. `compact` يرسم عرض البلاطات الكثيف ويستخدم منطق كثافة الشبكة، و`details` يرسم جدول التفاصيل مع مخصص الأعمدة. حُدّثت روابط dashboard والاختصارات وخيارات الإعدادات لاستخدام الأسماء الجديدة. ما زال مفتوحاً: Masonry/Kanban كملفات عرض مستقلة وسحب الأعمدة/البطاقات.
   - يرتبط بـ: §17.17 (الحالات)، §17.3 (السحب).
   - الجهد: 4-6 أسابيع.
   - المصدر: daisyui-ux-proposals (المقترح 16 — P1).

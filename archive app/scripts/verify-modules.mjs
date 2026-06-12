@@ -19,6 +19,7 @@ import {
 import {
   createArchiveRouteParams,
   getArchiveActiveFilterCount,
+  getArchiveRenderViewMode,
   getArchiveResultRangeText,
   getFilteredArchiveItems,
   hasArchiveContentFilters,
@@ -359,13 +360,13 @@ run("archive view model", () => {
   assert.equal(hasArchiveContentFilters({ showDeleted: true }), false);
   assert.equal(getArchiveResultRangeText({ total: 55, page: 3, itemsPerPage: 20 }), "عرض 41-55 من 55");
 
-  const params = createArchiveRouteParams({ searchQuery: "test", filterType: "movie", showFavoritesOnly: true, sortDirection: "asc", viewMode: "table", topMode: "detailed", openImport: true, page: 3, pageSize: 48, itemSize: "comfortable", gridRows: 6 });
+  const params = createArchiveRouteParams({ searchQuery: "test", filterType: "movie", showFavoritesOnly: true, sortDirection: "asc", viewMode: "details", topMode: "detailed", openImport: true, page: 3, pageSize: 48, itemSize: "comfortable", gridRows: 6 });
   const parsed = parseArchiveRouteParams(params);
   assert.equal(parsed.searchQuery, "test");
   assert.equal(parsed.filterType, "movie");
   assert.equal(parsed.showFavoritesOnly, true);
   assert.equal(parsed.sortDirection, "asc");
-  assert.equal(parsed.viewMode, "table");
+  assert.equal(parsed.viewMode, "details");
   assert.equal(parsed.topMode, "detailed");
   assert.equal(parsed.openImport, true);
   assert.equal(parsed.page, 3);
@@ -373,6 +374,10 @@ run("archive view model", () => {
   assert.equal(parsed.itemSize, "comfortable");
   assert.equal(parsed.gridRows, 6);
   assert.equal(parseArchiveRouteParams(new URLSearchParams("view=missing")).viewMode, "grid");
+  assert.equal(parseArchiveRouteParams(new URLSearchParams("view=table")).viewMode, "details");
+  assert.equal(parseArchiveRouteParams(new URLSearchParams("view=tiles")).viewMode, "compact");
+  assert.equal(getArchiveRenderViewMode("compact"), "tiles");
+  assert.equal(getArchiveRenderViewMode("details"), "table");
   assert.equal(parseArchiveRouteParams(new URLSearchParams("top=wide&rows=9")).topMode, "quick");
   assert.equal(parseArchiveRouteParams(new URLSearchParams("rows=5")).gridRows, 5);
   assert.equal(normalizeArchiveTopMode("detailed"), "detailed");
