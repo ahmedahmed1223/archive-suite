@@ -77,6 +77,13 @@ import {
   storeDaisyTheme
 } from "../features/theme/daisyThemes.js";
 import {
+  getStoredSchedule,
+  normalizeSchedule,
+  resolveScheduledTheme,
+  storeSchedule,
+  systemPrefersDark
+} from "../features/theme/themeSchedule.js";
+import {
   DEFAULT_THEME_VERSION,
   storeThemeVersion
 } from "../theme/themeVersionStorage.js";
@@ -133,9 +140,14 @@ const APPEARANCE_PRESETS = [
 ];
 
 function createAppearanceDraft(settings = {}, fallbackTheme = "dark") {
+  const themeSchedule = normalizeSchedule({
+    ...getStoredSchedule(),
+    theme: settings.ui?.daisyTheme || DEFAULT_DAISY_THEME
+  });
   return {
     themeVersion: settings.ui?.themeVersion || DEFAULT_THEME_VERSION,
     daisyTheme: normalizeDaisyTheme(settings.ui?.daisyTheme || DEFAULT_DAISY_THEME),
+    themeSchedule,
     theme: settings.theme || fallbackTheme || "dark",
     accentColor: settings.accentColor || "teal",
     visualDensity: settings.ui?.visualDensity || "comfortable",
@@ -302,20 +314,42 @@ export function SettingsPage() {
       [type]: enabled
     }
   });
-  const patchAppearanceDraft = (patch) => setAppearanceDraft((current) => ({ ...current, ...patch }));
+  const patchAppearanceDraft = (patch) => setAppearanceDraft((current) => ({
+    ...current,
+    ...(typeof patch === "function" ? patch(current) : patch)
+  }));
   const selectDaisyTheme = (value) => {
     const daisyTheme = normalizeDaisyTheme(value);
     applyDaisyTheme(daisyTheme);
-    patchAppearanceDraft({ daisyTheme });
+    patchAppearanceDraft((current) => ({
+      daisyTheme,
+      themeSchedule: normalizeSchedule({ ...(current.themeSchedule || {}), theme: daisyTheme })
+    }));
+  };
+  const patchLiveThemeEditor = (patch) => {
+    if (patch.daisyTheme) {
+      selectDaisyTheme(patch.daisyTheme);
+      return;
+    }
+    if (patch.themeSchedule) {
+      const themeSchedule = normalizeSchedule(patch.themeSchedule);
+      applyDaisyTheme(resolveScheduledTheme(themeSchedule, systemPrefersDark()));
+      patchAppearanceDraft({ themeSchedule });
+      return;
+    }
+    patchAppearanceDraft(patch);
   };
   const applyAppearanceDraft = () => {
+    const themeSchedule = normalizeSchedule(appearanceDraft.themeSchedule);
+    const scheduledDaisyTheme = resolveScheduledTheme(themeSchedule, systemPrefersDark());
     setTheme?.(appearanceDraft.theme);
     if (typeof document !== "undefined") {
       document.documentElement.setAttribute("data-theme-version", appearanceDraft.themeVersion);
-      applyDaisyTheme(appearanceDraft.daisyTheme);
+      applyDaisyTheme(scheduledDaisyTheme);
     }
     storeThemeVersion(appearanceDraft.themeVersion);
     storeDaisyTheme(appearanceDraft.daisyTheme);
+    storeSchedule(themeSchedule);
     return saveSettings({
       theme: appearanceDraft.theme,
       accentColor: appearanceDraft.accentColor,
@@ -372,7 +406,8 @@ export function SettingsPage() {
           sidebarLayout: settings.ui?.sidebarLayout,
           fontScale: settings.ui?.fontScale,
           motionLevel: settings.ui?.motionLevel,
-          cardStyle: settings.ui?.cardStyle
+          cardStyle: settings.ui?.cardStyle,
+          themeSchedule: getStoredSchedule()
         }
       }
     };
@@ -391,6 +426,10 @@ export function SettingsPage() {
       const profile = JSON.parse(await file.text());
       if (profile.kind !== "video-archive-appearance-profile" || !profile.settings) throw new Error("ملف المظهر غير صالح");
       const next = profile.settings;
+      const importedSchedule = normalizeSchedule(next.ui?.themeSchedule);
+      const nextUi = { ...(next.ui || {}) };
+      delete nextUi.themeSchedule;
+      storeSchedule(importedSchedule);
       await saveSettings({
         theme: next.theme || settings.theme,
         accentColor: next.accentColor || settings.accentColor,
@@ -399,7 +438,7 @@ export function SettingsPage() {
         itemsPerPage: Number(next.itemsPerPage) || settings.itemsPerPage,
         ui: {
           ...(settings.ui || {}),
-          ...(next.ui || {}),
+          ...nextUi,
           daisyTheme: normalizeDaisyTheme(next.ui?.daisyTheme || settings.ui?.daisyTheme)
         }
       }, "تم استيراد ملف المظهر");
@@ -573,7 +612,7 @@ export function SettingsPage() {
                 }),
                 jsx(LiveThemeEditor, {
                   draft: appearanceDraft,
-                  onPatch: (patch) => patch.daisyTheme ? selectDaisyTheme(patch.daisyTheme) : patchAppearanceDraft(patch)
+                  onPatch: patchLiveThemeEditor
                 }),
                 jsx(SegmentedChoices, { label: "المظهر", value: appearanceDraft.theme, options: THEME_OPTIONS, onChange: (value) => patchAppearanceDraft({ theme: value }) }),
                 jsx(ColorChoices, { value: appearanceDraft.accentColor, onChange: (value) => patchAppearanceDraft({ accentColor: value }) }),
