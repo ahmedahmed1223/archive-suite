@@ -53,6 +53,11 @@ import { FavoritesSidebarSection } from "../favorites/FavoritesSidebarSection.js
 import { getSidebarNavigationGroups } from "./viewModel.js";
 import { ACTIONS, canPerform } from "../../features/users/permissions.js";
 import { USER_ROLES } from "../../features/users/viewModel.js";
+import {
+  getRoleProfileQuietPages,
+  orderPageIdsForRoleProfile,
+  resolveRoleProfileId
+} from "../../features/onboarding/roleProfiles.js";
 import { getUnreadNotifications } from "../../features/notifications/viewModel.js";
 import {
   applySidebarLayout,
@@ -181,6 +186,7 @@ export function Sidebar() {
   const activeCount = videoItems.filter((item) => !item.isDeleted).length;
   const watchLaterCount = getWatchLaterCount?.() ?? 0;
   const unreadNotifications = getUnreadNotifications(notificationHistory);
+  const roleProfileId = resolveRoleProfileId({ settings, currentUser });
 
   const permittedGroups = getSidebarNavigationGroups()
     .map((group) => ({
@@ -193,22 +199,46 @@ export function Sidebar() {
       })
     }))
     .filter((group) => group.pages.length > 0);
+  const guidedGroups = React.useMemo(() => {
+    const ids = permittedGroups.flatMap((group) => group.pages.map((page) => page.id));
+    const order = new Map(orderPageIdsForRoleProfile(ids, roleProfileId).map((id, index) => [id, index]));
+    return permittedGroups
+      .map((group) => ({
+        ...group,
+        pages: [...group.pages].sort((first, second) => (order.get(first.id) ?? 999) - (order.get(second.id) ?? 999))
+      }))
+      .sort((first, second) => {
+        const firstRank = Math.min(...first.pages.map((page) => order.get(page.id) ?? 999));
+        const secondRank = Math.min(...second.pages.map((page) => order.get(page.id) ?? 999));
+        return firstRank - secondRank;
+      });
+  }, [permittedGroups, roleProfileId]);
 
   // ── customizable sidebar (pin/hide/reorder + persisted collapse) ──
   const availableIds = React.useMemo(
-    () => permittedGroups.flatMap((group) => group.pages.map((page) => page.id)),
-    [permittedGroups]
+    () => guidedGroups.flatMap((group) => group.pages.map((page) => page.id)),
+    [guidedGroups]
   );
   const savedLayout = React.useMemo(
-    () => normalizeSidebarLayout(settings.ui?.sidebarLayout, availableIds),
-    [settings.ui?.sidebarLayout, availableIds]
+    () => {
+      const normalized = normalizeSidebarLayout(settings.ui?.sidebarLayout, availableIds);
+      if (settings.ui?.sidebarLayout) return normalized;
+      const quietPages = new Set(getRoleProfileQuietPages(roleProfileId));
+      if (quietPages.size === 0) return normalized;
+      const items = { ...normalized.items };
+      for (const pageId of quietPages) {
+        if (items[pageId]) items[pageId] = { ...items[pageId], hidden: true };
+      }
+      return { ...normalized, items };
+    },
+    [settings.ui?.sidebarLayout, availableIds, roleProfileId]
   );
   const [editing, setEditing] = React.useState(false);
   const [draftLayout, setDraftLayout] = React.useState(null);
   const activeLayout = editing && draftLayout ? draftLayout : savedLayout;
   // Collapse never applies on mobile (drawer) or while editing (need room for controls).
   const collapsed = !isMobile && !editing && Boolean(activeLayout.collapsed);
-  const shaped = applySidebarLayout(permittedGroups, activeLayout, { editing });
+  const shaped = applySidebarLayout(guidedGroups, activeLayout, { editing });
 
   const persistLayout = (nextLayout) => {
     updateSettings?.({ ui: { ...(settings.ui || {}), sidebarLayout: nextLayout } });

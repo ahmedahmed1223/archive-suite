@@ -3,7 +3,8 @@ import {
   writeAppRoute
 } from "../services/router/index.js";
 import {
-  useAppStore
+  useAppStore,
+  useAuthStore
 } from "../stores/index.js";
 import {
   ArrowUp,
@@ -51,9 +52,14 @@ import {
   PageHero,
   StatusBadge
 } from "../components/ui/index.js";
+import { RoleSelectionStep } from "../components/onboarding/RoleSelectionStep.jsx";
 import {
   formatNumber
 } from "../utils/formatting.js";
+import {
+  normalizeRoleProfileId,
+  resolveRoleProfileId
+} from "../features/onboarding/roleProfiles.js";
 
 function HelpPanel({ title, children, icon = null, className = "" }) {
   return jsxs("section", {
@@ -111,8 +117,20 @@ function BulletList({ items }) {
   });
 }
 
-function createHelpSections(keyboardShortcuts) {
+function createHelpSections(keyboardShortcuts, { roleProfile, onRoleProfileChange, onOpenPage } = {}) {
   return [
+    {
+      id: "guided-journey",
+      title: "المسار الموجّه",
+      icon: jsx(Users, { className: "h-4 w-4" }),
+      searchText: "مسار موجه دور مسؤول محرر مشاهد تخصيص الواجهة",
+      content: jsx(RoleSelectionStep, {
+        compact: true,
+        value: roleProfile,
+        onChange: onRoleProfileChange,
+        onOpenPage
+      })
+    },
     {
       id: "getting-started",
       title: "البدء",
@@ -398,6 +416,7 @@ function createHelpSections(keyboardShortcuts) {
 
 export function HelpPage() {
   const { settings, updateSettings, setCurrentPage } = useAppStore();
+  const { currentUser } = useAuthStore();
   const [activeSection, setActiveSection] = React.useState(settings.ui?.lastHelpSection || "getting-started");
   const [helpQuery, setHelpQuery] = React.useState("");
   const contentRef = React.useRef(null);
@@ -420,7 +439,18 @@ export function HelpPage() {
   }, []);
   const effectiveShortcuts = getEffectiveKeyboardShortcuts(settings);
   const keyboardShortcuts = createHelpShortcutList(SHORTCUT_ACTIONS, effectiveShortcuts, SHORTCUT_DISABLED);
-  const sections = React.useMemo(() => createHelpSections(keyboardShortcuts), [settings.keyboardShortcuts]);
+  const roleProfile = normalizeRoleProfileId(resolveRoleProfileId({ settings, currentUser }));
+  const onRoleProfileChange = React.useCallback((value) => {
+    updateSettings({ ui: { ...(settings.ui || {}), roleProfile: normalizeRoleProfileId(value) } });
+  }, [settings.ui, updateSettings]);
+  const openRolePage = React.useCallback((page) => {
+    setCurrentPage?.(page);
+  }, [setCurrentPage]);
+  const sections = React.useMemo(() => createHelpSections(keyboardShortcuts, {
+    roleProfile,
+    onRoleProfileChange,
+    onOpenPage: openRolePage
+  }), [keyboardShortcuts, onRoleProfileChange, openRolePage, roleProfile]);
   const filteredSections = React.useMemo(() => filterHelpSections(sections, helpQuery), [sections, helpQuery]);
   const filteredFaqItems = React.useMemo(() => filterHelpFaqItems(HELP_FAQ_ITEMS, helpQuery), [helpQuery]);
 
