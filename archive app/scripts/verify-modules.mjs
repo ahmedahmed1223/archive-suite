@@ -238,6 +238,11 @@ import {
   normalizeThemeVersion,
   DEFAULT_THEME_VERSION
 } from "../src/theme/themeVersionStorage.js";
+import {
+  DAISY_THEME_OPTIONS,
+  DEFAULT_DAISY_THEME,
+  normalizeDaisyTheme
+} from "../src/features/theme/daisyThemes.js";
 import { staggerFor, transitions } from "../src/theme/motion.js";
 import { defaultSettings } from "../src/stores/settingsDefaults.js";
 import { getDefaultSettings } from "../src/utils/settings.js";
@@ -2982,6 +2987,12 @@ assert.equal(normalizeThemeVersion("v4"), "v4", "v4 must be a valid theme versio
 assert.equal(normalizeThemeVersion("v3"), "v3", "v3 still valid");
 assert.equal(normalizeThemeVersion("nope"), DEFAULT_THEME_VERSION, "unknown falls back to default");
 console.log("ok: theme version v4 registered and defaulted");
+
+assert.ok(DAISY_THEME_OPTIONS.length >= 30, "DaisyUI theme gallery exposes 30+ themes");
+assert.equal(normalizeDaisyTheme("business"), "business", "known DaisyUI theme is preserved");
+assert.equal(normalizeDaisyTheme("missing-theme"), DEFAULT_DAISY_THEME, "unknown DaisyUI theme falls back to default");
+assert.equal(getDefaultSettings().ui.daisyTheme, DEFAULT_DAISY_THEME, "app settings default mirrors DaisyUI default");
+console.log("ok: DaisyUI theme gallery registered and defaulted");
 
 // --- motion: stagger is capped at 12 items (spec §3) ---
 assert.equal(staggerFor(0), 0, "first item no delay");

@@ -16,7 +16,7 @@ export function ProgressBar({ progress, onCancel }) {
     // (role="progressbar" must not contain focusable elements per WCAG 4.1.2)
     <div
       aria-label={progress.label || "جاري التحميل"}
-      className="fixed right-0 left-0 z-50 bg-gray-900 border-t border-gray-700 p-3 shadow-xl"
+      className="fixed right-0 left-0 z-50 border-t border-gray-700 bg-gray-900 p-3 shadow-xl"
       style={{ bottom: "var(--va-mobile-nav-bottom, 0px)" }}
     >
       <div className="max-w-3xl mx-auto">
@@ -29,7 +29,7 @@ export function ProgressBar({ progress, onCancel }) {
               <button
                 type="button"
                 onClick={onCancel}
-                className="text-xs text-red-400 hover:text-red-300 border border-red-800 hover:border-red-600 px-2 py-0.5 rounded transition-colors"
+                className="btn btn-xs btn-error btn-soft rounded px-2 py-0.5 text-xs"
               >
                 إلغاء
               </button>
@@ -37,19 +37,16 @@ export function ProgressBar({ progress, onCancel }) {
           </div>
         </div>
         {/* role="progressbar" is scoped to the track element only — no focusable descendants */}
-        <div
+        <progress
           role="progressbar"
+          value={progress.percent}
+          max={100}
           aria-valuenow={progress.percent}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label={progress.label || "جاري التحميل"}
-          className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden"
-        >
-          <div
-            className="va-accent-bg h-1.5 rounded-full transition-all duration-300"
-            style={{ width: `${progress.percent}%` }}
-          />
-        </div>
+          className="progress progress-accent h-1.5 w-full overflow-hidden rounded-full bg-gray-700"
+        />
       </div>
     </div>
   );

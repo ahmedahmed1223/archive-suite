@@ -62,11 +62,19 @@ import { ApiKeysSettings } from "../components/settings/ApiKeysSettings.jsx";
 import { FieldPermissionsSettings } from "../components/settings/FieldPermissionsSettings.jsx";
 import { NotificationPreferences } from "../components/settings/NotificationPreferences.jsx";
 import { TwoFactorSettings } from "../components/settings/TwoFactorSettings.jsx";
+import { ThemeGallery } from "../components/settings/ThemeGallery.jsx";
+import { LiveThemeEditor } from "../components/settings/LiveThemeEditor.jsx";
 import {
   getDefaultSettings,
   mergeAppSettings
 } from "../utils/settings.js";
 import { ThemeVersionPicker } from "../features/settings/ThemeVersionPicker.jsx";
+import {
+  DEFAULT_DAISY_THEME,
+  applyDaisyTheme,
+  normalizeDaisyTheme,
+  storeDaisyTheme
+} from "../features/theme/daisyThemes.js";
 import {
   DEFAULT_THEME_VERSION,
   storeThemeVersion
@@ -125,6 +133,7 @@ const APPEARANCE_PRESETS = [
 function createAppearanceDraft(settings = {}, fallbackTheme = "dark") {
   return {
     themeVersion: settings.ui?.themeVersion || DEFAULT_THEME_VERSION,
+    daisyTheme: normalizeDaisyTheme(settings.ui?.daisyTheme || DEFAULT_DAISY_THEME),
     theme: settings.theme || fallbackTheme || "dark",
     accentColor: settings.accentColor || "teal",
     visualDensity: settings.ui?.visualDensity || "comfortable",
@@ -143,6 +152,7 @@ function AppearanceStudioPreview({ draft, numberSystem = "latn" }) {
       ? "border-white/15 bg-transparent"
       : "border-white/10 bg-white/[0.04]";
   return jsxs("div", {
+    "data-theme": draft.daisyTheme,
     className: "rounded-2xl border border-white/10 bg-gray-950/35 p-3",
     dir: "rtl",
     children: [
@@ -182,7 +192,7 @@ function AppearanceStudioPreview({ draft, numberSystem = "latn" }) {
                 ]
               }),
               jsx("div", { className: "mt-3 h-2 overflow-hidden rounded-full bg-white/10", children: jsx("div", { className: "h-full w-4/5 rounded-full bg-[var(--va-action)]" }) }),
-              jsx("p", { className: "mt-3 text-xs leading-5 text-gray-500", children: `ثيم ${draft.themeVersion}، لون ${draft.accentColor}، خط ${draft.fontScale}.` }),
+              jsx("p", { className: "mt-3 text-xs leading-5 text-gray-500", children: `ثيم ${draft.themeVersion}، DaisyUI ${draft.daisyTheme}، لون ${draft.accentColor}، خط ${draft.fontScale}.` }),
               jsxs("div", {
                 className: "mt-3 flex gap-2",
                 children: [
@@ -237,6 +247,7 @@ export function SettingsPage() {
     settings.theme,
     settings.ui?.cardStyle,
     settings.ui?.fontScale,
+    settings.ui?.daisyTheme,
     settings.ui?.motionLevel,
     settings.ui?.sidebarLayout?.mode,
     settings.ui?.themeVersion,
@@ -290,18 +301,26 @@ export function SettingsPage() {
     }
   });
   const patchAppearanceDraft = (patch) => setAppearanceDraft((current) => ({ ...current, ...patch }));
+  const selectDaisyTheme = (value) => {
+    const daisyTheme = normalizeDaisyTheme(value);
+    applyDaisyTheme(daisyTheme);
+    patchAppearanceDraft({ daisyTheme });
+  };
   const applyAppearanceDraft = () => {
     setTheme?.(appearanceDraft.theme);
     if (typeof document !== "undefined") {
       document.documentElement.setAttribute("data-theme-version", appearanceDraft.themeVersion);
+      applyDaisyTheme(appearanceDraft.daisyTheme);
     }
     storeThemeVersion(appearanceDraft.themeVersion);
+    storeDaisyTheme(appearanceDraft.daisyTheme);
     return saveSettings({
       theme: appearanceDraft.theme,
       accentColor: appearanceDraft.accentColor,
       ui: {
         ...(settings.ui || {}),
         themeVersion: appearanceDraft.themeVersion,
+        daisyTheme: appearanceDraft.daisyTheme,
         visualDensity: appearanceDraft.visualDensity,
         fontScale: appearanceDraft.fontScale,
         motionLevel: appearanceDraft.motionLevel,
@@ -346,6 +365,7 @@ export function SettingsPage() {
         itemsPerPage: settings.itemsPerPage,
         ui: {
           themeVersion: settings.ui?.themeVersion,
+          daisyTheme: settings.ui?.daisyTheme,
           visualDensity: settings.ui?.visualDensity,
           sidebarLayout: settings.ui?.sidebarLayout,
           fontScale: settings.ui?.fontScale,
@@ -375,7 +395,11 @@ export function SettingsPage() {
         numberSystem: next.numberSystem || settings.numberSystem,
         defaultView: next.defaultView || settings.defaultView,
         itemsPerPage: Number(next.itemsPerPage) || settings.itemsPerPage,
-        ui: { ...(settings.ui || {}), ...(next.ui || {}) }
+        ui: {
+          ...(settings.ui || {}),
+          ...(next.ui || {}),
+          daisyTheme: normalizeDaisyTheme(next.ui?.daisyTheme || settings.ui?.daisyTheme)
+        }
       }, "تم استيراد ملف المظهر");
     } catch (error) {
       reportError(showNotification, error, { context: "استيراد ملف المظهر" });
@@ -526,6 +550,14 @@ export function SettingsPage() {
                   value: appearanceDraft.themeVersion,
                   commitOnSelect: false,
                   onChange: (version) => patchAppearanceDraft({ themeVersion: version })
+                }),
+                jsx(ThemeGallery, {
+                  value: appearanceDraft.daisyTheme,
+                  onChange: selectDaisyTheme
+                }),
+                jsx(LiveThemeEditor, {
+                  draft: appearanceDraft,
+                  onPatch: (patch) => patch.daisyTheme ? selectDaisyTheme(patch.daisyTheme) : patchAppearanceDraft(patch)
                 }),
                 jsx(SegmentedChoices, { label: "المظهر", value: appearanceDraft.theme, options: THEME_OPTIONS, onChange: (value) => patchAppearanceDraft({ theme: value }) }),
                 jsx(ColorChoices, { value: appearanceDraft.accentColor, onChange: (value) => patchAppearanceDraft({ accentColor: value }) }),

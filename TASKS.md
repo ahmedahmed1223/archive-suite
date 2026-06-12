@@ -1812,9 +1812,10 @@
 ### 17.1 P1 — الانتقال إلى نظام مكوّنات DaisyUI كأساس تصميمي (DaisyUI Component System Migration)
 
 - [ ] `[P1]` ⏱️XL **تبنّي DaisyUI كنظام تصميم موحّد فوق Tailwind v4 وترحيل المكوّنات تدريجياً** — المكوّنات الحالية مكتوبة بـ CSS مخصص غير موحّد، ما ينتج تبايناً بصرياً ويصعّب الصيانة والتخصيص ودعم السمات.
-  - **التثبيت:** `npx skills add saadeghi/daisyui --agent claude-code --yes` ثم إضافة `daisyui` كـ plugin في `archive app/src/index.css` (Tailwind v4 `@plugin "daisyui";`).
-  - **تعديل ملفات:** `archive app/src/index.css` (أو ملف Tailwind الجذري)، `archive app/src/components/ui/*` (الأزرار، البطاقات، الحقول، النوافذ)، `archive app/tailwind.config.*` إن وُجد.
+  - **التثبيت:** `npx skills add saadeghi/daisyui --agent claude-code --yes` ثم إضافة `daisyui` كـ plugin في `archive app/src/styles/tailwind.css` (Tailwind v4 `@plugin "daisyui";`).
+  - **تعديل ملفات:** `archive app/src/styles/tailwind.css` (ملف Tailwind الجذري)، `archive app/src/components/ui/*` (الأزرار، البطاقات، الحقول، النوافذ)، `archive app/tailwind.config.*` إن وُجد.
   - **التنفيذ التدريجي:** المرحلة 1 المكوّنات الأساسية (`btn`, `input`, `card`)؛ المرحلة 2 المكوّنات المركّبة (`navbar`, `menu`, `drawer`)؛ المرحلة 3 الصفحات الكاملة. دعم RTL أصيل، توحيد الأحجام والمسافات.
+  - 🔄 **تقدم 2026-06-12:** `daisyui` مثبت ومفعّل في `archive app/src/styles/tailwind.css`؛ أُضيف تبنٍّ تدريجي لمكوّنات `btn`/`card`/`badge`/`alert`/`skeleton`/`progress`/`dock` داخل primitives المشتركة (`V1Primitives.jsx`, `EmptyState.jsx`, `ProgressBar.jsx`, `MobileActionBar.jsx`) مع إبقاء طبقة `va-*` والثيمات الحالية. تقدمت §17.10 أيضاً بمعرض 34 سمة ومحرر حي مرتبطين بـ `SettingsPage`. لا تزال المهمة مفتوحة لأن ترحيل الصفحات الكاملة و`navbar/menu/drawer` كعمل شامل لم يكتمل بعد.
   - يرتبط بـ: §4 (UI/UX)، §17.10 (السمات)، §19.4 (تثبيت daisyUI).
   - الجهد: 6-8 أسابيع (تدريجي).
   - المصدر: daisyui-ux-proposals (المقترح 1 — P1).
@@ -1901,6 +1902,7 @@
   - **الملفات الجديدة:** `archive app/src/features/theme/daisyThemes.js`، `archive app/src/components/settings/ThemeGallery.jsx`، `archive app/src/components/settings/LiveThemeEditor.jsx`.
   - **تعديل ملفات:** `archive app/src/theme/useTheme.js`، `SettingsPage.jsx` (تبويب السمات).
   - **التنفيذ:** معاينات مصغّرة لكل سمة، تبديل فوري عبر `data-theme`، محرّر ألوان حيّ، حفظ سمة مخصّصة، جدولة فاتح/داكن حسب `prefers-color-scheme`، تصدير/استيراد JSON.
+  - 🔄 **تقدم 2026-06-12:** أُضيفت الملفات المطلوبة فعلياً: `features/theme/daisyThemes.js` (34 سمة جاهزة + normalize/store/apply)، `components/settings/ThemeGallery.jsx` (معرض radio + `theme-controller` + معاينة `data-theme` لكل بطاقة)، و`components/settings/LiveThemeEditor.jsx` (select/range عبر DaisyUI). تم توسيع `@plugin "daisyui"` ليضم السمات الجاهزة، وربط `settings.ui.daisyTheme` بـ `SettingsPage`, `AppRouter`, boot helper `applyInitialDaisyTheme.js`, وتصدير/استيراد ملف المظهر. ما زال مفتوحاً: حفظ سمة مخصّصة كاملة وجدولة فاتح/داكن.
   - يرتبط بـ: §17.1، §15.3 (مركز الإعدادات).
   - الجهد: 2-3 أسابيع (بعد §17.1).
   - المصدر: daisyui-ux-proposals (المقترح 10 — P1).
@@ -2092,9 +2094,10 @@
 
 ### 19.4 P1 — تثبيت daisyUI وتحسين المظهر العام (DaisyUI Install + Polish)
 
-- [ ] `[P1]` ⏱️M **تثبيت إضافة daisyUI وتحسين المظهر العام حسب مهارة daisyui/frontend-design** — `npx skills add saadeghi/daisyui --agent claude-code --yes` + إضافة `daisyui` كـ Tailwind v4 plugin + تطبيق سمات وتحسينات بصرية أولية.
-  - **تعديل ملفات:** `archive app/src/index.css` (`@plugin "daisyui";`)، مكوّنات `components/ui/*` الأساسية أولاً.
-  - **التنفيذ:** نقطة انطلاق §17.1 (الترحيل الكامل) + §17.10 (السمات)؛ تطبيق أولي على الأزرار/البطاقات/الحقول والتحقّق البصري.
+- [x] `[P1]` ⏱️M **تثبيت إضافة daisyUI وتحسين المظهر العام حسب مهارة daisyui/frontend-design** — `daisyui` مثبت ومفعّل كـ Tailwind v4 plugin + تطبيق سمات وتحسينات بصرية أولية.
+  - **تعديل ملفات:** `archive app/src/styles/tailwind.css` (`@plugin "daisyui";`)، مكوّنات `components/ui/*` الأساسية أولاً.
+  - **✅ مُنجَز 2026-06-12:** الاعتماد الفعلي موجود في `archive app/src/styles/tailwind.css` (`@plugin "daisyui"` مع `light/dark` و`logs:false`)؛ طبقة primitives المشتركة تستخدم الآن `btn`/`card`/`badge`/`alert`/`skeleton`/`progress`/`dock` في `components/ui/*` و`components/common/*` بدون إزالة نظام الثيم `va-*`.
+  - **✅ تحقّق:** `pnpm --filter @archive/app run verify`، `build:spa`، `build:cloud`، `build:aistudio`، و`playwright test tests/navigation.spec.ts --project=mobile-chrome` كلها نجحت.
   - يرتبط بـ: §17.1، §17.10، مهارة `daisyui`/`frontend-design`.
   - الجهد: 1-3 أيام (انطلاق) — الترحيل الكامل في §17.1.
   - المصدر: توجيه المستخدم (10 يونيو 2026).

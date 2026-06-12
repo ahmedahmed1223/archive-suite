@@ -16,6 +16,7 @@ export function defaultSettings() {
       onboardingThemeChoice: "dark",
       serverUpdatePolicy: "stable",
       visualDensity: "comfortable",
+      daisyTheme: "business",
       startupMode: "balanced",
       lastSettingsTab: "general",
       lastDataCenterTab: "export",
