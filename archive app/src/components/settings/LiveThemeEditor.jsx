@@ -2,6 +2,7 @@ import { SlidersHorizontal } from "lucide-react";
 import * as React from "react";
 
 import { DAISY_THEME_OPTIONS } from "../../features/theme/daisyThemes.js";
+import { THEME_MODE, normalizeSchedule } from "../../features/theme/themeSchedule.js";
 
 const MOTION_LEVEL_VALUE = { off: 0, reduced: 1, full: 2 };
 const MOTION_LEVEL_BY_VALUE = ["off", "reduced", "full"];
@@ -10,6 +11,15 @@ const FONT_SCALE_BY_VALUE = ["small", "normal", "large", "xlarge"];
 
 export function LiveThemeEditor({ draft, onPatch }) {
   const selectedTheme = DAISY_THEME_OPTIONS.find((theme) => theme.id === draft.daisyTheme) || DAISY_THEME_OPTIONS[0];
+  const themeSchedule = normalizeSchedule(draft.themeSchedule);
+  const lightThemes = DAISY_THEME_OPTIONS.filter((theme) => theme.tone?.includes("فاتح") || theme.tone?.includes("نهاري") || theme.id === "light");
+  const darkThemes = DAISY_THEME_OPTIONS.filter((theme) => theme.tone?.includes("داكن") || theme.id === "dark" || theme.id === "business");
+  const patchSchedule = (patch) => onPatch?.({
+    themeSchedule: normalizeSchedule({
+      ...themeSchedule,
+      ...patch
+    })
+  });
 
   return (
     <section className="card card-border rounded-2xl border border-white/10 bg-gray-950/30 p-3 text-right" dir="rtl">
@@ -42,6 +52,27 @@ export function LiveThemeEditor({ draft, onPatch }) {
           </select>
         </label>
 
+        <div className="rounded-xl border border-white/10 bg-base-200/30 p-3">
+          <label className="flex items-center justify-between gap-3">
+            <span className="min-w-0">
+              <span className="block text-xs font-semibold text-gray-300">جدولة فاتح/داكن</span>
+              <span className="mt-1 block text-[11px] leading-5 text-gray-500">
+                يتبع تفضيل النظام للوضع الفاتح أو الداكن عند التفعيل.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={themeSchedule.mode === THEME_MODE.AUTO}
+              onChange={(event) => patchSchedule({
+                mode: event.target.checked ? THEME_MODE.AUTO : THEME_MODE.MANUAL,
+                theme: draft.daisyTheme
+              })}
+              className="toggle toggle-accent toggle-sm"
+              aria-label="تفعيل جدولة السمات التلقائية"
+            />
+          </label>
+        </div>
+
         <label className="space-y-2">
           <span className="block text-xs font-semibold text-gray-300">ثيم التطبيق</span>
           <select
@@ -54,6 +85,36 @@ export function LiveThemeEditor({ draft, onPatch }) {
             <option value="system">حسب النظام</option>
           </select>
         </label>
+
+        {themeSchedule.mode === THEME_MODE.AUTO && (
+          <>
+            <label className="space-y-2">
+              <span className="block text-xs font-semibold text-gray-300">سمة الوضع الفاتح</span>
+              <select
+                value={themeSchedule.lightTheme}
+                onChange={(event) => patchSchedule({ lightTheme: event.target.value })}
+                className="select select-sm select-accent w-full rounded-xl"
+              >
+                {lightThemes.map((theme) => (
+                  <option key={theme.id} value={theme.id}>{theme.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-2">
+              <span className="block text-xs font-semibold text-gray-300">سمة الوضع الداكن</span>
+              <select
+                value={themeSchedule.darkTheme}
+                onChange={(event) => patchSchedule({ darkTheme: event.target.value })}
+                className="select select-sm select-accent w-full rounded-xl"
+              >
+                {darkThemes.map((theme) => (
+                  <option key={theme.id} value={theme.id}>{theme.label}</option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
 
         <label className="space-y-2">
           <span className="block text-xs font-semibold text-gray-300">الحركة</span>
