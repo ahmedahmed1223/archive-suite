@@ -84,6 +84,7 @@ export function getDefaultSettings() {
       onboardingReplayRequestedAt: null,
       onboardingReplayCompletedAt: null,
       visualDensity: "comfortable",
+      daisyTheme: "business",
       lastHelpSection: "getting-started",
       themeVersion: "v4",
       v1OnboardingCompleted: false,

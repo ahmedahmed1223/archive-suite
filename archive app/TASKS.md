@@ -175,6 +175,7 @@
 - [ ] **UIUX-F13 — فحص بصري بعدي للصفحات ذات الأشرطة الثابتة**
   - التقط 390px و1440px لصفحات Archive, Detail, Search, Data Center.
   - راجع حالات: شريط أفعال، تحديد جماعي، عملية تقدم، وفتح معاينة.
+  - 🔄 **تقدم 2026-06-12:** مر اختبار `playwright test tests/navigation.spec.ts --project=mobile-chrome` على preview محلي بعد تعديلات الأشرطة وdaisyUI primitives، بما يغطي shell والتنقل السفلي وفتح drawer على Pixel. ما زال مطلوباً التقاط مصفوفة screenshots الكاملة 390px/1440px للصفحات الأربع قبل إغلاق البند.
   - التحقق: لا overflow أفقي، ولا نص مقصوص داخل الأزرار، ولا z-index يغطي تفاعلا أساسيا.
 
 - [x] **UIUX-F14 — إصلاح drawer القائمة على الموبايل**

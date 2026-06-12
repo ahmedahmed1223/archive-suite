@@ -21,6 +21,7 @@ import { getPageContextMeta } from "./pageMeta.js";
 import { DashboardSkeleton } from "./shell/ShellParts.jsx";
 import { ErrorBoundary } from "../components/common/ErrorBoundary.jsx";
 import { OfflineBanner } from "../components/common/OfflineBanner.jsx";
+import { applyDaisyTheme, storeDaisyTheme } from "../features/theme/daisyThemes.js";
 import {
   PageContextBar as AppPageContextBar,
   Sidebar as AppSidebar,
@@ -36,6 +37,12 @@ export function AppRouter() {
     PAGE_COMPONENTS[currentPage] || PAGE_COMPONENTS.dashboard;
   const currentPageTitle =
     getPageContextMeta(currentPage)?.title || "أرشيف الفيديو";
+  const daisyTheme = settings.ui?.daisyTheme || "business";
+
+  React.useEffect(() => {
+    const applied = applyDaisyTheme(daisyTheme);
+    storeDaisyTheme(applied);
+  }, [daisyTheme]);
 
   return jsxs("div", {
     dir: "rtl",
@@ -48,6 +55,7 @@ export function AppRouter() {
     "data-font-scale": settings.ui?.fontScale || "normal",
     "data-motion": settings.ui?.motionLevel || "full",
     "data-card-style": settings.ui?.cardStyle || "filled",
+    "data-daisy-theme": daisyTheme,
     children: [
       jsx(OfflineBanner, {}),
       jsx("a", {

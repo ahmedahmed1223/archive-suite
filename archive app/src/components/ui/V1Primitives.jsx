@@ -106,7 +106,7 @@ function renderWorkflowIcon(icon) {
 
 export function StatusBadge({ tone = "slate", children, className = "" }) {
   return (
-    <span className={cx("va-status-badge inline-flex min-h-7 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium", toneClasses[tone] || toneClasses.slate, className)}>
+    <span className={cx("badge badge-sm badge-soft va-status-badge inline-flex min-h-7 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium", toneClasses[tone] || toneClasses.slate, className)}>
       {children}
     </span>
   );
@@ -252,7 +252,7 @@ export function WorkflowStepper({
 
 export function MetricCard({ label, value, hint, icon, tone = "accent", className = "" }) {
   return (
-    <section className={cx("va-metric-card rounded-xl border p-4 text-right", className)} dir="rtl">
+    <section className={cx("card card-border va-metric-card rounded-xl border p-4 text-right", className)} dir="rtl">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-gray-400">{label}</p>
@@ -274,7 +274,7 @@ export function ActionCard({ label, detail, icon, onClick, tone = "accent", clas
     <button
       type="button"
       onClick={onClick}
-      className={cx("va-action-card group flex min-h-[92px] w-full items-center gap-3 rounded-xl border border-white/10 bg-gray-800/30 p-4 text-right transition-colors hover:border-emerald-500/25 hover:bg-white/5", className)}
+      className={cx("card card-border va-action-card group flex min-h-[92px] w-full items-center gap-3 rounded-xl border border-white/10 bg-gray-800/30 p-4 text-right transition-colors hover:border-emerald-500/25 hover:bg-white/5", className)}
     >
       {icon && (
         <span className={cx("va-icon-tile flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border", toneClasses[tone] || toneClasses.accent)}>
@@ -291,7 +291,7 @@ export function ActionCard({ label, detail, icon, onClick, tone = "accent", clas
 
 export function FormSection({ title, description, icon, actions, children, className = "" }) {
   return (
-    <section className={cx("va-card rounded-2xl border border-white/10 bg-gray-900/50 p-5 text-right backdrop-blur-sm", className)} dir="rtl">
+    <section className={cx("card card-border va-card rounded-2xl border border-white/10 bg-gray-900/50 p-5 text-right backdrop-blur-sm", className)} dir="rtl">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="flex items-center gap-2 text-base font-bold text-white">
@@ -327,7 +327,7 @@ export function CommandPanel({ title, description, icon, actions, children, high
   return (
     <section
       className={cx(
-        "va-command-panel rounded-2xl border p-4 text-right",
+        "card card-border va-command-panel rounded-2xl border p-4 text-right",
         highlight ? "va-command-panel-highlight" : "",
         className
       )}
@@ -390,7 +390,7 @@ export function QuickActionGrid({ actions = [], className = "" }) {
           type="button"
           onClick={action.onClick}
           disabled={action.disabled}
-          className="va-action-card group flex min-h-[4.8rem] w-full items-center gap-3 rounded-xl border border-white/10 bg-gray-800/30 p-3 text-right transition-colors hover:border-emerald-500/25 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+          className="card card-border va-action-card group flex min-h-[4.8rem] w-full items-center gap-3 rounded-xl border border-white/10 bg-gray-800/30 p-3 text-right transition-colors hover:border-emerald-500/25 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {action.icon && (
             <span className={cx("va-icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border", toneClasses[action.tone] || toneClasses.accent)}>
@@ -413,7 +413,7 @@ export function ResultPreview({ title, meta, icon, actions, children, onClick, c
     <Wrapper
       type={onClick ? "button" : undefined}
       onClick={onClick}
-      className={cx("va-result-preview block w-full rounded-xl border p-3 text-right transition-colors hover:border-emerald-500/25", className)}
+      className={cx("card card-border va-result-preview block w-full rounded-xl border p-3 text-right transition-colors hover:border-emerald-500/25", className)}
       dir="rtl"
     >
       <span className="flex items-start justify-between gap-3">
@@ -433,7 +433,7 @@ export function ResultPreview({ title, meta, icon, actions, children, onClick, c
 
 export function RiskActionPanel({ title, description, icon, actions, children, className = "" }) {
   return (
-    <section className={cx("va-risk-action-panel rounded-2xl border p-4 text-right", className)} dir="rtl">
+    <section className={cx("alert alert-warning alert-soft va-risk-action-panel rounded-2xl border p-4 text-right", className)} dir="rtl">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           {icon && <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-200">{icon}</span>}
@@ -450,7 +450,7 @@ export function RiskActionPanel({ title, description, icon, actions, children, c
 }
 
 export function SkeletonBlock({ className = "" }) {
-  return <div className={cx("va-skeleton rounded-xl", className)} aria-hidden="true" />;
+  return <div className={cx("skeleton va-skeleton rounded-xl", className)} aria-hidden="true" />;
 }
 
 export function UXStateBlock({
@@ -467,7 +467,7 @@ export function UXStateBlock({
 }) {
   if (state === "loading") {
     return (
-      <section className={cx("rounded-2xl border border-white/10 bg-gray-900/30 p-4", className)} role="status" aria-live="polite" dir="rtl">
+      <section className={cx("card card-border rounded-2xl border border-white/10 bg-gray-900/30 p-4", className)} role="status" aria-live="polite" dir="rtl">
         <div className="space-y-3">
           <SkeletonBlock className="h-5 w-40" />
           <SkeletonBlock className="h-20 w-full" />
@@ -479,11 +479,11 @@ export function UXStateBlock({
 
   if (state === "error") {
     return (
-      <section className={cx("rounded-2xl border border-red-500/25 bg-red-500/10 p-5 text-right", className)} role="alert" aria-live="assertive" dir="rtl">
+      <section className={cx("alert alert-error alert-soft rounded-2xl border border-red-500/25 bg-red-500/10 p-5 text-right", className)} role="alert" aria-live="assertive" dir="rtl">
         <h3 className="text-base font-bold text-red-100">{title || "تعذر تحميل البيانات"}</h3>
         {description && <p className="mt-2 text-sm leading-7 text-red-100/80">{description}</p>}
         {onRetry && (
-          <button type="button" onClick={onRetry} className="mt-4 rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-50 hover:bg-red-500/20">
+          <button type="button" onClick={onRetry} className="btn btn-sm btn-error btn-soft mt-4 rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-50 hover:bg-red-500/20">
             {retryLabel}
           </button>
         )}
@@ -493,7 +493,7 @@ export function UXStateBlock({
 
   if (state === "success") {
     return (
-      <section className={cx("rounded-2xl border va-accent-border va-accent-bg-soft p-4 text-right", className)} role="status" aria-live="polite" dir="rtl">
+      <section className={cx("alert alert-success alert-soft rounded-2xl border va-accent-border va-accent-bg-soft p-4 text-right", className)} role="status" aria-live="polite" dir="rtl">
         <h3 className="text-sm font-bold va-accent-text-on-soft">{title || "تمت العملية"}</h3>
         {description && <p className="mt-1 text-xs leading-6 va-accent-text-on-soft">{description}</p>}
         {children}
@@ -501,7 +501,7 @@ export function UXStateBlock({
     );
   }
 
-  return <UXEmptyState icon={icon} title={title} description={description} actions={actionLabel && onAction ? <button type="button" onClick={onAction} className="va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white">{actionLabel}</button> : null} className={className} />;
+  return <UXEmptyState icon={icon} title={title} description={description} actions={actionLabel && onAction ? <button type="button" onClick={onAction} className="btn btn-primary va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white">{actionLabel}</button> : null} className={className} />;
 }
 
 export function FloatingActionBar({ children, className = "", label = "إجراءات سريعة" }) {
@@ -514,7 +514,7 @@ export function FloatingActionBar({ children, className = "", label = "إجرا�
 
 export function InsightPanel({ icon, title, description, actions, children, tone = "accent", className = "" }) {
   return (
-    <section className={cx("va-insight-panel rounded-2xl border p-4 text-right", `va-insight-panel-${tone}`, className)} dir="rtl">
+    <section className={cx("card card-border va-insight-panel rounded-2xl border p-4 text-right", `va-insight-panel-${tone}`, className)} dir="rtl">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           {icon && <span className={cx("va-icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border", toneClasses[tone] || toneClasses.accent)}>{icon}</span>}
@@ -532,7 +532,7 @@ export function InsightPanel({ icon, title, description, actions, children, tone
 
 export function UXEmptyState({ icon, title, description, actions, className = "" }) {
   return (
-    <section className={cx("va-ux-empty-state rounded-2xl border border-dashed p-8 text-center", className)} dir="rtl">
+    <section className={cx("card card-border va-ux-empty-state rounded-2xl border border-dashed p-8 text-center", className)} dir="rtl">
       {icon && <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-gray-400">{icon}</div>}
       {title && <h3 className="mt-4 text-lg font-bold text-white">{title}</h3>}
       {description && <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-gray-500">{description}</p>}
@@ -572,7 +572,7 @@ export function EntityCard({ title, description, icon, meta, actions, selected =
       type={onClick ? "button" : undefined}
       onClick={onClick}
       className={cx(
-        "va-entity-card va-card-subtle block w-full rounded-2xl border p-4 text-right transition-colors",
+        "card card-border va-entity-card va-card-subtle block w-full rounded-2xl border p-4 text-right transition-colors",
         selected ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-950/30 hover:border-emerald-500/25 hover:bg-white/[0.04]",
         className
       )}

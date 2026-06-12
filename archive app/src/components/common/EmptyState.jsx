@@ -77,7 +77,7 @@ export function EmptyState({
       hintItems.length > 0 && jsx("div", {
         className: "mb-6 flex flex-wrap justify-center gap-2",
         children: hintItems.map((hint) => jsx("span", {
-          className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1 text-xs va-accent-text",
+          className: "badge badge-sm badge-accent badge-soft rounded-full border va-accent-border va-accent-bg-soft px-3 py-1 text-xs va-accent-text",
           children: hint
         }, hint))
       }),
@@ -87,7 +87,7 @@ export function EmptyState({
           actionLabel && onAction && jsxs("button", {
             type: "button",
             onClick: onAction,
-            className: "va-primary-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white",
+            className: "btn btn-primary va-primary-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white",
             children: [
               renderedActionIcon,
               actionLabel
@@ -96,7 +96,7 @@ export function EmptyState({
           secondaryActionLabel && onSecondaryAction && jsx("button", {
             type: "button",
             onClick: onSecondaryAction,
-            className: "inline-flex min-h-10 items-center justify-center rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-white/5 hover:text-white",
+            className: "btn btn-ghost inline-flex min-h-10 items-center justify-center rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-white/5 hover:text-white",
             children: secondaryActionLabel
           })
         ]

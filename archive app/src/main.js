@@ -20,6 +20,7 @@ import "./i18n/index.js";
 import { registerByBackendChoice } from "./bootstrap/registerByBackendChoice.js";
 import { startVideoArchive } from "./app/startVideoArchive.js";
 import { useAppStore } from "./stores/index.js";
+import { applyInitialDaisyTheme } from "./theme/applyInitialDaisyTheme.js";
 import { applyInitialTheme } from "./theme/applyInitialTheme.js";
 import { applyInitialThemeVersion } from "./theme/applyInitialThemeVersion.js";
 
@@ -41,6 +42,7 @@ if (wiring.backend !== "local") {
   console.info(`[archive] Cloud storage backend active: ${wiring.backend} → ${wiring.url || "same-origin"}`);
 }
 
+applyInitialDaisyTheme();
 applyInitialThemeVersion();
 applyInitialTheme();
 startVideoArchive();
