@@ -3,6 +3,31 @@ import { Download, ChevronDown, FileText, Loader2, Table, Archive } from "lucide
 import { useAppStore } from "../../stores/index.js";
 import { useLoading } from "../../hooks/useLoading.js";
 import { getCloudToken } from "../../bootstrap/cloudSession.js";
+import { startOperation } from "../../features/notifications/operationProgress.js";
+
+const FORMAT_LABELS = { csv: "CSV", xlsx: "Excel", zip: "JSON" };
+
+/**
+ * Read a fetch Response body to a Blob while reporting download progress.
+ * Falls back to res.blob() when streaming or Content-Length is unavailable.
+ */
+async function readBlobWithProgress(res, onProgress) {
+  const total = Number(res.headers.get("Content-Length")) || 0;
+  const reader = res.body?.getReader?.();
+  if (!reader || total <= 0) {
+    return res.blob();
+  }
+  const chunks = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    onProgress?.(Math.round((received / total) * 100));
+  }
+  return new Blob(chunks, { type: res.headers.get("Content-Type") || "application/octet-stream" });
+}
 
 const FORMATS = [
   { id: "csv", label: "CSV", icon: FileText, desc: "مناسب للجداول" },
@@ -13,10 +38,19 @@ const FORMATS = [
 export function ExportButton({ selectedIds = [] }) {
   const [open, setOpen] = useState(false);
   const { anyLoading, isLoading, withLoading } = useLoading();
-  const showToast = useAppStore((s) => s.showToast);
+  const showNotification = useAppStore((s) => s.showNotification);
+  const updateNotificationProgress = useAppStore((s) => s.updateNotificationProgress);
+  const finalizeNotification = useAppStore((s) => s.finalizeNotification);
 
   async function handleExport(format) {
     setOpen(false);
+    const store = { showNotification, updateNotificationProgress, finalizeNotification };
+    const count = selectedIds.length > 0 ? `${selectedIds.length} سجلاً` : "كل السجلات";
+    const operation = startOperation(store, {
+      title: "تصدير السجلات",
+      message: `جارٍ تصدير ${count} بصيغة ${FORMAT_LABELS[format] || format}…`,
+      category: "export",
+    });
     await withLoading("export", async () => {
       const body = { format, store: "videoItems" };
       if (selectedIds.length > 0) body.ids = selectedIds;
@@ -24,18 +58,24 @@ export function ExportButton({ selectedIds = [] }) {
       const token = getCloudToken();
       const headers = { "Content-Type": "application/json" };
       if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch("/api/export", {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-      });
+      let res;
+      try {
+        res = await fetch("/api/export", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+        });
+      } catch (error) {
+        operation.fail({ message: "تعذّر الاتصال بالخادم أثناء التصدير." });
+        throw error;
+      }
 
       if (!res.ok) {
-        showToast?.("فشل التصدير", "error");
+        operation.fail({ message: "فشل التصدير على الخادم." });
         throw new Error("فشل التصدير");
       }
 
-      const blob = await res.blob();
+      const blob = await readBlobWithProgress(res, (percent) => operation.setProgress(percent));
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       const cd = res.headers.get("Content-Disposition") ?? "";
@@ -44,7 +84,7 @@ export function ExportButton({ selectedIds = [] }) {
       a.download = match?.[1] ?? `archive-export.${format}`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast?.("تم التصدير بنجاح", "success");
+      operation.succeed({ message: `تم تصدير ${count} بصيغة ${FORMAT_LABELS[format] || format} بنجاح.` });
     });
   }
 

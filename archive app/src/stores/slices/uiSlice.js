@@ -23,6 +23,7 @@ export const uiActionKeys = [
   "showNotification",
   "showToast",
   "updateNotificationProgress",
+  "finalizeNotification",
   "dismissNotification",
   "clearNotifications",
   "clearNotificationHistory",
@@ -120,11 +121,37 @@ export function createUiActions({ set, get }) {
       }
       return notification.id;
     },
-    updateNotificationProgress: (id, progress) => set((state) => ({
-      notifications: (state.notifications || []).map((n) =>
-        n.id === id ? { ...n, progress: Math.min(100, Math.max(0, progress)) } : n
-      )
-    })),
+    updateNotificationProgress: (id, progress) => {
+      const clamped = Math.min(100, Math.max(0, Number(progress) || 0));
+      set((state) => ({
+        notifications: (state.notifications || []).map((n) =>
+          n.id === id ? { ...n, progress: clamped } : n
+        ),
+        // Keep history (the source of truth for the Notification Center) in sync
+        // so progress bars in the center advance, not just the live toast.
+        notificationHistory: (state.notificationHistory || []).map((n) =>
+          n.id === id ? { ...n, progress: clamped } : n
+        )
+      }));
+    },
+    // Resolve a long-running notification in place: drop its live toast and
+    // patch the history entry to its terminal state (success/error). Keeps the
+    // Notification Center to a single entry per operation instead of a stuck
+    // progress row plus a separate completion row.
+    finalizeNotification: (id, patch = {}) => set((state) => {
+      const allowed = ["type", "title", "message", "progress", "targetLabel"];
+      const clean = {};
+      for (const key of allowed) {
+        if (patch[key] !== undefined) clean[key] = patch[key];
+      }
+      return {
+        notifications: (state.notifications || []).filter((item) => item.id !== id),
+        toast: state.notifications?.length <= 1 ? null : state.toast,
+        notificationHistory: (state.notificationHistory || []).map((item) =>
+          item.id === id ? { ...item, ...clean, updatedAt: nowIso() } : item
+        )
+      };
+    }),
     showToast: (message, type = "info") => get().showNotification(message, { type }),
     dismissNotification: (id) => set((state) => ({
       notifications: state.notifications.filter((item) => item.id !== id),

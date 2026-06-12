@@ -940,7 +940,18 @@
 
 ### 14.2 P0 — نظام الإشعارات المركزية الذكية (Smart Notification Center)
 
-- [ ] `[P0]` ⏱️XL **بناء مركز إشعارات موحد مع Push API للمتصفح** — الإشعارات الحالية مشتتة؛ العمليات الطويلة (FFmpeg/OCR/backup) تنتهي بصمت بدون إخبار المستخدم.
+- [x] `[P0]` ⏱️XL **بناء مركز إشعارات موحد مع Push API للمتصفح** — **(مكتملة ✅ — 12 يونيو 2026)** الإشعارات الحالية مشتتة؛ العمليات الطويلة (FFmpeg/OCR/backup) تنتهي بصمت بدون إخبار المستخدم.
+  - **الحالة عند الفحص:** البنية الأساسية كانت موجودة مسبقاً (مركز `NotificationDrawer.jsx`، جرس الشريط الجانبي مع badge، `services/pushService.js` لاشتراك Web Push من الخادم، `viewModel.js` للتصفية/التجميع/العدّ، `uiSlice` يحوي `showNotification` بتجميع `groupKey` + حقل `progress` + `updateNotificationProgress`). الفجوات الحقيقية المتبقية عولجت:
+  - **المنجَز (2026-06-12):**
+    1. **`updateNotificationProgress` كان يُحدّث القائمة الحيّة فقط** — أصبح يزامن `notificationHistory` أيضاً (مصدر الحقيقة للمركز) فيتقدّم شريط التقدّم داخل المركز لا في التوست فقط.
+    2. **إجراء `finalizeNotification(id, patch)` جديد** في `uiSlice` — يحوّل إشعار العملية الجارية إلى حالة نهائية (نجاح/خطأ) في مكانه بدل صفّ تقدّم عالق + صفّ اكتمال منفصل.
+    3. **`features/notifications/pushManager.js` جديد** — Notification API محلّي قابل للحقن: `requestNotificationPermission`, `showBrowserNotification`, `shouldAlertBrowser` (سياسة: التنبيه عند إخفاء التبويب + إذن ممنوح، تجاهل info العادي)، `notifyForAppNotification` (deduped بـ tag). مكمّل لـ `pushService.js` (اشتراك الخادم) لا بديل عنه.
+    4. **`features/notifications/operationProgress.js` جديد** — `startOperation(store, …)` يقود دورة حياة إشعار عملية واحد (بدء→تقدّم→نجاح/فشل) + إطلاق إشعار متصفح عند الاكتمال؛ idempotent؛ قابل لإعادة الاستخدام لـ backup/OCR/transcode لاحقاً.
+    5. **شريط تقدّم داخل `NotificationDrawer`** — يُرسَم `role="progressbar"` مع نسبة مئوية عند وجود `item.progress` رقمياً.
+    6. **ربط التصدير الفعلي** — `ExportButton.jsx` يبثّ جسم استجابة `/api/export` عبر `getReader()` ويحدّث التقدّم الحقيقي (نسبة التحميل)، وينهي بإشعار نجاح/فشل + إشعار متصفح.
+    7. **جسر إشعارات الخلفية** — `useBackgroundNotificationBridge` (مركّب في `AppNotifications.jsx`) يطلق إشعار متصفح للإشعارات الجديدة عند إخفاء التبويب (دون تكرار للسجل عند الإقلاع، إشعار واحد لكل id).
+  - **الاختبارات:** `pushManager.test.js` (16 اختبار: الدعم/الإذن/العرض/السياسة) و`operationProgress.test.js` (دورة الحياة + idempotency). `pnpm --filter @archive/app run test` أخضر (171 اختبار، 24 ملف)، و`verify` أخضر.
+  - ملاحظة: ملفات الأسماء في المقترح (`NotificationCenter`/`NotificationCard`/`NotificationBell`/`notificationsSlice`) لها مكافئات قائمة (`NotificationDrawer` + جرس Sidebar + `uiSlice`)؛ لم تُكرَّر تفادياً للازدواج.
   - **الملفات الجديدة:**
     - `archive app/src/features/notifications/pushManager.js` — `requestNotificationPermission`, `showBrowserNotification`
     - `archive app/src/components/notifications/NotificationCenter.jsx` — لوحة الإشعارات الرئيسية مع فلترة
