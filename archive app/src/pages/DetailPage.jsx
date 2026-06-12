@@ -5,9 +5,11 @@ import {
   AlertTriangle,
   Activity,
   ArrowRight,
+  Captions,
   CheckCircle2,
   Clock3,
   Copy,
+  Download,
   FileText,
   Gauge,
   HardDrive,
@@ -50,6 +52,9 @@ import {
 } from "../features/archive/mediaPreview.js";
 import { getFieldsForSelection, groupCustomFields, getVisibleFields, getMissingRequiredFields } from "../features/types/viewModel.js";
 import { StarRating } from "../components/common/StarRating.jsx";
+import { SubtitleRenderer } from "../components/media/SubtitleRenderer.jsx";
+import { segmentsToCues } from "../features/media/subtitleParser.js";
+import { transcriptToSrt } from "../features/media/transcriptToSrt.js";
 import { computeCompleteness, COMPLETENESS_TIERS } from "../features/archive/completeness.js";
 import { getRelatedItems } from "../features/archive/relatedItems.js";
 import { getItemRelations } from "../features/relations/viewModel.js";
@@ -443,7 +448,18 @@ export function DetailPage() {
   const [activeDetailTab, setActiveDetailTab] = React.useState("data");
   const [relationDialogOpen, setRelationDialogOpen] = React.useState(false);
   const [playbackTime, setPlaybackTime] = React.useState(0);
+  const [subtitlesOn, setSubtitlesOn] = React.useState(true);
   const transcriptSegments = React.useMemo(() => item ? getTranscriptSegments(item) : [], [item]);
+  // Derive subtitle cues from timed transcript segments: each cue runs until the
+  // next timed segment starts (4s fallback for the last one).
+  const subtitleCues = React.useMemo(() => {
+    const timed = transcriptSegments.filter((segment) => Number.isFinite(segment.seconds));
+    return segmentsToCues(timed.map((segment, index) => ({
+      start: segment.seconds,
+      end: Number.isFinite(timed[index + 1]?.seconds) ? timed[index + 1].seconds : segment.seconds + 4,
+      text: segment.text
+    })));
+  }, [transcriptSegments]);
   const autosaveEngineRef = React.useRef(null);
   const draftRef = React.useRef(null);
   const [autosaveStatus, setAutosaveStatus] = React.useState("idle");
@@ -995,6 +1011,15 @@ export function DetailPage() {
                 onEditPath: startPathEdit,
                 onMetadataOnly: showMetadataOnly
               })
+            }),
+            subtitleCues.length > 0 && jsx(SubtitleRenderer, { cues: subtitleCues, currentTime: playbackTime, enabled: subtitlesOn }),
+            subtitleCues.length > 0 && jsxs("button", {
+              type: "button",
+              onClick: () => setSubtitlesOn((value) => !value),
+              "aria-pressed": subtitlesOn,
+              "aria-label": subtitlesOn ? "إخفاء الترجمة" : "إظهار الترجمة",
+              className: `absolute right-2 top-2 z-10 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold backdrop-blur transition-colors ${subtitlesOn ? "border-[var(--va-action)] bg-black/60 text-white" : "border-white/20 bg-black/40 text-gray-300 hover:text-white"}`,
+              children: [jsx(Captions, { className: "h-3.5 w-3.5" }), "ترجمة"]
             })
           ]
         }) : jsx(MediaPreviewFallback, {
@@ -1086,6 +1111,22 @@ export function DetailPage() {
         className: "grid gap-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
       }),
       jsxs("section", { className: `va-card space-y-4 rounded-2xl va-surface-muted border p-5 text-right ${activeDetailTab === "media" ? "" : "hidden"}`, dir: "rtl", children: [
+        subtitleCues.length > 0 && jsxs("button", {
+          type: "button",
+          onClick: () => {
+            const srt = transcriptToSrt({ segments: subtitleCues });
+            const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = `${(item.title || "subtitles").replace(/[\\/:*?"<>|]+/g, "_")}.srt`;
+            anchor.click();
+            URL.revokeObjectURL(url);
+            showToast?.("تم تنزيل ملف الترجمة SRT", "success");
+          },
+          className: "inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-200 transition-colors hover:bg-white/5 hover:text-white",
+          children: [jsx(Download, { className: "h-3.5 w-3.5" }), "تنزيل الترجمة (SRT)"]
+        }),
         jsx(TranscriptSyncWorkbench, { segments: transcriptSegments, currentTime: playbackTime, onSeek: seekToBookmark }),
         jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
           jsxs("div", { className: "min-w-0", children: [
