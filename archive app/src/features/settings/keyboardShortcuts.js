@@ -10,6 +10,7 @@ export const SHORTCUT_ACTIONS = [
   { id: "toggleNotifications", label: "فتح مركز الإشعارات", category: "التنقل", defaultKeys: "Ctrl+Shift+M", options: ["Ctrl+Shift+M", "Alt+M", "disabled"] },
   { id: "openBackup", label: "فتح النسخ الاحتياطي", category: "التنقل", defaultKeys: "Ctrl+B", options: ["Ctrl+B", "Alt+B", "disabled"] },
   { id: "openDashboard", label: "فتح مركز التحكم", category: "التنقل", defaultKeys: "Ctrl+D", options: ["Ctrl+D", "Alt+D", "disabled"] },
+  { id: "toggleFocusMode", label: "وضع التركيز", category: "العرض", defaultKeys: "F11", options: ["F11", "Alt+F", "disabled"] },
   { id: "undo", label: "تراجع عن آخر عملية", category: "التحرير", defaultKeys: "Ctrl+Z", options: ["Ctrl+Z", "Alt+Z", "disabled"] },
   { id: "redo", label: "إعادة العملية الأخيرة", category: "التحرير", defaultKeys: "Ctrl+Y", options: ["Ctrl+Y", "Ctrl+Shift+Z", "Alt+Y", "disabled"] },
   { id: "viewGrid", label: "عرض شبكي", category: "العرض", defaultKeys: "Ctrl+1", options: ["Ctrl+1", "Alt+1", "disabled"] },

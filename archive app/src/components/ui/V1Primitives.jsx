@@ -1,6 +1,7 @@
 ﻿import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import * as React from "react";
+import { AnimatedNumber } from "./AnimatedNumber.jsx";
 
 export function cx(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -360,7 +361,11 @@ export function ReportStrip({ items = [], className = "" }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-gray-500">{item.label}</p>
-                <p className="mt-1 text-2xl font-bold text-white">{item.value}</p>
+                <p className="mt-1 text-2xl font-bold text-white">
+                  {Number.isFinite(item.animateTo)
+                    ? <AnimatedNumber value={item.animateTo} format={item.format} />
+                    : item.value}
+                </p>
                 {item.hint && <p className="mt-1 text-xs leading-5 text-gray-500">{item.hint}</p>}
               </div>
               {item.icon && (

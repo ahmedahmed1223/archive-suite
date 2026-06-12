@@ -78,3 +78,25 @@
  * retain !important.
  */
 @layer app-overrides, v1-identity, v2-identity, v3-identity, v4-identity;
+
+/*
+ * Focus Mode (§17.7) — when FocusShell adds `va-focus-active` to <body>,
+ * strip the surrounding chrome so a single piece of content fills the screen.
+ * Declared unlayered (after the @layer statement) so it wins over the layered
+ * identity utilities; !important guards against per-element inline overrides.
+ */
+body.va-focus-active .va-sidebar,
+body.va-focus-active .va-bottom-tabs,
+body.va-focus-active .va-context-bar {
+  display: none !important;
+}
+
+body.va-focus-active #main-content {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Prevent the body scrolling behind the focused content. */
+body.va-focus-active {
+  overflow: hidden;
+}

@@ -13,7 +13,9 @@ export const uiInitialState = {
   notificationHistory: [],
   notificationCenterOpen: false,
   backgroundOperation: null,
-  recentSearches: []
+  recentSearches: [],
+  focusMode: false,
+  focusDoNotDisturb: false
 };
 
 export const uiActionKeys = [
@@ -31,7 +33,10 @@ export const uiActionKeys = [
   "openDataTab",
   "openHelpSection",
   "addRecentSearch",
-  "clearRecentSearches"
+  "clearRecentSearches",
+  "setFocusMode",
+  "toggleFocusMode",
+  "setFocusDoNotDisturb"
 ];
 
 function scheduleNotificationDismiss(callback, timeout) {
@@ -90,7 +95,10 @@ export function createUiActions({ set, get }) {
           ? { label: String(options.action.label || "إجراء"), run: options.action.run, dismissOnRun: options.action.dismissOnRun !== false }
           : null
       });
-      const visibleToast = shouldShowNotificationToast(get().settings || {}, notification);
+      // Do-Not-Disturb (Focus Mode §17.7): keep recording to history but
+      // suppress the visible toast — except for errors, which must surface.
+      const dndActive = get().focusMode && get().focusDoNotDisturb && type !== "error";
+      const visibleToast = !dndActive && shouldShowNotificationToast(get().settings || {}, notification);
       const retentionDays = get().settings?.notifications?.retentionDays || 30;
 
       const PRIORITY = { error: 0, warning: 1, success: 2, info: 3 };
@@ -170,6 +178,9 @@ export function createUiActions({ set, get }) {
         return { recentSearches: [normalized, ...filtered].slice(0, 12) };
       });
     },
-    clearRecentSearches: () => set({ recentSearches: [] })
+    clearRecentSearches: () => set({ recentSearches: [] }),
+    setFocusMode: (focusMode) => set({ focusMode: !!focusMode }),
+    toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
+    setFocusDoNotDisturb: (focusDoNotDisturb) => set({ focusDoNotDisturb: !!focusDoNotDisturb })
   };
 }

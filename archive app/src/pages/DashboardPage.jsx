@@ -408,10 +408,10 @@ export function DashboardPage() {
   };
 
   const reportItems = [
-    { id: "total", label: "إجمالي المواد", value: formatNumber(stats.total), hint: "نشطة داخل الأرشيف", icon: jsx(Video, { className: "h-4 w-4" }), tone: "emerald" },
-    { id: "review", label: "تحتاج مراجعة", value: formatNumber(stats.needsReview), hint: `${formatNumber(stats.completenessAverage)}% اكتمال`, icon: jsx(AlertTriangle, { className: "h-4 w-4" }), tone: stats.needsReview ? "amber" : "emerald" },
-    { id: "week", label: "نشاط 7 أيام", value: formatNumber(stats.recentActivity), hint: `${formatNumber(stats.addedThisWeek)} إضافة جديدة`, icon: jsx(Activity, { className: "h-4 w-4" }), tone: "cyan" },
-    { id: "users", label: "المستخدمون", value: formatNumber(activeUsers), hint: `${formatNumber(stats.types)} أنواع و${formatNumber(stats.collections)} مجموعات`, icon: jsx(Users, { className: "h-4 w-4" }), tone: "violet" }
+    { id: "total", label: "إجمالي المواد", value: formatNumber(stats.total), animateTo: stats.total, format: formatNumber, hint: "نشطة داخل الأرشيف", icon: jsx(Video, { className: "h-4 w-4" }), tone: "emerald" },
+    { id: "review", label: "تحتاج مراجعة", value: formatNumber(stats.needsReview), animateTo: stats.needsReview, format: formatNumber, hint: `${formatNumber(stats.completenessAverage)}% اكتمال`, icon: jsx(AlertTriangle, { className: "h-4 w-4" }), tone: stats.needsReview ? "amber" : "emerald" },
+    { id: "week", label: "نشاط 7 أيام", value: formatNumber(stats.recentActivity), animateTo: stats.recentActivity, format: formatNumber, hint: `${formatNumber(stats.addedThisWeek)} إضافة جديدة`, icon: jsx(Activity, { className: "h-4 w-4" }), tone: "cyan" },
+    { id: "users", label: "المستخدمون", value: formatNumber(activeUsers), animateTo: activeUsers, format: formatNumber, hint: `${formatNumber(stats.types)} أنواع و${formatNumber(stats.collections)} مجموعات`, icon: jsx(Users, { className: "h-4 w-4" }), tone: "violet" }
   ];
 
   const quickActions = [

@@ -11,6 +11,7 @@ export const GLOBAL_SHORTCUT_ACTION_ORDER = [
   "toggleNotifications",
   "openBackup",
   "openDashboard",
+  "toggleFocusMode",
   "logout",
   "lockApp",
   "undo",
