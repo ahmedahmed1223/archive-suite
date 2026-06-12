@@ -47,15 +47,15 @@ import { DocumentViewer } from "../../components/media/DocumentViewer.jsx";
 
 export const ARCHIVE_VIEW_MODES = [
   { id: "grid", label: "شبكة", Icon: LayoutGrid },
-  { id: "tiles", label: "بلاطات", Icon: Rows3 },
+  { id: "compact", label: "مدمجة", Icon: Rows3 },
   { id: "list", label: "قائمة", Icon: Archive },
-  { id: "table", label: "تفاصيل", Icon: FolderOpen }
+  { id: "details", label: "تفاصيل", Icon: FolderOpen }
 ];
 
-/** Compact icon-only view-mode switcher (grid / tiles / list / table). */
+/** Compact icon-only view-mode switcher (grid / compact / list / details). */
 export function ViewModeSwitch({ value = "grid", onChange, className = "" }) {
   return jsx("div", {
-    className: `va-control-surface inline-flex min-h-8 overflow-hidden va-surface-muted rounded-lg border p-0.5 ${className}`,
+    className: `join va-control-surface inline-flex min-h-8 overflow-hidden va-surface-muted rounded-lg border p-0.5 ${className}`,
     role: "group",
     "aria-label": "طريقة العرض",
     children: ARCHIVE_VIEW_MODES.map(({ id, label, Icon }) => jsx("button", {
@@ -64,7 +64,7 @@ export function ViewModeSwitch({ value = "grid", onChange, className = "" }) {
       "aria-pressed": value === id,
       title: label,
       "aria-label": `عرض ${label}`,
-      className: `inline-flex h-7 w-8 items-center justify-center rounded-md transition-colors ${value === id ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-300 hover:bg-white/5 hover:text-white"}`,
+      className: `btn btn-xs join-item inline-flex h-7 w-8 min-h-0 items-center justify-center rounded-md border-0 px-0 ${value === id ? "btn-active btn-primary" : "btn-ghost"}`,
       children: jsx(Icon, { className: "h-4 w-4" })
     }, id))
   });

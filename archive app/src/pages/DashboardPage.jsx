@@ -339,14 +339,14 @@ export function DashboardPage() {
     setSearchQuery?.(normalizedQuery);
     setFilterType?.("all");
     setFilterSubtype?.("all");
-    setViewMode?.("table");
+    setViewMode?.("details");
     const params = createArchiveRouteParams({
       searchQuery: normalizedQuery,
       filterType: "all",
       filterSubtype: "all",
       showFavoritesOnly: false,
       itemSize: "compact",
-      viewMode: "table"
+      viewMode: "details"
     });
     writeAppRoute("archive", { params }, settings, false);
     goTo("archive");

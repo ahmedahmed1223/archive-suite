@@ -439,7 +439,7 @@ export function App() {
     }
     if (shortcutAction === "viewTable") {
       event.preventDefault();
-      setViewMode("table");
+      setViewMode("details");
       return;
     }
     if (shortcutAction === "deleteSelected") {

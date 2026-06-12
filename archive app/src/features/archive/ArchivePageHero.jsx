@@ -63,9 +63,9 @@ function MobileControlButton({ children, onClick, active = false, danger = false
 
 const VIEW_MODE_BUTTONS = [
   { id: "grid", label: "شبكة", Icon: LayoutGrid },
-  { id: "tiles", label: "بلاطات", Icon: Rows3 },
+  { id: "compact", label: "مدمجة", Icon: Rows3 },
   { id: "list", label: "قائمة", Icon: Archive },
-  { id: "table", label: "تفاصيل", Icon: FolderOpen }
+  { id: "details", label: "تفاصيل", Icon: FolderOpen }
 ];
 
 /**
@@ -206,26 +206,26 @@ export function ArchivePageHero(props) {
   });
 
   const viewModeControl = ({ mobile = false } = {}) => jsx("div", {
-    className: `va-control-surface min-h-9 overflow-hidden va-surface-muted rounded-xl border p-1 ${mobile ? "flex w-full flex-wrap" : "inline-flex"}`,
+    className: `join va-control-surface min-h-9 overflow-hidden va-surface-muted rounded-xl border p-1 ${mobile ? "flex w-full flex-wrap" : "inline-flex"}`,
     role: "group",
     "aria-label": "وضع عرض الأرشيف",
     children: VIEW_MODE_BUTTONS.map(({ id, label, Icon }) => jsxs("button", {
       type: "button",
       onClick: () => changeViewMode(id),
       "aria-pressed": activeViewMode === id,
-      className: `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${mobile ? "flex-1 justify-center" : ""} ${activeViewMode === id ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
+      className: `btn btn-xs join-item min-h-7 gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold ${mobile ? "flex-1 justify-center" : ""} ${activeViewMode === id ? "btn-active btn-primary" : "btn-ghost"}`,
       children: [jsx(Icon, { className: "h-3.5 w-3.5" }), label]
     }, id))
   });
 
-  const renderSizingControl = () => activeViewMode === "grid" ? jsx(GridDensitySlider, {
+  const renderSizingControl = () => (activeViewMode === "grid" || activeViewMode === "compact") ? jsx(GridDensitySlider, {
     gridColumns,
     gridColumnCount,
     onChange: changeGridColumns
   }) : jsxs("div", {
     className: "inline-flex flex-wrap items-center gap-2",
     children: [
-      activeViewMode === "table" && jsx(ColumnManagerMenu, {
+      activeViewMode === "details" && jsx(ColumnManagerMenu, {
         stored: tableColumns,
         onChange: changeTableColumns
       }),

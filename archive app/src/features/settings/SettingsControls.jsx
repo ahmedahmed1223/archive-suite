@@ -53,8 +53,9 @@ const TAB_ICONS = {
 
 export const VIEW_OPTIONS = [
   { value: "grid", label: "شبكة", detail: "بطاقات ومعاينة" },
+  { value: "compact", label: "مدمجة", detail: "بلاطات كثيفة" },
   { value: "list", label: "قائمة", detail: "تفاصيل أكثر" },
-  { value: "table", label: "جدول", detail: "كثافة عالية" }
+  { value: "details", label: "تفاصيل", detail: "جدول قابل للتخصيص" }
 ];
 
 export const DENSITY_OPTIONS = [

@@ -113,7 +113,7 @@ const APPEARANCE_PRESETS = [
     id: "reports-manager",
     name: "مدير تقارير",
     detail: "قراءة أوسع، أرقام لاتينية، واجهة هادئة.",
-    settings: { defaultView: "table", itemsPerPage: 24, accentColor: "blue", numberSystem: "latn" },
+    settings: { defaultView: "details", itemsPerPage: 24, accentColor: "blue", numberSystem: "latn" },
     ui: { visualDensity: "comfortable", sidebarLayout: { mode: "expanded" }, fontScale: "normal", motionLevel: "full", cardStyle: "filled" }
   },
   {

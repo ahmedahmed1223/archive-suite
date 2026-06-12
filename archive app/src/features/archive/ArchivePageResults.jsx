@@ -7,6 +7,7 @@ import { SkeletonBlock } from "../../components/ui/index.js";
 import { formatNumber } from "../../utils/formatting.js";
 import { parseVideoTags } from "../videos/viewModel.js";
 import { computeCompleteness } from "./completeness.js";
+import { getArchiveRenderViewMode } from "./viewModel.js";
 import { useKeyboardListNav } from "../../hooks/useKeyboardListNav.js";
 import { useVirtualList } from "../../hooks/useVirtualList.js";
 import {
@@ -32,7 +33,8 @@ import {
 const SKELETON_CARD_COUNT = 8;
 
 function ArchiveResultsSkeleton({ activeViewMode = "grid" }) {
-  const isCompactRow = activeViewMode === "list" || activeViewMode === "table";
+  const renderViewMode = getArchiveRenderViewMode(activeViewMode);
+  const isCompactRow = renderViewMode === "list" || renderViewMode === "table";
   const wrapperClass = isCompactRow
     ? "space-y-2"
     : "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
@@ -149,7 +151,8 @@ function renderItemsForViewMode(deps) {
     return base;
   };
 
-  if (activeViewMode === "tiles") {
+  const renderViewMode = getArchiveRenderViewMode(activeViewMode);
+  if (renderViewMode === "tiles") {
     return jsx("div", {
       className: "va-archive-tile-grid grid auto-rows-fr gap-2 sm:grid-cols-2 xl:grid-cols-3",
       children: visibleItems.map((item, index) => jsx(AnimatedItem, {
@@ -161,7 +164,7 @@ function renderItemsForViewMode(deps) {
       }, item.id))
     });
   }
-  if (activeViewMode === "list") {
+  if (renderViewMode === "list") {
     return jsx("div", {
       className: "space-y-3",
       children: visibleItems.map((item, index) => jsx(AnimatedItem, {
@@ -173,7 +176,7 @@ function renderItemsForViewMode(deps) {
       }, item.id))
     });
   }
-  if (activeViewMode === "table") {
+  if (renderViewMode === "table") {
     return jsx(VideoTableView, {
       items: visibleItems,
       previewItem,
@@ -357,7 +360,7 @@ export function ArchivePageResults(props) {
                 className: "flex shrink-0 flex-wrap items-center justify-end gap-2",
                 children: [
                   jsx(ItemSizeSlider, { value: activeItemSize, onChange: changeItemSize }),
-                  (activeViewMode === "grid" || activeViewMode === "tiles") && jsx(GridDensitySlider, {
+                  (activeViewMode === "grid" || activeViewMode === "compact") && jsx(GridDensitySlider, {
                     gridColumns,
                     gridColumnCount,
                     onChange: changeGridColumns
