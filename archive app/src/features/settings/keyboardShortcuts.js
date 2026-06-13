@@ -37,6 +37,31 @@ export function getEffectiveKeyboardShortcuts(settings = {}) {
   return getEffectiveKeyboardShortcutsUtil(settings);
 }
 
+export function normalizeImportedKeyboardShortcuts(payload = {}, fallback = getDefaultKeyboardShortcuts()) {
+  const source = payload?.keyboardShortcuts && typeof payload.keyboardShortcuts === "object"
+    ? payload.keyboardShortcuts
+    : payload;
+  const next = { ...fallback };
+  if (!source || typeof source !== "object" || Array.isArray(source)) return next;
+  SHORTCUT_ACTIONS.forEach((action) => {
+    const value = source[action.id];
+    if (action.options.includes(value)) next[action.id] = value;
+  });
+  return next;
+}
+
+export function createShortcutExportPayload(settings = {}, now = new Date().toISOString()) {
+  return {
+    version: 1,
+    exportedAt: now,
+    keyboardShortcuts: normalizeImportedKeyboardShortcuts(getEffectiveKeyboardShortcuts(settings))
+  };
+}
+
+export function serializeShortcutExportPayload(settings = {}, now) {
+  return JSON.stringify(createShortcutExportPayload(settings, now), null, 2);
+}
+
 export function normalizeShortcutValue(value) {
   const normalized = String(value || SHORTCUT_DISABLED).trim().toLowerCase();
   return normalized || SHORTCUT_DISABLED;

@@ -22,7 +22,9 @@ import {
   findShortcutConflict,
   getDefaultKeyboardShortcuts,
   getEffectiveKeyboardShortcuts,
-  getShortcutConflictDetails
+  getShortcutConflictDetails,
+  normalizeImportedKeyboardShortcuts,
+  serializeShortcutExportPayload
 } from "./keyboardShortcuts.js";
 
 export const THEME_OPTIONS = [
@@ -297,6 +299,8 @@ function CircleQuestionFallback(props) {
 
 export function ShortcutManager({ settings, onSave, showToast }) {
   const [draft, setDraft] = React.useState(() => getEffectiveKeyboardShortcuts(settings));
+  const [importText, setImportText] = React.useState("");
+  const [exportText, setExportText] = React.useState("");
   const conflicts = getShortcutConflictDetails(draft);
   const hasConflicts = Object.keys(conflicts).length > 0;
 
@@ -322,6 +326,27 @@ export function ShortcutManager({ settings, onSave, showToast }) {
       return;
     }
     onSave?.({ keyboardShortcuts: draft }, "تم حفظ الاختصارات");
+  };
+
+  const exportJson = async () => {
+    const text = serializeShortcutExportPayload({ ...settings, keyboardShortcuts: draft });
+    setExportText(text);
+    try {
+      await navigator.clipboard?.writeText(text);
+      showToast?.("تم نسخ خريطة الاختصارات كـ JSON", "success");
+    } catch {
+      showToast?.("تم تجهيز JSON للنسخ اليدوي", "info");
+    }
+  };
+
+  const importJson = () => {
+    try {
+      const parsed = JSON.parse(importText || "{}");
+      setDraft(normalizeImportedKeyboardShortcuts(parsed, draft));
+      showToast?.("تم استيراد خريطة الاختصارات. راجعها ثم احفظ.", "success");
+    } catch {
+      showToast?.("ملف JSON غير صالح.", "error");
+    }
   };
 
   return jsxs("div", {
@@ -370,6 +395,43 @@ export function ShortcutManager({ settings, onSave, showToast }) {
           jsx("button", { type: "button", onClick: save, disabled: hasConflicts, className: "va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50", children: "حفظ الاختصارات" }),
           jsx("button", { type: "button", onClick: restoreDefaults, className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5", children: "استعادة الافتراضيات" }),
           jsx("button", { type: "button", onClick: disableAll, className: "rounded-xl border border-red-500/20 px-4 py-2 text-sm text-red-100 hover:bg-red-500/10", children: "تعطيل الكل" })
+        ]
+      }),
+      jsxs("div", {
+        className: "grid gap-3 lg:grid-cols-2",
+        children: [
+          jsxs("div", {
+            className: "rounded-xl border border-white/10 bg-gray-950/30 p-3",
+            children: [
+              jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
+                jsx("p", { className: "text-sm font-semibold text-white", children: "تصدير الاختصارات" }),
+                jsx("button", { type: "button", onClick: exportJson, className: "rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: "نسخ JSON" })
+              ] }),
+              jsx("textarea", {
+                readOnly: true,
+                value: exportText,
+                placeholder: "اضغط نسخ JSON لتجهيز خريطة الاختصارات الحالية.",
+                dir: "ltr",
+                className: "mt-3 min-h-28 w-full rounded-xl border border-white/10 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-200 outline-none"
+              })
+            ]
+          }),
+          jsxs("div", {
+            className: "rounded-xl border border-white/10 bg-gray-950/30 p-3",
+            children: [
+              jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
+                jsx("p", { className: "text-sm font-semibold text-white", children: "استيراد الاختصارات" }),
+                jsx("button", { type: "button", onClick: importJson, className: "rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: "تطبيق JSON" })
+              ] }),
+              jsx("textarea", {
+                value: importText,
+                onChange: (event) => setImportText(event.target.value),
+                placeholder: "الصق JSON هنا. يتم تجاهل المفاتيح غير المعروفة والقيم غير المسموحة.",
+                dir: "ltr",
+                className: "mt-3 min-h-28 w-full rounded-xl border border-white/10 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-200 outline-none focus:border-emerald-500/50"
+              })
+            ]
+          })
         ]
       })
     ]
