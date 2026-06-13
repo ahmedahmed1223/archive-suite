@@ -46,8 +46,8 @@ import {
   getDashboardDemoItemIds
 } from "../features/dashboard/viewModel.js";
 import {
-  getDefaultDashboardLayout,
   normalizeDashboardLayout,
+  resetDashboardLayout,
   setPanelHidden,
   setPanelAutoHeight,
   hasDashboardLayoutDraftChanges
@@ -449,7 +449,7 @@ export function DashboardPage() {
   };
   const resetDashLayout = async () => {
     const ok = await appConfirm("استعادة التخطيط الافتراضي للوحة؟", { title: "استعادة الافتراضي", confirmLabel: "استعادة" });
-    if (ok) setWorkingLayout(getDefaultDashboardLayout());
+    if (ok) setWorkingLayout(resetDashboardLayout(DASHBOARD_PANEL_IDS));
   };
   const toggleDashHidden = (id) => setWorkingLayout((l) => { const base = l || savedDashboardLayout; return setPanelHidden(base, id, !base.items[id]?.hidden); });
   const toggleDashAuto = (id) => setWorkingLayout((l) => { const base = l || savedDashboardLayout; return setPanelAutoHeight(base, id, !(base.items[id]?.autoHeight !== false)); });
