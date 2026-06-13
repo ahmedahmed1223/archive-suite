@@ -40,6 +40,7 @@ import { MobileActionBar, MotionPage, ResponsiveTabs, UXEmptyState } from "../co
 import { RecordVersionHistory } from "../components/records/RecordVersionHistory.jsx";
 import { AddRelationDialog } from "../components/relations/AddRelationDialog.jsx";
 import { RelationsPanel } from "../components/relations/RelationsPanel.jsx";
+import { StatusTransitionMenu } from "../components/workflow/StatusTransitionMenu.jsx";
 import { AutosaveIndicator } from "../components/autosave/AutosaveIndicator.jsx";
 import { DraftRecoveryDialog } from "../components/autosave/DraftRecoveryDialog.jsx";
 import { createAutosaveEngine } from "../features/autosave/autosaveEngine.js";
@@ -978,6 +979,24 @@ export function DetailPage() {
     });
   };
 
+  const handleWorkflowChanged = async (result) => {
+    if (!item?.id || !result?.status) return;
+    const updated = createVideoItemValue({
+      ...item,
+      workflowStatus: result.status,
+      workflowDueDate: result.dueDate ?? item.workflowDueDate ?? null,
+      workflowUpdatedAt: result.entry?.at || new Date().toISOString(),
+      createdAt: item.createdAt,
+      version: (item.version || 1) + 1
+    });
+    try {
+      await updateVideoItem?.(updated);
+      showToast?.("تم تغيير حالة السجل", "success");
+    } catch (error) {
+      reportError(showNotification, error, { context: "تغيير حالة السجل" });
+    }
+  };
+
   return jsxs(MotionPage, {
     className: "space-y-6 p-4 sm:p-6",
     children: [
@@ -1056,6 +1075,11 @@ export function DetailPage() {
             jsxs("div", { className: "min-w-0 flex-1", children: [
               jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
                 jsx("h2", { className: "text-2xl font-bold text-white", children: item.title || "بدون عنوان" }),
+                jsx(StatusTransitionMenu, {
+                  item,
+                  role: currentUser?.role || "viewer",
+                  onChanged: handleWorkflowChanged
+                }),
                 item.isFavorite && jsxs("span", { className: "inline-flex items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/12 px-2 py-0.5 text-xs text-amber-200", children: [jsx(Star, { className: "h-3 w-3 fill-current" }), "مفضلة"] })
               ] }),
               jsx("p", { className: "mt-2 text-sm text-gray-500", children: [getTypeLabel(contentTypes, item.type), getSubtypeLabel(contentTypes, item.type, item.subtype)].filter(Boolean).join(" / ") || "غير مصنف" }),
