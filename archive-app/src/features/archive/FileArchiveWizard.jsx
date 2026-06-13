@@ -110,7 +110,12 @@ export function FileArchiveWizard({
       for (const row of selectedRows) {
         const item = createImportedVideoItem(row, { typeId, subtypeId, notes });
         addedIds.push(item.id);
-        await addVideoItem?.(item);
+        const savedItem = await addVideoItem?.(item);
+        useAppStore.getState().enqueueUploads?.([row.file], {
+          source: "fileArchiveWizard",
+          linkedItemId: (savedItem || item).id,
+          fieldKey: "localFile"
+        });
       }
       const { showNotification, bulkDeleteItems } = useAppStore.getState();
       showNotification?.(

@@ -756,9 +756,15 @@
     - `archive-app/src/stores/slices/uploadSlice.js` — طابور خلفي في المتجر (`enqueueUploads`/`updateUpload`/`retryUpload`/`clearFinishedUploads` + `selectUploadProgress`)، مُركَّب في `appStore.js`.
     - `archive-app/src/components/upload/UploadQueue.jsx` — لوحة طابور حيّة (تقدّم إجمالي + لكل ملف، إعادة/إزالة/مسح المكتمل).
     - ✅ كل الملفات تُحلَّل (esbuild/node) والربط في المتجر مكتمل.
-  - ⬜ **المتبقّي:** ربط الطابور في تدفّق الإضافة (`AddVideoPage.jsx` + معالج رفع)؛ **endpoints تقسيم/استئناف خلفية** (الخادم حالياً whole-blob فقط، فالاستئناف بعد الانقطاع يتطلب range upload)؛ اختبارات وحدة؛ ربط مفتاح المحتوى بحقل الملف في العنصر.
-  - الملفات الجديدة: `archive-app/src/stores/slices/uploadSlice.js`، `archive-app/src/hooks/useChunkedUpload.js`، `archive-app/src/components/upload/UploadQueue.jsx`.
-  - التغييرات: `archive-app/src/pages/AddVideoPage.jsx`، `archive-app/src/components/modals/FileArchiveWizard.jsx`.
+  - 🔄 **تقدّم 2026-06-14 (ربط التدفقات):**
+    - `archive-app/src/features/upload/uploadLink.js` يربط إدخال الطابور بـ `metadata.localFile` ويثبّت مفتاح الملف في `metadata.fileKey`/`storageKey`/`media.sourceKey` عند اكتمال الرفع.
+    - `archive-app/src/components/upload/UploadQueueController.jsx` يعمل عالمياً من طبقة الإشعارات حتى لا تُلغى الرفعات عند مغادرة صفحة الإضافة/الاستيراد.
+    - `AddVideoPage.jsx` يضيف الملف المختار إلى الطابور ويحفظ `uploadId` داخل المادة، ثم يربط إدخال الطابور بـ `linkedItemId` بعد الحفظ.
+    - `FileArchiveWizard.jsx` يضيف كل ملف مستورد إلى الطابور بعد إنشاء عنصره مع `linkedItemId`.
+    - ✅ اختبارات: `uploadLink.test.js`، `UploadQueueController.test.jsx`، `AddVideoPage.upload.test.jsx`، `FileArchiveWizard.upload.test.jsx`.
+  - ⬜ **المتبقّي:** **endpoints تقسيم/استئناف خلفية** (الخادم حالياً whole-blob فقط، فالاستئناف بعد الانقطاع يتطلب range upload)؛ تحسين hashing ليصبح streaming فعلياً للملفات الكبيرة؛ تحقق بصري نهائي للطابور على الجوال/سطح المكتب.
+  - الملفات الجديدة: `archive-app/src/stores/slices/uploadSlice.js`، `archive-app/src/hooks/useChunkedUpload.js`، `archive-app/src/components/upload/UploadQueue.jsx`، `archive-app/src/components/upload/UploadQueueController.jsx`، `archive-app/src/features/upload/uploadLink.js`.
+  - التغييرات: `archive-app/src/pages/AddVideoPage.jsx`، `archive-app/src/features/archive/FileArchiveWizard.jsx`، `archive-app/src/app/AppNotifications.jsx`.
   - التنفيذ: رفع مقسم (5MB chunks) عبر `FileStore.putBlob()`؛ استئناف تلقائي بعد انقطاع الإنترنت؛ طابور خلفي يسمح للمستخدم بمواصلة العمل أثناء الرفع؛ شريط تقدم دقيق (نسبة الملف + إجمالي الطابور)؛ كشف التكرارات بـ SHA-256 checksum.
   - الجهد: 6-8 أسابيع. يدعم جميع مزودي التخزين (S3/Azure/GDrive/Dropbox).
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #1).
