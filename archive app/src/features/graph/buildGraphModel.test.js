@@ -34,6 +34,37 @@ describe("buildGraphModel", () => {
     expect(model.nodes).toHaveLength(2);
   });
 
+  test("manual item relations produce directed edges without shared tags", () => {
+    const model = buildGraphModel({
+      videoItems: [item("a"), item("b")],
+      itemRelations: [{ id: "r1", sourceId: "a", targetId: "b", type: "depends_on", note: "context" }]
+    });
+
+    expect(model.edges).toHaveLength(1);
+    expect(model.edges[0]).toMatchObject({
+      id: "rel:r1",
+      source: "a",
+      target: "b",
+      edgeKind: "manual",
+      relationLabel: "يعتمد على",
+      weight: 2
+    });
+    expect(model.nodes.map((node) => node.degree)).toEqual([1, 1]);
+  });
+
+  test("manual mirror relations are ignored to avoid duplicate graph edges", () => {
+    const model = buildGraphModel({
+      videoItems: [item("a"), item("b")],
+      itemRelations: [
+        { id: "r1", sourceId: "a", targetId: "b", type: "related_to" },
+        { id: "r2", sourceId: "b", targetId: "a", type: "related_to", mirrorOf: "r1" }
+      ]
+    });
+
+    expect(model.edges).toHaveLength(1);
+    expect(model.edges[0].id).toBe("rel:r1");
+  });
+
   test("Arabic tag variants (همزة/تاء مربوطة) still match", () => {
     const model = buildGraphModel({
       videoItems: [item("a", { tags: ["المدرسة الأولى"] }), item("b", { tags: ["المدرسه الاولى"] })]
@@ -105,6 +136,6 @@ describe("buildGraphModel", () => {
     const elements = toCytoscapeElements(model);
     expect(elements.filter((el) => el.group === "nodes")).toHaveLength(2);
     expect(elements.filter((el) => el.group === "edges")).toHaveLength(1);
-    expect(elements.at(-1).data).toMatchObject({ source: "a", target: "b", weight: 1 });
+    expect(elements.at(-1).data).toMatchObject({ source: "a", target: "b", weight: 1, edgeKind: "shared" });
   });
 });
