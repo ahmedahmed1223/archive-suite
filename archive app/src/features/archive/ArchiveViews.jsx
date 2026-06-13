@@ -744,7 +744,7 @@ export function VideoCard({ item, typeLabel, subtypeLabel, selected, onPreview, 
   });
 }
 
-export function AnimatedItem({ index, children, as = "div", className = "", itemId, disableMotion = false }) {
+export function AnimatedItem({ index, children, as = "div", className = "", itemId, disableMotion = false, ...rest }) {
   const shouldDisableMotion = disableMotion || index >= 24;
   const Component = shouldDisableMotion ? as : motion[as] || motion.div;
   const motionProps = shouldDisableMotion ? {} : {
@@ -754,6 +754,7 @@ export function AnimatedItem({ index, children, as = "div", className = "", item
   };
   return jsx(Component, {
     ...motionProps,
+    ...rest,
     className,
     "data-archive-item-id": itemId,
     children

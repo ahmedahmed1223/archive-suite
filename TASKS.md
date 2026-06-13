@@ -728,9 +728,7 @@
   - الإصلاح: استبدل القيم الثابتة بمتغيرات بيئة أو أضف الملف لـ `.gitignore` مع نسخة `.example`.
   - المصدر: deep-audit-v2 (INFRA-02).
 
-- [ ] `[P3]` ⏱️M **تحسين HPA — مقاييس مخصصة بجانب CPU** — HPA يعتمد على CPU فقط ولا يتوسع عند ضغط WebSocket أو I/O.
-  - الملف: `archive-server/k8s/hpa.yaml`
-  - الإصلاح: أضف Custom Metrics: عدد اتصالات WebSocket النشطة + عمق قائمة انتظار الطلبات.
+- [x] `[P3]` ⏱️M **تحسين HPA — مقاييس مخصصة بجانب CPU** — ✅ **2026-06-13:** أُضيفت مقياسان مخصصان في `hpa.yaml`: `archive_ws_connections_active` (حد 50 اتصال/pod) و`archive_http_queue_depth` (حد 20 طلب/pod)، مع `behavior.stabilizationWindowSeconds` لمنع التذبذب.
   - المصدر: deep-audit-v2 (INFRA-03).
 
 - [x] `[P3]` ⏱️S **استبدال `redis.keys()` بـ `redis.scan()`** — `KEYS` تحجب Redis event loop بالكامل على قواعد بيانات كبيرة.
@@ -810,7 +808,8 @@
   - تغييرات: `archive app/src/features/archive/ArchiveViews.jsx` ✅ (ربط InlineCellEditor بخلايا العنوان/النوع/الوسوم في `VideoTableView` عبر أيقونة قلم/نقر مزدوج؛ خلية واحدة قيد التحرير في كل مرة؛ تنقل Tab/Shift+Tab بين الأعمدة القابلة للتعديل)، `ArchivePageResults.jsx` ✅ (الحفظ عبر `updateVideoItem` مع سجل التغييرات + toast نجاح/فشل).
   - ✅ المرحلة 1 (2026-06-10): تحرير العنوان والوسوم مضمّنًا؛ حفظ عند Enter/مغادرة الخلية؛ Escape للإلغاء؛ تجاهل القيم غير المتغيّرة/الفارغة.
   - ✅ تحديث (2026-06-11): محرر النوع كقائمة + نقر مزدوج للخلايا المدعومة + تنقل `Tab` / `Shift+Tab` بين العنوان/النوع/الوسوم، مع اختبارات `InlineCellEditor.test.jsx` و`ArchiveViews.inline-edit.test.jsx`.
-  - ⬜ المتبقي: تحرير أي خلية قابلة للتخصيص عند ظهور أعمدة جديدة؛ Ctrl+Z للتراجع عبر `undoManager`؛ ربط محررات التاريخ والتقييم عندما تُضاف أعمدتها إلى الجدول.
+  - ✅ **2026-06-13:** Ctrl+Z للتراجع مُنجَز — `undoLastActivity` نُقل من `activityLogSlice` عبر `useArchivePageState` إلى `ArchivePageResults` حيث يُعالج `keydown` Ctrl+Z عالمياً (يتجاهل الحقول النصية والـ contentEditable).
+  - ⬜ المتبقي: تحرير أي خلية قابلة للتخصيص عند ظهور أعمدة جديدة؛ ربط محررات التاريخ والتقييم عندما تُضاف أعمدتها إلى الجدول.
   - الجهد: 3-4 أسابيع (المتبقي ~1-2 أسبوع).
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #3). ملاحظة: P2 placeholder موجود في §12.7 — هذه الميزة الكاملة.
 
@@ -2046,7 +2045,8 @@
   - المصدر: daily-use-proposals (المقترح 1 — P0).
   - **حالة التنفيذ (المرحلة 1 — محلي فقط، 11 يونيو 2026):**
     - ✅ منجز: `features/activityLog/viewModel.js` (createActivityEntry/buildDiff/describeActivity/filterActivityEntries/groupActivitiesByDay) + اختبارات وحدة (`viewModel.test.js`، 13 اختبار)؛ `features/activityLog/undoManager.js` (توسعة withActivityLog فوق SimpleUndoRedoManager)؛ store `activity_log` في `schema.js` مع مرايا DATA_STORES/SNAPSHOT_STORES/الاستيراد في `services/storage/index.js` و`storage/adapters/local-sqlite/index.js`؛ `stores/slices/activityLogSlice.js` (add/remove/load/clear/filters + undoActivityEntryById/redoActivityEntryById) مركّب في `appStore.js`؛ صفحة `ActivityPage.jsx` + `components/activity/` (ActivityTimeline/ActivityEntry/DiffView/ActivityFilterBar) مسجّلة في pageManifest/pageRegistry (id: `activity`)؛ توثيق نشاط تلقائي في `archiveSlice.updateVideoItem` (snapshot before/after، failure-safe، خيار skipActivityLog).
-    - ✅ **مُنجَز المرحلة 2 (2026-06-12):** أُضيف `addActivityEntry` لعمليات `addVideoItem` (create)، `deleteVideoItem` (delete + skipActivityLog)، `restoreVideoItem` (restore + skipActivityLog)، `bulkDeleteItems` (bulk_delete)، `bulkRestoreItems` (restore جماعي) — جميعها failure-safe (try/catch + .catch()). الـ undo/redo lambdas تمرّر الآن `skipActivityLog: true`. ما زال متبقياً: Prisma `ActivityLog` schema للباك-إند السحابي؛ توثيق عمليات collections/folders/settings؛ فلترة المستخدم/التاريخ في الواجهة.
+    - ✅ **مُنجَز المرحلة 2 (2026-06-12):** أُضيف `addActivityEntry` لعمليات `addVideoItem` (create)، `deleteVideoItem` (delete + skipActivityLog)، `restoreVideoItem` (restore + skipActivityLog)، `bulkDeleteItems` (bulk_delete)، `bulkRestoreItems` (restore جماعي) — جميعها failure-safe (try/catch + .catch()). الـ undo/redo lambdas تمرّر الآن `skipActivityLog: true`.
+    - ✅ **مُنجَز المرحلة 3 (2026-06-13):** (1) نموذج `ActivityLog` في `archive-server/prisma/schema.prisma` (فهارس على timestamp/userId/targetType/action/targetId). (2) فلترة التاريخ: `ActivityFilterBar.jsx` أُضيفت حقول من/إلى؛ `ActivityPage.jsx` وُسّع state + memo. 215 اختبار ✅. مستقبلياً: `prisma migrate dev` لتطبيق المخطط + توثيق عمليات collections/folders.
 
 ### 18.2 P0 — مركز الإشعارات المركزي الذكي (Smart Notification Center)
 
@@ -2079,7 +2079,8 @@
   - **الملفات الجديدة:** `archive app/src/features/relations/viewModel.js` (createRelation/RELATION_TYPES/getItemRelations/buildRelationsGraph)، `archive app/src/components/relations/RelationsPanel.jsx`، `AddRelationDialog.jsx`، `RelationsGraph.jsx`، `archive app/src/stores/slices/relationsSlice.js`.
   - **تعديل ملفات:** `DetailPage.jsx`، `ArchivePage.jsx`، `schema.js` (store `item_relations`)؛ Prisma `ItemRelation` (unique على [sourceId,targetId,type]، فهارس) للباك-إند.
   - **التنفيذ:** علاقات أحادية/ثنائية الاتجاه، تنقّل سريع بين المرتبطين، رسم علاقات (D3/cytoscape)، إنشاء بالسحب، اكتشاف تلقائي للعلاقات المحتملة (نفس الوسم/المجلد).
-  - 🔄 **تقدم 2026-06-12:** أُضيف `RelationsGraph.jsx` (cytoscape تفاعلي، تكبير/تصغير/ملاءمة، lazy import، النقر للتنقل) ودُمج في `RelationsPanel.jsx` فوق قوائم العلاقات. سابقاً (2026-06-11): `RelationsPanel` + `AddRelationDialog` في `DetailPage.jsx`. ما زال مفتوحاً: الرسم بالسحب (Drag-to-link) + Prisma `ItemRelation` schema.
+  - 🔄 **تقدم 2026-06-12:** أُضيف `RelationsGraph.jsx` (cytoscape تفاعلي، تكبير/تصغير/ملاءمة، lazy import، النقر للتنقل) ودُمج في `RelationsPanel.jsx` فوق قوائم العلاقات. سابقاً (2026-06-11): `RelationsPanel` + `AddRelationDialog` في `DetailPage.jsx`.
+  - ✅ **2026-06-13:** نموذج `ItemRelation` أُضيف لـ `schema.prisma` (unique على [sourceId,targetId,type]، فهارس على sourceId/targetId). ✅ **Drag-to-link:** سحب بطاقة على أخرى في عرض الشبكة يفتح `AddRelationDialog` مع العنصر المستهدف محدداً مسبقاً (`initialTargetId`)؛ يعمل عبر event delegation على حاوية الشبكة (`data-archive-item-id`). ما زال مفتوحاً: `prisma migrate dev` لتطبيق المخطط.
   - يرتبط بـ: §16 (المجموعات/المجلدات)، §17.3 (السحب)، §11/§12 graph.
   - الجهد: 4-5 أسابيع.
   - المصدر: daily-use-proposals (المقترح 5 — P1).

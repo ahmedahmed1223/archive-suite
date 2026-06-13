@@ -87,6 +87,9 @@ export function useArchivePageState() {
     addItemsToCollection,
     emptyTrash,
     projects = [],
+    undoLastActivity,
+    addRelation,
+    itemRelations = [],
     showToast,
     showNotification
   } = store;
@@ -651,6 +654,9 @@ export function useArchivePageState() {
     openImport,
     openProjects,
     confirmDelete,
-    confirmEmptyTrash
+    confirmEmptyTrash,
+    undoLastActivity,
+    addRelation,
+    itemRelations
   };
 }

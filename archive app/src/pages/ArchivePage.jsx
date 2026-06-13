@@ -76,7 +76,7 @@ export function ArchivePage() {
     videoItems, contentTypes, virtualCollections, showToast, showNotification, currentUser, storeSelectedItems,
     addVideoItem, updateVideoItem, toggleFavorite, restoreVideoItem,
     clearSelection, bulkDeleteItems, bulkRestoreItems, bulkAddTags, bulkMoveToCollection, bulkSetType, bulkSetProject,
-    projects,
+    projects, undoLastActivity,
     filterType, filterSubtype, filterStatus, setFilterType, setFilterSubtype, setFilterStatus,
     localSearch, setLocalSearch, showDeleted, showFavoritesOnly,
     resetFilters, activeTopMode,

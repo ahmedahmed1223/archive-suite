@@ -11,9 +11,35 @@ spec:
   minReplicas: 1
   maxReplicas: 5
   metrics:
+    # Tier 1 — CPU (baseline signal)
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
           averageUtilization: 70
+    # Tier 2 — active WebSocket connections per pod.
+    # Requires Prometheus Adapter. Server exposes `archive_ws_connections_active`
+    # at /metrics. Scale out when each pod carries >50 concurrent WS clients.
+    - type: Pods
+      pods:
+        metric:
+          name: archive_ws_connections_active
+        target:
+          type: AverageValue
+          averageValue: "50"
+    # Tier 3 — HTTP request queue depth (in-flight requests waiting for a worker).
+    # Metric: `archive_http_queue_depth`. Signals I/O saturation independent of CPU.
+    - type: Pods
+      pods:
+        metric:
+          name: archive_http_queue_depth
+        target:
+          type: AverageValue
+          averageValue: "20"
+  # Stabilization windows prevent flapping on bursty workloads.
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+    scaleUp:
+      stabilizationWindowSeconds: 60

@@ -20,11 +20,11 @@ generator client {
   // moduleFormat=esm matches the package "type": "module"; importFileExtension
   // ="js" makes the generated client's internal imports use .js specifiers
   // that tsx resolves to the sibling .ts files.
-  provider             = "prisma-client"
-  output               = "../src/generated/prisma"
-  runtime              = "nodejs"
-  moduleFormat         = "esm"
-  importFileExtension  = "js"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
 }
 
 datasource db {
@@ -43,8 +43,8 @@ model StorageRow {
   data           Json
   syncVersion    Int?
   lastModifiedBy Json?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
   // pgvector embedding (1536 dims = text-embedding-3-small).
   // Nullable — rows without embeddings are skipped in semantic search.
   // Prisma uses Unsupported for pgvector types since there is no native mapping.
@@ -58,7 +58,6 @@ model StorageRow {
   @@index([createdAt])
   // Index for filtering by syncVersion (used in sync operations)
   @@index([syncVersion])
-
   @@map("storage_rows")
 }
 
@@ -76,17 +75,17 @@ model ShareRevocation {
 
 /// Strongly-typed user record (parallel to StorageRow store="users")
 model User {
-  id            String    @id @default(cuid())
-  username      String    @unique
-  displayName   String?
-  email         String?   @unique
-  role          String    @default("viewer")
-  isActive      Boolean   @default(true)
-  passwordHash  String
-  totpSecret    String?
-  totpEnabled   Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String   @id @default(cuid())
+  username     String   @unique
+  displayName  String?
+  email        String?  @unique
+  role         String   @default("viewer")
+  isActive     Boolean  @default(true)
+  passwordHash String
+  totpSecret   String?
+  totpEnabled  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([role])
   @@index([isActive])
@@ -96,23 +95,23 @@ model User {
 /// Strongly-typed archive item (parallel to StorageRow store="videos"/"documents"/etc.)
 model ArchiveItem {
   id            String    @id @default(cuid())
-  store         String    // original store name ("videos", "documents", etc.)
+  store         String // original store name ("videos", "documents", etc.)
   title         String
   description   String?
-  documentType  String?   // pdf | image | video | audio | document
+  documentType  String? // pdf | image | video | audio | document
   mimeType      String?
-  fileKey       String?   // storage key for the file
+  fileKey       String? // storage key for the file
   fileSizeBytes BigInt?
   pageCount     Int?
-  tags          String[]  // text array
+  tags          String[] // text array
   categoryId    String?
   ocrText       String?
   summary       String?
   isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
   syncVersion   Int       @default(0)
-  ownerId       String?   // references typed_users.id
-  metadata      Json?     // flexible overflow for extra fields
+  ownerId       String? // references typed_users.id
+  metadata      Json? // flexible overflow for extra fields
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -142,15 +141,15 @@ model RecordVersion {
 
 /// Content type registry (replaces hardcoded type lists)
 model ContentType {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  label       String   // Arabic display name
-  icon        String?
-  color       String?
-  isBuiltIn   Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  name      String   @unique
+  label     String // Arabic display name
+  icon      String?
+  color     String?
+  isBuiltIn Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 
   @@index([isActive])
   @@map("typed_content_types")
@@ -191,13 +190,13 @@ model Webhook {
 model NotificationPreference {
   id             String  @id @default(cuid())
   userId         String  @unique @map("user_id")
-  emailOnShare   Boolean @default(true)  @map("email_on_share")
+  emailOnShare   Boolean @default(true) @map("email_on_share")
   emailOnUpload  Boolean @default(false) @map("email_on_upload")
-  emailOnMention Boolean @default(true)  @map("email_on_mention")
-  pushOnShare    Boolean @default(true)  @map("push_on_share")
-  pushOnUpload   Boolean @default(true)  @map("push_on_upload")
-  pushOnMention  Boolean @default(true)  @map("push_on_mention")
-  pushOnSystem   Boolean @default(true)  @map("push_on_system")
+  emailOnMention Boolean @default(true) @map("email_on_mention")
+  pushOnShare    Boolean @default(true) @map("push_on_share")
+  pushOnUpload   Boolean @default(true) @map("push_on_upload")
+  pushOnMention  Boolean @default(true) @map("push_on_mention")
+  pushOnSystem   Boolean @default(true) @map("push_on_system")
 
   @@map("notification_preferences")
 }
@@ -233,4 +232,56 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+/// Activity log — every create/update/delete/restore/move/bulk op (§18.1).
+/// Mirrors the client-side IndexedDB `activity_log` store so cloud syncs land here.
+/// `before`/`after` are full JSONB snapshots; `diff` is field-level { key: { before, after } }.
+model ActivityLog {
+  id         String    @id
+  timestamp  DateTime  @default(now())
+  userId     String    @map("user_id")
+  userName   String    @map("user_name")
+  userRole   String?   @map("user_role")
+  sessionId  String?   @map("session_id")
+  action     String
+  targetType String    @map("target_type")
+  targetId   String?   @map("target_id")
+  targetName String    @default("") @map("target_name")
+  before     Json?
+  after      Json?
+  diff       Json?
+  relatedIds Json?     @map("related_ids")
+  undoable   Boolean   @default(false)
+  undone     Boolean   @default(false)
+  undoneBy   String?   @map("undone_by")
+  undoneAt   DateTime? @map("undone_at")
+  context    Json?
+
+  @@index([timestamp])
+  @@index([userId])
+  @@index([targetType])
+  @@index([action])
+  @@index([targetId])
+  @@map("activity_log")
+}
+
+/// Manual semantic relations between archive items (§18.5).
+/// `type` is one of: is_part_of / contains / references / depends_on /
+///   related_to / alternative_of / copy_of / precedes / follows.
+/// Bidirectional types (related_to, alternative_of) store a single canonical
+/// row (sourceId ≤ targetId alphabetically) to avoid duplicates.
+model ItemRelation {
+  id        String   @id @default(cuid())
+  sourceId  String   @map("source_id")
+  targetId  String   @map("target_id")
+  type      String
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  note      String?
+
+  @@unique([sourceId, targetId, type])
+  @@index([sourceId])
+  @@index([targetId])
+  @@map("item_relations")
 }
