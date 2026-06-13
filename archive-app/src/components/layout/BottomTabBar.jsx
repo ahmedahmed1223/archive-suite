@@ -11,7 +11,7 @@ const TABS = [
 ];
 
 export function BottomTabBar() {
-  const { currentPage, setCurrentPage, setSelectedItemId, toggleSidebar } = useAppStore();
+  const { currentPage, setCurrentPage, setSelectedItemId, setSidebarOpen, toggleSidebar } = useAppStore();
 
   function navigate(pageId) {
     setSelectedItemId(null);
@@ -64,7 +64,7 @@ export function BottomTabBar() {
         }),
         jsx("button", {
           type: "button",
-          onClick: toggleSidebar,
+          onClick: () => setSidebarOpen ? setSidebarOpen(true) : toggleSidebar?.(),
           "aria-label": "فتح القائمة الكاملة",
           className: [
             "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 min-h-[56px]",

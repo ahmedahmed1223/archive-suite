@@ -97,6 +97,7 @@ import {
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_CATEGORY_LABELS
 } from "../features/notifications/viewModel.js";
+import { resolveSidebarLayoutMode } from "../features/navigation/sidebarLayoutModel.js";
 import { reportError } from "../utils/errorReporting.js";
 import { normalizeRoleProfileId } from "../features/onboarding/roleProfiles.js";
 
@@ -162,7 +163,7 @@ function createAppearanceDraft(settings = {}, fallbackTheme = "dark") {
     fontScale: settings.ui?.fontScale || "normal",
     motionLevel: settings.ui?.motionLevel || "full",
     cardStyle: settings.ui?.cardStyle || "filled",
-    sidebarMode: settings.ui?.sidebarLayout?.mode || "expanded"
+    sidebarMode: resolveSidebarLayoutMode(settings.ui?.sidebarLayout)
   };
 }
 
@@ -273,6 +274,7 @@ export function SettingsPage() {
     settings.ui?.fontScale,
     settings.ui?.daisyTheme,
     settings.ui?.motionLevel,
+    settings.ui?.sidebarLayout?.collapsed,
     settings.ui?.sidebarLayout?.mode,
     settings.ui?.themeVersion,
     settings.ui?.visualDensity,
@@ -384,7 +386,8 @@ export function SettingsPage() {
         customDaisyTheme,
         sidebarLayout: {
           ...(settings.ui?.sidebarLayout || {}),
-          mode: appearanceDraft.sidebarMode
+          mode: appearanceDraft.sidebarMode,
+          collapsed: appearanceDraft.sidebarMode === "collapsed"
         }
       }
     }, "تم تطبيق إعدادات المظهر");
@@ -405,7 +408,15 @@ export function SettingsPage() {
   };
   const applyAppearancePreset = async (preset) => {
     const uiPatch = { ...(settings.ui || {}), ...(preset.ui || {}) };
-    if (preset.ui?.sidebarLayout) uiPatch.sidebarLayout = { ...(settings.ui?.sidebarLayout || {}), ...preset.ui.sidebarLayout };
+    if (preset.ui?.sidebarLayout) {
+      const sidebarMode = resolveSidebarLayoutMode(preset.ui.sidebarLayout);
+      uiPatch.sidebarLayout = {
+        ...(settings.ui?.sidebarLayout || {}),
+        ...preset.ui.sidebarLayout,
+        mode: sidebarMode,
+        collapsed: sidebarMode === "collapsed"
+      };
+    }
     await saveSettings({ ...(preset.settings || {}), ui: uiPatch }, `تم تطبيق قالب "${preset.name}"`);
     setAppearanceDraft(createAppearanceDraft({ ...settings, ...(preset.settings || {}), ui: uiPatch }, theme));
   };

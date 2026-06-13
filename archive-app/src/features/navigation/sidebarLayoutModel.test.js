@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { resolveSidebarResponsiveState } from "./sidebarLayoutModel.js";
+import {
+  normalizeSidebarLayout,
+  resolveSidebarLayoutMode,
+  resolveSidebarResponsiveState
+} from "./sidebarLayoutModel.js";
 
 describe("resolveSidebarResponsiveState", () => {
   it("keeps the mobile drawer state separate from desktop collapse state", () => {
@@ -23,5 +27,37 @@ describe("resolveSidebarResponsiveState", () => {
       persistedCollapsed: true,
       editing: true
     })).toEqual({ mode: "desktop", drawerOpen: false, collapsed: false });
+  });
+});
+
+describe("normalizeSidebarLayout", () => {
+  it("keeps legacy settings sidebar mode compatible with the new layout shape", () => {
+    expect(normalizeSidebarLayout({ mode: "collapsed" }, ["dashboard"])).toEqual({
+      version: 1,
+      collapsed: true,
+      items: {
+        dashboard: { order: 0, hidden: false, pinned: false }
+      }
+    });
+
+    expect(resolveSidebarLayoutMode({ collapsed: true })).toBe("collapsed");
+    expect(resolveSidebarLayoutMode({ mode: "expanded" })).toBe("expanded");
+  });
+
+  it("prefers explicit collapsed over legacy mode when both exist", () => {
+    expect(normalizeSidebarLayout({
+      version: 1,
+      collapsed: false,
+      mode: "collapsed",
+      items: {
+        dashboard: { order: 2, hidden: true, pinned: true }
+      }
+    }, ["dashboard"])).toEqual({
+      version: 1,
+      collapsed: false,
+      items: {
+        dashboard: { order: 2, hidden: true, pinned: true }
+      }
+    });
   });
 });
