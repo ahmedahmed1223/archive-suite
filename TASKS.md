@@ -804,13 +804,13 @@
 
 ### 13.3 P1 — تجربة المستخدم اليومية
 
-- [ ] `[P1]` ⏱️L **التعديل المضمّن في عرض الجدول (InlineCellEditor)** — كل تعديل يتطلب فتح صفحة التفاصيل والعودة. **(المرحلة 1 منجزة ✅)**
+- [x] `[P1]` ⏱️L **التعديل المضمّن في عرض الجدول (InlineCellEditor)** — كل تعديل يتطلب فتح صفحة التفاصيل والعودة. **(المرحلة 1 منجزة ✅)**
   - الملفات الجديدة: `archive app/src/components/data/InlineCellEditor.jsx` ✅ (مكوّن عام: نص/وسوم/رقم/تاريخ/قائمة، Enter يحفظ، Escape يلغي، blur يحفظ، RTL، وTab/Shift+Tab يطلب الانتقال).
   - تغييرات: `archive app/src/features/archive/ArchiveViews.jsx` ✅ (ربط InlineCellEditor بخلايا العنوان/النوع/الوسوم في `VideoTableView` عبر أيقونة قلم/نقر مزدوج؛ خلية واحدة قيد التحرير في كل مرة؛ تنقل Tab/Shift+Tab بين الأعمدة القابلة للتعديل)، `ArchivePageResults.jsx` ✅ (الحفظ عبر `updateVideoItem` مع سجل التغييرات + toast نجاح/فشل).
   - ✅ المرحلة 1 (2026-06-10): تحرير العنوان والوسوم مضمّنًا؛ حفظ عند Enter/مغادرة الخلية؛ Escape للإلغاء؛ تجاهل القيم غير المتغيّرة/الفارغة.
   - ✅ تحديث (2026-06-11): محرر النوع كقائمة + نقر مزدوج للخلايا المدعومة + تنقل `Tab` / `Shift+Tab` بين العنوان/النوع/الوسوم، مع اختبارات `InlineCellEditor.test.jsx` و`ArchiveViews.inline-edit.test.jsx`.
   - ✅ **2026-06-13:** Ctrl+Z للتراجع مُنجَز — `undoLastActivity` نُقل من `activityLogSlice` عبر `useArchivePageState` إلى `ArchivePageResults` حيث يُعالج `keydown` Ctrl+Z عالمياً (يتجاهل الحقول النصية والـ contentEditable).
-  - ⬜ المتبقي: تحرير أي خلية قابلة للتخصيص عند ظهور أعمدة جديدة؛ ربط محررات التاريخ والتقييم عندما تُضاف أعمدتها إلى الجدول.
+  - ✅ **مُنجز ومتحقق (2026-06-13):** يدعم `VideoTableView` الآن أعمدة metadata مخصصة بصيغة `metadata:<key>` مع `InlineCellEditor` لأنواع `text/tags/number/date/select`، ويحفظ التعديل داخل `metadata` مع استمرار تنقل Tab بين الأعمدة القابلة للتحرير. تحقق: `ArchiveViews.inline-edit.test.jsx`.
   - الجهد: 3-4 أسابيع (المتبقي ~1-2 أسبوع).
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #3). ملاحظة: P2 placeholder موجود في §12.7 — هذه الميزة الكاملة.
 
