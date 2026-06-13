@@ -33,6 +33,8 @@ import { QuickAddDialog } from "../features/videos/QuickAddDialog.jsx";
 import { KeyboardShortcutsDialog } from "../components/common/KeyboardShortcutsDialog.jsx";
 import { FocusShell } from "../components/focus/FocusShell.jsx";
 import { useBackgroundNotificationBridge } from "../features/notifications/useBackgroundNotificationBridge.js";
+import { UploadQueue } from "../components/upload/UploadQueue.jsx";
+import { UploadQueueController } from "../components/upload/UploadQueueController.jsx";
 
 export function AppNotifications({
   showShortcuts,
@@ -49,6 +51,11 @@ export function AppNotifications({
   useBackgroundNotificationBridge();
   return jsxs(React.Fragment, {
     children: [
+      jsx(UploadQueueController, {}),
+      jsx("div", {
+        className: "pointer-events-auto fixed inset-x-4 bottom-24 z-[9990] mx-auto max-h-[60vh] max-w-md overflow-auto md:inset-x-auto md:left-4 md:bottom-4",
+        children: jsx(UploadQueue, {})
+      }),
       jsx(ToastNotification, {}),
       jsx(NotificationDrawer, {}),
       jsx(UndoRedoBar, {}),

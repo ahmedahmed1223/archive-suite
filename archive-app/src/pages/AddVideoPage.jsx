@@ -39,6 +39,10 @@ import { applyProofread, applySummaryToNotes, buildSuggestPayload, correctionsCo
 import { TagAutocomplete } from "../components/forms/TagAutocomplete.jsx";
 import { TemplatePicker } from "../components/templates/TemplatePicker.jsx";
 import { QuickAddBar } from "../components/templates/QuickAddBar.jsx";
+import {
+  createUploadLinkedLocalFilePatch,
+  mergeUploadIntoMetadata
+} from "../features/upload/uploadLink.js";
 
 
 const STEPS = [
@@ -275,13 +279,13 @@ function RequiredFieldSummary({ checks = [] }) {
         children: checks.map((check) => jsxs("div", {
           className: `flex items-start gap-2 rounded-lg border px-3 py-2 text-xs leading-5 ${check.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/30 text-gray-400"}`,
           children: [
-            check.ok ? jsx(CheckCircle2, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }) : jsx(Circle, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }),
+            check.ok ? jsx(CheckCircle2, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }, "icon-ok") : jsx(Circle, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }, "icon-empty"),
             jsxs("span", {
               children: [
-                jsx("span", { className: "font-semibold", children: check.label }),
-                check.detail && jsx("span", { className: "block opacity-75", children: check.detail })
+                jsx("span", { className: "font-semibold", children: check.label }, "label"),
+                check.detail && jsx("span", { className: "block opacity-75", children: check.detail }, "detail")
               ]
-            })
+            }, "body")
           ]
         }, check.id))
       })
@@ -293,6 +297,9 @@ export function AddVideoPage() {
   const {
     contentTypes = [],
     addVideoItem,
+    enqueueUploads,
+    updateUpload,
+    uploads = [],
     setCurrentPage,
     setSelectedItemId,
     showToast
@@ -418,7 +425,14 @@ export function AddVideoPage() {
 
   const updateMetadata = (key, value) => setMetadata((current) => ({ ...current, [key]: value }));
   const applyPrimaryLocalFile = (file) => {
-    const patch = createVideoLocalFilePatch(file, { currentTitle: title });
+    const entries = enqueueUploads?.([file], {
+      source: "addVideoPage",
+      fieldKey: "localFile"
+    }) || [];
+    const patch = createUploadLinkedLocalFilePatch(file, {
+      currentTitle: title,
+      upload: entries[0]
+    }) || createVideoLocalFilePatch(file, { currentTitle: title });
     if (!patch) return;
     if (patch.title) setTitle(patch.title);
     setPath(patch.path);
@@ -434,6 +448,9 @@ export function AddVideoPage() {
       showToast?.("أكمل الحقول المطلوبة قبل الحفظ.", "error");
       return;
     }
+    const uploadId = metadata?.localFile?.uploadId;
+    const linkedUpload = uploadId ? uploads.find((upload) => upload.id === uploadId) : null;
+    const linkedMetadata = linkedUpload ? mergeUploadIntoMetadata(metadata, linkedUpload) : metadata;
     const item = createVideoItemValue({
       title,
       path,
@@ -442,11 +459,14 @@ export function AddVideoPage() {
       tags,
       type: typeId,
       subtype: subtypeId,
-      metadata
+      metadata: linkedMetadata
     });
     try {
       submitSave.begin();
-      await addVideoItem?.(item);
+      const savedItem = await addVideoItem?.(item);
+      if (uploadId) {
+        updateUpload?.(uploadId, { linkedItemId: (savedItem || item).id });
+      }
       submitSave.succeed();
       // Successful submit invalidates the draft so the next AddVideo
       // visit starts clean.
@@ -531,21 +551,21 @@ export function AddVideoPage() {
 
   const renderActionBar = (className) => jsxs("div", { className, children: [
     jsxs("div", { className: "flex items-center gap-3", children: [
-      jsxs("button", { type: "button", disabled: stepIndex <= 0, onClick: () => setStepIndex((value) => Math.max(0, value - 1)), className: "va-secondary-button inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: [jsx(ChevronRight, { className: "h-4 w-4" }), "السابق"] }),
+      jsxs("button", { type: "button", disabled: stepIndex <= 0, onClick: () => setStepIndex((value) => Math.max(0, value - 1)), className: "va-secondary-button inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: [jsx(ChevronRight, { className: "h-4 w-4" }, "icon"), "السابق"] }, "previous"),
       jsx(SaveIndicator, {
         state: submitSave.state !== "idle" ? submitSave.state : draftSave.state,
         message: submitSave.state !== "idle"
           ? (submitSave.isSaving ? "يحفظ الفيديو..." : submitSave.isSaved ? "تم الحفظ" : "تعذر الحفظ")
           : (draftSave.isSaving ? "يحفظ المسودة..." : draftSave.isSaved ? "تم حفظ المسودة" : null)
-      })
-    ] }),
+      }, "save-indicator")
+    ] }, "save-status"),
     jsxs("div", { className: "flex flex-wrap gap-2", children: [
-      jsx("button", { type: "button", onClick: cancelEntry, className: "rounded-xl border border-white/10 px-3 py-2 text-xs text-gray-300 hover:bg-white/5", children: "إلغاء" }),
-      jsx("button", { type: "button", onClick: resetDraft, className: "rounded-xl border border-white/10 px-3 py-2 text-xs text-gray-300 hover:bg-white/5", title: "مسح المسودة المحفوظة محليًا", children: "إعادة تعيين" }),
-      stepIndex < STEPS.length - 1 && jsxs("button", { type: "button", onClick: tryAdvance, className: "va-primary-button inline-flex items-center gap-2  rounded-xl px-4 py-2 text-sm font-semibold text-white", children: ["التالي", jsx(ChevronLeft, { className: "h-4 w-4" })] }),
-      stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(false), className: "va-primary-button  rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40", children: "حفظ وفتح التفاصيل" }),
-      stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(true), className: "va-secondary-button rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: "حفظ وإضافة آخر" })
-    ] })
+      jsx("button", { type: "button", onClick: cancelEntry, className: "rounded-xl border border-white/10 px-3 py-2 text-xs text-gray-300 hover:bg-white/5", children: "إلغاء" }, "cancel"),
+      jsx("button", { type: "button", onClick: resetDraft, className: "rounded-xl border border-white/10 px-3 py-2 text-xs text-gray-300 hover:bg-white/5", title: "مسح المسودة المحفوظة محليًا", children: "إعادة تعيين" }, "reset"),
+      stepIndex < STEPS.length - 1 && jsxs("button", { type: "button", onClick: tryAdvance, className: "va-primary-button inline-flex items-center gap-2  rounded-xl px-4 py-2 text-sm font-semibold text-white", children: ["التالي", jsx(ChevronLeft, { className: "h-4 w-4" }, "icon")] }, "next"),
+      stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(false), className: "va-primary-button  rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40", children: "حفظ وفتح التفاصيل" }, "save-open"),
+      stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(true), className: "va-secondary-button rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: "حفظ وإضافة آخر" }, "save-another")
+    ] }, "actions")
   ] });
 
   const mobileActionBar = typeof document !== "undefined"
@@ -652,8 +672,8 @@ export function AddVideoPage() {
               ["الملاحظات", notes || "—"],
               ["حقول مخصصة", Object.keys(metadata).filter((k) => k !== "localFile").length ? `${Object.keys(metadata).filter((k) => k !== "localFile").length} حقل` : "لا توجد"]
             ].map(([label, value]) => jsxs("div", { className: "va-surface-muted rounded-xl border p-3", children: [
-              jsx("p", { className: "text-xs text-gray-500", children: label }),
-              jsx("p", { className: "mt-1 truncate text-sm font-semibold text-white", title: value, children: value })
+              jsx("p", { className: "text-xs text-gray-500", children: label }, "label"),
+              jsx("p", { className: "mt-1 truncate text-sm font-semibold text-white", title: value, children: value }, "value")
             ] }, label)) })
           ]
         })
@@ -675,7 +695,7 @@ export function AddVideoPage() {
                 ] }),
                 jsx("div", { className: "mt-3 h-2 overflow-hidden rounded-full bg-white/10", dir: "rtl", children: jsx(motion.div, { className: "h-full rounded-full va-accent-bg", initial: false, animate: { width: `${readyPercent}%` }, transition: { duration: 0.28 } }) }),
                 jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: readyChecks.map((check) => jsxs("span", { className: `inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${check.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-500"}`, children: [
-                  check.ok ? jsx(CheckCircle2, { className: "h-3.5 w-3.5" }) : jsx(Circle, { className: "h-3.5 w-3.5" }),
+                  check.ok ? jsx(CheckCircle2, { className: "h-3.5 w-3.5" }, "icon-ok") : jsx(Circle, { className: "h-3.5 w-3.5" }, "icon-empty"),
                   check.label
                 ] }, check.id)) })
               ] }),
@@ -690,8 +710,8 @@ export function AddVideoPage() {
                   ["الوسوم", parsedTags.length ? `${parsedTags.length} وسم` : "لا توجد"],
                   ["المصدر", path || metadata.localFile?.name || "غير محدد"]
                 ].map(([label, value]) => jsxs("div", { className: "flex items-center justify-between gap-3 rounded-xl va-surface-subtle border px-3 py-2", children: [
-                  jsx("span", { className: "text-gray-500", children: label }),
-                  jsx("span", { className: "min-w-0 truncate text-gray-200", children: value })
+                  jsx("span", { className: "text-gray-500", children: label }, "label"),
+                  jsx("span", { className: "min-w-0 truncate text-gray-200", children: value }, "value")
                 ] }, label)) })
               ] }),
               jsxs("div", { className: "va-card rounded-2xl va-surface-muted border p-4 text-right", children: [

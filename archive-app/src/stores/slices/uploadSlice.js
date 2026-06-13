@@ -41,8 +41,9 @@ export function createUploadActions({ set, get }) {
      * Add files to the queue. Returns the created entries (with ids) so the
      * caller can immediately drive them through the upload hook.
      * @param {File[]|FileList} files
+     * @param {object} context optional linkage metadata (source, linkedItemId, fieldKey)
      */
-    enqueueUploads: (files = []) => {
+    enqueueUploads: (files = [], context = {}) => {
       const list = Array.from(files || []);
       const entries = list.map((file) => ({
         id: nextUploadId(),
@@ -55,7 +56,8 @@ export function createUploadActions({ set, get }) {
         key: null,
         url: null,
         error: null,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        ...(context && typeof context === "object" ? context : {})
       }));
       if (entries.length) {
         set((state) => ({ uploads: [...state.uploads, ...entries] }));
