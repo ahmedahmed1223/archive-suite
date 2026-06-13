@@ -884,9 +884,10 @@
   - الجهد: 6-8 أسابيع.
   - المصدر: feature-proposals-2026 (محور 4 — ميزة #22).
 
-- [ ] `[P2]` ⏱️L **سير عمل المراجعة والموافقة (Draft → Review → Approved → Published)** — لا حالات للمحتوى؛ أي مستخدم بإذن تعديل يمكنه نشر مباشرة.
+- [x] `[P2]` ⏱️L **سير عمل المراجعة والموافقة (Draft → Review → Approved → Published)** — لا حالات للمحتوى؛ أي مستخدم بإذن تعديل يمكنه نشر مباشرة.
   - الملفات: حقل `status` في `StorageRow.data`؛ `archive app/src/components/review/ReviewWorkflow.jsx`؛ تكامل مع نظام RBAC الموجود.
   - التنفيذ: 4 حالات (مسودة/قيد المراجعة/معتمد/منشور)؛ إشعارات للمراجعين عند تقديم عنصر؛ تعليقات مراجعة منظمة مع طلب تعديلات؛ سجل مراجعة كامل؛ تكامل مع ACL + Comments.
+  - ✅ **مُنجز ومتحقق (2026-06-13):** أصبحت صفحة التفاصيل تعرض `StatusTransitionMenu` في رأس السجل حسب `workflowStatus` ودور المستخدم، وتطبّق الانتقال عبر API سير العمل ثم تحفظ الحالة الجديدة في السجل المحلي مع تحديث النسخة. تحقق: `DetailPage.relations.test.jsx` و`StatusTransitionMenu.test.jsx`.
   - الجهد: 4-6 أسابيع.
   - المصدر: feature-proposals-2026 (محور 4 — ميزة #24).
 
@@ -2180,7 +2181,7 @@
 ### 20.3 P1 — نظام Workflow لحالات السجلات (Status Flow + Webhooks)
 
 - [x] `[P1]` ⏱️L **آلة حالات معرّفة للسجلات: مسودة → تحرير → مراجعة → معتمد → منشور → مؤرشف (+ تواريخ استحقاق)** — انتقالات مضبوطة بالأدوار، وصلاحيات معرّفة لكل انتقال.
-  - ✅ **مُنجز ومتحقق (2026-06-11):** خادم: `archive-server/src/workflow/stateMachine.js` (6 حالات بتسميات عربية، انتقالات data-driven مقيدة بالأدوار — editor للتأليف وadmin/owner للاعتماد/النشر، `applyTransition` immutable يلحق `workflowHistory` ويتحقق من `dueDate`)؛ مساران `GET /api/workflow/definition` و`POST /api/workflow/transition` (تدقيق + webhook `record.status_changed` + push للمالك عند تغيير حالة سجله من مستخدم آخر — تكامل §20.2). عميل: `itemStatus.js` (مرآة الحالات + `isOverdue`) و`StatusTransitionMenu.jsx` (شارة + قائمة انتقالات حسب الدور). تحقق: `verify-workflow.mjs` جديد ضمن سلسلة `verify` (6/6 مرّت) و9 اختبارات vitest (91/91 مرّت). المتبقي لاحقًا: تذكيرات مجدولة لتواريخ الاستحقاق، وتضمين القائمة في صفحة التفاصيل، وschema قابل للتهيئة من واجهة الإدارة.
+  - ✅ **مُنجز ومتحقق (2026-06-11):** خادم: `archive-server/src/workflow/stateMachine.js` (6 حالات بتسميات عربية، انتقالات data-driven مقيدة بالأدوار — editor للتأليف وadmin/owner للاعتماد/النشر، `applyTransition` immutable يلحق `workflowHistory` ويتحقق من `dueDate`)؛ مساران `GET /api/workflow/definition` و`POST /api/workflow/transition` (تدقيق + webhook `record.status_changed` + push للمالك عند تغيير حالة سجله من مستخدم آخر — تكامل §20.2). عميل: `itemStatus.js` (مرآة الحالات + `isOverdue`) و`StatusTransitionMenu.jsx` (شارة + قائمة انتقالات حسب الدور)، ثم دُمجت القائمة في صفحة التفاصيل في 2026-06-13. تحقق: `verify-workflow.mjs` جديد ضمن سلسلة `verify` (6/6 مرّت) و9 اختبارات vitest (91/91 مرّت). المتبقي لاحقًا: تذكيرات مجدولة لتواريخ الاستحقاق، وschema قابل للتهيئة من واجهة الإدارة.
   - **التنفيذ:** تعريف الحالات والانتقالات المسموحة في schema قابل للتهيئة؛ صلاحيات لكل انتقال حسب الدور (admin/editor/viewer)؛ إطلاق webhooks عند كل انتقال حالة (يبني على بنية Webhooks الموجودة في `WebhooksSettings.jsx` وأحداث `record.*` في `server.js`)؛ تواريخ استحقاق مع تنبيهات (تكامل §20.2)؛ سجل انتقالات لكل سجل.
   - **الملفات:** `archive-server/src/workflow/stateMachine.js` (جديد)، `archive-server/src/api/server.js`، `archive app/src/features/archive/itemStatus.js` (يرتبط بـ §17.17 — الحالات المرئية تُبنى فوق هذا الـ workflow)، `archive app/src/components/workflow/StatusTransitionMenu.jsx`.
   - يرتبط بـ: §17.17 (شارات الحالة)، §18.1 (سجل النشاط)، §20.2 (تنبيهات الاستحقاق).

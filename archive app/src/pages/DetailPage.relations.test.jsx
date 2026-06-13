@@ -133,4 +133,15 @@ describe("DetailPage relations tab", () => {
 
     expect(state.removeRelation).toHaveBeenCalledWith("rel-1");
   });
+
+  it("renders the workflow status menu on the detail header", () => {
+    renderDetailPage({
+      videoItems: [
+        { ...baseItems[0], workflowStatus: "review" },
+        ...baseItems.slice(1)
+      ]
+    });
+
+    expect(screen.getByRole("button", { name: /حالة السجل: مراجعة.*تغيير الحالة/ })).toBeInTheDocument();
+  });
 });
