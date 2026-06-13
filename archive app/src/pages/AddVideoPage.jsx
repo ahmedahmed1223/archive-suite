@@ -208,7 +208,18 @@ function FieldInput({ field, value, onChange, inputId }) {
       ...(field.options || []).map((option) => jsx("option", { value: option, children: option }, option))
     ] });
   }
-  if (field.type === "tags" || field.type === "multiselect") {
+  if (field.type === "multiselect") {
+    const selected = Array.isArray(value) ? value : value ? [value] : [];
+    return jsx("select", {
+      id: inputId,
+      multiple: true,
+      value: selected,
+      onChange: (event) => onChange(key, Array.from(event.target.selectedOptions, (option) => option.value)),
+      className: `${commonClass} min-h-28 py-2`,
+      children: (field.options || []).map((option) => jsx("option", { value: option, children: option }, option))
+    });
+  }
+  if (field.type === "tags") {
     return jsx("input", { id: inputId, value: Array.isArray(value) ? value.join("، ") : value || "", onChange: (event) => onChange(key, parseVideoTags(event.target.value)), className: commonClass, placeholder: "قيم مفصولة بفاصلة" });
   }
   if (field.type === "localFile") {

@@ -364,7 +364,8 @@
   - جدول: `api_keys` (hash, name, scopes[], lastUsed, expiresAt). ✅ مُطبَّق في `archive-server/prisma/schema.prisma` (`model ApiKey` → `@@map("api_keys")`: `keyHash`/`name`/`scopes[]`/`lastUsedAt`/`expiresAt` + `prefix`/`active`/`ownerId`).
   - الخادم: `archive-server/src/auth/apiKeyService.js` (إصدار/تجزئة/تحقّق/إلغاء بنطاقات scoped). الواجهة: `archive app/src/components/settings/ApiKeysSettings.jsx` (إصدار/قائمة/إلغاء + كشف المفتاح مرة واحدة) + `ApiKeysSettings.test.jsx`، مدمجة في تبويب الإعدادات. مرجع: commits b8155b0 / a8626e3 / c89b801.
 
-- [ ] `[P3]` ⏱️L **حقول بيانات وصفية مخصصة** — إضافة حقول مُعرَّفة من المستخدم (نص/رقم/تاريخ/قائمة) لكل نوع محتوى.
+- [x] `[P3]` ⏱️L **حقول بيانات وصفية مخصصة** — إضافة حقول مُعرَّفة من المستخدم (نص/رقم/تاريخ/قائمة) لكل نوع محتوى.
+  - ✅ **مكتملة 2026-06-13:** صفحة الأنواع تنشئ حقولاً لكل نوع محتوى، ونماذج الإضافة/التفاصيل تحفظ القيم في `metadata` وتعرضها؛ أُكمل دعم القوائم المتعددة كنوع قابل للاختيار مع واجهة `select multiple` واختبار وحدة يثبت قبول النوع وخياراته.
 
 ---
 
