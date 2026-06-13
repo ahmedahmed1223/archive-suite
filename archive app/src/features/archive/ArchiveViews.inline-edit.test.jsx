@@ -73,4 +73,28 @@ describe("VideoTableView inline cell editing", () => {
       expect(screen.getByRole("textbox", { name: /عنوان المادة/ })).toBeInTheDocument();
     });
   });
+
+  it("edits custom metadata columns inline", async () => {
+    const onCellSave = vi.fn();
+    renderTable({
+      onCellSave,
+      items: [{ ...baseItem, metadata: { director: "سلمى" } }],
+      columns: [
+        { id: "title", visible: true, width: 220 },
+        { id: "metadata:director", label: "المخرج", visible: true, width: 160, fieldType: "text" },
+        { id: "actions", visible: true, width: 160 }
+      ]
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /المخرج/ }));
+
+    const input = screen.getByRole("textbox", { name: /المخرج/ });
+    fireEvent.change(input, { target: { value: "ليلى" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(onCellSave).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "item-1" }),
+      { metadata: { director: "ليلى" } }
+    );
+  });
 });
