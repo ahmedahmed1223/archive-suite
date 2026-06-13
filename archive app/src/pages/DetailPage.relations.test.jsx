@@ -116,6 +116,9 @@ describe("DetailPage relations tab", () => {
     expect(within(region).getByText("verified transcript")).toBeInTheDocument();
     expect(screen.getByText("مواد قد ترتبط بهذا السياق")).toBeInTheDocument();
     expect(screen.getByText("Suggested Context")).toBeInTheDocument();
+    expect(screen.getByText("اقتراحات تحسين هذا العنصر")).toBeInTheDocument();
+    expect(screen.getByText("ثبّت أفضل عنصر مشابه كعلاقة")).toBeInTheDocument();
+    expect(screen.getByText("أضف مصدر الملف أو رابط الوصول")).toBeInTheDocument();
 
     fireEvent.click(within(region).getByRole("button", { name: "إضافة علاقة" }));
     const dialog = screen.getByRole("dialog", { name: "إضافة علاقة" });
