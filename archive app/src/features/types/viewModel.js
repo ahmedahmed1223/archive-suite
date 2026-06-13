@@ -8,6 +8,7 @@ export const FIELD_TYPE_OPTIONS = [
   { id: "number", label: "رقم" },
   { id: "date", label: "تاريخ" },
   { id: "select", label: "قائمة" },
+  { id: "multiselect", label: "قائمة متعددة" },
   { id: "tags", label: "وسوم" },
   { id: "checkbox", label: "اختيار" },
   { id: "url", label: "رابط" },
