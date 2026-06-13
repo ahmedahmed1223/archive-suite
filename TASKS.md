@@ -2185,8 +2185,9 @@
 
 ### 20.4 P1 — تصدير متقدّم: PDF منسّق + قوالب Excel + صيغ أكاديمية
 
-- [ ] `[P1]` ⏱️L **قدرة تصدير منسّقة: تقارير PDF بهوية بصرية (pdf-lib)، قوالب Excel قابلة للتخصيص، وصيغ BibTeX/RIS أكاديمية** — التصدير الحالي CSV/Excel خام عبر XLSX فقط.
+- [x] `[P1]` ⏱️L **قدرة تصدير منسّقة: تقارير PDF بهوية بصرية (pdf-lib)، قوالب Excel قابلة للتخصيص، وصيغ BibTeX/RIS أكاديمية** — التصدير الحالي CSV/Excel خام عبر XLSX فقط.
   - 🔄 **تقدم 2026-06-11 (جزء الاستشهادات):** أُنجزت صيغتا BibTeX/RIS عبر `archive-server/src/export/citationExport.js` (دوال نقية: `recordToBibtex`/`recordToRis`/`recordsTo*`/`makeCiteKey`، اشتقاق السنة من `createdAt`، تهريب أحرف BibTeX الخاصة مع إبقاء URL/ID خامًا، تخطّي المحذوف). مدموجتان في `exportRecords` وقائمة سماح `/api/export` (`csv,xlsx,zip,bibtex,ris`). تحقق: 7 اختبارات في `verify-export.mjs` (16/16 مرّت). المتبقي من البند: تقارير PDF بهوية بصرية (pdf-lib + خط عربي) وقوالب Excel قابلة للتخصيص.
+  - ✅ **مُنجز ومتحقق (2026-06-13):** أُضيف `pdf-lib` + `@pdf-lib/fontkit` لتوليد تقارير PDF منسّقة مع غلاف وملخص وجدول سجلات، وبحث تلقائي عن خط عربي عبر `ARCHIVE_PDF_FONT_PATH` أو مسارات النظام الشائعة مع fallback آمن. أُضيفت صيغة `xlsx-template` بورقة بيانات وورقة تعليمات وورقة إعدادات قالب قابلة للتخصيص، وتوسّعت قائمة السماح في `/api/export` لتشمل `pdf` و`xlsx-template`، كما ظهرت الصيغ الجديدة في زر التصدير داخل الواجهة. تحقق: `pnpm --filter archive-server run verify:export` مرّ شاملاً اختبارات PDF، قالب Excel، ومسار HTTP للصيغتين.
   - **التنفيذ:** تقارير PDF (غلاف + جداول منسّقة + دعم RTL/خط عربي مدمج) عبر مكتبة pdf خفيفة (`pdf-lib`)؛ قوالب Excel معرّفة مسبقاً (أعمدة/تنسيق/شعار) فوق `xlsx` الموجودة؛ تصدير مراجع BibTeX/RIS للاستخدام الأكاديمي (تحويل حقول العنصر إلى مدخلات استشهاد).
   - **الملفات:** `archive-server/src/export/pdfReport.js` (جديد)، `archive-server/src/export/citationExport.js` (جديد)، توسعة `archive-server/src/export/exportService.js`، خيارات في `DataCenterPage.jsx`/`ReportsPage.jsx`.
   - **تنبيه:** فحص الخط العربي المدمج (حجم/ترخيص)؛ تعقيم إدخال المستخدم في حقول PDF.

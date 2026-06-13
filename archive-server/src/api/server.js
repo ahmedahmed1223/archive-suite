@@ -1555,13 +1555,14 @@ export function createApiServer({
       }
     }
 
-    // POST /api/export — export archive records as csv, xlsx, or json
+    // POST /api/export — export archive records as csv, xlsx, pdf, citations, or json
     if (req.method === "POST" && url.split("?")[0] === "/api/export") {
       if (overLimit(res, "rpc", req)) return undefined;
       if (!requireAuth(req, res)) return undefined;
       try {
         const body = await readJsonBody(req);
-        const format = ["csv", "xlsx", "zip"].includes(body.format) ? body.format : "csv";
+        const allowed = ["csv", "xlsx", "xlsx-template", "pdf", "zip", "bibtex", "ris"];
+        const format = allowed.includes(body.format) ? body.format : "csv";
         const store = typeof body.store === "string" && body.store ? body.store : "videoItems";
         const ids = Array.isArray(body.ids) ? body.ids.slice(0, 10000) : null;
 
@@ -2111,14 +2112,14 @@ export function createApiServer({
       }
     }
 
-    // POST /api/export — export records as CSV, XLSX, or ZIP
+    // POST /api/export — export records as CSV, XLSX, PDF, citations, or ZIP
     if (req.method === "POST" && url === "/api/export") {
       const claims = requireAuthClaims(req, res);
       if (!claims) return undefined;
       const { format = "csv", store = "videoItems", ids = null } = body || {};
-      const allowed = ["csv", "xlsx", "zip", "bibtex", "ris"];
+      const allowed = ["csv", "xlsx", "xlsx-template", "pdf", "zip", "bibtex", "ris"];
       if (!allowed.includes(format)) {
-        return send(res, 400, { ok: false, error: `Unsupported format: ${format}. Use csv, xlsx, zip, bibtex, or ris.` });
+        return send(res, 400, { ok: false, error: `Unsupported format: ${format}. Use csv, xlsx, xlsx-template, pdf, zip, bibtex, or ris.` });
       }
       const result = await exportRecords(resolveStorage(), { format, store, ids }).catch((err) => {
         log.error({ err }, "Export failed");
