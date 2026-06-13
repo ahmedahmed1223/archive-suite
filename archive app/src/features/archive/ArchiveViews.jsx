@@ -956,9 +956,29 @@ const COLUMN_LABELS = {
   actions: "إجراءات"
 };
 
+function getColumnLabel(column) {
+  return column?.label || COLUMN_LABELS[column?.id] || column?.id || "";
+}
+
+function getMetadataColumnKey(column) {
+  if (!column?.id || typeof column.id !== "string") return "";
+  if (column.id.startsWith("metadata:")) return column.id.slice("metadata:".length);
+  return column.metadataKey || "";
+}
+
+function normalizeInlineFieldType(fieldType) {
+  const value = String(fieldType || "text");
+  return ["text", "tags", "number", "date", "select"].includes(value) ? value : "text";
+}
+
+function normalizeInlineOptions(options = []) {
+  return options.map((option) => typeof option === "string" ? { value: option, label: option } : option);
+}
+
 function isInlineEditableTableColumn(column, typeOptions = []) {
   if (!column || column.visible === false) return false;
   if (column.id === "type") return typeOptions.length > 0;
+  if (getMetadataColumnKey(column)) return true;
   return column.id === "title" || column.id === "tags";
 }
 
@@ -977,9 +997,66 @@ function getFileSizeForItem(item) {
   return file?.size > 0 ? formatFileSize(file.size) : null;
 }
 
+function valuesEqual(a, b) {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    const left = Array.isArray(a) ? a : [];
+    const right = Array.isArray(b) ? b : [];
+    return left.length === right.length && left.every((value, index) => value === right[index]);
+  }
+  return a === b;
+}
+
 function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview, onOpen, onFavorite, onDelete, onRestore, onBulkToggle, typeLabel, subtypeLabel, typeOptions, editingCell, onStartCellEdit, onCommitCellEdit, onCancelCellEdit }) {
   const isEditingCell = (columnId) => editingCell?.itemId === item.id && editingCell?.columnId === columnId;
   const canInlineEdit = !showDeleted && !bulkMode && typeof onStartCellEdit === "function";
+  const metadataKey = getMetadataColumnKey(column);
+  if (metadataKey) {
+    const label = getColumnLabel(column);
+    const value = item.metadata?.[metadataKey];
+    const fieldType = normalizeInlineFieldType(column.fieldType || column.type);
+    const options = normalizeInlineOptions(column.options || []);
+    if (isEditingCell(column.id)) {
+      return jsx("td", {
+        className: size.cell,
+        style: { minWidth: column.width },
+        children: jsx(InlineCellEditor, {
+          value,
+          fieldType,
+          options,
+          isEditing: true,
+          placeholder: label,
+          onSave: (nextValue, meta = {}) => {
+            const navigationMeta = { ...meta, columnId: column.id };
+            if (valuesEqual(nextValue, value)) {
+              if (meta.navigationDirection) onCommitCellEdit?.(item, null, navigationMeta);
+              else onCancelCellEdit?.();
+              return;
+            }
+            onCommitCellEdit?.(item, {
+              metadata: {
+                ...(item.metadata || {}),
+                [metadataKey]: nextValue
+              }
+            }, navigationMeta);
+          },
+          onCancel: onCancelCellEdit
+        })
+      }, column.id);
+    }
+    return jsx("td", {
+      className: size.cell,
+      style: { minWidth: column.width },
+      children: jsx(InlineCellEditor, {
+        value,
+        fieldType,
+        options,
+        isEditing: false,
+        placeholder: label,
+        disabled: !canInlineEdit,
+        onStartEdit: () => onStartCellEdit?.(item.id, column.id)
+      })
+    }, column.id);
+  }
   switch (column.id) {
     case "title": {
       if (isEditingCell("title")) {
@@ -1265,7 +1342,7 @@ export function VideoTableView({ items, previewItem, typeLabel, subtypeLabel, ty
                 }),
                 ...visibleColumns.map((column) => jsx(ResizableHeader, {
                   column,
-                  label: COLUMN_LABELS[column.id] || column.id,
+                  label: getColumnLabel(column),
                   cellClass: size.cell,
                   onResize: onColumnResize
                 }, column.id))
