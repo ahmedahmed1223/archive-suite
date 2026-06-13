@@ -36,6 +36,8 @@ import { motion } from "framer-motion";
 
 import { appConfirm } from "../components/common/ConfirmDialog.js";
 import { TagAutocomplete } from "../components/forms/TagAutocomplete.jsx";
+import { ArchiveImprovementSuggestions } from "../components/recommendations/ArchiveImprovementSuggestions.jsx";
+import { RelatedContentPanel } from "../components/recommendations/RelatedContentPanel.jsx";
 import { MobileActionBar, MotionPage, ResponsiveTabs, UXEmptyState } from "../components/ui/index.js";
 import { RecordVersionHistory } from "../components/records/RecordVersionHistory.jsx";
 import { AddRelationDialog } from "../components/relations/AddRelationDialog.jsx";
@@ -56,7 +58,7 @@ import { VideoPlayer } from "../components/media/VideoPlayer.jsx";
 import { parseSubtitles, segmentsToCues } from "../features/media/subtitleParser.js";
 import { transcriptToSrt } from "../features/media/transcriptToSrt.js";
 import { computeCompleteness, COMPLETENESS_TIERS } from "../features/archive/completeness.js";
-import { getRelatedItems } from "../features/archive/relatedItems.js";
+import { getItemImprovementSuggestions, getRelatedItems } from "../features/archive/relatedItems.js";
 import { getItemRelations } from "../features/relations/viewModel.js";
 import { parseTimestampSegments, hasTimestamps } from "../features/archive/timestampLinks.js";
 import { getTranscriptSegments } from "../features/search/viewModel.js";
@@ -76,6 +78,11 @@ import { AiAssistBar } from "../features/ai/AiAssistBar.jsx";
 import { applyProofread, applySummaryToNotes, buildSuggestPayload, correctionsCount, hasSourceText, mergeTagText } from "../features/ai/viewModel.js";
 import { canDeleteComment, extractMentionUsernames, getItemComments } from "../features/comments/viewModel.js";
 import { FIELD_ACL_ROLES, canViewField, normalizeFieldAcl } from "../features/field-acl/viewModel.js";
+import {
+  filterDismissedRecommendations,
+  getRecommendationFeedback,
+  setRecommendationFeedback
+} from "../features/recommendations/recommendationFeedback.js";
 import { resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 import { createMediaClient } from "../features/media/mediaClient.js";
@@ -462,6 +469,7 @@ export function DetailPage() {
   const [importedCues, setImportedCues] = React.useState([]);
   const [captionSize, setCaptionSize] = React.useState("md");
   const [captionColor, setCaptionColor] = React.useState("#ffffff");
+  const [recommendationFeedback, setRecommendationFeedbackState] = React.useState(() => getRecommendationFeedback());
   const transcriptSegments = React.useMemo(() => item ? getTranscriptSegments(item) : [], [item]);
   // Derive subtitle cues from timed transcript segments: each cue runs until the
   // next timed segment starts (4s fallback for the last one).
@@ -606,6 +614,18 @@ export function DetailPage() {
     () => getItemRelations(item?.id, itemRelations),
     [item?.id, itemRelations]
   );
+  const explicitRelationIds = React.useMemo(() => [
+    ...(explicitItemRelations.outgoing || []).map((relation) => relation.targetId),
+    ...(explicitItemRelations.incoming || []).map((relation) => relation.sourceId)
+  ].filter(Boolean), [explicitItemRelations]);
+  const improvementSuggestions = React.useMemo(
+    () => item ? getItemImprovementSuggestions(item, videoItems, { relatedItems, explicitRelationIds, limit: 4 }) : [],
+    [explicitRelationIds, item, relatedItems, videoItems]
+  );
+  const visibleImprovementSuggestions = React.useMemo(
+    () => filterDismissedRecommendations(improvementSuggestions, recommendationFeedback),
+    [improvementSuggestions, recommendationFeedback]
+  );
   const itemHistory = React.useMemo(
     () => (changeHistory || []).filter((record) => record.itemId === item?.id && Array.isArray(record.changes) && record.changes.length > 0),
     [changeHistory, item?.id]
@@ -721,6 +741,33 @@ export function DetailPage() {
     else acl[key] = roles;
     return { ...current, fieldAcl: acl };
   });
+  const handleImprovementSuggestion = (suggestion) => {
+    if (suggestion.targetItemId) {
+      setSelectedItemId?.(suggestion.targetItemId);
+      return;
+    }
+    if (suggestion.action === "archive") {
+      setCurrentPage?.("archive");
+      return;
+    }
+    setActiveDetailTab("data");
+    setEditing(true);
+    if (suggestion.id === "add-peer-tags" && suggestion.suggestedTags?.length) {
+      setDraft((current) => {
+        const base = current || {
+          ...item,
+          tagsText: (item.tags || []).join("، "),
+          metadata: { ...(item.metadata || {}) },
+          fieldAcl: normalizeFieldAcl(item.fieldAcl || {})
+        };
+        return { ...base, tagsText: mergeTagText(base.tagsText, suggestion.suggestedTags) };
+      });
+    }
+  };
+  const handleRecommendationFeedback = (suggestion, value) => {
+    setRecommendationFeedbackState(setRecommendationFeedback(suggestion.key || suggestion.id, value));
+    if (value === "dismissed") showToast?.("تم إخفاء الاقتراح", "success");
+  };
   const applyPrimaryLocalFile = (file) => {
     const patch = createVideoLocalFilePatch(file, { currentTitle: draft?.title || item.title });
     if (!patch) return;
@@ -1368,21 +1415,12 @@ export function DetailPage() {
               onAddRelation: () => setRelationDialogOpen(true),
               onRemoveRelation: handleRemoveRelation
             }),
-            relatedItems.length ? jsxs("section", { children: [
-              jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Gauge, { className: "h-4 w-4 va-accent-text" }), "مواد قد ترتبط بهذا السياق"] }),
-              jsx("ul", { className: "mt-3 space-y-2", children: relatedItems.map((related) => jsx("li", { children: jsxs("button", {
-                type: "button",
-                onClick: () => setSelectedItemId?.(related.item.id),
-                className: "w-full rounded-xl va-surface-subtle border p-3 text-right transition-colors hover:border-emerald-500/25",
-                children: [
-                  jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-                    jsx("span", { className: "min-w-0 flex-1 truncate text-sm font-semibold text-white", children: related.item.title || "بدون عنوان" }),
-                    jsx("span", { dir: "ltr", className: "shrink-0 font-mono text-[10px] va-accent-text", children: `${related.percent}%` })
-                  ] }),
-                  related.reason ? jsx("p", { className: "mt-1 text-[11px] text-gray-500", children: related.reason }) : null
-                ]
-              }) }, related.item.id)) })
-            ] }) : null,
+            jsx(RelatedContentPanel, { items: relatedItems, onOpenItem: (related) => setSelectedItemId?.(related.id) }),
+            jsx(ArchiveImprovementSuggestions, {
+              suggestions: visibleImprovementSuggestions,
+              onAction: handleImprovementSuggestion,
+              onFeedback: handleRecommendationFeedback
+            }),
             jsx(AddRelationDialog, {
               isOpen: relationDialogOpen,
               sourceItem: item,

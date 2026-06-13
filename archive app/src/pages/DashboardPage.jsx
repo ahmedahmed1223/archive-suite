@@ -40,11 +40,18 @@ import {
   UXEmptyState
 } from "../components/ui/V1Primitives.jsx";
 import { KbdHint } from "../components/common/Kbd.jsx";
+import { ArchiveImprovementSuggestions } from "../components/recommendations/ArchiveImprovementSuggestions.jsx";
 import {
   createDashboardStats,
   getDailyFocusItems,
   getDashboardDemoItemIds
 } from "../features/dashboard/viewModel.js";
+import { getArchiveImprovementSuggestions } from "../features/archive/relatedItems.js";
+import {
+  filterDismissedRecommendations,
+  getRecommendationFeedback,
+  setRecommendationFeedback
+} from "../features/recommendations/recommendationFeedback.js";
 import {
   normalizeDashboardLayout,
   resetDashboardLayout,
@@ -69,6 +76,7 @@ const DASHBOARD_PANEL_TITLES = {
   dailyFocus: "أولويات اليوم",
   operations: "إجراءات العمليات",
   savedViews: "عروض محفوظة",
+  recommendations: "اقتراحات التحسين",
   distribution: "توزيع المحتوى",
   orgMetrics: "مؤشرات تنظيمية",
   recentItems: "آخر المواد",
@@ -264,6 +272,7 @@ export function DashboardPage() {
     showToast
   } = useAppStore();
   const [commandQuery, setCommandQuery] = React.useState("");
+  const [recommendationFeedback, setRecommendationFeedbackState] = React.useState(() => getRecommendationFeedback());
 
   const stats = React.useMemo(() => createDashboardStats({
     videoItems,
@@ -285,6 +294,10 @@ export function DashboardPage() {
     sqliteError
   }), [isPasswordSet, recentItems, settings, sqliteError, stats]);
   const distribution = React.useMemo(() => getTypeDistribution(videoItems, contentTypes), [contentTypes, videoItems]);
+  const dashboardSuggestions = React.useMemo(
+    () => filterDismissedRecommendations(getArchiveImprovementSuggestions(videoItems, { contentTypes, limit: 4 }), recommendationFeedback),
+    [contentTypes, recommendationFeedback, videoItems]
+  );
   const demoIds = React.useMemo(() => getDashboardDemoItemIds(videoItems), [videoItems]);
   const dismissedBanners = settings.ui?.dismissedBanners || [];
   const demoBannerDismissed = dismissedBanners.includes("demo");
@@ -405,6 +418,15 @@ export function DashboardPage() {
         openArchiveFor("");
         break;
     }
+  };
+
+  const handleDashboardSuggestion = (suggestion) => {
+    if (suggestion.action === "types") goTo("types");
+    else openArchiveFor("");
+  };
+  const handleDashboardSuggestionFeedback = (suggestion, value) => {
+    setRecommendationFeedbackState(setRecommendationFeedback(suggestion.key || suggestion.id, value));
+    if (value === "dismissed") showToast?.("تم إخفاء الاقتراح", "success");
   };
 
   const reportItems = [
@@ -637,6 +659,13 @@ export function DashboardPage() {
         actions: jsx("button", { type: "button", onClick: () => goTo("search"), className: "text-sm va-accent-text hover:text-emerald-200", children: "إدارة من البحث" }),
         children: jsx(SavedViewsBar, { views: savedViews, onApply: applySavedView, onRemove: removeView })
       }, "savedViews"),
+
+      dashboardSuggestions.length > 0 && jsx(ArchiveImprovementSuggestions, {
+        title: "اقتراحات تحسين الأرشيف",
+        suggestions: dashboardSuggestions,
+        onAction: handleDashboardSuggestion,
+        onFeedback: handleDashboardSuggestionFeedback
+      }, "recommendations"),
 
       jsx(CommandPanel, {
         title: "توزيع المحتوى",
