@@ -4,7 +4,7 @@
 
 هذا المستودع هو monorepo يحتوي على ثلاثة أجزاء رئيسية:
 
-- `archive app/` — واجهة المستخدم الأمامية المبنية بـ React و Vite.
+- `archive-app/` — واجهة المستخدم الأمامية المبنية بـ React و Vite.
 - `archive-core/` — مكتبة النواة المشتركة التي تطرح منافذ التخزين وAI والمصادقة.
 - `archive-server/` — خادم الإنتاج مع دعم Postgres/PocketBase وAI وخيارات تخزين متعددة.
 
@@ -21,7 +21,7 @@
 
 ```text
 Arch_App/
-  ├─ archive app/      # الواجهة الأمامية
+  ├─ archive-app/      # الواجهة الأمامية
   ├─ archive-core/     # النواة المشتركة
   ├─ archive-server/   # الخادم والإنتاج
   ├─ .git/
@@ -97,7 +97,7 @@ bash setup.sh        # أو: pnpm deploy
 
 ## توصيف الأجزاء
 
-### `archive app/`
+### `archive-app/`
 
 واجهة SPA تدمج:
 

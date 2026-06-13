@@ -1,6 +1,6 @@
 # archive-suite
 
-pnpm monorepo: `archive app` (React SPA), `archive-core` (shared lib), `archive-server` (Node backend).
+pnpm monorepo: `archive-app` (React SPA), `archive-core` (shared lib), `archive-server` (Node backend).
 
 ## Commands
 
