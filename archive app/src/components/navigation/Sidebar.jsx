@@ -65,6 +65,7 @@ import {
   hasSidebarLayoutDraftChanges,
   normalizeSidebarLayout,
   reorderSidebarItem,
+  resolveSidebarResponsiveState,
   setSidebarCollapsed,
   setSidebarItemHidden,
   setSidebarItemPinned
@@ -236,9 +237,18 @@ export function Sidebar() {
   const [editing, setEditing] = React.useState(false);
   const [draftLayout, setDraftLayout] = React.useState(null);
   const activeLayout = editing && draftLayout ? draftLayout : savedLayout;
-  // Collapse never applies on mobile (drawer) or while editing (need room for controls).
-  const collapsed = !isMobile && !editing && Boolean(activeLayout.collapsed);
+  const responsiveSidebar = resolveSidebarResponsiveState({
+    isMobile,
+    requestedOpen: sidebarOpen,
+    persistedCollapsed: activeLayout.collapsed,
+    editing
+  });
+  const collapsed = responsiveSidebar.collapsed;
   const shaped = applySidebarLayout(guidedGroups, activeLayout, { editing });
+
+  React.useEffect(() => {
+    if (!isMobile && sidebarOpen) toggleSidebar?.();
+  }, [isMobile, sidebarOpen, toggleSidebar]);
 
   const persistLayout = (nextLayout) => {
     updateSettings?.({ ui: { ...(settings.ui || {}), sidebarLayout: nextLayout } });
@@ -253,7 +263,7 @@ export function Sidebar() {
     if (editing) return;
     setSelectedItemId(null);
     setCurrentPage(pageId);
-    if (isMobile && sidebarOpen) toggleSidebar();
+    if (responsiveSidebar.drawerOpen) toggleSidebar();
   };
 
   // Renders one nav entry: a plain button in view mode, or a button + edit
@@ -359,7 +369,7 @@ export function Sidebar() {
           children: [
             !editing && jsx(FavoritesSidebarSection, {
               collapsed,
-              onNavigate: () => { if (isMobile && sidebarOpen) toggleSidebar(); }
+              onNavigate: () => { if (responsiveSidebar.drawerOpen) toggleSidebar(); }
             }),
             editing && jsxs("div", {
               className: "sticky top-0 z-10 -mx-1 mb-1 flex items-center gap-1.5 rounded-xl border va-accent-border va-accent-bg-soft p-2",
@@ -479,15 +489,15 @@ export function Sidebar() {
         type: "button",
         onClick: toggleSidebar,
         className: "va-surface-muted fixed right-3 top-3 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-xl border text-white shadow-lg backdrop-blur md:hidden",
-        "aria-label": sidebarOpen ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية",
-        children: sidebarOpen ? jsx(X, { className: "h-5 w-5" }) : jsx(Menu, { className: "h-5 w-5" })
+        "aria-label": responsiveSidebar.drawerOpen ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية",
+        children: responsiveSidebar.drawerOpen ? jsx(X, { className: "h-5 w-5" }) : jsx(Menu, { className: "h-5 w-5" })
       }),
-      isMobile && sidebarOpen && jsx("div", {
+      isMobile && responsiveSidebar.drawerOpen && jsx("div", {
         className: "fixed inset-0 z-40 bg-black/50 md:hidden",
         onClick: toggleSidebar,
         "aria-hidden": "true"
       }),
-      isMobile ? sidebarOpen && jsx("aside", {
+      isMobile ? responsiveSidebar.drawerOpen && jsx("aside", {
         role: "navigation",
         "aria-label": "القائمة الجانبية",
         className: "va-sidebar fixed top-0 right-0 z-50 flex h-full flex-col border-l border-white/10 bg-gray-950",
