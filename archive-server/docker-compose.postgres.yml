@@ -11,7 +11,9 @@
 services:
   # PostgreSQL 17 — production database backend
   postgres:
-    image: postgres:17-alpine
+    # pgvector/pgvector ships PostgreSQL 17 + the `vector` extension, which the
+    # 20260608120000_add_pgvector migration requires (plain postgres:17 lacks it).
+    image: pgvector/pgvector:pg17
     container_name: archive-postgres
     restart: unless-stopped
     security_opt:
@@ -262,10 +264,11 @@ services:
     image: dpage/pgadmin4:latest
     container_name: archive-pgadmin
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+    # pgAdmin's entrypoint needs to chown its data dir and drop privileges, which
+    # `no-new-privileges` + `cap_drop: ALL` block (python3: "Operation not
+    # permitted"). It is bound to 127.0.0.1 only, so the relaxed posture here is
+    # local-admin-only and never exposed publicly.
+    user: root
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Set PGADMIN_EMAIL in .env}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?Set PGADMIN_PASSWORD in .env}

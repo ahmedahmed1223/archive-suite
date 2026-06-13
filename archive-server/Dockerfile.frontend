@@ -38,10 +38,16 @@ RUN chmod -R 644 /usr/share/nginx/html && \
     mkdir -p /var/run/nginx && \
     chown -R nginx:nginx /var/run/nginx
 
+# Point the pid file at a writable tmpfs path. The base image's nginx.conf
+# already declares a `pid` directive, so passing another via `-g` crashed nginx
+# ("pid directive is duplicate"). Rewrite it here and keep the CMD `-g` to
+# `daemon off;` only.
+RUN sed -i 's#^pid .*#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf
+
 # Use unprivileged nginx user
 USER nginx
 
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD wget -qO- http://127.0.0.1/ || exit 1
-CMD ["nginx", "-g", "daemon off; pid /tmp/nginx.pid;"]
+CMD ["nginx", "-g", "daemon off;"]
