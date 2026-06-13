@@ -79,6 +79,22 @@ export function applySidebarLayout(groups = [], layout, { editing = false } = {}
   return { pinned, groups: outGroups };
 }
 
+export function resolveSidebarResponsiveState({
+  isMobile = false,
+  requestedOpen = false,
+  persistedCollapsed = false,
+  editing = false
+} = {}) {
+  if (isMobile) {
+    return { mode: "drawer", drawerOpen: !!requestedOpen, collapsed: false };
+  }
+  return {
+    mode: "desktop",
+    drawerOpen: false,
+    collapsed: !editing && !!persistedCollapsed
+  };
+}
+
 export function setSidebarCollapsed(layout, collapsed) {
   return { ...layout, version: SIDEBAR_LAYOUT_VERSION, collapsed: !!collapsed, items: { ...(layout?.items || {}) } };
 }
