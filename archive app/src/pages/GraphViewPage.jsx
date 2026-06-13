@@ -49,6 +49,24 @@ function createStylesheet() {
         width: "mapData(weight, 1, 6, 1, 5)"
       }
     },
+    {
+      selector: 'edge[edgeKind = "manual"]',
+      style: {
+        "curve-style": "bezier",
+        "line-color": "#34d399",
+        "target-arrow-color": "#34d399",
+        "target-arrow-shape": "triangle",
+        opacity: 0.82,
+        width: 2.5,
+        label: "data(label)",
+        color: "#bbf7d0",
+        "font-size": 9,
+        "text-rotation": "autorotate",
+        "text-background-color": "#020617",
+        "text-background-opacity": 0.75,
+        "text-background-padding": 2
+      }
+    },
     { selector: "node:selected", style: { "border-color": "#34d399", "border-width": 3, color: "#ffffff" } },
     { selector: ".cy-highlighted", style: { "line-color": "#34d399", opacity: 0.9 } }
   ];
@@ -114,7 +132,7 @@ function SelectedNodePanel({ node, typeLabel, onOpen }) {
 }
 
 export function GraphViewPage() {
-  const { videoItems = [], hierarchicalTags = [], virtualCollections = [], setSelectedItemId, setCurrentPage } = useAppStore();
+  const { videoItems = [], hierarchicalTags = [], virtualCollections = [], itemRelations = [], setSelectedItemId, setCurrentPage } = useAppStore();
   const [typeFilter, setTypeFilter] = React.useState("all");
   const [tagFilter, setTagFilter] = React.useState("");
   const [maxNodes, setMaxNodes] = React.useState(GRAPH_MAX_NODES);
@@ -126,10 +144,10 @@ export function GraphViewPage() {
 
   const model = React.useMemo(
     () => buildGraphModel(
-      { videoItems, hierarchicalTags, collections: virtualCollections },
+      { videoItems, hierarchicalTags, collections: virtualCollections, itemRelations },
       { typeFilter, tagFilter, maxNodes }
     ),
-    [videoItems, hierarchicalTags, virtualCollections, typeFilter, tagFilter, maxNodes]
+    [videoItems, hierarchicalTags, virtualCollections, itemRelations, typeFilter, tagFilter, maxNodes]
   );
   const nodeById = React.useMemo(() => new Map(model.nodes.map((node) => [node.id, node])), [model.nodes]);
   const selectedNode = selectedId ? nodeById.get(selectedId) || null : null;
@@ -201,7 +219,7 @@ export function GraphViewPage() {
 
   const emptyDescription = model.nodes.length === 0
     ? (typeFilter !== "all" || tagFilter ? "لا توجد مواد مطابقة للفلاتر الحالية. جرّب «كل الأنواع» أو «كل الوسوم»." : "أضف مواد إلى الأرشيف أولاً لتظهر هنا.")
-    : "لا توجد وسوم مشتركة بعد — تظهر الروابط عندما تتشارك المواد وسوماً أو تنتمي لنفس المجموعة. أضف وسوماً مشتركة أو انقل المواد إلى مجموعات.";
+    : "لا توجد وسوم أو علاقات يدوية مشتركة بعد — تظهر الروابط عندما تتشارك المواد وسوماً، تنتمي لنفس مجموعة، أو تربط بينها علاقة صريحة.";
 
   return jsxs(MotionPage, {
     className: "space-y-4 p-4 sm:p-6",

@@ -1,11 +1,13 @@
 import { normalizeArabicSearchText } from "../../utils/formatting.js";
+import { getRelationLabel } from "../relations/viewModel.js";
 
 /**
  * Pure graph-model builder for the relations map (§20.7).
  *
  * Nodes  = active (non-deleted) archive items, colored by documentType.
- * Edges  = shared tags (Arabic-normalized + hierarchical-tag alias aware)
- *          and same-collection membership. weight = overlap count.
+ * Edges  = manual item relations, shared tags (Arabic-normalized +
+ *          hierarchical-tag alias aware), and same-collection membership.
+ *          Shared edge weight = overlap count; manual relations are directed.
  *
  * No DOM, no store access — unit-testable.
  */
@@ -67,7 +69,7 @@ function createPairKey(indexA, indexB) {
 /**
  * Build the {nodes, edges} relations model.
  *
- * @param {{ videoItems?: Array, hierarchicalTags?: Array, collections?: Array }} data
+ * @param {{ videoItems?: Array, hierarchicalTags?: Array, collections?: Array, itemRelations?: Array }} data
  * @param {{ typeFilter?: string, tagFilter?: string, maxNodes?: number }} [options]
  *   typeFilter — documentType key or "all"; tagFilter — canonical tag key or "".
  * @returns {{
@@ -81,7 +83,7 @@ function createPairKey(indexA, indexB) {
  * }}
  */
 export function buildGraphModel(data = {}, options = {}) {
-  const { videoItems = [], hierarchicalTags = [], collections = [] } = data;
+  const { videoItems = [], hierarchicalTags = [], collections = [], itemRelations = [] } = data;
   const { typeFilter = "all", tagFilter = "", maxNodes = GRAPH_MAX_NODES } = options;
 
   const canonicalize = createTagCanonicalizer(hierarchicalTags);
@@ -153,8 +155,36 @@ export function buildGraphModel(data = {}, options = {}) {
     }
   });
 
-  // --- Assemble --------------------------------------------------------------
   const degree = new Map();
+
+  // --- Edges: explicit manual relations -------------------------------------
+  const manualEdges = [];
+  const manualEdgeKeys = new Set();
+  itemRelations.forEach((relation) => {
+    if (!relation || relation.mirrorOf) return;
+    const sourceIndex = indexById.get(relation.sourceId);
+    const targetIndex = indexById.get(relation.targetId);
+    if (sourceIndex === undefined || targetIndex === undefined || sourceIndex === targetIndex) return;
+    const id = `rel:${relation.id || `${relation.sourceId}:${relation.targetId}:${relation.type}`}`;
+    if (manualEdgeKeys.has(id)) return;
+    manualEdgeKeys.add(id);
+    manualEdges.push({
+      id,
+      source: relation.sourceId,
+      target: relation.targetId,
+      weight: 2,
+      edgeKind: "manual",
+      relationType: relation.type,
+      relationLabel: getRelationLabel(relation.type, true),
+      note: relation.note || "",
+      sharedTags: [],
+      sharedCollections: []
+    });
+    degree.set(sourceIndex, (degree.get(sourceIndex) || 0) + 1);
+    degree.set(targetIndex, (degree.get(targetIndex) || 0) + 1);
+  });
+
+  // --- Assemble --------------------------------------------------------------
   const edges = [];
   pairData.forEach(({ a, b, sharedTags, sharedCollections }) => {
     const weight = sharedTags.length + sharedCollections.length;
@@ -164,12 +194,15 @@ export function buildGraphModel(data = {}, options = {}) {
       source: items[a].id,
       target: items[b].id,
       weight,
+      edgeKind: "shared",
       sharedTags,
       sharedCollections
     });
     degree.set(a, (degree.get(a) || 0) + 1);
     degree.set(b, (degree.get(b) || 0) + 1);
   });
+
+  edges.push(...manualEdges);
 
   const nodes = items.map((item, index) => {
     const documentType = getItemDocumentType(item);
@@ -209,7 +242,15 @@ export function toCytoscapeElements(model) {
     })),
     ...model.edges.map((edge) => ({
       group: "edges",
-      data: { id: edge.id, source: edge.source, target: edge.target, weight: edge.weight }
+      data: {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        weight: edge.weight,
+        edgeKind: edge.edgeKind || "shared",
+        label: edge.relationLabel || "",
+        relationType: edge.relationType || ""
+      }
     }))
   ];
 }
