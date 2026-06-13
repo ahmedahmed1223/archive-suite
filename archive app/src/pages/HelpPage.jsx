@@ -2,6 +2,7 @@ import {
   parseAppRoute,
   writeAppRoute
 } from "../services/router/index.js";
+import { PAGE_MANIFEST } from "../app/pageManifest.js";
 import {
   useAppStore,
   useAuthStore
@@ -38,6 +39,8 @@ import {
 } from "../features/help/content.js";
 import {
   createHelpShortcutList,
+  createHelpContextCards,
+  filterHelpContextCards,
   filterHelpFaqItems,
   filterHelpSections,
   normalizeHelpSectionId
@@ -453,6 +456,9 @@ export function HelpPage() {
   }), [keyboardShortcuts, onRoleProfileChange, openRolePage, roleProfile]);
   const filteredSections = React.useMemo(() => filterHelpSections(sections, helpQuery), [sections, helpQuery]);
   const filteredFaqItems = React.useMemo(() => filterHelpFaqItems(HELP_FAQ_ITEMS, helpQuery), [helpQuery]);
+  const contextCards = React.useMemo(() => createHelpContextCards(PAGE_MANIFEST), []);
+  const filteredContextCards = React.useMemo(() => filterHelpContextCards(contextCards, helpQuery), [contextCards, helpQuery]);
+  const visibleContextCards = helpQuery.trim() ? filteredContextCards : filteredContextCards.slice(0, 8);
 
   const scrollToSection = React.useCallback((sectionId, options = {}) => {
     const normalizedSectionId = normalizeHelpSectionId(sectionId);
@@ -577,6 +583,7 @@ export function HelpPage() {
                       className: "flex flex-wrap items-center gap-2",
                       children: [
                         jsx(StatusBadge, { tone: "emerald", children: `${formatNumber(filteredSections.length)} قسم` }),
+                        jsx(StatusBadge, { tone: "amber", children: `${formatNumber(filteredContextCards.length)} تلميح` }),
                         jsx(StatusBadge, { tone: "slate", children: `${formatNumber(keyboardShortcuts.length)} اختصار` })
                       ]
                     })
@@ -607,6 +614,48 @@ export function HelpPage() {
                   children: [section.icon, section.title]
                 }, section.id))
               })
+            })
+          }),
+          jsx("section", {
+            className: "mb-6 space-y-3",
+            dir: "rtl",
+            "aria-labelledby": "help-context-title",
+            children: jsxs(Fragment, {
+              children: [
+                jsxs("div", {
+                  className: "flex flex-wrap items-center justify-between gap-3",
+                  children: [
+                    jsxs("h2", {
+                      id: "help-context-title",
+                      className: "va-title-section flex items-center gap-2",
+                      children: [jsx(Lightbulb, { className: "h-4 w-4 text-amber-400" }), "تلميحات سياقية حسب الصفحة"]
+                    }),
+                    jsx(StatusBadge, { tone: "slate", children: `${formatNumber(visibleContextCards.length)} معروض` })
+                  ]
+                }),
+                visibleContextCards.length === 0 ? jsx("p", {
+                  className: "va-card-subtle va-body rounded-xl p-4 text-center",
+                  children: "لا توجد تلميحات صفحات مطابقة للبحث الحالي."
+                }) : jsx("div", {
+                  className: "grid gap-3 md:grid-cols-2 xl:grid-cols-4",
+                  children: visibleContextCards.map((card) => jsxs("button", {
+                    type: "button",
+                    onClick: () => scrollToSection(card.helpSection),
+                    className: "va-card-subtle group min-h-32 rounded-xl p-4 text-right transition-colors hover:border-[var(--va-action)]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+                    children: [
+                      jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+                        jsxs("span", { className: "min-w-0", children: [
+                          jsx("span", { className: "va-label block truncate text-white", children: card.title }),
+                          jsx("span", { className: "va-faint mt-1 block truncate text-xs", children: card.breadcrumb })
+                        ] }),
+                        jsx("span", { className: "rounded-lg border border-white/10 px-2 py-1 text-[10px] va-faint", children: card.heavy ? "متقدم" : card.group })
+                      ] }),
+                      jsx("p", { className: "va-bidi-text va-body va-muted mt-3 line-clamp-3", dir: "rtl", children: card.hint }),
+                      jsx("span", { className: "va-label va-accent-text mt-3 inline-flex", children: "افتح القسم المرتبط" })
+                    ]
+                  }, card.id))
+                })
+              ]
             })
           }),
           jsx("div", {
