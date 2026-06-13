@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { PDFDocument } from "pdf-lib";
+import { read as XLSXRead, utils as XLSXUtils } from "xlsx";
 
 import { buildFfmpegArgs, ExportError } from "../src/export/ffmpegPlan.js";
 import { exportTimelineToMp4 } from "../src/export/mp4.js";
@@ -189,6 +191,64 @@ run("exportRecords — bibtex skips soft-deleted records", async () => {
   const text = bib.buffer.toString("utf-8");
   assert.match(text, /تاريخ الأرشيف الرقمي/);
   assert.doesNotMatch(text, /محذوف/);
+});
+
+run("exportRecords — pdf produces a readable branded report", async () => {
+  const provider = { async getAll() { return [citationRecord]; } };
+  const pdf = await exportRecords(provider, { format: "pdf", store: "video_items" });
+  assert.equal(pdf.contentType, "application/pdf");
+  assert.match(pdf.filename, /\.pdf$/);
+  assert.equal(pdf.buffer.subarray(0, 5).toString("utf8"), "%PDF-");
+  const doc = await PDFDocument.load(pdf.buffer);
+  assert.ok(doc.getPageCount() >= 1);
+});
+
+run("exportRecords — xlsx-template includes data, instructions, and template settings", async () => {
+  const provider = { async getAll() { return [citationRecord]; } };
+  const xlsx = await exportRecords(provider, { format: "xlsx-template", store: "video_items" });
+  assert.match(xlsx.contentType, /spreadsheetml/);
+  assert.match(xlsx.filename, /template.*\.xlsx$/);
+  const workbook = XLSXRead(xlsx.buffer, { type: "buffer" });
+  assert.deepEqual(workbook.SheetNames, ["بيانات الأرشيف", "تعليمات", "إعدادات القالب"]);
+  const dataRows = XLSXUtils.sheet_to_json(workbook.Sheets["بيانات الأرشيف"], { header: 1 });
+  assert.equal(dataRows[0][1], "العنوان");
+});
+
+run("HTTP: /api/export streams pdf and xlsx-template behind auth", async () => {
+  const SECRET = "export-api";
+  const storage = { async getAll() { return [citationRecord]; } };
+  const server = createApiServer({ backend: "test", authSecret: SECRET, resolveStorage: () => storage, rateLimit: null });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const token = signJwt({ sub: "u1", role: "editor" }, SECRET);
+  try {
+    const noAuth = await fetch(`${base}/api/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ format: "pdf" }),
+    });
+    assert.equal(noAuth.status, 401);
+
+    const pdf = await fetch(`${base}/api/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ format: "pdf" }),
+    });
+    assert.equal(pdf.status, 200);
+    assert.equal(pdf.headers.get("content-type"), "application/pdf");
+    assert.match(pdf.headers.get("content-disposition") || "", /archive-report-.*\.pdf/);
+
+    const template = await fetch(`${base}/api/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ format: "xlsx-template" }),
+    });
+    assert.equal(template.status, 200);
+    assert.match(template.headers.get("content-type") || "", /spreadsheetml/);
+    assert.match(template.headers.get("content-disposition") || "", /archive-template-.*\.xlsx/);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
 });
 
 process.on("beforeExit", () => {
