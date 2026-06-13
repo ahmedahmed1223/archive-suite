@@ -25,9 +25,12 @@ import { ACTIONS } from "../features/users/permissions.js";
 import {
   USER_ROLES,
   canDeactivateUser,
+  createInvitationMetadata,
+  createTemporaryPassword,
   createUserValue,
   getFilteredUsers,
   getUserSummary,
+  isValidInviteEmail,
   normalizeUserRole
 } from "../features/users/viewModel.js";
 import { formatDateTime, formatNumber } from "../utils/formatting.js";
@@ -43,6 +46,7 @@ function UserForm({ user, users, onCancel, onSave }) {
   const [email, setEmail] = React.useState(user?.email || "");
   const [role, setRole] = React.useState(normalizeUserRole(user?.role || "viewer"));
   const [password, setPassword] = React.useState("");
+  const [inviteByEmail, setInviteByEmail] = React.useState(false);
   const usernameId = React.useId();
   const displayNameId = React.useId();
   const emailId = React.useId();
@@ -51,16 +55,22 @@ function UserForm({ user, users, onCancel, onSave }) {
   const displayNameRef = React.useRef(null);
 
   const usernameExists = !user && users.some((item) => item.username.trim().toLowerCase() === username.trim().toLowerCase());
-  const canSave = Boolean(username.trim() && displayName.trim() && !usernameExists && (user || password.length >= 6));
+  const canSave = Boolean(
+    username.trim() &&
+    displayName.trim() &&
+    !usernameExists &&
+    (user || (inviteByEmail ? isValidInviteEmail(email) : password.length >= 6))
+  );
 
   const submit = async (keepOpen) => {
     if (!canSave) return;
-    const ok = await onSave({ ...user, username, displayName, email: email.trim() || undefined, role, password }, { keepOpen });
+    const ok = await onSave({ ...user, username, displayName, email: email.trim() || undefined, role, password, inviteByEmail }, { keepOpen });
     if (ok && keepOpen) {
       setUsername("");
       setDisplayName("");
       setEmail("");
       setPassword("");
+      setInviteByEmail(false);
       setRole(normalizeUserRole("viewer"));
       window.requestAnimationFrame(() => displayNameRef.current?.focus());
     }
@@ -78,7 +88,7 @@ function UserForm({ user, users, onCancel, onSave }) {
     children: jsxs("div", {
       className: "space-y-4",
       children: [
-        jsx("p", { className: "text-xs leading-relaxed text-gray-500", children: user ? "لا يتم تغيير كلمة المرور من هنا؛ استخدم تبويب الأمان عند الحاجة." : "سيتم إنشاء كلمة مرور أولية لهذا المستخدم دون تغيير المستخدم الحالي." }),
+        jsx("p", { className: "text-xs leading-relaxed text-gray-500", children: user ? "لا يتم تغيير كلمة المرور من هنا؛ استخدم تبويب الأمان عند الحاجة." : "يمكن إنشاء مستخدم بكلمة مرور أولية أو دعوة بريدية معلّقة مع إلزام تغيير كلمة المرور." }),
         jsxs("div", {
           className: "grid gap-3 md:grid-cols-2",
           children: [
@@ -119,7 +129,16 @@ function UserForm({ user, users, onCancel, onSave }) {
                 placeholder: "user@example.com"
               })
             ] }),
-            !user && jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
+            !user && jsxs("div", { className: "space-y-2 text-sm text-gray-300", children: [
+              jsxs("label", { className: "flex items-center gap-2 rounded-xl border border-white/10 bg-gray-950/25 px-3 py-2 text-xs text-gray-300", children: [
+                jsx("input", {
+                  type: "checkbox",
+                  checked: inviteByEmail,
+                  onChange: (event) => setInviteByEmail(event.target.checked),
+                  className: "h-4 w-4 rounded border-white/20 bg-gray-900"
+                }),
+                "دعوة بالبريد وإنشاء كلمة مرور مؤقتة"
+              ] }),
               jsx("label", { htmlFor: passwordId, className: "block", children: "كلمة المرور الأولية" }),
               jsx("input", {
                 id: passwordId,
@@ -127,8 +146,9 @@ function UserForm({ user, users, onCancel, onSave }) {
                 onChange: (event) => setPassword(event.target.value),
                 type: "password",
                 dir: "ltr",
+                disabled: inviteByEmail,
                 className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
-                placeholder: "6 أحرف على الأقل"
+                placeholder: inviteByEmail ? "سيتم توليدها تلقائيًا" : "6 أحرف على الأقل"
               })
             ] }),
             jsxs("div", { className: `space-y-2 ${user ? "md:col-span-2" : ""}`, children: [
@@ -178,11 +198,13 @@ function UserCard({ user, currentUser, users, index, recentOpsCount = 0, onEdit,
               jsx("h3", { className: "truncate text-base font-bold text-white", children: user.displayName || user.username }),
               jsx("span", { className: "rounded-full border px-2 py-0.5 text-xs font-medium", style: { borderColor: `${accentColor}45`, backgroundColor: `${accentColor}18`, color: accentColor }, children: role.label }),
               !user.isActive && jsx("span", { className: "rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-xs text-red-200", children: "معطل" }),
+              user.inviteStatus === "pending" && jsx("span", { className: "rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200", children: "دعوة معلّقة" }),
               isCurrent && jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-xs va-accent-text-on-soft", children: "الحالي" })
             ] }),
             jsx("p", { className: "mt-1 truncate text-xs text-gray-500 font-mono", dir: "ltr", children: `@${user.username}` }),
             user.email && jsx("p", { className: "mt-0.5 truncate text-xs text-gray-500", dir: "ltr", children: user.email }),
             user.lastLoginAt && jsx("p", { className: "mt-2 text-xs text-gray-600", children: `آخر دخول: ${formatDateTime(user.lastLoginAt)}` }),
+            user.invitedAt && jsx("p", { className: "mt-2 text-xs text-amber-300/80", children: `أُنشئت الدعوة: ${formatDateTime(user.invitedAt)}` }),
             jsxs("p", {
               className: "mt-1 flex items-center gap-1.5 text-xs text-gray-500",
               children: [
@@ -253,21 +275,42 @@ export function UsersPage() {
         }));
         showToast?.("تم تحديث المستخدم", "success");
       } else {
-        const policyErrors = validatePasswordStrength(draft.password);
+        const temporaryPassword = draft.inviteByEmail ? createTemporaryPassword() : "";
+        const passwordForHash = draft.inviteByEmail ? temporaryPassword : draft.password;
+        const policyErrors = validatePasswordStrength(passwordForHash);
         if (policyErrors.length > 0) {
           showToast?.(policyErrors[0], "error");
           return false;
         }
-        const passwordHash = await hashPassword(draft.password);
+        const invitation = draft.inviteByEmail
+          ? createInvitationMetadata({ email: draft.email, invitedBy: currentUser?.id || currentUser?.username })
+          : null;
+        const passwordHash = await hashPassword(passwordForHash);
         await addUser?.(createUserValue({
           username: draft.username,
           displayName: draft.displayName,
+          email: draft.email,
           passwordHash,
           role: draft.role,
           isActive: true,
-          mustChangePassword: true
+          mustChangePassword: true,
+          ...(invitation || {})
         }));
-        showToast?.("تم إنشاء المستخدم", "success");
+        if (draft.inviteByEmail) {
+          showNotification?.(`كلمة المرور المؤقتة لـ ${draft.username}: ${temporaryPassword}`, {
+            type: "success",
+            title: "تم إنشاء دعوة المستخدم",
+            category: "users",
+            persistent: true,
+            targetLabel: draft.email,
+            action: {
+              label: "نسخ",
+              run: () => navigator.clipboard?.writeText?.(temporaryPassword)
+            }
+          });
+        } else {
+          showToast?.("تم إنشاء المستخدم", "success");
+        }
       }
       if (!opts.keepOpen) {
         setShowForm(false);
