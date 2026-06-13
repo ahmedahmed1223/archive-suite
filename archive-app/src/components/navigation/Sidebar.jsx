@@ -117,14 +117,19 @@ const iconMap = {
 };
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState(() => typeof window !== "undefined" ? window.innerWidth < 768 : false);
+  const getIsMobile = React.useCallback(() => {
+    if (typeof window === "undefined") return false;
+    if (typeof window.matchMedia === "function") return window.matchMedia("(max-width: 767px)").matches;
+    return window.innerWidth < 768;
+  }, []);
+  const [isMobile, setIsMobile] = React.useState(getIsMobile);
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => setIsMobile(getIsMobile());
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  }, [getIsMobile]);
   return isMobile;
 }
 
@@ -176,6 +181,7 @@ export function Sidebar() {
     notificationHistory,
     notificationCenterOpen,
     toggleNotificationCenter,
+    setSidebarOpen,
     settings = {},
     updateSettings,
     getWatchLaterCount
@@ -246,9 +252,39 @@ export function Sidebar() {
   const collapsed = responsiveSidebar.collapsed;
   const shaped = applySidebarLayout(guidedGroups, activeLayout, { editing });
 
+  const setDrawerOpen = React.useCallback((open) => {
+    if (setSidebarOpen) {
+      setSidebarOpen(open);
+      return;
+    }
+    if (open !== sidebarOpen) toggleSidebar?.();
+  }, [setSidebarOpen, sidebarOpen, toggleSidebar]);
+
+  const toggleDrawer = React.useCallback(() => {
+    setDrawerOpen(!responsiveSidebar.drawerOpen);
+  }, [responsiveSidebar.drawerOpen, setDrawerOpen]);
+
   React.useEffect(() => {
-    if (!isMobile && sidebarOpen) toggleSidebar?.();
-  }, [isMobile, sidebarOpen, toggleSidebar]);
+    if (!isMobile && sidebarOpen) setDrawerOpen(false);
+  }, [isMobile, sidebarOpen, setDrawerOpen]);
+
+  React.useEffect(() => {
+    if (!responsiveSidebar.drawerOpen || typeof window === "undefined") return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setDrawerOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [responsiveSidebar.drawerOpen, setDrawerOpen]);
+
+  React.useEffect(() => {
+    if (!responsiveSidebar.drawerOpen || typeof document === "undefined") return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [responsiveSidebar.drawerOpen]);
 
   const persistLayout = (nextLayout) => {
     updateSettings?.({ ui: { ...(settings.ui || {}), sidebarLayout: nextLayout } });
@@ -263,7 +299,7 @@ export function Sidebar() {
     if (editing) return;
     setSelectedItemId(null);
     setCurrentPage(pageId);
-    if (responsiveSidebar.drawerOpen) toggleSidebar();
+    if (responsiveSidebar.drawerOpen) setDrawerOpen(false);
   };
 
   // Renders one nav entry: a plain button in view mode, or a button + edit
@@ -355,7 +391,7 @@ export function Sidebar() {
           }),
           isMobile && jsx("button", {
             type: "button",
-            onClick: toggleSidebar,
+            onClick: () => setDrawerOpen(false),
             className: "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white",
             "aria-label": "إغلاق القائمة الجانبية",
             children: jsx(X, { className: "h-4 w-4" })
@@ -364,12 +400,12 @@ export function Sidebar() {
       }),
       jsx("nav", {
         className: "custom-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto p-3",
-        "aria-label": "القائمة الجانبية",
+        "aria-label": "روابط القائمة الجانبية",
         children: jsxs(Fragment, {
           children: [
             !editing && jsx(FavoritesSidebarSection, {
               collapsed,
-              onNavigate: () => { if (responsiveSidebar.drawerOpen) toggleSidebar(); }
+              onNavigate: () => { if (responsiveSidebar.drawerOpen) setDrawerOpen(false); }
             }),
             editing && jsxs("div", {
               className: "sticky top-0 z-10 -mx-1 mb-1 flex items-center gap-1.5 rounded-xl border va-accent-border va-accent-bg-soft p-2",
@@ -487,14 +523,14 @@ export function Sidebar() {
     children: [
       isMobile && jsx("button", {
         type: "button",
-        onClick: toggleSidebar,
-        className: "va-surface-muted fixed right-3 top-3 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-xl border text-white shadow-lg backdrop-blur md:hidden",
+        onClick: toggleDrawer,
+        className: "va-surface-muted fixed right-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-[60] inline-flex h-11 w-11 items-center justify-center rounded-xl border text-white shadow-lg backdrop-blur md:hidden",
         "aria-label": responsiveSidebar.drawerOpen ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية",
         children: responsiveSidebar.drawerOpen ? jsx(X, { className: "h-5 w-5" }) : jsx(Menu, { className: "h-5 w-5" })
       }),
       isMobile && responsiveSidebar.drawerOpen && jsx("div", {
         className: "fixed inset-0 z-40 bg-black/50 md:hidden",
-        onClick: toggleSidebar,
+        onClick: () => setDrawerOpen(false),
         "aria-hidden": "true"
       }),
       isMobile ? responsiveSidebar.drawerOpen && jsx("aside", {

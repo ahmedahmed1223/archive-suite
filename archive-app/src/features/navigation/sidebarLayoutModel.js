@@ -7,6 +7,16 @@
 
 export const SIDEBAR_LAYOUT_VERSION = 1;
 
+function resolveStoredCollapsed(stored) {
+  if (!stored || typeof stored !== "object") return false;
+  if (typeof stored.collapsed === "boolean") return stored.collapsed;
+  return stored.mode === "collapsed";
+}
+
+export function resolveSidebarLayoutMode(stored) {
+  return resolveStoredCollapsed(stored) ? "collapsed" : "expanded";
+}
+
 /** Fresh default layout covering exactly `availableIds` (in their given order). */
 export function getDefaultSidebarLayout(availableIds = []) {
   const items = {};
@@ -24,7 +34,7 @@ export function getDefaultSidebarLayout(availableIds = []) {
  */
 export function normalizeSidebarLayout(stored, availableIds = []) {
   if (!stored || typeof stored !== "object" || stored.version !== SIDEBAR_LAYOUT_VERSION || !stored.items || typeof stored.items !== "object") {
-    return getDefaultSidebarLayout(availableIds);
+    return { ...getDefaultSidebarLayout(availableIds), collapsed: resolveStoredCollapsed(stored) };
   }
   const items = {};
   availableIds.forEach((id, index) => {
@@ -37,7 +47,7 @@ export function normalizeSidebarLayout(stored, availableIds = []) {
         }
       : { order: index, hidden: false, pinned: false };
   });
-  return { version: SIDEBAR_LAYOUT_VERSION, collapsed: !!stored.collapsed, items };
+  return { version: SIDEBAR_LAYOUT_VERSION, collapsed: resolveStoredCollapsed(stored), items };
 }
 
 function flagsFor(layout, id, fallbackOrder = 0) {
