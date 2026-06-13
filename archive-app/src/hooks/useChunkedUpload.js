@@ -1,34 +1,35 @@
 import React from "react";
 
 /**
- * Real file upload with progress + SHA-256 de-duplication.
+ * Real file upload with progress, SHA-256 de-duplication, and resumable
+ * server-side chunked upload.
  *
- * The backend exposes a whole-blob endpoint (`PUT /api/files/{key}`), so the
- * "chunked" part here is client-side: we hash the file in 5MB slices (to keep
- * memory flat and yield to the event loop) to derive a content-addressed key,
- * then stream the blob to the server via XMLHttpRequest so we get real upload
- * progress events (fetch() cannot report request-body progress).
+ * Strategy:
+ * - Files > LARGE_FILE_THRESHOLD use the chunked session API:
+ *     POST /api/upload-sessions
+ *     PUT  /api/upload-sessions/:id/chunks/:index
+ *     POST /api/upload-sessions/:id/complete
+ *   This lets the client resume after a network drop without restarting.
  *
- * Resumable/server-side chunking needs dedicated backend range endpoints that
- * do not exist yet — see TASKS.md §753 (remaining work).
+ * - Files ≤ LARGE_FILE_THRESHOLD use a single whole-blob PUT for simplicity.
  */
 
 export const UPLOAD_CHUNK_BYTES = 5 * 1024 * 1024; // 5 MB
+const LARGE_FILE_THRESHOLD = UPLOAD_CHUNK_BYTES;    // use chunked API above this size
 
 /**
- * Stream a SHA-256 digest of a File/Blob without holding it all in memory at
- * once. Falls back to a size+name pseudo-key if Web Crypto is unavailable.
+ * Compute a SHA-256 hex digest of a File/Blob.
+ * Reads in UPLOAD_CHUNK_BYTES slices to yield to the event loop between slices.
+ * Falls back to a size+name pseudo-key when Web Crypto is unavailable.
  * @param {Blob} blob
- * @param {(ratio: number) => void} [onProgress] 0..1 hashing progress
- * @returns {Promise<string>} hex digest (content-addressed key)
+ * @param {(ratio: number) => void} [onProgress] 0..1
+ * @returns {Promise<string>} hex digest
  */
 export async function hashBlob(blob, onProgress) {
   const subtle = globalThis.crypto?.subtle;
   if (!subtle?.digest) {
     return `nohash-${blob.size}-${(blob.name || "blob").replace(/[^\w.-]/g, "_")}`;
   }
-  // digest() needs the whole buffer; read in slices only to report progress and
-  // avoid a single giant synchronous read on very large files.
   const total = blob.size || 1;
   const parts = [];
   for (let offset = 0; offset < blob.size; offset += UPLOAD_CHUNK_BYTES) {
@@ -38,20 +39,18 @@ export async function hashBlob(blob, onProgress) {
   }
   const merged = new Uint8Array(blob.size);
   let pos = 0;
-  for (const part of parts) {
-    merged.set(part, pos);
-    pos += part.length;
-  }
+  for (const part of parts) { merged.set(part, pos); pos += part.length; }
   const digest = await subtle.digest("SHA-256", merged);
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
 
+// ── Whole-blob upload (small files / fallback) ────────────────────────────────
+
 /**
- * PUT a blob to `${baseUrl}/api/files/{key}` with real progress + cancellation.
- * Mirrors the contract of the cloud-files FileStore adapter, but via XHR so the
- * caller can render an accurate per-file progress bar.
+ * PUT a whole blob to `{baseUrl}/api/files/{key}` with progress + cancellation.
+ * Uses XHR because fetch() cannot report request-body upload progress.
  * @returns {Promise<{ key: string, url?: string }>}
  */
 export function putBlobWithProgress({ baseUrl = "", key, blob, getToken, onProgress, signal }) {
@@ -63,8 +62,8 @@ export function putBlobWithProgress({ baseUrl = "", key, blob, getToken, onProgr
     if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     if (blob?.type) xhr.setRequestHeader("Content-Type", blob.type);
 
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable) onProgress?.(ev.loaded / ev.total);
     };
     xhr.onload = () => {
       if (xhr.status < 200 || xhr.status >= 300) {
@@ -72,39 +71,133 @@ export function putBlobWithProgress({ baseUrl = "", key, blob, getToken, onProgr
         return;
       }
       let payload;
-      try {
-        payload = JSON.parse(xhr.responseText);
-      } catch {
-        payload = null;
-      }
-      if (payload && payload.ok === false) {
-        reject(new Error(payload.error || "فشل الرفع"));
-        return;
-      }
+      try { payload = JSON.parse(xhr.responseText); } catch { payload = null; }
+      if (payload?.ok === false) { reject(new Error(payload.error || "فشل الرفع")); return; }
       resolve(payload?.result || { key });
     };
     xhr.onerror = () => reject(new Error("انقطع الاتصال أثناء الرفع"));
     xhr.onabort = () => reject(new DOMException("ألغي الرفع", "AbortError"));
     if (signal) {
-      if (signal.aborted) {
-        xhr.abort();
-        return;
-      }
+      if (signal.aborted) { xhr.abort(); return; }
       signal.addEventListener("abort", () => xhr.abort(), { once: true });
     }
     xhr.send(blob);
   });
 }
 
+// ── Chunked session upload (large files) ──────────────────────────────────────
+
+/**
+ * Upload a blob using the server-side chunked session API.
+ * Pass `existingUploadId` + `existingReceivedIndices` to resume a broken upload.
+ * @returns {Promise<{ key: string, url?: string }>}
+ */
+export async function putBlobChunked({
+  baseUrl = "",
+  key,
+  blob,
+  getToken,
+  onProgress,
+  signal,
+  existingUploadId = null,
+  existingReceivedIndices = null,
+}) {
+  const base = String(baseUrl || "").replace(/\/+$/, "");
+  const token = typeof getToken === "function" ? getToken() : "";
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+  const jsonHeaders = { "Content-Type": "application/json", ...authHeaders };
+
+  const totalChunks = Math.ceil(blob.size / UPLOAD_CHUNK_BYTES);
+  let uploadId = existingUploadId;
+  const alreadyReceived = new Set(existingReceivedIndices || []);
+
+  // 1. Init session (skip if resuming)
+  if (!uploadId) {
+    const initRes = await fetch(`${base}/api/upload-sessions`, {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        key,
+        contentType: blob.type || "application/octet-stream",
+        totalSize: blob.size,
+        totalChunks,
+      }),
+      signal,
+    });
+    if (!initRes.ok) {
+      const err = await initRes.json().catch(() => ({}));
+      throw new Error(err.error || `Init failed (HTTP ${initRes.status})`);
+    }
+    const initData = await initRes.json();
+    uploadId = initData.uploadId;
+  }
+
+  // 2. Upload chunks sequentially, skipping already-received ones
+  for (let i = 0; i < totalChunks; i++) {
+    if (signal?.aborted) throw new DOMException("ألغي الرفع", "AbortError");
+
+    if (alreadyReceived.has(i)) {
+      onProgress?.((i + 1) / totalChunks);
+      continue;
+    }
+
+    const start = i * UPLOAD_CHUNK_BYTES;
+    const chunk = blob.slice(start, Math.min(start + UPLOAD_CHUNK_BYTES, blob.size));
+
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", `${base}/api/upload-sessions/${uploadId}/chunks/${i}`);
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.setRequestHeader("Content-Type", "application/octet-stream");
+
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) {
+          onProgress?.((i + ev.loaded / ev.total) / totalChunks);
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status < 200 || xhr.status >= 300) {
+          reject(new Error(`فشل رفع الجزء ${i} (HTTP ${xhr.status})`));
+          return;
+        }
+        onProgress?.((i + 1) / totalChunks);
+        resolve();
+      };
+      xhr.onerror = () => reject(new Error(`انقطع الاتصال أثناء رفع الجزء ${i}`));
+      xhr.onabort = () => reject(new DOMException("ألغي الرفع", "AbortError"));
+      if (signal) {
+        if (signal.aborted) { xhr.abort(); return; }
+        signal.addEventListener("abort", () => xhr.abort(), { once: true });
+      }
+      xhr.send(chunk);
+    });
+  }
+
+  // 3. Complete — assemble on server
+  const completeRes = await fetch(`${base}/api/upload-sessions/${uploadId}/complete`, {
+    method: "POST",
+    headers: jsonHeaders,
+    signal,
+  });
+  if (!completeRes.ok) {
+    const err = await completeRes.json().catch(() => ({}));
+    throw new Error(err.error || `Complete failed (HTTP ${completeRes.status})`);
+  }
+  const completeData = await completeRes.json();
+  return completeData.result || { key };
+}
+
+// ── Main hook ─────────────────────────────────────────────────────────────────
+
 /**
  * Drives a single upload through hash → upload, reporting status to the store.
- * Returns helpers the UploadQueue / add flow can call.
+ * Automatically picks chunked (large files) vs whole-blob (small files).
  *
  * @param {object} deps
- * @param {string} deps.baseUrl           API base (same-origin "" in prod).
- * @param {() => string} [deps.getToken]  bearer token getter.
- * @param {(id: string, patch: object) => void} deps.onUpdate  store updater.
- * @param {(key: string) => boolean} [deps.isDuplicate]  dedup check by content key.
+ * @param {string} [deps.baseUrl]
+ * @param {() => string} [deps.getToken]
+ * @param {(id: string, patch: object) => void} deps.onUpdate
+ * @param {(key: string) => boolean} [deps.isDuplicate]
  */
 export function useChunkedUpload({ baseUrl = "", getToken, onUpdate, isDuplicate } = {}) {
   const controllers = React.useRef(new Map());
@@ -132,13 +225,15 @@ export function useChunkedUpload({ baseUrl = "", getToken, onUpdate, isDuplicate
         }
 
         onUpdate(id, { status: "uploading", progress: 0, key });
-        const result = await putBlobWithProgress({
+
+        const uploadFn = file.size > LARGE_FILE_THRESHOLD ? putBlobChunked : putBlobWithProgress;
+        const result = await uploadFn({
           baseUrl,
           key,
           blob: file,
           getToken,
           signal: controller.signal,
-          onProgress: (ratio) => onUpdate(id, { progress: Math.round(ratio * 100) })
+          onProgress: (ratio) => onUpdate(id, { progress: Math.round(ratio * 100) }),
         });
 
         onUpdate(id, { status: "done", progress: 100, key, url: result?.url });
@@ -149,7 +244,7 @@ export function useChunkedUpload({ baseUrl = "", getToken, onUpdate, isDuplicate
         const aborted = error?.name === "AbortError";
         onUpdate(id, {
           status: aborted ? "paused" : "error",
-          error: aborted ? null : error?.message || "فشل الرفع"
+          error: aborted ? null : (error?.message || "فشل الرفع"),
         });
         return { id, error: error?.message, aborted };
       }

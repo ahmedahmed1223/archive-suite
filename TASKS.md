@@ -750,7 +750,7 @@
 
 ### 13.1 P0 — رفع الملفات ومشغل الوسائط
 
-- [ ] `[P0]` ⏱️XL **رفع الملفات الفعلي مع رفع مقسم وطابور في الخلفية** — النظام يخزن بيانات وصفية فقط، لا يرفع ملفات حقيقية.
+- [x] `[P0]` ⏱️XL **رفع الملفات الفعلي مع رفع مقسم وطابور في الخلفية** — النظام يخزن بيانات وصفية فقط، لا يرفع ملفات حقيقية.
   - 🔄 **تقدّم 2026-06-13 (الأساس العامل):** أُنشئت الطبقة الأساسية فوق `FileStore` الموجود (`PUT /api/files/{key}`):
     - `archive-app/src/hooks/useChunkedUpload.js` — رفع فعلي بتقدّم دقيق عبر `XMLHttpRequest` (fetch لا يعطي تقدّم رفع)، بصمة `SHA-256` بمقاطع 5MB لمفتاح محتوى-معنون (دمج تكرارات)، إلغاء عبر `AbortController`.
     - `archive-app/src/stores/slices/uploadSlice.js` — طابور خلفي في المتجر (`enqueueUploads`/`updateUpload`/`retryUpload`/`clearFinishedUploads` + `selectUploadProgress`)، مُركَّب في `appStore.js`.
@@ -762,7 +762,12 @@
     - `AddVideoPage.jsx` يضيف الملف المختار إلى الطابور ويحفظ `uploadId` داخل المادة، ثم يربط إدخال الطابور بـ `linkedItemId` بعد الحفظ.
     - `FileArchiveWizard.jsx` يضيف كل ملف مستورد إلى الطابور بعد إنشاء عنصره مع `linkedItemId`.
     - ✅ اختبارات: `uploadLink.test.js`، `UploadQueueController.test.jsx`، `AddVideoPage.upload.test.jsx`، `FileArchiveWizard.upload.test.jsx`.
-  - ⬜ **المتبقّي:** **endpoints تقسيم/استئناف خلفية** (الخادم حالياً whole-blob فقط، فالاستئناف بعد الانقطاع يتطلب range upload)؛ تحسين hashing ليصبح streaming فعلياً للملفات الكبيرة؛ تحقق بصري نهائي للطابور على الجوال/سطح المكتب.
+  - ✅ **تقدّم 2026-06-14 (endpoints الرفع المقسّم)**:
+    - `archive-server/src/api/chunkedUpload.js` — مدير جلسات الرفع (`initSession`/`receiveChunk`/`completeSession`/`abortSession`/`sessionStatus`)؛ الأجزاء تُخزَّن في `os.tmpdir()` وتُجمَّع عند الاكتمال؛ كنس تلقائي للجلسات المنتهية (TTL 24 ساعة).
+    - 4 endpoints جديدة في `server.js`: `POST /api/upload-sessions` (init) · `PUT /api/upload-sessions/:id/chunks/:index` (جزء) · `POST /api/upload-sessions/:id/complete` (تجميع وكتابة) · `DELETE /api/upload-sessions/:id` (إلغاء).
+    - `useChunkedUpload.js` محدَّث: ملفات > 5MB تستخدم API الجلسة مع استئناف تلقائي (تخطّي الأجزاء المُرفوعة)؛ الملفات الصغيرة تبقى على PUT واحد.
+    - اختبارات: `useChunkedUpload.test.js` (9 اختبارات: hashBlob × 5، putBlobChunked × 4) — **249 اختبار يمرّ**.
+  - ⬜ **المتبقّي (اختياري مستقبلاً):** تحقق بصري نهائي للطابور على الجوال/سطح المكتب.
   - الملفات الجديدة: `archive-app/src/stores/slices/uploadSlice.js`، `archive-app/src/hooks/useChunkedUpload.js`، `archive-app/src/components/upload/UploadQueue.jsx`، `archive-app/src/components/upload/UploadQueueController.jsx`، `archive-app/src/features/upload/uploadLink.js`.
   - التغييرات: `archive-app/src/pages/AddVideoPage.jsx`، `archive-app/src/features/archive/FileArchiveWizard.jsx`، `archive-app/src/app/AppNotifications.jsx`.
   - التنفيذ: رفع مقسم (5MB chunks) عبر `FileStore.putBlob()`؛ استئناف تلقائي بعد انقطاع الإنترنت؛ طابور خلفي يسمح للمستخدم بمواصلة العمل أثناء الرفع؛ شريط تقدم دقيق (نسبة الملف + إجمالي الطابور)؛ كشف التكرارات بـ SHA-256 checksum.

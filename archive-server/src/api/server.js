@@ -59,6 +59,14 @@ import bcrypt from "bcryptjs";
 import { sendPasswordResetEmail, sendMail as defaultSendMail } from "../auth/emailService.js";
 import { createResetToken, consumeResetToken } from "../auth/resetTokenStore.js";
 import { notifyRecordShared, notifyUploadComplete } from "../notifications/notificationService.js";
+import {
+  initSession as initUploadSession,
+  receiveChunk,
+  completeSession as completeUploadSession,
+  abortSession as abortUploadSession,
+  sessionStatus as uploadSessionStatus,
+  CHUNK_BYTES as UPLOAD_CHUNK_BYTES,
+} from "./chunkedUpload.js";
 
 // Minimal dependency-free HTTP server exposing the StorageProvider port to the
 // SPA over a single RPC endpoint. Node's built-in http keeps the runtime image
@@ -1414,6 +1422,84 @@ export function createApiServer({
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "File operation failed" });
       }
     }
+
+    // ── Chunked / resumable upload sessions ────────────────────────────────
+    // POST   /api/upload-sessions                  → init session
+    // GET    /api/upload-sessions/:id/status       → received chunks list (resume support)
+    // PUT    /api/upload-sessions/:id/chunks/:idx  → receive one chunk
+    // POST   /api/upload-sessions/:id/complete     → assemble → FileStore
+    // DELETE /api/upload-sessions/:id              → abort
+    if (url === "/api/upload-sessions" && req.method === "POST") {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const { key, contentType, totalSize, totalChunks } = body || {};
+        const result = await initUploadSession({
+          key,
+          contentType,
+          totalSize: Number(totalSize),
+          totalChunks: Number(totalChunks),
+          userId: claims.sub,
+        });
+        return send(res, 201, { ok: true, ...result, chunkSize: UPLOAD_CHUNK_BYTES });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message });
+      }
+    }
+
+    if (url.startsWith("/api/upload-sessions/")) {
+      const claims = requireAuthClaims(req, res);
+      if (!claims) return undefined;
+      // Parse: /api/upload-sessions/{uploadId}/...
+      const rest = url.slice("/api/upload-sessions/".length);
+      const slashIdx = rest.indexOf("/");
+      const uploadId = slashIdx === -1 ? rest : rest.slice(0, slashIdx);
+      const subPath = slashIdx === -1 ? "" : rest.slice(slashIdx + 1);
+
+      try {
+        if (req.method === "GET" && subPath === "status") {
+          const result = uploadSessionStatus({ uploadId, userId: claims.sub });
+          return send(res, 200, { ok: true, ...result });
+        }
+
+        if (req.method === "PUT" && subPath.startsWith("chunks/")) {
+          const chunkIndex = parseInt(subPath.slice("chunks/".length), 10);
+          const data = await readRawBody(req);
+          const result = await receiveChunk({ uploadId, chunkIndex, data, userId: claims.sub });
+          return send(res, 200, { ok: true, ...result });
+        }
+
+        if (req.method === "POST" && subPath === "complete") {
+          const files = resolveFileStore();
+          const result = await completeUploadSession({ uploadId, userId: claims.sub, files });
+          notifyUploadComplete({
+            prisma,
+            sendMail: notificationSendMail,
+            userId: claims.sub,
+            recordTitle: result?.key || uploadId,
+          });
+          sendPushToUser({
+            prisma,
+            userId: claims.sub,
+            type: "upload",
+            title: `اكتمل الرفع — ${result?.key || uploadId}`,
+            url: "/",
+          });
+          return send(res, 200, { ok: true, result });
+        }
+
+        if (req.method === "DELETE" && !subPath) {
+          const result = await abortUploadSession({ uploadId, userId: claims.sub });
+          return send(res, 200, { ok: true, ...result });
+        }
+
+        return send(res, 404, { ok: false, error: "Not found" });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message });
+      }
+    }
+    // ── End chunked upload ──────────────────────────────────────────────────
 
     if (url === "/api/sync/push" && req.method === "POST") {
       if (!requireAuth(req, res)) return undefined;
