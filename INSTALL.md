@@ -16,26 +16,39 @@ git clone https://github.com/your-org/archive-suite.git
 cd archive-suite
 ```
 
-### 2. تشغيل معالج الإعداد
+### 2. تشغيل معالج النشر الموجّه
 
-```bash
-node scripts/setup.mjs
+**Windows:** انقر نقراً مزدوجاً على `Setup-Archive.bat` — أو من الطرفية:
+
+```powershell
+.\Setup-Archive.bat
 ```
 
-المعالج يقوم تلقائياً بـ:
-- فحص Node.js و Docker
-- اختيار وضع التشغيل (PocketBase للتطوير / PostgreSQL للإنتاج)
-- توليد ملف `.env` بأسرار JWT عشوائية آمنة
-- تشغيل حاويات Docker
-- انتظار صحة النظام وفتح المتصفح
+**Linux / macOS:**
+
+```bash
+bash setup.sh        # أو: pnpm deploy
+```
+
+المعالج يقودك خطوة بخطوة (PostgreSQL إنتاجي):
+- فحص البيئة (Node.js / Docker / Compose)
+- اختيار وضع الوصول: **داخلي (intranet)** أو **عام (نطاق + HTTPS)**
+- ضبط حساب المشرف
+- توليد كل الأسرار تلقائياً (PostgreSQL / Redis / JWT / pgAdmin / Grafana / تشفير النسخ الاحتياطي)
+- كتابة `archive-server/.env` (مع نسخة احتياطية لأي ملف سابق)
+- رفع الحزمة المُحصّنة عبر Docker وانتظار صحة النظام
+
+> دليل النشر الكامل (الوضع الداخلي/العام، الإدارة، التشغيل عند الإقلاع، الترقية):
+> [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 
 ### 3. افتح التطبيق
 
 ```
-http://localhost:8787
+http://localhost:8080      # وضع داخلي (أو http://SERVER_IP:8080 من جهاز آخر)
+https://<your-domain>      # وضع عام
 ```
 
-عند أول تشغيل ستظهر صفحة إنشاء حساب المشرف.
+بيانات دخول المشرف تظهر في ملخّص المعالج عند انتهائه (مرة واحدة — احفظها).
 
 ---
 

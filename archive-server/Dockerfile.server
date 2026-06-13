@@ -11,7 +11,12 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY ["archive app/package.json", "archive app/package.json"]
 COPY archive-core/package.json archive-core/package.json
 COPY archive-server/package.json archive-server/package.json
-RUN pnpm install --frozen-lockfile --filter archive-server... --filter @archive/core --prod
+# Full install (not --prod): the runtime runs `prisma migrate deploy` at start,
+# and the prisma CLI is a devDependency — a prod-only install would omit it.
+RUN pnpm install --frozen-lockfile --filter archive-server... --filter @archive/core
+# @archive/core ships only source (no deps); ensure the dir exists so the
+# runtime stage COPY below never fails on a missing node_modules.
+RUN mkdir -p /app/archive-core/node_modules
 
 # ── 2. build: full install + Prisma client generation ─────────────────────────
 FROM node:24-alpine AS build
@@ -63,4 +68,7 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
 
 # The image is generated for the target Prisma provider at build time. Run the
 # deploy command directly so read-only production containers do not rewrite schema.prisma.
-CMD ["sh", "-c", "pnpm --filter archive-server exec prisma migrate deploy && pnpm --filter archive-server run start"]
+# Call the local binaries directly instead of pnpm: the read-only runtime user
+# cannot let corepack provision pnpm at start. prisma + tsx are linked in
+# archive-server/node_modules/.bin by the full install above.
+CMD ["sh", "-c", "cd /app/archive-server && node_modules/.bin/prisma migrate deploy && exec node_modules/.bin/tsx src/index.js"]
