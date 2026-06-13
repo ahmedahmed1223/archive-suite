@@ -870,9 +870,10 @@
 
 ### 13.5 P2 — ميزات مبتكرة جديدة
 
-- [ ] `[P2]` ⏱️L **نشر سحابي بنقرة واحدة — Railway / DigitalOcean / Render** — لا أزرار Deploy-to-Cloud في README.
+- [x] `[P2]` ⏱️L **نشر سحابي بنقرة واحدة — Railway / DigitalOcean / Render** — لا أزرار Deploy-to-Cloud في README.
   - الملفات: `README.md`، ملفات `railway.json`/`render.yaml`/`do-app-spec.yaml` جديدة.
   - التنفيذ: أزرار "Deploy to Railway/DigitalOcean/Render" في README؛ 4 متغيرات فقط (DOMAIN, ADMIN_EMAIL, ADMIN_PASSWORD, JWT_SECRET)؛ المنصة تتولى البناء والنشر Docker Compose؛ يفتح سوق غير تقني جديد.
+  - ✅ **مُنجز ومتحقق (2026-06-13):** أضيف قسم “النشر السحابي السريع” في `README.md` مع أزرار Render/Railway وتعليمات DigitalOcean App Platform، وأضيفت قوالب `archive-server/deploy/render.yaml` و`archive-server/deploy/railway.json` و`archive-server/deploy/digitalocean-app.yaml`. أضيف فحص `scripts/verify-cloud-deploy.mjs` ومرّ `pnpm run verify:cloud-deploy`.
   - الجهد: 2-3 أسابيع.
   - المصدر: feature-proposals-2026 (محور 2 — ميزة #12).
 
