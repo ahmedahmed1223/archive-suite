@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Download, ChevronDown, FileText, Loader2, Table, Archive } from "lucide-react";
+import { Download, ChevronDown, FileText, Loader2, Table, Archive, FileSpreadsheet } from "lucide-react";
 import { useAppStore } from "../../stores/index.js";
 import { useLoading } from "../../hooks/useLoading.js";
 import { getCloudToken } from "../../bootstrap/cloudSession.js";
 import { startOperation } from "../../features/notifications/operationProgress.js";
 
-const FORMAT_LABELS = { csv: "CSV", xlsx: "Excel", zip: "JSON" };
+const FORMAT_LABELS = { csv: "CSV", xlsx: "Excel", "xlsx-template": "قالب Excel", pdf: "PDF", bibtex: "BibTeX", ris: "RIS", zip: "JSON" };
 
 /**
  * Read a fetch Response body to a Blob while reporting download progress.
@@ -32,6 +32,10 @@ async function readBlobWithProgress(res, onProgress) {
 const FORMATS = [
   { id: "csv", label: "CSV", icon: FileText, desc: "مناسب للجداول" },
   { id: "xlsx", label: "Excel", icon: Table, desc: "مناسب لـ Microsoft Excel" },
+  { id: "xlsx-template", label: "قالب Excel", icon: FileSpreadsheet, desc: "تعليمات + إعدادات" },
+  { id: "pdf", label: "PDF", icon: FileText, desc: "تقرير منسّق" },
+  { id: "bibtex", label: "BibTeX", icon: FileText, desc: "استشهادات أكاديمية" },
+  { id: "ris", label: "RIS", icon: FileText, desc: "Zotero / EndNote" },
   { id: "zip", label: "JSON", icon: Archive, desc: "بيانات كاملة" },
 ];
 
