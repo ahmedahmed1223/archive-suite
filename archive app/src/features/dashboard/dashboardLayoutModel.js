@@ -43,6 +43,21 @@ export function getDefaultDashboardLayout() {
   return { version: DASHBOARD_LAYOUT_VERSION, items };
 }
 
+export function resetDashboardLayout(availableIds = Object.keys(DASHBOARD_DEFAULT_ITEMS)) {
+  const items = {};
+  let nextY = 0;
+  for (const id of availableIds) {
+    const def = DASHBOARD_DEFAULT_ITEMS[id] || { x: 0, y: nextY, w: 12, h: 6, autoHeight: true };
+    items[id] = {
+      ...cloneItem(def),
+      y: nextY,
+      hidden: false
+    };
+    nextY += items[id].h;
+  }
+  return { version: DASHBOARD_LAYOUT_VERSION, items };
+}
+
 function isValidStoredItem(value) {
   return value
     && isFiniteNumber(value.x) && isFiniteNumber(value.y)
