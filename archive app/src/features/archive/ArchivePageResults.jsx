@@ -3,6 +3,7 @@ import { jsx, jsxs } from "react/jsx-runtime";
 
 import { EmptyState } from "../../components/common/EmptyState.jsx";
 import { appPrompt } from "../../components/common/ConfirmDialog.js";
+import { AddRelationDialog } from "../../components/relations/AddRelationDialog.jsx";
 import { SkeletonBlock } from "../../components/ui/index.js";
 import { formatNumber } from "../../utils/formatting.js";
 import { parseVideoTags } from "../videos/viewModel.js";
@@ -326,11 +327,15 @@ function renderItemsForViewMode(deps) {
       ? "va-archive-grid grid auto-rows-fr gap-3"
       : `va-archive-grid auto-rows-fr ${ARCHIVE_GRID_CLASSES[activeItemSize] || ARCHIVE_GRID_CLASSES.comfortable}`,
     style: explicitColumnsStyle,
+    onDragOver: deps.onLinkDragOver,
+    onDrop: deps.onLinkDrop,
     children: visibleItems.map((item, index) => jsx(AnimatedItem, {
       index,
       itemId: item.id,
       className: kbFocusClass(index),
       "data-list-item": "",
+      draggable: Boolean(deps.onLinkDragStart),
+      onDragStart: deps.onLinkDragStart ? (e) => deps.onLinkDragStart(item, e) : undefined,
       children: jsx(VideoCard, itemActions(item, index))
     }, item.id))
   });
@@ -378,8 +383,68 @@ export function ArchivePageResults(props) {
     addItemsToCollection,
     openProjects,
     updateVideoItem,
-    showToast
+    showToast,
+    undoLastActivity,
+    addRelation,
+    itemRelations = [],
+    videoItems = []
   } = props;
+
+  // Ctrl+Z: undo the last undoable inline-edit when focus is not inside a text field.
+  React.useEffect(() => {
+    if (!undoLastActivity) return;
+    function handleGlobalUndo(event) {
+      if (!event.ctrlKey && !event.metaKey) return;
+      if (event.key !== "z" && event.key !== "Z") return;
+      const tag = (document.activeElement?.tagName || "").toUpperCase();
+      if (tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable) return;
+      event.preventDefault();
+      undoLastActivity().then((result) => {
+        if (result) showToast?.("تم التراجع عن آخر تعديل", "success");
+      }).catch(() => {});
+    }
+    document.addEventListener("keydown", handleGlobalUndo);
+    return () => document.removeEventListener("keydown", handleGlobalUndo);
+  }, [undoLastActivity, showToast]);
+
+  // Drag-to-link: drag one card onto another to open AddRelationDialog.
+  // Uses a ref for the drag source to avoid re-renders mid-drag.
+  const linkDragSourceRef = React.useRef(null);
+  const [linkDialog, setLinkDialog] = React.useState(null); // { sourceId, targetId } | null
+
+  const handleLinkDragStart = React.useCallback((item, event) => {
+    linkDragSourceRef.current = item.id;
+    event.dataTransfer.setData("text/archive-link-id", item.id);
+    event.dataTransfer.effectAllowed = "link";
+  }, []);
+
+  const handleLinkDragOver = React.useCallback((event) => {
+    if (!linkDragSourceRef.current) return;
+    const node = event.target.closest("[data-archive-item-id]");
+    if (!node) return;
+    const targetId = node.getAttribute("data-archive-item-id");
+    if (targetId && targetId !== linkDragSourceRef.current) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "link";
+    }
+  }, []);
+
+  const handleLinkDrop = React.useCallback((event) => {
+    const sourceId = event.dataTransfer.getData("text/archive-link-id") || linkDragSourceRef.current;
+    if (!sourceId) return;
+    const node = event.target.closest("[data-archive-item-id]");
+    const targetId = node?.getAttribute("data-archive-item-id");
+    linkDragSourceRef.current = null;
+    if (!targetId || targetId === sourceId) return;
+    event.preventDefault();
+    setLinkDialog({ sourceId, targetId });
+  }, []);
+
+  const handleLinkDialogAdd = React.useCallback(async (relation) => {
+    await addRelation?.(relation);
+    showToast?.("تمت إضافة العلاقة", "success");
+    setLinkDialog(null);
+  }, [addRelation, showToast]);
 
   const typeOptions = React.useMemo(
     () => (contentTypes || [])
@@ -503,6 +568,9 @@ export function ArchivePageResults(props) {
                   typeOptions,
                   kbFocusedIndex: focusedIndex,
                   kbIsSelected: isSelected,
+                  onLinkDragStart: addRelation ? handleLinkDragStart : undefined,
+                  onLinkDragOver: addRelation ? handleLinkDragOver : undefined,
+                  onLinkDrop: addRelation ? handleLinkDrop : undefined,
                 }),
                 viewSupportsVirtualization && bottomSpacerHeight > 0 && jsx("div", { style: { height: bottomSpacerHeight }, "aria-hidden": "true" }),
                 viewSupportsVirtualization && shouldVirtualize && jsx("p", {
@@ -569,6 +637,15 @@ export function ArchivePageResults(props) {
           await addItemsToCollection?.(collectionId, [item.id]);
           showToast?.("أُضيفت المادة إلى المجموعة", "success");
         }
+      }),
+      linkDialog && jsx(AddRelationDialog, {
+        isOpen: true,
+        sourceItem: videoItems.find((item) => item.id === linkDialog.sourceId) || null,
+        initialTargetId: linkDialog.targetId,
+        allItems: videoItems,
+        existingRelations: itemRelations.filter((relation) => relation.sourceId === linkDialog.sourceId),
+        onAdd: handleLinkDialogAdd,
+        onClose: () => setLinkDialog(null)
       })
     ]
   });

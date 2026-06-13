@@ -30,7 +30,13 @@ export function ActivityPage() {
     showToast
   } = useAppStore();
 
-  const [filters, setFilters] = React.useState({ query: "", action: "", targetType: "" });
+  const [filters, setFilters] = React.useState({
+    query: "",
+    action: "",
+    targetType: "",
+    dateFrom: "",
+    dateTo: ""
+  });
   const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
@@ -40,7 +46,9 @@ export function ActivityPage() {
   const filteredEntries = React.useMemo(() => filterActivityEntries(activityLog, {
     action: filters.action || null,
     targetType: filters.targetType || null,
-    query: filters.query || null
+    query: filters.query || null,
+    dateFrom: filters.dateFrom || null,
+    dateTo: filters.dateTo || null
   }), [activityLog, filters]);
 
   const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));

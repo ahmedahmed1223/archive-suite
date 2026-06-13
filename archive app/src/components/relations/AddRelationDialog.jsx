@@ -31,6 +31,7 @@ function getItemTitle(item) {
 export function AddRelationDialog({
   isOpen,
   sourceItem,
+  initialTargetId = "",
   allItems = [],
   existingRelations = [],
   onAdd,
@@ -45,12 +46,12 @@ export function AddRelationDialog({
   React.useEffect(() => {
     if (isOpen) {
       setQuery("");
-      setTargetId("");
+      setTargetId(initialTargetId || "");
       setType(RELATION_TYPES.RELATED_TO.key);
       setNote("");
       setError("");
     }
-  }, [isOpen, sourceItem?.id]);
+  }, [isOpen, sourceItem?.id, initialTargetId]);
 
   React.useEffect(() => {
     if (!isOpen) return undefined;
