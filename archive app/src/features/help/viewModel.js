@@ -36,6 +36,33 @@ export function filterHelpFaqItems(faqItems = [], query = "") {
   });
 }
 
+export function createHelpContextCards(pageManifest = []) {
+  return pageManifest
+    .filter((page) => page?.id && page?.meta?.title && page?.meta?.helpSection)
+    .map((page) => {
+      const title = page.meta.title;
+      const breadcrumb = page.meta.breadcrumb || title;
+      const hint = page.meta.hint || "";
+      const helpSection = normalizeHelpSectionId(page.meta.helpSection);
+      return {
+        id: page.id,
+        title,
+        breadcrumb,
+        hint,
+        helpSection,
+        group: page.group || "general",
+        heavy: Boolean(page.heavy),
+        keywords: [title, breadcrumb, hint, helpSection].filter(Boolean).join(" ")
+      };
+    });
+}
+
+export function filterHelpContextCards(cards = [], query = "") {
+  const normalizedQuery = normalizeArabicSearchText(query);
+  if (!normalizedQuery) return cards;
+  return cards.filter((card) => normalizeArabicSearchText(card.keywords || "").includes(normalizedQuery));
+}
+
 export function createHelpShortcutList(shortcutActions = [], effectiveShortcuts = {}, disabledToken = "disabled") {
   return shortcutActions.map((shortcut) => {
     const value = effectiveShortcuts[shortcut.id] || shortcut.defaultKeys || disabledToken;
