@@ -69,6 +69,20 @@ pnpm run verify:core
 pnpm run verify:server
 ```
 
+## النشر السحابي السريع
+
+يمكن تشغيل نسخة إنتاجية من Archive Suite عبر Docker images الموجودة في `archive-server/` وقوالب المنصات الجاهزة:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/your-org/archive-suite)
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/archive-suite?referralCode=archive-suite)
+
+- **Render:** استخدم [archive-server/deploy/render.yaml](archive-server/deploy/render.yaml) كـ Blueprint، ثم عيّن `APP_BASE_URL` و`ADMIN_PASSWORD` وأي مزود تخزين خارجي.
+- **Railway:** استخدم [archive-server/deploy/railway.json](archive-server/deploy/railway.json) كقالب مشروع مع Postgres وRedis، ثم أضف أسرار `JWT_AUTH_SECRET` و`JWT_SHARE_SECRET` و`OAUTH_STATE_SECRET`.
+- **DigitalOcean App Platform:** استخدم [archive-server/deploy/digitalocean-app.yaml](archive-server/deploy/digitalocean-app.yaml)، وعدّل `github.repo` إلى مستودعك قبل الإنشاء.
+
+بعد أول نشر، غيّر كلمة مرور المدير فورًا وراجع [دليل Docker الإنتاجي](archive-server/DOCKER_DEPLOYMENT.md) لإعداد النطاق، التخزين، النسخ الاحتياطي، والمراقبة.
+
 ## توصيف الأجزاء
 
 ### `archive app/`
