@@ -751,7 +751,13 @@
 ### 13.1 P0 — رفع الملفات ومشغل الوسائط
 
 - [ ] `[P0]` ⏱️XL **رفع الملفات الفعلي مع رفع مقسم وطابور في الخلفية** — النظام يخزن بيانات وصفية فقط، لا يرفع ملفات حقيقية.
-  - الملفات الجديدة: `archive-app/src/store/uploadSlice.js`، `archive-app/src/hooks/useChunkedUpload.js`، `archive-app/src/components/upload/UploadQueue.jsx`.
+  - 🔄 **تقدّم 2026-06-13 (الأساس العامل):** أُنشئت الطبقة الأساسية فوق `FileStore` الموجود (`PUT /api/files/{key}`):
+    - `archive-app/src/hooks/useChunkedUpload.js` — رفع فعلي بتقدّم دقيق عبر `XMLHttpRequest` (fetch لا يعطي تقدّم رفع)، بصمة `SHA-256` بمقاطع 5MB لمفتاح محتوى-معنون (دمج تكرارات)، إلغاء عبر `AbortController`.
+    - `archive-app/src/stores/slices/uploadSlice.js` — طابور خلفي في المتجر (`enqueueUploads`/`updateUpload`/`retryUpload`/`clearFinishedUploads` + `selectUploadProgress`)، مُركَّب في `appStore.js`.
+    - `archive-app/src/components/upload/UploadQueue.jsx` — لوحة طابور حيّة (تقدّم إجمالي + لكل ملف، إعادة/إزالة/مسح المكتمل).
+    - ✅ كل الملفات تُحلَّل (esbuild/node) والربط في المتجر مكتمل.
+  - ⬜ **المتبقّي:** ربط الطابور في تدفّق الإضافة (`AddVideoPage.jsx` + معالج رفع)؛ **endpoints تقسيم/استئناف خلفية** (الخادم حالياً whole-blob فقط، فالاستئناف بعد الانقطاع يتطلب range upload)؛ اختبارات وحدة؛ ربط مفتاح المحتوى بحقل الملف في العنصر.
+  - الملفات الجديدة: `archive-app/src/stores/slices/uploadSlice.js`، `archive-app/src/hooks/useChunkedUpload.js`، `archive-app/src/components/upload/UploadQueue.jsx`.
   - التغييرات: `archive-app/src/pages/AddVideoPage.jsx`، `archive-app/src/components/modals/FileArchiveWizard.jsx`.
   - التنفيذ: رفع مقسم (5MB chunks) عبر `FileStore.putBlob()`؛ استئناف تلقائي بعد انقطاع الإنترنت؛ طابور خلفي يسمح للمستخدم بمواصلة العمل أثناء الرفع؛ شريط تقدم دقيق (نسبة الملف + إجمالي الطابور)؛ كشف التكرارات بـ SHA-256 checksum.
   - الجهد: 6-8 أسابيع. يدعم جميع مزودي التخزين (S3/Azure/GDrive/Dropbox).
