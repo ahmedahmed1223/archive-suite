@@ -891,9 +891,10 @@
   - الجهد: 4-6 أسابيع.
   - المصدر: feature-proposals-2026 (محور 4 — ميزة #24).
 
-- [ ] `[P2]` ⏱️L **صفحة مساعدة تفاعلية مع جولة إرشادية react-joyride** — صفحة المساعدة الحالية أساسية بلا توجيه.
+- [x] `[P2]` ⏱️L **صفحة مساعدة تفاعلية مع جولة إرشادية react-joyride** — صفحة المساعدة الحالية أساسية بلا توجيه.
   - الملفات: `archive app/src/pages/HelpPage.jsx` (موجود → ترقية)؛ `archive app/src/components/onboarding/OnboardingTour.jsx` جديد.
   - التنفيذ: جولة إرشادية (onboarding tour) عبر `react-joyride` للمستخدمين الجدد؛ دليل استخدام تفاعلي مع لقطات شاشة؛ بحث في المحتوى التعليمي؛ تلميحات سياقية (tooltips) على كل ميزة؛ اختصارات لوحة مفاتيح قابلة للاكتشاف.
+  - ✅ **مُنجز ومتحقق (2026-06-13):** صفحة المساعدة أصبحت مركزًا تفاعليًا قابلًا للبحث مع فهرس، روابط أقسام مباشرة، إعادة تشغيل الجولة الحالية، اختصارات فعلية، وطبقة جديدة من التلميحات السياقية المبنية من `PAGE_MANIFEST` لكل صفحة. لم تُضف `react-joyride` لأن التطبيق يملك جولة مدمجة بالفعل في `RuntimeShellApp`/`ShellParts` و`V1OnboardingWizard`. تحقق: `help/viewModel.test.js`، `pnpm --filter @archive/app run verify`، و`pnpm --filter @archive/app run build:spa`.
   - الجهد: 2-3 أسابيع.
   - المصدر: feature-proposals-2026 (محور 5 — ميزة #27).
 
