@@ -1978,7 +1978,8 @@
 
 ### 17.14 P2 — مدجات لوحة المعلومات القابلة للتخصيص (Customizable Dashboard Widgets)
 
-- [ ] `[P2]` ⏱️L **لوحة معلومات قابلة للتخصيص بالكامل عبر مدجات تُضاف/تُزال/تُرتّب/تُكبّر (react-grid-layout موجود)** — اللوحة ثابتة التخطيط حالياً.
+- [x] `[P2]` ⏱️L **لوحة معلومات قابلة للتخصيص بالكامل عبر مدجات تُضاف/تُزال/تُرتّب/تُكبّر (react-grid-layout موجود)** — اللوحة ثابتة التخطيط حالياً.
+  - ✅ **مُنجز ومتحقق (2026-06-13):** لوحة التحكم تستخدم `DashboardGrid` فوق `react-grid-layout` مع وضع تخصيص، إخفاء/إظهار المدجات، تبديل الارتفاع التلقائي، حفظ/إلغاء، وسحب/تحجيم. أضيف `resetDashboardLayout()` لضمان أن استعادة التخطيط الافتراضي تعيد كل المدجات المخفية وتطبّع التخطيط حسب قائمة المدجات المتاحة. تحقق: `dashboardLayoutModel.test.js`، `pnpm --filter @archive/app run verify`، و`pnpm --filter @archive/app run build:spa`.
   - **الملفات الجديدة:** `archive app/src/features/dashboard/widgetRegistry.js`، `archive app/src/components/dashboard/WidgetStore.jsx`، `WidgetFrame.jsx`.
   - **تعديل ملفات:** `DashboardPage.jsx` (يستخدم `react-grid-layout` بالفعل).
   - **التنفيذ:** متجر مدجات، سحب لإعادة الترتيب، توسيع/تصغير، مدجات قابلة للتهيئة (إحصائيات/نشاط/عشوائي)، DaisyUI `stat`/`timeline`، تخطيط متجاوب.
