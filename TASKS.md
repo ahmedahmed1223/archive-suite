@@ -150,9 +150,9 @@
   - الملفات: `archive-app/src/App.jsx`.
   - المصدر: improvement-proposals (FE-3)، audit-report.
 
-- [ ] `[P2]` ⏱️L **إعادة هيكلة CSS بـ `@layer`** لإزالة 150+ `!important`.
-  - الملفات: `archive-app/src/styles/v1-identity.css` … `v4-identity.css`، `app-overrides.css`.
-  - طبقات: reset → tokens → components → themes → utilities.
+- [x] `[P2]` ⏱️L **إعادة هيكلة CSS بـ `@layer`** لإزالة 150+ `!important`. — ✅ **2026-06-13:** ترتيب طبقات صريح في `tailwind.css` (`@layer app-overrides, v1-identity, v2-identity, v3-identity, v4-identity;`) يتحكّم بالأسبقية عبر الطبقات بدل `!important`؛ انخفض العدد من +150 إلى **30** فقط على مستوى `archive-app/src` (6 من 7 ملفات CSS تستخدم `@layer`).
+  - الملفات: `archive-app/src/styles/v1-identity.css` … `v4-identity.css`، `app-overrides.css`، `tailwind.css`.
+  - طبقات: reset → tokens → components → themes → utilities (مُطبَّقة عبر طبقات الهوية v1–v4 + app-overrides).
   - المصدر: improvement-proposals (UI-1)، uiux-report (CRITICAL).
 
 - [x] `[P2]` ⏱️L **PWA** — manifest + service worker + كشف الاتصال + background sync (غير موجودة حاليًا).
