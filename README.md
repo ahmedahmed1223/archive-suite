@@ -69,6 +69,18 @@ pnpm run verify:core
 pnpm run verify:server
 ```
 
+## النشر الموجّه (الأسرع)
+
+للنشر الإنتاجي على PostgreSQL عبر معالج واحد على Windows أو Linux:
+
+```bash
+# Windows: انقر نقراً مزدوجاً على Setup-Archive.bat
+# Linux/macOS:
+bash setup.sh        # أو: pnpm deploy
+```
+
+يفحص البيئة، يولّد الأسرار، ويرفع الحزمة المُحصّنة. التفاصيل في [`DEPLOYMENT.md`](DEPLOYMENT.md).
+
 ## النشر السحابي السريع
 
 يمكن تشغيل نسخة إنتاجية من Archive Suite عبر Docker images الموجودة في `archive-server/` وقوالب المنصات الجاهزة:
