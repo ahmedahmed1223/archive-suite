@@ -77,11 +77,11 @@ pnpm run build:cloud
 
 ```text
 archive-core/    # المنافذ والعقود المشتركة
-archive app/     # واجهة React ونسخة SPA/Cloud، الحزمة @archive/app
+archive-app/     # واجهة React ونسخة SPA/Cloud، الحزمة @archive/app
 archive-server/  # API، التخزين السحابي، AI، المشاركة، والتصدير
 ```
 
-داخل `archive app/`:
+داخل `archive-app/`:
 
 ```text
 src/app/          # shell والتوجيه وسجل الصفحات

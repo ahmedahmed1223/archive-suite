@@ -176,7 +176,7 @@
   - التقط 390px و1440px لصفحات Archive, Detail, Search, Data Center.
   - راجع حالات: شريط أفعال، تحديد جماعي، عملية تقدم، وفتح معاينة.
   - 🔄 **تقدم 2026-06-12:** مر اختبار `playwright test tests/navigation.spec.ts --project=mobile-chrome` على preview محلي بعد تعديلات الأشرطة وdaisyUI primitives، بما يغطي shell والتنقل السفلي وفتح drawer على Pixel. ما زال مطلوباً التقاط مصفوفة screenshots الكاملة 390px/1440px للصفحات الأربع قبل إغلاق البند.
-  - ✅ **مُنجز 2026-06-13:** بُنيت نسخة SPA وشُغّلت preview على `http://127.0.0.1:4173/`، ثم التُقطت مصفوفة screenshots كاملة للصفحات الأربع على 390px و1440px: Archive مع preview مفتوح، Detail، Search، وData Center. التقرير الآلي في `archive app/output/playwright/uiux-f13-2026-06-13/report.json` سجّل 8/8 حالات ناجحة: لا overflow أفقي، لا framework overlay، لا أخطاء console/pageerror، ولا نصوص مقصوصة داخل controls المرئية.
+  - ✅ **مُنجز 2026-06-13:** بُنيت نسخة SPA وشُغّلت preview على `http://127.0.0.1:4173/`، ثم التُقطت مصفوفة screenshots كاملة للصفحات الأربع على 390px و1440px: Archive مع preview مفتوح، Detail، Search، وData Center. التقرير الآلي في `archive-app/output/playwright/uiux-f13-2026-06-13/report.json` سجّل 8/8 حالات ناجحة: لا overflow أفقي، لا framework overlay، لا أخطاء console/pageerror، ولا نصوص مقصوصة داخل controls المرئية.
   - التحقق: لا overflow أفقي، ولا نص مقصوص داخل الأزرار، ولا z-index يغطي تفاعلا أساسيا.
 
 - [x] **UIUX-F14 — إصلاح drawer القائمة على الموبايل**
@@ -364,7 +364,7 @@
   للخادم، نقاط `/api/media/*` المتزامنة، طابور `media_jobs` للتحويل/المونتاج،
   عميل `mediaClient` للواجهة، أدوات تفاصيل المادة، توليد تلقائي بعد الرفع، إجراء
   جماعي في الأرشيف، لوحة «مهام الوسائط»، وتنظيف النواتج المشتقة عند الحذف النهائي.
-  التحقق: `archive-server npm run verify`, `archive app npm run verify`,
+  التحقق: `archive-server npm run verify`, `archive-app npm run verify`,
   `build:spa`, `build:cloud`, `test:a11y`، وفحص Playwright بصري.
 
 - [x] **P0 — Dropbox داخل الواجهة: الاتصال واختيار المخزن النشط** — أُضيفت بطاقة

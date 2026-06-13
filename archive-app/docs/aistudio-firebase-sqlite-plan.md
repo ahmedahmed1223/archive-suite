@@ -7,7 +7,7 @@
 
 ## 1. الوضع الحالي (مؤكَّد بالكود)
 
-بنية التخزين تعتمد منافذ (ports) في `@archive/core` + محوّلات (adapters) في `archive app/src/storage/adapters/`، تُربط عبر بذرة إقلاع واحدة `bootstrap/registerByBackendChoice.js`.
+بنية التخزين تعتمد منافذ (ports) في `@archive/core` + محوّلات (adapters) في `archive-app/src/storage/adapters/`، تُربط عبر بذرة إقلاع واحدة `bootstrap/registerByBackendChoice.js`.
 
 **خيارات الباك-إند الحالية** (`bootstrap/backendChoice.js`):
 - `BACKEND_CHOICES = ["local", "pocketbase", "postgres"]`
@@ -57,7 +57,7 @@ Firebase SDK يعمل **من جانب العميل عبر HTTPS** إلى `*.goog
 1. `BACKEND_CHOICES` → إضافة `"firebase"`؛ تخزين تهيئة Firebase (apiKey/projectId/…) بجانب الخيار.
 2. محوّل جديد `storage/adapters/firebase-firestore/index.js` يُطبّق منفذ `StorageProvider` (`get`/`getAll`/`put`/`putBatch`/`delete`/`deleteBatch`/`clear`/`snapshot`/`replaceAll`) فوق Firestore. مطابقة مخطّط `STORES` لمجموعات Firestore، مع batched writes للذرّية في `replaceAll`.
 3. تسجيل في `registerByBackendChoice.js`: فرع `backend === "firebase"`.
-4. تبعية: `firebase` (Web SDK v10+, modular) في `archive app` deps.
+4. تبعية: `firebase` (Web SDK v10+, modular) في `archive-app` deps.
 - **الملفات الجديدة:** `firebase-firestore/index.js`، `firebase-firestore/mapping.js`، `bootstrap/firebaseConfig.js`.
 
 ### المرحلة ج — Firebase للمنافذ الأخرى (Auth/FileStore)

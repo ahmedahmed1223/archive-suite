@@ -8,7 +8,7 @@ FROM node:24-alpine AS deps
 RUN apk add --no-cache vips-dev fftw-dev python3 make g++ && corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY ["archive app/package.json", "archive app/package.json"]
+COPY ["archive-app/package.json", "archive-app/package.json"]
 COPY archive-core/package.json archive-core/package.json
 COPY archive-server/package.json archive-server/package.json
 # Full install (not --prod): the runtime runs `prisma migrate deploy` at start,
@@ -23,7 +23,7 @@ FROM node:24-alpine AS build
 RUN apk add --no-cache vips-dev fftw-dev python3 make g++ && corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY ["archive app/package.json", "archive app/package.json"]
+COPY ["archive-app/package.json", "archive-app/package.json"]
 COPY archive-core/package.json archive-core/package.json
 COPY archive-server/package.json archive-server/package.json
 RUN pnpm install --frozen-lockfile --filter archive-server... --filter @archive/core

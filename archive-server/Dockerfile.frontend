@@ -8,14 +8,14 @@ RUN corepack enable
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY ["archive app/package.json", "archive app/"]
+COPY ["archive-app/package.json", "archive-app/"]
 COPY archive-core/package.json archive-core/
 COPY archive-server/package.json archive-server/
 
 RUN pnpm install --frozen-lockfile --filter @archive/app... --filter @archive/core
 
 COPY archive-core ./archive-core
-COPY ["archive app", "archive app"]
+COPY ["archive-app", "archive-app"]
 
 RUN pnpm --filter @archive/app run build:cloud
 
@@ -27,7 +27,7 @@ LABEL org.opencontainers.image.vendor="Archive Suite"
 # Keep CA roots available for health checks and any proxied TLS upstreams.
 RUN apk add --no-cache ca-certificates
 
-COPY --from=build ["/app/archive app/dist-cloud", "/usr/share/nginx/html"]
+COPY --from=build ["/app/archive-app/dist-cloud", "/usr/share/nginx/html"]
 COPY archive-server/nginx/default.conf /etc/nginx/conf.d/default.conf
 
 # Security: ensure files are readable by nginx user, set restrictive permissions

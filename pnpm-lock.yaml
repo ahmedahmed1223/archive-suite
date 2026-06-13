@@ -8,7 +8,7 @@ importers:
 
   .: {}
 
-  archive app:
+  archive-app:
     dependencies:
       '@archive/core':
         specifier: workspace:1.2.1
