@@ -7,9 +7,41 @@ export const USER_ROLES = [
 ];
 
 const USER_ROLE_IDS = new Set(USER_ROLES.map((role) => role.id));
+const TEMP_PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
 
 export function normalizeUserRole(role = "viewer") {
   return USER_ROLE_IDS.has(role) ? role : "viewer";
+}
+
+export function isValidInviteEmail(email = "") {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+}
+
+export function createTemporaryPassword(length = 16, randomValues = null) {
+  const size = Math.max(12, Number(length) || 16);
+  const bytes = new Uint8Array(size);
+  if (typeof randomValues === "function") {
+    randomValues(bytes);
+  } else if (globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return [...bytes].map((byte) => TEMP_PASSWORD_ALPHABET[byte % TEMP_PASSWORD_ALPHABET.length]).join("");
+}
+
+export function createInvitationMetadata({ email, invitedBy = null, now = () => new Date().toISOString() } = {}) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!isValidInviteEmail(normalizedEmail)) {
+    throw new Error("بريد الدعوة غير صالح");
+  }
+  return {
+    email: normalizedEmail,
+    inviteStatus: "pending",
+    invitedAt: now(),
+    invitedBy,
+    mustChangePassword: true
+  };
 }
 
 export function createUserValue(partial = {}) {
@@ -23,6 +55,9 @@ export function createUserValue(partial = {}) {
     roleId: partial.roleId || partial.role_id,
     avatar: partial.avatar,
     email: partial.email,
+    inviteStatus: partial.inviteStatus,
+    invitedAt: partial.invitedAt,
+    invitedBy: partial.invitedBy,
     customPermissions: partial.customPermissions,
     isActive: partial.isActive ?? true,
     lastLoginAt: partial.lastLoginAt,
