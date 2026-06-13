@@ -162,7 +162,17 @@ function EditableField({ field, value, onChange }) {
     jsx("option", { value: "", children: "اختر..." }),
     ...(field.options || []).map((option) => jsx("option", { value: option, children: option }, option))
   ] });
-  if (field.type === "tags" || field.type === "multiselect") return jsx("input", { value: Array.isArray(value) ? value.join("، ") : value || "", onChange: (event) => onChange(key, parseVideoTags(event.target.value)), className: commonClass });
+  if (field.type === "multiselect") {
+    const selected = Array.isArray(value) ? value : value ? [value] : [];
+    return jsx("select", {
+      multiple: true,
+      value: selected,
+      onChange: (event) => onChange(key, Array.from(event.target.selectedOptions, (option) => option.value)),
+      className: `${commonClass} min-h-28 py-2`,
+      children: (field.options || []).map((option) => jsx("option", { value: option, children: option }, option))
+    });
+  }
+  if (field.type === "tags") return jsx("input", { value: Array.isArray(value) ? value.join("، ") : value || "", onChange: (event) => onChange(key, parseVideoTags(event.target.value)), className: commonClass });
   if (field.type === "localFile") return jsx(LocalFilePicker, { value, onFileSelect: (file) => onChange(key, createLocalFileValue(file)) });
   if (field.type === "rating") return jsx("div", { className: "flex min-h-11 items-center", children: jsx(StarRating, { value: Number(value) || 0, onChange: (val) => onChange(key, val) }) });
   return jsx("input", { type: field.type === "number" ? "number" : field.type === "date" ? "date" : field.type === "url" ? "url" : "text", value: value || "", onChange: (event) => onChange(key, event.target.value), className: commonClass });
