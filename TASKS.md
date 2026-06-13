@@ -2075,12 +2075,13 @@
 
 ### 18.5 P1 — الارتباطات والعلاقات بين العناصر (Item Relations & Links)
 
-- [ ] `[P1]` ⏱️L **نظام علاقات ذات معنى بين العناصر (جزء من/يرتبط مع/نسخة من/يعتمد على/يشير إلى/بديل عن/يسبق/يتبع) مع رسم بياني تفاعلي** — العناصر معزولة ولا يمكن ربطها بعلاقة دلالية.
+- [x] `[P1]` ⏱️L **نظام علاقات ذات معنى بين العناصر (جزء من/يرتبط مع/نسخة من/يعتمد على/يشير إلى/بديل عن/يسبق/يتبع) مع رسم بياني تفاعلي** — العناصر معزولة ولا يمكن ربطها بعلاقة دلالية.
   - **الملفات الجديدة:** `archive app/src/features/relations/viewModel.js` (createRelation/RELATION_TYPES/getItemRelations/buildRelationsGraph)، `archive app/src/components/relations/RelationsPanel.jsx`، `AddRelationDialog.jsx`، `RelationsGraph.jsx`، `archive app/src/stores/slices/relationsSlice.js`.
   - **تعديل ملفات:** `DetailPage.jsx`، `ArchivePage.jsx`، `schema.js` (store `item_relations`)؛ Prisma `ItemRelation` (unique على [sourceId,targetId,type]، فهارس) للباك-إند.
   - **التنفيذ:** علاقات أحادية/ثنائية الاتجاه، تنقّل سريع بين المرتبطين، رسم علاقات (D3/cytoscape)، إنشاء بالسحب، اكتشاف تلقائي للعلاقات المحتملة (نفس الوسم/المجلد).
   - 🔄 **تقدم 2026-06-12:** أُضيف `RelationsGraph.jsx` (cytoscape تفاعلي، تكبير/تصغير/ملاءمة، lazy import، النقر للتنقل) ودُمج في `RelationsPanel.jsx` فوق قوائم العلاقات. سابقاً (2026-06-11): `RelationsPanel` + `AddRelationDialog` في `DetailPage.jsx`.
-  - ✅ **2026-06-13:** نموذج `ItemRelation` أُضيف لـ `schema.prisma` (unique على [sourceId,targetId,type]، فهارس على sourceId/targetId). ✅ **Drag-to-link:** سحب بطاقة على أخرى في عرض الشبكة يفتح `AddRelationDialog` مع العنصر المستهدف محدداً مسبقاً (`initialTargetId`)؛ يعمل عبر event delegation على حاوية الشبكة (`data-archive-item-id`). ما زال مفتوحاً: `prisma migrate dev` لتطبيق المخطط.
+  - ✅ **2026-06-13:** نموذج `ItemRelation` أُضيف لـ `schema.prisma` (unique على [sourceId,targetId,type]، فهارس على sourceId/targetId) مع migration `20260613110000_item_relations`. ✅ **Drag-to-link:** سحب بطاقة على أخرى في عرض الشبكة يفتح `AddRelationDialog` مع العنصر المستهدف محدداً مسبقاً (`initialTargetId`)؛ يعمل عبر event delegation على حاوية الشبكة (`data-archive-item-id`).
+  - ✅ **مُنجز ومتحقق (2026-06-13):** خريطة العلاقات العامة `GraphViewPage` أصبحت تستهلك `itemRelations` وتعرض العلاقات اليدوية كحواف موجهة وموسومة داخل cytoscape حتى بدون وسوم/مجموعات مشتركة، مع تجاهل `mirrorOf` لمنع تكرار العلاقات الثنائية. تحقق: `pnpm --filter @archive/app run test -- src/features/graph/buildGraphModel.test.js` مرّ بـ 12/12.
   - يرتبط بـ: §16 (المجموعات/المجلدات)، §17.3 (السحب)، §11/§12 graph.
   - الجهد: 4-5 أسابيع.
   - المصدر: daily-use-proposals (المقترح 5 — P1).
@@ -2214,7 +2215,7 @@
 
 - [x] `[P1]` ⏱️M **ترقية `GraphViewPage.jsx` إلى cytoscape.js وإصلاح عدم ظهور الروابط بين العناصر** — المستخدم يبلّغ أن الروابط/العلاقات لا تظهر حالياً في الخريطة.
   - **التحقيق أولاً:** ✅ السبب: المطابقة كانت نصية حرفية (lowercase فقط، بلا تطبيع عربي ولا aliases للوسوم الهرمية)، لا حواف للمجموعات إطلاقاً، وقصّ أول 60 عنصراً بترتيب الإدخال قبل حساب الحواف.
-  - **التنفيذ:** ✅ تم — `cytoscape.js` (cose ≤250 عقدة / concentric فوقها، استيراد كسول)؛ عقد ملوّنة حسب documentType؛ حواف وسوم مشتركة (مطبّعة عربياً + aliases الوسوم الهرمية) + نفس المجموعة بوزن = عدد التداخل؛ تكبير/سحب؛ نقرة → تحديد ونقرة ثانية → التفاصيل؛ فلترة حسب النوع/الوسم؛ سقف 500 عقدة مع «تحميل المزيد». **متبقٍ:** حواف علاقات §18.5 عند تنفيذها؛ أداء ~5K عقدة (عرض تدريجي حقيقي).
+  - **التنفيذ:** ✅ تم — `cytoscape.js` (cose ≤250 عقدة / concentric فوقها، استيراد كسول)؛ عقد ملوّنة حسب documentType؛ حواف وسوم مشتركة (مطبّعة عربياً + aliases الوسوم الهرمية) + نفس المجموعة بوزن = عدد التداخل؛ حواف علاقات §18.5 اليدوية موجهة وموسومة؛ تكبير/سحب؛ نقرة → تحديد ونقرة ثانية → التفاصيل؛ فلترة حسب النوع/الوسم؛ سقف 500 عقدة مع «تحميل المزيد». **متبقٍ لاحقًا:** أداء ~5K عقدة (عرض تدريجي حقيقي).
   - **الملفات:** `archive app/src/pages/GraphViewPage.jsx`، تبعية `cytoscape` جديدة، `archive app/src/features/graph/buildGraphModel.js` + `buildGraphModel.test.js` (جديدان، 10 اختبارات).
   - يرتبط بـ: §18.5 (العلاقات)، §11/§12 graph.
   - الجهد: 2-3 أسابيع.
