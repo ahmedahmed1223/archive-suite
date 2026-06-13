@@ -122,7 +122,7 @@ TRANSCRIBE_MODEL=whisper-1
 
 ## 5. الواجهة السحابية
 
-من مجلد `archive app`:
+من مجلد `archive-app`:
 
 ```bash
 npm install
@@ -165,7 +165,7 @@ node scripts/verify-files-dropbox.mjs
 node scripts/verify-dropbox-oauth.mjs
 ```
 
-من `archive app`:
+من `archive-app`:
 
 ```bash
 node scripts/verify-modules.mjs

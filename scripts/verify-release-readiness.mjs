@@ -22,7 +22,7 @@ function assertExcludes(file, forbidden) {
 }
 
 const rootPkg = json("package.json");
-const appPkg = json("archive app/package.json");
+const appPkg = json("archive-app/package.json");
 const serverPkg = json("archive-server/package.json");
 
 for (const script of [
@@ -66,8 +66,8 @@ assertExcludes("archive-server/docker-compose.yml", "APP_REPO");
 assertIncludes("archive-server/src/index.js", "assertProductionSecrets");
 assertIncludes("archive-server/scripts/verify-deployment.mjs", "assertProductionSecrets");
 
-const audit = read("archive app/scripts/comprehensive-ui-audit.mjs");
-assertIncludes("archive app/scripts/run-interactive-audit.mjs", "comprehensive-ui-audit.mjs");
+const audit = read("archive-app/scripts/comprehensive-ui-audit.mjs");
+assertIncludes("archive-app/scripts/run-interactive-audit.mjs", "comprehensive-ui-audit.mjs");
 assert.match(appPkg.scripts["audit:ui"], /run-interactive-audit\.mjs/, "@archive/app audit:ui should start its own preview");
 for (const needle of [
   "E2E_MODE",

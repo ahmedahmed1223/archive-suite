@@ -1,5 +1,5 @@
 packages:
-  - "archive app"
+  - "archive-app"
   - "archive-core"
   - "archive-server"
 allowBuilds:
