@@ -3,6 +3,9 @@
  * Archive Suite — Interactive Setup Wizard
  * Run: node scripts/setup.mjs
  *
+ * Language (§19.6): English by default (terminals render Arabic unreliably).
+ * Switch to Arabic with --lang=ar, ARCHIVE_WIZARD_LANG=ar, or the first prompt.
+ *
  * Steps:
  *  1. Check Node.js version
  *  2. Check Docker + Docker Compose
@@ -19,6 +22,7 @@ import { createInterface } from "node:readline";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { platform } from "node:os";
+import { resolveWizardLang, hasExplicitLang, createTranslator } from "./wizard-i18n.mjs";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,25 +44,42 @@ function err(msg)    { console.error(`  ${RED}✗${RESET}  ${msg}`); }
 function step(n, msg){ console.log(`\n${BOLD}${CYAN}[${n}]${RESET}${BOLD} ${msg}${RESET}\n`); }
 function hr()        { console.log(`\n${"─".repeat(60)}\n`); }
 
+// ─── Language (§19.6) — English default; Arabic via --lang=ar / env / prompt ──
+const ARGV = process.argv.slice(2);
+let LANG = resolveWizardLang(ARGV, process.env);
+let t = createTranslator(LANG);
+
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 const ask = (q, def = "") => new Promise(res =>
   rl.question(`  ${CYAN}?${RESET} ${q}${def ? ` ${YELLOW}(${def})${RESET}` : ""}: `, a => res(a.trim() || def))
 );
 const askSecret = (q) => new Promise(res =>
-  rl.question(`  ${CYAN}?${RESET} ${q} ${YELLOW}(اضغط Enter لتوليد تلقائي)${RESET}: `, a => res(a.trim() || randomBytes(32).toString("hex"))
+  rl.question(`  ${CYAN}?${RESET} ${q} ${YELLOW}(${t("autoGenerateHint")})${RESET}: `, a => res(a.trim() || randomBytes(32).toString("hex"))
 ));
 const confirm = async (q) => { const a = await ask(`${q} (y/n)`, "y"); return a.toLowerCase() === "y"; };
+
+// First-prompt language picker (ASCII-safe), skipped when explicit lang given.
+async function promptLanguage() {
+  if (hasExplicitLang(ARGV, process.env)) return;
+  const answer = await new Promise(res =>
+    rl.question(`  ${CYAN}?${RESET} ${t("langPrompt")}: `, a => res(a.trim().toLowerCase()))
+  );
+  if (answer.startsWith("a") || answer === "2" || answer === "ع") {
+    LANG = "ar";
+    t = createTranslator(LANG);
+  }
+}
 
 function genSecret() { return randomBytes(32).toString("hex"); }
 
 // ─── Step 1: Node.js version ──────────────────────────────────────────────────
 async function checkNode() {
-  step(1, "فحص إصدار Node.js");
+  step(1, t("setupStep1"));
   const v = process.version;
   const major = parseInt(v.slice(1), 10);
   if (major < 18) {
-    err(`يتطلب النظام Node.js 18 أو أحدث. الإصدار الحالي: ${v}`);
-    err("قم بتحميل Node.js من: https://nodejs.org");
+    err(t("nodeTooOld18", { version: v }));
+    err(t("nodeDownload"));
     process.exit(1);
   }
   ok(`Node.js ${v}`);
@@ -66,51 +87,51 @@ async function checkNode() {
 
 // ─── Step 2: Docker ───────────────────────────────────────────────────────────
 async function checkDocker() {
-  step(2, "فحص Docker");
+  step(2, t("setupStep2"));
 
   let dockerOk = false;
   let composeOk = false;
 
-  try { execSync("docker --version", { stdio: "pipe" }); dockerOk = true; ok("Docker مثبّت"); }
-  catch { warn("Docker غير مثبّت"); }
+  try { execSync("docker --version", { stdio: "pipe" }); dockerOk = true; ok(t("dockerInstalled")); }
+  catch { warn(t("dockerNotInstalled")); }
 
-  try { execSync("docker compose version", { stdio: "pipe" }); composeOk = true; ok("Docker Compose مثبّت"); }
+  try { execSync("docker compose version", { stdio: "pipe" }); composeOk = true; ok(t("composeInstalled")); }
   catch {
-    try { execSync("docker-compose --version", { stdio: "pipe" }); composeOk = true; ok("Docker Compose مثبّت"); }
-    catch { warn("Docker Compose غير مثبّت"); }
+    try { execSync("docker-compose --version", { stdio: "pipe" }); composeOk = true; ok(t("composeInstalled")); }
+    catch { warn(t("composeNotInstalled")); }
   }
 
   if (!dockerOk || !composeOk) {
     const os = platform();
     log("");
-    log(`${BOLD}لتثبيت Docker:${RESET}`);
+    log(`${BOLD}${t("toInstallDocker")}${RESET}`);
     if (os === "win32")  log("  Windows: https://docs.docker.com/desktop/install/windows-install/");
     else if (os === "darwin") log("  macOS:   https://docs.docker.com/desktop/install/mac-install/");
     else                 log("  Linux:   https://docs.docker.com/engine/install/");
     log("");
-    log("بعد التثبيت أعد تشغيل الطرفية ثم شغّل هذا السكريبت مرة أخرى.");
+    log(t("afterInstallRerun"));
     log("");
-    const go = await confirm("هل أكملت تثبيت Docker وتريد الاستمرار؟");
-    if (!go) { log("تم الإنهاء."); rl.close(); process.exit(0); }
+    const go = await confirm(t("dockerDoneContinue"));
+    if (!go) { log(t("finished")); rl.close(); process.exit(0); }
     // Re-check
-    try { execSync("docker --version", { stdio: "pipe" }); ok("Docker جاهز"); }
-    catch { err("لم يُكتشف Docker. أعد التثبيت وحاول مجدداً."); rl.close(); process.exit(1); }
+    try { execSync("docker --version", { stdio: "pipe" }); ok(t("dockerReady")); }
+    catch { err(t("dockerNotDetected")); rl.close(); process.exit(1); }
   }
 }
 
 // ─── Step 3: Mode selection ───────────────────────────────────────────────────
 async function chooseMode() {
-  step(3, "اختيار وضع التشغيل");
-  log(`  ${CYAN}1${RESET}) وضع التطوير  — PocketBase (خفيف، بدون قاعدة بيانات خارجية)`);
-  log(`  ${CYAN}2${RESET}) وضع الإنتاج — PostgreSQL + Caddy (موصى به للنشر)`);
+  step(3, t("setupStep3"));
+  log(`  ${CYAN}${t("modeDev")}${RESET}`);
+  log(`  ${CYAN}${t("modeProd")}${RESET}`);
   log("");
-  const choice = await ask("اختر", "1");
+  const choice = await ask(t("promptChoose"), "1");
   return choice === "2" ? "postgres" : "pocketbase";
 }
 
 // ─── Step 4: Configure .env ───────────────────────────────────────────────────
 async function configureEnv(mode) {
-  step(4, "إعداد متغيرات البيئة (.env)");
+  step(4, t("setupStep4"));
 
   const envPath = join(SERVER_DIR, ".env");
   const examplePath = join(SERVER_DIR, ".env.example");
@@ -125,13 +146,13 @@ async function configureEnv(mode) {
       : content + `\n${key}=${value}`;
   }
 
-  log("أدخل إعدادات النظام (اضغط Enter لقبول القيمة الافتراضية):");
+  log(t("enterSettings"));
   log("");
 
   // Admin credentials
-  const adminUser  = await ask("اسم المشرف (username)", "admin");
-  const adminEmail = await ask("بريد المشرف", "admin@example.com");
-  const adminPass  = await askSecret("كلمة مرور المشرف");
+  const adminUser  = await ask(t("promptAdminUser"), "admin");
+  const adminEmail = await ask(t("promptAdminEmail"), "admin@example.com");
+  const adminPass  = await askSecret(t("promptAdminPass"));
 
   // JWT secrets
   const jwtSecret   = genSecret();
@@ -139,16 +160,16 @@ async function configureEnv(mode) {
   const oauthSecret = genSecret();
 
   // Port
-  const port = await ask("منفذ الخادم", "8787");
+  const port = await ask(t("promptPort"), "8787");
 
   // SMTP (optional)
-  const wantSmtp = await confirm("هل تريد إعداد البريد الإلكتروني (SMTP) الآن؟");
+  const wantSmtp = await confirm(t("smtpQuestion"));
   let smtpHost = "", smtpUser = "", smtpPass = "", smtpFrom = "";
   if (wantSmtp) {
     smtpHost = await ask("SMTP Host", "smtp.gmail.com");
-    smtpUser = await ask("SMTP User (بريدك)");
+    smtpUser = await ask(t("promptSmtpUser"));
     smtpPass = await askSecret("SMTP Password");
-    smtpFrom = await ask("From address", smtpUser);
+    smtpFrom = await ask(t("promptSmtpFrom"), smtpUser);
   }
 
   // Apply values
@@ -168,14 +189,14 @@ async function configureEnv(mode) {
   }
 
   writeFileSync(envPath, envContent, "utf-8");
-  ok(`.env تم إنشاؤه في ${envPath}`);
+  ok(t("envCreated", { path: envPath }));
 
   return port;
 }
 
 // ─── Step 5: Start Docker ─────────────────────────────────────────────────────
 async function startDocker(mode) {
-  step(5, "تشغيل حاويات Docker");
+  step(5, t("setupStep5"));
 
   // Find the right compose file
   const deployDir = join(SERVER_DIR, "deploy");
@@ -187,11 +208,11 @@ async function startDocker(mode) {
   const finalFile = useFallback ? join(SERVER_DIR, "docker-compose.yml") : composeFile;
 
   if (!existsSync(finalFile)) {
-    err(`لم يُعثر على ملف docker-compose في: ${finalFile}`);
+    err(t("composeNotFound", { path: finalFile }));
     rl.close(); process.exit(1);
   }
 
-  log(`تشغيل: docker compose -f ${finalFile} up -d`);
+  log(`docker compose -f ${finalFile} up -d`);
   log("");
 
   await new Promise((resolve, reject) => {
@@ -200,16 +221,16 @@ async function startDocker(mode) {
     });
     child.on("close", code => code === 0 ? resolve() : reject(new Error(`Docker exited ${code}`)));
   });
-  ok("الحاويات تعمل");
+  ok(t("containersUp"));
 }
 
 // ─── Step 6: Health check ─────────────────────────────────────────────────────
 async function waitForHealth(port = "8787", timeoutMs = 120_000) {
-  step(6, "انتظار جاهزية النظام");
+  step(6, t("setupStep6"));
   const url = `http://localhost:${port}/api/health`;
   const deadline = Date.now() + timeoutMs;
   let dots = 0;
-  process.stdout.write("  انتظار");
+  process.stdout.write(`  ${t("waiting")}`);
   while (Date.now() < deadline) {
     try {
       const { default: http } = await import("node:http");
@@ -219,7 +240,7 @@ async function waitForHealth(port = "8787", timeoutMs = 120_000) {
         req.setTimeout(2000, () => { req.destroy(); rej(new Error("timeout")); });
       }).then(code => { if (code !== 200) throw new Error(`status ${code}`); });
       process.stdout.write("\n");
-      ok(`النظام جاهز على ${url}`);
+      ok(t("systemReadyAt", { url }));
       return;
     } catch { /* retry */ }
     process.stdout.write(".");
@@ -228,31 +249,32 @@ async function waitForHealth(port = "8787", timeoutMs = 120_000) {
     await new Promise(r => setTimeout(r, 2000));
   }
   process.stdout.write("\n");
-  warn("لم يستجب النظام خلال المهلة المحددة. تحقق من: docker compose logs");
+  warn(t("healthTimeoutSetup"));
 }
 
 // ─── Step 7: Open browser ─────────────────────────────────────────────────────
 async function openBrowser(port = "8787") {
-  step(7, "فتح المتصفح");
+  step(7, t("setupStep7"));
   const url = `http://localhost:${port}`;
   const os = platform();
   try {
     if (os === "win32")       execSync(`start ${url}`);
     else if (os === "darwin") execSync(`open ${url}`);
     else                      execSync(`xdg-open ${url}`);
-    ok(`تم فتح ${url}`);
+    ok(t("browserOpened", { url }));
   } catch {
-    log(`افتح المتصفح يدوياً على: ${BOLD}${url}${RESET}`);
+    log(t("openManually", { url: `${BOLD}${url}${RESET}` }));
   }
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.clear();
-  console.log(`\n${BOLD}${CYAN}╔═══════════════════════════════════════╗${RESET}`);
-  console.log(`${BOLD}${CYAN}║     Archive Suite — معالج التثبيت     ║${RESET}`);
-  console.log(`${BOLD}${CYAN}╚═══════════════════════════════════════╝${RESET}\n`);
-  log("هذا المعالج سيُرشدك خطوة بخطوة لتشغيل النظام.\n");
+  await promptLanguage();
+  const title = t("setupBanner");
+  console.log(`\n${BOLD}${CYAN}  ${title}${RESET}`);
+  console.log(`${BOLD}${CYAN}  ${"─".repeat(Math.max(20, title.length))}${RESET}\n`);
+  log(`${t("setupIntro")}\n`);
 
   try {
     await checkNode();
@@ -260,7 +282,7 @@ async function main() {
     const mode = await chooseMode();
     const port = await configureEnv(mode);
 
-    const doStart = await confirm("هل تريد تشغيل الحاويات الآن؟");
+    const doStart = await confirm(t("startContainersQuestion"));
     if (doStart) {
       await startDocker(mode);
       // Read port from .env (may have been updated by user)
@@ -278,7 +300,7 @@ async function main() {
         const pbEmail    = process.env.PB_EMAIL    || "admin@archive.local";
         const pbPassword = process.env.PB_PASSWORD || "";
         if (pbPassword) {
-          step("6b", "تهيئة مخطط PocketBase تلقائياً");
+          step("6b", t("pbInitStep"));
           const { spawnSync } = await import("node:child_process");
           const result = spawnSync(process.execPath, [
             join(__dirname, "pb-init.mjs"),
@@ -286,9 +308,9 @@ async function main() {
             `--email=${pbEmail}`,
             `--password=${pbPassword}`,
           ], { stdio: "inherit" });
-          if (result.status !== 0) warn("تعذّر تهيئة PocketBase تلقائياً — شغّل يدوياً: node scripts/pb-init.mjs");
+          if (result.status !== 0) warn(t("pbInitFailed"));
         } else {
-          log(`💡 لتهيئة PocketBase تلقائياً: ${CYAN}node scripts/pb-init.mjs --url=${pbUrl}${RESET}`);
+          log(`${CYAN}${t("pbInitHint", { url: pbUrl })}${RESET}`);
         }
       }
 
@@ -296,10 +318,11 @@ async function main() {
     }
 
     hr();
-    console.log(`${BOLD}${GREEN}✓ اكتمل الإعداد!${RESET}\n`);
-    log(`الخادم: ${CYAN}http://localhost:${port || "8787"}${RESET}`);
-    log(`المستندات: ${CYAN}INSTALL.md${RESET}`);
-    log(`الوقف: ${CYAN}docker compose down${RESET}\n`);
+    console.log(`${BOLD}${GREEN}${t("setupDone")}${RESET}\n`);
+    log(t("labelServer", { url: `${CYAN}http://localhost:${port || "8787"}${RESET}` }));
+    log(t("labelDocs"));
+    log(t("labelStop"));
+    console.log("");
   } catch (e) {
     err(e.message);
     process.exit(1);

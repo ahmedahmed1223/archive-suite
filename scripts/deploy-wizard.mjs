@@ -17,6 +17,9 @@
  *   9. Wait for health (migrations + admin seed happen automatically)
  *  10. Print the summary (URLs, one-time credentials, next steps)
  *
+ * Language (§19.6): English by default (terminals render Arabic unreliably).
+ * Switch to Arabic with --lang=ar, ARCHIVE_WIZARD_LANG=ar, or the first prompt.
+ *
  * Non-interactive (CI/automation):
  *   node scripts/deploy-wizard.mjs --non-interactive [--public --domain=d --acme-email=e] [--lite] [--skip-gate]
  *
@@ -29,6 +32,7 @@ import { createInterface } from "node:readline";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { platform } from "node:os";
+import { resolveWizardLang, hasExplicitLang, createTranslator } from "./wizard-i18n.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
@@ -75,6 +79,10 @@ const FLAG_ENV_ONLY = hasFlag("env-only");
 const FLAG_DOMAIN = flagValue("domain");
 const FLAG_ACME_EMAIL = flagValue("acme-email");
 
+// ─── Language (§19.6) — English default; Arabic via --lang=ar / env / prompt ──
+let LANG = resolveWizardLang(ARGV, process.env);
+let t = createTranslator(LANG);
+
 // ─── Prompt helpers (no-op in non-interactive mode) ─────────────────────────
 const rl = NON_INTERACTIVE
   ? null
@@ -95,7 +103,7 @@ const askSecret = (q) =>
     ? Promise.resolve(genSecret())
     : new Promise((res) =>
         rl.question(
-          `  ${CYAN}?${RESET} ${q} ${YELLOW}(Enter = توليد تلقائي)${RESET}: `,
+          `  ${CYAN}?${RESET} ${q} ${YELLOW}(${t("autoGenerateHint")})${RESET}: `,
           (a) => res(a.trim() || genSecret())
         )
       );
@@ -105,6 +113,19 @@ const confirm = async (q, def = "y") => {
   const a = await ask(`${q} (y/n)`, def);
   return a.toLowerCase().startsWith("y");
 };
+
+// First-prompt language picker. Only shown when interactive and no explicit
+// --lang/env was given. The prompt itself is ASCII-safe so it never breaks.
+async function promptLanguage() {
+  if (NON_INTERACTIVE || hasExplicitLang(ARGV, process.env)) return;
+  const answer = await new Promise((res) =>
+    rl.question(`  ${CYAN}?${RESET} ${t("langPrompt")}: `, (a) => res(a.trim().toLowerCase()))
+  );
+  if (answer.startsWith("a") || answer === "2" || answer === "ع") {
+    LANG = "ar";
+    t = createTranslator(LANG);
+  }
+}
 
 function genSecret(bytes = 32) {
   return randomBytes(bytes).toString("hex");
@@ -132,13 +153,13 @@ function ensureSecret(content, key, gen = genSecret) {
 
 // ─── Step 1: environment detection ──────────────────────────────────────────
 function detectEnvironment() {
-  step(1, "فحص البيئة");
+  step(1, t("step1"));
   const os = platform();
-  ok(`نظام التشغيل: ${os === "win32" ? "Windows" : os === "darwin" ? "macOS" : "Linux"}`);
+  ok(t("osLabel", { os: os === "win32" ? "Windows" : os === "darwin" ? "macOS" : "Linux" }));
 
   const nodeMajor = parseInt(process.version.slice(1), 10);
   if (nodeMajor < 22) {
-    err(`يتطلب Node.js 22+. الحالي: ${process.version} — حمّل من https://nodejs.org`);
+    err(t("nodeTooOld", { version: process.version }));
     process.exit(1);
   }
   ok(`Node.js ${process.version}`);
@@ -146,20 +167,20 @@ function detectEnvironment() {
   try {
     execSync("docker --version", { stdio: "pipe" });
     execSync("docker info", { stdio: "pipe" });
-    ok("Docker يعمل");
+    ok(t("dockerRunning"));
   } catch {
-    err("Docker غير مثبّت أو لا يعمل.");
-    if (os === "win32") log("  شغّل Docker Desktop ثم أعد المحاولة: https://docs.docker.com/desktop/install/windows-install/");
-    else if (os === "darwin") log("  شغّل Docker Desktop: https://docs.docker.com/desktop/install/mac-install/");
-    else log("  ثبّت/شغّل Docker Engine: https://docs.docker.com/engine/install/");
+    err(t("dockerMissing"));
+    if (os === "win32") log(t("dockerHintWin"));
+    else if (os === "darwin") log(t("dockerHintMac"));
+    else log(t("dockerHintLinux"));
     process.exit(1);
   }
 
   try {
     execSync("docker compose version", { stdio: "pipe" });
-    ok("Docker Compose متاح");
+    ok(t("composeAvailable"));
   } catch {
-    err("Docker Compose (v2 plugin) غير متاح. حدّث Docker.");
+    err(t("composeMissing"));
     process.exit(1);
   }
   return { os };
@@ -167,47 +188,47 @@ function detectEnvironment() {
 
 // ─── Step 2: access mode ────────────────────────────────────────────────────
 async function chooseAccessMode() {
-  step(2, "وضع الوصول");
+  step(2, t("step2"));
   if (FLAG_PUBLIC) {
-    const domain = FLAG_DOMAIN || (await ask("النطاق (DOMAIN)", "example.com"));
-    const acmeEmail = FLAG_ACME_EMAIL || (await ask("بريد ACME (لتجديد الشهادة)", "admin@" + domain));
-    ok(`وضع عام: https://${domain}`);
+    const domain = FLAG_DOMAIN || (await ask(t("promptDomain"), "example.com"));
+    const acmeEmail = FLAG_ACME_EMAIL || (await ask(t("promptAcmeEmail"), "admin@" + domain));
+    ok(t("publicMode", { domain }));
     return { mode: "public", domain, acmeEmail };
   }
   if (FLAG_INTRANET || NON_INTERACTIVE) {
-    ok("وضع داخلي: http://SERVER_IP:8080");
+    ok(t("internalMode"));
     return { mode: "internal" };
   }
-  log(`  ${CYAN}1${RESET}) داخلي (intranet) — وصول عبر الشبكة المحلية على المنفذ 8080، بلا نطاق/HTTPS`);
-  log(`  ${CYAN}2${RESET}) عام (public) — نطاق حقيقي + HTTPS تلقائي (Let's Encrypt عبر Caddy)`);
+  log(`  ${CYAN}${t("accessOption1")}${RESET}`);
+  log(`  ${CYAN}${t("accessOption2")}${RESET}`);
   log("");
-  const choice = await ask("اختر", "1");
+  const choice = await ask(t("promptChoose"), "1");
   if (choice === "2") {
-    const domain = await ask("النطاق (DOMAIN) — يجب أن يشير DNS إليه", "example.com");
-    const acmeEmail = await ask("بريد ACME (تنبيهات تجديد الشهادة)", "admin@" + domain);
-    const dnsReady = await confirm(`هل يشير سجل DNS لـ ${domain} إلى هذا الخادم بالفعل؟`, "n");
-    if (!dnsReady) warn("بدون DNS صحيح لن تُصدَر شهادة Let's Encrypt. يمكنك المتابعة وإصلاح DNS لاحقاً.");
+    const domain = await ask(t("promptDomainDns"), "example.com");
+    const acmeEmail = await ask(t("promptAcmeAlerts"), "admin@" + domain);
+    const dnsReady = await confirm(t("dnsReadyQuestion", { domain }), "n");
+    if (!dnsReady) warn(t("dnsWarning"));
     return { mode: "public", domain, acmeEmail };
   }
-  ok("وضع داخلي مُختار");
+  ok(t("internalChosen"));
   return { mode: "internal" };
 }
 
 // ─── Step 3 + 4 + 5 + 6: build and write the .env ───────────────────────────
 async function configureEnv(access) {
-  step(3, "حساب المشرف والأسرار");
+  step(3, t("step3"));
 
   // Reuse an existing .env if present, else start from the example.
   let content;
   let reused = false;
   if (existsSync(ENV_PATH)) {
-    const keep = NON_INTERACTIVE ? true : await confirm("وُجد .env سابق — الإبقاء عليه وتعبئة الناقص فقط؟", "y");
+    const keep = NON_INTERACTIVE ? true : await confirm(t("reuseEnv"), "y");
     if (keep) {
       content = readFileSync(ENV_PATH, "utf-8");
       reused = true;
       const backup = `${ENV_PATH}.bak.${Date.now()}`;
       copyFileSync(ENV_PATH, backup);
-      ok(`نسخة احتياطية: ${backup}`);
+      ok(t("backupWritten", { path: backup }));
     } else {
       content = readFileSync(EXAMPLE_PATH, "utf-8");
     }
@@ -217,11 +238,11 @@ async function configureEnv(access) {
 
   // --- Admin account ---
   const adminUser =
-    reused && getVar(content, "ADMIN_USERNAME") ? getVar(content, "ADMIN_USERNAME") : await ask("اسم المشرف (username)", "admin");
-  const adminEmail = await ask("بريد المشرف", getVar(content, "ADMIN_EMAIL") || "admin@example.com");
+    reused && getVar(content, "ADMIN_USERNAME") ? getVar(content, "ADMIN_USERNAME") : await ask(t("promptAdminUser"), "admin");
+  const adminEmail = await ask(t("promptAdminEmail"), getVar(content, "ADMIN_EMAIL") || "admin@example.com");
   let adminPass = getVar(content, "ADMIN_PASSWORD");
   if (!adminPass || /CHANGE_ME/i.test(adminPass)) {
-    adminPass = NON_INTERACTIVE ? genPassword() : await askSecret("كلمة مرور المشرف");
+    adminPass = NON_INTERACTIVE ? genPassword() : await askSecret(t("promptAdminPass"));
     if (adminPass.length < 12) adminPass = genPassword();
   }
 
@@ -243,7 +264,7 @@ async function configureEnv(access) {
   }
 
   // --- Step 4: generate all required secrets ---
-  step(4, "توليد الأسرار القوية");
+  step(4, t("step4"));
   for (const key of [
     "JWT_AUTH_SECRET",
     "JWT_SHARE_SECRET",
@@ -267,30 +288,30 @@ async function configureEnv(access) {
   content = setVar(content, "POSTGRES_DB", pgDb);
   content = setVar(content, "DATABASE_URL", `postgresql://${pgUser}:${pgPass}@postgres:5432/${pgDb}`);
   content = setVar(content, "BACKUP_ENABLED", "true");
-  ok("الأسرار جاهزة (POSTGRES/REDIS/JWT/PGADMIN/GRAFANA/BACKUP)");
+  ok(t("secretsReady"));
 
   // --- Step 5: optional integrations ---
-  step(5, "تكاملات اختيارية");
-  if (!NON_INTERACTIVE && (await confirm("إعداد البريد (SMTP) لإعادة تعيين كلمة المرور الآن؟", "n"))) {
+  step(5, t("step5"));
+  if (!NON_INTERACTIVE && (await confirm(t("smtpQuestion"), "n"))) {
     const host = await ask("SMTP Host", "smtp.gmail.com");
-    const user = await ask("SMTP User (بريدك)", "");
+    const user = await ask(t("promptSmtpUser"), "");
     const pass = await askSecret("SMTP Password");
     content = setVar(content, "SMTP_HOST", host);
     content = setVar(content, "SMTP_USER", user);
     content = setVar(content, "SMTP_PASS", pass);
     content = setVar(content, "SMTP_FROM", await ask("From", user));
-    ok("SMTP مضبوط");
+    ok(t("smtpConfigured"));
   } else {
-    log("تخطّي SMTP (روابط إعادة التعيين ستُطبع في سجل الخادم).");
+    log(t("smtpSkipped"));
   }
 
-  if (!NON_INTERACTIVE && (await confirm("تفعيل مزوّد ذكاء اصطناعي (AI) الآن؟", "n"))) {
+  if (!NON_INTERACTIVE && (await confirm(t("aiQuestion"), "n"))) {
     const provider = await ask("AI_PROVIDER (openrouter|openai|anthropic|google|groq|mistral|ollama)", "openrouter");
     content = setVar(content, "AI_PROVIDER", provider);
     if (provider !== "ollama") content = setVar(content, "AI_API_KEY", await askSecret("AI_API_KEY"));
-    ok("AI مضبوط");
+    ok(t("aiConfigured"));
   } else {
-    log("تخطّي AI (يمكن تفعيله لاحقاً من إعدادات الإدارة).");
+    log(t("aiSkipped"));
   }
 
   // Validate: no CHANGE_ME placeholders may survive (non-comment lines).
@@ -298,15 +319,15 @@ async function configureEnv(access) {
     .split("\n")
     .filter((line) => /CHANGE_ME/i.test(line) && !line.trimStart().startsWith("#"));
   if (leftovers.length) {
-    err("بقيت قيم CHANGE_ME غير مضبوطة:");
+    err(t("changeMeLeft"));
     leftovers.forEach((l) => log(`  ${l.split("=")[0]}`));
     process.exit(1);
   }
 
   // --- Step 6: write .env ---
-  step(6, "كتابة ملف البيئة");
+  step(6, t("step6"));
   writeFileSync(ENV_PATH, content, "utf-8");
-  ok(`${ENV_PATH} ${reused ? "(محدّث)" : "(جديد)"}`);
+  ok(t("envWritten", { path: ENV_PATH, reused }));
 
   return {
     adminUser,
@@ -319,22 +340,22 @@ async function configureEnv(access) {
 
 // ─── Step 7: readiness gate ─────────────────────────────────────────────────
 async function readinessGate() {
-  step(7, "بوابة الجاهزية");
+  step(7, t("step7"));
   if (FLAG_SKIP_GATE) {
-    warn("تم تخطّي البوابة (--skip-gate).");
+    warn(t("gateSkippedFlag"));
     return;
   }
-  const run = NON_INTERACTIVE ? false : await confirm("تشغيل فحص الأساس الأمني (pnpm security:baseline)؟", "y");
+  const run = NON_INTERACTIVE ? false : await confirm(t("gateQuestion"), "y");
   if (!run) {
-    log("تخطّي البوابة.");
+    log(t("gateSkipped"));
     return;
   }
   const res = spawnSync("pnpm", ["security:baseline"], { cwd: ROOT, stdio: "inherit", shell: true });
   if (res.status !== 0) {
-    warn("فشل فحص الأساس الأمني — راجع المخرجات أعلاه.");
-    if (!NON_INTERACTIVE && !(await confirm("المتابعة رغم ذلك؟", "n"))) process.exit(1);
+    warn(t("gateFailed"));
+    if (!NON_INTERACTIVE && !(await confirm(t("continueAnyway"), "n"))) process.exit(1);
   } else {
-    ok("الأساس الأمني سليم");
+    ok(t("gateOk"));
   }
 }
 
@@ -347,7 +368,7 @@ function composeFiles(access, lite) {
 }
 
 async function bringUp(access, lite) {
-  step(8, "تشغيل الحزمة");
+  step(8, t("step8"));
   const files = composeFiles(access, lite);
   log(`docker compose ${files.join(" ")} up -d --build`);
   log("");
@@ -356,18 +377,18 @@ async function bringUp(access, lite) {
       cwd: SERVER_DIR,
       stdio: "inherit",
     });
-    child.on("close", (code) => (code === 0 ? res() : rej(new Error(`docker compose خرج بالرمز ${code}`))));
+    child.on("close", (code) => (code === 0 ? res() : rej(new Error(t("composeExit", { code })))));
   });
-  ok("الحاويات تعمل");
+  ok(t("containersUp"));
   return files;
 }
 
 // ─── Step 9: health wait ────────────────────────────────────────────────────
 async function waitForHealth(access, files, timeoutMs = 240_000) {
-  step(9, "انتظار جاهزية النظام (ترحيلات + بذر المشرف تلقائياً)");
+  step(9, t("step9"));
   const deadline = Date.now() + timeoutMs;
   const pollHttp = access.mode === "internal";
-  process.stdout.write("  انتظار");
+  process.stdout.write(`  ${t("waiting")}`);
   let dots = 0;
   while (Date.now() < deadline) {
     try {
@@ -386,7 +407,7 @@ async function waitForHealth(access, files, timeoutMs = 240_000) {
         });
         if (code === 200) {
           process.stdout.write("\n");
-          ok("النظام جاهز على http://localhost:8080");
+          ok(t("systemReady"));
           return true;
         }
       } else {
@@ -396,7 +417,7 @@ async function waitForHealth(access, files, timeoutMs = 240_000) {
         });
         if (/server\s+healthy/.test(out)) {
           process.stdout.write("\n");
-          ok("خدمة الخادم سليمة");
+          ok(t("serverHealthy"));
           return true;
         }
       }
@@ -408,7 +429,7 @@ async function waitForHealth(access, files, timeoutMs = 240_000) {
     await new Promise((r) => setTimeout(r, 3000));
   }
   process.stdout.write("\n");
-  warn("لم يجتَز فحص الصحة ضمن المهلة. افحص السجلات: docker compose logs server");
+  warn(t("healthTimeout"));
   return false;
 }
 
@@ -427,29 +448,34 @@ function openBrowser(url) {
 
 function summary(access, creds, lite) {
   hr();
-  console.log(`${BOLD}${GREEN}✓ اكتمل النشر!${RESET}\n`);
-  const appUrl = access.mode === "public" ? `https://${access.domain}` : "http://localhost:8080 (أو http://SERVER_IP:8080)";
-  log(`${BOLD}التطبيق:${RESET} ${CYAN}${appUrl}${RESET}`);
-  log(`${BOLD}تسجيل الدخول:${RESET} ${creds.adminUser} / ${YELLOW}${creds.adminPass}${RESET}  ${DIM}(احفظها الآن — لن تُعرض ثانية)${RESET}`);
+  console.log(`${BOLD}${GREEN}${t("deployDone")}${RESET}\n`);
+  const appUrl = access.mode === "public" ? `https://${access.domain}` : t("appUrlInternal");
+  log(`${BOLD}${t("labelApp")}${RESET} ${CYAN}${appUrl}${RESET}`);
+  log(`${BOLD}${t("labelLogin")}${RESET} ${creds.adminUser} / ${YELLOW}${creds.adminPass}${RESET}  ${DIM}${t("saveNow")}${RESET}`);
   log("");
-  log(`${BOLD}إدارة SQL (pgAdmin):${RESET} ${CYAN}http://127.0.0.1:5050${RESET}  ${DIM}(محلي فقط — للوصول البعيد استخدم نفق SSH)${RESET}`);
+  log(`${BOLD}${t("labelPgAdmin")}${RESET} ${CYAN}http://127.0.0.1:5050${RESET}  ${DIM}${t("pgAdminLocalOnly")}${RESET}`);
   log(`  pgAdmin: ${creds.pgadminEmail} / ${YELLOW}${creds.pgadminPass}${RESET}`);
-  log(`  Postgres مباشرة (DBeaver…): host=localhost port=15432 db=archive`);
-  if (!lite) log(`${BOLD}Grafana:${RESET} ${CYAN}http://127.0.0.1:3000${RESET} ${DIM}(محلي فقط)${RESET}`);
+  log(`  ${t("postgresDirect")}`);
+  if (!lite) log(`${BOLD}${t("labelGrafana")}${RESET} ${CYAN}http://127.0.0.1:3000${RESET} ${DIM}${t("localOnly")}${RESET}`);
   hr();
-  log(`${BOLD}الخطوات التالية:${RESET}`);
-  log(`  • ثبّت التطبيق كـ PWA من المتصفح (نافذة مستقلة).`);
-  if (access.mode === "internal") log(`  • للتحويل للعام لاحقاً: أعد تشغيل المعالج بوضع "عام" مع نطاق + DNS.`);
-  log(`  • الإيقاف: docker compose ${composeFiles(access, lite).join(" ")} down`);
-  log(`  • النسخ الاحتياطي مُفعّل (مشفّر) — راجع BACKUP_DIR.`);
+  log(`${BOLD}${t("nextSteps")}${RESET}`);
+  log(t("nextInstallPwa"));
+  if (access.mode === "internal") log(t("nextGoPublic"));
+  log(t("nextStop", { cmd: `docker compose ${composeFiles(access, lite).join(" ")} down` }));
+  log(t("nextBackup"));
   console.log("");
 }
 
 // ─── Main ───────────────────────────────────────────────────────────────────
+function printBanner() {
+  const title = t("bannerTitle");
+  console.log(`\n${BOLD}${CYAN}  ${title}${RESET}`);
+  console.log(`${BOLD}${CYAN}  ${"─".repeat(Math.max(20, title.length))}${RESET}\n`);
+}
+
 async function main() {
-  console.log(`\n${BOLD}${CYAN}╔════════════════════════════════════════════╗${RESET}`);
-  console.log(`${BOLD}${CYAN}║   Archive Suite — معالج النشر الإنتاجي     ║${RESET}`);
-  console.log(`${BOLD}${CYAN}╚════════════════════════════════════════════╝${RESET}\n`);
+  await promptLanguage();
+  printBanner();
 
   try {
     detectEnvironment();
@@ -457,7 +483,7 @@ async function main() {
     const creds = await configureEnv(access);
 
     if (FLAG_ENV_ONLY) {
-      ok(`تم إنشاء/تحديث ${ENV_PATH} فقط (--env-only). ارفع الحزمة لاحقاً عبر docker compose up.`);
+      ok(t("envOnlyDone", { path: ENV_PATH }));
       void creds;
       return;
     }
@@ -466,11 +492,11 @@ async function main() {
 
     const lite =
       FLAG_LITE ||
-      (!NON_INTERACTIVE && (await confirm("جهاز محدود الموارد؟ تشغيل النسخة الخفيفة (بلا OCR/Whisper/مراقبة)؟", "n")));
+      (!NON_INTERACTIVE && (await confirm(t("liteQuestion"), "n")));
 
-    const goUp = NON_INTERACTIVE ? true : await confirm("تشغيل الحزمة الآن؟", "y");
+    const goUp = NON_INTERACTIVE ? true : await confirm(t("goUpQuestion"), "y");
     if (!goUp) {
-      log("تم إعداد .env فقط. شغّل لاحقاً عبر docker compose up.");
+      log(t("envOnlyManual"));
       return;
     }
 
