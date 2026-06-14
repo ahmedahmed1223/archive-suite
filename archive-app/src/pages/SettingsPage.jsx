@@ -332,11 +332,19 @@ export function SettingsPage() {
   }));
   const selectDaisyTheme = (value) => {
     const daisyTheme = normalizeDaisyTheme(value);
+    // 1) Apply live so the change is visible immediately.
     applyDaisyTheme(daisyTheme);
+    // 2) Keep the appearance draft consistent for the rest of the form.
     patchAppearanceDraft((current) => ({
       daisyTheme,
       themeSchedule: normalizeSchedule({ ...(current.themeSchedule || {}), theme: daisyTheme })
     }));
+    // 3) Persist immediately (§19.7) so the pick survives reload and is the
+    //    source of truth for AppRouter's theme effect — previously the theme
+    //    only stuck after an explicit "save appearance", so selecting from the
+    //    gallery appeared not to apply.
+    storeDaisyTheme(daisyTheme);
+    patchUi({ daisyTheme });
   };
   const patchLiveThemeEditor = (patch) => {
     if (patch.daisyTheme) {
