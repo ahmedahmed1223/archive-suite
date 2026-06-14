@@ -41,6 +41,8 @@ import {
 } from "../components/ui/V1Primitives.jsx";
 import { KbdHint } from "../components/common/Kbd.jsx";
 import { ArchiveImprovementSuggestions } from "../components/recommendations/ArchiveImprovementSuggestions.jsx";
+import { SuggestionsPanel } from "../components/suggestions/SuggestionsPanel.jsx";
+import { buildSuggestions } from "../features/suggestions/suggestionEngine.js";
 import {
   createDashboardStats,
   getDailyFocusItems,
@@ -77,6 +79,7 @@ const DASHBOARD_PANEL_TITLES = {
   operations: "إجراءات العمليات",
   savedViews: "عروض محفوظة",
   recommendations: "اقتراحات التحسين",
+  usageSuggestions: "تحسين الاستخدام",
   distribution: "توزيع المحتوى",
   orgMetrics: "مؤشرات تنظيمية",
   recentItems: "آخر المواد",
@@ -298,6 +301,11 @@ export function DashboardPage() {
     () => filterDismissedRecommendations(getArchiveImprovementSuggestions(videoItems, { contentTypes, limit: 4 }), recommendationFeedback),
     [contentTypes, recommendationFeedback, videoItems]
   );
+  const dismissedSuggestions = settings.ui?.dismissedSuggestions || [];
+  const usageSuggestions = React.useMemo(
+    () => buildSuggestions({ videoItems, virtualCollections, contentTypes }, { dismissed: dismissedSuggestions }),
+    [contentTypes, dismissedSuggestions, videoItems, virtualCollections]
+  );
   const demoIds = React.useMemo(() => getDashboardDemoItemIds(videoItems), [videoItems]);
   const dismissedBanners = settings.ui?.dismissedBanners || [];
   const demoBannerDismissed = dismissedBanners.includes("demo");
@@ -427,6 +435,16 @@ export function DashboardPage() {
   const handleDashboardSuggestionFeedback = (suggestion, value) => {
     setRecommendationFeedbackState(setRecommendationFeedback(suggestion.key || suggestion.id, value));
     if (value === "dismissed") showToast?.("تم إخفاء الاقتراح", "success");
+  };
+
+  const handleUsageSuggestionAction = (suggestion) => {
+    goTo(suggestion?.actionPage || "archive");
+  };
+  const dismissUsageSuggestion = (suggestion) => {
+    if (!suggestion?.id) return;
+    const next = Array.from(new Set([...dismissedSuggestions, suggestion.id]));
+    updateSettings?.({ ui: { ...(settings.ui || {}), dismissedSuggestions: next } });
+    showToast?.("تم إخفاء الاقتراح", "success");
   };
 
   const reportItems = [
@@ -666,6 +684,12 @@ export function DashboardPage() {
         onAction: handleDashboardSuggestion,
         onFeedback: handleDashboardSuggestionFeedback
       }, "recommendations"),
+
+      usageSuggestions.length > 0 && jsx(SuggestionsPanel, {
+        suggestions: usageSuggestions,
+        onAction: handleUsageSuggestionAction,
+        onDismiss: dismissUsageSuggestion
+      }, "usageSuggestions"),
 
       jsx(CommandPanel, {
         title: "توزيع المحتوى",
