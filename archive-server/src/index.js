@@ -24,9 +24,12 @@ import { resolveServerConfig } from "./config/serverConfig.js";
 import { assertProductionSecrets } from "./config/productionGuard.js";
 import { logger } from "./logger.js";
 import { startBackupScheduler, stopBackupScheduler } from "./backup/backupScheduler.js";
+import { createVersionRetentionService } from "./versions/versionRetentionService.js";
 import { initMetrics } from "./monitoring/metrics.js";
 import { initRedis, closeRedis } from "./cache/redisCache.js";
 import { startPresenceServer } from "./collaboration/presenceServer.js";
+import { tryCreateRedisMediaJobStore } from "./media/redisMediaJobStore.js";
+import { createInMemoryMediaJobStore } from "./media/mediaJobs.js";
 
 const BACKEND = process.env.BACKEND || "pocketbase";
 const PORT = Number(process.env.API_PORT || 8787);
@@ -81,6 +84,7 @@ async function main() {
 
   let registration;
   let prisma = null;
+  let stopVersionRetention = null;
 
   if (BACKEND === "postgres") {
     prisma = await buildPrismaClient();
@@ -88,6 +92,8 @@ async function main() {
     // Surface connection problems early with a clear message.
     await registration.provider.open();
     logger.info("Postgres backend ready.");
+    const versionRetention = createVersionRetentionService(prisma, logger);
+    stopVersionRetention = versionRetention.scheduleHourly();
   } else if (BACKEND === "pocketbase") {
     registration = registerCloudProviders({
       backend: "pocketbase",
@@ -124,6 +130,15 @@ async function main() {
     );
   }
 
+  // Media job store: Redis-persisted when REDIS_URL is set, otherwise in-memory.
+  // The Redis store survives server restarts and supports cross-session tracking.
+  const mediaJobStore =
+    (await tryCreateRedisMediaJobStore()) ?? createInMemoryMediaJobStore();
+  logger.info(
+    { backend: process.env.REDIS_URL ? "redis" : "memory" },
+    "Media job store initialised."
+  );
+
   const server = startApiServer({
     port: PORT,
     backend: registration.backend,
@@ -137,7 +152,8 @@ async function main() {
       windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000)
     },
     // Realtime fan-out: pushes broadcast to SSE clients on /api/sync/events.
-    eventBus: createEventBus()
+    eventBus: createEventBus(),
+    mediaJobStore,
   });
 
   // Attach WebSocket presence server to the same HTTP server instance.
@@ -155,6 +171,7 @@ async function main() {
 
     // Stop the backup scheduler before draining HTTP.
     stopBackupScheduler();
+    stopVersionRetention?.();
 
     // Stop accepting new connections; wait for in-flight requests to finish.
     server.close(async () => {

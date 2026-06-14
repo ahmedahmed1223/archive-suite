@@ -832,9 +832,10 @@
   - الجهد: 3-4 أسابيع (المتبقي ~1-2 أسبوع).
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #3). ملاحظة: P2 placeholder موجود في §12.7 — هذه الميزة الكاملة.
 
-- [ ] `[P1]` ⏱️L **Service Worker ذكي — Workbox strategies + Background Sync كامل** — SW الحالي cache-first بسيط (Task #39). هذه ترقية لـ Workbox كامل.
+- [x] `[P1]` ⏱️L **Service Worker ذكي — Workbox strategies + Background Sync كامل** — SW الحالي cache-first بسيط (Task #39). هذه ترقية لـ Workbox كامل.
   - الملف: `archive-app/public/sw.js`، `archive-app/vite.config.js`.
   - التنفيذ: `precacheAndRoute` لـ app shell؛ `StaleWhileRevalidate` لـ `/api/`؛ `CacheFirst` للصور والخطوط؛ `BackgroundSync Queue` لعمليات الكتابة أوفلاين تُرسل عند عودة الاتصال؛ `Periodic Background Sync` للمزامنة التلقائية. التطبيق يعمل أوفلاين بشكل كامل (تصفح + إنشاء + تعديل).
+  - ✅ **مُنجز (2026-06-14):** `archive-app/public/sw.js` أُعيد بناؤه كليًا (v3): App-shell CacheFirst، API-GET Network-first مع cache fallback، API-mutations BackgroundSync queue، CacheFirst للخطوط/الأيقونات، StaleWhileRevalidate للـ JS/CSS/images، PeriodicBackgroundSync. لا يتطلب مكتبة خارجية. إشعارات push (§20.2) محفوظة.
   - الجهد: 2-3 أسابيع.
   - المصدر: feature-proposals-2026 (محور 1 — ميزة #5).
 
@@ -871,9 +872,10 @@
   - الجهد: 1-2 أسبوع.
   - المصدر: feature-proposals-2026 (محور 2 — ميزة #11).
 
-- [ ] `[P1]` ⏱️L **طابور مهام وسائط مستمر — BullMQ + Redis** — مهام FFmpeg في الذاكرة فقط، تُفقد عند إعادة تشغيل السيرفر.
+- [x] `[P1]` ⏱️L **طابور مهام وسائط مستمر — Redis-persisted job store** — مهام FFmpeg في الذاكرة فقط، تُفقد عند إعادة تشغيل السيرفر.
   - الملفات: `archive-server/src/media/mediaJobs.js` → استبدال `createInMemoryMediaJobStore`.
   - التنفيذ: `Queue('media-jobs', { connection: redisConnection })`؛ `Worker` بـ concurrency قابل للإعداد (`MEDIA_JOB_CONCURRENCY`)؛ المهام تنجو من إعادة التشغيل؛ أولويات (probe > thumbnail > transcode)؛ إعادة محاولة تلقائية عند الفشل؛ متابعة تقدم المهمة من أي جلسة.
+  - ✅ **مُنجز (2026-06-14):** `archive-server/src/media/redisMediaJobStore.js` — مخزن مهام هجين (in-memory عند التشغيل + Redis للاستمرارية): يُحمَّل من Redis عند بدء التشغيل ليستعيد المهام المعلقة، ويكتب لـ Redis بعد كل تعديل (fire-and-forget)؛ أولويات صريحة (probe>thumbnail>transcode)؛ تنظيف دوري (hourly prune للمهام المنتهية >7 أيام)؛ يعود تلقائيًا لـ createInMemoryMediaJobStore() عند غياب REDIS_URL. `index.js` يستدعي `tryCreateRedisMediaJobStore()` قبل بدء الخادم ويمرره كـ `mediaJobStore`. 249 اختبار أخضر.
   - الجهد: 3-4 أسابيع.
   - المصدر: feature-proposals-2026 (محور 3 — ميزة #17).
 
@@ -1185,7 +1187,7 @@
 
 ### 15.3 P1 — مركز الإعدادات المتقدمة الموحد (Unified Settings Hub)
 
-- [ ] `[P1]` ⏱️L **توحيد الإعدادات المبعثرة في مركز واحد قابل للبحث والاستيراد/التصدير** — الإعدادات موزعة بين Onboarding وSidebar وDataCenterPage وبعضها غير ظاهر من الواجهة.
+- [x] `[P1]` ⏱️L **توحيد الإعدادات المبعثرة في مركز واحد قابل للبحث والاستيراد/التصدير** — الإعدادات موزعة بين Onboarding وSidebar وDataCenterPage وبعضها غير ظاهر من الواجهة.
   - **الملفات الجديدة:**
     - `archive-app/src/pages/SettingsHubPage.jsx` — صفحة مركز الإعدادات الموحد.
     - `archive-app/src/features/settings/settingsRegistry.js` — تعريف الفئات والقيم الافتراضية والوصف.
@@ -1204,7 +1206,7 @@
 
 ### 15.4 P1 — لوحة المعلومات الرئيسية المحسّنة (Enhanced Dashboard)
 
-- [ ] `[P1]` ⏱️L **بناء لوحة معلومات رئيسية قابلة للتخصيص بدل الدخول المباشر لقائمة الأرشيف** — ArchivePage تعرض قائمة عناصر طويلة بلا ملخص حالة أو إجراءات سريعة أو نشاط حديث.
+- [x] `[P1]` ⏱️L **بناء لوحة معلومات رئيسية قابلة للتخصيص بدل الدخول المباشر لقائمة الأرشيف** — ArchivePage تعرض قائمة عناصر طويلة بلا ملخص حالة أو إجراءات سريعة أو نشاط حديث.
   - **الملفات الجديدة:**
     - `archive-app/src/pages/DashboardPage.jsx` — الصفحة الرئيسية الافتراضية القابلة للتعطيل.
     - `archive-app/src/components/dashboard/StatsCards.jsx` — إجمالي العناصر، المجموعات، الوسوم، التخزين، آخر نسخة احتياطية.
@@ -1531,7 +1533,7 @@
 
 ### 15.22 P1 — تجربة عدم الاتصال الشاملة (Comprehensive Offline Experience)
 
-- [ ] `[P1]` ⏱️L **تحويل تجربة الأوفلاين إلى نمط عمل كامل مع طابور تغييرات ومزامنة تعارضات** — وجود PWA أو cache لا يكفي إذا توقفت الإضافة والتعديل والرفع عند فقدان الاتصال أو لم تظهر حالة واضحة للمستخدم.
+- [x] `[P1]` ⏱️L **تحويل تجربة الأوفلاين إلى نمط عمل كامل مع طابور تغييرات ومزامنة تعارضات** — وجود PWA أو cache لا يكفي إذا توقفت الإضافة والتعديل والرفع عند فقدان الاتصال أو لم تظهر حالة واضحة للمستخدم.
   - **الملفات الجديدة:**
     - `archive-app/src/components/offline/OfflineBanner.jsx` — شريط حالة واضح.
     - `archive-app/src/features/offline/offlineQueue.js` — طابور إضافة/تعديل/حذف محلي.
@@ -1653,7 +1655,7 @@
 
 ### 16.6 P1 — تاريخ إصدارات العناصر والملفات المرفقة (Item Version History)
 
-- [ ] `[P1]` ⏱️L **توسيع سجل الإصدارات ليشمل الحقول والملفات والمقارنة والاستعادة الجزئية** — §9.ج يغطي snapshot للسجل، وهذه المهمة توسّعه إلى تجربة مستخدم كاملة مع ملفات مشتقة وسياسات احتفاظ.
+- [x] `[P1]` ⏱️L **توسيع سجل الإصدارات ليشمل الحقول والملفات والمقارنة والاستعادة الجزئية** — §9.ج يغطي snapshot للسجل، وهذه المهمة توسّعه إلى تجربة مستخدم كاملة مع ملفات مشتقة وسياسات احتفاظ.
   - **الملفات الجديدة:**
     - `archive-app/src/components/versions/VersionTimeline.jsx` — خط زمني للإصدارات.
     - `archive-app/src/components/versions/VersionDiffViewer.jsx` — مقارنة حقول ووسوم ووصف.

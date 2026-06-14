@@ -20,7 +20,7 @@ import { PAGE_COMPONENTS } from "./pageRegistry.js";
 import { getPageContextMeta } from "./pageMeta.js";
 import { DashboardSkeleton } from "./shell/ShellParts.jsx";
 import { ErrorBoundary } from "../components/common/ErrorBoundary.jsx";
-import { OfflineBanner } from "../components/common/OfflineBanner.jsx";
+import { OfflineBanner } from "../components/offline/OfflineBanner.jsx";
 import { applyCustomDaisyTheme, getStoredCustomDaisyTheme } from "../features/theme/customDaisyTheme.js";
 import { applyDaisyTheme, storeDaisyTheme } from "../features/theme/daisyThemes.js";
 import { THEME_MODE, getStoredSchedule, resolveScheduledTheme, systemPrefersDark } from "../features/theme/themeSchedule.js";
