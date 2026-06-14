@@ -35,6 +35,8 @@ import { jsx, jsxs } from "react/jsx-runtime";
 import { motion } from "framer-motion";
 
 import { appConfirm } from "../components/common/ConfirmDialog.js";
+import { DetailNavigationPanel } from "../components/navigation/DetailNavigationPanel.jsx";
+import { getItemPosition, resolveAdjacentItem } from "../features/navigation/navigationContext.js";
 import { TagAutocomplete } from "../components/forms/TagAutocomplete.jsx";
 import { ArchiveImprovementSuggestions } from "../components/recommendations/ArchiveImprovementSuggestions.jsx";
 import { RelatedContentPanel } from "../components/recommendations/RelatedContentPanel.jsx";
@@ -438,6 +440,7 @@ export function DetailPage() {
     selectedItemId,
     setSelectedItemId,
     setCurrentPage,
+    navItemIds = [],
     updateVideoItem,
     deleteVideoItem,
     restoreVideoItem,
@@ -456,6 +459,18 @@ export function DetailPage() {
   } = useAppStore();
 
   const item = videoItems.find((video) => video.id === selectedItemId) || null;
+  // §1408 — next/previous through the filtered list captured at open time.
+  // Fall back to the full item order so the navigator still works when the
+  // detail page is reached without going through the archive (e.g. deep link).
+  const navOrder = React.useMemo(
+    () => (navItemIds.length ? navItemIds : videoItems.map((video) => video.id)),
+    [navItemIds, videoItems]
+  );
+  const navPosition = getItemPosition(selectedItemId, navOrder);
+  const goToAdjacent = React.useCallback((direction) => {
+    const targetId = resolveAdjacentItem(selectedItemId, navOrder, direction);
+    if (targetId) setSelectedItemId?.(targetId);
+  }, [selectedItemId, navOrder, setSelectedItemId]);
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState(null);
   const [commentDraft, setCommentDraft] = React.useState("");
@@ -1057,10 +1072,17 @@ export function DetailPage() {
   return jsxs(MotionPage, {
     className: "space-y-6 p-4 sm:p-6",
     children: [
-      jsxs("nav", { className: "flex items-center gap-2 text-sm text-gray-500", "aria-label": "مسار التنقل", children: [
-        jsxs("button", { type: "button", onClick: () => setCurrentPage?.("archive"), className: "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-gray-500 transition-colors hover:bg-white/5 hover:text-gray-300", children: [jsx(ArrowRight, { className: "h-3.5 w-3.5" }), "الأرشيف"] }),
-        jsx("span", { className: "text-gray-700", children: "/" }),
-        jsx("span", { className: "max-w-[200px] truncate text-gray-400", children: item.title || "التفاصيل" })
+      jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
+        jsxs("nav", { className: "flex items-center gap-2 text-sm text-gray-500", "aria-label": "مسار التنقل", children: [
+          jsxs("button", { type: "button", onClick: () => setCurrentPage?.("archive"), className: "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-gray-500 transition-colors hover:bg-white/5 hover:text-gray-300", children: [jsx(ArrowRight, { className: "h-3.5 w-3.5" }), "الأرشيف"] }),
+          jsx("span", { className: "text-gray-700", children: "/" }),
+          jsx("span", { className: "max-w-[200px] truncate text-gray-400", children: item.title || "التفاصيل" })
+        ] }),
+        jsx(DetailNavigationPanel, {
+          position: navPosition,
+          onPrevious: () => goToAdjacent("previous"),
+          onNext: () => goToAdjacent("next")
+        })
       ] }),
       jsxs("div", { className: "grid gap-6 xl:grid-cols-[minmax(0,460px)_minmax(0,1fr)] xl:items-start", children: [
         jsxs("div", { className: "space-y-6 xl:sticky xl:top-4 xl:self-start", children: [
