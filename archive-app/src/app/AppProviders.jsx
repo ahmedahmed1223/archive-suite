@@ -11,6 +11,7 @@ import * as React from "react";
 import { ErrorBoundary } from "../components/common/ErrorBoundary.jsx";
 import { DialogProvider } from "../components/common/DialogManager.jsx";
 import { ProgressProvider } from "../contexts/ProgressContext.jsx";
+import { DndProvider } from "../features/dnd/dndController.js";
 
 export function AppProviders({ children }) {
   const inner = (
@@ -18,7 +19,9 @@ export function AppProviders({ children }) {
       <ErrorBoundary>
         <DialogProvider>
           <ProgressProvider>
-            {children}
+            <DndProvider>
+              {children}
+            </DndProvider>
           </ProgressProvider>
         </DialogProvider>
       </ErrorBoundary>

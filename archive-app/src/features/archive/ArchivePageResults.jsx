@@ -11,6 +11,8 @@ import { parseVideoTags } from "../videos/viewModel.js";
 import { computeCompleteness } from "./completeness.js";
 import { getArchiveRenderViewMode, groupArchiveItemsForKanban } from "./viewModel.js";
 import { useReorderDnd } from "./useReorderDnd.js";
+import { useDndController } from "../dnd/dndController.js";
+import { setDragCountBadge } from "../../components/dnd/DragPreview.jsx";
 import { useKeyboardListNav } from "../../hooks/useKeyboardListNav.js";
 import { useVirtualList } from "../../hooks/useVirtualList.js";
 import {
@@ -354,9 +356,10 @@ function renderItemsForViewMode(deps) {
         itemId: item.id,
         className: `${kbFocusClass(index)} ${reorderClass(item)}`.trim(),
         "data-list-item": "",
-        draggable: Boolean(reorder) || Boolean(deps.onLinkDragStart),
+        draggable: Boolean(reorder) || Boolean(deps.onLinkDragStart) || Boolean(deps.onCrossZoneDragStart),
         ...sourceProps,
-        onDragStart: (e) => { sourceProps.onDragStart?.(e); deps.onLinkDragStart?.(item, e); },
+        onDragStart: (e) => { sourceProps.onDragStart?.(e); deps.onCrossZoneDragStart?.(item, e); deps.onLinkDragStart?.(item, e); },
+        onDragEnd: (e) => { sourceProps.onDragEnd?.(e); deps.onCrossZoneDragEnd?.(); },
         children: jsx(VideoCard, itemActions(item, index))
       }, item.id);
     })
@@ -443,6 +446,15 @@ export function ArchivePageResults(props) {
   // Uses a ref for the drag source to avoid re-renders mid-drag.
   const linkDragSourceRef = React.useRef(null);
   const [linkDialog, setLinkDialog] = React.useState(null); // { sourceId, targetId } | null
+
+  // §1892 — cross-zone drag: sets archive item IDs on DataTransfer so
+  // DropZone targets (folders, collections) can receive them.
+  const { startDrag: startCrossZoneDrag, clearDrag: clearCrossZoneDrag } = useDndController() ?? {};
+  const handleCrossZoneDragStart = React.useCallback((item, event) => {
+    const ids = selectedIds?.size > 0 ? [...selectedIds] : [item.id];
+    setDragCountBadge(event, ids.length);
+    startCrossZoneDrag?.(ids, event);
+  }, [selectedIds, startCrossZoneDrag]);
 
   const handleLinkDragStart = React.useCallback((item, event) => {
     linkDragSourceRef.current = item.id;
@@ -609,6 +621,8 @@ export function ArchivePageResults(props) {
                   typeOptions,
                   kbFocusedIndex: focusedIndex,
                   kbIsSelected: isSelected,
+                  onCrossZoneDragStart: handleCrossZoneDragStart,
+                  onCrossZoneDragEnd: clearCrossZoneDrag,
                   onLinkDragStart: addRelation ? handleLinkDragStart : undefined,
                   onLinkDragOver: addRelation ? handleLinkDragOver : undefined,
                   onLinkDrop: addRelation ? handleLinkDrop : undefined,

@@ -23,7 +23,8 @@ export function FolderTree({
   onToggle,
   onCreateFolder,
   onMoveFolder,
-  onContextMenu
+  onContextMenu,
+  onDropItems
 }) {
   const tree = React.useMemo(() => buildFolderTree(folders), [folders]);
   const hasFolders = tree.roots.length > 0;
@@ -57,6 +58,7 @@ export function FolderTree({
               onSelect={onSelect}
               onToggle={onToggle}
               onContextMenu={onContextMenu}
+              onDrop={onDropItems}
             />
           ))}
         </ul>

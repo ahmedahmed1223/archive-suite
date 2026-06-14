@@ -1,5 +1,6 @@
 import * as React from "react";
 import { ChevronDown, ChevronLeft } from "lucide-react";
+import { DropZone } from "../dnd/DropZone.jsx";
 
 const INDENT_PX = 16;
 
@@ -16,7 +17,7 @@ const INDENT_PX = 16;
  *   onToggle      — (id) => void
  *   onContextMenu — (id, event) => void
  */
-export function FolderTreeNode({ folder, tree, depth = 0, selectedId, onSelect, onToggle, onContextMenu }) {
+export function FolderTreeNode({ folder, tree, depth = 0, selectedId, onSelect, onToggle, onContextMenu, onDrop }) {
   const children = tree?.childrenByParent?.[folder.id] || [];
   const hasChildren = children.length > 0;
   const isExpanded = folder.isExpanded !== false;
@@ -41,7 +42,11 @@ export function FolderTreeNode({ folder, tree, depth = 0, selectedId, onSelect, 
 
   return (
     <li role="none">
-      <div
+      <DropZone
+        as="div"
+        onDrop={onDrop ? (ids) => onDrop(folder.id, ids) : undefined}
+        disabled={!onDrop}
+        label={`إفلات على مجلد ${folder.name || ""}`}
         role="treeitem"
         aria-expanded={hasChildren ? isExpanded : undefined}
         aria-level={depth + 1}
@@ -54,7 +59,7 @@ export function FolderTreeNode({ folder, tree, depth = 0, selectedId, onSelect, 
           onContextMenu?.(folder.id, event);
         }}
         style={{ paddingInlineStart: `${depth * INDENT_PX + 8}px` }}
-        className={`group flex items-center gap-1.5 pe-2 py-1.5 rounded-lg cursor-pointer transition-colors ${
+        className={`group relative flex items-center gap-1.5 pe-2 py-1.5 rounded-lg cursor-pointer transition-colors ${
           isSelected ? "bg-white/10 text-white" : "text-gray-300 hover:bg-white/5 hover:text-white"
         }`}
       >
@@ -86,7 +91,7 @@ export function FolderTreeNode({ folder, tree, depth = 0, selectedId, onSelect, 
             {itemCount}
           </span>
         )}
-      </div>
+      </DropZone>
 
       {hasChildren && isExpanded && (
         <ul role="group">
