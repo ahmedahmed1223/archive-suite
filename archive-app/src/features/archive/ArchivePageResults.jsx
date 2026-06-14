@@ -2,6 +2,7 @@ import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 
 import { EmptyState } from "../../components/common/EmptyState.jsx";
+import { UsageOnboardingPanel } from "../../components/onboarding/UsageOnboarding.jsx";
 import { appPrompt } from "../../components/common/ConfirmDialog.js";
 import { AddRelationDialog } from "../../components/relations/AddRelationDialog.jsx";
 import { SkeletonBlock } from "../../components/ui/index.js";
@@ -538,7 +539,14 @@ export function ArchivePageResults(props) {
     className: "grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]",
     children: [
       showSkeleton ? jsx(ArchiveResultsSkeleton, { activeViewMode }) :
-      filteredItems.length === 0 ? jsx("div", {
+      filteredItems.length === 0 ? jsxs("div", {
+        className: "space-y-4",
+        children: [
+        // §1483 — first-run usage onboarding. Self-guards: only renders for a
+        // genuinely empty, non-dismissed archive. Suppressed in trash and
+        // filtered "no results" states so it never competes with those.
+        !showDeleted && !hasFilters && jsx(UsageOnboardingPanel, {}),
+        jsx("div", {
         className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-950/35",
         children: jsx(EmptyState, {
           type: showDeleted ? "trash" : "archive",
@@ -553,6 +561,8 @@ export function ArchivePageResults(props) {
           secondaryActionLabel: hasFilters ? "مسح الفلاتر" : undefined,
           onSecondaryAction: hasFilters ? resetFilters : undefined
         })
+      })
+        ]
       }) : jsxs("div", {
         className: "space-y-4",
         children: [
