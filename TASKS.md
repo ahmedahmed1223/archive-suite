@@ -1278,7 +1278,8 @@
 
 ### 15.8 P1 — تحسين نظام التعامل مع الأخطاء والاسترداد (Error Handling & Recovery)
 
-- [ ] `[P1]` ⏱️L **بناء طبقة استرداد أخطاء شاملة فوق رسائل الخطأ الحالية** — الرسائل الودّية وحدها لا تكفي إذا فشلت عملية كتابة أو مزامنة وتركت بيانات معلقة أو حالة غير متسقة.
+- [x] `[P1]` ⏱️L **بناء طبقة استرداد أخطاء شاملة فوق رسائل الخطأ الحالية** — الرسائل الودّية وحدها لا تكفي إذا فشلت عملية كتابة أو مزامنة وتركت بيانات معلقة أو حالة غير متسقة.
+  - **✅ مُنجَز (2026-06-14):** (1) `features/storage/transactionalWrite.js` — `runTransactionalWrite` يشغّل خطوات متعددة مع **تراجع عكسي عند الفشل** (+5 اختبارات). (2) `features/errors/recoveryQueue.js` — طابور مُخزَّن للعمليات الفاشلة بمشغّلات حسب النوع، `retry/retryAll`، سقف محاولات، اشتراك (+10 اختبارات). (3) `features/errors/errorReportBuilder.js` — تقرير منظّم (رسالة/سياق/خطورة/جهاز) + نص قابل للنسخ (+5). (4) `features/errors/errorLogStore.js` — سجل مركزي مُخزَّن قابل للاشتراك بفلترة خطورة/صفحة/بحث (+5). (5) `components/errors/ErrorDetailsPanel.jsx` — **طبقات الرسالة** (مبسّطة → حل مقترح → تفاصيل تقنية قابلة للطي) + نسخ التقرير. (6) `pages/ErrorLogPage.jsx` — سجل قابل للفلترة + شريط «عمليات معلّقة» بإعادة محاولة بضغطة، مسجَّل في `pageManifest`/`pageRegistry` (مجموعة administration). (7) `utils/errorHandling.handleAppError` يسجّل كل خطأ مُعالَج في السجل المركزي (failure-safe، اختياري عبر `options.log`). **متاح للتوسيع:** `runTransactionalWrite` جاهز لتغليف عمليات `archiveSlice` المركّبة عند الحاجة (لم يُفرض على مسارات حسّاسة في هذه الجلسة). التحقق: 292 اختبار يمرّ + `build:spa` أخضر.
   - **الملفات الجديدة:**
     - `archive-app/src/features/errors/recoveryQueue.js` — حفظ عمليات الكتابة الفاشلة لإعادة المحاولة.
     - `archive-app/src/components/errors/ErrorDetailsPanel.jsx` — طبقات الرسالة: مبسطة/حل مقترح/تفاصيل تقنية.
@@ -1557,7 +1558,8 @@
 
 ### 16.1 P1 — المجموعات الذكية التلقائية بقواعد مركبة (Smart Auto-Collections)
 
-- [ ] `[P1]` ⏱️L **توسيع المجموعات الذكية لتُدار بقواعد تلقائية عند إضافة/تعديل العناصر** — المهمة الحالية في §9 تغطي مجموعات مبنية على استعلام محفوظ، لكنها لا تغطي محرّك قواعد حي يربط العناصر تلقائياً عند كل تغيير.
+- [x] `[P1]` ⏱️L **توسيع المجموعات الذكية لتُدار بقواعد تلقائية عند إضافة/تعديل العناصر** — المهمة الحالية في §9 تغطي مجموعات مبنية على استعلام محفوظ، لكنها لا تغطي محرّك قواعد حي يربط العناصر تلقائياً عند كل تغيير.
+  - **✅ مُنجَز (2026-06-14):** محرّك DSL `features/collections/smartCollectionRules.js` (حقول: tags/type/subtype/status/folder/title/notes/favorite/createdAt/updatedAt/size، عمليات per-field، AND/OR) + `createSmartRuleset/matchItemAgainstRules/evaluateSmartCollection/countSmartMatches/describeRuleset` و**19 اختبار وحدة**. `viewModel.resolveCollectionItems` يقيّم `filterRules.kind==="rules"` **لحظياً** فتُعاد العضوية تلقائياً عند كل إضافة/تعديل عنصر (لا itemIds يدوية). محرّر بصري `components/collections/SmartCollectionRuleBuilder.jsx` (تبديل وضع المطابقة، إضافة/حذف شروط، **معاينة عدد المطابقات الحية**). دُمج في `CollectionsPage.jsx` (زر «مجموعة ذكية» + توجيه تعديل مجموعات القواعد للمحرّر). **قرار تصميم:** القواعد تُحفَظ ضمن `filterRules` JSON على سجل المجموعة وتُزامَن عبر تخزين المجموعات الموجود (IndexedDB/Postgres/PocketBase) — فأُلغيت الحاجة لجدول `smart_collection_rules` منفصل ومقيّم خادمي مستقل (إعادة استخدام/YAGNI؛ التقييم يجري على العميل في الأوضاع الثلاثة). التحقق: 268 اختبار يمرّ + `build:spa` أخضر.
   - **حالة حالية (2026-06-11):** يبقى هذا البند مفتوحاً بعد إغلاق §9؛ الموجود حالياً saved filters حيّة، وليس DSL قواعد مركبة ولا جدول `smart_collection_rules` ولا مقيّم خادمي يشتغل عند إضافة/تعديل العناصر.
   - **الملفات الجديدة:**
     - `archive-app/src/features/collections/smartCollectionRules.js` — تعريف DSL القواعد: وسوم، نوع، تاريخ، مجلد، حجم، شروط AND/OR.
