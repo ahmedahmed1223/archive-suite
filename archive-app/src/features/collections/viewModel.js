@@ -1,5 +1,6 @@
 import { getFilteredArchiveItems } from "../archive/viewModel.js";
 import { normalizeArabicSearchText } from "../../utils/formatting.js";
+import { evaluateSmartCollection } from "./smartCollectionRules.js";
 
 export const COLLECTION_COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#ef4444", "#f59e0b", "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#6b7280"];
 
@@ -39,9 +40,12 @@ export function getFilteredCollections(collections = [], query = "") {
     .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime());
 }
 
-export function resolveCollectionItems(collection, videoItems = []) {
+export function resolveCollectionItems(collection, videoItems = [], context = {}) {
   if (!collection) return [];
   if (collection.type === "smart") {
+    if (collection.filterRules?.kind === "rules") {
+      return evaluateSmartCollection(collection.filterRules, videoItems, context);
+    }
     if (collection.filterRules?.query) {
       return getFilteredArchiveItems({
         videoItems,

@@ -22,6 +22,7 @@ import {
 import * as React from "react";
 import { jsx, jsxs, Fragment } from "react/jsx-runtime";
 import { SavedFilterCard } from "../components/collections/SavedFilterCard.jsx";
+import { SmartCollectionRuleBuilder } from "../components/collections/SmartCollectionRuleBuilder.jsx";
 import { motion } from "framer-motion";
 
 import { appConfirm } from "../components/common/ConfirmDialog.js";
@@ -382,6 +383,7 @@ export function CollectionsPage() {
     virtualCollections = [],
     videoItems = [],
     contentTypes = [],
+    folders = [],
     settings = {},
     addVirtualCollection,
     updateVirtualCollection,
@@ -398,6 +400,48 @@ export function CollectionsPage() {
   const [selectedCollectionId, setSelectedCollectionId] = React.useState(virtualCollections[0]?.id || null);
   const [editingCollection, setEditingCollection] = React.useState(null);
   const [showForm, setShowForm] = React.useState(false);
+  // Rule-based smart-collection builder (§1560). `editingSmart` holds the
+  // collection being edited, or null when creating a new one.
+  const [showRuleBuilder, setShowRuleBuilder] = React.useState(false);
+  const [editingSmart, setEditingSmart] = React.useState(null);
+
+  const isRuleCollection = (collection) => collection?.type === "smart" && collection?.filterRules?.kind === "rules";
+
+  const startCreateSmart = () => {
+    setEditingSmart(null);
+    setShowRuleBuilder(true);
+  };
+
+  const editCollection = (collection) => {
+    if (isRuleCollection(collection)) {
+      setEditingSmart(collection);
+      setShowRuleBuilder(true);
+      return;
+    }
+    setEditingCollection(collection);
+    setShowForm(true);
+  };
+
+  const saveSmartCollection = async (value) => {
+    try {
+      if (editingSmart) {
+        await updateVirtualCollection?.(value);
+      } else {
+        await addVirtualCollection?.(value);
+      }
+      setSelectedCollectionId(value.id);
+      setShowRuleBuilder(false);
+      setEditingSmart(null);
+      showToast?.(editingSmart ? "تم تحديث قواعد المجموعة" : "تم إنشاء المجموعة الذكية", "success");
+      return true;
+    } catch (error) {
+      reportError(showNotification, error, {
+        context: "حفظ المجموعة الذكية",
+        recovery: { run: () => saveSmartCollection(value) }
+      });
+      return false;
+    }
+  };
 
   // ── Smart Collections / Saved Filters state ──────────────────────────────
   const [savedFilters, setSavedFilters] = React.useState([]);
@@ -592,8 +636,25 @@ export function CollectionsPage() {
             title: "حفظ البحث الحالي كمجموعة ذكية",
             children: [jsx(BookmarkPlus, { className: "h-4 w-4" }), "حفظ البحث"]
           }),
+          jsxs("button", {
+            type: "button",
+            onClick: startCreateSmart,
+            className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/20 transition-colors",
+            title: "إنشاء مجموعة ذكية تتحدّث تلقائياً حسب قواعد",
+            children: [jsx(Zap, { className: "h-4 w-4" }), "مجموعة ذكية"]
+          }),
           jsxs("button", { type: "button", onClick: startCreate, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مجموعة جديدة"] })
         ] })
+      }),
+      showRuleBuilder && jsx(SmartCollectionRuleBuilder, {
+        collection: editingSmart,
+        videoItems,
+        folders,
+        onCancel: () => {
+          setShowRuleBuilder(false);
+          setEditingSmart(null);
+        },
+        onSave: saveSmartCollection
       }),
       showSaveFilterModal && jsx(SaveFilterModal, {
         initialQuery: query || null,
@@ -645,10 +706,7 @@ export function CollectionsPage() {
             itemCount: resolveCollectionItems(collection, videoItems).length,
             active: selectedCollection?.id === collection.id,
             onOpen: () => setSelectedCollectionId(collection.id),
-            onEdit: () => {
-              setEditingCollection(collection);
-              setShowForm(true);
-            },
+            onEdit: () => editCollection(collection),
             onDelete: () => deleteCollection(collection)
           }, collection.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
             icon: jsx(FolderOpen, { className: "h-16 w-16" }),
