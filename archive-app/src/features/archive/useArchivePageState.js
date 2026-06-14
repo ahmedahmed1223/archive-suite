@@ -66,6 +66,7 @@ export function useArchivePageState() {
     viewMode: storeViewMode,
     setCurrentPage,
     setSelectedItemId,
+    setNavItemIds,
     setSearchQuery,
     setFilterType,
     setFilterSubtype,
@@ -493,9 +494,12 @@ export function useArchivePageState() {
   }, [setCurrentPage, setSelectedItemId]);
 
   const openItem = React.useCallback((item) => {
+    // §1408: persist the current filtered order so the detail page can step
+    // next/previous through the same list without returning to the archive.
+    setNavItemIds?.(filteredItems.map((entry) => entry.id));
     setSelectedItemId?.(item.id);
     setCurrentPage?.("detail");
-  }, [setCurrentPage, setSelectedItemId]);
+  }, [setCurrentPage, setSelectedItemId, setNavItemIds, filteredItems]);
 
   // §19.8 — persist a custom drag order. We rebuild the order from the full
   // filtered list (not just the current page) so positions survive paging,

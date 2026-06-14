@@ -50,6 +50,7 @@ import * as React from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 
 import { FavoritesSidebarSection } from "../favorites/FavoritesSidebarSection.jsx";
+import { ContextualQuickActions } from "./ContextualSidebar.jsx";
 import { getSidebarNavigationGroups } from "./viewModel.js";
 import { ACTIONS, canPerform } from "../../features/users/permissions.js";
 import { USER_ROLES } from "../../features/users/viewModel.js";
@@ -403,6 +404,11 @@ export function Sidebar() {
         "aria-label": "روابط القائمة الجانبية",
         children: jsxs(Fragment, {
           children: [
+            !editing && jsx(ContextualQuickActions, {
+              currentPage,
+              collapsed,
+              onNavigate: (action) => goToPage(action.targetPage)
+            }),
             !editing && jsx(FavoritesSidebarSection, {
               collapsed,
               onNavigate: () => { if (responsiveSidebar.drawerOpen) setDrawerOpen(false); }

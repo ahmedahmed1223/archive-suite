@@ -1,9 +1,14 @@
 import { generateId, nowIso } from "../storeCore.js";
 import { normalizeNotification, shouldShowNotificationToast } from "../../features/notifications/viewModel.js";
+import { normalizeNavIds } from "../../features/navigation/navigationContext.js";
 
 export const uiInitialState = {
   currentPage: "dashboard",
   selectedItemId: null,
+  // Ordered ids of the current filtered archive list (§1408). Persisted when an
+  // item is opened so the detail page can step next/previous without returning
+  // to the archive.
+  navItemIds: [],
   selectedTypeId: null,
   sidebarOpen: false,
   isLoading: true,
@@ -37,6 +42,7 @@ export const uiActionKeys = [
   "openHelpSection",
   "setCurrentPage",
   "setSelectedItemId",
+  "setNavItemIds",
   "addRecentSearch",
   "clearRecentSearches",
   "setFocusMode",
@@ -192,6 +198,7 @@ export function createUiActions({ set, get }) {
     setCurrentPage: (page) => set({ currentPage: page }),
     goToPage: (page) => set({ currentPage: page, selectedItemId: null }),
     setSelectedItemId: (id) => set({ selectedItemId: id }),
+    setNavItemIds: (ids) => set({ navItemIds: normalizeNavIds(ids) }),
     openDataTab: async (tab = "export") => {
       await get().updateSettings?.({ ui: { lastDataCenterTab: tab } });
       set({ currentPage: "backup", selectedItemId: null });
