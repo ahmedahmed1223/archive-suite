@@ -2,6 +2,7 @@ export const PAGE_MANIFEST = [
   { id: "dashboard", group: "daily", heavy: false, meta: { title: "مركز التحكم", breadcrumb: "الرئيسية", hint: "عمليات وتقارير مختصرة، بحث سريع، ووصول مباشر لكل مسارات الأرشيف.", helpSection: "dashboard-archive" } },
   { id: "archive", group: "daily", heavy: false, meta: { title: "الأرشيف", breadcrumb: "الرئيسية / الأرشيف", hint: "تصفية، معاينة، تحديد متعدد، وإضافة فيديو من نفس المسار.", helpSection: "dashboard-archive" } },
   { id: "discover", group: "daily", heavy: false, meta: { title: "الاكتشاف", breadcrumb: "الرئيسية / الاكتشاف", hint: "مسارات استكشف ورائج وعشوائي والأكثر نشاطاً والمنسيّون لإحياء المحتوى.", helpSection: "dashboard-archive" } },
+  { id: "timeline", group: "daily", heavy: false, meta: { title: "الخط الزمني", breadcrumb: "الرئيسية / الخط الزمني", hint: "توزيع عناصر الأرشيف عبر الزمن بدقّة يوم/أسبوع/شهر/سنة مع أسطورة الأنواع.", helpSection: "dashboard-archive" } },
   { id: "add", group: "daily", heavy: false, meta: { title: "إضافة فيديو", breadcrumb: "الأرشيف / إضافة", hint: "احفظ وارجع للأرشيف أو احفظ وأضف فيديو آخر بسرعة.", helpSection: "adding-videos" } },
   { id: "search", group: "daily", heavy: false, meta: { title: "البحث المتقدم", breadcrumb: "الرئيسية / البحث", hint: "ابحث ثم عد للأرشيف مع حفظ الفلاتر في الرابط.", helpSection: "searching" } },
   { id: "detail", group: "daily", heavy: false, meta: { title: "تفاصيل الفيديو", breadcrumb: "الأرشيف / التفاصيل", hint: "مراجعة البيانات، التشغيل، الوسوم، وسجل التغييرات.", helpSection: "adding-videos" } },
