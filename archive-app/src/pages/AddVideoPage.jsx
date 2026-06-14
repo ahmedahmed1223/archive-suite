@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { jsx, jsxs } from "react/jsx-runtime";
+import { jsx as runtimeJsx } from "react/jsx-runtime";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { getFieldsForSelection, groupCustomFields, getVisibleFields, getMissingRequiredFields } from "../features/types/viewModel.js";
@@ -43,6 +43,21 @@ import {
   createUploadLinkedLocalFilePatch,
   mergeUploadIntoMetadata
 } from "../features/upload/uploadLink.js";
+
+function withKeyedChildren(props) {
+  if (!Array.isArray(props?.children)) return props;
+  // This file hand-authors JSX runtime calls; clone array children so React
+  // treats each rendered sibling as an explicitly keyed element in dev tests.
+  const children = React.Children.toArray(props.children).map((child, index) => (
+    React.isValidElement(child)
+      ? React.cloneElement(child, { key: child.key ?? `child-${index}` })
+      : child
+  ));
+  return { ...props, children };
+}
+
+const jsx = (type, props, key) => runtimeJsx(type, withKeyedChildren(props), key);
+const jsxs = (type, props, key) => runtimeJsx(type, withKeyedChildren(props), key);
 
 
 const STEPS = [
@@ -208,7 +223,7 @@ function FieldInput({ field, value, onChange, inputId }) {
   }
   if (field.type === "select" || field.type === "radio") {
     return jsxs("select", { id: inputId, value: value || "", onChange: (event) => onChange(key, event.target.value), className: commonClass, children: [
-      jsx("option", { value: "", children: "اختر..." }),
+      jsx("option", { value: "", children: "اختر..." }, "empty"),
       ...(field.options || []).map((option) => jsx("option", { value: option, children: option }, option))
     ] });
   }
@@ -555,7 +570,7 @@ export function AddVideoPage() {
     return next;
   });
 
-  const renderActionBar = (className) => jsxs("div", { className, children: [
+  const renderActionBar = (className, key) => jsxs("div", { className, children: [
     jsxs("div", { className: "flex items-center gap-3", children: [
       jsxs("button", { type: "button", disabled: stepIndex <= 0, onClick: () => setStepIndex((value) => Math.max(0, value - 1)), className: "va-secondary-button inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: [jsx(ChevronRight, { className: "h-4 w-4" }, "icon"), "السابق"] }, "previous"),
       jsx(SaveIndicator, {
@@ -572,10 +587,10 @@ export function AddVideoPage() {
       stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(false), className: "va-primary-button  rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40", children: "حفظ وفتح التفاصيل" }, "save-open"),
       stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(true), className: "va-secondary-button rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: "حفظ وإضافة آخر" }, "save-another")
     ] }, "actions")
-  ] });
+  ] }, key);
 
   const mobileActionBar = typeof document !== "undefined"
-    ? createPortal(renderActionBar("fixed inset-x-4 bottom-24 z-[9991] flex flex-wrap items-center justify-between gap-3 va-control-surface va-surface-muted rounded-2xl border p-3 shadow-2xl shadow-black/20 md:hidden"), document.body)
+    ? createPortal(renderActionBar("fixed inset-x-4 bottom-24 z-[9991] flex flex-wrap items-center justify-between gap-3 va-control-surface va-surface-muted rounded-2xl border p-3 shadow-2xl shadow-black/20 md:hidden", "mobile-action-bar-surface"), document.body, "mobile-action-bar")
     : null;
 
   return jsxs(React.Fragment, {
@@ -583,7 +598,7 @@ export function AddVideoPage() {
     className: "space-y-6 p-4 pb-40 sm:p-6 md:pb-6",
     children: [
       jsx(PageHero, {
-        icon: jsx(Video, { className: "h-6 w-6 va-accent-text" }),
+        icon: jsx(Video, { className: "h-6 w-6 va-accent-text" }, "hero-icon"),
         title: "إضافة فيديو",
         description: "نموذج متعدد الخطوات لإضافة مادة أرشيفية بدون عرض كل الحقول دفعة واحدة.",
         children: jsxs("div", {
@@ -614,7 +629,7 @@ export function AddVideoPage() {
                   }, step.id))
                 })
               ]
-            }),
+            }, "mobile-stepper"),
             jsx("div", {
               className: "hidden md:block",
               children: jsx(WorkflowStepper, {
@@ -625,10 +640,10 @@ export function AddVideoPage() {
                 className: "sm:grid-cols-4",
                 compact: true
               })
-            })
+            }, "desktop-stepper")
           ]
-        })
-      }),
+        }, "hero-body")
+      }, "page-hero"),
       jsxs("div", {
         className: `grid gap-5 ${showPanel ? "xl:grid-cols-[minmax(0,1fr)_340px]" : ""}`,
         children: [
@@ -647,8 +662,8 @@ export function AddVideoPage() {
         ] }),
         currentStep.id === "basic" && jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [
           jsx("div", { className: "md:col-span-2 flex flex-wrap gap-2", children: [
-            jsx("button", { type: "button", onClick: () => setShowTemplatePicker(true), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-white/15 px-4 py-2 text-sm text-gray-400 transition-colors hover:border-white/25 hover:text-white", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }), "تطبيق قالب"] }),
-            jsx("button", { type: "button", onClick: () => setShowQuickAdd(v => !v), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-emerald-500/20 px-4 py-2 text-sm text-emerald-400 transition-colors hover:border-emerald-500/40 hover:text-emerald-300", children: [jsx("span", { className: "text-base leading-none", children: "⚡" }), "إضافة سريعة"] })
+            jsx("button", { type: "button", onClick: () => setShowTemplatePicker(true), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-white/15 px-4 py-2 text-sm text-gray-400 transition-colors hover:border-white/25 hover:text-white", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }, "icon"), "تطبيق قالب"] }),
+            jsx("button", { type: "button", onClick: () => setShowQuickAdd(v => !v), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-emerald-500/20 px-4 py-2 text-sm text-emerald-400 transition-colors hover:border-emerald-500/40 hover:text-emerald-300", children: [jsx("span", { className: "text-base leading-none", children: "⚡" }, "icon"), "إضافة سريعة"] })
           ] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: titleId, className: "block", children: "العنوان" }), jsx("input", { id: titleId, value: title, onChange: (event) => setTitle(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "عنوان الفيديو" })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: pathId, className: "block", children: "الرابط أو المسار" }), jsx("input", { id: pathId, value: path, onChange: (event) => setPath(event.target.value), dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "https:// أو D:\\..." })] }),
@@ -671,13 +686,13 @@ export function AddVideoPage() {
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: thumbnailId, className: "block", children: "الصورة المصغرة" }), jsx("input", { id: thumbnailId, value: thumbnail, onChange: (event) => setThumbnail(event.target.value), dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "رابط صورة اختياري" })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: notesId, className: "block", children: "ملاحظات" }), jsx("textarea", { id: notesId, value: notes, onChange: (event) => setNotes(event.target.value), className: "min-h-[100px] w-full va-surface-deep rounded-xl border p-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "ملخص أو ملاحظات أرشيفية" })] }),
           ai.available && jsx("div", { className: "md:col-span-2", children: jsx(AiAssistBar, { available: ai.available, busy: ai.busy, onSummarize: aiSummarize, onSuggestTags: aiSuggestTags, onProofread: aiProofread }) })
-        ] }),
+        ] }, "basic-step"),
         currentStep.id === "classify" && jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: typeSelectId, className: "block", children: "نوع المحتوى" }), jsxs("select", { id: typeSelectId, value: typeId, onChange: (event) => setTypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: contentTypes.filter((type) => type.status !== "archived").map((type) => jsx("option", { value: type.id, children: type.name }, type.id)) })] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: subtypeSelectId, className: "block", children: "الفرع" }), jsxs("select", { id: subtypeSelectId, value: subtypeId, onChange: (event) => setSubtypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: [jsx("option", { value: "", children: "بدون فرع" }), ...subtypes.map((subtype) => jsx("option", { value: subtype.id, children: subtype.name }, subtype.id))] })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: subtypeSelectId, className: "block", children: "الفرع" }), jsxs("select", { id: subtypeSelectId, value: subtypeId, onChange: (event) => setSubtypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: [jsx("option", { value: "", children: "بدون فرع" }, "empty"), ...subtypes.map((subtype) => jsx("option", { value: subtype.id, children: subtype.name }, subtype.id))] })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: tagsId, className: "block", children: "الوسوم" }), jsx(TagAutocomplete, { id: tagsId, value: tags, onChange: setTags, placeholder: "وسوم مفصولة بفاصلة، ويمكن استخدام مسارات الوسوم الهرمية", allowed: ["tags", "vocabulary"] })] })
-        ] }),
-        currentStep.id === "fields" && jsx(FieldsStep, { fields, metadata, onChange: updateMetadata }),
+        ] }, "classify-step"),
+        currentStep.id === "fields" && jsx(FieldsStep, { fields, metadata, onChange: updateMetadata }, "fields-step"),
         currentStep.id === "review" && jsxs("div", {
           className: "space-y-3",
           children: [
@@ -694,12 +709,12 @@ export function AddVideoPage() {
               jsx("p", { className: "mt-1 truncate text-sm font-semibold text-white", title: value, children: value }, "value")
             ] }, label)) })
           ]
-        })
+        }, "review-step")
       ] }),
-      stepError && jsx("div", { role: "alert", className: "rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-200", children: stepError }),
-      renderActionBar("hidden items-center justify-between gap-3 va-control-surface va-surface-muted rounded-2xl border p-3 md:flex")
+      stepError && jsx("div", { role: "alert", className: "rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-200", children: stepError }, "step-error"),
+      renderActionBar("hidden items-center justify-between gap-3 va-control-surface va-surface-muted rounded-2xl border p-3 md:flex", "desktop-action-bar")
           ]
-          }),
+          }, "form-column"),
           showPanel && jsxs("aside", {
             className: "min-w-0 space-y-4 xl:sticky xl:top-6 xl:self-start",
             children: [
@@ -716,7 +731,7 @@ export function AddVideoPage() {
                   check.ok ? jsx(CheckCircle2, { className: "h-3.5 w-3.5" }, "icon-ok") : jsx(Circle, { className: "h-3.5 w-3.5" }, "icon-empty"),
                   check.label
                 ] }, check.id)) })
-              ] }),
+              ] }, "readiness-card"),
               jsxs("div", { className: "va-card rounded-2xl va-surface-muted border p-4 text-right", children: [
                 jsxs("div", { className: "flex items-center gap-2", children: [
                   jsx(Sparkles, { className: "h-5 w-5 text-amber-300" }),
@@ -731,7 +746,7 @@ export function AddVideoPage() {
                   jsx("span", { className: "text-gray-500", children: label }, "label"),
                   jsx("span", { className: "min-w-0 truncate text-gray-200", children: value }, "value")
                 ] }, label)) })
-              ] }),
+              ] }, "summary-card"),
               jsxs("div", { className: "va-card rounded-2xl va-surface-muted border p-4 text-right", children: [
                 jsxs("div", { className: "flex items-center gap-2", children: [
                   jsx(Eye, { className: "h-5 w-5 text-cyan-300" }),
@@ -740,19 +755,19 @@ export function AddVideoPage() {
                 jsx("p", { className: "mt-3 text-lg font-bold text-white", children: currentStep.label }),
                 jsx("p", { className: "mt-1 text-sm leading-7 text-gray-500", children: currentStep.detail }),
                 jsx("p", { className: "mt-3 rounded-xl va-surface-subtle border p-3 text-xs leading-6 text-gray-500", children: stepIndex === STEPS.length - 1 ? "راجع الملخص ثم احفظ، أو استخدم حفظ وإضافة آخر للعمل المتكرر." : "يمكنك الانتقال بين الخطوات بحرية؛ لن يتم الحفظ إلا من خطوة المراجعة." })
-              ] })
+              ] }, "current-step-card")
             ]
-          })
+          }, "side-panel")
         ]
-      })
+      }, "content-grid")
     ]
-    }), mobileActionBar,
+    }, "motion-page"), mobileActionBar,
     jsx(TemplatePicker, {
       isOpen: showTemplatePicker,
       onClose: () => setShowTemplatePicker(false),
       onApply: applyTemplate,
       context: { counter: 0, lastValues: {} }
-    }),
+    }, "template-picker"),
     showQuickAdd && jsx("div", {
       className: "fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl sm:inset-x-6 sm:bottom-6",
       children: jsx(QuickAddBar, {
@@ -761,7 +776,7 @@ export function AddVideoPage() {
         onDone: (count) => { setShowQuickAdd(false); showToast?.(`تمت إضافة ${count} عنصر`, "success"); },
         onClose: () => setShowQuickAdd(false)
       })
-    })
+    }, "quick-add")
   ] });
 }
 

@@ -11,15 +11,10 @@ export default defineConfig({
   },
   test: {
     // Non-DOM tests keep the node environment; jsdom is set per-file using
-    // the @vitest-environment docblock where needed. The a11y component tests
-    // declare `// @vitest-environment jsdom` at the top of each file.
+    // the @vitest-environment docblock where needed.
     environment: "node",
     include: ["src/**/*.test.{js,jsx,ts,tsx}"],
     globals: false,
-    environmentMatchGlobs: [
-      // Any test under __tests__/a11y/ runs in jsdom automatically
-      ["src/__tests__/a11y/**", "jsdom"],
-    ],
     setupFiles: ["./src/test-setup.js"],
   },
 });
