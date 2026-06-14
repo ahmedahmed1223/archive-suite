@@ -1,5 +1,6 @@
 import { appAlert } from "../components/common/ConfirmDialog.js";
 import { getErrorMessage } from "./errorMessages.js";
+import { recordError } from "../features/errors/errorLogStore.js";
 
 export function normalizeAppError(error) {
   const fallback = getErrorMessage("unknownError");
@@ -22,6 +23,20 @@ export function handleAppError(error, context = "عملية", options = {}) {
   }
   if (options.alert !== false) {
     appAlert(message, { title: options.title || getErrorMessage("operationFailed"), kind: "error" });
+  }
+  // Record into the central error log (§1281) for later review — failure-safe.
+  if (options.log !== false) {
+    try {
+      recordError(normalized.originalError || normalized, {
+        operation: typeof context === "string" ? context : context?.operation || "",
+        page: options.page || "",
+        severity: options.severity || "error",
+        suggestion: options.suggestion || "",
+        recoverable: options.recoverable === true
+      });
+    } catch {
+      /* logging must never mask the original error */
+    }
   }
   return normalized;
 }
