@@ -36,6 +36,24 @@ export const foldersActionKeys = [
 let _loadFoldersInFlight = false;
 
 export function createFoldersActions({ set, get }) {
+  // Failure-safe activity logging for folder operations. Never blocks the mutation.
+  const logFolderActivity = (action, folder, snapshot = {}) => {
+    try {
+      Promise.resolve(
+        get().addActivityEntry?.({
+          action,
+          targetType: "folder",
+          targetId: folder?.id || null,
+          targetName: folder?.name || "",
+          snapshot,
+          undoable: false
+        })
+      ).catch(() => {});
+    } catch {
+      /* never block the folder operation */
+    }
+  };
+
   return {
     loadFoldersFromStorage: async () => {
       if (_loadFoldersInFlight) return get().folders;
@@ -62,6 +80,7 @@ export function createFoldersActions({ set, get }) {
         set({ foldersError: error?.message || "تعذر حفظ المجلد" });
       });
       get().addAuditLog?.("folder.create", value.id, "folder", { name: value.name });
+      logFolderActivity("create", value, { before: null, after: value });
       return value;
     },
 
@@ -73,6 +92,7 @@ export function createFoldersActions({ set, get }) {
       await dbPut(STORES.FOLDERS, updated).catch((error) => {
         set({ foldersError: error?.message || "تعذر تحديث المجلد" });
       });
+      logFolderActivity("update", updated, { before: target, after: updated });
       return updated;
     },
 
@@ -89,6 +109,7 @@ export function createFoldersActions({ set, get }) {
         await dbDelete(STORES.FOLDERS, folderId).catch(() => {});
       }
       get().addAuditLog?.("folder.delete", id, "folder", { name: target.name, count: removeIds.size });
+      logFolderActivity("delete", target, { before: target, after: null });
       return true;
     },
 
@@ -105,6 +126,7 @@ export function createFoldersActions({ set, get }) {
       await dbPut(STORES.FOLDERS, moved).catch((error) => {
         set({ foldersError: error?.message || "تعذر نقل المجلد" });
       });
+      logFolderActivity("move", moved, { before: target, after: moved });
       return moved;
     },
 

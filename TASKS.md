@@ -2063,7 +2063,7 @@
 
 ### 18.1 P0 — سجل النشاط والتراجع المتقدّم (Activity History & Advanced Undo)
 
-- [ ] `[P0]` ⏱️L **سجل نشاط مركزي + تراجع متعدد المستويات يغطّي الإضافة/التعديل/الحذف/النقل/التعديل الجماعي مع Redo** — `undoManager` الحالي يدعم صفحة التفاصيل فقط ولا يغطّي الحذف/النقل/التعديل الجماعي.
+- [x] `[P0]` ⏱️L **سجل نشاط مركزي + تراجع متعدد المستويات يغطّي الإضافة/التعديل/الحذف/النقل/التعديل الجماعي مع Redo** — `undoManager` الحالي يدعم صفحة التفاصيل فقط ولا يغطّي الحذف/النقل/التعديل الجماعي.
   - **الملفات الجديدة:** `archive-app/src/features/activityLog/viewModel.js` (createActivityEntry/buildDiff/describeActivity)، `undoManager.js` (توسعة)، `archive-app/src/components/activity/ActivityTimeline.jsx`، `ActivityEntry.jsx`، `DiffView.jsx`، `ActivityFilterBar.jsx`، `archive-app/src/pages/ActivityPage.jsx`، `archive-app/src/stores/slices/activitySlice.js`.
   - **تعديل ملفات:** `ArchivePage.jsx`، `DetailPage.jsx`، `Sidebar.jsx`، `archiveSlice.js`، `services/storage/schema.js` (store `activity_log`)، `undoManager`.
   - **مخطط:** store `activity_log` (IndexedDB) + جدول Prisma `ActivityLog` (before/after/diff JSON، فهارس على timestamp/userId/targetType/action) للباك-إند السحابي.
@@ -2074,7 +2074,8 @@
   - **حالة التنفيذ (المرحلة 1 — محلي فقط، 11 يونيو 2026):**
     - ✅ منجز: `features/activityLog/viewModel.js` (createActivityEntry/buildDiff/describeActivity/filterActivityEntries/groupActivitiesByDay) + اختبارات وحدة (`viewModel.test.js`، 13 اختبار)؛ `features/activityLog/undoManager.js` (توسعة withActivityLog فوق SimpleUndoRedoManager)؛ store `activity_log` في `schema.js` مع مرايا DATA_STORES/SNAPSHOT_STORES/الاستيراد في `services/storage/index.js` و`storage/adapters/local-sqlite/index.js`؛ `stores/slices/activityLogSlice.js` (add/remove/load/clear/filters + undoActivityEntryById/redoActivityEntryById) مركّب في `appStore.js`؛ صفحة `ActivityPage.jsx` + `components/activity/` (ActivityTimeline/ActivityEntry/DiffView/ActivityFilterBar) مسجّلة في pageManifest/pageRegistry (id: `activity`)؛ توثيق نشاط تلقائي في `archiveSlice.updateVideoItem` (snapshot before/after، failure-safe، خيار skipActivityLog).
     - ✅ **مُنجَز المرحلة 2 (2026-06-12):** أُضيف `addActivityEntry` لعمليات `addVideoItem` (create)، `deleteVideoItem` (delete + skipActivityLog)، `restoreVideoItem` (restore + skipActivityLog)، `bulkDeleteItems` (bulk_delete)، `bulkRestoreItems` (restore جماعي) — جميعها failure-safe (try/catch + .catch()). الـ undo/redo lambdas تمرّر الآن `skipActivityLog: true`.
-    - ✅ **مُنجَز المرحلة 3 (2026-06-13):** (1) نموذج `ActivityLog` في `archive-server/prisma/schema.prisma` (فهارس على timestamp/userId/targetType/action/targetId). (2) فلترة التاريخ: `ActivityFilterBar.jsx` أُضيفت حقول من/إلى؛ `ActivityPage.jsx` وُسّع state + memo. 215 اختبار ✅. مستقبلياً: `prisma migrate dev` لتطبيق المخطط + توثيق عمليات collections/folders.
+    - ✅ **مُنجَز المرحلة 3 (2026-06-13):** (1) نموذج `ActivityLog` في `archive-server/prisma/schema.prisma` (فهارس على timestamp/userId/targetType/action/targetId). (2) فلترة التاريخ: `ActivityFilterBar.jsx` أُضيفت حقول من/إلى؛ `ActivityPage.jsx` وُسّع state + memo. 215 اختبار ✅.
+    - ✅ **مُنجَز المرحلة 4 (2026-06-14) — إغلاق المهمة:** migration `20260613120000_add_activity_log` مطبّق؛ تمّ توثيق عمليات **المجلدات** (create/update/delete/move في `foldersSlice.js` عبر مساعد `logFolderActivity` آمن الفشل) و**المجموعات** (create/update/delete في `archiveSlice.js` عبر `logCollectionActivity` يربط المستخدم من auth store). الـ viewModel يدعم مسبقاً `targetType: folder|collection` و`action: move`. ✅ 249 اختبار يمرّ.
 
 ### 18.2 P0 — مركز الإشعارات المركزي الذكي (Smart Notification Center)
 

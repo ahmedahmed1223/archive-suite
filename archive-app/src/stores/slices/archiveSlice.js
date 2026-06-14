@@ -135,6 +135,27 @@ export const archiveActionKeys = [
 let _loadAllDataInFlight = false;
 
 export function createArchiveActions({ set, get, getAuthStore }) {
+  // Failure-safe activity logging for collection operations. Never blocks the mutation.
+  const logCollectionActivity = (action, collection, snapshot = {}) => {
+    try {
+      const authState = getAuthStore().getState();
+      Promise.resolve(
+        get().addActivityEntry?.({
+          action,
+          targetType: "collection",
+          targetId: collection?.id || null,
+          targetName: collection?.name || "",
+          userId: authState.currentUser?.id || "system",
+          userName: authState.currentUser?.username || "النظام",
+          snapshot,
+          undoable: false
+        })
+      ).catch(() => {});
+    } catch {
+      /* never block the collection operation */
+    }
+  };
+
   return {
     loadAllData: async () => {
       if (_loadAllDataInFlight) return;
@@ -697,13 +718,16 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       const value = createVirtualCollectionValue(collection);
       set((state) => ({ virtualCollections: [value, ...state.virtualCollections] }));
       await dbPut(STORES.COLLECTIONS, value);
+      logCollectionActivity("create", value, { before: null, after: value });
       return value;
     },
     updateVirtualCollection: async (collection) => {
       checkPermission(get, getAuthStore, ACTIONS.COLLECTIONS_MANAGE);
+      const previous = get().virtualCollections.find((item) => item.id === collection.id) || null;
       const updated = createVirtualCollectionValue({ ...collection, id: collection.id, createdAt: collection.createdAt });
       set((state) => ({ virtualCollections: state.virtualCollections.map((item) => item.id === updated.id ? updated : item) }));
       await dbPut(STORES.COLLECTIONS, updated);
+      logCollectionActivity("update", updated, { before: previous, after: updated });
       return updated;
     },
     deleteVirtualCollection: async (id, options = {}) => {
@@ -713,6 +737,7 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       set((state) => ({ virtualCollections: state.virtualCollections.filter((item) => item.id !== id) }));
       await dbDelete(STORES.COLLECTIONS, id);
       get().addAuditLog?.("collection.delete", id, "collection", { name: target.name });
+      logCollectionActivity("delete", target, { before: target, after: null });
       if (!options.skipUndo) {
         undoRedoManager.push({
           label: `حذف مجموعة ${target.name || ""}`.trim(),
