@@ -74,6 +74,7 @@ import { validatePasswordStrength } from "../../utils/passwordHash.js";
 import { applyAccentColor } from "../../theme/accentColor.js";
 import { PresetConfigScreen } from "./PresetConfigScreen.jsx";
 import { normalizeRoleProfileId } from "./roleProfiles.js";
+import { seedDemoData } from "./DemoModeSeeder.js";
 
 const STORAGE_ICONS = { local: Laptop, postgres: Server, pocketbase: Cloud };
 const DEFAULT_PORT_BY_ENGINE = { postgresql: "5432", mysql: "3306", sqlserver: "1433" };
@@ -238,7 +239,8 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     setMasterPassword,
     skipPasswordSetup,
     updateSettings,
-    showToast
+    showToast,
+    addVideoItem
   } = useAppStore();
   const authStore = useAuthStore();
   const { setTheme } = useTheme();
@@ -573,6 +575,19 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     }
   };
 
+  const handleInstantTry = React.useCallback(async () => {
+    setIsSubmitting(true);
+    try {
+      await seedDemoData(addVideoItem);
+      await updateSettings({ ui: { ...(settings.ui || {}), demoMode: true, onboardingCompleted: true, v1OnboardingCompleted: true } });
+      onComplete?.({ replayMode: false, securityMode: "quick", roleProfile, firstTaskChoice: "dashboard", serverUpdatePolicy, instantTry: true });
+    } catch (errorObject) {
+      handleAppError(errorObject, "وضع التجربة", { message: "تعذر تهيئة بيانات التجربة" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [addVideoItem, firstTaskChoice, onComplete, roleProfile, serverUpdatePolicy, settings.ui, updateSettings]);
+
   const renderStepBody = () => {
     if (activeStep.id === "welcome") {
       return jsxs("div", { className: "space-y-5", children: [
@@ -586,7 +601,23 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
         ].map(([title, detail]) => jsxs("div", { className: "rounded-2xl border border-white/10 bg-white/[0.035] p-4", children: [
           jsx("p", { className: "font-semibold text-white", children: title }),
           jsx("p", { className: "mt-1 text-xs leading-6 text-gray-500", children: detail })
-        ] }, title)) })
+        ] }, title)) }),
+        !replayMode && jsxs("div", { className: "flex flex-col gap-3 pt-2 sm:flex-row", children: [
+          jsx("button", {
+            type: "button",
+            onClick: handleInstantTry,
+            disabled: isSubmitting,
+            className: "va-primary-button inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+            children: isSubmitting ? "جارٍ التحضير..." : "ابدأ فوراً (تجريبي)"
+          }),
+          jsx("button", {
+            type: "button",
+            onClick: goNext,
+            disabled: isSubmitting,
+            className: "inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-white/10 px-5 py-2 text-sm font-semibold text-gray-200 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50",
+            children: "إعداد كامل"
+          })
+        ] })
       ] });
     }
 
