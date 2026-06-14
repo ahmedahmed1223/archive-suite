@@ -38,6 +38,7 @@ import {
   resolveCollectionItems
 } from "../features/collections/viewModel.js";
 import { formatDateTime, formatNumber } from "../utils/formatting.js";
+import { getDragItemIds, ARCHIVE_ITEMS_MIME } from "../features/dnd/dndController.js";
 import { canShare, mintShareLink } from "../features/share/shareClient.js";
 import { getBackendUrl, resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
@@ -106,15 +107,40 @@ function CollectionForm({ collection, onCancel, onSave }) {
   });
 }
 
-function CollectionCard({ collection, itemCount, active, index, onOpen, onEdit, onDelete }) {
+function CollectionCard({ collection, itemCount, active, index, onOpen, onEdit, onDelete, onDrop }) {
   const isSmart = collection.type === "smart";
   const accentColor = collection.color || "#10b981";
+  const [isDropOver, setIsDropOver] = React.useState(false);
+
+  const handleDragOver = React.useCallback((event) => {
+    if (!onDrop || !event.dataTransfer?.types?.includes?.(ARCHIVE_ITEMS_MIME)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setIsDropOver(true);
+  }, [onDrop]);
+
+  const handleDragLeave = React.useCallback((event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) setIsDropOver(false);
+  }, []);
+
+  const handleDrop = React.useCallback((event) => {
+    setIsDropOver(false);
+    if (!onDrop) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const ids = getDragItemIds(event);
+    if (ids.length) onDrop(ids);
+  }, [onDrop]);
+
   return jsxs(motion.article, {
+    onDragOver: handleDragOver,
+    onDragLeave: handleDragLeave,
+    onDrop: handleDrop,
     initial: { opacity: 0, y: 8 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.18, delay: Math.min(index, 10) * 0.025 },
     onClick: onOpen,
-    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${active ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
+    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${isDropOver ? "ring-2 ring-inset ring-[var(--va-accent,#7c3aed)] bg-[var(--va-accent,#7c3aed)]/10" : active ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
     style: { boxShadow: `inset -3px 0 0 0 ${accentColor}${active ? "88" : "44"}` },
     dir: "rtl",
     children: [
@@ -707,7 +733,8 @@ export function CollectionsPage() {
             active: selectedCollection?.id === collection.id,
             onOpen: () => setSelectedCollectionId(collection.id),
             onEdit: () => editCollection(collection),
-            onDelete: () => deleteCollection(collection)
+            onDelete: () => deleteCollection(collection),
+            onDrop: collection.type !== "smart" ? (ids) => addItemsToCollection?.(collection.id, ids) : undefined
           }, collection.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
             icon: jsx(FolderOpen, { className: "h-16 w-16" }),
             title: virtualCollections.length ? "لا توجد مجموعات مطابقة" : "ابدأ تنظيم الأرشيف",
