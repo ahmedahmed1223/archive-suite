@@ -1487,7 +1487,8 @@
 
 ### 15.19 P1 — تجربة العنصر الأول والتهيئة الموجّهة (First-Item Onboarding)
 
-- [ ] `[P1]` ⏱️L **إضافة تهيئة استخدام بعد الإعداد التقني تقود المستخدم لإضافة وتنظيم أول عنصر** — صفحة الأرشيف الفارغة لا تشرح ما الذي يجب أرشفته أولاً أو كيف تُنظّم المجلدات والوسوم.
+- [x] `[P1]` ⏱️L **إضافة تهيئة استخدام بعد الإعداد التقني تقود المستخدم لإضافة وتنظيم أول عنصر** — صفحة الأرشيف الفارغة لا تشرح ما الذي يجب أرشفته أولاً أو كيف تُنظّم المجلدات والوسوم.
+  - **✅ مُنجَز (2026-06-14):** شريحة عمودية أولى لتهيئة الاستخدام في الحالة الفارغة للأرشيف. منطق نقي قابل للاختبار في `archive-app/src/features/onboarding/usageOnboarding.js` (`computeUsageSteps` / `shouldShowUsageOnboarding` / `computeUsageProgress` / `getUsageOnboardingDismissPatch` / `isUsageOnboardingDismissed`) مع `usageOnboarding.test.js` (19 اختباراً). مكوّن `archive-app/src/components/onboarding/UsageOnboarding.jsx` يعرض قائمة مهام من 3 خطوات (أضف عنصراً → أنشئ مجلداً → أضف وسوماً) مع شرح الفرق بين المجلدات والمجموعات الذكية، وشريط تقدّم، وزر إخفاء؛ غلاف `UsageOnboardingPanel` يقرأ `videoItems`/`folders`/الوسوم المشتقة من المتجر، ويتنقّل عبر `setCurrentPage`، ويحفظ الإخفاء عبر `settings.ui.usageOnboardingDismissed` باستخدام `updateSettings`. مربوط في الحالة الفارغة بـ `archive-app/src/features/archive/ArchivePageResults.jsx` (يظهر فقط عند أرشيف فارغ غير مُخفى وليس في السلة/نتائج الفلترة). 367 اختباراً تمر، build:spa أخضر. **مؤجَّل:** مسار الإعداد العشري الموجّه واختيار حالة الاستخدام وقوالب المجلدات/الوسوم المقترحة وشاشة النجاح الاحتفالية (FirstItemOnboarding / UseCasePicker / suggestedStructures / FirstItemSuccess) لم تُنفَّذ في هذه الشريحة.
   - **الملفات الجديدة:**
     - `archive-app/src/features/onboarding/FirstItemOnboarding.jsx` — مسار أول 10 دقائق.
     - `archive-app/src/components/onboarding/UseCasePicker.jsx` — اختيار محاضرات/عمل/وسائط/مؤسسي/أخرى.
