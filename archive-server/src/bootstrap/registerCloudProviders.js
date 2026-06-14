@@ -8,6 +8,8 @@ import { createDropboxFileStore } from "../adapters/files-dropbox/index.js";
 import { createS3FileStore } from "../adapters/files-s3/index.js";
 import { createAzureBlobFileStore } from "../adapters/files-azure/index.js";
 import { createGoogleDriveFileStore } from "../adapters/files-gdrive/index.js";
+import { createFtpFileStore } from "../adapters/files-ftp/index.js";
+import { createSmbFileStore } from "../adapters/files-smb/index.js";
 import { createAiProvider } from "../ai/createAiProvider.js";
 import { resolveServerConfig } from "../config/serverConfig.js";
 import { normalizeDatabaseEngine } from "../config/secrets.js";
@@ -44,6 +46,12 @@ export function buildFileStore(options = {}) {
   }
   if (choice === "gdrive") {
     return createGoogleDriveFileStore({}); // reads GDRIVE_* from env
+  }
+  if (choice === "ftp") {
+    return createFtpFileStore({}); // reads FTP_* from env
+  }
+  if (choice === "smb") {
+    return createSmbFileStore({}); // reads SMB_* from env
   }
   return createDiskFileStore({ rootDir: options.fileStoreDir || config.fileStoreDir || process.env.FILE_STORE_DIR });
 }
