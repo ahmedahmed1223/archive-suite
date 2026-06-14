@@ -96,7 +96,7 @@ export function classifyDatabaseTarget(url, engine) {
   return local.has(parts.host) ? "bundled" : "external";
 }
 
-const VALID_FILE_STORES = new Set(["disk", "dropbox", "s3", "azure", "gdrive"]);
+const VALID_FILE_STORES = new Set(["disk", "dropbox", "s3", "azure", "gdrive", "ftp", "smb"]);
 
 function normalizeFileStoreKind(value) {
   const kind = String(value || "").trim().toLowerCase();
