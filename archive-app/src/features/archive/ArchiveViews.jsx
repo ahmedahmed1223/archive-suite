@@ -36,6 +36,7 @@ import {
   getMediaPreviewDescriptor,
   isLocalFilePath
 } from "./mediaPreview.js";
+import { buildCardActivationHandlers } from "./openInteraction.js";
 import { COMPLETENESS_TIERS, computeCompleteness } from "./completeness.js";
 import {
   formatDateTime,
@@ -656,7 +657,8 @@ export function SegmentedControl({ label, value, options, onChange }) {
 export function VideoCard({ item, typeLabel, subtypeLabel, selected, onPreview, onOpen, onFavorite, onDelete, onRestore, showDeleted, itemSize = "comfortable", bulkMode = false, bulkSelected = false, onBulkToggle, onContextMenu, completeness = null }) {
   const size = ARCHIVE_CARD_SIZE[itemSize] || ARCHIVE_CARD_SIZE.comfortable;
   const highlight = bulkMode ? bulkSelected : selected;
-  const handleCardClick = bulkMode ? () => onBulkToggle?.() : onPreview;
+  // §19.8 — single click previews (desktop), double-click opens; touch tap opens.
+  const activation = buildCardActivationHandlers({ bulkMode, onSelect: onPreview, onOpen, onToggle: onBulkToggle });
   return jsxs("article", {
     onContextMenu,
     "data-item-size": itemSize,
@@ -671,7 +673,9 @@ export function VideoCard({ item, typeLabel, subtypeLabel, selected, onPreview, 
       }),
       jsxs("button", {
         type: "button",
-        onClick: handleCardClick,
+        onClick: activation.onClick,
+        onDoubleClick: activation.onDoubleClick,
+        onPointerUp: activation.onPointerUp,
         className: "va-archive-card-main block w-full text-right",
         children: [
           jsx("div", { className: "aspect-video overflow-hidden border-b border-white/5 bg-gray-950", children: jsx(VideoThumb, { item }) }),
@@ -771,7 +775,8 @@ export function AnimatedItem({ index, children, as = "div", className = "", item
  */
 export function VideoTileItem({ item, typeLabel, subtypeLabel, selected, onPreview, onOpen, onFavorite, onDelete, onRestore, showDeleted, itemSize = "comfortable", bulkMode = false, bulkSelected = false, onBulkToggle, onContextMenu, completeness = null }) {
   const highlight = bulkMode ? bulkSelected : selected;
-  const handlePreview = bulkMode ? () => onBulkToggle?.() : onPreview;
+  // §19.8 — single click previews (desktop), double-click opens; touch tap opens.
+  const activation = buildCardActivationHandlers({ bulkMode, onSelect: onPreview, onOpen, onToggle: onBulkToggle });
   const tagLimit = itemSize === "xs" ? 1 : itemSize === "compact" ? 2 : itemSize === "comfortable" ? 3 : 4;
   const thumbWidth = itemSize === "xs" ? "w-20" : itemSize === "compact" ? "w-24" : itemSize === "large" || itemSize === "xl" ? "w-36" : "w-28";
 
@@ -789,14 +794,18 @@ export function VideoTileItem({ item, typeLabel, subtypeLabel, selected, onPrevi
       }),
       jsx("button", {
         type: "button",
-        onClick: handlePreview,
+        onClick: activation.onClick,
+        onDoubleClick: activation.onDoubleClick,
+        onPointerUp: activation.onPointerUp,
         className: `overflow-hidden rounded-lg border border-white/10 bg-gray-950 ${thumbWidth} shrink-0`,
         "aria-label": `معاينة ${item.title || "الفيديو"}`,
         children: jsx("div", { className: "aspect-video", children: jsx(VideoThumb, { item }) })
       }),
       jsxs("button", {
         type: "button",
-        onClick: handlePreview,
+        onClick: activation.onClick,
+        onDoubleClick: activation.onDoubleClick,
+        onPointerUp: activation.onPointerUp,
         className: "min-w-0 text-right",
         children: [
           jsxs("div", {
@@ -856,7 +865,8 @@ export function VideoTileItem({ item, typeLabel, subtypeLabel, selected, onPrevi
 export function VideoListItem({ item, typeLabel, subtypeLabel, selected, onPreview, onOpen, onFavorite, onDelete, onRestore, showDeleted, itemSize = "comfortable", bulkMode = false, bulkSelected = false, onBulkToggle, onContextMenu, completeness = null }) {
   const size = ARCHIVE_LIST_SIZE[itemSize] || ARCHIVE_LIST_SIZE.comfortable;
   const highlight = bulkMode ? bulkSelected : selected;
-  const handlePreview = bulkMode ? () => onBulkToggle?.() : onPreview;
+  // §19.8 — single click previews (desktop), double-click opens; touch tap opens.
+  const activation = buildCardActivationHandlers({ bulkMode, onSelect: onPreview, onOpen, onToggle: onBulkToggle });
 
   return jsxs("article", {
     onContextMenu,
@@ -871,13 +881,17 @@ export function VideoListItem({ item, typeLabel, subtypeLabel, selected, onPrevi
       }),
       jsx("button", {
         type: "button",
-        onClick: handlePreview,
+        onClick: activation.onClick,
+        onDoubleClick: activation.onDoubleClick,
+        onPointerUp: activation.onPointerUp,
         className: "overflow-hidden rounded-xl border border-white/10 bg-gray-950 text-right",
         children: jsx("div", { className: "aspect-video", children: jsx(VideoThumb, { item }) })
       }),
       jsxs("button", {
         type: "button",
-        onClick: handlePreview,
+        onClick: activation.onClick,
+        onDoubleClick: activation.onDoubleClick,
+        onPointerUp: activation.onPointerUp,
         className: "min-w-0 text-right",
         children: [
           jsxs("div", {
@@ -1097,6 +1111,11 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
               jsx("button", {
                 type: "button",
                 onClick: () => bulkMode ? onBulkToggle?.(item.id) : onPreview(item),
+                // §19.8 — touch tap opens the detail page directly (mouse keeps single=preview).
+                onPointerUp: (event) => {
+                  if (bulkMode) return;
+                  if (event.pointerType === "touch" || event.pointerType === "pen") onOpen?.(item);
+                },
                 className: "min-w-0 flex-1 line-clamp-2 text-right font-semibold leading-relaxed text-white hover:text-[color-mix(in_srgb,var(--va-action)_70%,#ffffff)]",
                 children: item.title || "بدون عنوان"
               }),

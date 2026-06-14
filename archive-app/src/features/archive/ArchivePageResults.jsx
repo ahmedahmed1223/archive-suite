@@ -9,6 +9,7 @@ import { formatNumber } from "../../utils/formatting.js";
 import { parseVideoTags } from "../videos/viewModel.js";
 import { computeCompleteness } from "./completeness.js";
 import { getArchiveRenderViewMode, groupArchiveItemsForKanban } from "./viewModel.js";
+import { useReorderDnd } from "./useReorderDnd.js";
 import { useKeyboardListNav } from "../../hooks/useKeyboardListNav.js";
 import { useVirtualList } from "../../hooks/useVirtualList.js";
 import {
@@ -321,23 +322,43 @@ function renderItemsForViewMode(deps) {
     });
   }
   const explicitColumnsStyle = getGridStyleForColumns(gridColumns);
+  const reorder = deps.reorder;
+  // Drop indicator: a reorder gesture highlights the hovered target card so
+  // the user sees exactly where the dragged item will land.
+  const reorderClass = (item) => {
+    if (!reorder) return "";
+    if (reorder.dragId === item.id) return "opacity-50";
+    if (reorder.overId === item.id) return "ring-2 ring-emerald-400 ring-offset-2 ring-offset-gray-950 rounded-2xl";
+    return "";
+  };
+  const containerProps = reorder ? reorder.getContainerProps() : {};
   return jsx("div", {
     ref: gridContainerRef,
     className: explicitColumnsStyle
       ? "va-archive-grid grid auto-rows-fr gap-3"
       : `va-archive-grid auto-rows-fr ${ARCHIVE_GRID_CLASSES[activeItemSize] || ARCHIVE_GRID_CLASSES.comfortable}`,
     style: explicitColumnsStyle,
-    onDragOver: deps.onLinkDragOver,
-    onDrop: deps.onLinkDrop,
-    children: visibleItems.map((item, index) => jsx(AnimatedItem, {
-      index,
-      itemId: item.id,
-      className: kbFocusClass(index),
-      "data-list-item": "",
-      draggable: Boolean(deps.onLinkDragStart),
-      onDragStart: deps.onLinkDragStart ? (e) => deps.onLinkDragStart(item, e) : undefined,
-      children: jsx(VideoCard, itemActions(item, index))
-    }, item.id))
+    onDragOver: (event) => { containerProps.onDragOver?.(event); deps.onLinkDragOver?.(event); },
+    onDrop: (event) => {
+      // Reorder claims the drop first; the link dialog only opens when no
+      // reorder gesture is in flight (preserves the drag-to-link feature).
+      const wasReordering = reorder?.isDragging;
+      containerProps.onDrop?.(event);
+      if (!wasReordering) deps.onLinkDrop?.(event);
+    },
+    children: visibleItems.map((item, index) => {
+      const sourceProps = reorder ? reorder.getSourceProps(item) : {};
+      return jsx(AnimatedItem, {
+        index,
+        itemId: item.id,
+        className: `${kbFocusClass(index)} ${reorderClass(item)}`.trim(),
+        "data-list-item": "",
+        draggable: Boolean(reorder) || Boolean(deps.onLinkDragStart),
+        ...sourceProps,
+        onDragStart: (e) => { sourceProps.onDragStart?.(e); deps.onLinkDragStart?.(item, e); },
+        children: jsx(VideoCard, itemActions(item, index))
+      }, item.id);
+    })
   });
 }
 
@@ -387,8 +408,18 @@ export function ArchivePageResults(props) {
     undoLastActivity,
     addRelation,
     itemRelations = [],
-    videoItems = []
+    videoItems = [],
+    reorderArchiveItems
   } = props;
+
+  // §19.8 — reorder DnD (mouse + touch) for the grid view, persisted via the
+  // page-state hook. Only enabled when a handler exists and we're not in the
+  // table/kanban views (those have their own column/status DnD semantics).
+  const reorderEnabled = Boolean(reorderArchiveItems)
+    && activeViewMode !== "details"
+    && activeViewMode !== "kanban"
+    && !showDeleted;
+  const reorder = useReorderDnd({ enabled: reorderEnabled, onReorder: reorderArchiveItems });
 
   // Ctrl+Z: undo the last undoable inline-edit when focus is not inside a text field.
   React.useEffect(() => {
@@ -571,6 +602,7 @@ export function ArchivePageResults(props) {
                   onLinkDragStart: addRelation ? handleLinkDragStart : undefined,
                   onLinkDragOver: addRelation ? handleLinkDragOver : undefined,
                   onLinkDrop: addRelation ? handleLinkDrop : undefined,
+                  reorder: reorderEnabled ? reorder : null,
                 }),
                 viewSupportsVirtualization && bottomSpacerHeight > 0 && jsx("div", { style: { height: bottomSpacerHeight }, "aria-hidden": "true" }),
                 viewSupportsVirtualization && shouldVirtualize && jsx("p", {

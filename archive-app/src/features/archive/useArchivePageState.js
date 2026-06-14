@@ -33,6 +33,7 @@ import {
   hasMeaningfulFilters,
   removeSavedView
 } from "./savedViews.js";
+import { buildCustomOrderIds } from "./reorderItems.js";
 
 // Grid-column responsive breakpoints — extracted so the page and the
 // state hook share a single source of truth.
@@ -216,6 +217,13 @@ export function useArchivePageState() {
   // 2k items this removes perceived lag as the library grows, without the
   // complexity of DOM virtualization (pagination already caps the DOM at ≤96).
   const deferredSearch = React.useDeferredValue(localSearch);
+  // §19.8 — persisted drag-reorder. The custom order only applies in the
+  // default updatedAt-desc sort; any explicit sort the user picks wins.
+  const archiveItemOrder = React.useMemo(
+    () => (Array.isArray(settings.ui?.archiveItemOrder) ? settings.ui.archiveItemOrder : null),
+    [settings.ui?.archiveItemOrder]
+  );
+  const customOrder = sortField === "updatedAt" && sortDirection === "desc" ? archiveItemOrder : null;
   const filteredItems = React.useMemo(() => getFilteredArchiveItems({
     videoItems,
     filterType,
@@ -226,8 +234,9 @@ export function useArchivePageState() {
     sortDirection,
     showDeleted,
     showFavoritesOnly,
-    showGapsOnly
-  }), [filterStatus, filterType, filterSubtype, deferredSearch, showDeleted, showFavoritesOnly, showGapsOnly, sortDirection, sortField, videoItems]);
+    showGapsOnly,
+    customOrder
+  }), [filterStatus, filterType, filterSubtype, deferredSearch, showDeleted, showFavoritesOnly, showGapsOnly, sortDirection, sortField, videoItems, customOrder]);
   const quickSearchMatches = React.useMemo(
     () => (localSearch.trim() ? filteredItems.slice(0, 5) : []),
     [filteredItems, localSearch]
@@ -488,6 +497,24 @@ export function useArchivePageState() {
     setCurrentPage?.("detail");
   }, [setCurrentPage, setSelectedItemId]);
 
+  // §19.8 — persist a custom drag order. We rebuild the order from the full
+  // filtered list (not just the current page) so positions survive paging,
+  // then snap the sort back to the default so the custom order is honored.
+  const reorderArchiveItems = React.useCallback(async (fromId, toId) => {
+    if (!fromId || !toId || fromId === toId) return;
+    const orderIds = buildCustomOrderIds(filteredItems, fromId, toId);
+    if (!orderIds.length) return;
+    if (sortField !== "updatedAt" || sortDirection !== "desc") {
+      setSortField("updatedAt");
+      setSortDirection("desc");
+    }
+    try {
+      await updateSettings?.({ ui: { archiveItemOrder: orderIds } });
+    } catch (error) {
+      showToast?.(error?.message || "تعذر حفظ الترتيب", "error");
+    }
+  }, [filteredItems, sortDirection, sortField, updateSettings, showToast]);
+
   const openImport = React.useCallback(() => {
     setShowFileImportWizard(true);
   }, []);
@@ -651,6 +678,7 @@ export function useArchivePageState() {
     // actions
     openAdd,
     openItem,
+    reorderArchiveItems,
     openImport,
     openProjects,
     confirmDelete,

@@ -1,6 +1,7 @@
 import { normalizeArabicSearchText } from "../../utils/formatting.js";
 import { itemHasDescriptionGap } from "./completeness.js";
 import { STATE_META, WORKFLOW_STATES, getItemState } from "./itemStatus.js";
+import { applyCustomOrder } from "./reorderItems.js";
 
 const ARCHIVE_SORT_FIELDS = new Set(["title", "createdAt", "updatedAt"]);
 const ARCHIVE_VIEW_MODES = new Set(["grid", "gallery", "compact", "list", "details", "kanban"]);
@@ -106,7 +107,8 @@ export function getFilteredArchiveItems({
   sortDirection = "desc",
   showDeleted = false,
   showFavoritesOnly = false,
-  showGapsOnly = false
+  showGapsOnly = false,
+  customOrder = null
 } = {}) {
   const normalizedSortField = ARCHIVE_SORT_FIELDS.has(sortField) ? sortField : "updatedAt";
   const query = normalizeArabicSearchText(searchQuery.trim());
@@ -123,13 +125,16 @@ export function getFilteredArchiveItems({
     return getArchiveItemSearchValues(item).some((value) => normalizeArabicSearchText(value).includes(query));
   });
 
-  return items.sort((a, b) => {
+  const sorted = items.sort((a, b) => {
     let comparison = 0;
     if (normalizedSortField === "title") comparison = String(a.title || "").localeCompare(String(b.title || ""), "ar");
     if (normalizedSortField === "createdAt") comparison = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
     if (normalizedSortField === "updatedAt") comparison = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
     return sortDirection === "desc" ? -comparison : comparison;
   });
+
+  // §19.8 — a user-defined drag order, when present, overrides the field sort.
+  return Array.isArray(customOrder) && customOrder.length ? applyCustomOrder(sorted, customOrder) : sorted;
 }
 
 export function getArchiveActiveFilterCount({
