@@ -319,6 +319,11 @@ export function AddVideoPage() {
   const [typeId, setTypeId] = React.useState(initialDraft?.typeId ?? firstType?.id ?? "");
   const [subtypeId, setSubtypeId] = React.useState(initialDraft?.subtypeId ?? "");
   const [metadata, setMetadata] = React.useState(initialDraft?.metadata ?? {});
+  // Upload mode: "real" actually transfers the file blob; "metadata" only
+  // extracts/records its details without uploading (§753).
+  const [uploadMode, setUploadMode] = React.useState(initialDraft?.uploadMode ?? "real");
+  // Archive the material immediately on save instead of leaving it active.
+  const [archiveOnSave, setArchiveOnSave] = React.useState(initialDraft?.archiveOnSave ?? false);
   const [draftRestored, setDraftRestored] = React.useState(!!initialDraft);
   const [stepError, setStepError] = React.useState(null);
   const draftSave = useFormSaveState();
@@ -425,14 +430,14 @@ export function AddVideoPage() {
 
   const updateMetadata = (key, value) => setMetadata((current) => ({ ...current, [key]: value }));
   const applyPrimaryLocalFile = (file) => {
-    const entries = enqueueUploads?.([file], {
-      source: "addVideoPage",
-      fieldKey: "localFile"
-    }) || [];
-    const patch = createUploadLinkedLocalFilePatch(file, {
-      currentTitle: title,
-      upload: entries[0]
-    }) || createVideoLocalFilePatch(file, { currentTitle: title });
+    // Only enqueue a real transfer in "real" mode; "metadata" mode just records
+    // the file's details (name/size/type) without uploading the blob.
+    const entries = uploadMode === "real"
+      ? (enqueueUploads?.([file], { source: "addVideoPage", fieldKey: "localFile" }) || [])
+      : [];
+    const patch = (entries[0]
+      ? createUploadLinkedLocalFilePatch(file, { currentTitle: title, upload: entries[0] })
+      : null) || createVideoLocalFilePatch(file, { currentTitle: title });
     if (!patch) return;
     if (patch.title) setTitle(patch.title);
     setPath(patch.path);
@@ -459,7 +464,8 @@ export function AddVideoPage() {
       tags,
       type: typeId,
       subtype: subtypeId,
-      metadata: linkedMetadata
+      metadata: linkedMetadata,
+      ...(archiveOnSave ? { status: "archived" } : {})
     });
     try {
       submitSave.begin();
@@ -646,9 +652,21 @@ export function AddVideoPage() {
           ] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: titleId, className: "block", children: "العنوان" }), jsx("input", { id: titleId, value: title, onChange: (event) => setTitle(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "عنوان الفيديو" })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: pathId, className: "block", children: "الرابط أو المسار" }), jsx("input", { id: pathId, value: path, onChange: (event) => setPath(event.target.value), dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "https:// أو D:\\..." })] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [
+          jsxs("div", { className: "space-y-2 text-sm text-gray-300 md:col-span-2", children: [
             jsx("label", { htmlFor: localFileId, className: "block", children: "ملف محلي من الجهاز" }),
-            jsx(LocalFilePicker, { value: metadata.localFile, onFileSelect: applyPrimaryLocalFile, inputId: localFileId })
+            jsxs("div", { className: "flex flex-wrap gap-2", role: "radiogroup", "aria-label": "وضع الرفع", children: [
+              jsxs("label", { className: `inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-1.5 ${uploadMode === "real" ? "border-emerald-500/40 text-white" : "border-white/10 text-gray-400"}`, children: [
+                jsx("input", { type: "radio", name: "uploadMode", checked: uploadMode === "real", onChange: () => setUploadMode("real"), className: "accent-emerald-500" }), "رفع فعلي للملف"
+              ] }),
+              jsxs("label", { className: `inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-1.5 ${uploadMode === "metadata" ? "border-emerald-500/40 text-white" : "border-white/10 text-gray-400"}`, children: [
+                jsx("input", { type: "radio", name: "uploadMode", checked: uploadMode === "metadata", onChange: () => setUploadMode("metadata"), className: "accent-emerald-500" }), "استخراج البيانات فقط"
+              ] })
+            ] }),
+            jsx(LocalFilePicker, { value: metadata.localFile, onFileSelect: applyPrimaryLocalFile, inputId: localFileId }),
+            jsxs("label", { className: "inline-flex cursor-pointer items-center gap-2 text-gray-300", children: [
+              jsx("input", { type: "checkbox", checked: archiveOnSave, onChange: (event) => setArchiveOnSave(event.target.checked), className: "accent-emerald-500" }),
+              "أرشفة المادة المرفوعة مباشرة"
+            ] })
           ] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: thumbnailId, className: "block", children: "الصورة المصغرة" }), jsx("input", { id: thumbnailId, value: thumbnail, onChange: (event) => setThumbnail(event.target.value), dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "رابط صورة اختياري" })] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: notesId, className: "block", children: "ملاحظات" }), jsx("textarea", { id: notesId, value: notes, onChange: (event) => setNotes(event.target.value), className: "min-h-[100px] w-full va-surface-deep rounded-xl border p-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "ملخص أو ملاحظات أرشيفية" })] }),
