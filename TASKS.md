@@ -1174,7 +1174,11 @@
 
 ### 15.2 P0 — تحسين استقرار المزامنة السحابية (Cloud Sync Stabilization)
 
-- [ ] `[P0]` ⏱️XL **بناء طبقة مزامنة سحابية موثوقة مع كشف تعارضات وطابور مرئي** — المزامنة بين IndexedDB وPrisma قد تخفي التعارضات، ولا تعرض حالة الاتصال أو العمليات المعلقة بشكل واضح.
+- [x] `[P0]` ⏱️XL **بناء طبقة مزامنة سحابية موثوقة مع كشف تعارضات وطابور مرئي** — المزامنة بين IndexedDB وPrisma قد تخفي التعارضات، ولا تعرض حالة الاتصال أو العمليات المعلقة بشكل واضح.
+  - **✅ مُنجَز (شريحة، 2026-06-15):** كشف تعارضات + طابور مرئي قابل للاشتراك فوق طبقة المزامنة الحالية دون المساس بمسار الكتابة.
+    - **ملفات جديدة/معدّلة:** `archive-app/src/features/sync/conflictDetection.js` (إضافة `detectConflict`/`classifyConflicts`/`resolveConflict` + `CONFLICT_RESOLUTION_STRATEGIES` بجانب `detectConflicts` الموجود دون تعديله)؛ `syncQueueModel.js` (نموذج عمليات نقي: `createSyncOp`/`summarizeQueue`/`nextPendingOp`/`transitionOp`)؛ `syncStatusStore.js` (مخزن قابل للاشتراك: حالة الاتصال عبر `navigator.onLine`، طابور معلّق محفوظ، تعارضات مكتشفة)؛ تحسين `pages/SyncLogPage.jsx` بلوحة `SyncStatusPanel` (متصل/معلّق/مكتمل + طابور + أزرار حل لكل تعارض keepLocal/keepRemote/newest).
+    - **اختبارات:** 38 اختبار جديد (conflictDetection 17، syncQueueModel 11، syncStatusStore 10) — الإجمالي 548 اختباراً ناجحاً، و`build:spa` أخضر.
+    - **مؤجَّل (تكامل حلقة المزامنة الحيّة):** تعبئة الطابور والتعارضات من حلقة `local-sync`/Prisma الفعلية وتطبيق السجل المحلول على المخزن الحيّ؛ exponential backoff لإعادة المحاولة؛ إشعارات اكتمال/تعارض. الشريحة الحالية تعرض الطابور فارغاً حتى يغذّيه مصدر حقيقي أو لقطة بعيدة.
   - **الملفات الجديدة:**
     - `archive-app/src/features/sync/conflictResolver.js` — كشف التعارضات بمراجعات وطوابع زمنية.
     - `archive-app/src/components/sync/ConflictResolutionDialog.jsx` — عرض نسختين جنباً إلى جنب مع تمييز الفروقات.
