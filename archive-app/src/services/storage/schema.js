@@ -28,5 +28,6 @@ export const STORES = {
   SAVED_SEARCHES: "saved_searches",
   INBOX: "inbox_items",
   ITEM_NOTES: "item_notes",
-  AUTOMATION_RULES: "automation_rules"
+  AUTOMATION_RULES: "automation_rules",
+  ITEM_SUMMARIES: "item_summaries"
 };
