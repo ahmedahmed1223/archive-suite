@@ -1,18 +1,8 @@
 # Archive Suite Production Stack (Postgres + All Services)
-# Security-hardened with capabilities dropping, read-only filesystems, and resource limits.
-#
-# Usage:
-#   cp .env.example .env
-#   Set required secrets: POSTGRES_PASSWORD, JWT_AUTH_SECRET, ADMIN_PASSWORD, REDIS_PASSWORD, PGADMIN_EMAIL/PASSWORD, GRAFANA_PASSWORD
-#   docker compose -f docker-compose.postgres.yml up -d --build
-#
-# All optional services are now enabled by default (no profiles needed).
+# Without Whisper (image unavailable)
 
 services:
-  # PostgreSQL 17 — production database backend
   postgres:
-    # pgvector/pgvector ships PostgreSQL 17 + the `vector` extension, which the
-    # 20260608120000_add_pgvector migration requires (plain postgres:17 lacks it).
     image: pgvector/pgvector:pg17
     container_name: archive-postgres
     restart: unless-stopped
@@ -51,7 +41,6 @@ services:
           cpus: '1'
           memory: 512M
 
-  # Node.js API Server — production backend for all operations
   server:
     build:
       context: ..
@@ -92,10 +81,6 @@ services:
       AI_MODEL: ${AI_MODEL:-}
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_IMPL: ${AI_IMPL:-sdk}
-      TRANSCRIBE_PROVIDER: ${TRANSCRIBE_PROVIDER:-whisper-local}
-      TRANSCRIBE_API_KEY: ${TRANSCRIBE_API_KEY:-}
-      TRANSCRIBE_MODEL: ${TRANSCRIBE_MODEL:-}
-      TRANSCRIBE_BASE_URL: ${TRANSCRIBE_BASE_URL:-http://whisper:8000/v1}
       SERVER_CONFIG_PATH: /app/config/server-config.json
     volumes:
       - server_config:/app/config
@@ -104,8 +89,6 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      whisper:
         condition: service_healthy
     networks:
       - archive
@@ -124,7 +107,6 @@ services:
           cpus: '2'
           memory: 1G
 
-  # React SPA Frontend + nginx reverse proxy
   frontend:
     build:
       context: ..
@@ -157,7 +139,6 @@ services:
           cpus: '0.5'
           memory: 256M
 
-  # Caddy reverse proxy + TLS termination
   caddy:
     image: caddy:2.11-alpine
     container_name: archive-caddy
@@ -195,7 +176,6 @@ services:
           cpus: '0.5'
           memory: 128M
 
-  # Redis cache — search results, share snapshots
   redis:
     image: redis:7-alpine
     container_name: archive-redis
@@ -226,22 +206,20 @@ services:
           cpus: '0.5'
           memory: 256M
 
-  # Whisper transcription service (OpenAI-compatible API)
   whisper:
-    image: fedirz/faster-whisper-server:latest-cpu
+    build:
+      context: .
+      dockerfile: Dockerfile.whisper
     container_name: archive-whisper
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    read_only: true
     tmpfs:
       - /tmp
-    environment:
-      WHISPER__MODEL: ${TRANSCRIBE_MODEL:-Systran/faster-whisper-base}
-    volumes:
-      - whisper_models:/root/.cache/huggingface
+    ports:
+      - "8000:8000"
     networks:
       - archive
     healthcheck:
@@ -249,25 +227,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
     deploy:
       resources:
         limits:
           cpus: '2'
-          memory: 2G
+          memory: 3G
         reservations:
           cpus: '1'
-          memory: 1G
+          memory: 2G
 
-  # pgAdmin — Postgres web UI
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: archive-pgadmin
     restart: unless-stopped
-    # pgAdmin's entrypoint needs to chown its data dir and drop privileges, which
-    # `no-new-privileges` + `cap_drop: ALL` block (python3: "Operation not
-    # permitted"). It is bound to 127.0.0.1 only, so the relaxed posture here is
-    # local-admin-only and never exposed publicly.
     user: root
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Set PGADMIN_EMAIL in .env}
@@ -279,7 +252,7 @@ services:
       - pgadmin_data:/var/lib/pgadmin
       - ./deploy/pgadmin-servers.json:/pgadmin4/servers.json:ro
     ports:
-      - "127.0.0.1:5050:80"
+      - "0.0.0.0:5050:80"
     depends_on:
       postgres:
         condition: service_healthy
@@ -294,9 +267,8 @@ services:
           cpus: '0.5'
           memory: 256M
 
-  # Prometheus — metrics scraping
   prometheus:
-    image: prom/prometheus:v3.0.1
+    image: prom/prometheus:latest
     container_name: archive-prometheus
     restart: unless-stopped
     security_opt:
@@ -313,7 +285,7 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=15d
     ports:
-      - "127.0.0.1:9090:9090"
+      - "0.0.0.0:9090:9090"
     networks:
       - archive
     deploy:
@@ -325,9 +297,8 @@ services:
           cpus: '0.5'
           memory: 256M
 
-  # Grafana — dashboards
   grafana:
-    image: grafana/grafana:11.4.0
+    image: grafana/grafana:latest
     container_name: archive-grafana
     restart: unless-stopped
     security_opt:
@@ -345,7 +316,7 @@ services:
       - grafana_data:/var/lib/grafana
       - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
-      - "127.0.0.1:3000:3000"
+      - "0.0.0.0:3000:3000"
     depends_on:
       - prometheus
     networks:
@@ -359,7 +330,6 @@ services:
           cpus: '0.5'
           memory: 256M
 
-  # PaddleOCR — Arabic/multilingual text extraction
   ocr:
     build:
       context: ./ocr-service
@@ -403,8 +373,6 @@ volumes:
     driver: local
   caddy_config:
     driver: local
-  whisper_models:
-    driver: local
   pgadmin_data:
     driver: local
   ocr_models:
@@ -413,6 +381,7 @@ volumes:
     driver: local
   grafana_data:
     driver: local
+
 networks:
   archive:
     driver: bridge
