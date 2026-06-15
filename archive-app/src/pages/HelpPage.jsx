@@ -496,6 +496,16 @@ export function HelpPage() {
     updateSettings({ ui: { ...(settings.ui || {}), v1TourCompleted: false, v1TourVersion: null, lastOnboardingStep: "tour-restart" } });
   };
 
+  // §1152: start the interactive feature-discovery tour. The controller mounted
+  // in AppNotifications listens for this event and opens the tour, replaying it
+  // from the start regardless of previous dismissal.
+  const startGuidedTour = () => {
+    updateSettings({ ui: { ...(settings.ui || {}), tourDismissed: false, tourSeenSteps: [] } });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("videoarchive:start-guided-tour"));
+    }
+  };
+
   return jsxs(MotionPage, {
     className: "help-page flex h-[calc(100vh-4rem)] gap-6 p-4 text-right sm:p-6",
     role: "main",
@@ -543,6 +553,12 @@ export function HelpPage() {
             description: "مركز معرفة قابل للبحث، بروابط مباشرة للأقسام، ومصمم ليعطي المستخدم إجابة عملية بدون مغادرة السياق.",
             actions: jsxs(Fragment, {
               children: [
+                jsxs("button", {
+                  type: "button",
+                  onClick: startGuidedTour,
+                  className: "va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm",
+                  children: [jsx(Lightbulb, { className: "h-4 w-4 text-amber-300" }), "ابدأ الجولة"]
+                }),
                 jsxs("button", {
                   type: "button",
                   onClick: restartV1Tour,

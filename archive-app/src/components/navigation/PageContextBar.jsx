@@ -20,6 +20,7 @@ import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 
 import { ContextMenu } from "../common/ContextMenu.jsx";
+import { ContextualTip } from "../guide/ContextualTip.jsx";
 import { getPageContextBarModel } from "./viewModel.js";
 import { ServerStatusBadge } from "../../features/server-status/ServerStatusBadge.jsx";
 import { Breadcrumb } from "./Breadcrumb.jsx";
@@ -176,7 +177,8 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
                   ]
                 }),
                 jsx("h2", { className: "truncate text-lg font-bold text-white sm:text-xl", children: meta.title || currentPageTitle }),
-                meta.hint && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-gray-400", children: meta.hint })
+                meta.hint && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-gray-400", children: meta.hint }),
+                jsx(ContextualTip, { pageId: currentPage })
               ]
             }),
             jsxs("div", {
