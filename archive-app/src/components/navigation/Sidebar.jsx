@@ -369,7 +369,10 @@ export function Sidebar() {
   const sidebarContent = jsxs(Fragment, {
     children: [
       jsxs("div", {
-        className: `va-sidebar-brand flex items-center gap-3 border-b p-5 ${isDark ? "border-white/10" : "border-gray-200"}`,
+        // When collapsed the narrow rail can't fit the logo + toggle side by
+        // side, so they used to overflow under the top bar (hiding the expand
+        // icon). Stack them vertically and shrink padding while collapsed.
+        className: `va-sidebar-brand relative z-10 flex border-b ${collapsed ? "flex-col items-center gap-2 p-3" : "items-center gap-3 p-5"} ${isDark ? "border-white/10" : "border-gray-200"}`,
         children: [
           jsx("div", {
             className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl va-accent-bg shadow-lg",
