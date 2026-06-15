@@ -25,5 +25,6 @@ export const STORES = {
   FAVORITES: "favorites",
   READING_LISTS: "reading_lists",
   READING_LIST_ITEMS: "reading_list_items",
-  SAVED_SEARCHES: "saved_searches"
+  SAVED_SEARCHES: "saved_searches",
+  INBOX: "inbox_items"
 };
