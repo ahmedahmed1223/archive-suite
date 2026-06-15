@@ -1,6 +1,7 @@
 import { getFilteredArchiveItems } from "../archive/viewModel.js";
 import { normalizeArabicSearchText } from "../../utils/formatting.js";
 import { evaluateSmartCollection } from "./smartCollectionRules.js";
+import { resolveMultiSourceItems } from "./collectionSources.js";
 
 export const COLLECTION_COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#ef4444", "#f59e0b", "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#6b7280"];
 
@@ -13,6 +14,7 @@ export function createVirtualCollectionValue(partial = {}) {
     itemIds: Array.isArray(partial.itemIds) ? partial.itemIds : [],
     type: partial.type || "manual",
     filterRules: partial.filterRules || null,
+    sources: Array.isArray(partial.sources) ? partial.sources : undefined,
     icon: partial.icon || "📁",
     iconSpec: partial.iconSpec,
     color: partial.color || "#10b981",
@@ -42,6 +44,11 @@ export function getFilteredCollections(collections = [], query = "") {
 
 export function resolveCollectionItems(collection, videoItems = [], context = {}) {
   if (!collection) return [];
+  // §1090 — a multi-source collection unions members from several sources.
+  // Backward compatible: collections without `sources` fall through unchanged.
+  if (Array.isArray(collection.sources) && collection.sources.length > 0) {
+    return resolveMultiSourceItems(collection, videoItems, context);
+  }
   if (collection.type === "smart") {
     if (collection.filterRules?.kind === "rules") {
       return evaluateSmartCollection(collection.filterRules, videoItems, context);
