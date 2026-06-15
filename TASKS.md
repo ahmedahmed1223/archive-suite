@@ -790,10 +790,14 @@
   - الجهد: 6-8 أسابيع. يرفع درجة مرحلة الميديا من 58 إلى 85+.
   - المصدر: feature-proposals-2026 (محور 4 — ميزة #20).
 
-- [ ] `[P0]` ⏱️XL **محرر خط زمني بصري للمونتاج مع موجة صوتية** — المحرر الحالي يعتمد على إدخال أرقام بلا معاينة بصرية.
+- [x] `[P0]` ⏱️XL **محرر خط زمني بصري للمونتاج مع موجة صوتية** — المحرر الحالي يعتمد على إدخال أرقام بلا معاينة بصرية.
   - الملفات الجديدة: `archive-app/src/features/projects/TimelineEditor.jsx`، `WaveformTrack.jsx`، `VideoTrack.jsx`، `SubtitleTrack.jsx`، `TransitionsPanel.jsx`، `ExportDialog.jsx`.
   - تغييرات: `archive-server/src/export/ffmpegPlan.js`.
   - التنفيذ: عرض موجة صوتية عبر `wavesurfer.js`؛ سحب حواف المقاطع لتعديل نقاط البداية/النهاية؛ معاينة فورية؛ مسارات متعددة (فيديو + صوت + ترجمة)؛ تصدير محسّن مع اختيار الدقة/الترميز/الجودة؛ انتقالات بسيطة (crossfade/cut/dissolve)؛ Undo/Redo.
+  - **✅ مُنجَز (شريحة، 2026-06-15):** نموذج خطّ زمني نقي + مساعد موجة صوتية + مكوّن مرئي مدمج في صفحة المونتاج، إضافيًا ومتوافقًا مع الخلف (التصدير JSON/EDL/MP4 سليم).
+    - الملفات: `archive-app/src/features/montage/timelineModel.js` (`buildClipLayout`/`moveClip`/`trimClip`/`totalDuration`/`timeToPx`/`pxToTime`) + `timelineModel.test.js`؛ `archive-app/src/features/montage/waveform.js` (`downsamplePeaks`/`peaksToBars`/`placeholderPeaks`) + `waveform.test.js`؛ `archive-app/src/components/montage/TimelineTrack.jsx` (كتل مقاطع متناسبة + مسطرة زمنية + شريط موجة + تحديد + سحب بالماوس لإعادة الترتيب)؛ دمج في `archive-app/src/pages/ProjectsPage.jsx` بجانب مدخلات الأرقام (محفوظة).
+    - 628 اختبارًا ناجحًا (593 قائمة + 35 جديدًا)، و`build:spa` أخضر.
+    - مؤجَّل: فكّ ترميز صوتي حقيقي عبر `wavesurfer.js`؛ سحب حواف للتقليم (trim) في الواجهة (المنطق `trimClip` جاهز ومختبَر)؛ مسارات ترجمة/فيديو متعددة؛ انتقالات؛ Undo/Redo؛ تغييرات `ffmpegPlan.js`.
   - الجهد: 8-10 أسابيع.
   - المصدر: feature-proposals-2026 (محور 4 — ميزة #21).
 
