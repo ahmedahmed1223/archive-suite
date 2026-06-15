@@ -1087,7 +1087,8 @@
 
 ### 14.7 P1 — نظام المجموعات/الحاويات الافتراضية المُحسّن (Enhanced Virtual Collections)
 
-- [ ] `[P1]` ⏱️XL **ترقية المجموعات من قوائم ثابتة إلى حاويات افتراضية غنية متعددة المصادر** — المجموعات الحالية قوائم ثابتة (itemIds فقط)؛ لا تدعم مصادر متعددة ولا فلترة متقدمة.
+- [x] `[P1]` ⏱️XL **ترقية المجموعات من قوائم ثابتة إلى حاويات افتراضية غنية متعددة المصادر** — المجموعات الحالية قوائم ثابتة (itemIds فقط)؛ لا تدعم مصادر متعددة ولا فلترة متقدمة.
+  - **✅ مُنجَز (2026-06-14):** شريحة عمودية لمحرّك العضوية متعدد المصادر. أُضيف `archive-app/src/features/collections/collectionSources.js` (`resolveMultiSourceItems` + `createCollectionSource` + `normalizeSources` + `describeSources`) يوحّد عناصر من مصادر `manual`/`rules`/`query` مع إزالة التكرار، استبعاد المحذوف، وترتيب ثابت (أول ظهور للمعرّف يفوز). أعاد استخدام `evaluateSmartCollection` و`getFilteredArchiveItems`. رُبط في `viewModel.js`: `resolveCollectionItems` يستدعي المحلّل عند وجود `collection.sources` غير فارغ وإلا يُبقي السلوك السابق دون تغيير (متوافق رجعياً)؛ و`createVirtualCollectionValue` يمرّر `sources`. اختبار مرافق `collectionSources.test.js` (اتحاد+إزالة تكرار عبر الأنواع، استبعاد المحذوف، مصادر فارغة/غير صالحة، ثبات الترتيب). **466 اختباراً ناجحاً، build:spa أخضر.** **مؤجَّل (XL):** واجهة المستخدم (ContainerContentsPanel/FilterRuleBuilder/تبويبات CollectionsPage)، `applyFilterRules.js`، `cycleDetection.js` (منع الحلقات المرجعية)، مصادر المجلدات/المجموعات المرجعية، وتحديثات `archiveSlice.js`.
   - **الملفات الجديدة:**
     - `archive-app/src/components/collections/ContainerContentsPanel.jsx` — تبويبات مصادر متعددة
     - `archive-app/src/features/collections/applyFilterRules.js` — فلترة متقدمة متعددة الشروط
