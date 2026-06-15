@@ -897,12 +897,17 @@
   - الجهد: 2-3 أسابيع.
   - المصدر: feature-proposals-2026 (محور 2 — ميزة #12).
 
-- [ ] `[P2]` ⏱️XL **مساعد ذكي مدمج (AI Copilot) — لوحة جانبية قابلة للطي** — مزودو AI متاحون لكن معزولون في صفحة منفصلة.
+- [x] `[P2]` ⏱️XL **مساعد ذكي مدمج (AI Copilot) — لوحة جانبية قابلة للطي** — مزودو AI متاحون لكن معزولون في صفحة منفصلة.
   - الملفات الجديدة: `archive-app/src/components/ai/AICopilotPanel.jsx`، `archive-app/src/components/ai/AICopilotButton.jsx`.
   - التنفيذ: اقتراحات ذكية أثناء إدخال العنوان/الوصف؛ توليد وسوم تلقائية من المحتوى؛ تلخيص عنصر أو مجموعة بنقرة؛ إجابة أسئلة بالعربية عن المحتوى المؤرشف؛ توليد تقارير ذكية (إحصائيات/أنماط/توصيات)؛ لوحة جانبية قابلة للطي لا تعيق العمل.
   - الصلاحية: admin + editor.
   - الجهد: 6-8 أسابيع.
   - المصدر: feature-proposals-2026 (محور 4 — ميزة #22).
+  - **✅ مُنجَز (2026-06-14):** شريحة عمودية أولى للوحة المساعد الجانبية القابلة للطي، تُعيد استخدام منفذ `AiProvider` الموجود عبر `useAiAssist().chat` (يوكّل إلى `cloud-ai → /api/ai/rpc`) بدل بناء عميل ذكاء جديد.
+    - الملفات: `archive-app/src/features/copilot/copilotModel.js` (نموذج محادثة نقي: `createMessage`/`appendMessage`/`trimHistory`/`buildSuggestedPrompts`) + `copilotModel.test.js`؛ `archive-app/src/stores/slices/copilotSlice.js` (شريحة `copilotOpen`/`copilotMessages` + `toggleCopilot`/`setCopilotOpen`/`addCopilotMessage`/`clearCopilot`) مركّبة في `appStore.js`؛ `archive-app/src/components/copilot/CopilotPanel.jsx` (درج منزلق RTL + قائمة رسائل + إدخال + رقائق اقتراحات + زر إغلاق)؛ زرّ عائم عالمي + تركيب اللوحة في `app/AppRouter.jsx`؛ إضافة `chat` إلى `features/ai/useAiAssist.js`.
+    - مسار الإرسال آمن من الفشل: يتدهور إلى ردّ عربي «المساعد غير مُهيّأ» عند غياب مزوّد، دون تعطّل التطبيق أو رفض وعود غير مُلتقَط.
+    - التحقق: 494 اختبارًا ناجحًا (منها 19 جديدًا)، و`build:spa` أخضر.
+    - مؤجّل (XL): البثّ المباشر (streaming)، توليد الوسوم/الملخّص بنقرة من داخل اللوحة وربطها بحقول العنصر، تقارير ذكية كاملة، وبوابة صلاحيات admin+editor على مستوى اللوحة.
 
 - [x] `[P2]` ⏱️L **سير عمل المراجعة والموافقة (Draft → Review → Approved → Published)** — لا حالات للمحتوى؛ أي مستخدم بإذن تعديل يمكنه نشر مباشرة.
   - الملفات: حقل `status` في `StorageRow.data`؛ `archive-app/src/components/review/ReviewWorkflow.jsx`؛ تكامل مع نظام RBAC الموجود.
