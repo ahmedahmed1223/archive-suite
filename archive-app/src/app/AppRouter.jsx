@@ -29,10 +29,14 @@ import {
   Sidebar as AppSidebar,
 } from "../components/navigation/index.js";
 import { BottomTabBar } from "../components/layout/BottomTabBar.jsx";
+import { CopilotPanel } from "../components/copilot/CopilotPanel.jsx";
+import { Bot } from "lucide-react";
 
 export function AppRouter() {
   const currentPage = useAppStore((s) => s.currentPage);
   const settings = useAppStore((s) => s.settings);
+  const copilotOpen = useAppStore((s) => s.copilotOpen);
+  const toggleCopilot = useAppStore((s) => s.toggleCopilot);
   const { resolvedTheme } = useTheme();
 
   const PageComponent =
@@ -105,6 +109,17 @@ export function AppRouter() {
           ),
         }),
       }),
+      jsx(CopilotPanel, {}),
+      !copilotOpen &&
+        jsx("button", {
+          type: "button",
+          onClick: toggleCopilot,
+          "aria-label": "فتح المساعد الذكي",
+          title: "المساعد الذكي",
+          className:
+            "va-copilot-fab fixed bottom-[calc(64px+env(safe-area-inset-bottom,0px))] left-4 z-[65] inline-flex h-12 w-12 items-center justify-center rounded-full va-accent-bg text-white shadow-xl hover:opacity-90 md:bottom-6",
+          children: jsx(Bot, { className: "h-5 w-5" }),
+        }),
     ],
   });
 }

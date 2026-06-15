@@ -82,6 +82,11 @@ import {
   itemNotesActionKeys,
   itemNotesInitialState
 } from "./slices/itemNotesSlice.js";
+import {
+  copilotActionKeys,
+  copilotInitialState,
+  createCopilotActions
+} from "./slices/copilotSlice.js";
 
 export { pickStoreActions } from "./storeCore.js";
 export { archiveActionKeys } from "./slices/archiveSlice.js";
@@ -100,6 +105,7 @@ export { savedSearchesActionKeys } from "./slices/savedSearchesSlice.js";
 export { uploadActionKeys } from "./slices/uploadSlice.js";
 export { inboxActionKeys } from "./slices/inboxSlice.js";
 export { itemNotesActionKeys } from "./slices/itemNotesSlice.js";
+export { copilotActionKeys } from "./slices/copilotSlice.js";
 
 export const useAppStore = createStore((set, get) => ({
   ...archiveInitialState,
@@ -117,6 +123,7 @@ export const useAppStore = createStore((set, get) => ({
   ...uploadInitialState,
   ...inboxInitialState,
   ...itemNotesInitialState,
+  ...copilotInitialState,
   ...createUiActions({ set, get }),
   ...createConnectionStatusActions({ set, get }),
   ...createRelationsActions({ set, get }),
@@ -132,7 +139,8 @@ export const useAppStore = createStore((set, get) => ({
   ...createSavedSearchesActions({ set, get }),
   ...createUploadActions({ set, get }),
   ...createInboxActions({ set, get }),
-  ...createItemNotesActions({ set, get })
+  ...createItemNotesActions({ set, get }),
+  ...createCopilotActions({ set, get })
 }));
 
 export const useAuthStore = createAuthStore({ createStore, useAppStore });
