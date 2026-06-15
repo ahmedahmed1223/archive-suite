@@ -1155,7 +1155,13 @@
 
 ### 15.1 P0 — نظام دليل المستخدم التفاعلي المدمج (Interactive User Guide)
 
-- [ ] `[P0]` ⏱️XL **بناء دليل مستخدم تفاعلي متعدد الطبقات داخل التطبيق** — المستخدم الجديد لا يحصل على جولة إرشادية أو تلميحات سياقية أو مركز مساعدة قابل للبحث، فتظل ميزات مهمة مثل الوسوم الهرمية والبحث المتقدم غير مكتشفة.
+- [x] `[P0]` ⏱️XL **بناء دليل مستخدم تفاعلي متعدد الطبقات داخل التطبيق** — المستخدم الجديد لا يحصل على جولة إرشادية أو تلميحات سياقية أو مركز مساعدة قابل للبحث، فتظل ميزات مهمة مثل الوسوم الهرمية والبحث المتقدم غير مكتشفة.
+  - **✅ مُنجَز (شريحة، 2026-06-15):** طبقة اكتشاف ميزات تكمّل معالج الإعداد وقائمة الأرشيف الفارغ دون تكرارهما: جولة تفاعلية بخطوات على صفحات حقيقية + تلميحات سياقية لكل صفحة + إعادة استخدام بحث المساعدة الموجود.
+    - **ملفات جديدة:** `archive-app/src/features/guide/tourModel.js` (نموذج نقي: `createTourStep`/`PRODUCT_TOUR`/`nextStep`/`prevStep`/`getStepIndex`/`isTourComplete`)؛ `tourDriver.js` (تشغيل تلقائي + لقطات إعدادات `tourSeenSteps`/`tourDismissed`)؛ `contextualTips.js` (`getTipsForPage`/`shouldShowTip` معاد استخدامها من `pageManifest.meta.hint/helpSection`)؛ `components/guide/GuidedTour.jsx` (نافذة خطوات قابلة للتخطي: التالي/السابق/تخطّي + مؤشر تقدم + «اذهب للصفحة»، تشغيل تلقائي للمستخدم الجديد، احترام reduced-motion)؛ `components/guide/ContextualTip.jsx` (تلميح مضمّن قابل للإخفاء في شريط سياق الصفحة يربط بقسم المساعدة).
+    - **تعديل ملفات:** `app/AppNotifications.jsx` (تركيب `GuidedTourController`)؛ `components/navigation/PageContextBar.jsx` (تركيب `ContextualTip`)؛ `pages/HelpPage.jsx` (زر «ابدأ الجولة» اليدوي).
+    - **معاد استخدامه:** بحث المساعدة القائم (`filterHelpSections`/`filterHelpFaqItems`) وأقسام `features/help` — لم يُنشأ `helpSearch.js` جديد. الجولة مكمّلة لـ`usageOnboarding` (قائمة الأرشيف الفارغ) ولجولة المعالج `V1ProductTour` دون تكرار أيٍّ منهما.
+    - **اختبارات:** 45 اختباراً جديداً (tourModel 17، tourDriver 19، contextualTips 9) — الإجمالي 593 اختباراً ناجحاً، و`build:spa` أخضر.
+    - **مؤجَّل:** coachmarks مثبّتة على عناصر DOM بـ spotlight (الشريحة الحالية نافذة خطوات مركزية قوية مع `data-tour` selectors جاهزة للترقية)؛ جولة حسب الدور (admin/editor/viewer)؛ مستويات إزعاج التلميحات (مختصر/مفصل/معطّل)؛ ربط نهاية معالج الإعداد مباشرة بهذه الجولة.
   - **الملفات الجديدة:**
     - `archive-app/src/components/help/InteractiveGuideTour.jsx` — جولة ترحيب مع spotlight وخطوات قابلة للتخطي.
     - `archive-app/src/components/help/ContextualTooltip.jsx` — تلميحات تظهر عند أول استخدام للميزة.
