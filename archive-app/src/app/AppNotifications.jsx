@@ -35,6 +35,7 @@ import { FocusShell } from "../components/focus/FocusShell.jsx";
 import { useBackgroundNotificationBridge } from "../features/notifications/useBackgroundNotificationBridge.js";
 import { UploadQueue } from "../components/upload/UploadQueue.jsx";
 import { UploadQueueController } from "../components/upload/UploadQueueController.jsx";
+import { GuidedTourController } from "../components/guide/GuidedTour.jsx";
 
 export function AppNotifications({
   showShortcuts,
@@ -80,6 +81,7 @@ export function AppNotifications({
         onComplete: onCompleteV1Tour,
         onSkip: onSkipV1Tour,
       }),
+      jsx(GuidedTourController, {}),
       jsx(ForceChangePasswordDialog, {}),
       jsx(FocusShell, {}),
     ],
