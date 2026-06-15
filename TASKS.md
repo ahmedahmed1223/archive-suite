@@ -1317,7 +1317,13 @@
 
 ### 15.10 P1 — نظام الملاحظات والتعليقات على العناصر (Item Notes & Annotations)
 
-- [ ] `[P1]` ⏱️XL **إضافة ملاحظات شخصية وتعليقات تعاونية مرتبطة بالزمن أو المنطقة داخل العنصر** — العناصر المؤرشفة لا تدعم تدوين ملاحظات زمنية على الفيديو/الصوت أو ملاحظات مرئية على الصور والمستندات.
+- [x] `[P1]` ⏱️XL **إضافة ملاحظات شخصية وتعليقات تعاونية مرتبطة بالزمن أو المنطقة داخل العنصر** — العناصر المؤرشفة لا تدعم تدوين ملاحظات زمنية على الفيديو/الصوت أو ملاحظات مرئية على الصور والمستندات.
+  - **✅ مُنجَز (2026-06-14):** شريحة عمودية أولى للملاحظات الشخصية المرتبطة بالزمن/المنطقة (تخزين محلي عبر IndexedDB على غرار باقي الميزات):
+    - نموذج نقي `archive-app/src/features/itemNotes/itemNotesModel.js` (`createItemNote`/`sortNotes`/`filterNotesForItem`/`describeNoteAnchor`/`formatNoteTime`) مع اختبارات `itemNotesModel.test.js`.
+    - شريحة متجر `archive-app/src/stores/slices/itemNotesSlice.js` (`addItemNote`/`updateItemNote`/`removeItemNote`/`loadItemNotesFromStorage`) على نمط `activityLogSlice`، مع تسجيل متجر `item_notes` في `services/storage/schema.js` ودمجها في `stores/appStore.js`.
+    - لوحة `archive-app/src/components/itemNotes/ItemNotesPanel.jsx` مدمجة كتبويب «ملاحظاتي» في `pages/DetailPage.jsx` (إضافة/حذف، ربط اختياري باللحظة الزمنية الحالية للوسائط، قفز للوقت).
+    - 480 اختباراً ناجحاً (14 جديداً)، و`build:spa` أخضر.
+    - **مؤجَّل (XL):** التعليقات المتداخلة (Threaded) و@mentions، تحديد المناطق المرئية على الصور/المستندات (`VisualAnnotationLayer`)، علامات شريط الفيديو (`TimelineNoteMarkers`)، تصدير Markdown/PDF (`ExportNotesDialog`)، فلترة «ملاحظاتي/الكل» والبحث داخل الملاحظات، ومزامنة سحابية تعاونية لحظية (جدول `notes/comments` في Prisma).
   - **الملفات الجديدة:**
     - `archive-app/src/features/notes/notesModel.js` — نموذج الملاحظات والردود والربط الزمني/المكاني.
     - `archive-app/src/components/notes/NotesSidebar.jsx` — لوحة جانبية للملاحظات والتعليقات.
