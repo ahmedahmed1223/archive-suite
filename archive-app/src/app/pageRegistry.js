@@ -44,6 +44,7 @@ const SavedSearchesPage   = lazy(() => import("../pages/SavedSearchesPage.jsx"))
 const SettingsHubPage     = lazy(() => import("../pages/SettingsHubPage.jsx"));
 const InboxPage           = lazy(() => import("../pages/InboxPage.jsx"));
 const AnalyticsPage       = lazy(() => import("../pages/AnalyticsPage.jsx"));
+const AutomationPage      = lazy(() => import("../pages/AutomationPage.jsx"));
 
 export const PAGE_COMPONENTS = {
   dashboard:   DashboardPage,
@@ -80,6 +81,7 @@ export const PAGE_COMPONENTS = {
   "settingshub":    SettingsHubPage,
   "inbox":          InboxPage,
   "analytics":      AnalyticsPage,
+  "automation":     AutomationPage,
 };
 
 export { HEAVY_PAGE_IDS, PAGE_GROUPS };

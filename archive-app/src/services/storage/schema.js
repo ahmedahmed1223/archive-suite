@@ -1,5 +1,5 @@
 export const DB_NAME = "VideoArchiveDB";
-export const DB_VERSION = 9;
+export const DB_VERSION = 10;
 
 export const STORES = {
   TYPES: "content_types",
@@ -27,5 +27,6 @@ export const STORES = {
   READING_LIST_ITEMS: "reading_list_items",
   SAVED_SEARCHES: "saved_searches",
   INBOX: "inbox_items",
-  ITEM_NOTES: "item_notes"
+  ITEM_NOTES: "item_notes",
+  AUTOMATION_RULES: "automation_rules"
 };
