@@ -1451,7 +1451,8 @@
 
 ### 15.17 P1 — نظام العرض التكيفي (Adaptive View System)
 
-- [ ] `[P1]` ⏱️XL **إضافة عروض Timeline/Map/Kanban وتذكر تفضيلات العرض حسب السياق** — أوضاع الشبكة/القائمة/الجدول ثابتة ولا تتكيف مع عدد العناصر أو نوعها أو شاشة المستخدم.
+- [x] `[P1]` ⏱️XL **إضافة عروض Timeline/Map/Kanban وتذكر تفضيلات العرض حسب السياق** — أوضاع الشبكة/القائمة/الجدول ثابتة ولا تتكيف مع عدد العناصر أو نوعها أو شاشة المستخدم.
+  - **✅ مُنجَز (2026-06-14):** شريحة عرض Kanban حسب حالة سير العمل. وحدة نقية `archive-app/src/features/views/kanbanModel.js` (`buildKanbanColumns`/`moveItemStatus`/`listKanbanStatuses`) تعيد استخدام تصنيف الحالات وتسمياتها من `features/archive/itemStatus.js` دون اختراع تصنيف جديد، مع اختبارات `kanbanModel.test.js` (11 حالة). صفحة `archive-app/src/pages/KanbanPage.jsx` (jsx/jsxs مثل TimelinePage) تعرض الأعمدة وبطاقات العناصر، النقر يفتح التفاصيل، وقائمة منسدلة لكل بطاقة تنقل الحالة عبر `getAvailableTransitions` + `updateVideoItem`. مُسجَّلة في `pageManifest.js` و`pageRegistry.js` (group "daily"، id `kanban`). 454 اختباراً تمر، build:spa أخضر. **مؤجَّل:** عرض Timeline موجود مسبقاً (TimelinePage)؛ عرض Map، وحفظ تفضيلات العرض لكل سياق (`viewPreferenceStore`)، والتخصيص التكيفي للأعمدة، وسحب البطاقات بين الأعمدة (drag-move) — لاحقاً.
   - **الملفات الجديدة:**
     - `archive-app/src/components/views/TimelineView.jsx` — عرض زمني يوم/أسبوع/شهر/سنة.
     - `archive-app/src/components/views/MapView.jsx` — خريطة للعناصر ذات الإحداثيات.
