@@ -139,3 +139,183 @@ export function summarizeConflictPlan(plan) {
     needsReview: plan.conflicts.length + plan.deletes.length > 0
   };
 }
+
+/* ------------------------------------------------------------------ *
+ * §1172 — pairwise conflict detection + resolution.
+ *
+ * The functions above operate on a whole incoming delta package with
+ * a baseSyncFloor. The functions below are a simpler, self-contained
+ * pairwise model used by the visible sync queue / status panel: given
+ * a single local record and a single remote record (each carrying the
+ * standard sync metadata) decide whether they conflict, and how a
+ * chosen strategy resolves them.
+ *
+ * Decision rules for detectConflict(local, remote):
+ *   1. If either side is missing → not a pairwise conflict; the caller
+ *      handles add/remove via classifyConflicts (localOnly/remoteOnly).
+ *   2. Equal syncVersion AND equal updatedAt → in sync, no conflict.
+ *   3. One side strictly ahead in syncVersion while the other is at the
+ *      base it last saw (same lastModifiedBy chain, lower version) →
+ *      fast-forward, NOT a conflict.
+ *   4. Both sides advanced past the common version (their syncVersions
+ *      differ AND they were last modified by *different* devices) →
+ *      conflict ("both-modified"). Delete-vs-edit is flagged via type.
+ *   5. Same syncVersion but different content/device → conflict
+ *      ("version-clash"); treated as both-modified.
+ * ------------------------------------------------------------------ */
+
+export const CONFLICT_RESOLUTION_STRATEGIES = ["keepLocal", "keepRemote", "newest"];
+
+function metaVersion(record) {
+  const value = record?.syncVersion;
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
+  return 0;
+}
+
+function metaDevice(record) {
+  const id = record?.lastModifiedBy?.deviceId;
+  return typeof id === "string" && id ? id : null;
+}
+
+function metaTime(record) {
+  const at = record?.updatedAt || record?.lastModifiedBy?.at;
+  const ms = at ? Date.parse(at) : NaN;
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/**
+ * Detect a conflict between a single local and remote record. Pure.
+ * @returns {null | { type: string, localVersion: number, remoteVersion: number, fields: string[] }}
+ */
+export function detectConflict(local, remote) {
+  if (!local || !remote) return null;
+  const localVersion = metaVersion(local);
+  const remoteVersion = metaVersion(remote);
+  const localDevice = metaDevice(local);
+  const remoteDevice = metaDevice(remote);
+
+  const sameVersion = localVersion === remoteVersion;
+  const sameTime = (local.updatedAt || null) === (remote.updatedAt || null);
+  if (sameVersion && sameTime) return null; // in sync
+
+  const fields = changedFields(local, remote);
+
+  if (sameVersion) {
+    // Same version number but content/device differ → branched at the
+    // same point. Always a conflict that needs review.
+    return { type: "version-clash", localVersion, remoteVersion, fields };
+  }
+
+  // Different versions. A clean fast-forward is when both sides agree on
+  // who made the last change (same device chain) — the lower-version
+  // side simply hasn't caught up yet.
+  const sameDeviceChain = localDevice && remoteDevice && localDevice === remoteDevice;
+  if (sameDeviceChain) return null; // fast-forward, not a conflict
+
+  // Divergent devices AND divergent versions → both replicas moved
+  // independently from a common base. Real conflict.
+  const type = remote.isDeleted && !local.isDeleted
+    ? "delete-vs-edit"
+    : !remote.isDeleted && local.isDeleted
+      ? "edit-vs-delete"
+      : "both-modified";
+  return { type, localVersion, remoteVersion, fields };
+}
+
+function changedFields(local, remote) {
+  const skip = new Set(["syncVersion", "lastModifiedBy", "updatedAt"]);
+  const keys = new Set([...Object.keys(local || {}), ...Object.keys(remote || {})]);
+  const changed = [];
+  for (const key of keys) {
+    if (skip.has(key)) continue;
+    const a = local ? local[key] : undefined;
+    const b = remote ? remote[key] : undefined;
+    if (!shallowEqualValue(a, b)) changed.push(key);
+  }
+  return changed.sort();
+}
+
+function shallowEqualValue(a, b) {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((value, index) => value === b[index]);
+  }
+  if (a && b && typeof a === "object" && typeof b === "object") {
+    try {
+      return JSON.stringify(a) === JSON.stringify(b);
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Classify two id-keyed record lists into conflicts / localOnly /
+ * remoteOnly / inSync buckets. Pure.
+ */
+export function classifyConflicts(localItems = [], remoteItems = []) {
+  const localById = indexById(localItems);
+  const remoteById = indexById(remoteItems);
+
+  const conflicts = [];
+  const inSync = [];
+  const localOnly = [];
+  const remoteOnly = [];
+
+  for (const [id, local] of localById) {
+    const remote = remoteById.get(id);
+    if (!remote) {
+      localOnly.push(local);
+      continue;
+    }
+    const conflict = detectConflict(local, remote);
+    if (conflict) conflicts.push({ id, local, remote, ...conflict });
+    else inSync.push({ id, local, remote });
+  }
+
+  for (const [id, remote] of remoteById) {
+    if (!localById.has(id)) remoteOnly.push(remote);
+  }
+
+  return { conflicts, localOnly, remoteOnly, inSync };
+}
+
+function indexById(items) {
+  const map = new Map();
+  if (!Array.isArray(items)) return map;
+  for (const item of items) {
+    if (item?.id != null) map.set(item.id, item);
+  }
+  return map;
+}
+
+/**
+ * Resolve a single conflict using a strategy. Pure + immutable:
+ * returns the chosen record, never mutates the inputs.
+ * @param {{ local: object, remote: object }} conflict
+ * @param {"keepLocal"|"keepRemote"|"newest"} strategy
+ */
+export function resolveConflict(conflict, strategy) {
+  if (!conflict || typeof conflict !== "object") {
+    throw new Error("resolveConflict: التعارض غير صالح");
+  }
+  const { local, remote } = conflict;
+  if (!CONFLICT_RESOLUTION_STRATEGIES.includes(strategy)) {
+    throw new Error(`resolveConflict: استراتيجية غير مدعومة "${strategy}"`);
+  }
+  if (strategy === "keepLocal") return local ? { ...local } : null;
+  if (strategy === "keepRemote") return remote ? { ...remote } : null;
+  // newest: higher updatedAt wins; fall back to higher syncVersion; then local.
+  const localTime = metaTime(local);
+  const remoteTime = metaTime(remote);
+  if (localTime != null && remoteTime != null && localTime !== remoteTime) {
+    return localTime > remoteTime ? { ...local } : { ...remote };
+  }
+  const localVersion = metaVersion(local);
+  const remoteVersion = metaVersion(remote);
+  if (localVersion !== remoteVersion) {
+    return localVersion > remoteVersion ? { ...local } : { ...remote };
+  }
+  return local ? { ...local } : remote ? { ...remote } : null;
+}
