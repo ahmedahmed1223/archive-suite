@@ -44,6 +44,7 @@ import {
 import { reportError } from "../utils/errorReporting.js";
 import { ContextualQuickAddBar } from "../components/workflow/ContextualQuickAddBar.jsx";
 import { SideEditPanel } from "../components/workflow/SideEditPanel.jsx";
+import { isEditInSidePanelEnabled, resolveOpenTarget } from "../features/archive/resolveOpenTarget.js";
 
 function MediaJobsBoard({ enabled, jobs, busy, onRefresh, onRetry }) {
   return jsxs("section", { className: "rounded-2xl va-surface-muted border p-4 text-right", dir: "rtl", children: [
@@ -89,11 +90,23 @@ export function ArchivePage() {
     showFileImportWizard, setShowFileImportWizard,
     contextMenu, setContextMenu,
     savedViews, currentFiltersForSave, applySavedView, saveCurrentView, removeView, canSaveCurrentView,
-    openAdd, openItem, openImport, confirmDelete, confirmEmptyTrash
+    openAdd, openItem, openImport, confirmDelete, confirmEmptyTrash,
+    settings
   } = state;
   const [mediaJobs, setMediaJobs] = React.useState([]);
   const [mediaBusy, setMediaBusy] = React.useState(false);
   const [sideEditItem, setSideEditItem] = React.useState(null);
+  // §19.9 — the dedicated detail/edit page is the default everywhere. The
+  // slide-in SideEditPanel is demoted to an opt-in secondary affordance gated
+  // behind settings.ui.editInSidePanel (default false).
+  const editInSidePanel = isEditInSidePanelEnabled(settings);
+  const startEdit = React.useCallback((item) => {
+    if (resolveOpenTarget({ action: "edit", editInSidePanel }) === "sidePanel") {
+      setSideEditItem(item);
+    } else {
+      openItem(item);
+    }
+  }, [editInSidePanel, openItem]);
   const backendChoice = resolveBackendChoice();
   const mediaToolsEnabled = canUseServerMediaTools({ backend: backendChoice.backend, token: getCloudToken(), role: currentUser?.role });
   const mediaClient = React.useMemo(() => {
@@ -207,8 +220,13 @@ export function ArchivePage() {
     if (!showDeleted) {
       items.push({ type: "separator" });
       items.push({ id: "favorite", label: item.isFavorite ? "إزالة من المفضلة" : "إضافة للمفضلة", icon: Star, onSelect: () => toggleFavorite?.(item.id) });
-      items.push({ id: "quick-edit", label: "تعديل سريع", icon: PenLine, onSelect: () => { setSideEditItem(item); setContextMenu(null); } });
-      items.push({ id: "edit", label: "تعديل (تفاصيل كاملة)", icon: PenLine, onSelect: () => openItem(item) });
+      // §19.9 — default edit opens the dedicated detail/edit page. The slide-in
+      // side panel is only offered as an explicit secondary action, and only
+      // when the user has opted into it.
+      items.push({ id: "edit", label: "تعديل", icon: PenLine, onSelect: () => startEdit(item) });
+      if (editInSidePanel) {
+        items.push({ id: "quick-edit-side", label: "تعديل سريع جانبي", icon: PenLine, onSelect: () => { setSideEditItem(item); setContextMenu(null); } });
+      }
     }
     if (item.path) {
       items.push({
@@ -238,7 +256,7 @@ export function ArchivePage() {
       title: `إجراءات: ${item.title || "العنصر"}`,
       items
     });
-  }, [confirmDelete, openItem, restoreVideoItem, setContextMenu, setPreviewId, showDeleted, showToast, toggleFavorite]);
+  }, [confirmDelete, editInSidePanel, openItem, restoreVideoItem, setContextMenu, setPreviewId, showDeleted, showToast, startEdit, toggleFavorite]);
 
   return jsxs(MotionPage, {
     className: "space-y-6 p-4 sm:p-6 pb-24",
