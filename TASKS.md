@@ -1760,7 +1760,8 @@
 
 ### 16.10 P2 — أتمتة سير العمل بقواعد إذا-ثم (Workflow Automation Rules)
 
-- [ ] `[P2]` ⏱️XL **بناء محرر قواعد أتمتة بصري للأحداث والإجراءات المتكررة** — بدون أتمتة، تبقى خطوات مثل إضافة وسوم أو تشغيل تفريغ أو إرسال تذكير عمليات يدوية سهلة النسيان.
+- [x] `[P2]` ⏱️XL **بناء محرر قواعد أتمتة بصري للأحداث والإجراءات المتكررة** — بدون أتمتة، تبقى خطوات مثل إضافة وسوم أو تشغيل تفريغ أو إرسال تذكير عمليات يدوية سهلة النسيان.
+  - **✅ مُنجَز (شريحة، 2026-06-15):** نموذج `features/automation/automationModel.js` (قواعد trigger→conditions→actions، تقييم نقي) + **16 اختبار**؛ `stores/slices/automationSlice.js` يخزّن في store `automation_rules` الجديد (schema + appStore)؛ صفحة `pages/AutomationPage.jsx` مسجّلة في `pageManifest`/`pageRegistry` (مجموعة administration). 510 اختبار يمرّ + `build:spa` أخضر. **مؤجَّل (XL):** تنفيذ الإجراءات الفعلي عند أحداث الإضافة/التعديل في `archiveSlice`، إجراءات التفريغ/التذكير، وسجل تشغيل القواعد.
   - **الملفات الجديدة:**
     - `archive-app/src/pages/AutomationRulesPage.jsx` — إدارة القواعد.
     - `archive-app/src/components/automation/RuleBuilder.jsx` — محرر إذا/ثم.
