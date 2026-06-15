@@ -1361,7 +1361,9 @@
 
 ### 15.11 P1 — المزامنة الانتقائية وذكاء النطاق الترددي (Selective Sync & Bandwidth Intelligence)
 
-- [ ] `[P1]` ⏱️XL **تمكين مزامنة انتقائية حسب المجلد/المجموعة مع سياسات نطاق ترددي وتخزين مؤقت ذكي** — المزامنة الحالية تعمل بمنطق الكل أو لا شيء، وهو غير مناسب للأرشيفات الكبيرة أو الجوال.
+- [x] `[P1]` ⏱️XL **تمكين مزامنة انتقائية حسب المجلد/المجموعة مع سياسات نطاق ترددي وتخزين مؤقت ذكي** — المزامنة الحالية تعمل بمنطق الكل أو لا شيء، وهو غير مناسب للأرشيفات الكبيرة أو الجوال.
+  - **✅ مُنجَز (شريحة، 2026-06-16):** نموذج سياسة نقي `selectiveSyncPolicy.js` (createSyncPolicy/isItemIncluded/filterSyncableItems/shouldSyncNow/summarizePolicy) + **26 اختبار**؛ `smartCacheManager.js` (rankForEviction/evictToFitQuota/recordAccess) + **9 اختبارات**؛ مكوّنات واجهة `PerItemSyncBadge.jsx`/`SyncScopeToggle.jsx`/`BandwidthSettings.jsx`. 675 اختبار يمرّ + `build:spa` أخضر.
+  - **مؤجَّل (XL):** دعم metadata-only في storage adapters، download-on-demand، ربط CollectionsPage/FoldersPage، مزامنة المفضلة دائماً محلياً، جدولة تلقائية.
   - **الملفات الجديدة:**
     - `archive-app/src/features/sync/selectiveSyncPolicy.js` — قواعد مزامنة لكل مجلد/مجموعة.
     - `archive-app/src/components/sync/SyncScopeToggle.jsx` — زر “مزامنة محلياً”.
