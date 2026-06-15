@@ -18,6 +18,7 @@ import {
   Loader2,
   MessageSquare,
   Music,
+  StickyNote,
   PenLine,
   Play,
   RefreshCw,
@@ -44,6 +45,7 @@ import { MobileActionBar, MotionPage, ResponsiveTabs, UXEmptyState } from "../co
 import { RecordVersionHistory } from "../components/records/RecordVersionHistory.jsx";
 import { AddRelationDialog } from "../components/relations/AddRelationDialog.jsx";
 import { RelationsPanel } from "../components/relations/RelationsPanel.jsx";
+import { ItemNotesPanel } from "../components/itemNotes/ItemNotesPanel.jsx";
 import { StatusTransitionMenu } from "../components/workflow/StatusTransitionMenu.jsx";
 import { AutosaveIndicator } from "../components/autosave/AutosaveIndicator.jsx";
 import { DraftRecoveryDialog } from "../components/autosave/DraftRecoveryDialog.jsx";
@@ -455,7 +457,11 @@ export function DetailPage() {
     itemRelations = [],
     loadRelationsFromStorage,
     addRelation,
-    removeRelation
+    removeRelation,
+    itemNotes = [],
+    loadItemNotesFromStorage,
+    addItemNote,
+    removeItemNote
   } = useAppStore();
 
   const item = videoItems.find((video) => video.id === selectedItemId) || null;
@@ -507,6 +513,10 @@ export function DetailPage() {
   React.useEffect(() => {
     loadRelationsFromStorage?.();
   }, [loadRelationsFromStorage]);
+
+  React.useEffect(() => {
+    loadItemNotesFromStorage?.();
+  }, [loadItemNotesFromStorage]);
 
   React.useEffect(() => {
     setDraft(item ? {
@@ -737,6 +747,7 @@ export function DetailPage() {
   const detailTabs = [
     { id: "data", label: "البيانات", icon: FileText },
     { id: "comments", label: "التعليقات", icon: MessageSquare },
+    { id: "notes", label: "ملاحظاتي", icon: StickyNote },
     { id: "history", label: "التاريخ", icon: Clock3 },
     { id: "versions", label: "السجل التاريخي", icon: History },
     { id: "media", label: "الوسائط", icon: HardDrive },
@@ -1429,6 +1440,16 @@ export function DetailPage() {
             ai.available && jsx("div", { className: "mt-4", children: jsx(AiAssistBar, { available: ai.available, busy: ai.busy, onSummarize: aiSummarize, onSuggestTags: aiSuggestTags, onProofread: aiProofread, show: { summarize: canEditNotes, proofread: canEditNotes, tags: canEditTags } }) }),
             draft && jsx("p", { className: "mt-3 rounded-xl border va-accent-border va-accent-bg-soft p-3 text-xs leading-6 va-accent-text-on-soft", children: editing ? "أنت داخل وضع التحرير. احفظ عند الرضا عن النتيجة." : "سيتم فتح وضع التحرير عند الحاجة للمراجعة والحفظ." })
           ] }),
+          activeDetailTab === "notes" ? jsx("section", { children: jsx(ItemNotesPanel, {
+            itemId: item.id,
+            notes: itemNotes,
+            currentUser,
+            currentTime: playbackTime,
+            canAnchorTime: Boolean(previewSource),
+            onAdd: (note) => addItemNote?.(note),
+            onRemove: (id) => removeItemNote?.(id),
+            onSeek: seekToBookmark
+          }) }) : null,
           activeDetailTab === "relations" ? jsxs("section", { className: "space-y-4", children: [
             jsx(RelationsPanel, {
               itemId: item.id,
