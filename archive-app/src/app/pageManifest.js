@@ -28,7 +28,8 @@ export const PAGE_MANIFEST = [
   { id: "server-status", group: "maintenance", heavy: false, meta: { title: "حالة السيرفر", breadcrumb: "الصيانة / حالة السيرفر", hint: "مراقبة الاتصال وصحة قاعدة البيانات وزمن الاستجابة ومدة تشغيل السيرفر.", helpSection: "transfer-export" } },
   { id: "duplicates", group: "maintenance", heavy: false, meta: { title: "كشف المكررات", breadcrumb: "الصيانة / المكررات", hint: "فحص الأرشيف بحثاً عن عناصر مكررة بناءً على العنوان والرابط والحجم وبصمة الملف.", helpSection: "transfer-export" } },
   { id: "saved-searches", group: "daily", heavy: false, meta: { title: "البحوث المحفوظة", breadcrumb: "الرئيسية / البحوث المحفوظة", hint: "احفظ استعلامات البحث وشغّلها بنقرة، أو فعّل تنبيهاً عند ظهور عناصر جديدة مطابقة.", helpSection: "searching" } },
-  { id: "inbox", group: "daily", heavy: false, meta: { title: "صندوق الوارد", breadcrumb: "الرئيسية / الوارد", hint: "التقط الأفكار والمحتوى بسرعة ونظّمها لاحقاً بالأرشفة أو الحذف.", helpSection: "dashboard-archive" } }
+  { id: "inbox", group: "daily", heavy: false, meta: { title: "صندوق الوارد", breadcrumb: "الرئيسية / الوارد", hint: "التقط الأفكار والمحتوى بسرعة ونظّمها لاحقاً بالأرشفة أو الحذف.", helpSection: "dashboard-archive" } },
+  { id: "analytics", group: "administration", heavy: true, meta: { title: "تحليلات الأرشيف", breadcrumb: "الإدارة / التحليلات", hint: "لوحة شخصية تكشف النمو الشهري وأكثر الوسوم والعناصر غير المصنفة والمكررات وصحة الأرشيف.", helpSection: "reports-settings" } }
 ];
 
 export const PAGE_CONTEXT_META = Object.fromEntries(
