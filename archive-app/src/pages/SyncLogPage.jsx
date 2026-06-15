@@ -1,11 +1,17 @@
 ﻿import { useAppStore } from "../stores/index.js";
 import {
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
+  Cloud,
+  CloudOff,
   Download,
   GitMerge,
   HardDrive,
+  Loader2,
+  RefreshCw,
   Sparkles,
+  Trash2,
   Upload
 } from "lucide-react";
 import * as React from "react";
@@ -15,6 +21,203 @@ import { motion } from "framer-motion";
 import { EmptyState } from "../components/common/EmptyState.jsx";
 import { MotionPage, PageHero } from "../components/ui/V1Primitives.jsx";
 import { formatDateTime, formatNumber } from "../utils/formatting.js";
+import {
+  getSyncSnapshot,
+  subscribeSync,
+  startConnectionWatch,
+  removeSyncOp,
+  updateSyncOpStatus,
+  resolveConflictInStore
+} from "../features/sync/syncStatusStore.js";
+
+// Presentational metadata for each connection state.
+const CONNECTION_PRESENTATION = {
+  online: { label: "متصل", icon: Cloud, className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" },
+  offline: { label: "غير متصل", icon: CloudOff, className: "border-gray-500/30 bg-gray-500/10 text-gray-300" },
+  syncing: { label: "جارٍ المزامنة", icon: Loader2, className: "border-cyan-500/30 bg-cyan-500/10 text-cyan-200" }
+};
+
+const OP_STATUS_PRESENTATION = {
+  pending: { label: "معلّقة", className: "border-amber-500/30 bg-amber-500/10 text-amber-200" },
+  inFlight: { label: "قيد التنفيذ", className: "border-cyan-500/30 bg-cyan-500/10 text-cyan-200" },
+  failed: { label: "فاشلة", className: "border-red-500/30 bg-red-500/10 text-red-200" },
+  done: { label: "مكتملة", className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" }
+};
+
+const OP_ACTION_LABEL = { create: "إنشاء", update: "تعديل", delete: "حذف" };
+
+const CONFLICT_TYPE_LABEL = {
+  "both-modified": "تعديل من الجهازين",
+  "version-clash": "تعارض إصدارات",
+  "delete-vs-edit": "حذف مقابل تعديل",
+  "edit-vs-delete": "تعديل مقابل حذف"
+};
+
+// Subscribe to the sync status store and re-render on every change.
+function useSyncStatus() {
+  const [snapshot, setSnapshot] = React.useState(() => getSyncSnapshot());
+  React.useEffect(() => {
+    const detach = startConnectionWatch();
+    setSnapshot(getSyncSnapshot());
+    const unsubscribe = subscribeSync(setSnapshot);
+    return () => {
+      unsubscribe();
+      detach?.();
+    };
+  }, []);
+  return snapshot;
+}
+
+function ConnectionBadge({ state }) {
+  const presentation = CONNECTION_PRESENTATION[state] || CONNECTION_PRESENTATION.online;
+  const Icon = presentation.icon;
+  return jsxs("span", {
+    className: `inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${presentation.className}`,
+    children: [
+      jsx(Icon, { className: state === "syncing" ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5" }),
+      presentation.label
+    ]
+  });
+}
+
+function SyncOpRow({ op }) {
+  const status = OP_STATUS_PRESENTATION[op.status] || OP_STATUS_PRESENTATION.pending;
+  return jsxs("div", {
+    className: "flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-gray-950/30 p-3",
+    children: [
+      jsxs("div", { className: "min-w-0", children: [
+        jsxs("p", { className: "truncate text-sm font-semibold text-white", children: [
+          OP_ACTION_LABEL[op.action] || op.action, " · ", op.entity
+        ] }),
+        jsxs("p", { className: "mt-0.5 truncate text-[11px] font-mono text-gray-500", dir: "ltr", children: [
+          op.entityId || "—", op.attempts > 0 ? ` · محاولات: ${op.attempts}` : ""
+        ] }),
+        op.error && jsx("p", { className: "mt-1 truncate text-[11px] text-red-300", children: op.error })
+      ] }),
+      jsxs("div", { className: "flex shrink-0 items-center gap-2", children: [
+        jsx("span", { className: `rounded-full border px-2 py-0.5 text-[11px] ${status.className}`, children: status.label }),
+        op.status === "failed" && jsx("button", {
+          type: "button",
+          onClick: () => updateSyncOpStatus(op.id, "pending"),
+          "aria-label": "إعادة المحاولة",
+          className: "inline-flex h-7 w-7 items-center justify-center rounded-lg text-cyan-300 hover:bg-cyan-500/10",
+          children: jsx(RefreshCw, { className: "h-3.5 w-3.5" })
+        }),
+        jsx("button", {
+          type: "button",
+          onClick: () => removeSyncOp(op.id),
+          "aria-label": "إزالة العملية",
+          className: "inline-flex h-7 w-7 items-center justify-center rounded-lg text-red-300 hover:bg-red-500/10",
+          children: jsx(Trash2, { className: "h-3.5 w-3.5" })
+        })
+      ] })
+    ]
+  });
+}
+
+function ConflictRow({ conflict, onResolve }) {
+  const title = conflict.local?.title || conflict.remote?.title || conflict.id;
+  const typeLabel = CONFLICT_TYPE_LABEL[conflict.type] || conflict.type;
+  const fields = Array.isArray(conflict.fields) ? conflict.fields : [];
+  return jsxs("div", {
+    className: "space-y-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3",
+    children: [
+      jsxs("div", { className: "flex flex-wrap items-start justify-between gap-2", children: [
+        jsxs("div", { className: "min-w-0", children: [
+          jsx("p", { className: "truncate text-sm font-bold text-white", dir: "auto", children: title }),
+          jsxs("p", { className: "mt-0.5 text-[11px] text-amber-200/80", children: [
+            typeLabel,
+            fields.length > 0 ? ` · ${formatNumber(fields.length)} حقل متعارض` : ""
+          ] })
+        ] }),
+        jsx("span", { className: "shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-200", children: "بانتظار الحل" })
+      ] }),
+      jsxs("div", { className: "flex flex-wrap gap-2", children: [
+        jsx("button", {
+          type: "button",
+          onClick: () => onResolve(conflict.id, "keepLocal"),
+          className: "rounded-lg border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs font-medium va-accent-text-on-soft hover:bg-emerald-500/15",
+          children: "احتفظ بالمحلي"
+        }),
+        jsx("button", {
+          type: "button",
+          onClick: () => onResolve(conflict.id, "keepRemote"),
+          className: "rounded-lg border border-cyan-500/25 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-500/15",
+          children: "احتفظ بالوارد"
+        }),
+        jsx("button", {
+          type: "button",
+          onClick: () => onResolve(conflict.id, "newest"),
+          className: "rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-100 hover:bg-amber-500/15",
+          children: "الأحدث يفوز"
+        })
+      ] })
+    ]
+  });
+}
+
+/**
+ * Live sync status surface: connection state, visible operation queue,
+ * and detected conflicts with per-conflict resolve actions. Driven by
+ * the in-memory syncStatusStore; empty until the live sync loop (or a
+ * remote snapshot comparison) populates it.
+ */
+function SyncStatusPanel() {
+  const { connectionState, ops, conflicts, summary } = useSyncStatus();
+
+  const handleResolve = (id, strategy) => {
+    // Pure resolution → chosen record. Applying the record to the live
+    // store is deferred to the sync-loop integration; here we clear the
+    // visible conflict so the queue reflects the user's decision.
+    resolveConflictInStore(id, strategy);
+  };
+
+  return jsxs("section", {
+    className: "space-y-4 rounded-2xl border border-white/10 bg-gray-950/30 p-4",
+    children: [
+      jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
+        jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [
+          jsx(Cloud, { className: "h-5 w-5 va-accent-text" }),
+          "حالة المزامنة الحيّة"
+        ] }),
+        jsx(ConnectionBadge, { state: connectionState })
+      ] }),
+      jsxs("div", { className: "grid grid-cols-2 gap-2 sm:grid-cols-4", children: [
+        jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
+          jsx("p", { className: "text-[11px] text-amber-200", children: "معلّقة" }),
+          jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(summary.pending) })
+        ] }),
+        jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
+          jsx("p", { className: "text-[11px] text-cyan-200", children: "قيد التنفيذ" }),
+          jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(summary.inFlight) })
+        ] }),
+        jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
+          jsx("p", { className: "text-[11px] text-red-200", children: "فاشلة" }),
+          jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(summary.failed) })
+        ] }),
+        jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
+          jsx("p", { className: "text-[11px] text-emerald-200", children: "مكتملة" }),
+          jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(summary.done) })
+        ] })
+      ] }),
+      jsxs("div", { className: "space-y-2", children: [
+        jsx("h3", { className: "text-sm font-semibold text-gray-300", children: "طابور العمليات" }),
+        ops.length > 0
+          ? jsx("div", { className: "space-y-2", children: ops.map((op) => jsx(SyncOpRow, { op }, op.id)) })
+          : jsx("p", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/20 p-3 text-center text-xs text-gray-500", children: "لا عمليات مزامنة معلّقة حالياً." })
+      ] }),
+      jsxs("div", { className: "space-y-2", children: [
+        jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [
+          jsx(AlertTriangle, { className: "h-4 w-4 text-amber-300" }),
+          "التعارضات المكتشفة"
+        ] }),
+        conflicts.length > 0
+          ? jsx("div", { className: "space-y-2", children: conflicts.map((conflict) => jsx(ConflictRow, { conflict, onResolve: handleResolve }, conflict.id)) })
+          : jsx("p", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/20 p-3 text-center text-xs text-gray-500", children: "لا تعارضات بانتظار الحل." })
+      ] })
+    ]
+  });
+}
 
 // Maps each sync.* audit event to a presentational record used by
 // both the device summary cards and the chronological log. New
@@ -194,6 +397,7 @@ export function SyncLogPage() {
           children: "لا توجد عمليات بعد"
         })
       }),
+      jsx(SyncStatusPanel, {}),
       jsxs("section", { className: "grid gap-4 md:grid-cols-[minmax(0,1fr)_280px]", children: [
         syncEvents.length ? jsx("div", { className: "space-y-3", children: syncEvents.map((entry, index) => jsx(SyncEventRow, { entry, index }, entry.id)) }) : jsx("div", {
           className: "rounded-2xl border border-dashed border-white/10 bg-gray-950/30",
