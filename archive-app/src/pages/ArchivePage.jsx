@@ -42,6 +42,8 @@ import {
   mergeMediaJobs
 } from "../features/media/viewModel.js";
 import { reportError } from "../utils/errorReporting.js";
+import { ContextualQuickAddBar } from "../components/workflow/ContextualQuickAddBar.jsx";
+import { SideEditPanel } from "../components/workflow/SideEditPanel.jsx";
 
 function MediaJobsBoard({ enabled, jobs, busy, onRefresh, onRetry }) {
   return jsxs("section", { className: "rounded-2xl va-surface-muted border p-4 text-right", dir: "rtl", children: [
@@ -91,6 +93,7 @@ export function ArchivePage() {
   } = state;
   const [mediaJobs, setMediaJobs] = React.useState([]);
   const [mediaBusy, setMediaBusy] = React.useState(false);
+  const [sideEditItem, setSideEditItem] = React.useState(null);
   const backendChoice = resolveBackendChoice();
   const mediaToolsEnabled = canUseServerMediaTools({ backend: backendChoice.backend, token: getCloudToken(), role: currentUser?.role });
   const mediaClient = React.useMemo(() => {
@@ -204,7 +207,8 @@ export function ArchivePage() {
     if (!showDeleted) {
       items.push({ type: "separator" });
       items.push({ id: "favorite", label: item.isFavorite ? "إزالة من المفضلة" : "إضافة للمفضلة", icon: Star, onSelect: () => toggleFavorite?.(item.id) });
-      items.push({ id: "edit", label: "تعديل", icon: PenLine, onSelect: () => openItem(item) });
+      items.push({ id: "quick-edit", label: "تعديل سريع", icon: PenLine, onSelect: () => { setSideEditItem(item); setContextMenu(null); } });
+      items.push({ id: "edit", label: "تعديل (تفاصيل كاملة)", icon: PenLine, onSelect: () => openItem(item) });
     }
     if (item.path) {
       items.push({
@@ -240,6 +244,13 @@ export function ArchivePage() {
     className: "space-y-6 p-4 sm:p-6 pb-24",
     children: [
       jsx(ArchivePageHero, { ...state, openImport, openAdd, confirmEmptyTrash }),
+      jsx(ContextualQuickAddBar, { contentTypes }),
+      jsx(SideEditPanel, {
+        item: sideEditItem,
+        contentTypes,
+        onSave: updateVideoItem,
+        onClose: () => setSideEditItem(null)
+      }),
       jsx(FileArchiveWizard, {
         open: showFileImportWizard,
         onOpenChange: setShowFileImportWizard,

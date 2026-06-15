@@ -1297,7 +1297,8 @@
 
 ### 15.9 P0 — تحسين رحلة المستخدم في سير العمل المتكرر (Daily Workflow Journey Optimization)
 
-- [ ] `[P0]` ⏱️XL **إزالة احتكاكات الإضافة والتعديل والبحث عبر تدفق عمل متصل** — المستخدم الذي يضيف أو يعدّل عشرات العناصر يضيع وقتاً في فتح صفحات منفصلة وفقدان السياق.
+- [x] `[P0]` ⏱️XL **إزالة احتكاكات الإضافة والتعديل والبحث عبر تدفق عمل متصل** — المستخدم الذي يضيف أو يعدّل عشرات العناصر يضيع وقتاً في فتح صفحات منفصلة وفقدان السياق.
+  - ✅ **مُنجَز 2026-06-15:** أُضيفت `features/workflow/recentDefaults.js` (تذكّر نوع/وسوم/مجلد/مجموعة في localStorage بـ11 اختبار)، `components/workflow/ContextualQuickAddBar.jsx` (شريط طي/فتح يلف QuickAddBar مع استعادة الإعدادات الأخيرة)، `components/workflow/SideEditPanel.jsx` (لوحة جانبية لتعديل العنوان/الوسوم/الملاحظات/النوع مع Ctrl+S وAnimatePresence). رُبطت في `ArchivePage.jsx` مع عنصر "تعديل سريع" في قائمة السياق.
   - **الملفات الجديدة:**
     - `archive-app/src/components/workflow/ContextualQuickAddBar.jsx` — شريط إضافة سريع قابل للطي من أي صفحة.
     - `archive-app/src/components/workflow/SideEditPanel.jsx` — تعديل سريع دون مغادرة القائمة.
