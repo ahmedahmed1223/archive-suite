@@ -1756,7 +1756,9 @@
 
 ### 16.9 P2 — تلخيص المحتوى واستخلاص النقاط الرئيسية (Content Summarization & Key Insights)
 
-- [ ] `[P2]` ⏱️XL **إضافة طبقة تلخيص AI للعناصر والمجموعات اعتماداً على OCR والتفريغ الصوتي** — البحث داخل المحتوى يصبح أقوى عندما توجد ملخصات ونقاط رئيسية قابلة للعرض والفهرسة.
+- [x] `[P2]` ⏱️XL **إضافة طبقة تلخيص AI للعناصر والمجموعات اعتماداً على OCR والتفريغ الصوتي** — البحث داخل المحتوى يصبح أقوى عندما توجد ملخصات ونقاط رئيسية قابلة للعرض والفهرسة.
+  - **✅ مُنجَز (شريحة، 2026-06-16):** نموذج نقي `itemSummary.js` (createItemSummary/hasValidSummary/describeStatus/extractTextForSummary) + **25 اختبار**؛ `summarySlice.js` مُخزَّن في `item_summaries` مُدمج في `appStore`؛ `SummaryPanel.jsx` (ملخص قصير + نقاط رئيسية + تفاصيل قابلة للطي + حالة تحميل/خطأ)؛ `SummarySnippet.jsx` للبطاقات. 700 اختبار يمرّ + `build:spa` أخضر.
+  - **مؤجَّل (XL):** `summarizationService.js` من جانب الخادم، `groupSummaryService.js`، هجرة Prisma (جدول summaries)، تشغيل خلفية بعد OCR/Transcription، ربط RecordDetailsPage بزر "تلخيص".
   - **الملفات الجديدة:**
     - `archive-server/src/ai/summarizationService.js` — توليد ملخص قصير ونقاط وملخص مفصل.
     - `archive-server/src/ai/groupSummaryService.js` — تلخيص مجموعة عناصر.
