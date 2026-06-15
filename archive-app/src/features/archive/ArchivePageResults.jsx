@@ -447,6 +447,23 @@ export function ArchivePageResults(props) {
   const linkDragSourceRef = React.useRef(null);
   const [linkDialog, setLinkDialog] = React.useState(null); // { sourceId, targetId } | null
 
+  // Keyboard list navigation provides `selectedIds`, which the cross-zone drag
+  // handler below reads — so this must be initialized first (avoids a TDZ
+  // "Cannot access 'selectedIds' before initialization" on archive load).
+  const handleKbActivate = React.useCallback((item) => openItem?.(item), [openItem]);
+  const handleKbSelect = React.useCallback((id, selected) => {
+    // Enter bulk mode the first time a keyboard selection is made
+    if (selected) setBulkMode?.(true);
+    toggleBulkSelect?.(id);
+  }, [setBulkMode, toggleBulkSelect]);
+
+  const { containerRef, onKeyDown, isFocused, isSelected, toggleSelect, selectedIds, clearSelection, focusedIndex } = useKeyboardListNav({
+    items: visibleItems || [],
+    onActivate: handleKbActivate,
+    onSelect: handleKbSelect,
+    multiSelect: true,
+  });
+
   // §1892 — cross-zone drag: sets archive item IDs on DataTransfer so
   // DropZone targets (folders, collections) can receive them.
   const { startDrag: startCrossZoneDrag, clearDrag: clearCrossZoneDrag } = useDndController() ?? {};
@@ -496,20 +513,6 @@ export function ArchivePageResults(props) {
       .map((type) => ({ value: type.id, label: type.name || type.id })),
     [contentTypes]
   );
-
-  const handleKbActivate = React.useCallback((item) => openItem?.(item), [openItem]);
-  const handleKbSelect = React.useCallback((id, selected) => {
-    // Enter bulk mode the first time a keyboard selection is made
-    if (selected) setBulkMode?.(true);
-    toggleBulkSelect?.(id);
-  }, [setBulkMode, toggleBulkSelect]);
-
-  const { containerRef, onKeyDown, isFocused, isSelected, toggleSelect, selectedIds, clearSelection, focusedIndex } = useKeyboardListNav({
-    items: visibleItems || [],
-    onActivate: handleKbActivate,
-    onSelect: handleKbSelect,
-    multiSelect: true,
-  });
 
   // Virtual list — only active on mobile (< 768 px) with > 20 items.
   // itemHeight 120 px matches a standard archive card height in list/grid view.
