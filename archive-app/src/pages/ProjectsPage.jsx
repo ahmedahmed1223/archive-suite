@@ -59,6 +59,7 @@ import {
 } from "../features/projects/exportClient.js";
 import { getBackendUrl, resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
+import { TimelineTrack } from "../components/montage/TimelineTrack.jsx";
 
 /** Friendly clock for a duration in seconds → H:MM:SS or M:SS. */
 function formatClock(totalSeconds) {
@@ -302,7 +303,7 @@ function ProjectCard({ project, active, index, onOpen, onDelete }) {
 // ── editor panel ─────────────────────────────────────────────────────────────
 function ProjectEditor({
   project, items, itemsById, users, usersById, onPatch,
-  onAddCut, onMoveCut, onRemoveCut, onAddTask, onMoveTask, onRemoveTask,
+  onAddCut, onMoveCut, onRemoveCut, onReorderClips, onAddTask, onMoveTask, onRemoveTask,
   onExport, mp4Enabled, exporting
 }) {
   if (!project) {
@@ -358,6 +359,11 @@ function ProjectEditor({
           jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(ListVideo, { className: "h-4 w-4 va-accent-text" }), "الخطّ الزمني"] }),
           jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: `${formatNumber(ordered.length)} قصاصة · ${formatClock(total)}` })
         ] }),
+        ordered.length ? jsx("div", { className: "mb-3", children: jsx(TimelineTrack, {
+          clips: ordered,
+          selectedId: null,
+          onMoveClip: onReorderClips
+        }) }) : null,
         ordered.length ? jsx("div", { className: "space-y-2", children: ordered.map((cut, i) => jsx(TimelineRow, {
           cut, index: i, total: ordered.length, itemsById, onMove: onMoveCut, onRemove: onRemoveCut
         }, cut.id)) }) : jsx("p", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/30 p-4 text-center text-sm text-gray-500", children: "الخطّ الزمني فارغ — أضف قصاصة من الأعلى." })
@@ -498,6 +504,12 @@ export function ProjectsPage() {
   const removeCut = (cutId) => {
     if (!selected) return;
     persist(removeRoughCut(selected, cutId));
+  };
+
+  // Visual timeline drag-reorder: `nextClips` already carries re-sequenced order.
+  const reorderClipsVisual = (nextClips) => {
+    if (!selected || !Array.isArray(nextClips)) return;
+    persist({ ...selected, roughCuts: nextClips, updatedAt: new Date().toISOString() });
   };
 
   const addTask = (taskPartial) => {
@@ -653,6 +665,7 @@ export function ProjectsPage() {
           onAddCut: addCut,
           onMoveCut: moveCut,
           onRemoveCut: removeCut,
+          onReorderClips: reorderClipsVisual,
           onAddTask: addTask,
           onMoveTask: moveTask,
           onRemoveTask: removeTask,
