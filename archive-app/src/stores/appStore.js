@@ -87,6 +87,11 @@ import {
   copilotInitialState,
   createCopilotActions
 } from "./slices/copilotSlice.js";
+import {
+  automationActionKeys,
+  automationInitialState,
+  createAutomationActions
+} from "./slices/automationSlice.js";
 
 export { pickStoreActions } from "./storeCore.js";
 export { archiveActionKeys } from "./slices/archiveSlice.js";
@@ -106,6 +111,7 @@ export { uploadActionKeys } from "./slices/uploadSlice.js";
 export { inboxActionKeys } from "./slices/inboxSlice.js";
 export { itemNotesActionKeys } from "./slices/itemNotesSlice.js";
 export { copilotActionKeys } from "./slices/copilotSlice.js";
+export { automationActionKeys } from "./slices/automationSlice.js";
 
 export const useAppStore = createStore((set, get) => ({
   ...archiveInitialState,
@@ -124,6 +130,7 @@ export const useAppStore = createStore((set, get) => ({
   ...inboxInitialState,
   ...itemNotesInitialState,
   ...copilotInitialState,
+  ...automationInitialState,
   ...createUiActions({ set, get }),
   ...createConnectionStatusActions({ set, get }),
   ...createRelationsActions({ set, get }),
@@ -140,7 +147,8 @@ export const useAppStore = createStore((set, get) => ({
   ...createUploadActions({ set, get }),
   ...createInboxActions({ set, get }),
   ...createItemNotesActions({ set, get }),
-  ...createCopilotActions({ set, get })
+  ...createCopilotActions({ set, get }),
+  ...createAutomationActions({ set, get })
 }));
 
 export const useAuthStore = createAuthStore({ createStore, useAppStore });

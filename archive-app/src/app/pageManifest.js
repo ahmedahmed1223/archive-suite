@@ -30,7 +30,8 @@ export const PAGE_MANIFEST = [
   { id: "duplicates", group: "maintenance", heavy: false, meta: { title: "كشف المكررات", breadcrumb: "الصيانة / المكررات", hint: "فحص الأرشيف بحثاً عن عناصر مكررة بناءً على العنوان والرابط والحجم وبصمة الملف.", helpSection: "transfer-export" } },
   { id: "saved-searches", group: "daily", heavy: false, meta: { title: "البحوث المحفوظة", breadcrumb: "الرئيسية / البحوث المحفوظة", hint: "احفظ استعلامات البحث وشغّلها بنقرة، أو فعّل تنبيهاً عند ظهور عناصر جديدة مطابقة.", helpSection: "searching" } },
   { id: "inbox", group: "daily", heavy: false, meta: { title: "صندوق الوارد", breadcrumb: "الرئيسية / الوارد", hint: "التقط الأفكار والمحتوى بسرعة ونظّمها لاحقاً بالأرشفة أو الحذف.", helpSection: "dashboard-archive" } },
-  { id: "analytics", group: "administration", heavy: true, meta: { title: "تحليلات الأرشيف", breadcrumb: "الإدارة / التحليلات", hint: "لوحة شخصية تكشف النمو الشهري وأكثر الوسوم والعناصر غير المصنفة والمكررات وصحة الأرشيف.", helpSection: "reports-settings" } }
+  { id: "analytics", group: "administration", heavy: true, meta: { title: "تحليلات الأرشيف", breadcrumb: "الإدارة / التحليلات", hint: "لوحة شخصية تكشف النمو الشهري وأكثر الوسوم والعناصر غير المصنفة والمكررات وصحة الأرشيف.", helpSection: "reports-settings" } },
+  { id: "automation", group: "administration", heavy: true, meta: { title: "الأتمتة", breadcrumb: "الإدارة / الأتمتة", hint: "قواعد أتمتة بصرية: عند حدث (إضافة/تعديل) نفّذ إجراءات مثل إضافة وسوم أو نقل لمجموعة تلقائياً.", helpSection: "reports-settings" } }
 ];
 
 export const PAGE_CONTEXT_META = Object.fromEntries(
