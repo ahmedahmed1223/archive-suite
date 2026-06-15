@@ -44,6 +44,8 @@ export function useAiAssist({ showToast } = {}) {
     isBusy: Boolean(busy),
     summarize: (text) => run("summarize", (p) => p.summarize({ text })),
     suggestTags: (payload) => run("suggestTags", (p) => p.suggestTags(payload)),
-    proofread: (text) => run("proofread", (p) => p.proofread({ text }))
+    proofread: (text) => run("proofread", (p) => p.proofread({ text })),
+    chat: ({ context, query, history } = {}) =>
+      run("chat", (p) => p.chat({ context, query, history }))
   };
 }
