@@ -1280,7 +1280,9 @@
 
 ### 15.7 P2 — نظام التخصيص البصري والسمات (Theming & Visual Customization)
 
-- [ ] `[P2]` ⏱️XL **بناء محرر سمات وتخصيص كثافة وتخطيط الواجهة** — التطبيق لا يمنح المستخدم تحكماً كافياً في الألوان والخطوط والكثافة وحجم البطاقات وتخطيط الشريط الجانبي.
+- [x] `[P2]` ⏱️XL **بناء محرر سمات وتخصيص كثافة وتخطيط الواجهة** — التطبيق لا يمنح المستخدم تحكماً كافياً في الألوان والخطوط والكثافة وحجم البطاقات وتخطيط الشريط الجانبي.
+  - **✅ مُنجَز (شريحة، 2026-06-16):** `themePresets.js` (DENSITY_OPTIONS/getStoredDensity/applyDensityToDocument)؛ `themeExportImport.js` (exportThemeConfig/importThemeConfig/downloadThemeFile)؛ `DensitySelector.jsx`؛ `ThemePreviewCard.jsx`؛ `AppearanceSettingsPage.jsx` (شبكة 34 سمة + كثافة + محرر ألوان مخصص + استيراد/تصدير)؛ مسجَّلة في pageManifest/pageRegistry. `build:spa` أخضر 1.09s.
+  - **مؤجَّل:** ربط متغيرات v*-identity.css بالسمة المخصصة، تخصيص حجم البطاقات وعرض الشريط الجانبي، مزامنة سحابية للسمة.
   - **الملفات الجديدة:**
     - `archive-app/src/pages/AppearanceSettingsPage.jsx` — صفحة التخصيص البصري.
     - `archive-app/src/features/theme/themePresets.js` — سمات جاهزة: فاتح/داكن/عالي التباين/باستيل/دافئ.
