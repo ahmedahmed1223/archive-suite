@@ -90,20 +90,20 @@ export function ActivityEntry({ entry, settings = {}, onUndo, onRedo }) {
               canUndo && jsxs("button", {
                 type: "button",
                 onClick: () => onUndo(entry),
-                className: "inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-500/15",
+                className: "btn btn-xs btn-warning gap-1.5",
                 children: [jsx(RotateCcw, { className: "h-3.5 w-3.5" }), "تراجع"]
               }),
               canRedo && jsxs("button", {
                 type: "button",
                 onClick: () => onRedo(entry),
-                className: "inline-flex min-h-9 items-center gap-1.5 rounded-lg border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs font-semibold va-accent-text hover:opacity-90",
+                className: "btn btn-xs btn-primary gap-1.5",
                 children: [jsx(RotateCw, { className: "h-3.5 w-3.5" }), "إعادة"]
               }),
               hasDiff && jsxs("button", {
                 type: "button",
                 onClick: () => setExpanded((value) => !value),
                 "aria-expanded": expanded,
-                className: "inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-gray-300 hover:bg-white/10",
+                className: "btn btn-xs btn-ghost gap-1.5",
                 children: [
                   expanded ? jsx(ChevronUp, { className: "h-3.5 w-3.5" }) : jsx(ChevronDown, { className: "h-3.5 w-3.5" }),
                   "الفروقات"
