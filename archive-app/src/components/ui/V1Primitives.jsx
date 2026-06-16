@@ -353,30 +353,29 @@ export function CommandPanel({ title, description, icon, actions, children, high
 }
 
 export function ReportStrip({ items = [], className = "" }) {
+  // DaisyUI `stats` — semantic stat display replacing custom grid (§1881 Phase 2)
   return (
-    <section className={cx("va-report-strip rounded-2xl border p-3 text-right", className)} dir="rtl" aria-label="ملخص التقارير">
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        {items.map((item) => (
-          <article key={item.id || item.label} className="va-report-strip-item rounded-xl border border-white/5 bg-white/[0.025] p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs text-gray-500">{item.label}</p>
-                <p className="mt-1 text-2xl font-bold text-white">
-                  {Number.isFinite(item.animateTo)
-                    ? <AnimatedNumber value={item.animateTo} format={item.format} />
-                    : item.value}
-                </p>
-                {item.hint && <p className="mt-1 text-xs leading-5 text-gray-500">{item.hint}</p>}
-              </div>
-              {item.icon && (
-                <span className={cx("va-icon-tile flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border", toneClasses[item.tone] || toneClasses.accent)}>
-                  {item.icon}
-                </span>
-              )}
+    <section
+      className={cx("stats stats-vertical sm:stats-horizontal w-full overflow-visible rounded-2xl border border-white/10 bg-white/[0.02] text-right shadow-none", className)}
+      dir="rtl"
+      aria-label="ملخص التقارير"
+    >
+      {items.map((item) => (
+        <div key={item.id || item.label} className="stat px-4 py-3">
+          {item.icon && (
+            <div className={cx("stat-figure va-icon-tile flex h-9 w-9 items-center justify-center rounded-xl border", toneClasses[item.tone] || toneClasses.accent)}>
+              {item.icon}
             </div>
-          </article>
-        ))}
-      </div>
+          )}
+          <div className="stat-title text-xs text-gray-500">{item.label}</div>
+          <div className="stat-value mt-1 text-2xl font-bold text-white">
+            {Number.isFinite(item.animateTo)
+              ? <AnimatedNumber value={item.animateTo} format={item.format} />
+              : item.value}
+          </div>
+          {item.hint && <div className="stat-desc mt-1 text-xs leading-5 text-gray-500">{item.hint}</div>}
+        </div>
+      ))}
     </section>
   );
 }
