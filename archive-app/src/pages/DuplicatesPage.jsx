@@ -94,14 +94,14 @@ function ConfidencePill({ score }) {
     pct >= 80 ? "bg-amber-500/20 text-amber-300" :
                 "bg-yellow-500/20 text-yellow-300";
   return jsx("span", {
-    className: `rounded-full px-2 py-0.5 text-xs font-medium ${cls}`,
+    className: `badge badge-sm rounded-full px-2 py-0.5 text-xs font-medium ${cls}`,
     children: `${pct}% تطابق`
   });
 }
 
 function ItemMini({ item }) {
   return jsxs("div", {
-    className: "rounded-xl border border-white/8 bg-white/[0.03] p-3",
+    className: "card rounded-xl border border-white/8 bg-white/[0.03] p-3",
     children: [
       jsx("p", { className: "truncate text-sm font-medium text-gray-100", children: item.title || item.id }),
       jsxs("p", {
@@ -119,7 +119,7 @@ function PairCard({ pair, onDismiss, onDelete }) {
   const [expanded, setExpanded] = React.useState(false);
 
   return jsxs("div", {
-    className: "rounded-2xl border border-white/8 bg-white/[0.03] p-4",
+    className: "card rounded-2xl border border-white/8 bg-white/[0.03] p-4",
     children: [
       jsxs("div", {
         className: "flex items-center gap-3",
@@ -138,7 +138,7 @@ function PairCard({ pair, onDismiss, onDelete }) {
           jsx("button", {
             type: "button",
             onClick: () => setExpanded((e) => !e),
-            className: "text-gray-500 hover:text-gray-300",
+            className: "btn btn-ghost btn-circle btn-sm text-gray-500 hover:text-gray-300",
             "aria-label": expanded ? "طي" : "توسيع",
             children: expanded
               ? jsx(ChevronDown, { className: "h-4 w-4" })
@@ -158,13 +158,13 @@ function PairCard({ pair, onDismiss, onDelete }) {
               jsx("button", {
                 type: "button",
                 onClick: () => onDelete(pair.a.id),
-                className: "flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/20 transition-colors",
+                className: "btn btn-sm btn-error flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/20 transition-colors",
                 children: [jsx(Trash2, { className: "h-3.5 w-3.5" }), "حذف الأقدم"]
               }),
               jsx("button", {
                 type: "button",
                 onClick: () => onDismiss(pair.a.id, pair.b.id),
-                className: "flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-400 hover:bg-white/5 transition-colors",
+                className: "btn btn-sm btn-ghost flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-400 hover:bg-white/5 transition-colors",
                 children: [jsx(X, { className: "h-3.5 w-3.5" }), "ليسا مكررَين"]
               })
             ]
@@ -252,7 +252,7 @@ export default function DuplicatesPage() {
             type: "button",
             onClick: runScan,
             disabled: scanning,
-            className: "inline-flex items-center gap-1.5 rounded-xl bg-amber-600/20 px-3 py-1.5 text-sm font-medium text-amber-300 hover:bg-amber-600/30 disabled:opacity-50 transition-colors",
+            className: "btn btn-sm inline-flex items-center gap-1.5 rounded-xl bg-amber-600/20 px-3 py-1.5 text-sm font-medium text-amber-300 hover:bg-amber-600/30 disabled:opacity-50 transition-colors",
             children: scanning
               ? [jsx(Loader2, { className: "h-4 w-4 animate-spin" }), "جاري الفحص…"]
               : "ابدأ الفحص"
@@ -274,10 +274,11 @@ export default function DuplicatesPage() {
       pairs !== null && visiblePairs !== null && jsxs(React.Fragment, {
         children: [
           jsxs("div", {
-            className: `mb-4 flex items-center gap-3 rounded-xl border p-3 ${
+            role: "alert",
+            className: `alert mb-4 flex items-center gap-3 rounded-xl border p-3 ${
               visiblePairs.length === 0
-                ? "border-green-500/20 bg-green-500/10"
-                : "border-amber-500/20 bg-amber-500/10"
+                ? "alert-success border-green-500/20 bg-green-500/10"
+                : "alert-warning border-amber-500/20 bg-amber-500/10"
             }`,
             children: [
               visiblePairs.length === 0
@@ -301,7 +302,7 @@ export default function DuplicatesPage() {
                 value: query,
                 onChange: (e) => setQuery(e.target.value),
                 placeholder: "فلترة حسب العنوان…",
-                className: "w-full rounded-xl border border-white/10 bg-white/[0.04] py-2 pr-9 pl-3 text-sm text-gray-100 placeholder-gray-600 focus:border-blue-500 focus:outline-none"
+                className: "input input-bordered w-full rounded-xl border border-white/10 bg-white/[0.04] py-2 pr-9 pl-3 text-sm text-gray-100 placeholder-gray-600 focus:border-blue-500 focus:outline-none"
               })
             ]
           }),
