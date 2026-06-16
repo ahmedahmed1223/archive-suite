@@ -66,31 +66,18 @@ const PREF_ITEMS = [
   },
 ];
 
-// Shared accessible switch used by both the email and push lists.
+// DaisyUI toggle (§1881 Phase 2) — native checkbox with switch styling
 function ToggleSwitch({ checked, label, disabled, onToggle }) {
   return (
-    <button
-      type="button"
+    <input
+      type="checkbox"
       role="switch"
-      aria-checked={checked}
       aria-label={label}
-      onClick={onToggle}
+      checked={checked}
+      onChange={onToggle}
       disabled={disabled}
-      className={[
-        "relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
-        "disabled:cursor-not-allowed disabled:opacity-60",
-        checked ? "bg-emerald-600" : "bg-gray-700",
-      ].join(" ")}
-    >
-      <span
-        className={[
-          "absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200",
-          checked ? "translate-x-5" : "translate-x-0",
-        ].join(" ")}
-      />
-      <span className="sr-only">{checked ? "مفعّل" : "معطّل"}</span>
-    </button>
+      className="toggle toggle-accent shrink-0"
+    />
   );
 }
 
