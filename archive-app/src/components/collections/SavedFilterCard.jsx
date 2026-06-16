@@ -12,7 +12,7 @@ import { Zap, Trash2, FolderOpen } from "lucide-react";
 export function SavedFilterCard({ filter, onDelete, onOpen }) {
   return (
     <div
-      className="group relative flex flex-col gap-2 p-4 rounded-xl border border-white/10 bg-gray-900/45 hover:bg-gray-900/70 hover:border-white/20 transition-colors cursor-pointer"
+      className="card card-border group relative flex flex-col gap-2 p-4 rounded-xl border border-white/10 bg-gray-900/45 hover:bg-gray-900/70 hover:border-white/20 transition-colors cursor-pointer"
       onClick={() => onOpen(filter)}
       role="button"
       tabIndex={0}

@@ -21,9 +21,10 @@ export function RestoreVersionDialog({ version, currentSnapshot, onConfirm, onCl
     role: "dialog",
     "aria-modal": "true",
     "aria-label": `استعادة النسخة ${version.version}`,
-    className: "fixed inset-0 z-[3000] flex items-end justify-center p-4 sm:items-center",
+    // DaisyUI `modal modal-open` — adopt modal semantics; keep RTL shell look (§1881 Phase 5)
+    className: "modal modal-open fixed inset-0 z-[3000] flex items-end justify-center p-4 sm:items-center",
     children: jsxs("div", {
-      className: "relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#0d0d0d] shadow-2xl",
+      className: "modal-box relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#0d0d0d] p-0 shadow-2xl",
       children: [
         // Header
         jsxs("div", {
@@ -53,9 +54,10 @@ export function RestoreVersionDialog({ version, currentSnapshot, onConfirm, onCl
           ],
         }),
 
-        // Warning
+        // Warning — DaisyUI `alert alert-warning` over custom amber tint (§1881 Phase 5)
         jsxs("div", {
-          className: "mx-5 mt-4 flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3.5 py-3",
+          role: "alert",
+          className: "alert alert-warning mx-5 mt-4 flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3.5 py-3",
           children: [
             jsx(AlertTriangle, { className: "mt-0.5 h-4 w-4 shrink-0 text-amber-400" }),
             jsx("p", {

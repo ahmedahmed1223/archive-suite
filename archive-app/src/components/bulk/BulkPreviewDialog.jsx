@@ -43,9 +43,10 @@ export function BulkPreviewDialog({
   const failed = progress.filter((p) => p.status === "failed").length;
 
   return jsx("div", {
-    className: "fixed inset-0 z-[9980] flex items-center justify-center p-4",
+    // DaisyUI `modal modal-open` — adopt modal semantics; keep custom shell look (§1881 Phase 5)
+    className: "modal modal-open fixed inset-0 z-[9980] flex items-center justify-center p-4",
     children: jsxs("div", {
-      className: "relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1626] p-6 shadow-2xl",
+      className: "modal-box relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1626] p-6 shadow-2xl",
       children: [
         jsxs("div", {
           className: "mb-4 flex items-center justify-between",
@@ -65,7 +66,9 @@ export function BulkPreviewDialog({
           children: [
             actionDescription && jsx("p", { className: "text-sm text-gray-400", children: actionDescription }),
             dangerous && jsxs("div", {
-              className: "flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-300",
+              role: "alert",
+              // DaisyUI `alert alert-warning` over custom amber tint (§1881 Phase 5)
+              className: "alert alert-warning flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-300",
               children: [jsx(AlertTriangle, { className: "mt-0.5 h-4 w-4 shrink-0" }), "هذا الإجراء لا يمكن التراجع عنه"]
             }),
             jsxs("p", {
