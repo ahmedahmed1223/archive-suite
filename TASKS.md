@@ -1,4 +1,4 @@
-# مهام Archive Suite — قائمة مُصالَحة من تقارير الفحص
+﻿# مهام Archive Suite — قائمة مُصالَحة من تقارير الفحص
 
 > **المصدر:** 9 تقارير فحص (HTML) في `D:\archiveaq\Reports`.
 > **المنهجية:** كل بند في التقارير تم التحقق منه مقابل الكود الفعلي في هذا المستودع. أُبقيت فقط المهام الحقيقية المتبقية؛ والبنود المُنفّذة بالفعل أو غير الدقيقة في التقارير وُثّقت في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
@@ -1909,6 +1909,7 @@
   - **تعديل ملفات:** `archive-app/src/styles/tailwind.css` (ملف Tailwind الجذري)، `archive-app/src/components/ui/*` (الأزرار، البطاقات، الحقول، النوافذ)، `archive-app/tailwind.config.*` إن وُجد.
   - **التنفيذ التدريجي:** المرحلة 1 المكوّنات الأساسية (`btn`, `input`, `card`)؛ المرحلة 2 المكوّنات المركّبة (`navbar`, `menu`, `drawer`)؛ المرحلة 3 الصفحات الكاملة. دعم RTL أصيل، توحيد الأحجام والمسافات.
   - 🔄 **تقدم 2026-06-12:** `daisyui` مثبت ومفعّل في `archive-app/src/styles/tailwind.css`؛ أُضيف تبنٍّ تدريجي لمكوّنات `btn`/`card`/`badge`/`alert`/`skeleton`/`progress`/`dock` داخل primitives المشتركة (`V1Primitives.jsx`, `EmptyState.jsx`, `ProgressBar.jsx`, `MobileActionBar.jsx`) مع إبقاء طبقة `va-*` والثيمات الحالية. تقدمت §17.10 أيضاً بمعرض 34 سمة ومحرر حي مرتبطين بـ `SettingsPage`. لا تزال المهمة مفتوحة لأن ترحيل الصفحات الكاملة و`navbar/menu/drawer` كعمل شامل لم يكتمل بعد.
+  - 🔄 **تقدم 2026-06-16 (المرحلة 2):** اكتملت ترحيلات المرحلة الثانية — `navbar`/`navbar-start`/`navbar-end` في `PageContextBar.jsx`؛ `menu`/`menu-sm`/`menu-title`/`active` في `Sidebar.jsx`؛ `stats`/`stat`/`stat-figure`/`stat-title`/`stat-value`/`stat-desc` في `ReportStrip` بـ`V1Primitives.jsx`؛ `toggle toggle-accent` في `NotificationPreferences.jsx`. تم دمجها في `master` بعد التحقق من البناء والاختبارات (700+ اختبار). المتبقي: `drawer` للشريط الجانبي على الجوال (يتطلب إعادة هيكلة AppRouter).
   - يرتبط بـ: §4 (UI/UX)، §17.10 (السمات)، §19.4 (تثبيت daisyUI).
   - الجهد: 6-8 أسابيع (تدريجي).
   - المصدر: daisyui-ux-proposals (المقترح 1 — P1).
