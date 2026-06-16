@@ -100,7 +100,7 @@ function UserForm({ user, users, onCancel, onSave }) {
                 onChange: (event) => setUsername(event.target.value),
                 disabled: !!user,
                 dir: "ltr",
-                className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40 disabled:opacity-60",
+                className: "input input-bordered min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40 disabled:opacity-60",
                 placeholder: "username"
               }),
               usernameExists && jsx("span", { className: "text-xs text-red-300", children: "اسم المستخدم موجود بالفعل" })
@@ -113,7 +113,7 @@ function UserForm({ user, users, onCancel, onSave }) {
                 "data-autofocus": true,
                 value: displayName,
                 onChange: (event) => setDisplayName(event.target.value),
-                className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+                className: "input input-bordered min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
                 placeholder: "اسم المستخدم داخل الواجهة"
               })
             ] }),
@@ -125,7 +125,7 @@ function UserForm({ user, users, onCancel, onSave }) {
                 onChange: (event) => setEmail(event.target.value),
                 type: "email",
                 dir: "ltr",
-                className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+                className: "input input-bordered min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
                 placeholder: "user@example.com"
               })
             ] }),
@@ -147,7 +147,7 @@ function UserForm({ user, users, onCancel, onSave }) {
                 type: "password",
                 dir: "ltr",
                 disabled: inviteByEmail,
-                className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+                className: "input input-bordered min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
                 placeholder: inviteByEmail ? "سيتم توليدها تلقائيًا" : "6 أحرف على الأقل"
               })
             ] }),
@@ -158,7 +158,7 @@ function UserForm({ user, users, onCancel, onSave }) {
                 role: "radio",
                 "aria-checked": role === item.id,
                 onClick: () => setRole(item.id),
-                className: `inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${role === item.id ? "text-white" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5"}`,
+                className: `btn btn-sm inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${role === item.id ? "text-white" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5"}`,
                 style: role === item.id ? { borderColor: `${item.color}55`, backgroundColor: `${item.color}18` } : undefined,
                 children: [
                   jsx("span", { className: "inline-block h-2.5 w-2.5 shrink-0 rounded-full", style: { backgroundColor: item.color } }),
@@ -196,10 +196,10 @@ function UserCard({ user, currentUser, users, index, recentOpsCount = 0, onEdit,
           jsxs("div", { className: "min-w-0", children: [
             jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
               jsx("h3", { className: "truncate text-base font-bold text-white", children: user.displayName || user.username }),
-              jsx("span", { className: "rounded-full border px-2 py-0.5 text-xs font-medium", style: { borderColor: `${accentColor}45`, backgroundColor: `${accentColor}18`, color: accentColor }, children: role.label }),
-              !user.isActive && jsx("span", { className: "rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-xs text-red-200", children: "معطل" }),
-              user.inviteStatus === "pending" && jsx("span", { className: "rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200", children: "دعوة معلّقة" }),
-              isCurrent && jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-xs va-accent-text-on-soft", children: "الحالي" })
+              jsx("span", { className: "badge badge-sm rounded-full border px-2 py-0.5 text-xs font-medium", style: { borderColor: `${accentColor}45`, backgroundColor: `${accentColor}18`, color: accentColor }, children: role.label }),
+              !user.isActive && jsx("span", { className: "badge badge-sm rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-xs text-red-200", children: "معطل" }),
+              user.inviteStatus === "pending" && jsx("span", { className: "badge badge-sm rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200", children: "دعوة معلّقة" }),
+              isCurrent && jsx("span", { className: "badge badge-sm rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-xs va-accent-text-on-soft", children: "الحالي" })
             ] }),
             jsx("p", { className: "mt-1 truncate text-xs text-gray-500 font-mono", dir: "ltr", children: `@${user.username}` }),
             user.email && jsx("p", { className: "mt-0.5 truncate text-xs text-gray-500", dir: "ltr", children: user.email }),
@@ -217,9 +217,9 @@ function UserCard({ user, currentUser, users, index, recentOpsCount = 0, onEdit,
           ] })
         ] }),
         jsxs("div", { className: "flex shrink-0 gap-1", children: [
-          jsx("button", { type: "button", onClick: onToggle, disabled: !canToggle, className: `rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${user.isActive ? "text-gray-300 hover:bg-white/5" : "va-accent-text hover:bg-emerald-500/10"}`, children: user.isActive ? "تعطيل" : "تفعيل" }),
-          jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": `تعديل ${user.displayName || user.username || "المستخدم"}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
-          jsx("button", { type: "button", onClick: onDelete, disabled: !canToggle, className: "rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40", "aria-label": `حذف ${user.displayName || user.username || "المستخدم"}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
+          jsx("button", { type: "button", onClick: onToggle, disabled: !canToggle, className: `btn btn-ghost btn-sm rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${user.isActive ? "text-gray-300 hover:bg-white/5" : "va-accent-text hover:bg-emerald-500/10"}`, children: user.isActive ? "تعطيل" : "تفعيل" }),
+          jsx("button", { type: "button", onClick: onEdit, className: "btn btn-ghost btn-sm btn-square rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": `تعديل ${user.displayName || user.username || "المستخدم"}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
+          jsx("button", { type: "button", onClick: onDelete, disabled: !canToggle, className: "btn btn-ghost btn-sm btn-square rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40", "aria-label": `حذف ${user.displayName || user.username || "المستخدم"}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
         ] })
       ] }),
       jsx("p", { className: "mt-3 text-xs leading-relaxed text-gray-600", children: role.description })
@@ -352,7 +352,7 @@ export function UsersPage() {
         icon: jsx(Users, { className: "h-6 w-6 va-accent-text" }),
         title: "المستخدمون",
         description: "إدارة الحسابات والأدوار مع حماية آخر مدير نشط ومنع تغيير كلمات المرور من صفحة المستخدمين.",
-        actions: canManageUsers ? jsxs("button", { type: "button", onClick: () => { setEditingUser(null); setShowForm(true); }, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مستخدم جديد"] }) : null
+        actions: canManageUsers ? jsxs("button", { type: "button", onClick: () => { setEditingUser(null); setShowForm(true); }, className: "btn btn-sm va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مستخدم جديد"] }) : null
       }),
       showForm && jsx(UserForm, { user: editingUser, users, onCancel: () => { setShowForm(false); setEditingUser(null); }, onSave: saveUser }),
       jsx("section", { className: "grid gap-3 sm:grid-cols-4", children: [
@@ -360,7 +360,7 @@ export function UsersPage() {
         ["نشط", summary.active, ShieldCheck],
         ["معطل", summary.inactive, Trash2],
         ["مدير نشط", summary.activeAdmins, Shield]
-      ].map(([label, value, Icon]) => jsxs("div", { className: "va-metric-card rounded-2xl va-surface-muted border p-4 text-right", children: [
+      ].map(([label, value, Icon]) => jsxs("div", { className: "card va-metric-card rounded-2xl va-surface-muted border p-4 text-right", children: [
         jsxs("div", { className: "flex items-start justify-between gap-3", children: [
           jsxs("div", { className: "min-w-0", children: [
             jsx("p", { className: "text-xs text-gray-500", children: label }),
@@ -373,22 +373,22 @@ export function UsersPage() {
         jsxs("div", { className: "grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]", children: [
           jsxs("label", { className: "relative block", children: [
             jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
-            jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث بالاسم أو اسم المستخدم...", className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40" })
+            jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث بالاسم أو اسم المستخدم...", className: "input input-bordered min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40" })
           ] }),
-          jsxs("select", { value: roleFilter, onChange: (event) => setRoleFilter(event.target.value), className: "min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: [
+          jsxs("select", { value: roleFilter, onChange: (event) => setRoleFilter(event.target.value), className: "select select-bordered min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: [
             jsx("option", { value: "all", children: "كل الأدوار" }),
             ...USER_ROLES.map((role) => jsx("option", { value: role.id, children: role.label }, role.id))
           ] })
         ] }),
         jsxs("div", { role: "group", "aria-label": "تصفية حسب الدور", className: "mt-4 flex flex-wrap gap-2", children: [
-          jsxs("button", { type: "button", onClick: () => setRoleFilter("all"), className: `rounded-xl border px-3 py-2 text-sm gap-2 inline-flex items-center ${roleFilter === "all" ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5"}`, children: [
+          jsxs("button", { type: "button", onClick: () => setRoleFilter("all"), className: `btn btn-sm rounded-xl border px-3 py-2 text-sm gap-2 inline-flex items-center ${roleFilter === "all" ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5"}`, children: [
             "كل الأدوار",
-            jsx("span", { className: "rounded-full bg-black/20 px-2 py-0.5 text-xs", children: formatNumber(summary.total) })
+            jsx("span", { className: "badge badge-sm rounded-full bg-black/20 px-2 py-0.5 text-xs", children: formatNumber(summary.total) })
           ] }),
-          ...USER_ROLES.map((role) => jsxs("button", { type: "button", onClick: () => setRoleFilter(role.id), className: `rounded-xl border px-3 py-2 text-sm gap-2 inline-flex items-center ${roleFilter === role.id ? "text-white" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5"}`, style: roleFilter === role.id ? { borderColor: `${role.color}55`, backgroundColor: `${role.color}18` } : undefined, children: [
+          ...USER_ROLES.map((role) => jsxs("button", { type: "button", onClick: () => setRoleFilter(role.id), className: `btn btn-sm rounded-xl border px-3 py-2 text-sm gap-2 inline-flex items-center ${roleFilter === role.id ? "text-white" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5"}`, style: roleFilter === role.id ? { borderColor: `${role.color}55`, backgroundColor: `${role.color}18` } : undefined, children: [
             jsx("span", { className: "inline-block h-2.5 w-2.5 rounded-full", style: { backgroundColor: role.color } }),
             role.label,
-            jsx("span", { className: "rounded-full bg-black/20 px-2 py-0.5 text-xs", children: formatNumber(summary.byRole[role.id] || 0) })
+            jsx("span", { className: "badge badge-sm rounded-full bg-black/20 px-2 py-0.5 text-xs", children: formatNumber(summary.byRole[role.id] || 0) })
           ] }, role.id))
         ] })
       ] }),
