@@ -259,7 +259,7 @@ export function StartupRecoveryScreen({ report, onRetry, onOpenDiagnostics }) {
           بياناتك لا تُنقل إلى أي خادم. إذا استمر الخطأ، افتح فحص النظام لمعرفة حالة IndexedDB والمساحة المتاحة.
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
-          <button type="button" onClick={onOpenDiagnostics} className="va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white">
+          <button type="button" onClick={onOpenDiagnostics} className="btn btn-primary">
             فتح فحص النظام
           </button>
           <button type="button" onClick={onRetry} className="va-secondary-button rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200">
@@ -309,7 +309,7 @@ export function LockScreen() {
           placeholder="كلمة المرور"
         />
         {error && <p className="mt-3 text-sm text-red-200">{error}</p>}
-        <button type="submit" className="va-primary-button mt-5 w-full rounded-xl px-4 py-3 font-semibold text-white">
+        <button type="submit" className="btn btn-primary mt-5 w-full">
           فتح
         </button>
       </form>
@@ -379,7 +379,7 @@ export function LoginScreen() {
             تذكر الجلسة على هذا الجهاز
           </label>
           {authError && <p role="alert" className="alert alert-error mt-4 block rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-100">{authError}</p>}
-          <button type="submit" disabled={isLoading} className="va-primary-button mt-6 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-60">
+          <button type="submit" disabled={isLoading} className="btn btn-primary mt-6 w-full">
             {isLoading ? "جار التحقق..." : "دخول"}
           </button>
           {users.length === 0 && (
@@ -768,7 +768,7 @@ export function ForceChangePasswordDialog() {
           placeholder="كلمة المرور الجديدة"
         />
         {error && <p className="mt-3 text-sm text-red-200">{error}</p>}
-        <button type="submit" className="va-primary-button mt-5 w-full rounded-xl px-4 py-3 font-semibold text-white">حفظ كلمة المرور</button>
+        <button type="submit" className="btn btn-primary mt-5 w-full">حفظ كلمة المرور</button>
       </form>
     </div>,
     document.body
@@ -816,7 +816,7 @@ export function V1ProductTour({ open, role = "viewer", onComplete, onSkip }) {
         <p className="mt-3 text-sm leading-7 text-gray-300">{step.body}</p>
         <div className="mt-6 flex flex-wrap justify-between gap-3">
           <button type="button" onClick={onSkip} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">تخطي</button>
-          <button type="button" onClick={() => last ? onComplete?.() : setIndex((value) => value + 1)} className="va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white">
+          <button type="button" onClick={() => last ? onComplete?.() : setIndex((value) => value + 1)} className="btn btn-primary">
             {last ? "إنهاء الجولة" : "التالي"}
           </button>
         </div>
