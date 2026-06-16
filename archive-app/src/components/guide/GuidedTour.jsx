@@ -156,7 +156,7 @@ export function GuidedTour({
                 jsxs("button", {
                   type: "button",
                   onClick: goNext,
-                  className: "va-primary-button inline-flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-semibold text-white",
+                  className: "btn btn-primary gap-1",
                   children: isLast ? ["إنهاء الجولة"] : ["التالي", jsx(ArrowLeft, { className: "h-4 w-4" })]
                 })
               ]

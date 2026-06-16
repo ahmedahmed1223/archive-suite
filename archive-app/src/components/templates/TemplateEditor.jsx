@@ -285,7 +285,7 @@ export function TemplateEditor({ isOpen, template, onClose, onSaved }) {
                   إلغاء
                 </button>
                 <button type="button" onClick={handleSave} disabled={saving}
-                  className="inline-flex items-center gap-1.5 rounded-lg va-primary-button px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                  className="btn btn-primary gap-1.5">
                   <Save className="h-3.5 w-3.5" aria-hidden="true" />
                   {saving ? "جاري الحفظ…" : "حفظ"}
                 </button>

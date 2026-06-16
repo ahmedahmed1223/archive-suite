@@ -362,7 +362,7 @@ function DialogModal({ request, mode, onResolve }) {
               onClick: handleConfirm,
               className: isDanger
                 ? "min-h-10 rounded-xl border border-red-500/45 bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
-                : "va-primary-button min-h-10 rounded-xl px-4 py-2 text-sm font-semibold text-white",
+                : "btn btn-primary",
               children: confirmText
             })
           ]

@@ -179,7 +179,7 @@ export function CopilotPanel() {
             disabled: ai.isBusy || !draft.trim(),
             "aria-label": "إرسال",
             className:
-              "va-primary-button inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white disabled:opacity-40",
+              "btn btn-primary h-10 w-10 shrink-0",
             children: jsx(Send, { className: "h-4 w-4" })
           })
         ]
