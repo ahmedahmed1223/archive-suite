@@ -133,11 +133,11 @@ export function SmartCollectionRuleBuilder({ collection, videoItems = [], folder
         jsxs("div", { className: "grid gap-3 md:grid-cols-[5rem_minmax(0,1fr)]", children: [
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
             jsx("label", { htmlFor: iconId, className: "block", children: "الرمز" }),
-            jsx("input", { id: iconId, value: icon, onChange: (event) => setIcon(event.target.value.slice(0, 4)), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-center text-xl text-white outline-none focus:border-cyan-500/40" })
+            jsx("input", { id: iconId, value: icon, onChange: (event) => setIcon(event.target.value.slice(0, 4)), className: "input input-bordered min-h-11 w-full va-surface-deep rounded-xl border px-3 text-center text-xl text-white outline-none focus:border-cyan-500/40" })
           ] }),
           jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
             jsx("label", { htmlFor: nameId, className: "block", children: "اسم المجموعة الذكية" }),
-            jsx("input", { id: nameId, "data-autofocus": true, value: name, onChange: (event) => setName(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-cyan-500/40", placeholder: "مثال: مقاطع العمل الحديثة" })
+            jsx("input", { id: nameId, "data-autofocus": true, value: name, onChange: (event) => setName(event.target.value), className: "input input-bordered min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-cyan-500/40", placeholder: "مثال: مقاطع العمل الحديثة" })
           ] })
         ] }),
         jsxs("div", { className: "space-y-1 md:col-span-2", children: [
@@ -165,14 +165,14 @@ export function SmartCollectionRuleBuilder({ collection, videoItems = [], folder
                   value: condition.field,
                   "aria-label": "الحقل",
                   onChange: (event) => updateCondition(index, { field: event.target.value }),
-                  className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40",
+                  className: "select select-bordered select-sm min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40",
                   children: fieldOptions.map(([key, spec]) => jsx("option", { value: key, children: spec.label }, key))
                 }),
                 jsx("select", {
                   value: condition.operator,
                   "aria-label": "العملية",
                   onChange: (event) => updateCondition(index, { operator: event.target.value }),
-                  className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40",
+                  className: "select select-bordered select-sm min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40",
                   children: fieldSpec.operators.map((op) => jsx("option", { value: op, children: OPERATOR_LABELS[op] || op }, op))
                 }),
                 showValue ? jsx("input", {
@@ -180,7 +180,7 @@ export function SmartCollectionRuleBuilder({ collection, videoItems = [], folder
                   "aria-label": "القيمة",
                   onChange: (event) => updateCondition(index, { value: event.target.value }),
                   placeholder: ARRAY_OPERATORS.has(condition.operator) ? "افصل بفاصلة" : condition.operator === "between" ? "من، إلى" : fieldSpec.type === "date" ? (condition.operator === "withinDays" ? "عدد الأيام" : "YYYY-MM-DD") : "القيمة",
-                  className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40"
+                  className: "input input-bordered input-sm min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40"
                 }) : jsx("span", { className: "px-2 text-xs text-gray-600", children: "—" }),
                 jsx("button", {
                   type: "button",

@@ -21,8 +21,12 @@ const TARGET_OPTIONS = [
   { value: "settings", label: "إعدادات" }
 ];
 
-const fieldClass =
-  "min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none transition-colors focus:border-emerald-500/40";
+// DaisyUI `select`/`input` base + bespoke surface/accent layered on top so the
+// look (deep surface, emerald focus) is preserved while standardizing the control.
+const selectClass =
+  "select select-bordered min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none transition-colors focus:border-emerald-500/40";
+const dateClass =
+  "input input-bordered min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none transition-colors focus:border-emerald-500/40";
 
 /**
  * Filter bar for the activity timeline.
@@ -58,7 +62,7 @@ export function ActivityFilterBar({ value = {}, onChange }) {
                 onChange: (event) => update({ query: event.target.value }),
                 placeholder: "ابحث باسم العنصر أو المستخدم أو الوصف...",
                 className:
-                  "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40"
+                  "input input-bordered min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40"
               })
             ]
           }),
@@ -67,7 +71,7 @@ export function ActivityFilterBar({ value = {}, onChange }) {
             value: value.action || "",
             onChange: (event) => update({ action: event.target.value }),
             "aria-label": "تصفية حسب الإجراء",
-            className: fieldClass,
+            className: selectClass,
             children: ACTION_OPTIONS.map((option) =>
               jsx("option", { value: option.value, children: option.label }, option.value || "all")
             )
@@ -77,7 +81,7 @@ export function ActivityFilterBar({ value = {}, onChange }) {
             value: value.targetType || "",
             onChange: (event) => update({ targetType: event.target.value }),
             "aria-label": "تصفية حسب نوع الهدف",
-            className: fieldClass,
+            className: selectClass,
             children: TARGET_OPTIONS.map((option) =>
               jsx("option", { value: option.value, children: option.label }, option.value || "all")
             )
@@ -89,7 +93,7 @@ export function ActivityFilterBar({ value = {}, onChange }) {
             onChange: (event) => update({ dateFrom: event.target.value }),
             "aria-label": "من تاريخ",
             title: "من تاريخ",
-            className: fieldClass
+            className: dateClass
           }),
           // Date to
           jsx("input", {
@@ -98,7 +102,7 @@ export function ActivityFilterBar({ value = {}, onChange }) {
             onChange: (event) => update({ dateTo: event.target.value }),
             "aria-label": "إلى تاريخ",
             title: "إلى تاريخ",
-            className: fieldClass
+            className: dateClass
           }),
           // Clear all — shown only when any filter is active
           hasFilters &&
