@@ -26,7 +26,7 @@ const sourceTypeLabels = {
 
 export function PageCard({ children, className = "" }) {
   return jsx("section", {
-    className: `va-card rounded-2xl va-surface-muted border p-5 text-right backdrop-blur-sm ${className}`,
+    className: `card card-border va-surface-muted p-5 text-right backdrop-blur-sm ${className}`,
     dir: "rtl",
     children
   });
@@ -79,7 +79,7 @@ export function TaskChoiceCard({ task, active, onClick, count }) {
             children: jsx(Icon, { className: "h-5 w-5" })
           }),
           count != null && jsx("span", {
-            className: "rounded-full border border-white/10 bg-black/10 px-2 py-0.5 text-[11px] text-[var(--va-text-soft)]",
+            className: "badge badge-xs border-white/10 bg-black/10 text-[var(--va-text-soft)]",
             children: formatNumber(count)
           })
         ]
@@ -161,17 +161,12 @@ export function CollapsibleSummary({ title, description, open, onToggle, childre
 
 export function TabButton({ tab, active, onClick }) {
   const Icon = tabIconMap[tab.id] || Database;
-  // Intrinsic chip at all widths inside the horizontal scrollable bar.
   return jsxs("button", {
     type: "button",
     role: "tab",
     "aria-selected": active,
     onClick,
-    className: `va-tool-button inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border px-3 py-2 text-sm transition-colors ${
-      active
-        ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
-        : "border-white/5 bg-gray-900/40 text-gray-400 hover:border-white/10 hover:bg-white/5 hover:text-white"
-    }`,
+    className: `btn btn-sm shrink-0 gap-2 ${active ? "btn-primary" : "btn-ghost"}`,
     children: [
       jsx(Icon, { className: "h-4 w-4 shrink-0" }),
       jsx("span", { className: "min-w-0 truncate", children: tab.label })
@@ -180,32 +175,29 @@ export function TabButton({ tab, active, onClick }) {
 }
 
 export function SegmentedButton({ active, children, onClick, danger = false }) {
+  const activeClass = active
+    ? danger ? "btn-error" : "btn-primary"
+    : "btn-ghost";
   return jsx("button", {
     type: "button",
     onClick,
     "aria-pressed": active,
-    className: `va-tool-button min-h-10 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
-      active
-        ? danger
-          ? "border-red-500/40 bg-red-500/15 text-red-100"
-          : "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
-        : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"
-    }`,
+    className: `btn btn-sm ${activeClass}`,
     children
   });
 }
 
 export function ActionButton({ children, icon, onClick, disabled = false, tone = "emerald" }) {
   const toneClass = tone === "amber"
-    ? "border-amber-500/30 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20"
+    ? "btn-warning"
     : tone === "red"
-      ? "border-red-500/30 bg-red-500/10 text-red-100 hover:bg-red-500/20"
-      : "va-primary-button text-white";
+      ? "btn-error"
+      : "btn-primary";
   return jsxs("button", {
     type: "button",
     onClick,
     disabled,
-    className: `va-action-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${toneClass}`,
+    className: `btn ${toneClass} gap-2`,
     children: [
       icon,
       children
@@ -217,7 +209,7 @@ export function SummaryGrid({ rows }) {
   return jsx("div", {
     className: "grid gap-3 sm:grid-cols-2 xl:grid-cols-3",
     children: rows.map((item) => jsxs("div", {
-      className: "va-card-subtle rounded-xl va-surface-muted border p-3",
+      className: "card card-border va-surface-muted p-3",
       children: [
         jsx("p", { className: "text-xs text-gray-500", children: item.label }),
         jsx("p", { className: "mt-1 text-sm font-semibold text-gray-100", children: String(item.value) })
@@ -233,11 +225,12 @@ export function PreviewSummary({ preview }) {
     className: "space-y-3",
     children: [
       jsxs("div", {
-        className: "rounded-xl border va-accent-border va-accent-bg-soft p-4",
+        className: "alert alert-success block",
+        role: "alert",
         children: [
-          jsx("p", { className: "text-sm font-semibold va-accent-text-on-soft", children: "تمت قراءة الملف بنجاح" }),
+          jsx("p", { className: "text-sm font-semibold", children: "تمت قراءة الملف بنجاح" }),
           jsxs("p", {
-            className: "mt-1 text-xs leading-relaxed va-accent-text-on-soft",
+            className: "mt-1 text-xs leading-relaxed",
             children: [
               preview.fileName,
               " - ",
