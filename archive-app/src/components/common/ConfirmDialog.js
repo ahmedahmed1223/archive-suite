@@ -91,8 +91,10 @@ function TieredDialogModal({ config, onResolve }) {
     return () => document.removeEventListener("keydown", handler);
   });
 
+  // DaisyUI `modal modal-open` shell (§1881 Phase 8) — keeps custom backdrop tint,
+  // z-index, RTL, and backdrop-click-to-cancel behavior intact.
   return jsx("div", {
-    className: "va-dialog-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4 backdrop-blur-md",
+    className: "modal modal-open va-dialog-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4 backdrop-blur-md",
     style: { background: "rgba(3, 7, 18, 0.72)" },
     dir: "rtl",
     onClick: (event) => { if (event.target === event.currentTarget) onResolve(false); },
@@ -100,7 +102,7 @@ function TieredDialogModal({ config, onResolve }) {
       role: "alertdialog",
       "aria-modal": "true",
       "aria-labelledby": "va-tiered-dialog-title",
-      className: `va-card va-dialog-panel w-full max-w-md rounded-2xl border ${styles.border} bg-gray-900/95 p-5 text-right text-white shadow-2xl`,
+      className: `modal-box va-card va-dialog-panel w-full max-w-md rounded-2xl border ${styles.border} bg-gray-900/95 p-5 text-right text-white shadow-2xl`,
       onClick: (event) => event.stopPropagation(),
       children: [
         // Header row
@@ -159,9 +161,10 @@ function TieredDialogModal({ config, onResolve }) {
         level === 3 && jsxs("div", {
           className: "mt-4",
           children: [
-            // Countdown warning badge
+            // Countdown warning badge — DaisyUI `alert alert-error` (§1881 Phase 8)
             !countdownDone && jsxs("div", {
-              className: "mb-3 flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm text-red-200",
+              role: "alert",
+              className: "alert alert-error mb-3 flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm text-red-200",
               children: [
                 jsx("span", { className: "font-bold tabular-nums text-red-300", children: secondsLeft }),
                 jsx("span", { children: "ثوانٍ قبل تفعيل زر الحذف" })
@@ -187,9 +190,9 @@ function TieredDialogModal({ config, onResolve }) {
           ]
         }),
 
-        // Action buttons
+        // Action buttons — DaisyUI `modal-action` (§1881 Phase 8); keep justify-start for RTL
         jsxs("div", {
-          className: "mt-5 flex flex-wrap justify-start gap-2",
+          className: "modal-action mt-5 flex flex-wrap justify-start gap-2",
           children: [
             jsx("button", {
               type: "button",
@@ -310,8 +313,10 @@ function DialogModal({ request, mode, onResolve }) {
   const confirmText = request.confirmLabel || (mode === "alert" ? "حسنًا" : "متابعة");
   const cancelText = request.cancelLabel || "إلغاء";
 
+  // DaisyUI `modal modal-open` shell (§1881 Phase 8) — keeps custom backdrop tint,
+  // z-index, RTL, and backdrop-click-to-cancel behavior intact.
   return jsx("div", {
-    className: "va-dialog-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4 backdrop-blur-md",
+    className: "modal modal-open va-dialog-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4 backdrop-blur-md",
     style: { background: "rgba(3, 7, 18, 0.72)" },
     dir: "rtl",
     onClick: (event) => {
@@ -321,7 +326,7 @@ function DialogModal({ request, mode, onResolve }) {
       role: mode === "alert" ? "alertdialog" : "dialog",
       "aria-modal": "true",
       "aria-labelledby": "va-dialog-title",
-      className: "va-card va-dialog-panel w-full max-w-md rounded-2xl border border-white/10 bg-gray-900/90 p-5 text-right text-white shadow-2xl",
+      className: "modal-box va-card va-dialog-panel w-full max-w-md rounded-2xl border border-white/10 bg-gray-900/90 p-5 text-right text-white shadow-2xl",
       onClick: (event) => event.stopPropagation(),
       children: [
         jsx("h2", {
@@ -343,7 +348,7 @@ function DialogModal({ request, mode, onResolve }) {
           onChange: (event) => setValue(event.target.value)
         }),
         jsxs("div", {
-          className: "mt-5 flex flex-wrap justify-start gap-2",
+          className: "modal-action mt-5 flex flex-wrap justify-start gap-2",
           children: [
             mode !== "alert" && jsx("button", {
               type: "button",
