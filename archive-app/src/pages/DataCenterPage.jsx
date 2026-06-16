@@ -752,7 +752,7 @@ export function DataCenterPage() {
               jsxs("select", {
                 value: typeFilter,
                 onChange: (event) => setTypeFilter(event.target.value),
-                className: "va-surface-deep w-full rounded-xl border px-3 py-2 text-sm text-white",
+                className: "select select-bordered w-full",
                 children: [
                   jsx("option", { value: "all", children: "كل الأنواع" }),
                   ...contentTypes.map((type) => jsx("option", { value: type.id, children: type.name || type.id }, type.id))
@@ -767,7 +767,7 @@ export function DataCenterPage() {
               jsxs("select", {
                 value: collectionFilter,
                 onChange: (event) => setCollectionFilter(event.target.value),
-                className: "va-surface-deep w-full rounded-xl border px-3 py-2 text-sm text-white",
+                className: "select select-bordered w-full",
                 children: [
                   jsx("option", { value: "all", children: "كل المجموعات" }),
                   ...virtualCollections.map((collection) => jsx("option", { value: collection.id, children: collection.name || collection.id }, collection.id))
@@ -827,7 +827,8 @@ export function DataCenterPage() {
         ]
       }),
       importErrors.length > 0 && jsx("div", {
-        className: "mt-5 rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-100",
+        className: "alert alert-error block mt-5",
+        role: "alert",
         children: importErrors.map((error) => jsx("p", { children: error }, error))
       }),
       jsx("div", {
@@ -870,14 +871,14 @@ export function DataCenterPage() {
             type: "button",
             onClick: handleSmartMerge,
             disabled: isWorking,
-            className: "min-h-10 inline-flex items-center gap-2 rounded-xl border va-accent-border va-accent-bg-soft px-4 py-2 text-sm font-semibold va-accent-text-on-soft transition-colors hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-60",
+            className: "btn btn-outline btn-primary gap-2",
             title: "يكتشف التعارضات بين الأجهزة قبل الدمج",
             children: "دمج ذكي مع كشف التعارضات"
           }),
           jsx("button", {
             type: "button",
             onClick: () => setImportPreview(null),
-            className: "min-h-10 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5",
+            className: "btn btn-ghost",
             children: "إلغاء المعاينة"
           })
         ]
@@ -933,7 +934,7 @@ export function DataCenterPage() {
                 onChange: (event) => setSourceDeviceName(event.target.value),
                 onBlur: commitDeviceName,
                 "aria-label": "اسم الجهاز",
-                className: "mt-3 w-full rounded-xl border border-white/10 bg-gray-950/50 px-3 py-2 text-sm text-white",
+                className: "input input-bordered mt-3 w-full",
                 placeholder: "مثال: جهاز الأرشفة الرئيسي"
               }),
               jsx("p", { className: "mt-3 text-xs leading-relaxed text-gray-500", children: "هذه الهوية تُضمَّن في كل ملف نقل لتمييز الجهاز المرسل وتُخزّن محلياً فقط. الاسم قابل للتعديل أما المعرّف فثابت." })
@@ -979,7 +980,7 @@ export function DataCenterPage() {
                 jsxs("select", {
                   value: deltaTargetId,
                   onChange: (event) => setDeltaTargetId(event.target.value),
-                  className: "min-h-10 w-full rounded-xl border border-white/10 bg-gray-950/50 px-3 text-sm text-white",
+                  className: "select select-bordered w-full",
                   children: [
                     jsx("option", { value: "", children: "— جديد —" }),
                     ...syncPeerList.map((peer) => jsx("option", { value: peer.deviceId, children: `${peer.deviceName}${peer.lastSentAt ? ` (آخر مزامنة: ${formatDateTime(peer.lastSentAt)})` : ""}` }, peer.deviceId))
@@ -992,7 +993,7 @@ export function DataCenterPage() {
                   value: deltaNewDeviceName,
                   onChange: (event) => setDeltaNewDeviceName(event.target.value),
                   placeholder: "مثال: لابتوب الميدان",
-                  className: "min-h-10 w-full rounded-xl border border-white/10 bg-gray-950/50 px-3 text-sm text-white"
+                  className: "input input-bordered w-full"
                 })
               ] }),
               jsxs("div", { className: "flex flex-col items-end justify-end text-right text-xs text-gray-400", children: [
@@ -1008,10 +1009,11 @@ export function DataCenterPage() {
         ]
       }),
       transferNextStep && jsxs("div", {
-        className: "mt-5 rounded-2xl border va-accent-border va-accent-bg-soft p-4 text-sm leading-7 va-accent-text-on-soft",
+        className: "alert alert-info block mt-5 text-sm leading-7",
+        role: "alert",
         children: [
           jsx("p", { className: "font-semibold", children: "ماذا بعد إنشاء ملف النقل؟" }),
-          jsx("p", { className: "mt-1 va-accent-text-on-soft", children: transferNextStep })
+          jsx("p", { className: "mt-1", children: transferNextStep })
         ]
       })
     ]
@@ -1037,8 +1039,9 @@ export function DataCenterPage() {
         ]
       }),
       backupError && jsxs("div", {
-        className: "mt-5 flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-100",
-        children: [jsx(TriangleAlert, { className: "mt-0.5 h-4 w-4 shrink-0" }), backupError]
+        className: "alert alert-warning block mt-5 text-sm",
+        role: "alert",
+        children: [jsx(TriangleAlert, { className: "mt-0.5 h-4 w-4 shrink-0 inline mr-2" }), backupError]
       }),
       jsx("div", {
         className: "mt-5 space-y-3",
@@ -1059,13 +1062,13 @@ export function DataCenterPage() {
                   jsxs("button", {
                     type: "button",
                     onClick: () => handleRestoreBackup(backup),
-                    className: "inline-flex min-h-9 items-center gap-2 rounded-lg border va-accent-border px-3 py-1.5 text-sm va-accent-text-on-soft hover:bg-emerald-500/10",
+                    className: "btn btn-sm btn-outline btn-primary gap-2",
                     children: [jsx(RotateCcw, { className: "h-4 w-4" }), "استعادة"]
                   }),
                   jsxs("button", {
                     type: "button",
                     onClick: () => handleDeleteBackup(backup),
-                    className: "inline-flex min-h-9 items-center gap-2 rounded-lg border border-red-500/20 px-3 py-1.5 text-sm text-red-100 hover:bg-red-500/10",
+                    className: "btn btn-sm btn-outline btn-error gap-2",
                     children: [jsx(Trash2, { className: "h-4 w-4" }), "حذف"]
                   })
                 ]
