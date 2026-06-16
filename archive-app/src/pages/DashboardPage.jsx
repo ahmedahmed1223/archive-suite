@@ -511,7 +511,7 @@ export function DashboardPage() {
           jsxs("div", {
             className: "flex flex-wrap items-center gap-2",
             children: [
-              jsxs("button", { type: "button", onClick: saveDashEditing, className: "btn btn-sm va-primary-button inline-flex min-h-9 items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-white", children: [jsx(Save, { className: "h-4 w-4" }), "حفظ"] }, "save"),
+              jsxs("button", { type: "button", onClick: saveDashEditing, className: "btn btn-sm btn-primary gap-2", children: [jsx(Save, { className: "h-4 w-4" }), "حفظ"] }, "save"),
               jsxs("button", { type: "button", onClick: cancelDashEditing, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-sm font-normal text-gray-300 hover:bg-white/5", children: [jsx(X, { className: "h-4 w-4" }), "إلغاء"] }, "cancel"),
               jsxs("button", { type: "button", onClick: resetDashLayout, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-sm font-normal text-gray-300 hover:bg-white/5", children: [jsx(RotateCcw, { className: "h-4 w-4" }), "استعادة الافتراضي"] }, "reset")
             ]
@@ -565,7 +565,7 @@ export function DashboardPage() {
                       jsxs("button", {
                         type: "button",
                         onClick: () => goTo("add"),
-                        className: "btn btn-sm va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white",
+                        className: "btn btn-sm btn-primary gap-2",
                         title: "إضافة فيديو — اختصار A",
                         children: [
                           jsx(Video, { className: "h-4 w-4" }),
@@ -598,7 +598,7 @@ export function DashboardPage() {
                       }),
                       jsxs("button", {
                         type: "submit",
-                        className: "btn va-primary-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white",
+                        className: "btn btn-primary gap-2",
                         children: [jsx(Search, { className: "h-4 w-4" }), "بحث"]
                       }),
                       jsxs("button", {
@@ -723,7 +723,7 @@ export function DashboardPage() {
           icon: jsx(Video, { className: "h-7 w-7" }),
           title: "لا توجد مواد بعد",
           description: "أضف فيديو أو استورد ملف نقل، وستتحول هذه المساحة إلى قائمة تشغيل يومية.",
-          actions: jsx("button", { type: "button", onClick: () => goTo("add"), className: "btn btn-sm va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white", children: "إضافة فيديو" })
+          actions: jsx("button", { type: "button", onClick: () => goTo("add"), className: "btn btn-sm btn-primary", children: "إضافة فيديو" })
         }) : jsx("div", {
           className: "grid gap-2 lg:grid-cols-2",
           children: recentItems.map((item) => jsx(ResultPreview, {

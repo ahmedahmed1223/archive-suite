@@ -500,7 +500,7 @@ export function UXStateBlock({
     );
   }
 
-  return <UXEmptyState icon={icon} title={title} description={description} actions={actionLabel && onAction ? <button type="button" onClick={onAction} className="btn btn-primary va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white">{actionLabel}</button> : null} className={className} />;
+  return <UXEmptyState icon={icon} title={title} description={description} actions={actionLabel && onAction ? <button type="button" onClick={onAction} className="btn btn-primary">{actionLabel}</button> : null} className={className} />;
 }
 
 export function FloatingActionBar({ children, className = "", label = "إجراءات سريعة" }) {

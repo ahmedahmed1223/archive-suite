@@ -31,7 +31,7 @@ export function MobileActionBar({ actions = [], label = "إجراءات الصف
             "inline-flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border px-1.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45",
             action.active ? "dock-active" : "",
             action.primary
-              ? "btn btn-primary va-primary-button border-transparent text-white"
+              ? "btn btn-primary"
               : action.active
                 ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
                 : "border-white/10 bg-white/[0.035] text-gray-300 hover:bg-white/[0.07] hover:text-white"

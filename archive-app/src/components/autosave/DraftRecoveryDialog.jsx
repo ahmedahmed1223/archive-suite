@@ -89,7 +89,7 @@ export function DraftRecoveryDialog({ isOpen, draft, onRestore, onDiscard, onClo
               <button
                 type="button"
                 onClick={() => { onRestore?.(draft.data); onClose?.(); }}
-                className="flex-1 rounded-xl va-primary-button px-4 py-2 text-sm font-semibold text-white"
+                className="btn btn-primary flex-1"
               >
                 استعادة المسودة
               </button>

@@ -432,7 +432,7 @@ export function Sidebar() {
             editing && jsxs("div", {
               className: "sticky top-0 z-10 -mx-1 mb-1 flex items-center gap-1.5 rounded-xl border va-accent-border va-accent-bg-soft p-2",
               children: [
-                jsxs("button", { type: "button", onClick: saveEditing, className: "va-primary-button inline-flex min-h-8 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-white", children: [jsx(Save, { className: "h-3.5 w-3.5" }), "حفظ"] }),
+                jsxs("button", { type: "button", onClick: saveEditing, className: "btn btn-primary btn-xs flex-1 gap-1.5", children: [jsx(Save, { className: "h-3.5 w-3.5" }), "حفظ"] }),
                 jsx("button", { type: "button", onClick: cancelEditing, title: "إلغاء", "aria-label": "إلغاء التخصيص", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 hover:text-white", children: jsx(X, { className: "h-4 w-4" }) }),
                 jsx("button", { type: "button", onClick: resetLayout, title: "استعادة الافتراضي", "aria-label": "استعادة الترتيب الافتراضي", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 hover:text-white", children: jsx(RotateCcw, { className: "h-4 w-4" }) })
               ]
