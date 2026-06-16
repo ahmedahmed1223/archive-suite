@@ -119,7 +119,8 @@ export function SettingsImportExport() {
       }),
 
       phase === "done" && jsxs("div", {
-        className: "flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300",
+        role: "alert",
+        className: "alert alert-success flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300",
         children: [
           jsx(CheckCircle2, { className: "h-4 w-4 shrink-0" }),
           "تم تطبيق الإعدادات بنجاح.",
@@ -127,7 +128,8 @@ export function SettingsImportExport() {
       }),
 
       phase === "error" && jsxs("div", {
-        className: "flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300",
+        role: "alert",
+        className: "alert alert-error flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300",
         children: [
           jsx(AlertCircle, { className: "mt-0.5 h-4 w-4 shrink-0" }),
           jsxs("span", {

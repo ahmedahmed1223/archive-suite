@@ -232,7 +232,7 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
         </div>
 
         {warnings.length > 0 && (
-          <div className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100">
+          <div role="alert" className="alert alert-warning mt-5 block rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100">
             {warnings.slice(0, 2).map((warning) => <p key={warning.id || warning.message}>{warning.message || warning}</p>)}
           </div>
         )}
@@ -378,7 +378,7 @@ export function LoginScreen() {
             <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 accent-emerald-500" />
             تذكر الجلسة على هذا الجهاز
           </label>
-          {authError && <p className="mt-4 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-100">{authError}</p>}
+          {authError && <p role="alert" className="alert alert-error mt-4 block rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-100">{authError}</p>}
           <button type="submit" disabled={isLoading} className="va-primary-button mt-6 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-60">
             {isLoading ? "جار التحقق..." : "دخول"}
           </button>

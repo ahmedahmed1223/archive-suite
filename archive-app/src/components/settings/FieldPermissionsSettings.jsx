@@ -92,7 +92,7 @@ export function FieldPermissionsSettings() {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <p className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-300">
+      <p role="alert" className="alert alert-warning block rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-300">
         <strong>ملاحظة:</strong> تُطبَّق هذه القيود عند جلب السجلات من الخادم.
         المسؤولون يرون جميع الحقول دائمًا.
       </p>
