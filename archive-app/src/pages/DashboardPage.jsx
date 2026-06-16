@@ -165,10 +165,11 @@ function DistributionBars({ items = [], total = 0 }) {
 }
 
 function RecentSearchButton({ term, onClick }) {
+  // DaisyUI `btn btn-sm btn-ghost` over the custom chip surface (§1881 Phase 12)
   return jsxs("button", {
     type: "button",
     onClick,
-    className: "inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.025] px-2.5 py-1 text-xs text-gray-300 transition-colors hover:border-emerald-500/30 hover:text-emerald-100",
+    className: "btn btn-sm btn-ghost inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.025] px-2.5 py-1 text-xs font-normal text-gray-300 transition-colors hover:border-emerald-500/30 hover:text-emerald-100",
     children: [
       jsx(Search, { className: "h-3.5 w-3.5 opacity-70" }),
       jsx("span", { className: "max-w-[11rem] truncate", children: term })
@@ -502,7 +503,7 @@ export function DashboardPage() {
       // Edit mode: full toolbar with save/cancel/reset and any hidden-panel chips.
       !dashEditing && jsx("div", {
         className: "flex justify-end",
-        children: jsx("button", { type: "button", onClick: startDashEditing, title: "تخصيص ترتيب لوحة التحكم", "aria-label": "تخصيص ترتيب لوحة التحكم", className: "va-secondary-button inline-flex h-8 w-8 items-center justify-center rounded-lg border text-gray-300 hover:text-white", children: jsx(Settings2, { className: "h-4 w-4 va-accent-text" }) })
+        children: jsx("button", { type: "button", onClick: startDashEditing, title: "تخصيص ترتيب لوحة التحكم", "aria-label": "تخصيص ترتيب لوحة التحكم", className: "btn btn-ghost btn-sm va-secondary-button inline-flex h-8 w-8 items-center justify-center rounded-lg border text-gray-300 hover:text-white", children: jsx(Settings2, { className: "h-4 w-4 va-accent-text" }) })
       }, "dash-customize-btn"),
       dashEditing && jsxs("div", {
         className: "flex flex-wrap items-center justify-between gap-3 rounded-2xl border va-accent-border va-accent-bg/[0.04] px-4 py-2.5",
@@ -510,16 +511,16 @@ export function DashboardPage() {
           jsxs("div", {
             className: "flex flex-wrap items-center gap-2",
             children: [
-              jsxs("button", { type: "button", onClick: saveDashEditing, className: "va-primary-button inline-flex min-h-9 items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-white", children: [jsx(Save, { className: "h-4 w-4" }), "حفظ"] }, "save"),
-              jsxs("button", { type: "button", onClick: cancelDashEditing, className: "inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-sm text-gray-300 hover:bg-white/5", children: [jsx(X, { className: "h-4 w-4" }), "إلغاء"] }, "cancel"),
-              jsxs("button", { type: "button", onClick: resetDashLayout, className: "inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-sm text-gray-300 hover:bg-white/5", children: [jsx(RotateCcw, { className: "h-4 w-4" }), "استعادة الافتراضي"] }, "reset")
+              jsxs("button", { type: "button", onClick: saveDashEditing, className: "btn btn-sm va-primary-button inline-flex min-h-9 items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-white", children: [jsx(Save, { className: "h-4 w-4" }), "حفظ"] }, "save"),
+              jsxs("button", { type: "button", onClick: cancelDashEditing, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-sm font-normal text-gray-300 hover:bg-white/5", children: [jsx(X, { className: "h-4 w-4" }), "إلغاء"] }, "cancel"),
+              jsxs("button", { type: "button", onClick: resetDashLayout, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-sm font-normal text-gray-300 hover:bg-white/5", children: [jsx(RotateCcw, { className: "h-4 w-4" }), "استعادة الافتراضي"] }, "reset")
             ]
           }),
           hiddenDashPanels.length === 0
             ? jsx("span", { className: "text-xs text-gray-500", children: "اسحب رأس اللوحة لإعادة الترتيب · اسحب الحافة للتحجيم" }, "hint")
             : jsxs("div", { className: "flex flex-wrap items-center gap-1.5", children: [
                 jsx("span", { className: "text-xs text-gray-500", children: "إظهار:" }),
-                ...hiddenDashPanels.map((id) => jsxs("button", { type: "button", onClick: () => toggleDashHidden(id), className: "inline-flex min-h-8 items-center gap-1.5 rounded-lg border va-accent-border va-accent-bg-soft px-2.5 py-1 text-xs font-semibold va-accent-text-on-soft", children: [jsx(Eye, { className: "h-3.5 w-3.5" }), DASHBOARD_PANEL_TITLES[id] || id] }, id))
+                ...hiddenDashPanels.map((id) => jsxs("button", { type: "button", onClick: () => toggleDashHidden(id), className: "btn btn-xs btn-ghost inline-flex min-h-8 items-center gap-1.5 rounded-lg border va-accent-border va-accent-bg-soft px-2.5 py-1 text-xs font-semibold va-accent-text-on-soft", children: [jsx(Eye, { className: "h-3.5 w-3.5" }), DASHBOARD_PANEL_TITLES[id] || id] }, id))
               ] }, "hidden-list")
         ]
       }, "dash-toolbar"),
@@ -564,7 +565,7 @@ export function DashboardPage() {
                       jsxs("button", {
                         type: "button",
                         onClick: () => goTo("add"),
-                        className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white",
+                        className: "btn btn-sm va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white",
                         title: "إضافة فيديو — اختصار A",
                         children: [
                           jsx(Video, { className: "h-4 w-4" }),
@@ -591,19 +592,19 @@ export function DashboardPage() {
                             value: commandQuery,
                             onChange: (event) => setCommandQuery(event.target.value),
                             placeholder: "ابحث عن عنوان، وسم، مسار، أو ملاحظة...",
-                            className: "va-command-search-input min-h-11 w-full rounded-xl border py-2 pe-4 ps-3 pr-10 text-sm outline-none"
+                            className: "input input-bordered va-command-search-input min-h-11 w-full rounded-xl border py-2 pe-4 ps-3 pr-10 text-sm outline-none"
                           })
                         ]
                       }),
                       jsxs("button", {
                         type: "submit",
-                        className: "va-primary-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white",
+                        className: "btn va-primary-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white",
                         children: [jsx(Search, { className: "h-4 w-4" }), "بحث"]
                       }),
                       jsxs("button", {
                         type: "button",
                         onClick: () => openArchiveFor(),
-                        className: "va-secondary-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold text-gray-200",
+                        className: "btn va-secondary-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold text-gray-200",
                         children: [jsx(Archive, { className: "h-4 w-4" }), "في الأرشيف"]
                       })
                     ]
@@ -639,8 +640,8 @@ export function DashboardPage() {
             actions: jsxs("div", {
               className: "flex gap-2",
               children: [
-                jsx("button", { type: "button", onClick: () => goTo("archive"), className: "va-secondary-button rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-200", children: "فتح الأرشيف" }),
-                jsx("button", { type: "button", onClick: () => dismissBanner("demo"), className: "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5", "aria-label": "إخفاء التنبيه", children: jsx(X, { className: "h-4 w-4" }) })
+                jsx("button", { type: "button", onClick: () => goTo("archive"), className: "btn btn-xs va-secondary-button rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-200", children: "فتح الأرشيف" }),
+                jsx("button", { type: "button", onClick: () => dismissBanner("demo"), className: "btn btn-ghost btn-xs btn-square inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5", "aria-label": "إخفاء التنبيه", children: jsx(X, { className: "h-4 w-4" }) })
               ]
             })
           }, "demo-banner"),
@@ -652,7 +653,7 @@ export function DashboardPage() {
             actions: jsx("button", {
               type: "button",
               onClick: openSecuritySettings,
-              className: "va-secondary-button rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-200",
+              className: "btn btn-xs va-secondary-button rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-200",
               children: "فتح الأمان"
             })
           }, "security-banner")
@@ -722,7 +723,7 @@ export function DashboardPage() {
           icon: jsx(Video, { className: "h-7 w-7" }),
           title: "لا توجد مواد بعد",
           description: "أضف فيديو أو استورد ملف نقل، وستتحول هذه المساحة إلى قائمة تشغيل يومية.",
-          actions: jsx("button", { type: "button", onClick: () => goTo("add"), className: "va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white", children: "إضافة فيديو" })
+          actions: jsx("button", { type: "button", onClick: () => goTo("add"), className: "btn btn-sm va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white", children: "إضافة فيديو" })
         }) : jsx("div", {
           className: "grid gap-2 lg:grid-cols-2",
           children: recentItems.map((item) => jsx(ResultPreview, {
