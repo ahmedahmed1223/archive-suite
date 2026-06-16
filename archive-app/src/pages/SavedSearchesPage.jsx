@@ -32,7 +32,7 @@ function FilterChips({ filters = {} }) {
     className: "mt-1.5 flex flex-wrap gap-1",
     children: chips.map((chip) =>
       jsx("span", {
-        className: "rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-gray-500",
+        className: "badge badge-xs rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-gray-500",
         children: chip
       }, chip)
     )
@@ -48,7 +48,7 @@ function SearchCard({ search, onRun, onDelete, onToggleAlert }) {
   }
 
   return jsxs("div", {
-    className: "rounded-2xl border border-white/8 bg-white/[0.03] p-4",
+    className: "card rounded-2xl border border-white/8 bg-white/[0.03] p-4",
     children: [
       jsxs("div", {
         className: "flex items-start gap-3",
@@ -87,7 +87,7 @@ function SearchCard({ search, onRun, onDelete, onToggleAlert }) {
                 type: "button",
                 onClick: () => onToggleAlert(search.id),
                 title: search.alertEnabled ? "إيقاف التنبيه" : "تفعيل التنبيه",
-                className: `rounded-lg p-1.5 transition-colors ${
+                className: `btn btn-ghost btn-circle btn-sm rounded-lg p-1.5 transition-colors ${
                   search.alertEnabled
                     ? "text-amber-400 hover:text-amber-300"
                     : "text-gray-600 hover:text-gray-400"
@@ -100,7 +100,7 @@ function SearchCard({ search, onRun, onDelete, onToggleAlert }) {
                 type: "button",
                 onClick: () => onRun(search),
                 title: "تشغيل البحث",
-                className: "rounded-lg p-1.5 text-blue-400 hover:text-blue-300 transition-colors",
+                className: "btn btn-ghost btn-circle btn-sm rounded-lg p-1.5 text-blue-400 hover:text-blue-300 transition-colors",
                 children: jsx(Play, { className: "h-4 w-4" })
               }),
               jsx("button", {
@@ -108,7 +108,7 @@ function SearchCard({ search, onRun, onDelete, onToggleAlert }) {
                 onClick: handleDelete,
                 disabled: deleting,
                 title: "حذف",
-                className: "rounded-lg p-1.5 text-gray-600 hover:text-red-400 disabled:opacity-40 transition-colors",
+                className: "btn btn-ghost btn-circle btn-sm rounded-lg p-1.5 text-gray-600 hover:text-red-400 disabled:opacity-40 transition-colors",
                 children: deleting
                   ? jsx(Loader2, { className: "h-4 w-4 animate-spin" })
                   : jsx(Trash2, { className: "h-4 w-4" })
@@ -169,7 +169,8 @@ export default function SavedSearchesPage() {
       }),
 
       savedSearchesError && jsx("div", {
-        className: "mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400",
+        role: "alert",
+        className: "alert alert-error block mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400",
         children: savedSearchesError
       }),
 
@@ -179,7 +180,7 @@ export default function SavedSearchesPage() {
           jsx("button", {
             type: "button",
             onClick: () => setFilter("all"),
-            className: `rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            className: `btn btn-sm btn-ghost rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               filter === "all" ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
             }`,
             children: `الكل (${savedSearches.length})`
@@ -187,7 +188,7 @@ export default function SavedSearchesPage() {
           jsx("button", {
             type: "button",
             onClick: () => setFilter("alerts"),
-            className: `flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            className: `btn btn-sm btn-ghost flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               filter === "alerts" ? "bg-amber-500/20 text-amber-300" : "text-gray-500 hover:text-gray-300"
             }`,
             children: [
@@ -234,7 +235,7 @@ export default function SavedSearchesPage() {
       }),
 
       savedSearches.length > 0 && jsxs("div", {
-        className: "mt-4 flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs text-gray-600",
+        className: "alert mt-4 flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs text-gray-600",
         children: [
           jsx(Filter, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }),
           "التنبيهات تُشغَّل داخل التطبيق فقط في الوضع المحلي. لتفعيل التنبيهات التلقائية عبر البريد أو خارج التطبيق، يلزم وجود السيرفر."
