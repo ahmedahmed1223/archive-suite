@@ -23,12 +23,11 @@ export function BulkProgressTracker({ items = [] }) {
           jsxs("span", { children: [pct, "%"] })
         ]
       }),
-      jsx("div", {
-        className: "h-1.5 w-full overflow-hidden rounded-full bg-white/10",
-        children: jsx("div", {
-          className: "h-full rounded-full bg-blue-500 transition-all duration-300",
-          style: { width: `${pct}%` }
-        })
+      jsx("progress", {
+        className: "progress progress-info h-1.5 w-full overflow-hidden rounded-full bg-white/10",
+        value: pct,
+        max: 100,
+        "aria-label": "تقدّم العملية"
       }),
       jsx("div", {
         className: "max-h-48 space-y-1 overflow-y-auto",

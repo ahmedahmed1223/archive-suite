@@ -71,7 +71,7 @@ export function AutoTagSuggestions({ name = "", summary = "", categories = [], o
         ✨ وسوم مقترحة
         {loading && <span className="animate-pulse">•••</span>}
       </p>
-      {error && <p className="text-xs text-orange-400">{error}</p>}
+      {error && <p role="alert" className="alert alert-warning alert-sm block bg-transparent border-0 p-0 text-xs text-orange-400">{error}</p>}
       <div className="flex flex-wrap gap-1.5">
         {tags.map((tag) => (
           <span

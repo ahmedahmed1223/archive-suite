@@ -30,7 +30,7 @@ export function ArchiveImprovementSuggestions({
             jsx("p", { className: "text-sm font-semibold text-white", children: suggestion.title }),
             jsx("p", { className: "mt-1 text-xs leading-5 text-gray-500", children: suggestion.detail })
           ] }),
-          jsx("span", { className: `shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${toneClass(suggestion.severity)}`, children: severityLabel(suggestion.severity) })
+          jsx("span", { className: `badge badge-sm shrink-0 border px-2 py-0.5 text-[11px] ${toneClass(suggestion.severity)}`, children: severityLabel(suggestion.severity) })
         ] }),
         jsxs("div", { className: "mt-3 flex flex-wrap gap-2", children: [
           jsx("button", {

@@ -34,7 +34,7 @@ function StoreCheckbox({ domainKey, count, checked, onChange }) {
         className="accent-emerald-500"
       />
       <span className="flex-1 text-sm text-gray-200">{label}</span>
-      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-300" dir="ltr">
+      <span className="badge badge-sm border-0 bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-300" dir="ltr">
         {count}
       </span>
     </label>
@@ -202,7 +202,10 @@ export function BackupManager({ authToken }) {
       </div>
 
       {msg && (
-        <div className={`p-3 rounded-lg text-sm ${msg.err ? "bg-red-900/30 text-red-300 border border-red-700/50" : "bg-emerald-900/30 text-emerald-300 border border-emerald-700/50"}`}>
+        <div
+          role="alert"
+          className={`alert block p-3 rounded-lg text-sm ${msg.err ? "alert-error bg-red-900/30 text-red-300 border border-red-700/50" : "alert-success bg-emerald-900/30 text-emerald-300 border border-emerald-700/50"}`}
+        >
           {msg.text}
         </div>
       )}

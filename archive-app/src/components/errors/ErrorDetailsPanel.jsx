@@ -41,7 +41,7 @@ export function ErrorDetailsPanel({ report, onCopy }) {
         jsx(AlertTriangle, { className: `h-5 w-5 shrink-0 ${style.text}` }),
         jsxs("div", { className: "min-w-0 flex-1", children: [
           jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-            jsx("span", { className: `rounded-full border ${style.border} px-2 py-0.5 text-[11px] font-semibold ${style.text}`, children: style.label }),
+            jsx("span", { className: `badge badge-sm border ${style.border} px-2 py-0.5 text-[11px] font-semibold ${style.text}`, children: style.label }),
             report.operation ? jsx("span", { className: "text-xs text-gray-400", children: report.operation }) : null,
             report.page ? jsx("span", { className: "text-xs text-gray-600", children: `· ${report.page}` }) : null
           ] }),
