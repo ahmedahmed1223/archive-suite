@@ -147,7 +147,7 @@ export function AddRelationDialog({
             <select
               value={type}
               onChange={(event) => setType(event.target.value)}
-              className="min-h-11 w-full rounded-xl border border-white/10 bg-gray-800/70 px-3 text-sm text-white outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10"
+              className="select select-bordered min-h-11 w-full rounded-xl border border-white/10 bg-gray-800/70 px-3 text-sm text-white outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10"
             >
               {RELATION_OPTIONS.map((option) => (
                 <option key={option.key} value={option.key}>
@@ -166,7 +166,7 @@ export function AddRelationDialog({
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="ابحث عن عنصر..."
                 aria-label="ابحث عن عنصر للربط"
-                className="min-h-11 w-full rounded-xl border border-white/10 bg-gray-800/70 pr-10 pl-3 text-sm text-white outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10"
+                className="input input-bordered min-h-11 w-full rounded-xl border border-white/10 bg-gray-800/70 pr-10 pl-3 text-sm text-white outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10"
               />
             </div>
             <ul
@@ -220,7 +220,7 @@ export function AddRelationDialog({
               value={note}
               onChange={(event) => setNote(event.target.value)}
               placeholder="أضف ملاحظة توضيحية..."
-              className="min-h-11 w-full rounded-xl border border-white/10 bg-gray-800/70 px-3 text-sm text-white outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10"
+              className="input input-bordered min-h-11 w-full rounded-xl border border-white/10 bg-gray-800/70 px-3 text-sm text-white outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10"
             />
           </label>
 

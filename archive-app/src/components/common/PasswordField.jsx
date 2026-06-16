@@ -48,7 +48,7 @@ export function PasswordField({
         dir: "ltr",
         "aria-label": ariaLabel,
         className:
-          `va-surface-deep min-h-11 w-full rounded-xl border ps-11 pe-3 py-2 text-sm outline-none ` +
+          `input input-bordered va-surface-deep min-h-11 w-full rounded-xl border ps-11 pe-3 py-2 text-sm outline-none ` +
           `text-[color:var(--va-text-strong)] placeholder:text-[color:var(--va-text-faint)] ` +
           `focus:border-[color:var(--va-action)] ${inputClassName}`
       }),
