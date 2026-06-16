@@ -20,9 +20,10 @@ export function PendingSyncBadge({ className = "" }) {
 
   if (count === 0) return null;
 
+  // DaisyUI `badge` — semantic badge primitive; custom orange tint preserved (§1881 Phase 3)
   return jsxs("span", {
     title: `${count} عملية في طابور المزامنة`,
-    className: `inline-flex items-center gap-1 rounded-full border border-orange-500/20 bg-orange-500/10 px-1.5 py-0.5 text-[10px] font-bold text-orange-400 ${className}`,
+    className: `badge badge-xs gap-1 border border-orange-500/20 bg-orange-500/10 px-1.5 py-0.5 text-[10px] font-bold text-orange-400 ${className}`,
     children: [
       jsx(RefreshCw, { className: "h-2.5 w-2.5" }),
       count,
