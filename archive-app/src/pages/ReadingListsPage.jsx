@@ -38,7 +38,7 @@ function StatusButton({ status, onCycle }) {
 function ListItemRow({ entry, onRemove, onCycleStatus, onNavigate }) {
   return jsxs("div", {
     className:
-      "group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 hover:bg-white/[0.06] transition-colors",
+      "card group flex flex-row items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 hover:bg-white/[0.06] transition-colors",
     children: [
       jsx(StatusButton, { status: entry.status, onCycle: () => onCycleStatus(entry) }),
       jsxs("div", {
@@ -64,7 +64,7 @@ function ListItemRow({ entry, onRemove, onCycleStatus, onNavigate }) {
         title: "إزالة من القائمة",
         onClick: () => onRemove(entry),
         className:
-          "invisible shrink-0 rounded-lg p-1.5 text-gray-600 hover:bg-red-500/10 hover:text-red-400 group-hover:visible transition-colors",
+          "btn btn-ghost btn-circle btn-sm invisible shrink-0 rounded-lg p-1.5 text-gray-600 hover:bg-red-500/10 hover:text-red-400 group-hover:visible transition-colors",
         children: jsx(X, { className: "h-4 w-4" })
       })
     ]
@@ -99,12 +99,12 @@ function ListSection({ list, items, onRemoveItem, onCycleStatus, onDeleteList, o
           }),
           pending > 0 &&
             jsx("span", {
-              className: "rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-300",
+              className: "badge badge-sm rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-300",
               children: `${pending} متبق`
             }),
           done > 0 &&
             jsx("span", {
-              className: "rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400",
+              className: "badge badge-sm rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400",
               children: `${done} مكتمل`
             }),
           jsx("span", { className: "flex-1" }),
@@ -114,7 +114,7 @@ function ListSection({ list, items, onRemoveItem, onCycleStatus, onDeleteList, o
               title: "حذف القائمة",
               onClick: () => onDeleteList(list.id),
               className:
-                "rounded-lg p-1.5 text-gray-600 hover:bg-red-500/10 hover:text-red-400 transition-colors",
+                "btn btn-ghost btn-circle btn-sm rounded-lg p-1.5 text-gray-600 hover:bg-red-500/10 hover:text-red-400 transition-colors",
               children: jsx(Trash2, { className: "h-3.5 w-3.5" })
             })
         ]
@@ -157,11 +157,11 @@ function NewListDialog({ onClose, onCreate }) {
     role: "dialog",
     "aria-modal": "true",
     "aria-label": "إنشاء قائمة جديدة",
-    className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4",
+    className: "modal modal-open fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4",
     children: jsxs("form", {
       onSubmit: handleSubmit,
       className:
-        "w-full max-w-sm rounded-2xl border border-white/10 bg-gray-900 p-6 shadow-2xl",
+        "modal-box w-full max-w-sm rounded-2xl border border-white/10 bg-gray-900 p-6 shadow-2xl",
       children: [
         jsx("h2", {
           className: "mb-4 text-base font-semibold text-gray-100",
@@ -175,22 +175,22 @@ function NewListDialog({ onClose, onCreate }) {
           autoFocus: true,
           maxLength: 80,
           className:
-            "mb-4 w-full rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:border-blue-500 focus:outline-none"
+            "input input-bordered mb-4 w-full rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:border-blue-500 focus:outline-none"
         }),
         jsxs("div", {
-          className: "flex justify-end gap-2",
+          className: "modal-action flex justify-end gap-2",
           children: [
             jsx("button", {
               type: "button",
               onClick: onClose,
-              className: "rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-gray-200 transition-colors",
+              className: "btn btn-ghost rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-gray-200 transition-colors",
               children: "إلغاء"
             }),
             jsx("button", {
               type: "submit",
               disabled: !title.trim(),
               className:
-                "rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40 transition-colors",
+                "btn btn-primary rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40 transition-colors",
               children: "إنشاء"
             })
           ]
@@ -282,7 +282,7 @@ export default function ReadingListsPage() {
             type: "button",
             onClick: () => setShowNewList(true),
             className:
-              "inline-flex items-center gap-1.5 rounded-xl bg-blue-600/20 px-3 py-1.5 text-sm font-medium text-blue-300 hover:bg-blue-600/30 transition-colors",
+              "btn btn-sm inline-flex items-center gap-1.5 rounded-xl bg-blue-600/20 px-3 py-1.5 text-sm font-medium text-blue-300 hover:bg-blue-600/30 transition-colors",
             children: [jsx(Plus, { className: "h-4 w-4" }), "قائمة جديدة"]
           })
         ]
@@ -298,7 +298,7 @@ export default function ReadingListsPage() {
           jsx("button", {
             type: "button",
             onClick: () => setFilter(val),
-            className: `rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className: `btn btn-xs btn-ghost rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               filter === val
                 ? "bg-blue-600/30 text-blue-300"
                 : "text-gray-500 hover:text-gray-300"
@@ -310,8 +310,9 @@ export default function ReadingListsPage() {
 
       readingListsError &&
         jsx("div", {
+          role: "alert",
           className:
-            "mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400",
+            "alert alert-error block mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400",
           children: readingListsError
         }),
 

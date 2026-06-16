@@ -295,7 +295,7 @@ export function ReportsPage() {
             <button
               type="button"
               onClick={exportCsv}
-              className="va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5"
+              className="btn btn-ghost va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5"
             >
               <Download className="h-4 w-4" aria-hidden="true" />
               CSV
@@ -303,7 +303,7 @@ export function ReportsPage() {
             <button
               type="button"
               onClick={exportJson}
-              className="va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5"
+              className="btn btn-ghost va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5"
             >
               <Download className="h-4 w-4" aria-hidden="true" />
               JSON
@@ -311,7 +311,7 @@ export function ReportsPage() {
             <button
               type="button"
               onClick={exportExcel}
-              className="va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white"
+              className="btn btn-primary va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white"
             >
               <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
               Excel
@@ -414,7 +414,7 @@ export function ReportsPage() {
         >
           <div className="grid gap-3 sm:grid-cols-2">
             {orgIndicators.map(([label, value]) => (
-              <div className="rounded-xl va-surface-muted border p-3" key={label}>
+              <div className="card rounded-xl va-surface-muted border p-3" key={label}>
                 <p className="text-xs text-gray-500">{label}</p>
                 <p className="mt-1 text-xl font-bold text-white">
                   {formatNumber(value, settings.numberSystem)}
@@ -432,7 +432,7 @@ export function ReportsPage() {
             <div className="space-y-2">
               {recentLogs.map((log) => (
                 <div
-                  className="grid gap-2 rounded-xl va-surface-subtle border p-3 text-sm sm:grid-cols-[1fr_auto]"
+                  className="card grid gap-2 rounded-xl va-surface-subtle border p-3 text-sm sm:grid-cols-[1fr_auto]"
                   key={log.id || `${log.eventType}-${log.timestamp}`}
                 >
                   <div className="min-w-0">
