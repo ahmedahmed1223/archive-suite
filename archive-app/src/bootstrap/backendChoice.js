@@ -106,7 +106,7 @@ export function shouldForceLocalBackend() {
 /** Resolves what the boot should *actually* use, given saved + runtime context. */
 export function resolveBackendChoice(options = {}) {
   if (shouldForceLocalBackend()) {
-    return { backend: "local", url: "", localEngine: DEFAULT_LOCAL_ENGINE, forced: true };
+    return { backend: "local", url: "", localEngine: getLocalEngine(options), forced: true };
   }
   return {
     backend: getBackendChoice(options),

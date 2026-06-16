@@ -28,7 +28,7 @@ import {
   PageContextBar as AppPageContextBar,
   Sidebar as AppSidebar,
 } from "../components/navigation/index.js";
-import { BottomTabBar } from "../components/layout/BottomTabBar.jsx";
+import { MobileShell } from "../components/layout/MobileShell.jsx";
 import { CopilotPanel } from "../components/copilot/CopilotPanel.jsx";
 import { Bot } from "lucide-react";
 
@@ -76,8 +76,8 @@ export function AppRouter() {
         children: "تخطي إلى المحتوى الرئيسي",
       }),
       jsx(AppSidebar, {}),
-      jsx(BottomTabBar, {}),
-      jsx("main", {
+      jsx(MobileShell, {
+        children: jsx("main", {
         id: "main-content",
         tabIndex: -1,
         dir: "rtl",
@@ -108,6 +108,7 @@ export function AppRouter() {
             currentPage
           ),
         }),
+      }),
       }),
       jsx(CopilotPanel, {}),
       !copilotOpen &&

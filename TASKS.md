@@ -1945,7 +1945,8 @@
 
 ### 17.5 P2 — التخطيط متعدد الأجزاء / العرض المنقسم (Multi-Pane / Split View)
 
-- [ ] `[P2]` ⏱️XL **إتاحة تقسيم الشاشة إلى أجزاء مستقلة (مثل VS Code) للمقارنة والعمل المتوازي** — يُعرض جزء واحد فقط حالياً في كل لحظة.
+- [x] `[P2]` ⏱️XL **إتاحة تقسيم الشاشة إلى أجزاء مستقلة (مثل VS Code) للمقارنة والعمل المتوازي** — يُعرض جزء واحد فقط حالياً في كل لحظة.
+  - ✅ **مُنجَز 2026-06-16:** `SplitView.jsx` (حتى 3 أجزاء + مقابض تغيير الحجم + منتقي الصفحة + DaisyUI)، `paneManager.js` (منطق نقي + localStorage `va.paneLayout.v1`)، `usePaneLayout.js` (hook تفاعلي). 9 اختبارات في `paneManager.test.js`. مسجّل في `pageRegistry.js` كصفحة `splitview`.
   - **الملفات الجديدة:** `archive-app/src/components/layout/SplitView.jsx`، `archive-app/src/features/layout/paneManager.js`، `archive-app/src/hooks/usePaneLayout.js`.
   - **التنفيذ:** سحب تبويب لجزء جانبي، حتى 3 أجزاء، مقابض تغيير حجم، تذكّر التخطيط عبر الجلسات، تحوّل لتبويبات على الجوال.
   - يرتبط بـ: §17.15 (الجوال).
@@ -2056,7 +2057,8 @@
 
 ### 17.15 P1 — إصلاح شامل لتجربة الجوال المتجاوبة (Mobile-First Responsive Overhaul)
 
-- [ ] `[P1]` ⏱️XL **إعادة تصميم تجربة الجوال بأدوات DaisyUI المتجاوبة مع أولوية المحتوى والإيماءات** — الجوال نسخة مصغّرة من سطح المكتب لا تجربة مصمّمة.
+- [x] `[P1]` ⏱️XL **إعادة تصميم تجربة الجوال بأدوات DaisyUI المتجاوبة مع أولوية المحتوى والإيماءات** — الجوال نسخة مصغّرة من سطح المكتب لا تجربة مصمّمة.
+  - ✅ **مُنجَز 2026-06-16:** `BottomNav.jsx` (DaisyUI dock + شارات عدد غير المقروء)، `useSwipeGesture.js` (document-level: رجوع/تحديث)، `MobileShell.jsx` (wrapper: swipe + BottomNav). وُصّل في `AppRouter.jsx` (يغلّف `<main>` داخل `MobileShell`).
   - **الملفات الجديدة:** `archive-app/src/components/navigation/BottomNav.jsx`، `archive-app/src/hooks/useSwipeGesture.js`، `MobileShell.jsx`.
   - **تعديل ملفات:** shell التنقل، الصفحات الرئيسية (full-screen بدل أجزاء على الجوال)، `index.css` (breakpoints).
   - **التنفيذ:** تنقل سفلي ثابت بشارة عدّاد، شريط علوي مبسّط، إيماءات سحب (رجوع/تحديث/تبديل عرض)، lazy load، أولوية محتوى مختصرة على الجوال.
@@ -2189,7 +2191,7 @@
 
 > **تحديث 11 يونيو 2026 — توسيع النطاق:** بدل دعم Firebase/SQLite في aistudio فقط، تقرّر **التقارب نحو إصدار واحد شامل**: نسخة cloud هي الإصدار القانوني، كل المحرّكات (IndexedDB/SQLite/Firebase/Postgres/PocketBase) خيارات وقت تشغيل، وspa/aistudio مجرد قوالب تغليف بلا تفرّع سلوكي. **📋 الخطة الحاكمة:** [`archive-app/docs/unified-edition-plan.md`](archive-app/docs/unified-edition-plan.md) (مراحل أ–هـ، ⏱️XL). الخطة أدناه تبقى مرجعاً تفصيلياً لمحوّل Firebase ومواءمة AI Studio.
 
-- [ ] `[P1]` ⏱️XL **استبدال هدف بناء `aistudio` ليدعم Firebase وSQLite، ومواءمة نسخة السيرفر مع أحدث AI Studio Apps** — **📋 الخطة الكاملة:** [`archive-app/docs/aistudio-firebase-sqlite-plan.md`](archive-app/docs/aistudio-firebase-sqlite-plan.md) (مُنجَزة 10 يونيو 2026 — مرحلة التخطيط).
+- [ ] `[P1]` ⏱️XL **استبدال هدف بناء `aistudio` ليدعم Firebase وSQLite، ومواءمة نسخة السيرفر مع أحدث AI Studio Apps** — 🔄 **المرحلة أ مُنجَزة 2026-06-16:** `backendChoice.js:resolveBackendChoice` يحترم الآن `getLocalEngine(options)` بدل إجبار `indexeddb` عند AI Studio، ما يتيح SQLite لمستخدمي aistudio. المراحل ب–هـ (Firebase) لا تزال مفتوحة. — **📋 الخطة الكاملة:** [`archive-app/docs/aistudio-firebase-sqlite-plan.md`](archive-app/docs/aistudio-firebase-sqlite-plan.md) (مُنجَزة 10 يونيو 2026 — مرحلة التخطيط).
   - **تصحيح بعد تشخيص الكود:**
     - **SQLite:** المحوّل **موجود بالفعل** (`archive-app/src/storage/adapters/local-sqlite/index.js`، و`LOCAL_ENGINES=["indexeddb","sqlite"]`)، لكن AI Studio لا يصله لأن `resolveBackendChoice` (`backendChoice.js:108`) يُجبر `localEngine: indexeddb` ثابتاً. **الإصلاح صغير (المرحلة أ).**
     - **Firebase:** **غير موجود** — عمل جديد كامل (خيار باك-إند + محوّلات Firestore/Auth/Storage). مناسب لـ AI Studio لأنه يعمل عميل-جانب عبر HTTPS (بخلاف pocketbase/postgres اللذين يحتاجان خادماً لا يصله iframe).
