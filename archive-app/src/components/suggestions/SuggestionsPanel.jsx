@@ -31,7 +31,7 @@ function SuggestionRow({ suggestion, onAction, onDismiss }) {
             ]
           }),
           jsx("span", {
-            className: `shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${toneClass(suggestion.severity)}`,
+            className: `badge badge-sm shrink-0 border px-2 py-0.5 text-[11px] ${toneClass(suggestion.severity)}`,
             children: severityLabel(suggestion.severity)
           })
         ]
