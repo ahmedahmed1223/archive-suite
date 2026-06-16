@@ -146,7 +146,7 @@ export function TwoFactorSettings() {
       </div>
 
       {error && (
-        <p className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>
+        <p role="alert" className="alert alert-error block rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>
       )}
 
       {/* ── Setup: initiate ── */}

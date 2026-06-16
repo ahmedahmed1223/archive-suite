@@ -192,7 +192,7 @@ export function NotificationPreferences() {
       </h3>
 
       {loadError && (
-        <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
+        <p role="alert" className="alert alert-warning block rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
           تعذّر تحميل التفضيلات. تأكد من اتصال الخادم.
         </p>
       )}
@@ -213,7 +213,7 @@ export function NotificationPreferences() {
       </h3>
 
       {!push.supported ? (
-        <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
+        <p role="alert" className="alert alert-warning block rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
           هذا المتصفح لا يدعم تنبيهات Web Push.
         </p>
       ) : (
