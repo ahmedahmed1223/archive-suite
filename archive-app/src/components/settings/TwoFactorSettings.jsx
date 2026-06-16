@@ -211,11 +211,11 @@ export function TwoFactorSettings() {
 
       {/* ── Setup: show recovery codes ── */}
       {setupPhase === "codes" && (
-        <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-          <p className="text-sm font-semibold text-amber-300">
+        <div className="alert alert-warning block space-y-3 p-4">
+          <p className="text-sm font-semibold">
             احفظ رموز الاسترداد التالية في مكان آمن — لن تظهر مرة أخرى.
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs opacity-75">
             كل رمز يُستخدم مرة واحدة فقط للدخول عند فقدان الجهاز. عندك {recoveryCodes.length} رموز.
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -226,13 +226,13 @@ export function TwoFactorSettings() {
               </div>
             ))}
           </div>
-          <button type="button" onClick={downloadCodes} className="text-xs va-accent-text hover:underline">
+          <button type="button" onClick={downloadCodes} className="btn btn-xs btn-ghost">
             تحميل كملف نصي
           </button>
           <button
             type="button"
             onClick={() => setSetupPhase("done")}
-            className="mt-2 block va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white"
+            className="btn btn-primary btn-sm mt-2 block"
           >
             لقد حفظت الرموز ✓
           </button>
@@ -244,7 +244,7 @@ export function TwoFactorSettings() {
         <button
           type="button"
           onClick={() => setShowDisable(true)}
-          className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/20 transition-colors"
+          className="btn btn-sm btn-outline btn-error"
         >
           تعطيل المصادقة الثنائية
         </button>
