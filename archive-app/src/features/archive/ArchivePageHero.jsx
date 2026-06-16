@@ -271,7 +271,7 @@ export function ArchivePageHero(props) {
         jsxs("button", {
           type: "button",
           onClick: openAdd,
-          className: "va-primary-button inline-flex min-h-9 items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-white md:hidden",
+          className: "btn btn-primary gap-2 md:hidden",
           title: "إضافة فيديو — اختصار A",
           children: [
             jsx(Video, { className: "h-4 w-4" }),
@@ -364,7 +364,7 @@ export function ArchivePageHero(props) {
               jsxs("button", {
                 type: "button",
                 onClick: openAdd,
-                className: "va-primary-button inline-flex min-h-9 items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold text-white",
+                className: "btn btn-primary btn-sm gap-2",
                 title: "إضافة فيديو — اختصار A",
                 children: [
                   jsx(Video, { className: "h-4 w-4" }),
@@ -495,7 +495,7 @@ export function ArchivePageHero(props) {
                   jsxs("button", {
                     type: "button",
                     onClick: () => { setMobileControlsOpen(false); openAdd?.(); },
-                    className: "va-primary-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white",
+                    className: "btn btn-primary gap-2",
                     children: [jsx(Video, { className: "h-4 w-4" }), "إضافة"]
                   })
                 ]
