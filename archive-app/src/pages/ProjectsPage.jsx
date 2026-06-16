@@ -144,7 +144,7 @@ function RoughCutBuilder({ items, onAdd }) {
       ] }),
       jsx("div", { className: "mt-2 flex justify-end", children: jsxs("button", {
         type: "button", onClick: submit, disabled: !valid,
-        className: "va-primary-button inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40",
+        className: "btn btn-primary gap-2",
         children: [jsx(Plus, { className: "h-4 w-4" }), "إضافة للخطّ الزمني"]
       }) })
     ]
@@ -199,7 +199,7 @@ function TaskBuilder({ items, users, onAdd }) {
       ] }),
       jsx("div", { className: "mt-2 flex justify-end", children: jsxs("button", {
         type: "button", onClick: submit, disabled: !title.trim(),
-        className: "va-primary-button inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40",
+        className: "btn btn-primary gap-2",
         children: [jsx(Plus, { className: "h-4 w-4" }), "إضافة للوحة"]
       }) })
     ]
@@ -376,7 +376,7 @@ function ProjectEditor({
           type: "button", onClick: () => onExport("mp4"),
           disabled: !mp4Enabled || exporting || !ordered.some(isValidRoughCut),
           title: mp4Enabled ? "عرض MP4 على الخادم عبر ffmpeg" : "تصدير MP4 يتطلّب تسجيل الدخول إلى خادم سحابي",
-          className: "va-primary-button inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40",
+          className: "btn btn-primary gap-2",
           children: [jsx(Film, { className: "h-4 w-4" }), exporting ? "جارٍ التصدير…" : "تصدير MP4"]
         })
       ] })
@@ -600,7 +600,7 @@ export function ProjectsPage() {
         icon: jsx(Clapperboard, { className: "h-6 w-6 va-accent-text" }),
         title: "مشاريع المونتاج",
         description: "اجمع لقطات الأرشيف في خطّ زمني مرتّب بنقاط قص (in/out)، ثم صدّر JSON أو EDL لبرامج المونتاج أو MP4 جاهزًا من الخادم.",
-        actions: jsxs("button", { type: "button", onClick: openCreate, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مشروع جديد"] })
+        actions: jsxs("button", { type: "button", onClick: openCreate, className: "btn btn-primary gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "مشروع جديد"] })
       }),
 
       showForm && jsx(ProjectForm, {

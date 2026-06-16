@@ -119,7 +119,7 @@ function SubtypesEditor({ draft, setDraft }) {
           type: "button",
           onClick: addSubtype,
           disabled: !name.trim(),
-          className: "va-primary-button shrink-0 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50",
+          className: "btn btn-primary shrink-0",
           children: "إضافة"
         })
       ] }),
@@ -210,7 +210,7 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
           type: "button",
           onClick: addField,
           disabled: !fieldDraft.label.trim(),
-          className: "va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50",
+          className: "btn btn-primary",
           children: "إضافة الحقل"
         })
       ] }),
@@ -407,7 +407,7 @@ function TypeEditor({ type, fieldUsage = {}, contentTypes = [], videoItems = [],
         jsxs("div", { className: "flex flex-wrap gap-2", children: [
           jsx("button", { type: "button", onClick: onCancel, disabled: saving, className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: "إلغاء" }),
           activeStepIndex > 0 && jsx("button", { type: "button", onClick: goBack, className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5", children: "السابق" }),
-          activeStep !== "review" ? jsx("button", { type: "button", onClick: goNext, disabled: activeStep === "basics" && !draft.name.trim(), className: "va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40", children: "التالي" }) : jsx("button", { type: "button", onClick: save, disabled: !draft.name.trim() || !validation.canSave || saving, className: "va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40", children: saving ? "يحفظ..." : type ? "حفظ النوع" : "إنشاء النوع" })
+          activeStep !== "review" ? jsx("button", { type: "button", onClick: goNext, disabled: activeStep === "basics" && !draft.name.trim(), className: "btn btn-primary", children: "التالي" }) : jsx("button", { type: "button", onClick: save, disabled: !draft.name.trim() || !validation.canSave || saving, className: "btn btn-primary", children: saving ? "يحفظ..." : type ? "حفظ النوع" : "إنشاء النوع" })
         ] })
       ] }),
       jsx(WorkflowStepper, { steps: TYPE_EDITOR_STEPS, activeStepId: activeStep, completedStepIds: TYPE_EDITOR_STEPS.slice(0, activeStepIndex).map((step) => step.id), compact: true, className: "sm:grid-cols-2 xl:grid-cols-4" }),
@@ -625,7 +625,7 @@ export function TypesPage() {
         icon: jsx(Database, { className: "h-6 w-6 va-accent-text" }),
         title: "إدارة الأنواع والحقول",
         description: "أنواع المحتوى والفروع والحقول المخصصة، مع دعم حقل ملف محلي يحفظ metadata فقط.",
-        actions: jsxs("button", { type: "button", onClick: () => { setEditingType(null); setShowEditor(true); }, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "نوع جديد"] }),
+        actions: jsxs("button", { type: "button", onClick: () => { setEditingType(null); setShowEditor(true); }, className: "btn btn-primary gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "نوع جديد"] }),
         children: jsx("div", { className: "mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4", children: [
           { id: "types", label: "أنواع نشطة", value: formatNumber(activeTypes.length, settings.numberSystem), icon: Layers3 },
           { id: "subtypes", label: "فروع", value: formatNumber(totalSubtypes, settings.numberSystem), icon: Workflow },
