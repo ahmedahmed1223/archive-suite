@@ -25,7 +25,8 @@ export function WatchLaterButton({ itemId, itemTitle = "", className = "", size 
     title: active ? "إزالة من شاهد لاحقاً" : "إضافة إلى شاهد لاحقاً",
     "aria-label": active ? "إزالة من شاهد لاحقاً" : "إضافة إلى شاهد لاحقاً",
     "aria-pressed": active,
-    className: `inline-flex items-center justify-center rounded transition-colors ${
+    // DaisyUI `btn btn-ghost btn-circle` — icon-button idiom; bookmark tint preserved (§1881 Phase 3)
+    className: `btn btn-ghost btn-circle btn-sm transition-colors ${
       active
         ? "text-blue-400 hover:text-blue-300"
         : "text-gray-500 hover:text-blue-400"

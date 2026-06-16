@@ -15,6 +15,7 @@ export function Pagination({ page = 1, totalPages = 1, onPageChange, totalItems 
 
   const pages = getPageRange(page, totalPages);
 
+  // DaisyUI `join` groups the page controls; `btn join-item` for each control (§1881 Phase 3)
   return (
     <nav
       aria-label="تنقل الصفحات"
@@ -32,55 +33,57 @@ export function Pagination({ page = 1, totalPages = 1, onPageChange, totalItems 
         </span>
       )}
 
-      {/* Previous page */}
-      <button
-        type="button"
-        onClick={() => onPageChange(page - 1)}
-        disabled={page <= 1}
-        aria-label="الصفحة السابقة"
-        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        ‹
-      </button>
+      <div className="join">
+        {/* Previous page */}
+        <button
+          type="button"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+          aria-label="الصفحة السابقة"
+          className="btn btn-ghost btn-sm join-item text-gray-400 hover:text-white disabled:opacity-30"
+        >
+          ‹
+        </button>
 
-      {/* Page number buttons + ellipsis */}
-      {pages.map((p, i) =>
-        p === "..." ? (
-          <span
-            key={`ellipsis-${i}`}
-            className="px-1 text-gray-600 select-none"
-            aria-hidden="true"
-          >
-            …
-          </span>
-        ) : (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p)}
-            aria-label={`صفحة ${p}`}
-            aria-current={p === page ? "page" : undefined}
-            className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-colors ${
-              p === page
-                ? "bg-[color-mix(in_srgb,var(--va-action)_85%,transparent)] text-white"
-                : "text-gray-400 hover:text-white hover:bg-gray-700"
-            }`}
-          >
-            {p}
-          </button>
-        )
-      )}
+        {/* Page number buttons + ellipsis */}
+        {pages.map((p, i) =>
+          p === "..." ? (
+            <span
+              key={`ellipsis-${i}`}
+              className="btn btn-ghost btn-sm join-item pointer-events-none text-gray-600"
+              aria-hidden="true"
+            >
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              type="button"
+              onClick={() => onPageChange(p)}
+              aria-label={`صفحة ${p}`}
+              aria-current={p === page ? "page" : undefined}
+              className={`btn btn-sm join-item font-medium ${
+                p === page
+                  ? "btn-active bg-[color-mix(in_srgb,var(--va-action)_85%,transparent)] text-white"
+                  : "btn-ghost text-gray-400 hover:text-white"
+              }`}
+            >
+              {p}
+            </button>
+          )
+        )}
 
-      {/* Next page */}
-      <button
-        type="button"
-        onClick={() => onPageChange(page + 1)}
-        disabled={page >= totalPages}
-        aria-label="الصفحة التالية"
-        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        ›
-      </button>
+        {/* Next page */}
+        <button
+          type="button"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages}
+          aria-label="الصفحة التالية"
+          className="btn btn-ghost btn-sm join-item text-gray-400 hover:text-white disabled:opacity-30"
+        >
+          ›
+        </button>
+      </div>
     </nav>
   );
 }

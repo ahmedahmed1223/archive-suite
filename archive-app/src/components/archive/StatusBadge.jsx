@@ -17,9 +17,10 @@ export function StatusBadge({ item, compact = false, now }) {
   const meta = getItemStateMeta(item);
   const overdue = isOverdue(item, now);
   return jsxs("span", {
+    // DaisyUI `badge` — semantic badge primitive; custom color tints preserved (§1881 Phase 3)
     className: [
-      "inline-flex shrink-0 items-center gap-1 rounded-full border font-medium",
-      compact ? "px-1.5 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
+      "badge shrink-0 gap-1 border font-medium",
+      compact ? "badge-xs px-1.5 py-0.5 text-[10px]" : "badge-sm px-2.5 py-0.5 text-xs",
       BADGE_COLORS[meta.color] || BADGE_COLORS.gray
     ].join(" "),
     children: [
