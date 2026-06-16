@@ -715,7 +715,7 @@ export function VideoCard({ item, typeLabel, subtypeLabel, selected, onPreview, 
           jsx("button", {
             type: "button",
             onClick: onOpen,
-            className: `va-primary-button ${size.button} flex-1 rounded-lg font-semibold text-white`,
+            className: `btn btn-primary flex-1 ${size.button}`,
             children: "فتح التفاصيل"
           }),
           !showDeleted && jsx("button", {
@@ -833,7 +833,7 @@ export function VideoTileItem({ item, typeLabel, subtypeLabel, selected, onPrevi
             type: "button",
             onClick: onOpen,
             "aria-label": `فتح ${item.title || "الفيديو"}`,
-            className: "va-primary-button rounded-md px-2.5 py-1 text-[11px] font-semibold text-white",
+            className: "btn btn-primary btn-xs",
             children: "فتح"
           }),
           !showDeleted && jsx("button", {
@@ -921,7 +921,7 @@ export function VideoListItem({ item, typeLabel, subtypeLabel, selected, onPrevi
           jsx("button", {
             type: "button",
             onClick: onOpen,
-            className: `va-primary-button ${size.actionButton} rounded-lg font-semibold text-white `,
+            className: `btn btn-primary ${size.actionButton}`,
             children: "التفاصيل"
           }),
           !showDeleted && jsx("button", {
@@ -1260,7 +1260,7 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
         children: jsxs("div", {
           className: "flex flex-wrap gap-2",
           children: [
-            jsx("button", { type: "button", onClick: () => onOpen(item), className: `va-primary-button rounded-lg font-semibold text-white  ${size.actionButton}`, children: "فتح" }),
+            jsx("button", { type: "button", onClick: () => onOpen(item), className: `btn btn-primary ${size.actionButton}`, children: "فتح" }),
             !showDeleted && jsx("button", { type: "button", onClick: () => onFavorite(item), className: `rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 ${size.actionButton}`, children: item.isFavorite ? "إزالة" : "مفضلة" }),
             showDeleted ? jsx("button", { type: "button", onClick: () => onRestore(item), className: `rounded-lg border va-accent-border va-accent-text-on-soft hover:opacity-80 ${size.actionButton}`, children: "استعادة" }) : jsx("button", { type: "button", onClick: () => onDelete(item), className: `rounded-lg border border-red-500/20 text-red-100 hover:bg-red-500/10 ${size.actionButton}`, children: "حذف" })
           ]
@@ -1483,7 +1483,7 @@ export function PreviewPanel({
     type: "button",
     onClick: props.onClick,
     disabled: props.disabled,
-    className: `${props.primary ? "va-primary-button text-white" : "border-white/10 bg-white/[0.035] text-gray-300 hover:bg-white/[0.06] hover:text-white"} inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45`,
+    className: `${props.primary ? "btn btn-primary" : "border-white/10 bg-white/[0.035] text-gray-300 hover:bg-white/[0.06] hover:text-white"} inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45`,
     children: [props.icon, props.children]
   });
 
