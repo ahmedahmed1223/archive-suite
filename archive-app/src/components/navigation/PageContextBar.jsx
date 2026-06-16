@@ -154,11 +154,14 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
     dir: "rtl",
     children: jsxs(React.Fragment, {
       children: [
+        // DaisyUI navbar for semantic structure; va-context-bar custom styles intact
         jsxs("div", {
-          className: "va-context-bar-inner",
+          className: "navbar va-context-bar-inner !min-h-0 !p-0",
+          style: { padding: "0.85rem var(--va-page-gutter)", gap: "1rem" },
           children: [
+            // navbar-start = title area (RTL: visual right side)
             jsxs("div", {
-              className: "va-context-title min-w-0",
+              className: "navbar-start va-context-title min-w-0 flex-1 !block",
               children: [
                 jsxs("div", {
                   className: "mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-500",
@@ -181,8 +184,9 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
                 jsx(ContextualTip, { pageId: currentPage })
               ]
             }),
+            // navbar-end = action buttons (RTL: visual left side) — hidden on mobile
             jsxs("div", {
-              className: "hidden flex-wrap justify-end gap-2 md:flex",
+              className: "navbar-end hidden flex-wrap justify-end gap-2 md:flex",
               children: [
                 jsxs(ContextButton, {
                   variant: "primary",
@@ -202,8 +206,9 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
                 }, "help")
               ]
             }),
+            // Mobile: primary action + overflow — visible only on small screens
             jsxs("div", {
-              className: "flex shrink-0 items-center gap-2 md:hidden",
+              className: "navbar-end flex shrink-0 items-center gap-2 md:hidden",
               children: [
                 jsxs(ContextButton, {
                   variant: "primary",

@@ -307,58 +307,71 @@ export function Sidebar() {
   // controls (pin / hide / move up / move down) in edit mode. `listIds` is the
   // ordered id list of the entry's own list (group or pinned) for reorder bounds.
   const renderItem = (page, listIds) => {
+    const isActive = currentPage === page.id;
     if (!editing) {
-      return jsx(SidebarButton, {
-        page,
-        active: currentPage === page.id,
-        onClick: () => goToPage(page.id),
-        badge: page.id === "archive" ? activeCount : page.id === "reading-lists" ? (watchLaterCount > 0 ? watchLaterCount : undefined) : undefined,
-        collapsed
+      // DaisyUI menu item: wrap in <li> with `active` class for active state
+      return jsxs("li", {
+        className: isActive ? "active" : "",
+        children: [
+          jsx(SidebarButton, {
+            page,
+            active: isActive,
+            onClick: () => goToPage(page.id),
+            badge: page.id === "archive" ? activeCount : page.id === "reading-lists" ? (watchLaterCount > 0 ? watchLaterCount : undefined) : undefined,
+            collapsed
+          })
+        ]
       }, page.id);
     }
     const index = listIds.indexOf(page.id);
     const title = page.meta?.title || page.id;
     const ctrl = "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white disabled:opacity-30";
-    return jsxs("div", {
-      className: `rounded-xl border p-1 ${page._hidden ? "border-white/5 opacity-60" : "border-white/10"}`,
+    // Edit mode: <li> with block wrapper to bypass DaisyUI menu's flex defaults on children
+    return jsxs("li", {
+      className: "block !p-0",
       children: [
-        jsx(SidebarButton, { page, active: false, onClick: () => {}, collapsed: false }),
         jsxs("div", {
-          className: "mt-0.5 flex items-center justify-end gap-0.5 px-1 pb-0.5",
+          className: `rounded-xl border p-1 ${page._hidden ? "border-white/5 opacity-60" : "border-white/10"}`,
           children: [
-            jsx("button", {
-              type: "button",
-              onClick: () => setDraftLayout((l) => setSidebarItemPinned(l, page.id, !page._pinned)),
-              title: page._pinned ? "إلغاء التثبيت" : "تثبيت",
-              "aria-label": page._pinned ? `إلغاء تثبيت ${title}` : `تثبيت ${title}`,
-              className: `inline-flex h-7 w-7 items-center justify-center rounded-lg border ${page._pinned ? "border-amber-500/30 bg-amber-500/10 text-amber-200" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-white"}`,
-              children: jsx(Star, { className: "h-3.5 w-3.5", fill: page._pinned ? "currentColor" : "none" })
-            }),
-            jsx("button", {
-              type: "button",
-              onClick: () => setDraftLayout((l) => setSidebarItemHidden(l, page.id, !page._hidden)),
-              title: page._hidden ? "إظهار" : "إخفاء",
-              "aria-label": page._hidden ? `إظهار ${title}` : `إخفاء ${title}`,
-              className: ctrl,
-              children: page._hidden ? jsx(EyeOff, { className: "h-3.5 w-3.5" }) : jsx(Eye, { className: "h-3.5 w-3.5" })
-            }),
-            jsx("button", {
-              type: "button",
-              disabled: index <= 0,
-              onClick: () => setDraftLayout((l) => reorderSidebarItem(l, listIds, page.id, "up")),
-              title: "تحريك لأعلى",
-              "aria-label": `تحريك ${title} لأعلى`,
-              className: ctrl,
-              children: jsx(ArrowUp, { className: "h-3.5 w-3.5" })
-            }),
-            jsx("button", {
-              type: "button",
-              disabled: index >= listIds.length - 1,
-              onClick: () => setDraftLayout((l) => reorderSidebarItem(l, listIds, page.id, "down")),
-              title: "تحريك لأسفل",
-              "aria-label": `تحريك ${title} لأسفل`,
-              className: ctrl,
-              children: jsx(ArrowDown, { className: "h-3.5 w-3.5" })
+            jsx(SidebarButton, { page, active: false, onClick: () => {}, collapsed: false }),
+            jsxs("div", {
+              className: "mt-0.5 flex items-center justify-end gap-0.5 px-1 pb-0.5",
+              children: [
+                jsx("button", {
+                  type: "button",
+                  onClick: () => setDraftLayout((l) => setSidebarItemPinned(l, page.id, !page._pinned)),
+                  title: page._pinned ? "إلغاء التثبيت" : "تثبيت",
+                  "aria-label": page._pinned ? `إلغاء تثبيت ${title}` : `تثبيت ${title}`,
+                  className: `inline-flex h-7 w-7 items-center justify-center rounded-lg border ${page._pinned ? "border-amber-500/30 bg-amber-500/10 text-amber-200" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-white"}`,
+                  children: jsx(Star, { className: "h-3.5 w-3.5", fill: page._pinned ? "currentColor" : "none" })
+                }),
+                jsx("button", {
+                  type: "button",
+                  onClick: () => setDraftLayout((l) => setSidebarItemHidden(l, page.id, !page._hidden)),
+                  title: page._hidden ? "إظهار" : "إخفاء",
+                  "aria-label": page._hidden ? `إظهار ${title}` : `إخفاء ${title}`,
+                  className: ctrl,
+                  children: page._hidden ? jsx(EyeOff, { className: "h-3.5 w-3.5" }) : jsx(Eye, { className: "h-3.5 w-3.5" })
+                }),
+                jsx("button", {
+                  type: "button",
+                  disabled: index <= 0,
+                  onClick: () => setDraftLayout((l) => reorderSidebarItem(l, listIds, page.id, "up")),
+                  title: "تحريك لأعلى",
+                  "aria-label": `تحريك ${title} لأعلى`,
+                  className: ctrl,
+                  children: jsx(ArrowUp, { className: "h-3.5 w-3.5" })
+                }),
+                jsx("button", {
+                  type: "button",
+                  disabled: index >= listIds.length - 1,
+                  onClick: () => setDraftLayout((l) => reorderSidebarItem(l, listIds, page.id, "down")),
+                  title: "تحريك لأسفل",
+                  "aria-label": `تحريك ${title} لأسفل`,
+                  className: ctrl,
+                  children: jsx(ArrowDown, { className: "h-3.5 w-3.5" })
+                })
+              ]
             })
           ]
         })
@@ -424,17 +437,29 @@ export function Sidebar() {
                 jsx("button", { type: "button", onClick: resetLayout, title: "استعادة الافتراضي", "aria-label": "استعادة الترتيب الافتراضي", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 hover:text-white", children: jsx(RotateCcw, { className: "h-4 w-4" }) })
               ]
             }),
-            shaped.pinned.length > 0 && jsxs("section", {
-              children: [
-                !collapsed && jsxs("p", { className: "mb-2 flex items-center gap-1.5 px-3 text-xs font-medium text-amber-300/80", children: [jsx(Star, { className: "h-3 w-3", fill: "currentColor" }), "مثبّتة"] }),
-                jsx("div", { className: "space-y-1", children: shaped.pinned.map((page) => renderItem(page, shaped.pinned.map((p) => p.id))) })
-              ]
+            shaped.pinned.length > 0 && jsx("section", {
+              children: jsxs("ul", {
+                className: "menu menu-sm p-0 w-full gap-0.5",
+                children: [
+                  !collapsed && jsxs("li", {
+                    className: "menu-title flex items-center gap-1.5 text-xs font-medium text-amber-300/80 py-1",
+                    children: [jsx(Star, { className: "h-3 w-3", fill: "currentColor" }), "مثبّتة"]
+                  }),
+                  ...shaped.pinned.map((page) => renderItem(page, shaped.pinned.map((p) => p.id)))
+                ]
+              })
             }, "pinned"),
-            ...shaped.groups.map((group) => jsxs("section", {
-              children: [
-                !collapsed && jsx("p", { className: "mb-2 px-3 text-xs font-medium text-gray-600", children: group.label }),
-                jsx("div", { className: "space-y-1", children: group.pages.map((page) => renderItem(page, group.pages.map((p) => p.id))) })
-              ]
+            ...shaped.groups.map((group) => jsx("section", {
+              children: jsxs("ul", {
+                className: "menu menu-sm p-0 w-full gap-0.5",
+                children: [
+                  !collapsed && jsx("li", {
+                    className: "menu-title text-xs font-medium text-gray-600 py-1",
+                    children: group.label
+                  }),
+                  ...group.pages.map((page) => renderItem(page, group.pages.map((p) => p.id)))
+                ]
+              })
             }, group.id))
           ]
         })
