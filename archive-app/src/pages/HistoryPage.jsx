@@ -59,7 +59,7 @@ function HistoryMetric({ action, label, value, active, onClick }) {
     onClick,
     "aria-pressed": active,
     "aria-label": `${label}: ${value}`,
-    className: `va-action-card flex min-h-[92px] items-center gap-3 rounded-2xl border p-4 text-right transition-colors ${active ? toneClasses(getHistoryActionTone(action)) : "border-white/10 bg-gray-900/45 text-gray-300 hover:bg-white/5"}`,
+    className: `card va-action-card flex min-h-[92px] flex-row items-center gap-3 rounded-2xl border p-4 text-right transition-colors ${active ? toneClasses(getHistoryActionTone(action)) : "border-white/10 bg-gray-900/45 text-gray-300 hover:bg-white/5"}`,
     children: [
       jsx("span", {
         className: `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${toneClasses(getHistoryActionTone(action))}`,
@@ -104,7 +104,7 @@ function HistoryRecord({ record, itemTitle, index, settings }) {
                   jsxs("div", {
                     className: "flex flex-wrap items-center gap-2",
                     children: [
-                      jsx("span", { className: `rounded-full border px-2 py-0.5 text-xs ${toneClasses(tone)}`, children: getHistoryActionLabel(record.action) }),
+                      jsx("span", { className: `badge badge-sm border ${toneClasses(tone)}`, children: getHistoryActionLabel(record.action) }),
                       jsx("h3", { className: "truncate text-sm font-semibold text-white", children: itemTitle || record.itemId || "عنصر غير معروف" })
                     ]
                   }),
@@ -228,7 +228,7 @@ export function HistoryPage() {
         actions: changeHistory.length > 0 ? jsxs("button", {
           type: "button",
           onClick: handleClearHistory,
-          className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/15",
+          className: "btn btn-sm min-h-10 rounded-xl border-red-500/20 bg-red-500/10 text-red-200 hover:bg-red-500/15 hover:border-red-500/30",
           children: [jsx(Trash2, { className: "h-4 w-4" }), "مسح السجل"]
         }) : null
       }),
@@ -259,14 +259,14 @@ export function HistoryPage() {
                     value: query,
                     onChange: (event) => setQuery(event.target.value),
                     placeholder: "ابحث باسم العنصر أو الحقل أو القيمة...",
-                    className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40"
+                    className: "input input-bordered min-h-11 w-full va-surface-deep rounded-xl py-2 pl-3 pr-10 text-sm text-white placeholder:text-gray-600 focus:border-emerald-500/40"
                   })
                 ]
               }),
               jsxs("select", {
                 value: action,
                 onChange: (event) => setAction(event.target.value),
-                className: "min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none",
+                className: "select select-bordered min-h-11 va-surface-deep rounded-xl px-3 text-sm text-white",
                 children: [
                   jsx("option", { value: "all", children: "كل الإجراءات" }),
                   ...HISTORY_ACTIONS.map((item) => jsx("option", { value: item.id, children: item.label }, item.id))
@@ -275,7 +275,7 @@ export function HistoryPage() {
               jsx("select", {
                 value: pageSize,
                 onChange: (event) => setPageSize(Number(event.target.value)),
-                className: "min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none",
+                className: "select select-bordered min-h-11 va-surface-deep rounded-xl px-3 text-sm text-white",
                 children: [20, 50, 100].map((size) => jsx("option", { value: size, children: `${size} سجل` }, size))
               })
             ]

@@ -43,7 +43,7 @@ function StatusDot({ ok }) {
 
 function MetricCard({ icon, label, value, sub, ok }) {
   return jsxs("div", {
-    className: "flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-4",
+    className: "card flex flex-row items-start gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-4",
     children: [
       jsx("span", {
         className: `mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
@@ -129,7 +129,7 @@ export default function ServerStatusPage() {
             type: "button",
             onClick: handleRefresh,
             disabled: checking,
-            className: "inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-sm text-gray-400 hover:bg-white/5 hover:text-white disabled:opacity-50 transition-colors",
+            className: "btn btn-sm btn-ghost gap-1.5 rounded-xl border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white",
             children: [
               jsx(RefreshCw, { className: `h-4 w-4 ${checking ? "animate-spin" : ""}` }),
               checking ? "جاري الفحص…" : "فحص الآن"
@@ -157,7 +157,8 @@ export default function ServerStatusPage() {
       }),
 
       connectionStatus?.lastError && jsx("div", {
-        className: "mb-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400",
+        className: "alert alert-error mb-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400",
+        role: "alert",
         children: [
           jsx(XCircle, { className: "mt-0.5 h-4 w-4 shrink-0" }),
           jsx("span", { children: connectionStatus.lastError })
