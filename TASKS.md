@@ -1117,6 +1117,12 @@
 ### 14.8 P1 — مركز تحكم النظام (System Control Center)
 
 - [ ] `[P1]` ⏱️XL **بناء مركز تحكم موحد للنظام عبر واجهة ويب** — لا واجهة للتحكم بالسيرفر؛ يتطلب CLI بـ25+ أمر؛ لا دعم لنظام Windows خارج Docker.
+  - 🔄 **شريحة مراقبة آمنة (2026-06-16):** صفحة `SystemControlPage` للقراءة فقط («مركز تحكم النظام») تعرض الحالة العامة (ok/degraded/down) ومقاييس الموارد (CPU/ذاكرة/قرص مع عتبات تحذير/حرج) ونظرة عامة على الخدمات، باستهلاك نقطة `/api/health` الموجودة وعميل `serverHealthClient` (لم تُكرَّر). أزرار التحكم (تشغيل/إيقاف/إعادة تشغيل) تُعرض **معطّلة** بتلميح «قيد التطوير — يتطلب صلاحيات النظام».
+    - **ملفات جديدة:** `archive-app/src/features/systemControl/systemControlModel.js` (نموذج نقي: `buildSystemControlModel`/`classifyMetric`/`deriveOverallState`/`formatBytes`/`formatPercent`/`buildServiceList`)؛ `systemControlModel.test.js` (31 اختباراً)؛ `archive-app/src/pages/SystemControlPage.jsx`.
+    - **تعديل ملفات:** `archive-app/src/app/pageManifest.js` + `pageRegistry.js` (تسجيل `system-control` في مجموعة `maintenance`).
+    - **معاد استخدامه:** `/api/health` و`serverHealthClient.fetchServerHealth` و`connectionStatus` من المتجر — لا نقطة أو عميل جديد.
+    - 772 اختباراً ناجحاً (741 أساس + 31 جديد)، و`build:spa` أخضر.
+    - **مؤجَّل (خطر عالٍ — صلاحيات نظام التشغيل):** `controlAgent.js` (docker/linux-native/windows-native)، نقاط `controlRoutes.js` للتشغيل/الإيقاف/إعادة التشغيل/apply-config، `configSync.js`، سكربت `deploy/install-windows.ps1`، وأي تنفيذ فعلي لأوامر بدء/إيقاف/إعادة تشغيل الخدمات عبر طلب ويب — يتطلب مراجعة بشرية.
   - **الملفات الجديدة:**
     - `archive-server/src/control/controlAgent.js` — `createControlAgent` (docker/linux-native/windows-native)
     - `archive-server/src/api/controlRoutes.js` — `/api/control/status|start|stop|restart|logs|apply-config`
