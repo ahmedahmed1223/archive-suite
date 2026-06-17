@@ -185,7 +185,7 @@ export function applyAccentColor(accentColor = "teal", root = typeof document !=
   root.style.setProperty("--va-accent-900", palette[900]);
   root.style.setProperty("--va-accent-950", palette[950]);
 
-  // 2. Semantic aliases (used by va-* classes in v1-identity.css)
+  // 2. Semantic aliases used by the shared va-* utility classes.
   root.style.setProperty("--va-v1-accent",        palette.accent);
   root.style.setProperty("--va-v1-accent-strong",  palette.strong);
   root.style.setProperty("--va-v1-accent-soft",    palette.soft);

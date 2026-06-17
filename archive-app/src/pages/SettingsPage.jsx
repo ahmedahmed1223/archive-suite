@@ -1,4 +1,4 @@
-﻿import {
+import {
   useTheme
 } from "../theme/useTheme.js";
 import {
@@ -69,7 +69,6 @@ import {
   getDefaultSettings,
   mergeAppSettings
 } from "../utils/settings.js";
-import { ThemeVersionPicker } from "../features/settings/ThemeVersionPicker.jsx";
 import {
   DEFAULT_DAISY_THEME,
   applyDaisyTheme,
@@ -90,23 +89,12 @@ import {
   systemPrefersDark
 } from "../features/theme/themeSchedule.js";
 import {
-  DEFAULT_THEME_VERSION,
-  storeThemeVersion
-} from "../theme/themeVersionStorage.js";
-import {
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_CATEGORY_LABELS
 } from "../features/notifications/viewModel.js";
 import { resolveSidebarLayoutMode } from "../features/navigation/sidebarLayoutModel.js";
 import { reportError } from "../utils/errorReporting.js";
 import { normalizeRoleProfileId } from "../features/onboarding/roleProfiles.js";
-
-const THEME_VERSION_SAVE_MESSAGES = {
-  v1: "تم تفعيل النمط الكلاسيكي",
-  v2: "تم تفعيل النمط الحديث",
-  v3: "تم تفعيل مركز التحكم",
-  v4: "تم تفعيل الثيم الزجاجي الأخضر"
-};
 
 const NOTIFICATION_TYPE_LABELS = {
   info: "معلومات",
@@ -153,7 +141,6 @@ function createAppearanceDraft(settings = {}, fallbackTheme = "dark") {
   });
   const customDaisyTheme = normalizeCustomDaisyTheme(settings.ui?.customDaisyTheme || getStoredCustomDaisyTheme());
   return {
-    themeVersion: settings.ui?.themeVersion || DEFAULT_THEME_VERSION,
     daisyTheme: normalizeDaisyTheme(settings.ui?.daisyTheme || DEFAULT_DAISY_THEME),
     themeSchedule,
     customDaisyTheme,
@@ -217,7 +204,7 @@ function AppearanceStudioPreview({ draft, numberSystem = "latn" }) {
                 ]
               }),
               jsx("div", { className: "mt-3 h-2 overflow-hidden rounded-full bg-white/10", children: jsx("div", { className: "h-full w-4/5 rounded-full bg-[var(--va-action)]" }) }),
-              jsx("p", { className: "mt-3 text-xs leading-5 text-gray-500", children: `ثيم ${draft.themeVersion}، DaisyUI ${draft.daisyTheme}، لون ${draft.accentColor}، خط ${draft.fontScale}.` }),
+              jsx("p", { className: "mt-3 text-xs leading-5 text-gray-500", children: `DaisyUI ${draft.daisyTheme}، لون ${draft.accentColor}، خط ${draft.fontScale}.` }),
               jsxs("div", {
                 className: "mt-3 flex gap-2",
                 children: [
@@ -276,7 +263,6 @@ export function SettingsPage() {
     settings.ui?.motionLevel,
     settings.ui?.sidebarLayout?.collapsed,
     settings.ui?.sidebarLayout?.mode,
-    settings.ui?.themeVersion,
     settings.ui?.visualDensity,
     theme
   ]);
@@ -372,11 +358,9 @@ export function SettingsPage() {
     const scheduledDaisyTheme = resolveScheduledTheme(themeSchedule, systemPrefersDark());
     setTheme?.(appearanceDraft.theme);
     if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme-version", appearanceDraft.themeVersion);
       applyDaisyTheme(scheduledDaisyTheme);
       applyCustomDaisyTheme(customDaisyTheme);
     }
-    storeThemeVersion(appearanceDraft.themeVersion);
     storeDaisyTheme(appearanceDraft.daisyTheme);
     storeSchedule(themeSchedule);
     storeCustomDaisyTheme(customDaisyTheme);
@@ -385,7 +369,6 @@ export function SettingsPage() {
       accentColor: appearanceDraft.accentColor,
       ui: {
         ...(settings.ui || {}),
-        themeVersion: appearanceDraft.themeVersion,
         daisyTheme: appearanceDraft.daisyTheme,
         visualDensity: appearanceDraft.visualDensity,
         fontScale: appearanceDraft.fontScale,
@@ -440,7 +423,6 @@ export function SettingsPage() {
         defaultView: settings.defaultView,
         itemsPerPage: settings.itemsPerPage,
         ui: {
-          themeVersion: settings.ui?.themeVersion,
           daisyTheme: settings.ui?.daisyTheme,
           visualDensity: settings.ui?.visualDensity,
           sidebarLayout: settings.ui?.sidebarLayout,
@@ -647,11 +629,6 @@ export function SettingsPage() {
             jsxs("div", {
               className: "space-y-4",
               children: [
-                jsx(ThemeVersionPicker, {
-                  value: appearanceDraft.themeVersion,
-                  commitOnSelect: false,
-                  onChange: (version) => patchAppearanceDraft({ themeVersion: version })
-                }),
                 jsx(ThemeGallery, {
                   value: appearanceDraft.daisyTheme,
                   onChange: selectDaisyTheme

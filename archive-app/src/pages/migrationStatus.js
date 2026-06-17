@@ -4,6 +4,8 @@ export const PAGE_NATIVE_MIGRATION = {
   dashboard: { status: "native", notes: "Page JSX lives in src/pages/DashboardPage.jsx; shell, store, services, and vendor imports are native." },
   archive: { status: "native", notes: "Page JSX lives in src/pages/ArchivePage.jsx with native grid/list/table modes and a native file import wizard." },
   discover: { status: "native", notes: "Page JSX lives in src/pages/DiscoverPage.jsx; discovery sections are driven by src/features/discover/discoveryEngine.js." },
+  timeline: { status: "native", notes: "Page JSX lives in src/pages/TimelinePage.jsx; timeline buckets are driven by src/features/timeline/timelineSelectors.js." },
+  kanban: { status: "native", notes: "Page JSX lives in src/pages/KanbanPage.jsx; status columns are driven by src/features/views/kanbanModel.js." },
   add: { status: "native", notes: "Page JSX lives in src/pages/AddVideoPage.jsx with a native multi-step form and localFile metadata support." },
   detail: { status: "native", notes: "Page JSX lives in src/pages/DetailPage.jsx with native preview, editing, custom fields, and history summary." },
   types: { status: "native", notes: "Page JSX lives in src/pages/TypesPage.jsx with native type, subtype, and custom-field management including localFile." },
@@ -20,14 +22,20 @@ export const PAGE_NATIVE_MIGRATION = {
   reports: { status: "native", notes: "Page JSX lives in src/pages/ReportsPage.jsx; export helpers use the explicit xlsx vendor module." },
   users: { status: "native", notes: "Page JSX lives in src/pages/UsersPage.jsx with native role filtering, account status controls, and protected admin handling." },
   activity: { status: "native", notes: "Page JSX lives in src/pages/ActivityPage.jsx with native activity timeline, before/after diffs, and undo/redo history controls." },
+  errors: { status: "native", notes: "Page JSX lives in src/pages/ErrorLogPage.jsx; errors and recovery actions are driven by src/features/errors." },
   help: { status: "native", notes: "Page JSX lives in src/pages/HelpPage.jsx; shared UI wrappers and runtime bridges have been removed." },
   "sync-log": { status: "native", notes: "Page JSX lives in src/pages/SyncLogPage.jsx; reads audit_logs for sync.* events and renders per-device summary plus chronological log." },
   graph: { status: "native", notes: "Page JSX lives in src/pages/GraphViewPage.jsx; lightweight inline SVG relationship graph (shared tags + type) — no d3/recharts." },
   favorites: { status: "native", notes: "Page JSX lives in src/pages/FavoritesPage.jsx; favorites and quick-access items driven by the favorites store slice." },
   "reading-lists": { status: "native", notes: "Page JSX lives in src/pages/ReadingListsPage.jsx; watch-later and reading list queues driven by the reading-lists store slice." },
   "server-status": { status: "native", notes: "Page JSX lives in src/pages/ServerStatusPage.jsx; server health, storage, and service status from the health endpoint." },
+  "system-control": { status: "native", notes: "Page JSX lives in src/pages/SystemControlPage.jsx; system controls are read-only status cards in this safe slice." },
   duplicates: { status: "native", notes: "Page JSX lives in src/pages/DuplicatesPage.jsx; duplicate detection and merge flows driven by the duplicates feature module." },
-  "saved-searches": { status: "native", notes: "Page JSX lives in src/pages/SavedSearchesPage.jsx; saved searches and alert subscriptions driven by the saved-searches store slice." }
+  "saved-searches": { status: "native", notes: "Page JSX lives in src/pages/SavedSearchesPage.jsx; saved searches and alert subscriptions driven by the saved-searches store slice." },
+  inbox: { status: "native", notes: "Page JSX lives in src/pages/InboxPage.jsx; quick-capture intake is driven by the inbox store slice." },
+  analytics: { status: "native", notes: "Page JSX lives in src/pages/AnalyticsPage.jsx; archive health and growth metrics are driven by src/features/analytics." },
+  automation: { status: "native", notes: "Page JSX lives in src/pages/AutomationPage.jsx; rules are modeled by src/features/automation/automationModel.js." },
+  appearance: { status: "native", notes: "Page JSX lives in src/pages/AppearanceSettingsPage.jsx; appearance settings are a dedicated native surface." }
 };
 
 export function getPageMigrationStatus() {

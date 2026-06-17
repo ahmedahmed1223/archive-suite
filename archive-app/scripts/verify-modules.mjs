@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import {
   MEDIA_PREVIEW_STATUS,
@@ -248,10 +250,6 @@ import {
   applyAccentColor,
   getAccentColorTokens
 } from "../src/theme/accentColor.js";
-import {
-  normalizeThemeVersion,
-  DEFAULT_THEME_VERSION
-} from "../src/theme/themeVersionStorage.js";
 import {
   DAISY_THEME_OPTIONS,
   DEFAULT_DAISY_THEME,
@@ -950,8 +948,8 @@ run("navigation view model", () => {
 run("page migration native status", () => {
   const status = getPageMigrationStatus();
   const summary = getPageMigrationSummary(status);
-  assert.equal(summary.total, 27);
-  assert.equal(summary.native, 27);
+  assert.equal(summary.total, 35);
+  assert.equal(summary.native, 35);
   assert.equal(summary.wrappedPages, 0);
   assert.equal(status.find((page) => page.id === "archive")?.status, "native");
   assert.equal(status.find((page) => page.id === "discover")?.status, "native");
@@ -1746,6 +1744,7 @@ import {
   DEFAULT_BACKEND,
   DEFAULT_LOCAL_ENGINE,
   getBackendChoice,
+  getFirebaseConfig,
   getBackendUrl,
   getLocalEngine,
   setBackendChoice,
@@ -1784,7 +1783,7 @@ function createMemoryByteStorage(initialBytes = null) {
 run("backend choice — defaults to local when storage is empty or absent", () => {
   assert.equal(DEFAULT_BACKEND, "local");
   assert.equal(DEFAULT_LOCAL_ENGINE, "indexeddb");
-  assert.deepEqual([...BACKEND_CHOICES], ["local", "pocketbase", "postgres"]);
+  assert.deepEqual([...BACKEND_CHOICES], ["local", "pocketbase", "postgres", "firebase"]);
   // No storage at all → default.
   assert.equal(getBackendChoice({ storage: null }), "local");
   // Empty storage → default.
@@ -1799,6 +1798,7 @@ run("backend choice — normalize accepts only the known set", () => {
   assert.equal(normalizeBackendChoice("local"), "local");
   assert.equal(normalizeBackendChoice("pocketbase"), "pocketbase");
   assert.equal(normalizeBackendChoice("postgres"), "postgres");
+  assert.equal(normalizeBackendChoice("firebase"), "firebase");
   assert.equal(normalizeBackendChoice("mysql"), "local");
   assert.equal(normalizeBackendChoice(""), "local");
   assert.equal(normalizeBackendChoice(null), "local");
@@ -1825,6 +1825,12 @@ run("backend choice — round-trip set/get with URL pairing", () => {
   assert.equal(setBackendChoice("postgres", "https://db.example.com/api", { storage }), true);
   assert.equal(getBackendChoice({ storage }), "postgres");
   assert.equal(getBackendUrl({ storage }), "https://db.example.com/api");
+
+  // Firebase keeps its client config with the backend choice.
+  const firebaseConfig = { apiKey: "k", projectId: "archive-test", appId: "app" };
+  assert.equal(setBackendChoice("firebase", "", { storage, firebaseConfig }), true);
+  assert.equal(getBackendChoice({ storage }), "firebase");
+  assert.deepEqual(getFirebaseConfig({ storage }), firebaseConfig);
 });
 
 run("backend choice — corrupted JSON in storage falls back to default", () => {
@@ -1900,7 +1906,7 @@ await runAsync("local sqlite provider — CRUD, snapshot, replaceAll, and sqlite
   assert.equal(provider.engine, "sqlite");
 
   await provider.open();
-  await provider.put(STORES.SETTINGS, { key: "app_settings", ui: { themeVersion: "v4" } });
+  await provider.put(STORES.SETTINGS, { key: "app_settings", ui: { daisyTheme: "business" } });
   await provider.put(STORES.ITEMS, { id: "v1", title: "لقطة افتتاحية", type: "clip" });
   assert.equal((await provider.get(STORES.ITEMS, "v1")).title, "لقطة افتتاحية");
 
@@ -1920,13 +1926,13 @@ await runAsync("local sqlite provider — CRUD, snapshot, replaceAll, and sqlite
   assert.equal(await provider.get(STORES.ITEMS, "v2"), undefined);
   const snapshot = await provider.snapshot();
   assert.deepEqual(snapshot.videoItems.map((item) => item.id), ["v1"]);
-  assert.equal(snapshot.settings.ui.themeVersion, "v4");
+  assert.equal(snapshot.settings.ui.daisyTheme, "business");
 
   const counts = await provider.replaceAll({
     contentTypes: [{ id: "clip", name: "لقطات" }],
     videoItems: [{ id: "v3", title: "مستوردة", type: "clip" }],
     bookmarks: [],
-    settings: { ui: { themeVersion: "v4" } },
+    settings: { ui: { daisyTheme: "business" } },
     users: [{ id: "u1", username: "admin" }],
     projects: [{ id: "p1", name: "مشروع" }]
   });
@@ -3056,25 +3062,60 @@ await runAsync("media client — calls endpoints with bearer and maps errors", a
   );
 });
 
-// Theme v2 storage tests — runs the standalone test suite from
-// verify-modules.theme-v2.mjs in the same node process.
-await import("./verify-modules.theme-v2.mjs");
-
-// --- v4 theme version registration ---
-assert.equal(DEFAULT_THEME_VERSION, "v4", "v4 is the default theme version");
-assert.equal(defaultSettings().ui.themeVersion, "v4", "settings default mirrors v4");
+// --- DaisyUI-only theme registration ---
 assert.equal(defaultSettings().ui.roleProfile, "editor", "settings default has guided role profile");
-assert.equal(getDefaultSettings().ui.themeVersion, "v4", "app settings default mirrors v4");
-assert.equal(normalizeThemeVersion("v4"), "v4", "v4 must be a valid theme version");
-assert.equal(normalizeThemeVersion("v3"), "v3", "v3 still valid");
-assert.equal(normalizeThemeVersion("nope"), DEFAULT_THEME_VERSION, "unknown falls back to default");
-console.log("ok: theme version v4 registered and defaulted");
-
 assert.ok(DAISY_THEME_OPTIONS.length >= 30, "DaisyUI theme gallery exposes 30+ themes");
 assert.equal(normalizeDaisyTheme("business"), "business", "known DaisyUI theme is preserved");
 assert.equal(normalizeDaisyTheme("missing-theme"), DEFAULT_DAISY_THEME, "unknown DaisyUI theme falls back to default");
 assert.equal(getDefaultSettings().ui.daisyTheme, DEFAULT_DAISY_THEME, "app settings default mirrors DaisyUI default");
 console.log("ok: DaisyUI theme gallery registered and defaulted");
+
+function collectFiles(root, predicate, output = []) {
+  if (!existsSync(root)) return output;
+  for (const entry of readdirSync(root)) {
+    const fullPath = `${root}/${entry}`;
+    const stats = statSync(fullPath);
+    if (stats.isDirectory()) {
+      collectFiles(fullPath, predicate, output);
+    } else if (predicate(fullPath)) {
+      output.push(fullPath);
+    }
+  }
+  return output;
+}
+
+{
+  const legacyFiles = [
+    "src/features/settings/ThemeVersionPicker.jsx",
+    "src/theme/themeVersionStorage.js",
+    "src/theme/applyInitialThemeVersion.js",
+    "src/styles/v1-identity.css",
+    "src/styles/v2-identity.css",
+    "src/styles/v3-identity.css",
+    "src/styles/v4-identity.css"
+  ];
+  for (const file of legacyFiles) {
+    assert.equal(existsSync(new URL(`../${file}`, import.meta.url)), false, `${file} must stay removed after DaisyUI consolidation`);
+  }
+
+  const sourceFiles = collectFiles(fileURLToPath(new URL("../src", import.meta.url)), (file) => /\.(js|jsx|ts|tsx|css)$/.test(file));
+  const bannedRefs = [
+    "ThemeVersionPicker",
+    "applyInitialThemeVersion",
+    "themeVersionStorage",
+    "data-theme-version",
+    "themeVersion"
+  ];
+  const offenders = [];
+  for (const file of sourceFiles) {
+    const contents = readFileSync(file, "utf8");
+    for (const ref of bannedRefs) {
+      if (contents.includes(ref)) offenders.push(`${file}: ${ref}`);
+    }
+  }
+  assert.deepEqual(offenders, [], "legacy theme-version references must not reappear in src");
+  console.log("ok: legacy theme-version files and src references removed");
+}
 
 // --- motion: stagger is capped at 12 items (spec §3) ---
 assert.equal(staggerFor(0), 0, "first item no delay");

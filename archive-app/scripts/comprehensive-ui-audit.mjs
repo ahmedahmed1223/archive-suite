@@ -243,7 +243,7 @@ function makeSettings(timestamp) {
       firstTaskChoiceUsed: false,
       deviceId: "device_e2e_main",
       deviceName: "جهاز فحص شامل",
-      themeVersion: "v4",
+      daisyTheme: "business",
       motionLevel: "off"
     },
     notifications: {
@@ -440,7 +440,7 @@ async function seedLocalArchive(page) {
     localStorage.clear();
     localStorage.setItem("va_session", `s_e2e:${data.sessionUserId}:${data.sessionExpiresAt}`);
     localStorage.setItem("videoArchive:theme", "dark");
-    localStorage.setItem("videoArchive:themeVersion", "v4");
+    localStorage.setItem("videoArchive:daisyTheme", "business");
     localStorage.setItem("videoArchive:addVideoSidePanel", "1");
 
     const db = await openDb();
@@ -542,7 +542,7 @@ async function seedServerArchive(page) {
     localStorage.setItem("va.cloudUser.v1", JSON.stringify(cloudUser));
     localStorage.setItem("va_session", `s_e2e_cloud:${cloudUser?.id || "admin"}:${expiresAt}`);
     localStorage.setItem("videoArchive:theme", "dark");
-    localStorage.setItem("videoArchive:themeVersion", "v4");
+    localStorage.setItem("videoArchive:daisyTheme", "business");
   }, {
     token,
     user: user || seed.user,

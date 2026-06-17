@@ -130,17 +130,6 @@ export const SETTINGS_REGISTRY = [
     keywords: ["density", "compact", "comfortable", "كثافة", "مسافات"],
   },
   {
-    id: "themeVersion",
-    category: "appearance",
-    tab: "appearance",
-    label: "إصدار النمط البصري",
-    description: "الجيل البصري للواجهة: كلاسيكي (v1)، حديث (v2)، مركز التحكم (v3)، زجاجي (v4).",
-    path: "ui.themeVersion",
-    type: "select",
-    default: "v4",
-    keywords: ["theme version", "classic", "modern", "glass", "نمط"],
-  },
-  {
     id: "daisyTheme",
     category: "appearance",
     tab: "appearance",

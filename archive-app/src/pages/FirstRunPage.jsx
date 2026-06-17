@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Archive, User, Palette, CheckCircle2 } from "lucide-react";
 import { useAppStore } from "../stores/index.js";
+import { applyDaisyTheme, storeDaisyTheme } from "../features/theme/daisyThemes.js";
 
 const STEPS = [
   { id: "account", icon: User,          label: "إنشاء حساب المشرف" },
@@ -11,7 +12,7 @@ const STEPS = [
 export function FirstRunPage() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({ username: "", email: "", password: "", confirmPassword: "" });
-  const [theme, setTheme] = useState("v4");
+  const [theme, setTheme] = useState("business");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -57,8 +58,8 @@ export function FirstRunPage() {
   }
 
   function handleThemeDone() {
-    document.documentElement.setAttribute("data-theme-version", theme);
-    localStorage.setItem("archive_theme_version", theme);
+    applyDaisyTheme(theme);
+    storeDaisyTheme(theme);
     setStep(2);
   }
 
@@ -80,10 +81,10 @@ export function FirstRunPage() {
   ];
 
   const THEMES = [
-    { id: "v1", label: "الكلاسيكي",  color: "#1a1a2e" },
-    { id: "v2", label: "الاحترافي",  color: "#1e293b" },
-    { id: "v3", label: "الأنيق",     color: "#0f172a" },
-    { id: "v4", label: "الحديث",     color: "#111827" },
+    { id: "business", label: "تشغيلي",  color: "#1c1c1c" },
+    { id: "corporate", label: "مؤسسي",  color: "#ffffff" },
+    { id: "night", label: "ليلي",     color: "#0f172a" },
+    { id: "emerald", label: "هادئ",     color: "#ffffff" },
   ];
 
   return (
