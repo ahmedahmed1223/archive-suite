@@ -171,7 +171,7 @@ export function SelectRow({ label, value, options, onChange, description }) {
       jsx("select", {
         value,
         onChange: (event) => onChange(event.target.value),
-        className: "mt-3 min-h-10 w-full rounded-xl border border-white/10 bg-gray-900 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/50",
+        className: "select select-bordered w-full mt-3",
         children: options.map((option) => jsx("option", { value: option.value, children: option.label }, option.value))
       })
     ]
@@ -197,7 +197,7 @@ export function TextInputRow({ label, value, onChange, description, dir = "rtl",
             onChange: (event) => onChange(event.target.value),
             placeholder,
             dir,
-            className: `min-h-10 w-full rounded-xl border border-white/10 bg-gray-900 py-2 text-sm text-white outline-none focus:border-emerald-500/50 ${isPassword ? "ps-3 pe-10" : "px-3"}`
+            className: `input input-bordered w-full mt-3 ${isPassword ? "pe-10" : ""}`
           }),
           isPassword && jsx("button", {
             type: "button",
@@ -377,7 +377,7 @@ export function ShortcutManager({ settings, onSave, showToast }) {
               jsx("select", {
                 value: draft[action.id] || SHORTCUT_DISABLED,
                 onChange: (event) => updateShortcut(action, event.target.value),
-                className: "mt-3 min-h-10 w-full rounded-xl border border-white/10 bg-gray-900 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/50",
+                className: "select select-bordered w-full mt-3",
                 dir: "ltr",
                 children: action.options.map((option) => jsx("option", {
                   value: option,
@@ -393,8 +393,8 @@ export function ShortcutManager({ settings, onSave, showToast }) {
         className: "flex flex-wrap gap-2",
         children: [
           jsx("button", { type: "button", onClick: save, disabled: hasConflicts, className: "btn btn-primary", children: "حفظ الاختصارات" }),
-          jsx("button", { type: "button", onClick: restoreDefaults, className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5", children: "استعادة الافتراضيات" }),
-          jsx("button", { type: "button", onClick: disableAll, className: "rounded-xl border border-red-500/20 px-4 py-2 text-sm text-red-100 hover:bg-red-500/10", children: "تعطيل الكل" })
+          jsx("button", { type: "button", onClick: restoreDefaults, className: "btn btn-ghost", children: "استعادة الافتراضيات" }),
+          jsx("button", { type: "button", onClick: disableAll, className: "btn btn-ghost text-error", children: "تعطيل الكل" })
         ]
       }),
       jsxs("div", {
@@ -405,14 +405,14 @@ export function ShortcutManager({ settings, onSave, showToast }) {
             children: [
               jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
                 jsx("p", { className: "text-sm font-semibold text-white", children: "تصدير الاختصارات" }),
-                jsx("button", { type: "button", onClick: exportJson, className: "rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: "نسخ JSON" })
+                jsx("button", { type: "button", onClick: exportJson, className: "btn btn-ghost btn-xs", children: "نسخ JSON" })
               ] }),
               jsx("textarea", {
                 readOnly: true,
                 value: exportText,
                 placeholder: "اضغط نسخ JSON لتجهيز خريطة الاختصارات الحالية.",
                 dir: "ltr",
-                className: "mt-3 min-h-28 w-full rounded-xl border border-white/10 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-200 outline-none"
+                className: "textarea textarea-bordered w-full mt-3 min-h-28 font-mono text-xs"
               })
             ]
           }),
@@ -421,14 +421,14 @@ export function ShortcutManager({ settings, onSave, showToast }) {
             children: [
               jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
                 jsx("p", { className: "text-sm font-semibold text-white", children: "استيراد الاختصارات" }),
-                jsx("button", { type: "button", onClick: importJson, className: "rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: "تطبيق JSON" })
+                jsx("button", { type: "button", onClick: importJson, className: "btn btn-ghost btn-xs", children: "تطبيق JSON" })
               ] }),
               jsx("textarea", {
                 value: importText,
                 onChange: (event) => setImportText(event.target.value),
                 placeholder: "الصق JSON هنا. يتم تجاهل المفاتيح غير المعروفة والقيم غير المسموحة.",
                 dir: "ltr",
-                className: "mt-3 min-h-28 w-full rounded-xl border border-white/10 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-200 outline-none focus:border-emerald-500/50"
+                className: "textarea textarea-bordered w-full mt-3 min-h-28 font-mono text-xs"
               })
             ]
           })

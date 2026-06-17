@@ -11,7 +11,7 @@ import {
   saveFileStoreConfig, startDropboxOAuth, FileStoreConfigError
 } from "./fileStoreConfigClient.js";
 
-const FIELD = "min-h-10 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-cyan-500/40";
+const FIELD = "input input-bordered w-full";
 
 const PROVIDER_LABELS = {
   disk: "قرص الخادم",
@@ -227,36 +227,36 @@ export function FileStoreSettings() {
           ? jsxs("div", { className: "mt-3 grid gap-2 md:grid-cols-2", children: [
               jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
                 jsx("span", { children: "Dropbox root path" }),
-                jsx("input", { value: dropboxRootPath, onChange: (e) => setDropboxRootPath(e.target.value), dir: "ltr", placeholder: "/archive", className: `${FIELD} text-left` })
+                jsx("input", { value: dropboxRootPath, onChange: (e) => setDropboxRootPath(e.target.value), dir: "ltr", placeholder: "/archive", className: FIELD })
               ] }),
               jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
                 jsx("span", { children: "Dropbox App key" }),
-                jsx("input", { value: dropboxAppKey, onChange: (e) => setDropboxAppKey(e.target.value), dir: "ltr", className: `${FIELD} text-left` })
+                jsx("input", { value: dropboxAppKey, onChange: (e) => setDropboxAppKey(e.target.value), dir: "ltr", className: FIELD })
               ] }),
               jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
                 jsxs("span", { children: ["Dropbox App secret", config?.dropbox?.hasAppSecret ? " (محفوظ)" : ""] }),
-                jsx("input", { type: "password", value: dropboxAppSecret, onChange: (e) => setDropboxAppSecret(e.target.value), dir: "ltr", className: `${FIELD} text-left` })
+                jsx("input", { type: "password", value: dropboxAppSecret, onChange: (e) => setDropboxAppSecret(e.target.value), dir: "ltr", className: FIELD })
               ] }),
               jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
                 jsxs("span", { children: ["Refresh token", config?.dropbox?.hasRefreshToken ? " (اتركه فارغًا للإبقاء على الحالي)" : ""] }),
-                jsx("input", { type: "password", value: dropboxRefreshToken, onChange: (e) => setDropboxRefreshToken(e.target.value), dir: "ltr", className: `${FIELD} text-left` })
+                jsx("input", { type: "password", value: dropboxRefreshToken, onChange: (e) => setDropboxRefreshToken(e.target.value), dir: "ltr", className: FIELD })
               ] }),
               jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
                 jsxs("span", { children: ["Access token", config?.dropbox?.hasAccessToken ? " (اتركه فارغًا للإبقاء على الحالي)" : ""] }),
-                jsx("input", { type: "password", value: dropboxAccessToken, onChange: (e) => setDropboxAccessToken(e.target.value), dir: "ltr", className: `${FIELD} text-left` })
+                jsx("input", { type: "password", value: dropboxAccessToken, onChange: (e) => setDropboxAccessToken(e.target.value), dir: "ltr", className: FIELD })
               ] }),
               jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
                 jsx("span", { children: "Dropbox-API-Select-User" }),
-                jsx("input", { value: dropboxSelectUser, onChange: (e) => setDropboxSelectUser(e.target.value), dir: "ltr", placeholder: "dbid:...", className: `${FIELD} text-left` })
+                jsx("input", { value: dropboxSelectUser, onChange: (e) => setDropboxSelectUser(e.target.value), dir: "ltr", placeholder: "dbid:...", className: FIELD })
               ] }),
               jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
                 jsx("span", { children: "Dropbox-API-Select-Admin" }),
-                jsx("input", { value: dropboxSelectAdmin, onChange: (e) => setDropboxSelectAdmin(e.target.value), dir: "ltr", placeholder: "dbid:...", className: `${FIELD} text-left` })
+                jsx("input", { value: dropboxSelectAdmin, onChange: (e) => setDropboxSelectAdmin(e.target.value), dir: "ltr", placeholder: "dbid:...", className: FIELD })
               ] })
             ] })
           : jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
               jsx("span", { children: "مسار ملفات الخادم" }),
-              jsx("input", { value: diskRootDir, onChange: (e) => setDiskRootDir(e.target.value), dir: "ltr", placeholder: ".archive-files", className: `${FIELD} text-left` })
+              jsx("input", { value: diskRootDir, onChange: (e) => setDiskRootDir(e.target.value), dir: "ltr", placeholder: ".archive-files", className: FIELD })
             ] }),
 
         jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-2", children: [
@@ -267,7 +267,7 @@ export function FileStoreSettings() {
       ] }),
 
       jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-        jsxs("button", { type: "button", onClick: refresh, disabled: loading, className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-50", children: [loading ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(RefreshCw, { className: "h-4 w-4" }), "اختبار الاتصال"] }),
+        jsxs("button", { type: "button", onClick: refresh, disabled: loading, className: "btn btn-ghost gap-2", children: [loading ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(RefreshCw, { className: "h-4 w-4" }), "اختبار الاتصال"] }),
         status?.kind === "dropbox" && jsx("p", { className: "text-xs leading-6 text-gray-500", children: "اختبار الاتصال يستخدم المخزن النشط الآن؛ الإعداد المحفوظ يظهر بعد إعادة التشغيل." })
       ] })
     ] })

@@ -18,7 +18,8 @@ import {
   normalizeDatabaseEngine
 } from "./dbConfigClient.js";
 
-const FIELD = "min-h-10 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40";
+const FIELD = "input input-bordered w-full";
+const SELECT_FIELD = "select select-bordered w-full";
 const DEFAULT_PORT_BY_ENGINE = { postgresql: "5432", mysql: "3306", sqlserver: "1433" };
 
 // Admin-only DB settings (cloud backend). Lets the operator point the server at
@@ -111,7 +112,7 @@ export function DatabaseSettings() {
         jsx("select", {
           value: engine,
           onChange: (event) => changeEngine(event.target.value),
-          className: FIELD,
+          className: SELECT_FIELD,
           children: DATABASE_ENGINES.map((id) => jsx("option", { value: id, children: DATABASE_ENGINE_LABELS[id] || id }, id))
         })
       ] }),
@@ -142,7 +143,7 @@ export function DatabaseSettings() {
       testMsg && jsx("p", { className: `rounded-xl border p-3 text-sm ${testMsg.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-red-500/20 bg-red-500/10 text-red-200"}`, children: testMsg.text }),
 
       jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-        jsxs("button", { type: "button", onClick: runTest, disabled: testing || saving, className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-50", children: [testing ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(PlugZap, { className: "h-4 w-4" }), "اختبار الاتصال"] }),
+        jsxs("button", { type: "button", onClick: runTest, disabled: testing || saving, className: "btn btn-ghost gap-2", children: [testing ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(PlugZap, { className: "h-4 w-4" }), "اختبار الاتصال"] }),
         jsxs("button", { type: "button", onClick: runSave, disabled: saving || testing, className: "btn btn-primary gap-2", children: [saving ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(Save, { className: "h-4 w-4" }), "حفظ (يتطلّب إعادة تشغيل)"] })
       ] }),
       jsx("p", { className: "text-xs leading-6 text-gray-600", children: "تنبيه: لا تُرسَل كلمة مرور القاعدة الحالية إلى الواجهة (تظهر مُقنَّعة). تبديل المحرّك يحتاج إعادة تشغيل الخادم وتشغيل migration مناسب للمحرّك المختار." })
