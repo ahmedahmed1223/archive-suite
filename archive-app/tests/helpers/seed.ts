@@ -54,7 +54,7 @@ function makeSettings(timestamp: string) {
       firstTaskChoiceUsed: true,
       deviceId: 'e2e-device',
       deviceName: 'E2E Runner',
-      themeVersion: 'v3',
+      daisyTheme: 'business',
       helpAutoOpenPending: false
     },
     notifications: {
@@ -190,7 +190,7 @@ export async function seedLocalArchive(page: Page) {
       `s_e2e:${data.sessionUserId}:${data.sessionExpiresAt}`,
     );
     localStorage.setItem('videoArchive:theme', 'dark');
-    localStorage.setItem('videoArchive:themeVersion', 'v3');
+    localStorage.setItem('videoArchive:daisyTheme', 'business');
 
     const db = await openDb();
     await transact(db, data.dataStores, 'readwrite', (tx) => {

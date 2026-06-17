@@ -1,10 +1,6 @@
 import "./styles/design-tokens.css";
 import "./styles/tailwind.css";
 import "./styles/app-overrides.css";
-import "./styles/v1-identity.css";
-import "./styles/v2-identity.css";
-import "./styles/v3-identity.css";
-import "./styles/v4-identity.css";
 
 // Load Sentry only when configured so the default SPA bundle does not pay for
 // the SDK on first paint. When enabled, it still initializes before React
@@ -22,7 +18,6 @@ import { startVideoArchive } from "./app/startVideoArchive.js";
 import { useAppStore } from "./stores/index.js";
 import { applyInitialDaisyTheme } from "./theme/applyInitialDaisyTheme.js";
 import { applyInitialTheme } from "./theme/applyInitialTheme.js";
-import { applyInitialThemeVersion } from "./theme/applyInitialThemeVersion.js";
 
 // Bind storage adapters before anything touches the storage port.
 //
@@ -43,6 +38,5 @@ if (wiring.backend !== "local") {
 }
 
 applyInitialDaisyTheme();
-applyInitialThemeVersion();
 applyInitialTheme();
 startVideoArchive();

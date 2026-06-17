@@ -88,7 +88,6 @@ export function getDefaultSettings() {
       visualDensity: "comfortable",
       daisyTheme: "business",
       lastHelpSection: "getting-started",
-      themeVersion: "v4",
       v1OnboardingCompleted: false,
       v1TourCompleted: false,
       onboardingSkippedAt: null,

@@ -749,7 +749,7 @@
       margin-inline-start: 0;
     }
     /* Compact page padding on small screens */
-    /* intentional: mobile media-query override of v1-identity non-conditional padding */
+    /* intentional: mobile media-query override for fixed bottom chrome padding */
     .va-page-shell { padding: .75rem !important; }
     /* Horizontal scroll for filter pill rows */
     .va-filter-pills-row {

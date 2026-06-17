@@ -30,16 +30,7 @@ export function defaultSettings() {
       // settings reset), but we mirror them here so transfer packages
       // can embed them without an extra IndexedDB roundtrip.
       deviceId: null,
-      deviceName: null,
-      // Theme version — "v1" (classic Office-style), "v2"
-      // (modern Linear/Vercel-style), "v3" (operations-first
-      // command-center identity), or "v4" (glass-green identity).
-      // v4 is now the default; mirrors
-      // DEFAULT_THEME_VERSION in themeVersionStorage.js. The boot path
-      // (applyInitialThemeVersion) reads localStorage which uses the
-      // same default, so the live attribute, this settings mirror, and
-      // the picker all agree for users without an explicit choice.
-      themeVersion: "v4"
+      deviceName: null
     },
     notifications: {
       durationMs: 5500,
