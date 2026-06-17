@@ -3,7 +3,9 @@ packages:
   - "archive-core"
   - "archive-server"
 allowBuilds:
+  '@firebase/util': false
   '@prisma/engines': true
   esbuild: true
   prisma: true
+  protobufjs: false
   sharp: true

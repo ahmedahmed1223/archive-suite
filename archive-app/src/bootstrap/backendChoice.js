@@ -12,8 +12,11 @@
 //   "postgres"   — Postgres via a server-side REST API. Requires a URL.
 //                  Not wired in the SPA yet — needs a follow-up sub-project
 //                  that ships the REST API in archive-server.
+//   "firebase"   — Firestore reached client-side over HTTPS. Requires a
+//                  firebaseConfig (apiKey/projectId/appId/…). Works inside the
+//                  AI Studio iframe because no user-owned server is involved.
 
-export const BACKEND_CHOICES = Object.freeze(["local", "pocketbase", "postgres"]);
+export const BACKEND_CHOICES = Object.freeze(["local", "pocketbase", "postgres", "firebase"]);
 export const LOCAL_ENGINES = Object.freeze(["indexeddb", "sqlite"]);
 export const DEFAULT_BACKEND = "local";
 export const DEFAULT_LOCAL_ENGINE = "indexeddb";
@@ -45,6 +48,20 @@ export function getBackendUrl({ storage = safeLocalStorage() } = {}) {
   }
 }
 
+/** Reads the persisted firebaseConfig for the firebase backend (or null). */
+export function getFirebaseConfig({ storage = safeLocalStorage() } = {}) {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const config = parsed?.firebaseConfig;
+    return config && typeof config === "object" ? config : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getLocalEngine({ storage = safeLocalStorage() } = {}) {
   if (!storage) return DEFAULT_LOCAL_ENGINE;
   try {
@@ -58,14 +75,17 @@ export function getLocalEngine({ storage = safeLocalStorage() } = {}) {
 }
 
 /** Persists choice + url atomically (so we don't end up with mismatched pair). */
-export function setBackendChoice(backend, url = "", { storage = safeLocalStorage(), localEngine = DEFAULT_LOCAL_ENGINE } = {}) {
+export function setBackendChoice(backend, url = "", { storage = safeLocalStorage(), localEngine = DEFAULT_LOCAL_ENGINE, firebaseConfig = null } = {}) {
   if (!storage) return false;
   const normalized = normalizeBackendChoice(backend);
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify({
       backend: normalized,
       url: normalized === "local" ? "" : String(url || ""),
-      localEngine: normalizeLocalEngine(localEngine)
+      localEngine: normalizeLocalEngine(localEngine),
+      firebaseConfig: normalized === "firebase" && firebaseConfig && typeof firebaseConfig === "object"
+        ? firebaseConfig
+        : null
     }));
     return true;
   } catch {
@@ -112,6 +132,7 @@ export function resolveBackendChoice(options = {}) {
     backend: getBackendChoice(options),
     url: getBackendUrl(options),
     localEngine: getLocalEngine(options),
+    firebaseConfig: getFirebaseConfig(options),
     forced: false
   };
 }

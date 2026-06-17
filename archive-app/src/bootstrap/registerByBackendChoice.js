@@ -2,6 +2,7 @@ import { registerAiProvider, registerFileStore, registerSessionProvider, registe
 
 import { registerLocalProviders } from "./registerLocalProviders.js";
 import { resolveBackendChoice } from "./backendChoice.js";
+import { createFirestoreProvider } from "../storage/adapters/cloud-firebase/index.js";
 import { createCloudSessionProvider } from "./cloudSession.js";
 import { createCloudHttpProvider } from "../storage/adapters/cloud-http/index.js";
 import { createCloudFileStore } from "../storage/adapters/cloud-files/index.js";
@@ -19,11 +20,22 @@ import { createCloudAiProvider } from "../storage/adapters/cloud-ai/index.js";
 // resolveBackendChoice forces "local" in AI Studio builds, so this returns the
 // local wiring there regardless of any saved choice.
 export function registerByBackendChoice(options = {}) {
-  const { backend, url, localEngine, forced } = resolveBackendChoice(options);
+  const { backend, url, localEngine, firebaseConfig, forced } = resolveBackendChoice(options);
   const local = registerLocalProviders({ localEngine });
 
   if (backend === "local") {
     return { backend: "local", forced, localEngine: local.localEngine, warning: local.warning, storage: local.storage };
+  }
+
+  // Firebase backend: override only the StorageProvider with the Firestore
+  // adapter (client-side over HTTPS — works in the AI Studio iframe). Files/
+  // auth/sync/ai stay local for now; Firebase Auth/Storage land in Phase C.
+  // The firebase SDK is dynamically imported inside the adapter, so this branch
+  // is the only path that ever loads it.
+  if (backend === "firebase") {
+    const storage = createFirestoreProvider({ firebaseConfig });
+    registerStorageProvider(storage);
+    return { backend: "firebase", forced, localEngine: local.localEngine, storage };
   }
 
   // Cloud backend: override storage with the HTTP adapter. baseUrl is the
