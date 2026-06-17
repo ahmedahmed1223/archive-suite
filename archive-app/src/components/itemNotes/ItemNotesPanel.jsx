@@ -148,7 +148,7 @@ export function ItemNotesPanel({
             type: "button",
             onClick: handleAdd,
             disabled: busy || !body.trim(),
-            className: "va-primary-button inline-flex min-h-9 items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-white disabled:opacity-50",
+            className: "btn btn-primary btn-sm gap-2",
             children: [jsx(Plus, { className: "h-3.5 w-3.5", "aria-hidden": "true" }), "إضافة ملاحظة"]
           })
         ] })

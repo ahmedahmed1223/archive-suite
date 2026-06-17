@@ -52,7 +52,7 @@ export function DataTabs({
         onClick: () => changeTab(tab.id),
         className: `flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors ${
           active
-            ? "va-primary-button text-white shadow-lg shadow-emerald-500/10"
+            ? "bg-primary text-primary-content shadow-lg shadow-emerald-500/10"
             : isDark
               ? "text-gray-400 hover:bg-white/5 hover:text-white"
               : "text-gray-700 hover:bg-gray-100"

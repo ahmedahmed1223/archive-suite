@@ -311,7 +311,7 @@ export function ReportsPage() {
             <button
               type="button"
               onClick={exportExcel}
-              className="btn btn-primary va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white"
+              className="btn btn-primary gap-2"
             >
               <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
               Excel

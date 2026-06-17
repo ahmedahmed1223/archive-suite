@@ -16,7 +16,7 @@ import { useAppStore } from "../../stores/index.js";
 
 function getWizardButtonClass(tone = "neutral", disabled = false) {
   const toneClass = tone === "primary"
-    ? "va-primary-button text-white"
+    ? "btn btn-primary"
     : "border-white/10 bg-white/5 text-slate-200 hover:bg-white/10";
   return `inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${disabled ? "cursor-not-allowed opacity-50" : ""} ${toneClass}`;
 }

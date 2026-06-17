@@ -119,7 +119,7 @@ function SearchResultCard({ item, typeLabel, subtypeLabel, index, onOpen, onOpen
         jsxs("button", {
           type: "button",
           onClick: onOpen,
-          className: `va-primary-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white ${resultMode === "grid" ? "mt-auto w-full" : ""}`,
+          className: `btn btn-primary gap-2 ${resultMode === "grid" ? "mt-auto w-full" : ""}`,
           children: [jsx(Video, { className: "h-4 w-4" }), "فتح التفاصيل"]
         })
       ]
@@ -409,7 +409,7 @@ export function SearchPage() {
           children: [
             activeFilterCount > 0 && jsxs("button", { type: "button", onClick: saveAsSmartCollection, className: "va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/5", children: [jsx(FolderOpen, { className: "h-4 w-4" }), "حفظ كمجموعة ذكية"] }, "save-smart-collection"),
             jsxs("button", { type: "button", onClick: openInArchive, className: "va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/5", children: [jsx(Archive, { className: "h-4 w-4" }), "عرض في الأرشيف"] }, "open-in-archive"),
-            jsxs("button", { type: "button", onClick: () => setCurrentPage?.("add"), className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Video, { className: "h-4 w-4" }), "إضافة فيديو"] }, "add-video")
+            jsxs("button", { type: "button", onClick: () => setCurrentPage?.("add"), className: "btn btn-primary gap-2", children: [jsx(Video, { className: "h-4 w-4" }), "إضافة فيديو"] }, "add-video")
           ]
         })
       }),

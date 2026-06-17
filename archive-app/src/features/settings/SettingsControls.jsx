@@ -392,7 +392,7 @@ export function ShortcutManager({ settings, onSave, showToast }) {
       jsxs("div", {
         className: "flex flex-wrap gap-2",
         children: [
-          jsx("button", { type: "button", onClick: save, disabled: hasConflicts, className: "va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50", children: "حفظ الاختصارات" }),
+          jsx("button", { type: "button", onClick: save, disabled: hasConflicts, className: "btn btn-primary", children: "حفظ الاختصارات" }),
           jsx("button", { type: "button", onClick: restoreDefaults, className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5", children: "استعادة الافتراضيات" }),
           jsx("button", { type: "button", onClick: disableAll, className: "rounded-xl border border-red-500/20 px-4 py-2 text-sm text-red-100 hover:bg-red-500/10", children: "تعطيل الكل" })
         ]

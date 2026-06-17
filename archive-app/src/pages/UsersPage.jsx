@@ -352,7 +352,7 @@ export function UsersPage() {
         icon: jsx(Users, { className: "h-6 w-6 va-accent-text" }),
         title: "المستخدمون",
         description: "إدارة الحسابات والأدوار مع حماية آخر مدير نشط ومنع تغيير كلمات المرور من صفحة المستخدمين.",
-        actions: canManageUsers ? jsxs("button", { type: "button", onClick: () => { setEditingUser(null); setShowForm(true); }, className: "btn btn-sm va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مستخدم جديد"] }) : null
+        actions: canManageUsers ? jsxs("button", { type: "button", onClick: () => { setEditingUser(null); setShowForm(true); }, className: "btn btn-primary btn-sm gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "مستخدم جديد"] }) : null
       }),
       showForm && jsx(UserForm, { user: editingUser, users, onCancel: () => { setShowForm(false); setEditingUser(null); }, onSave: saveUser }),
       jsx("section", { className: "grid gap-3 sm:grid-cols-4", children: [

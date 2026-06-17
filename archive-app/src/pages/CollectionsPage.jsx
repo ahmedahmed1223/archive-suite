@@ -231,7 +231,7 @@ function CollectionAddPicker({ availableItems, typeLabel, onAddItems }) {
       }),
       jsxs("div", { className: "flex items-center justify-between gap-2", children: [
         jsx("button", { type: "button", onClick: toggleSelectAll, disabled: filteredIds.length === 0, className: "text-xs text-gray-400 hover:text-white disabled:opacity-40", children: allFilteredSelected ? "إلغاء التحديد" : "تحديد الكل" }),
-        jsxs("button", { type: "button", disabled: selectedIds.length === 0, onClick: handleAdd, className: "va-primary-button inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40", children: [jsx(Plus, { className: "h-3.5 w-3.5" }), `إضافة ${formatNumber(selectedIds.length)}`] })
+        jsxs("button", { type: "button", disabled: selectedIds.length === 0, onClick: handleAdd, className: "btn btn-primary btn-sm gap-1.5", children: [jsx(Plus, { className: "h-3.5 w-3.5" }), `إضافة ${formatNumber(selectedIds.length)}`] })
       ] })
     ]
   });
@@ -669,7 +669,7 @@ export function CollectionsPage() {
             title: "إنشاء مجموعة ذكية تتحدّث تلقائياً حسب قواعد",
             children: [jsx(Zap, { className: "h-4 w-4" }), "مجموعة ذكية"]
           }),
-          jsxs("button", { type: "button", onClick: startCreate, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مجموعة جديدة"] })
+          jsxs("button", { type: "button", onClick: startCreate, className: "btn btn-primary gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "مجموعة جديدة"] })
         ] })
       }),
       showRuleBuilder && jsx(SmartCollectionRuleBuilder, {

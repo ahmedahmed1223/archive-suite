@@ -155,7 +155,7 @@ export function TwoFactorSettings() {
           type="button"
           onClick={handleSetup}
           disabled={busy}
-          className="va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="btn btn-primary gap-2"
         >
           <Shield className="h-4 w-4" />
           {busy ? "جاري الإعداد..." : "تفعيل المصادقة الثنائية (2FA)"}
@@ -194,7 +194,7 @@ export function TwoFactorSettings() {
               type="button"
               onClick={handleVerify}
               disabled={busy || verifyCode.length < 6}
-              className="va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="btn btn-primary"
             >
               {busy ? "جاري التحقق..." : "تأكيد"}
             </button>

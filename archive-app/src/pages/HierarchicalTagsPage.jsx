@@ -363,7 +363,7 @@ export function HierarchicalTagsPage() {
         actions: jsxs("div", { className: "flex flex-wrap gap-2", children: [
           hierarchicalTags.length > 0 && jsxs("button", { type: "button", onClick: expandAll, className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5", children: [jsx(ChevronDown, { className: "h-4 w-4" }), "توسيع الكل"] }),
           hierarchicalTags.length > 0 && jsxs("button", { type: "button", onClick: collapseAll, className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5", children: [jsx(ChevronLeft, { className: "h-4 w-4" }), "طي الكل"] }),
-          jsxs("button", { type: "button", onClick: startCreateRoot, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "وسم جذر"] })
+          jsxs("button", { type: "button", onClick: startCreateRoot, className: "btn btn-primary gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "وسم جذر"] })
         ] })
       }),
       showForm && jsx(TagForm, {
