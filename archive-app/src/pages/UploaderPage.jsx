@@ -170,13 +170,13 @@ export function UploaderPage() {
         jsxs("div", { className: "grid gap-3 md:grid-cols-2", children: [
           jsxs("label", { htmlFor: folderId, className: "block space-y-1 text-sm text-gray-300", children: [
             jsx("span", { children: "مجلّد الرفع والاستعراض" }),
-            jsx("input", { id: folderId, value: folder, onChange: (e) => setFolder(e.target.value), placeholder: "مثال: thumbnails", dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-left text-sm text-white outline-none focus:border-emerald-500/40" })
+            jsx("input", { id: folderId, value: folder, onChange: (e) => setFolder(e.target.value), placeholder: "مثال: thumbnails", dir: "ltr", className: "input input-bordered w-full" })
           ] }),
           jsxs("label", { htmlFor: searchId, className: "block space-y-1 text-sm text-gray-300", children: [
             jsx("span", { children: "بحث في النتائج" }),
             jsxs("div", { className: "relative", children: [
               jsx(Search, { className: "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
-              jsx("input", { id: searchId, value: query, onChange: (e) => setQuery(e.target.value), placeholder: "filename, folder, type", dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pe-3 ps-9 text-left text-sm text-white outline-none focus:border-emerald-500/40" })
+              jsx("input", { id: searchId, value: query, onChange: (e) => setQuery(e.target.value), placeholder: "filename, folder, type", dir: "ltr", className: "input input-bordered w-full" })
             ] })
           ] })
         ] }),

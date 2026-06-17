@@ -744,7 +744,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             value: storageUrl,
             onChange: (event) => setStorageUrl(event.target.value),
             placeholder: selected.urlPlaceholder || "https://...",
-            className: "w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/50",
+            className: "input input-bordered w-full",
             "aria-invalid": storageNeedsUrl && !storageUrlValid,
             "aria-label": "عنوان الخادم"
           }),
@@ -784,7 +784,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
               jsx("select", {
                 value: serverEngine,
                 onChange: (event) => changeServerEngine(event.target.value),
-                className: "w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50",
+                className: "select select-bordered w-full",
                 children: DATABASE_ENGINES.map((id) => jsx("option", { value: id, children: DATABASE_ENGINE_LABELS[id] || id }, id))
               })
             ] }),
@@ -795,13 +795,13 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                 onChange: (event) => setServerDbUrl(event.target.value),
                 dir: "ltr",
                 placeholder: serverEngine === "sqlite" ? "file:./archive.sqlite" : `${serverEngine}://user:pass@host:${DEFAULT_PORT_BY_ENGINE[serverEngine] || ""}/db`,
-                className: "w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2.5 text-start text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/50"
+                className: "input input-bordered w-full"
               })
             ] }),
             !serverDbUrl.trim() && (serverEngine === "sqlite"
               ? jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
                   jsx("span", { children: "ملف SQLite" }),
-                  jsx("input", { value: serverDbParts.file, onChange: (event) => setServerDbPart("file", event.target.value), dir: "ltr", className: "w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2.5 text-start text-sm text-white outline-none focus:border-emerald-500/50" })
+                  jsx("input", { value: serverDbParts.file, onChange: (event) => setServerDbPart("file", event.target.value), dir: "ltr", className: "input input-bordered w-full" })
                 ] })
               : jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: [
                   ["host", "المضيف", "db.example.com"],
@@ -819,7 +819,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                       onChange: (event) => setServerDbPart(key, event.target.value),
                       dir: "ltr",
                       placeholder,
-                      className: "w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2.5 text-start text-sm text-white outline-none focus:border-emerald-500/50"
+                      className: "input input-bordered w-full"
                     })
                   ]
                 }, key)) }))
@@ -834,11 +834,11 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: [
               jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
                 jsx("span", { children: "اسم المستخدم" }),
-                jsx("input", { value: cloudUsername, onChange: (event) => setCloudUsername(event.target.value), dir: "ltr", className: "w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2.5 text-start text-sm text-white outline-none focus:border-emerald-500/50" })
+                jsx("input", { value: cloudUsername, onChange: (event) => setCloudUsername(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
               ] }),
               jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
                 jsx("span", { children: "كلمة المرور" }),
-                jsx("input", { type: "password", value: cloudPassword, onChange: (event) => setCloudPassword(event.target.value), dir: "ltr", className: "w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2.5 text-start text-sm text-white outline-none focus:border-emerald-500/50" })
+                jsx("input", { type: "password", value: cloudPassword, onChange: (event) => setCloudPassword(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
               ] })
             ] }),
             jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-2", children: [

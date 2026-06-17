@@ -148,7 +148,7 @@ export function IconPicker({
             value: query,
             onChange: (event) => setQuery(event.target.value),
             placeholder: "ابحث في الأيقونات المدمجة...",
-            className: "min-h-10 w-full rounded-xl border border-white/10 bg-gray-800/50 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/50"
+            className: "input input-bordered w-full"
           }),
           jsx("div", {
             className: "grid grid-cols-4 gap-2 sm:grid-cols-6",
@@ -194,7 +194,7 @@ export function IconPicker({
                 value: textValue,
                 onChange: (event) => setTextValue(event.target.value.slice(0, 8)),
                 placeholder: "إيموجي أو نص قصير",
-                className: "min-h-10 flex-1 rounded-xl border border-white/10 bg-gray-800/50 px-3 py-2 text-center text-lg text-white outline-none focus:border-emerald-500/50",
+                className: "input input-bordered w-full",
                 maxLength: 8
               }),
               jsx("button", {
@@ -232,7 +232,7 @@ export function IconPicker({
             onChange: (event) => setUrlValue(event.target.value),
             placeholder: "https://example.com/icon.png",
             dir: "ltr",
-            className: "min-h-10 w-full rounded-xl border border-white/10 bg-gray-800/50 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/50"
+            className: "input input-bordered w-full"
           }),
           jsx("button", {
             type: "button",

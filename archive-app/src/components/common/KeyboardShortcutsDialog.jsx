@@ -98,7 +98,7 @@ export function KeyboardShortcutsDialog({ open, onOpenChange }) {
                   value: shortcutQuery,
                   onChange: (event) => updateShortcutQuery(event.target.value),
                   placeholder: "ابحث في الاختصارات...",
-                  className: "min-h-11 w-full rounded-xl border border-white/10 bg-gray-800/70 pr-10 pl-3 text-sm text-white outline-none transition focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10",
+                  className: "input input-bordered w-full",
                   autoFocus: true
                 })
               ]

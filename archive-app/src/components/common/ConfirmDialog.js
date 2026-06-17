@@ -342,7 +342,7 @@ function DialogModal({ request, mode, onResolve }) {
         }),
         mode === "prompt" && jsx("input", {
           ref: inputRef,
-          className: "mt-4 min-h-11 w-full rounded-xl border border-white/10 bg-gray-950/45 px-3 text-sm text-white outline-none focus:border-emerald-500/50",
+          className: "input input-bordered w-full",
           dir: "auto",
           value,
           onChange: (event) => setValue(event.target.value)

@@ -79,7 +79,7 @@ function TagForm({ tag, parentTag, tags, onCancel, onSave }) {
             "data-autofocus": true,
             value: name,
             onChange: (event) => setName(event.target.value),
-            className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+            className: "input input-bordered w-full",
             placeholder: "مثال: رياضة / كرة قدم"
           })
         ] }),
@@ -88,7 +88,7 @@ function TagForm({ tag, parentTag, tags, onCancel, onSave }) {
           jsx("input", {
             value: aliases,
             onChange: (event) => setAliases(event.target.value),
-            className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+            className: "input input-bordered w-full",
             placeholder: "أسماء بديلة مفصولة بفواصل"
           })
         ] }),
@@ -432,7 +432,7 @@ export function HierarchicalTagsPage() {
               value: query,
               onChange: (event) => setQuery(event.target.value),
               placeholder: "بحث في أسماء الوسوم أو المسارات...",
-              className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40"
+              className: "input input-bordered w-full"
             })
           ] }),
           jsx("p", { className: "mt-3 text-xs text-gray-500", children: query.trim() ? `${formatNumber(filteredTags.length)} نتيجة بحث` : "يمكن ترتيب الوسوم أو إضافة فروع من نفس الشجرة." })

@@ -23,10 +23,8 @@ const TARGET_OPTIONS = [
 
 // DaisyUI `select`/`input` base + bespoke surface/accent layered on top so the
 // look (deep surface, emerald focus) is preserved while standardizing the control.
-const selectClass =
-  "select select-bordered min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none transition-colors focus:border-emerald-500/40";
-const dateClass =
-  "input input-bordered min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none transition-colors focus:border-emerald-500/40";
+const selectClass = "select select-bordered w-full";
+const dateClass = "input input-bordered";
 
 /**
  * Filter bar for the activity timeline.
@@ -61,8 +59,7 @@ export function ActivityFilterBar({ value = {}, onChange }) {
                 value: value.query || "",
                 onChange: (event) => update({ query: event.target.value }),
                 placeholder: "ابحث باسم العنصر أو المستخدم أو الوصف...",
-                className:
-                  "input input-bordered min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40"
+                className: "input input-bordered w-full"
               })
             ]
           }),

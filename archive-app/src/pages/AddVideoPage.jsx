@@ -211,7 +211,7 @@ function LocalFilePicker({ value, onFileSelect, inputId }) {
 
 function FieldInput({ field, value, onChange, inputId }) {
   const key = fieldKey(field);
-  const commonClass = "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40";
+  const commonClass = "input input-bordered w-full";
   if (field.type === "textarea" || field.type === "transcript") {
     return jsx("textarea", { id: inputId, value: value || "", onChange: (event) => onChange(key, event.target.value), rows: 3, className: `${commonClass} p-3`, placeholder: field.placeholder || field.label });
   }
@@ -665,8 +665,8 @@ export function AddVideoPage() {
             jsx("button", { type: "button", onClick: () => setShowTemplatePicker(true), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-white/15 px-4 py-2 text-sm text-gray-400 transition-colors hover:border-white/25 hover:text-white", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }, "icon"), "تطبيق قالب"] }),
             jsx("button", { type: "button", onClick: () => setShowQuickAdd(v => !v), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-emerald-500/20 px-4 py-2 text-sm text-emerald-400 transition-colors hover:border-emerald-500/40 hover:text-emerald-300", children: [jsx("span", { className: "text-base leading-none", children: "⚡" }, "icon"), "إضافة سريعة"] })
           ] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: titleId, className: "block", children: "العنوان" }), jsx("input", { id: titleId, value: title, onChange: (event) => setTitle(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "عنوان الفيديو" })] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: pathId, className: "block", children: "الرابط أو المسار" }), jsx("input", { id: pathId, value: path, onChange: (event) => setPath(event.target.value), dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "https:// أو D:\\..." })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: titleId, className: "block", children: "العنوان" }), jsx("input", { id: titleId, value: title, onChange: (event) => setTitle(event.target.value), className: "input input-bordered w-full", placeholder: "عنوان الفيديو" })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: pathId, className: "block", children: "الرابط أو المسار" }), jsx("input", { id: pathId, value: path, onChange: (event) => setPath(event.target.value), dir: "ltr", className: "input input-bordered w-full", placeholder: "https:// أو D:\\..." })] }),
           jsxs("div", { className: "space-y-2 text-sm text-gray-300 md:col-span-2", children: [
             jsx("label", { htmlFor: localFileId, className: "block", children: "ملف محلي من الجهاز" }),
             jsxs("div", { className: "flex flex-wrap gap-2", role: "radiogroup", "aria-label": "وضع الرفع", children: [
@@ -683,8 +683,8 @@ export function AddVideoPage() {
               "أرشفة المادة المرفوعة مباشرة"
             ] })
           ] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: thumbnailId, className: "block", children: "الصورة المصغرة" }), jsx("input", { id: thumbnailId, value: thumbnail, onChange: (event) => setThumbnail(event.target.value), dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "رابط صورة اختياري" })] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: notesId, className: "block", children: "ملاحظات" }), jsx("textarea", { id: notesId, value: notes, onChange: (event) => setNotes(event.target.value), className: "min-h-[100px] w-full va-surface-deep rounded-xl border p-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "ملخص أو ملاحظات أرشيفية" })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: thumbnailId, className: "block", children: "الصورة المصغرة" }), jsx("input", { id: thumbnailId, value: thumbnail, onChange: (event) => setThumbnail(event.target.value), dir: "ltr", className: "input input-bordered w-full", placeholder: "رابط صورة اختياري" })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: notesId, className: "block", children: "ملاحظات" }), jsx("textarea", { id: notesId, value: notes, onChange: (event) => setNotes(event.target.value), className: "textarea textarea-bordered w-full", placeholder: "ملخص أو ملاحظات أرشيفية" })] }),
           ai.available && jsx("div", { className: "md:col-span-2", children: jsx(AiAssistBar, { available: ai.available, busy: ai.busy, onSummarize: aiSummarize, onSuggestTags: aiSuggestTags, onProofread: aiProofread }) })
         ] }, "basic-step"),
         currentStep.id === "classify" && jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [

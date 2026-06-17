@@ -60,15 +60,15 @@ function TypeBasicsForm({ draft, setDraft }) {
     children: [
       jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
         jsx("span", { children: "الأيقونة" }),
-        jsx("input", { value: draft.icon || "📁", onChange: (event) => setDraft({ ...draft, icon: event.target.value.slice(0, 4), iconSpec: { type: "emoji", value: event.target.value.slice(0, 4) || "📁" } }), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-center text-xl text-white outline-none focus:border-emerald-500/40" })
+        jsx("input", { value: draft.icon || "📁", onChange: (event) => setDraft({ ...draft, icon: event.target.value.slice(0, 4), iconSpec: { type: "emoji", value: event.target.value.slice(0, 4) || "📁" } }), className: "input input-bordered w-full text-center text-xl" })
       ] }),
       jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
         jsx("span", { children: "اسم النوع" }),
-        jsx("input", { "data-autofocus": true, value: draft.name || "", onChange: (event) => updateName(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "مثال: مقابلات" })
+        jsx("input", { "data-autofocus": true, value: draft.name || "", onChange: (event) => updateName(event.target.value), className: "input input-bordered w-full", placeholder: "مثال: مقابلات" })
       ] }),
       jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
         jsx("span", { children: "اسم داخلي/إنجليزي" }),
-        jsx("input", { value: draft.nameEn || "", onChange: (event) => setDraft({ ...draft, nameEn: event.target.value }), dir: "ltr", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "interviews" })
+        jsx("input", { value: draft.nameEn || "", onChange: (event) => setDraft({ ...draft, nameEn: event.target.value }), dir: "ltr", className: "input input-bordered w-full", placeholder: "interviews" })
       ] }),
       jsxs("div", { className: "space-y-1 md:col-span-3", children: [
         jsx("span", { className: "text-sm text-gray-300", children: "اللون" }),
@@ -111,7 +111,7 @@ function SubtypesEditor({ draft, setDraft }) {
           value: name,
           onChange: (event) => setName(event.target.value),
           onKeyDown: handleKey,
-          className: "min-h-10 min-w-0 flex-1 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+          className: "input input-bordered w-full min-w-0 flex-1",
           placeholder: "اسم الفرع (مثلاً: مقابلات سياسية)",
           "aria-label": "اسم الفرع الجديد"
         }),
@@ -188,14 +188,14 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
         jsx("input", {
           value: fieldDraft.label,
           onChange: (event) => setFieldDraft({ ...fieldDraft, label: event.target.value }),
-          className: "min-h-10 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+          className: "input input-bordered w-full",
           placeholder: "اسم الحقل",
           "aria-label": "اسم الحقل المخصص"
         }),
         jsx("select", {
           value: fieldDraft.type,
           onChange: (event) => setFieldDraft({ ...fieldDraft, type: event.target.value }),
-          className: "min-h-10 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+          className: "select select-bordered w-full",
           "aria-label": "نوع الحقل",
           children: FIELD_TYPE_OPTIONS.map((type) => jsx("option", { value: type.id, children: type.label }, type.id))
         }),
@@ -270,11 +270,11 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
           editingFieldId === field.id ? jsxs("div", { className: "mt-3 grid gap-2 border-t border-white/10 pt-3 sm:grid-cols-2", children: [
             jsxs("label", { className: "block text-xs text-gray-400", children: [
               jsx("span", { className: "block", children: "المجموعة / التبويب" }),
-              jsx("input", { value: field.group || "", onChange: (event) => updateField(field.id, { group: event.target.value }), className: "mt-1 min-h-9 w-full va-surface-deep rounded-lg border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "بدون مجموعة" })
+              jsx("input", { value: field.group || "", onChange: (event) => updateField(field.id, { group: event.target.value }), className: "input input-bordered w-full mt-1", placeholder: "بدون مجموعة" })
             ] }),
             FIELD_OPTION_TYPES.includes(field.type) ? jsxs("label", { className: "block text-xs text-gray-400", children: [
               jsx("span", { className: "block", children: "الخيارات (مفصولة بفاصلة)" }),
-              jsx("input", { value: (field.options || []).join("، "), onChange: (event) => updateField(field.id, { options: parseFieldOptions(event.target.value) }), className: "mt-1 min-h-9 w-full va-surface-deep rounded-lg border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "خيار 1، خيار 2" })
+              jsx("input", { value: (field.options || []).join("، "), onChange: (event) => updateField(field.id, { options: parseFieldOptions(event.target.value) }), className: "input input-bordered w-full mt-1", placeholder: "خيار 1، خيار 2" })
             ] }) : null,
             jsxs("div", { className: "block text-xs text-gray-400", children: [
               jsx("span", { className: "block", children: "إلزامية الحفظ" }),
@@ -283,11 +283,11 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
             jsxs("div", { className: "block text-xs text-gray-400 sm:col-span-2", children: [
               jsx("span", { className: "block", children: "إظهار شرطي — أظهر هذا الحقل فقط عندما يساوي حقلٌ آخر قيمةً معيّنة" }),
               jsxs("div", { className: "mt-1 grid gap-2 sm:grid-cols-2", children: [
-                jsxs("select", { value: field.showWhen?.fieldKey || "", onChange: (event) => updateField(field.id, { showWhen: event.target.value ? { fieldKey: event.target.value, equals: field.showWhen?.equals ?? "" } : null }), className: "min-h-9 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-emerald-500/40", children: [
+                jsxs("select", { value: field.showWhen?.fieldKey || "", onChange: (event) => updateField(field.id, { showWhen: event.target.value ? { fieldKey: event.target.value, equals: field.showWhen?.equals ?? "" } : null }), className: "select select-bordered w-full", children: [
                   jsx("option", { value: "", children: "دائماً (بلا شرط)" }),
                   ...fields.filter((other) => other.id !== field.id).map((other) => jsx("option", { value: other.storageKey || other.name, children: other.label }, other.id))
                 ] }),
-                jsx("input", { value: field.showWhen?.equals ?? "", onChange: (event) => updateField(field.id, { showWhen: field.showWhen?.fieldKey ? { fieldKey: field.showWhen.fieldKey, equals: event.target.value } : null }), disabled: !field.showWhen?.fieldKey, placeholder: "القيمة المطلوبة", className: "min-h-9 w-full va-surface-deep rounded-lg border px-3 text-sm text-white outline-none focus:border-emerald-500/40 disabled:opacity-40" })
+                jsx("input", { value: field.showWhen?.equals ?? "", onChange: (event) => updateField(field.id, { showWhen: field.showWhen?.fieldKey ? { fieldKey: field.showWhen.fieldKey, equals: event.target.value } : null }), disabled: !field.showWhen?.fieldKey, placeholder: "القيمة المطلوبة", className: "input input-bordered w-full disabled:opacity-40" })
               ] })
             ] })
           ] }) : null
@@ -684,7 +684,7 @@ export function TypesPage() {
           jsxs("div", { className: "va-filter-surface grid gap-3 rounded-2xl va-surface-muted border p-3 md:grid-cols-[minmax(0,1fr)_auto]", children: [
             jsxs("label", { className: "relative block", children: [
               jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
-              jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث في الأنواع والفروع...", className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40" })
+              jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث في الأنواع والفروع...", className: "input input-bordered w-full py-2 pl-3 pr-10 placeholder:text-gray-600" })
             ] }),
             jsxs("label", { className: "inline-flex min-h-11 items-center gap-2 va-surface-muted rounded-xl border px-3 text-sm text-gray-300", children: [
               jsx("input", { type: "checkbox", checked: includeArchived, onChange: (event) => setIncludeArchived(event.target.checked) }),

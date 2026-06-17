@@ -107,7 +107,7 @@ function VocabularyForm({ entry, activeCategory, onCancel, onSave }) {
             "data-autofocus": true,
             value: term,
             onChange: (event) => setTerm(event.target.value),
-            className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+            className: "input input-bordered w-full",
             placeholder: "مثال: القدس"
           })
         ] }),
@@ -117,7 +117,7 @@ function VocabularyForm({ entry, activeCategory, onCancel, onSave }) {
             id: categoryId,
             value: category,
             onChange: (event) => setCategory(event.target.value),
-            className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+            className: "select select-bordered w-full",
             children: VOCABULARY_CATEGORIES.map((item) => jsx("option", { value: item.id, children: item.label }, item.id))
           })
         ] }),
@@ -127,7 +127,7 @@ function VocabularyForm({ entry, activeCategory, onCancel, onSave }) {
             id: aliasesId,
             value: aliases,
             onChange: (event) => setAliases(event.target.value),
-            className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+            className: "input input-bordered w-full",
             placeholder: "أسماء بديلة مفصولة بفاصلة"
           })
         ] }),
@@ -137,7 +137,7 @@ function VocabularyForm({ entry, activeCategory, onCancel, onSave }) {
             id: descriptionId,
             value: description,
             onChange: (event) => setDescription(event.target.value),
-            className: "min-h-[86px] w-full va-surface-deep rounded-xl border p-3 text-sm text-white outline-none focus:border-emerald-500/40",
+            className: "textarea textarea-bordered w-full",
             placeholder: "معلومة قصيرة تساعد فريق الأرشفة على استخدام المصطلح الصحيح"
           })
         ] })
@@ -400,7 +400,7 @@ export function VocabularyPage() {
                     value: query,
                     onChange: (event) => setQuery(event.target.value),
                     placeholder: "بحث في المصطلحات والأسماء المستعارة...",
-                    className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40"
+                    className: "input input-bordered w-full"
                   })
                 ]
               }),

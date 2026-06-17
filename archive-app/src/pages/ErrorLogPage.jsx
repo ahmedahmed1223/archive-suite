@@ -116,7 +116,7 @@ export function ErrorLogPage() {
           onChange: (event) => setQuery(event.target.value),
           placeholder: "بحث في الأخطاء...",
           "aria-label": "بحث في الأخطاء",
-          className: "min-h-10 flex-1 va-surface-deep rounded-lg border px-3 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-500/40"
+          className: "input input-bordered w-full"
         }),
         errors.length > 0 ? jsxs("button", {
           type: "button",

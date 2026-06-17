@@ -170,13 +170,13 @@ export function QuickAddBar({ initialTemplate = null, contentTypes = [], default
             placeholder: "عنوان العنصر... (Enter للإضافة)",
             disabled: saving,
             "aria-label": "عنوان العنصر للإضافة السريعة",
-            className: "min-w-0 flex-1 rounded-xl border border-gray-700 bg-gray-800/60 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-50"
+            className: "input input-bordered w-full"
           }),
           contentTypes.length > 0 && jsx("select", {
             value: typeId,
             onChange: e => setTypeId(e.target.value),
             "aria-label": "نوع المحتوى",
-            className: "rounded-xl border border-gray-700 bg-gray-800/60 px-2.5 py-2 text-sm text-gray-200 outline-none focus:border-emerald-500/60 min-w-24"
+            className: "select select-bordered w-full"
           }, contentTypes.map(ct =>
             jsx("option", { value: ct.id, children: ct.name || ct.id }, ct.id)
           )),
