@@ -354,7 +354,7 @@ export function VocabularyPage() {
         icon: jsx(BookOpen, { className: "h-6 w-6 va-accent-text" }),
         title: "القاموس المتحكم به",
         description: "مصطلحات موحدة تظهر في حقول الوسوم والاستدعاء الذكي عند كتابة الرمز @.",
-        actions: jsxs("button", { type: "button", onClick: startCreate, className: "va-primary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white", children: [jsx(Plus, { className: "h-4 w-4" }), "مصطلح جديد"] })
+        actions: jsxs("button", { type: "button", onClick: startCreate, className: "btn btn-primary gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "مصطلح جديد"] })
       }),
       showForm && jsx(VocabularyForm, {
         entry: editingEntry,

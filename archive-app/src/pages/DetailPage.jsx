@@ -117,7 +117,7 @@ function LocalFilePicker({ value, onFileSelect }) {
         jsx(HardDrive, { className: "h-4 w-4 shrink-0 va-accent-text" }),
         jsx("span", { className: "truncate", dir: "auto", children: file?.name || "لم يتم اختيار ملف" })
       ] }),
-      jsx("button", { type: "button", onClick: () => inputRef.current?.click(), className: "inline-flex min-h-9 items-center justify-center va-primary-button rounded-lg px-3 py-1.5 text-xs font-semibold text-white", children: "استعراض" })
+      jsx("button", { type: "button", onClick: () => inputRef.current?.click(), className: "btn btn-primary btn-sm", children: "استعراض" })
     ] }),
     file && jsxs("div", { className: "mt-2 space-y-1 text-xs text-gray-600", children: [
       file.size > 0 && jsx("p", { children: formatFileSize(file.size) }),
@@ -356,7 +356,7 @@ function PreviewAction({ onClick, children, icon, primary = false, disabled = fa
     type: "button",
     onClick,
     disabled,
-    className: `${primary ? "va-primary-button border-transparent text-white" : "border-white/10 bg-white/[0.035] text-gray-300 hover:bg-white/[0.06] hover:text-white"} inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45`,
+    className: `${primary ? "btn btn-primary btn-sm" : "border-white/10 bg-white/[0.035] text-gray-300 hover:bg-white/[0.06] hover:text-white inline-flex min-h-9 items-center justify-center rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45"} gap-1.5`,
     children: [icon, children]
   });
 }
@@ -733,7 +733,7 @@ export function DetailPage() {
         icon: jsx(Video, { className: "h-8 w-8" }),
         title: "لم يتم اختيار فيديو",
         description: "افتح عنصرًا من الأرشيف لعرض تفاصيله أو استخدم البحث للوصول إلى مادة محددة.",
-        actions: jsx("button", { type: "button", onClick: () => setCurrentPage?.("archive"), className: "va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white", children: "فتح الأرشيف" })
+        actions: jsx("button", { type: "button", onClick: () => setCurrentPage?.("archive"), className: "btn btn-primary", children: "فتح الأرشيف" })
       })
     ] });
   }
@@ -1354,7 +1354,7 @@ export function DetailPage() {
         ] }, field.id) }),
         jsxs("div", { className: "flex justify-end gap-2", children: [
           jsx("button", { type: "button", onClick: () => setEditing(false), className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5", children: "إلغاء" }),
-          jsx("button", { type: "button", onClick: save, className: "va-primary-button rounded-xl px-4 py-2 text-sm font-semibold text-white", children: "حفظ" })
+          jsx("button", { type: "button", onClick: save, className: "btn btn-primary", children: "حفظ" })
         ] })
       ] }),
       jsxs("section", { className: "space-y-6", children: [
@@ -1410,7 +1410,7 @@ export function DetailPage() {
                 type: "button",
                 onClick: submitComment,
                 disabled: commentBusy || !commentDraft.trim(),
-                className: "va-primary-button inline-flex min-h-9 items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-white disabled:opacity-50",
+                className: "btn btn-primary btn-sm gap-2",
                 children: [commentBusy ? jsx(Loader2, { className: "h-3.5 w-3.5 animate-spin" }) : jsx(Send, { className: "h-3.5 w-3.5" }), "إرسال"]
               })
             ] }),

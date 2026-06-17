@@ -29,7 +29,7 @@ import { useBreadcrumbs } from "../../hooks/useBreadcrumbs.js";
 
 function ContextButton({ children, onClick, variant = "secondary", className = "", ariaLabel }) {
   const classes = variant === "primary"
-    ? "va-primary-button text-white"
+    ? "bg-primary text-primary-content"
     : "va-secondary-button border-white/10 text-gray-300 hover:bg-white/5 hover:text-white";
 
   return jsx("button", {

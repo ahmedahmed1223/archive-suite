@@ -125,7 +125,7 @@ export function TranscriberPage() {
 
         jsx("div", { className: "flex justify-end", children: jsxs("button", {
           type: "button", onClick: run, disabled: busy || !file,
-          className: "va-primary-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40",
+          className: "btn btn-primary gap-2",
           children: [busy ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(Sparkles, { className: "h-4 w-4" }), busy ? "جارٍ التفريغ…" : "ابدأ التفريغ"]
         }) })
       ] }),

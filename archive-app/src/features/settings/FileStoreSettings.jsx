@@ -260,7 +260,7 @@ export function FileStoreSettings() {
             ] }),
 
         jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-2", children: [
-          jsxs("button", { type: "button", onClick: runSave, disabled: saving || loading, className: "va-primary-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50", children: [saving ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(Save, { className: "h-4 w-4" }), "حفظ (يتطلّب إعادة تشغيل)"] }),
+          jsxs("button", { type: "button", onClick: runSave, disabled: saving || loading, className: "btn btn-primary gap-2", children: [saving ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(Save, { className: "h-4 w-4" }), "حفظ (يتطلّب إعادة تشغيل)"] }),
           kind === "dropbox" && jsxs("button", { type: "button", onClick: runDropboxOAuth, disabled: oauthBusy || saving || loading, className: "inline-flex items-center gap-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-500/15 disabled:opacity-50", children: [oauthBusy ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(ExternalLink, { className: "h-4 w-4" }), "ربط Dropbox"] }),
           jsx("p", { className: "text-xs leading-6 text-gray-600", children: "لا يتم عرض token الحالي في الواجهة؛ الحفظ يكتب الإعداد على الخادم فقط." })
         ] })

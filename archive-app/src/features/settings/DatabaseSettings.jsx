@@ -143,7 +143,7 @@ export function DatabaseSettings() {
 
       jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
         jsxs("button", { type: "button", onClick: runTest, disabled: testing || saving, className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-50", children: [testing ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(PlugZap, { className: "h-4 w-4" }), "اختبار الاتصال"] }),
-        jsxs("button", { type: "button", onClick: runSave, disabled: saving || testing, className: "va-primary-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50", children: [saving ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(Save, { className: "h-4 w-4" }), "حفظ (يتطلّب إعادة تشغيل)"] })
+        jsxs("button", { type: "button", onClick: runSave, disabled: saving || testing, className: "btn btn-primary gap-2", children: [saving ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(Save, { className: "h-4 w-4" }), "حفظ (يتطلّب إعادة تشغيل)"] })
       ] }),
       jsx("p", { className: "text-xs leading-6 text-gray-600", children: "تنبيه: لا تُرسَل كلمة مرور القاعدة الحالية إلى الواجهة (تظهر مُقنَّعة). تبديل المحرّك يحتاج إعادة تشغيل الخادم وتشغيل migration مناسب للمحرّك المختار." })
     ] })

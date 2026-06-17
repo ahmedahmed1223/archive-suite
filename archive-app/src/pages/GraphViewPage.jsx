@@ -127,7 +127,7 @@ function SelectedNodePanel({ node, typeLabel, onOpen }) {
       jsx("p", { className: "mb-1 text-[10px] uppercase tracking-wide text-gray-500", children: "وسوم" }),
       jsx("div", { className: "flex flex-wrap gap-1", children: node.tags.slice(0, 8).map((tag) => jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-gray-300", children: tag }, tag)) })
     ] }) : null,
-    jsx("button", { type: "button", onClick: onOpen, className: "va-primary-button mt-2 inline-flex min-h-8 w-full items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold text-white", children: "فتح التفاصيل" })
+    jsx("button", { type: "button", onClick: onOpen, className: "btn btn-primary btn-sm btn-block mt-2", children: "فتح التفاصيل" })
   ] });
 }
 

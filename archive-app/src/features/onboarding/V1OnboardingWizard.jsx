@@ -216,7 +216,7 @@ function PrimaryButton({ children, onClick, disabled = false, type = "button" })
     type,
     onClick,
     disabled,
-    className: "va-primary-button inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-2 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+    className: "btn btn-primary",
     children
   });
 }
@@ -607,7 +607,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             type: "button",
             onClick: handleInstantTry,
             disabled: isSubmitting,
-            className: "va-primary-button inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+            className: "btn btn-primary flex-1 gap-2",
             children: isSubmitting ? "جارٍ التحضير..." : "ابدأ فوراً (تجريبي)"
           }),
           jsx("button", {
