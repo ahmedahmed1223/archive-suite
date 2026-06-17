@@ -1924,7 +1924,10 @@
   - 🔄 **مرحلة 14 (2026-06-17):** ترحيل `components/settings/TwoFactorSettings.jsx` (رموز استرداد → `alert alert-warning`) + `components/activity/ActivityEntry.jsx` (أزرار تراجع/إعادة → `btn btn-xs`). **709 اختبار تمرّ، build:spa أخضر.**
   - 🔄 **مرحلة 15 (2026-06-17):** ترحيل `pages/TypesPage.jsx` + `pages/ProjectsPage.jsx` — جميع `va-primary-button` → `btn btn-primary`. **709 اختبار تمرّ، build:spa أخضر.**
   - 🔄 **مرحلة 16 (2026-06-17):** ترحيل `pages/SettingsPage.jsx` — 7 أزرار `va-primary-button` → `btn btn-primary`. **709 اختبار تمرّ، build:spa أخضر.**
-  - 🔄 **مرحلة 17 (2026-06-17):** ترحيل `app/shell/ShellParts.jsx` — أزرار نماذج تسجيل الدخول/كلمة المرور/معالج البداية → `btn btn-primary`. **709 اختبار تمرّ، build:spa أخضر.** المتبقي: `ArchiveViews.jsx`/`ArchivePageHero.jsx`/`EntityFormModal`/`ConfirmDialog` + `drawer` للجوال (يتطلب إعادة هيكلة AppRouter — جلسة منفصلة) + §2002 (إزالة v1–v4) عالي الخطورة.
+  - 🔄 **مرحلة 17 (2026-06-17):** ترحيل `app/shell/ShellParts.jsx` — أزرار نماذج تسجيل الدخول/كلمة المرور/معالج البداية → `btn btn-primary`. **709 اختبار تمرّ، build:spa أخضر.**
+  - 🔄 **مرحلة 24 (2026-06-17):** ترحيل حقول إعدادات الخادم — `DatabaseSettings`/`FileStoreSettings`/`SettingsControls` → `input input-bordered`/`select select-bordered`/`textarea textarea-bordered`/`btn btn-ghost`. **709 اختبار تمرّ.**
+  - 🔄 **مرحلة 25-26 (2026-06-17):** مسح كل 77 نمطاً متبقياً (`outline-none focus:border-emerald`) عبر 24 ملفاً — جميع صفحات الإعدادات والمحتوى والمكوّنات + V1OnboardingWizard. **صفر نمط متبقٍ. 709 اختبار تمرّ.**
+  - **المتبقي الوحيد لـ§1881:** `drawer` للجوال (يتطلب إعادة هيكلة AppRouter — جلسة منفصلة).
   - يرتبط بـ: §4 (UI/UX)، §17.10 (السمات)، §19.4 (تثبيت daisyUI).
   - الجهد: 6-8 أسابيع (تدريجي).
   - المصدر: daisyui-ux-proposals (المقترح 1 — P1).
