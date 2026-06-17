@@ -260,7 +260,7 @@ export function ArchivePageHero(props) {
           onClick: () => setMobileControlsOpen(true),
           "aria-expanded": mobileControlsOpen,
           "aria-controls": mobilePanelId,
-          className: "va-tool-button inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 bg-gray-950/35 px-3 py-1.5 text-sm font-semibold text-gray-200 hover:bg-white/5 md:hidden",
+          className: "btn btn-ghost btn-sm gap-2 md:hidden",
           title: "خيارات العرض والفلاتر",
           children: [
             jsx(SlidersHorizontal, { className: "h-4 w-4 va-accent-text" }),
@@ -324,7 +324,7 @@ export function ArchivePageHero(props) {
                 onClick: () => setMobileControlsOpen(true),
                 "aria-expanded": mobileControlsOpen,
                 "aria-controls": mobilePanelId,
-                className: "va-tool-button inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 bg-gray-950/35 px-3 py-1.5 text-xs font-semibold text-gray-200 hover:bg-white/5 md:hidden",
+                className: "btn btn-ghost btn-sm gap-2 md:hidden",
                 children: [
                   jsx(SlidersHorizontal, { className: "h-4 w-4 va-accent-text" }),
                   currentViewLabel,
