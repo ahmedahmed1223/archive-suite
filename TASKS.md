@@ -1682,6 +1682,7 @@
 ### 16.5 P1 — الاستيراد من مصادر خارجية (External Source Import)
 
 - [ ] `[P1]` ⏱️XL **بناء منظومة استيراد من يوتيوب وGoogle Drive وروابط الويب والمجلدات المحلية** — الرفع اليدوي وحده يرفع الاحتكاك ويمنع إدخال المحتوى من مصادر الاستخدام اليومية.
+  - 🔄 **شريحة استيراد الروابط (2026-06-16):** كشف مصادر نقي من جانب العميل + واجهة استيراد. نموذج `detectImportSource`/`parseImportLines`/`buildImportDraft` يصنّف روابط يوتيوب/Drive/الويب ويبني مسودات لـ `createVideoItemValue`، وحوار `ImportFromUrlDialog` يتيح لصق روابط متعددة مع معاينة وإنشاء عناصر تشير إلى الرابط. الملفات: `archive-app/src/features/import/importSources.js` (+`importSources.test.js`)، `archive-app/src/features/import/ImportFromUrlDialog.jsx`، ومربوط في `archive-app/src/pages/ArchivePage.jsx` (زر "استيراد من روابط"). 794 اختبارًا ينجح، build:spa أخضر. مؤجّل: جلب البيانات الوصفية من الخادم، مصادقة Drive OAuth للملفات الخاصة، تنزيل الوسائط الفعلي، واستيراد المجلدات المحلية دفعة واحدة.
   - **الملفات الجديدة:**
     - `archive-app/src/pages/ImportSourcesPage.jsx` — مركز ربط المصادر.
     - `archive-app/src/components/import/ExternalImportDialog.jsx` — إدخال رابط أو اختيار مصدر.
