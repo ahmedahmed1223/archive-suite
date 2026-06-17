@@ -13,6 +13,7 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
+  ArrowRight,
   Archive as ArchiveIcon,
   CheckCircle2,
   ClipboardList,
@@ -304,10 +305,10 @@ function ProjectCard({ project, active, index, onOpen, onDelete }) {
 function ProjectEditor({
   project, items, itemsById, users, usersById, onPatch,
   onAddCut, onMoveCut, onRemoveCut, onReorderClips, onAddTask, onMoveTask, onRemoveTask,
-  onExport, mp4Enabled, exporting
+  onExport, mp4Enabled, exporting, onBack
 }) {
   if (!project) {
-    return jsxs("aside", {
+    return jsxs("section", {
       className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35 p-8 text-center",
       children: [
         jsx(Film, { className: "mx-auto h-12 w-12 text-gray-600" }),
@@ -320,10 +321,17 @@ function ProjectEditor({
   const ordered = getOrderedRoughCuts(project);
   const total = getProjectDuration(project);
 
-  return jsxs("aside", {
+  return jsxs("section", {
     className: "va-preview-panel space-y-4 rounded-2xl va-surface-muted border p-4 text-right",
     dir: "rtl",
     children: [
+      onBack && jsxs("button", {
+        type: "button",
+        onClick: onBack,
+        className: "btn btn-ghost btn-sm gap-2 self-start",
+        "aria-label": "رجوع للمشاريع",
+        children: [jsx(ArrowRight, { className: "h-4 w-4" }), "رجوع للمشاريع"]
+      }),
       jsxs("div", { className: "space-y-2", children: [
         jsx("input", {
           value: project.name,
@@ -443,6 +451,10 @@ export function ProjectsPage() {
 
   const [query, setQuery] = React.useState("");
   const [selectedId, setSelectedId] = React.useState(projects[0]?.id || null);
+  // §19.9 — opening a project gives it a full dedicated view instead of a
+  // cramped side aside. `openedId` holds the project shown full-width; null
+  // means the projects list is visible.
+  const [openedId, setOpenedId] = React.useState(null);
   const [exporting, setExporting] = React.useState(false);
   const [showForm, setShowForm] = React.useState(false);
 
@@ -451,6 +463,7 @@ export function ProjectsPage() {
   const usersById = React.useMemo(() => new Map((users || []).map((user) => [user.id, user])), [users]);
   const filtered = React.useMemo(() => getFilteredProjects(projects, query), [projects, query]);
   const selected = projects.find((p) => p.id === selectedId) || filtered[0] || null;
+  const openedProject = openedId ? projects.find((p) => p.id === openedId) || null : null;
   const summary = React.useMemo(() => getProjectSummary(projects), [projects]);
   const totalTasks = React.useMemo(() => projects.filter((project) => project.status !== "archived").reduce((sum, project) => sum + (project.tasks?.length || 0), 0), [projects]);
 
@@ -462,6 +475,18 @@ export function ProjectsPage() {
     setSelectedId(filtered[0]?.id || null);
   }, [filtered, projects, selectedId]);
 
+  // If the opened project disappears (deleted), fall back to the list view.
+  React.useEffect(() => {
+    if (openedId && !projects.some((p) => p.id === openedId)) setOpenedId(null);
+  }, [openedId, projects]);
+
+  const openProject = (project) => {
+    setSelectedId(project.id);
+    setOpenedId(project.id);
+  };
+
+  const closeProject = () => setOpenedId(null);
+
   const openCreate = () => setShowForm(true);
 
   const saveProject = async (draft, opts = {}) => {
@@ -469,7 +494,10 @@ export function ProjectsPage() {
       const created = createProjectValue({ name: draft.name || "مشروع جديد", description: draft.description || "" });
       await addProject?.(created);
       setSelectedId(created.id);
-      if (!opts.keepOpen) setShowForm(false);
+      if (!opts.keepOpen) {
+        setShowForm(false);
+        setOpenedId(created.id);
+      }
       return true;
     } catch (error) {
       reportError(showNotification, error, { context: "إنشاء مشروع", recovery: { run: () => saveProject(draft, opts) } });
@@ -521,7 +549,7 @@ export function ProjectsPage() {
       category: "task",
       title: "مهمة مشروع جديدة",
       targetLabel: selected.name || "مشروع",
-      action: { label: "فتح المشروع", run: () => setSelectedId(selected.id) }
+      action: { label: "فتح المشروع", run: () => openProject(selected) }
     });
   };
 
@@ -635,44 +663,42 @@ export function ProjectsPage() {
           onAction: openCreate,
           hintItems: ["نقاط قص in/out", "لوحة مهام", "تصدير EDL/JSON/MP4"]
         })
-      }) : jsxs("section", { className: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_460px]", children: [
-        jsxs("div", { className: "space-y-4", children: [
-          jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [
-            jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
-            jsx("input", { value: query, onChange: (e) => setQuery(e.target.value), placeholder: "بحث في المشاريع...", className: "input input-bordered w-full py-2 pl-3 pr-10 placeholder:text-gray-600" })
-          ] }),
-          filtered.length ? jsx("div", { className: "grid gap-3", children: filtered.map((project, index) => jsx(ProjectCard, {
-            project, index,
-            active: selected?.id === project.id,
-            onOpen: () => setSelectedId(project.id),
-            onDelete: () => removeProject(project)
-          }, project.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
-            icon: jsx(Clapperboard, { className: "h-16 w-16" }),
-            title: "لا توجد مشاريع مطابقة",
-            description: "امسح البحث أو استخدم كلمة أبسط.",
-            actionLabel: "مسح البحث",
-            onAction: () => setQuery(""),
-            actionIcon: RefreshCw
-          }) })
+      }) : openedProject ? jsx(ProjectEditor, {
+        project: openedProject,
+        items: activeItems,
+        itemsById,
+        users,
+        usersById,
+        onBack: closeProject,
+        onPatch: patchProject,
+        onAddCut: addCut,
+        onMoveCut: moveCut,
+        onRemoveCut: removeCut,
+        onReorderClips: reorderClipsVisual,
+        onAddTask: addTask,
+        onMoveTask: moveTask,
+        onRemoveTask: removeTask,
+        onExport: runExport,
+        mp4Enabled,
+        exporting
+      }) : jsxs("section", { className: "space-y-4", children: [
+        jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [
+          jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+          jsx("input", { value: query, onChange: (e) => setQuery(e.target.value), placeholder: "بحث في المشاريع...", className: "input input-bordered w-full py-2 pl-3 pr-10 placeholder:text-gray-600" })
         ] }),
-        jsx(ProjectEditor, {
-          project: selected,
-          items: activeItems,
-          itemsById,
-          users,
-          usersById,
-          onPatch: patchProject,
-          onAddCut: addCut,
-          onMoveCut: moveCut,
-          onRemoveCut: removeCut,
-          onReorderClips: reorderClipsVisual,
-          onAddTask: addTask,
-          onMoveTask: moveTask,
-          onRemoveTask: removeTask,
-          onExport: runExport,
-          mp4Enabled,
-          exporting
-        })
+        filtered.length ? jsx("div", { className: "grid gap-3 sm:grid-cols-2 lg:grid-cols-3", children: filtered.map((project, index) => jsx(ProjectCard, {
+          project, index,
+          active: selected?.id === project.id,
+          onOpen: () => openProject(project),
+          onDelete: () => removeProject(project)
+        }, project.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
+          icon: jsx(Clapperboard, { className: "h-16 w-16" }),
+          title: "لا توجد مشاريع مطابقة",
+          description: "امسح البحث أو استخدم كلمة أبسط.",
+          actionLabel: "مسح البحث",
+          onAction: () => setQuery(""),
+          actionIcon: RefreshCw
+        }) })
       ] })
     ]
   });
