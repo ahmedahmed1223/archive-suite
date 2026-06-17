@@ -1737,6 +1737,7 @@
     - `archive-server/src/api/server.js` — middleware صلاحيات للموارد المشتركة.
     - `archive-app/src/pages/RecordDetailsPage.jsx` و`CollectionsPage.jsx` — أزرار المشاركة والتعليقات.
   - **التنفيذ:** مشاركة عنصر/مجموعة؛ رابط خاص؛ دعوة مستخدم بالبريد؛ صلاحيات: metadata فقط، عرض، تنزيل، تعليق، تعديل؛ انتهاء صلاحية؛ كلمة مرور اختيارية؛ سجل نشاط المشاركة.
+  - 🔄 **شريحة آمنة 2026-06-18:** أُضيف نموذج صلاحيات SPA نقي (`sharePermissions.js`) وحوار مشاركة DaisyUI (`ShareDialog.jsx`) يتيح اختيار `view/comment/download/edit` ويمرر `scope.permission` عند سكّ الرابط. رُبط الحوار بزر مشاركة المجموعات في `CollectionsPage.jsx` مع الحفاظ على بوابة `canShare` والنسخ/الإشعار السابقين. **لم يُربط `DetailPage` بعد** لأن الخادم يستخدم نطاق `items` بينما نموذج الحوار بدأ بـ`item`، وربطه الآن قد يطبّع لنطاق عام؛ يلزم توحيد scope server/client أولاً. التحقق: اختبارات `sharePermissions` و`ShareDialog`، `verify`، و`build:spa`.
   - يرتبط بـ: مهام إبطال روابط المشاركة وRBAC في §1 و§9.
   - الجهد: 5-8 أسابيع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 7 — P1).

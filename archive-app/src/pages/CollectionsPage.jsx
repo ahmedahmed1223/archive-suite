@@ -40,7 +40,8 @@ import {
 } from "../features/collections/viewModel.js";
 import { formatDateTime, formatNumber } from "../utils/formatting.js";
 import { getDragItemIds, ARCHIVE_ITEMS_MIME } from "../features/dnd/dndController.js";
-import { canShare, mintShareLink } from "../features/share/shareClient.js";
+import { canShare } from "../features/share/shareClient.js";
+import { ShareDialog } from "../features/share/ShareDialog.jsx";
 import { getBackendUrl, resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 
@@ -310,7 +311,7 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
           type: "button",
           onClick: () => onShare?.(collection),
           className: "inline-flex shrink-0 items-center gap-1.5 rounded-xl border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs font-semibold va-accent-text-on-soft hover:bg-emerald-500/20",
-          title: "إنشاء رابط مشاركة عام للقراءة فقط",
+          title: "إنشاء رابط مشاركة مع صلاحيات",
           children: [jsx(Share2, { className: "h-3.5 w-3.5" }), "مشاركة"]
         })
       ] }),
@@ -442,6 +443,7 @@ export function CollectionsPage() {
   // collection being edited, or null when creating a new one.
   const [showRuleBuilder, setShowRuleBuilder] = React.useState(false);
   const [editingSmart, setEditingSmart] = React.useState(null);
+  const [sharingCollection, setSharingCollection] = React.useState(null);
 
   const isRuleCollection = (collection) => collection?.type === "smart" && collection?.filterRules?.kind === "rules";
 
@@ -653,23 +655,21 @@ export function CollectionsPage() {
   };
 
   const shareEnabled = React.useMemo(() => canShare({ backend: resolveBackendChoice().backend, token: getCloudToken() }), []);
-  const shareCollection = async (collection) => {
+  const shareCollection = (collection) => {
+    setSharingCollection(collection);
+  };
+
+  const handleSharedCollection = async ({ url } = {}) => {
+    const targetLabel = sharingCollection?.name || "مجموعة";
     try {
-      const { url } = await mintShareLink({
-        scope: { type: "collection", ids: [collection.id], label: collection.name },
-        title: collection.name ? `مراجعة: ${collection.name}` : "مراجعة أرشيف مشتركة",
-        expiresInDays: settings.sharing?.defaultExpiryDays || 30,
-        baseUrl: getBackendUrl(),
-        getToken: getCloudToken
-      });
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url).catch(() => {});
-        showNotification?.("تم إنشاء رابط المشاركة ونسخه.", { type: "success", category: "share", title: "رابط مشاركة جديد", targetLabel: collection.name || "مجموعة" });
+        showNotification?.("تم إنشاء رابط المشاركة ونسخه.", { type: "success", category: "share", title: "رابط مشاركة جديد", targetLabel });
       } else {
-        showNotification?.(`رابط المشاركة: ${url}`, { type: "success", category: "share", title: "رابط مشاركة جديد", targetLabel: collection.name || "مجموعة" });
+        showNotification?.(`رابط المشاركة: ${url}`, { type: "success", category: "share", title: "رابط مشاركة جديد", targetLabel });
       }
     } catch (error) {
-      showNotification?.(error?.message || "تعذّر إنشاء رابط المشاركة", { type: "error", category: "share", title: "فشل إنشاء المشاركة", targetLabel: collection.name || "مجموعة" });
+      showNotification?.(error?.message || "تعذّر نسخ رابط المشاركة", { type: "warning", category: "share", title: "رابط مشاركة جاهز", targetLabel });
     }
   };
 
@@ -716,6 +716,17 @@ export function CollectionsPage() {
         initialQuery: query || null,
         onCancel: () => setShowSaveFilterModal(false),
         onSave: handleSaveFilter,
+      }),
+      sharingCollection && jsx(ShareDialog, {
+        scopeType: "collection",
+        scopeIds: [sharingCollection.id],
+        label: sharingCollection.name || "مجموعة",
+        title: sharingCollection.name ? `مراجعة: ${sharingCollection.name}` : "مراجعة أرشيف مشتركة",
+        defaultExpiryDays: settings.sharing?.defaultExpiryDays || 30,
+        baseUrl: getBackendUrl(),
+        getToken: getCloudToken,
+        onClose: () => setSharingCollection(null),
+        onShared: handleSharedCollection
       }),
       showForm && jsx(CollectionForm, {
         collection: editingCollection,
