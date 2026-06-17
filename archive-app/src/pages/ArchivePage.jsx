@@ -4,6 +4,7 @@
   Copy,
   Eye,
   FolderOpen,
+  Link2,
   PenLine,
   RotateCcw,
   SlidersHorizontal,
@@ -24,6 +25,7 @@ import {
 import { ToolbarButton } from "../features/archive/ArchiveViews.jsx";
 import { BulkActionBar } from "../features/archive/BulkActionBar.jsx";
 import { FileArchiveWizard } from "../features/archive/FileArchiveWizard.jsx";
+import { ImportFromUrlDialog } from "../features/import/ImportFromUrlDialog.jsx";
 import { SavedViewsBar } from "../features/archive/SavedViewsBar.jsx";
 import { ArchivePageDetailedFilters } from "../features/archive/ArchivePageDetailedFilters.jsx";
 import { ArchivePageHero } from "../features/archive/ArchivePageHero.jsx";
@@ -95,6 +97,7 @@ export function ArchivePage() {
   } = state;
   const [mediaJobs, setMediaJobs] = React.useState([]);
   const [mediaBusy, setMediaBusy] = React.useState(false);
+  const [showImportFromUrl, setShowImportFromUrl] = React.useState(false);
   const [sideEditItem, setSideEditItem] = React.useState(null);
   // §19.9 — the dedicated detail/edit page is the default everywhere. The
   // slide-in SideEditPanel is demoted to an opt-in secondary affordance gated
@@ -277,6 +280,12 @@ export function ArchivePage() {
         addVideoItem,
         showToast
       }),
+      jsx(ImportFromUrlDialog, {
+        open: showImportFromUrl,
+        onOpenChange: setShowImportFromUrl,
+        addVideoItem,
+        showToast
+      }),
       jsx(ContextMenu, { menu: contextMenu, onClose: () => setContextMenu(null) }),
       jsx(BulkActionBar, {
         selectedCount: storeSelectedItems.length,
@@ -369,6 +378,7 @@ export function ArchivePage() {
         className: "archive-desktop-floating-actions",
         children: [
           jsx(ToolbarButton, { onClick: openImport, icon: jsx(Upload, { className: "h-4 w-4" }), children: "استيراد ملفات" }, "import"),
+          jsx(ToolbarButton, { onClick: () => setShowImportFromUrl(true), icon: jsx(Link2, { className: "h-4 w-4" }), children: "استيراد من روابط" }, "import-url"),
           jsxs("button", {
             type: "button",
             onClick: openAdd,
