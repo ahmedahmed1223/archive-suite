@@ -4,6 +4,7 @@
 import { EntityFormModal } from "../components/common/EntityFormModal.jsx";
 import { ColorSwatchPicker } from "../components/common/ColorSwatchPicker.jsx";
 import {
+  ArrowRight,
   Check,
   Copy,
   ExternalLink,
@@ -255,7 +256,7 @@ function CollectionItemRow({ item, typeLabel, canManageItems, onOpen, onRemove }
   }, item.id);
 }
 
-function CollectionDetails({ collection, items, availableItems, typeLabel, onAddItems, onRemoveItem, onOpenItem, onShare, shareEnabled, onCopyTitles }) {
+function CollectionDetails({ collection, items, availableItems, typeLabel, onAddItems, onRemoveItem, onOpenItem, onShare, shareEnabled, onCopyTitles, onBack }) {
   const [itemQuery, setItemQuery] = React.useState("");
 
   React.useEffect(() => {
@@ -263,7 +264,7 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
   }, [collection?.id]);
 
   if (!collection) {
-    return jsxs("aside", {
+    return jsxs("section", {
       className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35 p-8 text-center",
       children: [
         jsx(FolderOpen, { className: "mx-auto h-12 w-12 text-gray-600" }),
@@ -280,11 +281,18 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
     ? items.filter((item) => (item.title || "").toLowerCase().includes(normalizedItemQuery))
     : items;
 
-  return jsxs("aside", {
+  return jsxs("section", {
     className: "va-preview-panel space-y-4 rounded-2xl va-surface-muted border p-4 text-right",
     style: { borderTopColor: `${panelAccent}50` },
     dir: "rtl",
     children: [
+      onBack && jsxs("button", {
+        type: "button",
+        onClick: onBack,
+        className: "btn btn-ghost btn-sm gap-2 self-start",
+        "aria-label": "رجوع للمجموعات",
+        children: [jsx(ArrowRight, { className: "h-4 w-4" }), "رجوع للمجموعات"]
+      }),
       jsxs("div", { className: "flex items-start gap-3", children: [
         jsx("span", {
           className: "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl",
@@ -424,6 +432,10 @@ export function CollectionsPage() {
 
   const [query, setQuery] = React.useState("");
   const [selectedCollectionId, setSelectedCollectionId] = React.useState(virtualCollections[0]?.id || null);
+  // §19.9 — opening a collection gives it a full dedicated view instead of a
+  // cramped side aside. `openedCollectionId` holds the collection currently
+  // shown full-width; null means the cards list is visible.
+  const [openedCollectionId, setOpenedCollectionId] = React.useState(null);
   const [editingCollection, setEditingCollection] = React.useState(null);
   const [showForm, setShowForm] = React.useState(false);
   // Rule-based smart-collection builder (§1560). `editingSmart` holds the
@@ -545,14 +557,32 @@ export function CollectionsPage() {
 
   const filteredCollections = React.useMemo(() => getFilteredCollections(virtualCollections, query), [query, virtualCollections]);
   const selectedCollection = virtualCollections.find((collection) => collection.id === selectedCollectionId) || filteredCollections[0] || null;
-  const selectedItems = React.useMemo(() => resolveCollectionItems(selectedCollection, videoItems), [selectedCollection, videoItems]);
-  const availableItems = React.useMemo(() => getAvailableCollectionItems(selectedCollection, videoItems), [selectedCollection, videoItems]);
+  const openedCollection = openedCollectionId
+    ? virtualCollections.find((collection) => collection.id === openedCollectionId) || null
+    : null;
+  const detailCollection = openedCollection || selectedCollection;
+  const selectedItems = React.useMemo(() => resolveCollectionItems(detailCollection, videoItems), [detailCollection, videoItems]);
+  const availableItems = React.useMemo(() => getAvailableCollectionItems(detailCollection, videoItems), [detailCollection, videoItems]);
   const summary = React.useMemo(() => getCollectionSummary(virtualCollections, videoItems), [videoItems, virtualCollections]);
 
   React.useEffect(() => {
     if (selectedCollectionId && virtualCollections.some((collection) => collection.id === selectedCollectionId)) return;
     setSelectedCollectionId(filteredCollections[0]?.id || null);
   }, [filteredCollections, selectedCollectionId, virtualCollections]);
+
+  // If the opened collection disappears (deleted), fall back to the list view.
+  React.useEffect(() => {
+    if (openedCollectionId && !virtualCollections.some((collection) => collection.id === openedCollectionId)) {
+      setOpenedCollectionId(null);
+    }
+  }, [openedCollectionId, virtualCollections]);
+
+  const openCollection = (collection) => {
+    setSelectedCollectionId(collection.id);
+    setOpenedCollectionId(collection.id);
+  };
+
+  const closeCollection = () => setOpenedCollectionId(null);
 
   const startCreate = () => {
     setEditingCollection(null);
@@ -720,49 +750,47 @@ export function CollectionsPage() {
           onAction: startCreate,
           hintItems: ["مجموعات يدوية", "مجموعات ذكية", "ألوان مخصصة"]
         })
-      }) : jsxs("section", { className: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]", children: [
-        jsxs("div", { className: "space-y-4", children: [
-          jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [
-            jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
-            jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث في المجموعات...", className: "input input-bordered w-full" })
-          ] }),
-          filteredCollections.length ? jsx("div", { className: "grid gap-3 lg:grid-cols-2", children: filteredCollections.map((collection, index) => jsx(CollectionCard, {
-            collection,
-            index,
-            itemCount: resolveCollectionItems(collection, videoItems).length,
-            active: selectedCollection?.id === collection.id,
-            onOpen: () => setSelectedCollectionId(collection.id),
-            onEdit: () => editCollection(collection),
-            onDelete: () => deleteCollection(collection),
-            onDrop: collection.type !== "smart" ? (ids) => addItemsToCollection?.(collection.id, ids) : undefined
-          }, collection.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
-            icon: jsx(FolderOpen, { className: "h-16 w-16" }),
-            title: virtualCollections.length ? "لا توجد مجموعات مطابقة" : "ابدأ تنظيم الأرشيف",
-            description: virtualCollections.length ? "امسح البحث أو استخدم كلمة أبسط." : "أنشئ مجموعة يدوية لتجميع الفيديوهات المهمة.",
-            actionLabel: virtualCollections.length ? "مسح البحث" : "إنشاء مجموعة",
-            onAction: virtualCollections.length ? () => setQuery("") : startCreate,
-            actionIcon: virtualCollections.length ? RefreshCw : undefined,
-            hintItems: virtualCollections.length ? [] : ["مجموعات يدوية", "مجموعات ذكية", "ألوان مخصصة"]
-          }) })
+      }) : openedCollection ? jsx(CollectionDetails, {
+        collection: detailCollection,
+        items: selectedItems,
+        availableItems,
+        typeLabel,
+        onBack: closeCollection,
+        onCopyTitles: copyTitles,
+        onAddItems: async (ids) => {
+          await addItemsToCollection?.(detailCollection.id, ids);
+          showToast?.("تمت إضافة العناصر للمجموعة", "success");
+        },
+        onRemoveItem: async (id) => {
+          await removeItemsFromCollection?.(detailCollection.id, [id]);
+          showToast?.("تمت إزالة العنصر من المجموعة", "info");
+        },
+        onOpenItem: openItem,
+        onShare: shareCollection,
+        shareEnabled
+      }) : jsxs("section", { className: "space-y-4", children: [
+        jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [
+          jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+          jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث في المجموعات...", className: "input input-bordered w-full" })
         ] }),
-        jsx(CollectionDetails, {
-          collection: selectedCollection,
-          items: selectedItems,
-          availableItems,
-          typeLabel,
-          onCopyTitles: copyTitles,
-          onAddItems: async (ids) => {
-            await addItemsToCollection?.(selectedCollection.id, ids);
-            showToast?.("تمت إضافة العناصر للمجموعة", "success");
-          },
-          onRemoveItem: async (id) => {
-            await removeItemsFromCollection?.(selectedCollection.id, [id]);
-            showToast?.("تمت إزالة العنصر من المجموعة", "info");
-          },
-          onOpenItem: openItem,
-          onShare: shareCollection,
-          shareEnabled
-        })
+        filteredCollections.length ? jsx("div", { className: "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", children: filteredCollections.map((collection, index) => jsx(CollectionCard, {
+          collection,
+          index,
+          itemCount: resolveCollectionItems(collection, videoItems).length,
+          active: selectedCollection?.id === collection.id,
+          onOpen: () => openCollection(collection),
+          onEdit: () => editCollection(collection),
+          onDelete: () => deleteCollection(collection),
+          onDrop: collection.type !== "smart" ? (ids) => addItemsToCollection?.(collection.id, ids) : undefined
+        }, collection.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
+          icon: jsx(FolderOpen, { className: "h-16 w-16" }),
+          title: virtualCollections.length ? "لا توجد مجموعات مطابقة" : "ابدأ تنظيم الأرشيف",
+          description: virtualCollections.length ? "امسح البحث أو استخدم كلمة أبسط." : "أنشئ مجموعة يدوية لتجميع الفيديوهات المهمة.",
+          actionLabel: virtualCollections.length ? "مسح البحث" : "إنشاء مجموعة",
+          onAction: virtualCollections.length ? () => setQuery("") : startCreate,
+          actionIcon: virtualCollections.length ? RefreshCw : undefined,
+          hintItems: virtualCollections.length ? [] : ["مجموعات يدوية", "مجموعات ذكية", "ألوان مخصصة"]
+        }) })
       ] }),
       // ── Smart Collections (Saved Filters) section ─────────────────────────
       jsxs("section", {
