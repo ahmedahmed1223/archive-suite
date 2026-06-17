@@ -3,6 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@11.5.2",
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@firebase/util",
+      "protobufjs"
+    ]
+  },
   "scripts": {
     "bootstrap": "pnpm install",
     "dev": "pnpm --filter @archive/app run dev",
