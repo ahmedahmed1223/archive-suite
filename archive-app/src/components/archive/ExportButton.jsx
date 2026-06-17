@@ -100,7 +100,7 @@ export function ExportButton({ selectedIds = [] }) {
         disabled={anyLoading}
         aria-label="تصدير السجلات"
         aria-expanded={open}
-        className="va-tool-button inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/10 bg-gray-950/35 px-3 py-1.5 text-xs font-semibold text-gray-200 hover:bg-white/5 hover:text-white disabled:opacity-50"
+        className="btn btn-ghost btn-sm gap-1.5"
       >
         {isLoading("export")
           ? <Loader2 className="h-4 w-4 animate-spin" />

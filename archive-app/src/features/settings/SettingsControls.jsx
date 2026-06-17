@@ -115,7 +115,7 @@ export function SegmentedChoices({ label, value, options, onChange, columns = "s
             type: "button",
             onClick: () => onChange(option.value),
             className: cx(
-              "va-tool-button min-h-16 rounded-xl border px-3 py-2 text-right transition-colors",
+              "btn btn-ghost min-h-16 rounded-xl px-3 py-2 text-right transition-colors",
               selected
                 ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft"
                 : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5 hover:text-white"
@@ -226,7 +226,7 @@ export function ColorChoices({ value, onChange }) {
             type: "button",
             onClick: () => onChange(option.value),
             className: cx(
-              "va-tool-button min-h-16 rounded-xl border p-3 text-right transition-colors",
+              "btn btn-ghost min-h-16 rounded-xl p-3 text-right transition-colors",
               selected ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-950/35 hover:bg-white/5"
             ),
             children: [

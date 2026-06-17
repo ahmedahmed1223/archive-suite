@@ -199,7 +199,7 @@ function OptionButton({ active, children, onClick }) {
     type: "button",
     onClick,
     "aria-pressed": active,
-    className: `va-tool-button h-full min-h-[88px] w-full rounded-2xl border p-4 text-right transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] ${
+    className: `btn btn-ghost h-full min-h-[88px] w-full rounded-2xl p-4 text-right transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] ${
       active
         ? "va-accent-border va-accent-bg-soft text-white"
         : "border-white/10 bg-white/[0.035] text-gray-300 hover:border-white/20 hover:bg-white/[0.06]"

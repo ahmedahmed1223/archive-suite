@@ -352,7 +352,7 @@ export function ToolbarButton({ children, onClick, active = false, danger = fals
     type: "button",
     onClick,
     "aria-pressed": active,
-    className: `va-tool-button inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+    className: `btn btn-ghost btn-sm gap-1.5 ${
       active
         ? danger
           ? "border-red-500/35 bg-red-500/15 text-red-100"
