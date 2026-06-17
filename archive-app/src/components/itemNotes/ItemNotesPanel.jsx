@@ -130,7 +130,7 @@ export function ItemNotesPanel({
           rows: 3,
           dir: "auto",
           placeholder: "اكتب ملاحظة شخصية…",
-          className: "w-full rounded-lg border border-white/10 bg-gray-900/60 p-2.5 text-sm text-gray-100 outline-none focus:border-emerald-500/40"
+          className: "textarea textarea-bordered w-full"
         }),
         jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
           canAnchorTime

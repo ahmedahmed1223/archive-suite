@@ -177,7 +177,7 @@ export function TimeBookmarkButton({ getTime, getSuggestion, onSave }) {
                   placeholder: "مثال: بداية المقابلة",
                   "aria-required": "true",
                   className:
-                    "min-h-9 w-full va-surface-deep rounded-lg border px-3 text-sm text-white outline-none focus:border-emerald-500/40"
+                    "input input-bordered w-full"
                 })
               ]
             }),
@@ -195,7 +195,7 @@ export function TimeBookmarkButton({ getTime, getSuggestion, onSave }) {
                   onKeyDown: handleKeyDown,
                   placeholder: "وصف مختصر...",
                   className:
-                    "min-h-9 w-full va-surface-deep rounded-lg border px-3 text-sm text-white outline-none focus:border-emerald-500/40"
+                    "input input-bordered w-full"
                 })
               ]
             }),

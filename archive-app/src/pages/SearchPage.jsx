@@ -451,7 +451,7 @@ export function SearchPage() {
                     placeholder: "ابحث في العنوان أو الوسوم أو الملاحظات",
                     "aria-label": "كلمات البحث",
                     type: "search",
-                    className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-12 pr-10 text-sm text-white outline-none focus:border-emerald-500/50"
+                    className: "input input-bordered w-full"
                   }),
                   jsx("span", {
                     className: "absolute left-2 top-1/2 -translate-y-1/2",
@@ -503,14 +503,14 @@ export function SearchPage() {
                 className: "block va-surface-muted rounded-xl border p-3",
                 children: [
                   jsx("span", { className: "text-xs text-gray-500", children: "من تاريخ" }),
-                  jsx("input", { type: "date", value: dateFrom, onChange: (event) => setDateFrom(event.target.value), dir: "ltr", className: "mt-2 min-h-9 w-full rounded-lg border border-white/10 bg-gray-900 px-3 py-1 text-sm text-white outline-none focus:border-emerald-500/40" })
+                  jsx("input", { type: "date", value: dateFrom, onChange: (event) => setDateFrom(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
                 ]
               }),
               jsxs("label", {
                 className: "block va-surface-muted rounded-xl border p-3",
                 children: [
                   jsx("span", { className: "text-xs text-gray-500", children: "إلى تاريخ" }),
-                  jsx("input", { type: "date", value: dateTo, onChange: (event) => setDateTo(event.target.value), dir: "ltr", className: "mt-2 min-h-9 w-full rounded-lg border border-white/10 bg-gray-900 px-3 py-1 text-sm text-white outline-none focus:border-emerald-500/40" })
+                  jsx("input", { type: "date", value: dateTo, onChange: (event) => setDateTo(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
                 ]
               }),
               jsx("button", {

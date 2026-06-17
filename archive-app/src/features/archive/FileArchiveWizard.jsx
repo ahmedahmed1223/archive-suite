@@ -224,7 +224,7 @@ export function FileArchiveWizard({
             <h3 className="font-bold">إعدادات الإنشاء</h3>
             <label className="block text-sm text-slate-300">
               النوع
-              <select value={typeId} onChange={(event) => setTypeId(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 py-2 text-white outline-none focus:border-emerald-500/40">
+              <select value={typeId} onChange={(event) => setTypeId(event.target.value)} className="select select-bordered w-full">
                 <option value="">بدون نوع</option>
                 {contentTypes.filter((type) => type.status !== "archived").map((type) => (
                   <option key={type.id} value={type.id}>{type.name || type.id}</option>
@@ -233,7 +233,7 @@ export function FileArchiveWizard({
             </label>
             <label className="block text-sm text-slate-300">
               الفرع
-              <select value={subtypeId} onChange={(event) => setSubtypeId(event.target.value)} disabled={!subtypes.length} className="mt-2 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 py-2 text-white outline-none focus:border-emerald-500/40 disabled:opacity-50">
+              <select value={subtypeId} onChange={(event) => setSubtypeId(event.target.value)} disabled={!subtypes.length} className="select select-bordered w-full">
                 <option value="">بدون فرع</option>
                 {subtypes.map((subtype) => (
                   <option key={subtype.id} value={subtype.id}>{subtype.name || subtype.id}</option>
@@ -242,7 +242,7 @@ export function FileArchiveWizard({
             </label>
             <label className="block text-sm text-slate-300">
               ملاحظة مشتركة
-              <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-[#07111f] px-3 py-2 text-right text-white outline-none focus:border-emerald-500/40" placeholder="اختياري" />
+              <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} className="textarea textarea-bordered w-full" placeholder="اختياري" />
             </label>
             <div className="flex items-start gap-2 rounded-2xl border border-white/10 bg-[#07111f]/70 p-3 text-xs leading-6 text-slate-400">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 va-accent-text" />

@@ -166,7 +166,7 @@ function GroupedFields({ fields, renderField, gap = "gap-4" }) {
 
 function EditableField({ field, value, onChange }) {
   const key = fieldKey(field);
-  const commonClass = "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40";
+  const commonClass = "input input-bordered w-full";
   if (field.type === "textarea" || field.type === "transcript") return jsx("textarea", { value: value || "", onChange: (event) => onChange(key, event.target.value), rows: 3, className: `${commonClass} p-3` });
   if (field.type === "checkbox") return jsx("input", { type: "checkbox", checked: !!value, onChange: (event) => onChange(key, event.target.checked), className: "h-5 w-5" });
   if (field.type === "select" || field.type === "radio") return jsxs("select", { value: value || "", onChange: (event) => onChange(key, event.target.value), className: commonClass, children: [
@@ -295,7 +295,7 @@ function TranscriptSyncWorkbench({ segments = [], currentTime = 0, onSeek }) {
         value: query,
         onChange: (event) => setQuery(event.target.value),
         placeholder: "بحث داخل التفريغ...",
-        className: "min-h-10 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40"
+        className: "input input-bordered w-full"
       })
     ] }),
     jsx("div", { className: "mt-3 max-h-[360px] space-y-2 overflow-y-auto pe-1", children: visibleSegments.map((segment) => {
@@ -1404,7 +1404,7 @@ export function DetailPage() {
                 rows: 3,
                 allowed: ["users", "vocabulary", "tags"],
                 placeholder: "اكتب ملاحظة للفريق حول هذه المادة...",
-                className: "min-h-[84px] w-full resize-y va-surface-deep rounded-xl border p-3 text-sm text-white outline-none focus:border-emerald-500/40"
+                className: "textarea textarea-bordered w-full"
               }),
               jsxs("button", {
                 type: "button",

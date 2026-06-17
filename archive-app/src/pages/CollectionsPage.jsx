@@ -88,15 +88,15 @@ function CollectionForm({ collection, onCancel, onSave }) {
       children: [
         jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
           jsx("label", { htmlFor: iconId, className: "block", children: "الرمز" }),
-          jsx("input", { id: iconId, value: icon, onChange: (event) => setIcon(event.target.value.slice(0, 4)), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-center text-xl text-white outline-none focus:border-emerald-500/40" })
+          jsx("input", { id: iconId, value: icon, onChange: (event) => setIcon(event.target.value.slice(0, 4)), className: "input input-bordered w-full text-center text-xl" })
         ] }),
         jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
           jsx("label", { htmlFor: nameId, className: "block", children: "اسم المجموعة" }),
-          jsx("input", { id: nameId, ref: nameRef, "data-autofocus": true, value: name, onChange: (event) => setName(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "مثال: مقابلات مهمة" })
+          jsx("input", { id: nameId, ref: nameRef, "data-autofocus": true, value: name, onChange: (event) => setName(event.target.value), className: "input input-bordered w-full", placeholder: "مثال: مقابلات مهمة" })
         ] }),
         jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [
           jsx("label", { htmlFor: descriptionId, className: "block", children: "الوصف" }),
-          jsx("textarea", { id: descriptionId, value: description, onChange: (event) => setDescription(event.target.value), className: "min-h-[76px] w-full va-surface-deep rounded-xl border p-3 text-sm text-white outline-none focus:border-emerald-500/40", placeholder: "ملاحظة قصيرة عن استخدام المجموعة" })
+          jsx("textarea", { id: descriptionId, value: description, onChange: (event) => setDescription(event.target.value), className: "textarea textarea-bordered w-full", placeholder: "ملاحظة قصيرة عن استخدام المجموعة" })
         ] }),
         jsxs("div", { className: "space-y-1 md:col-span-2", children: [
           jsx("span", { id: colorGroupId, className: "text-sm text-gray-300", children: "اللون" }),
@@ -205,7 +205,7 @@ function CollectionAddPicker({ availableItems, typeLabel, onAddItems }) {
       ] }),
       jsxs("div", { className: "relative", children: [
         jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
-        jsx("input", { value: addQuery, onChange: (event) => setAddQuery(event.target.value), placeholder: "ابحث عن عنصر لإضافته...", "aria-label": "بحث عن عنصر لإضافته", className: "min-h-10 w-full va-surface-deep rounded-lg border py-2 pl-3 pr-9 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-500/40" })
+        jsx("input", { value: addQuery, onChange: (event) => setAddQuery(event.target.value), placeholder: "ابحث عن عنصر لإضافته...", "aria-label": "بحث عن عنصر لإضافته", className: "input input-bordered w-full" })
       ] }),
       jsx("div", {
         role: "listbox",
@@ -316,7 +316,7 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
         children: [
           jsxs("p", { className: "text-sm font-semibold text-gray-300", children: ["العناصر ", jsx("span", { className: "text-gray-500", children: `(${formatNumber(items.length)})` })] }),
           jsxs("div", { className: "flex items-center gap-2", children: [
-            items.length > 6 && jsx("input", { value: itemQuery, onChange: (event) => setItemQuery(event.target.value), placeholder: "تصفية...", "aria-label": "تصفية عناصر المجموعة", className: "min-h-8 w-28 va-surface-deep rounded-lg border px-2 text-xs text-white outline-none placeholder:text-gray-600 focus:border-emerald-500/40" }),
+            items.length > 6 && jsx("input", { value: itemQuery, onChange: (event) => setItemQuery(event.target.value), placeholder: "تصفية...", "aria-label": "تصفية عناصر المجموعة", className: "input input-bordered w-full" }),
             items.length > 0 && jsx("button", { type: "button", onClick: () => onCopyTitles?.(items), "aria-label": "نسخ عناوين العناصر", title: "نسخ عناوين العناصر", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white", children: jsx(Copy, { className: "h-4 w-4" }) })
           ] })
         ]
@@ -372,7 +372,7 @@ function SaveFilterModal({ onSave, onCancel, initialQuery }) {
             ref: nameRef,
             value: name,
             onChange: (e) => setName(e.target.value),
-            className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+            className: "input input-bordered w-full",
             placeholder: "مثال: أرشيف أكتوبر 2026"
           })
         ] }),
@@ -724,7 +724,7 @@ export function CollectionsPage() {
         jsxs("div", { className: "space-y-4", children: [
           jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [
             jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
-            jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث في المجموعات...", className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40" })
+            jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث في المجموعات...", className: "input input-bordered w-full" })
           ] }),
           filteredCollections.length ? jsx("div", { className: "grid gap-3 lg:grid-cols-2", children: filteredCollections.map((collection, index) => jsx(CollectionCard, {
             collection,

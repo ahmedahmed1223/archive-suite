@@ -125,21 +125,21 @@ function RoughCutBuilder({ items, onAdd }) {
             id: itemSelectId,
             value: itemId,
             onChange: (e) => setItemId(e.target.value),
-            className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40",
+            className: "select select-bordered w-full",
             children: items.slice(0, 500).map((item) => jsx("option", { value: item.id, children: itemLabel(item) }, item.id))
           })
         ] }),
         jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
           jsx("label", { htmlFor: inId, className: "block", children: "بداية (ث)" }),
-          jsx("input", { id: inId, type: "number", min: "0", step: "0.1", value: inSec, onChange: (e) => setInSec(e.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40" })
+          jsx("input", { id: inId, type: "number", min: "0", step: "0.1", value: inSec, onChange: (e) => setInSec(e.target.value), className: "input input-bordered w-full" })
         ] }),
         jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
           jsx("label", { htmlFor: outId, className: "block", children: "نهاية (ث)" }),
-          jsx("input", { id: outId, type: "number", min: "0", step: "0.1", value: outSec, onChange: (e) => setOutSec(e.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40" })
+          jsx("input", { id: outId, type: "number", min: "0", step: "0.1", value: outSec, onChange: (e) => setOutSec(e.target.value), className: "input input-bordered w-full" })
         ] }),
         jsxs("div", { className: "space-y-1 text-sm text-gray-300 sm:col-span-2", children: [
           jsx("label", { htmlFor: labelId, className: "block", children: "وصف القصاصة (اختياري)" }),
-          jsx("input", { id: labelId, value: label, onChange: (e) => setLabel(e.target.value), placeholder: "مثال: لقطة الافتتاح", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40" })
+          jsx("input", { id: labelId, value: label, onChange: (e) => setLabel(e.target.value), placeholder: "مثال: لقطة الافتتاح", className: "input input-bordered w-full" })
         ] })
       ] }),
       jsx("div", { className: "mt-2 flex justify-end", children: jsxs("button", {
@@ -176,22 +176,22 @@ function TaskBuilder({ items, users, onAdd }) {
       jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
         jsxs("label", { className: "space-y-1 text-sm text-gray-300 sm:col-span-2", htmlFor: titleId, children: [
           jsx("span", { children: "عنوان المهمة" }),
-          jsx("input", { id: titleId, value: title, onChange: (e) => setTitle(e.target.value), placeholder: "مثال: مراجعة لقطة الافتتاح", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40" })
+          jsx("input", { id: titleId, value: title, onChange: (e) => setTitle(e.target.value), placeholder: "مثال: مراجعة لقطة الافتتاح", className: "input input-bordered w-full" })
         ] }),
         jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
           jsx("span", { children: "الحالة" }),
-          jsx("select", { value: status, onChange: (e) => setStatus(e.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", children: PROJECT_TASK_STATUSES.map((key) => jsx("option", { value: key, children: KANBAN_META[key].label }, key)) })
+          jsx("select", { value: status, onChange: (e) => setStatus(e.target.value), className: "select select-bordered w-full", children: PROJECT_TASK_STATUSES.map((key) => jsx("option", { value: key, children: KANBAN_META[key].label }, key)) })
         ] }),
         jsxs("label", { className: "space-y-1 text-sm text-gray-300", htmlFor: itemIdField, children: [
           jsx("span", { children: "مادة مرتبطة" }),
-          jsxs("select", { id: itemIdField, value: itemId, onChange: (e) => setItemId(e.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", children: [
+          jsxs("select", { id: itemIdField, value: itemId, onChange: (e) => setItemId(e.target.value), className: "select select-bordered w-full", children: [
             jsx("option", { value: "", children: "بدون ربط" }),
             ...items.slice(0, 500).map((item) => jsx("option", { value: item.id, children: itemLabel(item) }, item.id))
           ] })
         ] }),
         jsxs("label", { className: "space-y-1 text-sm text-gray-300 sm:col-span-2", htmlFor: assigneeIdField, children: [
           jsx("span", { children: "المسؤول" }),
-          jsxs("select", { id: assigneeIdField, value: assigneeId, onChange: (e) => setAssigneeId(e.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40", children: [
+          jsxs("select", { id: assigneeIdField, value: assigneeId, onChange: (e) => setAssigneeId(e.target.value), className: "select select-bordered w-full", children: [
             jsx("option", { value: "", children: "غير مسندة" }),
             ...users.filter((user) => user.isActive !== false).map((user) => jsx("option", { value: user.id, children: user.displayName || user.username || user.id }, user.id))
           ] })
@@ -232,7 +232,7 @@ function KanbanBoard({ project, itemsById, usersById, onMoveTask, onRemoveTask }
                 ] }),
                 jsx("button", { type: "button", onClick: () => onRemoveTask(task.id), "aria-label": "حذف المهمة", className: "shrink-0 rounded-lg p-1.5 text-gray-500 hover:bg-red-500/10 hover:text-red-300", children: jsx(Trash2, { className: "h-4 w-4" }) })
               ] }),
-              jsx("select", { value: task.status, onChange: (e) => onMoveTask(task.id, e.target.value), className: "mt-3 min-h-9 w-full va-surface-deep rounded-lg border px-2 text-xs text-white outline-none focus:border-emerald-500/40", children: PROJECT_TASK_STATUSES.map((key) => jsx("option", { value: key, children: KANBAN_META[key].label }, key)) })
+              jsx("select", { value: task.status, onChange: (e) => onMoveTask(task.id, e.target.value), className: "select select-bordered w-full mt-3", children: PROJECT_TASK_STATUSES.map((key) => jsx("option", { value: key, children: KANBAN_META[key].label }, key)) })
             ] }, task.id);
           }) }) : jsx("p", { className: "rounded-lg border border-dashed border-white/10 p-3 text-center text-xs text-gray-600", children: "فارغ" })
         ]
@@ -337,7 +337,7 @@ function ProjectEditor({
           onChange: (e) => onPatch({ description: e.target.value }),
           placeholder: "وصف موجز للمشروع (اختياري)",
           "aria-label": "وصف المشروع",
-          className: "min-h-[52px] w-full va-surface-deep rounded-xl border p-2 text-sm text-gray-200 outline-none focus:border-emerald-500/40"
+          className: "textarea textarea-bordered w-full"
         })
       ] }),
 
@@ -417,11 +417,11 @@ function ProjectForm({ onCancel, onSave }) {
       children: [
         jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
           jsx("label", { htmlFor: nameId, className: "block", children: "اسم المشروع" }),
-          jsx("input", { id: nameId, ref: nameRef, "data-autofocus": true, value: name, onChange: (e) => setName(e.target.value), placeholder: "مثال: تقرير القدس", className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-emerald-500/40" })
+          jsx("input", { id: nameId, ref: nameRef, "data-autofocus": true, value: name, onChange: (e) => setName(e.target.value), placeholder: "مثال: تقرير القدس", className: "input input-bordered w-full" })
         ] }),
         jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
           jsx("label", { htmlFor: descId, className: "block", children: "الوصف (اختياري)" }),
-          jsx("textarea", { id: descId, value: description, onChange: (e) => setDescription(e.target.value), placeholder: "وصف موجز للمشروع", className: "min-h-[76px] w-full va-surface-deep rounded-xl border p-3 text-sm text-white outline-none focus:border-emerald-500/40" })
+          jsx("textarea", { id: descId, value: description, onChange: (e) => setDescription(e.target.value), placeholder: "وصف موجز للمشروع", className: "textarea textarea-bordered w-full" })
         ] })
       ]
     })
@@ -639,7 +639,7 @@ export function ProjectsPage() {
         jsxs("div", { className: "space-y-4", children: [
           jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [
             jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
-            jsx("input", { value: query, onChange: (e) => setQuery(e.target.value), placeholder: "بحث في المشاريع...", className: "min-h-11 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-emerald-500/40" })
+            jsx("input", { value: query, onChange: (e) => setQuery(e.target.value), placeholder: "بحث في المشاريع...", className: "input input-bordered w-full py-2 pl-3 pr-10 placeholder:text-gray-600" })
           ] }),
           filtered.length ? jsx("div", { className: "grid gap-3", children: filtered.map((project, index) => jsx(ProjectCard, {
             project, index,
