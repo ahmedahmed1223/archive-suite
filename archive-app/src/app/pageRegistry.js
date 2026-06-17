@@ -39,6 +39,7 @@ const FirstRunPage        = lazy(() => import("../pages/FirstRunPage.jsx"));
 const FavoritesPage       = lazy(() => import("../pages/FavoritesPage.jsx"));
 const ReadingListsPage    = lazy(() => import("../pages/ReadingListsPage.jsx"));
 const ServerStatusPage    = lazy(() => import("../pages/ServerStatusPage.jsx"));
+const SystemControlPage   = lazy(() => import("../pages/SystemControlPage.jsx"));
 const DuplicatesPage      = lazy(() => import("../pages/DuplicatesPage.jsx"));
 const SavedSearchesPage   = lazy(() => import("../pages/SavedSearchesPage.jsx"));
 const SettingsHubPage     = lazy(() => import("../pages/SettingsHubPage.jsx"));
@@ -78,6 +79,7 @@ export const PAGE_COMPONENTS = {
   favorites:       FavoritesPage,
   "reading-lists":  ReadingListsPage,
   "server-status":  ServerStatusPage,
+  "system-control": SystemControlPage,
   "duplicates":     DuplicatesPage,
   "saved-searches": SavedSearchesPage,
   "settingshub":    SettingsHubPage,
