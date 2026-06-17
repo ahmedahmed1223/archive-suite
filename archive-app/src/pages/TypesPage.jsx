@@ -679,7 +679,10 @@ export function TypesPage() {
         ] }, label)) })
       ] }),
       showEditor && jsx(TypeEditor, { type: editingType, fieldUsage: editingFieldUsage, contentTypes, videoItems, saving: typeSaveAction.busy, onCancel: () => { setShowEditor(false); setEditingType(null); }, onSave: saveType }),
-      jsxs("section", { className: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]", children: [
+      // §19.9 — while the editor is open it takes over the page as a full
+      // dedicated view; the list + preview-aside grid is hidden until the
+      // user cancels/saves and returns to the list.
+      !showEditor && jsxs("section", { className: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]", children: [
         jsxs("div", { className: "space-y-4", children: [
           jsxs("div", { className: "va-filter-surface grid gap-3 rounded-2xl va-surface-muted border p-3 md:grid-cols-[minmax(0,1fr)_auto]", children: [
             jsxs("label", { className: "relative block", children: [
