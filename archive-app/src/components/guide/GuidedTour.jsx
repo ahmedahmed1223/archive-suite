@@ -139,7 +139,7 @@ export function GuidedTour({
                 step.page && jsx("button", {
                   type: "button",
                   onClick: goToPage,
-                  className: "va-secondary-button inline-flex items-center gap-1 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-200 hover:bg-white/5",
+                  className: "btn btn-ghost gap-1",
                   children: "اذهب للصفحة"
                 })
               ]

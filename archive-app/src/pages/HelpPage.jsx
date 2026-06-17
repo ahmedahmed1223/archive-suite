@@ -556,13 +556,13 @@ export function HelpPage() {
                 jsxs("button", {
                   type: "button",
                   onClick: startGuidedTour,
-                  className: "va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm",
+                  className: "btn btn-ghost gap-2",
                   children: [jsx(Lightbulb, { className: "h-4 w-4 text-amber-300" }), "ابدأ الجولة"]
                 }),
                 jsxs("button", {
                   type: "button",
                   onClick: restartV1Tour,
-                  className: "va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-sm",
+                  className: "btn btn-ghost gap-2",
                   children: [jsx(Sparkles, { className: "h-4 w-4 text-amber-300" }), "إعادة الجولة"]
                 }),
                 jsxs("button", {

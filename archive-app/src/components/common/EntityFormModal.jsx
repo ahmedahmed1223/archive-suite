@@ -106,7 +106,7 @@ export function EntityFormModal({
               onClick: onSubmitAndNew,
               disabled: !canSubmit,
               title: "حفظ هذا العنصر وبدء إنشاء عنصر جديد مباشرة",
-              className: "va-secondary-button inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold va-accent-text-on-soft disabled:cursor-not-allowed disabled:opacity-40",
+              className: "btn btn-ghost gap-1.5 va-accent-text-on-soft",
               children: "حفظ وجديد"
             }) : null,
             (!isEditing && onSubmitAndOpen) ? jsx("button", {
@@ -114,7 +114,7 @@ export function EntityFormModal({
               onClick: onSubmitAndOpen,
               disabled: !canSubmit,
               title: "حفظ هذا العنصر ثم فتح صفحته المناسبة",
-              className: "va-secondary-button inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold text-gray-100 disabled:cursor-not-allowed disabled:opacity-40",
+              className: "btn btn-ghost gap-1.5",
               children: submitAndOpenLabel
             }) : null,
             jsx("button", {

@@ -572,7 +572,7 @@ export function AddVideoPage() {
 
   const renderActionBar = (className, key) => jsxs("div", { className, children: [
     jsxs("div", { className: "flex items-center gap-3", children: [
-      jsxs("button", { type: "button", disabled: stepIndex <= 0, onClick: () => setStepIndex((value) => Math.max(0, value - 1)), className: "va-secondary-button inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: [jsx(ChevronRight, { className: "h-4 w-4" }, "icon"), "السابق"] }, "previous"),
+      jsxs("button", { type: "button", disabled: stepIndex <= 0, onClick: () => setStepIndex((value) => Math.max(0, value - 1)), className: "btn btn-ghost gap-2", children: [jsx(ChevronRight, { className: "h-4 w-4" }, "icon"), "السابق"] }, "previous"),
       jsx(SaveIndicator, {
         state: submitSave.state !== "idle" ? submitSave.state : draftSave.state,
         message: submitSave.state !== "idle"
@@ -585,7 +585,7 @@ export function AddVideoPage() {
       jsx("button", { type: "button", onClick: resetDraft, className: "rounded-xl border border-white/10 px-3 py-2 text-xs text-gray-300 hover:bg-white/5", title: "مسح المسودة المحفوظة محليًا", children: "إعادة تعيين" }, "reset"),
       stepIndex < STEPS.length - 1 && jsxs("button", { type: "button", onClick: tryAdvance, className: "btn btn-primary gap-2", children: ["التالي", jsx(ChevronLeft, { className: "h-4 w-4" }, "icon")] }, "next"),
       stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(false), className: "btn btn-primary", children: "حفظ وفتح التفاصيل" }, "save-open"),
-      stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(true), className: "va-secondary-button rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: "حفظ وإضافة آخر" }, "save-another")
+      stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(true), className: "btn btn-ghost", children: "حفظ وإضافة آخر" }, "save-another")
     ] }, "actions")
   ] }, key);
 
