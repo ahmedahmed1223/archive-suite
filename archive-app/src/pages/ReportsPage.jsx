@@ -295,7 +295,7 @@ export function ReportsPage() {
             <button
               type="button"
               onClick={exportCsv}
-              className="btn btn-ghost va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5"
+              className="btn btn-ghost gap-2"
             >
               <Download className="h-4 w-4" aria-hidden="true" />
               CSV
@@ -303,7 +303,7 @@ export function ReportsPage() {
             <button
               type="button"
               onClick={exportJson}
-              className="btn btn-ghost va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5"
+              className="btn btn-ghost gap-2"
             >
               <Download className="h-4 w-4" aria-hidden="true" />
               JSON

@@ -262,7 +262,7 @@ export function StartupRecoveryScreen({ report, onRetry, onOpenDiagnostics }) {
           <button type="button" onClick={onOpenDiagnostics} className="btn btn-primary">
             فتح فحص النظام
           </button>
-          <button type="button" onClick={onRetry} className="va-secondary-button rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200">
+          <button type="button" onClick={onRetry} className="btn btn-ghost">
             إعادة المحاولة
           </button>
         </div>

@@ -407,8 +407,8 @@ export function SearchPage() {
         description: "بحث لحظي داخل الأرشيف مع فلاتر مباشرة ونتائج مصغرة بدون مغادرة الصفحة.",
         actions: jsxs(React.Fragment, {
           children: [
-            activeFilterCount > 0 && jsxs("button", { type: "button", onClick: saveAsSmartCollection, className: "va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/5", children: [jsx(FolderOpen, { className: "h-4 w-4" }), "حفظ كمجموعة ذكية"] }, "save-smart-collection"),
-            jsxs("button", { type: "button", onClick: openInArchive, className: "va-secondary-button inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/5", children: [jsx(Archive, { className: "h-4 w-4" }), "عرض في الأرشيف"] }, "open-in-archive"),
+            activeFilterCount > 0 && jsxs("button", { type: "button", onClick: saveAsSmartCollection, className: "btn btn-ghost gap-2", children: [jsx(FolderOpen, { className: "h-4 w-4" }), "حفظ كمجموعة ذكية"] }, "save-smart-collection"),
+            jsxs("button", { type: "button", onClick: openInArchive, className: "btn btn-ghost gap-2", children: [jsx(Archive, { className: "h-4 w-4" }), "عرض في الأرشيف"] }, "open-in-archive"),
             jsxs("button", { type: "button", onClick: () => setCurrentPage?.("add"), className: "btn btn-primary gap-2", children: [jsx(Video, { className: "h-4 w-4" }), "إضافة فيديو"] }, "add-video")
           ]
         })

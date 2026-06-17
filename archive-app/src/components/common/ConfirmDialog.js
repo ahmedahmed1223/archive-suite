@@ -197,7 +197,7 @@ function TieredDialogModal({ config, onResolve }) {
             jsx("button", {
               type: "button",
               onClick: () => onResolve(false),
-              className: "va-secondary-button min-h-10 rounded-xl border border-white/10 bg-gray-950/55 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/5",
+              className: "btn btn-ghost",
               children: "إلغاء"
             }),
             jsx("button", {
@@ -353,7 +353,7 @@ function DialogModal({ request, mode, onResolve }) {
             mode !== "alert" && jsx("button", {
               type: "button",
               onClick: handleCancel,
-              className: "va-secondary-button min-h-10 rounded-xl border border-white/10 bg-gray-950/55 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/5",
+              className: "btn btn-ghost",
               children: cancelText
             }),
             jsx("button", {

@@ -503,7 +503,7 @@ export function DashboardPage() {
       // Edit mode: full toolbar with save/cancel/reset and any hidden-panel chips.
       !dashEditing && jsx("div", {
         className: "flex justify-end",
-        children: jsx("button", { type: "button", onClick: startDashEditing, title: "تخصيص ترتيب لوحة التحكم", "aria-label": "تخصيص ترتيب لوحة التحكم", className: "btn btn-ghost btn-sm va-secondary-button inline-flex h-8 w-8 items-center justify-center rounded-lg border text-gray-300 hover:text-white", children: jsx(Settings2, { className: "h-4 w-4 va-accent-text" }) })
+        children: jsx("button", { type: "button", onClick: startDashEditing, title: "تخصيص ترتيب لوحة التحكم", "aria-label": "تخصيص ترتيب لوحة التحكم", className: "btn btn-ghost btn-sm h-8 w-8", children: jsx(Settings2, { className: "h-4 w-4 va-accent-text" }) })
       }, "dash-customize-btn"),
       dashEditing && jsxs("div", {
         className: "flex flex-wrap items-center justify-between gap-3 rounded-2xl border va-accent-border va-accent-bg/[0.04] px-4 py-2.5",
@@ -604,7 +604,7 @@ export function DashboardPage() {
                       jsxs("button", {
                         type: "button",
                         onClick: () => openArchiveFor(),
-                        className: "btn va-secondary-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold text-gray-200",
+                        className: "btn btn-ghost gap-2",
                         children: [jsx(Archive, { className: "h-4 w-4" }), "في الأرشيف"]
                       })
                     ]
@@ -640,7 +640,7 @@ export function DashboardPage() {
             actions: jsxs("div", {
               className: "flex gap-2",
               children: [
-                jsx("button", { type: "button", onClick: () => goTo("archive"), className: "btn btn-xs va-secondary-button rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-200", children: "فتح الأرشيف" }),
+                jsx("button", { type: "button", onClick: () => goTo("archive"), className: "btn btn-ghost btn-xs", children: "فتح الأرشيف" }),
                 jsx("button", { type: "button", onClick: () => dismissBanner("demo"), className: "btn btn-ghost btn-xs btn-square inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5", "aria-label": "إخفاء التنبيه", children: jsx(X, { className: "h-4 w-4" }) })
               ]
             })
@@ -653,7 +653,7 @@ export function DashboardPage() {
             actions: jsx("button", {
               type: "button",
               onClick: openSecuritySettings,
-              className: "btn btn-xs va-secondary-button rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-200",
+              className: "btn btn-ghost btn-xs",
               children: "فتح الأمان"
             })
           }, "security-banner")

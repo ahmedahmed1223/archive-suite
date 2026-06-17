@@ -226,7 +226,7 @@ function SecondaryButton({ children, onClick, disabled = false }) {
     type: "button",
     onClick,
     disabled,
-    className: "va-secondary-button inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 px-5 py-2 text-sm font-semibold text-gray-200 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50",
+    className: "btn btn-ghost",
     children
   });
 }
