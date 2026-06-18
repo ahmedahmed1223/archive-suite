@@ -5,18 +5,21 @@
 // It performs NO network requests and touches NO DOM — all logic is pure so it
 // can be unit-tested in isolation and reused from any UI surface.
 //
-// Deferred (NOT handled here): server-side metadata fetch, Google Drive OAuth
-// for private files, actual media download, and local-folder batch import.
+// Deferred (NOT handled here): Google Drive OAuth for private files and actual
+// media download.
 
 export const IMPORT_KINDS = Object.freeze({
   YOUTUBE: "youtube",
   GOOGLE_DRIVE: "googledrive",
+  LOCAL_FOLDER: "local_folder",
   WEB: "web",
   UNKNOWN: "unknown"
 });
 
 const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
 const DRIVE_ID_PATTERN = /^[a-zA-Z0-9_-]{10,}$/;
+const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "mkv", "webm", "avi", "m4v"]);
+const AUDIO_EXTENSIONS = new Set(["mp3", "wav", "m4a", "aac", "flac", "ogg"]);
 
 function safeParseUrl(input) {
   const raw = String(input || "").trim();
@@ -158,4 +161,72 @@ export function buildImportDraft(source) {
       sourceUrl
     }
   };
+}
+
+function normalizeManifestPath(value) {
+  const path = String(value || "").trim().replace(/\\/g, "/");
+  if (!path || path.startsWith("/") || /^[a-zA-Z]:\//.test(path)) return "";
+  const segments = path.split("/").filter(Boolean);
+  if (!segments.length || segments.some((segment) => segment === "." || segment === "..")) return "";
+  return segments.join("/");
+}
+
+function guessTitleFromPath(path) {
+  const fileName = path.split("/").filter(Boolean).pop() || path;
+  const base = fileName.includes(".") ? fileName.split(".").slice(0, -1).join(".") : fileName;
+  return decodeURIComponent(base).replace(/[-_]+/g, " ").trim() || fileName;
+}
+
+function inferItemType(path, mimeType = "") {
+  const lowerMime = String(mimeType || "").toLowerCase();
+  if (lowerMime.startsWith("video/")) return "video";
+  if (lowerMime.startsWith("audio/")) return "audio";
+  const extension = path.includes(".") ? path.split(".").pop().toLowerCase() : "";
+  if (VIDEO_EXTENSIONS.has(extension)) return "video";
+  if (AUDIO_EXTENSIONS.has(extension)) return "audio";
+  return "";
+}
+
+function normalizeManifestFileEntry(entry, manifestRoot) {
+  if (!entry || typeof entry !== "object") return null;
+  const path = normalizeManifestPath(entry.relativePath || entry.path || entry.name);
+  if (!path) return null;
+  const mimeType = String(entry.mimeType || entry.type || "").trim();
+  const title = String(entry.title || "").trim() || guessTitleFromPath(path);
+  const size = Number(entry.size);
+  return {
+    title,
+    path,
+    type: inferItemType(path, mimeType),
+    subtype: "",
+    notes: String(entry.notes || "").trim(),
+    tags: Array.isArray(entry.tags) ? entry.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
+    metadata: {
+      importSource: IMPORT_KINDS.LOCAL_FOLDER,
+      sourceUrl: path,
+      localPath: path,
+      ...(manifestRoot ? { manifestRoot } : {}),
+      ...(Number.isFinite(size) && size > 0 ? { fileSize: size } : {}),
+      ...(mimeType ? { mimeType } : {})
+    }
+  };
+}
+
+/**
+ * Parse a local-folder manifest into item drafts. The browser cannot safely
+ * read arbitrary folders by path, so this accepts an explicit manifest file:
+ *   { "rootLabel": "Batch", "files": [{ "path": "folder/video.mp4" }] }
+ */
+export function parseLocalFolderManifest(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(String(text || "").trim() || "{}");
+  } catch {
+    return [];
+  }
+  const manifestRoot = String(parsed?.rootLabel || parsed?.root || "").trim();
+  const files = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.files) ? parsed.files : [];
+  return files
+    .map((entry) => normalizeManifestFileEntry(entry, manifestRoot))
+    .filter(Boolean);
 }

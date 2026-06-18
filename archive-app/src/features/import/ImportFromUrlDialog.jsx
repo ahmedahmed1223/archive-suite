@@ -9,7 +9,8 @@ import { previewImportSources } from "./importPreviewClient.js";
 import {
   IMPORT_KINDS,
   buildImportDraft,
-  parseImportLines
+  parseImportLines,
+  parseLocalFolderManifest
 } from "./importSources.js";
 
 // Visual treatment per source kind: an Arabic label plus a DaisyUI badge color.
@@ -18,6 +19,7 @@ import {
 const KIND_BADGE = {
   [IMPORT_KINDS.YOUTUBE]: { label: "يوتيوب", className: "badge-error" },
   [IMPORT_KINDS.GOOGLE_DRIVE]: { label: "Google Drive", className: "badge-info" },
+  [IMPORT_KINDS.LOCAL_FOLDER]: { label: "Manifest محلي", className: "badge-success" },
   [IMPORT_KINDS.WEB]: { label: "رابط ويب", className: "badge-neutral" }
 };
 
@@ -44,6 +46,19 @@ function SourcePreviewRow({ source, preview }) {
   });
 }
 
+function ManifestPreviewRow({ draft }) {
+  return jsxs("div", {
+    className: "flex items-center justify-between gap-3 rounded-lg border border-base-300 bg-base-200/40 px-3 py-2",
+    children: [
+      jsxs("div", { className: "min-w-0", children: [
+        jsx("p", { className: "truncate text-sm font-semibold", title: draft.title, children: draft.title || "—" }, "title"),
+        jsx("p", { dir: "ltr", className: "truncate text-left text-xs opacity-60", title: draft.path, children: draft.path }, "path")
+      ] }),
+      jsx(KindBadge, { kind: IMPORT_KINDS.LOCAL_FOLDER })
+    ]
+  });
+}
+
 function mergePreviewIntoDraft(draft, preview) {
   if (!preview?.ok) return draft;
   return {
@@ -59,7 +74,7 @@ function mergePreviewIntoDraft(draft, preview) {
   };
 }
 
-async function runImport(sources, previews, addVideoItem) {
+async function runImport(sources, previews, localDrafts, addVideoItem) {
   let imported = 0;
   let failed = 0;
   for (const source of sources) {
@@ -68,6 +83,14 @@ async function runImport(sources, previews, addVideoItem) {
       failed += 1;
       continue;
     }
+    try {
+      await addVideoItem?.(createVideoItemValue(draft));
+      imported += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  for (const draft of localDrafts) {
     try {
       await addVideoItem?.(createVideoItemValue(draft));
       imported += 1;
@@ -87,9 +110,13 @@ export function ImportFromUrlDialog({ open, onOpenChange, addVideoItem, showToas
   const [busy, setBusy] = React.useState(false);
   const [previewBusy, setPreviewBusy] = React.useState(false);
   const [previews, setPreviews] = React.useState({});
+  const [localDrafts, setLocalDrafts] = React.useState([]);
+  const [manifestError, setManifestError] = React.useState("");
   const inputId = React.useId();
+  const manifestInputId = React.useId();
 
   const sources = React.useMemo(() => parseImportLines(text), [text]);
+  const totalReady = sources.length + localDrafts.length;
 
   React.useEffect(() => {
     if (!open || sources.length === 0) {
@@ -122,18 +149,40 @@ export function ImportFromUrlDialog({ open, onOpenChange, addVideoItem, showToas
   const close = () => {
     if (busy) return;
     setText("");
+    setLocalDrafts([]);
+    setManifestError("");
     onOpenChange?.(false);
   };
 
+  const loadManifestFile = async (file) => {
+    setManifestError("");
+    if (!file) return;
+    try {
+      const drafts = parseLocalFolderManifest(await file.text());
+      if (!drafts.length) {
+        setManifestError("لم يحتوي ملف manifest على مسارات صالحة.");
+        setLocalDrafts([]);
+        return;
+      }
+      setLocalDrafts(drafts);
+      showToast?.(`تم تجهيز ${drafts.length} عنصر من manifest المجلد المحلي.`, "success");
+    } catch {
+      setManifestError("تعذر قراءة ملف manifest.");
+      setLocalDrafts([]);
+    }
+  };
+
   const confirmImport = async () => {
-    if (!sources.length || busy) return;
+    if (!totalReady || busy) return;
     setBusy(true);
     try {
-      const { imported, failed } = await runImport(sources, previews, addVideoItem);
+      const { imported, failed } = await runImport(sources, previews, localDrafts, addVideoItem);
       if (imported) showToast?.(`تم استيراد ${imported} عنصر${failed ? ` (تعذّر ${failed})` : ""}`, failed ? "warning" : "success");
-      else showToast?.("تعذّر استيراد الروابط", "error");
+      else showToast?.("تعذّر استيراد المصادر", "error");
       if (imported) {
         setText("");
+        setLocalDrafts([]);
+        setManifestError("");
         onOpenChange?.(false);
       }
     } catch {
@@ -165,7 +214,7 @@ export function ImportFromUrlDialog({ open, onOpenChange, addVideoItem, showToas
         ] }),
         jsxs("div", { className: "space-y-3 p-4", children: [
           jsxs("label", { htmlFor: inputId, className: "block text-sm opacity-80", children: [
-            "ألصق رابطًا واحدًا أو أكثر (يوتيوب، Google Drive، أو روابط ويب). كل سطر أو رابط مفصول بفاصلة يُضاف كعنصر."
+            "ألصق رابطًا واحدًا أو أكثر (يوتيوب، Google Drive، أو روابط ويب)، أو أضف manifest لمجلد محلي بصيغة JSON."
           ] }, "label"),
           jsx("textarea", {
             id: inputId,
@@ -183,18 +232,38 @@ export function ImportFromUrlDialog({ open, onOpenChange, addVideoItem, showToas
               ] }, "preview")
             : text.trim()
               ? jsx("div", { role: "alert", className: "alert alert-warning py-2 text-sm", children: "لم يتم التعرّف على روابط صالحة بعد." }, "empty")
-              : null
+              : null,
+          jsxs("div", { className: "rounded-lg border border-dashed border-base-300 bg-base-200/30 p-3", children: [
+            jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
+              jsxs("div", { className: "min-w-0", children: [
+                jsx("p", { className: "text-sm font-semibold", children: "Manifest مجلد محلي" }),
+                jsx("p", { className: "mt-1 text-xs opacity-70", children: "ملف JSON يحتوي files[] مع relativePath/path/title/tags. يحفظ مراجع فقط ولا يقرأ الملفات مباشرة." })
+              ] }),
+              jsx("input", {
+                id: manifestInputId,
+                type: "file",
+                accept: "application/json,.json",
+                className: "file-input file-input-bordered file-input-sm max-w-full",
+                onChange: (event) => loadManifestFile(event.target.files?.[0])
+              })
+            ] }),
+            manifestError ? jsx("div", { role: "alert", className: "alert alert-warning mt-3 py-2 text-sm", children: manifestError }) : null,
+            localDrafts.length ? jsxs("div", { className: "mt-3 space-y-2", children: [
+              jsx("p", { className: "text-xs opacity-70", children: `${localDrafts.length} عنصر من manifest جاهز للاستيراد` }),
+              jsx("div", { className: "max-h-40 space-y-2 overflow-y-auto", children: localDrafts.map((draft) => jsx(ManifestPreviewRow, { draft }, draft.path)) })
+            ] }) : null
+          ] }, "manifest")
         ] }),
         jsxs("div", { className: "flex items-center justify-end gap-2 border-t border-base-300 p-4", children: [
           jsx("button", { type: "button", onClick: close, disabled: busy, className: "btn btn-ghost", children: "إلغاء" }, "cancel"),
           jsxs("button", {
             type: "button",
             onClick: confirmImport,
-            disabled: !sources.length || busy,
+            disabled: !totalReady || busy,
             className: "btn btn-primary gap-2",
             children: [
               busy ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }, "spin") : null,
-              busy ? "يستورد…" : `استيراد ${sources.length || ""}`.trim()
+              busy ? "يستورد…" : `استيراد ${totalReady || ""}`.trim()
             ]
           }, "confirm")
         ] })

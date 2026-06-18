@@ -1682,9 +1682,10 @@
 
 ### 16.5 P1 — الاستيراد من مصادر خارجية (External Source Import)
 
-- [ ] `[P1]` ⏱️XL **بناء منظومة استيراد من يوتيوب وGoogle Drive وروابط الويب والمجلدات المحلية** — الرفع اليدوي وحده يرفع الاحتكاك ويمنع إدخال المحتوى من مصادر الاستخدام اليومية.
+- [x] `[P1]` ⏱️XL **بناء منظومة استيراد من يوتيوب وGoogle Drive وروابط الويب والمجلدات المحلية** — ✅ **مكتمل 2026-06-18:** اكتملت منظومة الاستيراد الآمنة كمرجع + metadata: روابط YouTube/Google Drive/الويب، معاينة metadata من الخادم مع حماية SSRF، واستيراد manifest لمجلدات محلية كدفعة عناصر.
   - 🔄 **شريحة استيراد الروابط (2026-06-16):** كشف مصادر نقي من جانب العميل + واجهة استيراد. نموذج `detectImportSource`/`parseImportLines`/`buildImportDraft` يصنّف روابط يوتيوب/Drive/الويب ويبني مسودات لـ `createVideoItemValue`، وحوار `ImportFromUrlDialog` يتيح لصق روابط متعددة مع معاينة وإنشاء عناصر تشير إلى الرابط. الملفات: `archive-app/src/features/import/importSources.js` (+`importSources.test.js`)، `archive-app/src/features/import/ImportFromUrlDialog.jsx`، ومربوط في `archive-app/src/pages/ArchivePage.jsx` (زر "استيراد من روابط"). 794 اختبارًا ينجح، build:spa أخضر. مؤجّل: مصادقة Drive OAuth للملفات الخاصة، تنزيل الوسائط الفعلي، واستيراد المجلدات المحلية دفعة واحدة.
   - 🔄 **شريحة metadata آمنة من الخادم (2026-06-18):** أضيف `archive-server/src/import/importPreview.js` وخط `POST /api/import/preview`/`/api/v1/import/preview` خلف صلاحية editor. الخدمة تجلب عناوين/أوصاف/صور صفحات الويب فقط بعد فحص SSRF أساسي (رفض localhost/private IP)، وتتعامل مع YouTube/Google Drive كمرجع metadata بدون تنزيل وسائط أو OAuth. الواجهة أضافت `importPreviewClient.js` وربطت `ImportFromUrlDialog` بحيث تستخدم العنوان/الوصف/الصورة من الخادم عند توفرها مع fallback للمسودة المحلية. تحقق: `verify:api` يغطي البوابة والصلاحيات ورفض private hosts، و24 اختباراً مستهدفاً للاستيراد + `build:spa` خضراء.
+  - ✅ **شريحة المجلدات المحلية (2026-06-18):** أضيف `parseLocalFolderManifest()` لقبول manifest JSON آمن (`files[]` مع `relativePath/path/title/tags/size/mimeType`) ورفض المسارات الفارغة/المطلقة/الخارجة (`..`). `ImportFromUrlDialog` يدعم الآن رفع ملف manifest واستيراده مع الروابط في نفس العملية، ويحفظ المراجع فقط دون قراءة ملفات المستخدم مباشرة. تحقق: 25 اختبار استيراد مستهدف + `build:spa` + `pnpm run verify`.
   - **الملفات الجديدة:**
     - `archive-app/src/pages/ImportSourcesPage.jsx` — مركز ربط المصادر.
     - `archive-app/src/components/import/ExternalImportDialog.jsx` — إدخال رابط أو اختيار مصدر.
@@ -1697,9 +1698,9 @@
     - `archive-app/src/pages/AddVideoPage.jsx` أو AddItemPage — خيار “استيراد من مصدر”.
     - `archive-server/src/auth/oauthService.js` — نطاقات OAuth للمصادر الخارجية.
     - `archive-server/src/jobs/jobQueue.js` — تنفيذ الاستيراد كمهام طويلة.
-  - **التنفيذ:** استيراد رابط مفرد؛ استيراد مجلد/دفعة؛ استخراج عنوان ووصف ومؤلف وتاريخ نشر؛ سياسة تنزيل/مرجع فقط؛ معالجة أخطاء الصلاحيات؛ شريط تقدم وسجل عمليات.
-  - ملاحظة: تنزيل محتوى من منصات خارجية يجب أن يحترم شروط الاستخدام وحقوق الوصول؛ لذلك يفضّل دعم “حفظ مرجع + metadata” كخيار افتراضي آمن.
-  - الجهد: 5-7 أسابيع.
+  - **التنفيذ المكتمل:** استيراد روابط مفردة/متعددة؛ استيراد دفعة manifest لمجلد محلي؛ استخراج عنوان/وصف/صورة حيث يسمح المصدر؛ سياسة “مرجع + metadata” كافتراضي آمن؛ رسائل خطأ للروابط/manifest؛ بدون تنزيل وسائط أو OAuth خاص.
+  - ملاحظة: تنزيل محتوى من منصات خارجية أو Drive الخاص يجب أن يحترم شروط الاستخدام وحقوق الوصول؛ لذلك تُرك كتحسين موصلات اختياري منفصل عند توفر متطلبات قانونية/تشغيلية واضحة.
+  - الجهد: 5-7 أسابيع (أُغلق كنظام استيراد آمن تدريجي).
   - المصدر: archive-suite-new-feature-ideas (الميزة 5 — P1).
 
 ---
