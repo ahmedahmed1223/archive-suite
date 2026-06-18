@@ -83,11 +83,12 @@ describe("buildServiceList", () => {
 
   test("normalizes mixed status keywords", () => {
     const list = buildServiceList([
-      { id: "api", name: "API", status: "running" },
+      { id: "api", name: "API", status: "running", actions: ["restart"] },
       { id: "queue", name: "Queue", status: "stopped" },
       { id: "ocr", name: "OCR", status: "weird" }
     ]);
     expect(list.map((s) => s.status)).toEqual(["up", "down", "unknown"]);
+    expect(list[0].actions).toEqual(["restart"]);
   });
 
   test("falls back to a generated id when none is given", () => {
@@ -206,10 +207,13 @@ describe("buildSystemControlModel", () => {
   test("merges explicit services with the synthetic database service", () => {
     const model = buildSystemControlModel({
       ok: true,
+      actionsEnabled: true,
       db: { ok: true, latencyMs: 5 },
-      services: [{ id: "api", name: "API", status: "up" }]
+      services: [{ id: "api", name: "API", status: "up", actions: ["restart"] }]
     });
     expect(model.services.map((s) => s.id)).toEqual(["database", "api"]);
+    expect(model.actionsEnabled).toBe(true);
+    expect(model.services.find((s) => s.id === "api").actions).toEqual(["restart"]);
   });
 
   test("handles empty/invalid payload without throwing", () => {

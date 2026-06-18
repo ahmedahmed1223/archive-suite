@@ -21,7 +21,7 @@ import { getSessionProvider } from "@archive/core";
 import { useAppStore } from "../stores/index.js";
 import { getBackendUrl } from "../bootstrap/backendChoice.js";
 import { fetchServerHealth } from "../features/server-status/serverHealthClient.js";
-import { fetchControlStatus } from "../features/systemControl/systemControlClient.js";
+import { fetchControlStatus, runControlAction } from "../features/systemControl/systemControlClient.js";
 import {
   METRIC_LEVELS,
   OVERALL_STATES,
@@ -59,15 +59,13 @@ const LEVEL_BAR = {
   [METRIC_LEVELS.UNKNOWN]: "bg-gray-600"
 };
 
-// Control actions are intentionally disabled in this safe slice — wiring them to
-// OS-level start/stop/restart requires system privileges and human review.
 const CONTROL_ACTIONS = [
   { id: "start", label: "تشغيل", Icon: Play },
   { id: "restart", label: "إعادة تشغيل", Icon: RotateCw },
   { id: "stop", label: "إيقاف", Icon: Pause }
 ];
 
-const CONTROL_DEFERRED_NOTE = "قيد التطوير — يتطلب صلاحيات النظام";
+const CONTROL_DISABLED_NOTE = "غير مفعّل من إعدادات الخادم";
 
 function formatUptime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return "—";
@@ -115,7 +113,7 @@ function MetricGauge({ id, percent, level, label, detail }) {
   });
 }
 
-function ServiceRow({ name, status, detail }) {
+function ServiceRow({ id, name, status, detail, actions = [], actionsEnabled, pendingAction, onAction }) {
   const ok = status === "up";
   const down = status === "down";
   const dot = ok ? "bg-green-400" : down ? "bg-red-400" : "bg-gray-500";
@@ -136,14 +134,21 @@ function ServiceRow({ name, status, detail }) {
       jsx("div", {
         className: "flex shrink-0 gap-1",
         children: CONTROL_ACTIONS.map((action) =>
-          jsx("button", {
-            type: "button",
-            disabled: true,
-            title: CONTROL_DEFERRED_NOTE,
-            "aria-label": `${action.label} — ${CONTROL_DEFERRED_NOTE}`,
-            className: "btn btn-xs btn-ghost cursor-not-allowed gap-1 rounded-lg border border-white/5 text-gray-600 opacity-50",
-            children: jsx(action.Icon, { className: "h-3.5 w-3.5" })
-          }, action.id)
+          {
+            const allowed = actionsEnabled && actions.includes(action.id);
+            const pending = pendingAction === `${id}:${action.id}`;
+            return jsx("button", {
+              type: "button",
+              disabled: !allowed || Boolean(pendingAction),
+              title: allowed ? action.label : CONTROL_DISABLED_NOTE,
+              "aria-label": `${action.label} ${name}`,
+              onClick: () => onAction?.(id, action.id),
+              className: `btn btn-xs btn-ghost gap-1 rounded-lg border border-white/5 ${
+                allowed ? "text-gray-300 hover:bg-white/5 hover:text-white" : "cursor-not-allowed text-gray-600 opacity-50"
+              }`,
+              children: jsx(action.Icon, { className: `h-3.5 w-3.5 ${pending ? "animate-spin" : ""}` })
+            }, action.id);
+          }
         )
       })
     ]
@@ -155,6 +160,8 @@ export default function SystemControlPage() {
   const [manualHealth, setManualHealth] = React.useState(null);
   const [checking, setChecking] = React.useState(false);
   const [autoRefresh, setAutoRefresh] = React.useState(false);
+  const [actionPending, setActionPending] = React.useState("");
+  const [actionError, setActionError] = React.useState("");
 
   const handleRefresh = React.useCallback(async () => {
     setChecking(true);
@@ -180,6 +187,20 @@ export default function SystemControlPage() {
       setChecking(false);
     }
   }, [runSystemHealthCheck]);
+
+  const handleControlAction = React.useCallback(async (service, action) => {
+    setActionPending(`${service}:${action}`);
+    setActionError("");
+    try {
+      const token = getSessionProvider()?.getToken?.() || "";
+      await runControlAction({ baseUrl: getBackendUrl(), token, service, action });
+      await handleRefresh();
+    } catch (error) {
+      setActionError(error?.message || "فشل تنفيذ إجراء مركز التحكم.");
+    } finally {
+      setActionPending("");
+    }
+  }, [handleRefresh]);
 
   React.useEffect(() => {
     if (!autoRefresh) return undefined;
@@ -330,15 +351,37 @@ export default function SystemControlPage() {
             ? jsx("div", {
                 className: "flex flex-col gap-2",
                 children: model.services.map((svc) =>
-                  jsx(ServiceRow, { name: svc.name, status: svc.status, detail: svc.detail }, svc.id)
+                  jsx(ServiceRow, {
+                    id: svc.id,
+                    name: svc.name,
+                    status: svc.status,
+                    detail: svc.detail,
+                    actions: svc.actions,
+                    actionsEnabled: model.actionsEnabled,
+                    pendingAction: actionPending,
+                    onAction: handleControlAction
+                  }, svc.id)
                 )
               })
             : jsx("p", { className: "text-xs text-gray-600", children: "لا توجد خدمات معروضة." })
         ]
       }),
 
+      actionError && jsxs("div", {
+        className: "alert mb-5 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-300/90",
+        role: "alert",
+        children: [
+          jsx(AlertTriangle, { className: "mt-0.5 h-4 w-4 shrink-0" }),
+          jsx("span", { children: actionError })
+        ]
+      }),
+
       jsxs("div", {
-        className: "alert mt-2 flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-300/90",
+        className: `alert mt-2 flex items-start gap-2 rounded-xl border p-3 text-xs ${
+          model.actionsEnabled
+            ? "border-green-500/20 bg-green-500/5 text-green-300/90"
+            : "border-amber-500/20 bg-amber-500/5 text-amber-300/90"
+        }`,
         role: "note",
         children: [
           jsx(ShieldAlert, { className: "mt-0.5 h-4 w-4 shrink-0" }),
@@ -346,11 +389,16 @@ export default function SystemControlPage() {
             children: [
               jsxs("p", {
                 className: "flex items-center gap-1.5 font-medium",
-                children: [jsx(Lock, { className: "h-3.5 w-3.5" }), "أزرار التحكم (تشغيل/إيقاف/إعادة تشغيل) معطّلة"]
+                children: [
+                  jsx(Lock, { className: "h-3.5 w-3.5" }),
+                  model.actionsEnabled ? "أزرار التحكم مفعّلة للخدمات المسموحة فقط" : "أزرار التحكم (تشغيل/إيقاف/إعادة تشغيل) معطّلة"
+                ]
               }),
               jsx("p", {
-                className: "mt-0.5 text-amber-300/70",
-                children: "التحكم بخدمات نظام التشغيل يتطلب صلاحيات النظام ومراجعة بشرية، وهو مؤجَّل في هذه الشريحة الآمنة."
+                className: model.actionsEnabled ? "mt-0.5 text-green-300/70" : "mt-0.5 text-amber-300/70",
+                children: model.actionsEnabled
+                  ? "الخادم لا ينفذ إلا أوامر الخدمات الموجودة في allowlist، وكل طلب يتطلب صلاحية admin."
+                  : "فعّل CONTROL_AGENT_ACTIONS=enabled وعرّف CONTROL_AGENT_SERVICES على الخادم للسماح بالأوامر."
               })
             ]
           })

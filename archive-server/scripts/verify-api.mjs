@@ -640,6 +640,40 @@ run("control agent reports safe local status without exposing secrets", async ()
   assert.equal(JSON.stringify(logs).includes("secret"), false);
 });
 
+run("control agent executes only enabled allowlisted service actions", async () => {
+  const { createControlAgent } = await import("../src/control/controlAgent.js");
+  const calls = [];
+  const agent = createControlAgent({
+    mode: "linux-native",
+    actionsEnabled: true,
+    services: [
+      { id: "api", name: "API", systemdUnit: "archive-api.service", actions: ["restart"] }
+    ],
+    executor: async (command) => {
+      calls.push(command);
+      return { code: 0, stdout: "ok token=secret", stderr: "" };
+    }
+  });
+
+  const restarted = await agent.runAction("restart", { service: "api" });
+  assert.equal(restarted.ok, true);
+  assert.equal(restarted.statusCode, 200);
+  assert.equal(restarted.stdout, "ok token=***");
+  assert.equal(calls[0].command, "systemctl");
+  assert.deepEqual(calls[0].args, ["restart", "archive-api.service"]);
+
+  const forbidden = await agent.runAction("stop", { service: "api" });
+  assert.equal(forbidden.statusCode, 403);
+  assert.equal(calls.length, 1);
+
+  const missing = await agent.runAction("restart", { service: "db" });
+  assert.equal(missing.statusCode, 400);
+  assert.equal(calls.length, 1);
+
+  const disabled = createControlAgent({ actionsEnabled: false, executor: async () => { throw new Error("must not run"); } });
+  assert.equal((await disabled.runAction("restart", { service: "archive-api" })).statusCode, 501);
+});
+
 run("fireWebhooks delivers matching hooks with signature and retry", async () => {
   const received = [];
   const receiver = createServer((req, res) => {

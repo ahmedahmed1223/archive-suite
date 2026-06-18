@@ -8,7 +8,8 @@ export async function handleControlRoute({
   authorizeAdmin,
   sendJson,
   agent,
-  overLimit
+  overLimit,
+  readJsonBody = async () => ({})
 }) {
   if (!url.startsWith("/api/control/")) return false;
 
@@ -33,8 +34,13 @@ export async function handleControlRoute({
   const action = url.slice("/api/control/".length);
   if (req.method === "POST" && CONTROL_ACTIONS.has(action)) {
     if (overLimit?.(res, "rpc", req)) return true;
-    const result = await agent.unsupportedAction(action);
-    sendJson(res, 501, result);
+    const body = await readJsonBody(req);
+    const service = body?.service || requestUrl.searchParams.get("service") || "archive-api";
+    const canRunAction = typeof agent.runAction === "function";
+    const result = canRunAction
+      ? await agent.runAction(action, { service })
+      : await agent.unsupportedAction(action);
+    sendJson(res, result.statusCode || (!canRunAction ? 501 : result.ok ? 200 : 500), result);
     return true;
   }
 

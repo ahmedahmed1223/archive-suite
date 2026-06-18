@@ -129,7 +129,8 @@ export function buildServiceList(rawServices) {
         id,
         name: String(svc.name ?? svc.id ?? id),
         status,
-        detail: svc.detail ? String(svc.detail) : ""
+        detail: svc.detail ? String(svc.detail) : "",
+        actions: Array.isArray(svc.actions) ? svc.actions.map(String) : []
       };
     });
 }
@@ -208,6 +209,7 @@ export function buildSystemControlModel(payload = {}, options = {}) {
     uptimeSec: uptimeSec !== null && uptimeSec >= 0 ? uptimeSec : null,
     metrics,
     services,
+    actionsEnabled: source.actionsEnabled === true,
     checkedAt: options.checkedAt || source.checkedAt || null
   };
 }
