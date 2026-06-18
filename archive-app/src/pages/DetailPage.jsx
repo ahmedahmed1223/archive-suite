@@ -94,6 +94,7 @@ import { getCloudToken } from "../bootstrap/cloudSession.js";
 import { createMediaClient } from "../features/media/mediaClient.js";
 import { ShareDialog } from "../features/share/ShareDialog.jsx";
 import { canShare } from "../features/share/shareClient.js";
+import { saveMintedLink } from "../features/share/mintedLinksStore.js";
 import {
   canUseServerMediaTools,
   buildDerivedFileRecordsFromJobs,
@@ -1054,8 +1055,9 @@ export function DetailPage() {
     }
   };
 
-  const handleSharedItem = async ({ url } = {}) => {
+  const handleSharedItem = async ({ url, permission, jti, expiresAt, passwordProtected } = {}) => {
     const targetLabel = item?.title || "سجل";
+    saveMintedLink({ url, jti, permission, scopeType: "items", label: targetLabel, expiresAt, passwordProtected });
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url).catch(() => {});

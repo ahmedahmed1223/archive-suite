@@ -33,7 +33,8 @@ export const PAGE_MANIFEST = [
   { id: "inbox", group: "daily", heavy: false, meta: { title: "صندوق الوارد", breadcrumb: "الرئيسية / الوارد", hint: "التقط الأفكار والمحتوى بسرعة ونظّمها لاحقاً بالأرشفة أو الحذف.", helpSection: "dashboard-archive" } },
   { id: "analytics", group: "administration", heavy: true, meta: { title: "تحليلات الأرشيف", breadcrumb: "الإدارة / التحليلات", hint: "لوحة شخصية تكشف النمو الشهري وأكثر الوسوم والعناصر غير المصنفة والمكررات وصحة الأرشيف.", helpSection: "reports-settings" } },
   { id: "automation", group: "administration", heavy: true, meta: { title: "الأتمتة", breadcrumb: "الإدارة / الأتمتة", hint: "قواعد أتمتة بصرية: عند حدث (إضافة/تعديل) نفّذ إجراءات مثل إضافة وسوم أو نقل لمجموعة تلقائياً.", helpSection: "reports-settings" } },
-  { id: "appearance", group: "administration", heavy: false, meta: { title: "المظهر", breadcrumb: "الإدارة / المظهر", hint: "تخصيص السمة والكثافة والألوان ومشاركة الإعدادات.", helpSection: "reports-settings" } }
+  { id: "appearance", group: "administration", heavy: false, meta: { title: "المظهر", breadcrumb: "الإدارة / المظهر", hint: "تخصيص السمة والكثافة والألوان ومشاركة الإعدادات.", helpSection: "reports-settings" } },
+  { id: "shared-links", group: "daily", heavy: false, meta: { title: "روابط المشاركة", breadcrumb: "الرئيسية / روابط المشاركة", hint: "إدارة روابط المشاركة التي أنشأتها على هذا الجهاز مع إمكانية الإلغاء.", helpSection: "dashboard-archive" } }
 ];
 
 export const PAGE_CONTEXT_META = Object.fromEntries(
