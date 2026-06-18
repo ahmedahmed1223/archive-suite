@@ -152,6 +152,10 @@ function bearer(secret = "sync-secret") {
   return `Bearer ${signJwt({ sub: "u1", username: "admin", role: "admin" }, secret)}`;
 }
 
+function bearerWithRole(secret = "sync-secret", role = "admin") {
+  return `Bearer ${signJwt({ sub: "u1", username: role, role }, secret)}`;
+}
+
 async function waitFor(predicate, { timeoutMs = 2500, intervalMs = 25 } = {}) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
@@ -541,6 +545,99 @@ run("HTTP: webhook routes list, create, and delete caller hooks behind auth", as
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
+});
+
+run("HTTP: control center status and logs are admin-only and read-only", async () => {
+  const secret = "control-secret";
+  const server = createApiServer({
+    backend: "test",
+    authSecret: secret,
+    rateLimit: null,
+    controlAgent: {
+      async status() {
+        return {
+          ok: true,
+          mode: "test",
+          readOnly: true,
+          metrics: { cpu: { percent: 12 }, memory: { percent: 34 }, disk: { percent: 56 } },
+          services: [{ id: "api", name: "API", status: "running", detail: "test mode" }]
+        };
+      },
+      async logs({ service, limit }) {
+        return {
+          ok: true,
+          service,
+          limit,
+          lines: [
+            { ts: "2026-06-18T00:00:00.000Z", service, line: "started" }
+          ]
+        };
+      },
+      async unsupportedAction(action) {
+        return { ok: false, action, error: "disabled" };
+      }
+    }
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const admin = { Authorization: bearer(secret) };
+
+  try {
+    assert.equal((await fetch(`${base}/api/control/status`)).status, 401);
+    assert.equal((await fetch(`${base}/api/control/status`, {
+      headers: { Authorization: bearerWithRole(secret, "viewer") }
+    })).status, 403);
+
+    const statusRes = await fetch(`${base}/api/control/status`, { headers: admin });
+    assert.equal(statusRes.status, 200);
+    const status = await statusRes.json();
+    assert.equal(status.ok, true);
+    assert.equal(status.result.readOnly, true);
+    assert.equal(status.result.metrics.cpu.percent, 12);
+    assert.deepEqual(status.result.services.map((svc) => svc.id), ["api"]);
+
+    const logsRes = await fetch(`${base}/api/control/logs?service=api&limit=1`, { headers: admin });
+    assert.equal(logsRes.status, 200);
+    const logs = await logsRes.json();
+    assert.equal(logs.ok, true);
+    assert.equal(logs.result.service, "api");
+    assert.equal(logs.result.limit, 1);
+    assert.equal(logs.result.lines[0].line, "started");
+
+    const restart = await fetch(`${base}/api/control/restart`, { method: "POST", headers: admin });
+    assert.equal(restart.status, 501);
+    assert.deepEqual(await restart.json(), { ok: false, error: "disabled", action: "restart" });
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+run("control agent reports safe local status without exposing secrets", async () => {
+  const { createControlAgent } = await import("../src/control/controlAgent.js");
+  const agent = createControlAgent({
+    mode: "test",
+    now: () => new Date("2026-06-18T00:00:00.000Z"),
+    platform: () => "win32",
+    uptime: () => 60,
+    loadavg: () => [0.5, 0.25, 0.1],
+    cpus: () => [{}, {}],
+    totalmem: () => 100,
+    freemem: () => 25,
+    diskUsage: () => ({ used: 70, total: 100 }),
+    services: [{ id: "api", name: "Archive API", status: "running", detail: "local" }],
+    readLogs: async () => ["token=secret", "healthy"]
+  });
+
+  const status = await agent.status();
+  assert.equal(status.mode, "test");
+  assert.equal(status.readOnly, true);
+  assert.equal(status.metrics.memory.percent, 75);
+  assert.equal(status.metrics.disk.percent, 70);
+  assert.equal(status.services[0].status, "running");
+
+  const logs = await agent.logs({ service: "api", limit: 5 });
+  assert.equal(logs.lines.length, 2);
+  assert.equal(JSON.stringify(logs).includes("secret"), false);
 });
 
 run("fireWebhooks delivers matching hooks with signature and retry", async () => {

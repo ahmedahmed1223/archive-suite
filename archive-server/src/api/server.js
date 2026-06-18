@@ -53,8 +53,10 @@ import {
   incActiveRequests, decActiveRequests, recordRequest
 } from "../monitoring/metrics.js";
 import { handleOcr } from "./ocrHandler.js";
+import { handleControlRoute } from "./controlRoutes.js";
 import { publicOpenApiSpec } from "./publicOpenApi.js";
 import { exportRecords } from "../export/exportService.js";
+import { createControlAgent } from "../control/controlAgent.js";
 import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
 import bcrypt from "bcryptjs";
 import { sendPasswordResetEmail, sendMail as defaultSendMail } from "../auth/emailService.js";
@@ -308,7 +310,8 @@ export function createApiServer({
   testDbConnection = testDatabaseConnection,
   notificationSendMail = defaultSendMail,
   version = process.env.npm_package_version || process.env.APP_VERSION || "0.0.0",
-  dropboxOAuthFetch
+  dropboxOAuthFetch,
+  controlAgent = createControlAgent()
 } = {}) {
   // Prefer dedicated per-token-type secrets; fall back to the legacy JWT_SECRET
   // (via authSecret/shareSecret) so existing deployments keep working.
@@ -319,6 +322,9 @@ export function createApiServer({
   const authRequired = Boolean(resolvedAuthSecret);
   const oauthSecret = resolvedOauthSecret;
   const refreshExpiresInSec = Number(process.env.REFRESH_EXPIRES_IN_SEC) || DEFAULT_REFRESH_EXPIRES_IN_SEC;
+  const resolvedControlAgent = controlAgent && typeof controlAgent.status === "function"
+    ? controlAgent
+    : createControlAgent();
 
   // §20.5 security — the public API key endpoint may ONLY read these content
   // stores. An allowlist (not a denylist) keeps sensitive stores — users,
@@ -556,6 +562,19 @@ export function createApiServer({
 
     if (req.method === "GET" && url === "/api/public/openapi.json") {
       return send(res, 200, publicOpenApiSpec);
+    }
+
+    if (await handleControlRoute({
+      req,
+      res,
+      url,
+      requestUrl,
+      authorizeAdmin: requireAdmin,
+      sendJson: send,
+      agent: resolvedControlAgent,
+      overLimit
+    })) {
+      return undefined;
     }
 
     if (req.method === "GET" && (url === "/api/health" || url === "/health")) {

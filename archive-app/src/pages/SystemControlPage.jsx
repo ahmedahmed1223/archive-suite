@@ -17,8 +17,11 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
+import { getSessionProvider } from "@archive/core";
 import { useAppStore } from "../stores/index.js";
+import { getBackendUrl } from "../bootstrap/backendChoice.js";
 import { fetchServerHealth } from "../features/server-status/serverHealthClient.js";
+import { fetchControlStatus } from "../features/systemControl/systemControlClient.js";
 import {
   METRIC_LEVELS,
   OVERALL_STATES,
@@ -156,14 +159,23 @@ export default function SystemControlPage() {
   const handleRefresh = React.useCallback(async () => {
     setChecking(true);
     try {
+      const token = getSessionProvider()?.getToken?.() || "";
+      const controlStatus = await fetchControlStatus({ baseUrl: getBackendUrl(), token });
+      setManualHealth(controlStatus);
       if (typeof runSystemHealthCheck === "function") {
-        await runSystemHealthCheck();
-      } else {
-        const result = await fetchServerHealth({});
-        setManualHealth(result);
+        runSystemHealthCheck().catch(() => {});
       }
     } catch {
-      // Leave the last-known state in place on failure.
+      try {
+        if (typeof runSystemHealthCheck === "function") {
+          await runSystemHealthCheck();
+        } else {
+          const result = await fetchServerHealth({});
+          setManualHealth(result);
+        }
+      } catch {
+        // Leave the last-known state in place on failure.
+      }
     } finally {
       setChecking(false);
     }
