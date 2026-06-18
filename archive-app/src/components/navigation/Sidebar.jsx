@@ -63,6 +63,7 @@ import { getUnreadNotifications } from "../../features/notifications/viewModel.j
 import {
   applySidebarLayout,
   getDefaultSidebarLayout,
+  getSidebarDrawerFrame,
   hasSidebarLayoutDraftChanges,
   normalizeSidebarLayout,
   reorderSidebarItem,
@@ -252,6 +253,7 @@ export function Sidebar() {
   });
   const collapsed = responsiveSidebar.collapsed;
   const shaped = applySidebarLayout(guidedGroups, activeLayout, { editing });
+  const drawerFrame = getSidebarDrawerFrame({ open: responsiveSidebar.drawerOpen });
 
   const setDrawerOpen = React.useCallback((open) => {
     if (setSidebarOpen) {
@@ -553,35 +555,50 @@ export function Sidebar() {
     ]
   });
 
-  return jsxs(Fragment, {
-    children: [
-      isMobile && jsx("button", {
-        type: "button",
-        onClick: toggleDrawer,
-        className: "va-surface-muted fixed right-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-[60] inline-flex h-11 w-11 items-center justify-center rounded-xl border text-white shadow-lg backdrop-blur md:hidden",
-        "aria-label": responsiveSidebar.drawerOpen ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية",
-        children: responsiveSidebar.drawerOpen ? jsx(X, { className: "h-5 w-5" }) : jsx(Menu, { className: "h-5 w-5" })
-      }),
-      isMobile && responsiveSidebar.drawerOpen && jsx("div", {
-        className: "fixed inset-0 z-40 bg-black/50 md:hidden",
-        onClick: () => setDrawerOpen(false),
-        "aria-hidden": "true"
-      }),
-      isMobile ? responsiveSidebar.drawerOpen && jsx("aside", {
-        role: "navigation",
-        "aria-label": "القائمة الجانبية",
-        className: "va-sidebar fixed top-0 right-0 z-50 flex h-full flex-col border-l border-white/10 bg-gray-950",
-        style: { width: "min(88vw, 320px)" },
-        dir: "rtl",
-        children: sidebarContent
-      }) : jsx("aside", {
+  if (isMobile) {
+    return jsxs("div", {
+      className: drawerFrame.rootClassName,
+      dir: "rtl",
+      children: [
+        jsx("div", {
+          className: drawerFrame.contentClassName,
+          children: jsx("button", {
+            type: "button",
+            onClick: toggleDrawer,
+            className: drawerFrame.toggleClassName,
+            "aria-label": responsiveSidebar.drawerOpen ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية",
+            children: responsiveSidebar.drawerOpen ? jsx(X, { className: "h-5 w-5" }) : jsx(Menu, { className: "h-5 w-5" })
+          })
+        }),
+        responsiveSidebar.drawerOpen && jsxs("div", {
+          className: drawerFrame.sideClassName,
+          children: [
+            jsx("button", {
+              type: "button",
+              className: drawerFrame.overlayClassName,
+              onClick: () => setDrawerOpen(false),
+              "aria-label": "إغلاق القائمة الجانبية"
+            }),
+            jsx("aside", {
+              role: "navigation",
+              "aria-label": "القائمة الجانبية",
+              className: drawerFrame.panelClassName,
+              style: drawerFrame.panelStyle,
+              dir: "rtl",
+              children: sidebarContent
+            })
+          ]
+        })
+      ]
+    });
+  }
+
+  return jsx("aside", {
         role: "navigation",
         "aria-label": "القائمة الجانبية",
         className: `va-sidebar ${collapsed ? "w-[72px]" : "w-[clamp(240px,18vw,280px)]"} flex h-screen shrink-0 flex-col border-l border-white/10 bg-gray-950 transition-[width] duration-200`,
         dir: "rtl",
         children: sidebarContent
-      })
-    ]
   });
 }
 
