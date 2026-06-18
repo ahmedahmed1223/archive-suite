@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   normalizeSidebarLayout,
+  getSidebarDrawerFrame,
   resolveSidebarLayoutMode,
   resolveSidebarResponsiveState
 } from "./sidebarLayoutModel.js";
@@ -27,6 +28,17 @@ describe("resolveSidebarResponsiveState", () => {
       persistedCollapsed: true,
       editing: true
     })).toEqual({ mode: "desktop", drawerOpen: false, collapsed: false });
+  });
+});
+
+describe("getSidebarDrawerFrame", () => {
+  it("uses DaisyUI drawer classes for the mobile sidebar shell", () => {
+    expect(getSidebarDrawerFrame({ open: true }).rootClassName).toContain("drawer drawer-end");
+    expect(getSidebarDrawerFrame({ open: true }).rootClassName).toContain("drawer-open");
+    expect(getSidebarDrawerFrame({ open: true }).sideClassName).toContain("drawer-side");
+    expect(getSidebarDrawerFrame({ open: true }).overlayClassName).toContain("drawer-overlay");
+
+    expect(getSidebarDrawerFrame({ open: false }).rootClassName).not.toContain("drawer-open");
   });
 });
 

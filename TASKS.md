@@ -1914,7 +1914,7 @@
 
 ### 17.1 P1 — الانتقال إلى نظام مكوّنات DaisyUI كأساس تصميمي (DaisyUI Component System Migration)
 
-- [ ] `[P1]` ⏱️XL **تبنّي DaisyUI كنظام تصميم موحّد فوق Tailwind v4 وترحيل المكوّنات تدريجياً** — المكوّنات الحالية مكتوبة بـ CSS مخصص غير موحّد، ما ينتج تبايناً بصرياً ويصعّب الصيانة والتخصيص ودعم السمات.
+- [x] `[P1]` ⏱️XL **تبنّي DaisyUI كنظام تصميم موحّد فوق Tailwind v4 وترحيل المكوّنات تدريجياً** — ✅ **مكتمل 2026-06-18:** اكتمل الترحيل التدريجي لمكوّنات DaisyUI بما فيها آخر بند مفتوح: غلاف `drawer` للشريط الجانبي على الجوال.
   - **التثبيت:** `npx skills add saadeghi/daisyui --agent claude-code --yes` ثم إضافة `daisyui` كـ plugin في `archive-app/src/styles/tailwind.css` (Tailwind v4 `@plugin "daisyui";`).
   - **تعديل ملفات:** `archive-app/src/styles/tailwind.css` (ملف Tailwind الجذري)، `archive-app/src/components/ui/*` (الأزرار، البطاقات، الحقول، النوافذ)، `archive-app/tailwind.config.*` إن وُجد.
   - **التنفيذ التدريجي:** المرحلة 1 المكوّنات الأساسية (`btn`, `input`, `card`)؛ المرحلة 2 المكوّنات المركّبة (`navbar`, `menu`, `drawer`)؛ المرحلة 3 الصفحات الكاملة. دعم RTL أصيل، توحيد الأحجام والمسافات.
@@ -1937,7 +1937,7 @@
   - 🔄 **مرحلة 17 (2026-06-17):** ترحيل `app/shell/ShellParts.jsx` — أزرار نماذج تسجيل الدخول/كلمة المرور/معالج البداية → `btn btn-primary`. **709 اختبار تمرّ، build:spa أخضر.**
   - 🔄 **مرحلة 24 (2026-06-17):** ترحيل حقول إعدادات الخادم — `DatabaseSettings`/`FileStoreSettings`/`SettingsControls` → `input input-bordered`/`select select-bordered`/`textarea textarea-bordered`/`btn btn-ghost`. **709 اختبار تمرّ.**
   - 🔄 **مرحلة 25-26 (2026-06-17):** مسح كل 77 نمطاً متبقياً (`outline-none focus:border-emerald`) عبر 24 ملفاً — جميع صفحات الإعدادات والمحتوى والمكوّنات + V1OnboardingWizard. **صفر نمط متبقٍ. 709 اختبار تمرّ.**
-  - **المتبقي الوحيد لـ§1881:** `drawer` للجوال (يتطلب إعادة هيكلة AppRouter — جلسة منفصلة).
+  - ✅ **مرحلة 27 (2026-06-18):** إغلاق آخر بند متبقٍ: ترحيل غلاف الشريط الجانبي على الجوال إلى بنية DaisyUI `drawer drawer-end` مع إبقاء منطق الفتح/الإغلاق، Escape، منع تمرير الصفحة، وRTL كما هي. أضيف helper نقي `getSidebarDrawerFrame` في `sidebarLayoutModel.js` واختبار عقد له. تحقق: اختبار `sidebarLayoutModel.test.js` و`build:spa`، ثم `pnpm run verify`.
   - يرتبط بـ: §4 (UI/UX)، §17.10 (السمات)، §19.4 (تثبيت daisyUI).
   - الجهد: 6-8 أسابيع (تدريجي).
   - المصدر: daisyui-ux-proposals (المقترح 1 — P1).
