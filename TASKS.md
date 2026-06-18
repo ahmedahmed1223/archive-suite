@@ -2035,6 +2035,7 @@
   - ✅ **جدولة فاتح/داكن مُنجَزة 2026-06-12:** أُضيف `features/theme/themeSchedule.js` (محرك نقي: `relativeLuminance`/`getDaisyThemeTone`/`normalizeSchedule`/`resolveScheduledTheme` + تخزين `videoArchive:themeSchedule`) مع `themeSchedule.test.js` (12 اختبار). يدعم وضع `manual` (يحترم اختيار `daisyTheme` الحالي — لا ارتداد للمستخدمين) و`auto` (سمة فاتحة/داكنة حسب `prefers-color-scheme`). رُبط في `theme/applyInitialDaisyTheme.js` مع `watchSystemThemeChange` لتتبّع تبدّل النظام وقت التشغيل.
   - 🔄 **تقدم إضافي 2026-06-12:** أضيفت واجهة تبديل `manual/auto` داخل `LiveThemeEditor` باستخدام DaisyUI `toggle` و`select` لاختيار سمة فاتحة وداكنة، وصارت الجدولة جزءاً من مسودة المظهر: تُعاين فورياً، وتُحفظ عبر `storeSchedule()` عند تطبيق المظهر، وتُضمّن في تصدير/استيراد JSON لملف المظهر.
   - ✅ **السمة المخصصة مُنجَزة 2026-06-12:** أُضيف `features/theme/customDaisyTheme.js` لحفظ وتطبيع وتطبيق CSS vars كاملة لرموز DaisyUI والتطبيق، مع `customDaisyTheme.test.js` (6 اختبارات). رُبطت الطبقة في boot helper و`AppRouter` و`SettingsPage`، وأضيفت واجهة `toggle` + `input` ألوان داخل `LiveThemeEditor`، وصار ملف المظهر يصدّر/يستورد `customDaisyTheme`.
+  - ✅ **تحسين معاينة المظهر 2026-06-18:** صارت معاينة “استوديو المظهر” في `SettingsPage` مبنية على أصناف DaisyUI الدلالية (`base-*`/`primary`/`accent`) بدل ألوان داكنة ثابتة، مع view-model مختبر في `features/theme/appearancePreview.js` يضبط تسميات الكثافة وأنماط البطاقات وملخص السمة.
   - يرتبط بـ: §17.1، §15.3 (مركز الإعدادات).
   - الجهد: 2-3 أسابيع (بعد §17.1).
   - المصدر: daisyui-ux-proposals (المقترح 10 — P1).
