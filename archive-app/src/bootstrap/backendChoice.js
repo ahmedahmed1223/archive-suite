@@ -12,9 +12,10 @@
 //   "postgres"   — Postgres via a server-side REST API. Requires a URL.
 //                  Not wired in the SPA yet — needs a follow-up sub-project
 //                  that ships the REST API in archive-server.
-//   "firebase"   — Firestore reached client-side over HTTPS. Requires a
-//                  firebaseConfig (apiKey/projectId/appId/…). Works inside the
-//                  AI Studio iframe because no user-owned server is involved.
+//   "firebase"   — Firestore/Auth/Storage reached client-side over HTTPS.
+//                  Requires a firebaseConfig (apiKey/projectId/appId/…).
+//                  Works inside the AI Studio iframe because no user-owned
+//                  server is involved.
 
 export const BACKEND_CHOICES = Object.freeze(["local", "pocketbase", "postgres", "firebase"]);
 export const LOCAL_ENGINES = Object.freeze(["indexeddb", "sqlite"]);
@@ -126,6 +127,11 @@ export function shouldForceLocalBackend() {
 /** Resolves what the boot should *actually* use, given saved + runtime context. */
 export function resolveBackendChoice(options = {}) {
   if (shouldForceLocalBackend()) {
+    const backend = getBackendChoice(options);
+    const firebaseConfig = getFirebaseConfig(options);
+    if (backend === "firebase" && isFirebaseConfigUsable(firebaseConfig)) {
+      return { backend: "firebase", url: "", localEngine: getLocalEngine(options), firebaseConfig, forced: true };
+    }
     return { backend: "local", url: "", localEngine: getLocalEngine(options), forced: true };
   }
   return {
@@ -135,6 +141,16 @@ export function resolveBackendChoice(options = {}) {
     firebaseConfig: getFirebaseConfig(options),
     forced: false
   };
+}
+
+function isFirebaseConfigUsable(config) {
+  return Boolean(
+    config &&
+    typeof config === "object" &&
+    String(config.apiKey || "").trim() &&
+    String(config.projectId || "").trim() &&
+    String(config.appId || "").trim()
+  );
 }
 
 function safeLocalStorage() {

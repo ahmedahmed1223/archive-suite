@@ -11,7 +11,7 @@ export const ONBOARDING_STEPS = [
 
 // Storage backend options surfaced in the setup wizard. The id maps 1:1 to
 // BACKEND_CHOICES in bootstrap/backendChoice.js. "local" needs no URL; the
-// cloud backends need a server address the user pastes in.
+// server backends need a server address; Firebase needs a client config.
 export const ONBOARDING_STORAGE_OPTIONS = [
   {
     id: "postgres",
@@ -24,6 +24,12 @@ export const ONBOARDING_STORAGE_OPTIONS = [
     id: "local",
     label: "محلي مستقل",
     detail: "أوفلاين على هذا الجهاز فقط. مناسب للتجربة أو العمل المنفصل.",
+    needsUrl: false
+  },
+  {
+    id: "firebase",
+    label: "Firebase",
+    detail: "Firestore/Auth/Storage من جانب العميل؛ مناسب لـ AI Studio ولا يحتاج خادماً مملوكاً.",
     needsUrl: false
   },
   {

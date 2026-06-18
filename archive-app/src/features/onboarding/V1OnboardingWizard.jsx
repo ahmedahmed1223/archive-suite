@@ -17,6 +17,7 @@ import {
   Database,
   FileDown,
   FileUp,
+  Flame,
   HardDrive,
   Keyboard,
   LayoutGrid,
@@ -53,12 +54,14 @@ import {
 } from "./viewModel.js";
 import {
   getBackendChoice,
+  getFirebaseConfig,
   getBackendUrl,
   getLocalEngine,
   normalizeBackendChoice,
   setBackendChoice,
   shouldForceLocalBackend
 } from "../../bootstrap/backendChoice.js";
+import { parseFirebaseConfigText, stringifyFirebaseConfig } from "../../bootstrap/firebaseConfig.js";
 import { getCloudToken, loginToCloud } from "../../bootstrap/cloudSession.js";
 import { PasswordField } from "../../components/common/PasswordField.jsx";
 import { RoleSelectionStep } from "../../components/onboarding/RoleSelectionStep.jsx";
@@ -76,7 +79,7 @@ import { PresetConfigScreen } from "./PresetConfigScreen.jsx";
 import { normalizeRoleProfileId } from "./roleProfiles.js";
 import { seedDemoData } from "./DemoModeSeeder.js";
 
-const STORAGE_ICONS = { local: Laptop, postgres: Server, pocketbase: Cloud };
+const STORAGE_ICONS = { local: Laptop, postgres: Server, pocketbase: Cloud, firebase: Flame };
 const DEFAULT_PORT_BY_ENGINE = { postgresql: "5432", mysql: "3306", sqlserver: "1433" };
 
 const FIRST_TASK_OPTIONS = [
@@ -256,6 +259,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   const [storageChoice, setStorageChoice] = React.useState(() => getBackendChoice());
   const [storageUrl, setStorageUrl] = React.useState(() => getBackendUrl());
   const [localEngine, setLocalEngine] = React.useState(() => getLocalEngine());
+  const [firebaseConfigText, setFirebaseConfigText] = React.useState(() => stringifyFirebaseConfig(getFirebaseConfig() || {}));
   const [serverEngine, setServerEngine] = React.useState("postgresql");
   const [serverDbUrl, setServerDbUrl] = React.useState("");
   const [serverDbParts, setServerDbParts] = React.useState({ host: "", port: "5432", database: "archive", user: "archive", password: "", file: "./archive.sqlite" });
@@ -268,17 +272,19 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   const [error, setError] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // AI Studio sandboxes the SPA in an iframe that can't reach a remote server,
-  // so the build forces local-only and we hide the storage step entirely.
+  // AI Studio sandboxes the SPA in an iframe that can't reach a user-owned
+  // server, but client-side local and Firebase remain valid choices.
   const forceLocal = shouldForceLocalBackend();
+  const availableStorageOptions = React.useMemo(() => forceLocal
+    ? ONBOARDING_STORAGE_OPTIONS.filter((option) => option.id === "local" || option.id === "firebase")
+    : ONBOARDING_STORAGE_OPTIONS
+  , [forceLocal]);
 
   const steps = React.useMemo(() => {
     let list = EXTRA_STEPS;
     if (!replayMode && securityMode === "quick") list = list.filter((step) => step.id !== "admin");
-    // Hide the storage step when the backend is forced (AI Studio).
-    if (forceLocal) list = list.filter((step) => step.id !== "storage");
     return list;
-  }, [replayMode, securityMode, forceLocal]);
+  }, [replayMode, securityMode]);
   const [stepId, setStepId] = React.useState(settings.ui?.lastOnboardingStep && EXTRA_STEPS.some((step) => step.id === settings.ui.lastOnboardingStep) ? settings.ui.lastOnboardingStep : "welcome");
   const [presetConfig, setPresetConfig] = React.useState(null);
   const [showPresetScreen, setShowPresetScreen] = React.useState(false);
@@ -312,7 +318,13 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   // full URL parser.
   const storageNeedsUrl = storageChoice === "postgres" || storageChoice === "pocketbase";
   const storageUrlValid = !storageNeedsUrl || /^https?:\/\/.+/i.test(storageUrl.trim());
-  const canContinueStorage = !storageNeedsUrl || storageUrlValid;
+  const firebaseConfigState = React.useMemo(() => parseFirebaseConfigText(firebaseConfigText), [firebaseConfigText]);
+  const canContinueStorage = storageChoice === "firebase" ? firebaseConfigState.ok : (!storageNeedsUrl || storageUrlValid);
+  React.useEffect(() => {
+    if (!availableStorageOptions.some((option) => option.id === storageChoice)) {
+      setStorageChoice("local");
+    }
+  }, [availableStorageOptions, storageChoice]);
   const storageDbCandidateUrl = React.useCallback(() => {
     if (serverDbUrl.trim()) return serverDbUrl.trim();
     return buildDatabaseUrl({
@@ -331,6 +343,15 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     setStorageTest(null);
     if (storageChoice === "local") {
       setStorageTest({ ok: true, text: localEngine === "sqlite" ? "سيُستخدم SQLite المحلي عبر OPFS عند توفره، مع تراجع آمن إلى IndexedDB." : "الوضع المحلي جاهز عبر IndexedDB." });
+      return;
+    }
+    if (storageChoice === "firebase") {
+      setStorageTest({
+        ok: firebaseConfigState.ok,
+        text: firebaseConfigState.ok
+          ? "تهيئة Firebase صالحة. سيتم تحميل Firestore/Auth/Storage عند التفعيل."
+          : `حقول Firebase مطلوبة: ${firebaseConfigState.errors.join(", ")}`
+      });
       return;
     }
     if (!storageUrlValid) {
@@ -379,11 +400,13 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
       return false;
     }
     if (activeStep?.id === "storage" && !canContinueStorage) {
-      setError("أدخل عنوان خادم صحيح يبدأ بـ http:// أو https:// قبل المتابعة.");
+      setError(storageChoice === "firebase"
+        ? "ألصق firebaseConfig صالحاً يحتوي apiKey وprojectId وappId قبل المتابعة."
+        : "أدخل عنوان خادم صحيح يبدأ بـ http:// أو https:// قبل المتابعة.");
       return false;
     }
     return true;
-  }, [activeStep?.id, canContinueAdmin, canContinueStorage]);
+  }, [activeStep?.id, canContinueAdmin, canContinueStorage, storageChoice]);
 
   const persistStepProgress = React.useCallback((nextStepId) => {
     if (replayMode || !nextStepId) return;
@@ -522,18 +545,21 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     });
     // Persist the storage backend choice before anything else. It lives in
     // localStorage (not settings) because the boot path reads it BEFORE the
-    // store — which itself needs a backend — can load. forceLocal builds
-    // (AI Studio) skip this; the choice stays "local". The actual re-wiring
-    // to a cloud backend happens on next boot via resolveBackendChoice.
+    // store — which itself needs a backend — can load. AI Studio persists
+    // only client-side choices (local/Firebase); user-owned server backends
+    // are still forced back to local at boot.
     try {
       if (!forceLocal && storageNeedsUrl && cloudUsername.trim() && cloudPassword) {
         await loginToCloud({ baseUrl: storageUrl.trim(), username: cloudUsername.trim(), password: cloudPassword });
       }
-      if (!forceLocal) {
+      if (!forceLocal || storageChoice === "local" || storageChoice === "firebase") {
         setBackendChoice(
           normalizeBackendChoice(storageChoice),
           storageNeedsUrl ? storageUrl.trim() : "",
-          { localEngine }
+          {
+            localEngine,
+            firebaseConfig: storageChoice === "firebase" ? firebaseConfigState.config : null
+          }
         );
       }
       if (!replayMode && securityMode === "secure") {
@@ -711,7 +737,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     }
 
     if (activeStep.id === "storage") {
-      const selected = ONBOARDING_STORAGE_OPTIONS.find((option) => option.id === storageChoice) || ONBOARDING_STORAGE_OPTIONS[0];
+      const selected = availableStorageOptions.find((option) => option.id === storageChoice) || availableStorageOptions[0];
       const selectedServerPolicy = ONBOARDING_SERVER_UPDATE_OPTIONS.find((option) => option.id === serverUpdatePolicy) || ONBOARDING_SERVER_UPDATE_OPTIONS[0];
       return jsxs("div", { className: "space-y-5", children: [
         jsxs("div", { className: "flex items-start gap-3", children: [
@@ -721,7 +747,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             jsx("p", { className: "mt-1 text-sm leading-7 text-gray-400", children: "يمكنك تغيير هذا لاحقاً. الافتراضي «هذا الجهاز» يعمل فوراً دون أي إعداد." })
           ] })
         ] }),
-        jsx("div", { className: "grid auto-rows-fr gap-3 md:grid-cols-3", children: ONBOARDING_STORAGE_OPTIONS.map((option) => {
+        jsx("div", { className: "grid auto-rows-fr gap-3 md:grid-cols-2 lg:grid-cols-4", children: availableStorageOptions.map((option) => {
           const Icon = STORAGE_ICONS[option.id] || Database;
           return jsx(OptionButton, {
             active: storageChoice === option.id,
@@ -735,6 +761,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             ] })
           }, option.id);
         }) }),
+        forceLocal && jsx("p", { className: "rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs leading-6 text-amber-100", children: "في AI Studio تظهر الخيارات التي تعمل من جانب العميل فقط: محلي أو Firebase." }),
         selected.needsUrl && jsxs("div", { className: "space-y-2", children: [
           jsx(FieldLabel, { children: "عنوان الخادم" }),
           jsx("input", {
@@ -766,6 +793,29 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                 jsx("p", { className: "mt-2 text-xs leading-6 text-gray-400", children: detail })
               ] })
             }, id)) })
+          ]
+        }),
+        storageChoice === "firebase" && jsxs("section", {
+          className: "rounded-2xl border border-white/10 bg-white/[0.03] p-4",
+          "aria-label": "تهيئة Firebase",
+          children: [
+            jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
+              jsxs("div", { className: "min-w-0", children: [
+                jsx("h3", { className: "text-base font-bold text-white", children: "تهيئة Firebase" }),
+                jsx("p", { className: "mt-1 text-xs leading-6 text-gray-500", children: "ألصق كائن firebaseConfig من إعدادات تطبيق الويب. تُحفظ مفاتيح العميل فقط، ولا تضع مفاتيح خادم خاصة هنا." })
+              ] }),
+              jsx("span", { className: `rounded-full border px-3 py-1 text-xs ${firebaseConfigState.ok ? "border-green-500/30 text-green-200" : "border-amber-500/30 text-amber-100"}`, children: firebaseConfigState.ok ? "جاهز" : "ينقصه إعداد" })
+            ] }),
+            jsx("textarea", {
+              value: firebaseConfigText,
+              onChange: (event) => setFirebaseConfigText(event.target.value),
+              dir: "ltr",
+              rows: 7,
+              spellCheck: false,
+              className: "textarea textarea-bordered mt-3 w-full font-mono text-xs",
+              placeholder: "{\n  \"apiKey\": \"...\",\n  \"projectId\": \"...\",\n  \"appId\": \"...\"\n}"
+            }),
+            !firebaseConfigState.ok && jsx("p", { className: "mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100", children: `حقول مطلوبة: ${firebaseConfigState.errors.join(", ")}` })
           ]
         }),
         storageChoice === "postgres" && jsxs("section", {

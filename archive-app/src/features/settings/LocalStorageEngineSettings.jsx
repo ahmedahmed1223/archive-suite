@@ -42,13 +42,13 @@ export function LocalStorageEngineSettings() {
     icon: jsx(HardDrive, { className: "h-5 w-5 va-accent-text" }),
     aside: jsx("span", { className: "rounded-full border border-white/10 px-3 py-1 text-xs text-gray-300", children: value || DEFAULT_LOCAL_ENGINE }),
     children: jsxs("div", { className: "space-y-3", dir: "rtl", children: [
-      forced && jsx("p", { className: "rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-100", children: "AI Studio يفرض IndexedDB المحلي لهذا التشغيل." }),
+      forced && jsx("p", { className: "rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-100", children: "AI Studio يمنع خوادم المستخدم البعيدة، لكنه يسمح بتغيير المحرّك المحلي بين IndexedDB وSQLite." }),
       jsx("div", { className: "grid gap-3 sm:grid-cols-2", children: OPTIONS.map((option) => {
         const active = value === option.id;
         return jsxs("button", {
           type: "button",
-          onClick: () => { if (!forced && !switching) save(option.id); },
-          disabled: forced || switching,
+          onClick: () => { if (!switching) save(option.id); },
+          disabled: switching,
           "aria-pressed": active,
           className: `min-h-[6rem] rounded-xl border p-3 text-start transition-colors disabled:opacity-60 ${
             active ? "va-accent-border va-accent-bg-soft text-white" : "border-white/10 va-surface-subtle text-gray-300 hover:bg-white/[0.05]"

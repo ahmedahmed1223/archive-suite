@@ -1,6 +1,6 @@
 # خطة §19.2 — إعادة بناء نسخة AI Studio: دعم Firebase + SQLite
 
-> **الحالة:** خطة تصميم (لا كود) — جلسة 10 يونيو 2026.
+> **الحالة:** مُنفّذة ومتحقّق منها حتى المرحلة هـ — تحديث 18 يونيو 2026.
 > **النطاق:** مهمة TASKS.md §19.2. هذه وثيقة تخطيط تسبق التنفيذ كما طُلب ("Plan it first").
 
 ---
@@ -60,19 +60,21 @@ Firebase SDK يعمل **من جانب العميل عبر HTTPS** إلى `*.goog
 4. تبعية: `firebase` (Web SDK v10+, modular) في `archive-app` deps.
 - **الملفات الجديدة:** `firebase-firestore/index.js`، `firebase-firestore/mapping.js`، `bootstrap/firebaseConfig.js`.
 
-### المرحلة ج — Firebase للمنافذ الأخرى (Auth/FileStore)
+### المرحلة ج — Firebase للمنافذ الأخرى (Auth/FileStore) ✅
 1. `firebase-auth` يُطبّق `AuthProvider`/`SessionProvider` فوق Firebase Auth.
 2. `firebase-files` يُطبّق `FileStore` فوق Firebase Storage.
 3. ربطها في بذرة الإقلاع لخيار firebase (مع إبقاء AI/Sync محلية أو سحابية حسب التهيئة).
 
-### المرحلة د — واجهة التهيئة
+### المرحلة د — واجهة التهيئة ✅
 1. خطوة تخزين في `V1OnboardingWizard`: خيار "Firebase" + نموذج لصق تهيئة Firebase (JSON config).
 2. `DatabaseSettings.jsx`: عرض/تعديل تهيئة Firebase بعد الإعداد.
 3. تحقّق من التهيئة + رسائل خطأ واضحة عند فشل الاتصال.
 
-### المرحلة هـ — التبديل الساخن والترحيل
+### المرحلة هـ — التبديل الساخن والترحيل ✅
 1. `bootstrap/switchBackendHot.js` (موجود): دعم التبديل من/إلى firebase.
 2. ترحيل بيانات اختياري local ⇆ firebase عبر `snapshot()`/`replaceAll()` (المنفذ يدعمهما بالفعل).
+
+**تحديث التنفيذ 2026-06-18:** اكتملت المراحل ج–هـ بإضافة `firebaseSession.js` فوق Firebase Auth، و`firebaseFileStore.js` فوق Firebase Storage، وربط Firestore/Auth/Storage معاً في `registerByBackendChoice.js`. واجهة البداية تعرض Firebase وتهيئته، وإعدادات الصيانة تضيف بطاقة Firebase مع خيار ترحيل لقطة من الباكند الحالي. `resolveBackendChoice` في AI Studio يسمح الآن بـ `local` و`firebase` فقط، ويعيد Postgres/PocketBase إلى المحلي. التحقق تم باختبارات وحدات/عقود مع مضاعفات Firebase وبناء `spa` و`aistudio`; لم يُختبر مشروع Firebase حي لعدم توفر مفاتيح تشغيل.
 
 ---
 
