@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   IMPORT_KINDS,
   buildImportDraft,
+  parseLocalFolderManifest,
   detectImportSource,
   parseImportLines
 } from "./importSources.js";
@@ -37,6 +38,43 @@ describe("detectImportSource — YouTube", () => {
   it("falls back to web for a youtube host without a valid id", () => {
     const result = detectImportSource("https://www.youtube.com/feed/subscriptions");
     expect(result.kind).toBe(IMPORT_KINDS.WEB);
+  });
+});
+
+describe("parseLocalFolderManifest", () => {
+  it("builds safe drafts from a local folder manifest", () => {
+    const manifest = JSON.stringify({
+      rootLabel: "Oral history batch",
+      files: [
+        { path: "interviews/day-1/clip-one.mp4", size: 1200, mimeType: "video/mp4", tags: ["oral-history"] },
+        { relativePath: "notes/session-notes.pdf", title: "Session notes" },
+        { path: "../outside.mp4" },
+        { path: "" }
+      ]
+    });
+
+    const result = parseLocalFolderManifest(manifest);
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({
+      title: "clip one",
+      path: "interviews/day-1/clip-one.mp4",
+      type: "video",
+      tags: ["oral-history"],
+      metadata: {
+        importSource: IMPORT_KINDS.LOCAL_FOLDER,
+        manifestRoot: "Oral history batch",
+        fileSize: 1200,
+        mimeType: "video/mp4"
+      }
+    });
+    expect(result[1]).toMatchObject({
+      title: "Session notes",
+      path: "notes/session-notes.pdf",
+      metadata: {
+        importSource: IMPORT_KINDS.LOCAL_FOLDER
+      }
+    });
   });
 });
 
