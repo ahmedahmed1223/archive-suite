@@ -1,7 +1,7 @@
 ﻿import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { jsx, jsxs } from "react/jsx-runtime";
-import { Archive, ExternalLink, Loader2, ShieldAlert, Tag } from "lucide-react";
+import { Archive, ExternalLink, Loader2, LockKeyhole, ShieldAlert, Tag } from "lucide-react";
 
 import { fetchSharedView } from "./shareClient.js";
 
@@ -49,14 +49,33 @@ function formatShareDate(value) {
 
 export function SharedView({ token, baseUrl = "", fetchImpl }) {
   const [state, setState] = React.useState({ status: "loading", data: null, error: "" });
+  const [passwordInput, setPasswordInput] = React.useState("");
+  const [passwordAttempt, setPasswordAttempt] = React.useState({ value: "", nonce: 0 });
 
   React.useEffect(() => {
     let alive = true;
-    fetchSharedView({ token, baseUrl, fetchImpl })
+    fetchSharedView({ token, baseUrl, fetchImpl, password: passwordAttempt.value })
       .then((data) => { if (alive) setState({ status: "ready", data, error: "" }); })
-      .catch((err) => { if (alive) setState({ status: "error", data: null, error: err?.message || "تعذّر فتح الرابط." }); });
+      .catch((err) => {
+        if (!alive) return;
+        if (err?.status === 401) {
+          setState({
+            status: "password",
+            data: null,
+            error: passwordAttempt.value ? err?.message || "كلمة المرور غير صحيحة." : ""
+          });
+          return;
+        }
+        setState({ status: "error", data: null, error: err?.message || "تعذّر فتح الرابط." });
+      });
     return () => { alive = false; };
-  }, [token, baseUrl, fetchImpl]);
+  }, [token, baseUrl, fetchImpl, passwordAttempt.value, passwordAttempt.nonce]);
+
+  const submitPassword = (event) => {
+    event.preventDefault();
+    setState({ status: "loading", data: null, error: "" });
+    setPasswordAttempt((current) => ({ value: passwordInput, nonce: current.nonce + 1 }));
+  };
 
   const typeName = (id, types) => (Array.isArray(types) ? types.find((t) => t.id === id)?.name : "") || "";
   const shareTitle = state.data?.share?.title || state.data?.scope?.label || "أرشيف مُشارَك";
@@ -83,6 +102,27 @@ export function SharedView({ token, baseUrl = "", fetchImpl }) {
         state.status === "loading" && jsxs("div", { className: "flex items-center justify-center gap-3 py-24 text-gray-400", children: [
           jsx(Loader2, { className: "h-5 w-5 animate-spin" }), "جارٍ تحميل المشاركة…"
         ] }),
+
+        state.status === "password" && jsxs("form", {
+          onSubmit: submitPassword,
+          className: "mx-auto max-w-md rounded-2xl border border-amber-500/25 bg-amber-500/10 p-6 text-center",
+          children: [
+            jsx(LockKeyhole, { className: "mx-auto h-10 w-10 text-amber-200" }),
+            jsx("h2", { className: "mt-3 text-lg font-bold", children: "هذه المشاركة محمية بكلمة مرور" }),
+            jsx("p", { className: "mt-2 text-sm text-amber-100/85", children: "أدخل كلمة المرور التي أرسلها لك صاحب الرابط لفتح المحتوى." }),
+            jsx("input", {
+              type: "password",
+              value: passwordInput,
+              onChange: (event) => setPasswordInput(event.target.value),
+              className: "input input-bordered mt-4 w-full bg-black/20 text-center text-sm text-white placeholder:text-gray-500",
+              placeholder: "كلمة المرور",
+              "aria-label": "كلمة مرور المشاركة",
+              autoFocus: true
+            }),
+            state.error && jsx("p", { role: "alert", className: "mt-2 text-xs text-red-100", children: state.error }),
+            jsx("button", { type: "submit", className: "btn btn-primary mt-4 w-full", children: "فتح المشاركة" })
+          ]
+        }),
 
         state.status === "error" && jsxs("div", { className: "mx-auto max-w-md rounded-2xl border border-red-500/25 bg-red-500/10 p-6 text-center", children: [
           jsx(ShieldAlert, { className: "mx-auto h-10 w-10 text-red-300" }),

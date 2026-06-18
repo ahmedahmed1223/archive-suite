@@ -96,6 +96,23 @@ run("token round-trips scope; rejects wrong-kind / tampered / expired", () => {
   assert.throws(() => readShareToken(expired, secret), (e) => e instanceof ShareTokenError);
 });
 
+run("password-protected share tokens require the link password", () => {
+  const secret = "share-secret";
+  const token = mintShareToken({
+    scope: { type: "items", ids: ["v1"], label: "لقطات", permission: "view" },
+    secret,
+    title: "مراجعة محمية",
+    password: "open-sesame"
+  });
+
+  assert.throws(() => readShareTokenPayload(token, secret), (e) => e instanceof ShareTokenError && e.statusCode === 401);
+  assert.throws(() => readShareTokenPayload(token, secret, { password: "wrong" }), (e) => e instanceof ShareTokenError && e.statusCode === 401);
+
+  const payload = readShareTokenPayload(token, secret, { password: "open-sesame" });
+  assert.equal(payload.passwordProtected, true);
+  assert.deepEqual(payload.scope, { type: "items", ids: ["v1"], label: "لقطات", permission: "view" });
+});
+
 run("HTTP: POST /api/share needs auth; GET /api/share/:token is public + scoped", async () => {
   const SECRET = "s6";
   const server = createApiServer({
@@ -136,6 +153,41 @@ run("HTTP: POST /api/share needs auth; GET /api/share/:token is public + scoped"
     // invalid token → 404
     const bad = await fetch(`${base}/api/share/not-a-real-token`);
     assert.equal(bad.status, 404);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
+run("HTTP: password-protected share requires x-share-password", async () => {
+  const SECRET = "s6";
+  const server = createApiServer({
+    backend: "test", authSecret: SECRET, rateLimit: null,
+    resolveStorage: () => ({ snapshot: async () => SNAP })
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const jwt = signJwt({ sub: "u1", role: "admin" }, SECRET);
+    const mint = await fetch(`${base}/api/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+      body: JSON.stringify({ scope: { type: "items", ids: ["v1"], permission: "view" }, title: "محمية", password: "123456" })
+    });
+    assert.equal(mint.status, 200);
+    const { result } = await mint.json();
+    assert.equal(result.passwordProtected, true);
+
+    const missingPassword = await fetch(`${base}/api/share/${result.token}`);
+    assert.equal(missingPassword.status, 401);
+
+    const wrongPassword = await fetch(`${base}/api/share/${result.token}`, { headers: { "x-share-password": "nope" } });
+    assert.equal(wrongPassword.status, 401);
+
+    const ok = await fetch(`${base}/api/share/${result.token}`, { headers: { "x-share-password": "123456" } });
+    assert.equal(ok.status, 200);
+    const payload = (await ok.json()).result;
+    assert.equal(payload.share.passwordProtected, true);
+    assert.deepEqual(payload.videoItems.map((i) => i.id), ["v1"]);
   } finally {
     await new Promise((r) => server.close(r));
   }

@@ -1180,8 +1180,8 @@ export function createApiServer({
         const body = await readJsonBody(req);
         const expiresInDays = Object.hasOwn(body || {}, "expiresInDays") ? Number(body.expiresInDays) : shareExpiryDays;
         const title = body?.title || body?.scope?.label || "";
-        const token = mintShareToken({ scope: body?.scope, secret: resolvedShareSecret, expiresInDays, title });
-        const payload = readShareTokenPayload(token, resolvedShareSecret);
+        const token = mintShareToken({ scope: body?.scope, secret: resolvedShareSecret, expiresInDays, title, password: body?.password });
+        const payload = readShareTokenPayload(token, resolvedShareSecret, { password: body?.password });
         const shareUrl = `${requestOrigin(req)}/api/share/${token}`;
 
         // Fire-and-forget email to the recipient (if caller specified a target user).
@@ -1205,7 +1205,7 @@ export function createApiServer({
           });
         }
 
-        return send(res, 200, { ok: true, result: { token, path: `/api/share/${token}`, title: payload.title, expiresAt: payload.expiresAt, jti: payload.jti } });
+        return send(res, 200, { ok: true, result: { token, path: `/api/share/${token}`, title: payload.title, expiresAt: payload.expiresAt, jti: payload.jti, passwordProtected: payload.passwordProtected } });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Failed to create share link" });
       }
@@ -1240,7 +1240,7 @@ export function createApiServer({
       if (overLimit(res, "rpc", req)) return undefined;
       const token = decodeURIComponent(url.split("?")[0].slice("/api/share/".length));
       try {
-        const share = readShareTokenPayload(token, resolvedShareSecret);
+        const share = readShareTokenPayload(token, resolvedShareSecret, { password: req.headers["x-share-password"] });
         // Check revocation (Postgres only; no-op on PocketBase).
         if (prisma && share.jti) {
           const revoked = await prisma.shareRevocation.findUnique({ where: { jti: share.jti } });

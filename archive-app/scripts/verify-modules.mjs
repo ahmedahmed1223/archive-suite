@@ -2632,24 +2632,29 @@ run("share client — canShare gate + detectShareToken + buildShareUrl", () => {
 
 await runAsync("share client — mintShareLink posts scope with bearer; guards token", async () => {
   let sent = null;
-  const okFetch = async (url, opts) => { sent = { url, opts }; return { ok: true, json: async () => ({ ok: true, result: { token: "TK", path: "/api/share/TK", title: "مراجعة", expiresAt: "2026-06-10T00:00:00.000Z" } }) }; };
-  const out = await mintShareLink({ scope: { type: "collection", ids: ["c1"] }, title: "مراجعة", expiresInDays: 5, baseUrl: "https://srv", getToken: () => "jwt", fetchImpl: okFetch, origin: "https://app.test" });
+  const okFetch = async (url, opts) => { sent = { url, opts }; return { ok: true, json: async () => ({ ok: true, result: { token: "TK", path: "/api/share/TK", title: "مراجعة", expiresAt: "2026-06-10T00:00:00.000Z", passwordProtected: true } }) }; };
+  const out = await mintShareLink({ scope: { type: "collection", ids: ["c1"] }, title: "مراجعة", expiresInDays: 5, password: "secret", baseUrl: "https://srv", getToken: () => "jwt", fetchImpl: okFetch, origin: "https://app.test" });
   assert.equal(sent.url, "https://srv/api/share");
   assert.equal(sent.opts.headers.Authorization, "Bearer jwt");
   assert.equal(JSON.parse(sent.opts.body).scope.ids[0], "c1");
   assert.equal(JSON.parse(sent.opts.body).title, "مراجعة");
   assert.equal(JSON.parse(sent.opts.body).expiresInDays, 5);
+  assert.equal(JSON.parse(sent.opts.body).password, "secret");
   assert.equal(out.token, "TK");
   assert.equal(out.url, "https://app.test/?share=TK");
   assert.equal(out.expiresAt, "2026-06-10T00:00:00.000Z");
+  assert.equal(out.passwordProtected, true);
 
   await assert.rejects(() => mintShareLink({ scope: {}, getToken: () => "", fetchImpl: okFetch }), (e) => e instanceof ShareClientError);
 });
 
 await runAsync("share client — fetchSharedView returns result; maps errors to 404", async () => {
-  const okFetch = async () => ({ ok: true, json: async () => ({ ok: true, result: { videoItems: [{ id: "v1" }], counts: { items: 1 } } }) });
-  const view = await fetchSharedView({ token: "TK", baseUrl: "https://srv", fetchImpl: okFetch });
+  let sent = null;
+  const okFetch = async (url, opts) => { sent = { url, opts }; return { ok: true, json: async () => ({ ok: true, result: { videoItems: [{ id: "v1" }], counts: { items: 1 } } }) }; };
+  const view = await fetchSharedView({ token: "TK", baseUrl: "https://srv", fetchImpl: okFetch, password: "secret" });
   assert.equal(view.videoItems.length, 1);
+  assert.equal(sent.url, "https://srv/api/share/TK");
+  assert.equal(sent.opts.headers["x-share-password"], "secret");
 
   const missFetch = async () => ({ ok: false, status: 404, json: async () => ({ ok: false, error: "منتهٍ" }) });
   await assert.rejects(() => fetchSharedView({ token: "BAD", fetchImpl: missFetch }), (e) => e instanceof ShareClientError && e.status === 404);

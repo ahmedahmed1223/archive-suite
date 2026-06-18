@@ -45,6 +45,7 @@ describe("ShareDialog", () => {
     );
 
     fireEvent.click(screen.getByLabelText("تحميل"));
+    fireEvent.change(screen.getByLabelText("كلمة مرور اختيارية"), { target: { value: "client-secret" } });
     fireEvent.click(screen.getByRole("button", { name: "إنشاء الرابط" }));
 
     await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
@@ -54,6 +55,7 @@ describe("ShareDialog", () => {
     expect(JSON.parse(init.body)).toMatchObject({
       title: "مراجعة: مجموعة",
       expiresInDays: 30,
+      password: "client-secret",
       scope: {
         type: "collection",
         ids: ["c1"],

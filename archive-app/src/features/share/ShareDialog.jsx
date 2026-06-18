@@ -79,6 +79,7 @@ export function ShareDialog({
 }) {
   const [permission, setPermission] = useState(DEFAULT_SHARE_PERMISSION);
   const [expiresInDays, setExpiresInDays] = useState(Number(defaultExpiryDays) || 0);
+  const [password, setPassword] = useState("");
   const [state, setState] = useState({ status: "idle", url: "", error: "" });
   const [copied, setCopied] = useState(false);
 
@@ -101,6 +102,7 @@ export function ShareDialog({
         scope: { type: grant.scopeType, ids: grant.scopeIds, label: grant.label, permission: grant.permission },
         title: String(title || grant.label || "").trim(),
         expiresInDays: grant.expiresInDays,
+        password,
         baseUrl,
         getToken
       });
@@ -169,6 +171,18 @@ export function ShareDialog({
               disabled: isBusy,
               onChange: (e) => setExpiresInDays(Number(e.target.value)),
               children: EXPIRY_OPTIONS.map((opt) => jsx("option", { value: opt.value, children: opt.label }, opt.value))
+            })
+          ] }),
+
+          jsxs("label", { className: "block space-y-2", children: [
+            jsx("span", { className: "text-xs font-semibold text-gray-400", children: "كلمة مرور اختيارية" }),
+            jsx("input", {
+              type: "password",
+              value: password,
+              disabled: isBusy,
+              onChange: (e) => setPassword(e.target.value),
+              className: "input input-bordered w-full bg-white/5 text-sm text-gray-200",
+              placeholder: "اتركها فارغة لرابط مفتوح"
             })
           ] }),
 
