@@ -1904,7 +1904,8 @@
     - `archive-server/src/jobs/jobQueue.js` — شريط تقدم وإلغاء.
   - **التنفيذ:** فيديو → صوت؛ فيديو → صيغة/حجم أصغر؛ صورة → نص OCR؛ صوت → نص transcript؛ مستند → PDF؛ حفظ الناتج كملف مرتبط لا كعنصر جديد؛ سجل تحويلات؛ حذف ملف مشتق دون حذف الأصل.
   - 🔄 **شريحة آمنة 2026-06-18:** أُضيف نموذج `derivedFiles` داخل `metadata.media` يربط مخرجات `transcode` المكتملة بالأصل تلقائياً من مهام الوسائط (`buildDerivedFileRecordsFromJobs` + `mergeDerivedFiles`) ويحافظ على `derivedKey` القديم للتوافق. تعرض صفحة التفاصيل قسم "الملفات المشتقة" في تبويب الوسائط مع مفاتيح التخزين وزر نسخ. التحقق: `features/media/viewModel.test.js`، `DetailPage.relations.test.jsx`، و`build:spa`.
-  - **المتبقي:** لوحة تحويل عامة لكل الصيغ، حذف ملف مشتق من FileStore دون حذف الأصل، OCR/مستند→PDF كتحويلات موحدة، وسجل تحويلات خادمي دائم/جدول `derived_files`.
+  - 🔄 **تحسين إدارة الملفات المشتقة 2026-06-18:** أضيف حذف مشتق منفرد من صفحة التفاصيل: يؤكد المستخدم العملية، يحذف مفتاح FileStore للمشتق فقط، ثم يحدّث `metadata.media.derivedFiles`/`derivedKey` دون لمس الأصل. أُضيف `removeDerivedFile` وتحديث `createMediaMetadataPatch` لدعم تصفير آخر مشتق. التحقق: `features/media/viewModel.test.js`، `DetailPage.relations.test.jsx`، و`build:spa`.
+  - **المتبقي:** لوحة تحويل عامة لكل الصيغ، OCR/مستند→PDF كتحويلات موحدة، وسجل تحويلات خادمي دائم/جدول `derived_files`.
   - يرتبط بـ: §7 “خط معالجة الصور” و§16.9 “التلخيص”.
   - الجهد: 3-5 أسابيع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 15 — P2).

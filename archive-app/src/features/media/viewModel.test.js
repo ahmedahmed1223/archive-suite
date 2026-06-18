@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildDerivedFileRecordsFromJobs,
   createMediaMetadataPatch,
-  mergeDerivedFiles
+  mergeDerivedFiles,
+  removeDerivedFile
 } from "./viewModel.js";
 
 describe("media derived files", () => {
@@ -42,6 +43,24 @@ describe("media derived files", () => {
           codec: "h264",
           derivedFiles: next,
           derivedKey: "derived/new-web.mp4"
+        }
+      }
+    });
+  });
+
+  it("removes a derived file by key and supports clearing the last derived key", () => {
+    const next = removeDerivedFile([
+      { id: "a", key: "derived/a.mp4", label: "A" },
+      { id: "b", key: "derived/b.mp4", label: "B" }
+    ], "derived/a.mp4");
+
+    expect(next.map((file) => file.key)).toEqual(["derived/b.mp4"]);
+    expect(createMediaMetadataPatch({ probe: { codec: "h264" }, derivedFiles: [] })).toEqual({
+      metadata: {
+        media: {
+          codec: "h264",
+          derivedFiles: [],
+          derivedKey: ""
         }
       }
     });

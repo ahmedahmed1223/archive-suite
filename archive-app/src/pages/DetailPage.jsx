@@ -1,6 +1,7 @@
 ﻿import {
   useAppStore
 } from "../stores/index.js";
+import { getFileStore } from "@archive/core";
 import {
   AlertTriangle,
   Activity,
@@ -103,6 +104,7 @@ import {
   mediaProbeToDisplayRows,
   mergeDerivedFiles,
   mergeMediaJobs,
+  removeDerivedFile,
   secondsToClock,
   selectSmartThumbnailSecond
 } from "../features/media/viewModel.js";
@@ -487,6 +489,7 @@ export function DetailPage() {
   const [commentDraft, setCommentDraft] = React.useState("");
   const [commentBusy, setCommentBusy] = React.useState(false);
   const [mediaBusy, setMediaBusy] = React.useState("");
+  const [derivedDeleteKey, setDerivedDeleteKey] = React.useState("");
   const [mediaJobs, setMediaJobs] = React.useState([]);
   const [activeDetailTab, setActiveDetailTab] = React.useState("data");
   const [relationDialogOpen, setRelationDialogOpen] = React.useState(false);
@@ -685,6 +688,45 @@ export function DetailPage() {
     const legacy = mediaInfo.derivedKey ? [{ id: "legacy-derived", key: mediaInfo.derivedKey, label: "نسخة ويب", type: "video/mp4" }] : [];
     return mergeDerivedFiles(mediaInfo.derivedFiles || [], legacy);
   }, [mediaInfo.derivedFiles, mediaInfo.derivedKey]);
+
+  const deleteDerivedFile = React.useCallback(async (file) => {
+    if (!item?.id || !file?.key) return;
+    const confirmed = await appConfirm(`حذف الملف المشتق "${file.label || file.key}"؟ لن يتم حذف الأصل.`, {
+      title: "حذف ملف مشتق",
+      kind: "danger",
+      confirmLabel: "حذف"
+    });
+    if (!confirmed) return;
+    setDerivedDeleteKey(file.key);
+    try {
+      const fileStore = getFileStore();
+      if (typeof fileStore?.remove !== "function") throw new Error("FileStore لا يدعم حذف الملفات.");
+      await fileStore.remove(file.key);
+      const nextDerivedFiles = removeDerivedFile(displayDerivedFiles, file.key);
+      const patch = createMediaMetadataPatch({ probe: mediaInfo, derivedFiles: nextDerivedFiles });
+      const metadata = {
+        ...(item.metadata || {}),
+        ...(patch.metadata || {}),
+        media: {
+          ...(item.metadata?.media || {}),
+          ...(patch.metadata?.media || {})
+        }
+      };
+      const updated = createVideoItemValue({
+        ...item,
+        ...patch,
+        metadata,
+        createdAt: item.createdAt,
+        version: (item.version || 1) + 1
+      });
+      await updateVideoItem?.(updated);
+      showToast?.("تم حذف الملف المشتق دون حذف الأصل", "success");
+    } catch (error) {
+      reportError(showNotification, error, { context: "حذف ملف مشتق" });
+    } finally {
+      setDerivedDeleteKey("");
+    }
+  }, [displayDerivedFiles, item, mediaInfo, showNotification, showToast, updateVideoItem]);
 
   const makeMediaClient = React.useCallback(() => createMediaClient({
     baseUrl: backendChoice.url,
@@ -1392,20 +1434,30 @@ export function DetailPage() {
               jsx("p", { className: "text-xs font-semibold text-gray-200", children: file.label || "ملف مشتق" }),
               jsx("p", { dir: "ltr", className: "mt-0.5 truncate text-left font-mono text-[11px] text-gray-500", children: file.key })
             ] }),
-            jsx("button", {
-              type: "button",
-              onClick: async () => {
-                try {
-                  await navigator.clipboard?.writeText(file.key);
-                  showToast?.("تم نسخ مفتاح الملف المشتق", "success");
-                } catch (error) {
-                  reportError(showNotification, error, { context: "نسخ ملف مشتق" });
-                }
-              },
-              className: "btn btn-ghost btn-circle btn-xs shrink-0",
-              "aria-label": `نسخ مفتاح ${file.label || "ملف مشتق"}`,
-              children: jsx(Copy, { className: "h-3.5 w-3.5" })
-            })
+            jsxs("div", { className: "flex shrink-0 items-center gap-1", children: [
+              jsx("button", {
+                type: "button",
+                onClick: async () => {
+                  try {
+                    await navigator.clipboard?.writeText(file.key);
+                    showToast?.("تم نسخ مفتاح الملف المشتق", "success");
+                  } catch (error) {
+                    reportError(showNotification, error, { context: "نسخ ملف مشتق" });
+                  }
+                },
+                className: "btn btn-ghost btn-circle btn-xs",
+                "aria-label": `نسخ مفتاح ${file.label || "ملف مشتق"}`,
+                children: jsx(Copy, { className: "h-3.5 w-3.5" })
+              }),
+              jsx("button", {
+                type: "button",
+                onClick: () => deleteDerivedFile(file),
+                disabled: derivedDeleteKey === file.key,
+                className: "btn btn-ghost btn-circle btn-xs text-red-300 hover:bg-red-500/10",
+                "aria-label": `حذف ${file.label || "ملف مشتق"}`,
+                children: derivedDeleteKey === file.key ? jsx(Loader2, { className: "h-3.5 w-3.5 animate-spin" }) : jsx(Trash2, { className: "h-3.5 w-3.5" })
+              })
+            ] })
           ] }, file.key)) })
         ] }) : null,
         jsxs("div", { className: "space-y-2", children: [
