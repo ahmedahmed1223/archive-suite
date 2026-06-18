@@ -82,6 +82,7 @@ import {
   normalizeCustomDaisyTheme,
   storeCustomDaisyTheme
 } from "../features/theme/customDaisyTheme.js";
+import { getAppearancePreviewModel } from "../features/theme/appearancePreview.js";
 import {
   getStoredSchedule,
   normalizeSchedule,
@@ -156,17 +157,12 @@ function createAppearanceDraft(settings = {}, fallbackTheme = "dark") {
 }
 
 function AppearanceStudioPreview({ draft, numberSystem = "latn" }) {
-  const densityLabel = draft.visualDensity === "compact" ? "كثيف" : draft.visualDensity === "spacious" ? "واسع" : "مريح";
+  const preview = getAppearancePreviewModel(draft);
   const customTheme = normalizeCustomDaisyTheme(draft.customDaisyTheme);
-  const cardTone = draft.cardStyle === "minimal"
-    ? "border-transparent bg-transparent"
-    : draft.cardStyle === "outlined"
-      ? "border-white/15 bg-transparent"
-      : "border-white/10 bg-white/[0.04]";
   return jsxs("div", {
     "data-theme": draft.daisyTheme,
     style: customTheme.enabled ? customTheme.vars : undefined,
-    className: "rounded-2xl border border-white/10 bg-gray-950/35 p-3",
+    className: "rounded-2xl border border-base-300 bg-base-100 p-3 text-base-content shadow-sm",
     dir: "rtl",
     children: [
       jsxs("div", {
@@ -174,43 +170,43 @@ function AppearanceStudioPreview({ draft, numberSystem = "latn" }) {
         children: [
           jsxs("div", {
             children: [
-              jsx("p", { className: "text-xs text-gray-500", children: "معاينة حيّة" }),
-              jsx("h3", { className: "mt-1 text-base font-bold text-white", children: "محطة أرشيف مصغّرة" })
+              jsx("p", { className: "text-xs text-base-content/60", children: "معاينة حيّة" }),
+              jsx("h3", { className: "mt-1 text-base font-bold text-base-content", children: "محطة أرشيف مصغّرة" })
             ]
           }),
-          jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-2 py-1 text-[11px] va-accent-text-on-soft", children: densityLabel })
+          jsx("span", { className: "badge badge-accent badge-sm", children: preview.densityLabel })
         ]
       }),
       jsxs("div", {
         className: "mt-3 grid gap-2 sm:grid-cols-[0.7fr_1fr]",
         children: [
           jsx("aside", {
-            className: `rounded-xl border p-2 ${cardTone}`,
+            className: `rounded-xl border p-2 ${preview.cardClass}`,
             children: ["الأرشيف", "البحث", "المركز"].map((item, index) => jsxs("div", {
-              className: `mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs ${index === 0 ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-500"}`,
+              className: `mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs ${index === 0 ? "bg-accent text-accent-content" : "text-base-content/55"}`,
               children: [
-                jsx("span", { className: "h-2 w-2 rounded-full bg-[var(--va-action)]" }),
+                jsx("span", { className: "h-2 w-2 rounded-full bg-current opacity-80" }),
                 item
               ]
             }, item))
           }),
           jsxs("main", {
-            className: `rounded-xl border p-3 ${cardTone}`,
+            className: `rounded-xl border p-3 ${preview.cardClass}`,
             children: [
               jsxs("div", {
                 className: "flex items-center justify-between gap-2",
                 children: [
-                  jsx("p", { className: "text-sm font-semibold text-white", children: "مادة قيد المراجعة" }),
-                  jsx("span", { className: "rounded-full va-accent-bg-soft px-2 py-0.5 text-[10px] va-accent-text-on-soft", children: `${formatNumber(82, numberSystem)}%` })
+                  jsx("p", { className: "text-sm font-semibold text-base-content", children: "مادة قيد المراجعة" }),
+                  jsx("span", { className: "badge badge-primary badge-sm", children: `${formatNumber(82, numberSystem)}%` })
                 ]
               }),
-              jsx("div", { className: "mt-3 h-2 overflow-hidden rounded-full bg-white/10", children: jsx("div", { className: "h-full w-4/5 rounded-full bg-[var(--va-action)]" }) }),
-              jsx("p", { className: "mt-3 text-xs leading-5 text-gray-500", children: `DaisyUI ${draft.daisyTheme}، لون ${draft.accentColor}، خط ${draft.fontScale}.` }),
+              jsx("div", { className: "mt-3 h-2 overflow-hidden rounded-full bg-base-300", children: jsx("div", { className: "h-full w-4/5 rounded-full bg-primary" }) }),
+              jsx("p", { className: "mt-3 text-xs leading-5 text-base-content/60", children: preview.summary }),
               jsxs("div", {
                 className: "mt-3 flex gap-2",
                 children: [
                   jsx("span", { className: "btn btn-primary btn-xs", children: "فتح" }),
-                  jsx("span", { className: "rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-300", children: "تعديل" })
+                  jsx("span", { className: "btn btn-ghost btn-xs", children: "تعديل" })
                 ]
               })
             ]
