@@ -13,9 +13,9 @@ import {
 // §1697 — share dialog slice. Lets the user pick a PERMISSION level (view /
 // comment / download / edit) and an expiry, previews the grant via
 // describeShareGrant, then threads the permission into the existing
-// mintShareLink scope. Server-side enforcement of permissions, email/user
-// invites, and the comment system are DEFERRED (see §1697); this slice only
-// adds the permission CHOICE to the minted link's scope. FAILURE-SAFE.
+// mintShareLink scope. Server-side invite/comment workflows are DEFERRED (see
+// §1697); this slice normalizes item shares to the server's `items` scope and
+// carries the permission choice in the signed link. FAILURE-SAFE.
 
 const EXPIRY_OPTIONS = Object.freeze([
   { value: 7, label: "7 أيام" },
@@ -52,10 +52,10 @@ function PermissionPicker({ permission, onChange, disabled }) {
 }
 
 /**
- * Share dialog for an item / collection / folder.
+ * Share dialog for an item / collection.
  *
  * @param {{
- *   scopeType: "item"|"collection"|"folder",
+ *   scopeType: "item"|"items"|"collection",
  *   scopeIds: string[]|string,
  *   label?: string,
  *   title?: string,

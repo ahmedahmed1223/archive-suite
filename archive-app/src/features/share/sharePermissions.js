@@ -1,13 +1,13 @@
 // §1697 — pure share-permission model (SPA side).
 //
-// Defines the ordered permission levels used when sharing items, collections,
-// or folders, the capability map each level grants, grant normalization, and a
+// Defines the ordered permission levels used when sharing items and
+// collections, the capability map each level grants, grant normalization, and a
 // human-readable Arabic summary. PURE: no network, no DOM. The minted share
 // link carries the chosen permission inside its scope so the viewer/server can
 // enforce capabilities later (server enforcement is deferred — see §1697).
 
 /** Scope types a grant may target. */
-export const SHARE_SCOPE_TYPES = Object.freeze(["item", "collection", "folder"]);
+export const SHARE_SCOPE_TYPES = Object.freeze(["items", "collection"]);
 
 /**
  * Ordered permission levels (least → most capable) with Arabic labels.
@@ -40,9 +40,15 @@ export function isValidPermission(permission) {
   return PERMISSION_IDS.includes(permission);
 }
 
-/** Whether a scope type is one of item|collection|folder. */
+function normalizeScopeType(scopeType) {
+  if (scopeType === "item" || scopeType === "items") return "items";
+  if (scopeType === "collection") return "collection";
+  return "";
+}
+
+/** Whether a scope type is one of item|items|collection. */
 export function isValidScopeType(scopeType) {
-  return SHARE_SCOPE_TYPES.includes(scopeType);
+  return SHARE_SCOPE_TYPES.includes(normalizeScopeType(scopeType));
 }
 
 /**
@@ -79,7 +85,8 @@ function normalizeExpiry(expiresInDays) {
  * @throws {Error} when scopeType, scopeIds, or permission are invalid.
  */
 export function createShareGrant({ scopeType, scopeIds, permission = DEFAULT_SHARE_PERMISSION, expiresInDays, label = "" } = {}) {
-  if (!isValidScopeType(scopeType)) {
+  const normalizedScopeType = normalizeScopeType(scopeType);
+  if (!normalizedScopeType) {
     throw new Error(`نوع المشاركة غير صالح: ${scopeType ?? "غير محدد"}.`);
   }
   const ids = normalizeScopeIds(scopeIds);
@@ -88,7 +95,7 @@ export function createShareGrant({ scopeType, scopeIds, permission = DEFAULT_SHA
   }
   const level = isValidPermission(permission) ? permission : DEFAULT_SHARE_PERMISSION;
   return {
-    scopeType,
+    scopeType: normalizedScopeType,
     scopeIds: ids,
     permission: level,
     expiresInDays: normalizeExpiry(expiresInDays),
@@ -97,7 +104,7 @@ export function createShareGrant({ scopeType, scopeIds, permission = DEFAULT_SHA
   };
 }
 
-const SCOPE_LABELS = Object.freeze({ item: "مشاركة عنصر", collection: "مشاركة مجموعة", folder: "مشاركة مجلد" });
+const SCOPE_LABELS = Object.freeze({ items: "مشاركة عنصر", collection: "مشاركة مجموعة" });
 
 /**
  * Arabic one-line summary of a grant, e.g.

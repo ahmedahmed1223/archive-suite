@@ -22,6 +22,19 @@ vi.mock("../features/ai/useAiAssist.js", () => ({
   })
 }));
 
+const cloudState = vi.hoisted(() => ({
+  backendChoice: { backend: "local", url: "" },
+  token: ""
+}));
+
+vi.mock("../bootstrap/backendChoice.js", () => ({
+  resolveBackendChoice: () => cloudState.backendChoice
+}));
+
+vi.mock("../bootstrap/cloudSession.js", () => ({
+  getCloudToken: () => cloudState.token
+}));
+
 const baseItems = [
   {
     id: "item-source",
@@ -59,7 +72,9 @@ const baseItems = [
   }
 ];
 
-function renderDetailPage(overrides = {}) {
+function renderDetailPage(overrides = {}, cloudOverrides = {}) {
+  cloudState.backendChoice = cloudOverrides.backendChoice || { backend: "local", url: "" };
+  cloudState.token = cloudOverrides.token || "";
   const state = {
     videoItems: baseItems,
     contentTypes: [],
@@ -146,5 +161,18 @@ describe("DetailPage relations tab", () => {
     });
 
     expect(screen.getByRole("button", { name: /حالة السجل: مراجعة.*تغيير الحالة/ })).toBeInTheDocument();
+  });
+
+  it("opens item sharing from the detail header when cloud sharing is available", () => {
+    renderDetailPage({}, {
+      backendChoice: { backend: "postgres", url: "https://archive.example" },
+      token: "jwt"
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "مشاركة" })[0]);
+
+    const dialog = screen.getByRole("dialog", { name: "مشاركة مع صلاحيات" });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText("Source Video")).toBeInTheDocument();
   });
 });

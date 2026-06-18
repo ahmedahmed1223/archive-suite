@@ -65,9 +65,12 @@ describe("validation helpers", () => {
     expect(isValidPermission("")).toBe(false);
   });
 
-  it("isValidScopeType accepts item|collection|folder", () => {
-    expect(SHARE_SCOPE_TYPES).toEqual(["item", "collection", "folder"]);
+  it("isValidScopeType accepts server-backed item aliases and collections", () => {
+    expect(SHARE_SCOPE_TYPES).toEqual(["items", "collection"]);
+    expect(isValidScopeType("item")).toBe(true);
+    expect(isValidScopeType("items")).toBe(true);
     expect(isValidScopeType("collection")).toBe(true);
+    expect(isValidScopeType("folder")).toBe(false);
     expect(isValidScopeType("workspace")).toBe(false);
   });
 });
@@ -81,6 +84,7 @@ describe("createShareGrant normalization and validation", () => {
 
   it("defaults permission to view when omitted (backward compatible)", () => {
     const grant = createShareGrant({ scopeType: "item", scopeIds: ["i1"] });
+    expect(grant.scopeType).toBe("items");
     expect(grant.permission).toBe("view");
   });
 
@@ -90,8 +94,8 @@ describe("createShareGrant normalization and validation", () => {
   });
 
   it("drops empty/blank ids", () => {
-    const grant = createShareGrant({ scopeType: "folder", scopeIds: ["f1", "", "  ", "f2"] });
-    expect(grant.scopeIds).toEqual(["f1", "f2"]);
+    const grant = createShareGrant({ scopeType: "items", scopeIds: ["i1", "", "  ", "i2"] });
+    expect(grant.scopeIds).toEqual(["i1", "i2"]);
   });
 
   it("clamps expiry to a sane range and floors fractions", () => {
@@ -107,6 +111,7 @@ describe("createShareGrant normalization and validation", () => {
 
   it("throws on an invalid scope type", () => {
     expect(() => createShareGrant({ scopeType: "workspace", scopeIds: ["x"] })).toThrow();
+    expect(() => createShareGrant({ scopeType: "folder", scopeIds: ["f1"] })).toThrow();
   });
 
   it("throws when there are no usable scope ids", () => {
