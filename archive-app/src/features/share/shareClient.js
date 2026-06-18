@@ -39,7 +39,7 @@ export function buildShareUrl(token, { origin = (typeof location !== "undefined"
 
 /**
  * Mint a share link for a scope.
- * @returns {Promise<{ token: string, url: string }>}
+ * @returns {Promise<{ token: string, url: string, jti?: string }>}
  */
 export async function mintShareLink({ scope, title = "", expiresInDays, password = "", baseUrl = "", getToken, fetchImpl, origin } = {}) {
   const doFetch = fetchImpl || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : null);
@@ -74,8 +74,37 @@ export async function mintShareLink({ scope, title = "", expiresInDays, password
     url: buildShareUrl(shareToken, { origin }),
     title: payload.result.title || "",
     expiresAt: payload.result.expiresAt || "",
+    jti: payload.result.jti || "",
     passwordProtected: Boolean(payload.result.passwordProtected)
   };
+}
+
+/** Revoke a previously minted share link by token jti. */
+export async function revokeShareLink({ jti, baseUrl = "", getToken, fetchImpl } = {}) {
+  const doFetch = fetchImpl || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : null);
+  if (!doFetch) throw new ShareClientError("لا يوجد منفّذ fetch.");
+  const token = typeof getToken === "function" ? getToken() : "";
+  if (!token) throw new ShareClientError("إلغاء الرابط يتطلّب تسجيل الدخول إلى خادم سحابي.");
+  const cleanJti = String(jti || "").trim();
+  if (!cleanJti) throw new ShareClientError("معرّف الرابط غير متاح للإلغاء.");
+
+  const base = String(baseUrl || "").replace(/\/+$/, "");
+  let response;
+  try {
+    response = await doFetch(`${base}/api/share/revoke`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ jti: cleanJti })
+    });
+  } catch (networkError) {
+    throw new ShareClientError(`تعذّر الاتصال بخادم المشاركة: ${networkError?.message || "خطأ شبكة"}`);
+  }
+  let payload;
+  try { payload = await response.json(); } catch { throw new ShareClientError("استجابة غير صالحة من خادم المشاركة.", { status: response.status }); }
+  if (!response.ok || !payload?.ok) {
+    throw new ShareClientError(payload?.error || "فشل إلغاء رابط المشاركة.", { status: response.status });
+  }
+  return payload.result || { revoked: true, jti: cleanJti };
 }
 
 /** Fetch the read-only scoped snapshot behind a share token (public, no auth). */

@@ -1,8 +1,8 @@
 import { jsx, jsxs } from "react/jsx-runtime";
 import { useState } from "react";
-import { Share2, X, Loader2, Copy, Check, ShieldCheck } from "lucide-react";
+import { Share2, X, Loader2, Copy, Check, ShieldCheck, ShieldOff } from "lucide-react";
 
-import { mintShareLink } from "./shareClient.js";
+import { mintShareLink, revokeShareLink } from "./shareClient.js";
 import {
   SHARE_PERMISSIONS,
   DEFAULT_SHARE_PERMISSION,
@@ -63,7 +63,7 @@ function PermissionPicker({ permission, onChange, disabled }) {
  *   baseUrl?: string,
  *   getToken: () => string,
  *   onClose: () => void,
- *   onShared?: (result: { url: string, permission: string }) => void,
+ *   onShared?: (result: { url: string, permission: string, jti?: string }) => void,
  * }} props
  */
 export function ShareDialog({
@@ -80,7 +80,8 @@ export function ShareDialog({
   const [permission, setPermission] = useState(DEFAULT_SHARE_PERMISSION);
   const [expiresInDays, setExpiresInDays] = useState(Number(defaultExpiryDays) || 0);
   const [password, setPassword] = useState("");
-  const [state, setState] = useState({ status: "idle", url: "", error: "" });
+  const [state, setState] = useState({ status: "idle", url: "", jti: "", error: "" });
+  const [revokeState, setRevokeState] = useState({ status: "idle", error: "" });
   const [copied, setCopied] = useState(false);
 
   let grant = null;
@@ -93,12 +94,13 @@ export function ShareDialog({
 
   const handleConfirm = async () => {
     if (!grant) {
-      setState({ status: "error", url: "", error: grantError });
+      setState({ status: "error", url: "", jti: "", error: grantError });
       return;
     }
-    setState({ status: "minting", url: "", error: "" });
+    setState({ status: "minting", url: "", jti: "", error: "" });
+    setRevokeState({ status: "idle", error: "" });
     try {
-      const { url } = await mintShareLink({
+      const { url, jti } = await mintShareLink({
         scope: { type: grant.scopeType, ids: grant.scopeIds, label: grant.label, permission: grant.permission },
         title: String(title || grant.label || "").trim(),
         expiresInDays: grant.expiresInDays,
@@ -106,10 +108,10 @@ export function ShareDialog({
         baseUrl,
         getToken
       });
-      setState({ status: "ready", url, error: "" });
-      onShared?.({ url, permission: grant.permission });
+      setState({ status: "ready", url, jti: jti || "", error: "" });
+      onShared?.({ url, permission: grant.permission, jti: jti || "" });
     } catch (err) {
-      setState({ status: "error", url: "", error: err?.message || "تعذّر إنشاء رابط المشاركة." });
+      setState({ status: "error", url: "", jti: "", error: err?.message || "تعذّر إنشاء رابط المشاركة." });
     }
   };
 
@@ -126,7 +128,19 @@ export function ShareDialog({
     }
   };
 
+  const handleRevoke = async () => {
+    if (!state.jti || revokeState.status === "revoking" || revokeState.status === "revoked") return;
+    setRevokeState({ status: "revoking", error: "" });
+    try {
+      await revokeShareLink({ jti: state.jti, baseUrl, getToken });
+      setRevokeState({ status: "revoked", error: "" });
+    } catch (err) {
+      setRevokeState({ status: "error", error: err?.message || "تعذّر إلغاء رابط المشاركة." });
+    }
+  };
+
   const isBusy = state.status === "minting";
+  const isRevoking = revokeState.status === "revoking";
 
   return jsx("div", {
     role: "dialog",
@@ -191,19 +205,41 @@ export function ShareDialog({
             children: [jsx(ShieldCheck, { className: "h-3.5 w-3.5 shrink-0 va-accent-text" }), jsx("span", { children: describeShareGrant(grant) })]
           }),
 
-          state.status === "ready" && jsxs("div", {
-            role: "alert",
-            className: "alert alert-success flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5",
-            children: [
-              jsx("input", { readOnly: true, value: state.url, className: "input input-sm flex-1 truncate bg-transparent text-xs text-emerald-100", "aria-label": "رابط المشاركة" }),
-              jsxs("button", {
-                type: "button",
-                onClick: handleCopy,
-                className: "btn btn-sm btn-ghost gap-1 text-emerald-100",
-                children: [copied ? jsx(Check, { className: "h-3.5 w-3.5" }) : jsx(Copy, { className: "h-3.5 w-3.5" }), copied ? "تم النسخ" : "نسخ"]
-              })
-            ]
-          }),
+          state.status === "ready" && jsxs("div", { className: "space-y-2", children: [
+            jsxs("div", {
+              role: "alert",
+              className: "alert alert-success flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5",
+              children: [
+                jsx("input", { readOnly: true, value: state.url, className: "input input-sm flex-1 truncate bg-transparent text-xs text-emerald-100", "aria-label": "رابط المشاركة" }),
+                jsxs("button", {
+                  type: "button",
+                  onClick: handleCopy,
+                  className: "btn btn-sm btn-ghost gap-1 text-emerald-100",
+                  children: [copied ? jsx(Check, { className: "h-3.5 w-3.5" }) : jsx(Copy, { className: "h-3.5 w-3.5" }), copied ? "تم النسخ" : "نسخ"]
+                }),
+                state.jti && jsxs("button", {
+                  type: "button",
+                  onClick: handleRevoke,
+                  disabled: isRevoking || revokeState.status === "revoked",
+                  className: "btn btn-sm btn-error btn-outline gap-1",
+                  children: [
+                    isRevoking ? jsx(Loader2, { className: "h-3.5 w-3.5 animate-spin" }) : jsx(ShieldOff, { className: "h-3.5 w-3.5" }),
+                    revokeState.status === "revoked" ? "تم الإلغاء" : "إلغاء الرابط"
+                  ]
+                })
+              ]
+            }),
+            revokeState.status === "revoked" && jsx("div", {
+              role: "status",
+              className: "alert alert-warning rounded-xl px-3 py-2 text-xs",
+              children: "تم إلغاء الرابط"
+            }),
+            revokeState.status === "error" && jsx("div", {
+              role: "alert",
+              className: "alert alert-error rounded-xl px-3 py-2 text-xs",
+              children: revokeState.error
+            })
+          ] }),
 
           (state.status === "error" || grantError) && state.status !== "ready" && jsx("div", {
             role: "alert",

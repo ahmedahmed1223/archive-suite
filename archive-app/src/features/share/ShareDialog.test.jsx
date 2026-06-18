@@ -68,4 +68,53 @@ describe("ShareDialog", () => {
       permission: "download"
     })));
   });
+
+  it("lets the user revoke a freshly minted share link", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({
+        ok: true,
+        result: {
+          token: "share-token",
+          title: "مراجعة: مجموعة",
+          expiresAt: "2026-07-18T00:00:00.000Z",
+          jti: "share-jti"
+        }
+      }))
+      .mockResolvedValueOnce(jsonResponse({
+        ok: true,
+        result: { revoked: true, jti: "share-jti" }
+      }));
+    globalThis.fetch = fetchImpl;
+    const onShared = vi.fn();
+
+    render(
+      <ShareDialog
+        scopeType="collection"
+        scopeIds={["c1"]}
+        label="مجموعة"
+        title="مراجعة: مجموعة"
+        defaultExpiryDays={30}
+        baseUrl="https://api.example.test"
+        getToken={() => "jwt-token"}
+        onClose={() => {}}
+        onShared={onShared}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "إنشاء الرابط" }));
+
+    await waitFor(() => expect(onShared).toHaveBeenCalledWith(expect.objectContaining({
+      jti: "share-jti"
+    })));
+
+    fireEvent.click(screen.getByRole("button", { name: "إلغاء الرابط" }));
+
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
+    const [url, init] = fetchImpl.mock.calls[1];
+    expect(url).toBe("https://api.example.test/api/share/revoke");
+    expect(init.headers.Authorization).toBe("Bearer jwt-token");
+    expect(JSON.parse(init.body)).toEqual({ jti: "share-jti" });
+    expect(await screen.findByText("تم إلغاء الرابط")).toBeInTheDocument();
+  });
 });
