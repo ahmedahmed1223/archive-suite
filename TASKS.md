@@ -1745,7 +1745,8 @@
   - 🔄 **تحسين واجهة 2026-06-18:** تعرض شاشة الرابط العام `SharedView.jsx` مستوى الصلاحية وقدرات الرابط (`تعليق`/`تنزيل`/`تعديل`) من payload العام حتى يفهم المستلم حدود الوصول بدقة. التحقق: `SharedView.test.jsx`.
   - 🔄 **تحسين أمان 2026-06-18:** أضيفت كلمة مرور اختيارية لروابط المشاركة: الخادم يوقّع حالة الحماية داخل token دون حفظ كلمة المرور الخام، ويتطلب `x-share-password` عند فتح الرابط العام؛ حوار المشاركة يرسل الكلمة اختيارياً، و`SharedView` يعرض نموذج إدخال ثم يعيد المحاولة. كما يوجد endpoint إبطال خادمي بـ `jti` (`POST /api/share/revoke`) يحتاج لاحقاً واجهة إدارة/قائمة روابط. التحقق: `archive-server verify:share` + اختبارات `ShareDialog`/`SharedView` + عقد `shareClient` في `verify-modules`.
   - 🔄 **إدارة إبطال 2026-06-18:** صار `shareClient` يعيد `jti` عند سك الرابط ويضيف `revokeShareLink` لاستدعاء `POST /api/share/revoke`، ويعرض `ShareDialog` زر "إلغاء الرابط" مباشرة بعد إنشاء رابط قابل للإبطال مع حالة نجاح/خطأ. التحقق: `shareClient.test.js` و`ShareDialog.test.jsx`.
-  - **المتبقي:** الدعوات البريدية/`SharedWithMe`، قائمة روابط مشاركة محفوظة، وإنفاذ صلاحيات التعليق/التحميل/التعديل على موارد مشتركة ما زالت شريحة لاحقة داخل هذه المهمة الكبيرة.
+  - 🔄 **شريحة آمنة 2026-06-19:** أُضيف `mintedLinksStore.js` (localStorage بحد أقصى 200 إدخال) يحفظ كل رابط يُسكّ مع `jti/url/permission/scopeType/label/expiresAt/passwordProtected/mintedAt/revoked`. أُضيفت صفحة `SharedLinksPage.jsx` (route `shared-links`) تعرض الروابط النشطة والملغاة/المنتهية مع نسخ وإلغاء وحذف لكل رابط. رُبط `handleSharedItem` في `DetailPage.jsx` و`handleSharedCollection` في `CollectionsPage.jsx` بـ `saveMintedLink` تلقائياً عند سكّ أي رابط. التحقق: `build:spa` + 845 اختباراً.
+  - **المتبقي:** الدعوات البريدية/`SharedWithMe` (تتطلب خادماً)، وإنفاذ صلاحيات التعليق/التحميل/التعديل على موارد مشتركة — شريحة لاحقة.
   - يرتبط بـ: مهام إبطال روابط المشاركة وRBAC في §1 و§9.
   - الجهد: 5-8 أسابيع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 7 — P1).
@@ -1906,7 +1907,8 @@
   - **التنفيذ:** فيديو → صوت؛ فيديو → صيغة/حجم أصغر؛ صورة → نص OCR؛ صوت → نص transcript؛ مستند → PDF؛ حفظ الناتج كملف مرتبط لا كعنصر جديد؛ سجل تحويلات؛ حذف ملف مشتق دون حذف الأصل.
   - 🔄 **شريحة آمنة 2026-06-18:** أُضيف نموذج `derivedFiles` داخل `metadata.media` يربط مخرجات `transcode` المكتملة بالأصل تلقائياً من مهام الوسائط (`buildDerivedFileRecordsFromJobs` + `mergeDerivedFiles`) ويحافظ على `derivedKey` القديم للتوافق. تعرض صفحة التفاصيل قسم "الملفات المشتقة" في تبويب الوسائط مع مفاتيح التخزين وزر نسخ. التحقق: `features/media/viewModel.test.js`، `DetailPage.relations.test.jsx`، و`build:spa`.
   - 🔄 **تحسين إدارة الملفات المشتقة 2026-06-18:** أضيف حذف مشتق منفرد من صفحة التفاصيل: يؤكد المستخدم العملية، يحذف مفتاح FileStore للمشتق فقط، ثم يحدّث `metadata.media.derivedFiles`/`derivedKey` دون لمس الأصل. أُضيف `removeDerivedFile` وتحديث `createMediaMetadataPatch` لدعم تصفير آخر مشتق. التحقق: `features/media/viewModel.test.js`، `DetailPage.relations.test.jsx`، و`build:spa`.
-  - **المتبقي:** لوحة تحويل عامة لكل الصيغ، OCR/مستند→PDF كتحويلات موحدة، وسجل تحويلات خادمي دائم/جدول `derived_files`.
+  - 🔄 **شريحة آمنة 2026-06-19:** أُضيف `ConversionPanel.jsx` في `features/media/` — مكوّن قابل لإعادة الاستخدام يعرض خيارات التحويل حسب نوع الملف (فيديو: صوت/ويب/GIF؛ صوت: MP3؛ صورة: OCR؛ مستند: PDF) ويرسل المهام عبر `mediaClient.transcode()` أو `mediaClient.audio()` مع عرض حالة آخر مهمة. التحقق: `build:spa` + 845 اختباراً.
+  - **المتبقي:** دمج `ConversionPanel` داخل `DetailPage.jsx` بدلاً من الأزرار الحالية، وسجل تحويلات خادمي دائم/جدول `derived_files` — شريحة لاحقة.
   - يرتبط بـ: §7 “خط معالجة الصور” و§16.9 “التلخيص”.
   - الجهد: 3-5 أسابيع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 15 — P2).

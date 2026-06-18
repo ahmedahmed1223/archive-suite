@@ -48,6 +48,7 @@ const AnalyticsPage       = lazy(() => import("../pages/AnalyticsPage.jsx"));
 const AutomationPage      = lazy(() => import("../pages/AutomationPage.jsx"));
 const AppearanceSettingsPage = lazy(() => import("../pages/AppearanceSettingsPage.jsx"));
 const SplitViewPage          = lazy(() => import("../components/layout/SplitView.jsx").then((m) => ({ default: m.SplitView })));
+const SharedLinksPage        = lazy(() => import("../pages/SharedLinksPage.jsx"));
 
 export const PAGE_COMPONENTS = {
   dashboard:   DashboardPage,
@@ -88,6 +89,7 @@ export const PAGE_COMPONENTS = {
   "automation":     AutomationPage,
   "appearance":     AppearanceSettingsPage,
   "splitview":      SplitViewPage,
+  "shared-links":   SharedLinksPage,
 };
 
 export { HEAVY_PAGE_IDS, PAGE_GROUPS };

@@ -42,6 +42,7 @@ import { formatDateTime, formatNumber } from "../utils/formatting.js";
 import { getDragItemIds, ARCHIVE_ITEMS_MIME } from "../features/dnd/dndController.js";
 import { canShare } from "../features/share/shareClient.js";
 import { ShareDialog } from "../features/share/ShareDialog.jsx";
+import { saveMintedLink } from "../features/share/mintedLinksStore.js";
 import { getBackendUrl, resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 
@@ -659,8 +660,9 @@ export function CollectionsPage() {
     setSharingCollection(collection);
   };
 
-  const handleSharedCollection = async ({ url } = {}) => {
+  const handleSharedCollection = async ({ url, permission, jti, expiresAt, passwordProtected } = {}) => {
     const targetLabel = sharingCollection?.name || "مجموعة";
+    saveMintedLink({ url, jti, permission, scopeType: "collection", label: targetLabel, expiresAt, passwordProtected });
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url).catch(() => {});
