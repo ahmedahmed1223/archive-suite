@@ -238,6 +238,12 @@ export function mergeDerivedFiles(existing = [], incoming = []) {
   return merged;
 }
 
+export function removeDerivedFile(existing = [], key = "") {
+  const target = String(key || "").trim();
+  if (!target) return mergeDerivedFiles([], existing);
+  return mergeDerivedFiles([], existing).filter((file) => file.key !== target);
+}
+
 export function createMediaMetadataPatch({
   probe,
   thumbnailKey,
@@ -252,9 +258,9 @@ export function createMediaMetadataPatch({
   if (thumbnailKey) media.thumbnailKey = thumbnailKey;
   if (audioKey) media.audioKey = audioKey;
   if (previewKey) media.previewKey = previewKey;
-  if (Array.isArray(derivedFiles) && derivedFiles.length) {
+  if (Array.isArray(derivedFiles)) {
     media.derivedFiles = mergeDerivedFiles([], derivedFiles);
-    media.derivedKey = media.derivedFiles[0]?.key || derivedKey;
+    media.derivedKey = media.derivedFiles[0]?.key || "";
   }
   if (derivedKey) media.derivedKey = derivedKey;
   const patch = { metadata: { media } };
