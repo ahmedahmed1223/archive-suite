@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import { createApiServer } from "../src/api/server.js";
 import { signJwt } from "../src/auth/jwt.js";
@@ -257,6 +258,55 @@ run("HTTP: public read paginates by stable cursor", async () => {
     const p3 = await page(p2.nextCursor);
     assert.deepEqual(p3.records.map((r) => r.id), ["e"]);
     assert.equal(p3.nextCursor, null, "last page has no nextCursor");
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
+run("public API contract is documented and served as OpenAPI", async () => {
+  const specText = await readFile(new URL("../docs/public-api.openapi.json", import.meta.url), "utf8");
+  const docText = await readFile(new URL("../docs/public-api.md", import.meta.url), "utf8");
+  const spec = JSON.parse(specText);
+
+  assert.equal(spec.openapi, "3.1.0");
+  assert.equal(spec.info.title, "Archive Suite Public API");
+  assert.equal(spec.components.securitySchemes.ApiKeyAuth.type, "apiKey");
+  assert.equal(spec.components.securitySchemes.ApiKeyAuth.in, "header");
+  assert.equal(spec.components.securitySchemes.ApiKeyAuth.name, "X-API-Key");
+  assert.ok(spec.components.schemas.PublicRecordsResponse, "records response schema is documented");
+  assert.ok(spec.components.schemas.PublicApiError, "error schema is documented");
+
+  const operation = spec.paths["/api/public/records"].get;
+  assert.deepEqual(operation.security, [{ ApiKeyAuth: [] }]);
+  assert.deepEqual(
+    operation.parameters.map((param) => param.name).sort(),
+    ["cursor", "limit", "store"],
+  );
+  for (const code of ["200", "401", "403", "429", "500"]) {
+    assert.ok(operation.responses[code], `documents ${code} response`);
+  }
+
+  for (const requiredDocText of [
+    "X-API-Key",
+    "GET /api/public/records",
+    "cursor",
+    "nextCursor",
+    "401",
+    "403",
+    "429",
+    "/api/public/openapi.json",
+  ]) {
+    assert.match(docText, new RegExp(requiredDocText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  const server = createApiServer({ backend: "test", authSecret: SECRET, prisma: fakeApiKeyPrisma(), resolveStorage: () => ({ async getAll() { return []; } }), rateLimit: null });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const res = await fetch(`${base}/api/public/openapi.json`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get("content-type") || "", /^application\/json\b/);
+    assert.deepEqual(await res.json(), spec);
   } finally {
     await new Promise((r) => server.close(r));
   }

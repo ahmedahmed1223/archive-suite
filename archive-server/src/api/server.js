@@ -53,6 +53,7 @@ import {
   incActiveRequests, decActiveRequests, recordRequest
 } from "../monitoring/metrics.js";
 import { handleOcr } from "./ocrHandler.js";
+import { publicOpenApiSpec } from "./publicOpenApi.js";
 import { exportRecords } from "../export/exportService.js";
 import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
 import bcrypt from "bcryptjs";
@@ -491,7 +492,7 @@ export function createApiServer({
     if (corsOrigin) {
       res.setHeader("Access-Control-Allow-Origin", corsOrigin);
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key");
       // Refresh-token cookie (§20.1) must survive the cross-origin dev setup.
       res.setHeader("Access-Control-Allow-Credentials", "true");
       if (req.method === "OPTIONS") {
@@ -537,6 +538,8 @@ export function createApiServer({
         version: "1.0",
         endpoints: {
           health: "/api/v1/health",
+          publicOpenApi: "/api/v1/public/openapi.json",
+          publicRecords: "/api/v1/public/records",
           rpc: "/api/v1/rpc",
           search: "/api/v1/search",
           auth: {
@@ -549,6 +552,10 @@ export function createApiServer({
           ocr: "/api/v1/ocr",
         },
       });
+    }
+
+    if (req.method === "GET" && url === "/api/public/openapi.json") {
+      return send(res, 200, publicOpenApiSpec);
     }
 
     if (req.method === "GET" && (url === "/api/health" || url === "/health")) {

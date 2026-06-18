@@ -1,0 +1,260 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Archive Suite Public API",
+    "version": "1.0.0",
+    "description": "Read-only public records API for external systems using Archive Suite API keys."
+  },
+  "servers": [
+    {
+      "url": "https://archive.example.com",
+      "description": "Production deployment"
+    },
+    {
+      "url": "http://localhost:8787",
+      "description": "Local archive-server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Public records",
+      "description": "API-key authenticated read access to allowlisted archive stores."
+    }
+  ],
+  "paths": {
+    "/api/public/openapi.json": {
+      "get": {
+        "operationId": "getPublicOpenApiSpec",
+        "summary": "Fetch the public API OpenAPI schema",
+        "tags": ["Public records"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3.1 schema for the public API.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/records": {
+      "get": {
+        "operationId": "listPublicRecords",
+        "summary": "List records from an allowlisted archive store",
+        "description": "Returns a stable cursor-paginated page of records sorted by id or uid. Requires an active API key with the read scope.",
+        "tags": ["Public records"],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store",
+            "in": "query",
+            "required": false,
+            "description": "Allowlisted store to read. Defaults to video_items. Operators can change the allowlist with PUBLIC_API_STORES.",
+            "schema": {
+              "type": "string",
+              "default": "video_items",
+              "examples": ["video_items", "media_items", "document_items", "audio_items", "image_items"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size. Values are clamped to the inclusive range 1-200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque cursor from the previous response's nextCursor. Omit for the first page.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of public records.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicRecordsResponse"
+                },
+                "examples": {
+                  "page": {
+                    "value": {
+                      "ok": true,
+                      "store": "video_items",
+                      "count": 125,
+                      "records": [
+                        {
+                          "id": "video-001",
+                          "title": "Interview archive",
+                          "documentType": "video",
+                          "tags": ["oral-history"]
+                        }
+                      ],
+                      "nextCursor": "video-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, expired, inactive, or revoked API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks read scope or the requested store is not public-readable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The request exceeded a rate limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Archive Suite API key generated in Settings. The key is shown once at creation time."
+      }
+    },
+    "schemas": {
+      "PublicRecordsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ok", "store", "count", "records", "nextCursor"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "store": {
+            "type": "string",
+            "description": "The store returned by this page."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total record count in the requested store before pagination."
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArchiveRecord"
+            }
+          },
+          "nextCursor": {
+            "type": ["string", "null"],
+            "description": "Cursor for the next page, or null when the current page is final."
+          }
+        }
+      },
+      "ArchiveRecord": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Archive record payload as stored in the requested content store. Fields vary by store and deployment.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "documentType": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "url": {
+            "type": "string"
+          },
+          "workflowStatus": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicApiError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ok", "error"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string",
+            "description": "Human-readable error message. Messages may be localized by the server."
+          }
+        }
+      }
+    }
+  }
+}
