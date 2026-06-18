@@ -191,12 +191,60 @@ export function createTranscriptBookmarkDraft({ time = 0, segments = [] } = {}) 
   };
 }
 
+function normalizeDerivedFile(file = {}) {
+  const key = String(file.key || file.outputKey || "").trim();
+  if (!key) return null;
+  return {
+    id: String(file.id || file.jobId || key),
+    key,
+    label: String(file.label || "نسخة ويب").trim() || "نسخة ويب",
+    type: String(file.type || file.contentType || "video/mp4").trim() || "video/mp4",
+    jobId: file.jobId ? String(file.jobId) : file.id ? String(file.id) : "",
+    sourceKey: String(file.sourceKey || "").trim(),
+    createdAt: file.createdAt || new Date(Number(file.updatedAt || Date.now())).toISOString()
+  };
+}
+
+export function buildDerivedFileRecordsFromJobs(jobs = [], { sourceKey = "" } = {}) {
+  const wantedSource = String(sourceKey || "").trim();
+  return (Array.isArray(jobs) ? jobs : [])
+    .filter((job) => (
+      job?.type === "transcode" &&
+      job?.status === "done" &&
+      String(job?.outputKey || "").trim() &&
+      (!wantedSource || String(job?.sourceKey || "").trim() === wantedSource)
+    ))
+    .map((job) => normalizeDerivedFile({
+      id: job.id,
+      key: job.outputKey,
+      label: "نسخة ويب",
+      type: "video/mp4",
+      jobId: job.id,
+      sourceKey: job.sourceKey,
+      updatedAt: job.updatedAt
+    }))
+    .filter(Boolean);
+}
+
+export function mergeDerivedFiles(existing = [], incoming = []) {
+  const seen = new Set();
+  const merged = [];
+  for (const file of [...(Array.isArray(incoming) ? incoming : []), ...(Array.isArray(existing) ? existing : [])]) {
+    const normalized = normalizeDerivedFile(file);
+    if (!normalized || seen.has(normalized.key)) continue;
+    seen.add(normalized.key);
+    merged.push(normalized);
+  }
+  return merged;
+}
+
 export function createMediaMetadataPatch({
   probe,
   thumbnailKey,
   audioKey,
   previewKey,
-  derivedKey
+  derivedKey,
+  derivedFiles
 } = {}) {
   const media = {
     ...(probe || {})
@@ -204,6 +252,10 @@ export function createMediaMetadataPatch({
   if (thumbnailKey) media.thumbnailKey = thumbnailKey;
   if (audioKey) media.audioKey = audioKey;
   if (previewKey) media.previewKey = previewKey;
+  if (Array.isArray(derivedFiles) && derivedFiles.length) {
+    media.derivedFiles = mergeDerivedFiles([], derivedFiles);
+    media.derivedKey = media.derivedFiles[0]?.key || derivedKey;
+  }
   if (derivedKey) media.derivedKey = derivedKey;
   const patch = { metadata: { media } };
   if (Number.isFinite(Number(probe?.durationSec))) patch.duration = Number(probe.durationSec);

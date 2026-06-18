@@ -95,11 +95,13 @@ import { ShareDialog } from "../features/share/ShareDialog.jsx";
 import { canShare } from "../features/share/shareClient.js";
 import {
   canUseServerMediaTools,
+  buildDerivedFileRecordsFromJobs,
   createMediaMetadataPatch,
   deriveMediaSourceKey,
   createTranscriptBookmarkDraft,
   formatMediaJobStatus,
   mediaProbeToDisplayRows,
+  mergeDerivedFiles,
   mergeMediaJobs,
   secondsToClock,
   selectSmartThumbnailSecond
@@ -675,6 +677,14 @@ export function DetailPage() {
   const mediaInfo = item?.metadata?.media || {};
   const bookmarkDuration = playbackDuration || Number(mediaInfo.durationSec || item?.duration || 0);
   const mediaRows = React.useMemo(() => mediaProbeToDisplayRows(mediaInfo), [mediaInfo]);
+  const completedDerivedFiles = React.useMemo(
+    () => buildDerivedFileRecordsFromJobs(mediaJobs, { sourceKey: mediaSourceKey }),
+    [mediaJobs, mediaSourceKey]
+  );
+  const displayDerivedFiles = React.useMemo(() => {
+    const legacy = mediaInfo.derivedKey ? [{ id: "legacy-derived", key: mediaInfo.derivedKey, label: "نسخة ويب", type: "video/mp4" }] : [];
+    return mergeDerivedFiles(mediaInfo.derivedFiles || [], legacy);
+  }, [mediaInfo.derivedFiles, mediaInfo.derivedKey]);
 
   const makeMediaClient = React.useCallback(() => createMediaClient({
     baseUrl: backendChoice.url,
@@ -731,6 +741,33 @@ export function DetailPage() {
       /* non-critical navigation hint */
     }
   }, [item?.id, previewSource]);
+
+  React.useEffect(() => {
+    if (!item?.id || !completedDerivedFiles.length) return;
+    const currentMedia = item.metadata?.media || {};
+    const existing = Array.isArray(currentMedia.derivedFiles) ? currentMedia.derivedFiles : [];
+    const merged = mergeDerivedFiles(existing, completedDerivedFiles);
+    if (merged.length <= existing.length) return;
+    const patch = createMediaMetadataPatch({ probe: currentMedia, derivedFiles: merged });
+    const metadata = {
+      ...(item.metadata || {}),
+      ...(patch.metadata || {}),
+      media: {
+        ...(item.metadata?.media || {}),
+        ...(patch.metadata?.media || {})
+      }
+    };
+    const updated = createVideoItemValue({
+      ...item,
+      ...patch,
+      metadata,
+      createdAt: item.createdAt,
+      version: (item.version || 1) + 1
+    });
+    Promise.resolve(updateVideoItem?.(updated))
+      .then(() => showToast?.("تم ربط ملف مشتق بالسجل", "success"))
+      .catch((error) => reportError(showNotification, error, { context: "ربط ملف مشتق" }));
+  }, [completedDerivedFiles, item, showNotification, showToast, updateVideoItem]);
 
   if (!item) {
     return jsxs(MotionPage, { className: "space-y-6 p-4 text-center sm:p-6", children: [
@@ -1345,6 +1382,32 @@ export function DetailPage() {
           jsx("p", { className: "text-[11px] text-gray-600", children: row.label }),
           jsx("p", { dir: row.dir || "auto", className: "mt-1 truncate text-sm font-semibold text-gray-200", children: row.value })
         ] }, row.id)) }) : null,
+        displayDerivedFiles.length ? jsxs("div", { className: "rounded-xl va-surface-subtle border p-3", children: [
+          jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+            jsx("h3", { className: "text-sm font-bold text-white", children: "الملفات المشتقة" }),
+            jsx("span", { className: "badge badge-sm border-white/10 bg-white/5 text-gray-300", children: displayDerivedFiles.length })
+          ] }),
+          jsx("ul", { className: "mt-3 space-y-2", children: displayDerivedFiles.map((file) => jsxs("li", { className: "flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-gray-950/25 px-3 py-2", children: [
+            jsxs("div", { className: "min-w-0", children: [
+              jsx("p", { className: "text-xs font-semibold text-gray-200", children: file.label || "ملف مشتق" }),
+              jsx("p", { dir: "ltr", className: "mt-0.5 truncate text-left font-mono text-[11px] text-gray-500", children: file.key })
+            ] }),
+            jsx("button", {
+              type: "button",
+              onClick: async () => {
+                try {
+                  await navigator.clipboard?.writeText(file.key);
+                  showToast?.("تم نسخ مفتاح الملف المشتق", "success");
+                } catch (error) {
+                  reportError(showNotification, error, { context: "نسخ ملف مشتق" });
+                }
+              },
+              className: "btn btn-ghost btn-circle btn-xs shrink-0",
+              "aria-label": `نسخ مفتاح ${file.label || "ملف مشتق"}`,
+              children: jsx(Copy, { className: "h-3.5 w-3.5" })
+            })
+          ] }, file.key)) })
+        ] }) : null,
         jsxs("div", { className: "space-y-2", children: [
           jsxs("div", { className: "flex items-center justify-between gap-2", children: [
             jsx("h3", { className: "text-sm font-bold text-white", children: "مهام الوسائط" }),
