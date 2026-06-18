@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
+import { spawn } from "node:child_process";
 
 const DEFAULT_MODE = process.env.CONTROL_AGENT_MODE || "read-only";
 const DEFAULT_LOG_LIMIT = 100;
+const CONTROL_ACTIONS = new Set(["start", "stop", "restart", "apply-config"]);
 
 function finite(value) {
   const num = Number(value);
@@ -41,12 +43,95 @@ function normalizeService(service, index) {
     id,
     name: String(service?.name || service?.id || id),
     status: String(service?.status || "unknown"),
-    detail: service?.detail ? String(service.detail) : ""
+    detail: service?.detail ? String(service.detail) : "",
+    actions: Array.isArray(service?.actions)
+      ? service.actions.filter((action) => CONTROL_ACTIONS.has(action))
+      : Array.from(CONTROL_ACTIONS),
+    dockerService: service?.dockerService ? String(service.dockerService) : "",
+    systemdUnit: service?.systemdUnit ? String(service.systemdUnit) : "",
+    windowsService: service?.windowsService ? String(service.windowsService) : "",
+    composeFile: service?.composeFile ? String(service.composeFile) : ""
   };
+}
+
+function parseServices(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(String(raw));
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function defaultExecutor({ command, args = [], timeoutMs = 30_000 }) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { shell: false, windowsHide: true });
+    const stdout = [];
+    const stderr = [];
+    const timer = setTimeout(() => {
+      child.kill("SIGTERM");
+      resolve({ code: 124, stdout: "", stderr: "Command timed out." });
+    }, timeoutMs);
+    child.stdout?.on("data", (chunk) => stdout.push(chunk));
+    child.stderr?.on("data", (chunk) => stderr.push(chunk));
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      resolve({ code: 1, stdout: "", stderr: error?.message || "Command failed." });
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolve({
+        code: Number.isFinite(code) ? code : 1,
+        stdout: Buffer.concat(stdout).toString("utf8"),
+        stderr: Buffer.concat(stderr).toString("utf8")
+      });
+    });
+  });
+}
+
+function enabledFromEnv(value) {
+  return ["1", "true", "yes", "enabled"].includes(String(value || "").toLowerCase());
+}
+
+function buildCommand({ action, mode, service }) {
+  const normalizedAction = action === "apply-config" ? "restart" : action;
+  if (mode === "docker") {
+    const target = service.dockerService || service.id;
+    const composeFile = service.composeFile || process.env.COMPOSE_FILE || "docker-compose.yml";
+    return { command: "docker", args: ["compose", "-f", composeFile, normalizedAction, target] };
+  }
+  if (mode === "linux-native") {
+    const target = service.systemdUnit || service.id;
+    const systemctlAction = action === "apply-config" ? "reload-or-restart" : normalizedAction;
+    return { command: "systemctl", args: [systemctlAction, target] };
+  }
+  if (mode === "windows-native") {
+    const target = service.windowsService || service.id;
+    const powershellAction = {
+      start: "Start-Service",
+      stop: "Stop-Service",
+      restart: "Restart-Service",
+      "apply-config": "Restart-Service"
+    }[action];
+    return {
+      command: "powershell.exe",
+      args: [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        `${powershellAction} -Name ([string]$args[0])`,
+        target
+      ]
+    };
+  }
+  return null;
 }
 
 export function createControlAgent({
   mode = DEFAULT_MODE,
+  actionsEnabled = enabledFromEnv(process.env.CONTROL_AGENT_ACTIONS || process.env.CONTROL_AGENT_ACTIONS_ENABLED),
   now = () => new Date(),
   platform = os.platform,
   uptime = os.uptime,
@@ -55,9 +140,12 @@ export function createControlAgent({
   totalmem = os.totalmem,
   freemem = os.freemem,
   diskUsage = () => safeDiskUsage(process.env.FILE_STORE_DIR || process.cwd()),
-  services = null,
-  readLogs = null
+  services = parseServices(process.env.CONTROL_AGENT_SERVICES),
+  readLogs = null,
+  executor = defaultExecutor
 } = {}) {
+  const configuredServices = Array.isArray(services) ? services.map(normalizeService) : null;
+
   async function status() {
     const cpuCount = Math.max(1, cpus()?.length || 1);
     const load = loadavg?.() || [];
@@ -73,6 +161,7 @@ export function createControlAgent({
       ok: true,
       mode,
       readOnly: true,
+      actionsEnabled: Boolean(actionsEnabled),
       platform: platform?.() || "unknown",
       checkedAt: now().toISOString(),
       uptimeSec: Math.max(0, Math.floor(finite(uptime?.()) ?? 0)),
@@ -83,7 +172,13 @@ export function createControlAgent({
           : { used: totalMemory - freeMemory, total: totalMemory, percent: percent(totalMemory - freeMemory, totalMemory) },
         disk: disk ? { ...disk, percent: percent(disk.used, disk.total) } : {}
       },
-      services: (Array.isArray(services) ? services : defaultServices).map(normalizeService)
+      services: (configuredServices || defaultServices.map(normalizeService)).map((svc) => ({
+        id: svc.id,
+        name: svc.name,
+        status: svc.status,
+        detail: svc.detail,
+        actions: actionsEnabled ? svc.actions : []
+      }))
     };
   }
 
@@ -109,9 +204,40 @@ export function createControlAgent({
     return {
       ok: false,
       action: String(action),
+      statusCode: 501,
+      errorCode: "disabled",
       error: "System control actions are disabled in this safe read-only slice."
     };
   }
 
-  return { status, logs, unsupportedAction };
+  async function runAction(action, { service: serviceId = "archive-api" } = {}) {
+    if (!CONTROL_ACTIONS.has(action)) {
+      return { ok: false, action, statusCode: 404, errorCode: "unknown_action", error: "Unknown control action." };
+    }
+    if (!actionsEnabled) return unsupportedAction(action);
+    const service = (configuredServices || []).find((svc) => svc.id === serviceId || svc.name === serviceId);
+    if (!service) {
+      return { ok: false, action, service: serviceId, statusCode: 400, errorCode: "unknown_service", error: "Unknown control service." };
+    }
+    if (!service.actions.includes(action)) {
+      return { ok: false, action, service: service.id, statusCode: 403, errorCode: "action_not_allowed", error: "Action is not allowed for this service." };
+    }
+    const command = buildCommand({ action, mode, service });
+    if (!command) return unsupportedAction(action);
+    const result = await executor({ ...command, action, service, mode });
+    const ok = result.code === 0;
+    return {
+      ok,
+      action,
+      service: service.id,
+      mode,
+      statusCode: ok ? 200 : 500,
+      code: result.code,
+      stdout: redactLogLine(result.stdout || "").trim(),
+      stderr: redactLogLine(result.stderr || "").trim(),
+      error: ok ? undefined : "Control command failed."
+    };
+  }
+
+  return { status, logs, unsupportedAction, runAction };
 }

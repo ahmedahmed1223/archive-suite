@@ -572,7 +572,8 @@ export function createApiServer({
       authorizeAdmin: requireAdmin,
       sendJson: send,
       agent: resolvedControlAgent,
-      overLimit
+      overLimit,
+      readJsonBody
     })) {
       return undefined;
     }

@@ -63,3 +63,24 @@ export async function fetchControlLogs({
   });
   return unwrapResponse(response);
 }
+
+export async function runControlAction({
+  baseUrl = "",
+  action,
+  service,
+  token = "",
+  fetchImpl
+} = {}) {
+  const safeAction = String(action || "").trim();
+  if (!safeAction) throw new SystemControlError("إجراء مركز التحكم غير محدد.");
+  const base = String(baseUrl || "").replace(/\/+$/, "");
+  const response = await resolveFetch(fetchImpl)(`${base}/api/control/${encodeURIComponent(safeAction)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token)
+    },
+    body: JSON.stringify({ service })
+  });
+  return unwrapResponse(response);
+}

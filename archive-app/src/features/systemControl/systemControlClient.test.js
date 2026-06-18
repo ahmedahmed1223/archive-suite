@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { fetchControlLogs, fetchControlStatus, SystemControlError } from "./systemControlClient.js";
+import { fetchControlLogs, fetchControlStatus, runControlAction, SystemControlError } from "./systemControlClient.js";
 
 describe("systemControlClient", () => {
   test("fetchControlStatus sends bearer auth and unwraps result", async () => {
@@ -77,5 +77,33 @@ describe("systemControlClient", () => {
       message: "Admin privileges required."
     });
     expect(SystemControlError).toBeTypeOf("function");
+  });
+
+  test("runControlAction posts the selected service and action", async () => {
+    const calls = [];
+    const fetchImpl = async (url, init) => {
+      calls.push([url, init]);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { ok: true, action: "restart", service: "api" };
+        }
+      };
+    };
+
+    const result = await runControlAction({
+      baseUrl: "https://archive.example",
+      action: "restart",
+      service: "api",
+      token: "jwt-token",
+      fetchImpl
+    });
+
+    expect(calls[0][0]).toBe("https://archive.example/api/control/restart");
+    expect(calls[0][1].method).toBe("POST");
+    expect(calls[0][1].headers.Authorization).toBe("Bearer jwt-token");
+    expect(JSON.parse(calls[0][1].body)).toEqual({ service: "api" });
+    expect(result.action).toBe("restart");
   });
 });

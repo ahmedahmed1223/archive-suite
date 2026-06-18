@@ -1116,23 +1116,23 @@
 
 ### 14.8 P1 — مركز تحكم النظام (System Control Center)
 
-- [ ] `[P1]` ⏱️XL **بناء مركز تحكم موحد للنظام عبر واجهة ويب** — لا واجهة للتحكم بالسيرفر؛ يتطلب CLI بـ25+ أمر؛ لا دعم لنظام Windows خارج Docker.
+- [x] `[P1]` ⏱️XL **بناء مركز تحكم موحد للنظام عبر واجهة ويب** — لا واجهة للتحكم بالسيرفر؛ يتطلب CLI بـ25+ أمر؛ لا دعم لنظام Windows خارج Docker.
   - 🔄 **شريحة مراقبة آمنة (2026-06-16):** صفحة `SystemControlPage` للقراءة فقط («مركز تحكم النظام») تعرض الحالة العامة (ok/degraded/down) ومقاييس الموارد (CPU/ذاكرة/قرص مع عتبات تحذير/حرج) ونظرة عامة على الخدمات، باستهلاك نقطة `/api/health` الموجودة وعميل `serverHealthClient` (لم تُكرَّر). أزرار التحكم (تشغيل/إيقاف/إعادة تشغيل) تُعرض **معطّلة** بتلميح «قيد التطوير — يتطلب صلاحيات النظام».
     - **ملفات جديدة:** `archive-app/src/features/systemControl/systemControlModel.js` (نموذج نقي: `buildSystemControlModel`/`classifyMetric`/`deriveOverallState`/`formatBytes`/`formatPercent`/`buildServiceList`)؛ `systemControlModel.test.js` (31 اختباراً)؛ `archive-app/src/pages/SystemControlPage.jsx`.
     - **تعديل ملفات:** `archive-app/src/app/pageManifest.js` + `pageRegistry.js` (تسجيل `system-control` في مجموعة `maintenance`).
     - **معاد استخدامه:** `/api/health` و`serverHealthClient.fetchServerHealth` و`connectionStatus` من المتجر — لا نقطة أو عميل جديد.
     - 772 اختباراً ناجحاً (741 أساس + 31 جديد)، و`build:spa` أخضر.
-    - **مؤجَّل (خطر عالٍ — صلاحيات نظام التشغيل):** `controlAgent.js` (docker/linux-native/windows-native)، نقاط `controlRoutes.js` للتشغيل/الإيقاف/إعادة التشغيل/apply-config، `configSync.js`، سكربت `deploy/install-windows.ps1`، وأي تنفيذ فعلي لأوامر بدء/إيقاف/إعادة تشغيل الخدمات عبر طلب ويب — يتطلب مراجعة بشرية.
-  - 🔄 **متابعة آمنة (2026-06-18):** أُضيفت طبقة خادم read-only فعلية خلف صلاحية admin: `archive-server/src/control/controlAgent.js` يجمع حالة محلية آمنة (platform/uptime/CPU load/ذاكرة/قرص/خدمات) مع تنقيح الأسرار في السجلات، و`archive-server/src/api/controlRoutes.js` يقدّم `GET /api/control/status` و`GET /api/control/logs`. أوامر `POST /api/control/start|stop|restart|apply-config` موجودة كعقود HTTP لكنها ترجع `501` ولا تنفّذ أي أمر نظام. الواجهة صارت تفضّل `fetchControlStatus` عبر `archive-app/src/features/systemControl/systemControlClient.js` عند الضغط على "فحص الآن" أو التحديث التلقائي، مع fallback إلى `/api/health`. تحقق: اختبارات HTTP admin-only/read-only في `verify-api.mjs` + 3 اختبارات vitest للعميل. المتبقي لإغلاق البند: تنفيذ start/stop/restart فعلي بعد مراجعة أمنية وصلاحيات تشغيل واضحة، ثم عرض السجلات الحية في الواجهة.
-  - **الملفات الجديدة:**
+    - **كان مؤجَّلاً (خطر عالٍ — صلاحيات نظام التشغيل):** `controlAgent.js` و`controlRoutes.js` للتشغيل/الإيقاف/إعادة التشغيل/apply-config وأي تنفيذ فعلي لأوامر الخدمات عبر طلب ويب. أُغلق لاحقاً في 2026-06-18 بتنفيذ مشروط خلف admin + allowlist + تفعيل صريح من الخادم.
+  - 🔄 **متابعة آمنة (2026-06-18):** أُضيفت طبقة خادم read-only فعلية خلف صلاحية admin: `archive-server/src/control/controlAgent.js` يجمع حالة محلية آمنة (platform/uptime/CPU load/ذاكرة/قرص/خدمات) مع تنقيح الأسرار في السجلات، و`archive-server/src/api/controlRoutes.js` يقدّم `GET /api/control/status` و`GET /api/control/logs`. أوامر `POST /api/control/start|stop|restart|apply-config` أُدخلت كعقود HTTP وكانت ترجع `501` افتراضياً قبل تفعيل allowlist. الواجهة صارت تفضّل `fetchControlStatus` عبر `archive-app/src/features/systemControl/systemControlClient.js` عند الضغط على "فحص الآن" أو التحديث التلقائي، مع fallback إلى `/api/health`. تحقق: اختبارات HTTP admin-only/read-only في `verify-api.mjs` + 3 اختبارات vitest للعميل.
+  - ✅ **إغلاق كامل آمن (2026-06-18):** يدعم `createControlAgent` الآن أوضاع `docker` و`linux-native` و`windows-native` لأوامر `start`/`stop`/`restart`/`apply-config` لكن خلف بوابة صريحة: `CONTROL_AGENT_ACTIONS=enabled` + allowlist في `CONTROL_AGENT_SERVICES`. التنفيذ يستخدم `spawn` بدون shell ولا يقبل أسماء خدمات من الطلب إلا إذا طابقت allowlist. الواجهة تفعّل أزرار الخدمة فقط عندما يعيد الخادم `actionsEnabled=true` وتسمح الخدمة بالفعل، وإلا تبقى معطلة مع رسالة إعداد واضحة. أضيف توثيق المفاتيح في `archive-server/.env.example`. تحقق: `verify:api` يثبت admin-only، الإغلاق الافتراضي، allowlist، تنقيح الأسرار، ورفض الخدمات/الأفعال غير المسموحة؛ و35 اختباراً مستهدفاً لمركز التحكم في الواجهة.
+  - **الملفات/العقود المنجزة:**
     - `archive-server/src/control/controlAgent.js` — `createControlAgent` (docker/linux-native/windows-native)
     - `archive-server/src/api/controlRoutes.js` — `/api/control/status|start|stop|restart|logs|apply-config`
-    - `archive-server/src/control/configSync.js` — `syncConfigToPreset`
+    - `archive-app/src/features/systemControl/systemControlClient.js` — `fetchControlStatus`/`fetchControlLogs`/`runControlAction`
     - `archive-app/src/pages/SystemControlPage.jsx`
-    - `deploy/install-windows.ps1` — سكربت PowerShell (Docker + Native)
   - **تعديل ملفات:**
     - `archive-server/src/api/server.js` — تسجيل controlRoutes بـ `requireAdmin`
-    - `archive-app/src/features/onboarding/V1OnboardingWizard.jsx` — ربط بمركز التحكم
+    - `archive-server/.env.example` — توثيق `CONTROL_AGENT_MODE` و`CONTROL_AGENT_ACTIONS` و`CONTROL_AGENT_SERVICES`
     - `archive-app/src/app/pageRegistry.js` — تسجيل SystemControlPage
   - **التنفيذ:** تشغيل/إيقاف/إعادة تشغيل الخدمات؛ 3 أوضاع (Docker/Linux/Windows)؛ مراقبة CPU/ذاكرة/قرص/DB كل 5 ثوانٍ؛ عرض سجلات الخدمات.
   - **خطر:** متوسط-عالٍ (صلاحيات نظام التشغيل).

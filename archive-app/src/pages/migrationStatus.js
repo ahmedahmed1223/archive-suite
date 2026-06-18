@@ -29,7 +29,7 @@ export const PAGE_NATIVE_MIGRATION = {
   favorites: { status: "native", notes: "Page JSX lives in src/pages/FavoritesPage.jsx; favorites and quick-access items driven by the favorites store slice." },
   "reading-lists": { status: "native", notes: "Page JSX lives in src/pages/ReadingListsPage.jsx; watch-later and reading list queues driven by the reading-lists store slice." },
   "server-status": { status: "native", notes: "Page JSX lives in src/pages/ServerStatusPage.jsx; server health, storage, and service status from the health endpoint." },
-  "system-control": { status: "native", notes: "Page JSX lives in src/pages/SystemControlPage.jsx; system controls are read-only status cards in this safe slice." },
+  "system-control": { status: "native", notes: "Page JSX lives in src/pages/SystemControlPage.jsx; status cards are always read-only and service actions require an admin-only server allowlist." },
   duplicates: { status: "native", notes: "Page JSX lives in src/pages/DuplicatesPage.jsx; duplicate detection and merge flows driven by the duplicates feature module." },
   "saved-searches": { status: "native", notes: "Page JSX lives in src/pages/SavedSearchesPage.jsx; saved searches and alert subscriptions driven by the saved-searches store slice." },
   inbox: { status: "native", notes: "Page JSX lives in src/pages/InboxPage.jsx; quick-capture intake is driven by the inbox store slice." },
