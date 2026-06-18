@@ -57,6 +57,7 @@ import { handleControlRoute } from "./controlRoutes.js";
 import { publicOpenApiSpec } from "./publicOpenApi.js";
 import { exportRecords } from "../export/exportService.js";
 import { createControlAgent } from "../control/controlAgent.js";
+import { importPreviewService } from "../import/importPreview.js";
 import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
 import bcrypt from "bcryptjs";
 import { sendPasswordResetEmail, sendMail as defaultSendMail } from "../auth/emailService.js";
@@ -311,7 +312,8 @@ export function createApiServer({
   notificationSendMail = defaultSendMail,
   version = process.env.npm_package_version || process.env.APP_VERSION || "0.0.0",
   dropboxOAuthFetch,
-  controlAgent = createControlAgent()
+  controlAgent = createControlAgent(),
+  importPreview = importPreviewService
 } = {}) {
   // Prefer dedicated per-token-type secrets; fall back to the legacy JWT_SECRET
   // (via authSecret/shareSecret) so existing deployments keep working.
@@ -576,6 +578,22 @@ export function createApiServer({
       readJsonBody
     })) {
       return undefined;
+    }
+
+    if (req.method === "POST" && (url === "/api/import/preview" || url === "/api/v1/import/preview")) {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const claims = requireEditor(req, res);
+      if (!claims) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const urls = Array.isArray(body?.urls)
+          ? body.urls
+          : String(body?.text || "").split(/[\s,]+/).filter(Boolean);
+        const result = await importPreview({ urls, requestedBy: claims });
+        return send(res, 200, { ok: true, result });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Import preview failed" });
+      }
     }
 
     if (req.method === "GET" && (url === "/api/health" || url === "/health")) {

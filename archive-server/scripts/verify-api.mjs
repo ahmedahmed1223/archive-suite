@@ -612,6 +612,82 @@ run("HTTP: control center status and logs are admin-only and read-only", async (
   }
 });
 
+run("HTTP: import preview is editor-gated and returns normalized metadata", async () => {
+  const secret = "import-secret";
+  const server = createApiServer({
+    backend: "test",
+    authSecret: secret,
+    rateLimit: null,
+    importPreview: async ({ urls, requestedBy }) => ({
+      ok: true,
+      requestedBy,
+      items: urls.map((url) => ({ ok: true, url, kind: "web", title: "Preview title" }))
+    })
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+
+  try {
+    assert.equal((await fetch(`${base}/api/import/preview`, { method: "POST" })).status, 401);
+    assert.equal((await fetch(`${base}/api/import/preview`, {
+      method: "POST",
+      headers: { Authorization: bearerWithRole(secret, "viewer"), "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: ["https://example.com/a"] })
+    })).status, 403);
+
+    const res = await fetch(`${base}/api/import/preview`, {
+      method: "POST",
+      headers: { Authorization: bearerWithRole(secret, "editor"), "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: ["https://example.com/a"] })
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.result.requestedBy.role, "editor");
+    assert.equal(body.result.items[0].title, "Preview title");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+run("import preview extracts safe metadata without fetching private hosts", async () => {
+  const { createImportPreviewService } = await import("../src/import/importPreview.js");
+  const fetched = [];
+  const preview = createImportPreviewService({
+    lookupHost: async (host) => [{ address: host === "example.com" ? "93.184.216.34" : "127.0.0.1" }],
+    fetchImpl: async (url) => {
+      fetched.push(String(url));
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => "text/html; charset=utf-8" },
+        async text() {
+          return "<html><head><title>  Example Page  </title><meta name=\"description\" content=\"A useful page\"><meta property=\"og:image\" content=\"https://example.com/cover.jpg\"></head></html>";
+        }
+      };
+    }
+  });
+
+  const result = await preview({
+    urls: [
+      "https://example.com/article",
+      "https://youtu.be/dQw4w9WgXcQ",
+      "http://127.0.0.1/admin"
+    ],
+    requestedBy: { sub: "u1", role: "editor" }
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.items[0].kind, "web");
+  assert.equal(result.items[0].title, "Example Page");
+  assert.equal(result.items[0].description, "A useful page");
+  assert.equal(result.items[0].thumbnailUrl, "https://example.com/cover.jpg");
+  assert.equal(result.items[1].kind, "youtube");
+  assert.equal(result.items[1].sourceId, "dQw4w9WgXcQ");
+  assert.equal(result.items[2].ok, false);
+  assert.equal(result.items[2].errorCode, "private_host");
+  assert.deepEqual(fetched, ["https://example.com/article"]);
+});
+
 run("control agent reports safe local status without exposing secrets", async () => {
   const { createControlAgent } = await import("../src/control/controlAgent.js");
   const agent = createControlAgent({
