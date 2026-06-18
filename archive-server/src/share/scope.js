@@ -10,15 +10,39 @@
 import { filterItemByFieldAcl } from "./fieldAcl.js";
 
 export const SHARE_SCOPE_TYPES = Object.freeze(["all", "items", "collection"]);
+export const SHARE_PERMISSION_TYPES = Object.freeze(["view", "comment", "download", "edit"]);
+
+const CAPABILITY_MAP = Object.freeze({
+  view: Object.freeze({ canView: true, canComment: false, canDownload: false, canEdit: false }),
+  comment: Object.freeze({ canView: true, canComment: true, canDownload: false, canEdit: false }),
+  download: Object.freeze({ canView: true, canComment: true, canDownload: true, canEdit: false }),
+  edit: Object.freeze({ canView: true, canComment: true, canDownload: true, canEdit: true })
+});
+
+function normalizeScopeType(type) {
+  if (type === "item" || type === "items") return "items";
+  if (type === "collection") return "collection";
+  if (type === "all") return "all";
+  return "all";
+}
+
+function normalizePermission(permission) {
+  return SHARE_PERMISSION_TYPES.includes(permission) ? permission : "view";
+}
+
+export function permissionCapabilities(permission) {
+  return { ...(CAPABILITY_MAP[normalizePermission(permission)] || CAPABILITY_MAP.view) };
+}
 
 /** Normalize arbitrary input into a safe scope: { type, ids[], label }. */
 export function createShareScope(input = {}) {
-  const type = SHARE_SCOPE_TYPES.includes(input?.type) ? input.type : "all";
+  const type = normalizeScopeType(input?.type);
   const ids = Array.isArray(input?.ids)
     ? [...new Set(input.ids.map((id) => String(id || "")).filter(Boolean))]
     : [];
   const label = String(input?.label || "").trim().slice(0, 120);
-  return { type, ids, label };
+  const permission = normalizePermission(input?.permission);
+  return { type, ids, label, permission };
 }
 
 function isActive(item) {
@@ -73,9 +97,11 @@ export function filterSnapshotForShare(snapshot = {}, scope = { type: "all", ids
       title: String(shareMeta.title || "").trim().slice(0, 120),
       expiresAt: shareMeta.expiresAt || "",
       scopeLabel: scope.label || "",
+      permission: scope.permission || "view",
+      capabilities: permissionCapabilities(scope.permission),
       readOnly: true
     },
-    scope: { type: scope.type, label: scope.label || "" },
+    scope: { type: scope.type, label: scope.label || "", permission: scope.permission || "view" },
     counts: { items: items.length },
     videoItems: items,
     contentTypes,

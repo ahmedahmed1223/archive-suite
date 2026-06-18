@@ -1740,7 +1740,9 @@
     - `archive-server/src/api/server.js` — middleware صلاحيات للموارد المشتركة.
     - `archive-app/src/pages/RecordDetailsPage.jsx` و`CollectionsPage.jsx` — أزرار المشاركة والتعليقات.
   - **التنفيذ:** مشاركة عنصر/مجموعة؛ رابط خاص؛ دعوة مستخدم بالبريد؛ صلاحيات: metadata فقط، عرض، تنزيل، تعليق، تعديل؛ انتهاء صلاحية؛ كلمة مرور اختيارية؛ سجل نشاط المشاركة.
-  - 🔄 **شريحة آمنة 2026-06-18:** أُضيف نموذج صلاحيات SPA نقي (`sharePermissions.js`) وحوار مشاركة DaisyUI (`ShareDialog.jsx`) يتيح اختيار `view/comment/download/edit` ويمرر `scope.permission` عند سكّ الرابط. رُبط الحوار بزر مشاركة المجموعات في `CollectionsPage.jsx` مع الحفاظ على بوابة `canShare` والنسخ/الإشعار السابقين. **لم يُربط `DetailPage` بعد** لأن الخادم يستخدم نطاق `items` بينما نموذج الحوار بدأ بـ`item`، وربطه الآن قد يطبّع لنطاق عام؛ يلزم توحيد scope server/client أولاً. التحقق: اختبارات `sharePermissions` و`ShareDialog`، `verify`، و`build:spa`.
+  - 🔄 **شريحة آمنة 2026-06-18:** أُضيف نموذج صلاحيات SPA نقي (`sharePermissions.js`) وحوار مشاركة DaisyUI (`ShareDialog.jsx`) يتيح اختيار `view/comment/download/edit` ويمرر `scope.permission` عند سكّ الرابط. رُبط الحوار بزر مشاركة المجموعات في `CollectionsPage.jsx` مع الحفاظ على بوابة `canShare` والنسخ/الإشعار السابقين.
+  - 🔄 **تقدّم 2026-06-18:** وُحّدت صيغة نطاق مشاركة العنصر بين العميل والخادم: يقبل العميل `item` كاختصار واجهة لكنه يرسل `items` إلى الخادم، ويحفظ الخادم `permission` داخل token ويعرض `share.permission` و`share.capabilities` في payload العام. رُبط `DetailPage.jsx` بزر مشاركة السجل في سطح المكتب وشريط الجوال، مع إخفائه في الوضع المحلي أو دون token. التحقق: `sharePermissions`، `ShareDialog`، `DetailPage.relations`، و`archive-server verify:share`.
+  - **المتبقي:** الدعوات البريدية/`SharedWithMe`، إلغاء الروابط الفوري، كلمة مرور اختيارية، وإنفاذ صلاحيات التعليق/التحميل/التعديل على موارد مشتركة ما زالت شريحة لاحقة داخل هذه المهمة الكبيرة.
   - يرتبط بـ: مهام إبطال روابط المشاركة وRBAC في §1 و§9.
   - الجهد: 5-8 أسابيع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 7 — P1).

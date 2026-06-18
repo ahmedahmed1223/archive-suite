@@ -39,7 +39,8 @@ const SNAP = {
 };
 
 run("createShareScope normalizes type/ids/label", () => {
-  assert.deepEqual(createShareScope({ type: "items", ids: ["a", "a", "", "b"], label: " x " }), { type: "items", ids: ["a", "b"], label: "x" });
+  assert.deepEqual(createShareScope({ type: "items", ids: ["a", "a", "", "b"], label: " x ", permission: "download" }), { type: "items", ids: ["a", "b"], label: "x", permission: "download" });
+  assert.deepEqual(createShareScope({ type: "item", ids: ["a"], permission: "owner" }), { type: "items", ids: ["a"], label: "", permission: "view" });
   assert.equal(createShareScope({ type: "bogus" }).type, "all");          // unknown → all
   assert.deepEqual(createShareScope().ids, []);
 });
@@ -51,10 +52,12 @@ run("resolveScopedItemIds: all / items / collection (excludes deleted)", () => {
 });
 
 run("filterSnapshotForShare exposes only scoped items + used types; hides private data", () => {
-  const out = filterSnapshotForShare(SNAP, createShareScope({ type: "items", ids: ["v1"] }));
+  const out = filterSnapshotForShare(SNAP, createShareScope({ type: "items", ids: ["v1"], permission: "comment" }));
   assert.deepEqual(out.videoItems.map((i) => i.id), ["v1"]);
   assert.deepEqual(out.contentTypes.map((t) => t.id), ["t1"]);           // only the referenced type
   assert.equal(out.counts.items, 1);
+  assert.equal(out.share.permission, "comment");
+  assert.deepEqual(out.share.capabilities, { canView: true, canComment: true, canDownload: false, canEdit: false });
   assert.ok(out.vocabulary && out.hierarchicalTags);
   // privacy: no users / audit / settings / collections leak
   assert.equal(out.users, undefined);
@@ -74,10 +77,10 @@ run("filterSnapshotForShare applies field ACL before public exposure", () => {
 
 run("token round-trips scope; rejects wrong-kind / tampered / expired", () => {
   const secret = "share-secret";
-  const token = mintShareToken({ scope: { type: "items", ids: ["v1"], label: "لقطات" }, secret, title: "مراجعة العميل", expiresInDays: 7 });
-  assert.deepEqual(readShareToken(token, secret), { type: "items", ids: ["v1"], label: "لقطات" });
+  const token = mintShareToken({ scope: { type: "items", ids: ["v1"], label: "لقطات", permission: "download" }, secret, title: "مراجعة العميل", expiresInDays: 7 });
+  assert.deepEqual(readShareToken(token, secret), { type: "items", ids: ["v1"], label: "لقطات", permission: "download" });
   const payload = readShareTokenPayload(token, secret);
-  assert.deepEqual(payload.scope, { type: "items", ids: ["v1"], label: "لقطات" });
+  assert.deepEqual(payload.scope, { type: "items", ids: ["v1"], label: "لقطات", permission: "download" });
   assert.equal(payload.title, "مراجعة العميل");
   assert.ok(payload.expiresAt);
 
@@ -110,7 +113,7 @@ run("HTTP: POST /api/share needs auth; GET /api/share/:token is public + scoped"
     const mint = await fetch(`${base}/api/share`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
-      body: JSON.stringify({ scope: { type: "items", ids: ["v1", "v3"], label: "للمراجعة" }, title: "مراجعة عامة", expiresInDays: 5 })
+      body: JSON.stringify({ scope: { type: "items", ids: ["v1", "v3"], label: "للمراجعة", permission: "download" }, title: "مراجعة عامة", expiresInDays: 5 })
     });
     assert.equal(mint.status, 200);
     const { result } = await mint.json();
@@ -125,6 +128,8 @@ run("HTTP: POST /api/share needs auth; GET /api/share/:token is public + scoped"
     assert.deepEqual(payload.videoItems.map((i) => i.id).sort(), ["v1", "v3"]);
     assert.equal(payload.share.title, "مراجعة عامة");
     assert.equal(payload.share.scopeLabel, "للمراجعة");
+    assert.equal(payload.share.permission, "download");
+    assert.equal(payload.share.capabilities.canDownload, true);
     assert.ok(payload.share.expiresAt);
     assert.equal(payload.users, undefined);
 

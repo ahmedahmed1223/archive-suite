@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Save,
   Send,
+  Share2,
   ShieldAlert,
   Sparkles,
   Star,
@@ -90,6 +91,8 @@ import {
 import { resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 import { createMediaClient } from "../features/media/mediaClient.js";
+import { ShareDialog } from "../features/share/ShareDialog.jsx";
+import { canShare } from "../features/share/shareClient.js";
 import {
   canUseServerMediaTools,
   createMediaMetadataPatch,
@@ -485,6 +488,7 @@ export function DetailPage() {
   const [mediaJobs, setMediaJobs] = React.useState([]);
   const [activeDetailTab, setActiveDetailTab] = React.useState("data");
   const [relationDialogOpen, setRelationDialogOpen] = React.useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = React.useState(false);
   const [playbackTime, setPlaybackTime] = React.useState(0);
   const [subtitlesOn, setSubtitlesOn] = React.useState(true);
   const [importedCues, setImportedCues] = React.useState([]);
@@ -660,6 +664,7 @@ export function DetailPage() {
   const previewSource = previewDescriptor.status === MEDIA_PREVIEW_STATUS.PLAYABLE ? previewDescriptor.source : null;
   const backendChoice = resolveBackendChoice();
   const cloudToken = getCloudToken();
+  const shareEnabled = canShare({ backend: backendChoice.backend, token: cloudToken });
   const mediaSourceKey = deriveMediaSourceKey(item || {});
   const mediaToolsEnabled = canUseServerMediaTools({ backend: backendChoice.backend, token: cloudToken, role: currentUser?.role });
   const mediaUnavailable = !mediaSourceKey
@@ -970,6 +975,20 @@ export function DetailPage() {
     }
   };
 
+  const handleSharedItem = async ({ url } = {}) => {
+    const targetLabel = item?.title || "سجل";
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url).catch(() => {});
+        showNotification?.("تم إنشاء رابط المشاركة ونسخه.", { type: "success", category: "share", title: "رابط مشاركة جديد", targetLabel });
+      } else {
+        showNotification?.(`رابط المشاركة: ${url}`, { type: "success", category: "share", title: "رابط مشاركة جديد", targetLabel });
+      }
+    } catch (error) {
+      showNotification?.(error?.message || "تعذّر نسخ رابط المشاركة", { type: "warning", category: "share", title: "رابط مشاركة جاهز", targetLabel });
+    }
+  };
+
   const startPathEdit = () => {
     setEditing(true);
     const focusPathInput = () => {
@@ -1083,6 +1102,16 @@ export function DetailPage() {
   return jsxs(MotionPage, {
     className: "space-y-6 p-4 sm:p-6",
     children: [
+      shareDialogOpen && item && jsx(ShareDialog, {
+        scopeType: "item",
+        scopeIds: [item.id],
+        label: item.title || "سجل",
+        title: item.title ? `مراجعة: ${item.title}` : "مراجعة سجل مشترك",
+        baseUrl: backendChoice.url,
+        getToken: getCloudToken,
+        onClose: () => setShareDialogOpen(false),
+        onShared: handleSharedItem
+      }),
       jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
         jsxs("nav", { className: "flex items-center gap-2 text-sm text-gray-500", "aria-label": "مسار التنقل", children: [
           jsxs("button", { type: "button", onClick: () => setCurrentPage?.("archive"), className: "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-gray-500 transition-colors hover:bg-white/5 hover:text-gray-300", children: [jsx(ArrowRight, { className: "h-3.5 w-3.5" }), "الأرشيف"] }),
@@ -1180,6 +1209,7 @@ export function DetailPage() {
               item.isDeleted && jsx("span", { className: "mt-3 inline-flex items-center gap-1.5 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1 text-xs text-red-300", children: "محذوف — في سلة المحذوفات" })
             ] }),
             jsxs("div", { className: "flex flex-wrap gap-2", children: [
+              shareEnabled && jsxs("button", { type: "button", onClick: () => setShareDialogOpen(true), className: "btn btn-ghost btn-sm gap-2 text-gray-300 hover:bg-white/5", children: [jsx(Share2, { className: "h-4 w-4" }), "مشاركة"] }),
               jsxs("button", { type: "button", onClick: () => toggleFavorite?.(item.id), className: `inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors ${item.isFavorite ? "border-amber-500/30 bg-amber-500/10 text-amber-200 hover:bg-amber-500/15" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-amber-200"}`, children: [jsx(Star, { className: `h-4 w-4 ${item.isFavorite ? "fill-current" : ""}` }), item.isFavorite ? "إزالة المفضلة" : "مفضلة"] }),
               jsxs("button", { type: "button", onClick: () => { setActiveDetailTab("data"); setEditing((value) => !value); }, className: `btn btn-ghost btn-sm gap-2 ${editing ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "text-gray-300 hover:bg-white/5"}`, children: [jsx(PenLine, { className: "h-4 w-4" }), editing ? "إغلاق التحرير" : "تحرير"] }),
               editing && jsx(AutosaveIndicator, { status: autosaveStatus }),
@@ -1548,7 +1578,9 @@ export function DetailPage() {
         label: "إجراءات التفاصيل",
         actions: [
           { id: "archive", label: "الأرشيف", icon: ArrowRight, onClick: () => setCurrentPage?.("archive") },
-          { id: "play", label: "تشغيل", icon: Play, disabled: !previewSource, onClick: () => videoRef.current?.play?.().catch(() => {}) },
+          shareEnabled
+            ? { id: "share", label: "مشاركة", icon: Share2, onClick: () => setShareDialogOpen(true) }
+            : { id: "play", label: "تشغيل", icon: Play, disabled: !previewSource, onClick: () => videoRef.current?.play?.().catch(() => {}) },
           { id: "save", label: "حفظ", icon: Save, primary: true, disabled: !editing || !draft, onClick: save },
           { id: "comment", label: "تعليق", icon: MessageSquare, onClick: () => { setActiveDetailTab("comments"); window.requestAnimationFrame?.(() => commentsSectionRef.current?.scrollIntoView({ block: "center", behavior: "smooth" })); } },
           { id: "edit", label: editing ? "إغلاق" : "تحرير", icon: PenLine, active: editing, onClick: () => { setActiveDetailTab("data"); setEditing((value) => !value); } }
