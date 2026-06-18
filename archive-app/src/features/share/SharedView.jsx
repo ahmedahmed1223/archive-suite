@@ -10,6 +10,21 @@ import { fetchSharedView } from "./shareClient.js";
 // Fetches the scoped, privacy-safe snapshot from /api/share/:token and lists
 // the shared items.
 
+const PERMISSION_LABELS = Object.freeze({
+  view: "عرض فقط",
+  comment: "تعليق",
+  download: "تحميل",
+  edit: "تعديل"
+});
+
+function capabilityLabels(capabilities = {}) {
+  const labels = [];
+  if (capabilities.canComment) labels.push("تعليق");
+  if (capabilities.canDownload) labels.push("تنزيل");
+  if (capabilities.canEdit) labels.push("تعديل");
+  return labels;
+}
+
 function SharedItemCard({ item, typeName }) {
   const tags = Array.isArray(item.tags) ? item.tags : [];
   return jsxs("article", {
@@ -46,6 +61,10 @@ export function SharedView({ token, baseUrl = "", fetchImpl }) {
   const typeName = (id, types) => (Array.isArray(types) ? types.find((t) => t.id === id)?.name : "") || "";
   const shareTitle = state.data?.share?.title || state.data?.scope?.label || "أرشيف مُشارَك";
   const expiresText = formatShareDate(state.data?.share?.expiresAt);
+  const permission = state.data?.share?.permission || state.data?.scope?.permission || "view";
+  const permissionLabel = PERMISSION_LABELS[permission] || PERMISSION_LABELS.view;
+  const capabilities = state.data?.share?.capabilities || {};
+  const visibleCapabilities = capabilityLabels(capabilities);
 
   return jsx("main", {
     dir: "rtl",
@@ -75,6 +94,8 @@ export function SharedView({ token, baseUrl = "", fetchImpl }) {
         state.status === "ready" && jsxs(React.Fragment, { children: [
           jsxs("div", { className: "mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-400", children: [
             jsxs("span", { className: "rounded-full bg-white/5 px-3 py-1", children: [`${(state.data?.counts?.items ?? state.data?.videoItems?.length ?? 0)} عنصر`] }),
+            jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1 va-accent-text-on-soft", children: `صلاحية: ${permissionLabel}` }),
+            ...visibleCapabilities.map((label) => jsx("span", { className: "rounded-full bg-white/5 px-3 py-1", children: label }, label)),
             state.data?.share?.scopeLabel && jsx("span", { className: "rounded-full bg-white/5 px-3 py-1", children: state.data.share.scopeLabel }),
             expiresText && jsx("span", { className: "rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-amber-100", children: `ينتهي: ${expiresText}` })
           ] }),
