@@ -1,8 +1,11 @@
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Link2, Loader2, X } from "lucide-react";
+import { getSessionProvider } from "@archive/core";
 
+import { getBackendUrl } from "../../bootstrap/backendChoice.js";
 import { createVideoItemValue } from "../videos/viewModel.js";
+import { previewImportSources } from "./importPreviewClient.js";
 import {
   IMPORT_KINDS,
   buildImportDraft,
@@ -10,8 +13,8 @@ import {
 } from "./importSources.js";
 
 // Visual treatment per source kind: an Arabic label plus a DaisyUI badge color.
-// Deferred (NOT in this slice): server-side metadata fetch, Drive OAuth for
-// private files, actual media download, and local-folder batch import.
+// Deferred (NOT in this slice): Drive OAuth for private files, actual media
+// download, and local-folder batch import.
 const KIND_BADGE = {
   [IMPORT_KINDS.YOUTUBE]: { label: "يوتيوب", className: "badge-error" },
   [IMPORT_KINDS.GOOGLE_DRIVE]: { label: "Google Drive", className: "badge-info" },
@@ -23,13 +26,17 @@ function KindBadge({ kind }) {
   return jsx("span", { className: `badge ${meta.className} badge-sm`, children: meta.label });
 }
 
-function SourcePreviewRow({ source }) {
+function SourcePreviewRow({ source, preview }) {
   const draft = buildImportDraft(source);
+  const title = preview?.ok && preview.title ? preview.title : draft?.title;
   return jsxs("div", {
     className: "flex items-center justify-between gap-3 rounded-lg border border-base-300 bg-base-200/40 px-3 py-2",
     children: [
       jsxs("div", { className: "min-w-0", children: [
-        jsx("p", { className: "truncate text-sm font-semibold", title: draft?.title, children: draft?.title || "—" }, "title"),
+        jsx("p", { className: "truncate text-sm font-semibold", title, children: title || "—" }, "title"),
+        preview?.ok && preview.description
+          ? jsx("p", { className: "truncate text-xs opacity-70", title: preview.description, children: preview.description }, "description")
+          : null,
         jsx("p", { dir: "ltr", className: "truncate text-left text-xs opacity-60", title: source.normalizedUrl, children: source.normalizedUrl }, "url")
       ] }),
       jsx(KindBadge, { kind: source.kind })
@@ -37,11 +44,26 @@ function SourcePreviewRow({ source }) {
   });
 }
 
-async function runImport(sources, addVideoItem) {
+function mergePreviewIntoDraft(draft, preview) {
+  if (!preview?.ok) return draft;
+  return {
+    ...draft,
+    title: preview.title || draft.title,
+    thumbnail: preview.thumbnailUrl || draft.thumbnail || "",
+    notes: preview.description || draft.notes || "",
+    metadata: {
+      ...draft.metadata,
+      ...(preview.description ? { sourceDescription: preview.description } : {}),
+      ...(preview.thumbnailUrl ? { sourceThumbnailUrl: preview.thumbnailUrl } : {})
+    }
+  };
+}
+
+async function runImport(sources, previews, addVideoItem) {
   let imported = 0;
   let failed = 0;
   for (const source of sources) {
-    const draft = buildImportDraft(source);
+    const draft = mergePreviewIntoDraft(buildImportDraft(source), previews[source.normalizedUrl]);
     if (!draft) {
       failed += 1;
       continue;
@@ -63,9 +85,39 @@ async function runImport(sources, addVideoItem) {
 export function ImportFromUrlDialog({ open, onOpenChange, addVideoItem, showToast }) {
   const [text, setText] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [previewBusy, setPreviewBusy] = React.useState(false);
+  const [previews, setPreviews] = React.useState({});
   const inputId = React.useId();
 
   const sources = React.useMemo(() => parseImportLines(text), [text]);
+
+  React.useEffect(() => {
+    if (!open || sources.length === 0) {
+      setPreviews({});
+      setPreviewBusy(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setPreviewBusy(true);
+    const token = getSessionProvider()?.getToken?.() || "";
+    previewImportSources({
+      baseUrl: getBackendUrl(),
+      token,
+      urls: sources.map((source) => source.normalizedUrl)
+    }).then((items) => {
+      if (cancelled) return;
+      const next = {};
+      for (const item of items) next[item.url] = item;
+      setPreviews(next);
+    }).catch(() => {
+      if (!cancelled) setPreviews({});
+    }).finally(() => {
+      if (!cancelled) setPreviewBusy(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, sources]);
 
   const close = () => {
     if (busy) return;
@@ -77,7 +129,7 @@ export function ImportFromUrlDialog({ open, onOpenChange, addVideoItem, showToas
     if (!sources.length || busy) return;
     setBusy(true);
     try {
-      const { imported, failed } = await runImport(sources, addVideoItem);
+      const { imported, failed } = await runImport(sources, previews, addVideoItem);
       if (imported) showToast?.(`تم استيراد ${imported} عنصر${failed ? ` (تعذّر ${failed})` : ""}`, failed ? "warning" : "success");
       else showToast?.("تعذّر استيراد الروابط", "error");
       if (imported) {
@@ -126,8 +178,8 @@ export function ImportFromUrlDialog({ open, onOpenChange, addVideoItem, showToas
           }, "textarea"),
           sources.length
             ? jsxs("div", { className: "space-y-2", children: [
-                jsx("p", { className: "text-xs opacity-70", children: `${sources.length} مصدر جاهز للاستيراد` }, "count"),
-                jsx("div", { className: "max-h-56 space-y-2 overflow-y-auto", children: sources.map((source) => jsx(SourcePreviewRow, { source }, source.normalizedUrl)) }, "list")
+                jsx("p", { className: "text-xs opacity-70", children: previewBusy ? "يجري جلب بيانات المصادر…" : `${sources.length} مصدر جاهز للاستيراد` }, "count"),
+                jsx("div", { className: "max-h-56 space-y-2 overflow-y-auto", children: sources.map((source) => jsx(SourcePreviewRow, { source, preview: previews[source.normalizedUrl] }, source.normalizedUrl)) }, "list")
               ] }, "preview")
             : text.trim()
               ? jsx("div", { role: "alert", className: "alert alert-warning py-2 text-sm", children: "لم يتم التعرّف على روابط صالحة بعد." }, "empty")
