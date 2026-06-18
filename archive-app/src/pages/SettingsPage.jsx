@@ -56,6 +56,7 @@ import {
 } from "../features/settings/SettingsControls.jsx";
 import { DatabaseSettings } from "../features/settings/DatabaseSettings.jsx";
 import { FileStoreSettings } from "../features/settings/FileStoreSettings.jsx";
+import { FirebaseBackendSettings } from "../features/settings/FirebaseBackendSettings.jsx";
 import { LocalStorageEngineSettings } from "../features/settings/LocalStorageEngineSettings.jsx";
 import { ServerStatusBadge } from "../features/server-status/ServerStatusBadge.jsx";
 import { WebhooksSettings } from "../components/settings/WebhooksSettings.jsx";
@@ -1058,6 +1059,7 @@ export function SettingsPage() {
         children: jsx("div", { className: "flex flex-wrap items-center gap-2", dir: "rtl", children: jsx(ServerStatusBadge, {}) })
       }),
       jsx(FileStoreSettings, {}),
+      jsx(FirebaseBackendSettings, {}),
       jsx(DatabaseSettings, {}),
       jsx(SettingsCard, {
         title: "فحص النظام",
