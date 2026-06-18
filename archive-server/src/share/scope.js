@@ -99,6 +99,7 @@ export function filterSnapshotForShare(snapshot = {}, scope = { type: "all", ids
       scopeLabel: scope.label || "",
       permission: scope.permission || "view",
       capabilities: permissionCapabilities(scope.permission),
+      passwordProtected: Boolean(shareMeta.passwordProtected),
       readOnly: true
     },
     scope: { type: scope.type, label: scope.label || "", permission: scope.permission || "view" },

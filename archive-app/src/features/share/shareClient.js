@@ -41,7 +41,7 @@ export function buildShareUrl(token, { origin = (typeof location !== "undefined"
  * Mint a share link for a scope.
  * @returns {Promise<{ token: string, url: string }>}
  */
-export async function mintShareLink({ scope, title = "", expiresInDays, baseUrl = "", getToken, fetchImpl, origin } = {}) {
+export async function mintShareLink({ scope, title = "", expiresInDays, password = "", baseUrl = "", getToken, fetchImpl, origin } = {}) {
   const doFetch = fetchImpl || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : null);
   if (!doFetch) throw new ShareClientError("لا يوجد منفّذ fetch.");
   const token = typeof getToken === "function" ? getToken() : "";
@@ -56,7 +56,8 @@ export async function mintShareLink({ scope, title = "", expiresInDays, baseUrl 
       body: JSON.stringify({
         scope,
         title: String(title || "").trim(),
-        ...(Number(expiresInDays) > 0 ? { expiresInDays: Number(expiresInDays) } : {})
+        ...(Number(expiresInDays) > 0 ? { expiresInDays: Number(expiresInDays) } : {}),
+        ...(String(password || "").trim() ? { password: String(password || "").trim() } : {})
       })
     });
   } catch (networkError) {
@@ -72,19 +73,23 @@ export async function mintShareLink({ scope, title = "", expiresInDays, baseUrl 
     token: shareToken,
     url: buildShareUrl(shareToken, { origin }),
     title: payload.result.title || "",
-    expiresAt: payload.result.expiresAt || ""
+    expiresAt: payload.result.expiresAt || "",
+    passwordProtected: Boolean(payload.result.passwordProtected)
   };
 }
 
 /** Fetch the read-only scoped snapshot behind a share token (public, no auth). */
-export async function fetchSharedView({ token, baseUrl = "", fetchImpl } = {}) {
+export async function fetchSharedView({ token, baseUrl = "", fetchImpl, password = "" } = {}) {
   const doFetch = fetchImpl || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : null);
   if (!doFetch) throw new ShareClientError("لا يوجد منفّذ fetch.");
   if (!token) throw new ShareClientError("رابط المشاركة غير صالح.", { status: 404 });
   const base = String(baseUrl || "").replace(/\/+$/, "");
   let response;
   try {
-    response = await doFetch(`${base}/api/share/${encodeURIComponent(token)}`);
+    const trimmedPassword = String(password || "").trim();
+    response = await doFetch(`${base}/api/share/${encodeURIComponent(token)}`, trimmedPassword ? {
+      headers: { "x-share-password": trimmedPassword }
+    } : undefined);
   } catch (networkError) {
     throw new ShareClientError(`تعذّر الاتصال بالخادم: ${networkError?.message || "خطأ شبكة"}`);
   }
