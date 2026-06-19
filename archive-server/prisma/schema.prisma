@@ -293,6 +293,47 @@ model DerivedFile {
   @@map("derived_files")
 }
 
+/// Email invitations for scoped share links (§16.7).
+/// The signed token remains stateless; this table records delivery/audit state.
+model ShareInvitation {
+  id                String    @id
+  email             String
+  title             String    @default("")
+  message           String    @default("")
+  scope             Json
+  permission        String    @default("view")
+  shareJti          String?   @map("share_jti")
+  sharePath         String    @map("share_path")
+  shareUrl          String    @map("share_url")
+  passwordProtected Boolean   @default(false) @map("password_protected")
+  expiresAt         DateTime? @map("expires_at")
+  invitedByUserId   String?   @map("invited_by_user_id")
+  invitedByUsername String?   @map("invited_by_username")
+  status            String    @default("created")
+  emailSentAt       DateTime? @map("email_sent_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@index([email])
+  @@index([shareJti])
+  @@index([status])
+  @@map("share_invitations")
+}
+
+/// Comments submitted through public share links (§16.7).
+model ShareComment {
+  id         String   @id
+  itemId     String   @map("item_id")
+  text       String
+  authorName String   @map("author_name")
+  authorType String   @default("share_link") @map("author_type")
+  shareJti   String?  @map("share_jti")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([itemId])
+  @@index([shareJti])
+  @@map("share_comments")
+}
+
 /// Manual semantic relations between archive items (§18.5).
 /// `type` is one of: is_part_of / contains / references / depends_on /
 ///   related_to / alternative_of / copy_of / precedes / follows.

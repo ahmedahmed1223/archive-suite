@@ -350,7 +350,8 @@ export function createApiServer({
     resolvedShareSecret,
     defaultExpiryDays: shareExpiryDays,
     sendMail: notificationSendMail,
-    resolveStorage
+    resolveStorage,
+    db: prisma
   });
 
   // §20.5 security — the public API key endpoint may ONLY read these content
@@ -1384,8 +1385,22 @@ export function createApiServer({
         };
         // Persist via storage if available (best-effort).
         try {
-          const storage = resolveStorage();
-          await storage.put?.("share_comments", comment);
+          if (prisma?.shareComment && typeof prisma.shareComment.create === "function") {
+            await prisma.shareComment.create({
+              data: {
+                id: comment.id,
+                itemId: comment.itemId,
+                text: comment.text,
+                authorName: comment.authorName,
+                authorType: comment.authorType,
+                shareJti: comment.shareJti || null,
+                createdAt: new Date(comment.createdAt)
+              }
+            });
+          } else {
+            const storage = resolveStorage();
+            await storage.put?.("share_comments", comment);
+          }
         } catch {
           // no-op: local/SPA backends may not support share_comments store
         }
