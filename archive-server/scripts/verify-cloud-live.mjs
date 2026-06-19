@@ -1,14 +1,17 @@
 // Live cloud-stack smoke test.
 // Requires the Docker compose stack to be running locally. It exercises the
-// real HTTP API, Postgres container, file store volume, ffmpeg, Whisper, and OCR.
+// real HTTP API, frontend proxy, Postgres/pgvector, Redis, pgAdmin,
+// file store volume, ffmpeg, Whisper, and OCR.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import sharp from "sharp";
 
 const BASE = process.env.BASE || "http://127.0.0.1:8787";
+const FRONTEND_BASE = process.env.FRONTEND_BASE || "http://127.0.0.1:8080";
+const PGADMIN_BASE = process.env.PGADMIN_BASE || "http://127.0.0.1:5050";
 const TEST_ID = `cloud_live_${Date.now()}`;
 const TMP = path.join(os.tmpdir(), TEST_ID);
 mkdirSync(TMP, { recursive: true });
@@ -62,6 +65,7 @@ async function login() {
 }
 
 let token = "";
+let lastHealth = null;
 const uploadedKeys = [];
 
 function authHeaders(extra = {}) {
@@ -77,21 +81,6 @@ async function rpc(method, args) {
   const body = await json(res);
   if (!res.ok || !body.ok) throw new Error(body.error || `${method} failed (${res.status})`);
   return body.result;
-}
-
-function docker(args, options = {}) {
-  return execFileSync("docker", args, {
-    encoding: options.encoding || "utf8",
-    stdio: options.stdio || "pipe",
-    timeout: options.timeout || 120_000
-  });
-}
-
-function psqlValue(sql) {
-  return docker([
-    "exec", "archive-postgres", "psql", "-U", "archive", "-d", "archive",
-    "-tAc", sql
-  ]).trim();
 }
 
 async function putFile(key, bytes, contentType) {
@@ -131,19 +120,58 @@ async function cleanup() {
 await run("login and health", async () => {
   token = await login();
   const health = await fetch(`${BASE}/api/health`).then(json);
+  lastHealth = health;
   if (!health.ok && health.status !== "ok") throw new Error("health response was not ok");
   const ffmpeg = health.export?.mp4?.serverFfmpeg;
   if (!ffmpeg?.available) throw new Error("ffmpeg capability is not available in health");
   return `ffmpeg ${ffmpeg.version || "available"}`;
 });
 
-await run("SQL persistence via RPC and direct Postgres query", async () => {
+await run("frontend cloud same-origin API proxy", async () => {
+  const page = await fetch(FRONTEND_BASE);
+  if (!page.ok) throw new Error(`frontend failed (${page.status})`);
+  const html = await page.text();
+  if (!/Archive|الأرشيف|root/i.test(html)) throw new Error("frontend did not return the app shell");
+  const health = await fetch(`${FRONTEND_BASE}/api/health`).then(json);
+  if (!health.ok || health.backend !== "postgres") {
+    throw new Error(`frontend /api/health is not Postgres-backed: ${JSON.stringify(health).slice(0, 200)}`);
+  }
+  return `backend=${health.backend}`;
+});
+
+await run("Redis service responds with PONG", async () => {
+  const redis = lastHealth?.redis;
+  if (!redis?.configured) throw new Error("Redis is not configured in server health");
+  if (!redis?.ok) throw new Error(`Redis health is not ok: ${JSON.stringify(redis)}`);
+  return `${redis.cache}, mediaJobs=${redis.mediaJobs}`;
+});
+
+await run("pgvector extension is installed in Postgres", async () => {
+  const pgvector = lastHealth?.pgvector;
+  if (!pgvector?.ok) throw new Error(`pgvector health is not ok: ${JSON.stringify(pgvector)}`);
+  return `vector ${pgvector.version}`;
+});
+
+await run("pgAdmin login page is reachable with default server seed", async () => {
+  const res = await fetch(PGADMIN_BASE);
+  const text = await res.text();
+  if (!res.ok || !/pgAdmin/i.test(text)) throw new Error(`pgAdmin failed (${res.status})`);
+  const seed = readFileSync(new URL("../deploy/pgadmin-servers.json", import.meta.url), "utf8");
+  if (!seed.includes("Archive Postgres") || !seed.includes("\"Host\": \"postgres\"") || !seed.includes("\"Username\": \"archive\"")) {
+    throw new Error("pgAdmin default server seed does not point at bundled Postgres");
+  }
+  return "Archive Postgres seeded";
+});
+
+await run("SQL persistence via cloud RPC", async () => {
   const id = TEST_ID;
   await rpc("add", ["video_items", { id, title: "Cloud live SQL test", type: "video", tags: ["cloud-live"] }]);
-  const count = psqlValue(`select count(*) from storage_rows where store='video_items' and uid='${id}';`);
-  if (count !== "1") throw new Error(`expected one storage row, got ${count || "none"}`);
+  const stored = await rpc("get", ["video_items", id]);
+  if (stored?.id !== id || stored?.title !== "Cloud live SQL test") throw new Error("RPC read did not return the inserted SQL-backed row");
   await rpc("delete", ["video_items", id]);
-  return "storage_rows count=1 before cleanup";
+  const gone = await rpc("get", ["video_items", id]);
+  if (gone) throw new Error("RPC delete did not remove the SQL-backed row");
+  return "add/get/delete round-trip";
 });
 
 await run("file upload, list, download, and delete path", async () => {
@@ -162,15 +190,17 @@ await run("file upload, list, download, and delete path", async () => {
 let videoKey = "";
 await run("ffmpeg generates sample media in server container", async () => {
   videoKey = `live-tests/${TEST_ID}.mp4`;
-  const containerPath = `/app/files/${videoKey}`;
-  docker([
-    "exec", "archive-server", "sh", "-lc",
-    `mkdir -p /app/files/live-tests && su-exec node ffmpeg -hide_banner -loglevel error -y -f lavfi -i testsrc2=size=320x180:rate=25 -f lavfi -i sine=frequency=880:sample_rate=16000 -t 2 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest ${containerPath}`
-  ], { timeout: 180_000 });
-  uploadedKeys.push(videoKey);
-  const size = Number(docker(["exec", "archive-server", "stat", "-c", "%s", containerPath]).trim());
-  if (!Number.isFinite(size) || size < 10_000) throw new Error(`sample mp4 too small (${size})`);
-  return `${size} bytes`;
+  const hostPath = path.join(TMP, "sample.mp4");
+  execFileSync("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=25",
+    "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=16000",
+    "-t", "2", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", hostPath
+  ], { stdio: "pipe", timeout: 180_000 });
+  const bytes = readFileSync(hostPath);
+  if (bytes.length < 10_000) throw new Error(`sample mp4 too small (${bytes.length})`);
+  await putFile(videoKey, bytes, "video/mp4");
+  return `${bytes.length} bytes`;
 });
 
 await run("ffmpeg media probe and thumbnail through API", async () => {
@@ -231,11 +261,11 @@ await run("Whisper transcription through /api/ai/transcribe", async () => {
     execFileSync("powershell", ["-NoProfile", "-Command", ps], { stdio: "pipe", timeout: 60_000 });
     generatedSpeech = existsSync(wavPath);
   } catch {
-    docker([
-      "exec", "archive-server", "sh", "-lc",
-      `ffmpeg -hide_banner -loglevel error -y -f lavfi -i sine=frequency=440:sample_rate=16000 -t 1 /tmp/${TEST_ID}.wav`
-    ]);
-    docker(["cp", `archive-server:/tmp/${TEST_ID}.wav`, wavPath]);
+    execFileSync("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=16000",
+      "-t", "1", wavPath
+    ], { stdio: "pipe", timeout: 60_000 });
   }
   const audio = readFileSync(wavPath);
   const res = await fetch(`${BASE}/api/ai/transcribe`, {

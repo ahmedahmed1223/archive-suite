@@ -70,6 +70,7 @@ import {
   getSavedViews,
   removeSavedView
 } from "../features/archive/savedViews.js";
+import { resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { formatDateTime, formatNumber } from "../utils/formatting.js";
 
 const DASHBOARD_PANEL_TITLES = {
@@ -261,6 +262,7 @@ export function DashboardPage() {
     auditLogs = [],
     users = [],
     settings = {},
+    connectionStatus = {},
     sqliteError,
     isPasswordSet,
     recentSearches = [],
@@ -315,6 +317,17 @@ export function DashboardPage() {
   const latestAudit = auditLogs.slice().sort((a, b) => new Date(b.timestamp || b.createdAt || 0).getTime() - new Date(a.timestamp || a.createdAt || 0).getTime())[0];
   const lastBackup = settings.lastBackupAt ? formatDateTime(settings.lastBackupAt) : "لا توجد نسخة";
   const lastHealth = settings.systemHealth?.lastCheckAt ? formatDateTime(settings.systemHealth.lastCheckAt) : "لم يتم الفحص";
+  const backendChoice = React.useMemo(() => resolveBackendChoice(), []);
+  const storageStatus = React.useMemo(() => {
+    if (sqliteError) return { value: "تحقق التخزين", status: "warning" };
+    if (backendChoice.backend !== "local") {
+      const engine = connectionStatus.engine || backendChoice.backend;
+      const isOffline = connectionStatus.state === "offline" || connectionStatus.state === "reconnecting";
+      const label = /postgres|sql/i.test(engine) ? "Postgres SQL" : String(engine || backendChoice.backend);
+      return { value: label, status: isOffline ? "warning" : "ok" };
+    }
+    return { value: "IndexedDB محلي", status: "ok" };
+  }, [backendChoice.backend, connectionStatus.engine, connectionStatus.state, sqliteError]);
 
   const goTo = (page) => {
     setSelectedItemId(null);
@@ -624,7 +637,7 @@ export function DashboardPage() {
               jsxs("div", {
                 className: "grid grid-cols-2 gap-2 sm:grid-cols-4",
                 children: [
-                  jsx(StatusRow, { label: "التخزين", value: sqliteError ? "تحقق التخزين" : "IndexedDB محلي", status: sqliteError ? "warning" : "ok", icon: jsx(Database, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "storage"),
+                  jsx(StatusRow, { label: "التخزين", value: storageStatus.value, status: storageStatus.status, icon: jsx(Database, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "storage"),
                   jsx(StatusRow, { label: "آخر نسخة", value: lastBackup, status: settings.lastBackupAt ? "ok" : "warning", icon: jsx(HardDrive, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "backup"),
                   jsx(StatusRow, { label: "آخر فحص", value: lastHealth, status: settings.systemHealth?.lastCheckAt ? "ok" : "neutral", icon: jsx(CheckCircle2, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "health"),
                   jsx(StatusRow, { label: "اكتمال البيانات", value: `${formatNumber(stats.completenessAverage)}%`, status: stats.needsReview ? "warning" : "ok", icon: jsx(FileText, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "complete")

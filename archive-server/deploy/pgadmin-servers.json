@@ -6,8 +6,9 @@
       "Host": "postgres",
       "Port": 5432,
       "MaintenanceDB": "archive",
+      "Username": "archive",
       "SSLMode": "prefer",
-      "Comment": "Username is prompted at first connection — set it to match POSTGRES_USER. Do not commit credentials here."
+      "Comment": "Default bundled Postgres connection. Password is prompted from PGADMIN_PASSWORD/POSTGRES_PASSWORD and is not stored here."
     }
   }
 }

@@ -26,7 +26,7 @@ import { logger } from "./logger.js";
 import { startBackupScheduler, stopBackupScheduler } from "./backup/backupScheduler.js";
 import { createVersionRetentionService } from "./versions/versionRetentionService.js";
 import { initMetrics } from "./monitoring/metrics.js";
-import { initRedis, closeRedis } from "./cache/redisCache.js";
+import { initRedis, closeRedis, isRedisAvailable } from "./cache/redisCache.js";
 import { startPresenceServer } from "./collaboration/presenceServer.js";
 import { tryCreateRedisMediaJobStore } from "./media/redisMediaJobStore.js";
 import { createInMemoryMediaJobStore } from "./media/mediaJobs.js";
@@ -36,6 +36,31 @@ const PORT = Number(process.env.API_PORT || 8787);
 const CORS_ORIGIN = process.env.API_CORS_ORIGIN || "";
 const JWT_SECRET = process.env.JWT_SECRET || "";
 const TOKEN_TTL_SEC = Number(process.env.JWT_TTL_SEC || 12 * 60 * 60);
+
+async function buildExtraHealth({ prisma, mediaJobStore }) {
+  const redisConfigured = Boolean(process.env.REDIS_URL);
+  const health = {
+    redis: {
+      configured: redisConfigured,
+      ok: redisConfigured ? isRedisAvailable() : null,
+      cache: redisConfigured ? (isRedisAvailable() ? "connected" : "unavailable") : "disabled",
+      mediaJobs: process.env.REDIS_URL ? "redis" : "memory"
+    }
+  };
+  if (prisma) {
+    try {
+      const rows = await prisma.$queryRawUnsafe("select extversion from pg_extension where extname='vector'");
+      const version = Array.isArray(rows) ? rows[0]?.extversion : null;
+      health.pgvector = { ok: Boolean(version), version: version || null };
+    } catch (error) {
+      health.pgvector = { ok: false, error: error?.message || "pgvector check failed" };
+    }
+  }
+  if (mediaJobStore?.backend) {
+    health.redis.mediaJobs = mediaJobStore.backend;
+  }
+  return health;
+}
 
 async function buildPrismaClient() {
   // Lazy, dynamic imports so the pocketbase path never loads Prisma (and the
@@ -154,6 +179,7 @@ async function main() {
     // Realtime fan-out: pushes broadcast to SSE clients on /api/sync/events.
     eventBus: createEventBus(),
     mediaJobStore,
+    extraHealth: () => buildExtraHealth({ prisma, mediaJobStore }),
   });
 
   // Attach WebSocket presence server to the same HTTP server instance.
