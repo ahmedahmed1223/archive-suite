@@ -24,6 +24,7 @@ import { jsx, jsxs } from "react/jsx-runtime";
 import { motion } from "framer-motion";
 
 import { EmptyState } from "../components/common/EmptyState.jsx";
+import { EntityFoldersPanel } from "../components/folders/EntityFoldersPanel.jsx";
 import { MotionPage, PageHero, WorkflowStepper } from "../components/ui/index.js";
 import { useAsyncAction } from "../hooks/useAsyncAction.js";
 import {
@@ -768,6 +769,15 @@ export function TypesPage() {
             ]
           }, stat.id);
         }) })
+      }),
+      contentTypes.length > 0 && jsx(EntityFoldersPanel, {
+        scope: "types",
+        entityType: "content-type",
+        entities: contentTypes,
+        title: "مجلدات الأنواع",
+        description: "اجمع أنواع المحتوى والفروع المنطقية داخل مجلدات تنظيمية مستقلة عن المواد نفسها.",
+        getEntityLabel: (type) => type.name || type.id,
+        getEntityMeta: (type) => type.status === "archived" ? "مؤرشف" : `${formatNumber(type.fields?.length || 0, settings.numberSystem)} حقل`
       }),
       openedType ? jsx(TypeDetailScreen, {
         type: openedType,

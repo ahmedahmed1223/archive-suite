@@ -24,7 +24,10 @@ export function FolderTree({
   onCreateFolder,
   onMoveFolder,
   onContextMenu,
-  onDropItems
+  onDropItems,
+  title = "مجلدات الأرشيف",
+  emptyDescription = "أنشئ أول مجلد لتنظيم عناصر الأرشيف في شجرة.",
+  countEntityType = "archive-item"
 }) {
   const tree = React.useMemo(() => buildFolderTree(folders), [folders]);
   const hasFolders = tree.roots.length > 0;
@@ -34,7 +37,7 @@ export function FolderTree({
       <div className="flex items-center justify-between gap-2 px-1">
         <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
           <FolderTreeIcon className="w-3.5 h-3.5" aria-hidden="true" />
-          مجلدات الأرشيف
+          {title}
         </h2>
         <button
           type="button"
@@ -47,7 +50,7 @@ export function FolderTree({
       </div>
 
       {hasFolders ? (
-        <ul role="tree" aria-label="مجلدات الأرشيف" className="flex flex-col gap-0.5">
+        <ul role="tree" aria-label={title} className="flex flex-col gap-0.5">
           {tree.roots.map((root) => (
             <FolderTreeNode
               key={root.id}
@@ -59,6 +62,7 @@ export function FolderTree({
               onToggle={onToggle}
               onContextMenu={onContextMenu}
               onDrop={onDropItems}
+              countEntityType={countEntityType}
             />
           ))}
         </ul>
@@ -66,7 +70,7 @@ export function FolderTree({
         <div className="flex flex-col items-center gap-2 py-8 px-3 text-center rounded-xl border border-dashed border-white/10">
           <FolderTreeIcon className="w-8 h-8 text-gray-600" aria-hidden="true" />
           <p className="text-sm text-gray-400">لا توجد مجلدات بعد</p>
-          <p className="text-xs text-gray-500">أنشئ أول مجلد لتنظيم عناصر الأرشيف في شجرة.</p>
+          <p className="text-xs text-gray-500">{emptyDescription}</p>
           <button
             type="button"
             onClick={() => onCreateFolder?.()}

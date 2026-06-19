@@ -24,6 +24,7 @@ import * as React from "react";
 import { jsx, jsxs, Fragment } from "react/jsx-runtime";
 import { SavedFilterCard } from "../components/collections/SavedFilterCard.jsx";
 import { SmartCollectionRuleBuilder } from "../components/collections/SmartCollectionRuleBuilder.jsx";
+import { EntityFoldersPanel } from "../components/folders/EntityFoldersPanel.jsx";
 import { motion } from "framer-motion";
 
 import { appConfirm } from "../components/common/ConfirmDialog.js";
@@ -752,6 +753,15 @@ export function CollectionsPage() {
           ] }),
           jsx("p", { className: "mt-2 text-2xl font-bold text-white", children: formatNumber(value, settings.numberSystem) })
         ] }, label))
+      }),
+      virtualCollections.length > 0 && jsx(EntityFoldersPanel, {
+        scope: "collections",
+        entityType: "collection",
+        entities: virtualCollections,
+        title: "مجلدات المجموعات",
+        description: "اجمع المجموعات اليدوية والذكية داخل مجلدات تنظيمية بدون تغيير محتوى المجموعة نفسها.",
+        getEntityLabel: (collection) => collection.name || collection.id,
+        getEntityMeta: (collection) => collection.type === "smart" ? "ذكية" : "يدوية"
       }),
       virtualCollections.length === 0 ? jsx("div", {
         className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35",
