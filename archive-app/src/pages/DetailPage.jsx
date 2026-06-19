@@ -110,7 +110,7 @@ import {
   selectSmartThumbnailSecond
 } from "../features/media/viewModel.js";
 import { TimeBookmarkButton, TimeBookmarkList, TimeBookmarkTimelineMarkers } from "../components/media/TimeBookmarks.jsx";
-
+import { ConversionPanel } from "../features/media/ConversionPanel.jsx";
 
 function fieldKey(field) {
   return field.storageKey || field.name || field.id;
@@ -734,6 +734,8 @@ export function DetailPage() {
     getToken: getCloudToken
   }), [backendChoice.url]);
 
+  const stableMediaClient = React.useMemo(() => makeMediaClient(), [makeMediaClient]);
+
   const refreshMediaJobs = React.useCallback(async () => {
     if (!mediaToolsEnabled) return;
     try {
@@ -1155,6 +1157,17 @@ export function DetailPage() {
     if (result?.job) setMediaJobs((current) => mergeMediaJobs([result.job, ...current]));
   });
 
+  const handleConversionJobCreated = React.useCallback((result, recipe) => {
+    if (result?.job) setMediaJobs((current) => mergeMediaJobs([result.job, ...current]));
+    showNotification?.(`بدأت مهمة ${recipe.label}.`, {
+      type: "info",
+      category: "export",
+      title: "تحويل صيغة",
+      targetLabel: item?.title || "مادة"
+    });
+    refreshMediaJobs();
+  }, [item?.title, refreshMediaJobs, showNotification]);
+
   const retryMediaJob = async (jobId) => {
     await runMediaAction(`retry-${jobId}`, async (client) => {
       await client.retryJob(jobId);
@@ -1422,6 +1435,16 @@ export function DetailPage() {
           jsx(MediaToolButton, { icon: jsx(Video, { className: "h-3.5 w-3.5" }), label: "GIF", busy: mediaBusy === "preview", disabled: Boolean(mediaUnavailable), onClick: runPreviewGif }),
           jsx(MediaToolButton, { icon: jsx(RefreshCw, { className: "h-3.5 w-3.5" }), label: "نسخة ويب", busy: mediaBusy === "transcode", disabled: Boolean(mediaUnavailable), onClick: runTranscode })
         ] }),
+        !mediaUnavailable && mediaSourceKey ? jsxs("div", { className: "rounded-xl va-surface-subtle border p-3 space-y-2", children: [
+          jsx("h3", { className: "text-sm font-bold text-white", children: "تحويل الصيغ" }),
+          jsx(ConversionPanel, {
+            sourceKey: mediaSourceKey,
+            mediaClient: stableMediaClient,
+            disabled: false,
+            onJobCreated: handleConversionJobCreated,
+            onError: (err) => reportError(showNotification, err, { context: "تحويل الصيغ" })
+          })
+        ] }) : null,
         mediaRows.length ? jsx("div", { className: "grid gap-2 sm:grid-cols-2 xl:grid-cols-5", children: mediaRows.map((row) => jsxs("div", { className: "rounded-xl va-surface-subtle border p-3", children: [
           jsx("p", { className: "text-[11px] text-gray-600", children: row.label }),
           jsx("p", { dir: row.dir || "auto", className: "mt-1 truncate text-sm font-semibold text-gray-200", children: row.value })

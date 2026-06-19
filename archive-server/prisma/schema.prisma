@@ -266,6 +266,33 @@ model ActivityLog {
   @@map("activity_log")
 }
 
+/// Derived files produced by server-side format conversion (§16.15).
+/// One row per output file; linked to the source item via sourceItemId
+/// and to the triggering media job via jobId. Status tracks the job lifecycle.
+/// Deletion of a derived file should also call FileStore.remove(outputKey).
+model DerivedFile {
+  id             String    @id @default(cuid())
+  sourceItemId   String?   @map("source_item_id")
+  sourceKey      String    @map("source_key")
+  outputKey      String?   @map("output_key")
+  conversionType String    @map("conversion_type")
+  label          String    @default("")
+  mimeType       String?   @map("mime_type")
+  fileSizeBytes  BigInt?   @map("file_size_bytes")
+  status         String    @default("pending")
+  jobId          String?   @map("job_id")
+  errorMessage   String?   @map("error_message")
+  createdBy      String?   @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  completedAt    DateTime? @map("completed_at")
+
+  @@index([sourceItemId])
+  @@index([sourceKey])
+  @@index([status])
+  @@index([jobId])
+  @@map("derived_files")
+}
+
 /// Manual semantic relations between archive items (§18.5).
 /// `type` is one of: is_part_of / contains / references / depends_on /
 ///   related_to / alternative_of / copy_of / precedes / follows.

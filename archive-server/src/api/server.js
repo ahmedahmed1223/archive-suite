@@ -10,6 +10,7 @@ import { dispatchAi } from "./aiHandler.js";
 import { handleSearch } from "./searchHandler.js";
 import { exportTimelineToMp4 } from "../export/mp4.js";
 import { createInMemoryMediaJobStore, createMediaJobWorker, montageOutputKey, storeMontageOutput } from "../media/mediaJobs.js";
+import { createConversionService } from "../conversion/conversionService.js";
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
 import { verifyJwt, signJwt } from "../auth/jwt.js";
 import { revokeToken } from "../auth/tokenBlacklist.js";
@@ -327,6 +328,19 @@ export function createApiServer({
   const resolvedControlAgent = controlAgent && typeof controlAgent.status === "function"
     ? controlAgent
     : createControlAgent();
+
+  // §16.15 — conversion service: persists derived_file records for every
+  // media job created via /api/media/jobs. Gracefully no-ops when prisma=null.
+  const conversionSvc = createConversionService({ db: prisma });
+  if (eventBus) {
+    eventBus.subscribe((payload) => {
+      if (!payload?.type?.startsWith("media.job.")) return;
+      const job = payload.job;
+      if (!job?.id) return;
+      const status = payload.type === "media.job.done" ? "done" : "error";
+      conversionSvc.syncJobResult(job.id, { status, outputKey: job.outputKey, error: job.error }).catch(() => {});
+    });
+  }
 
   // §20.5 security — the public API key endpoint may ONLY read these content
   // stores. An allowlist (not a denylist) keeps sensitive stores — users,
@@ -1139,6 +1153,14 @@ export function createApiServer({
           params,
           requestedBy: user.sub || user.username || ""
         });
+        conversionSvc.requestConversion({
+          sourceItemId: params?.itemId ?? null,
+          sourceKey,
+          conversionType: params?.format || type,
+          label: params?.outputLabel || type,
+          jobId: job.id,
+          createdBy: user.sub || user.username || ""
+        }).catch(() => {});
         Promise.resolve(getMediaWorker().pump()).catch(() => {});
         return send(res, 200, { ok: true, result: { jobId: job.id, job } });
       } catch (error) {
