@@ -193,6 +193,62 @@ run("HTTP: password-protected share requires x-share-password", async () => {
   }
 });
 
+run("HTTP: share-access enforces comment capability and item scope", async () => {
+  const SECRET = "s6";
+  const comments = [];
+  const storage = {
+    snapshot: async () => SNAP,
+    getAll: async (store) => (store === "share_comments" ? comments : []),
+    put: async (store, row) => {
+      if (store === "share_comments") comments.push(row);
+      return row;
+    }
+  };
+  const server = createApiServer({
+    backend: "test", authSecret: SECRET, rateLimit: null,
+    resolveStorage: () => storage
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const viewToken = mintShareToken({ scope: { type: "items", ids: ["v1"], permission: "view" }, secret: SECRET });
+    const commentToken = mintShareToken({ scope: { type: "items", ids: ["v1"], permission: "comment" }, secret: SECRET });
+
+    const access = await fetch(`${base}/api/share-access?shareToken=${encodeURIComponent(commentToken)}`);
+    assert.equal(access.status, 200);
+    const accessPayload = (await access.json()).result;
+    assert.equal(accessPayload.capabilities.canComment, true);
+
+    const denied = await fetch(`${base}/api/share-access/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-share-token": viewToken },
+      body: JSON.stringify({ itemId: "v1", text: "تعليق" })
+    });
+    assert.equal(denied.status, 403);
+
+    const outOfScope = await fetch(`${base}/api/share-access/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-share-token": commentToken },
+      body: JSON.stringify({ itemId: "v3", text: "تعليق خارج النطاق" })
+    });
+    assert.equal(outOfScope.status, 403);
+
+    const ok = await fetch(`${base}/api/share-access/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-share-token": commentToken },
+      body: JSON.stringify({ itemId: "v1", text: "تعليق عام", authorName: "مراجع" })
+    });
+    assert.equal(ok.status, 201);
+    const comment = (await ok.json()).result;
+    assert.equal(comment.itemId, "v1");
+    assert.equal(comment.text, "تعليق عام");
+    assert.equal(comment.authorName, "مراجع");
+    assert.equal(comments.length, 1);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
 process.on("beforeExit", () => {
   if (failures > 0) { console.error(`\n${failures} test(s) failed`); process.exit(1); }
   else console.log("\nAll share tests passed.");

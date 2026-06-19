@@ -35,7 +35,9 @@ export const PAGE_NATIVE_MIGRATION = {
   inbox: { status: "native", notes: "Page JSX lives in src/pages/InboxPage.jsx; quick-capture intake is driven by the inbox store slice." },
   analytics: { status: "native", notes: "Page JSX lives in src/pages/AnalyticsPage.jsx; archive health and growth metrics are driven by src/features/analytics." },
   automation: { status: "native", notes: "Page JSX lives in src/pages/AutomationPage.jsx; rules are modeled by src/features/automation/automationModel.js." },
-  appearance: { status: "native", notes: "Page JSX lives in src/pages/AppearanceSettingsPage.jsx; appearance settings are a dedicated native surface." }
+  appearance: { status: "native", notes: "Page JSX lives in src/pages/AppearanceSettingsPage.jsx; appearance settings are a dedicated native surface." },
+  "shared-links": { status: "native", notes: "Page JSX lives in src/pages/SharedLinksPage.jsx; minted share links are managed locally with copy, revoke, and delete actions." },
+  "shared-with-me": { status: "native", notes: "Page JSX lives in src/pages/SharedWithMePage.jsx; received share links can be opened and kept in a local access history." }
 };
 
 export function getPageMigrationStatus() {
