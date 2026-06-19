@@ -9,8 +9,9 @@ import { dispatchRpc } from "./rpcHandler.js";
 import { dispatchAi } from "./aiHandler.js";
 import { handleSearch } from "./searchHandler.js";
 import { exportTimelineToMp4 } from "../export/mp4.js";
-import { createInMemoryMediaJobStore, createMediaJobWorker, montageOutputKey, storeMontageOutput } from "../media/mediaJobs.js";
+import { createInMemoryMediaJobStore } from "../media/mediaJobs.js";
 import { createConversionService } from "../conversion/conversionService.js";
+import { createConversionJobRunner } from "../conversion/conversionJobRunner.js";
 import { createSharePermissionService } from "../share/sharePermissionService.js";
 import { createShareInvitationService } from "../share/invitationService.js";
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
@@ -471,23 +472,15 @@ export function createApiServer({
   function getMediaWorker() {
     if (mediaWorker) return mediaWorker;
     if (!defaultMediaWorker) {
-      defaultMediaWorker = createMediaJobWorker({
+      defaultMediaWorker = createConversionJobRunner({
         store: mediaJobStore,
         eventBus,
-        fileStore: resolveFileStore(),
+        conversionService: conversionSvc,
+        resolveFileStore,
         concurrency: Number(process.env.MEDIA_JOB_CONCURRENCY) || 1,
-        runDerivative: ({ job, onProgress }) => runMediaDerivativeImpl({
-          type: "transcode",
-          key: job.sourceKey,
-          params: job.params,
-          fileStore: resolveFileStore(),
-          onProgress
-        }),
-        runMontage: async ({ job }) => {
-          const outputKey = job.params?.outputKey || montageOutputKey(job);
-          const result = await runExport(job.params?.timeline, { rootDir: mediaRootDir });
-          return storeMontageOutput({ output: result.output, outputKey, fileStore: resolveFileStore() });
-        }
+        runMediaDerivativeImpl,
+        runExport,
+        mediaRootDir
       });
     }
     return defaultMediaWorker;
