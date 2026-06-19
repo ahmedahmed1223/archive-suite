@@ -107,6 +107,59 @@ export async function revokeShareLink({ jti, baseUrl = "", getToken, fetchImpl }
   return payload.result || { revoked: true, jti: cleanJti };
 }
 
+/** Send an email invitation for a scoped share link. */
+export async function inviteShareByEmail({
+  email,
+  message = "",
+  scope,
+  title = "",
+  expiresInDays,
+  password = "",
+  baseUrl = "",
+  getToken,
+  fetchImpl,
+  origin
+} = {}) {
+  const doFetch = fetchImpl || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : null);
+  if (!doFetch) throw new ShareClientError("لا يوجد منفّذ fetch.");
+  const token = typeof getToken === "function" ? getToken() : "";
+  if (!token) throw new ShareClientError("إرسال الدعوة يتطلّب تسجيل الدخول إلى خادم سحابي.");
+  const cleanEmail = String(email || "").trim();
+  if (!cleanEmail) throw new ShareClientError("أدخل بريد المستلم.");
+
+  const base = String(baseUrl || "").replace(/\/+$/, "");
+  let response;
+  try {
+    response = await doFetch(`${base}/api/share/invitations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        email: cleanEmail,
+        message: String(message || "").trim(),
+        scope,
+        title: String(title || "").trim(),
+        ...(Number(expiresInDays) > 0 ? { expiresInDays: Number(expiresInDays) } : {}),
+        ...(String(password || "").trim() ? { password: String(password || "").trim() } : {})
+      })
+    });
+  } catch (networkError) {
+    throw new ShareClientError(`تعذّر الاتصال بخادم المشاركة: ${networkError?.message || "خطأ شبكة"}`);
+  }
+  let payload;
+  try { payload = await response.json(); } catch { throw new ShareClientError("استجابة غير صالحة من خادم المشاركة.", { status: response.status }); }
+  if (!response.ok || !payload?.ok || !payload?.result?.token) {
+    throw new ShareClientError(payload?.error || "فشل إرسال دعوة المشاركة.", { status: response.status });
+  }
+  const shareToken = payload.result.token;
+  return {
+    token: shareToken,
+    url: buildShareUrl(shareToken, { origin }),
+    invitation: payload.result.invitation || null,
+    emailStatus: payload.result.emailStatus || null,
+    jti: payload.result.invitation?.shareJti || ""
+  };
+}
+
 /** Fetch the read-only scoped snapshot behind a share token (public, no auth). */
 export async function fetchSharedView({ token, baseUrl = "", fetchImpl, password = "" } = {}) {
   const doFetch = fetchImpl || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : null);
