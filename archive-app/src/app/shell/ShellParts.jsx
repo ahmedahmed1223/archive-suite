@@ -10,7 +10,9 @@
   History as HistoryIcon,
   Home,
   Info,
+  Inbox,
   KeyRound,
+  Link2,
   Lock,
   LogIn,
   Redo2,
@@ -503,6 +505,8 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
     { id: "types", label: "الأنواع والحقول", detail: "إدارة نماذج المواد", icon: Tags, kind: "page", group: "page", run: () => setCurrentPage?.("types") },
     { id: "add", label: "إضافة فيديو (نموذج كامل)", detail: "إنشاء مادة أرشيفية جديدة", icon: Sparkles, kind: "page", group: "page", run: () => setCurrentPage?.("add") },
     { id: "backup", label: "مركز البيانات", detail: "استيراد وتصدير ونقل", icon: Database, kind: "page", group: "page", run: () => setCurrentPage?.("backup") },
+    { id: "shared-links", label: "روابط المشاركة", detail: "إدارة الروابط التي أنشأتها ونسخها أو إبطالها", icon: Link2, kind: "page", group: "page", run: () => setCurrentPage?.("shared-links") },
+    { id: "shared-with-me", label: "المشترك معي", detail: "فتح رابط مشاركة وصل إليك أو العودة لسجل الروابط", icon: Inbox, kind: "page", group: "page", run: () => setCurrentPage?.("shared-with-me") },
     { id: "history", label: "سجل التغييرات", detail: "آخر العمليات على الأرشيف", icon: HistoryIcon, kind: "page", group: "page", run: () => setCurrentPage?.("history") },
     { id: "help", label: "المساعدة", detail: "فتح مركز المعرفة", icon: Info, kind: "page", group: "page", run: () => setCurrentPage?.("help") }
   ], [onOpenShortcuts, setCurrentPage]);
