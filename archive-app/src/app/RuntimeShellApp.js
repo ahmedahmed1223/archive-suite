@@ -449,7 +449,8 @@ export function App() {
     }
     if (shortcutAction === "viewKanban") {
       event.preventDefault();
-      setViewMode("kanban");
+      setSelectedItemId(null);
+      setCurrentPage("kanban");
       return;
     }
     if (shortcutAction === "deleteSelected") {

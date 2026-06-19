@@ -17,7 +17,7 @@ export const SHORTCUT_ACTIONS = [
   { id: "viewList", label: "عرض قائمة", category: "العرض", defaultKeys: "Ctrl+2", options: ["Ctrl+2", "Alt+2", "disabled"] },
   { id: "viewTable", label: "عرض جدول", category: "العرض", defaultKeys: "Ctrl+3", options: ["Ctrl+3", "Alt+3", "disabled"] },
   { id: "viewGallery", label: "عرض معرض", category: "العرض", defaultKeys: "Ctrl+4", options: ["Ctrl+4", "Alt+4", "disabled"] },
-  { id: "viewKanban", label: "عرض كانبان", category: "العرض", defaultKeys: "Ctrl+5", options: ["Ctrl+5", "Alt+5", "disabled"] },
+  { id: "viewKanban", label: "فتح لوحات المشاريع", category: "التنقل", defaultKeys: "Ctrl+5", options: ["Ctrl+5", "Alt+5", "disabled"] },
   { id: "deleteSelected", label: "حذف العناصر المحددة", category: "التحرير", defaultKeys: "Delete", options: ["Delete", "Ctrl+Delete", "disabled"] },
   { id: "lockApp", label: "قفل التطبيق", category: "الأمان", defaultKeys: "Ctrl+Shift+L", options: ["Ctrl+Shift+L", "Alt+L", "disabled"] },
   { id: "logout", label: "تسجيل الخروج", category: "الأمان", defaultKeys: "Ctrl+Alt+L", options: ["Ctrl+Alt+L", "disabled"] },

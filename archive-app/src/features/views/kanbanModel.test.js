@@ -1,90 +1,99 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
-  KANBAN_STATUSES,
-  listKanbanStatuses,
-  buildKanbanColumns,
-  moveItemStatus,
+  addKanbanBoard,
+  addKanbanCard,
+  addKanbanColumn,
+  addKanbanField,
+  createKanbanBoard,
+  getKanbanBoardSummary,
+  moveKanbanCard,
+  normalizeKanbanWorkspace,
+  removeKanbanField,
+  updateKanbanBoard,
+  updateKanbanCard,
 } from "./kanbanModel.js";
 
-const item = (id, overrides = {}) => ({ id, title: `item-${id}`, ...overrides });
+describe("project kanban workspace", () => {
+  it("normalizes an empty workspace without creating boards or cards automatically", () => {
+    const workspace = normalizeKanbanWorkspace();
 
-describe("listKanbanStatuses", () => {
-  it("returns one descriptor per canonical status, in order, with labels", () => {
-    const list = listKanbanStatuses();
-    expect(list.map((s) => s.status)).toEqual(KANBAN_STATUSES);
-    expect(list[0]).toMatchObject({ status: "draft", label: "مسودة" });
-    list.forEach((s) => expect(typeof s.label).toBe("string"));
-  });
-});
-
-describe("buildKanbanColumns", () => {
-  it("returns all canonical columns in order even when empty", () => {
-    const columns = buildKanbanColumns([]);
-    expect(columns.map((c) => c.status)).toEqual(KANBAN_STATUSES);
-    expect(columns.every((c) => c.items.length === 0)).toBe(true);
+    expect(workspace).toEqual({ activeBoardId: "", boards: [] });
   });
 
-  it("groups items into the column matching their workflowStatus", () => {
-    const items = [
-      item("a", { workflowStatus: "review" }),
-      item("b", { workflowStatus: "review" }),
-      item("c", { workflowStatus: "published" }),
-    ];
-    const byStatus = Object.fromEntries(buildKanbanColumns(items).map((c) => [c.status, c]));
-    expect(byStatus.review.items.map((i) => i.id)).toEqual(["a", "b"]);
-    expect(byStatus.published.items.map((i) => i.id)).toEqual(["c"]);
-    expect(byStatus.draft.items).toHaveLength(0);
+  it("creates a manual project board with default columns but no automatic cards", () => {
+    const board = createKanbanBoard({
+      id: "board-a",
+      title: "مشروع حملة",
+      description: "متابعة إنتاج الحملة"
+    }, { now: "2026-06-19T10:00:00.000Z" });
+
+    expect(board.title).toBe("مشروع حملة");
+    expect(board.columns.map((column) => column.id)).toEqual(["backlog", "active", "review", "done"]);
+    expect(board.cards).toEqual([]);
   });
 
-  it("excludes deleted items", () => {
-    const items = [
-      item("a", { workflowStatus: "editing" }),
-      item("b", { workflowStatus: "editing", isDeleted: true }),
-    ];
-    const editing = buildKanbanColumns(items).find((c) => c.status === "editing");
-    expect(editing.items.map((i) => i.id)).toEqual(["a"]);
+  it("adds boards explicitly and selects the new board", () => {
+    const workspace = addKanbanBoard({}, {
+      id: "board-a",
+      title: "لوحة مشروع"
+    }, { now: "2026-06-19T10:00:00.000Z" });
+
+    expect(workspace.activeBoardId).toBe("board-a");
+    expect(workspace.boards).toHaveLength(1);
   });
 
-  it("treats legacy items with no status as drafts (deriveInitialItemWorkflowStatus)", () => {
-    const draft = buildKanbanColumns([item("a")]).find((c) => c.status === "draft");
-    expect(draft.items.map((i) => i.id)).toEqual(["a"]);
+  it("adds and moves cards without mutating the source board", () => {
+    const board = createKanbanBoard({ id: "board-a" }, { now: "2026-06-19T10:00:00.000Z" });
+    const withCard = addKanbanCard(board, {
+      id: "card-a",
+      columnId: "backlog",
+      title: "مراجعة اللقطات",
+      priority: "high"
+    }, { now: "2026-06-19T11:00:00.000Z" });
+    const moved = moveKanbanCard(withCard, "card-a", "review");
+
+    expect(board.cards).toHaveLength(0);
+    expect(withCard.cards[0]).toMatchObject({ id: "card-a", columnId: "backlog", priority: "high" });
+    expect(moved.cards[0].columnId).toBe("review");
   });
 
-  it("falls back unknown statuses onto the first column instead of dropping them", () => {
-    const draft = buildKanbanColumns([item("a", { workflowStatus: "bogus" })]).find(
-      (c) => c.status === "draft"
-    );
-    expect(draft.items.map((i) => i.id)).toEqual(["a"]);
+  it("supports custom fields and removes values when a field is deleted", () => {
+    const board = createKanbanBoard({ id: "board-a" }, { now: "2026-06-19T10:00:00.000Z" });
+    const withField = addKanbanField(board, { id: "budget", label: "الميزانية", type: "number" });
+    const withCard = addKanbanCard(withField, {
+      id: "card-a",
+      title: "تصميم الهوية",
+      fieldValues: { budget: "2500" }
+    });
+    const removed = removeKanbanField(withCard, "budget");
+
+    expect(withField.fields[0]).toMatchObject({ id: "budget", type: "number" });
+    expect(withCard.cards[0].fieldValues.budget).toBe("2500");
+    expect(removed.fields).toEqual([]);
+    expect(removed.cards[0].fieldValues).toEqual({});
   });
 
-  it("respects a custom ordered subset of statuses", () => {
-    const columns = buildKanbanColumns(
-      [item("a", { workflowStatus: "review" })],
-      ["review", "approved"]
-    );
-    expect(columns.map((c) => c.status)).toEqual(["review", "approved"]);
+  it("updates board and card metadata", () => {
+    const workspace = addKanbanBoard({}, { id: "board-a", title: "قديم" });
+    const renamed = updateKanbanBoard(workspace, "board-a", { title: "جديد", description: "وصف" });
+    const board = addKanbanCard(renamed.boards[0], { id: "card-a", title: "مهمة" });
+    const updated = updateKanbanCard(board, "card-a", { owner: "سارة", priority: "urgent" });
+
+    expect(renamed.boards[0]).toMatchObject({ title: "جديد", description: "وصف" });
+    expect(updated.cards[0]).toMatchObject({ owner: "سارة", priority: "urgent" });
   });
 
-  it("tolerates non-array input", () => {
-    expect(buildKanbanColumns(null).every((c) => c.items.length === 0)).toBe(true);
-  });
-});
+  it("summarizes cards, columns, and fields", () => {
+    const board = addKanbanColumn(createKanbanBoard({ id: "board-a" }), "نشر");
+    const withField = addKanbanField(board, { id: "channel", label: "القناة", type: "text" });
+    const withCard = addKanbanCard(withField, { id: "card-a", title: "جاهزية النص", columnId: "done" });
 
-describe("moveItemStatus", () => {
-  it("returns a new item with the updated status without mutating the source", () => {
-    const source = item("a", { workflowStatus: "draft" });
-    const moved = moveItemStatus(source, "editing");
-    expect(moved).not.toBe(source);
-    expect(moved.workflowStatus).toBe("editing");
-    expect(source.workflowStatus).toBe("draft");
-  });
-
-  it("throws on a missing item", () => {
-    expect(() => moveItemStatus(null, "draft")).toThrow(/item is required/);
-  });
-
-  it("throws on an unknown target status", () => {
-    expect(() => moveItemStatus(item("a"), "bogus")).toThrow(/unknown workflow status/);
+    expect(getKanbanBoardSummary(withCard)).toMatchObject({
+      columns: 5,
+      cards: 1,
+      openCards: 0,
+      customFields: 1
+    });
   });
 });
