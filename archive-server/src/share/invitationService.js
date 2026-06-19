@@ -67,10 +67,6 @@ export function createShareInvitationService({
   resolveStorage,
   db
 } = {}) {
-  if (!resolvedShareSecret) {
-    throw new Error("Share invitations require a share secret.");
-  }
-
   return {
     async createInvitation({
       email,
@@ -82,6 +78,11 @@ export function createShareInvitationService({
       origin = "",
       sender = {}
     } = {}) {
+      if (!resolvedShareSecret) {
+        const error = new Error("Share invitations require a share secret.");
+        error.statusCode = 503;
+        throw error;
+      }
       const normalizedEmail = normalizeEmail(email);
       if (!EMAIL_RE.test(normalizedEmail)) {
         const error = new Error("Valid recipient email is required.");
