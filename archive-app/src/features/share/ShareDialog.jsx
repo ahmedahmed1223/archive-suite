@@ -1,8 +1,8 @@
 import { jsx, jsxs } from "react/jsx-runtime";
 import { useState } from "react";
-import { Share2, X, Loader2, Copy, Check, ShieldCheck, ShieldOff } from "lucide-react";
+import { Share2, X, Loader2, Copy, Check, Mail, ShieldCheck, ShieldOff } from "lucide-react";
 
-import { mintShareLink, revokeShareLink } from "./shareClient.js";
+import { inviteShareByEmail, mintShareLink, revokeShareLink } from "./shareClient.js";
 import {
   SHARE_PERMISSIONS,
   DEFAULT_SHARE_PERMISSION,
@@ -80,6 +80,8 @@ export function ShareDialog({
   const [permission, setPermission] = useState(DEFAULT_SHARE_PERMISSION);
   const [expiresInDays, setExpiresInDays] = useState(Number(defaultExpiryDays) || 0);
   const [password, setPassword] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
   const [state, setState] = useState({ status: "idle", url: "", jti: "", error: "" });
   const [revokeState, setRevokeState] = useState({ status: "idle", error: "" });
   const [copied, setCopied] = useState(false);
@@ -100,15 +102,30 @@ export function ShareDialog({
     setState({ status: "minting", url: "", jti: "", error: "" });
     setRevokeState({ status: "idle", error: "" });
     try {
-      const { url, jti } = await mintShareLink({
-        scope: { type: grant.scopeType, ids: grant.scopeIds, label: grant.label, permission: grant.permission },
-        title: String(title || grant.label || "").trim(),
-        expiresInDays: grant.expiresInDays,
-        password,
-        baseUrl,
-        getToken
-      });
-      setState({ status: "ready", url, jti: jti || "", error: "" });
+      const scope = { type: grant.scopeType, ids: grant.scopeIds, label: grant.label, permission: grant.permission };
+      const cleanTitle = String(title || grant.label || "").trim();
+      const cleanEmail = inviteEmail.trim();
+      const result = cleanEmail
+        ? await inviteShareByEmail({
+            email: cleanEmail,
+            message: inviteMessage,
+            scope,
+            title: cleanTitle,
+            expiresInDays: grant.expiresInDays,
+            password,
+            baseUrl,
+            getToken
+          })
+        : await mintShareLink({
+            scope,
+            title: cleanTitle,
+            expiresInDays: grant.expiresInDays,
+            password,
+            baseUrl,
+            getToken
+          });
+      const { url, jti } = result;
+      setState({ status: "ready", url, jti: jti || "", error: "", invitedEmail: result.invitation?.email || cleanEmail });
       onShared?.({ url, permission: grant.permission, jti: jti || "" });
     } catch (err) {
       setState({ status: "error", url: "", jti: "", error: err?.message || "تعذّر إنشاء رابط المشاركة." });
@@ -200,12 +217,47 @@ export function ShareDialog({
             })
           ] }),
 
+          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-3", children: [
+            jsxs("label", { className: "block space-y-2", children: [
+              jsxs("span", { className: "inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400", children: [
+                jsx(Mail, { className: "h-3.5 w-3.5", "aria-hidden": true }),
+                "دعوة بالبريد الإلكتروني"
+              ] }),
+              jsx("input", {
+                type: "email",
+                value: inviteEmail,
+                disabled: isBusy,
+                onChange: (e) => setInviteEmail(e.target.value),
+                className: "input input-bordered w-full bg-white/5 text-sm text-gray-200",
+                placeholder: "reviewer@example.com",
+                "aria-label": "بريد المستلم"
+              })
+            ] }),
+            jsxs("label", { className: "block space-y-2", children: [
+              jsx("span", { className: "text-xs font-semibold text-gray-400", children: "رسالة اختيارية" }),
+              jsx("textarea", {
+                value: inviteMessage,
+                disabled: isBusy,
+                onChange: (e) => setInviteMessage(e.target.value),
+                rows: 2,
+                className: "textarea textarea-bordered w-full bg-white/5 text-sm text-gray-200",
+                placeholder: "اكتب سياقاً قصيراً للمستلم",
+                "aria-label": "رسالة الدعوة"
+              })
+            ] })
+          ] }),
+
           grant && jsxs("div", {
             className: "badge badge-ghost h-auto w-full justify-start gap-2 whitespace-normal rounded-xl border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300",
             children: [jsx(ShieldCheck, { className: "h-3.5 w-3.5 shrink-0 va-accent-text" }), jsx("span", { children: describeShareGrant(grant) })]
           }),
 
           state.status === "ready" && jsxs("div", { className: "space-y-2", children: [
+            state.invitedEmail && jsx("div", {
+              role: "status",
+              className: "alert alert-info rounded-xl px-3 py-2 text-xs",
+              children: `تم إرسال الدعوة إلى ${state.invitedEmail}`
+            }),
             jsxs("div", {
               role: "alert",
               className: "alert alert-success flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5",
@@ -264,7 +316,7 @@ export function ShareDialog({
               className: "btn btn-primary btn-sm gap-2",
               children: [
                 isBusy ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(Share2, { className: "h-4 w-4" }),
-                isBusy ? "جارٍ الإنشاء…" : "إنشاء الرابط"
+                isBusy ? "جارٍ الإنشاء…" : (inviteEmail.trim() ? "إرسال الدعوة" : "إنشاء الرابط")
               ]
             })
           ]

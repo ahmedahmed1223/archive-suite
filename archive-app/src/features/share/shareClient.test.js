@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { mintShareLink, revokeShareLink } from "./shareClient.js";
+import { inviteShareByEmail, mintShareLink, revokeShareLink } from "./shareClient.js";
 
 function jsonResponse(body, ok = true, status = 200) {
   return { ok, status, json: async () => body };
@@ -53,5 +53,46 @@ describe("shareClient", () => {
       body: JSON.stringify({ jti: "share-jti" })
     });
     expect(result).toEqual({ revoked: true, jti: "share-jti" });
+  });
+
+  it("sends a scoped share invitation by email", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({
+      ok: true,
+      result: {
+        token: "invite-token",
+        invitation: { email: "reviewer@example.test", shareJti: "invite-jti" },
+        emailStatus: { sent: true }
+      }
+    }));
+
+    const result = await inviteShareByEmail({
+      email: "reviewer@example.test",
+      message: "راجع هذه المادة",
+      scope: { type: "items", ids: ["v1"], permission: "comment" },
+      title: "مراجعة",
+      expiresInDays: 7,
+      baseUrl: "https://api.example.test",
+      getToken: () => "jwt-token",
+      fetchImpl,
+      origin: "https://app.example.test"
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith("https://api.example.test/api/share/invitations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer jwt-token" },
+      body: JSON.stringify({
+        email: "reviewer@example.test",
+        message: "راجع هذه المادة",
+        scope: { type: "items", ids: ["v1"], permission: "comment" },
+        title: "مراجعة",
+        expiresInDays: 7
+      })
+    });
+    expect(result).toMatchObject({
+      token: "invite-token",
+      url: "https://app.example.test/?share=invite-token",
+      jti: "invite-jti",
+      emailStatus: { sent: true }
+    });
   });
 });

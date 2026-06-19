@@ -117,4 +117,62 @@ describe("ShareDialog", () => {
     expect(JSON.parse(init.body)).toEqual({ jti: "share-jti" });
     expect(await screen.findByText("تم إلغاء الرابط")).toBeInTheDocument();
   });
+
+  it("sends an email invitation when a recipient email is provided", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({
+      ok: true,
+      result: {
+        token: "invite-token",
+        invitation: { email: "reviewer@example.test", shareJti: "invite-jti" },
+        emailStatus: { sent: true }
+      }
+    }));
+    globalThis.fetch = fetchImpl;
+    const onShared = vi.fn();
+
+    render(
+      <ShareDialog
+        scopeType="item"
+        scopeIds="v1"
+        label="مادة"
+        title="مراجعة مادة"
+        defaultExpiryDays={7}
+        baseUrl="https://api.example.test"
+        getToken={() => "jwt-token"}
+        onClose={() => {}}
+        onShared={onShared}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("تعليق"));
+    fireEvent.change(screen.getByLabelText("بريد المستلم"), {
+      target: { value: "reviewer@example.test" }
+    });
+    fireEvent.change(screen.getByLabelText("رسالة الدعوة"), {
+      target: { value: "راجع هذه المادة" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "إرسال الدعوة" }));
+
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe("https://api.example.test/api/share/invitations");
+    expect(JSON.parse(init.body)).toMatchObject({
+      email: "reviewer@example.test",
+      message: "راجع هذه المادة",
+      title: "مراجعة مادة",
+      expiresInDays: 7,
+      scope: {
+        type: "items",
+        ids: ["v1"],
+        label: "مادة",
+        permission: "comment"
+      }
+    });
+    await waitFor(() => expect(onShared).toHaveBeenCalledWith(expect.objectContaining({
+      url: expect.stringContaining("?share=invite-token"),
+      permission: "comment",
+      jti: "invite-jti"
+    })));
+    expect(await screen.findByText("تم إرسال الدعوة إلى reviewer@example.test")).toBeInTheDocument();
+  });
 });
