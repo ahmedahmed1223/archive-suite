@@ -30,19 +30,87 @@ import {
 } from "../components/navigation/index.js";
 import { MobileShell } from "../components/layout/MobileShell.jsx";
 import { CopilotPanel } from "../components/copilot/CopilotPanel.jsx";
-import { Bot } from "lucide-react";
+import { Bot, Compass } from "lucide-react";
+
+function PageLoadingFallback({ title }) {
+  return (
+    <div
+      dir="rtl"
+      role="status"
+      aria-live="polite"
+      aria-label={`تحميل ${title || "الصفحة"}`}
+      className="space-y-4 p-4 sm:p-6"
+    >
+      <div className="rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-5 shadow-[var(--va-elev-1)]">
+        <div className="flex items-center gap-3">
+          <span className="h-10 w-10 animate-pulse rounded-[var(--va-radius-md)] bg-[var(--va-surface-2)]" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--va-text)]">تحميل {title || "الصفحة"}</p>
+            <div className="mt-2 h-2 w-48 max-w-full overflow-hidden rounded-full bg-[var(--va-surface-2)]">
+              <span className="block h-full w-2/5 animate-pulse rounded-full bg-emerald-500/60" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <DashboardSkeleton compact />
+    </div>
+  );
+}
+
+/**
+ * Token-styled fallback shown when currentPage does not resolve to a known
+ * page. Replaces the silent dashboard fallback so an unknown route is
+ * communicated instead of masquerading as the dashboard.
+ */
+function UnknownPageScreen({ onBackToDashboard }) {
+  return jsx("div", {
+    dir: "rtl",
+    role: "alert",
+    className:
+      "flex min-h-[60vh] flex-col items-center justify-center gap-5 p-6 text-center",
+    children: jsxs("div", {
+      className:
+        "w-full max-w-md rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-8 shadow-[var(--va-elev-2)]",
+      children: [
+        jsx("span", {
+          className:
+            "mx-auto flex h-14 w-14 items-center justify-center rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-muted)]",
+          children: jsx(Compass, { className: "h-7 w-7" }),
+        }),
+        jsx("h2", {
+          className: "mt-5 text-xl font-bold text-[var(--va-text)]",
+          children: "الصفحة غير موجودة",
+        }),
+        jsx("p", {
+          className: "mt-2 text-sm leading-7 text-[var(--va-text-muted)]",
+          children:
+            "تعذر العثور على هذه الصفحة. قد يكون الرابط قديمًا أو غير صحيح.",
+        }),
+        jsx("button", {
+          type: "button",
+          onClick: onBackToDashboard,
+          className:
+            "mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-5 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]",
+          children: "العودة إلى مركز التحكم",
+        }),
+      ],
+    }),
+  });
+}
 
 export function AppRouter() {
   const currentPage = useAppStore((s) => s.currentPage);
   const settings = useAppStore((s) => s.settings);
   const copilotOpen = useAppStore((s) => s.copilotOpen);
   const toggleCopilot = useAppStore((s) => s.toggleCopilot);
+  const setCurrentPage = useAppStore((s) => s.setCurrentPage);
+  const mainRef = React.useRef(null);
   // useTheme() is invoked for its theme-resolution side effects; the resolved
   // value no longer drives a hardcoded background (the shell now uses --va-bg).
   useTheme();
 
-  const PageComponent =
-    PAGE_COMPONENTS[currentPage] || PAGE_COMPONENTS.dashboard;
+  const isKnownPage = Boolean(PAGE_COMPONENTS[currentPage]);
+  const PageComponent = PAGE_COMPONENTS[currentPage] || PAGE_COMPONENTS.dashboard;
   const currentPageTitle =
     getPageContextMeta(currentPage)?.title || "أرشيف الفيديو";
   const daisyTheme = settings.ui?.daisyTheme || "business";
@@ -57,6 +125,10 @@ export function AppRouter() {
     storeDaisyTheme(daisyTheme);
     applyCustomDaisyTheme(customDaisyTheme || getStoredCustomDaisyTheme());
   }, [daisyTheme, customDaisyTheme]);
+
+  React.useEffect(() => {
+    mainRef.current?.focus?.({ preventScroll: true });
+  }, [currentPage]);
 
   return jsxs("div", {
     dir: "rtl",
@@ -80,6 +152,7 @@ export function AppRouter() {
       jsx(AppSidebar, {}),
       jsx(MobileShell, {
         children: jsx("main", {
+        ref: mainRef,
         id: "main-content",
         tabIndex: -1,
         dir: "rtl",
@@ -101,10 +174,14 @@ export function AppRouter() {
                   children: currentPageTitle,
                 }),
                 jsx(AppPageContextBar, { currentPage, currentPageTitle }),
-                jsx(React.Suspense, {
-                  fallback: jsx(DashboardSkeleton, { compact: true }),
-                  children: jsx(PageComponent, {}),
-                }),
+                isKnownPage
+                  ? jsx(React.Suspense, {
+                      fallback: jsx(PageLoadingFallback, { title: currentPageTitle }),
+                      children: jsx(PageComponent, {}),
+                    })
+                  : jsx(UnknownPageScreen, {
+                      onBackToDashboard: () => setCurrentPage?.("dashboard"),
+                    }),
               ],
             },
             currentPage

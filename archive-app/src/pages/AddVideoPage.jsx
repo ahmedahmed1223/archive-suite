@@ -142,7 +142,7 @@ function FieldsStep({ fields, metadata, onChange }) {
   React.useEffect(() => { if (active >= groups.length) setActive(0); }, [groups.length, active]);
 
   if (!visibleFields.length) {
-    return jsx("p", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/35 p-6 text-center text-sm text-gray-400", children: "لا توجد حقول مخصصة لهذا النوع." });
+    return jsx("p", { className: "rounded-xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)] p-6 text-center text-sm text-[var(--va-text-2)]", children: "لا توجد حقول مخصصة لهذا النوع." });
   }
   const tabbed = groups.length > 1;
   const visible = tabbed ? (groups[active]?.fields || []) : visibleFields;
@@ -154,7 +154,7 @@ function FieldsStep({ fields, metadata, onChange }) {
         role: "tab",
         "aria-selected": active === index,
         onClick: () => setActive(index),
-        className: `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${active === index ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
+        className: `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${active === index ? "va-accent-bg-soft va-accent-text-on-soft" : "text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]"}`,
         children: [group.name, jsx("span", { className: "rounded-full bg-white/10 px-1.5 text-[10px]", children: `${group.fields.length}` })]
       }, group.name)) }) : null,
       jsx("div", { className: "grid gap-4 md:grid-cols-2", children: visible.map((field) => jsx(FieldRow, { field, value: metadata[fieldKey(field)], onChange }, field.id)) })
@@ -171,7 +171,7 @@ function LocalFilePicker({ value, onFileSelect, inputId }) {
   };
   return jsxs(motion.div, {
     whileHover: { y: -1 },
-    className: `rounded-xl border border-dashed p-3 transition-colors ${dragActive ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-950/35"}`,
+    className: `rounded-xl border border-dashed p-3 transition-colors ${dragActive ? "va-accent-border va-accent-bg-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface)]"}`,
     onDragOver: (event) => {
       event.preventDefault();
       setDragActive(true);
@@ -184,14 +184,14 @@ function LocalFilePicker({ value, onFileSelect, inputId }) {
     },
     children: [
     jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-      jsxs("div", { className: "flex min-w-0 items-center gap-2 text-sm text-gray-300", children: [
+      jsxs("div", { className: "flex min-w-0 items-center gap-2 text-sm text-[var(--va-text-2)]", children: [
         jsx(file ? HardDrive : UploadCloud, { className: "h-4 w-4 shrink-0 va-accent-text" }),
         jsx("span", { className: "truncate", children: file?.name || "لم يتم اختيار ملف" })
       ] }),
       jsx("button", { type: "button", onClick: () => inputRef.current?.click(), className: "btn btn-primary btn-sm", children: "استعراض" })
     ] }),
-    !file && jsx("p", { className: "mt-2 text-xs leading-5 text-gray-500", children: "يمكنك سحب ملف فيديو هنا وسيتم ملء الاسم والمسار تلقائيًا قدر الإمكان." }),
-    file && jsxs("div", { className: "mt-2 space-y-1 text-xs text-gray-600", children: [
+    !file && jsx("p", { className: "mt-2 text-xs leading-5 text-[var(--va-text-muted)]", children: "يمكنك سحب ملف فيديو هنا وسيتم ملء الاسم والمسار تلقائيًا قدر الإمكان." }),
+    file && jsxs("div", { className: "mt-2 space-y-1 text-xs text-[var(--va-text-muted)]", children: [
       file.size > 0 && jsx("p", { children: formatFileSize(file.size) }),
       (file.relativePath || file.path) && jsx("p", { dir: "ltr", className: "truncate text-left", children: file.relativePath || file.path })
     ] }),
@@ -216,7 +216,7 @@ function FieldInput({ field, value, onChange, inputId }) {
     return jsx("textarea", { id: inputId, value: value || "", onChange: (event) => onChange(key, event.target.value), rows: 3, className: `${commonClass} p-3`, placeholder: field.placeholder || field.label });
   }
   if (field.type === "checkbox") {
-    return jsxs("label", { className: "inline-flex min-h-11 items-center gap-2 va-surface-muted rounded-xl border px-3 text-sm text-gray-300", children: [
+    return jsxs("label", { className: "inline-flex min-h-11 items-center gap-2 va-surface-muted rounded-xl border px-3 text-sm text-[var(--va-text-2)]", children: [
       jsx("input", { id: inputId, type: "checkbox", checked: !!value, onChange: (event) => onChange(key, event.target.checked) }),
       "نعم"
     ] });
@@ -256,14 +256,14 @@ function FieldRow({ field, value, onChange }) {
   const inputId = React.useId();
   const isWide = field.type === "textarea" || field.type === "localFile";
   return jsxs("div", {
-    className: `space-y-1 text-sm text-gray-300 ${isWide ? "md:col-span-2" : ""}`,
+    className: `space-y-1 text-sm text-[var(--va-text-2)] ${isWide ? "md:col-span-2" : ""}`,
     children: [
       jsxs("label", { htmlFor: inputId, className: "block", children: [
         field.label,
         field.required && jsx("span", { className: "text-red-300", children: " *" })
       ] }),
       jsx(FieldInput, { field, value, onChange, inputId }),
-      field.description && jsx("span", { className: "text-xs text-gray-400", children: field.description })
+      field.description && jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: field.description })
     ]
   }, field.id);
 }
@@ -280,7 +280,7 @@ function RequiredFieldSummary({ checks = [] }) {
             className: "flex items-center gap-2",
             children: [
               jsx(ClipboardCheck, { className: `h-4 w-4 ${missing.length ? "text-amber-200" : "va-accent-text-on-soft"}` }),
-              jsx("h3", { className: "text-sm font-bold text-white", children: missing.length ? "قبل الحفظ، أكمل المطلوب" : "جاهز للحفظ" })
+              jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: missing.length ? "قبل الحفظ، أكمل المطلوب" : "جاهز للحفظ" })
             ]
           }),
           jsx("span", {
@@ -292,7 +292,7 @@ function RequiredFieldSummary({ checks = [] }) {
       jsx("div", {
         className: "mt-3 grid gap-2 sm:grid-cols-2",
         children: checks.map((check) => jsxs("div", {
-          className: `flex items-start gap-2 rounded-lg border px-3 py-2 text-xs leading-5 ${check.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/30 text-gray-400"}`,
+          className: `flex items-start gap-2 rounded-lg border px-3 py-2 text-xs leading-5 ${check.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface)] text-[var(--va-text-2)]"}`,
           children: [
             check.ok ? jsx(CheckCircle2, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }, "icon-ok") : jsx(Circle, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }, "icon-empty"),
             jsxs("span", {
@@ -581,8 +581,8 @@ export function AddVideoPage() {
       }, "save-indicator")
     ] }, "save-status"),
     jsxs("div", { className: "flex flex-wrap gap-2", children: [
-      jsx("button", { type: "button", onClick: cancelEntry, className: "rounded-xl border border-white/10 px-3 py-2 text-xs text-gray-300 hover:bg-white/5", children: "إلغاء" }, "cancel"),
-      jsx("button", { type: "button", onClick: resetDraft, className: "rounded-xl border border-white/10 px-3 py-2 text-xs text-gray-300 hover:bg-white/5", title: "مسح المسودة المحفوظة محليًا", children: "إعادة تعيين" }, "reset"),
+      jsx("button", { type: "button", onClick: cancelEntry, className: "rounded-xl border border-[var(--va-border-soft)] px-3 py-2 text-xs text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "إلغاء" }, "cancel"),
+      jsx("button", { type: "button", onClick: resetDraft, className: "rounded-xl border border-[var(--va-border-soft)] px-3 py-2 text-xs text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", title: "مسح المسودة المحفوظة محليًا", children: "إعادة تعيين" }, "reset"),
       stepIndex < STEPS.length - 1 && jsxs("button", { type: "button", onClick: tryAdvance, className: "btn btn-primary gap-2", children: ["التالي", jsx(ChevronLeft, { className: "h-4 w-4" }, "icon")] }, "next"),
       stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(false), className: "btn btn-primary", children: "حفظ وفتح التفاصيل" }, "save-open"),
       stepIndex === STEPS.length - 1 && jsx("button", { type: "button", disabled: !canSave || submitSave.isSaving, onClick: () => save(true), className: "btn btn-ghost", children: "حفظ وإضافة آخر" }, "save-another")
@@ -605,7 +605,7 @@ export function AddVideoPage() {
           className: "mt-5 space-y-3",
           children: [
             jsxs("div", {
-              className: "rounded-xl border border-white/10 bg-white/[0.03] p-3 md:hidden",
+              className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3 md:hidden",
               children: [
                 jsxs("div", {
                   className: "flex items-center justify-between gap-3",
@@ -613,14 +613,14 @@ export function AddVideoPage() {
                     jsxs("div", {
                       className: "min-w-0",
                       children: [
-                        jsx("p", { className: "text-[11px] text-gray-500", children: `الخطوة ${stepIndex + 1} من ${STEPS.length}` }),
-                        jsx("h2", { className: "mt-1 truncate text-base font-bold text-white", children: currentStep.label })
+                        jsx("p", { className: "text-[11px] text-[var(--va-text-muted)]", children: `الخطوة ${stepIndex + 1} من ${STEPS.length}` }),
+                        jsx("h2", { className: "mt-1 truncate text-base font-bold text-[var(--va-text)]", children: currentStep.label })
                       ]
                     }),
                     jsx(currentStep.icon, { className: "h-5 w-5 shrink-0 va-accent-text" })
                   ]
                 }),
-                jsx("p", { className: "mt-2 text-xs leading-6 text-gray-500", children: currentStep.detail }),
+                jsx("p", { className: "mt-2 text-xs leading-6 text-[var(--va-text-muted)]", children: currentStep.detail }),
                 jsx("div", {
                   className: "mt-3 grid grid-cols-4 gap-1",
                   "aria-hidden": true,
@@ -650,47 +650,47 @@ export function AddVideoPage() {
           jsxs("div", { className: "min-w-0 space-y-4", children: [
       jsxs("section", { className: "va-card rounded-2xl va-surface-muted border p-5 text-right", children: [
         jsxs("div", { className: "mb-4 flex items-center justify-between gap-3", children: [
-          jsx("h2", { className: "text-lg font-bold text-white", children: currentStep.label }),
+          jsx("h2", { className: "text-lg font-bold text-[var(--va-text)]", children: currentStep.label }),
           jsxs("button", {
             type: "button",
             onClick: toggleSidePanel,
             "aria-pressed": showPanel,
             title: showPanel ? "إخفاء اللوحة الجانبية" : "إظهار اللوحة الجانبية",
-            className: "inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-gray-400 transition-colors hover:bg-white/5 hover:text-white",
+            className: "inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--va-border-soft)] px-2.5 py-1.5 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]",
             children: [jsx(Eye, { className: "h-3.5 w-3.5" }), showPanel ? "إخفاء اللوحة" : "إظهار اللوحة"]
           })
         ] }),
         currentStep.id === "basic" && jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [
           jsx("div", { className: "md:col-span-2 flex flex-wrap gap-2", children: [
-            jsx("button", { type: "button", onClick: () => setShowTemplatePicker(true), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-white/15 px-4 py-2 text-sm text-gray-400 transition-colors hover:border-white/25 hover:text-white", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }, "icon"), "تطبيق قالب"] }),
+            jsx("button", { type: "button", onClick: () => setShowTemplatePicker(true), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-[var(--va-border-strong)] px-4 py-2 text-sm text-[var(--va-text-2)] transition-colors hover:border-emerald-500/25 hover:text-[var(--va-text)]", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }, "icon"), "تطبيق قالب"] }),
             jsx("button", { type: "button", onClick: () => setShowQuickAdd(v => !v), className: "inline-flex items-center gap-2 rounded-xl border border-dashed border-emerald-500/20 px-4 py-2 text-sm text-emerald-400 transition-colors hover:border-emerald-500/40 hover:text-emerald-300", children: [jsx("span", { className: "text-base leading-none", children: "⚡" }, "icon"), "إضافة سريعة"] })
           ] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: titleId, className: "block", children: "العنوان" }), jsx("input", { id: titleId, value: title, onChange: (event) => setTitle(event.target.value), className: "input input-bordered w-full", placeholder: "عنوان الفيديو" })] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: pathId, className: "block", children: "الرابط أو المسار" }), jsx("input", { id: pathId, value: path, onChange: (event) => setPath(event.target.value), dir: "ltr", className: "input input-bordered w-full", placeholder: "https:// أو D:\\..." })] }),
-          jsxs("div", { className: "space-y-2 text-sm text-gray-300 md:col-span-2", children: [
+          jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)] md:col-span-2", children: [jsx("label", { htmlFor: titleId, className: "block", children: "العنوان" }), jsx("input", { id: titleId, value: title, onChange: (event) => setTitle(event.target.value), className: "input input-bordered w-full", placeholder: "عنوان الفيديو" })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [jsx("label", { htmlFor: pathId, className: "block", children: "الرابط أو المسار" }), jsx("input", { id: pathId, value: path, onChange: (event) => setPath(event.target.value), dir: "ltr", className: "input input-bordered w-full", placeholder: "https:// أو D:\\..." })] }),
+          jsxs("div", { className: "space-y-2 text-sm text-[var(--va-text-2)] md:col-span-2", children: [
             jsx("label", { htmlFor: localFileId, className: "block", children: "ملف محلي من الجهاز" }),
             jsxs("div", { className: "flex flex-wrap gap-2", role: "radiogroup", "aria-label": "وضع الرفع", children: [
-              jsxs("label", { className: `inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-1.5 ${uploadMode === "real" ? "border-emerald-500/40 text-white" : "border-white/10 text-gray-400"}`, children: [
+              jsxs("label", { className: `inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-1.5 ${uploadMode === "real" ? "border-emerald-500/40 text-[var(--va-text)]" : "border-[var(--va-border-soft)] text-[var(--va-text-2)]"}`, children: [
                 jsx("input", { type: "radio", name: "uploadMode", checked: uploadMode === "real", onChange: () => setUploadMode("real"), className: "accent-emerald-500" }), "رفع فعلي للملف"
               ] }),
-              jsxs("label", { className: `inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-1.5 ${uploadMode === "metadata" ? "border-emerald-500/40 text-white" : "border-white/10 text-gray-400"}`, children: [
+              jsxs("label", { className: `inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-1.5 ${uploadMode === "metadata" ? "border-emerald-500/40 text-[var(--va-text)]" : "border-[var(--va-border-soft)] text-[var(--va-text-2)]"}`, children: [
                 jsx("input", { type: "radio", name: "uploadMode", checked: uploadMode === "metadata", onChange: () => setUploadMode("metadata"), className: "accent-emerald-500" }), "استخراج البيانات فقط"
               ] })
             ] }),
             jsx(LocalFilePicker, { value: metadata.localFile, onFileSelect: applyPrimaryLocalFile, inputId: localFileId }),
-            jsxs("label", { className: "inline-flex cursor-pointer items-center gap-2 text-gray-300", children: [
+            jsxs("label", { className: "inline-flex cursor-pointer items-center gap-2 text-[var(--va-text-2)]", children: [
               jsx("input", { type: "checkbox", checked: archiveOnSave, onChange: (event) => setArchiveOnSave(event.target.checked), className: "accent-emerald-500" }),
               "أرشفة المادة المرفوعة مباشرة"
             ] })
           ] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: thumbnailId, className: "block", children: "الصورة المصغرة" }), jsx("input", { id: thumbnailId, value: thumbnail, onChange: (event) => setThumbnail(event.target.value), dir: "ltr", className: "input input-bordered w-full", placeholder: "رابط صورة اختياري" })] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: notesId, className: "block", children: "ملاحظات" }), jsx("textarea", { id: notesId, value: notes, onChange: (event) => setNotes(event.target.value), className: "textarea textarea-bordered w-full", placeholder: "ملخص أو ملاحظات أرشيفية" })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [jsx("label", { htmlFor: thumbnailId, className: "block", children: "الصورة المصغرة" }), jsx("input", { id: thumbnailId, value: thumbnail, onChange: (event) => setThumbnail(event.target.value), dir: "ltr", className: "input input-bordered w-full", placeholder: "رابط صورة اختياري" })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)] md:col-span-2", children: [jsx("label", { htmlFor: notesId, className: "block", children: "ملاحظات" }), jsx("textarea", { id: notesId, value: notes, onChange: (event) => setNotes(event.target.value), className: "textarea textarea-bordered w-full", placeholder: "ملخص أو ملاحظات أرشيفية" })] }),
           ai.available && jsx("div", { className: "md:col-span-2", children: jsx(AiAssistBar, { available: ai.available, busy: ai.busy, onSummarize: aiSummarize, onSuggestTags: aiSuggestTags, onProofread: aiProofread }) })
         ] }, "basic-step"),
         currentStep.id === "classify" && jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: typeSelectId, className: "block", children: "نوع المحتوى" }), jsxs("select", { id: typeSelectId, value: typeId, onChange: (event) => setTypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: contentTypes.filter((type) => type.status !== "archived").map((type) => jsx("option", { value: type.id, children: type.name }, type.id)) })] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [jsx("label", { htmlFor: subtypeSelectId, className: "block", children: "الفرع" }), jsxs("select", { id: subtypeSelectId, value: subtypeId, onChange: (event) => setSubtypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: [jsx("option", { value: "", children: "بدون فرع" }, "empty"), ...subtypes.map((subtype) => jsx("option", { value: subtype.id, children: subtype.name }, subtype.id))] })] }),
-          jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [jsx("label", { htmlFor: tagsId, className: "block", children: "الوسوم" }), jsx(TagAutocomplete, { id: tagsId, value: tags, onChange: setTags, placeholder: "وسوم مفصولة بفاصلة، ويمكن استخدام مسارات الوسوم الهرمية", allowed: ["tags", "vocabulary"] })] })
+          jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [jsx("label", { htmlFor: typeSelectId, className: "block", children: "نوع المحتوى" }), jsxs("select", { id: typeSelectId, value: typeId, onChange: (event) => setTypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-[var(--va-text)] outline-none", children: contentTypes.filter((type) => type.status !== "archived").map((type) => jsx("option", { value: type.id, children: type.name }, type.id)) })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [jsx("label", { htmlFor: subtypeSelectId, className: "block", children: "الفرع" }), jsxs("select", { id: subtypeSelectId, value: subtypeId, onChange: (event) => setSubtypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-[var(--va-text)] outline-none", children: [jsx("option", { value: "", children: "بدون فرع" }, "empty"), ...subtypes.map((subtype) => jsx("option", { value: subtype.id, children: subtype.name }, subtype.id))] })] }),
+          jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)] md:col-span-2", children: [jsx("label", { htmlFor: tagsId, className: "block", children: "الوسوم" }), jsx(TagAutocomplete, { id: tagsId, value: tags, onChange: setTags, placeholder: "وسوم مفصولة بفاصلة، ويمكن استخدام مسارات الوسوم الهرمية", allowed: ["tags", "vocabulary"] })] })
         ] }, "classify-step"),
         currentStep.id === "fields" && jsx(FieldsStep, { fields, metadata, onChange: updateMetadata }, "fields-step"),
         currentStep.id === "review" && jsxs("div", {
@@ -705,8 +705,8 @@ export function AddVideoPage() {
               ["الملاحظات", notes || "—"],
               ["حقول مخصصة", Object.keys(metadata).filter((k) => k !== "localFile").length ? `${Object.keys(metadata).filter((k) => k !== "localFile").length} حقل` : "لا توجد"]
             ].map(([label, value]) => jsxs("div", { className: "va-surface-muted rounded-xl border p-3", children: [
-              jsx("p", { className: "text-xs text-gray-500", children: label }, "label"),
-              jsx("p", { className: "mt-1 truncate text-sm font-semibold text-white", title: value, children: value }, "value")
+              jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: label }, "label"),
+              jsx("p", { className: "mt-1 truncate text-sm font-semibold text-[var(--va-text)]", title: value, children: value }, "value")
             ] }, label)) })
           ]
         }, "review-step")
@@ -722,12 +722,12 @@ export function AddVideoPage() {
                 jsxs("div", { className: "flex items-center justify-between gap-3", children: [
                   jsxs("div", { className: "flex items-center gap-2", children: [
                     jsx(ClipboardCheck, { className: "h-5 w-5 va-accent-text" }),
-                    jsx("h2", { className: "text-sm font-bold text-white", children: "جاهزية الحفظ" })
+                    jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "جاهزية الحفظ" })
                   ] }),
                   jsx("span", { dir: "ltr", className: "font-mono text-sm va-accent-text-on-soft", children: `${readyPercent}%` })
                 ] }),
                 jsx("div", { className: "mt-3 h-2 overflow-hidden rounded-full bg-white/10", dir: "rtl", children: jsx(motion.div, { className: "h-full rounded-full va-accent-bg", initial: false, animate: { width: `${readyPercent}%` }, transition: { duration: 0.28 } }) }),
-                jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: readyChecks.map((check) => jsxs("span", { className: `inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${check.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-500"}`, children: [
+                jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: readyChecks.map((check) => jsxs("span", { className: `inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${check.ok ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface)] text-[var(--va-text-muted)]"}`, children: [
                   check.ok ? jsx(CheckCircle2, { className: "h-3.5 w-3.5" }, "icon-ok") : jsx(Circle, { className: "h-3.5 w-3.5" }, "icon-empty"),
                   check.label
                 ] }, check.id)) })
@@ -735,26 +735,26 @@ export function AddVideoPage() {
               jsxs("div", { className: "va-card rounded-2xl va-surface-muted border p-4 text-right", children: [
                 jsxs("div", { className: "flex items-center gap-2", children: [
                   jsx(Sparkles, { className: "h-5 w-5 text-amber-300" }),
-                  jsx("h2", { className: "text-sm font-bold text-white", children: "ملخص مباشر" })
+                  jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "ملخص مباشر" })
                 ] }),
-                jsx("div", { className: "mt-3 grid gap-2 text-sm text-gray-400", children: [
+                jsx("div", { className: "mt-3 grid gap-2 text-sm text-[var(--va-text-2)]", children: [
                   ["العنوان", title || "بانتظار الإدخال"],
                   ["التصنيف", selectedType?.name || "غير محدد"],
                   ["الوسوم", parsedTags.length ? `${parsedTags.length} وسم` : "لا توجد"],
                   ["المصدر", path || metadata.localFile?.name || "غير محدد"]
                 ].map(([label, value]) => jsxs("div", { className: "flex items-center justify-between gap-3 rounded-xl va-surface-subtle border px-3 py-2", children: [
-                  jsx("span", { className: "text-gray-500", children: label }, "label"),
-                  jsx("span", { className: "min-w-0 truncate text-gray-200", children: value }, "value")
+                  jsx("span", { className: "text-[var(--va-text-muted)]", children: label }, "label"),
+                  jsx("span", { className: "min-w-0 truncate text-[var(--va-text)]", children: value }, "value")
                 ] }, label)) })
               ] }, "summary-card"),
               jsxs("div", { className: "va-card rounded-2xl va-surface-muted border p-4 text-right", children: [
                 jsxs("div", { className: "flex items-center gap-2", children: [
                   jsx(Eye, { className: "h-5 w-5 text-cyan-300" }),
-                  jsx("h2", { className: "text-sm font-bold text-white", children: "الخطوة الحالية" })
+                  jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "الخطوة الحالية" })
                 ] }),
-                jsx("p", { className: "mt-3 text-lg font-bold text-white", children: currentStep.label }),
-                jsx("p", { className: "mt-1 text-sm leading-7 text-gray-500", children: currentStep.detail }),
-                jsx("p", { className: "mt-3 rounded-xl va-surface-subtle border p-3 text-xs leading-6 text-gray-500", children: stepIndex === STEPS.length - 1 ? "راجع الملخص ثم احفظ، أو استخدم حفظ وإضافة آخر للعمل المتكرر." : "يمكنك الانتقال بين الخطوات بحرية؛ لن يتم الحفظ إلا من خطوة المراجعة." })
+                jsx("p", { className: "mt-3 text-lg font-bold text-[var(--va-text)]", children: currentStep.label }),
+                jsx("p", { className: "mt-1 text-sm leading-7 text-[var(--va-text-muted)]", children: currentStep.detail }),
+                jsx("p", { className: "mt-3 rounded-xl va-surface-subtle border p-3 text-xs leading-6 text-[var(--va-text-muted)]", children: stepIndex === STEPS.length - 1 ? "راجع الملخص ثم احفظ، أو استخدم حفظ وإضافة آخر للعمل المتكرر." : "يمكنك الانتقال بين الخطوات بحرية؛ لن يتم الحفظ إلا من خطوة المراجعة." })
               ] }, "current-step-card")
             ]
           }, "side-panel")

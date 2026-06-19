@@ -138,4 +138,48 @@ describe("buildGraphModel", () => {
     expect(elements.filter((el) => el.group === "edges")).toHaveLength(1);
     expect(elements.at(-1).data).toMatchObject({ source: "a", target: "b", weight: 1, edgeKind: "shared" });
   });
+
+  test("expanded node kinds add entity nodes without changing default behavior", () => {
+    const defaultModel = buildGraphModel({
+      videoItems: [item("a", { tags: ["x"] }), item("b", { tags: ["x"] })],
+      collections: [{ id: "c1", name: "مجموعة", itemIds: ["a", "b"] }]
+    });
+    const expandedModel = buildGraphModel(
+      {
+        videoItems: [
+          item("a", { tags: ["x"], documentType: "pdf", type: "type_reports" }),
+          item("b", { tags: ["x"], documentType: "pdf", type: "type_reports" })
+        ],
+        collections: [{ id: "c1", name: "مجموعة", itemIds: ["a", "b"] }],
+        contentTypes: [{ id: "type_reports", name: "تقارير", color: "#3b82f6" }]
+      },
+      { nodeKinds: ["item", "tag", "collection", "documentType", "contentType"] }
+    );
+
+    expect(defaultModel.nodes).toHaveLength(2);
+    expect(expandedModel.nodes.some((node) => node.kind === "tag" && node.label === "x")).toBe(true);
+    expect(expandedModel.nodes.some((node) => node.kind === "collection" && node.label === "مجموعة")).toBe(true);
+    expect(expandedModel.nodes.some((node) => node.kind === "documentType" && node.label === "pdf")).toBe(true);
+    expect(expandedModel.nodes.some((node) => node.kind === "contentType" && node.label === "تقارير")).toBe(true);
+    expect(expandedModel.edges.some((edge) => edge.edgeKind === "tag")).toBe(true);
+  });
+
+  test("vocabulary and folder node kinds connect matching archive items", () => {
+    const model = buildGraphModel(
+      {
+        videoItems: [
+          item("a", { title: "لقاء في القدس", tags: ["سياسة"] }),
+          item("b", { title: "مادة أخرى" })
+        ],
+        vocabulary: [{ id: "v1", term: "القدس", aliases: ["بيت المقدس"], category: "city" }],
+        folders: [{ id: "f1", name: "ملف القدس", entityRefs: [{ type: "archive-item", id: "a" }] }]
+      },
+      { nodeKinds: ["item", "vocabulary", "folder"] }
+    );
+
+    expect(model.nodes.some((node) => node.kind === "vocabulary" && node.label === "القدس")).toBe(true);
+    expect(model.nodes.some((node) => node.kind === "folder" && node.label === "ملف القدس")).toBe(true);
+    expect(model.edges.some((edge) => edge.edgeKind === "vocabulary" && edge.source === "a")).toBe(true);
+    expect(model.edges.some((edge) => edge.edgeKind === "folder" && edge.source === "a")).toBe(true);
+  });
 });

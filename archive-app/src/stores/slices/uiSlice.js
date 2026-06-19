@@ -1,6 +1,7 @@
 import { generateId, nowIso } from "../storeCore.js";
 import { normalizeNotification, shouldShowNotificationToast } from "../../features/notifications/viewModel.js";
 import { normalizeNavIds } from "../../features/navigation/navigationContext.js";
+import { writeAppRoute } from "../../services/router/index.js";
 
 export const uiInitialState = {
   currentPage: "dashboard",
@@ -62,6 +63,16 @@ function pruneNotificationHistory(history = [], retentionDays = 30) {
     const timestamp = new Date(item.createdAt || 0).getTime();
     return Number.isNaN(timestamp) || timestamp >= floor;
   });
+}
+
+function syncRouteFromState(get, page, options = {}) {
+  if (typeof window === "undefined" || window.__videoArchiveApplyingHistory) return;
+  const state = get();
+  const routeOptions = {
+    ...options,
+    selectedItemId: options.selectedItemId || options.itemId || (page === "detail" ? state.selectedItemId : null)
+  };
+  writeAppRoute(page, routeOptions, state.settings || {}, !!options.replace);
 }
 
 export function createUiActions({ set, get }) {
@@ -195,17 +206,25 @@ export function createUiActions({ set, get }) {
     toggleNotificationCenter: () => set((state) => ({ notificationCenterOpen: !state.notificationCenterOpen })),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen: !!sidebarOpen }),
     toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-    setCurrentPage: (page) => set({ currentPage: page }),
-    goToPage: (page) => set({ currentPage: page, selectedItemId: null }),
+    setCurrentPage: (page, options = {}) => {
+      set({ currentPage: page });
+      syncRouteFromState(get, page, options);
+    },
+    goToPage: (page, options = {}) => {
+      set({ currentPage: page, selectedItemId: null });
+      syncRouteFromState(get, page, { ...options, selectedItemId: null });
+    },
     setSelectedItemId: (id) => set({ selectedItemId: id }),
     setNavItemIds: (ids) => set({ navItemIds: normalizeNavIds(ids) }),
     openDataTab: async (tab = "export") => {
       await get().updateSettings?.({ ui: { lastDataCenterTab: tab } });
       set({ currentPage: "backup", selectedItemId: null });
+      syncRouteFromState(get, "backup", { selectedItemId: null });
     },
     openHelpSection: async (section = "getting-started") => {
       await get().updateSettings?.({ ui: { lastHelpSection: section } });
       set({ currentPage: "help", selectedItemId: null });
+      syncRouteFromState(get, "help", { section, selectedItemId: null });
     },
     setBackgroundOperation: (backgroundOperation) => set({ backgroundOperation }),
     cancelBackgroundOperation: () => set({ backgroundOperation: null }),

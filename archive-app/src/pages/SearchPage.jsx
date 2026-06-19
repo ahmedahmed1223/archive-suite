@@ -61,9 +61,9 @@ function SearchMetric({ label, value, hint }) {
   return jsxs("div", {
     className: "va-metric-card rounded-xl va-surface-muted border p-3 text-right",
     children: [
-      jsx("p", { className: "text-xs text-gray-500", children: label }),
-      jsx("p", { className: "mt-1 text-lg font-bold text-white", children: value }),
-      hint && jsx("p", { className: "mt-1 text-xs text-gray-500", children: hint })
+      jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: label }),
+      jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)] font-[family-name:var(--va-font-mono)]", children: value }),
+      hint && jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: hint })
     ]
   });
 }
@@ -88,18 +88,18 @@ function SearchResultCard({ item, typeLabel, subtypeLabel, index, onOpen, onOpen
             jsxs("div", {
               className: "flex flex-wrap items-center gap-2",
               children: [
-                jsx("h3", { className: "line-clamp-2 text-base font-bold leading-relaxed text-white", children: item.title || "بدون عنوان" }),
+                jsx("h3", { className: "line-clamp-2 text-base font-bold leading-relaxed text-[var(--va-text)]", children: item.title || "بدون عنوان" }),
                 item.isFavorite && jsx("span", { className: "rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200", children: "مفضلة" })
               ]
             }),
-            jsx("p", { className: "mt-1 text-sm text-gray-500", children: [typeLabel, subtypeLabel].filter(Boolean).join(" / ") || "غير مصنف" }),
-            item.notes && jsx("p", { className: "mt-2 line-clamp-2 text-sm leading-relaxed text-gray-400", children: item.notes }),
+            jsx("p", { className: "mt-1 text-sm text-[var(--va-text-muted)]", children: [typeLabel, subtypeLabel].filter(Boolean).join(" / ") || "غير مصنف" }),
+            item.notes && jsx("p", { className: "mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--va-text-2)]", children: item.notes }),
             item.transcriptSnippets?.length > 0 && jsxs("div", { className: "mt-3 rounded-xl border va-accent-border va-accent-bg-soft p-2.5", children: [
               jsx("p", { className: "mb-2 text-xs font-bold va-accent-text-on-soft", children: "مقتطفات من التفريغ" }),
               jsx("div", { className: "space-y-2", children: item.transcriptSnippets.map((snippet) => jsxs("button", {
                 type: "button",
                 onClick: () => onOpenSnippet?.(snippet),
-                className: "block w-full rounded-lg border border-white/10 bg-gray-950/25 p-2 text-right text-xs leading-6 text-gray-300 transition-colors hover:border-emerald-500/25 hover:bg-emerald-500/10",
+                className: "block w-full rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-2 text-right text-xs leading-6 text-[var(--va-text-2)] transition-colors hover:border-emerald-500/25 hover:bg-emerald-500/10",
                 children: [
                   snippet.timecode && jsxs("span", { className: "mb-1 inline-flex items-center gap-1 rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 font-mono text-[11px] va-accent-text-on-soft", dir: "ltr", children: [jsx(Clock3, { className: "h-3 w-3" }), snippet.timecode] }),
                   jsx("span", { className: "block", children: snippet.text })
@@ -109,11 +109,11 @@ function SearchResultCard({ item, typeLabel, subtypeLabel, index, onOpen, onOpen
             item.tags?.length > 0 && jsx("div", {
               className: "mt-3 flex flex-wrap gap-1.5",
               children: item.tags.slice(0, 8).map((tag) => jsx("span", {
-                className: "rounded-full border border-white/5 bg-gray-950/45 px-2 py-0.5 text-xs text-gray-400",
+                className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-2)]",
                 children: tag
               }, tag))
             }),
-            jsx("p", { className: "mt-3 text-xs text-gray-600", children: item.updatedAt ? `آخر تحديث: ${formatDateTime(item.updatedAt)}` : "لم يسجل تحديث" })
+            jsx("p", { className: "mt-3 text-xs text-[var(--va-text-muted)]", children: item.updatedAt ? `آخر تحديث: ${formatDateTime(item.updatedAt)}` : "لم يسجل تحديث" })
           ]
         }),
         jsxs("button", {
@@ -136,15 +136,15 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
         type: "button",
         onClick: () => onPageChange(currentPage - 1),
         disabled: currentPage <= 1,
-        className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40",
+        className: "inline-flex items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] disabled:cursor-not-allowed disabled:opacity-40",
         children: [jsx(ChevronRight, { className: "h-4 w-4" }), "السابق"]
       }),
-      jsx("p", { className: "text-sm text-gray-500", children: `الصفحة ${formatNumber(currentPage)} من ${formatNumber(totalPages)}` }),
+      jsx("p", { className: "text-sm text-[var(--va-text-muted)]", children: `الصفحة ${formatNumber(currentPage)} من ${formatNumber(totalPages)}` }),
       jsxs("button", {
         type: "button",
         onClick: () => onPageChange(currentPage + 1),
         disabled: currentPage >= totalPages,
-        className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40",
+        className: "inline-flex items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] disabled:cursor-not-allowed disabled:opacity-40",
         children: ["التالي", jsx(ChevronLeft, { className: "h-4 w-4" })]
       })
     ]
@@ -443,7 +443,7 @@ export function SearchPage() {
               jsxs("label", {
                 className: "relative block",
                 children: [
-                  jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+                  jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
                   jsx("input", {
                     ref: searchInputRef,
                     value: query,
@@ -470,7 +470,7 @@ export function SearchPage() {
                   setType(event.target.value);
                   setSubtype("all");
                 },
-                className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-white",
+                className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-[var(--va-text)]",
                 children: [
                   jsx("option", { value: "all", children: "كل الأنواع" }),
                   ...contentTypes.map((item) => jsx("option", { value: item.id, children: item.name || item.id }, item.id))
@@ -481,7 +481,7 @@ export function SearchPage() {
                 value: subtype,
                 onChange: (event) => setSubtype(event.target.value),
                 disabled: !subtypes.length,
-                className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-white disabled:opacity-50",
+                className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-[var(--va-text)] disabled:opacity-50",
                 children: [
                   jsx("option", { value: "all", children: "كل الفروع" }),
                   ...subtypes.map((item) => jsx("option", { value: item.id, children: item.name || item.id }, item.id))
@@ -491,7 +491,7 @@ export function SearchPage() {
                 "aria-label": "عدد نتائج البحث في الصفحة",
                 value: pageSize,
                 onChange: (event) => setPageSize(Number(event.target.value)),
-                className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-white",
+                className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-[var(--va-text)]",
                 children: PAGE_SIZE_OPTIONS.map((value) => jsx("option", { value, children: `${formatNumber(value)} نتيجة` }, value))
               })
             ]
@@ -502,39 +502,39 @@ export function SearchPage() {
               jsxs("label", {
                 className: "block va-surface-muted rounded-xl border p-3",
                 children: [
-                  jsx("span", { className: "text-xs text-gray-500", children: "من تاريخ" }),
+                  jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "من تاريخ" }),
                   jsx("input", { type: "date", value: dateFrom, onChange: (event) => setDateFrom(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
                 ]
               }),
               jsxs("label", {
                 className: "block va-surface-muted rounded-xl border p-3",
                 children: [
-                  jsx("span", { className: "text-xs text-gray-500", children: "إلى تاريخ" }),
+                  jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "إلى تاريخ" }),
                   jsx("input", { type: "date", value: dateTo, onChange: (event) => setDateTo(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
                 ]
               }),
               jsx("button", {
                 type: "button",
                 onClick: () => setFavoritesOnly((value) => !value),
-                className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${favoritesOnly ? "border-amber-500/30 bg-amber-500/10 text-amber-100" : "border-white/10 text-gray-300 hover:bg-white/5"}`,
+                className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${favoritesOnly ? "border-amber-500/30 bg-amber-500/10 text-amber-100" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
                 children: "المفضلة فقط"
               }),
               jsx("button", {
                 type: "button",
                 onClick: () => setMissingFieldsOnly((value) => !value),
-                className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${missingFieldsOnly ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 text-gray-300 hover:bg-white/5"}`,
+                className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${missingFieldsOnly ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
                 children: "حقول ناقصة"
               }),
               activeFilterCount > 0 && jsxs("button", {
                 type: "button",
                 onClick: resetSearch,
-                className: "inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-gray-300 hover:bg-white/5",
+                className: "inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]",
                 children: [jsx(RefreshCw, { className: "h-4 w-4" }), "مسح"]
               })
             ]
           }),
           jsxs("div", {
-            className: "mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3",
+            className: "mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--va-border-soft)] pt-3",
             children: [
               jsx(SegmentedControl, {
                 label: "عرض النتائج",
@@ -546,14 +546,14 @@ export function SearchPage() {
                 onChange: setResultMode
               }),
               jsxs("label", {
-                className: "inline-flex min-h-9 items-center gap-2 va-surface-muted rounded-xl border px-2.5 py-1 text-xs text-gray-400",
+                className: "inline-flex min-h-9 items-center gap-2 va-surface-muted rounded-xl border px-2.5 py-1 text-xs text-[var(--va-text-2)]",
                 children: [
-                  jsx("span", { className: "text-gray-500", children: "الكثافة" }),
+                  jsx("span", { className: "text-[var(--va-text-muted)]", children: "الكثافة" }),
                   jsx("select", {
                     value: itemSize,
                     onChange: (event) => setItemSize(event.target.value),
                     "aria-label": "كثافة نتائج البحث",
-                    className: "min-h-7 rounded-lg border-0 bg-transparent px-1 text-xs font-semibold text-white outline-none",
+                    className: "min-h-7 rounded-lg border-0 bg-transparent px-1 text-xs font-semibold text-[var(--va-text)] outline-none",
                     children: ARCHIVE_ITEM_SIZE_OPTIONS.map((option) => jsx("option", { value: option.value, children: ARCHIVE_ITEM_SIZE_LABELS[option.value] || option.label }, option.value))
                   })
                 ]
@@ -578,7 +578,7 @@ export function SearchPage() {
               : "اكتب جزءاً من العنوان أو الوسم أو الملاحظة لتظهر النتائج هنا مباشرة.",
             actionLabel: activeFilterCount > 0 ? "مسح البحث" : undefined,
             onAction: activeFilterCount > 0 ? resetSearch : undefined,
-            className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-950/35"
+            className: "va-card rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)]"
           }),
           jsx(TagCloud, { videoItems, onSelect: (tag) => setQuery(tag), activeTag: query }),
           recentSearches.length > 0 && jsxs("div", {
@@ -588,8 +588,8 @@ export function SearchPage() {
               jsxs("div", {
                 className: "mb-3 flex items-center justify-between gap-2",
                 children: [
-                  jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(Tags, { className: "h-4 w-4 va-accent-text" }), "عمليات البحث الأخيرة"] }),
-                  jsx("button", { type: "button", onClick: clearRecentSearches, className: "text-xs text-gray-600 hover:text-gray-400 transition-colors", children: "مسح الكل" })
+                  jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-[var(--va-text-2)]", children: [jsx(Tags, { className: "h-4 w-4 va-accent-text" }), "عمليات البحث الأخيرة"] }),
+                  jsx("button", { type: "button", onClick: clearRecentSearches, className: "text-xs text-[var(--va-text-muted)] hover:text-[var(--va-text-2)] transition-colors", children: "مسح الكل" })
                 ]
               }),
               jsx("div", {
@@ -597,7 +597,7 @@ export function SearchPage() {
                 children: recentSearches.map((term) => jsxs("button", {
                   type: "button",
                   onClick: () => setQuery(term),
-                  className: "inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-gray-900/60 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-200",
+                  className: "inline-flex items-center gap-1.5 rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1.5 text-xs text-[var(--va-text-2)] transition-colors hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-200",
                   children: [jsx(Search, { className: "h-3 w-3 opacity-60" }), term]
                 }, term))
               })
@@ -610,8 +610,8 @@ export function SearchPage() {
           jsxs("div", {
             className: "va-control-surface flex flex-wrap items-center justify-between gap-3 va-surface-muted rounded-2xl border p-3 text-sm",
             children: [
-              jsx("p", { className: "font-semibold text-white", children: `عرض ${formatNumber(visibleResults.length)} من ${formatNumber(results.length)} نتيجة` }),
-              jsx("p", { className: "text-xs text-gray-500", children: query ? `بحث عن: ${query}` : "كل النتائج حسب الفلاتر" })
+              jsx("p", { className: "font-semibold text-[var(--va-text)]", children: `عرض ${formatNumber(visibleResults.length)} من ${formatNumber(results.length)} نتيجة` }),
+              jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: query ? `بحث عن: ${query}` : "كل النتائج حسب الفلاتر" })
             ]
           }),
           jsx("div", {

@@ -90,20 +90,20 @@ function CollectionForm({ collection, onCancel, onSave }) {
     children: jsxs("div", {
       className: "grid gap-3 md:grid-cols-[5rem_minmax(0,1fr)]",
       children: [
-        jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
+        jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("label", { htmlFor: iconId, className: "block", children: "الرمز" }),
           jsx("input", { id: iconId, value: icon, onChange: (event) => setIcon(event.target.value.slice(0, 4)), className: "input input-bordered w-full text-center text-xl" })
         ] }),
-        jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
+        jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("label", { htmlFor: nameId, className: "block", children: "اسم المجموعة" }),
           jsx("input", { id: nameId, ref: nameRef, "data-autofocus": true, value: name, onChange: (event) => setName(event.target.value), className: "input input-bordered w-full", placeholder: "مثال: مقابلات مهمة" })
         ] }),
-        jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [
+        jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)] md:col-span-2", children: [
           jsx("label", { htmlFor: descriptionId, className: "block", children: "الوصف" }),
           jsx("textarea", { id: descriptionId, value: description, onChange: (event) => setDescription(event.target.value), className: "textarea textarea-bordered w-full", placeholder: "ملاحظة قصيرة عن استخدام المجموعة" })
         ] }),
         jsxs("div", { className: "space-y-1 md:col-span-2", children: [
-          jsx("span", { id: colorGroupId, className: "text-sm text-gray-300", children: "اللون" }),
+          jsx("span", { id: colorGroupId, className: "text-sm text-[var(--va-text-2)]", children: "اللون" }),
           jsx(ColorSwatchPicker, { value: color, onChange: setColor, presets: COLLECTION_COLORS, labelId: colorGroupId })
         ] })
       ]
@@ -144,7 +144,7 @@ function CollectionCard({ collection, itemCount, active, index, onOpen, onEdit, 
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.18, delay: Math.min(index, 10) * 0.025 },
     onClick: onOpen,
-    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${isDropOver ? "ring-2 ring-inset ring-[var(--va-accent,#7c3aed)] bg-[var(--va-accent,#7c3aed)]/10" : active ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
+    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${isDropOver ? "ring-2 ring-inset ring-[var(--va-accent,#7c3aed)] bg-[var(--va-accent,#7c3aed)]/10" : active ? "va-accent-border va-accent-bg-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface)] hover:border-[var(--va-border-strong)]"}`,
     style: { boxShadow: `inset -3px 0 0 0 ${accentColor}${active ? "88" : "44"}` },
     dir: "rtl",
     children: [
@@ -157,10 +157,10 @@ function CollectionCard({ collection, itemCount, active, index, onOpen, onEdit, 
           }),
           jsxs("div", { className: "min-w-0", children: [
             jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-              jsx("h3", { className: "truncate text-base font-bold text-white", children: collection.name || "مجموعة بدون اسم" }),
+              jsx("h3", { className: "truncate text-base font-bold text-[var(--va-text)]", children: collection.name || "مجموعة بدون اسم" }),
               isSmart && jsxs("span", { className: "inline-flex items-center gap-1 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-200", children: [jsx(Sparkles, { className: "h-3 w-3" }), "ذكية"] })
             ] }),
-            collection.description && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-gray-500", children: collection.description }),
+            collection.description && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-[var(--va-text-muted)]", children: collection.description }),
             jsxs("span", {
               className: "mt-2.5 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
               style: { borderColor: `${accentColor}30`, backgroundColor: `${accentColor}12`, color: accentColor },
@@ -169,11 +169,11 @@ function CollectionCard({ collection, itemCount, active, index, onOpen, onEdit, 
           ] })
         ] }),
         jsxs("div", { className: "flex shrink-0 gap-1", onClick: (event) => event.stopPropagation(), children: [
-          jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": `تعديل ${collection.name}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
-          jsx("button", { type: "button", onClick: onDelete, className: "rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-300", "aria-label": `حذف ${collection.name}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
+          jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", "aria-label": `تعديل ${collection.name}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
+          jsx("button", { type: "button", onClick: onDelete, className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-red-500/10 hover:text-red-300", "aria-label": `حذف ${collection.name}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
         ] })
       ] }),
-      collection.updatedAt && jsx("p", { className: "mt-3 text-xs text-gray-700", children: `آخر تحديث: ${formatDateTime(collection.updatedAt)}` })
+      collection.updatedAt && jsx("p", { className: "mt-3 text-xs text-[var(--va-text-muted)]", children: `آخر تحديث: ${formatDateTime(collection.updatedAt)}` })
     ]
   }, collection.id);
 }
@@ -204,11 +204,11 @@ function CollectionAddPicker({ availableItems, typeLabel, onAddItems }) {
     className: "va-surface-muted space-y-2 rounded-xl border p-3",
     children: [
       jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-        jsx("p", { className: "text-sm font-semibold text-gray-300", children: "إضافة عناصر" }),
-        jsx("span", { className: "text-xs text-gray-500", children: `${formatNumber(filteredAvailable.length)} متاح` })
+        jsx("p", { className: "text-sm font-semibold text-[var(--va-text-2)]", children: "إضافة عناصر" }),
+        jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: `${formatNumber(filteredAvailable.length)} متاح` })
       ] }),
       jsxs("div", { className: "relative", children: [
-        jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+        jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
         jsx("input", { value: addQuery, onChange: (event) => setAddQuery(event.target.value), placeholder: "ابحث عن عنصر لإضافته...", "aria-label": "بحث عن عنصر لإضافته", className: "input input-bordered w-full" })
       ] }),
       jsx("div", {
@@ -224,17 +224,17 @@ function CollectionAddPicker({ availableItems, typeLabel, onAddItems }) {
             role: "option",
             "aria-selected": checked,
             onClick: () => toggle(item.id),
-            className: `flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-right text-sm transition-colors ${checked ? "va-accent-border va-accent-bg-soft text-white" : "border-white/10 text-gray-300 hover:border-white/25 hover:bg-white/5"}`,
+            className: `flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-right text-sm transition-colors ${checked ? "va-accent-border va-accent-bg-soft text-[var(--va-text)]" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:border-[var(--va-border-strong)] hover:bg-[var(--va-surface-2)]"}`,
             children: [
-              jsx("span", { className: `flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? "va-accent-border va-accent-bg text-white" : "border-white/25"}`, children: checked ? jsx(Check, { className: "h-3 w-3" }) : null }),
+              jsx("span", { className: `flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? "va-accent-border va-accent-bg text-[var(--va-text-inverse)]" : "border-[var(--va-border-strong)]"}`, children: checked ? jsx(Check, { className: "h-3 w-3" }) : null }),
               jsx("span", { className: "min-w-0 flex-1 truncate", dir: "auto", children: item.title || item.id }),
-              label ? jsx("span", { className: "shrink-0 text-[10px] text-gray-500", children: label }) : null
+              label ? jsx("span", { className: "shrink-0 text-[10px] text-[var(--va-text-muted)]", children: label }) : null
             ]
           }, item.id);
-        }) : jsx("p", { className: "py-4 text-center text-xs text-gray-600", children: "لا عناصر مطابقة" })
+        }) : jsx("p", { className: "py-4 text-center text-xs text-[var(--va-text-muted)]", children: "لا عناصر مطابقة" })
       }),
       jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-        jsx("button", { type: "button", onClick: toggleSelectAll, disabled: filteredIds.length === 0, className: "text-xs text-gray-400 hover:text-white disabled:opacity-40", children: allFilteredSelected ? "إلغاء التحديد" : "تحديد الكل" }),
+        jsx("button", { type: "button", onClick: toggleSelectAll, disabled: filteredIds.length === 0, className: "text-xs text-[var(--va-text-2)] hover:text-[var(--va-text)] disabled:opacity-40", children: allFilteredSelected ? "إلغاء التحديد" : "تحديد الكل" }),
         jsxs("button", { type: "button", disabled: selectedIds.length === 0, onClick: handleAdd, className: "btn btn-primary btn-sm gap-1.5", children: [jsx(Plus, { className: "h-3.5 w-3.5" }), `إضافة ${formatNumber(selectedIds.length)}`] })
       ] })
     ]
@@ -244,16 +244,16 @@ function CollectionAddPicker({ availableItems, typeLabel, onAddItems }) {
 function CollectionItemRow({ item, typeLabel, canManageItems, onOpen, onRemove }) {
   const label = typeLabel?.(item);
   return jsxs("div", {
-    className: "group flex items-center gap-2 rounded-xl va-surface-muted border p-3 transition-colors hover:border-white/20",
+    className: "group flex items-center gap-2 rounded-xl va-surface-muted border p-3 transition-colors hover:border-[var(--va-border-strong)]",
     children: [
       jsxs("button", { type: "button", onClick: onOpen, title: "فتح التفاصيل", className: "min-w-0 flex-1 text-right", children: [
         jsxs("div", { className: "flex items-center gap-2", children: [
-          jsx("p", { className: "truncate text-sm font-semibold text-white group-hover:text-emerald-200", dir: "auto", children: item.title || "بدون عنوان" }),
-          label ? jsx("span", { className: "shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-gray-400", children: label }) : null
+          jsx("p", { className: "truncate text-sm font-semibold text-[var(--va-text)] group-hover:text-emerald-200", dir: "auto", children: item.title || "بدون عنوان" }),
+          label ? jsx("span", { className: "shrink-0 rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-[10px] text-[var(--va-text-2)]", children: label }) : null
         ] }),
-        jsx("p", { className: "mt-1 text-xs text-gray-600", children: item.updatedAt ? formatDateTime(item.updatedAt) : "بدون تاريخ" })
+        jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: item.updatedAt ? formatDateTime(item.updatedAt) : "بدون تاريخ" })
       ] }),
-      jsx("button", { type: "button", onClick: onOpen, "aria-label": `فتح ${item.title || "العنصر"}`, title: "فتح", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-white/5 hover:text-white", children: jsx(ExternalLink, { className: "h-4 w-4" }) }),
+      jsx("button", { type: "button", onClick: onOpen, "aria-label": `فتح ${item.title || "العنصر"}`, title: "فتح", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", children: jsx(ExternalLink, { className: "h-4 w-4" }) }),
       canManageItems ? jsx("button", { type: "button", onClick: onRemove, "aria-label": `إزالة ${item.title || "العنصر"} من المجموعة`, title: "إزالة من المجموعة", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-red-300 hover:bg-red-500/10", children: jsx(Trash2, { className: "h-4 w-4" }) }) : null
     ]
   }, item.id);
@@ -268,11 +268,11 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
 
   if (!collection) {
     return jsxs("section", {
-      className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35 p-8 text-center",
+      className: "va-card rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)] p-8 text-center",
       children: [
-        jsx(FolderOpen, { className: "mx-auto h-12 w-12 text-gray-600" }),
-        jsx("h2", { className: "mt-3 text-lg font-bold text-white", children: "اختر مجموعة" }),
-        jsx("p", { className: "mt-2 text-sm text-gray-500", children: "ستظهر معاينة العناصر وإجراءات الإضافة والإزالة هنا." })
+        jsx(FolderOpen, { className: "mx-auto h-12 w-12 text-[var(--va-text-muted)]" }),
+        jsx("h2", { className: "mt-3 text-lg font-bold text-[var(--va-text)]", children: "اختر مجموعة" }),
+        jsx("p", { className: "mt-2 text-sm text-[var(--va-text-muted)]", children: "ستظهر معاينة العناصر وإجراءات الإضافة والإزالة هنا." })
       ]
     });
   }
@@ -376,7 +376,7 @@ function SaveFilterModal({ onSave, onCancel, initialQuery }) {
     children: jsxs("div", {
       className: "grid gap-3",
       children: [
-        jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
+        jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("label", { htmlFor: nameId, className: "block", children: "اسم المجموعة" }),
           jsx("input", {
             id: nameId,
@@ -793,7 +793,7 @@ export function CollectionsPage() {
         shareEnabled
       }) : jsxs("section", { className: "space-y-4", children: [
         jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [
-          jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+          jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
           jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث في المجموعات...", className: "input input-bordered w-full" })
         ] }),
         filteredCollections.length ? jsx("div", { className: "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", children: filteredCollections.map((collection, index) => jsx(CollectionCard, {

@@ -115,12 +115,12 @@ function StatusRow({ label, value, status = "neutral", icon }) {
     ? "va-accent-text-on-soft"
     : status === "warning"
       ? "text-amber-200"
-      : "text-gray-200";
+      : "text-[var(--va-text-2)]";
   return jsxs("div", {
-    className: "flex min-w-0 flex-col gap-1 rounded-xl border border-white/5 bg-white/[0.025] px-3 py-2",
+    className: "flex min-w-0 flex-col gap-1 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-3 py-2",
     children: [
       jsxs("span", {
-        className: "flex min-w-0 items-center gap-1.5 text-[11px] text-gray-500",
+        className: "flex min-w-0 items-center gap-1.5 text-[11px] text-[var(--va-text-muted)]",
         children: [
           icon,
           jsx("span", { className: "truncate", children: label })
@@ -133,7 +133,7 @@ function StatusRow({ label, value, status = "neutral", icon }) {
 
 function DistributionBars({ items = [], total = 0 }) {
   if (!items.length) {
-    return jsx("p", { className: "rounded-xl border border-dashed border-white/10 p-4 text-sm leading-6 text-gray-500", children: "لم تتشكل خريطة توزيع بعد. ستظهر الأنواع الأكثر استخدامًا هنا بعد إضافة المواد." });
+    return jsx("p", { className: "rounded-xl border border-dashed border-[var(--va-border-soft)] p-4 text-sm leading-6 text-[var(--va-text-muted)]", children: "لم تتشكل خريطة توزيع بعد. ستظهر الأنواع الأكثر استخدامًا هنا بعد إضافة المواد." });
   }
   return jsx("div", {
     className: "space-y-3",
@@ -144,12 +144,12 @@ function DistributionBars({ items = [], total = 0 }) {
           jsxs("div", {
             className: "mb-1 flex items-center justify-between gap-3 text-xs",
             children: [
-              jsx("span", { className: "truncate text-gray-300", children: item.label }),
-              jsx("span", { className: "va-number-badge text-gray-500", children: formatNumber(item.count) })
+              jsx("span", { className: "truncate text-[var(--va-text-2)]", children: item.label }),
+              jsx("span", { className: "va-number-badge text-[var(--va-text-muted)]", children: formatNumber(item.count) })
             ]
           }),
           jsx("div", {
-            className: "h-2 overflow-hidden rounded-full bg-white/[0.06]",
+            className: "h-2 overflow-hidden rounded-full bg-[var(--va-surface-2)]",
             children: jsx("div", {
               className: "h-full rounded-full",
               style: {
@@ -169,7 +169,7 @@ function RecentSearchButton({ term, onClick }) {
   return jsxs("button", {
     type: "button",
     onClick,
-    className: "btn btn-sm btn-ghost inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.025] px-2.5 py-1 text-xs font-normal text-gray-300 transition-colors hover:border-emerald-500/30 hover:text-emerald-100",
+    className: "btn btn-sm btn-ghost inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-2.5 py-1 text-xs font-normal text-[var(--va-text-2)] transition-colors hover:border-emerald-500/30 hover:text-emerald-100",
     children: [
       jsx(Search, { className: "h-3.5 w-3.5 opacity-70" }),
       jsx("span", { className: "max-w-[11rem] truncate", children: term })
@@ -204,7 +204,7 @@ const dailyFocusToneClasses = {
   cyan: "border-cyan-500/20 bg-cyan-500/10 text-cyan-200",
   amber: "border-amber-500/20 bg-amber-500/10 text-amber-200",
   violet: "border-violet-500/20 bg-violet-500/10 text-violet-200",
-  slate: "border-white/10 bg-white/5 text-gray-300"
+  slate: "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)]"
 };
 
 function DailyFocusPanel({ items = [], onAction }) {
@@ -222,7 +222,7 @@ function DailyFocusPanel({ items = [], onAction }) {
         return jsxs("button", {
           type: "button",
           onClick: () => onAction?.(item),
-          className: "va-action-card group flex min-h-[5.25rem] w-full items-start gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-3 text-right transition-colors hover:border-emerald-500/25 hover:bg-white/[0.055]",
+          className: "va-action-card group flex min-h-[5.25rem] w-full items-start gap-3 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3 text-right transition-colors hover:border-emerald-500/25 hover:bg-[var(--va-surface-2)]",
           children: [
             jsx("span", {
               className: `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${toneClass}`,
@@ -234,15 +234,15 @@ function DailyFocusPanel({ items = [], onAction }) {
                 jsxs("span", {
                   className: "flex flex-wrap items-center gap-2",
                   children: [
-                    jsx("span", { className: "text-sm font-bold text-white", children: item.title }),
-                    item.metric && jsx("span", { className: "va-number-badge text-[11px] text-gray-400", children: item.metric })
+                    jsx("span", { className: "text-sm font-bold text-[var(--va-text)]", children: item.title }),
+                    item.metric && jsx("span", { className: "va-number-badge text-[11px] text-[var(--va-text-2)]", children: item.metric })
                   ]
                 }),
-                jsx("span", { className: "mt-1 block text-xs leading-5 text-gray-500", children: item.detail })
+                jsx("span", { className: "mt-1 block text-xs leading-5 text-[var(--va-text-muted)]", children: item.detail })
               ]
             }),
             jsx("span", {
-              className: "shrink-0 self-center rounded-lg border border-white/10 px-2.5 py-1 text-xs font-semibold text-gray-300 transition-colors group-hover:text-emerald-100",
+              className: "shrink-0 self-center rounded-lg border border-[var(--va-border-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--va-text-2)] transition-colors group-hover:text-emerald-100",
               children: dailyFocusActionLabels[item.action] || "فتح"
             })
           ]
@@ -512,14 +512,14 @@ export function DashboardPage() {
             className: "flex flex-wrap items-center gap-2",
             children: [
               jsxs("button", { type: "button", onClick: saveDashEditing, className: "btn btn-sm btn-primary gap-2", children: [jsx(Save, { className: "h-4 w-4" }), "حفظ"] }, "save"),
-              jsxs("button", { type: "button", onClick: cancelDashEditing, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-sm font-normal text-gray-300 hover:bg-white/5", children: [jsx(X, { className: "h-4 w-4" }), "إلغاء"] }, "cancel"),
-              jsxs("button", { type: "button", onClick: resetDashLayout, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-sm font-normal text-gray-300 hover:bg-white/5", children: [jsx(RotateCcw, { className: "h-4 w-4" }), "استعادة الافتراضي"] }, "reset")
+              jsxs("button", { type: "button", onClick: cancelDashEditing, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-3 py-1.5 text-sm font-normal text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: [jsx(X, { className: "h-4 w-4" }), "إلغاء"] }, "cancel"),
+              jsxs("button", { type: "button", onClick: resetDashLayout, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-3 py-1.5 text-sm font-normal text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: [jsx(RotateCcw, { className: "h-4 w-4" }), "استعادة الافتراضي"] }, "reset")
             ]
           }),
           hiddenDashPanels.length === 0
-            ? jsx("span", { className: "text-xs text-gray-500", children: "اسحب رأس اللوحة لإعادة الترتيب · اسحب الحافة للتحجيم" }, "hint")
+            ? jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "اسحب رأس اللوحة لإعادة الترتيب · اسحب الحافة للتحجيم" }, "hint")
             : jsxs("div", { className: "flex flex-wrap items-center gap-1.5", children: [
-                jsx("span", { className: "text-xs text-gray-500", children: "إظهار:" }),
+                jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "إظهار:" }),
                 ...hiddenDashPanels.map((id) => jsxs("button", { type: "button", onClick: () => toggleDashHidden(id), className: "btn btn-xs btn-ghost inline-flex min-h-8 items-center gap-1.5 rounded-lg border va-accent-border va-accent-bg-soft px-2.5 py-1 text-xs font-semibold va-accent-text-on-soft", children: [jsx(Eye, { className: "h-3.5 w-3.5" }), DASHBOARD_PANEL_TITLES[id] || id] }, id))
               ] }, "hidden-list")
         ]
@@ -550,14 +550,14 @@ export function DashboardPage() {
                         className: "min-w-0",
                         children: [
                           jsxs("h2", {
-                            className: "flex items-center gap-2.5 text-xl font-bold text-white sm:text-2xl",
+                            className: "flex items-center gap-2.5 text-xl font-bold text-[var(--va-text)] sm:text-2xl",
                             children: [
                               jsx("span", { className: "flex h-9 w-9 items-center justify-center rounded-xl border va-accent-border va-accent-bg-soft va-accent-text-on-soft", children: jsx(Shield, { className: "h-5 w-5" }) }),
                               "مركز التحكم"
                             ]
                           }),
                           jsx("p", {
-                            className: "mt-1 max-w-3xl text-xs leading-6 text-gray-400",
+                            className: "mt-1 max-w-3xl text-xs leading-6 text-[var(--va-text-2)]",
                             children: "واجهة عمليات واحدة تجمع التقارير المختصرة، البحث، جاهزية النظام، والوصول السريع لكل مسارات الأرشيف."
                           })
                         ]
@@ -587,7 +587,7 @@ export function DashboardPage() {
                         className: "relative block min-w-0",
                         children: [
                           jsx("span", { className: "sr-only", children: "بحث في الأرشيف" }),
-                          jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+                          jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
                           jsx("input", {
                             value: commandQuery,
                             onChange: (event) => setCommandQuery(event.target.value),
@@ -624,10 +624,10 @@ export function DashboardPage() {
               jsxs("div", {
                 className: "grid grid-cols-2 gap-2 sm:grid-cols-4",
                 children: [
-                  jsx(StatusRow, { label: "التخزين", value: sqliteError ? "تحقق التخزين" : "IndexedDB محلي", status: sqliteError ? "warning" : "ok", icon: jsx(Database, { className: "h-4 w-4 text-gray-500" }) }, "storage"),
-                  jsx(StatusRow, { label: "آخر نسخة", value: lastBackup, status: settings.lastBackupAt ? "ok" : "warning", icon: jsx(HardDrive, { className: "h-4 w-4 text-gray-500" }) }, "backup"),
-                  jsx(StatusRow, { label: "آخر فحص", value: lastHealth, status: settings.systemHealth?.lastCheckAt ? "ok" : "neutral", icon: jsx(CheckCircle2, { className: "h-4 w-4 text-gray-500" }) }, "health"),
-                  jsx(StatusRow, { label: "اكتمال البيانات", value: `${formatNumber(stats.completenessAverage)}%`, status: stats.needsReview ? "warning" : "ok", icon: jsx(FileText, { className: "h-4 w-4 text-gray-500" }) }, "complete")
+                  jsx(StatusRow, { label: "التخزين", value: sqliteError ? "تحقق التخزين" : "IndexedDB محلي", status: sqliteError ? "warning" : "ok", icon: jsx(Database, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "storage"),
+                  jsx(StatusRow, { label: "آخر نسخة", value: lastBackup, status: settings.lastBackupAt ? "ok" : "warning", icon: jsx(HardDrive, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "backup"),
+                  jsx(StatusRow, { label: "آخر فحص", value: lastHealth, status: settings.systemHealth?.lastCheckAt ? "ok" : "neutral", icon: jsx(CheckCircle2, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "health"),
+                  jsx(StatusRow, { label: "اكتمال البيانات", value: `${formatNumber(stats.completenessAverage)}%`, status: stats.needsReview ? "warning" : "ok", icon: jsx(FileText, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "complete")
                 ]
               })
             ]
@@ -641,7 +641,7 @@ export function DashboardPage() {
               className: "flex gap-2",
               children: [
                 jsx("button", { type: "button", onClick: () => goTo("archive"), className: "btn btn-ghost btn-xs", children: "فتح الأرشيف" }),
-                jsx("button", { type: "button", onClick: () => dismissBanner("demo"), className: "btn btn-ghost btn-xs btn-square inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5", "aria-label": "إخفاء التنبيه", children: jsx(X, { className: "h-4 w-4" }) })
+                jsx("button", { type: "button", onClick: () => dismissBanner("demo"), className: "btn btn-ghost btn-xs btn-square inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", "aria-label": "إخفاء التنبيه", children: jsx(X, { className: "h-4 w-4" }) })
               ]
             })
           }, "demo-banner"),
@@ -706,10 +706,10 @@ export function DashboardPage() {
         children: jsxs("div", {
           className: "grid grid-cols-2 gap-2 text-sm",
           children: [
-            jsx(StatusRow, { label: "الأنواع", value: formatNumber(stats.types), icon: jsx(Tags, { className: "h-4 w-4 text-gray-500" }) }, "types"),
-            jsx(StatusRow, { label: "المجموعات", value: formatNumber(stats.collections), icon: jsx(Database, { className: "h-4 w-4 text-gray-500" }) }, "collections"),
-            jsx(StatusRow, { label: "الوسوم", value: formatNumber(stats.tags), icon: jsx(Tags, { className: "h-4 w-4 text-gray-500" }) }, "tags"),
-            jsx(StatusRow, { label: "المفضلة", value: formatNumber(stats.favorites), icon: jsx(Bookmark, { className: "h-4 w-4 text-gray-500" }) }, "favorites")
+            jsx(StatusRow, { label: "الأنواع", value: formatNumber(stats.types), icon: jsx(Tags, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "types"),
+            jsx(StatusRow, { label: "المجموعات", value: formatNumber(stats.collections), icon: jsx(Database, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "collections"),
+            jsx(StatusRow, { label: "الوسوم", value: formatNumber(stats.tags), icon: jsx(Tags, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "tags"),
+            jsx(StatusRow, { label: "المفضلة", value: formatNumber(stats.favorites), icon: jsx(Bookmark, { className: "h-4 w-4 text-[var(--va-text-muted)]" }) }, "favorites")
           ]
         })
       }, "orgMetrics"),
@@ -744,7 +744,7 @@ export function DashboardPage() {
           meta: latestAudit.timestamp || latestAudit.createdAt ? formatDateTime(latestAudit.timestamp || latestAudit.createdAt) : "وقت غير مسجل",
           icon: jsx(FileText, { className: "h-4 w-4" }),
           actions: jsx("button", { type: "button", onClick: () => goTo("history"), className: "text-xs va-accent-text hover:text-emerald-200", children: "السجل" })
-        }) : jsx("p", { className: "rounded-xl border border-dashed border-white/10 p-4 text-sm leading-6 text-gray-500", children: "ستظهر عمليات الإنشاء والتعديل والحذف هنا بعد بدء العمل." })
+        }) : jsx("p", { className: "rounded-xl border border-dashed border-[var(--va-border-soft)] p-4 text-sm leading-6 text-[var(--va-text-muted)]", children: "ستظهر عمليات الإنشاء والتعديل والحذف هنا بعد بدء العمل." })
       }, "recentActivity")
         ]
       })

@@ -1,4 +1,5 @@
 import { normalizeArabicSearchText } from "../../utils/formatting.js";
+import { getFolderEntityRefs } from "../folders/viewModel.js";
 import { getRelationLabel } from "../relations/viewModel.js";
 
 /**
@@ -13,6 +14,20 @@ import { getRelationLabel } from "../relations/viewModel.js";
  */
 
 export const GRAPH_MAX_NODES = 500;
+export const GRAPH_MAX_ENTITY_NODES = 180;
+
+export const NODE_KIND_META = {
+  item: { label: "مواد", color: "#f59e0b" },
+  documentType: { label: "أنواع ملفات", color: "#38bdf8" },
+  contentType: { label: "أنواع مخصصة", color: "#8b5cf6" },
+  tag: { label: "وسوم", color: "#22c55e" },
+  collection: { label: "مجموعات", color: "#14b8a6" },
+  vocabulary: { label: "مصطلحات", color: "#ec4899" },
+  folder: { label: "مجلدات", color: "#f97316" }
+};
+
+export const DEFAULT_NODE_KINDS = ["item"];
+export const EXPANDED_NODE_KINDS = Object.keys(NODE_KIND_META);
 
 /** Fallback documentType for legacy video items that predate the field. */
 const DEFAULT_DOCUMENT_TYPE = "video";
@@ -27,12 +42,85 @@ export const DOCUMENT_TYPE_COLORS = {
   audio: "#ec4899"
 };
 
+const ENTITY_NODE_COLORS = Object.fromEntries(
+  Object.entries(NODE_KIND_META).map(([kind, meta]) => [kind, meta.color])
+);
+
 function normalizeTag(tag) {
   return normalizeArabicSearchText(String(tag || "").trim());
 }
 
 function getItemDocumentType(item) {
   return item.documentType || DEFAULT_DOCUMENT_TYPE;
+}
+
+function getItemContentTypeId(item) {
+  return item.type || item.typeId || item.contentTypeId || "";
+}
+
+function normalizeNodeKinds(kinds) {
+  const requested = Array.isArray(kinds) && kinds.length ? kinds : DEFAULT_NODE_KINDS;
+  const valid = new Set(Object.keys(NODE_KIND_META));
+  return new Set(requested.filter((kind) => valid.has(kind)));
+}
+
+function createEntityNode(kind, id, label, extra = {}) {
+  const normalizedId = `${kind}:${id}`;
+  return {
+    id: normalizedId,
+    label: String(label || id || NODE_KIND_META[kind]?.label || kind),
+    kind,
+    documentType: kind,
+    color: extra.color || ENTITY_NODE_COLORS[kind] || DOCUMENT_TYPE_COLORS.file,
+    tags: [],
+    degree: 0,
+    entity: extra.entity || null,
+    count: extra.count || 0,
+    item: null
+  };
+}
+
+function addNodeOnce(nodes, nodeById, node) {
+  if (!node?.id || nodeById.has(node.id)) return nodeById.get(node?.id);
+  nodes.push(node);
+  nodeById.set(node.id, node);
+  return node;
+}
+
+function addEdgeOnce(edges, edgeKeys, edge, degreeByNodeId) {
+  if (!edge?.id || !edge.source || !edge.target || edge.source === edge.target || edgeKeys.has(edge.id)) return;
+  edgeKeys.add(edge.id);
+  edges.push(edge);
+  degreeByNodeId.set(edge.source, (degreeByNodeId.get(edge.source) || 0) + 1);
+  degreeByNodeId.set(edge.target, (degreeByNodeId.get(edge.target) || 0) + 1);
+}
+
+function createVocabularyMatcher(vocabulary = []) {
+  return (vocabulary || [])
+    .map((entry) => {
+      const keys = [entry.term, ...(Array.isArray(entry.aliases) ? entry.aliases : [])]
+        .map(normalizeTag)
+        .filter(Boolean);
+      return keys.length ? { entry, keys } : null;
+    })
+    .filter(Boolean);
+}
+
+function createItemSearchText(item = {}) {
+  const metadataValues = item.metadata && typeof item.metadata === "object"
+    ? Object.values(item.metadata).filter((value) => typeof value === "string" || typeof value === "number")
+    : [];
+  return normalizeArabicSearchText([
+    item.title,
+    item.name,
+    item.description,
+    item.notes,
+    item.transcript,
+    item.transcription,
+    item.transcriptionText,
+    ...(Array.isArray(item.tags) ? item.tags : []),
+    ...metadataValues
+  ].join(" "));
 }
 
 /**
@@ -69,8 +157,8 @@ function createPairKey(indexA, indexB) {
 /**
  * Build the {nodes, edges} relations model.
  *
- * @param {{ videoItems?: Array, hierarchicalTags?: Array, collections?: Array, itemRelations?: Array }} data
- * @param {{ typeFilter?: string, tagFilter?: string, maxNodes?: number }} [options]
+ * @param {{ videoItems?: Array, hierarchicalTags?: Array, collections?: Array, itemRelations?: Array, contentTypes?: Array, vocabulary?: Array, folders?: Array }} data
+ * @param {{ typeFilter?: string, tagFilter?: string, maxNodes?: number, maxEntityNodes?: number, nodeKinds?: string[] }} [options]
  *   typeFilter — documentType key or "all"; tagFilter — canonical tag key or "".
  * @returns {{
  *   nodes: Array<{id, label, documentType, color, tags, degree, item}>,
@@ -83,11 +171,13 @@ function createPairKey(indexA, indexB) {
  * }}
  */
 export function buildGraphModel(data = {}, options = {}) {
-  const { videoItems = [], hierarchicalTags = [], collections = [], itemRelations = [] } = data;
-  const { typeFilter = "all", tagFilter = "", maxNodes = GRAPH_MAX_NODES } = options;
+  const { videoItems = [], hierarchicalTags = [], collections = [], itemRelations = [], contentTypes = [], vocabulary = [], folders = [] } = data;
+  const { typeFilter = "all", tagFilter = "", maxNodes = GRAPH_MAX_NODES, maxEntityNodes = GRAPH_MAX_ENTITY_NODES } = options;
+  const nodeKinds = normalizeNodeKinds(options.nodeKinds);
 
   const canonicalize = createTagCanonicalizer(hierarchicalTags);
   const active = videoItems.filter((item) => item && !item.isDeleted);
+  const contentTypeById = new Map((contentTypes || []).filter(Boolean).map((type) => [type.id, type]));
 
   // Canonical tag entries per active item (computed before filtering so the
   // tag dropdown can offer every tag in the archive).
@@ -156,6 +246,8 @@ export function buildGraphModel(data = {}, options = {}) {
   });
 
   const degree = new Map();
+  const degreeByNodeId = new Map();
+  const edgeKeys = new Set();
 
   // --- Edges: explicit manual relations -------------------------------------
   const manualEdges = [];
@@ -182,6 +274,8 @@ export function buildGraphModel(data = {}, options = {}) {
     });
     degree.set(sourceIndex, (degree.get(sourceIndex) || 0) + 1);
     degree.set(targetIndex, (degree.get(targetIndex) || 0) + 1);
+    degreeByNodeId.set(relation.sourceId, (degreeByNodeId.get(relation.sourceId) || 0) + 1);
+    degreeByNodeId.set(relation.targetId, (degreeByNodeId.get(relation.targetId) || 0) + 1);
   });
 
   // --- Assemble --------------------------------------------------------------
@@ -200,22 +294,190 @@ export function buildGraphModel(data = {}, options = {}) {
     });
     degree.set(a, (degree.get(a) || 0) + 1);
     degree.set(b, (degree.get(b) || 0) + 1);
+    degreeByNodeId.set(items[a].id, (degreeByNodeId.get(items[a].id) || 0) + 1);
+    degreeByNodeId.set(items[b].id, (degreeByNodeId.get(items[b].id) || 0) + 1);
   });
 
   edges.push(...manualEdges);
+  edges.forEach((edge) => edgeKeys.add(edge.id));
 
   const nodes = items.map((item, index) => {
     const documentType = getItemDocumentType(item);
     return {
       id: item.id,
       label: String(item.title || "بدون عنوان"),
+      kind: "item",
       documentType,
       color: DOCUMENT_TYPE_COLORS[documentType] || DOCUMENT_TYPE_COLORS.file,
       tags: item.tags || [],
-      degree: degree.get(index) || 0,
+      degree: degreeByNodeId.get(item.id) || degree.get(index) || 0,
       item
     };
   });
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  let entityNodeCount = 0;
+  const canAddEntityNode = () => entityNodeCount < Math.max(0, maxEntityNodes);
+  const addEntityNode = (node) => {
+    if (!canAddEntityNode() && !nodeById.has(node.id)) return null;
+    const existed = nodeById.has(node.id);
+    const added = addNodeOnce(nodes, nodeById, node);
+    if (!existed && added?.kind !== "item") entityNodeCount += 1;
+    return added;
+  };
+  const addEntityEdge = (edge) => addEdgeOnce(edges, edgeKeys, edge, degreeByNodeId);
+
+  const itemById = new Map(items.map((item) => [item.id, item]));
+
+  if (nodeKinds.has("documentType")) {
+    items.forEach((item) => {
+      const documentType = getItemDocumentType(item);
+      const entityNode = addEntityNode(createEntityNode("documentType", documentType, documentType, {
+        color: DOCUMENT_TYPE_COLORS[documentType] || NODE_KIND_META.documentType.color,
+        count: typeCounts.get(documentType) || 0
+      }));
+      if (!entityNode) return;
+      addEntityEdge({
+        id: `doctype:${item.id}:${documentType}`,
+        source: item.id,
+        target: entityNode.id,
+        weight: 1,
+        edgeKind: "documentType",
+        relationLabel: "نوع ملف",
+        sharedTags: [],
+        sharedCollections: []
+      });
+    });
+  }
+
+  if (nodeKinds.has("contentType")) {
+    items.forEach((item) => {
+      const contentTypeId = getItemContentTypeId(item);
+      if (!contentTypeId) return;
+      const contentType = contentTypeById.get(contentTypeId);
+      const label = contentType?.name || contentType?.nameEn || contentTypeId;
+      const entityNode = addEntityNode(createEntityNode("contentType", contentTypeId, label, {
+        color: contentType?.color || NODE_KIND_META.contentType.color,
+        entity: contentType
+      }));
+      if (!entityNode) return;
+      addEntityEdge({
+        id: `ctype:${item.id}:${contentTypeId}`,
+        source: item.id,
+        target: entityNode.id,
+        weight: 1,
+        edgeKind: "contentType",
+        relationLabel: "نوع مخصص",
+        sharedTags: [],
+        sharedCollections: []
+      });
+    });
+  }
+
+  if (nodeKinds.has("tag")) {
+    items.forEach((item) => {
+      tagEntriesByItemId.get(item.id)?.forEach((entry) => {
+        const entityNode = addEntityNode(createEntityNode("tag", entry.key, entry.label, {
+          count: tagCounts.get(entry.key)?.count || 0
+        }));
+        if (!entityNode) return;
+        addEntityEdge({
+          id: `tag:${item.id}:${entry.key}`,
+          source: item.id,
+          target: entityNode.id,
+          weight: 1,
+          edgeKind: "tag",
+          relationLabel: "وسم",
+          sharedTags: [entry.label],
+          sharedCollections: []
+        });
+      });
+    });
+  }
+
+  if (nodeKinds.has("collection")) {
+    collections.forEach((collection) => {
+      const memberIds = (Array.isArray(collection?.itemIds) ? collection.itemIds : []).filter((id) => itemById.has(id));
+      if (!memberIds.length) return;
+      const entityNode = addEntityNode(createEntityNode("collection", collection.id, collection.name || collection.id, {
+        color: collection.color || NODE_KIND_META.collection.color,
+        entity: collection,
+        count: memberIds.length
+      }));
+      if (!entityNode) return;
+      memberIds.forEach((itemId) => {
+        addEntityEdge({
+          id: `collection:${itemId}:${collection.id}`,
+          source: itemId,
+          target: entityNode.id,
+          weight: 1,
+          edgeKind: "collection",
+          relationLabel: "مجموعة",
+          sharedTags: [],
+          sharedCollections: [collection.name || collection.id]
+        });
+      });
+    });
+  }
+
+  if (nodeKinds.has("folder")) {
+    folders.forEach((folder) => {
+      const refs = getFolderEntityRefs(folder, "archive-item").filter((ref) => itemById.has(ref.id));
+      if (!refs.length) return;
+      const entityNode = addEntityNode(createEntityNode("folder", folder.id, folder.name || folder.id, {
+        color: folder.color || NODE_KIND_META.folder.color,
+        entity: folder,
+        count: refs.length
+      }));
+      if (!entityNode) return;
+      refs.forEach((ref) => {
+        addEntityEdge({
+          id: `folder:${ref.id}:${folder.id}`,
+          source: ref.id,
+          target: entityNode.id,
+          weight: 1,
+          edgeKind: "folder",
+          relationLabel: "مجلد",
+          sharedTags: [],
+          sharedCollections: []
+        });
+      });
+    });
+  }
+
+  if (nodeKinds.has("vocabulary")) {
+    const vocabularyMatchers = createVocabularyMatcher(vocabulary);
+    items.forEach((item) => {
+      const searchable = createItemSearchText(item);
+      if (!searchable) return;
+      vocabularyMatchers.forEach(({ entry, keys }) => {
+        if (!keys.some((key) => searchable.includes(key))) return;
+        const entityNode = addEntityNode(createEntityNode("vocabulary", entry.id, entry.term || entry.id, {
+          color: NODE_KIND_META.vocabulary.color,
+          entity: entry
+        }));
+        if (!entityNode) return;
+        addEntityEdge({
+          id: `vocab:${item.id}:${entry.id}`,
+          source: item.id,
+          target: entityNode.id,
+          weight: 1,
+          edgeKind: "vocabulary",
+          relationLabel: "مصطلح",
+          sharedTags: [],
+          sharedCollections: []
+        });
+      });
+    });
+  }
+
+  nodes.forEach((node) => {
+    node.degree = degreeByNodeId.get(node.id) || node.degree || 0;
+  });
+
+  const kindCounts = nodes.reduce((counts, node) => {
+    counts[node.kind] = (counts[node.kind] || 0) + 1;
+    return counts;
+  }, {});
 
   return {
     nodes,
@@ -223,6 +485,9 @@ export function buildGraphModel(data = {}, options = {}) {
     maxWeight: edges.reduce((max, edge) => Math.max(max, edge.weight), 1),
     totalEligible: eligible.length,
     truncated: eligible.length > items.length,
+    entityTruncated: entityNodeCount >= Math.max(0, maxEntityNodes),
+    kindCounts,
+    nodeKinds: [...nodeKinds],
     tagOptions: [...tagCounts.values()]
       .filter((option) => option.count >= 2)
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "ar"))
@@ -238,7 +503,15 @@ export function toCytoscapeElements(model) {
   return [
     ...model.nodes.map((node) => ({
       group: "nodes",
-      data: { id: node.id, label: node.label, color: node.color, documentType: node.documentType, degree: node.degree }
+      data: {
+        id: node.id,
+        label: node.label,
+        color: node.color,
+        kind: node.kind || "item",
+        documentType: node.documentType,
+        degree: node.degree,
+        count: node.count || 0
+      }
     })),
     ...model.edges.map((edge) => ({
       group: "edges",
