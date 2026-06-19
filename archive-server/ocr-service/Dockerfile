@@ -20,8 +20,12 @@ COPY main.py .
 ENV OCR_LANG=ar
 ENV OCR_USE_GPU=false
 ENV MAX_FILE_SIZE_MB=20
+ENV HOME=/home/ocruser
 
-RUN useradd -r -u 1000 ocruser && chown -R ocruser:ocruser /app
+RUN useradd -r -u 1000 -m -d /home/ocruser ocruser && \
+    mkdir -p /home/ocruser/.paddleocr && \
+    if [ -d /root/.paddleocr ]; then cp -a /root/.paddleocr/. /home/ocruser/.paddleocr/; fi && \
+    chown -R ocruser:ocruser /app /home/ocruser
 USER 1000:1000
 
 EXPOSE 8788

@@ -29,6 +29,7 @@
     "verify:auth": "tsx scripts/verify-auth.mjs",
     "verify:db-provider": "tsx scripts/verify-db-provider.mjs",
     "verify:deployment": "tsx scripts/verify-deployment.mjs",
+    "verify:cloud-live": "tsx scripts/verify-cloud-live.mjs",
     "check": "pnpm run verify",
     "db:provider": "node scripts/set-db-provider.mjs",
     "prisma:generate": "node scripts/set-db-provider.mjs && prisma generate",

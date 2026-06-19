@@ -37,7 +37,7 @@ LABEL org.opencontainers.image.source="https://github.com/OWNER/archive"
 LABEL org.opencontainers.image.description="Archive Suite API Server"
 LABEL org.opencontainers.image.vendor="Archive Suite"
 
-RUN apk add --no-cache ffmpeg vips-dev fftw-dev && corepack enable
+RUN apk add --no-cache ffmpeg vips-dev fftw-dev su-exec && corepack enable
 
 WORKDIR /app
 
@@ -52,14 +52,16 @@ COPY --from=build /app/archive-server ./archive-server
 
 # Workspace manifests (needed for pnpm --filter to resolve the workspace)
 COPY package.json pnpm-workspace.yaml ./
+COPY archive-server/docker-entrypoint.sh /usr/local/bin/archive-server-entrypoint
 
 # Security: prepare directories with restrictive permissions and switch to non-root user
-RUN mkdir -p /app/.archive-files /app/config && \
-    chown -R node:node /app/.archive-files /app/config && \
-    chmod 700 /app/.archive-files /app/config && \
+RUN mkdir -p /app/.archive-files /app/config /app/files && \
+    chown -R node:node /app/.archive-files /app/config /app/files && \
+    chmod 750 /app/.archive-files /app/config /app/files && \
+    chmod +x /usr/local/bin/archive-server-entrypoint && \
     chmod 755 /app
 
-USER node
+USER root
 
 ENV NODE_ENV=production
 EXPOSE 8787
@@ -71,4 +73,5 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
 # Call the local binaries directly instead of pnpm: the read-only runtime user
 # cannot let corepack provision pnpm at start. prisma + tsx are linked in
 # archive-server/node_modules/.bin by the full install above.
+ENTRYPOINT ["archive-server-entrypoint"]
 CMD ["sh", "-c", "cd /app/archive-server && node_modules/.bin/prisma migrate deploy && exec node_modules/.bin/tsx src/index.js"]
