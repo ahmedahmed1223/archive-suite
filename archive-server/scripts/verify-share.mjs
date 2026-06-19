@@ -124,12 +124,14 @@ run("share invitation service mints token, sends email, and stores invitation", 
       sent.push(message);
       return { sent: true };
     },
-    resolveStorage: () => ({
-      put: async (store, row) => {
-        if (store === "share_invitations") invitations.push(row);
-        return row;
+    db: {
+      shareInvitation: {
+        create: async ({ data }) => {
+          invitations.push(data);
+          return data;
+        }
       }
-    })
+    }
   });
 
   const result = await svc.createInvitation({
@@ -143,11 +145,13 @@ run("share invitation service mints token, sends email, and stores invitation", 
 
   assert.equal(result.invitation.email, "reviewer@example.com");
   assert.equal(result.invitation.permission, "comment");
-  assert.equal(result.invitation.persisted, true);
+  assert.equal(result.invitation.persisted, "prisma");
   assert.equal(result.invitation.status, "sent");
   assert.equal(sent.length, 1);
   assert.match(sent[0].text, /https:\/\/archive\.example\/api\/share\//);
   assert.equal(invitations.length, 1);
+  assert.equal(invitations[0].email, "reviewer@example.com");
+  assert.ok(invitations[0].createdAt instanceof Date);
   const payload = readShareTokenPayload(result.token, SECRET);
   assert.deepEqual(payload.scope, { type: "items", ids: ["v1"], label: "", permission: "comment" });
 });
@@ -283,6 +287,42 @@ run("HTTP: share-access enforces comment capability and item scope", async () =>
     assert.equal(comment.text, "تعليق عام");
     assert.equal(comment.authorName, "مراجع");
     assert.equal(comments.length, 1);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
+run("HTTP: share comments persist through Prisma when available", async () => {
+  const SECRET = "s6";
+  const prismaComments = [];
+  const server = createApiServer({
+    backend: "test",
+    authSecret: SECRET,
+    rateLimit: null,
+    resolveStorage: () => ({ snapshot: async () => SNAP }),
+    prisma: {
+      shareComment: {
+        create: async ({ data }) => {
+          prismaComments.push(data);
+          return data;
+        }
+      }
+    }
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const commentToken = mintShareToken({ scope: { type: "items", ids: ["v1"], permission: "comment" }, secret: SECRET });
+    const ok = await fetch(`${base}/api/share-access/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-share-token": commentToken },
+      body: JSON.stringify({ itemId: "v1", text: "تعليق محفوظ", authorName: "مراجع" })
+    });
+    assert.equal(ok.status, 201);
+    assert.equal(prismaComments.length, 1);
+    assert.equal(prismaComments[0].itemId, "v1");
+    assert.equal(prismaComments[0].shareJti, readShareTokenPayload(commentToken, SECRET).jti);
+    assert.ok(prismaComments[0].createdAt instanceof Date);
   } finally {
     await new Promise((r) => server.close(r));
   }

@@ -25,17 +25,47 @@ function makeInviteId() {
   }
 }
 
-async function persistInvitation(storage, invitation) {
+function toNullableDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+async function persistInvitation({ db, storage, invitation }) {
+  if (db?.shareInvitation && typeof db.shareInvitation.create === "function") {
+    await db.shareInvitation.create({
+      data: {
+        id: invitation.id,
+        email: invitation.email,
+        title: invitation.title,
+        message: invitation.message,
+        scope: invitation.scope,
+        permission: invitation.permission,
+        shareJti: invitation.shareJti || null,
+        sharePath: invitation.sharePath,
+        shareUrl: invitation.shareUrl,
+        passwordProtected: invitation.passwordProtected,
+        expiresAt: toNullableDate(invitation.expiresAt),
+        invitedByUserId: invitation.invitedByUserId || null,
+        invitedByUsername: invitation.invitedByUsername || null,
+        status: invitation.status,
+        emailSentAt: toNullableDate(invitation.emailSentAt),
+        createdAt: toNullableDate(invitation.createdAt) || new Date()
+      }
+    });
+    return "prisma";
+  }
   if (!storage || typeof storage.put !== "function") return false;
   await storage.put("share_invitations", invitation);
-  return true;
+  return "storage";
 }
 
 export function createShareInvitationService({
   resolvedShareSecret,
   defaultExpiryDays = 30,
   sendMail,
-  resolveStorage
+  resolveStorage,
+  db
 } = {}) {
   if (!resolvedShareSecret) {
     throw new Error("Share invitations require a share secret.");
@@ -117,7 +147,7 @@ export function createShareInvitationService({
 
       try {
         const storage = typeof resolveStorage === "function" ? resolveStorage() : null;
-        invitation.persisted = await persistInvitation(storage, invitation);
+        invitation.persisted = await persistInvitation({ db, storage, invitation });
       } catch {
         invitation.persisted = false;
       }

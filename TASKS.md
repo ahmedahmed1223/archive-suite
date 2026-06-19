@@ -1727,7 +1727,7 @@
 
 ### 16.7 P1 — المشاركة والتعاون المحدود بصلاحيات دقيقة (Limited Sharing & Collaboration)
 
-- [ ] `[P1]` ⏱️XL **توسيع المشاركة من روابط snapshot إلى مشاركة عناصر ومجموعات بدعوات وصلاحيات وتعليقات** — روابط المشاركة الحالية لا تكفي لسيناريوهات الفريق ولا توفر صلاحيات مثل تعليق/تعديل/تحميل فقط.
+- [x] `[P1]` ⏱️XL **توسيع المشاركة من روابط snapshot إلى مشاركة عناصر ومجموعات بدعوات وصلاحيات وتعليقات** — روابط المشاركة الحالية لا تكفي لسيناريوهات الفريق ولا توفر صلاحيات مثل تعليق/تعديل/تحميل فقط.
   - **الملفات الجديدة:**
     - `archive-app/src/components/share/ShareDialog.jsx` — مشاركة عنصر أو مجموعة.
     - `archive-app/src/pages/SharedWithMePage.jsx` — المحتوى المشترك مع المستخدم.
@@ -1750,7 +1750,7 @@
   - 🔄 **تحسين UI/UX 2026-06-19:** أُضيف `archive-app/src/components/comments/CommentThread.jsx` كمكوّن مستقل لتعليقات المادة مع حالة فارغة أوضح، عدّاد، DaisyUI buttons، وحذف مشروط حسب صلاحيات المستخدم؛ واستُبدلت كتلة التعليقات الداخلية في `DetailPage.jsx` بالمكوّن. كما أُضيفت أيقونات واضحة لـ`shared-links` و`shared-with-me` في `Sidebar.jsx`، وأُضيفت الصفحتان إلى Command Palette في `ShellParts.jsx` لسهولة الاكتشاف. التحقق: `CommentThread.test.jsx` + `DetailPage.relations.test.jsx`.
   - 🔄 **شريحة دعوات 2026-06-19:** أُضيف `archive-server/src/share/invitationService.js` لتوليد رابط مشاركة مؤقت من نفس عقد `mintShareToken`، تطبيع البريد، إرسال رسالة عبر `sendMail`/nodemailer عند توفر SMTP، وحفظ سجل `share_invitations` best-effort. أُضيف endpoint محمي `POST /api/share/invitations` يعيد `{ invitation, token, path, url, emailStatus }` ويتحقق من البريد والصلاحيات. التحقق: `archive-server verify:share` يغطي الخدمة مباشرة ومسار HTTP كامل (auth required + بريد + تخزين).
   - 🔄 **واجهة الدعوات 2026-06-19:** أُضيف `inviteShareByEmail()` في `shareClient.js` وربط `ShareDialog.jsx` بحقول بريد المستلم ورسالة اختيارية؛ عند إدخال بريد يستخدم الحوار `POST /api/share/invitations` ويعرض حالة "تم إرسال الدعوة" مع بقاء رابط المشاركة قابلاً للنسخ والإبطال. التحقق: `shareClient.test.js` + `ShareDialog.test.jsx` + `build:spa`.
-  - **المتبقي:** ترحيل دائم لجداول `share_invitations` و`share_comments` عند تفعيل Postgres/Prisma.
+  - ✅ **إغلاق التخزين الدائم 2026-06-19:** أُضيفت نماذج Prisma `ShareInvitation` و`ShareComment` مع migration `20260619133000_share_invitations_comments`، وأُعيد توليد Prisma client ليشمل النماذج الجديدة. صار `invitationService` يفضّل `db.shareInvitation.create()` عند توفر Prisma مع fallback إلى `StorageProvider`، وصار `POST /api/share-access/comments` يكتب في `db.shareComment.create()` عند توفره. التحقق: `archive-server verify:share` يغطي تخزين الدعوات والتعليقات عبر Prisma.
   - يرتبط بـ: مهام إبطال روابط المشاركة وRBAC في §1 و§9.
   - الجهد: 5-8 أسابيع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 7 — P1).
