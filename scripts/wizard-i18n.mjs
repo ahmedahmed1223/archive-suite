@@ -106,6 +106,18 @@ export const MESSAGES = {
   // bring up
   composeExit: { en: ({ code }) => `docker compose exited with code ${code}`, ar: ({ code }) => `docker compose خرج بالرمز ${code}` },
   containersUp: { en: "Containers are running", ar: "الحاويات تعمل" },
+  controlStopping: { en: "Stopping the stack...", ar: "إيقاف الحزمة..." },
+  containersStopped: { en: "Containers stopped", ar: "تم إيقاف الحاويات" },
+
+  // post-deploy controls
+  controlTitle: { en: "Runtime controls", ar: "التحكم في التشغيل" },
+  controlOpen: { en: "  1) Open the app in the browser", ar: "  1) فتح التطبيق في المتصفح" },
+  controlStop: { en: "  2) Stop the system now", ar: "  2) إيقاف النظام الآن" },
+  controlRestart: { en: "  3) Restart the system", ar: "  3) إعادة تشغيل النظام" },
+  controlExit: { en: "  4) Exit this wizard and leave the system running", ar: "  4) الخروج من المعالج وترك النظام يعمل" },
+  controlPrompt: { en: "Choose an action", ar: "اختر إجراء" },
+  controlStoppedHint: { en: ({ cmd }) => `System is stopped. To start it again later: ${cmd}`, ar: ({ cmd }) => `تم إيقاف النظام. لتشغيله لاحقاً: ${cmd}` },
+  controlLeavingRunning: { en: "Leaving the system running. You can close this window.", ar: "سيبقى النظام يعمل. يمكنك إغلاق هذه النافذة." },
 
   // health
   waiting: { en: "Waiting", ar: "انتظار" },

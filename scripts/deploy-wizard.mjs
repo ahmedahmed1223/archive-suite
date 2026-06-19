@@ -370,17 +370,64 @@ function composeFiles(access, lite) {
 async function bringUp(access, lite) {
   step(8, t("step8"));
   const files = composeFiles(access, lite);
-  log(`docker compose ${files.join(" ")} up -d --build`);
+  await composeUp(files);
+  return files;
+}
+
+function runCompose(files, args, { label } = {}) {
+  if (label) log(label);
+  log(`docker compose ${files.join(" ")} ${args.join(" ")}`);
   log("");
-  await new Promise((res, rej) => {
-    const child = spawn("docker", ["compose", ...files, "up", "-d", "--build"], {
+  return new Promise((res, rej) => {
+    const child = spawn("docker", ["compose", ...files, ...args], {
       cwd: SERVER_DIR,
       stdio: "inherit",
     });
     child.on("close", (code) => (code === 0 ? res() : rej(new Error(t("composeExit", { code })))));
   });
+}
+
+async function composeUp(files) {
+  await runCompose(files, ["up", "-d", "--build"]);
   ok(t("containersUp"));
-  return files;
+}
+
+async function composeDown(files) {
+  await runCompose(files, ["down"], { label: t("controlStopping") });
+  ok(t("containersStopped"));
+}
+
+async function composeRestart(files, access) {
+  await composeDown(files);
+  await composeUp(files);
+  await waitForHealth(access, files);
+}
+
+async function postDeployControlLoop(access, files, lite, creds) {
+  if (NON_INTERACTIVE) return;
+  const appUrl = access.mode === "public" ? `https://${access.domain}` : "http://localhost:8080";
+  while (true) {
+    hr();
+    log(`${BOLD}${t("controlTitle")}${RESET}`);
+    log(t("controlOpen"));
+    log(t("controlStop"));
+    log(t("controlRestart"));
+    log(t("controlExit"));
+    const choice = (await ask(t("controlPrompt"), "4")).trim();
+    if (choice === "1") {
+      openBrowser(appUrl);
+    } else if (choice === "2") {
+      await composeDown(files);
+      log(t("controlStoppedHint", { cmd: `docker compose ${composeFiles(access, lite).join(" ")} up -d --build` }));
+      return;
+    } else if (choice === "3") {
+      await composeRestart(files, access);
+      summary(access, creds, lite);
+    } else {
+      log(t("controlLeavingRunning"));
+      return;
+    }
+  }
 }
 
 // ─── Step 9: health wait ────────────────────────────────────────────────────
@@ -504,6 +551,7 @@ async function main() {
     await waitForHealth(access, files);
     summary(access, creds, lite);
     openBrowser(access.mode === "public" ? `https://${access.domain}` : "http://localhost:8080");
+    await postDeployControlLoop(access, files, lite, creds);
   } catch (e) {
     err(e.message);
     process.exitCode = 1;
