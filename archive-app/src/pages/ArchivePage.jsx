@@ -45,6 +45,7 @@ import {
 } from "../features/media/viewModel.js";
 import { reportError } from "../utils/errorReporting.js";
 import { ContextualQuickAddBar } from "../components/workflow/ContextualQuickAddBar.jsx";
+import { EntityFoldersPanel } from "../components/folders/EntityFoldersPanel.jsx";
 import { SideEditPanel } from "../components/workflow/SideEditPanel.jsx";
 import { isEditInSidePanelEnabled, resolveOpenTarget } from "../features/archive/resolveOpenTarget.js";
 
@@ -265,6 +266,15 @@ export function ArchivePage() {
     className: "space-y-6 p-4 sm:p-6 pb-24",
     children: [
       jsx(ArchivePageHero, { ...state, openImport, openAdd, confirmEmptyTrash }),
+      videoItems.length > 0 && jsx(EntityFoldersPanel, {
+        scope: "archive",
+        entityType: "archive-item",
+        entities: videoItems.filter((item) => !item.isDeleted),
+        title: "مجلدات الأرشيف",
+        description: "اجمع مواد الأرشيف داخل مجلدات يدوية مستقلة عن النوع والوسوم والمجموعات.",
+        getEntityLabel: (item) => item.title || item.id,
+        getEntityMeta: (item) => typeById.get(item.type)?.name || "غير مصنف"
+      }),
       jsx(ContextualQuickAddBar, { contentTypes }),
       jsx(SideEditPanel, {
         item: sideEditItem,

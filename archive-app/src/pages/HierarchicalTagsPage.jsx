@@ -21,6 +21,7 @@ import { motion } from "framer-motion";
 
 import { appConfirm, showConfirm } from "../components/common/ConfirmDialog.js";
 import { EmptyState } from "../components/common/EmptyState.jsx";
+import { EntityFoldersPanel } from "../components/folders/EntityFoldersPanel.jsx";
 import { MotionPage, PageHero } from "../components/ui/V1Primitives.jsx";
 import {
   HIERARCHICAL_TAG_COLORS,
@@ -422,6 +423,15 @@ export function HierarchicalTagsPage() {
             ] })
           ]
         }, label))
+      }),
+      hierarchicalTags.length > 0 && jsx(EntityFoldersPanel, {
+        scope: "tags",
+        entityType: "hierarchical-tag",
+        entities: hierarchicalTags,
+        title: "مجلدات الوسوم",
+        description: "اجمع الوسوم في مجلدات عمل مستقلة عن الشجرة الهرمية، مثل مجلدات البرامج أو الحملات.",
+        getEntityLabel: (tag) => tag.name || tag.id,
+        getEntityMeta: (tag) => getHierarchicalTagPath(tag.id, hierarchicalTags) || "وسم جذر"
       }),
       hierarchicalTags.length > 0 && jsxs("section", {
         className: "va-filter-surface rounded-2xl va-surface-muted border p-4",

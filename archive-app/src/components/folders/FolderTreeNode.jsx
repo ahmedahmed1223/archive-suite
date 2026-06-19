@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ChevronDown, ChevronLeft } from "lucide-react";
 import { DropZone } from "../dnd/DropZone.jsx";
+import { getFolderEntityCount } from "../../features/folders/viewModel.js";
 
 const INDENT_PX = 16;
 
@@ -17,12 +18,12 @@ const INDENT_PX = 16;
  *   onToggle      — (id) => void
  *   onContextMenu — (id, event) => void
  */
-export function FolderTreeNode({ folder, tree, depth = 0, selectedId, onSelect, onToggle, onContextMenu, onDrop }) {
+export function FolderTreeNode({ folder, tree, depth = 0, selectedId, onSelect, onToggle, onContextMenu, onDrop, countEntityType = "archive-item" }) {
   const children = tree?.childrenByParent?.[folder.id] || [];
   const hasChildren = children.length > 0;
   const isExpanded = folder.isExpanded !== false;
   const isSelected = selectedId === folder.id;
-  const itemCount = (folder.itemIds || []).length;
+  const itemCount = getFolderEntityCount(folder, countEntityType);
 
   const handleToggle = (event) => {
     event.stopPropagation();
@@ -105,6 +106,8 @@ export function FolderTreeNode({ folder, tree, depth = 0, selectedId, onSelect, 
               onSelect={onSelect}
               onToggle={onToggle}
               onContextMenu={onContextMenu}
+              onDrop={onDrop}
+              countEntityType={countEntityType}
             />
           ))}
         </ul>

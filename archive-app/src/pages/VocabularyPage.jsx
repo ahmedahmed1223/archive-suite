@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 
 import { appConfirm, showConfirm } from "../components/common/ConfirmDialog.js";
 import { EmptyState } from "../components/common/EmptyState.jsx";
+import { EntityFoldersPanel } from "../components/folders/EntityFoldersPanel.jsx";
 import { MotionPage, PageHero } from "../components/ui/V1Primitives.jsx";
 import { reportError } from "../utils/errorReporting.js";
 import {
@@ -386,6 +387,15 @@ export function VocabularyPage() {
           ] }, tag.id)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: "كل الوسوم لها مقابل قاموسي." })
         ] })
       ] }),
+      vocabulary.length > 0 && jsx(EntityFoldersPanel, {
+        scope: "vocabulary",
+        entityType: "vocabulary",
+        entities: vocabulary,
+        title: "مجلدات المصطلحات",
+        description: "اجمع المصطلحات حسب البرامج أو الموضوعات أو فرق العمل، بعيداً عن فئات القاموس الرسمية.",
+        getEntityLabel: (entry) => entry.term || entry.id,
+        getEntityMeta: (entry) => getCategoryInfo(entry.category).label
+      }),
       vocabulary.length > 0 && jsxs("section", {
         className: "va-filter-surface rounded-2xl va-surface-muted border p-4",
         children: [

@@ -7,8 +7,11 @@ import {
 import { nowIso } from "../storeCore.js";
 import {
   buildFolderTree,
+  addFolderEntityRef,
   createFolderValue,
+  folderHasEntity,
   getDescendantFolderIds,
+  removeFolderEntityRef,
   moveFolderSafe
 } from "../../features/folders/viewModel.js";
 
@@ -27,6 +30,8 @@ export const foldersActionKeys = [
   "toggleFolderExpanded",
   "addItemToFolder",
   "removeItemFromFolder",
+  "addEntityToFolder",
+  "removeEntityFromFolder",
   "setSelectedFolder",
   "loadFoldersFromStorage",
   "clearFoldersStore"
@@ -141,8 +146,8 @@ export function createFoldersActions({ set, get }) {
 
     addItemToFolder: async (folderId, itemId) => {
       const target = get().folders.find((folder) => folder.id === folderId);
-      if (!target || !itemId || target.itemIds.includes(itemId)) return false;
-      const updated = { ...target, itemIds: [...target.itemIds, itemId], updatedAt: nowIso() };
+      if (!target || !itemId || folderHasEntity(target, "archive-item", itemId)) return false;
+      const updated = addFolderEntityRef({ ...target, updatedAt: nowIso() }, "archive-item", itemId);
       set((state) => ({ folders: state.folders.map((folder) => folder.id === folderId ? updated : folder) }));
       await dbPut(STORES.FOLDERS, updated).catch(() => {});
       return true;
@@ -150,8 +155,27 @@ export function createFoldersActions({ set, get }) {
 
     removeItemFromFolder: async (folderId, itemId) => {
       const target = get().folders.find((folder) => folder.id === folderId);
-      if (!target || !target.itemIds.includes(itemId)) return false;
-      const updated = { ...target, itemIds: target.itemIds.filter((id) => id !== itemId), updatedAt: nowIso() };
+      if (!target || !folderHasEntity(target, "archive-item", itemId)) return false;
+      const updated = removeFolderEntityRef({ ...target, updatedAt: nowIso() }, "archive-item", itemId);
+      set((state) => ({ folders: state.folders.map((folder) => folder.id === folderId ? updated : folder) }));
+      await dbPut(STORES.FOLDERS, updated).catch(() => {});
+      return true;
+    },
+
+    addEntityToFolder: async (folderId, entityType, entityId) => {
+      const target = get().folders.find((folder) => folder.id === folderId);
+      if (!target || !entityType || !entityId) return false;
+      const updated = addFolderEntityRef({ ...target, updatedAt: nowIso() }, entityType, entityId);
+      if (updated === target) return false;
+      set((state) => ({ folders: state.folders.map((folder) => folder.id === folderId ? updated : folder) }));
+      await dbPut(STORES.FOLDERS, updated).catch(() => {});
+      return true;
+    },
+
+    removeEntityFromFolder: async (folderId, entityType, entityId) => {
+      const target = get().folders.find((folder) => folder.id === folderId);
+      if (!target || !entityType || !entityId) return false;
+      const updated = removeFolderEntityRef({ ...target, updatedAt: nowIso() }, entityType, entityId);
       set((state) => ({ folders: state.folders.map((folder) => folder.id === folderId ? updated : folder) }));
       await dbPut(STORES.FOLDERS, updated).catch(() => {});
       return true;
