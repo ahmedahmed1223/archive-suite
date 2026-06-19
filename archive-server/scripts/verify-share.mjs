@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 
 import { createShareScope, resolveScopedItemIds, filterSnapshotForShare } from "../src/share/scope.js";
 import { mintShareToken, readShareToken, readShareTokenPayload, ShareTokenError } from "../src/share/token.js";
+import { createShareInvitationService } from "../src/share/invitationService.js";
 import { signJwt } from "../src/auth/jwt.js";
 import { createApiServer } from "../src/api/server.js";
 
@@ -111,6 +112,44 @@ run("password-protected share tokens require the link password", () => {
   const payload = readShareTokenPayload(token, secret, { password: "open-sesame" });
   assert.equal(payload.passwordProtected, true);
   assert.deepEqual(payload.scope, { type: "items", ids: ["v1"], label: "لقطات", permission: "view" });
+});
+
+run("share invitation service mints token, sends email, and stores invitation", async () => {
+  const SECRET = "share-secret";
+  const sent = [];
+  const invitations = [];
+  const svc = createShareInvitationService({
+    resolvedShareSecret: SECRET,
+    sendMail: async (message) => {
+      sent.push(message);
+      return { sent: true };
+    },
+    resolveStorage: () => ({
+      put: async (store, row) => {
+        if (store === "share_invitations") invitations.push(row);
+        return row;
+      }
+    })
+  });
+
+  const result = await svc.createInvitation({
+    email: " Reviewer@Example.COM ",
+    scope: { type: "items", ids: ["v1"], permission: "comment" },
+    title: "مراجعة خارجية",
+    message: "راجع التعليقات قبل النشر.",
+    origin: "https://archive.example",
+    sender: { sub: "u1", username: "Admin" }
+  });
+
+  assert.equal(result.invitation.email, "reviewer@example.com");
+  assert.equal(result.invitation.permission, "comment");
+  assert.equal(result.invitation.persisted, true);
+  assert.equal(result.invitation.status, "sent");
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].text, /https:\/\/archive\.example\/api\/share\//);
+  assert.equal(invitations.length, 1);
+  const payload = readShareTokenPayload(result.token, SECRET);
+  assert.deepEqual(payload.scope, { type: "items", ids: ["v1"], label: "", permission: "comment" });
 });
 
 run("HTTP: POST /api/share needs auth; GET /api/share/:token is public + scoped", async () => {
@@ -244,6 +283,69 @@ run("HTTP: share-access enforces comment capability and item scope", async () =>
     assert.equal(comment.text, "تعليق عام");
     assert.equal(comment.authorName, "مراجع");
     assert.equal(comments.length, 1);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
+run("HTTP: share invitations require auth and send/store invitation", async () => {
+  const SECRET = "s6";
+  const sent = [];
+  const invitations = [];
+  const storage = {
+    snapshot: async () => SNAP,
+    put: async (store, row) => {
+      if (store === "share_invitations") invitations.push(row);
+      return row;
+    }
+  };
+  const server = createApiServer({
+    backend: "test",
+    authSecret: SECRET,
+    rateLimit: null,
+    resolveStorage: () => storage,
+    notificationSendMail: async (message) => {
+      sent.push(message);
+      return { sent: true };
+    }
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const noAuth = await fetch(`${base}/api/share/invitations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "reviewer@example.com", scope: { type: "items", ids: ["v1"] } })
+    });
+    assert.equal(noAuth.status, 401);
+
+    const jwt = signJwt({ sub: "u1", role: "admin", username: "Admin" }, SECRET);
+    const invalid = await fetch(`${base}/api/share/invitations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+      body: JSON.stringify({ email: "not-an-email", scope: { type: "items", ids: ["v1"] } })
+    });
+    assert.equal(invalid.status, 400);
+
+    const ok = await fetch(`${base}/api/share/invitations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+      body: JSON.stringify({
+        email: "reviewer@example.com",
+        scope: { type: "items", ids: ["v1"], permission: "comment" },
+        title: "مراجعة",
+        message: "فضلاً راجع السجل."
+      })
+    });
+    assert.equal(ok.status, 201);
+    const payload = (await ok.json()).result;
+    assert.ok(payload.token);
+    assert.equal(payload.invitation.email, "reviewer@example.com");
+    assert.equal(payload.invitation.permission, "comment");
+    assert.equal(payload.emailStatus.sent, true);
+    assert.equal(sent.length, 1);
+    assert.equal(invitations.length, 1);
+    assert.match(payload.url, /\/api\/share\//);
   } finally {
     await new Promise((r) => server.close(r));
   }
