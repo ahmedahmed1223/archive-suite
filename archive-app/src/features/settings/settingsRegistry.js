@@ -305,6 +305,9 @@ export const SETTINGS_REGISTRY = [
     ["redo", "إعادة", "Ctrl+Y"],
     ["viewGrid", "عرض الشبكة", "Ctrl+1"],
     ["viewList", "عرض القائمة", "Ctrl+2"],
+    ["viewTable", "عرض الجدول", "Ctrl+3"],
+    ["viewGallery", "عرض المعرض", "Ctrl+4"],
+    ["viewKanban", "فتح لوحات المشاريع", "Ctrl+5"],
     ["deleteSelected", "حذف المحدد", "Delete"],
   ].map(([key, label, def]) => ({
     id: `shortcut.${key}`,

@@ -19,6 +19,8 @@ export const GLOBAL_SHORTCUT_ACTION_ORDER = [
   "viewGrid",
   "viewList",
   "viewTable",
+  "viewGallery",
+  "viewKanban",
   "deleteSelected",
   "goBack"
 ];

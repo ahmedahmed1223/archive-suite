@@ -9,7 +9,7 @@ import { SkeletonBlock } from "../../components/ui/index.js";
 import { formatNumber } from "../../utils/formatting.js";
 import { parseVideoTags } from "../videos/viewModel.js";
 import { computeCompleteness } from "./completeness.js";
-import { getArchiveRenderViewMode, groupArchiveItemsForKanban } from "./viewModel.js";
+import { getArchiveRenderViewMode } from "./viewModel.js";
 import { useReorderDnd } from "./useReorderDnd.js";
 import { useDndController } from "../dnd/dndController.js";
 import { setDragCountBadge } from "../../components/dnd/DragPreview.jsx";
@@ -124,85 +124,6 @@ function ArchiveGalleryView({ visibleItems, itemActions, kbFocusClass }) {
   });
 }
 
-function ArchiveKanbanView({ visibleItems, itemActions, updateVideoItem, showToast }) {
-  const [draggingId, setDraggingId] = React.useState(null);
-  const columns = React.useMemo(() => groupArchiveItemsForKanban(visibleItems), [visibleItems]);
-  const itemsById = React.useMemo(() => new Map(visibleItems.map((item) => [item.id, item])), [visibleItems]);
-
-  const handleDrop = async (event, columnId) => {
-    event.preventDefault();
-    const itemId = event.dataTransfer?.getData("text/plain") || draggingId;
-    setDraggingId(null);
-    const item = itemsById.get(itemId);
-    const droppedInCurrentColumn = columns
-      .find((column) => column.id === columnId)
-      ?.items.some((columnItem) => columnItem.id === itemId);
-    if (!item || droppedInCurrentColumn) return;
-    if (!updateVideoItem) {
-      showToast?.("تغيير الحالة غير متاح حالياً", "warning");
-      return;
-    }
-    try {
-      await updateVideoItem({ ...item, workflowStatus: columnId });
-      showToast?.("تم نقل العنصر بين أعمدة الكانبان", "success");
-    } catch (error) {
-      showToast?.(error?.message || "تعذر نقل العنصر", "error");
-    }
-  };
-
-  return jsx("div", {
-    className: "overflow-x-auto pb-2",
-    dir: "rtl",
-    children: jsx("div", {
-      className: "grid min-w-[64rem] gap-3 lg:grid-cols-6",
-      role: "list",
-      "aria-label": "كانبان حالات عناصر الأرشيف",
-      children: columns.map((column) => jsxs("section", {
-        className: "card card-sm va-surface-muted min-h-72 rounded-2xl border border-white/10 bg-base-200/40",
-        onDragOver: (event) => event.preventDefault(),
-        onDrop: (event) => handleDrop(event, column.id),
-        role: "listitem",
-        "aria-label": `عمود ${column.label}`,
-        children: [
-          jsxs("header", {
-            className: "card-body gap-2 border-b border-white/10 p-3",
-            children: [
-              jsxs("div", {
-                className: "flex items-center justify-between gap-2",
-                children: [
-                  jsx("h3", { className: "card-title text-sm text-base-content", children: column.label }),
-                  jsx("span", { className: "badge badge-sm badge-soft", children: formatNumber(column.items.length) })
-                ]
-              }),
-              jsx("p", { className: "text-[11px] leading-5 text-base-content/55", children: "اسحب بطاقة هنا لتحديث حالتها." })
-            ]
-          }),
-          jsx("div", {
-            className: "card-body gap-2 p-2",
-            children: column.items.length ? column.items.map((item, index) => jsx("div", {
-              draggable: Boolean(updateVideoItem),
-              onDragStart: (event) => {
-                setDraggingId(item.id);
-                event.dataTransfer?.setData("text/plain", item.id);
-                if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-              },
-              onDragEnd: () => setDraggingId(null),
-              className: draggingId === item.id ? "opacity-55" : "",
-              children: jsx(VideoTileItem, {
-                ...itemActions(item, index),
-                itemSize: "compact"
-              })
-            }, item.id)) : jsx("div", {
-              className: "rounded-xl border border-dashed border-white/10 p-4 text-center text-xs leading-5 text-base-content/45",
-              children: "لا توجد عناصر في هذا العمود."
-            })
-          })
-        ]
-      }, column.id))
-    })
-  });
-}
-
 function renderItemsForViewMode(deps) {
   const {
     activeViewMode,
@@ -257,14 +178,6 @@ function renderItemsForViewMode(deps) {
       visibleItems,
       itemActions,
       kbFocusClass
-    });
-  }
-  if (renderViewMode === "kanban") {
-    return jsx(ArchiveKanbanView, {
-      visibleItems,
-      itemActions,
-      updateVideoItem,
-      showToast
     });
   }
   if (renderViewMode === "tiles") {
@@ -418,10 +331,9 @@ export function ArchivePageResults(props) {
 
   // §19.8 — reorder DnD (mouse + touch) for the grid view, persisted via the
   // page-state hook. Only enabled when a handler exists and we're not in the
-  // table/kanban views (those have their own column/status DnD semantics).
+  // table view (that view has its own column semantics).
   const reorderEnabled = Boolean(reorderArchiveItems)
     && activeViewMode !== "details"
-    && activeViewMode !== "kanban"
     && !showDeleted;
   const reorder = useReorderDnd({ enabled: reorderEnabled, onReorder: reorderArchiveItems });
 
@@ -545,7 +457,7 @@ export function ArchivePageResults(props) {
     if (!canPreviewNext) return;
     setPreviewId?.(visibleItems[previewIndex + 1].id);
   }, [canPreviewNext, previewIndex, setPreviewId, visibleItems]);
-  const viewSupportsVirtualization = activeViewMode !== "gallery" && activeViewMode !== "kanban";
+  const viewSupportsVirtualization = activeViewMode !== "gallery";
   const renderedVisibleItems = viewSupportsVirtualization
     ? virtualItems.map(({ item }) => item)
     : visibleItems;
@@ -619,7 +531,7 @@ export function ArchivePageResults(props) {
                 viewSupportsVirtualization && topSpacerHeight > 0 && jsx("div", { style: { height: topSpacerHeight }, "aria-hidden": "true" }),
                 renderItemsForViewMode({
                   ...props,
-                  // Pass only the virtualized slice where the layout is linear; masonry/kanban need the full page.
+                  // Pass only the virtualized slice where the layout is linear; masonry needs the full page.
                   visibleItems: renderedVisibleItems,
                   typeOptions,
                   kbFocusedIndex: focusedIndex,

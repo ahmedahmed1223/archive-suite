@@ -3,7 +3,6 @@ import {
   CheckSquare,
   FolderOpen,
   Images,
-  Kanban,
   LayoutGrid,
   RefreshCw,
   Rows3,
@@ -68,8 +67,7 @@ const VIEW_MODE_BUTTONS = [
   { id: "gallery", label: "معرض", Icon: Images },
   { id: "compact", label: "مدمجة", Icon: Rows3 },
   { id: "list", label: "قائمة", Icon: Archive },
-  { id: "details", label: "تفاصيل", Icon: FolderOpen },
-  { id: "kanban", label: "كانبان", Icon: Kanban }
+  { id: "details", label: "تفاصيل", Icon: FolderOpen }
 ];
 
 /**
