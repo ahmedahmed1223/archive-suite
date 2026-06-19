@@ -11,6 +11,7 @@ import { handleSearch } from "./searchHandler.js";
 import { exportTimelineToMp4 } from "../export/mp4.js";
 import { createInMemoryMediaJobStore, createMediaJobWorker, montageOutputKey, storeMontageOutput } from "../media/mediaJobs.js";
 import { createConversionService } from "../conversion/conversionService.js";
+import { createSharePermissionService } from "../share/sharePermissionService.js";
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
 import { verifyJwt, signJwt } from "../auth/jwt.js";
 import { revokeToken } from "../auth/tokenBlacklist.js";
@@ -341,6 +342,9 @@ export function createApiServer({
       conversionSvc.syncJobResult(job.id, { status, outputKey: job.outputKey, error: job.error }).catch(() => {});
     });
   }
+
+  // §16.7 — share permission enforcement for protected actions on shared resources.
+  const sharePermissionSvc = createSharePermissionService({ resolvedShareSecret });
 
   // §20.5 security — the public API key endpoint may ONLY read these content
   // stores. An allowlist (not a denylist) keeps sensitive stores — users,
@@ -1192,6 +1196,41 @@ export function createApiServer({
       }
     }
 
+    // §16.15 — Derived files list for an item or storage key.
+    // GET /api/media/derived?sourceItemId=<id>  OR  ?sourceKey=<key>
+    if (req.method === "GET" && url.split("?")[0] === "/api/media/derived") {
+      if (!requireAuth(req, res)) return undefined;
+      const params = new URLSearchParams(url.includes("?") ? url.slice(url.indexOf("?") + 1) : "");
+      const sourceItemId = params.get("sourceItemId") || "";
+      const sourceKey = params.get("sourceKey") || "";
+      if (!sourceItemId && !sourceKey) {
+        return send(res, 400, { ok: false, error: "sourceItemId أو sourceKey مطلوب." });
+      }
+      try {
+        const files = sourceItemId
+          ? await conversionSvc.listForItem(sourceItemId)
+          : await conversionSvc.listForKey(sourceKey);
+        return send(res, 200, { ok: true, result: files.map((f) => ({
+          id: f.id,
+          sourceItemId: f.sourceItemId,
+          sourceKey: f.sourceKey,
+          conversionType: f.conversionType,
+          label: f.label,
+          status: f.status,
+          outputKey: f.outputKey,
+          mimeType: f.mimeType,
+          fileSizeBytes: f.fileSizeBytes != null ? Number(f.fileSizeBytes) : null,
+          errorMessage: f.errorMessage,
+          jobId: f.jobId,
+          createdBy: f.createdBy,
+          createdAt: f.createdAt,
+          completedAt: f.completedAt
+        })) });
+      } catch {
+        return send(res, 500, { ok: false, error: "فشل جلب الملفات المشتقة." });
+      }
+    }
+
     // Scoped sharing (G6) — mint a signed public share link. Auth + rate-limited.
     // Body: { scope: { type: "all"|"items"|"collection", ids?: [], label? },
     //         sharedWithUserId?: string }  — optional for user-to-user share notifications.
@@ -1272,6 +1311,56 @@ export function createApiServer({
         return send(res, 200, { ok: true, result: filterSnapshotForShare(snapshot, share.scope, share) });
       } catch (error) {
         return send(res, error?.statusCode || 404, { ok: false, error: error?.message || "Share link not found" });
+      }
+    }
+
+    // §16.7 — Share-access: verify capabilities and perform permission-gated actions.
+    // GET  /api/share-access?shareToken=<token>  → returns capabilities
+    // POST /api/share-access/comments            → post comment via share link (canComment)
+    if (req.method === "GET" && url.split("?")[0] === "/api/share-access") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const check = sharePermissionSvc.fromRequest(req, { password: req.headers["x-share-password"] });
+      if (!check.ok) return send(res, check.status, { ok: false, error: check.error });
+      const caps = sharePermissionSvc.capabilities(check.payload);
+      return send(res, 200, { ok: true, result: { permission: check.payload.scope?.permission || "view", capabilities: caps } });
+    }
+
+    if (req.method === "POST" && url.split("?")[0] === "/api/share-access/comments") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      const check = sharePermissionSvc.fromRequest(req, { password: req.headers["x-share-password"] });
+      if (!check.ok) return send(res, check.status, { ok: false, error: check.error });
+      if (!sharePermissionSvc.allows(check.payload, "canComment")) {
+        return send(res, 403, { ok: false, error: "رابط المشاركة لا يمنح صلاحية التعليق." });
+      }
+      try {
+        const body = await readJsonBody(req);
+        const itemId = String(body?.itemId || "").trim();
+        const text = String(body?.text || body?.content || "").trim();
+        const authorName = String(body?.authorName || "").trim().slice(0, 80) || "زائر";
+        if (!itemId) return send(res, 400, { ok: false, error: "معرّف العنصر مطلوب." });
+        if (!text) return send(res, 400, { ok: false, error: "نص التعليق مطلوب." });
+        if (!sharePermissionSvc.scopeIncludesItem(check.payload, itemId)) {
+          return send(res, 403, { ok: false, error: "العنصر ليس ضمن نطاق هذا الرابط." });
+        }
+        const comment = {
+          id: `sc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          itemId,
+          text: text.slice(0, 4000),
+          authorName,
+          authorType: "share_link",
+          shareJti: check.payload.jti || "",
+          createdAt: new Date().toISOString()
+        };
+        // Persist via storage if available (best-effort).
+        try {
+          const storage = resolveStorage();
+          await storage.put?.("share_comments", comment);
+        } catch {
+          // no-op: local/SPA backends may not support share_comments store
+        }
+        return send(res, 201, { ok: true, result: comment });
+      } catch (err) {
+        return send(res, 400, { ok: false, error: err?.message || "فشل حفظ التعليق." });
       }
     }
 

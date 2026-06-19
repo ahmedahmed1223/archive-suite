@@ -34,7 +34,8 @@ export const PAGE_MANIFEST = [
   { id: "analytics", group: "administration", heavy: true, meta: { title: "تحليلات الأرشيف", breadcrumb: "الإدارة / التحليلات", hint: "لوحة شخصية تكشف النمو الشهري وأكثر الوسوم والعناصر غير المصنفة والمكررات وصحة الأرشيف.", helpSection: "reports-settings" } },
   { id: "automation", group: "administration", heavy: true, meta: { title: "الأتمتة", breadcrumb: "الإدارة / الأتمتة", hint: "قواعد أتمتة بصرية: عند حدث (إضافة/تعديل) نفّذ إجراءات مثل إضافة وسوم أو نقل لمجموعة تلقائياً.", helpSection: "reports-settings" } },
   { id: "appearance", group: "administration", heavy: false, meta: { title: "المظهر", breadcrumb: "الإدارة / المظهر", hint: "تخصيص السمة والكثافة والألوان ومشاركة الإعدادات.", helpSection: "reports-settings" } },
-  { id: "shared-links", group: "daily", heavy: false, meta: { title: "روابط المشاركة", breadcrumb: "الرئيسية / روابط المشاركة", hint: "إدارة روابط المشاركة التي أنشأتها على هذا الجهاز مع إمكانية الإلغاء.", helpSection: "dashboard-archive" } }
+  { id: "shared-links", group: "daily", heavy: false, meta: { title: "روابط المشاركة", breadcrumb: "الرئيسية / روابط المشاركة", hint: "إدارة روابط المشاركة التي أنشأتها على هذا الجهاز مع إمكانية الإلغاء.", helpSection: "dashboard-archive" } },
+  { id: "shared-with-me", group: "daily", heavy: false, meta: { title: "المشترك معي", breadcrumb: "الرئيسية / المشترك معي", hint: "الوصول إلى المحتوى الذي شاركه معك آخرون برابط مشاركة، مع سجل للروابط السابقة.", helpSection: "dashboard-archive" } }
 ];
 
 export const PAGE_CONTEXT_META = Object.fromEntries(

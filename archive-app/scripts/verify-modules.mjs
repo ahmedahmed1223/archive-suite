@@ -948,8 +948,8 @@ run("navigation view model", () => {
 run("page migration native status", () => {
   const status = getPageMigrationStatus();
   const summary = getPageMigrationSummary(status);
-  assert.equal(summary.total, 35);
-  assert.equal(summary.native, 35);
+  assert.equal(summary.total, 37);
+  assert.equal(summary.native, 37);
   assert.equal(summary.wrappedPages, 0);
   assert.equal(status.find((page) => page.id === "archive")?.status, "native");
   assert.equal(status.find((page) => page.id === "discover")?.status, "native");
