@@ -1,7 +1,7 @@
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { motion } from "framer-motion";
-import { CalendarRange, ExternalLink } from "lucide-react";
+import { CalendarRange, CircleDot, ExternalLink, GitBranch, ListFilter } from "lucide-react";
 
 import { PageHero } from "../components/ui/V1Primitives.jsx";
 import { EmptyState } from "../components/common/EmptyState.jsx";
@@ -9,11 +9,14 @@ import { useAppStore } from "../stores/index.js";
 import { formatDateTime, formatNumber } from "../utils/formatting.js";
 import {
   TIMELINE_GRANULARITIES,
+  TIMELINE_LANE_GROUPS,
   buildTimeline,
+  buildTimelineLanes,
   timelineTypeTotals
 } from "../features/timeline/timelineSelectors.js";
 
 const GRANULARITY_LABELS = { day: "يوم", week: "أسبوع", month: "شهر", year: "سنة" };
+const LANE_GROUP_LABELS = { all: "سلسلة واحدة", type: "حسب النوع", year: "حسب السنة", workflow: "حسب الحالة" };
 const TYPE_PALETTE = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#ef4444", "#6b7280"];
 
 function colorForType(index) {
@@ -23,11 +26,16 @@ function colorForType(index) {
 export function TimelinePage() {
   const { videoItems = [], contentTypes = [], setCurrentPage, setSelectedItemId } = useAppStore();
   const [granularity, setGranularity] = React.useState("month");
-  const [activeKey, setActiveKey] = React.useState(null);
+  const [groupBy, setGroupBy] = React.useState("type");
+  const [activeNode, setActiveNode] = React.useState(null);
 
   const timeline = React.useMemo(
     () => buildTimeline(videoItems, { granularity }),
     [videoItems, granularity]
+  );
+  const lanesModel = React.useMemo(
+    () => buildTimelineLanes(videoItems, { granularity, groupBy }),
+    [videoItems, granularity, groupBy]
   );
   const typeTotals = React.useMemo(() => timelineTypeTotals(timeline), [timeline]);
   const typeColor = React.useMemo(() => {
@@ -40,11 +48,18 @@ export function TimelinePage() {
     [contentTypes]
   );
 
-  const activeBucket = timeline.buckets.find((bucket) => bucket.key === activeKey) || null;
+  const activeLane = lanesModel.lanes.find((lane) => lane.key === activeNode?.laneKey) || null;
+  const activeBucket = activeLane?.buckets.find((bucket) => bucket.key === activeNode?.bucketKey) || null;
   const openItem = (item) => {
     setSelectedItemId?.(item.id);
     setCurrentPage?.("detail");
   };
+
+  React.useEffect(() => {
+    if (!activeNode) return;
+    const exists = lanesModel.lanes.some((lane) => lane.key === activeNode.laneKey && lane.buckets.some((bucket) => bucket.key === activeNode.bucketKey));
+    if (!exists) setActiveNode(null);
+  }, [activeNode, lanesModel]);
 
   return jsxs(motion.div, {
     initial: { opacity: 0, y: 8 },
@@ -56,18 +71,38 @@ export function TimelinePage() {
       jsx(PageHero, {
         icon: jsx(CalendarRange, { className: "h-6 w-6 va-accent-text" }),
         title: "الخط الزمني",
-        description: "توزيع عناصر الأرشيف عبر الزمن — بدّل الدقة، واطّلع على ما أُضيف في كل فترة."
+        description: "سلاسل زمنية لعناصر الأرشيف على شكل عقد متصلة. بدّل الدقة أو أنشئ أكثر من شريط حسب النوع أو السنة أو الحالة."
       }),
-      jsxs("section", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-        jsx("div", { role: "tablist", "aria-label": "دقة الخط الزمني", className: "flex gap-1 rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-1", children: TIMELINE_GRANULARITIES.map((value) => jsx("button", {
-          type: "button",
-          role: "tab",
-          "aria-selected": granularity === value,
-          onClick: () => { setGranularity(value); setActiveKey(null); },
-          className: `rounded-[var(--va-radius-md)] px-3 py-1.5 text-sm font-semibold transition-colors ${granularity === value ? "va-accent-bg-soft va-accent-text-on-soft border va-accent-border" : "text-[var(--va-text-2)] hover:text-[var(--va-text)]"}`,
-          children: GRANULARITY_LABELS[value]
-        }, value)) }),
-        jsxs("span", { className: "text-sm text-[var(--va-text-muted)]", children: [`${formatNumber(timeline.total)} عنصر · ${formatNumber(timeline.buckets.length)} فترة`] })
+      jsxs("section", { className: "grid gap-3 rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3 xl:grid-cols-[minmax(0,1fr)_auto]", children: [
+        jsxs("div", { className: "flex flex-wrap gap-3", children: [
+          jsxs("div", { className: "min-w-[16rem] flex-1", children: [
+            jsxs("p", { className: "mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--va-text-2)]", children: [jsx(ListFilter, { className: "h-4 w-4 va-accent-text" }), "آلية إنشاء الأشرطة" ] }),
+            jsx("div", { role: "tablist", "aria-label": "آلية إنشاء الأشرطة الزمنية", className: "flex flex-wrap gap-1 rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-1", children: TIMELINE_LANE_GROUPS.map((value) => jsx("button", {
+              type: "button",
+              role: "tab",
+              "aria-selected": groupBy === value,
+              onClick: () => { setGroupBy(value); setActiveNode(null); },
+              className: `rounded-[var(--va-radius-md)] px-3 py-1.5 text-sm font-semibold transition-colors ${groupBy === value ? "va-accent-bg-soft va-accent-text-on-soft border va-accent-border" : "text-[var(--va-text-2)] hover:text-[var(--va-text)]"}`,
+              children: LANE_GROUP_LABELS[value]
+            }, value)) })
+          ] }),
+          jsxs("div", { className: "min-w-[14rem]", children: [
+            jsxs("p", { className: "mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--va-text-2)]", children: [jsx(CalendarRange, { className: "h-4 w-4 va-accent-text" }), "دقة العقد الزمنية" ] }),
+            jsx("div", { role: "tablist", "aria-label": "دقة الخط الزمني", className: "flex gap-1 rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-1", children: TIMELINE_GRANULARITIES.map((value) => jsx("button", {
+              type: "button",
+              role: "tab",
+              "aria-selected": granularity === value,
+              onClick: () => { setGranularity(value); setActiveNode(null); },
+              className: `rounded-[var(--va-radius-md)] px-3 py-1.5 text-sm font-semibold transition-colors ${granularity === value ? "va-accent-bg-soft va-accent-text-on-soft border va-accent-border" : "text-[var(--va-text-2)] hover:text-[var(--va-text)]"}`,
+              children: GRANULARITY_LABELS[value]
+            }, value)) })
+          ] })
+        ] }),
+        jsxs("div", { className: "grid grid-cols-3 gap-2 text-xs sm:min-w-[22rem]", children: [
+          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "العناصر" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.total) })] }),
+          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الأشرطة" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.lanes.length) })] }),
+          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الفترات" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(timeline.buckets.length) })] })
+        ] })
       ] }),
       Object.keys(typeTotals).length > 0 ? jsx("section", {
         className: "flex flex-wrap gap-2",
@@ -79,46 +114,67 @@ export function TimelinePage() {
           ]
         }, type))
       }) : null,
-      timeline.buckets.length === 0 ? jsx(EmptyState, {
+      lanesModel.lanes.length === 0 ? jsx(EmptyState, {
         icon: jsx(CalendarRange, { className: "h-16 w-16" }),
         title: "لا عناصر مؤرّخة بعد",
         description: "أضف عناصر إلى الأرشيف وستظهر هنا موزّعة على محور الزمن."
-      }) : jsx("section", {
-        className: "rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4",
-        children: jsx("div", {
-          className: "flex items-end gap-1.5 overflow-x-auto pb-2",
-          style: { minHeight: "12rem" },
-          role: "list",
-          "aria-label": "توزيع العناصر عبر الزمن",
-          children: timeline.buckets.map((bucket) => {
-            const heightPct = timeline.maxCount ? Math.max(6, Math.round((bucket.count / timeline.maxCount) * 100)) : 0;
-            const isActive = bucket.key === activeKey;
-            const segments = Object.entries(bucket.byType);
-            return jsxs("button", {
-              type: "button",
-              role: "listitem",
-              onClick: () => setActiveKey(isActive ? null : bucket.key),
-              title: `${bucket.label} — ${bucket.count}`,
-              className: `group flex min-w-[2.25rem] shrink-0 flex-col items-center gap-1 rounded-[var(--va-radius-md)] p-1 transition-colors ${isActive ? "bg-emerald-500/12" : "hover:bg-[var(--va-surface-2)]"}`,
-              children: [
-                jsx("span", { className: "font-[family-name:var(--va-font-mono)] text-[10px] font-semibold text-[var(--va-text-2)]", children: formatNumber(bucket.count) }),
-                jsx("span", {
-                  className: "flex w-7 flex-col-reverse overflow-hidden rounded-md",
-                  style: { height: `${heightPct}%`, minHeight: "0.5rem" },
-                  children: segments.map(([type, count]) => jsx("span", {
-                    style: { backgroundColor: typeColor.get(type) || "#10b981", flexGrow: count, display: "block" }
-                  }, type))
-                }),
-                jsx("span", { className: "max-w-[3.5rem] truncate text-[9px] text-[var(--va-text-muted)]", children: bucket.label })
-              ]
-            }, bucket.key);
-          })
-        })
-      }),
+      }) : jsx("section", { className: "space-y-4", "aria-label": "سلاسل الخط الزمني", children: lanesModel.lanes.map((lane, laneIndex) => {
+        const laneColor = groupBy === "type" ? typeColor.get(lane.key) || colorForType(laneIndex) : colorForType(laneIndex);
+        const width = Math.max(720, lane.buckets.length * 132);
+        return jsxs("article", {
+          className: "rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4",
+          children: [
+            jsxs("header", { className: "mb-4 flex flex-wrap items-center justify-between gap-3", children: [
+              jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
+                jsx("span", { className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border", style: { borderColor: `${laneColor}44`, backgroundColor: `${laneColor}18`, color: laneColor }, children: jsx(GitBranch, { className: "h-5 w-5" }) }),
+                jsxs("div", { className: "min-w-0", children: [
+                  jsx("h2", { className: "truncate text-base font-bold text-[var(--va-text)]", children: groupBy === "type" ? typeName(lane.label) : lane.label }),
+                  jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: `${formatNumber(lane.total)} عنصر · ${formatNumber(lane.buckets.length)} عقدة` })
+                ] })
+              ] }),
+              jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1 text-xs text-[var(--va-text-2)]", children: lane.range.from && lane.range.to ? `${formatDateTime(lane.range.from)} ← ${formatDateTime(lane.range.to)}` : "بلا نطاق" })
+            ] }),
+            jsx("div", { className: "overflow-x-auto pb-2", dir: "rtl", children: jsx("div", {
+              className: "relative flex items-center gap-0 py-5",
+              style: { minWidth: width },
+              role: "list",
+              "aria-label": `سلسلة ${lane.label}`,
+              children: lane.buckets.map((bucket, index) => {
+                const active = activeNode?.laneKey === lane.key && activeNode?.bucketKey === bucket.key;
+                const size = 42 + Math.round((bucket.count / Math.max(1, lane.maxCount)) * 30);
+                const majorType = Object.entries(bucket.byType).sort((a, b) => b[1] - a[1])[0]?.[0];
+                const nodeColor = typeColor.get(majorType) || laneColor;
+                return jsxs("div", { className: "flex min-w-[8rem] flex-1 items-center", children: [
+                  index > 0 && jsx("span", { className: "h-1 flex-1 rounded-full", style: { background: `linear-gradient(90deg, ${nodeColor}33, ${laneColor}66)` }, "aria-hidden": true }),
+                  jsxs("button", {
+                    type: "button",
+                    role: "listitem",
+                    onClick: () => setActiveNode(active ? null : { laneKey: lane.key, bucketKey: bucket.key }),
+                    className: `group relative flex shrink-0 flex-col items-center gap-2 rounded-2xl p-2 transition-colors ${active ? "bg-emerald-500/12" : "hover:bg-[var(--va-surface-2)]"}`,
+                    title: `${bucket.label} — ${bucket.count}`,
+                    children: [
+                      jsxs("span", {
+                        className: "grid place-items-center rounded-full border text-sm font-bold text-white shadow-lg transition-transform group-hover:scale-105",
+                        style: { width: size, height: size, borderColor: `${nodeColor}66`, background: `radial-gradient(circle at 35% 30%, ${nodeColor}, ${laneColor}99)` },
+                        children: [
+                          jsx(CircleDot, { className: "mb-0.5 h-4 w-4 opacity-90" }),
+                          formatNumber(bucket.count)
+                        ]
+                      }),
+                      jsx("span", { className: "max-w-[7rem] truncate text-center text-[11px] font-semibold text-[var(--va-text-2)]", children: bucket.label }),
+                      jsx("span", { className: "text-[10px] text-[var(--va-text-muted)]", children: majorType ? typeName(majorType) : "غير محدد" })
+                    ]
+                  })
+                ] }, bucket.key);
+              })
+            }) })
+          ]
+        }, lane.key);
+      }) }),
       activeBucket ? jsxs("section", {
         className: "rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4",
         children: [
-          jsxs("h2", { className: "mb-3 text-base font-bold text-[var(--va-text)]", children: [activeBucket.label, " ", jsxs("span", { className: "text-sm font-normal text-[var(--va-text-muted)]", children: [`(${formatNumber(activeBucket.count)})`] })] }),
+          jsxs("h2", { className: "mb-3 text-base font-bold text-[var(--va-text)]", children: [activeLane?.label ? `${groupBy === "type" ? typeName(activeLane.label) : activeLane.label} · ` : "", activeBucket.label, " ", jsxs("span", { className: "text-sm font-normal text-[var(--va-text-muted)]", children: [`(${formatNumber(activeBucket.count)})`] })] }),
           jsx("div", { className: "space-y-2", children: activeBucket.items.slice(0, 100).map((item) => jsxs("button", {
             type: "button",
             onClick: () => openItem(item),
