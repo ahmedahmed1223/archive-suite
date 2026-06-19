@@ -4,6 +4,7 @@
 import { useFocusOnMount } from "../components/common/useFocusOnMount.js";
 import {
   AlertTriangle,
+  ArrowRight,
   ChevronDown,
   ChevronUp,
   Database,
@@ -539,6 +540,83 @@ function TypeCard({ type, count, active, index, onOpen, onEdit, onArchive }) {
   }, type.id);
 }
 
+function TypeDetailScreen({ type, count = 0, settings = {}, onBack, onEdit, onArchive }) {
+  const fields = type?.fields || [];
+  const subtypes = type?.subtypes || [];
+  const accent = type?.color || "#6366f1";
+  const numberSystem = settings.numberSystem;
+
+  return jsxs("section", {
+    className: "va-preview-panel space-y-5 rounded-2xl va-surface-muted border p-4 text-right",
+    dir: "rtl",
+    children: [
+      jsxs("header", { className: "grid gap-4 border-b border-white/5 pb-4 lg:grid-cols-[auto_1fr_auto]", children: [
+        jsxs("button", {
+          type: "button",
+          onClick: onBack,
+          className: "btn btn-ghost btn-sm gap-2 self-start",
+          "aria-label": "رجوع إلى قائمة الأنواع",
+          children: [jsx(ArrowRight, { className: "h-4 w-4" }), "رجوع"]
+        }),
+        jsxs("div", { className: "flex min-w-0 items-start gap-3", children: [
+          jsx("span", {
+            className: "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-2xl",
+            style: { backgroundColor: `${accent}22`, color: accent, boxShadow: `0 0 0 1px ${accent}35` },
+            children: type?.icon || "📁"
+          }),
+          jsxs("div", { className: "min-w-0", children: [
+            jsx("h2", { className: "text-xl font-bold text-white", children: type?.name || "نوع محتوى" }),
+            jsx("p", { className: "mt-1 truncate text-xs text-gray-500", dir: "ltr", children: type?.nameEn || type?.id || "" }),
+            type?.status === "archived" && jsx("span", { className: "mt-2 inline-block rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200", children: "مؤرشف" })
+          ] })
+        ] }),
+        jsxs("div", { className: "flex flex-wrap gap-2 self-start", children: [
+          jsxs("button", { type: "button", onClick: onEdit, className: "btn btn-primary gap-2", children: [jsx(PenLine, { className: "h-4 w-4" }), "تعديل النوع والحقول"] }),
+          jsxs("button", { type: "button", onClick: onArchive, className: "btn btn-ghost gap-2 text-red-200 hover:bg-red-500/10", children: [jsx(Trash2, { className: "h-4 w-4" }), "أرشفة"] })
+        ] })
+      ] }),
+      jsx("div", { className: "grid gap-3 sm:grid-cols-3", children: [
+        ["مواد تستخدمه", count],
+        ["الفروع", subtypes.length],
+        ["الحقول المخصصة", fields.length]
+      ].map(([label, value]) => jsxs("div", { className: "rounded-2xl border border-white/10 bg-white/5 p-4", children: [
+        jsx("p", { className: "text-xs text-gray-500", children: label }),
+        jsx("p", { className: "mt-2 text-2xl font-bold text-white", children: formatNumber(value, numberSystem) })
+      ] }, label)) }),
+      jsxs("section", { className: "rounded-2xl va-surface-subtle border p-4", children: [
+        jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+          jsx("h3", { className: "text-sm font-bold text-white", children: "الفروع" }),
+          jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: formatNumber(subtypes.length, numberSystem) })
+        ] }),
+        subtypes.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-2", children: subtypes.map((subtype) => jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-gray-300", children: subtype.name }, subtype.id)) }) : jsx("p", { className: "mt-3 rounded-xl border border-dashed border-white/10 p-4 text-center text-sm text-gray-500", children: "لا توجد فروع لهذا النوع." })
+      ] }),
+      jsxs("section", { className: "rounded-2xl va-surface-subtle border p-4", children: [
+        jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+          jsx("h3", { className: "text-sm font-bold text-white", children: "الحقول المخصصة" }),
+          jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: formatNumber(fields.length, numberSystem) })
+        ] }),
+        fields.length ? jsx("div", { className: "mt-3 grid gap-3 md:grid-cols-2", children: fields.map((field) => {
+          const fieldType = FIELD_TYPE_OPTIONS.find((typeOption) => typeOption.id === field.type)?.label || field.type;
+          return jsxs("article", { className: "rounded-xl va-surface-muted border p-3", children: [
+            jsxs("div", { className: "flex flex-wrap items-start justify-between gap-2", children: [
+              jsxs("div", { className: "min-w-0", children: [
+                jsxs("p", { className: "flex flex-wrap items-center gap-2 text-sm font-semibold text-white", children: [
+                  field.label,
+                  field.required || field.requiredToSave ? jsx("span", { className: "rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-100", children: "مطلوب" }) : null
+                ] }),
+                jsx("p", { className: "mt-1 truncate font-mono text-xs text-gray-500", dir: "ltr", children: field.storageKey || field.name })
+              ] }),
+              jsx("span", { className: "shrink-0 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300", children: fieldType })
+            ] }),
+            field.group && jsx("p", { className: "mt-2 text-xs text-gray-500", children: `المجموعة: ${field.group}` }),
+            (field.options || []).length ? jsx("div", { className: "mt-2 flex flex-wrap gap-1.5", children: field.options.slice(0, 8).map((option) => jsx("span", { className: "rounded-full border border-white/10 bg-gray-950/35 px-2 py-0.5 text-[11px] text-gray-400", children: option }, option)) }) : null
+          ] }, field.id);
+        }) }) : jsx("p", { className: "mt-3 rounded-xl border border-dashed border-white/10 p-4 text-center text-sm text-gray-500", children: "لا توجد حقول مخصصة لهذا النوع." })
+      ] })
+    ]
+  });
+}
+
 export function TypesPage() {
   const {
     contentTypes = [],
@@ -554,6 +632,7 @@ export function TypesPage() {
   const [query, setQuery] = React.useState("");
   const [includeArchived, setIncludeArchived] = React.useState(false);
   const [selectedTypeId, setSelectedTypeId] = React.useState(contentTypes.find((type) => type.status !== "archived")?.id || contentTypes[0]?.id || null);
+  const [openedTypeId, setOpenedTypeId] = React.useState(null);
   const [editingType, setEditingType] = React.useState(null);
   const [showEditor, setShowEditor] = React.useState(false);
   const [impactType, setImpactType] = React.useState(null);
@@ -578,6 +657,7 @@ export function TypesPage() {
     ]));
   }, [editingType, typeImpactsById]);
   const selectedType = contentTypes.find((type) => type.id === selectedTypeId) || filteredTypes[0] || null;
+  const openedType = openedTypeId ? contentTypes.find((type) => type.id === openedTypeId) || null : null;
   const activeTypes = contentTypes.filter((type) => type.status !== "archived");
   const totalSubtypes = contentTypes.reduce((sum, type) => sum + (type.subtypes?.length || 0), 0);
   const totalFields = contentTypes.reduce((sum, type) => sum + (type.fields?.length || 0), 0);
@@ -587,12 +667,35 @@ export function TypesPage() {
     setSelectedTypeId(filteredTypes[0]?.id || null);
   }, [contentTypes, filteredTypes, selectedTypeId]);
 
+  React.useEffect(() => {
+    if (openedTypeId && !contentTypes.some((type) => type.id === openedTypeId)) setOpenedTypeId(null);
+  }, [contentTypes, openedTypeId]);
+
+  const openCreateType = () => {
+    setOpenedTypeId(null);
+    setEditingType(null);
+    setShowEditor(true);
+  };
+
+  const openTypeDetail = (type) => {
+    setSelectedTypeId(type.id);
+    setOpenedTypeId(type.id);
+  };
+
+  const openTypeEditor = (type) => {
+    setSelectedTypeId(type.id);
+    setOpenedTypeId(type.id);
+    setEditingType(type);
+    setShowEditor(true);
+  };
+
   const saveType = async (type) => {
     return typeSaveAction.run(async () => {
       try {
         if (editingType) await updateContentType?.(type);
         else await addContentType?.(type);
         setSelectedTypeId(type.id);
+        setOpenedTypeId(type.id);
         setShowEditor(false);
         setEditingType(null);
       } catch (error) {
@@ -611,12 +714,28 @@ export function TypesPage() {
       await deleteContentType?.(impactType.id);
       showToast?.("تمت أرشفة نوع المحتوى مع إبقاء المواد المرتبطة", "success");
       if (selectedTypeId === impactType.id) setSelectedTypeId(filteredTypes.find((type) => type.id !== impactType.id)?.id || null);
+      if (openedTypeId === impactType.id) setOpenedTypeId(null);
     } catch (error) {
       reportError(showNotification, error, { context: "أرشفة نوع المحتوى", recovery: { label: "إعادة الأرشفة", run: confirmArchiveType } });
     } finally {
       setImpactType(null);
     }
   };
+
+  if (showEditor) {
+    return jsx(MotionPage, {
+      className: "p-4 sm:p-6",
+      children: jsx(TypeEditor, {
+        type: editingType,
+        fieldUsage: editingFieldUsage,
+        contentTypes,
+        videoItems,
+        saving: typeSaveAction.busy,
+        onCancel: () => { setShowEditor(false); setEditingType(null); },
+        onSave: saveType
+      })
+    });
+  }
 
   return jsxs(MotionPage, {
     className: "space-y-6 p-4 sm:p-6",
@@ -625,7 +744,7 @@ export function TypesPage() {
         icon: jsx(Database, { className: "h-6 w-6 va-accent-text" }),
         title: "إدارة الأنواع والحقول",
         description: "أنواع المحتوى والفروع والحقول المخصصة، مع دعم حقل ملف محلي يحفظ metadata فقط.",
-        actions: jsxs("button", { type: "button", onClick: () => { setEditingType(null); setShowEditor(true); }, className: "btn btn-primary gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "نوع جديد"] }),
+        actions: jsxs("button", { type: "button", onClick: openCreateType, className: "btn btn-primary gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "نوع جديد"] }),
         children: jsx("div", { className: "mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4", children: [
           { id: "types", label: "أنواع نشطة", value: formatNumber(activeTypes.length, settings.numberSystem), icon: Layers3 },
           { id: "subtypes", label: "فروع", value: formatNumber(totalSubtypes, settings.numberSystem), icon: Workflow },
@@ -650,7 +769,15 @@ export function TypesPage() {
           }, stat.id);
         }) })
       }),
-      !showEditor && jsxs("section", { className: "va-control-surface overflow-hidden rounded-2xl va-surface-muted border text-right", children: [
+      openedType ? jsx(TypeDetailScreen, {
+        type: openedType,
+        count: usageCounts[openedType.id] || 0,
+        settings,
+        onBack: () => setOpenedTypeId(null),
+        onEdit: () => openTypeEditor(openedType),
+        onArchive: () => archiveType(openedType)
+      }) : jsxs(React.Fragment, { children: [
+      jsxs("section", { className: "va-control-surface overflow-hidden rounded-2xl va-surface-muted border text-right", children: [
         jsxs("button", {
           type: "button",
           onClick: toggleJourney,
@@ -678,11 +805,7 @@ export function TypesPage() {
           jsx("p", { className: "mt-1 text-xs leading-5 text-gray-500", children: detail })
         ] }, label)) })
       ] }),
-      showEditor && jsx(TypeEditor, { type: editingType, fieldUsage: editingFieldUsage, contentTypes, videoItems, saving: typeSaveAction.busy, onCancel: () => { setShowEditor(false); setEditingType(null); }, onSave: saveType }),
-      // §19.9 — while the editor is open it takes over the page as a full
-      // dedicated view; the list + preview-aside grid is hidden until the
-      // user cancels/saves and returns to the list.
-      !showEditor && jsxs("section", { className: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]", children: [
+      jsxs("section", { className: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]", children: [
         jsxs("div", { className: "space-y-4", children: [
           jsxs("div", { className: "va-filter-surface grid gap-3 rounded-2xl va-surface-muted border p-3 md:grid-cols-[minmax(0,1fr)_auto]", children: [
             jsxs("label", { className: "relative block", children: [
@@ -694,7 +817,7 @@ export function TypesPage() {
               "إظهار المؤرشف"
             ] })
           ] }),
-          filteredTypes.length ? jsx("div", { className: "grid gap-3 lg:grid-cols-2", children: filteredTypes.map((type, index) => jsx(TypeCard, { type, index, count: usageCounts[type.id] || 0, active: selectedType?.id === type.id, onOpen: () => setSelectedTypeId(type.id), onEdit: () => { setEditingType(type); setShowEditor(true); }, onArchive: () => archiveType(type) }, type.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
+          filteredTypes.length ? jsx("div", { className: "grid gap-3 lg:grid-cols-2", children: filteredTypes.map((type, index) => jsx(TypeCard, { type, index, count: usageCounts[type.id] || 0, active: selectedType?.id === type.id, onOpen: () => openTypeDetail(type), onEdit: () => openTypeEditor(type), onArchive: () => archiveType(type) }, type.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
             type: "types",
             title: "لا توجد أنواع مطابقة",
             description: "امسح البحث أو أنشئ نوعًا جديدًا."
@@ -732,6 +855,7 @@ export function TypesPage() {
             jsx("p", { className: "mt-1 text-xs text-gray-600", children: "انقر على أي نوع في القائمة لعرض الفروع والحقول هنا." })
           ] })
         ] })
+      ] })
       ] }),
       impactType && jsx(TypeImpactSheet, { type: impactType, impact: typeImpactsById[impactType.id] || analyzeTypeImpact(impactType, videoItems), settings, onCancel: () => setImpactType(null), onArchive: confirmArchiveType })
     ]
