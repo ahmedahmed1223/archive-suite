@@ -72,7 +72,7 @@ function MediaJobsBoard({ enabled, jobs, busy, onRefresh, onRetry }) {
           jsx("button", { type: "button", onClick: () => onRetry?.(job.id), className: "rounded-lg border border-red-500/30 px-2 py-1 text-[11px] text-red-100 hover:bg-red-500/10", children: "إعادة محاولة" })
         ] }) : null
       ] }, job.id);
-    }) }) : enabled ? jsx("p", { className: "mt-3 text-sm text-gray-500", children: "لا توجد مهام وسائط حديثة." }) : null
+    }) }) : enabled ? jsx("p", { className: "mt-3 text-sm text-[var(--va-text-muted)]", children: "لا توجد مهام وسائط حديثة." }) : null
   ] });
 }
 

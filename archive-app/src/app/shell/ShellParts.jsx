@@ -135,15 +135,20 @@ export class AppErrorBoundary extends React.Component {
   render() {
     if (!this.state.error) return this.props.children;
     return (
-      <div dir="rtl" role="alert" aria-live="assertive" className="m-6 rounded-2xl border border-red-500/25 bg-red-500/10 p-6 text-right text-red-100">
+      <div
+        dir="rtl"
+        role="alert"
+        aria-live="assertive"
+        className="m-6 rounded-[var(--va-radius-xl)] border border-[color-mix(in_oklab,var(--va-status-danger)_32%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_10%,var(--va-surface))] p-6 text-right text-[var(--va-text)]"
+      >
         <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-1 h-5 w-5 shrink-0" aria-hidden="true" />
+          <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-[var(--va-status-danger)]" aria-hidden="true" />
           <div>
             <h2 className="text-lg font-bold">حدث خطأ في هذه الشاشة</h2>
-            <p className="mt-2 text-sm leading-7 text-red-100/80">
+            <p className="mt-2 text-sm leading-7 text-[var(--va-text-2)]">
               لم يتم تطبيق أي تغيير غير مكتمل. أعد تحميل الصفحة أو افتح فحص النظام إذا تكرر الخطأ.
             </p>
-            <pre dir="ltr" className="mt-4 max-h-40 overflow-auto rounded-xl bg-black/25 p-3 text-left text-xs text-red-50">
+            <pre dir="ltr" className="mt-4 max-h-40 overflow-auto rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-bg)] p-3 text-left text-xs text-[var(--va-text-2)]">
               {this.state.error?.message || String(this.state.error)}
             </pre>
           </div>
@@ -154,17 +159,18 @@ export class AppErrorBoundary extends React.Component {
 }
 
 export function DashboardSkeleton() {
+  const block = "animate-pulse rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)]";
   return (
-    <div dir="rtl" className="space-y-5 p-6">
-      <div className="va-skeleton h-24 rounded-2xl" />
+    <div dir="rtl" className="space-y-5 p-6" aria-hidden="true">
+      <div className={`${block} h-24`} />
       <div className="grid gap-4 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="va-skeleton h-32 rounded-2xl" />
+          <div key={index} className={`${block} h-32`} />
         ))}
       </div>
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="va-skeleton h-96 rounded-2xl" />
-        <div className="va-skeleton h-96 rounded-2xl" />
+        <div className={`${block} h-96`} />
+        <div className={`${block} h-96`} />
       </div>
     </div>
   );
@@ -174,20 +180,20 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
   const currentStep = steps.find((step) => step.id === currentStepId) || steps[0];
   const completedStepIds = steps.filter((step) => step.status === "done").map((step) => step.id);
   return (
-    <main dir="rtl" className="va-onboarding-shell flex min-h-screen items-center justify-center bg-[#07111f] p-6 text-right text-white">
+    <main dir="rtl" className="va-onboarding-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-right text-[var(--va-text)]">
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-        className="va-onboarding-panel w-full max-w-3xl rounded-3xl border border-white/10 bg-[#0b1626]/95 p-7 shadow-2xl shadow-black/30"
+        className="va-onboarding-panel w-full max-w-3xl rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-7 shadow-[var(--va-elev-popover)]"
       >
         <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl va-accent-bg-soft va-accent-text-on-soft">
+          <span className="flex h-14 w-14 items-center justify-center rounded-[var(--va-radius-lg)] va-accent-bg-soft va-accent-text-on-soft">
             <Sparkles className="h-7 w-7" />
           </span>
           <div>
             <h1 className="text-2xl font-bold">أرشيف الفيديو</h1>
-            <p className="mt-1 text-sm text-slate-400">نجهز البيئة المحلية ونفتح آخر حالة آمنة للتطبيق.</p>
+            <p className="mt-1 text-sm text-[var(--va-text-muted)]">نجهز البيئة المحلية ونفتح آخر حالة آمنة للتطبيق.</p>
           </div>
         </div>
 
@@ -198,11 +204,11 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
             aria-atomic="true"
             className="flex items-center justify-between gap-3 text-sm"
           >
-            <span className="font-semibold text-slate-100">{currentStep?.label || "بدء التشغيل"}</span>
+            <span className="font-semibold text-[var(--va-text)]">{currentStep?.label || "بدء التشغيل"}</span>
             <span dir="ltr" className="font-mono va-accent-text-on-soft">{Math.max(0, Math.min(100, Math.round(progress)))}%</span>
           </div>
           <div
-            className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"
+            className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--va-surface-2)]"
             dir="rtl"
             role="progressbar"
             aria-valuenow={Math.max(0, Math.min(100, Math.round(progress)))}
@@ -223,8 +229,8 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
             description="يتم تحميل IndexedDB على هذا الجهاز فقط، ويمكنك نقل الأرشيف لاحقًا من مركز البيانات."
             className="p-4"
           />
-          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
-            <p className="text-sm font-semibold text-slate-200">نجهّز الواجهة التالية</p>
+          <div className="rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4">
+            <p className="text-sm font-semibold text-[var(--va-text)]">نجهّز الواجهة التالية</p>
             <div className="mt-3 space-y-2">
               <SkeletonBlock className="h-3 w-11/12" />
               <SkeletonBlock className="h-3 w-8/12" />
@@ -234,13 +240,13 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
         </div>
 
         {warnings.length > 0 && (
-          <div role="alert" className="alert alert-warning mt-5 block rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100">
+          <div role="alert" className="alert alert-warning mt-5 block rounded-[var(--va-radius-md)] border border-[color-mix(in_oklab,var(--va-status-warning)_30%,transparent)] bg-[color-mix(in_oklab,var(--va-status-warning)_12%,var(--va-surface))] p-4 text-sm text-[var(--va-text)]">
             {warnings.slice(0, 2).map((warning) => <p key={warning.id || warning.message}>{warning.message || warning}</p>)}
           </div>
         )}
 
         {fatalError && (
-          <button type="button" onClick={onOpenDiagnostics} className="mt-5 rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-100">
+          <button type="button" onClick={onOpenDiagnostics} className="mt-5 rounded-[var(--va-radius-md)] border border-[color-mix(in_oklab,var(--va-status-danger)_35%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_14%,var(--va-surface))] px-4 py-2 text-sm font-semibold text-[var(--va-status-danger)] transition-colors hover:bg-[color-mix(in_oklab,var(--va-status-danger)_20%,var(--va-surface))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--va-status-danger)_55%,transparent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">
             فتح فحص النظام
           </button>
         )}
@@ -252,19 +258,19 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
 export function StartupRecoveryScreen({ report, onRetry, onOpenDiagnostics }) {
   const message = report?.fatalError?.userMessage || report?.fatalError?.message || "تعذر بدء التطبيق بشكل كامل.";
   return (
-    <main dir="rtl" className="va-onboarding-shell flex min-h-screen items-center justify-center bg-[#07111f] p-6 text-right text-white">
-      <section className="va-onboarding-panel w-full max-w-xl rounded-3xl border border-red-500/25 bg-[#0b1626] p-7">
-        <ShieldAlert className="h-10 w-10 text-red-300" />
+    <main dir="rtl" className="va-onboarding-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-right text-[var(--va-text)]">
+      <section className="va-onboarding-panel w-full max-w-xl rounded-[var(--va-radius-xl)] border border-[color-mix(in_oklab,var(--va-status-danger)_28%,transparent)] bg-[var(--va-elevated)] p-7 shadow-[var(--va-elev-2)]">
+        <ShieldAlert className="h-10 w-10 text-[var(--va-status-danger)]" />
         <h1 className="mt-4 text-2xl font-bold">شاشة استرداد بدء التشغيل</h1>
-        <p className="mt-3 text-sm leading-7 text-slate-300">{message}</p>
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-sm leading-7 text-slate-300">
+        <p className="mt-3 text-sm leading-7 text-[var(--va-text-2)]">{message}</p>
+        <div className="mt-4 rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 text-sm leading-7 text-[var(--va-text-2)]">
           بياناتك لا تُنقل إلى أي خادم. إذا استمر الخطأ، افتح فحص النظام لمعرفة حالة IndexedDB والمساحة المتاحة.
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
-          <button type="button" onClick={onOpenDiagnostics} className="btn btn-primary">
+          <button type="button" onClick={onOpenDiagnostics} className="inline-flex h-10 items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">
             فتح فحص النظام
           </button>
-          <button type="button" onClick={onRetry} className="btn btn-ghost">
+          <button type="button" onClick={onRetry} className="inline-flex h-10 items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-transparent px-4 text-sm font-medium text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">
             إعادة المحاولة
           </button>
         </div>
@@ -297,11 +303,11 @@ export function LockScreen() {
   };
 
   return (
-    <main dir="rtl" className="va-auth-shell flex min-h-screen items-center justify-center bg-[#07111f] p-6 text-right text-white">
-      <form onSubmit={submit} className="va-auth-card w-full max-w-md rounded-3xl border border-white/10 bg-[#0b1626] p-7">
+    <main dir="rtl" className="va-auth-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-right text-[var(--va-text)]">
+      <form onSubmit={submit} className="va-auth-card w-full max-w-md rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-7 shadow-[var(--va-elev-2)]">
         <Lock className="h-10 w-10 va-accent-text" />
         <h1 className="mt-4 text-2xl font-bold">التطبيق مقفل</h1>
-        <p className="mt-2 text-sm text-slate-400">أدخل كلمة المرور الرئيسية للمتابعة.</p>
+        <p className="mt-2 text-sm text-[var(--va-text-muted)]">أدخل كلمة المرور الرئيسية للمتابعة.</p>
         <PasswordField
           autoFocus
           value={password}
@@ -310,8 +316,8 @@ export function LockScreen() {
           autoComplete="current-password"
           placeholder="كلمة المرور"
         />
-        {error && <p className="mt-3 text-sm text-red-200">{error}</p>}
-        <button type="submit" className="btn btn-primary mt-5 w-full">
+        {error && <p className="mt-3 text-sm text-[var(--va-status-danger)]">{error}</p>}
+        <button type="submit" disabled={busy} className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)] disabled:cursor-not-allowed disabled:opacity-55">
           فتح
         </button>
       </form>
@@ -342,15 +348,15 @@ export function LoginScreen() {
   };
 
   return (
-    <main dir="rtl" className="va-onboarding-shell va-auth-shell flex min-h-screen items-center justify-center bg-[#07111f] p-6 text-right text-white">
-      <section className="va-onboarding-panel va-auth-card grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-[#0b1626] shadow-2xl shadow-black/30 md:grid-cols-[0.9fr_1.1fr]">
+    <main dir="rtl" className="va-onboarding-shell va-auth-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-right text-[var(--va-text)]">
+      <section className="va-onboarding-panel va-auth-card grid w-full max-w-5xl overflow-hidden rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] shadow-[var(--va-elev-popover)] md:grid-cols-[0.9fr_1.1fr]">
         <aside className="va-accent-bg-soft p-7">
           <Sparkles className="h-11 w-11 va-accent-text-on-soft" />
           <h1 className="mt-5 text-3xl font-bold">أرشيف الفيديو</h1>
           <p className="mt-3 text-sm leading-7 va-accent-text-on-soft">
             دخول سريع وآمن إلى الأرشيف المحلي، مع بقاء بياناتك على هذا الجهاز.
           </p>
-          <button type="button" onClick={openOnboarding} className="mt-6 rounded-xl border va-accent-border px-4 py-2 text-sm font-semibold va-accent-text-on-soft">
+          <button type="button" onClick={openOnboarding} className="mt-6 rounded-[var(--va-radius-md)] border va-accent-border px-4 py-2 text-sm font-semibold va-accent-text-on-soft transition-colors hover:bg-[color-mix(in_oklab,var(--va-v1-accent)_12%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">
             تشغيل معالج البداية
           </button>
         </aside>
@@ -359,16 +365,16 @@ export function LoginScreen() {
             <LogIn className="h-6 w-6 va-accent-text" />
             <h2 className="text-2xl font-bold">تسجيل الدخول</h2>
           </div>
-          <label className="mt-6 block text-sm text-slate-300">
+          <label className="mt-6 block text-sm text-[var(--va-text-2)]">
             المستخدم
-            <select value={username} onChange={(event) => setUsername(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white">
+            <select value={username} onChange={(event) => setUsername(event.target.value)} className="mt-2 w-full rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-[var(--va-surface)] px-4 py-3 text-[var(--va-text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/45 focus-visible:border-emerald-500/60">
               {users.length ? users.filter((user) => user.isActive !== false).map((user) => (
                 <option key={user.id || user.username} value={user.username}>{user.displayName || user.username}</option>
               )) : <option value="admin">admin</option>}
             </select>
           </label>
           <div className="mt-4">
-            <span className="block text-sm text-slate-300">كلمة المرور</span>
+            <span className="block text-sm text-[var(--va-text-2)]">كلمة المرور</span>
             <PasswordField
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -376,16 +382,16 @@ export function LoginScreen() {
               autoComplete="current-password"
             />
           </div>
-          <label className="mt-4 flex items-center gap-2 text-sm text-slate-300">
+          <label className="mt-4 flex items-center gap-2 text-sm text-[var(--va-text-2)]">
             <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 accent-emerald-500" />
             تذكر الجلسة على هذا الجهاز
           </label>
-          {authError && <p role="alert" className="alert alert-error mt-4 block rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-100">{authError}</p>}
-          <button type="submit" disabled={isLoading} className="btn btn-primary mt-6 w-full">
+          {authError && <p role="alert" className="alert alert-error mt-4 block rounded-[var(--va-radius-md)] border border-[color-mix(in_oklab,var(--va-status-danger)_30%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_10%,var(--va-surface))] p-3 text-sm text-[var(--va-status-danger)]">{authError}</p>}
+          <button type="submit" disabled={isLoading} className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)] disabled:cursor-not-allowed disabled:opacity-55">
             {isLoading ? "جار التحقق..." : "دخول"}
           </button>
           {users.length === 0 && (
-            <button type="button" onClick={() => skipPasswordSetup?.()} className="mt-3 w-full rounded-xl border border-white/10 px-4 py-3 text-sm text-slate-300">
+            <button type="button" onClick={() => skipPasswordSetup?.()} className="mt-3 inline-flex w-full items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-[var(--va-surface)] px-4 py-3 text-sm text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-elevated)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">
               البدء السريع بدون كلمة مرور
             </button>
           )}
@@ -396,17 +402,17 @@ export function LoginScreen() {
 }
 
 const TOAST_ICON = {
-  success: <CheckCircle2 className="mt-0.5 h-5 w-5 va-accent-text" />,
-  error: <AlertTriangle className="mt-0.5 h-5 w-5 text-red-300" />,
-  warning: <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-300" />,
-  info: <Info className="mt-0.5 h-5 w-5 text-sky-300" />
+  success: <CheckCircle2 className="mt-0.5 h-5 w-5 text-[var(--va-status-success)]" />,
+  error: <AlertTriangle className="mt-0.5 h-5 w-5 text-[var(--va-status-danger)]" />,
+  warning: <AlertTriangle className="mt-0.5 h-5 w-5 text-[var(--va-status-warning)]" />,
+  info: <Info className="mt-0.5 h-5 w-5 text-[var(--va-status-info)]" />
 };
 
 const TOAST_PROGRESS_COLOR = {
-  success: "bg-[var(--va-action)]",
-  error: "bg-red-400",
-  warning: "bg-amber-400",
-  info: "bg-sky-400"
+  success: "bg-[var(--va-status-success)]",
+  error: "bg-[var(--va-status-danger)]",
+  warning: "bg-[var(--va-status-warning)]",
+  info: "bg-[var(--va-status-info)]"
 };
 
 export function ToastNotification() {
@@ -419,7 +425,7 @@ export function ToastNotification() {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] left-1/2 z-[9990] flex w-[min(92vw,380px)] -translate-x-1/2 flex-col gap-2 text-right md:bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] lg:left-4 lg:translate-x-0"
+      className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] left-1/2 z-[var(--va-z-toast)] flex w-[min(92vw,380px)] -translate-x-1/2 flex-col gap-2 text-right md:bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] lg:left-4 lg:translate-x-0"
     >
       <AnimatePresence initial={false}>
         {topItems.map((notification) => (
@@ -430,7 +436,7 @@ export function ToastNotification() {
             exit={{ opacity: 0, x: -24, scale: 0.96, transition: { duration: 0.18 } }}
             transition={{ duration: 0.2 }}
             role={notification.type === "error" ? "alert" : undefined}
-            className="pointer-events-auto overflow-hidden rounded-2xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)]/95 text-white shadow-2xl shadow-black/25 backdrop-blur"
+            className="pointer-events-auto overflow-hidden rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] text-[var(--va-text)] shadow-[var(--va-elev-popover)] backdrop-blur"
             layout
           >
             <div className="flex items-start gap-3 p-4">
@@ -439,12 +445,12 @@ export function ToastNotification() {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold">{notification.title || "تنبيه"}</p>
                   {notification.count > 1 && (
-                    <span className="rounded-full border border-white/15 bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white/70">
+                    <span className="rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-[var(--va-text-2)]">
                       ×{notification.count}
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-sm leading-6 text-slate-300">{notification.message}</p>
+                <p className="mt-1 text-sm leading-6 text-[var(--va-text-2)]">{notification.message}</p>
                 {notification.action && (
                   <button
                     type="button"
@@ -452,18 +458,18 @@ export function ToastNotification() {
                       try { notification.action.run(); } catch (error) { console.warn("[toast action]", error); }
                       if (notification.action.dismissOnRun !== false) dismissNotification?.(notification.id);
                     }}
-                    className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[color-mix(in_srgb,var(--va-action)_40%,transparent)] bg-[color-mix(in_srgb,var(--va-action)_18%,transparent)] px-3 py-1 text-xs font-semibold text-white hover:bg-[color-mix(in_srgb,var(--va-action)_28%,transparent)]"
+                    className="mt-2 inline-flex items-center gap-1 rounded-[var(--va-radius-sm)] border border-[color-mix(in_srgb,var(--va-action)_40%,transparent)] bg-[color-mix(in_srgb,var(--va-action)_18%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--va-text)] transition-colors hover:bg-[color-mix(in_srgb,var(--va-action)_28%,transparent)]"
                   >
                     {notification.action.label}
                   </button>
                 )}
               </div>
-              <button type="button" onClick={() => dismissNotification?.(notification.id)} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="إغلاق">
+              <button type="button" onClick={() => dismissNotification?.(notification.id)} className="rounded-[var(--va-radius-sm)] p-1 text-[var(--va-text-muted)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]" aria-label="إغلاق">
                 <X className="h-4 w-4" />
               </button>
             </div>
             {typeof notification.progress === "number" && (
-              <div className="h-1 w-full bg-white/10">
+              <div className="h-1 w-full bg-[var(--va-surface-2)]">
                 <div
                   className={`h-full transition-all duration-300 ${TOAST_PROGRESS_COLOR[notification.type] || TOAST_PROGRESS_COLOR.info}`}
                   style={{ width: `${notification.progress}%` }}
@@ -621,18 +627,18 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
   const showRecentLabel = !query.trim() && recentCommandIds.length > 0;
 
   return createPortal(
-    <div dir="rtl" className="fixed inset-0 z-[9980] bg-black/60 p-4 text-right backdrop-blur-sm" onMouseDown={() => onOpenChange?.(false)}>
+    <div dir="rtl" className="fixed inset-0 z-[var(--va-z-command)] bg-black/55 p-4 text-right backdrop-blur-sm" onMouseDown={() => onOpenChange?.(false)}>
       <motion.section
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.2 }}
-        className="mx-auto mt-4 w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)] text-white shadow-2xl sm:mt-16"
+        className="mx-auto mt-4 w-full max-w-2xl overflow-hidden rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] text-[var(--va-text)] shadow-[var(--va-elev-popover)] sm:mt-16"
         onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label="لوحة الأوامر"
       >
-        <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
+        <div className="flex items-center gap-3 border-b border-[var(--va-border-soft)] px-4 py-3">
           <Search className="h-5 w-5 text-[var(--va-action)]" />
           <input
             autoFocus
@@ -640,18 +646,18 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="اكتب أمرًا أو صفحة، أو ابحث عن فيديو..."
-            className="min-h-11 flex-1 bg-transparent text-right outline-none placeholder:text-slate-500"
+            className="min-h-11 flex-1 bg-transparent text-right text-[var(--va-text)] outline-none placeholder:text-[var(--va-text-muted)]"
             aria-label="بحث الأوامر"
             aria-autocomplete="list"
           />
-          <button type="button" onClick={() => onOpenChange?.(false)} className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="إغلاق">
+          <button type="button" onClick={() => onOpenChange?.(false)} className="rounded-[var(--va-radius-sm)] p-2 text-[var(--va-text-muted)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]" aria-label="إغلاق">
             <X className="h-4 w-4" />
           </button>
         </div>
         <div ref={listRef} className="max-h-[min(460px,calc(100dvh-12rem))] overflow-auto p-2" role="listbox">
           {indexedGroups.map((group) => (
             <section key={group.id} className="py-1">
-              <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{group.label}</p>
+              <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--va-text-muted)]">{group.label}</p>
               {group.items.map(({ command, index }) => {
                 const Icon = command.icon || (command.kind === "item" ? Video : Command);
                 const active = index === activeIndex;
@@ -665,24 +671,24 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
                     data-command-index={index}
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => runCommand(command)}
-                    className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-right transition-colors ${active ? "bg-[color-mix(in_srgb,var(--va-action)_18%,transparent)]" : "hover:bg-white/[0.05]"}`}
+                    className={`flex w-full items-center gap-3 rounded-[var(--va-radius-lg)] px-4 py-3 text-right transition-colors ${active ? "bg-[color-mix(in_srgb,var(--va-action)_16%,transparent)] text-[var(--va-text)]" : "hover:bg-[var(--va-surface-2)]"}`}
                   >
-                    <Icon className={`h-5 w-5 shrink-0 ${active ? "text-white" : "text-[var(--va-action)]"}`} />
+                    <Icon className={`h-5 w-5 shrink-0 ${active ? "text-[var(--va-action)]" : "text-[var(--va-text-muted)]"}`} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold">{command.label}</span>
-                      <span className="block truncate text-xs text-slate-400">{command.detail}</span>
+                      <span className="block truncate text-xs text-[var(--va-text-muted)]">{command.detail}</span>
                     </span>
                     {badge && (
-                      <span className="shrink-0 rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-400">{badge}</span>
+                      <span className="shrink-0 rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-[10px] text-[var(--va-text-2)]">{badge}</span>
                     )}
                   </button>
                 );
               })}
             </section>
           ))}
-          {isEmpty && <p className="p-6 text-center text-sm text-slate-400">لا توجد نتائج مطابقة.</p>}
+          {isEmpty && <p className="p-6 text-center text-sm text-[var(--va-text-muted)]">لا توجد نتائج مطابقة.</p>}
         </div>
-        <div className="flex items-center justify-between gap-2 border-t border-white/10 px-4 py-2 text-[10px] text-slate-500">
+        <div className="flex items-center justify-between gap-2 border-t border-[var(--va-border-soft)] px-4 py-2 text-[10px] text-[var(--va-text-muted)]">
           <span>↑ ↓ للتنقل · Enter للاختيار · Esc للإغلاق</span>
           <span>{filtered.length} نتيجة</span>
         </div>
@@ -699,7 +705,7 @@ export function UndoRedoBar() {
   return (
     <div
       dir="rtl"
-      className="va-surface-muted fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] right-4 z-[9970] flex items-center gap-1 rounded-2xl border p-1.5 text-sm shadow-xl md:bottom-4 lg:right-[296px]"
+      className="va-surface-muted fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] right-4 z-[var(--va-z-toast)] flex items-center gap-1 rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-1.5 text-sm text-[var(--va-text)] shadow-[var(--va-elev-2)] md:bottom-4 lg:right-[296px]"
       role="group"
       aria-label="تراجع وإعادة"
     >
@@ -709,19 +715,19 @@ export function UndoRedoBar() {
         onClick={() => undoRedoManager.undo()}
         title="تراجع"
         aria-label="تراجع"
-        className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-medium text-gray-200 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex items-center gap-1.5 rounded-[var(--va-radius-md)] px-3 py-2 font-medium text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Undo2 className="h-4 w-4" aria-hidden="true" />
         تراجع
       </button>
-      <span aria-hidden="true" className="h-5 w-px bg-white/10" />
+      <span aria-hidden="true" className="h-5 w-px bg-[var(--va-border-soft)]" />
       <button
         type="button"
         disabled={!snapshot.canRedo}
         onClick={() => undoRedoManager.redo()}
         title="إعادة"
         aria-label="إعادة"
-        className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-medium text-gray-200 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex items-center gap-1.5 rounded-[var(--va-radius-md)] px-3 py-2 font-medium text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Redo2 className="h-4 w-4" aria-hidden="true" />
         إعادة
@@ -739,7 +745,7 @@ export function StatusBar() {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="va-surface-muted fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] right-1/2 z-[9960] max-w-[92vw] translate-x-1/2 truncate rounded-full border px-4 py-2 text-sm text-gray-200 shadow-xl md:bottom-4"
+      className="va-surface-muted fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] right-1/2 z-[var(--va-z-toast)] max-w-[92vw] translate-x-1/2 truncate rounded-full border border-[var(--va-border-soft)] bg-[var(--va-elevated)] px-4 py-2 text-sm text-[var(--va-text-2)] shadow-[var(--va-elev-2)] md:bottom-4"
     >
       {backgroundOperation.label || "عملية تعمل في الخلفية"}
     </div>
@@ -760,8 +766,8 @@ export function ForceChangePasswordDialog() {
   };
 
   return createPortal(
-    <div dir="rtl" className="fixed inset-0 z-[9995] flex items-center justify-center bg-black/70 p-4 text-right text-white">
-      <form onSubmit={submit} className="va-surface-muted w-full max-w-md rounded-3xl border p-6">
+    <div dir="rtl" className="fixed inset-0 z-[var(--va-z-modal)] flex items-center justify-center bg-black/55 p-4 text-right text-[var(--va-text)] backdrop-blur-sm">
+      <form onSubmit={submit} className="va-surface-muted w-full max-w-md rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-6 shadow-[var(--va-elev-popover)]">
         <KeyRound className="h-9 w-9 va-accent-text" />
         <h2 className="mt-4 text-xl font-bold">تغيير كلمة المرور مطلوب</h2>
         <PasswordField
@@ -771,8 +777,8 @@ export function ForceChangePasswordDialog() {
           autoComplete="new-password"
           placeholder="كلمة المرور الجديدة"
         />
-        {error && <p className="mt-3 text-sm text-red-200">{error}</p>}
-        <button type="submit" className="btn btn-primary mt-5 w-full">حفظ كلمة المرور</button>
+        {error && <p className="mt-3 text-sm text-[var(--va-status-danger)]">{error}</p>}
+        <button type="submit" className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">حفظ كلمة المرور</button>
       </form>
     </div>,
     document.body
@@ -813,14 +819,14 @@ export function V1ProductTour({ open, role = "viewer", onComplete, onSkip }) {
   const step = tourSteps[index] || tourSteps[0];
   const last = index >= tourSteps.length - 1;
   return createPortal(
-    <div dir="rtl" className="fixed inset-0 z-[9992] flex items-end justify-center bg-black/55 p-4 text-right text-white backdrop-blur-sm sm:items-center">
-      <section className="va-surface-muted w-full max-w-lg rounded-3xl border p-6 shadow-2xl">
+    <div dir="rtl" className="fixed inset-0 z-[var(--va-z-modal)] flex items-end justify-center bg-black/55 p-4 text-right text-[var(--va-text)] backdrop-blur-sm sm:items-center">
+      <section className="va-surface-muted w-full max-w-lg rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-6 shadow-[var(--va-elev-popover)]">
         <p className="text-xs font-semibold va-accent-text">جولة تشغيل {index + 1} / {tourSteps.length}</p>
         <h2 className="mt-3 text-2xl font-bold">{step.title}</h2>
-        <p className="mt-3 text-sm leading-7 text-gray-300">{step.body}</p>
+        <p className="mt-3 text-sm leading-7 text-[var(--va-text-2)]">{step.body}</p>
         <div className="mt-6 flex flex-wrap justify-between gap-3">
-          <button type="button" onClick={onSkip} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">تخطي</button>
-          <button type="button" onClick={() => last ? onComplete?.() : setIndex((value) => value + 1)} className="btn btn-primary">
+          <button type="button" onClick={onSkip} className="inline-flex items-center rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-transparent px-4 py-2 text-sm text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">تخطي</button>
+          <button type="button" onClick={() => last ? onComplete?.() : setIndex((value) => value + 1)} className="inline-flex h-10 items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">
             {last ? "إنهاء الجولة" : "التالي"}
           </button>
         </div>

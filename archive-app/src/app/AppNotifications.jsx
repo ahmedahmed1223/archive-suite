@@ -54,7 +54,7 @@ export function AppNotifications({
     children: [
       jsx(UploadQueueController, {}),
       jsx("div", {
-        className: "pointer-events-auto fixed inset-x-4 bottom-24 z-[9990] mx-auto max-h-[60vh] max-w-md overflow-auto md:inset-x-auto md:left-4 md:bottom-4",
+        className: "pointer-events-auto fixed inset-x-4 bottom-24 z-[var(--va-z-toast)] mx-auto max-h-[60vh] max-w-md overflow-auto md:inset-x-auto md:left-4 md:bottom-4",
         children: jsx(UploadQueue, {})
       }),
       jsx(ToastNotification, {}),

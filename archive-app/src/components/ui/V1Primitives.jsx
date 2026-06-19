@@ -337,12 +337,12 @@ export function CommandPanel({ title, description, icon, actions, children, high
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             {title && (
-              <h2 className="flex items-center gap-2 text-base font-bold text-white">
+              <h2 className="flex items-center gap-2 text-base font-bold text-[var(--va-text)]">
                 {icon}
                 {title}
               </h2>
             )}
-            {description && <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>}
+            {description && <p className="mt-1 text-sm leading-6 text-[var(--va-text-muted)]">{description}</p>}
           </div>
           {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
         </div>
@@ -356,7 +356,7 @@ export function ReportStrip({ items = [], className = "" }) {
   // DaisyUI `stats` — semantic stat display replacing custom grid (§1881 Phase 2)
   return (
     <section
-      className={cx("stats stats-vertical sm:stats-horizontal w-full overflow-visible rounded-2xl border border-white/10 bg-white/[0.02] text-right shadow-none", className)}
+      className={cx("stats stats-vertical sm:stats-horizontal w-full overflow-visible rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] text-right shadow-none", className)}
       dir="rtl"
       aria-label="ملخص التقارير"
     >
@@ -367,13 +367,13 @@ export function ReportStrip({ items = [], className = "" }) {
               {item.icon}
             </div>
           )}
-          <div className="stat-title text-xs text-gray-500">{item.label}</div>
-          <div className="stat-value mt-1 text-2xl font-bold text-white">
+          <div className="stat-title text-xs text-[var(--va-text-muted)]">{item.label}</div>
+          <div className="stat-value mt-1 text-2xl font-bold text-[var(--va-text)] font-[family-name:var(--va-font-mono)]">
             {Number.isFinite(item.animateTo)
               ? <AnimatedNumber value={item.animateTo} format={item.format} />
               : item.value}
           </div>
-          {item.hint && <div className="stat-desc mt-1 text-xs leading-5 text-gray-500">{item.hint}</div>}
+          {item.hint && <div className="stat-desc mt-1 text-xs leading-5 text-[var(--va-text-muted)]">{item.hint}</div>}
         </div>
       ))}
     </section>
@@ -389,7 +389,7 @@ export function QuickActionGrid({ actions = [], className = "" }) {
           type="button"
           onClick={action.onClick}
           disabled={action.disabled}
-          className="card card-border va-action-card group flex min-h-[4.8rem] w-full items-center gap-3 rounded-xl border border-white/10 bg-gray-800/30 p-3 text-right transition-colors hover:border-emerald-500/25 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+          className="card card-border va-action-card group flex min-h-[4.8rem] w-full items-center gap-3 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3 text-right transition-colors hover:border-emerald-500/25 hover:bg-[var(--va-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {action.icon && (
             <span className={cx("va-icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border", toneClasses[action.tone] || toneClasses.accent)}>
@@ -397,8 +397,8 @@ export function QuickActionGrid({ actions = [], className = "" }) {
             </span>
           )}
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-white group-hover:text-emerald-100">{action.label}</span>
-            {action.detail && <span className="mt-1 block text-xs leading-5 text-gray-500">{action.detail}</span>}
+            <span className="block text-sm font-semibold text-[var(--va-text)] group-hover:text-emerald-100">{action.label}</span>
+            {action.detail && <span className="mt-1 block text-xs leading-5 text-[var(--va-text-muted)]">{action.detail}</span>}
           </span>
         </button>
       ))}
@@ -417,10 +417,10 @@ export function ResultPreview({ title, meta, icon, actions, children, onClick, c
     >
       <span className="flex items-start justify-between gap-3">
         <span className="flex min-w-0 items-start gap-3">
-          {icon && <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] text-gray-300">{icon}</span>}
+          {icon && <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)]">{icon}</span>}
           <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold text-white">{title}</span>
-            {meta && <span className="mt-1 block truncate text-xs text-gray-500">{meta}</span>}
+            <span className="block truncate text-sm font-semibold text-[var(--va-text)]">{title}</span>
+            {meta && <span className="mt-1 block truncate text-xs text-[var(--va-text-muted)]">{meta}</span>}
           </span>
         </span>
         {actions && <span className="flex shrink-0 flex-wrap gap-2">{actions}</span>}
@@ -437,8 +437,8 @@ export function RiskActionPanel({ title, description, icon, actions, children, c
         <div className="flex min-w-0 items-start gap-3">
           {icon && <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-200">{icon}</span>}
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-white">{title}</h2>
-            {description && <p className="mt-1 text-sm leading-6 text-gray-400">{description}</p>}
+            <h2 className="text-base font-bold text-[var(--va-text)]">{title}</h2>
+            {description && <p className="mt-1 text-sm leading-6 text-[var(--va-text-2)]">{description}</p>}
           </div>
         </div>
         {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
@@ -466,7 +466,7 @@ export function UXStateBlock({
 }) {
   if (state === "loading") {
     return (
-      <section className={cx("card card-border rounded-2xl border border-white/10 bg-gray-900/30 p-4", className)} role="status" aria-live="polite" dir="rtl">
+      <section className={cx("card card-border rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4", className)} role="status" aria-live="polite" dir="rtl">
         <div className="space-y-3">
           <SkeletonBlock className="h-5 w-40" />
           <SkeletonBlock className="h-20 w-full" />
@@ -518,8 +518,8 @@ export function InsightPanel({ icon, title, description, actions, children, tone
         <div className="flex min-w-0 items-start gap-3">
           {icon && <span className={cx("va-icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border", toneClasses[tone] || toneClasses.accent)}>{icon}</span>}
           <div className="min-w-0">
-            {title && <h3 className="text-base font-bold text-white">{title}</h3>}
-            {description && <p className="mt-1 text-sm leading-7 text-gray-400">{description}</p>}
+            {title && <h3 className="text-base font-bold text-[var(--va-text)]">{title}</h3>}
+            {description && <p className="mt-1 text-sm leading-7 text-[var(--va-text-2)]">{description}</p>}
           </div>
         </div>
         {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
@@ -532,9 +532,9 @@ export function InsightPanel({ icon, title, description, actions, children, tone
 export function UXEmptyState({ icon, title, description, actions, className = "" }) {
   return (
     <section className={cx("card card-border va-ux-empty-state rounded-2xl border border-dashed p-8 text-center", className)} dir="rtl">
-      {icon && <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-gray-400">{icon}</div>}
-      {title && <h3 className="mt-4 text-lg font-bold text-white">{title}</h3>}
-      {description && <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-gray-500">{description}</p>}
+      {icon && <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)]">{icon}</div>}
+      {title && <h3 className="mt-4 text-lg font-bold text-[var(--va-text)]">{title}</h3>}
+      {description && <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-[var(--va-text-muted)]">{description}</p>}
       {actions && <div className="mt-5 flex flex-wrap justify-center gap-2">{actions}</div>}
     </section>
   );
@@ -542,7 +542,7 @@ export function UXEmptyState({ icon, title, description, actions, className = ""
 
 export function ResponsiveTabs({ tabs, activeTab, onChange, ariaLabel = "تبويبات", className = "" }) {
   return (
-    <nav className={cx("va-tab-surface rounded-2xl border border-white/10 bg-gray-900/50 p-2", className)} dir="rtl" aria-label={ariaLabel}>
+    <nav className={cx("va-tab-surface rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-2", className)} dir="rtl" aria-label={ariaLabel}>
       {tabs.map((tab) => {
         const selected = activeTab === tab.id;
         const Icon = tab.icon;
@@ -551,7 +551,7 @@ export function ResponsiveTabs({ tabs, activeTab, onChange, ariaLabel = "تبو�
             key={tab.id}
             type="button"
             onClick={() => onChange(tab.id)}
-            className={cx("relative mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-right text-sm transition-colors", selected ? "va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white")}
+            className={cx("relative mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-right text-sm transition-colors", selected ? "va-accent-text-on-soft" : "text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]")}
             aria-current={selected ? "page" : undefined}
           >
             {selected && <motion.span layoutId={`${ariaLabel}-active-tab`} className="absolute inset-0 rounded-xl border va-accent-border va-accent-bg-soft" />}
@@ -572,19 +572,19 @@ export function EntityCard({ title, description, icon, meta, actions, selected =
       onClick={onClick}
       className={cx(
         "card card-border va-entity-card va-card-subtle block w-full rounded-2xl border p-4 text-right transition-colors",
-        selected ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-950/30 hover:border-emerald-500/25 hover:bg-white/[0.04]",
+        selected ? "va-accent-border va-accent-bg-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface)] hover:border-emerald-500/25 hover:bg-[var(--va-surface-2)]",
         className
       )}
       dir="rtl"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="flex items-center gap-2 text-base font-bold text-white">
+          <h3 className="flex items-center gap-2 text-base font-bold text-[var(--va-text)]">
             {icon}
             <span className="truncate">{title}</span>
           </h3>
-          {description && <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-gray-500">{description}</p>}
-          {meta && <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-400">{meta}</div>}
+          {description && <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-[var(--va-text-muted)]">{description}</p>}
+          {meta && <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--va-text-2)]">{meta}</div>}
         </div>
         {actions}
       </div>

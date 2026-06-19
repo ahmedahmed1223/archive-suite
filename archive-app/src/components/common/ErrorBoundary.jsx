@@ -16,18 +16,18 @@ function ErrorBoundaryFallback({ error, onReset }) {
       aria-live="assertive"
       className="flex min-h-[200px] items-center justify-center p-6"
     >
-      <div className="w-full max-w-lg rounded-2xl border border-red-500/25 bg-[#0d1117] p-6 text-right shadow-xl">
+      <div className="w-full max-w-lg rounded-[var(--va-radius-xl)] border border-[color-mix(in_oklab,var(--va-status-danger)_25%,transparent)] bg-[var(--va-elevated)] p-6 text-right shadow-[var(--va-elev-2)]">
         {/* Icon + Title */}
         <div className="flex items-start gap-4">
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/15 text-2xl text-red-300"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--va-radius-lg)] bg-[color-mix(in_oklab,var(--va-status-danger)_15%,transparent)] text-2xl text-[var(--va-status-danger)]"
             aria-hidden="true"
           >
             ⚠
           </span>
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-white">{t("error.generic")}</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-400">
+            <h2 className="text-lg font-bold text-[var(--va-text)]">{t("error.generic")}</h2>
+            <p className="mt-1 text-sm leading-6 text-[var(--va-text-2)]">
               {t("error.retryOrReload")}
             </p>
           </div>
@@ -37,7 +37,7 @@ function ErrorBoundaryFallback({ error, onReset }) {
         {errorMessage && (
           <pre
             dir="ltr"
-            className="mt-4 max-h-32 overflow-auto rounded-xl bg-black/30 p-3 text-left text-xs leading-5 text-red-200/80"
+            className="mt-4 max-h-32 overflow-auto rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-bg)] p-3 text-left text-xs leading-5 text-[var(--va-text-2)]"
           >
             {errorMessage}
           </pre>
@@ -48,14 +48,14 @@ function ErrorBoundaryFallback({ error, onReset }) {
           <button
             type="button"
             onClick={onReset}
-            className="flex-1 rounded-xl border border-white/10 bg-[#1a2332] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#243041]"
+            className="flex-1 rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-[var(--va-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--va-text)] transition-colors hover:bg-[var(--va-elevated)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]"
           >
             {t("actions.retry")}
           </button>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="flex-1 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-100 transition-colors hover:bg-red-500/20"
+            className="flex-1 rounded-[var(--va-radius-md)] border border-[color-mix(in_oklab,var(--va-status-danger)_30%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_10%,var(--va-surface))] px-4 py-2.5 text-sm font-semibold text-[var(--va-status-danger)] transition-colors hover:bg-[color-mix(in_oklab,var(--va-status-danger)_18%,var(--va-surface))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--va-status-danger)_55%,transparent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]"
           >
             {t("status.reload")}
           </button>
