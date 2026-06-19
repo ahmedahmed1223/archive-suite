@@ -1,8 +1,10 @@
 import { describe, expect, test } from "vitest";
 import {
   TIMELINE_GRANULARITIES,
+  TIMELINE_LANE_GROUPS,
   bucketFor,
   buildTimeline,
+  buildTimelineLanes,
   timelineTypeTotals
 } from "./timelineSelectors.js";
 
@@ -73,5 +75,36 @@ describe("buildTimeline", () => {
 
   test("granularity list is stable", () => {
     expect(TIMELINE_GRANULARITIES).toEqual(["day", "week", "month", "year"]);
+  });
+});
+
+describe("buildTimelineLanes", () => {
+  test("builds one chronological lane per content type", () => {
+    const lanes = buildTimelineLanes([
+      item("a", "2026-06-01T00:00:00", { type: "video" }),
+      item("b", "2026-07-02T00:00:00", { type: "audio" }),
+      item("c", "2026-07-03T00:00:00", { type: "video" })
+    ], { groupBy: "type", granularity: "month" });
+
+    expect(lanes.groupBy).toBe("type");
+    expect(lanes.total).toBe(3);
+    expect(lanes.lanes.map((lane) => lane.key)).toEqual(["video", "audio"]);
+    expect(lanes.lanes[0].buckets.map((bucket) => bucket.key)).toEqual(["2026-06", "2026-07"]);
+  });
+
+  test("groups lanes by year using the selected date field", () => {
+    const lanes = buildTimelineLanes([
+      item("a", "2025-12-01T00:00:00"),
+      item("b", "2026-01-02T00:00:00")
+    ], { groupBy: "year", granularity: "month" });
+
+    expect(lanes.lanes.map((lane) => lane.key)).toEqual(["2025", "2026"]);
+  });
+
+  test("supports a single all-archive lane and stable group list", () => {
+    const lanes = buildTimelineLanes([item("a", "2026-06-01T00:00:00")]);
+    expect(TIMELINE_LANE_GROUPS).toEqual(["all", "type", "year", "workflow"]);
+    expect(lanes.lanes).toHaveLength(1);
+    expect(lanes.lanes[0].key).toBe("all");
   });
 });
