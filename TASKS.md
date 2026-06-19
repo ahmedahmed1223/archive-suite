@@ -1896,7 +1896,7 @@
 
 ### 16.15 P2 — تحويل المحتوى بين الصيغ والملفات المشتقة (Content Format Conversion)
 
-- [ ] `[P2]` ⏱️L **بناء نظام تحويل صيغ داخلي يحفظ النتائج كملفات مشتقة مرتبطة بالأصل** — وجود FFmpeg وOCR يصبح أكثر قيمة إذا استطاع المستخدم توليد صيغ بديلة من داخل التطبيق.
+- [x] `[P2]` ⏱️L **بناء نظام تحويل صيغ داخلي يحفظ النتائج كملفات مشتقة مرتبطة بالأصل** — وجود FFmpeg وOCR يصبح أكثر قيمة إذا استطاع المستخدم توليد صيغ بديلة من داخل التطبيق.
   - **الملفات الجديدة:**
     - `archive-server/src/conversion/conversionService.js` — تحويل فيديو/صوت/صورة/مستند.
     - `archive-server/src/conversion/conversionJobRunner.js` — تشغيل التحويلات الطويلة.
@@ -1913,7 +1913,7 @@
   - 🔄 **تحسين إدارة الملفات المشتقة 2026-06-18:** أضيف حذف مشتق منفرد من صفحة التفاصيل: يؤكد المستخدم العملية، يحذف مفتاح FileStore للمشتق فقط، ثم يحدّث `metadata.media.derivedFiles`/`derivedKey` دون لمس الأصل. أُضيف `removeDerivedFile` وتحديث `createMediaMetadataPatch` لدعم تصفير آخر مشتق. التحقق: `features/media/viewModel.test.js`، `DetailPage.relations.test.jsx`، و`build:spa`.
   - 🔄 **شريحة آمنة 2026-06-19:** أُضيف `ConversionPanel.jsx` في `features/media/` — مكوّن قابل لإعادة الاستخدام يعرض خيارات التحويل حسب نوع الملف (فيديو: صوت/ويب/GIF؛ صوت: MP3؛ صورة: OCR؛ مستند: PDF) ويرسل المهام عبر `mediaClient.transcode()` أو `mediaClient.audio()` مع عرض حالة آخر مهمة. التحقق: `build:spa` + 845 اختباراً.
   - 🔄 **شريحة آمنة 2026-06-19:** أُضيف endpoint `GET /api/media/derived?sourceItemId=<id>` في `server.js` يستدعي `conversionSvc.listForItem()` أو `conversionSvc.listForKey()` ويعيد سجلات `derived_files` بهيكل `{ id, sourceItemId, sourceKey, conversionType, label, status, outputKey, mimeType, fileSizeBytes, errorMessage, jobId, createdBy, createdAt, completedAt }`. دُمج `ConversionPanel.jsx` في `DetailPage.jsx` وأُضيف حفظ `derived_files` من جانب الخادم (راجع commit الأحدث). التحقق: `verify:server` أخضر + 845 اختباراً.
-  - **المتبقي:** تطبيق migration `20260619120000_derived_files` عند توفّر `DATABASE_URL` لإنشاء جدول `derived_files` في Postgres؛ `prisma generate` لتجديد العميل؛ ربط `conversionJobRunner.js` بطابور المهام — شريحة لاحقة.
+  - ✅ **إغلاق 2026-06-19:** `20260619120000_derived_files` موجودة لإنشاء جدول `derived_files`، و`schema.prisma` يحتوي `DerivedFile`، وتم تشغيل `pnpm --filter archive-server run prisma:generate` لتجديد العميل. أُضيف `archive-server/src/conversion/conversionJobRunner.js` كجسر صريح بين طابور `mediaJobStore` و`conversionService`: يعلّم السجل `processing` عند التقاط المهمة ويزامن `done/error` عند نشر حدث الوسائط. يستخدمه `server.js` الآن لإنشاء worker الافتراضي. التحقق: `archive-server verify:media`.
   - يرتبط بـ: §7 “خط معالجة الصور” و§16.9 “التلخيص”.
   - الجهد: 3-5 أسابيع.
   - المصدر: archive-suite-new-feature-ideas (الميزة 15 — P2).

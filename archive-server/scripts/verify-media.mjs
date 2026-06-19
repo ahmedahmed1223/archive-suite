@@ -17,6 +17,7 @@ import {
   createMediaJobWorker,
   parseFfmpegProgress
 } from "../src/media/mediaJobs.js";
+import { createConversionJobRunner } from "../src/conversion/conversionJobRunner.js";
 import {
   MediaError,
   runMediaDerivative,
@@ -172,6 +173,37 @@ run("mediaJobs — transitions queued jobs through worker and progress parsing",
   assert.equal(done.progress, 100);
   assert.equal(done.outputKey, "derived/job-1.mp4");
   assert.equal(events.at(-1).type, "media.job.done");
+});
+
+run("conversionJobRunner — syncs derived file lifecycle with media jobs", async () => {
+  const store = createInMemoryMediaJobStore({ now: () => 1000, idFactory: () => "job-convert" });
+  const events = [];
+  const syncs = [];
+  const worker = createConversionJobRunner({
+    store,
+    eventBus: { publish: (payload) => events.push(payload) },
+    conversionService: {
+      syncJobResult: async (jobId, patch) => {
+        syncs.push({ jobId, ...patch });
+      }
+    },
+    resolveFileStore: () => createMemoryFileStore({ "uploads/a.mp4": "video" }),
+    runMediaDerivativeImpl: async ({ type, onProgress }) => {
+      assert.equal(type, "transcode");
+      onProgress(40);
+      return { outputKey: "derived/job-convert.mp4", url: "/file" };
+    },
+    runExport: async () => ({ output: "" }),
+    mediaRootDir: "/tmp"
+  });
+
+  const job = store.create({ type: "transcode", sourceKey: "uploads/a.mp4", params: {}, requestedBy: "u1" });
+  await worker.pump();
+
+  assert.equal(store.get(job.id).status, "done");
+  assert.equal(events.at(-1).type, "media.job.done");
+  assert.deepEqual(syncs.map((entry) => entry.status), ["processing", "done"]);
+  assert.equal(syncs.at(-1).outputKey, "derived/job-convert.mp4");
 });
 
 run("HTTP: media endpoints and jobs are editor-gated", async () => {
