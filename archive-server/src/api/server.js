@@ -303,6 +303,7 @@ export function createApiServer({
   ffmpegPath = process.env.FFMPEG_PATH || "ffmpeg",
   runExport = exportTimelineToMp4,
   checkFfmpeg = checkFfmpegAvailability,
+  extraHealth = null,
   mediaJobStore = createInMemoryMediaJobStore(),
   mediaWorker = null,
   runMediaProbeImpl = runMediaProbe,
@@ -629,10 +630,18 @@ export function createApiServer({
     if (req.method === "GET" && (url === "/api/health" || url === "/health")) {
       const config = resolveConfig();
       let db;
+      let extras = {};
       try {
         db = await buildDatabaseHealth(resolveStorage());
       } catch (error) {
         db = { ok: false, latencyMs: 0, error: safeDbError(error) };
+      }
+      if (typeof extraHealth === "function") {
+        try {
+          extras = await extraHealth();
+        } catch (error) {
+          extras = { healthExtrasError: error?.message || "extra health failed" };
+        }
       }
       return send(res, 200, {
         ok: true,
@@ -647,7 +656,8 @@ export function createApiServer({
         },
         uptimeSec: Math.floor(process.uptime()),
         version,
-        authRequired
+        authRequired,
+        ...extras
       });
     }
 

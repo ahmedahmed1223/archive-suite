@@ -33,10 +33,13 @@ async function getRedis() {
   const url = process.env.REDIS_URL;
   if (!url) return null;
   try {
-    const { createClient } = await import("redis");
-    _redis = createClient({ url, socket: { reconnectStrategy: (r) => Math.min(r * 100, 5000) } });
+    const { default: Redis } = await import("ioredis");
+    _redis = new Redis(url, {
+      maxRetriesPerRequest: 1,
+      retryStrategy: (retries) => Math.min(retries * 100, 5000)
+    });
     _redis.on("error", (err) => log.warn({ err: err.message }, "Redis blacklist error"));
-    await _redis.connect();
+    await _redis.ping();
     log.info("JWT blacklist connected to Redis");
   } catch (err) {
     log.warn({ err: err.message }, "Redis unavailable — JWT blacklist is memory-only");
@@ -51,9 +54,14 @@ async function hydrateFromRedis() {
     const redis = await getRedis();
     if (!redis) return;
     const keys = [];
-    for await (const key of redis.scanIterator({ MATCH: "jbl:*", COUNT: 200 })) keys.push(key);
+    let cursor = "0";
+    do {
+      const [nextCursor, batch] = await redis.scan(cursor, "MATCH", "jbl:*", "COUNT", 200);
+      cursor = nextCursor;
+      keys.push(...batch);
+    } while (cursor !== "0");
     if (!keys.length) return;
-    const ttls = await Promise.all(keys.map((k) => redis.pExpireTime(k)));
+    const ttls = await Promise.all(keys.map((k) => redis.pexpiretime(k)));
     const now = Date.now();
     keys.forEach((k, i) => {
       const expMs = ttls[i]; // pExpireTime returns ms epoch; -1 = no expire, -2 = missing
@@ -87,7 +95,7 @@ export function revokeToken(jti, expiresAt) {
   const expSec = Math.ceil(expMs / 1000);
   getRedis().then((redis) => {
     if (!redis) return;
-    return redis.set(`jbl:${jti}`, "1", { EXAT: expSec });
+    return redis.set(`jbl:${jti}`, "1", "EXAT", expSec);
   }).catch((err) => log.warn({ err: err.message, jti }, "Redis revokeToken failed"));
 }
 

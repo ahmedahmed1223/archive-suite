@@ -3,8 +3,9 @@
 // setup wizard (B3 UI integration, follow-up session).
 //
 // Stored in localStorage so the choice survives reloads without depending
-// on the store (which itself needs a backend to load…). Defaults to
-// "local" so first-run and AI-Studio sandboxed sessions just work.
+// on the store (which itself needs a backend to load…). The offline SPA
+// defaults to "local"; the cloud build defaults to "postgres" same-origin so
+// skipping onboarding never silently falls back to IndexedDB.
 //
 // Possible values:
 //   "local"      — IndexedDB via local-indexeddb adapter (default).
@@ -20,19 +21,21 @@
 export const BACKEND_CHOICES = Object.freeze(["local", "pocketbase", "postgres", "firebase"]);
 export const LOCAL_ENGINES = Object.freeze(["indexeddb", "sqlite"]);
 export const DEFAULT_BACKEND = "local";
+export const DEFAULT_CLOUD_BACKEND = "postgres";
 export const DEFAULT_LOCAL_ENGINE = "indexeddb";
 const STORAGE_KEY = "va.backendChoice.v1";
 
 /** Reads the persisted choice, with fallbacks for AI Studio and SSR. */
 export function getBackendChoice({ storage = safeLocalStorage() } = {}) {
-  if (!storage) return DEFAULT_BACKEND;
+  const fallback = getDefaultBackend();
+  if (!storage) return fallback;
   try {
     const raw = storage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_BACKEND;
+    if (!raw) return fallback;
     const parsed = JSON.parse(raw);
-    return normalizeBackendChoice(parsed?.backend);
+    return normalizeBackendChoice(parsed?.backend, fallback);
   } catch {
-    return DEFAULT_BACKEND;
+    return fallback;
   }
 }
 
@@ -95,8 +98,8 @@ export function setBackendChoice(backend, url = "", { storage = safeLocalStorage
 }
 
 /** Strict normalizer — any unknown value falls back to the default. */
-export function normalizeBackendChoice(value) {
-  return BACKEND_CHOICES.includes(value) ? value : DEFAULT_BACKEND;
+export function normalizeBackendChoice(value, fallback = getDefaultBackend()) {
+  return BACKEND_CHOICES.includes(value) ? value : fallback;
 }
 
 export function normalizeLocalEngine(value) {
@@ -122,6 +125,23 @@ export function shouldForceLocalBackend() {
     if (globalThis.__AISTUDIO_FORCE_LOCAL__ === true) return true;
   }
   return false;
+}
+
+export function getDefaultBackend() {
+  if (getBuildTarget() === "cloud") return DEFAULT_CLOUD_BACKEND;
+  return DEFAULT_BACKEND;
+}
+
+function getBuildTarget() {
+  try {
+    if (typeof __VITE_TARGET__ !== "undefined") return __VITE_TARGET__;
+  } catch {}
+  try {
+    if (typeof globalThis !== "undefined" && typeof globalThis.__VITE_TARGET__ === "string") {
+      return globalThis.__VITE_TARGET__;
+    }
+  } catch {}
+  return "spa";
 }
 
 /** Resolves what the boot should *actually* use, given saved + runtime context. */

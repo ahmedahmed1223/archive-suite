@@ -52,3 +52,35 @@ describe("resolveBackendChoice in AI Studio", () => {
     }
   });
 });
+
+describe("resolveBackendChoice in cloud build", () => {
+  it("defaults to postgres same-origin when onboarding choice is missing", () => {
+    const storage = createMemoryStorage();
+    globalThis.__VITE_TARGET__ = "cloud";
+
+    try {
+      expect(getBackendChoice({ storage })).toBe("postgres");
+      expect(resolveBackendChoice({ storage })).toEqual({
+        backend: "postgres",
+        url: "",
+        localEngine: "indexeddb",
+        firebaseConfig: null,
+        forced: false
+      });
+    } finally {
+      delete globalThis.__VITE_TARGET__;
+    }
+  });
+
+  it("falls back invalid stored backend to postgres in cloud builds", () => {
+    const storage = createMemoryStorage();
+    storage.setItem("va.backendChoice.v1", JSON.stringify({ backend: "bad-value", url: "https://wrong.example" }));
+    globalThis.__VITE_TARGET__ = "cloud";
+
+    try {
+      expect(resolveBackendChoice({ storage }).backend).toBe("postgres");
+    } finally {
+      delete globalThis.__VITE_TARGET__;
+    }
+  });
+});
