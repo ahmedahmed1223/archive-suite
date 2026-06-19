@@ -1,25 +1,50 @@
 @layer app-overrides {
 
 :root {
-    --color-bg-primary: #f7f4ee;
-    --color-bg-surface: #fffdf8;
-    --color-bg-elevated: #ffffff;
-    --color-text-primary: #172033;
-    --color-text-secondary: #485466;
-    --color-text-muted: #6f7784;
-    --color-border: #ebe5da;
+    /* ── New single source of truth for semantic surfaces (light / editorial
+       daylight). Legacy --color-* and --va-v1-* below now alias these so the
+       three namespaces collapse to one. ── */
+    --va-bg: #f6f4ee;
+    --va-surface: #fffdf9;
+    --va-surface-2: #f1ece3;
+    --va-elevated: #ffffff;
+    --va-overlay: #ffffff;
+    --va-border-soft: rgba(15, 23, 42, 0.08);
+    --va-border-strong: rgba(15, 23, 42, 0.14);
+    --va-text: #14202e;
+    --va-text-2: #475569;
+    --va-text-muted: #7b8a9a;
+    --va-text-inverse: #ffffff;
+    --va-highlight: #d98a1f;
+    --va-highlight-soft: #fbf0db;
+    --va-status-info: #2563eb;
+    --va-status-success: #0d9488;
+    --va-status-warning: #d98a1f;
+    --va-status-danger: #e11d48;
+    --va-elev-1: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --va-elev-2: 0 6px 16px -8px rgba(15, 23, 42, 0.14);
+    --va-elev-popover: 0 18px 40px -12px rgba(15, 23, 42, 0.22);
+
+    /* Legacy aliases → new tokens (compat shim; remove in T17). */
+    --color-bg-primary: var(--va-bg);
+    --color-bg-surface: var(--va-surface);
+    --color-bg-elevated: var(--va-elevated);
+    --color-text-primary: var(--va-text);
+    --color-text-secondary: var(--va-text-2);
+    --color-text-muted: var(--va-text-muted);
+    --color-border: var(--va-border-soft);
     --color-accent: #14b8a6;
-    --va-v1-bg: #f7f4ee;
-    --va-v1-surface: #fffdf8;
-    --va-v1-surface-2: #f1ece3;
-    --va-v1-elevated: #ffffff;
-    --va-v1-border: #e2dacd;
+    --va-v1-bg: var(--va-bg);
+    --va-v1-surface: var(--va-surface);
+    --va-v1-surface-2: var(--va-surface-2);
+    --va-v1-elevated: var(--va-elevated);
+    --va-v1-border: var(--va-border-strong);
     --va-v1-accent: #14b8a6;
     --va-v1-accent-strong: #0f766e;
     --va-v1-accent-soft: #dff7f3;
-    --va-v1-info: #38bdf8;
-    --va-v1-warning: #f59e0b;
-    --va-v1-danger: #ef4444;
+    --va-v1-info: var(--va-status-info);
+    --va-v1-warning: var(--va-status-warning);
+    --va-v1-danger: var(--va-status-danger);
     --va-v1-text: #f9fafb;
     --va-v1-text-secondary: #cbd5e1;
     --va-v1-text-muted: #94a3b8;
@@ -39,31 +64,58 @@
     --va-mobile-floating-bottom: calc(var(--va-mobile-nav-bottom) + var(--va-mobile-action-bar-height) + var(--va-mobile-chrome-gap));
   }
   html.dark {
-    --color-bg-primary: #07111f;
-    --color-bg-surface: #0b1626;
-    --color-bg-elevated: #142033;
-    --color-text-primary: #f8fafc;
-    --color-text-secondary: #cbd5e1;
-    --color-text-muted: #94a3b8;
-    --color-border: rgba(203,213,225,0.14);
+    /* New source of truth — dark / layered navy. */
+    --va-bg: #060e1a;
+    --va-surface: #0c1726;
+    --va-surface-2: #111c2e;
+    --va-elevated: #111f33;
+    --va-overlay: #16263b;
+    --va-border-soft: rgba(255, 255, 255, 0.07);
+    --va-border-strong: rgba(255, 255, 255, 0.12);
+    --va-text: #f8fafc;
+    --va-text-2: #cbd5e1;
+    --va-text-muted: #94a3b8;
+    --va-text-inverse: #04211c;
+    --va-highlight: #f4b860;
+    --va-highlight-soft: rgba(244, 184, 96, 0.14);
+    --va-status-info: #38bdf8;
+    --va-status-success: #2dd4bf;
+    --va-status-warning: #f4b860;
+    --va-status-danger: #fb7185;
+    --va-elev-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --va-elev-2: 0 8px 24px -10px rgba(0, 0, 0, 0.55);
+    --va-elev-popover: 0 24px 50px -16px rgba(0, 0, 0, 0.65);
+
+    /* Legacy aliases → new tokens. */
+    --color-bg-primary: var(--va-bg);
+    --color-bg-surface: var(--va-surface);
+    --color-bg-elevated: var(--va-elevated);
+    --color-text-primary: var(--va-text);
+    --color-text-secondary: var(--va-text-2);
+    --color-text-muted: var(--va-text-muted);
+    --color-border: var(--va-border-soft);
     --color-accent: #14b8a6;
-    --va-v1-bg: #07111f;
-    --va-v1-surface: #0b1626;
-    --va-v1-surface-2: #111c2e;
-    --va-v1-elevated: #142033;
-    --va-v1-border: #26364c;
+    --va-v1-bg: var(--va-bg);
+    --va-v1-surface: var(--va-surface);
+    --va-v1-surface-2: var(--va-surface-2);
+    --va-v1-elevated: var(--va-elevated);
+    --va-v1-border: var(--va-border-strong);
     --va-v1-accent: #14b8a6;
     --va-v1-accent-strong: #0f766e;
     --va-v1-accent-soft: #0f3f3b;
-    --va-v1-info: #38bdf8;
-    --va-v1-warning: #f59e0b;
-    --va-v1-danger: #ef4444;
+    --va-v1-info: var(--va-status-info);
+    --va-v1-warning: var(--va-status-warning);
+    --va-v1-danger: var(--va-status-danger);
     --va-v1-text: #f9fafb;
     --va-v1-text-secondary: #cbd5e1;
     --va-v1-text-muted: #94a3b8;
   }
   html, body, #root { direction: rtl; text-align: right; }
-  body { background: var(--color-bg-primary); color: var(--color-text-primary); }
+  body {
+    background: var(--va-bg);
+    color: var(--va-text);
+    font-family: var(--va-font-ui);
+  }
   [dir="ltr"], [dir="ltr"] * { direction: ltr; }
   [dir="auto"], .va-bidi-text {
     unicode-bidi: plaintext;
@@ -301,6 +353,25 @@
     background: var(--color-bg-elevated);
     border-color: var(--color-border);
     color: var(--color-text-primary);
+  }
+  /* Accent + surface helper utilities. These class names were used across ~40
+     components (V1Primitives, activity, data-center, archive filters, …) but had
+     NO definition anywhere — they rendered as silent no-ops. Defined here against
+     the accent tokens (managed by theme/accentColor.js) + the new --va-* surfaces
+     so accent-soft fills, borders, and on-soft text finally render. */
+  .va-surface-muted {
+    background: var(--va-surface-2);
+    border-color: var(--va-border-soft);
+  }
+  .va-accent-text { color: var(--va-v1-accent); }
+  .va-accent-bg { background-color: var(--va-v1-accent); }
+  .va-accent-bg-soft { background-color: var(--va-v1-accent-soft); }
+  .va-accent-text-on-soft { color: var(--va-v1-accent); }
+  .va-accent-border { border-color: color-mix(in oklab, var(--va-v1-accent) 32%, transparent); }
+  .va-tone-accent {
+    background-color: var(--va-v1-accent-soft);
+    border-color: color-mix(in oklab, var(--va-v1-accent) 32%, transparent);
+    color: var(--va-v1-accent);
   }
   .va-v1-page {
     color: var(--va-v1-text);

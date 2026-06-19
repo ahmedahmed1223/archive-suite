@@ -6,7 +6,7 @@ import { PDFDocument } from "pdf-lib";
 import { read as XLSXRead, utils as XLSXUtils } from "xlsx";
 
 import { buildFfmpegArgs, ExportError } from "../src/export/ffmpegPlan.js";
-import { exportTimelineToMp4 } from "../src/export/mp4.js";
+import { checkFfmpegAvailability, exportTimelineToMp4 } from "../src/export/mp4.js";
 import { exportRecords } from "../src/export/exportService.js";
 import { recordToBibtex, recordToRis, makeCiteKey } from "../src/export/citationExport.js";
 import { createApiServer } from "../src/api/server.js";
@@ -49,6 +49,31 @@ run("buildFfmpegArgs — withAudio:false drops audio mapping", () => {
   assert.doesNotMatch(s, /\[a\]/);
 });
 
+run("buildFfmpegArgs — applies clip effects, transforms, and transitions", () => {
+  const fxTimeline = {
+    project: { id: "pfx", name: "FX" },
+    clips: [
+      {
+        id: "c1", source: "a.mp4", sourceIn: 0, sourceOut: 4, duration: 4,
+        filters: { brightness: 0.1, contrast: 1.2, saturation: 0.9 },
+        transform: { scale: 1.1, x: 8, y: -4, rotation: 2, opacity: 0.85 },
+        transition: { type: "fade", durationSec: 0.5 },
+        volumeDb: -3
+      },
+      { id: "c2", source: "b.mp4", sourceIn: 0, sourceOut: 4, duration: 4, transition: { type: "dissolve", durationSec: 0.75 } }
+    ]
+  };
+  const args = buildFfmpegArgs(fxTimeline, { resolveSource: (c) => `/media/${c.source}`, output: "/out.mp4" });
+  const s = args.join(" ");
+  assert.match(s, /eq=brightness=0\.1:contrast=1\.2:saturation=0\.9/);
+  assert.match(s, /rotate=2\*PI\/180/);
+  assert.match(s, /scale=iw\*1\.1:ih\*1\.1/);
+  assert.match(s, /overlay=x=.*8.*:y=.*-4/);
+  assert.match(s, /fade=t=in:st=0:d=0\.5/);
+  assert.match(s, /xfade=transition=fade:duration=0\.75/);
+  assert.match(s, /volume=-3dB/);
+});
+
 run("buildFfmpegArgs — guards empty timeline + missing source", () => {
   assert.throws(() => buildFfmpegArgs({ clips: [] }, { resolveSource: () => "x", output: "o" }), /قابلة للتصدير/);
   assert.throws(() => buildFfmpegArgs(timeline, { resolveSource: () => null, output: "o" }), /المصدر/);
@@ -77,6 +102,36 @@ run("exportTimelineToMp4 — missing source under root throws SOURCE_MISSING", a
     (e) => { assert.ok(e instanceof ExportError); return true; }
   );
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+run("exportTimelineToMp4 — missing ffmpeg binary is a stable service error", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "media-"));
+  fs.writeFileSync(path.join(root, "a.mp4"), "x");
+  fs.writeFileSync(path.join(root, "b.mp4"), "x");
+  await assert.rejects(
+    () => exportTimelineToMp4(timeline, { rootDir: root, ffmpegPath: "archive-app-ffmpeg-does-not-exist" }),
+    (e) => e instanceof ExportError && e.code === "FFMPEG_MISSING" && e.statusCode === 503
+  );
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+run("checkFfmpegAvailability — reports ffmpeg capability without throwing", async () => {
+  const available = await checkFfmpegAvailability({
+    ffmpegPath: "ffmpeg-custom",
+    runProbe: async (cmd, args) => ({ stdout: `ffmpeg version 6.1\ncmd=${cmd}\nargs=${args.join(" ")}` })
+  });
+  assert.deepEqual(available, {
+    available: true,
+    path: "ffmpeg-custom",
+    version: "6.1"
+  });
+
+  const missing = await checkFfmpegAvailability({
+    ffmpegPath: "missing",
+    runProbe: async () => { throw Object.assign(new Error("not found"), { code: "ENOENT" }); }
+  });
+  assert.equal(missing.available, false);
+  assert.equal(missing.code, "FFMPEG_MISSING");
 });
 
 run("HTTP: /api/projects/export streams MP4 (auth + injected exporter)", async () => {
@@ -112,6 +167,26 @@ run("HTTP: /api/projects/export streams MP4 (auth + injected exporter)", async (
       body: JSON.stringify({ timeline: { clips: [] } })
     });
     assert.equal(bad.status, 400);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
+run("HTTP: /api/health advertises MP4 export capability", async () => {
+  const SECRET = "exp-health";
+  const server = createApiServer({
+    backend: "test",
+    authSecret: SECRET,
+    rateLimit: null,
+    checkFfmpeg: async () => ({ available: true, path: "ffmpeg", version: "6.1" })
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const health = await fetch(`${base}/api/health`).then((r) => r.json());
+    assert.equal(health.export.mp4.serverFfmpeg.available, true);
+    assert.equal(health.export.mp4.serverFfmpeg.version, "6.1");
+    assert.equal(health.export.mp4.wasmFallback, "client_optional");
   } finally {
     await new Promise((r) => server.close(r));
   }

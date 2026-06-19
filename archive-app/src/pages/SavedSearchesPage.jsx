@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
+import { EmptyState, SkeletonCard } from "../components/ui/primitives.jsx";
 import { useAppStore } from "../stores/index.js";
 
 function formatDate(iso) {
@@ -32,7 +33,7 @@ function FilterChips({ filters = {} }) {
     className: "mt-1.5 flex flex-wrap gap-1",
     children: chips.map((chip) =>
       jsx("span", {
-        className: "badge badge-xs rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-gray-500",
+        className: "badge badge-xs rounded-full bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-muted)]",
         children: chip
       }, chip)
     )
@@ -48,26 +49,26 @@ function SearchCard({ search, onRun, onDelete, onToggleAlert }) {
   }
 
   return jsxs("div", {
-    className: "card rounded-2xl border border-white/8 bg-white/[0.03] p-4",
+    className: "card rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 shadow-[var(--va-elev-1)] transition-colors hover:border-emerald-500/25",
     children: [
       jsxs("div", {
         className: "flex items-start gap-3",
         children: [
           jsx("div", {
-            className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]",
-            children: jsx(Bookmark, { className: "h-4 w-4 text-blue-400" })
+            className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)]",
+            children: jsx(Bookmark, { className: "h-4 w-4 text-[var(--va-status-info)]" })
           }),
           jsxs("div", {
             className: "flex-1 min-w-0",
             children: [
-              jsx("p", { className: "truncate text-sm font-medium text-gray-100", children: search.name }),
+              jsx("p", { className: "truncate text-sm font-medium text-[var(--va-text)]", children: search.name }),
               search.query && jsxs("p", {
-                className: "mt-0.5 flex items-center gap-1 text-xs text-gray-500",
+                className: "mt-0.5 flex items-center gap-1 text-xs text-[var(--va-text-muted)]",
                 children: [jsx(Search, { className: "h-3 w-3 shrink-0" }), jsx("span", { className: "truncate", children: search.query })]
               }),
               jsx(FilterChips, { filters: search.filters }),
               jsxs("div", {
-                className: "mt-1.5 flex items-center gap-3 text-xs text-gray-600",
+                className: "mt-1.5 flex items-center gap-3 text-xs text-[var(--va-text-muted)]",
                 children: [
                   jsxs("span", {
                     className: "flex items-center gap-1",
@@ -89,9 +90,10 @@ function SearchCard({ search, onRun, onDelete, onToggleAlert }) {
                 title: search.alertEnabled ? "إيقاف التنبيه" : "تفعيل التنبيه",
                 className: `btn btn-ghost btn-circle btn-sm rounded-lg p-1.5 transition-colors ${
                   search.alertEnabled
-                    ? "text-amber-400 hover:text-amber-300"
-                    : "text-gray-600 hover:text-gray-400"
+                    ? "text-[var(--va-highlight)] hover:brightness-110"
+                    : "text-[var(--va-text-muted)] hover:text-[var(--va-text-2)]"
                 }`,
+                "aria-label": search.alertEnabled ? "إيقاف التنبيه" : "تفعيل التنبيه",
                 children: search.alertEnabled
                   ? jsx(Bell, { className: "h-4 w-4" })
                   : jsx(BellOff, { className: "h-4 w-4" })
@@ -100,7 +102,8 @@ function SearchCard({ search, onRun, onDelete, onToggleAlert }) {
                 type: "button",
                 onClick: () => onRun(search),
                 title: "تشغيل البحث",
-                className: "btn btn-ghost btn-circle btn-sm rounded-lg p-1.5 text-blue-400 hover:text-blue-300 transition-colors",
+                "aria-label": "تشغيل البحث",
+                className: "btn btn-ghost btn-circle btn-sm rounded-lg p-1.5 text-[var(--va-status-info)] hover:brightness-110 transition-colors",
                 children: jsx(Play, { className: "h-4 w-4" })
               }),
               jsx("button", {
@@ -108,7 +111,8 @@ function SearchCard({ search, onRun, onDelete, onToggleAlert }) {
                 onClick: handleDelete,
                 disabled: deleting,
                 title: "حذف",
-                className: "btn btn-ghost btn-circle btn-sm rounded-lg p-1.5 text-gray-600 hover:text-red-400 disabled:opacity-40 transition-colors",
+                "aria-label": "حذف البحث المحفوظ",
+                className: "btn btn-ghost btn-circle btn-sm rounded-lg p-1.5 text-[var(--va-text-muted)] hover:text-rose-400 disabled:opacity-40 transition-colors",
                 children: deleting
                   ? jsx(Loader2, { className: "h-4 w-4 animate-spin" })
                   : jsx(Trash2, { className: "h-4 w-4" })
@@ -158,11 +162,11 @@ export default function SavedSearchesPage() {
         className: "mb-6",
         children: [
           jsxs("h1", {
-            className: "flex items-center gap-2 text-lg font-bold text-gray-100",
-            children: [jsx(Bookmark, { className: "h-5 w-5 text-blue-400" }), "عمليات البحث المحفوظة"]
+            className: "flex items-center gap-2 text-lg font-bold text-[var(--va-text)]",
+            children: [jsx(Bookmark, { className: "h-5 w-5 text-[var(--va-status-info)]" }), "عمليات البحث المحفوظة"]
           }),
           jsx("p", {
-            className: "mt-1 text-sm text-gray-500",
+            className: "mt-1 text-sm text-[var(--va-text-muted)]",
             children: "احفظ بحثاً وشغّله بنقرة، أو فعّل تنبيهاً عند ظهور عناصر جديدة مطابقة"
           })
         ]
@@ -170,7 +174,7 @@ export default function SavedSearchesPage() {
 
       savedSearchesError && jsx("div", {
         role: "alert",
-        className: "alert alert-error block mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400",
+        className: "alert alert-error block mb-4 rounded-[var(--va-radius-md)] border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-400",
         children: savedSearchesError
       }),
 
@@ -180,16 +184,18 @@ export default function SavedSearchesPage() {
           jsx("button", {
             type: "button",
             onClick: () => setFilter("all"),
+            "aria-pressed": filter === "all",
             className: `btn btn-sm btn-ghost rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              filter === "all" ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
+              filter === "all" ? "bg-emerald-500/15 text-emerald-300" : "text-[var(--va-text-muted)] hover:text-[var(--va-text-2)]"
             }`,
             children: `الكل (${savedSearches.length})`
           }),
           jsx("button", {
             type: "button",
             onClick: () => setFilter("alerts"),
+            "aria-pressed": filter === "alerts",
             className: `btn btn-sm btn-ghost flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              filter === "alerts" ? "bg-amber-500/20 text-amber-300" : "text-gray-500 hover:text-gray-300"
+              filter === "alerts" ? "bg-[var(--va-highlight-soft)] text-[var(--va-highlight)]" : "text-[var(--va-text-muted)] hover:text-[var(--va-text-2)]"
             }`,
             children: [
               jsx(Bell, { className: "h-3 w-3" }),
@@ -200,26 +206,14 @@ export default function SavedSearchesPage() {
       }),
 
       savedSearchesLoading && jsx("div", {
-        className: "flex justify-center py-12",
-        children: jsx(Loader2, { className: "h-8 w-8 animate-spin text-gray-600" })
+        className: "space-y-3",
+        children: [0, 1, 2].map((i) => jsx(SkeletonCard, {}, i))
       }),
 
-      !savedSearchesLoading && visible.length === 0 && jsx("div", {
-        className: "py-16 text-center",
-        children: jsxs("div", {
-          className: "mx-auto max-w-xs",
-          children: [
-            jsx(Bookmark, { className: "mx-auto mb-3 h-10 w-10 text-gray-700" }),
-            jsx("p", {
-              className: "text-sm text-gray-500",
-              children: filter === "alerts" ? "لا توجد بحوث مع تنبيهات مفعّلة" : "لم تحفظ أي بحث بعد"
-            }),
-            jsx("p", {
-              className: "mt-1 text-xs text-gray-700",
-              children: "استخدم زر الحفظ في صفحة البحث لإضافة بحث هنا"
-            })
-          ]
-        })
+      !savedSearchesLoading && visible.length === 0 && jsx(EmptyState, {
+        icon: jsx(Bookmark, { className: "h-7 w-7" }),
+        title: filter === "alerts" ? "لا توجد بحوث مع تنبيهات مفعّلة" : "لم تحفظ أي بحث بعد",
+        description: "استخدم زر الحفظ في صفحة البحث لإضافة بحث هنا."
       }),
 
       !savedSearchesLoading && visible.length > 0 && jsx("div", {
@@ -235,7 +229,7 @@ export default function SavedSearchesPage() {
       }),
 
       savedSearches.length > 0 && jsxs("div", {
-        className: "alert mt-4 flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs text-gray-600",
+        className: "alert mt-4 flex items-start gap-2 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3 text-xs text-[var(--va-text-muted)]",
         children: [
           jsx(Filter, { className: "mt-0.5 h-3.5 w-3.5 shrink-0" }),
           "التنبيهات تُشغَّل داخل التطبيق فقط في الوضع المحلي. لتفعيل التنبيهات التلقائية عبر البريد أو خارج التطبيق، يلزم وجود السيرفر."

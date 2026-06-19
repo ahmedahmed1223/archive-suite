@@ -10,6 +10,7 @@ import {
   Trash2
 } from "lucide-react";
 
+import { EmptyState } from "../components/ui/primitives.jsx";
 import { useAppStore } from "../stores/index.js";
 import {
   getAllMintedLinks,
@@ -88,7 +89,7 @@ function LinkRow({ entry, onRevoke, onRemove, baseUrl, getToken }) {
   }
 
   return jsxs("li", {
-    className: `rounded-xl border p-4 text-right transition-opacity ${unavailable ? "border-white/5 opacity-50" : "border-white/10 bg-white/[0.02]"}`,
+    className: `rounded-[var(--va-radius-lg)] border p-4 text-right transition-opacity ${unavailable ? "border-[var(--va-border-soft)] opacity-50" : "border-[var(--va-border-soft)] bg-[var(--va-surface)] shadow-[var(--va-elev-1)]"}`,
     children: [
       jsxs("div", {
         className: "flex flex-wrap items-start justify-between gap-2",
@@ -100,7 +101,7 @@ function LinkRow({ entry, onRevoke, onRemove, baseUrl, getToken }) {
                 className: "flex flex-wrap items-center gap-2",
                 children: [
                   jsx("span", {
-                    className: "badge badge-sm rounded-full border-white/10 bg-white/5 text-gray-300",
+                    className: "badge badge-sm rounded-full border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)]",
                     children: SCOPE_LABELS[entry.scopeType] || entry.scopeType || "رابط"
                   }),
                   jsx("span", {
@@ -116,16 +117,16 @@ function LinkRow({ entry, onRevoke, onRemove, baseUrl, getToken }) {
                 ]
               }),
               entry.label && jsx("p", {
-                className: "mt-1 text-sm font-semibold text-white",
+                className: "mt-1 text-sm font-semibold text-[var(--va-text)]",
                 children: entry.label
               }),
               jsx("p", {
                 dir: "ltr",
-                className: "mt-1 truncate text-left font-mono text-[11px] text-gray-500",
+                className: "mt-1 truncate text-left font-[family-name:var(--va-font-mono)] text-[11px] text-[var(--va-text-muted)]",
                 children: entry.url
               }),
               jsxs("p", {
-                className: "mt-1.5 text-[11px] text-gray-600",
+                className: "mt-1.5 text-[11px] text-[var(--va-text-muted)]",
                 children: [
                   "صُكّ: ",
                   formatDate(entry.mintedAt),
@@ -143,7 +144,7 @@ function LinkRow({ entry, onRevoke, onRemove, baseUrl, getToken }) {
                 type: "button",
                 onClick: handleCopy,
                 disabled: unavailable,
-                className: "btn btn-ghost btn-xs rounded-lg gap-1 text-gray-400",
+                className: "btn btn-ghost btn-xs rounded-lg gap-1 text-[var(--va-text-2)]",
                 "aria-label": "نسخ الرابط",
                 children: copied
                   ? jsx(Check, { className: "h-3.5 w-3.5 text-emerald-400" })
@@ -153,7 +154,7 @@ function LinkRow({ entry, onRevoke, onRemove, baseUrl, getToken }) {
                 type: "button",
                 onClick: handleRevoke,
                 disabled: revoking,
-                className: "btn btn-ghost btn-xs rounded-lg gap-1 text-red-400 hover:bg-red-500/10",
+                className: "btn btn-ghost btn-xs rounded-lg gap-1 text-rose-400 hover:bg-rose-500/10",
                 "aria-label": "إلغاء الرابط",
                 children: revoking
                   ? jsx(Loader2, { className: "h-3.5 w-3.5 animate-spin" })
@@ -162,7 +163,7 @@ function LinkRow({ entry, onRevoke, onRemove, baseUrl, getToken }) {
               jsx("button", {
                 type: "button",
                 onClick: () => onRemove(entry.jti || entry.url),
-                className: "btn btn-ghost btn-xs rounded-lg text-gray-600 hover:text-gray-300",
+                className: "btn btn-ghost btn-xs rounded-lg text-[var(--va-text-muted)] hover:text-[var(--va-text-2)]",
                 "aria-label": "إزالة من القائمة",
                 children: jsx(Trash2, { className: "h-3.5 w-3.5" })
               })
@@ -172,7 +173,7 @@ function LinkRow({ entry, onRevoke, onRemove, baseUrl, getToken }) {
       }),
       revokeError && jsx("p", {
         role: "alert",
-        className: "mt-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs text-red-300",
+        className: "mt-2 rounded-[var(--va-radius-md)] border border-rose-500/25 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300",
         children: revokeError
       })
     ]
@@ -221,11 +222,11 @@ export default function SharedLinksPage() {
           jsxs("div", {
             children: [
               jsxs("h1", {
-                className: "flex items-center gap-2 text-xl font-bold text-white",
+                className: "flex items-center gap-2 text-xl font-bold text-[var(--va-text)]",
                 children: [jsx(Link2, { className: "h-5 w-5 va-accent-text" }), "روابط المشاركة"]
               }),
               jsx("p", {
-                className: "mt-1 text-sm text-gray-500",
+                className: "mt-1 text-sm text-[var(--va-text-muted)]",
                 children: "الروابط التي أنشأتها على هذا الجهاز. الإلغاء يتطلب اتصالاً بالخادم."
               })
             ]
@@ -233,7 +234,7 @@ export default function SharedLinksPage() {
           links.length > 0 && jsx("button", {
             type: "button",
             onClick: handleClearAll,
-            className: "btn btn-ghost btn-sm text-gray-500",
+            className: "btn btn-ghost btn-sm text-[var(--va-text-muted)]",
             children: cleared ? "تم المسح" : "مسح الكل"
           })
         ]
@@ -241,30 +242,24 @@ export default function SharedLinksPage() {
 
       !isCloud && jsx("div", {
         role: "status",
-        className: "rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200",
+        className: "rounded-[var(--va-radius-md)] border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-200",
         children: "الإلغاء يتطلب الاتصال بخادم سحابي. لا يزال بإمكانك مراجعة الروابط المحلية."
       }),
 
-      links.length === 0 && jsx("div", {
-        className: "rounded-2xl border border-white/10 py-16 text-center text-gray-500",
-        children: jsxs("div", {
-          className: "flex flex-col items-center gap-3",
-          children: [
-            jsx(Link2, { className: "h-10 w-10 opacity-20" }),
-            jsx("p", { className: "text-sm", children: "لم تُنشئ أي روابط مشاركة بعد." }),
-            jsx("p", { className: "text-xs text-gray-600", children: "الروابط التي تنشئها من حوار المشاركة ستظهر هنا." })
-          ]
-        })
+      links.length === 0 && jsx(EmptyState, {
+        icon: jsx(Link2, { className: "h-7 w-7" }),
+        title: "لم تُنشئ أي روابط مشاركة بعد",
+        description: "الروابط التي تنشئها من حوار المشاركة ستظهر هنا."
       }),
 
       active.length > 0 && jsxs("section", {
         className: "space-y-2",
         children: [
           jsxs("h2", {
-            className: "flex items-center gap-2 text-sm font-semibold text-gray-400",
+            className: "flex items-center gap-2 text-sm font-semibold text-[var(--va-text-2)]",
             children: [
               "الروابط النشطة",
-              jsx("span", { className: "badge badge-sm rounded-full border-white/10 bg-white/5", children: active.length })
+              jsx("span", { className: "badge badge-sm rounded-full border-[var(--va-border-soft)] bg-[var(--va-surface-2)]", children: active.length })
             ]
           }),
           jsx("ul", {
@@ -286,10 +281,10 @@ export default function SharedLinksPage() {
         className: "space-y-2",
         children: [
           jsxs("h2", {
-            className: "flex items-center gap-2 text-sm font-semibold text-gray-400",
+            className: "flex items-center gap-2 text-sm font-semibold text-[var(--va-text-2)]",
             children: [
               "الروابط الملغاة / المنتهية",
-              jsx("span", { className: "badge badge-sm rounded-full border-white/10 bg-white/5", children: inactive.length })
+              jsx("span", { className: "badge badge-sm rounded-full border-[var(--va-border-soft)] bg-[var(--va-surface-2)]", children: inactive.length })
             ]
           }),
           jsx("ul", {

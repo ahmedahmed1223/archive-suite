@@ -109,10 +109,10 @@ export function getSidebarDrawerFrame({ open = false } = {}) {
   return {
     rootClassName: `drawer drawer-end fixed inset-0 z-[60] pointer-events-none md:hidden ${open ? "drawer-open" : ""}`.trim(),
     contentClassName: "drawer-content pointer-events-none",
-    toggleClassName: "va-surface-muted pointer-events-auto fixed right-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-[61] inline-flex h-11 w-11 items-center justify-center rounded-xl border text-white shadow-lg backdrop-blur md:hidden",
+    toggleClassName: "pointer-events-auto fixed right-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-[61] inline-flex h-11 w-11 items-center justify-center rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] text-[var(--va-text)] shadow-[var(--va-elev-2)] backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 md:hidden",
     sideClassName: "drawer-side pointer-events-auto z-[60]",
-    overlayClassName: "drawer-overlay bg-black/50",
-    panelClassName: "va-sidebar min-h-full flex flex-col border-l border-white/10 bg-gray-950",
+    overlayClassName: "drawer-overlay bg-black/55 backdrop-blur-sm",
+    panelClassName: "va-sidebar min-h-full flex flex-col border-s border-[var(--va-border-soft)] bg-[var(--va-surface)] shadow-[var(--va-elev-popover)]",
     panelStyle: { width: "min(88vw, 320px)" }
   };
 }

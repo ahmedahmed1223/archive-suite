@@ -9,6 +9,7 @@ export const PAGE_MANIFEST = [
   { id: "detail", group: "daily", heavy: false, meta: { title: "تفاصيل الفيديو", breadcrumb: "الأرشيف / التفاصيل", hint: "مراجعة البيانات، التشغيل، الوسوم، وسجل التغييرات.", helpSection: "adding-videos" } },
   { id: "collections", group: "daily", heavy: false, meta: { title: "المجموعات", breadcrumb: "العمل اليومي / المجموعات", hint: "مجموعات يدوية وذكية لتنظيم الأرشيف.", helpSection: "collections" } },
   { id: "projects", group: "production", heavy: false, meta: { title: "مشاريع المونتاج", breadcrumb: "الإنتاج / المونتاج", hint: "اجمع اللقطات في خطّ زمني بنقاط قص وصدّر JSON/EDL/MP4.", helpSection: "collections" } },
+  { id: "production-tasks", group: "production", heavy: false, meta: { title: "مهام الإنتاج", breadcrumb: "الإنتاج / مهام الإنتاج", hint: "لوحة مستقلة لمهام مشاريع المونتاج، المسؤولين، المواد المرتبطة، وحالات المراجعة.", helpSection: "collections" } },
   { id: "types", group: "taxonomy", heavy: false, meta: { title: "إدارة الأنواع", breadcrumb: "التوصيف / الأنواع", hint: "أنواع، فروع، حقول مخصصة، وأيقونات.", helpSection: "content-types" } },
   { id: "vocabulary", group: "taxonomy", heavy: false, meta: { title: "القاموس", breadcrumb: "التوصيف / القاموس", hint: "مصطلحات موحدة تظهر في الاستدعاء الذكي.", helpSection: "vocabulary-autocomplete" } },
   { id: "htags", group: "taxonomy", heavy: false, meta: { title: "الوسوم الهرمية", breadcrumb: "التوصيف / الوسوم", hint: "وسوم جذرية وفرعية للاستدعاء عبر #.", helpSection: "tags" } },

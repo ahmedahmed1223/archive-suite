@@ -948,8 +948,8 @@ run("navigation view model", () => {
 run("page migration native status", () => {
   const status = getPageMigrationStatus();
   const summary = getPageMigrationSummary(status);
-  assert.equal(summary.total, 37);
-  assert.equal(summary.native, 37);
+  assert.equal(summary.total, 38);
+  assert.equal(summary.native, 38);
   assert.equal(summary.wrappedPages, 0);
   assert.equal(status.find((page) => page.id === "archive")?.status, "native");
   assert.equal(status.find((page) => page.id === "discover")?.status, "native");
@@ -962,6 +962,7 @@ run("page migration native status", () => {
   assert.equal(status.find((page) => page.id === "history")?.status, "native");
   assert.equal(status.find((page) => page.id === "activity")?.status, "native");
   assert.equal(status.find((page) => page.id === "collections")?.status, "native");
+  assert.equal(status.find((page) => page.id === "production-tasks")?.status, "native");
   assert.equal(status.find((page) => page.id === "vocabulary")?.status, "native");
   assert.equal(status.find((page) => page.id === "htags")?.status, "native");
   assert.equal(status.find((page) => page.id === "users")?.status, "native");
@@ -2394,7 +2395,7 @@ import {
 } from "../src/features/projects/viewModel.js";
 import {
   CloudExportError, canExportMp4, safeFileName, triggerDownload,
-  downloadTimelineJson, downloadEdl, requestMp4Export
+  downloadTimelineJson, downloadEdl, requestMp4Export, requestMp4ExportWasm
 } from "../src/features/projects/exportClient.js";
 
 run("projects — rough cut value + validity + duration", () => {
@@ -2554,10 +2555,10 @@ await runAsync("export client — requestMp4Export streams a blob, guards token/
   );
 
   // server error → surfaces the server message
-  const errFetch = async () => ({ ok: false, status: 500, json: async () => ({ ok: false, error: "فشل الترميز" }) });
+  const errFetch = async () => ({ ok: false, status: 500, json: async () => ({ ok: false, error: "فشل الترميز", code: "FFMPEG" }) });
   await assert.rejects(
     () => requestMp4Export({ timeline, getToken: () => "tok", fetchImpl: errFetch }),
-    (e) => e instanceof CloudExportError && /فشل الترميز/.test(e.message)
+    (e) => e instanceof CloudExportError && /فشل الترميز/.test(e.message) && e.code === "FFMPEG"
   );
 });
 
@@ -2648,6 +2649,26 @@ await runAsync("share client — mintShareLink posts scope with bearer; guards t
   await assert.rejects(() => mintShareLink({ scope: {}, getToken: () => "", fetchImpl: okFetch }), (e) => e instanceof ShareClientError);
 });
 
+await runAsync("export client — ffmpeg.wasm renderer is an optional MP4 fallback", async () => {
+  const timeline = { project: { name: "P" }, clips: [{ id: "c1", source: "a.mp4", sourceIn: 0, sourceOut: 5, duration: 5 }] };
+  let received = null;
+  const blob = await requestMp4ExportWasm({
+    timeline,
+    wasmRenderer: async (job) => {
+      received = job;
+      return new Uint8Array([1, 2, 3, 4]);
+    }
+  });
+  assert.equal(received.timeline, timeline);
+  assert.equal(blob.type, "video/mp4");
+  assert.equal(blob.size, 4);
+
+  await assert.rejects(
+    () => requestMp4ExportWasm({ timeline }),
+    (e) => e instanceof CloudExportError && /ffmpeg\.wasm/.test(e.message)
+  );
+});
+
 await runAsync("share client — fetchSharedView returns result; maps errors to 404", async () => {
   let sent = null;
   const okFetch = async (url, opts) => { sent = { url, opts }; return { ok: true, json: async () => ({ ok: true, result: { videoItems: [{ id: "v1" }], counts: { items: 1 } } }) }; };
@@ -2731,10 +2752,21 @@ run("connection status — health maps online/degraded and RPC errors map offlin
 });
 
 run("server health client — normalize health shape", () => {
-  const health = normalizeServerHealth({ ok: true, backend: "postgres", engine: "postgresql", db: { ok: true, latencyMs: 12 }, uptimeSec: 3, version: "1.0.0", authRequired: true }, { measuredLatencyMs: 20, checkedAt: "now" });
+  const health = normalizeServerHealth({
+    ok: true,
+    backend: "postgres",
+    engine: "postgresql",
+    db: { ok: true, latencyMs: 12 },
+    export: { mp4: { serverFfmpeg: { available: true, path: "ffmpeg", version: "6.1" }, wasmFallback: "client_optional" } },
+    uptimeSec: 3,
+    version: "1.0.0",
+    authRequired: true
+  }, { measuredLatencyMs: 20, checkedAt: "now" });
   assert.equal(health.backend, "postgres");
   assert.equal(health.engine, "postgresql");
   assert.equal(health.db.latencyMs, 12);
+  assert.equal(health.export.mp4.serverFfmpeg.available, true);
+  assert.equal(health.export.mp4.wasmFallback, "client_optional");
   assert.equal(health.latencyMs, 20);
   assert.equal(health.checkedAt, "now");
 });

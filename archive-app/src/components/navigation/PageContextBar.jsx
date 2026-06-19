@@ -29,14 +29,14 @@ import { useBreadcrumbs } from "../../hooks/useBreadcrumbs.js";
 
 function ContextButton({ children, onClick, variant = "secondary", className = "", ariaLabel }) {
   const classes = variant === "primary"
-    ? "bg-primary text-primary-content"
-    : "btn btn-ghost border-white/10 text-gray-300 hover:bg-white/5 hover:text-white";
+    ? "border-transparent bg-emerald-500 text-[var(--va-text-inverse)] hover:bg-emerald-600 active:bg-emerald-700"
+    : "border-[var(--va-border-soft)] bg-[var(--va-surface)] text-[var(--va-text-2)] hover:border-[var(--va-border-strong)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]";
 
   return jsx("button", {
     type: "button",
     onClick,
     "aria-label": ariaLabel,
-    className: `inline-flex min-h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-3 py-1.5 text-sm font-medium transition-colors ${classes} ${className}`,
+    className: `inline-flex min-h-9 items-center justify-center gap-2 whitespace-nowrap rounded-[var(--va-radius-md)] border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 ${classes} ${className}`,
     children
   });
 }
@@ -126,7 +126,13 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
     currentPage !== "search" && { label: "بحث", Icon: Search, onClick: () => goToPage("search") },
     currentPage !== "backup" && { label: "نقل ونسخ", Icon: HardDrive, onClick: () => openDataTab("transfer") }
   ].filter(Boolean);
-  const desktopSecondaryActions = secondaryActions.slice(0, 3);
+  // Progressive reveal: the first two secondary actions show from `md`, the
+  // third only from `lg` so mid-width screens stay uncluttered (replaces the
+  // flat md-only reveal). Anything beyond stays in the overflow menu.
+  const desktopSecondaryActions = secondaryActions.slice(0, 3).map((action, index) => ({
+    ...action,
+    revealClass: index >= 2 ? "hidden lg:inline-flex" : ""
+  }));
   const overflowActions = [
     ...secondaryActions,
     { label: "مساعدة", Icon: CircleQuestionMark, onClick: openHelp }
@@ -149,7 +155,9 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
   };
 
   return jsx("header", {
-    className: "va-context-bar",
+    // va-context-bar provides sticky positioning + blur; the token classes layer
+    // an elevated editorial surface (bg + hairline border + soft shadow) on top.
+    className: "va-context-bar border-b border-[var(--va-border-soft)] bg-[color-mix(in_srgb,var(--va-surface)_88%,transparent)] shadow-[var(--va-elev-1)] supports-[backdrop-filter]:bg-[color-mix(in_srgb,var(--va-surface)_72%,transparent)]",
     role: "banner",
     dir: "rtl",
     children: jsxs(React.Fragment, {
@@ -157,30 +165,30 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
         // DaisyUI navbar for semantic structure; va-context-bar custom styles intact
         jsxs("div", {
           className: "navbar va-context-bar-inner !min-h-0 !p-0",
-          style: { padding: "0.85rem var(--va-page-gutter)", gap: "1rem" },
+          style: { padding: "0.85rem var(--va-page-gutter, 1.5rem)", gap: "1rem" },
           children: [
             // navbar-start = title area (RTL: visual right side)
             jsxs("div", {
               className: "navbar-start va-context-title min-w-0 flex-1 !block",
               children: [
                 jsxs("div", {
-                  className: "mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-500",
+                  className: "mb-1 flex flex-wrap items-center gap-2 text-xs text-[var(--va-text-muted)]",
                   children: [
                     breadcrumbs.length > 1
                       ? jsx(Breadcrumb, { crumbs: breadcrumbs, onNavigate: navigateToCrumb })
                       : jsx("span", { className: "truncate", children: meta.breadcrumb }),
                     jsx("span", {
-                      className: "va-number-badge rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-gray-400",
+                      className: "va-number-badge rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-[11px] text-[var(--va-text-2)]",
                       children: `${activeCount} عنصر`
                     }),
                     sqliteError ? jsx("span", {
-                      className: "rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-200",
+                      className: "rounded-full border border-amber-500/30 bg-amber-500/12 px-2 py-0.5 text-[11px] text-amber-300",
                       children: "تحقق التخزين"
                     }) : jsx(ServerStatusBadge, {})
                   ]
                 }),
-                jsx("h2", { className: "truncate text-lg font-bold text-white sm:text-xl", children: meta.title || currentPageTitle }),
-                meta.hint && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-gray-400", children: meta.hint }),
+                jsx("h2", { className: "truncate text-lg font-bold text-[var(--va-text)] sm:text-xl", children: meta.title || currentPageTitle }),
+                meta.hint && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-[var(--va-text-2)]", children: meta.hint }),
                 jsx(ContextualTip, { pageId: currentPage })
               ]
             }),
@@ -195,6 +203,7 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
                 }, "primary"),
                 desktopSecondaryActions.map((action) => jsxs(ContextButton, {
                   onClick: action.onClick,
+                  className: action.revealClass,
                   children: [jsx(action.Icon, { className: "h-4 w-4" }), action.label]
                 }, action.label)),
                 jsxs(ContextButton, {

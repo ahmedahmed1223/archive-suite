@@ -47,12 +47,12 @@ function CategoryButton({ category, count, active, onClick }) {
   return jsxs("button", {
     type: "button",
     onClick,
-    className: `inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${active ? "bg-white/10 text-white" : "border-white/10 bg-gray-950/35 text-gray-400 hover:bg-white/5"}`,
+    className: `inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${active ? "border-[var(--va-border-strong)] bg-[var(--va-surface-2)] text-[var(--va-text)]" : "border-[var(--va-border-soft)] bg-[var(--va-surface)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
     style: active && category.color ? { borderColor: `${category.color}55`, backgroundColor: `${category.color}18` } : undefined,
     children: [
       jsx("span", { className: "h-2.5 w-2.5 rounded-full", style: { backgroundColor: category.color || "#10b981" } }),
       category.label,
-      jsx("span", { className: "rounded-full bg-black/20 px-2 py-0.5 text-xs text-gray-300", children: formatNumber(count || 0) })
+      jsx("span", { className: "rounded-full bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-2)]", children: formatNumber(count || 0) })
     ]
   });
 }
@@ -99,7 +99,7 @@ function VocabularyForm({ entry, activeCategory, onCancel, onSave }) {
     children: jsxs("div", {
       className: "grid gap-3 md:grid-cols-2",
       children: [
-        jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
+        jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("label", { htmlFor: termId, className: "block", children: "المصطلح" }),
           jsx("input", {
             id: termId,
@@ -111,7 +111,7 @@ function VocabularyForm({ entry, activeCategory, onCancel, onSave }) {
             placeholder: "مثال: القدس"
           })
         ] }),
-        jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
+        jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("label", { htmlFor: categoryId, className: "block", children: "الفئة" }),
           jsx("select", {
             id: categoryId,
@@ -121,7 +121,7 @@ function VocabularyForm({ entry, activeCategory, onCancel, onSave }) {
             children: VOCABULARY_CATEGORIES.map((item) => jsx("option", { value: item.id, children: item.label }, item.id))
           })
         ] }),
-        jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [
+        jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)] md:col-span-2", children: [
           jsx("label", { htmlFor: aliasesId, className: "block", children: "الأسماء المستعارة" }),
           jsx("input", {
             id: aliasesId,

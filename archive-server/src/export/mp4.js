@@ -49,17 +49,83 @@ export async function exportTimelineToMp4(timeline, {
   return { output };
 }
 
+export async function checkFfmpegAvailability({
+  ffmpegPath = "ffmpeg",
+  runProbe = defaultProbeFfmpeg,
+  timeoutMs = 1500
+} = {}) {
+  try {
+    const result = await runProbe(ffmpegPath, ["-version"], { timeoutMs });
+    const output = String(result?.stdout || result || "");
+    const versionMatch = /ffmpeg version\s+([^\s]+)/i.exec(output);
+    return {
+      available: true,
+      path: ffmpegPath,
+      version: versionMatch?.[1] || "unknown"
+    };
+  } catch (error) {
+    const missing = error?.code === "ENOENT" || /ENOENT|not found/i.test(String(error?.message || ""));
+    return {
+      available: false,
+      path: ffmpegPath,
+      code: missing ? "FFMPEG_MISSING" : "FFMPEG_PROBE_FAILED",
+      error: missing ? "ffmpeg غير مثبت أو غير موجود في PATH." : String(error?.message || "تعذّر فحص ffmpeg.")
+    };
+  }
+}
+
 function defaultRunFfmpeg(cmd, args, { timeoutMs } = {}) {
   return new Promise((resolve, reject) => {
     const proc = spawn(cmd, args, { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
-    const timer = setTimeout(() => { proc.kill("SIGKILL"); reject(new ExportError("انتهت مهلة التصدير.", { code: "TIMEOUT" })); }, timeoutMs);
-    proc.stderr.on("data", (d) => { stderr += d.toString(); if (stderr.length > 8192) stderr = stderr.slice(-8192); });
-    proc.on("error", (err) => { clearTimeout(timer); reject(new ExportError(`تعذّر تشغيل ffmpeg: ${err.message}`, { code: "SPAWN" })); });
-    proc.on("close", (code) => {
+    let settled = false;
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
-      if (code === 0) resolve();
-      else reject(new ExportError(`فشل ffmpeg (رمز ${code}): ${stderr.slice(-500)}`, { code: "FFMPEG" }));
+      fn(value);
+    };
+    const timer = setTimeout(() => {
+      proc.kill("SIGKILL");
+      finish(reject, new ExportError("انتهت مهلة التصدير.", { code: "TIMEOUT", statusCode: 504 }));
+    }, timeoutMs);
+    proc.stderr.on("data", (d) => { stderr += d.toString(); if (stderr.length > 8192) stderr = stderr.slice(-8192); });
+    proc.on("error", (err) => {
+      if (err?.code === "ENOENT") {
+        finish(reject, new ExportError("ffmpeg غير مثبت أو غير موجود في PATH. ثبّت ffmpeg على الخادم أو فعّل fallback ffmpeg.wasm من العميل.", { code: "FFMPEG_MISSING", statusCode: 503 }));
+        return;
+      }
+      finish(reject, new ExportError(`تعذّر تشغيل ffmpeg: ${err.message}`, { code: "SPAWN", statusCode: 503 }));
+    });
+    proc.on("close", (code) => {
+      if (code === 0) finish(resolve);
+      else finish(reject, new ExportError(`فشل ffmpeg (رمز ${code}): ${stderr.slice(-500)}`, { code: "FFMPEG", statusCode: 500 }));
+    });
+  });
+}
+
+function defaultProbeFfmpeg(cmd, args, { timeoutMs } = {}) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(cmd, args, { stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn(value);
+    };
+    const timer = setTimeout(() => {
+      proc.kill("SIGKILL");
+      finish(reject, Object.assign(new Error("انتهت مهلة فحص ffmpeg."), { code: "FFMPEG_PROBE_TIMEOUT" }));
+    }, timeoutMs);
+    proc.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
+    proc.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+    proc.on("error", (error) => finish(reject, error));
+    proc.on("close", (code) => {
+      if (code === 0) finish(resolve, { stdout, stderr });
+      else finish(reject, Object.assign(new Error(stderr || `ffmpeg probe failed (${code})`), { code: "FFMPEG_PROBE_FAILED" }));
     });
   });
 }

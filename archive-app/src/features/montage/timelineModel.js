@@ -95,6 +95,7 @@ export function moveClip(clips, id, newStartSec) {
   const ordered = orderedClips(clips);
   const fromIndex = ordered.findIndex((clip) => clip?.id === id);
   if (fromIndex < 0) return ordered;
+  if (ordered[fromIndex]?.locked) return ordered;
 
   const target = toNum(newStartSec);
   let acc = 0;
@@ -126,6 +127,7 @@ export function trimClip(clips, id, { startSec, endSec } = {}) {
   const list = Array.isArray(clips) ? clips : [];
   return list.map((clip) => {
     if (clip?.id !== id) return clip;
+    if (clip.locked) return clip;
     let nextIn = startSec === undefined ? toNum(clip.inSec) : Math.max(0, toNum(startSec));
     let nextOut = endSec === undefined ? toNum(clip.outSec) : Math.max(0, toNum(endSec));
     if (nextOut < nextIn) {

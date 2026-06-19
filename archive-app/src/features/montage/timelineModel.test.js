@@ -116,6 +116,12 @@ describe("moveClip", () => {
     const result = moveClip(clips, "zzz", 5);
     expect(result.map((c) => c.id)).toEqual(["a", "b", "c"]);
   });
+
+  it("does not move locked clips", () => {
+    const locked = clips.map((clip) => clip.id === "b" ? { ...clip, locked: true } : clip);
+    const moved = moveClip(locked, "b", 0);
+    expect(moved.map((c) => c.id)).toEqual(["a", "b", "c"]);
+  });
 });
 
 describe("trimClip", () => {
@@ -149,5 +155,11 @@ describe("trimClip", () => {
   it("leaves other clips untouched and ignores unknown ids", () => {
     const next = trimClip(clips, "nope", { startSec: 1 });
     expect(next).toEqual(clips);
+  });
+
+  it("does not trim locked clips", () => {
+    const locked = clips.map((clip) => clip.id === "a" ? { ...clip, locked: true } : clip);
+    const next = trimClip(locked, "a", { startSec: 2, endSec: 8 });
+    expect(next.find((clip) => clip.id === "a")).toMatchObject({ inSec: 0, outSec: 10, locked: true });
   });
 });

@@ -18,6 +18,7 @@ import {
   ChevronRight,
   CirclePlus,
   Clapperboard,
+  ClipboardList,
   CloudUpload,
   CircleQuestionMark,
   Compass,
@@ -100,6 +101,7 @@ const iconMap = {
   search: Search,
   collections: FolderOpen,
   projects: Clapperboard,
+  "production-tasks": ClipboardList,
   types: FolderTree,
   vocabulary: BookOpen,
   htags: Tag,
@@ -147,16 +149,16 @@ function SidebarButton({ page, active, onClick, badge, collapsed }) {
     "aria-current": active ? "page" : undefined,
     title: collapsed ? page.meta?.title : undefined,
     "aria-label": collapsed ? page.meta?.title : undefined,
-    className: `va-sidebar-item ${active ? "va-sidebar-item-active" : ""} group relative flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-right text-sm transition-colors ${
+    className: `va-sidebar-item ${active ? "va-sidebar-item-active" : ""} group relative flex min-h-11 w-full items-center gap-3 rounded-[var(--va-radius-lg)] px-3 py-2 text-right text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 ${
       active
-        ? "va-accent-bg-soft va-accent-text-on-soft"
-        : "text-gray-400 hover:bg-white/5 hover:text-white"
+        ? "bg-emerald-500/12 text-emerald-300"
+        : "text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]"
     }`,
     children: [
-      active && jsx("span", { className: "absolute right-0 top-2 bottom-2 w-1 rounded-full va-accent-bg" }),
+      active && jsx("span", { className: "absolute inset-inline-end-0 right-0 top-2 bottom-2 w-1 rounded-full bg-emerald-500" }),
       jsx("span", {
-        className: `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
-          active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft border" : "border-white/10 bg-white/[0.03]"
+        className: `flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--va-radius-md)] border transition-colors ${
+          active ? "border-emerald-500/30 bg-emerald-500/12 text-emerald-300" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] group-hover:border-[var(--va-border-strong)]"
         }`,
         children: jsx(Icon, { className: "h-4 w-4" })
       }),
@@ -165,7 +167,7 @@ function SidebarButton({ page, active, onClick, badge, collapsed }) {
         children: [
           jsx("span", { className: "truncate", children: page.meta?.title || page.id }),
           badge && jsx("span", {
-            className: "va-number-badge shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-gray-300",
+            className: "va-number-badge shrink-0 rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-[11px] text-[var(--va-text-2)]",
             children: badge
           })
         ]
@@ -331,13 +333,13 @@ export function Sidebar() {
     }
     const index = listIds.indexOf(page.id);
     const title = page.meta?.title || page.id;
-    const ctrl = "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white disabled:opacity-30";
+    const ctrl = "inline-flex h-7 w-7 items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55";
     // Edit mode: <li> with block wrapper to bypass DaisyUI menu's flex defaults on children
     return jsxs("li", {
       className: "block !p-0",
       children: [
         jsxs("div", {
-          className: `rounded-xl border p-1 ${page._hidden ? "border-white/5 opacity-60" : "border-white/10"}`,
+          className: `rounded-[var(--va-radius-lg)] border p-1 ${page._hidden ? "border-[var(--va-border-soft)] opacity-60" : "border-[var(--va-border-strong)]"}`,
           children: [
             jsx(SidebarButton, { page, active: false, onClick: () => {}, collapsed: false }),
             jsxs("div", {
@@ -348,7 +350,7 @@ export function Sidebar() {
                   onClick: () => setDraftLayout((l) => setSidebarItemPinned(l, page.id, !page._pinned)),
                   title: page._pinned ? "إلغاء التثبيت" : "تثبيت",
                   "aria-label": page._pinned ? `إلغاء تثبيت ${title}` : `تثبيت ${title}`,
-                  className: `inline-flex h-7 w-7 items-center justify-center rounded-lg border ${page._pinned ? "border-amber-500/30 bg-amber-500/10 text-amber-200" : "border-white/10 text-gray-400 hover:bg-white/5 hover:text-white"}`,
+                  className: `inline-flex h-7 w-7 items-center justify-center rounded-[var(--va-radius-md)] border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 ${page._pinned ? "border-amber-500/30 bg-amber-500/12 text-amber-300" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]"}`,
                   children: jsx(Star, { className: "h-3.5 w-3.5", fill: page._pinned ? "currentColor" : "none" })
                 }),
                 jsx("button", {
@@ -391,23 +393,23 @@ export function Sidebar() {
         // When collapsed the narrow rail can't fit the logo + toggle side by
         // side, so they used to overflow under the top bar (hiding the expand
         // icon). Stack them vertically and shrink padding while collapsed.
-        className: `va-sidebar-brand relative z-10 flex border-b ${collapsed ? "flex-col items-center gap-2 p-3" : "items-center gap-3 p-5"} ${isDark ? "border-white/10" : "border-gray-200"}`,
+        className: `va-sidebar-brand relative z-10 flex border-b border-[var(--va-border-soft)] bg-[var(--va-surface)] ${collapsed ? "flex-col items-center gap-2 p-3" : "items-center gap-3 p-5"}`,
         children: [
           jsx("div", {
-            className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl va-accent-bg shadow-lg",
-            children: jsx(Video, { className: "h-5 w-5 text-white" })
+            className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--va-radius-lg)] bg-emerald-500 shadow-[var(--va-elev-2)]",
+            children: jsx(Video, { className: "h-5 w-5 text-[var(--va-text-inverse)]" })
           }),
           !collapsed && jsxs("div", {
             className: "min-w-0 flex-1",
             children: [
-              jsx("h2", { className: "truncate text-lg font-bold text-white", children: "أرشيف الفيديو" }),
-              jsx("p", { className: "truncate text-xs text-gray-500", children: "نظام إدارة الأرشيف" })
+              jsx("h2", { className: "truncate text-lg font-bold text-[var(--va-text)]", children: "أرشيف الفيديو" }),
+              jsx("p", { className: "truncate text-xs text-[var(--va-text-muted)]", children: "نظام إدارة الأرشيف" })
             ]
           }),
           !isMobile && !editing && jsx("button", {
             type: "button",
             onClick: toggleCollapsed,
-            className: "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white",
+            className: "inline-flex h-8 w-8 items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55",
             title: collapsed ? "توسيع القائمة" : "طي القائمة",
             "aria-label": collapsed ? "توسيع القائمة" : "طي القائمة",
             children: collapsed ? jsx(ChevronLeft, { className: "h-4 w-4" }) : jsx(ChevronRight, { className: "h-4 w-4" })
@@ -415,7 +417,7 @@ export function Sidebar() {
           isMobile && jsx("button", {
             type: "button",
             onClick: () => setDrawerOpen(false),
-            className: "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white",
+            className: "inline-flex h-8 w-8 items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55",
             "aria-label": "إغلاق القائمة الجانبية",
             children: jsx(X, { className: "h-4 w-4" })
           })
@@ -436,11 +438,11 @@ export function Sidebar() {
               onNavigate: () => { if (responsiveSidebar.drawerOpen) setDrawerOpen(false); }
             }),
             editing && jsxs("div", {
-              className: "sticky top-0 z-10 -mx-1 mb-1 flex items-center gap-1.5 rounded-xl border va-accent-border va-accent-bg-soft p-2",
+              className: "sticky top-0 z-10 -mx-1 mb-1 flex items-center gap-1.5 rounded-[var(--va-radius-lg)] border border-emerald-500/25 bg-emerald-500/12 p-2 shadow-[var(--va-elev-1)] backdrop-blur",
               children: [
-                jsxs("button", { type: "button", onClick: saveEditing, className: "btn btn-primary btn-xs flex-1 gap-1.5", children: [jsx(Save, { className: "h-3.5 w-3.5" }), "حفظ"] }),
-                jsx("button", { type: "button", onClick: cancelEditing, title: "إلغاء", "aria-label": "إلغاء التخصيص", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 hover:text-white", children: jsx(X, { className: "h-4 w-4" }) }),
-                jsx("button", { type: "button", onClick: resetLayout, title: "استعادة الافتراضي", "aria-label": "استعادة الترتيب الافتراضي", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 hover:text-white", children: jsx(RotateCcw, { className: "h-4 w-4" }) })
+                jsxs("button", { type: "button", onClick: saveEditing, className: "inline-flex min-h-8 flex-1 items-center justify-center gap-1.5 rounded-[var(--va-radius-md)] bg-emerald-500 px-3 text-xs font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55", children: [jsx(Save, { className: "h-3.5 w-3.5" }), "حفظ"] }),
+                jsx("button", { type: "button", onClick: cancelEditing, title: "إلغاء", "aria-label": "إلغاء التخصيص", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55", children: jsx(X, { className: "h-4 w-4" }) }),
+                jsx("button", { type: "button", onClick: resetLayout, title: "استعادة الافتراضي", "aria-label": "استعادة الترتيب الافتراضي", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55", children: jsx(RotateCcw, { className: "h-4 w-4" }) })
               ]
             }),
             shaped.pinned.length > 0 && jsx("section", {
@@ -448,7 +450,7 @@ export function Sidebar() {
                 className: "menu menu-sm p-0 w-full gap-0.5",
                 children: [
                   !collapsed && jsxs("li", {
-                    className: "menu-title flex items-center gap-1.5 text-xs font-medium text-amber-300/80 py-1",
+                    className: "menu-title flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-400/90 py-1",
                     children: [jsx(Star, { className: "h-3 w-3", fill: "currentColor" }), "مثبّتة"]
                   }),
                   ...shaped.pinned.map((page) => renderItem(page, shaped.pinned.map((p) => p.id)))
@@ -460,7 +462,7 @@ export function Sidebar() {
                 className: "menu menu-sm p-0 w-full gap-0.5",
                 children: [
                   !collapsed && jsx("li", {
-                    className: "menu-title text-xs font-medium text-gray-600 py-1",
+                    className: "menu-title text-xs font-semibold uppercase tracking-wide text-[var(--va-text-muted)] py-1",
                     children: group.label
                   }),
                   ...group.pages.map((page) => renderItem(page, group.pages.map((p) => p.id)))
@@ -471,14 +473,14 @@ export function Sidebar() {
         })
       }),
       jsxs("div", {
-        className: `space-y-2 border-t p-3 ${isDark ? "border-white/10" : "border-gray-200"}`,
+        className: "space-y-2 border-t border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3",
         children: [
           jsxs("button", {
             type: "button",
             onClick: toggleNotificationCenter,
             "aria-label": collapsed ? "مركز الرسائل" : undefined,
-            className: `flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${
-              notificationCenterOpen ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"
+            className: `flex min-h-10 w-full items-center gap-3 rounded-[var(--va-radius-lg)] px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 ${
+              notificationCenterOpen ? "bg-emerald-500/12 text-emerald-300" : "text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]"
             }`,
             children: [
               jsx(Bell, { className: "h-4 w-4 shrink-0", "aria-hidden": "true" }),
@@ -487,7 +489,7 @@ export function Sidebar() {
                 children: [
                   jsx("span", { children: "مركز الرسائل" }),
                   unreadNotifications.length > 0 && jsx("span", {
-                    className: "va-number-badge rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-gray-300",
+                    className: "va-number-badge rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-[11px] text-[var(--va-text-2)]",
                     children: unreadNotifications.length
                   })
                 ]
@@ -497,10 +499,10 @@ export function Sidebar() {
           !editing && !collapsed && jsxs("button", {
             type: "button",
             onClick: startEditing,
-            className: "flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-400 transition-colors hover:bg-white/5 hover:text-white",
+            className: "flex min-h-10 w-full items-center gap-3 rounded-[var(--va-radius-lg)] px-3 py-2 text-sm text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55",
             title: "تثبيت/إخفاء/ترتيب عناصر القائمة",
             children: [
-              jsx(Settings2, { className: "h-4 w-4 shrink-0 va-accent-text" }),
+              jsx(Settings2, { className: "h-4 w-4 shrink-0 text-emerald-400" }),
               "تخصيص القائمة"
             ]
           }),
@@ -508,7 +510,7 @@ export function Sidebar() {
             type: "button",
             onClick: lockApp,
             "aria-label": collapsed ? "قفل التطبيق" : undefined,
-            className: "flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-400 transition-colors hover:bg-white/5 hover:text-white",
+            className: "flex min-h-10 w-full items-center gap-3 rounded-[var(--va-radius-lg)] px-3 py-2 text-sm text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55",
             children: [
               jsx(Shield, { className: "h-4 w-4 shrink-0", "aria-hidden": "true" }),
               !collapsed && "قفل التطبيق"
@@ -517,10 +519,10 @@ export function Sidebar() {
           currentUser && !collapsed && (() => {
             const roleMeta = getRoleMeta(currentUser.role);
             return jsxs("div", {
-              className: "rounded-xl border border-white/10 bg-white/[0.03] p-3",
+              className: "rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3 shadow-[var(--va-elev-1)]",
               children: [
                 jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-                  jsx("p", { className: "truncate text-sm font-medium text-gray-200", children: currentUser.displayName || currentUser.name || currentUser.username || "مستخدم" }),
+                  jsx("p", { className: "truncate text-sm font-medium text-[var(--va-text)]", children: currentUser.displayName || currentUser.name || currentUser.username || "مستخدم" }),
                   jsx("span", {
                     className: "shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium",
                     style: { borderColor: `${roleMeta.color}55`, backgroundColor: `${roleMeta.color}18`, color: roleMeta.color },
@@ -529,7 +531,7 @@ export function Sidebar() {
                   })
                 ] }),
                 currentUser.username && jsx("p", {
-                  className: "mt-1 truncate text-xs text-gray-500 font-mono",
+                  className: "mt-1 truncate text-xs text-[var(--va-text-muted)] font-mono",
                   dir: "ltr",
                   children: `@${currentUser.username}`
                 }),
@@ -539,14 +541,14 @@ export function Sidebar() {
                     isPasswordSet && jsx("button", {
                       type: "button",
                       onClick: lockApp,
-                      className: "flex-1 min-w-0 rounded-lg border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs va-accent-text-on-soft hover:opacity-90",
+                      className: "flex-1 min-w-0 rounded-[var(--va-radius-md)] border border-emerald-500/25 bg-emerald-500/12 px-3 py-1.5 text-xs text-emerald-300 transition-colors hover:bg-emerald-500/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55",
                       title: "ارجع إلى شاشة الدخول للتبديل لحساب آخر",
                       children: "تبديل المستخدم"
                     }),
                     jsx("button", {
                       type: "button",
                       onClick: logout,
-                      className: "flex-1 min-w-0 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-300 hover:bg-white/5 hover:text-white",
+                      className: "flex-1 min-w-0 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] px-3 py-1.5 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55",
                       children: "تسجيل الخروج"
                     })
                   ]
@@ -600,7 +602,9 @@ export function Sidebar() {
   return jsx("aside", {
         role: "navigation",
         "aria-label": "القائمة الجانبية",
-        className: `va-sidebar ${collapsed ? "w-[72px]" : "w-[clamp(240px,18vw,280px)]"} flex h-screen shrink-0 flex-col border-l border-white/10 bg-gray-950 transition-[width] duration-200`,
+        // RTL: the sidebar is anchored on the inline-start (visual right). border-s
+        // draws the divider on the inline-start edge facing the content area.
+        className: `va-sidebar ${collapsed ? "w-[72px]" : "w-[clamp(240px,18vw,280px)]"} flex h-screen shrink-0 flex-col border-s border-[var(--va-border-soft)] bg-[var(--va-surface)] shadow-[var(--va-elev-1)] transition-[width] duration-200`,
         dir: "rtl",
         children: sidebarContent
   });
