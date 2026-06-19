@@ -22,9 +22,14 @@ import {
   ClipboardList,
   Copy,
   Eye,
+  FileUp,
+  FolderPlus,
   Gauge,
+  Link,
   Lock,
   RefreshCw,
+  Save,
+  Settings2,
   SlidersHorizontal,
   Wand2
 } from "lucide-react";
@@ -78,6 +83,7 @@ import {
 } from "../features/projects/exportClient.js";
 import { getBackendUrl, resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
+import { parseVideoTags } from "../features/videos/viewModel.js";
 import { TimelineTrack } from "../components/montage/TimelineTrack.jsx";
 import { VideoPlayer } from "../components/media/VideoPlayer.jsx";
 import { getMediaPreviewDescriptor, MEDIA_PREVIEW_STATUS } from "../features/archive/mediaPreview.js";
@@ -266,6 +272,245 @@ function SourceBin({ items, query, onQuery, selectedId, onSelect, projectItemIds
           }, item.id);
         })
       }) : jsx("p", { className: "rounded-xl border border-dashed border-white/10 p-4 text-center text-sm text-gray-500", children: "لا توجد مصادر مطابقة." })
+    ]
+  });
+}
+
+function MaterialImportPanel({ contentTypes = [], onImport }) {
+  const firstType = contentTypes.find((type) => type.status !== "archived") || contentTypes[0];
+  const [sourceKind, setSourceKind] = React.useState("path");
+  const [title, setTitle] = React.useState("");
+  const [path, setPath] = React.useState("");
+  const [thumbnail, setThumbnail] = React.useState("");
+  const [typeId, setTypeId] = React.useState(firstType?.id || "");
+  const [subtypeId, setSubtypeId] = React.useState("");
+  const [tags, setTags] = React.useState("");
+  const [notes, setNotes] = React.useState("");
+  const [media, setMedia] = React.useState({ audioKey: "", transcription: "", derivedKey: "" });
+  const [saving, setSaving] = React.useState(false);
+  const selectedType = contentTypes.find((type) => type.id === typeId);
+  const subtypes = selectedType?.subtypes || [];
+  const canSubmit = title.trim() && path.trim() && !saving;
+
+  React.useEffect(() => {
+    if (typeId && contentTypes.some((type) => type.id === typeId)) return;
+    setTypeId(firstType?.id || "");
+  }, [contentTypes, firstType?.id, typeId]);
+
+  React.useEffect(() => {
+    if (!subtypeId || subtypes.some((subtype) => subtype.id === subtypeId)) return;
+    setSubtypeId("");
+  }, [subtypeId, subtypes]);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!canSubmit) return;
+    setSaving(true);
+    const created = await onImport?.({
+      title: title.trim(),
+      path: path.trim(),
+      thumbnail: thumbnail.trim(),
+      type: typeId,
+      subtype: subtypeId,
+      notes: notes.trim(),
+      tags: parseVideoTags(tags),
+      sourceKind,
+      media: {
+        ...(thumbnail.trim() ? { thumbnailKey: thumbnail.trim() } : {}),
+        ...(media.audioKey.trim() ? { audioKey: media.audioKey.trim() } : {}),
+        ...(media.transcription.trim() ? { transcription: media.transcription.trim() } : {}),
+        ...(media.derivedKey.trim() ? { derivedKey: media.derivedKey.trim() } : {})
+      }
+    });
+    setSaving(false);
+    if (!created) return;
+    setTitle("");
+    setPath("");
+    setThumbnail("");
+    setSubtypeId("");
+    setTags("");
+    setNotes("");
+    setMedia({ audioKey: "", transcription: "", derivedKey: "" });
+  };
+
+  return jsxs("section", {
+    className: "rounded-2xl border border-white/10 bg-gray-950/35 p-3",
+    "aria-label": "استيراد مواد للمونتاج",
+    children: [
+      jsxs("div", { className: "mb-3 flex items-center justify-between gap-2", children: [
+        jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(FileUp, { className: "h-4 w-4 va-accent-text" }), "استيراد مواد للمونتاج"] }),
+        jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-gray-400", children: "يرتبط بالمشروع" })
+      ] }),
+      jsxs("form", { onSubmit: submit, className: "space-y-3", children: [
+        jsxs("div", { className: "grid grid-cols-2 gap-2", role: "group", "aria-label": "نوع مصدر المادة", children: [
+          jsx("button", { type: "button", onClick: () => setSourceKind("path"), className: `btn btn-sm gap-2 ${sourceKind === "path" ? "btn-primary" : "btn-ghost"}`, children: [jsx(FolderPlus, { className: "h-4 w-4" }), "مسار محلي"] }),
+          jsx("button", { type: "button", onClick: () => setSourceKind("url"), className: `btn btn-sm gap-2 ${sourceKind === "url" ? "btn-primary" : "btn-ghost"}`, children: [jsx(Link, { className: "h-4 w-4" }), "رابط"] })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "اسم المادة",
+          jsx("input", { value: title, onChange: (e) => setTitle(e.target.value), className: "input input-bordered mt-1 w-full", placeholder: "مثال: مقابلة المصدر الرئيسي" })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          sourceKind === "url" ? "رابط الفيديو أو نسخة الويب" : "مسار ملف المصدر",
+          jsx("input", { value: path, onChange: (e) => setPath(e.target.value), dir: "ltr", className: "input input-bordered mt-1 w-full", placeholder: sourceKind === "url" ? "https://..." : "D:\\media\\clip.mp4" })
+        ] }),
+        jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
+          jsxs("label", { className: "text-xs text-gray-400", children: [
+            "نوع المحتوى",
+            jsx("select", { value: typeId, onChange: (e) => setTypeId(e.target.value), className: "select select-bordered mt-1 w-full", children: [
+              jsx("option", { value: "", children: "بدون تصنيف" }, "empty"),
+              ...contentTypes.filter((type) => type.status !== "archived").map((type) => jsx("option", { value: type.id, children: type.name }, type.id))
+            ] })
+          ] }),
+          jsxs("label", { className: "text-xs text-gray-400", children: [
+            "الفرع",
+            jsx("select", { value: subtypeId, onChange: (e) => setSubtypeId(e.target.value), className: "select select-bordered mt-1 w-full", children: [
+              jsx("option", { value: "", children: "بدون فرع" }, "empty"),
+              ...subtypes.map((subtype) => jsx("option", { value: subtype.id, children: subtype.name }, subtype.id))
+            ] })
+          ] })
+        ] }),
+        jsxs("details", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [
+          jsx("summary", { className: "cursor-pointer text-xs font-semibold text-white", children: "جاهزية الوسائط وبيانات إضافية" }),
+          jsxs("div", { className: "mt-3 grid gap-2", children: [
+            jsxs("label", { className: "text-xs text-gray-400", children: ["Thumbnail", jsx("input", { value: thumbnail, onChange: (e) => setThumbnail(e.target.value), dir: "ltr", className: "input input-bordered mt-1 w-full" })] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: ["Audio key/path", jsx("input", { value: media.audioKey, onChange: (e) => setMedia((current) => ({ ...current, audioKey: e.target.value })), dir: "ltr", className: "input input-bordered mt-1 w-full" })] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: ["Web proxy/derived", jsx("input", { value: media.derivedKey, onChange: (e) => setMedia((current) => ({ ...current, derivedKey: e.target.value })), dir: "ltr", className: "input input-bordered mt-1 w-full" })] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: ["تفريغ مختصر", jsx("textarea", { value: media.transcription, onChange: (e) => setMedia((current) => ({ ...current, transcription: e.target.value })), className: "textarea textarea-bordered mt-1 w-full" })] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: ["وسوم", jsx("input", { value: tags, onChange: (e) => setTags(e.target.value), className: "input input-bordered mt-1 w-full", placeholder: "archive, interview, b-roll" })] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: ["ملاحظات", jsx("textarea", { value: notes, onChange: (e) => setNotes(e.target.value), className: "textarea textarea-bordered mt-1 w-full" })] })
+          ] })
+        ] }),
+        jsxs("button", { type: "submit", disabled: !canSubmit, className: "btn btn-primary w-full gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), saving ? "جار الاستيراد..." : "استيراد وربط بالمشروع"] })
+      ] })
+    ]
+  });
+}
+
+function MaterialInspector({ item, contentTypes = [], projectItemIds = [], onUpdate, onAttach }) {
+  const [draft, setDraft] = React.useState(null);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!item) {
+      setDraft(null);
+      return;
+    }
+    const media = item.metadata?.media || {};
+    setDraft({
+      title: item.title || "",
+      path: item.path || item.filePath || item.url || item.metadata?.localFile?.relativePath || "",
+      thumbnail: item.thumbnail || media.thumbnailKey || "",
+      type: item.type || "",
+      subtype: item.subtype || "",
+      tags: (item.tags || []).join(", "),
+      notes: item.notes || "",
+      audioKey: media.audioKey || "",
+      transcription: typeof media.transcription === "string" ? media.transcription : "",
+      derivedKey: media.derivedKey || ""
+    });
+  }, [item?.id]);
+
+  if (!item || !draft) {
+    return jsxs("section", {
+      className: "rounded-2xl border border-dashed border-white/10 bg-gray-950/35 p-4 text-center",
+      "aria-label": "إعدادات المادة المحددة",
+      children: [
+        jsx(Settings2, { className: "mx-auto h-8 w-8 text-gray-600" }),
+        jsx("p", { className: "mt-2 text-sm text-gray-500", children: "اختر مادة لضبط إعداداتها وربطها بالمشروع." })
+      ]
+    });
+  }
+
+  const selectedType = contentTypes.find((type) => type.id === draft.type);
+  const subtypes = selectedType?.subtypes || [];
+  const readiness = buildMediaReadiness({
+    ...item,
+    path: draft.path,
+    thumbnail: draft.thumbnail,
+    metadata: {
+      ...(item.metadata || {}),
+      media: {
+        ...(item.metadata?.media || {}),
+        thumbnailKey: draft.thumbnail,
+        audioKey: draft.audioKey,
+        transcription: draft.transcription,
+        derivedKey: draft.derivedKey
+      }
+    }
+  });
+  const inProject = projectItemIds.includes(item.id);
+
+  const patch = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
+
+  const save = async () => {
+    setSaving(true);
+    await onUpdate?.(item.id, {
+      title: draft.title.trim(),
+      path: draft.path.trim(),
+      thumbnail: draft.thumbnail.trim(),
+      type: draft.type,
+      subtype: draft.subtype,
+      tags: parseVideoTags(draft.tags),
+      notes: draft.notes.trim(),
+      metadata: {
+        ...(item.metadata || {}),
+        media: {
+          ...(item.metadata?.media || {}),
+          ...(draft.thumbnail.trim() ? { thumbnailKey: draft.thumbnail.trim() } : { thumbnailKey: "" }),
+          ...(draft.audioKey.trim() ? { audioKey: draft.audioKey.trim() } : { audioKey: "" }),
+          ...(draft.transcription.trim() ? { transcription: draft.transcription.trim() } : { transcription: "" }),
+          ...(draft.derivedKey.trim() ? { derivedKey: draft.derivedKey.trim() } : { derivedKey: "" })
+        },
+        montageMaterialUpdatedAt: new Date().toISOString()
+      }
+    });
+    setSaving(false);
+  };
+
+  return jsxs("section", {
+    className: "rounded-2xl border border-white/10 bg-gray-950/35 p-3",
+    "aria-label": "إعدادات المادة المحددة",
+    children: [
+      jsxs("div", { className: "mb-3 flex items-start justify-between gap-2", children: [
+        jsxs("div", { className: "min-w-0", children: [
+          jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(Settings2, { className: "h-4 w-4 va-accent-text" }), "إعدادات المادة المحددة"] }),
+          jsx("p", { className: "mt-1 truncate text-xs text-gray-500", dir: "ltr", children: itemMediaPath(item) || "لا يوجد مسار" })
+        ] }),
+        jsx("span", { className: `shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${readinessTone(readiness.status)}`, children: formatReadiness(readiness) })
+      ] }),
+      jsxs("div", { className: "grid gap-2", children: [
+        jsxs("label", { className: "text-xs text-gray-400", children: ["اسم المادة", jsx("input", { value: draft.title, onChange: (e) => patch("title", e.target.value), className: "input input-bordered mt-1 w-full" })] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: ["مسار/رابط المصدر", jsx("input", { value: draft.path, onChange: (e) => patch("path", e.target.value), dir: "ltr", className: "input input-bordered mt-1 w-full" })] }),
+        jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
+          jsxs("label", { className: "text-xs text-gray-400", children: [
+            "نوع المحتوى",
+            jsx("select", { value: draft.type, onChange: (e) => patch("type", e.target.value), className: "select select-bordered mt-1 w-full", children: [
+              jsx("option", { value: "", children: "بدون تصنيف" }, "empty"),
+              ...contentTypes.filter((type) => type.status !== "archived").map((type) => jsx("option", { value: type.id, children: type.name }, type.id))
+            ] })
+          ] }),
+          jsxs("label", { className: "text-xs text-gray-400", children: [
+            "الفرع",
+            jsx("select", { value: draft.subtype, onChange: (e) => patch("subtype", e.target.value), className: "select select-bordered mt-1 w-full", children: [
+              jsx("option", { value: "", children: "بدون فرع" }, "empty"),
+              ...subtypes.map((subtype) => jsx("option", { value: subtype.id, children: subtype.name }, subtype.id))
+            ] })
+          ] })
+        ] }),
+        jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
+          jsxs("label", { className: "text-xs text-gray-400", children: ["Thumbnail", jsx("input", { value: draft.thumbnail, onChange: (e) => patch("thumbnail", e.target.value), dir: "ltr", className: "input input-bordered mt-1 w-full" })] }),
+          jsxs("label", { className: "text-xs text-gray-400", children: ["Audio", jsx("input", { value: draft.audioKey, onChange: (e) => patch("audioKey", e.target.value), dir: "ltr", className: "input input-bordered mt-1 w-full" })] }),
+          jsxs("label", { className: "text-xs text-gray-400", children: ["Web proxy", jsx("input", { value: draft.derivedKey, onChange: (e) => patch("derivedKey", e.target.value), dir: "ltr", className: "input input-bordered mt-1 w-full" })] }),
+          jsxs("label", { className: "text-xs text-gray-400", children: ["وسوم", jsx("input", { value: draft.tags, onChange: (e) => patch("tags", e.target.value), className: "input input-bordered mt-1 w-full" })] })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: ["تفريغ أو وصف صوتي", jsx("textarea", { value: draft.transcription, onChange: (e) => patch("transcription", e.target.value), className: "textarea textarea-bordered mt-1 w-full" })] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: ["ملاحظات المادة", jsx("textarea", { value: draft.notes, onChange: (e) => patch("notes", e.target.value), className: "textarea textarea-bordered mt-1 w-full" })] }),
+        jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
+          jsxs("button", { type: "button", onClick: save, disabled: saving || !draft.title.trim(), className: "btn btn-primary gap-2", children: [jsx(Save, { className: "h-4 w-4" }), saving ? "جار الحفظ..." : "حفظ إعدادات المادة"] }),
+          jsxs("button", { type: "button", onClick: () => onAttach?.(item.id), disabled: inProject, className: "btn btn-ghost gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), inProject ? "مرتبطة بالمشروع" : "ربط بالمشروع"] })
+        ] })
+      ] })
     ]
   });
 }
@@ -738,7 +983,9 @@ function ProjectCard({ project, active, index, onOpen, onDelete }) {
 function ProjectEditor({
   project, items, itemsById, onPatch,
   onAddCut, onMoveCut, onRemoveCut, onUpdateCut, onSplitCut, onDuplicateCut, onReorderClips,
-  onAddMarker, onAddComment, onExport, onDownloadPackage, mp4Enabled, mp4Mode, serverFfmpeg, exporting, exportEvents, onOpenProductionTasks, onBack
+  onAddMarker, onAddComment, onImportMaterial, onUpdateMaterial, onAttachMaterial,
+  onExport, onDownloadPackage, mp4Enabled, mp4Mode, serverFfmpeg, exporting, exportEvents,
+  contentTypes, onOpenProductionTasks, onBack
 }) {
   const [sourceQuery, setSourceQuery] = React.useState("");
   const [selectedSourceId, setSelectedSourceId] = React.useState(project?.itemIds?.[0] || items[0]?.id || "");
@@ -841,15 +1088,32 @@ function ProjectEditor({
         ] })
       ] }),
 
-      jsxs("div", { className: "grid gap-4 2xl:grid-cols-[19rem_minmax(0,1fr)_22rem]", children: [
-        jsx(SourceBin, {
-          items,
-          query: sourceQuery,
-          onQuery: setSourceQuery,
-          selectedId: selectedSourceId,
-          onSelect: setSelectedSourceId,
-          projectItemIds: project.itemIds || []
-        }),
+      jsxs("div", { className: "grid gap-4 2xl:grid-cols-[21rem_minmax(0,1fr)_22rem]", children: [
+        jsxs("div", { className: "min-w-0 space-y-4", children: [
+          jsx(MaterialImportPanel, {
+            contentTypes,
+            onImport: async (draft) => {
+              const created = await onImportMaterial?.(project.id, draft);
+              if (created?.id) setSelectedSourceId(created.id);
+              return created;
+            }
+          }),
+          jsx(SourceBin, {
+            items,
+            query: sourceQuery,
+            onQuery: setSourceQuery,
+            selectedId: selectedSourceId,
+            onSelect: setSelectedSourceId,
+            projectItemIds: project.itemIds || []
+          }),
+          jsx(MaterialInspector, {
+            item: selectedSource,
+            contentTypes,
+            projectItemIds: project.itemIds || [],
+            onUpdate: onUpdateMaterial,
+            onAttach: (itemId) => onAttachMaterial?.(project.id, itemId)
+          })
+        ] }),
         jsxs("div", { className: "min-w-0 space-y-4", children: [
           jsx(PreviewComposer, {
             item: selectedSource,
@@ -981,11 +1245,14 @@ export function ProjectsPage() {
   const {
     projects = [],
     videoItems = [],
+    contentTypes = [],
     settings = {},
     connectionStatus,
     addProject,
     updateProject,
     deleteProject,
+    addVideoItem,
+    updateVideoItem,
     setCurrentPage,
     showToast,
     showNotification
@@ -1112,6 +1379,78 @@ export function ProjectsPage() {
       title: "تعليق مونتاج",
       targetLabel: selected.name || "مشروع"
     });
+  };
+
+  const attachMaterialToProject = async (projectId, itemId) => {
+    const target = projects.find((project) => project.id === projectId);
+    if (!target || !itemId || (target.itemIds || []).includes(itemId)) return target;
+    const next = {
+      ...target,
+      itemIds: [...(target.itemIds || []), itemId],
+      updatedAt: new Date().toISOString()
+    };
+    try {
+      await updateProject?.(next);
+      showToast?.("تم ربط المادة بالمشروع", "success");
+      return next;
+    } catch (error) {
+      reportError(showNotification, error, { context: "ربط مادة بالمشروع" });
+      return null;
+    }
+  };
+
+  const importMaterial = async (projectId, draft = {}) => {
+    const target = projects.find((project) => project.id === projectId);
+    if (!target) return null;
+    const firstType = contentTypes.find((type) => type.status !== "archived") || contentTypes[0];
+    try {
+      const created = await addVideoItem?.({
+        title: draft.title || "مادة مونتاج",
+        type: draft.type || firstType?.id || "",
+        subtype: draft.subtype || "",
+        path: draft.path || "",
+        thumbnail: draft.thumbnail || draft.media?.thumbnailKey || "",
+        notes: draft.notes || "",
+        tags: draft.tags || [],
+        metadata: {
+          media: draft.media || {},
+          importedFrom: "montageWorkstation",
+          importedAt: new Date().toISOString(),
+          sourceKind: draft.sourceKind || "path",
+          projectId
+        }
+      });
+      if (created?.id) {
+        await attachMaterialToProject(projectId, created.id);
+        showNotification?.("تم استيراد المادة وربطها بالمشروع.", {
+          type: "success",
+          category: "archive",
+          title: "استيراد مادة مونتاج",
+          targetLabel: created.title || target.name
+        });
+      }
+      return created;
+    } catch (error) {
+      reportError(showNotification, error, { context: "استيراد مادة للمونتاج", recovery: { run: () => importMaterial(projectId, draft) } });
+      return null;
+    }
+  };
+
+  const updateMaterial = async (itemId, patch = {}) => {
+    const current = itemsById.get(itemId);
+    if (!current) return null;
+    const metadata = patch.metadata
+      ? { ...(current.metadata || {}), ...patch.metadata }
+      : current.metadata;
+    const next = { ...current, ...patch, metadata };
+    try {
+      const updated = await updateVideoItem?.(next);
+      showToast?.("تم حفظ إعدادات المادة", "success");
+      return updated;
+    } catch (error) {
+      reportError(showNotification, error, { context: "تحديث إعدادات المادة" });
+      return null;
+    }
   };
 
   const updateCut = (cutId, patch) => {
@@ -1270,6 +1609,9 @@ export function ProjectsPage() {
         onReorderClips: reorderClipsVisual,
         onAddMarker: addMarker,
         onAddComment: addComment,
+        onImportMaterial: importMaterial,
+        onUpdateMaterial: updateMaterial,
+        onAttachMaterial: attachMaterialToProject,
         onExport: runExport,
         onDownloadPackage: downloadDeliveryPackage,
         mp4Enabled,
@@ -1277,6 +1619,7 @@ export function ProjectsPage() {
         serverFfmpeg,
         exporting,
         exportEvents,
+        contentTypes,
         onOpenProductionTasks: () => setCurrentPage?.("production-tasks")
       }) : jsxs("section", { className: "space-y-4", children: [
         jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [

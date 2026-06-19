@@ -12,8 +12,23 @@ test.describe('Projects workstation', () => {
     await page.getByRole('button', { name: 'إنشاء المشروع' }).click();
 
     await expect(page.getByText('مكتبة المصادر')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('استيراد مواد للمونتاج')).toBeVisible();
+    await expect(page.getByText('إعدادات المادة المحددة')).toBeVisible();
     await expect(page.getByText('المعاينة وبناء القصاصة')).toBeVisible();
     await expect(page.getByText('مركز التصدير')).toBeVisible();
+
+    const importPanel = page.getByRole('region', { name: 'استيراد مواد للمونتاج' });
+    await importPanel.getByLabel('اسم المادة').fill('مادة مستوردة E2E');
+    await importPanel.getByLabel('مسار ملف المصدر').fill('D:\\media\\imported-e2e.mp4');
+    await importPanel.getByRole('button', { name: 'استيراد وربط بالمشروع' }).click();
+    await expect(page.getByRole('button', { name: /مادة مستوردة E2E/ })).toBeVisible();
+
+    const materialInspector = page.getByRole('region', { name: 'إعدادات المادة المحددة' });
+    await materialInspector.getByLabel('اسم المادة').fill('مادة مضبوطة E2E');
+    await materialInspector.getByLabel('Audio').fill('audio/imported-e2e.wav');
+    await materialInspector.getByLabel('Web proxy').fill('proxy/imported-e2e.mp4');
+    await materialInspector.getByRole('button', { name: /حفظ إعدادات المادة/ }).click();
+    await expect(page.getByRole('button', { name: /مادة مضبوطة E2E/ })).toBeVisible();
 
     await page.getByRole('button', { name: /فيديو اختبار E2E/ }).first().click();
     await page.getByLabel('In').first().fill('1');
