@@ -12,6 +12,7 @@ import { exportTimelineToMp4 } from "../export/mp4.js";
 import { createInMemoryMediaJobStore, createMediaJobWorker, montageOutputKey, storeMontageOutput } from "../media/mediaJobs.js";
 import { createConversionService } from "../conversion/conversionService.js";
 import { createSharePermissionService } from "../share/sharePermissionService.js";
+import { createShareInvitationService } from "../share/invitationService.js";
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
 import { verifyJwt, signJwt } from "../auth/jwt.js";
 import { revokeToken } from "../auth/tokenBlacklist.js";
@@ -345,6 +346,12 @@ export function createApiServer({
 
   // §16.7 — share permission enforcement for protected actions on shared resources.
   const sharePermissionSvc = createSharePermissionService({ resolvedShareSecret });
+  const shareInvitationSvc = createShareInvitationService({
+    resolvedShareSecret,
+    defaultExpiryDays: shareExpiryDays,
+    sendMail: notificationSendMail,
+    resolveStorage
+  });
 
   // §20.5 security — the public API key endpoint may ONLY read these content
   // stores. An allowlist (not a denylist) keeps sensitive stores — users,
@@ -1269,6 +1276,30 @@ export function createApiServer({
         return send(res, 200, { ok: true, result: { token, path: `/api/share/${token}`, title: payload.title, expiresAt: payload.expiresAt, jti: payload.jti, passwordProtected: payload.passwordProtected } });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Failed to create share link" });
+      }
+    }
+
+    // Email invitation for a scoped share link. Auth + rate-limited.
+    // Body: { email, scope, title?, message?, expiresInDays?, password? }
+    if (req.method === "POST" && url.split("?")[0] === "/api/share/invitations") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      if (!requireAuth(req, res)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const senderClaims = (() => { try { return verifyJwt(bearerToken(req), resolvedAuthSecret); } catch { return null; } })();
+        const result = await shareInvitationSvc.createInvitation({
+          email: body?.email,
+          scope: body?.scope,
+          title: body?.title || body?.scope?.label || "",
+          message: body?.message || "",
+          password: body?.password || "",
+          expiresInDays: Object.hasOwn(body || {}, "expiresInDays") ? Number(body.expiresInDays) : shareExpiryDays,
+          origin: requestOrigin(req),
+          sender: senderClaims
+        });
+        return send(res, 201, { ok: true, result });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Failed to create share invitation" });
       }
     }
 
