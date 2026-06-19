@@ -51,8 +51,8 @@ import { isEditInSidePanelEnabled, resolveOpenTarget } from "../features/archive
 function MediaJobsBoard({ enabled, jobs, busy, onRefresh, onRetry }) {
   return jsxs("section", { className: "rounded-2xl va-surface-muted border p-4 text-right", dir: "rtl", children: [
     jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-      jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Activity, { className: "h-4 w-4 va-accent-text" }), "مهام الوسائط"] }),
-      jsx("button", { type: "button", onClick: onRefresh, disabled: !enabled || busy, className: "rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5 disabled:opacity-40", children: busy ? "جارٍ التحديث…" : "تحديث" })
+      jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-[var(--va-text)]", children: [jsx(Activity, { className: "h-4 w-4 va-accent-text" }), "مهام الوسائط"] }),
+      jsx("button", { type: "button", onClick: onRefresh, disabled: !enabled || busy, className: "rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] px-3 py-1.5 text-xs text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] disabled:opacity-40", children: busy ? "جارٍ التحديث…" : "تحديث" })
     ] }),
     !enabled ? jsx("p", { className: "mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-100", children: "تحتاج مهام الوسائط إلى خادم سحابي وتسجيل دخول بدور editor/admin." }) : null,
     jobs.length ? jsx("div", { className: "mt-3 grid gap-2 lg:grid-cols-2", children: jobs.slice(0, 6).map((job) => {
@@ -60,12 +60,12 @@ function MediaJobsBoard({ enabled, jobs, busy, onRefresh, onRetry }) {
       return jsxs("article", { className: "rounded-xl va-surface-subtle border p-3", children: [
         jsxs("div", { className: "flex items-start justify-between gap-2", children: [
           jsxs("div", { className: "min-w-0", children: [
-            jsx("p", { className: "truncate text-sm font-semibold text-white", children: job.type === "montage" ? "مونتاج" : "تحويل نسخة ويب" }),
-            jsx("p", { dir: "ltr", className: "mt-0.5 truncate text-left font-mono text-[11px] text-gray-500", children: job.sourceKey || job.outputKey || job.id })
+            jsx("p", { className: "truncate text-sm font-semibold text-[var(--va-text)]", children: job.type === "montage" ? "مونتاج" : "تحويل نسخة ويب" }),
+            jsx("p", { dir: "ltr", className: "mt-0.5 truncate text-left font-[family-name:var(--va-font-mono)] text-[11px] text-[var(--va-text-muted)]", children: job.sourceKey || job.outputKey || job.id })
           ] }),
           jsx("span", { className: `shrink-0 text-xs ${status.tone}`, children: status.label })
         ] }),
-        jsx("div", { className: "mt-3 h-1.5 overflow-hidden rounded-full bg-white/10", children: jsx("div", { className: "h-full rounded-full bg-[var(--va-action)]", style: { width: `${status.progress}%` } }) }),
+        jsx("div", { className: "mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--va-surface-2)]", children: jsx("div", { className: "h-full rounded-full bg-[var(--va-action)]", style: { width: `${status.progress}%` } }) }),
         job.status === "error" ? jsxs("div", { className: "mt-2 flex items-center justify-between gap-2", children: [
           jsx("p", { className: "min-w-0 flex-1 truncate text-xs text-red-200", children: job.error || "فشلت المهمة" }),
           jsx("button", { type: "button", onClick: () => onRetry?.(job.id), className: "rounded-lg border border-red-500/30 px-2 py-1 text-[11px] text-red-100 hover:bg-red-500/10", children: "إعادة محاولة" })

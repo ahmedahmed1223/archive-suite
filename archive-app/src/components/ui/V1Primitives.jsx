@@ -12,7 +12,7 @@ export function SaveIndicator({ state = "idle", message, onRetry, className = ""
   let content = null;
   if (state === "saving") {
     content = (
-      <span key="saving" className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-300">
+      <span key="saving" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--va-text-2)]">
         <Loader2 className={cx("h-3.5 w-3.5", prefersReducedMotion ? "" : "animate-spin")} aria-hidden="true" />
         <span>{message || "يحفظ..."}</span>
       </span>
@@ -94,7 +94,7 @@ const toneClasses = {
   amber: "border-amber-500/20 bg-amber-500/10 text-amber-200",
   rose: "border-rose-500/20 bg-rose-500/10 text-rose-200",
   violet: "border-violet-500/20 bg-violet-500/10 text-violet-200",
-  slate: "border-white/10 bg-white/5 text-gray-300"
+  slate: "border-[var(--va-border-soft)] va-surface-muted text-[var(--va-text-2)]"
 };
 
 function renderWorkflowIcon(icon) {
@@ -139,14 +139,14 @@ export function MotionPage({ children, className = "", ...props }) {
 
 export function PageHero({ icon, title, description, actions, children, className = "", compact = false }) {
   return (
-    <section className={cx("va-page-hero rounded-2xl border border-white/10 bg-gradient-to-l from-gray-900 via-gray-900/95 to-gray-950 text-right shadow-2xl shadow-black/10", compact ? "va-page-hero-compact p-3" : "p-5", className)} dir="rtl">
+    <section className={cx("va-page-hero rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-elevated)] text-right shadow-[var(--va-elev-2)]", compact ? "va-page-hero-compact p-3" : "p-5", className)} dir="rtl">
       <div className={cx("flex flex-wrap justify-between", compact ? "items-center gap-3" : "items-start gap-4")}>
         <div className="min-w-0">
-          <h2 className={cx("va-title flex items-center gap-2 font-bold text-white", compact ? "text-lg" : "text-2xl")}>
+          <h2 className={cx("va-title flex items-center gap-2 font-bold text-[var(--va-text)]", compact ? "text-lg" : "text-2xl")}>
             {icon}
             {title}
           </h2>
-          {description && <p className={cx("max-w-3xl leading-relaxed text-gray-400", compact ? "mt-1 text-xs" : "mt-2 text-sm")}>{description}</p>}
+          {description && <p className={cx("max-w-3xl leading-relaxed text-[var(--va-text-muted)]", compact ? "mt-1 text-xs" : "mt-2 text-sm")}>{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
@@ -158,22 +158,22 @@ export function PageHero({ icon, title, description, actions, children, classNam
 export function Stepper({ steps, activeStepId, className = "" }) {
   const activeIndex = Math.max(0, steps.findIndex((step) => step.id === activeStepId));
   return (
-    <ol className={cx("va-stepper-rtl grid gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-2 text-right", className)} dir="rtl">
+    <ol className={cx("va-stepper-rtl grid gap-2 rounded-2xl border border-[var(--va-border-soft)] va-surface-muted p-2 text-right", className)} dir="rtl">
       {steps.map((step, index) => (
         <li
           key={step.id}
           className={cx(
             "rounded-xl border px-3 py-2",
             index === activeIndex
-              ? "va-accent-border va-accent-bg-soft text-white"
+              ? "va-accent-border va-accent-bg-soft text-[var(--va-text)]"
               : index < activeIndex
-                ? "va-accent-border va-accent-bg-soft text-gray-200"
-                : "border-white/5 bg-white/[0.02] text-gray-500"
+                ? "va-accent-border va-accent-bg-soft text-[var(--va-text-2)]"
+                : "border-[var(--va-border-soft)] bg-[var(--va-surface)] text-[var(--va-text-muted)]"
           )}
         >
           <span className="va-number-badge text-xs">{String(index + 1).padStart(2, "0")}</span>
           <p className="mt-1 text-sm font-semibold">{step.label}</p>
-          {step.detail && <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-gray-500">{step.detail}</p>}
+          {step.detail && <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-[var(--va-text-muted)]">{step.detail}</p>}
         </li>
       ))}
     </ol>
@@ -217,7 +217,7 @@ export function WorkflowStepper({
                 <span>{step.label}</span>
               </span>
               {(step.detail || step.description) && (
-                <span className="mt-1 block text-xs leading-5 text-gray-500">{step.detail || step.description}</span>
+                <span className="mt-1 block text-xs leading-5 text-[var(--va-text-muted)]">{step.detail || step.description}</span>
               )}
             </span>
           </>
@@ -255,9 +255,9 @@ export function MetricCard({ label, value, hint, icon, tone = "accent", classNam
     <section className={cx("card card-border va-metric-card rounded-xl border p-4 text-right", className)} dir="rtl">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm text-gray-400">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-white">{value}</p>
-          {hint && <p className="mt-2 text-xs leading-relaxed text-gray-500">{hint}</p>}
+          <p className="text-sm text-[var(--va-text-muted)]">{label}</p>
+          <p className="mt-2 text-3xl font-bold text-[var(--va-text)]">{value}</p>
+          {hint && <p className="mt-2 text-xs leading-relaxed text-[var(--va-text-muted)]">{hint}</p>}
         </div>
         {icon && (
           <span className={cx("va-icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border", toneClasses[tone] || toneClasses.accent)}>
@@ -274,7 +274,7 @@ export function ActionCard({ label, detail, icon, onClick, tone = "accent", clas
     <button
       type="button"
       onClick={onClick}
-      className={cx("card card-border va-action-card group flex min-h-[92px] w-full items-center gap-3 rounded-xl border border-white/10 bg-gray-800/30 p-4 text-right transition-colors hover:border-emerald-500/25 hover:bg-white/5", className)}
+      className={cx("card card-border va-action-card group flex min-h-[92px] w-full items-center gap-3 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 text-right transition-colors hover:border-emerald-500/25 hover:bg-[var(--va-surface-2)]", className)}
     >
       {icon && (
         <span className={cx("va-icon-tile flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border", toneClasses[tone] || toneClasses.accent)}>
@@ -282,8 +282,8 @@ export function ActionCard({ label, detail, icon, onClick, tone = "accent", clas
         </span>
       )}
       <span className="min-w-0">
-        <span className="block text-sm font-semibold text-white group-hover:text-emerald-100">{label}</span>
-        {detail && <span className="mt-1 block text-xs leading-relaxed text-gray-500">{detail}</span>}
+        <span className="block text-sm font-semibold text-[var(--va-text)] group-hover:text-emerald-100">{label}</span>
+        {detail && <span className="mt-1 block text-xs leading-relaxed text-[var(--va-text-muted)]">{detail}</span>}
       </span>
     </button>
   );
@@ -291,14 +291,14 @@ export function ActionCard({ label, detail, icon, onClick, tone = "accent", clas
 
 export function FormSection({ title, description, icon, actions, children, className = "" }) {
   return (
-    <section className={cx("card card-border va-card rounded-2xl border border-white/10 bg-gray-900/50 p-5 text-right backdrop-blur-sm", className)} dir="rtl">
+    <section className={cx("card card-border va-card rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-5 text-right backdrop-blur-sm", className)} dir="rtl">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="flex items-center gap-2 text-base font-bold text-white">
+          <h3 className="flex items-center gap-2 text-base font-bold text-[var(--va-text)]">
             {icon}
             {title}
           </h3>
-          {description && <p className="mt-1 text-sm leading-relaxed text-gray-500">{description}</p>}
+          {description && <p className="mt-1 text-sm leading-relaxed text-[var(--va-text-muted)]">{description}</p>}
         </div>
         {actions}
       </div>
@@ -311,11 +311,11 @@ export function SectionToolbar({ title, description, icon, actions, children, cl
   return (
     <header className={cx("va-section-toolbar flex flex-wrap items-start justify-between gap-3 rounded-2xl border p-4 text-right", className)} dir="rtl">
       <div className="min-w-0">
-        <h2 className="flex items-center gap-2 text-base font-bold text-white">
+        <h2 className="flex items-center gap-2 text-base font-bold text-[var(--va-text)]">
           {icon}
           {title}
         </h2>
-        {description && <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>}
+        {description && <p className="mt-1 text-sm leading-6 text-[var(--va-text-muted)]">{description}</p>}
         {children}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}

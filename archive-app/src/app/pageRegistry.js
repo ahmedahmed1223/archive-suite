@@ -19,6 +19,7 @@ const TypesPage           = lazy(() => import("../pages/TypesPage.jsx"));
 const SearchPage          = lazy(() => import("../pages/SearchPage.jsx"));
 const CollectionsPage     = lazy(() => import("../pages/CollectionsPage.jsx"));
 const ProjectsPage        = lazy(() => import("../pages/ProjectsPage.jsx"));
+const ProductionTasksPage = lazy(() => import("../pages/ProductionTasksPage.jsx"));
 const TranscriberPage     = lazy(() => import("../pages/TranscriberPage.jsx"));
 const UploaderPage        = lazy(() => import("../pages/UploaderPage.jsx"));
 const VocabularyPage      = lazy(() => import("../pages/VocabularyPage.jsx"));
@@ -68,6 +69,7 @@ export const PAGE_COMPONENTS = {
   kanban:      KanbanPage,
   collections: CollectionsPage,
   projects:    ProjectsPage,
+  "production-tasks": ProductionTasksPage,
   transcriber: TranscriberPage,
   uploader:    UploaderPage,
   vocabulary:  VocabularyPage,

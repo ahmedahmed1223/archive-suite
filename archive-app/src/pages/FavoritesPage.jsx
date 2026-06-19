@@ -2,6 +2,7 @@ import { Star, Trash2 } from "lucide-react";
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { ErrorMessage } from "../components/common/ErrorMessage.jsx";
+import { EmptyState } from "../components/ui/primitives.jsx";
 import { useAppStore } from "../stores/index.js";
 import { FAVORITE_ENTITY_TYPES } from "../stores/slices/favoritesSlice.js";
 
@@ -27,22 +28,23 @@ function FavoriteRow({ fav, videoItems, onNavigate, onRemove }) {
   const displayLabel = fav.label || item?.title || fav.entityId;
 
   return jsxs("div", {
-    className: "group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 hover:bg-white/[0.06] transition-colors",
+    className: "group flex items-center gap-3 rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-4 py-3 transition-colors hover:border-emerald-500/25 hover:bg-[var(--va-surface-2)]",
     children: [
       jsx("span", { className: "text-xl shrink-0", children: ENTITY_ICON[fav.entityType] || "⭐" }),
       jsxs("div", {
         className: "flex-1 min-w-0 cursor-pointer",
         onClick: () => onNavigate(fav),
         children: [
-          jsx("p", { className: "truncate text-sm font-medium text-gray-100", children: displayLabel }),
-          jsx("p", { className: "text-xs text-gray-500", children: ENTITY_LABEL[fav.entityType] || fav.entityType })
+          jsx("p", { className: "truncate text-sm font-medium text-[var(--va-text)]", children: displayLabel }),
+          jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: ENTITY_LABEL[fav.entityType] || fav.entityType })
         ]
       }),
       jsx("button", {
         type: "button",
         title: "إزالة من المفضلة",
+        "aria-label": "إزالة من المفضلة",
         onClick: () => onRemove(fav),
-        className: "invisible shrink-0 rounded-lg p-1.5 text-gray-600 hover:bg-red-500/10 hover:text-red-400 group-hover:visible transition-colors",
+        className: "invisible shrink-0 rounded-[var(--va-radius-md)] p-1.5 text-[var(--va-text-muted)] transition-colors hover:bg-rose-500/10 hover:text-rose-400 group-hover:visible focus-visible:visible",
         children: jsx(Trash2, { className: "h-4 w-4" })
       })
     ]
@@ -93,13 +95,13 @@ export default function FavoritesPage() {
         className: "mb-6 flex items-center gap-3",
         children: [
           jsx("div", {
-            className: "flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/10",
-            children: jsx(Star, { className: "h-5 w-5 text-yellow-400", fill: "currentColor" })
+            className: "flex h-10 w-10 items-center justify-center rounded-[var(--va-radius-lg)] bg-[var(--va-highlight-soft)]",
+            children: jsx(Star, { className: "h-5 w-5 text-[var(--va-highlight)]", fill: "currentColor" })
           }),
           jsxs("div", {
             children: [
-              jsx("h1", { className: "text-xl font-semibold text-gray-100", children: "المفضلة" }),
-              jsx("p", { className: "text-sm text-gray-500", children: `${favorites.length} عنصر محفوظ` })
+              jsx("h1", { className: "text-xl font-semibold text-[var(--va-text)]", children: "المفضلة" }),
+              jsx("p", { className: "text-sm text-[var(--va-text-muted)]", children: `${favorites.length} عنصر محفوظ` })
             ]
           })
         ]
@@ -112,13 +114,10 @@ export default function FavoritesPage() {
       }),
 
       favorites.length === 0
-        ? jsxs("div", {
-            className: "flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/8 bg-white/[0.02] py-16 text-center",
-            children: [
-              jsx(Star, { className: "h-10 w-10 text-gray-600" }),
-              jsx("p", { className: "text-gray-400", children: "لا توجد عناصر مفضلة بعد" }),
-              jsx("p", { className: "text-sm text-gray-600", children: "انقر على أيقونة النجمة ★ في أي عنصر لإضافته هنا" })
-            ]
+        ? jsx(EmptyState, {
+            icon: jsx(Star, { className: "h-7 w-7" }),
+            title: "لا توجد عناصر مفضلة بعد",
+            description: "انقر على أيقونة النجمة ★ في أي عنصر لإضافته هنا."
           })
         : jsx("div", {
             className: "flex flex-col gap-6",
@@ -127,7 +126,7 @@ export default function FavoritesPage() {
                 key: type,
                 children: [
                   jsx("h2", {
-                    className: "mb-2 text-xs font-medium uppercase tracking-wider text-gray-500",
+                    className: "mb-2 text-xs font-medium uppercase tracking-wider text-[var(--va-text-muted)]",
                     children: ENTITY_LABEL[type] || type
                   }),
                   jsx("div", {

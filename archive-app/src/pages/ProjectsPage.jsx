@@ -5,8 +5,11 @@ import {
   Clapperboard,
   Download,
   FileJson,
+  Flag,
   Film,
   ListVideo,
+  MessageSquare,
+  PackageCheck,
   Plus,
   Scissors,
   Search,
@@ -17,9 +20,13 @@ import {
   Archive as ArchiveIcon,
   CheckCircle2,
   ClipboardList,
-  Link2,
+  Copy,
+  Eye,
+  Gauge,
+  Lock,
   RefreshCw,
-  UserRound
+  SlidersHorizontal,
+  Wand2
 } from "lucide-react";
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
@@ -32,35 +39,48 @@ import { PageHero } from "../components/ui/V1Primitives.jsx";
 import { reportError } from "../utils/errorReporting.js";
 import { formatDateTime, formatNumber } from "../utils/formatting.js";
 import {
+  addProjectMarker,
   addRoughCut,
-  addProjectTask,
+  addTemporalComment,
   buildEdl,
+  buildMediaReadiness,
+  buildMontagePresetClipPatch,
+  buildProductionBoardSummary,
+  buildProjectDeliveryPackage,
   buildProjectTimeline,
   createProjectValue,
+  DEFAULT_TIMELINE_SETTINGS,
+  duplicateRoughCut,
   getFilteredProjects,
   getOrderedRoughCuts,
   getProjectDuration,
   getProjectSummary,
-  getProjectTasksByStatus,
+  getProjectCommentsForClip,
   isValidRoughCut,
-  moveProjectTask,
-  PROJECT_TASK_STATUSES,
   removeRoughCut,
-  removeProjectTask,
   reorderRoughCut,
   roughCutDuration,
-  secondsToTimecode
+  secondsToTimecode,
+  splitRoughCut,
+  MONTAGE_LOOKS,
+  MONTAGE_TRANSITIONS,
+  MONTAGE_REVIEW_STATUSES
 } from "../features/projects/viewModel.js";
 import {
   CloudExportError,
   canExportMp4,
   downloadEdl,
   downloadTimelineJson,
-  exportProjectMp4
+  exportProjectMp4,
+  hasFfmpegWasmSupport,
+  safeFileName,
+  triggerDownload
 } from "../features/projects/exportClient.js";
 import { getBackendUrl, resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 import { TimelineTrack } from "../components/montage/TimelineTrack.jsx";
+import { VideoPlayer } from "../components/media/VideoPlayer.jsx";
+import { getMediaPreviewDescriptor, MEDIA_PREVIEW_STATUS } from "../features/archive/mediaPreview.js";
 
 /** Friendly clock for a duration in seconds → H:MM:SS or M:SS. */
 function formatClock(totalSeconds) {
@@ -76,12 +96,56 @@ function itemLabel(item) {
   return (item?.title || "").trim() || item?.path || item?.id || "عنصر";
 }
 
-const KANBAN_META = {
-  todo: { label: "للعمل", tone: "border-sky-500/20 bg-sky-500/10 text-sky-100" },
-  doing: { label: "قيد التنفيذ", tone: "border-amber-500/20 bg-amber-500/10 text-amber-100" },
-  review: { label: "مراجعة", tone: "border-violet-500/20 bg-violet-500/10 text-violet-100" },
-  done: { label: "منجز", tone: "va-accent-border va-accent-bg-soft va-accent-text-on-soft" }
+const REVIEW_META = {
+  raw: { label: "خام", tone: "border-white/10 bg-white/5 text-gray-300" },
+  selected: { label: "مختارة", tone: "border-sky-500/20 bg-sky-500/10 text-sky-100" },
+  needs_review: { label: "تحتاج مراجعة", tone: "border-amber-500/20 bg-amber-500/10 text-amber-100" },
+  approved: { label: "معتمدة", tone: "va-accent-border va-accent-bg-soft va-accent-text-on-soft" }
 };
+
+const TRANSITION_LABELS = {
+  cut: "Cut",
+  fade: "Fade",
+  dissolve: "Dissolve",
+  wipeleft: "Wipe Left",
+  wiperight: "Wipe Right"
+};
+
+const LOOK_LABELS = {
+  none: "طبيعي",
+  cinematic: "سينمائي",
+  news: "إخباري",
+  warm: "دافئ",
+  mono: "أبيض وأسود"
+};
+
+const TIMELINE_ZOOM = [
+  { label: "مضغوط", value: 6 },
+  { label: "متوازن", value: 12 },
+  { label: "تفصيلي", value: 22 }
+];
+
+function itemMediaPath(item) {
+  return item?.path || item?.filePath || item?.url || item?.metadata?.localFile?.relativePath || "";
+}
+
+function readinessTone(status) {
+  if (status === "ready") return "va-accent-border va-accent-bg-soft va-accent-text-on-soft";
+  if (status === "blocked") return "border-red-500/25 bg-red-500/10 text-red-100";
+  return "border-amber-500/25 bg-amber-500/10 text-amber-100";
+}
+
+function formatReadiness(readiness) {
+  if (readiness.status === "ready") return "جاهزة";
+  if (readiness.status === "blocked") return "مصدر مفقود";
+  return `ناقص: ${readiness.missing.map((item) => item.label).slice(0, 2).join("، ")}`;
+}
+
+function downloadJsonObject(payload, filename) {
+  if (typeof Blob === "undefined") return false;
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  return triggerDownload(blob, filename);
+}
 
 // ── rough-cut builder ────────────────────────────────────────────────────────
 function RoughCutBuilder({ items, onAdd }) {
@@ -152,93 +216,457 @@ function RoughCutBuilder({ items, onAdd }) {
   });
 }
 
-function TaskBuilder({ items, users, onAdd }) {
-  const [title, setTitle] = React.useState("");
-  const [status, setStatus] = React.useState("todo");
-  const [itemId, setItemId] = React.useState("");
-  const [assigneeId, setAssigneeId] = React.useState("");
-  const titleId = React.useId();
-  const itemIdField = React.useId();
-  const assigneeIdField = React.useId();
+function SourceBin({ items, query, onQuery, selectedId, onSelect, projectItemIds = [] }) {
+  const normalized = query.trim().toLowerCase();
+  const filtered = items
+    .filter((item) => {
+      if (!normalized) return true;
+      return [itemLabel(item), item.type, item.subtype, item.path]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(normalized));
+    })
+    .slice(0, 80);
 
-  const submit = () => {
-    const clean = title.trim();
-    if (!clean) return;
-    onAdd({ title: clean, status, itemId, assigneeId });
-    setTitle("");
-  };
-
-  return jsxs("div", {
-    className: "va-surface-muted rounded-xl border p-3",
+  return jsxs("section", {
+    className: "min-h-0 rounded-2xl border border-white/10 bg-gray-950/35 p-3",
     children: [
-      jsxs("p", { className: "mb-2 flex items-center gap-2 text-sm font-semibold text-gray-300", children: [
-        jsx(ClipboardList, { className: "h-4 w-4 va-accent-text" }), "إضافة مهمة"
+      jsxs("div", { className: "mb-3 flex items-center justify-between gap-2", children: [
+        jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(ArchiveIcon, { className: "h-4 w-4 va-accent-text" }), "مكتبة المصادر"] }),
+        jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: formatNumber(filtered.length) })
       ] }),
-      jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
-        jsxs("label", { className: "space-y-1 text-sm text-gray-300 sm:col-span-2", htmlFor: titleId, children: [
-          jsx("span", { children: "عنوان المهمة" }),
-          jsx("input", { id: titleId, value: title, onChange: (e) => setTitle(e.target.value), placeholder: "مثال: مراجعة لقطة الافتتاح", className: "input input-bordered w-full" })
-        ] }),
-        jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
-          jsx("span", { children: "الحالة" }),
-          jsx("select", { value: status, onChange: (e) => setStatus(e.target.value), className: "select select-bordered w-full", children: PROJECT_TASK_STATUSES.map((key) => jsx("option", { value: key, children: KANBAN_META[key].label }, key)) })
-        ] }),
-        jsxs("label", { className: "space-y-1 text-sm text-gray-300", htmlFor: itemIdField, children: [
-          jsx("span", { children: "مادة مرتبطة" }),
-          jsxs("select", { id: itemIdField, value: itemId, onChange: (e) => setItemId(e.target.value), className: "select select-bordered w-full", children: [
-            jsx("option", { value: "", children: "بدون ربط" }),
-            ...items.slice(0, 500).map((item) => jsx("option", { value: item.id, children: itemLabel(item) }, item.id))
-          ] })
-        ] }),
-        jsxs("label", { className: "space-y-1 text-sm text-gray-300 sm:col-span-2", htmlFor: assigneeIdField, children: [
-          jsx("span", { children: "المسؤول" }),
-          jsxs("select", { id: assigneeIdField, value: assigneeId, onChange: (e) => setAssigneeId(e.target.value), className: "select select-bordered w-full", children: [
-            jsx("option", { value: "", children: "غير مسندة" }),
-            ...users.filter((user) => user.isActive !== false).map((user) => jsx("option", { value: user.id, children: user.displayName || user.username || user.id }, user.id))
-          ] })
-        ] })
-      ] }),
-      jsx("div", { className: "mt-2 flex justify-end", children: jsxs("button", {
-        type: "button", onClick: submit, disabled: !title.trim(),
-        className: "btn btn-primary gap-2",
-        children: [jsx(Plus, { className: "h-4 w-4" }), "إضافة للوحة"]
-      }) })
+      jsx("input", {
+        value: query,
+        onChange: (event) => onQuery(event.target.value),
+        placeholder: "بحث في مواد الأرشيف...",
+        className: "input input-bordered input-sm mb-3 w-full"
+      }),
+      filtered.length ? jsx("div", {
+        className: "max-h-[34rem] space-y-2 overflow-y-auto pr-1",
+        children: filtered.map((item) => {
+          const readiness = buildMediaReadiness(item);
+          const active = item.id === selectedId;
+          const inProject = projectItemIds.includes(item.id);
+          return jsxs("button", {
+            type: "button",
+            onClick: () => onSelect(item.id),
+            className: [
+              "w-full rounded-xl border p-3 text-right transition-colors",
+              active ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-900/45 hover:border-white/25"
+            ].join(" "),
+            children: [
+              jsxs("div", { className: "flex items-start justify-between gap-2", children: [
+                jsxs("div", { className: "min-w-0", children: [
+                  jsx("p", { className: "truncate text-sm font-semibold text-white", children: itemLabel(item) }),
+                  jsx("p", { className: "mt-1 truncate text-xs text-gray-500", dir: "ltr", children: itemMediaPath(item) || "لا يوجد مسار" })
+                ] }),
+                inProject && jsx("span", { className: "shrink-0 rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-[11px] va-accent-text-on-soft", children: "ضمن المشروع" })
+              ] }),
+              jsx("span", { className: `mt-2 inline-flex rounded-full border px-2 py-0.5 text-[11px] ${readinessTone(readiness.status)}`, children: formatReadiness(readiness) })
+            ]
+          }, item.id);
+        })
+      }) : jsx("p", { className: "rounded-xl border border-dashed border-white/10 p-4 text-center text-sm text-gray-500", children: "لا توجد مصادر مطابقة." })
     ]
   });
 }
 
-function KanbanBoard({ project, itemsById, usersById, onMoveTask, onRemoveTask }) {
-  const grouped = getProjectTasksByStatus(project);
-  return jsx("div", {
-    className: "grid gap-3 xl:grid-cols-4",
-    children: PROJECT_TASK_STATUSES.map((status) => {
-      const meta = KANBAN_META[status];
-      const tasks = grouped[status] || [];
-      return jsxs("section", {
-        className: "min-w-0 rounded-xl border border-white/10 bg-gray-950/25 p-3",
-        children: [
-          jsxs("div", { className: "mb-3 flex items-center justify-between gap-2", children: [
-            jsx("h3", { className: `rounded-full border px-2.5 py-1 text-xs font-semibold ${meta.tone}`, children: meta.label }),
-            jsx("span", { className: "text-xs text-gray-600", children: formatNumber(tasks.length) })
+function PreviewComposer({
+  item,
+  markIn,
+  markOut,
+  onSetMarkIn,
+  onSetMarkOut,
+  onAddCut,
+  onTimeChange
+}) {
+  const videoRef = React.useRef(null);
+  const [label, setLabel] = React.useState("");
+  const [current, setCurrent] = React.useState(0);
+  const [duration, setDuration] = React.useState(0);
+  const path = itemMediaPath(item);
+  const descriptor = React.useMemo(
+    () => getMediaPreviewDescriptor(path, { runtimeProtocol: typeof window !== "undefined" ? window.location?.protocol || "" : "" }),
+    [path]
+  );
+  const canPreview = descriptor.status === MEDIA_PREVIEW_STATUS.PLAYABLE && descriptor.source;
+  const valid = item?.id && Number(markOut) > Number(markIn);
+
+  const setCurrentTime = (value) => {
+    const next = Math.max(0, Number(value) || 0);
+    setCurrent(next);
+    onTimeChange?.(next);
+  };
+
+  const add = () => {
+    if (!valid) return;
+    onAddCut({
+      itemId: item.id,
+      inSec: Number(markIn),
+      outSec: Number(markOut),
+      label: label.trim() || itemLabel(item),
+      reviewStatus: "selected"
+    });
+    setLabel("");
+  };
+
+  return jsxs("section", {
+    className: "rounded-2xl border border-white/10 bg-gray-950/35 p-3",
+    children: [
+      jsxs("div", { className: "mb-3 flex flex-wrap items-center justify-between gap-2", children: [
+        jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(Eye, { className: "h-4 w-4 va-accent-text" }), "المعاينة وبناء القصاصة"] }),
+        jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: `المؤشر ${formatClock(current)}` })
+      ] }),
+      canPreview ? jsx("div", { className: "overflow-hidden rounded-xl border border-white/10", children: jsx(VideoPlayer, {
+        videoRef,
+        src: descriptor.source,
+        onLoadedMetadata: (event) => setDuration(Number(event.currentTarget.duration) || 0),
+        onTimeUpdate: (event) => setCurrentTime(event.currentTarget.currentTime)
+      }) }) : jsxs("div", { className: "flex aspect-video items-center justify-center rounded-xl border border-dashed border-white/10 bg-black/50 p-6 text-center", children: [
+        jsx("p", { className: "max-w-md text-sm leading-6 text-gray-500", children: item ? "المصدر غير قابل للمعاينة داخل المتصفح، لكن يمكنك استخدامه في القص والتصدير إذا كان متاحًا للخادم." : "اختر مصدرًا من مكتبة المواد." })
+      ] }),
+      jsxs("div", { className: "mt-3 grid gap-2 lg:grid-cols-[1fr_1fr_auto_auto]", children: [
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "In",
+          jsx("input", { type: "number", min: "0", step: "0.1", value: markIn, onChange: (e) => onSetMarkIn(Number(e.target.value)), className: "input input-bordered mt-1 w-full" })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "Out",
+          jsx("input", { type: "number", min: "0", step: "0.1", value: markOut, onChange: (e) => onSetMarkOut(Number(e.target.value)), className: "input input-bordered mt-1 w-full" })
+        ] }),
+        jsx("button", { type: "button", onClick: () => onSetMarkIn(current), className: "btn btn-ghost mt-auto gap-2", children: "Mark In" }),
+        jsx("button", { type: "button", onClick: () => onSetMarkOut(duration ? Math.min(duration, Math.max(current, Number(markIn) + 0.5)) : Math.max(current, Number(markIn) + 0.5)), className: "btn btn-ghost mt-auto gap-2", children: "Mark Out" })
+      ] }),
+      jsxs("div", { className: "mt-2 grid gap-2 lg:grid-cols-[1fr_auto]", children: [
+        jsx("input", { value: label, onChange: (e) => setLabel(e.target.value), placeholder: "اسم القصاصة أو وصف سريع", className: "input input-bordered w-full" }),
+        jsxs("button", { type: "button", onClick: add, disabled: !valid, className: "btn btn-primary gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "إضافة للتايملاين"] })
+      ] })
+    ]
+  });
+}
+
+function ClipInspector({
+  clip,
+  item,
+  comments,
+  onUpdate,
+  onRemove,
+  onAddComment,
+  onSplit,
+  onDuplicate,
+  currentTime,
+  onUseCurrent
+}) {
+  if (!clip) {
+    return jsxs("aside", {
+      className: "rounded-2xl border border-dashed border-white/10 bg-gray-950/35 p-4 text-center",
+      children: [
+        jsx(SlidersHorizontal, { className: "mx-auto h-8 w-8 text-gray-600" }),
+        jsx("p", { className: "mt-2 text-sm text-gray-500", children: "اختر قصاصة من الخط الزمني لتحرير خصائصها." })
+      ]
+    });
+  }
+  const meta = REVIEW_META[clip.reviewStatus] || REVIEW_META.raw;
+  const transition = clip.transition || { type: "cut", durationSec: 0 };
+  const filters = clip.filters || { look: "none", brightness: 0, contrast: 1, saturation: 1 };
+  const transform = clip.transform || { scale: 1, x: 0, y: 0, rotation: 0, opacity: 1 };
+  const midpoint = Number(clip.inSec) + roughCutDuration(clip) / 2;
+  const patchNested = (key, patch) => onUpdate({ [key]: { ...(clip[key] || {}), ...patch } });
+  const applyPreset = (preset) => onUpdate(buildMontagePresetClipPatch(preset));
+  return jsxs("aside", {
+    className: "rounded-2xl border border-white/10 bg-gray-950/35 p-4",
+    children: [
+      jsxs("div", { className: "mb-3 flex items-start justify-between gap-2", children: [
+        jsxs("div", { className: "min-w-0", children: [
+          jsx("h3", { className: "truncate text-sm font-semibold text-white", children: clip.label || itemLabel(item) }),
+          jsx("p", { className: "mt-1 truncate text-xs text-gray-500", children: itemLabel(item) })
+        ] }),
+        jsx("span", { className: `shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${meta.tone}`, children: meta.label })
+      ] }),
+      jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
+        jsxs("label", { className: "text-xs text-gray-400 sm:col-span-2", children: [
+          "اسم القصاصة",
+          jsx("input", { value: clip.label || "", onChange: (e) => onUpdate({ label: e.target.value }), className: "input input-bordered mt-1 w-full" })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "In",
+          jsx("input", { type: "number", min: "0", step: "0.1", disabled: clip.locked, value: clip.inSec, onChange: (e) => onUpdate({ inSec: Number(e.target.value) }), className: "input input-bordered mt-1 w-full" })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "Out",
+          jsx("input", { type: "number", min: "0", step: "0.1", disabled: clip.locked, value: clip.outSec, onChange: (e) => onUpdate({ outSec: Number(e.target.value) }), className: "input input-bordered mt-1 w-full" })
+        ] }),
+        jsx("button", { type: "button", disabled: clip.locked, onClick: () => onUseCurrent("inSec", currentTime), className: "btn btn-ghost btn-sm", children: "استخدم المؤشر كبداية" }),
+        jsx("button", { type: "button", disabled: clip.locked, onClick: () => onUseCurrent("outSec", currentTime), className: "btn btn-ghost btn-sm", children: "استخدم المؤشر كنهاية" }),
+        jsxs("div", { className: "grid gap-2 rounded-xl border border-white/10 bg-white/5 p-3 sm:col-span-2", children: [
+          jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+            jsxs("p", { className: "flex items-center gap-2 text-xs font-semibold text-white", children: [jsx(Scissors, { className: "h-4 w-4 va-accent-text" }), "أدوات القطع" ] }),
+            jsx("span", { className: "text-[11px] text-gray-500", children: `المدة ${formatClock(roughCutDuration(clip))}` })
           ] }),
-          tasks.length ? jsx("div", { className: "space-y-2", children: tasks.map((task) => {
-            const linked = task.itemId ? itemsById.get(task.itemId) : null;
-            const assignee = task.assigneeId ? usersById.get(task.assigneeId) : null;
-            return jsxs("article", { className: "rounded-xl border border-white/10 bg-gray-900/45 p-3", children: [
-              jsxs("div", { className: "flex items-start justify-between gap-2", children: [
-                jsxs("div", { className: "min-w-0", children: [
-                  jsx("p", { className: "text-sm font-semibold leading-6 text-white", children: task.title || "مهمة بدون عنوان" }),
-                  linked && jsxs("p", { className: "mt-1 flex items-center gap-1.5 truncate text-xs text-gray-500", children: [jsx(Link2, { className: "h-3.5 w-3.5" }), itemLabel(linked)] }),
-                  assignee && jsxs("p", { className: "mt-1 flex items-center gap-1.5 truncate text-xs text-gray-500", children: [jsx(UserRound, { className: "h-3.5 w-3.5" }), assignee.displayName || assignee.username || assignee.id] })
-                ] }),
-                jsx("button", { type: "button", onClick: () => onRemoveTask(task.id), "aria-label": "حذف المهمة", className: "shrink-0 rounded-lg p-1.5 text-gray-500 hover:bg-red-500/10 hover:text-red-300", children: jsx(Trash2, { className: "h-4 w-4" }) })
-              ] }),
-              jsx("select", { value: task.status, onChange: (e) => onMoveTask(task.id, e.target.value), className: "select select-bordered w-full mt-3", children: PROJECT_TASK_STATUSES.map((key) => jsx("option", { value: key, children: KANBAN_META[key].label }, key)) })
-            ] }, task.id);
-          }) }) : jsx("p", { className: "rounded-lg border border-dashed border-white/10 p-3 text-center text-xs text-gray-600", children: "فارغ" })
-        ]
-      }, status);
-    })
+          jsxs("div", { className: "grid gap-2 sm:grid-cols-3", children: [
+            jsx("button", { type: "button", disabled: clip.locked, onClick: () => onSplit?.(currentTime), className: "btn btn-ghost btn-sm", children: "قص عند المؤشر" }),
+            jsx("button", { type: "button", disabled: clip.locked, onClick: () => onSplit?.(midpoint), className: "btn btn-ghost btn-sm", children: "قص في المنتصف" }),
+            jsxs("button", { type: "button", onClick: onDuplicate, className: "btn btn-ghost btn-sm gap-2", children: [jsx(Copy, { className: "h-4 w-4" }), "نسخ القصاصة"] })
+          ] })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "المراجعة",
+          jsx("select", { value: clip.reviewStatus || "raw", onChange: (e) => onUpdate({ reviewStatus: e.target.value }), className: "select select-bordered mt-1 w-full", children: MONTAGE_REVIEW_STATUSES.map((status) => jsx("option", { value: status, children: REVIEW_META[status]?.label || status }, status)) })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "المسار",
+          jsx("input", { value: clip.trackId || "v1", onChange: (e) => onUpdate({ trackId: e.target.value }), className: "input input-bordered mt-1 w-full" })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "اللون",
+          jsx("input", { type: "color", value: clip.color || "#22c55e", onChange: (e) => onUpdate({ color: e.target.value }), className: "mt-1 h-10 w-full rounded-lg border border-white/10 bg-transparent p-1" })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "الصوت dB",
+          jsx("input", { type: "number", min: "-60", max: "12", step: "1", value: clip.volumeDb ?? 0, onChange: (e) => onUpdate({ volumeDb: Number(e.target.value) }), className: "input input-bordered mt-1 w-full" })
+        ] }),
+        jsxs("label", { className: "flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-gray-300 sm:col-span-2", children: [
+          jsx("input", { type: "checkbox", checked: Boolean(clip.locked), onChange: (e) => onUpdate({ locked: e.target.checked }), className: "checkbox checkbox-sm" }),
+          jsx(Lock, { className: "h-4 w-4 text-gray-500" }),
+          "قفل القصاصة من التحريك والقص"
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400 sm:col-span-2", children: [
+          "ملاحظات زمنية",
+          jsx("textarea", { value: clip.notes || "", onChange: (e) => onUpdate({ notes: e.target.value }), className: "textarea textarea-bordered mt-1 w-full", placeholder: "ملاحظة للمراجعة أو الاعتماد..." })
+        ] }),
+        jsxs("section", { className: "rounded-xl border border-white/10 bg-white/5 p-3 sm:col-span-2", children: [
+          jsxs("div", { className: "mb-2 flex items-center justify-between gap-2", children: [
+            jsxs("p", { className: "flex items-center gap-2 text-xs font-semibold text-white", children: [jsx(Film, { className: "h-4 w-4 va-accent-text" }), "الانتقال" ] }),
+            jsx("span", { className: "text-[11px] text-gray-500", children: transition.type === "cut" ? "بدون مزج" : `${transition.durationSec || 0.5}s` })
+          ] }),
+          jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
+            jsxs("label", { className: "text-xs text-gray-400", children: [
+              "نوع الانتقال",
+              jsx("select", {
+                value: transition.type || "cut",
+                onChange: (e) => patchNested("transition", { type: e.target.value, durationSec: e.target.value === "cut" ? 0 : transition.durationSec || 0.5 }),
+                className: "select select-bordered mt-1 w-full",
+                children: MONTAGE_TRANSITIONS.map((type) => jsx("option", { value: type, children: TRANSITION_LABELS[type] || type }, type))
+              })
+            ] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: [
+              "مدة الانتقال",
+              jsx("input", {
+                type: "number",
+                min: "0.1",
+                max: "5",
+                step: "0.1",
+                disabled: transition.type === "cut",
+                value: transition.durationSec || 0,
+                onChange: (e) => patchNested("transition", { durationSec: Number(e.target.value) }),
+                className: "input input-bordered mt-1 w-full"
+              })
+            ] })
+          ] })
+        ] }),
+        jsxs("section", { className: "rounded-xl border border-white/10 bg-white/5 p-3 sm:col-span-2", children: [
+          jsxs("div", { className: "mb-2 flex items-center justify-between gap-2", children: [
+            jsxs("p", { className: "flex items-center gap-2 text-xs font-semibold text-white", children: [jsx(Wand2, { className: "h-4 w-4 va-accent-text" }), "فلاتر وتصحيح اللون" ] }),
+            jsx("button", { type: "button", onClick: () => applyPreset("none"), className: "btn btn-ghost btn-xs", children: "Reset" })
+          ] }),
+          jsx("div", { className: "mb-3 flex flex-wrap gap-2", children: MONTAGE_LOOKS.map((look) => jsx("button", {
+            type: "button",
+            onClick: () => applyPreset(look),
+            className: `rounded-lg border px-2 py-1 text-xs ${filters.look === look ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-white/5 text-gray-300 hover:border-white/25"}`,
+            children: LOOK_LABELS[look] || look
+          }, look)) }),
+          jsxs("div", { className: "grid gap-2 sm:grid-cols-3", children: [
+            jsxs("label", { className: "text-xs text-gray-400", children: [
+              `Brightness ${filters.brightness ?? 0}`,
+              jsx("input", { type: "range", min: "-1", max: "1", step: "0.05", value: filters.brightness ?? 0, onChange: (e) => patchNested("filters", { brightness: Number(e.target.value) }), className: "range range-xs mt-2" })
+            ] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: [
+              `Contrast ${filters.contrast ?? 1}`,
+              jsx("input", { type: "range", min: "0", max: "3", step: "0.05", value: filters.contrast ?? 1, onChange: (e) => patchNested("filters", { contrast: Number(e.target.value) }), className: "range range-xs mt-2" })
+            ] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: [
+              `Saturation ${filters.saturation ?? 1}`,
+              jsx("input", { type: "range", min: "0", max: "3", step: "0.05", value: filters.saturation ?? 1, onChange: (e) => patchNested("filters", { saturation: Number(e.target.value) }), className: "range range-xs mt-2" })
+            ] })
+          ] })
+        ] }),
+        jsxs("section", { className: "rounded-xl border border-white/10 bg-white/5 p-3 sm:col-span-2", children: [
+          jsxs("div", { className: "mb-2 flex items-center justify-between gap-2", children: [
+            jsxs("p", { className: "flex items-center gap-2 text-xs font-semibold text-white", children: [jsx(SlidersHorizontal, { className: "h-4 w-4 va-accent-text" }), "Transformation" ] }),
+            jsx("button", { type: "button", onClick: () => onUpdate({ transform: buildMontagePresetClipPatch("none").transform }), className: "btn btn-ghost btn-xs", children: "Reset" })
+          ] }),
+          jsxs("div", { className: "grid gap-2 sm:grid-cols-3", children: [
+            jsxs("label", { className: "text-xs text-gray-400", children: [
+              "Scale",
+              jsx("input", { type: "number", min: "0.1", max: "5", step: "0.05", value: transform.scale ?? 1, onChange: (e) => patchNested("transform", { scale: Number(e.target.value) }), className: "input input-bordered mt-1 w-full" })
+            ] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: [
+              "X",
+              jsx("input", { type: "number", step: "1", value: transform.x ?? 0, onChange: (e) => patchNested("transform", { x: Number(e.target.value) }), className: "input input-bordered mt-1 w-full" })
+            ] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: [
+              "Y",
+              jsx("input", { type: "number", step: "1", value: transform.y ?? 0, onChange: (e) => patchNested("transform", { y: Number(e.target.value) }), className: "input input-bordered mt-1 w-full" })
+            ] }),
+            jsxs("label", { className: "text-xs text-gray-400", children: [
+              "Rotation",
+              jsx("input", { type: "number", min: "-180", max: "180", step: "1", value: transform.rotation ?? 0, onChange: (e) => patchNested("transform", { rotation: Number(e.target.value) }), className: "input input-bordered mt-1 w-full" })
+            ] }),
+            jsxs("label", { className: "text-xs text-gray-400 sm:col-span-2", children: [
+              `Opacity ${Math.round((transform.opacity ?? 1) * 100)}%`,
+              jsx("input", { type: "range", min: "0", max: "1", step: "0.05", value: transform.opacity ?? 1, onChange: (e) => patchNested("transform", { opacity: Number(e.target.value) }), className: "range range-xs mt-2" })
+            ] })
+          ] })
+        ] })
+      ] }),
+      jsx("button", { type: "button", onClick: onRemove, className: "mt-3 inline-flex items-center gap-2 rounded-xl border border-red-500/20 px-3 py-2 text-sm text-red-200 hover:bg-red-500/10", children: [jsx(Trash2, { className: "h-4 w-4" }), "حذف القصاصة"] })
+      ,
+      jsx(TemporalCommentsPanel, { clip, comments, currentTime, onAddComment })
+    ]
+  });
+}
+
+function TimelineSettingsPanel({ settings, onChange }) {
+  const current = { ...DEFAULT_TIMELINE_SETTINGS, ...(settings || {}) };
+  return jsxs("section", {
+    className: "rounded-2xl border border-white/10 bg-gray-950/35 p-3",
+    children: [
+      jsxs("h3", { className: "mb-3 flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(Gauge, { className: "h-4 w-4 va-accent-text" }), "إعدادات المشروع"] }),
+      jsxs("div", { className: "grid gap-2 sm:grid-cols-3", children: [
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "FPS",
+          jsx("input", { type: "number", min: "1", step: "1", value: current.fps, onChange: (e) => onChange({ ...current, fps: Number(e.target.value) }), className: "input input-bordered mt-1 w-full" })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "الدقة",
+          jsx("input", { value: current.resolution, onChange: (e) => onChange({ ...current, resolution: e.target.value }), className: "input input-bordered mt-1 w-full" })
+        ] }),
+        jsxs("label", { className: "text-xs text-gray-400", children: [
+          "النسبة",
+          jsx("input", { value: current.aspectRatio, onChange: (e) => onChange({ ...current, aspectRatio: e.target.value }), className: "input input-bordered mt-1 w-full" })
+        ] })
+      ] })
+    ]
+  });
+}
+
+function MarkerPanel({ markers = [], currentTime = 0, onAddMarker }) {
+  const [label, setLabel] = React.useState("");
+  const add = () => {
+    const clean = label.trim();
+    if (!clean) return;
+    onAddMarker?.({ atSec: currentTime, label: clean });
+    setLabel("");
+  };
+
+  return jsxs("section", {
+    className: "rounded-2xl border border-white/10 bg-gray-950/35 p-3",
+    children: [
+      jsxs("div", { className: "mb-3 flex items-center justify-between gap-2", children: [
+        jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(Flag, { className: "h-4 w-4 va-accent-text" }), "Markers"] }),
+        jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: formatClock(currentTime) })
+      ] }),
+      jsxs("div", { className: "grid gap-2 sm:grid-cols-[1fr_auto]", children: [
+        jsx("input", { value: label, onChange: (event) => setLabel(event.target.value), placeholder: "علامة زمنية: افتتاح، ذروة، نهاية...", className: "input input-bordered input-sm w-full" }),
+        jsx("button", { type: "button", onClick: add, disabled: !label.trim(), className: "btn btn-primary btn-sm", children: "إضافة" })
+      ] }),
+      markers.length ? jsx("div", {
+        className: "mt-3 space-y-2",
+        children: [...markers].sort((a, b) => a.atSec - b.atSec).slice(0, 6).map((marker) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs", children: [
+          jsx("span", { className: "truncate text-gray-200", children: marker.label }),
+          jsx("span", { className: "tabular-nums text-gray-500", children: formatClock(marker.atSec) })
+        ] }, marker.id))
+      }) : jsx("p", { className: "mt-3 text-xs text-gray-500", children: "لا توجد markers بعد." })
+    ]
+  });
+}
+
+function TemporalCommentsPanel({ clip, comments = [], currentTime = 0, onAddComment }) {
+  const [body, setBody] = React.useState("");
+  const add = () => {
+    const clean = body.trim();
+    if (!clean || !clip) return;
+    onAddComment?.({ clipId: clip.id, itemId: clip.itemId, atSec: currentTime, body: clean });
+    setBody("");
+  };
+
+  return jsxs("section", {
+    className: "mt-4 rounded-2xl border border-white/10 bg-white/5 p-3",
+    children: [
+      jsxs("div", { className: "mb-2 flex items-center justify-between gap-2", children: [
+        jsxs("h4", { className: "flex items-center gap-2 text-xs font-semibold text-white", children: [jsx(MessageSquare, { className: "h-4 w-4 va-accent-text" }), "تعليقات زمنية"] }),
+        jsx("span", { className: "rounded-full bg-black/20 px-2 py-0.5 text-[11px] text-gray-400", children: formatClock(currentTime) })
+      ] }),
+      jsxs("div", { className: "grid gap-2", children: [
+        jsx("textarea", { value: body, onChange: (event) => setBody(event.target.value), disabled: !clip, className: "textarea textarea-bordered min-h-20 w-full", placeholder: clip ? "تعليق مرتبط بهذه القصاصة والزمن الحالي..." : "اختر قصاصة أولًا" }),
+        jsx("button", { type: "button", onClick: add, disabled: !clip || !body.trim(), className: "btn btn-ghost btn-sm justify-self-start", children: "إضافة تعليق" })
+      ] }),
+      comments.length ? jsx("div", {
+        className: "mt-3 space-y-2",
+        children: comments.slice(0, 5).map((comment) => jsxs("article", { className: "rounded-xl border border-white/10 bg-gray-950/40 p-2 text-xs", children: [
+          jsxs("div", { className: "mb-1 flex items-center justify-between gap-2", children: [
+            jsx("span", { className: comment.status === "resolved" ? "text-emerald-200" : "text-amber-200", children: comment.status === "resolved" ? "محلول" : "مفتوح" }),
+            jsx("span", { className: "tabular-nums text-gray-500", children: formatClock(comment.atSec) })
+          ] }),
+          jsx("p", { className: "leading-5 text-gray-300", children: comment.body })
+        ] }, comment.id))
+      }) : jsx("p", { className: "mt-3 text-xs text-gray-500", children: "لا توجد تعليقات على هذه القصاصة." })
+    ]
+  });
+}
+
+function ExportCenter({ canExport, exportMode = "server", serverFfmpeg, hasValidCuts, exporting, onExport, onDownloadPackage, exportEvents = [] }) {
+  const exportStateLabel = canExport
+    ? exportMode === "wasm" ? "MP4 عبر wasm" : "MP4 جاهز"
+    : "MP4 يحتاج خادمًا أو wasm";
+  const ffmpegDetail = serverFfmpeg
+    ? serverFfmpeg.available
+      ? `ffmpeg ${serverFfmpeg.version || ""}`.trim()
+      : serverFfmpeg.code === "FFMPEG_MISSING" ? "ffmpeg غير مثبت على الخادم" : "تعذّر فحص ffmpeg"
+    : exportMode === "wasm" ? "سيستخدم ffmpeg.wasm المتاح في المتصفح" : "لم يتم فحص خادم التصدير بعد";
+  return jsxs("section", {
+    className: "rounded-2xl border border-white/10 bg-gray-950/35 p-3",
+    children: [
+      jsxs("div", { className: "mb-3 flex items-center justify-between gap-2", children: [
+        jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(Download, { className: "h-4 w-4 va-accent-text" }), "مركز التصدير"] }),
+        jsx("span", { className: `rounded-full border px-2 py-0.5 text-xs ${canExport ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-amber-500/25 bg-amber-500/10 text-amber-100"}`, children: exportStateLabel })
+      ] }),
+      jsxs("div", { className: "flex flex-wrap gap-2", children: [
+        jsxs("button", { type: "button", onClick: () => onExport("json"), disabled: !hasValidCuts, className: "btn btn-ghost gap-2", children: [jsx(FileJson, { className: "h-4 w-4" }), "JSON"] }),
+        jsxs("button", { type: "button", onClick: () => onExport("edl"), disabled: !hasValidCuts, className: "btn btn-ghost gap-2", children: [jsx(Download, { className: "h-4 w-4" }), "EDL"] }),
+        jsxs("button", { type: "button", onClick: () => onExport("mp4"), disabled: !canExport || exporting || !hasValidCuts, className: "btn btn-primary gap-2", children: [jsx(Film, { className: "h-4 w-4" }), exporting ? "جارٍ تصدير MP4..." : "MP4"] }),
+        jsxs("button", { type: "button", onClick: onDownloadPackage, disabled: !hasValidCuts, className: "btn btn-ghost gap-2", children: [jsx(PackageCheck, { className: "h-4 w-4" }), "حزمة تسليم"] })
+      ] }),
+      jsx("p", { className: serverFfmpeg?.available || exportMode === "wasm" ? "mt-3 text-xs text-emerald-200" : "mt-3 text-xs text-amber-200", children: ffmpegDetail }),
+      exportEvents.length ? jsx("div", {
+        className: "mt-3 space-y-2",
+        children: exportEvents.slice(0, 3).map((event) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs", children: [
+          jsx("span", { className: event.ok ? "text-emerald-200" : "text-red-200", children: event.label }),
+          jsx("span", { className: "text-gray-500", children: event.time })
+        ] }, event.id))
+      }) : jsx("p", { className: "mt-3 text-xs text-gray-500", children: "لم يتم إنشاء تصديرات في هذه الجلسة بعد." })
+    ]
+  });
+}
+
+function ProductionBoard({ summary }) {
+  const cells = [
+    ["مشاريع نشطة", summary.activeProjects, Clapperboard],
+    ["مهام مفتوحة", summary.openTasks, ClipboardList],
+    ["قصاصات معتمدة", summary.approvedClips, CheckCircle2],
+    ["تعليقات مفتوحة", summary.unresolvedComments, MessageSquare],
+    ["جاهزة للتسليم", summary.deliverableProjects, PackageCheck],
+    ["تنبيهات وسائط", summary.mediaWarnings, Gauge]
+  ];
+
+  return jsx("section", {
+    className: "grid gap-3 sm:grid-cols-2 xl:grid-cols-6",
+    children: cells.map(([label, value, Icon]) => jsxs("div", { className: "rounded-2xl border va-surface-muted p-4 text-right", children: [
+      jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+        jsx("span", { className: "text-sm text-gray-500", children: label }),
+        jsx(Icon, { className: "h-4 w-4 va-accent-text" })
+      ] }),
+      jsx("p", { className: "mt-2 text-2xl font-bold text-white", children: formatNumber(value) })
+    ] }, label))
   });
 }
 
@@ -272,6 +700,9 @@ function TimelineRow({ cut, index, total, itemsById, onMove, onRemove }) {
 // ── project card ─────────────────────────────────────────────────────────────
 function ProjectCard({ project, active, index, onOpen, onDelete }) {
   const cuts = project.roughCuts?.length || 0;
+  const validCuts = (project.roughCuts || []).filter(isValidRoughCut).length;
+  const openTasks = (project.tasks || []).filter((task) => task.status !== "done").length;
+  const duration = getProjectDuration(project);
   return jsxs(motion.article, {
     initial: { opacity: 0, y: 8 },
     animate: { opacity: 1, y: 0 },
@@ -288,13 +719,15 @@ function ProjectCard({ project, active, index, onOpen, onDelete }) {
               jsx("h3", { className: "truncate text-base font-bold text-white", children: project.name || "مشروع بدون اسم" }),
               project.status === "archived" && jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: "مؤرشف" })
             ] }),
-            project.description && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-gray-500", children: project.description }),
-            jsxs("span", { className: "mt-2.5 inline-flex items-center gap-1 rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-xs font-medium va-accent-text-on-soft", children: [
-              jsx(ListVideo, { className: "h-3 w-3 opacity-70" }), `${formatNumber(cuts)} قصاصة · ${formatClock(getProjectDuration(project))}`
-            ] })
+            project.description && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-gray-500", children: project.description })
           ] })
         ] }),
         jsx("div", { className: "flex shrink-0 gap-1", onClick: (e) => e.stopPropagation(), children: jsx("button", { type: "button", onClick: onDelete, className: "rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-300", "aria-label": `حذف ${project.name}`, children: jsx(Trash2, { className: "h-4 w-4" }) }) })
+      ] }),
+      jsxs("div", { className: "mt-3 grid grid-cols-3 gap-2 text-xs", children: [
+        jsxs("span", { className: "rounded-lg border border-white/10 bg-white/5 p-2", children: [jsx("b", { className: "block text-white", children: `${formatNumber(validCuts)}/${formatNumber(cuts)}` }), jsx("span", { className: "text-gray-500", children: "قصاصات" })] }),
+        jsxs("span", { className: "rounded-lg border border-white/10 bg-white/5 p-2", children: [jsx("b", { className: "block text-white", children: formatClock(duration) }), jsx("span", { className: "text-gray-500", children: "مدة" })] }),
+        jsxs("span", { className: openTasks ? "rounded-lg border border-amber-500/20 bg-amber-500/10 p-2" : "rounded-lg border border-white/10 bg-white/5 p-2", children: [jsx("b", { className: openTasks ? "block text-amber-100" : "block text-white", children: formatNumber(openTasks) }), jsx("span", { className: "text-gray-500", children: "مهام" })] })
       ] }),
       project.updatedAt && jsx("p", { className: "mt-3 text-xs text-gray-700", children: `آخر تحديث: ${formatDateTime(project.updatedAt)}` })
     ]
@@ -303,10 +736,28 @@ function ProjectCard({ project, active, index, onOpen, onDelete }) {
 
 // ── editor panel ─────────────────────────────────────────────────────────────
 function ProjectEditor({
-  project, items, itemsById, users, usersById, onPatch,
-  onAddCut, onMoveCut, onRemoveCut, onReorderClips, onAddTask, onMoveTask, onRemoveTask,
-  onExport, mp4Enabled, exporting, onBack
+  project, items, itemsById, onPatch,
+  onAddCut, onMoveCut, onRemoveCut, onUpdateCut, onSplitCut, onDuplicateCut, onReorderClips,
+  onAddMarker, onAddComment, onExport, onDownloadPackage, mp4Enabled, mp4Mode, serverFfmpeg, exporting, exportEvents, onOpenProductionTasks, onBack
 }) {
+  const [sourceQuery, setSourceQuery] = React.useState("");
+  const [selectedSourceId, setSelectedSourceId] = React.useState(project?.itemIds?.[0] || items[0]?.id || "");
+  const [selectedClipId, setSelectedClipId] = React.useState(null);
+  const [markIn, setMarkIn] = React.useState(0);
+  const [markOut, setMarkOut] = React.useState(10);
+  const [currentTime, setCurrentTime] = React.useState(0);
+  const [timelineZoom, setTimelineZoom] = React.useState(12);
+
+  React.useEffect(() => {
+    const nextSource = project?.itemIds?.find((id) => itemsById.has(id)) || items[0]?.id || "";
+    setSelectedSourceId((current) => (current && itemsById.has(current) ? current : nextSource));
+  }, [items, itemsById, project?.id, project?.itemIds]);
+
+  React.useEffect(() => {
+    const ordered = getOrderedRoughCuts(project);
+    setSelectedClipId((current) => (current && ordered.some((clip) => clip.id === current) ? current : ordered[0]?.id || null));
+  }, [project]);
+
   if (!project) {
     return jsxs("section", {
       className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35 p-8 text-center",
@@ -320,73 +771,163 @@ function ProjectEditor({
 
   const ordered = getOrderedRoughCuts(project);
   const total = getProjectDuration(project);
+  const selectedSource = itemsById.get(selectedSourceId) || items[0] || null;
+  const selectedClip = ordered.find((clip) => clip.id === selectedClipId) || null;
+  const selectedClipItem = selectedClip ? itemsById.get(selectedClip.itemId) : null;
+  const selectedClipComments = selectedClip ? getProjectCommentsForClip(project, selectedClip.id) : [];
+  const validCuts = ordered.filter(isValidRoughCut);
+  const approvedCount = ordered.filter((clip) => clip.reviewStatus === "approved").length;
+  const mediaIssues = project.itemIds
+    .map((id) => itemsById.get(id))
+    .filter(Boolean)
+    .map((item) => buildMediaReadiness(item))
+    .filter((readiness) => readiness.status !== "ready").length;
+
+  const updateClip = (patch) => {
+    if (!selectedClip) return;
+    onUpdateCut?.(selectedClip.id, patch);
+  };
+
+  const useCurrentOnClip = (field, value) => {
+    if (!selectedClip || selectedClip.locked) return;
+    const next = Math.max(0, Number(value) || 0);
+    if (field === "inSec") updateClip({ inSec: Math.min(next, selectedClip.outSec) });
+    else updateClip({ outSec: Math.max(next, selectedClip.inSec) });
+  };
+
+  const splitSelectedClip = (atSec) => {
+    if (!selectedClip) return;
+    onSplitCut?.(selectedClip.id, atSec);
+  };
+
+  const duplicateSelectedClip = () => {
+    if (!selectedClip) return;
+    onDuplicateCut?.(selectedClip.id);
+  };
 
   return jsxs("section", {
     className: "va-preview-panel space-y-4 rounded-2xl va-surface-muted border p-4 text-right",
     dir: "rtl",
     children: [
-      onBack && jsxs("button", {
-        type: "button",
-        onClick: onBack,
-        className: "btn btn-ghost btn-sm gap-2 self-start",
-        "aria-label": "رجوع للمشاريع",
-        children: [jsx(ArrowRight, { className: "h-4 w-4" }), "رجوع للمشاريع"]
-      }),
-      jsxs("div", { className: "space-y-2", children: [
-        jsx("input", {
-          value: project.name,
-          onChange: (e) => onPatch({ name: e.target.value }),
-          placeholder: "اسم المشروع",
-          "aria-label": "اسم المشروع",
-          className: "w-full bg-transparent text-lg font-bold text-white outline-none placeholder:text-gray-600"
+      jsxs("header", { className: "grid gap-3 border-b border-white/5 pb-4 xl:grid-cols-[auto_1fr_auto]", children: [
+        onBack && jsxs("button", {
+          type: "button",
+          onClick: onBack,
+          className: "btn btn-ghost btn-sm gap-2 self-start",
+          "aria-label": "رجوع للمشاريع",
+          children: [jsx(ArrowRight, { className: "h-4 w-4" }), "رجوع"]
         }),
-        jsx("textarea", {
-          value: project.description,
-          onChange: (e) => onPatch({ description: e.target.value }),
-          placeholder: "وصف موجز للمشروع (اختياري)",
-          "aria-label": "وصف المشروع",
-          className: "textarea textarea-bordered w-full"
-        })
-      ] }),
-
-      jsx(RoughCutBuilder, { items, onAdd: onAddCut }),
-
-      jsxs("div", { className: "space-y-3", children: [
-        jsx(TaskBuilder, { items, users, onAdd: onAddTask }),
-        jsxs("div", { children: [
-          jsxs("div", { className: "mb-2 flex items-center justify-between", children: [
-            jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(CheckCircle2, { className: "h-4 w-4 va-accent-text" }), "لوحة المهام"] }),
-            jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: `${formatNumber(project.tasks?.length || 0)} مهمة` })
-          ] }),
-          jsx(KanbanBoard, { project, itemsById, usersById, onMoveTask, onRemoveTask })
+        jsxs("div", { className: "min-w-0 space-y-2", children: [
+          jsx("input", {
+            value: project.name,
+            onChange: (e) => onPatch({ name: e.target.value }),
+            placeholder: "اسم المشروع",
+            "aria-label": "اسم المشروع",
+            className: "w-full bg-transparent text-xl font-bold text-white outline-none placeholder:text-gray-600"
+          }),
+          jsx("textarea", {
+            value: project.description,
+            onChange: (e) => onPatch({ description: e.target.value }),
+            placeholder: "وصف موجز للمشروع (اختياري)",
+            "aria-label": "وصف المشروع",
+            className: "textarea textarea-bordered min-h-16 w-full"
+          })
+        ] }),
+        jsxs("div", { className: "grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 xl:min-w-[28rem]", children: [
+          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-gray-500", children: "المدة" }), jsx("p", { className: "mt-1 font-semibold text-white", children: formatClock(total) })] }),
+          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-gray-500", children: "قصاصات" }), jsx("p", { className: "mt-1 font-semibold text-white", children: `${formatNumber(validCuts.length)} / ${formatNumber(ordered.length)}` })] }),
+          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-gray-500", children: "معتمدة" }), jsx("p", { className: "mt-1 font-semibold text-white", children: formatNumber(approvedCount) })] }),
+          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-gray-500", children: "تنبيهات" }), jsx("p", { className: mediaIssues ? "mt-1 font-semibold text-amber-200" : "mt-1 font-semibold text-emerald-200", children: formatNumber(mediaIssues) })] })
         ] })
       ] }),
 
-      jsxs("div", { children: [
-        jsxs("div", { className: "mb-2 flex items-center justify-between", children: [
-          jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [jsx(ListVideo, { className: "h-4 w-4 va-accent-text" }), "الخطّ الزمني"] }),
-          jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: `${formatNumber(ordered.length)} قصاصة · ${formatClock(total)}` })
+      jsxs("div", { className: "grid gap-4 2xl:grid-cols-[19rem_minmax(0,1fr)_22rem]", children: [
+        jsx(SourceBin, {
+          items,
+          query: sourceQuery,
+          onQuery: setSourceQuery,
+          selectedId: selectedSourceId,
+          onSelect: setSelectedSourceId,
+          projectItemIds: project.itemIds || []
+        }),
+        jsxs("div", { className: "min-w-0 space-y-4", children: [
+          jsx(PreviewComposer, {
+            item: selectedSource,
+            markIn,
+            markOut,
+            onSetMarkIn: setMarkIn,
+            onSetMarkOut: setMarkOut,
+            onAddCut,
+            onTimeChange: setCurrentTime
+          }),
+          jsxs("section", { className: "rounded-2xl border border-white/10 bg-gray-950/35 p-3", children: [
+            jsxs("div", { className: "mb-3 flex flex-wrap items-center justify-between gap-2", children: [
+              jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(ListVideo, { className: "h-4 w-4 va-accent-text" }), "الخط الزمني الاحترافي"] }),
+              jsxs("div", { className: "flex items-center gap-2", children: [
+                jsx("span", { className: "rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: `${formatNumber(ordered.length)} قصاصة · ${formatClock(total)}` }),
+                jsx("select", { value: timelineZoom, onChange: (e) => setTimelineZoom(Number(e.target.value)), className: "select select-bordered select-sm", "aria-label": "تكبير الخط الزمني", children: TIMELINE_ZOOM.map((zoom) => jsx("option", { value: zoom.value, children: zoom.label }, zoom.value)) })
+              ] })
+            ] }),
+            ordered.length ? jsx(TimelineTrack, {
+              clips: ordered,
+              selectedId: selectedClipId,
+              onSelect: setSelectedClipId,
+              onMoveClip: onReorderClips,
+              pxPerSecond: timelineZoom
+            }) : jsx("p", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/30 p-4 text-center text-sm text-gray-500", children: "الخطّ الزمني فارغ — اختر مصدرًا وحدد In/Out ثم أضف القصاصة." }),
+            ordered.length ? jsx("div", { className: "mt-3 space-y-2", children: ordered.map((cut, i) => jsx(TimelineRow, {
+              cut, index: i, total: ordered.length, itemsById, onMove: onMoveCut, onRemove: onRemoveCut
+            }, cut.id)) }) : null
+          ] })
         ] }),
-        ordered.length ? jsx("div", { className: "mb-3", children: jsx(TimelineTrack, {
-          clips: ordered,
-          selectedId: null,
-          onMoveClip: onReorderClips
-        }) }) : null,
-        ordered.length ? jsx("div", { className: "space-y-2", children: ordered.map((cut, i) => jsx(TimelineRow, {
-          cut, index: i, total: ordered.length, itemsById, onMove: onMoveCut, onRemove: onRemoveCut
-        }, cut.id)) }) : jsx("p", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/30 p-4 text-center text-sm text-gray-500", children: "الخطّ الزمني فارغ — أضف قصاصة من الأعلى." })
+        jsxs("div", { className: "space-y-4", children: [
+          jsx(ClipInspector, {
+            clip: selectedClip,
+            item: selectedClipItem,
+            comments: selectedClipComments,
+            currentTime,
+            onUpdate: updateClip,
+            onUseCurrent: useCurrentOnClip,
+            onSplit: splitSelectedClip,
+            onDuplicate: duplicateSelectedClip,
+            onAddComment,
+            onRemove: () => selectedClip && onRemoveCut(selectedClip.id)
+          }),
+          jsx(TimelineSettingsPanel, {
+            settings: project.timelineSettings,
+            onChange: (timelineSettings) => onPatch({ timelineSettings })
+          }),
+          jsx(MarkerPanel, {
+            markers: project.markers || [],
+            currentTime,
+            onAddMarker
+          }),
+          jsx(ExportCenter, {
+            canExport: mp4Enabled,
+            exportMode: mp4Mode,
+            serverFfmpeg,
+            hasValidCuts: validCuts.length > 0,
+            exporting,
+            onExport,
+            onDownloadPackage,
+            exportEvents
+          })
+        ] })
       ] }),
 
-      jsxs("div", { className: "flex flex-wrap items-center gap-2 border-t border-white/5 pt-3", children: [
-        jsxs("button", { type: "button", onClick: () => onExport("json"), disabled: !ordered.some(isValidRoughCut), className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-40", children: [jsx(FileJson, { className: "h-4 w-4" }), "تصدير JSON"] }),
-        jsxs("button", { type: "button", onClick: () => onExport("edl"), disabled: !ordered.some(isValidRoughCut), className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-40", children: [jsx(Download, { className: "h-4 w-4" }), "تصدير EDL"] }),
-        jsxs("button", {
-          type: "button", onClick: () => onExport("mp4"),
-          disabled: !mp4Enabled || exporting || !ordered.some(isValidRoughCut),
-          title: mp4Enabled ? "عرض MP4 على الخادم عبر ffmpeg" : "تصدير MP4 يتطلّب تسجيل الدخول إلى خادم سحابي",
-          className: "btn btn-primary gap-2",
-          children: [jsx(Film, { className: "h-4 w-4" }), exporting ? "جارٍ التصدير…" : "تصدير MP4"]
-        })
+      jsxs("section", { className: "rounded-2xl border border-white/10 bg-gray-950/35 p-4", children: [
+        jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
+          jsxs("div", { children: [
+            jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(ClipboardList, { className: "h-4 w-4 va-accent-text" }), "مهام الإنتاج في قسم مستقل"] }),
+            jsx("p", { className: "mt-1 text-sm text-gray-500", children: "تم نقل إضافة المهام ولوحة الحالات إلى صفحة مهام الإنتاج حتى تبقى محطة المونتاج مخصصة للقص والتايملاين والتصدير." })
+          ] }),
+          jsxs("button", {
+            type: "button",
+            onClick: onOpenProductionTasks,
+            className: "btn btn-ghost gap-2",
+            children: [jsx(ArrowRight, { className: "h-4 w-4" }), "افتح مهام الإنتاج من القائمة"]
+          })
+        ] })
       ] })
     ]
   });
@@ -440,11 +981,12 @@ export function ProjectsPage() {
   const {
     projects = [],
     videoItems = [],
-    users = [],
     settings = {},
+    connectionStatus,
     addProject,
     updateProject,
     deleteProject,
+    setCurrentPage,
     showToast,
     showNotification
   } = useAppStore();
@@ -456,19 +998,23 @@ export function ProjectsPage() {
   // means the projects list is visible.
   const [openedId, setOpenedId] = React.useState(null);
   const [exporting, setExporting] = React.useState(false);
+  const [exportEvents, setExportEvents] = React.useState([]);
   const [showForm, setShowForm] = React.useState(false);
 
   const activeItems = React.useMemo(() => videoItems.filter((i) => !i.isDeleted), [videoItems]);
   const itemsById = React.useMemo(() => new Map(activeItems.map((i) => [i.id, i])), [activeItems]);
-  const usersById = React.useMemo(() => new Map((users || []).map((user) => [user.id, user])), [users]);
   const filtered = React.useMemo(() => getFilteredProjects(projects, query), [projects, query]);
   const selected = projects.find((p) => p.id === selectedId) || filtered[0] || null;
   const openedProject = openedId ? projects.find((p) => p.id === openedId) || null : null;
   const summary = React.useMemo(() => getProjectSummary(projects), [projects]);
+  const productionSummary = React.useMemo(() => buildProductionBoardSummary(projects, activeItems), [projects, activeItems]);
   const totalTasks = React.useMemo(() => projects.filter((project) => project.status !== "archived").reduce((sum, project) => sum + (project.tasks?.length || 0), 0), [projects]);
 
   const cloud = React.useMemo(() => resolveBackendChoice(), []);
-  const mp4Enabled = canExportMp4({ backend: cloud.backend, token: getCloudToken() });
+  const wasmMp4Enabled = hasFfmpegWasmSupport();
+  const serverFfmpeg = connectionStatus?.health?.export?.mp4?.serverFfmpeg || null;
+  const mp4Enabled = canExportMp4({ backend: cloud.backend, token: getCloudToken(), wasmAvailable: wasmMp4Enabled });
+  const mp4Mode = cloud.backend !== "local" && getCloudToken() ? "server" : wasmMp4Enabled ? "wasm" : "unavailable";
 
   React.useEffect(() => {
     if (selectedId && projects.some((p) => p.id === selectedId)) return;
@@ -534,33 +1080,58 @@ export function ProjectsPage() {
     persist(removeRoughCut(selected, cutId));
   };
 
+  const splitCut = (cutId, atSec) => {
+    if (!selected) return;
+    const next = splitRoughCut(selected, cutId, atSec);
+    if (next === selected) {
+      showToast?.("لا يمكن قص هذه القصاصة عند هذا الموضع", "warning");
+      return;
+    }
+    persist(next);
+    showToast?.("تم قص القصاصة إلى جزأين", "success");
+  };
+
+  const duplicateCut = (cutId) => {
+    if (!selected) return;
+    persist(duplicateRoughCut(selected, cutId));
+    showToast?.("تم نسخ القصاصة داخل الخط الزمني", "success");
+  };
+
+  const addMarker = (markerPartial) => {
+    if (!selected) return;
+    persist(addProjectMarker(selected, markerPartial));
+    showToast?.("أُضيفت marker إلى الخط الزمني", "success");
+  };
+
+  const addComment = (commentPartial) => {
+    if (!selected) return;
+    persist(addTemporalComment(selected, commentPartial));
+    showNotification?.("أُضيف تعليق زمني للمراجعة.", {
+      type: "success",
+      category: "task",
+      title: "تعليق مونتاج",
+      targetLabel: selected.name || "مشروع"
+    });
+  };
+
+  const updateCut = (cutId, patch) => {
+    if (!selected) return;
+    const roughCuts = (selected.roughCuts || []).map((cut) => {
+      if (cut.id !== cutId) return cut;
+      const next = { ...cut, ...patch };
+      if (Number(next.outSec) < Number(next.inSec)) {
+        if (Object.prototype.hasOwnProperty.call(patch, "inSec")) next.inSec = next.outSec;
+        else next.outSec = next.inSec;
+      }
+      return next;
+    });
+    persist({ ...selected, roughCuts, updatedAt: new Date().toISOString() });
+  };
+
   // Visual timeline drag-reorder: `nextClips` already carries re-sequenced order.
   const reorderClipsVisual = (nextClips) => {
     if (!selected || !Array.isArray(nextClips)) return;
     persist({ ...selected, roughCuts: nextClips, updatedAt: new Date().toISOString() });
-  };
-
-  const addTask = (taskPartial) => {
-    if (!selected) return;
-    persist(addProjectTask(selected, taskPartial));
-    const assignee = usersById.get(taskPartial.assigneeId);
-    showNotification?.(assignee ? `أُضيفت مهمة مسندة إلى ${assignee.displayName || assignee.username || "مستخدم"}.` : "أُضيفت مهمة إلى لوحة المشروع.", {
-      type: "success",
-      category: "task",
-      title: "مهمة مشروع جديدة",
-      targetLabel: selected.name || "مشروع",
-      action: { label: "فتح المشروع", run: () => openProject(selected) }
-    });
-  };
-
-  const moveTask = (taskId, status) => {
-    if (!selected) return;
-    persist(moveProjectTask(selected, taskId, status));
-  };
-
-  const removeTask = (taskId) => {
-    if (!selected) return;
-    persist(removeProjectTask(selected, taskId));
   };
 
   const removeProject = async (project) => {
@@ -593,27 +1164,46 @@ export function ProjectsPage() {
       if (kind === "json") {
         downloadTimelineJson(timeline, selected.name);
         showNotification?.("تم تنزيل ملف الخطّ الزمني (JSON).", { type: "success", category: "export", title: "اكتمل التصدير", targetLabel: selected.name });
+        setExportEvents((events) => [{ id: `${Date.now()}-json`, ok: true, label: "JSON timeline", time: formatDateTime(new Date().toISOString()) }, ...events]);
       } else if (kind === "edl") {
         downloadEdl(buildEdl(selected, itemsById), selected.name);
         showNotification?.("تم تنزيل ملف EDL.", { type: "success", category: "export", title: "اكتمل التصدير", targetLabel: selected.name });
+        setExportEvents((events) => [{ id: `${Date.now()}-edl`, ok: true, label: "EDL CMX3600", time: formatDateTime(new Date().toISOString()) }, ...events]);
       } else if (kind === "mp4") {
         setExporting(true);
         await exportProjectMp4({
           timeline,
           name: selected.name,
           baseUrl: getBackendUrl(),
-          getToken: getCloudToken
+          getToken: getCloudToken,
+          allowWasmFallback: true
         });
         showNotification?.("تم تصدير MP4 وتنزيله.", { type: "success", category: "export", title: "اكتمل تصدير MP4", targetLabel: selected.name });
+        setExportEvents((events) => [{ id: `${Date.now()}-mp4`, ok: true, label: "MP4 render", time: formatDateTime(new Date().toISOString()) }, ...events]);
       }
     } catch (error) {
       if (error instanceof CloudExportError) {
         showToast?.(error.message, "error");
+        setExportEvents((events) => [{ id: `${Date.now()}-${kind}-error`, ok: false, label: `فشل ${kind.toUpperCase()}`, time: formatDateTime(new Date().toISOString()) }, ...events]);
       } else {
         reportError(showNotification, error, { context: `تصدير ${kind.toUpperCase()}` });
+        setExportEvents((events) => [{ id: `${Date.now()}-${kind}-error`, ok: false, label: `فشل ${kind.toUpperCase()}`, time: formatDateTime(new Date().toISOString()) }, ...events]);
       }
     } finally {
       if (kind === "mp4") setExporting(false);
+    }
+  };
+
+  const downloadDeliveryPackage = () => {
+    if (!selected) return;
+    const manifest = buildProjectDeliveryPackage(selected, itemsById);
+    const ok = downloadJsonObject(manifest, `${safeFileName(selected.name || "project")}.delivery.json`);
+    if (ok) {
+      showNotification?.("تم تنزيل حزمة التسليم metadata.", { type: "success", category: "export", title: "حزمة التسليم", targetLabel: selected.name });
+      setExportEvents((events) => [{ id: `${Date.now()}-delivery`, ok: true, label: "Delivery package", time: formatDateTime(new Date().toISOString()) }, ...events]);
+    } else {
+      showToast?.("تعذر تنزيل حزمة التسليم في هذه البيئة.", "error");
+      setExportEvents((events) => [{ id: `${Date.now()}-delivery-error`, ok: false, label: "فشل حزمة التسليم", time: formatDateTime(new Date().toISOString()) }, ...events]);
     }
   };
 
@@ -636,8 +1226,10 @@ export function ProjectsPage() {
         onSave: saveProject
       }),
 
+      projects.length > 0 && jsx(ProductionBoard, { summary: productionSummary }),
+
       projects.length > 0 && jsx("section", {
-        className: "grid gap-3 sm:grid-cols-4",
+        className: "grid gap-3 sm:grid-cols-2 xl:grid-cols-5",
         children: [
           ["كل المشاريع", formatNumber(summary.total, settings.numberSystem), Clapperboard],
           ["مؤرشفة", formatNumber(summary.archived, settings.numberSystem), ArchiveIcon],
@@ -667,20 +1259,25 @@ export function ProjectsPage() {
         project: openedProject,
         items: activeItems,
         itemsById,
-        users,
-        usersById,
         onBack: closeProject,
         onPatch: patchProject,
         onAddCut: addCut,
         onMoveCut: moveCut,
         onRemoveCut: removeCut,
+        onUpdateCut: updateCut,
+        onSplitCut: splitCut,
+        onDuplicateCut: duplicateCut,
         onReorderClips: reorderClipsVisual,
-        onAddTask: addTask,
-        onMoveTask: moveTask,
-        onRemoveTask: removeTask,
+        onAddMarker: addMarker,
+        onAddComment: addComment,
         onExport: runExport,
+        onDownloadPackage: downloadDeliveryPackage,
         mp4Enabled,
-        exporting
+        mp4Mode,
+        serverFfmpeg,
+        exporting,
+        exportEvents,
+        onOpenProductionTasks: () => setCurrentPage?.("production-tasks")
       }) : jsxs("section", { className: "space-y-4", children: [
         jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [
           jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),

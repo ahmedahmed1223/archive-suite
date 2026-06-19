@@ -13,6 +13,9 @@ function nowMs() {
 
 function sanitizeHealth(payload = {}, measuredLatencyMs = 0) {
   const db = payload?.db && typeof payload.db === "object" ? payload.db : {};
+  const exportInfo = payload?.export && typeof payload.export === "object" ? payload.export : {};
+  const mp4 = exportInfo.mp4 && typeof exportInfo.mp4 === "object" ? exportInfo.mp4 : {};
+  const serverFfmpeg = mp4.serverFfmpeg && typeof mp4.serverFfmpeg === "object" ? mp4.serverFfmpeg : {};
   const dbLatency = Number.isFinite(Number(db.latencyMs)) ? Math.max(0, Math.round(Number(db.latencyMs))) : null;
   return {
     ok: payload?.ok !== false,
@@ -23,6 +26,18 @@ function sanitizeHealth(payload = {}, measuredLatencyMs = 0) {
       latencyMs: dbLatency,
       ...(db.error ? { error: String(db.error) } : {}),
       ...(db.skipped ? { skipped: true } : {})
+    },
+    export: {
+      mp4: {
+        serverFfmpeg: {
+          available: Boolean(serverFfmpeg.available),
+          path: serverFfmpeg.path ? String(serverFfmpeg.path) : "",
+          version: serverFfmpeg.version ? String(serverFfmpeg.version) : "",
+          ...(serverFfmpeg.code ? { code: String(serverFfmpeg.code) } : {}),
+          ...(serverFfmpeg.error ? { error: String(serverFfmpeg.error) } : {})
+        },
+        wasmFallback: mp4.wasmFallback ? String(mp4.wasmFallback) : ""
+      }
     },
     latencyMs: Math.max(0, Math.round(measuredLatencyMs)),
     uptimeSec: Number.isFinite(Number(payload?.uptimeSec)) ? Math.max(0, Math.round(Number(payload.uptimeSec))) : null,

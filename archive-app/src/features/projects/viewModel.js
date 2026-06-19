@@ -18,6 +18,73 @@ function toNum(value) {
 }
 
 export const PROJECT_TASK_STATUSES = ["todo", "doing", "review", "done"];
+export const MONTAGE_REVIEW_STATUSES = ["raw", "selected", "needs_review", "approved"];
+export const DEFAULT_TIMELINE_SETTINGS = Object.freeze({
+  fps: 25,
+  resolution: "1920x1080",
+  aspectRatio: "16:9"
+});
+export const MONTAGE_TRANSITIONS = ["cut", "fade", "dissolve", "wipeleft", "wiperight"];
+export const MONTAGE_LOOKS = ["none", "cinematic", "news", "warm", "mono"];
+
+function trimString(value) {
+  return String(value || "").trim();
+}
+
+function normalizeReviewStatus(status) {
+  return MONTAGE_REVIEW_STATUSES.includes(status) ? status : "raw";
+}
+
+function normalizeVolumeDb(value) {
+  if (value === undefined || value === null || value === "") return 0;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(-60, Math.min(12, n));
+}
+
+function clampNumber(value, fallback, min, max) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+export function normalizeClipTransition(value = {}) {
+  const type = MONTAGE_TRANSITIONS.includes(value.type) ? value.type : "cut";
+  return {
+    type,
+    durationSec: type === "cut" ? 0 : clampNumber(value.durationSec, 0.5, 0.1, 5)
+  };
+}
+
+export function normalizeClipFilters(value = {}) {
+  return {
+    look: MONTAGE_LOOKS.includes(value.look) ? value.look : "none",
+    brightness: clampNumber(value.brightness, 0, -1, 1),
+    contrast: clampNumber(value.contrast, 1, 0, 3),
+    saturation: clampNumber(value.saturation, 1, 0, 3)
+  };
+}
+
+export function normalizeClipTransform(value = {}) {
+  return {
+    scale: clampNumber(value.scale, 1, 0.1, 5),
+    x: clampNumber(value.x, 0, -2000, 2000),
+    y: clampNumber(value.y, 0, -2000, 2000),
+    rotation: clampNumber(value.rotation, 0, -180, 180),
+    opacity: clampNumber(value.opacity, 1, 0, 1)
+  };
+}
+
+export function normalizeTimelineSettings(settings = {}) {
+  const fps = Number(settings.fps);
+  const resolution = trimString(settings.resolution) || DEFAULT_TIMELINE_SETTINGS.resolution;
+  const aspectRatio = trimString(settings.aspectRatio) || DEFAULT_TIMELINE_SETTINGS.aspectRatio;
+  return {
+    fps: Number.isFinite(fps) && fps > 0 ? fps : DEFAULT_TIMELINE_SETTINGS.fps,
+    resolution,
+    aspectRatio
+  };
+}
 
 function normalizeTaskStatus(status) {
   return PROJECT_TASK_STATUSES.includes(status) ? status : "todo";
@@ -34,7 +101,16 @@ export function createRoughCutValue(partial = {}) {
     inSec,
     outSec,
     label: String(partial.label || "").trim(),
-    order: Number.isInteger(partial.order) ? partial.order : 0
+    order: Number.isInteger(partial.order) ? partial.order : 0,
+    notes: trimString(partial.notes),
+    color: trimString(partial.color),
+    trackId: trimString(partial.trackId) || "v1",
+    locked: Boolean(partial.locked),
+    reviewStatus: normalizeReviewStatus(partial.reviewStatus),
+    volumeDb: normalizeVolumeDb(partial.volumeDb),
+    transition: normalizeClipTransition(partial.transition),
+    filters: normalizeClipFilters(partial.filters),
+    transform: normalizeClipTransform(partial.transform)
   };
 }
 
@@ -50,6 +126,21 @@ export function createProjectTaskValue(partial = {}) {
     order: Number.isInteger(partial.order) ? partial.order : 0,
     createdAt: partial.createdAt || now,
     updatedAt: partial.updatedAt || now
+  };
+}
+
+export function createTemporalCommentValue(partial = {}) {
+  const body = trimString(partial.body);
+  if (!body) return null;
+  return {
+    id: partial.id || uid("comment"),
+    clipId: String(partial.clipId || ""),
+    itemId: String(partial.itemId || ""),
+    atSec: toNum(partial.atSec),
+    body,
+    authorId: String(partial.authorId || ""),
+    status: partial.status === "resolved" ? "resolved" : "open",
+    createdAt: partial.createdAt || new Date().toISOString()
   };
 }
 
@@ -71,11 +162,61 @@ export function createProjectValue(partial = {}) {
     itemIds: Array.isArray(partial.itemIds) ? [...new Set(partial.itemIds.map(String))] : [],
     roughCuts: Array.isArray(partial.roughCuts) ? partial.roughCuts.map(createRoughCutValue) : [],
     tasks: Array.isArray(partial.tasks) ? partial.tasks.map(createProjectTaskValue) : [],
+    markers: Array.isArray(partial.markers) ? partial.markers.map(createProjectMarkerValue).filter(Boolean) : [],
+    comments: Array.isArray(partial.comments) ? partial.comments.map(createTemporalCommentValue).filter(Boolean) : [],
+    timelineSettings: normalizeTimelineSettings(partial.timelineSettings),
     notes: String(partial.notes || ""),
     status: partial.status === "archived" ? "archived" : "active",
     createdAt: partial.createdAt || now,
     updatedAt: now
   };
+}
+
+export function createProjectMarkerValue(partial = {}) {
+  const atSec = toNum(partial.atSec);
+  const label = trimString(partial.label);
+  if (!label && !partial.id) return null;
+  const marker = {
+    id: partial.id || uid("marker"),
+    atSec,
+    label
+  };
+  const color = trimString(partial.color);
+  if (color) marker.color = color;
+  return marker;
+}
+
+function sortedMarkers(markers = []) {
+  return markers
+    .map(createProjectMarkerValue)
+    .filter(Boolean)
+    .sort((a, b) => a.atSec - b.atSec);
+}
+
+export function addProjectMarker(project, markerPartial = {}) {
+  const marker = createProjectMarkerValue(markerPartial);
+  if (!marker) return project;
+  return {
+    ...project,
+    markers: sortedMarkers([...(project.markers || []), marker]),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export function addTemporalComment(project, commentPartial = {}) {
+  const comment = createTemporalCommentValue(commentPartial);
+  if (!comment) return project;
+  return {
+    ...project,
+    comments: [...(project.comments || []), comment],
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export function getProjectCommentsForClip(project, clipId) {
+  return (project?.comments || [])
+    .filter((comment) => comment.clipId === clipId)
+    .sort((a, b) => a.atSec - b.atSec);
 }
 
 export function getFilteredProjects(projects = [], query = "", { includeArchived = false } = {}) {
@@ -98,6 +239,50 @@ export function addRoughCut(project, cutPartial) {
 export function removeRoughCut(project, cutId) {
   const roughCuts = project.roughCuts.filter((c) => c.id !== cutId).map((c, i) => ({ ...c, order: i }));
   return { ...project, roughCuts, updatedAt: new Date().toISOString() };
+}
+
+export function splitRoughCut(project, cutId, atSec) {
+  const cuts = getOrderedRoughCuts(project);
+  const index = cuts.findIndex((clip) => clip.id === cutId);
+  if (index < 0) return project;
+  const clip = cuts[index];
+  if (clip.locked) return project;
+  const splitAt = clampNumber(atSec, clip.inSec, clip.inSec, clip.outSec);
+  if (splitAt <= clip.inSec || splitAt >= clip.outSec) return project;
+  const first = createRoughCutValue({ ...clip, outSec: splitAt, label: clip.label || "" });
+  const second = createRoughCutValue({
+    ...clip,
+    id: uid("cut"),
+    inSec: splitAt,
+    outSec: clip.outSec,
+    label: clip.label ? `${clip.label} B` : "",
+    order: clip.order + 1
+  });
+  const next = [...cuts.slice(0, index), first, second, ...cuts.slice(index + 1)]
+    .map((item, order) => ({ ...item, order }));
+  return { ...project, roughCuts: next, updatedAt: new Date().toISOString() };
+}
+
+export function duplicateRoughCut(project, cutId) {
+  const cuts = getOrderedRoughCuts(project);
+  const index = cuts.findIndex((clip) => clip.id === cutId);
+  if (index < 0) return project;
+  const copy = createRoughCutValue({ ...cuts[index], id: uid("cut"), label: cuts[index].label ? `${cuts[index].label} نسخة` : "", order: index + 1 });
+  const next = [...cuts.slice(0, index + 1), copy, ...cuts.slice(index + 1)]
+    .map((item, order) => ({ ...item, order }));
+  return { ...project, roughCuts: next, updatedAt: new Date().toISOString() };
+}
+
+export function buildMontagePresetClipPatch(preset) {
+  if (preset === "cinematic") return { filters: { look: "cinematic", brightness: -0.03, contrast: 1.12, saturation: 0.95 } };
+  if (preset === "news") return { filters: { look: "news", brightness: 0.04, contrast: 1.06, saturation: 1.08 } };
+  if (preset === "warm") return { filters: { look: "warm", brightness: 0.03, contrast: 1.04, saturation: 1.15 } };
+  if (preset === "mono") return { filters: { look: "mono", brightness: 0, contrast: 1.1, saturation: 0 } };
+  return {
+    transition: { type: "cut", durationSec: 0 },
+    filters: { look: "none", brightness: 0, contrast: 1, saturation: 1 },
+    transform: { scale: 1, x: 0, y: 0, rotation: 0, opacity: 1 }
+  };
 }
 
 /** Move a rough cut to a new index (reorders the timeline). */
@@ -178,14 +363,26 @@ export function buildProjectTimeline(project, itemsById = new Map()) {
       sourceIn: cut.inSec,
       sourceOut: cut.outSec,
       timelineStart,
-      duration
+      duration,
+      notes: cut.notes || "",
+      color: cut.color || "",
+      trackId: cut.trackId || "v1",
+      locked: Boolean(cut.locked),
+      reviewStatus: normalizeReviewStatus(cut.reviewStatus),
+      volumeDb: normalizeVolumeDb(cut.volumeDb),
+      transition: normalizeClipTransition(cut.transition),
+      filters: normalizeClipFilters(cut.filters),
+      transform: normalizeClipTransform(cut.transform)
     };
     timelineStart += duration;
     return clip;
   });
+  const settings = normalizeTimelineSettings(project.timelineSettings);
   return {
     project: { id: project.id, name: project.name },
-    fps: null,
+    fps: settings.fps,
+    settings,
+    markers: sortedMarkers(project.markers || []),
     totalDuration: timelineStart,
     clips,
     version: "1.0"
@@ -239,5 +436,100 @@ export function getProjectSummary(projects = [], items = []) {
     archived: projects.length - active.length,
     totalRoughCuts: totalCuts,
     totalSeconds: active.reduce((n, p) => n + getProjectDuration(p), 0)
+  };
+}
+
+function itemSourcePath(item = {}) {
+  return item.path || item.filePath || item.url || item.metadata?.localFile?.path || item.metadata?.localFile?.relativePath || "";
+}
+
+export function buildProjectDeliveryPackage(project, itemsById = new Map()) {
+  const timeline = buildProjectTimeline(project, itemsById);
+  const sourceIds = [...new Set(timeline.clips.map((clip) => clip.itemId).filter(Boolean))];
+  const sources = sourceIds.map((id) => {
+    const item = itemsById.get?.(id) || {};
+    const readiness = buildMediaReadiness(item);
+    return {
+      id,
+      title: item.title || id,
+      source: itemSourcePath(item),
+      readinessStatus: readiness.status,
+      missing: readiness.missing
+    };
+  });
+  return {
+    version: "delivery-package/v1",
+    generatedAt: new Date().toISOString(),
+    project: {
+      id: project.id,
+      name: project.name || "Untitled",
+      description: project.description || ""
+    },
+    timeline,
+    sources,
+    markers: sortedMarkers(project.markers || []),
+    comments: [...(project.comments || [])]
+  };
+}
+
+export function buildProductionBoardSummary(projects = [], items = []) {
+  const itemsById = new Map((items || []).map((item) => [item.id, item]));
+  const active = (projects || []).filter((project) => project.status !== "archived");
+  const projectItemIds = new Set();
+  let openTasks = 0;
+  let approvedClips = 0;
+  let unresolvedComments = 0;
+  let deliverableProjects = 0;
+
+  for (const project of active) {
+    openTasks += (project.tasks || []).filter((task) => task.status !== "done").length;
+    approvedClips += (project.roughCuts || []).filter((clip) => clip.reviewStatus === "approved").length;
+    unresolvedComments += (project.comments || []).filter((comment) => comment.status !== "resolved").length;
+    if (getProjectDuration(project) > 0 && (project.roughCuts || []).some((clip) => clip.reviewStatus === "approved")) {
+      deliverableProjects += 1;
+    }
+    for (const itemId of project.itemIds || []) projectItemIds.add(itemId);
+    for (const clip of project.roughCuts || []) if (clip.itemId) projectItemIds.add(clip.itemId);
+  }
+
+  const mediaWarnings = [...projectItemIds]
+    .map((id) => itemsById.get(id))
+    .filter(Boolean)
+    .map((item) => buildMediaReadiness(item))
+    .filter((readiness) => readiness.status !== "ready").length;
+
+  return {
+    activeProjects: active.length,
+    openTasks,
+    approvedClips,
+    unresolvedComments,
+    deliverableProjects,
+    mediaWarnings
+  };
+}
+
+const READINESS_CHECKS = [
+  { id: "source", label: "ملف المصدر" },
+  { id: "thumbnail", label: "صورة مصغّرة" },
+  { id: "audio", label: "مسار صوت" },
+  { id: "transcription", label: "تفريغ" },
+  { id: "web", label: "نسخة ويب" }
+];
+
+export function buildMediaReadiness(item = {}) {
+  const media = item.metadata?.media || {};
+  const hasSource = Boolean(item.path || item.filePath || item.url || media.sourceKey || item.metadata?.localFile?.relativePath);
+  const hasThumbnail = Boolean(media.thumbnailKey);
+  const hasAudio = Boolean(media.audioKey);
+  const hasTranscription = Boolean(media.transcription || (Array.isArray(media.segments) && media.segments.length));
+  const hasWeb = Boolean(media.derivedKey || (Array.isArray(media.derivedFiles) && media.derivedFiles.length));
+  const values = { source: hasSource, thumbnail: hasThumbnail, audio: hasAudio, transcription: hasTranscription, web: hasWeb };
+  const missing = READINESS_CHECKS.filter((check) => !values[check.id]);
+  const score = READINESS_CHECKS.length - missing.length;
+  return {
+    score,
+    total: READINESS_CHECKS.length,
+    status: !hasSource ? "blocked" : missing.length ? "warning" : "ready",
+    missing
   };
 }

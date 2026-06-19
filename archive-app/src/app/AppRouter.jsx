@@ -37,7 +37,9 @@ export function AppRouter() {
   const settings = useAppStore((s) => s.settings);
   const copilotOpen = useAppStore((s) => s.copilotOpen);
   const toggleCopilot = useAppStore((s) => s.toggleCopilot);
-  const { resolvedTheme } = useTheme();
+  // useTheme() is invoked for its theme-resolution side effects; the resolved
+  // value no longer drives a hardcoded background (the shell now uses --va-bg).
+  useTheme();
 
   const PageComponent =
     PAGE_COMPONENTS[currentPage] || PAGE_COMPONENTS.dashboard;
@@ -58,9 +60,9 @@ export function AppRouter() {
 
   return jsxs("div", {
     dir: "rtl",
-    className: `va-app-shell flex min-h-screen text-right ${
-      resolvedTheme === "dark" ? "bg-gray-950" : "bg-white"
-    }`,
+    // Token-driven shell background works in both themes; resolvedTheme retained
+    // for downstream theme wiring but no longer drives a hardcoded hex.
+    className: "va-app-shell flex min-h-screen text-right bg-[var(--va-bg)] text-[var(--va-text)]",
     "data-density":
       settings.ui?.visualDensity === "compact" ? "compact" : "comfortable",
     "data-accent": settings.accentColor || "teal",
@@ -118,7 +120,7 @@ export function AppRouter() {
           "aria-label": "فتح المساعد الذكي",
           title: "المساعد الذكي",
           className:
-            "va-copilot-fab fixed bottom-[calc(64px+env(safe-area-inset-bottom,0px))] left-4 z-[65] inline-flex h-12 w-12 items-center justify-center rounded-full va-accent-bg text-white shadow-xl hover:opacity-90 md:bottom-6",
+            "va-copilot-fab fixed bottom-[calc(64px+env(safe-area-inset-bottom,0px))] left-4 z-[65] inline-flex h-12 w-12 items-center justify-center rounded-[var(--va-radius-full)] bg-emerald-500 text-[var(--va-text-inverse)] shadow-[var(--va-elev-popover)] transition-colors hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--va-bg)] md:bottom-6",
           children: jsx(Bot, { className: "h-5 w-5" }),
         }),
     ],

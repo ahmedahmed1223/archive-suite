@@ -4,7 +4,6 @@ import {
   Clock,
   Inbox,
   Link2,
-  Loader2,
   SortAsc,
   Tag,
   Trash2
@@ -12,6 +11,7 @@ import {
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { QuickCaptureWidget } from "../components/capture/QuickCaptureWidget.jsx";
+import { EmptyState as UIEmptyState, SkeletonCard } from "../components/ui/primitives.jsx";
 import { useAppStore } from "../stores/index.js";
 import { INBOX_SORT } from "../stores/slices/inboxSlice.js";
 
@@ -31,7 +31,7 @@ function relativeTime(iso) {
 function InboxItemCard({ item, onArchive, onDismiss }) {
   return jsxs("div", {
     className:
-      "group relative flex flex-col gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-4 hover:bg-white/[0.06] transition-colors",
+      "group relative flex flex-col gap-2 rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 shadow-[var(--va-elev-1)] transition-colors hover:border-emerald-500/25",
     children: [
       jsxs("div", {
         className: "flex items-start gap-3",
@@ -40,7 +40,7 @@ function InboxItemCard({ item, onArchive, onDismiss }) {
             className: "flex-1 min-w-0 space-y-1.5",
             children: [
               jsx("p", {
-                className: "text-sm font-medium text-gray-100 leading-snug break-words",
+                className: "text-sm font-medium text-[var(--va-text)] leading-snug break-words",
                 dir: "rtl",
                 children: item.title
               }),
@@ -60,7 +60,7 @@ function InboxItemCard({ item, onArchive, onDismiss }) {
                   children: item.tags.map((t) =>
                     jsxs("span", {
                       className:
-                        "inline-flex items-center gap-0.5 rounded-full bg-white/8 px-2 py-0.5 text-xs text-gray-400",
+                        "inline-flex items-center gap-0.5 rounded-full bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-2)]",
                       children: [jsx(Tag, { size: 9 }), t]
                     }, t)
                   )
@@ -74,16 +74,18 @@ function InboxItemCard({ item, onArchive, onDismiss }) {
                 type: "button",
                 onClick: () => onArchive(item.id),
                 title: "أرشفة العنصر",
+                "aria-label": "أرشفة العنصر",
                 className:
-                  "rounded-lg p-1.5 text-gray-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-white/10 hover:text-[var(--va-action)]",
+                  "rounded-[var(--va-radius-md)] p-1.5 text-[var(--va-text-muted)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all hover:bg-[var(--va-surface-2)] hover:text-emerald-300",
                 children: jsx(Archive, { size: 15 })
               }),
               jsx("button", {
                 type: "button",
                 onClick: () => onDismiss(item.id),
                 title: "حذف من الوارد",
+                "aria-label": "حذف من الوارد",
                 className:
-                  "rounded-lg p-1.5 text-gray-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-white/10 hover:text-red-400",
+                  "rounded-[var(--va-radius-md)] p-1.5 text-[var(--va-text-muted)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all hover:bg-[var(--va-surface-2)] hover:text-rose-400",
                 children: jsx(Trash2, { size: 15 })
               })
             ]
@@ -91,29 +93,8 @@ function InboxItemCard({ item, onArchive, onDismiss }) {
         ]
       }),
       jsxs("div", {
-        className: "flex items-center gap-1.5 text-xs text-gray-600",
+        className: "flex items-center gap-1.5 text-xs text-[var(--va-text-muted)]",
         children: [jsx(Clock, { size: 11 }), jsx("span", { children: relativeTime(item.capturedAt) })]
-      })
-    ]
-  });
-}
-
-function EmptyState() {
-  return jsxs("div", {
-    className: "flex flex-col items-center justify-center py-16 gap-4 text-center",
-    children: [
-      jsx("div", {
-        className: "rounded-full bg-white/[0.04] p-5 border border-white/8",
-        children: jsx(Inbox, { size: 32, className: "text-gray-600" })
-      }),
-      jsxs("div", {
-        children: [
-          jsx("p", { className: "text-gray-300 font-medium", children: "صندوق الوارد فارغ" }),
-          jsx("p", {
-            className: "text-sm text-gray-600 mt-1",
-            children: "التقط الأفكار والمحتوى بسرعة من الحقل أعلاه"
-          })
-        ]
       })
     ]
   });
@@ -205,11 +186,11 @@ export default function InboxPage() {
           jsxs("div", {
             children: [
               jsxs("h1", {
-                className: "text-xl font-semibold text-gray-100 flex items-center gap-2",
+                className: "text-xl font-semibold text-[var(--va-text)] flex items-center gap-2",
                 children: [jsx(Inbox, { size: 20 }), "صندوق الوارد"]
               }),
               jsx("p", {
-                className: "text-sm text-gray-500 mt-0.5",
+                className: "text-sm text-[var(--va-text-muted)] mt-0.5",
                 children: "التقط الأفكار بسرعة ونظّمها لاحقاً"
               })
             ]
@@ -219,7 +200,7 @@ export default function InboxPage() {
               type: "button",
               onClick: handleArchiveAll,
               className:
-                "flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-xs text-gray-400 hover:text-gray-100 hover:bg-white/8 transition-colors",
+                "flex items-center gap-1.5 rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] px-3 py-1.5 text-xs text-[var(--va-text-2)] hover:text-[var(--va-text)] hover:bg-[var(--va-surface-2)] transition-colors",
               children: [jsx(CheckCheck, { size: 13 }), "أرشفة الكل"]
             })
         ]
@@ -236,19 +217,19 @@ export default function InboxPage() {
           className: "flex items-center justify-between gap-3",
           children: [
             jsx("span", {
-              className: "text-sm text-gray-500",
+              className: "text-sm text-[var(--va-text-muted)]",
               children: `${inboxItems.length} عنصر في الانتظار`
             }),
             jsxs("div", {
               className: "flex items-center gap-1.5",
               children: [
-                jsx(SortAsc, { size: 13, className: "text-gray-600" }),
+                jsx(SortAsc, { size: 13, className: "text-[var(--va-text-muted)]" }),
                 jsx("select", {
                   value: inboxSort,
                   onChange: (e) => setInboxSort(e.target.value),
                   "aria-label": "ترتيب العناصر",
                   className:
-                    "rounded-lg border border-white/10 bg-transparent px-2 py-1 text-xs text-gray-400 outline-none focus:border-[var(--va-action)] cursor-pointer",
+                    "rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-[var(--va-surface)] px-2 py-1 text-xs text-[var(--va-text-2)] outline-none focus-visible:border-emerald-500/60 cursor-pointer",
                   children: SORT_OPTIONS.map(({ value, label }) =>
                     jsx("option", { value, children: label }, value)
                   )
@@ -259,12 +240,16 @@ export default function InboxPage() {
         }),
 
       inboxLoading && !hasItems
-        ? jsx("div", {
-            className: "flex justify-center py-12",
-            children: jsx(Loader2, { size: 24, className: "animate-spin text-gray-600" })
+        ? jsxs("div", {
+            className: "flex flex-col gap-2",
+            children: [jsx(SkeletonCard, {}, 0), jsx(SkeletonCard, {}, 1), jsx(SkeletonCard, {}, 2)]
           })
         : !hasItems
-        ? jsx(EmptyState, {})
+        ? jsx(UIEmptyState, {
+            icon: jsx(Inbox, { className: "h-7 w-7" }),
+            title: "صندوق الوارد فارغ",
+            description: "التقط الأفكار والمحتوى بسرعة من الحقل أعلاه."
+          })
         : jsx("div", {
             className: "flex flex-col gap-2",
             role: "list",

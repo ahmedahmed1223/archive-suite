@@ -132,13 +132,20 @@ export function createShareInvitationService({
             invitation.passwordProtected ? "هذا الرابط يتطلب كلمة مرور أرسلها لك صاحب الدعوة." : ""
           ].filter(Boolean).join("\n\n"),
           html: `
-            <div dir="rtl" style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;line-height:1.7;">
-              <h2 style="color:#059669;">دعوة مشاركة</h2>
-              <p>شارك معك <strong>${escapeHtml(sender?.username || "مستخدم")}</strong> محتوى من Archive Suite.</p>
-              ${invitation.title ? `<p><strong>${escapeHtml(invitation.title)}</strong></p>` : ""}
-              ${invitation.message ? `<p>${escapeHtml(invitation.message)}</p>` : ""}
-              <a href="${escapeHtml(shareUrl)}" style="display:inline-block;margin-top:8px;padding:10px 20px;background:#059669;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">فتح المشاركة</a>
-              ${invitation.passwordProtected ? `<p style="color:#92400e;font-size:13px;margin-top:14px;">هذا الرابط يتطلب كلمة مرور أرسلها لك صاحب الدعوة.</p>` : ""}
+            <div dir="rtl" style="font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,Arial,sans-serif;background:#f6f4ee;padding:24px 12px;">
+              <div style="max-width:560px;margin:0 auto;background:#fffdf9;border:1px solid rgba(15,23,42,0.10);border-radius:18px;overflow:hidden;">
+                <div style="background:#0c1726;padding:18px 24px;">
+                  <span style="color:#5eead4;font-size:13px;font-weight:600;letter-spacing:.02em;">Archive Suite</span>
+                </div>
+                <div style="padding:24px;line-height:1.7;color:#14202e;">
+                  <h2 style="color:#0d9488;margin:0 0 12px;font-size:19px;font-weight:600;">دعوة مشاركة</h2>
+                  <p style="margin:0 0 12px;">شارك معك <strong>${escapeHtml(sender?.username || "مستخدم")}</strong> محتوى من Archive Suite.</p>
+                  ${invitation.title ? `<p style="margin:0 0 6px;font-weight:600;color:#14202e;">${escapeHtml(invitation.title)}</p>` : ""}
+                  ${invitation.message ? `<p style="margin:0 0 16px;color:#475569;">${escapeHtml(invitation.message)}</p>` : ""}
+                  <a href="${escapeHtml(shareUrl)}" style="display:inline-block;margin-top:8px;padding:11px 22px;background:#0d9488;color:#ffffff;border-radius:10px;text-decoration:none;font-weight:600;">فتح المشاركة</a>
+                  ${invitation.passwordProtected ? `<p style="color:#92400e;font-size:13px;margin-top:16px;background:#fbf0db;border-radius:8px;padding:10px 12px;">هذا الرابط يتطلب كلمة مرور أرسلها لك صاحب الدعوة.</p>` : ""}
+                </div>
+              </div>
             </div>
           `
         }) || { sent: false };

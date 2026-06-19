@@ -24,10 +24,10 @@ export function DetailNavigationPanel({ position, onPrevious, onNext }) {
   const counterLabel = `${index + 1} / ${total}`;
 
   const buttonClass = (enabled) => [
-    "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors",
+    "inline-flex items-center gap-1 rounded-[var(--va-radius-md)] border px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55",
     enabled
-      ? "border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
-      : "cursor-not-allowed border-white/5 text-gray-600"
+      ? "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:border-[var(--va-border-strong)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]"
+      : "cursor-not-allowed border-[var(--va-border-soft)] text-[var(--va-text-muted)] opacity-60"
   ].join(" ");
 
   return jsxs("div", {
@@ -44,7 +44,7 @@ export function DetailNavigationPanel({ position, onPrevious, onNext }) {
         children: [jsx(ChevronRight, { className: "h-3.5 w-3.5" }), "السابق"]
       }),
       jsx("span", {
-        className: "min-w-[3.5rem] text-center text-[11px] tabular-nums text-gray-500",
+        className: "min-w-[3.5rem] text-center text-[11px] tabular-nums text-[var(--va-text-muted)]",
         children: counterLabel
       }),
       jsxs("button", {

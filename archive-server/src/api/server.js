@@ -8,7 +8,7 @@ import { auditLog } from "./auditLogger.js";
 import { dispatchRpc } from "./rpcHandler.js";
 import { dispatchAi } from "./aiHandler.js";
 import { handleSearch } from "./searchHandler.js";
-import { exportTimelineToMp4 } from "../export/mp4.js";
+import { checkFfmpegAvailability, exportTimelineToMp4 } from "../export/mp4.js";
 import { createInMemoryMediaJobStore } from "../media/mediaJobs.js";
 import { createConversionService } from "../conversion/conversionService.js";
 import { createConversionJobRunner } from "../conversion/conversionJobRunner.js";
@@ -300,7 +300,9 @@ export function createApiServer({
   rateLimit = {},
   eventBus = null,
   mediaRootDir = process.env.FILE_STORE_DIR || ".archive-files",
+  ffmpegPath = process.env.FFMPEG_PATH || "ffmpeg",
   runExport = exportTimelineToMp4,
+  checkFfmpeg = checkFfmpegAvailability,
   mediaJobStore = createInMemoryMediaJobStore(),
   mediaWorker = null,
   runMediaProbeImpl = runMediaProbe,
@@ -331,6 +333,15 @@ export function createApiServer({
   const resolvedControlAgent = controlAgent && typeof controlAgent.status === "function"
     ? controlAgent
     : createControlAgent();
+  let ffmpegHealthCache = null;
+
+  const getFfmpegHealth = async () => {
+    const now = Date.now();
+    if (ffmpegHealthCache && now - ffmpegHealthCache.checkedAtMs < 30_000) return ffmpegHealthCache.value;
+    const value = await checkFfmpeg({ ffmpegPath });
+    ffmpegHealthCache = { checkedAtMs: now, value };
+    return value;
+  };
 
   // §16.15 — conversion service: persists derived_file records for every
   // media job created via /api/media/jobs. Gracefully no-ops when prisma=null.
@@ -628,6 +639,12 @@ export function createApiServer({
         backend,
         engine: backend === "pocketbase" ? "pocketbase" : config.databaseEngine || "postgresql",
         db,
+        export: {
+          mp4: {
+            serverFfmpeg: await getFfmpegHealth(),
+            wasmFallback: "client_optional"
+          }
+        },
         uptimeSec: Math.floor(process.uptime()),
         version,
         authRequired
@@ -1077,7 +1094,7 @@ export function createApiServer({
         if (!timeline || !Array.isArray(timeline.clips) || !timeline.clips.length) {
           return send(res, 400, { ok: false, error: "حمولة timeline غير صالحة أو فارغة." });
         }
-        const result = await runExport(timeline, { rootDir: mediaRootDir });
+        const result = await runExport(timeline, { rootDir: mediaRootDir, ffmpegPath });
         outFile = result.output;
         const { createReadStream, statSync } = await import("node:fs");
         const size = statSync(outFile).size;
@@ -1093,7 +1110,7 @@ export function createApiServer({
       } catch (error) {
         const statusCode = error?.statusCode || 500;
         if (statusCode >= 500) captureException(error, { endpoint: "projects/export", reqId: req.id });
-        return send(res, statusCode, { ok: false, error: error?.message || "Export failed" });
+        return send(res, statusCode, { ok: false, error: error?.message || "Export failed", code: error?.code || "EXPORT_FAILED" });
       } finally {
         if (outFile) { try { (await import("node:fs")).unlinkSync(outFile); } catch { /* temp cleanup best-effort */ } }
       }

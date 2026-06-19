@@ -38,10 +38,10 @@ export function ContextualQuickActions({ currentPage, onNavigate, collapsed = fa
 
   return jsxs("section", {
     "aria-label": "إجراءات سريعة حسب الصفحة",
-    className: "rounded-xl border border-white/10 bg-white/[0.02] p-2",
+    className: "rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2",
     children: [
       !collapsed && jsx("p", {
-        className: "mb-1.5 px-1 text-[11px] font-medium text-gray-500",
+        className: "mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--va-text-muted)]",
         children: "إجراءات سريعة"
       }),
       jsx("div", {
@@ -54,7 +54,7 @@ export function ContextualQuickActions({ currentPage, onNavigate, collapsed = fa
             title: action.label,
             "aria-label": action.label,
             className: [
-              "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2 py-1 text-xs font-medium text-gray-300 transition-colors hover:bg-white/5 hover:text-white",
+              "inline-flex items-center gap-1.5 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] px-2 py-1 text-xs font-medium text-[var(--va-text-2)] transition-colors hover:border-[var(--va-border-strong)] hover:bg-[var(--va-surface)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55",
               collapsed ? "justify-center" : ""
             ].join(" "),
             children: [

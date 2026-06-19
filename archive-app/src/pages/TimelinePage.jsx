@@ -59,33 +59,32 @@ export function TimelinePage() {
         description: "توزيع عناصر الأرشيف عبر الزمن — بدّل الدقة، واطّلع على ما أُضيف في كل فترة."
       }),
       jsxs("section", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-        jsx("div", { className: "flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1", children: TIMELINE_GRANULARITIES.map((value) => jsx("button", {
+        jsx("div", { role: "tablist", "aria-label": "دقة الخط الزمني", className: "flex gap-1 rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-1", children: TIMELINE_GRANULARITIES.map((value) => jsx("button", {
           type: "button",
+          role: "tab",
+          "aria-selected": granularity === value,
           onClick: () => { setGranularity(value); setActiveKey(null); },
-          className: `rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${granularity === value ? "va-accent-bg-soft va-accent-text-on-soft border va-accent-border" : "text-gray-400 hover:text-white"}`,
+          className: `rounded-[var(--va-radius-md)] px-3 py-1.5 text-sm font-semibold transition-colors ${granularity === value ? "va-accent-bg-soft va-accent-text-on-soft border va-accent-border" : "text-[var(--va-text-2)] hover:text-[var(--va-text)]"}`,
           children: GRANULARITY_LABELS[value]
         }, value)) }),
-        jsxs("span", { className: "text-sm text-gray-500", children: [`${formatNumber(timeline.total)} عنصر · ${formatNumber(timeline.buckets.length)} فترة`] })
+        jsxs("span", { className: "text-sm text-[var(--va-text-muted)]", children: [`${formatNumber(timeline.total)} عنصر · ${formatNumber(timeline.buckets.length)} فترة`] })
       ] }),
       Object.keys(typeTotals).length > 0 ? jsx("section", {
         className: "flex flex-wrap gap-2",
         children: Object.entries(typeTotals).map(([type, count]) => jsxs("span", {
-          className: "inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300",
+          className: "inline-flex items-center gap-1.5 rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-2.5 py-1 text-xs text-[var(--va-text-2)]",
           children: [
             jsx("span", { className: "inline-block h-2.5 w-2.5 rounded-full", style: { backgroundColor: typeColor.get(type) } }),
             `${typeName(type)} (${formatNumber(count)})`
           ]
         }, type))
       }) : null,
-      timeline.buckets.length === 0 ? jsx("div", {
-        className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35",
-        children: jsx(EmptyState, {
-          icon: jsx(CalendarRange, { className: "h-16 w-16" }),
-          title: "لا عناصر مؤرّخة بعد",
-          description: "أضف عناصر إلى الأرشيف وستظهر هنا موزّعة على محور الزمن."
-        })
+      timeline.buckets.length === 0 ? jsx(EmptyState, {
+        icon: jsx(CalendarRange, { className: "h-16 w-16" }),
+        title: "لا عناصر مؤرّخة بعد",
+        description: "أضف عناصر إلى الأرشيف وستظهر هنا موزّعة على محور الزمن."
       }) : jsx("section", {
-        className: "rounded-2xl border border-white/10 bg-gray-900/40 p-4",
+        className: "rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4",
         children: jsx("div", {
           className: "flex items-end gap-1.5 overflow-x-auto pb-2",
           style: { minHeight: "12rem" },
@@ -100,9 +99,9 @@ export function TimelinePage() {
               role: "listitem",
               onClick: () => setActiveKey(isActive ? null : bucket.key),
               title: `${bucket.label} — ${bucket.count}`,
-              className: `group flex min-w-[2.25rem] shrink-0 flex-col items-center gap-1 rounded-lg p-1 transition-colors ${isActive ? "bg-white/10" : "hover:bg-white/5"}`,
+              className: `group flex min-w-[2.25rem] shrink-0 flex-col items-center gap-1 rounded-[var(--va-radius-md)] p-1 transition-colors ${isActive ? "bg-emerald-500/12" : "hover:bg-[var(--va-surface-2)]"}`,
               children: [
-                jsx("span", { className: "text-[10px] font-semibold text-gray-400", children: formatNumber(bucket.count) }),
+                jsx("span", { className: "font-[family-name:var(--va-font-mono)] text-[10px] font-semibold text-[var(--va-text-2)]", children: formatNumber(bucket.count) }),
                 jsx("span", {
                   className: "flex w-7 flex-col-reverse overflow-hidden rounded-md",
                   style: { height: `${heightPct}%`, minHeight: "0.5rem" },
@@ -110,26 +109,26 @@ export function TimelinePage() {
                     style: { backgroundColor: typeColor.get(type) || "#10b981", flexGrow: count, display: "block" }
                   }, type))
                 }),
-                jsx("span", { className: "max-w-[3.5rem] truncate text-[9px] text-gray-600", children: bucket.label })
+                jsx("span", { className: "max-w-[3.5rem] truncate text-[9px] text-[var(--va-text-muted)]", children: bucket.label })
               ]
             }, bucket.key);
           })
         })
       }),
       activeBucket ? jsxs("section", {
-        className: "rounded-2xl border border-white/10 va-surface-muted p-4",
+        className: "rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4",
         children: [
-          jsxs("h2", { className: "mb-3 text-base font-bold text-white", children: [activeBucket.label, " ", jsxs("span", { className: "text-sm font-normal text-gray-500", children: [`(${formatNumber(activeBucket.count)})`] })] }),
+          jsxs("h2", { className: "mb-3 text-base font-bold text-[var(--va-text)]", children: [activeBucket.label, " ", jsxs("span", { className: "text-sm font-normal text-[var(--va-text-muted)]", children: [`(${formatNumber(activeBucket.count)})`] })] }),
           jsx("div", { className: "space-y-2", children: activeBucket.items.slice(0, 100).map((item) => jsxs("button", {
             type: "button",
             onClick: () => openItem(item),
-            className: "flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 bg-gray-950/30 p-2.5 text-right hover:border-white/20",
+            className: "flex w-full items-center justify-between gap-2 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2.5 text-right transition-colors hover:border-emerald-500/25",
             children: [
               jsxs("div", { className: "min-w-0", children: [
-                jsx("p", { className: "truncate text-sm font-semibold text-white", dir: "auto", children: item.title || "بدون عنوان" }),
-                jsx("p", { className: "text-xs text-gray-600", children: item.createdAt ? formatDateTime(item.createdAt) : "" })
+                jsx("p", { className: "truncate text-sm font-semibold text-[var(--va-text)]", dir: "auto", children: item.title || "بدون عنوان" }),
+                jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: item.createdAt ? formatDateTime(item.createdAt) : "" })
               ] }),
-              jsx(ExternalLink, { className: "h-4 w-4 shrink-0 text-gray-500" })
+              jsx(ExternalLink, { className: "h-4 w-4 shrink-0 text-[var(--va-text-muted)]" })
             ]
           }, item.id)) })
         ]

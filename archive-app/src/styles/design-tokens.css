@@ -25,17 +25,20 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 :root {
-  --va-accent-50:  oklch(97.9% 0.021 166.113);
-  --va-accent-100: oklch(95%   0.052 163.051);
-  --va-accent-200: oklch(90.5% 0.093 164.15);
-  --va-accent-300: oklch(84.5% 0.143 164.978);
-  --va-accent-400: oklch(76.5% 0.177 163.223);
-  --va-accent-500: oklch(69.6% 0.17  162.48);
-  --va-accent-600: oklch(59.6% 0.145 163.225);
-  --va-accent-700: oklch(50.8% 0.118 165.612);
-  --va-accent-800: oklch(43.2% 0.095 166.913);
-  --va-accent-900: oklch(37.8% 0.077 168.94);
-  --va-accent-950: oklch(26.2% 0.051 172.552);
+  /* Default accent = teal (locked design language). Mirrors the `teal` preset in
+     theme/accentColor.js so the static default matches the runtime default before
+     applyAccentColor() runs. The picker still swaps these at runtime. */
+  --va-accent-50:  oklch(98.2% 0.019 196.0);
+  --va-accent-100: oklch(95.3% 0.05  196.0);
+  --va-accent-200: oklch(89.4% 0.096 196.0);
+  --va-accent-300: oklch(82.4% 0.14  196.0);
+  --va-accent-400: oklch(73.8% 0.162 196.0);
+  --va-accent-500: oklch(65.4% 0.15  196.0);
+  --va-accent-600: oklch(55.1% 0.126 196.0);
+  --va-accent-700: oklch(46.7% 0.101 196.0);
+  --va-accent-800: oklch(39.4% 0.08  196.0);
+  --va-accent-900: oklch(33.7% 0.064 196.0);
+  --va-accent-950: oklch(23.8% 0.042 196.0);
 }
 
 /**
@@ -111,12 +114,26 @@
   --va-form-gap: var(--va-space-4);
   --va-section-gap: var(--va-space-8);
 
-  /* Border radius */
-  --va-radius-sm: 0.25rem;   /* 4px */
-  --va-radius-md: 0.5rem;    /* 8px */
-  --va-radius-lg: 0.75rem;   /* 12px */
-  --va-radius-xl: 1rem;      /* 16px */
+  /* Border radius — locked "Layered Editorial Bento" scale (slightly rounder). */
+  --va-radius-sm: 0.5rem;     /* 8px */
+  --va-radius-md: 0.625rem;   /* 10px */
+  --va-radius-lg: 0.875rem;   /* 14px */
+  --va-radius-xl: 1.125rem;   /* 18px */
   --va-radius-full: 9999px;
+
+  /* Font families — locked. @font-face for the self-hosted woff2 files lives in
+     app-overrides.css; the system fallbacks keep the app readable before the
+     font binaries are vendored into /public/fonts. */
+  --va-font-ui:   "IBM Plex Sans Arabic", system-ui, "Segoe UI", Tahoma, "Helvetica Neue", Arial, sans-serif;
+  --va-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Density — `data-density` on the root now actually scales spacing. Components
+     that want density-aware spacing read the var(--va-density-scale) multiplier
+     or the derived padding/gap tokens below. */
+  --va-density-scale: 1;
+  --va-pad-card: calc(var(--va-space-4) * var(--va-density-scale));
+  --va-gap-grid: calc(var(--va-space-3) * var(--va-density-scale));
+  --va-gap-section: calc(var(--va-space-6) * var(--va-density-scale));
 
   /* Typography */
   --va-font-size-xs: 0.75rem;    /* 12px */
@@ -135,17 +152,33 @@
   --va-shadow-dialog: 0 25px 50px -12px rgb(0 0 0 / 0.6);
 
   /* Z-index scale */
+  --va-z-nav: 100;
   --va-z-dropdown: 100;
   --va-z-sticky: 200;
   --va-z-overlay: 300;
   --va-z-modal: 400;
   --va-z-popover: 500;
   --va-z-tooltip: 600;
+  --va-z-toast: 1200;
+  --va-z-command: 1300;
   --va-z-offline-banner: 2000;
 
-  /* Animation */
-  --va-duration-fast: 100ms;
-  --va-duration-base: 150ms;
-  --va-duration-slow: 300ms;
-  --va-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Animation — locked motion language. */
+  --va-duration-fast: 120ms;
+  --va-duration-base: 200ms;
+  --va-duration-slow: 320ms;
+  --va-ease-default: cubic-bezier(0.22, 1, 0.36, 1);
+  --va-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Density multipliers — wired so the existing `data-density` attribute set by
+   features/theme/themePresets.js finally changes spacing instead of being a no-op. */
+:root[data-density="compact"]     { --va-density-scale: 0.85; }
+:root[data-density="comfortable"] { --va-density-scale: 1.15; }
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --va-duration-fast: 0ms;
+    --va-duration-base: 0ms;
+    --va-duration-slow: 0ms;
+  }
 }

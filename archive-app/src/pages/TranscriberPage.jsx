@@ -32,10 +32,10 @@ function ModeButton({ active, onClick, icon, label, hint }) {
     type: "button",
     onClick,
     "aria-pressed": active,
-    className: `flex-1 rounded-xl border p-3 text-right transition-colors ${active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-gray-950/35 text-gray-300 hover:bg-white/5"}`,
+    className: `flex-1 rounded-xl border p-3 text-right transition-colors ${active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
     children: [
       jsxs("span", { className: "flex items-center gap-2 text-sm font-semibold", children: [icon, label] }),
-      jsx("span", { className: "mt-1 block text-xs text-gray-500", children: hint })
+      jsx("span", { className: "mt-1 block text-xs text-[var(--va-text-muted)]", children: hint })
     ]
   });
 }
@@ -116,10 +116,10 @@ export function TranscriberPage() {
           hasLocal && jsx(ModeButton, { active: mode === "local", onClick: () => setMode("local"), icon: jsx(MonitorSmartphone, { className: "h-4 w-4" }), label: "محلي في المتصفّح", hint: "بلا خادم — يُحمّل النموذج عند أول استخدام" })
         ] }),
 
-        jsxs("label", { htmlFor: fileInputId, className: "block cursor-pointer rounded-2xl border border-dashed border-white/15 bg-gray-950/30 p-6 text-center hover:border-emerald-500/30", children: [
-          jsx(FileAudio, { className: "mx-auto h-10 w-10 text-gray-500" }),
-          jsx("p", { className: "mt-2 text-sm font-semibold text-white", children: file ? file.name : "اختر ملف صوت أو فيديو" }),
-          jsx("p", { className: "mt-1 text-xs text-gray-500", children: file ? formatFileSize(file.size) : "MP3 · WAV · M4A · MP4 · WEBM …" }),
+        jsxs("label", { htmlFor: fileInputId, className: "block cursor-pointer rounded-2xl border border-dashed border-[var(--va-border-strong)] bg-[var(--va-surface)] p-6 text-center transition-colors hover:border-emerald-500/40", children: [
+          jsx(FileAudio, { className: "mx-auto h-10 w-10 text-[var(--va-text-muted)]" }),
+          jsx("p", { className: "mt-2 text-sm font-semibold text-[var(--va-text)]", children: file ? file.name : "اختر ملف صوت أو فيديو" }),
+          jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: file ? formatFileSize(file.size) : "MP3 · WAV · M4A · MP4 · WEBM …" }),
           jsx("input", { id: fileInputId, type: "file", "aria-label": "اختيار ملف صوت أو فيديو للتفريغ", accept: "audio/*,video/*", className: "hidden", onChange: (e) => { setFile(e.target.files?.[0] || null); setResult(null); } })
         ] }),
 
@@ -132,19 +132,19 @@ export function TranscriberPage() {
 
       result ? jsxs("section", { className: "space-y-4 rounded-2xl va-surface-muted border p-4", children: [
         jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
-          jsxs("h2", { className: "text-base font-bold text-white", children: [`النص (${segments.length} مقطع)`] }),
+          jsxs("h2", { className: "text-base font-bold text-[var(--va-text)]", children: [`النص (${segments.length} مقطع)`] }),
           jsxs("div", { className: "flex flex-wrap gap-2", children: [
-            jsxs("button", { type: "button", onClick: () => copy(false), className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: [jsx(Copy, { className: "h-3.5 w-3.5" }), "نسخ النص"] }),
-            segments.length > 0 && jsxs("button", { type: "button", onClick: () => copy(true), className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: [jsx(Copy, { className: "h-3.5 w-3.5" }), "نسخ بالطوابع"] }),
+            jsxs("button", { type: "button", onClick: () => copy(false), className: "inline-flex items-center gap-1.5 rounded-lg border border-[var(--va-border-soft)] px-3 py-1.5 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)]", children: [jsx(Copy, { className: "h-3.5 w-3.5" }), "نسخ النص"] }),
+            segments.length > 0 && jsxs("button", { type: "button", onClick: () => copy(true), className: "inline-flex items-center gap-1.5 rounded-lg border border-[var(--va-border-soft)] px-3 py-1.5 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)]", children: [jsx(Copy, { className: "h-3.5 w-3.5" }), "نسخ بالطوابع"] }),
             savedItemId
-              ? jsxs("span", { className: "inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs text-green-300", children: [jsx(Check, { className: "h-3.5 w-3.5" }), "تم الحفظ"] })
-              : jsxs("button", { type: "button", onClick: saveToArchive, className: "inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs va-accent-text hover:bg-white/10", children: [jsx(Archive, { className: "h-3.5 w-3.5" }), "حفظ كعنصر أرشيف"] })
+              ? jsxs("span", { className: "inline-flex items-center gap-1.5 rounded-lg border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs va-accent-text-on-soft", children: [jsx(Check, { className: "h-3.5 w-3.5" }), "تم الحفظ"] })
+              : jsxs("button", { type: "button", onClick: saveToArchive, className: "inline-flex items-center gap-1.5 rounded-lg border border-[var(--va-border-strong)] bg-[var(--va-surface-2)] px-3 py-1.5 text-xs va-accent-text transition-colors hover:bg-[var(--va-elevated)]", children: [jsx(Archive, { className: "h-3.5 w-3.5" }), "حفظ كعنصر أرشيف"] })
           ] })
         ] }),
-        jsx("textarea", { readOnly: true, value: transcriptToText(result), "aria-label": "النص المُفرَّغ", className: "min-h-[140px] w-full va-surface-deep rounded-xl border p-3 text-sm leading-7 text-white outline-none" }),
-        segments.length > 0 && jsx("div", { className: "max-h-72 space-y-1 overflow-y-auto", children: segments.map((seg, i) => jsxs("div", { className: "flex gap-3 rounded-lg va-surface-subtle border px-3 py-1.5 text-sm", children: [
-          jsx("span", { className: "shrink-0 font-mono text-xs va-accent-text", children: secondsToClock(seg.start) }),
-          jsx("span", { className: "text-gray-200", children: seg.text })
+        jsx("textarea", { readOnly: true, value: transcriptToText(result), "aria-label": "النص المُفرَّغ", className: "min-h-[140px] w-full rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3 text-sm leading-7 text-[var(--va-text)] outline-none" }),
+        segments.length > 0 && jsx("div", { className: "max-h-72 space-y-1 overflow-y-auto", children: segments.map((seg, i) => jsxs("div", { className: "flex gap-3 rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-3 py-1.5 text-sm", children: [
+          jsx("span", { className: "shrink-0 font-[family-name:var(--va-font-mono)] text-xs va-accent-text", children: secondsToClock(seg.start) }),
+          jsx("span", { className: "text-[var(--va-text-2)]", children: seg.text })
         ] }, i)) })
       ] }) : jsx("div", { className: "rounded-2xl border border-dashed border-white/10 bg-gray-900/30", children: jsx(UXStateBlock, {
         icon: jsx(FileAudio, { className: "h-14 w-14" }),

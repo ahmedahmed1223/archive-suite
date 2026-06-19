@@ -12,10 +12,12 @@
 // unit-testable without a browser or a server.
 
 export class CloudExportError extends Error {
-  constructor(message, { status } = {}) {
+  constructor(message, { status, code, cause } = {}) {
     super(message);
     this.name = "CloudExportError";
     this.status = status;
+    this.code = code;
+    this.cause = cause;
   }
 }
 
@@ -59,8 +61,12 @@ export function downloadEdl(edlString, name, deps = {}) {
 }
 
 /** Whether MP4 export is possible: needs a cloud backend and a token. */
-export function canExportMp4({ backend, token } = {}) {
-  return backend !== "local" && Boolean(token);
+export function canExportMp4({ backend, token, wasmAvailable = hasFfmpegWasmSupport() } = {}) {
+  return (backend !== "local" && Boolean(token)) || Boolean(wasmAvailable);
+}
+
+export function hasFfmpegWasmSupport({ globalScope = safeGlobalThis() } = {}) {
+  return typeof globalScope?.__archiveFfmpegWasmExport === "function";
 }
 
 /**
@@ -72,14 +78,27 @@ export function canExportMp4({ backend, token } = {}) {
  * @param {typeof fetch} [args.fetchImpl] - injectable for tests
  * @returns {Promise<Blob>}
  */
-export async function requestMp4Export({ timeline, baseUrl = "", getToken, fetchImpl } = {}) {
+export async function requestMp4Export({
+  timeline,
+  baseUrl = "",
+  getToken,
+  fetchImpl,
+  allowWasmFallback = false,
+  wasmRenderer,
+  sourceResolver,
+  BlobImpl
+} = {}) {
   const doFetch = fetchImpl || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : null);
-  if (!doFetch) throw new CloudExportError("لا يوجد منفّذ fetch.");
   if (!timeline || !Array.isArray(timeline.clips) || timeline.clips.length === 0) {
     throw new CloudExportError("لا توجد قصاصات قابلة للتصدير في المشروع.");
   }
   const token = typeof getToken === "function" ? getToken() : "";
-  if (!token) throw new CloudExportError("تصدير MP4 يتطلّب تسجيل الدخول إلى خادم سحابي.");
+  const useWasm = () => requestMp4ExportWasm({ timeline, wasmRenderer, sourceResolver, BlobImpl });
+  if (!doFetch || !token) {
+    if (allowWasmFallback) return useWasm();
+    if (!doFetch) throw new CloudExportError("لا يوجد منفّذ fetch.", { code: "NO_FETCH" });
+    throw new CloudExportError("تصدير MP4 يتطلّب تسجيل الدخول إلى خادم سحابي.", { code: "NO_TOKEN" });
+  }
 
   const base = String(baseUrl || "").replace(/\/+$/, "");
   let response;
@@ -90,18 +109,39 @@ export async function requestMp4Export({ timeline, baseUrl = "", getToken, fetch
       body: JSON.stringify({ timeline })
     });
   } catch (networkError) {
-    throw new CloudExportError(`تعذّر الاتصال بخادم التصدير: ${networkError?.message || "خطأ شبكة"}`);
+    if (allowWasmFallback) return useWasm();
+    throw new CloudExportError(`تعذّر الاتصال بخادم التصدير: ${networkError?.message || "خطأ شبكة"}`, { code: "NETWORK", cause: networkError });
   }
 
   if (!response.ok) {
     let message = "فشل تصدير MP4.";
+    let code = "SERVER";
     try {
       const payload = await response.json();
       message = payload?.error || message;
+      code = payload?.code || code;
     } catch { /* non-JSON error body */ }
-    throw new CloudExportError(message, { status: response.status });
+    if (allowWasmFallback && (response.status === 0 || response.status >= 500 || response.status === 503)) return useWasm();
+    throw new CloudExportError(message, { status: response.status, code });
   }
   return response.blob();
+}
+
+export async function requestMp4ExportWasm({ timeline, wasmRenderer, sourceResolver, BlobImpl } = {}) {
+  if (!timeline || !Array.isArray(timeline.clips) || timeline.clips.length === 0) {
+    throw new CloudExportError("لا توجد قصاصات قابلة للتصدير في المشروع.", { code: "EMPTY" });
+  }
+  const renderer = wasmRenderer || safeGlobalThis()?.__archiveFfmpegWasmExport;
+  if (typeof renderer !== "function") {
+    throw new CloudExportError("ffmpeg.wasm غير متاح في هذه البيئة. ثبّت مكوّن wasm أو استخدم خادمًا يحتوي ffmpeg.", { code: "WASM_UNAVAILABLE" });
+  }
+  try {
+    const output = await renderer({ timeline, sourceResolver });
+    return normalizeMp4Blob(output, { BlobImpl });
+  } catch (error) {
+    if (error instanceof CloudExportError) throw error;
+    throw new CloudExportError(`فشل ffmpeg.wasm: ${error?.message || "خطأ غير معروف"}`, { code: "WASM_FAILED", cause: error });
+  }
 }
 
 /** Render to MP4 and immediately download it. Convenience wrapper. */
@@ -119,6 +159,17 @@ function makeBlob(content, type, { BlobImpl } = {}) {
   return new Ctor([content], { type });
 }
 
+function normalizeMp4Blob(output, deps = {}) {
+  const Ctor = deps.BlobImpl || (typeof Blob !== "undefined" ? Blob : null);
+  if (!Ctor) throw new CloudExportError("بيئة بلا دعم Blob.", { code: "NO_BLOB" });
+  if (output instanceof Ctor) return output;
+  if (output?.blob) return normalizeMp4Blob(output.blob, deps);
+  if (output instanceof ArrayBuffer || ArrayBuffer.isView(output) || typeof output === "string") {
+    return new Ctor([output], { type: "video/mp4" });
+  }
+  throw new CloudExportError("ffmpeg.wasm لم يُرجع ملف MP4 صالحًا.", { code: "WASM_BAD_OUTPUT" });
+}
+
 function safeDocument() {
   try {
     if (typeof document !== "undefined") return document;
@@ -130,5 +181,12 @@ function safeUrl() {
   try {
     if (typeof URL !== "undefined") return URL;
   } catch { /* no URL */ }
+  return null;
+}
+
+function safeGlobalThis() {
+  try {
+    return typeof globalThis !== "undefined" ? globalThis : null;
+  } catch { /* no global */ }
   return null;
 }
