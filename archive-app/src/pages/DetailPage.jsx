@@ -24,7 +24,6 @@ import {
   Play,
   RefreshCw,
   Save,
-  Send,
   Share2,
   ShieldAlert,
   Sparkles,
@@ -40,7 +39,7 @@ import { motion } from "framer-motion";
 import { appConfirm } from "../components/common/ConfirmDialog.js";
 import { DetailNavigationPanel } from "../components/navigation/DetailNavigationPanel.jsx";
 import { getItemPosition, resolveAdjacentItem } from "../features/navigation/navigationContext.js";
-import { TagAutocomplete } from "../components/forms/TagAutocomplete.jsx";
+import { CommentThread } from "../components/comments/CommentThread.jsx";
 import { ArchiveImprovementSuggestions } from "../components/recommendations/ArchiveImprovementSuggestions.jsx";
 import { RelatedContentPanel } from "../components/recommendations/RelatedContentPanel.jsx";
 import { MobileActionBar, MotionPage, ResponsiveTabs, UXEmptyState } from "../components/ui/index.js";
@@ -82,7 +81,7 @@ import { formatDateTime, formatFileSize, formatNumber, normalizeArabicSearchText
 import { useAiAssist } from "../features/ai/useAiAssist.js";
 import { AiAssistBar } from "../features/ai/AiAssistBar.jsx";
 import { applyProofread, applySummaryToNotes, buildSuggestPayload, correctionsCount, hasSourceText, mergeTagText } from "../features/ai/viewModel.js";
-import { canDeleteComment, extractMentionUsernames, getItemComments } from "../features/comments/viewModel.js";
+import { extractMentionUsernames, getItemComments } from "../features/comments/viewModel.js";
 import { FIELD_ACL_ROLES, canViewField, normalizeFieldAcl } from "../features/field-acl/viewModel.js";
 import {
   filterDismissedRecommendations,
@@ -1560,50 +1559,17 @@ export function DetailPage() {
             jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Tags, { className: "h-4 w-4 va-accent-text" }), "الوسوم", canViewTags && item.tags?.length ? jsx("span", { className: "mr-auto rounded-full bg-white/10 px-2 py-0.5 text-xs text-gray-400", children: item.tags.length }) : null] }),
             canViewTags ? (item.tags?.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-1.5", children: item.tags.map((tag) => jsx("span", { className: "va-tag-chip inline-flex items-center rounded-full border border-white/10 bg-gray-900/60 px-2.5 py-1 text-xs text-gray-300 transition-colors hover:border-emerald-500/25 hover:text-emerald-200", children: tag }, tag)) }) : jsx("p", { className: "mt-3 text-sm text-gray-600", children: "لا توجد وسوم." })) : jsx("p", { className: "mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-100", children: "الوسوم محجوبة حسب صلاحيات العرض." })
           ] }),
-          jsxs("section", { ref: commentsSectionRef, className: `rounded-xl va-surface-subtle border p-3 ${activeDetailTab === "comments" ? "" : "hidden"}`, children: [
-            jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [
-              jsx(MessageSquare, { className: "h-4 w-4 va-accent-text" }),
-              "التعليقات",
-              jsx("span", { className: "mr-auto rounded-full bg-white/10 px-2 py-0.5 text-xs text-gray-400", children: itemComments.length })
-            ] }),
-            jsxs("div", { className: "mt-3 space-y-2", children: [
-              jsx(TagAutocomplete, {
-                multiline: true,
-                value: commentDraft,
-                onChange: setCommentDraft,
-                rows: 3,
-                allowed: ["users", "vocabulary", "tags"],
-                placeholder: "اكتب ملاحظة للفريق حول هذه المادة...",
-                className: "textarea textarea-bordered w-full"
-              }),
-              jsxs("button", {
-                type: "button",
-                onClick: submitComment,
-                disabled: commentBusy || !commentDraft.trim(),
-                className: "btn btn-primary btn-sm gap-2",
-                children: [commentBusy ? jsx(Loader2, { className: "h-3.5 w-3.5 animate-spin" }) : jsx(Send, { className: "h-3.5 w-3.5" }), "إرسال"]
-              })
-            ] }),
-            itemComments.length ? jsx("ul", { className: "mt-4 space-y-2", children: itemComments.map((comment) => jsxs("li", {
-              className: "rounded-xl border border-white/10 bg-gray-950/25 p-3",
-              children: [
-                jsxs("div", { className: "flex items-start justify-between gap-2", children: [
-                  jsxs("div", { className: "min-w-0", children: [
-                    jsx("p", { className: "truncate text-sm font-semibold text-gray-200", children: comment.author }),
-                    jsx("p", { className: "mt-0.5 text-[11px] text-gray-600", children: comment.createdAt ? formatDateTime(comment.createdAt) : "" })
-                  ] }),
-                  canDeleteComment(comment, currentUser) && jsx("button", {
-                    type: "button",
-                    onClick: () => removeComment(comment),
-                    "aria-label": "حذف التعليق",
-                    className: "shrink-0 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-500/10 hover:text-red-300",
-                    children: jsx(Trash2, { className: "h-3.5 w-3.5" })
-                  })
-                ] }),
-                jsx("p", { className: "mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-300", dir: "auto", children: comment.text })
-              ]
-            }, comment.id)) }) : jsx("p", { className: "mt-3 text-sm text-gray-600", children: "لا توجد تعليقات بعد." })
-          ] }),
+          jsx(CommentThread, {
+            sectionRef: commentsSectionRef,
+            className: activeDetailTab === "comments" ? "" : "hidden",
+            comments: itemComments,
+            currentUser,
+            draft: commentDraft,
+            busy: commentBusy,
+            onDraftChange: setCommentDraft,
+            onSubmit: submitComment,
+            onRemove: removeComment
+          }),
           activeDetailTab === "ai" && jsxs("section", { className: "rounded-xl va-surface-subtle border p-4", children: [
             jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(Sparkles, { className: "h-4 w-4 va-accent-text" }), "مساعد AI للمادة"] }),
             jsx("p", { className: "mt-2 text-sm leading-6 text-gray-500", children: ai.available ? "اختر إجراءً وسيضاف الناتج إلى مسودة التحرير. راجع التغييرات ثم احفظها من تبويب البيانات." : "مزود AI غير متاح حالياً. افتح إعدادات AI أو استخدم الملاحظات اليدوية." }),

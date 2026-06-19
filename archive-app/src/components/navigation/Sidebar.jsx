@@ -29,7 +29,9 @@ import {
   GitMerge,
   HardDrive,
   History,
+  Inbox,
   LayoutGrid,
+  Link2,
   ListChecks,
   Menu,
   RotateCcw,
@@ -115,7 +117,9 @@ const iconMap = {
   "reading-lists":  ListChecks,
   "server-status":  Server,
   "duplicates":     Copy,
-  "saved-searches": Bookmark
+  "saved-searches": Bookmark,
+  "shared-links":   Link2,
+  "shared-with-me": Inbox
 };
 
 function useIsMobile() {
