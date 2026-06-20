@@ -456,6 +456,7 @@ export function DetailPage() {
     toggleFavorite,
     markItemViewed,
     addBookmark,
+    updateBookmark,
     removeBookmark,
     addItemComment,
     deleteItemComment,
@@ -959,6 +960,15 @@ export function DetailPage() {
     }
   };
 
+  const editTimeBookmark = async (id, changes) => {
+    try {
+      await updateBookmark?.({ id, timestamp: changes.time, label: changes.title, description: changes.note });
+      showToast?.("تم تحديث العلامة الزمنية", "success");
+    } catch (error) {
+      reportError(showNotification, error, { context: "تحديث علامة زمنية" });
+    }
+  };
+
   // G7 — render free text with `MM:SS`/`HH:MM:SS` turned into clickable seek
   // links (only when a previewable video exists; otherwise plain text). The
   // timecodes keep dir="ltr" + tabular font so they read correctly in RTL.
@@ -1278,6 +1288,7 @@ export function DetailPage() {
               createdAt: bookmark.createdAt
             })),
             onSeek: seekToBookmark,
+            onUpdate: editTimeBookmark,
             onDelete: removeBookmark,
             itemTitle: item.title || ""
           })

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
-import { Bookmark, BookmarkPlus, Download, Trash2, X } from "lucide-react";
+import { Bookmark, BookmarkPlus, Download, Pencil, Save, Trash2, X } from "lucide-react";
 import { buildTimeBookmarkMarkers, secondsToClock } from "../../features/media/viewModel.js";
 import { triggerDownload, safeFileName } from "../../features/projects/exportClient.js";
 
@@ -48,6 +48,36 @@ function toCsv(bookmarks) {
 function downloadText(text, filename, mimeType) {
   const blob = new Blob([text], { type: mimeType });
   triggerDownload(blob, filename);
+}
+
+export function bookmarkTimeToSeconds(value) {
+  const parts = String(value || "").trim().split(":").map(Number);
+  if (!parts.length || parts.some((part) => !Number.isFinite(part) || part < 0)) return null;
+  if (parts.length === 1) return parts[0];
+  if (parts.length === 2 && parts[1] < 60) return parts[0] * 60 + parts[1];
+  if (parts.length === 3 && parts[1] < 60 && parts[2] < 60) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return null;
+}
+
+function BookmarkEditor({ bookmark, onSave, onCancel }) {
+  const [time, setTime] = React.useState(secondsToClock(bookmark.time));
+  const [title, setTitle] = React.useState(bookmark.title || "");
+  const [note, setNote] = React.useState(bookmark.note || "");
+  const seconds = bookmarkTimeToSeconds(time);
+  const valid = seconds !== null && title.trim();
+  return (
+    <div className="col-span-full w-full space-y-2" aria-label={`تحرير العلامة الزمنية: ${bookmark.title}`}>
+      <div className="grid gap-2 sm:grid-cols-[110px_minmax(0,1fr)]">
+        <label className="space-y-1 text-xs text-gray-400"><span>الوقت</span><input value={time} onChange={(event) => setTime(event.target.value)} className="input input-bordered input-sm w-full font-mono" dir="ltr" aria-label="وقت العلامة الزمنية" /></label>
+        <label className="space-y-1 text-xs text-gray-400"><span>العنوان</span><input value={title} onChange={(event) => setTitle(event.target.value)} className="input input-bordered input-sm w-full" aria-label="عنوان العلامة الزمنية" /></label>
+      </div>
+      <label className="block space-y-1 text-xs text-gray-400"><span>الملاحظة</span><textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} className="textarea textarea-bordered w-full" aria-label="ملاحظة العلامة الزمنية" /></label>
+      <div className="flex justify-end gap-2">
+        <button type="button" className="btn btn-ghost btn-xs" onClick={onCancel}>إلغاء</button>
+        <button type="button" className="btn btn-primary btn-xs gap-1" disabled={!valid} onClick={() => onSave({ time: seconds, title: title.trim(), note: note.trim() || undefined })}><Save className="h-3.5 w-3.5" />حفظ التعديل</button>
+      </div>
+    </div>
+  );
 }
 
 // ─── TimeBookmarkButton ──────────────────────────────────────────────────────
@@ -242,8 +272,9 @@ export function TimeBookmarkButton({ getTime, getSuggestion, onSave }) {
  *   onDelete    (id: string) => void
  *   itemTitle   string  — used in export filenames / headings
  */
-export function TimeBookmarkList({ bookmarks = [], onSeek, onDelete, itemTitle = "" }) {
+export function TimeBookmarkList({ bookmarks = [], onSeek, onDelete, onUpdate, itemTitle = "" }) {
   const sorted = React.useMemo(() => sortedByTime(bookmarks), [bookmarks]);
+  const [editingId, setEditingId] = React.useState(null);
 
   const exportMd = () => {
     const text = toMarkdown(sorted, itemTitle);
@@ -326,7 +357,11 @@ export function TimeBookmarkList({ bookmarks = [], onSeek, onDelete, itemTitle =
             className:
               "flex items-start gap-2 rounded-xl border border-white/10 va-surface-subtle p-2.5",
             children: [
-              jsx("button", {
+              editingId === bm.id ? jsx(BookmarkEditor, {
+                bookmark: bm,
+                onCancel: () => setEditingId(null),
+                onSave: (changes) => { onUpdate?.(bm.id, changes); setEditingId(null); }
+              }) : jsxs(React.Fragment, { children: [jsx("button", {
                 type: "button",
                 onClick: () => onSeek?.(bm.time),
                 dir: "ltr",
@@ -354,14 +389,22 @@ export function TimeBookmarkList({ bookmarks = [], onSeek, onDelete, itemTitle =
                     })
                 ]
               }),
-              jsx("button", {
-                type: "button",
-                onClick: () => onDelete?.(bm.id),
-                "aria-label": `حذف العلامة الزمنية: ${bm.title}`,
-                className:
-                  "shrink-0 rounded-md p-1 text-red-400/70 transition-colors hover:bg-red-500/10 hover:text-red-300",
-                children: jsx(Trash2, { className: "h-3.5 w-3.5", "aria-hidden": "true" })
-              })
+              jsxs("div", { className: "flex shrink-0 items-center gap-1", children: [
+                jsx("button", {
+                  type: "button",
+                  onClick: () => setEditingId(bm.id),
+                  "aria-label": `تحرير العلامة الزمنية: ${bm.title}`,
+                  className: "rounded-md p-1 text-gray-400 transition-colors hover:bg-white/10 hover:text-white",
+                  children: jsx(Pencil, { className: "h-3.5 w-3.5", "aria-hidden": "true" })
+                }),
+                jsx("button", {
+                  type: "button",
+                  onClick: () => onDelete?.(bm.id),
+                  "aria-label": `حذف العلامة الزمنية: ${bm.title}`,
+                  className: "rounded-md p-1 text-red-400/70 transition-colors hover:bg-red-500/10 hover:text-red-300",
+                  children: jsx(Trash2, { className: "h-3.5 w-3.5", "aria-hidden": "true" })
+                })
+              ] })] })
             ]
           }, bm.id)
         )
