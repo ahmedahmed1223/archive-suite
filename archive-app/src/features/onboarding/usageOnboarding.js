@@ -111,7 +111,8 @@ export function isUsageOnboardingComplete(steps = []) {
  * @param {{ itemCount?: number, dismissed?: boolean }} input
  * @returns {boolean}
  */
-export function shouldShowUsageOnboarding({ itemCount = 0, dismissed = false } = {}) {
+export function shouldShowUsageOnboarding({ itemCount = 0, dismissed = false, enabled = false } = {}) {
+  if (!enabled) return false;
   if (dismissed) return false;
   return toCount(itemCount) === 0;
 }

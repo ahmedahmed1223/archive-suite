@@ -40,6 +40,7 @@ export function isTourDismissed(settings = {}) {
  * @returns {boolean}
  */
 export function shouldAutoStartTour({ itemCount = 0, settings = {}, steps = PRODUCT_TOUR } = {}) {
+  if (settings.ui?.tourAutoStartEnabled !== true) return false;
   if (isTourDismissed(settings)) return false;
   if (isTourComplete(getSeenSteps(settings), steps)) return false;
   const count = Number.isFinite(itemCount) && itemCount > 0 ? itemCount : 0;
