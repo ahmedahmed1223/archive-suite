@@ -46,6 +46,9 @@ import {
 import { resolveServerConfig, loadServerConfigFile, saveServerConfigFile } from "../config/serverConfig.js";
 import { buildFileStore } from "../bootstrap/registerCloudProviders.js";
 import {
+  copyEntry, createFolder, listEntries, moveEntry, normalizeFileKey, removeEntries
+} from "../files/fileStoreOperations.js";
+import {
   buildConfigView, validateDbConfig, mergeDbConfig, validateFileStoreConfig,
   mergeFileStoreConfig, testDatabaseConnection, testFileStoreConnection
 } from "./adminConfig.js";
@@ -1577,6 +1580,71 @@ export function createApiServer({
         return send(res, 200, { ok: true, result });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "File status failed" });
+      }
+    }
+
+    if (url === "/api/files/browser" && req.method === "GET") {
+      if (!requireAuth(req, res)) return undefined;
+      try {
+        const result = await listEntries(resolveFileStore(), requestUrl.searchParams.get("path") || "", {
+          query: requestUrl.searchParams.get("query") || "",
+          limit: Math.min(200, Number(requestUrl.searchParams.get("limit")) || 200),
+          cursor: requestUrl.searchParams.get("cursor") || ""
+        });
+        return send(res, 200, { ok: true, result });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "File browse failed", details: { code: "FILE_BROWSE_FAILED", provider: resolveFileStore()?.describe?.().kind || "unknown", retryable: (error?.statusCode || 500) >= 500 } });
+      }
+    }
+
+    if (url === "/api/files/folders" && req.method === "POST") {
+      if (!requireEditor(req, res)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const result = await createFolder(resolveFileStore(), body?.path);
+        return send(res, 201, { ok: true, result });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Folder creation failed" });
+      }
+    }
+
+    if (url === "/api/files/actions" && req.method === "POST") {
+      if (!requireEditor(req, res)) return undefined;
+      try {
+        const body = await readJsonBody(req);
+        const action = String(body?.action || "").toLowerCase();
+        const store = resolveFileStore();
+        if (action === "delete") {
+          return send(res, 200, { ok: true, result: { action, results: await removeEntries(store, body?.keys || []) } });
+        }
+        if (action === "rename") {
+          const source = normalizeFileKey(body?.key);
+          const name = normalizeFileKey(body?.name);
+          if (name.includes("/")) return send(res, 400, { ok: false, error: "اسم الملف الجديد يجب ألا يحتوي على مسار." });
+          const parent = source.includes("/") ? source.slice(0, source.lastIndexOf("/")) : "";
+          const destination = parent ? `${parent}/${name}` : name;
+          const value = await moveEntry(store, source, destination);
+          return send(res, 200, { ok: true, result: { action, results: [{ key: source, destination, ok: true, value }] } });
+        }
+        if (action === "copy" || action === "move") {
+          const destinationFolder = normalizeFileKey(body?.destination, { allowEmpty: true });
+          const results = [];
+          for (const rawKey of body?.keys || []) {
+            const key = normalizeFileKey(rawKey);
+            const name = key.slice(key.lastIndexOf("/") + 1);
+            const destination = destinationFolder ? `${destinationFolder}/${name}` : name;
+            try {
+              const value = action === "copy" ? await copyEntry(store, key, destination) : await moveEntry(store, key, destination);
+              results.push({ key, destination, ok: true, value });
+            } catch (error) {
+              results.push({ key, destination, ok: false, error: error?.message || `${action} failed` });
+            }
+          }
+          return send(res, 200, { ok: true, result: { action, results } });
+        }
+        return send(res, 400, { ok: false, error: "عملية الملفات غير مدعومة." });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "File action failed" });
       }
     }
 
