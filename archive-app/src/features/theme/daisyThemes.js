@@ -60,8 +60,70 @@ export function storeDaisyTheme(value, storage = typeof localStorage !== "undefi
   return normalized;
 }
 
+// ── Native theme engine ──────────────────────────────────────────────────────
+// Maps each preset's seed colors {bg, fg, accent} onto the app's own --va-*
+// design tokens via color-mix, so selecting a theme drives the real (re-skinned)
+// UI directly — independently of any component library. This is what lets the
+// theme presets survive DaisyUI removal as a native color-customization feature.
+
+const THEME_BY_ID = Object.fromEntries(DAISY_THEME_OPTIONS.map((t) => [t.id, t]));
+
+function isDarkHex(hex) {
+  const h = String(hex || "").replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16) || 0;
+  const g = parseInt(full.slice(2, 4), 16) || 0;
+  const b = parseInt(full.slice(4, 6), 16) || 0;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+}
+
+const mix = (a, b, pct) => `color-mix(in oklab, ${a}, ${b} ${pct}%)`;
+
+/**
+ * Apply a preset's palette to the live --va-* tokens. Inline styles on :root
+ * beat the stylesheet's light/dark blocks, so the preset fully controls colors
+ * regardless of the html.dark class (which we still toggle to keep scrollbars
+ * and other html.dark-scoped CSS aligned).
+ */
+export function applyThemeTokens(themeId, root = typeof document !== "undefined" ? document.documentElement : null) {
+  if (!root) return;
+  const t = THEME_BY_ID[themeId] || THEME_BY_ID[DEFAULT_DAISY_THEME];
+  if (!t) return;
+  const { bg, fg, accent } = t;
+  const dark = isDarkHex(bg);
+  const lift = dark ? fg : "#ffffff"; // direction toward "elevated" surfaces
+  const s = root.style;
+  s.setProperty("--va-bg", bg);
+  s.setProperty("--va-surface", mix(bg, lift, 5));
+  s.setProperty("--va-surface-2", mix(bg, lift, 11));
+  s.setProperty("--va-elevated", mix(bg, lift, 8));
+  s.setProperty("--va-overlay", mix(bg, lift, 8));
+  s.setProperty("--va-border-soft", mix("transparent", fg, 12));
+  s.setProperty("--va-border-strong", mix("transparent", fg, 20));
+  s.setProperty("--va-text", fg);
+  s.setProperty("--va-text-2", mix(bg, fg, 78));
+  s.setProperty("--va-text-muted", mix(bg, fg, 52));
+  s.setProperty("--va-text-inverse", bg);
+  // Accent → drive the --va-accent-* ramp (emerald utilities map to it) + v1 aliases.
+  s.setProperty("--va-accent-300", mix(accent, "#ffffff", 30));
+  s.setProperty("--va-accent-400", mix(accent, "#ffffff", 14));
+  s.setProperty("--va-accent-500", accent);
+  s.setProperty("--va-accent-600", mix(accent, "#000000", 12));
+  s.setProperty("--va-accent-700", mix(accent, "#000000", 26));
+  s.setProperty("--va-accent-800", mix(accent, "#000000", 40));
+  s.setProperty("--va-v1-accent", accent);
+  s.setProperty("--va-v1-accent-strong", mix(accent, "#000000", 18));
+  s.setProperty("--va-v1-accent-soft", mix(bg, accent, 16));
+  s.setProperty("--color-accent", accent);
+  root.classList.toggle("dark", dark);
+  s.colorScheme = dark ? "dark" : "light";
+}
+
 export function applyDaisyTheme(value, root = typeof document !== "undefined" ? document.documentElement : null) {
   const normalized = normalizeDaisyTheme(value);
-  if (root) root.setAttribute("data-theme", normalized);
+  if (root) {
+    root.setAttribute("data-theme", normalized);
+    applyThemeTokens(normalized, root);
+  }
   return normalized;
 }
