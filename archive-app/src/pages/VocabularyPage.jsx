@@ -132,7 +132,7 @@ function VocabularyForm({ entry, activeCategory, onCancel, onSave }) {
             placeholder: "أسماء بديلة مفصولة بفاصلة"
           })
         ] }),
-        jsxs("div", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [
+        jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)] md:col-span-2", children: [
           jsx("label", { htmlFor: descriptionId, className: "block", children: "الوصف" }),
           jsx("textarea", {
             id: descriptionId,
@@ -154,7 +154,7 @@ function VocabularyCard({ entry, index, onEdit, onDelete }) {
     initial: { opacity: 0, y: 8 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.18, delay: Math.min(index, 10) * 0.025 },
-    className: "va-entity-card rounded-2xl va-surface-muted border p-4 text-right transition-all hover:border-white/20",
+    className: "va-entity-card rounded-2xl va-surface-muted border p-4 text-right transition-all hover:border-[var(--va-border-strong)]",
     style: { boxShadow: `inset -3px 0 0 0 ${accentColor}44` },
     dir: "rtl",
     children: [
@@ -167,7 +167,7 @@ function VocabularyCard({ entry, index, onEdit, onDelete }) {
               jsxs("div", {
                 className: "flex flex-wrap items-center gap-2",
                 children: [
-                  jsx("h3", { className: "truncate text-base font-bold text-white", children: entry.term || "مصطلح بدون اسم" }),
+                  jsx("h3", { className: "truncate text-base font-bold text-[var(--va-text)]", children: entry.term || "مصطلح بدون اسم" }),
                   jsxs("span", {
                     className: "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
                     style: { borderColor: `${accentColor}35`, backgroundColor: `${accentColor}14`, color: accentColor },
@@ -175,13 +175,13 @@ function VocabularyCard({ entry, index, onEdit, onDelete }) {
                   })
                 ]
               }),
-              entry.description && jsx("p", { className: "mt-2 line-clamp-2 text-sm leading-relaxed text-gray-400", children: entry.description }),
+              entry.description && jsx("p", { className: "mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--va-text-muted)]", children: entry.description }),
               entry.aliases?.length > 0 && jsxs("div", {
                 className: "mt-3 flex flex-wrap items-center gap-1.5",
                 children: [
-                  jsx(Tag, { className: "h-3 w-3 shrink-0 text-gray-600" }),
+                  jsx(Tag, { className: "h-3 w-3 shrink-0 text-[var(--va-text-muted)]" }),
                   entry.aliases.map((alias) => jsx("span", {
-                    className: "va-tag-chip inline-flex items-center rounded-full border border-white/8 bg-gray-950/50 px-2 py-0.5 text-xs text-gray-400",
+                    className: "va-tag-chip inline-flex items-center rounded-full border border-[var(--va-border-soft)] bg-[var(--va-elevated)]/50 px-2 py-0.5 text-xs text-[var(--va-text-muted)]",
                     children: alias
                   }, alias))
                 ]
@@ -191,13 +191,13 @@ function VocabularyCard({ entry, index, onEdit, onDelete }) {
           jsxs("div", {
             className: "flex shrink-0 gap-1",
             children: [
-              jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": `تعديل ${entry.term}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
-              jsx("button", { type: "button", onClick: onDelete, className: "rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-300", "aria-label": `حذف ${entry.term}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
+              jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", "aria-label": `تعديل ${entry.term}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
+              jsx("button", { type: "button", onClick: onDelete, className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-red-500/10 hover:text-red-300", "aria-label": `حذف ${entry.term}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
             ]
           })
         ]
       }),
-      entry.updatedAt && jsx("p", { className: "mt-3 text-xs text-gray-700", children: `آخر تحديث: ${formatDateTime(entry.updatedAt)}` })
+      entry.updatedAt && jsx("p", { className: "mt-3 text-xs text-[var(--va-text-muted)]", children: `آخر تحديث: ${formatDateTime(entry.updatedAt)}` })
     ]
   }, entry.id);
 }
@@ -368,23 +368,23 @@ export function VocabularyPage() {
       }),
       vocabulary.length > 0 && jsxs("section", { className: "grid gap-3 xl:grid-cols-3", children: [
         jsxs("div", { className: "rounded-2xl va-surface-muted border p-4 text-right", children: [
-          jsx("h2", { className: "text-sm font-bold text-white", children: "مكررات تحتاج دمج" }),
-          workspace.duplicates.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.duplicates.slice(0, 4).map((group) => jsxs("div", { className: "rounded-xl va-surface-subtle border p-3", children: [
-            jsxs("p", { className: "text-sm font-semibold text-white", children: [group.key, " · ", formatNumber(group.count, settings.numberSystem)] }),
-            jsx("p", { className: "mt-1 text-xs text-gray-500", children: group.entries.map((entry) => entry.term).join("، ") }),
+          jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "مكررات تحتاج دمج" }),
+          workspace.duplicates.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.duplicates.slice(0, 4).map((group) => jsxs("div", { className: "rounded-xl va-surface-muted border p-3", children: [
+            jsxs("p", { className: "text-sm font-semibold text-[var(--va-text)]", children: [group.key, " · ", formatNumber(group.count, settings.numberSystem)] }),
+            jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: group.entries.map((entry) => entry.term).join("، ") }),
             jsx("button", { type: "button", onClick: () => mergeDuplicateGroup(group), className: "mt-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-100 hover:bg-amber-500/15", children: "معاينة ودمج" })
-          ] }, group.key)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: "لا توجد مكررات واضحة." })
+          ] }, group.key)) }) : jsx("p", { className: "mt-3 text-sm text-[var(--va-text-muted)]", children: "لا توجد مكررات واضحة." })
         ] }),
         jsxs("div", { className: "rounded-2xl va-surface-muted border p-4 text-right", children: [
-          jsx("h2", { className: "text-sm font-bold text-white", children: "مصطلحات بلا استخدام" }),
-          workspace.unusedTerms.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-2", children: workspace.unusedTerms.slice(0, 10).map((entry) => jsx("button", { type: "button", onClick: () => { setQuery(entry.term); setCategory("all"); }, className: "rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-300 hover:bg-white/10", children: entry.term }, entry.id)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: "كل المصطلحات تظهر في مواد أو وسوم." })
+          jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "مصطلحات بلا استخدام" }),
+          workspace.unusedTerms.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-2", children: workspace.unusedTerms.slice(0, 10).map((entry) => jsx("button", { type: "button", onClick: () => { setQuery(entry.term); setCategory("all"); }, className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1 text-xs text-[var(--va-text-2)] hover:bg-[var(--va-elevated)]", children: entry.term }, entry.id)) }) : jsx("p", { className: "mt-3 text-sm text-[var(--va-text-muted)]", children: "كل المصطلحات تظهر في مواد أو وسوم." })
         ] }),
         jsxs("div", { className: "rounded-2xl va-surface-muted border p-4 text-right", children: [
-          jsx("h2", { className: "text-sm font-bold text-white", children: "وسوم بلا مصطلح" }),
-          workspace.tagsWithoutTerms.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.tagsWithoutTerms.slice(0, 6).map((tag) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl va-surface-subtle border px-3 py-2", children: [
-            jsx("span", { className: "min-w-0 truncate text-sm text-gray-200", children: tag.name }),
+          jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "وسوم بلا مصطلح" }),
+          workspace.tagsWithoutTerms.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.tagsWithoutTerms.slice(0, 6).map((tag) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl va-surface-muted border px-3 py-2", children: [
+            jsx("span", { className: "min-w-0 truncate text-sm text-[var(--va-text-2)]", children: tag.name }),
             jsx("button", { type: "button", onClick: () => createTermFromTag(tag), className: "shrink-0 rounded-lg border va-accent-border va-accent-bg-soft px-2 py-1 text-xs font-semibold va-accent-text-on-soft hover:bg-emerald-500/15", children: "أنشئ مصطلح" })
-          ] }, tag.id)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: "كل الوسوم لها مقابل قاموسي." })
+          ] }, tag.id)) }) : jsx("p", { className: "mt-3 text-sm text-[var(--va-text-muted)]", children: "كل الوسوم لها مقابل قاموسي." })
         ] })
       ] }),
       vocabulary.length > 0 && jsx(EntityFoldersPanel, {
@@ -405,7 +405,7 @@ export function VocabularyPage() {
               jsxs("label", {
                 className: "relative block",
                 children: [
-                  jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+                  jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
                   jsx("input", {
                     value: query,
                     onChange: (event) => setQuery(event.target.value),
@@ -417,7 +417,7 @@ export function VocabularyPage() {
               jsx("select", {
                 value: pageSize,
                 onChange: (event) => setPageSize(Number(event.target.value)),
-                className: "min-h-11 va-surface-deep rounded-xl border px-3 text-sm text-white outline-none",
+                className: "min-h-11 va-surface-muted rounded-xl border px-3 text-sm text-[var(--va-text)] outline-none",
                 children: [24, 48, 96].map((size) => jsx("option", { value: size, children: `${size} مصطلح` }, size))
               })
             ]
@@ -429,7 +429,7 @@ export function VocabularyPage() {
               ...VOCABULARY_CATEGORIES.map((item) => jsx(CategoryButton, { category: item, count: counts[item.id], active: category === item.id, onClick: () => setCategory(item.id) }, item.id))
             ]
           }),
-          jsxs("p", { className: "mt-3 flex items-center gap-2 text-xs text-gray-500", children: [jsx(Tag, { className: "h-3.5 w-3.5" }), `${formatNumber(filteredEntries.length, settings.numberSystem)} نتيجة من ${formatNumber(vocabulary.length, settings.numberSystem)} مصطلح`] })
+          jsxs("p", { className: "mt-3 flex items-center gap-2 text-xs text-[var(--va-text-muted)]", children: [jsx(Tag, { className: "h-3.5 w-3.5" }), `${formatNumber(filteredEntries.length, settings.numberSystem)} نتيجة من ${formatNumber(vocabulary.length, settings.numberSystem)} مصطلح`] })
         ]
       }),
       visibleEntries.length ? jsx("section", {
@@ -444,7 +444,7 @@ export function VocabularyPage() {
           onDelete: () => deleteEntry(entry)
         }, entry.id))
       }) : jsx("section", {
-        className: "rounded-2xl border border-dashed border-white/10 bg-gray-900/35",
+        className: "rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)]",
         children: jsx(EmptyState, {
           icon: jsx(BookOpen, { className: "h-16 w-16" }),
           title: vocabulary.length ? "لا توجد مصطلحات مطابقة" : "ابدأ قاموس المصطلحات",
@@ -462,9 +462,9 @@ export function VocabularyPage() {
         role: "navigation",
         "aria-label": "التنقل بين الصفحات",
         children: [
-          jsxs("button", { type: "button", disabled: currentPage <= 1, onClick: () => setPage(currentPage - 1), className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: [jsx(ChevronRight, { className: "h-4 w-4" }), "السابق"] }),
-          jsx("p", { className: "text-sm text-gray-500", children: `الصفحة ${formatNumber(currentPage)} من ${formatNumber(totalPages)}` }),
-          jsxs("button", { type: "button", disabled: currentPage >= totalPages, onClick: () => setPage(currentPage + 1), className: "inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: ["التالي", jsx(ChevronLeft, { className: "h-4 w-4" })] })
+          jsxs("button", { type: "button", disabled: currentPage <= 1, onClick: () => setPage(currentPage - 1), className: "inline-flex items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] disabled:cursor-not-allowed disabled:opacity-40", children: [jsx(ChevronRight, { className: "h-4 w-4" }), "السابق"] }),
+          jsx("p", { className: "text-sm text-[var(--va-text-muted)]", children: `الصفحة ${formatNumber(currentPage)} من ${formatNumber(totalPages)}` }),
+          jsxs("button", { type: "button", disabled: currentPage >= totalPages, onClick: () => setPage(currentPage + 1), className: "inline-flex items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] disabled:cursor-not-allowed disabled:opacity-40", children: ["التالي", jsx(ChevronLeft, { className: "h-4 w-4" })] })
         ]
       })
     ]

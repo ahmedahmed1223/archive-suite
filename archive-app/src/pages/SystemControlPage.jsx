@@ -33,10 +33,10 @@ import {
 const AUTO_REFRESH_MS = 10000;
 
 const OVERALL_CONFIG = {
-  [OVERALL_STATES.OK]:       { label: "النظام يعمل",      tone: "text-green-400", badge: "badge-success", Icon: CheckCircle2 },
-  [OVERALL_STATES.DEGRADED]: { label: "أداء متدنٍ",       tone: "text-amber-400", badge: "badge-warning", Icon: AlertTriangle },
-  [OVERALL_STATES.DOWN]:     { label: "خلل في النظام",    tone: "text-red-400",   badge: "badge-error",   Icon: XCircle },
-  [OVERALL_STATES.UNKNOWN]:  { label: "غير معروف",        tone: "text-gray-400",  badge: "badge-ghost",   Icon: Server }
+  [OVERALL_STATES.OK]:       { label: "النظام يعمل",      tone: "text-[var(--va-status-success)]", badge: "badge-success", Icon: CheckCircle2 },
+  [OVERALL_STATES.DEGRADED]: { label: "أداء متدنٍ",       tone: "text-[var(--va-status-warning)]", badge: "badge-warning", Icon: AlertTriangle },
+  [OVERALL_STATES.DOWN]:     { label: "خلل في النظام",    tone: "text-[var(--va-status-danger)]",  badge: "badge-error",   Icon: XCircle },
+  [OVERALL_STATES.UNKNOWN]:  { label: "غير معروف",        tone: "text-[var(--va-text-muted)]",     badge: "badge-ghost",   Icon: Server }
 };
 
 const METRIC_META = {

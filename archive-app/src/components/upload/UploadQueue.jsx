@@ -15,10 +15,10 @@ const STATUS_LABEL = {
 };
 
 const STATUS_TONE = {
-  done: "text-emerald-400",
-  duplicate: "text-amber-400",
-  error: "text-rose-400",
-  paused: "text-amber-400"
+  done: "text-emerald-500",
+  duplicate: "text-amber-500",
+  error: "text-rose-500",
+  paused: "text-amber-500"
 };
 
 function formatBytes(bytes) {
@@ -29,10 +29,10 @@ function formatBytes(bytes) {
 }
 
 function UploadRow({ item, onRemove, onRetry }) {
-  const tone = STATUS_TONE[item.status] || "text-gray-300";
+  const tone = STATUS_TONE[item.status] || "text-[var(--va-text-2)]";
   const canRetry = item.status === "error" || item.status === "paused";
   return jsxs("li", {
-    className: "va-surface-deep rounded-xl border border-white/10 p-3",
+    className: "rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3",
     children: [
       jsxs("div", {
         className: "flex items-center justify-between gap-3",
@@ -40,7 +40,7 @@ function UploadRow({ item, onRemove, onRetry }) {
           jsxs("div", {
             className: "min-w-0",
             children: [
-              jsx("p", { className: "truncate text-sm text-white", children: item.name }),
+              jsx("p", { className: "truncate text-sm text-[var(--va-text)]", children: item.name }),
               jsxs("p", {
                 className: `text-xs ${tone}`,
                 children: [STATUS_LABEL[item.status] || item.status, " · ", formatBytes(item.size)]
@@ -54,14 +54,14 @@ function UploadRow({ item, onRemove, onRetry }) {
                 jsx("button", {
                   type: "button",
                   onClick: () => onRetry(item.id),
-                  className: "rounded-lg border border-white/10 px-2 py-1 text-xs text-gray-200 hover:bg-white/10",
+                  className: "rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] px-2 py-1 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-elevated)]",
                   children: "إعادة"
                 }),
               jsx("button", {
                 type: "button",
                 onClick: () => onRemove(item.id),
                 "aria-label": "إزالة",
-                className: "rounded-lg border border-white/10 px-2 py-1 text-xs text-gray-400 hover:bg-white/10",
+                className: "rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] px-2 py-1 text-xs text-[var(--va-text-muted)] transition-colors hover:bg-[var(--va-elevated)]",
                 children: "✕"
               })
             ]

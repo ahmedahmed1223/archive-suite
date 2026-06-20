@@ -43,7 +43,7 @@ function BarList({ items, maxValue, emptyTitle, emptyHint }) {
         icon={<ChartColumn className="h-7 w-7" aria-hidden="true" />}
         title={emptyTitle}
         description={emptyHint}
-        className="bg-gray-950/30"
+        className="bg-[var(--va-surface)]"
       />
     );
   }
@@ -54,10 +54,10 @@ function BarList({ items, maxValue, emptyTitle, emptyHint }) {
         return (
           <div className="space-y-1.5" key={item.id || item.label}>
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="truncate text-gray-300">{item.label}</span>
-              <span className="font-semibold text-gray-500">{formatNumber(item.value)}</span>
+              <span className="truncate text-[var(--va-text-2)]">{item.label}</span>
+              <span className="font-semibold text-[var(--va-text-muted)]">{formatNumber(item.value)}</span>
             </div>
-            <div className="va-progress-rtl h-2 overflow-hidden rounded-full bg-gray-800">
+            <div className="va-progress-rtl h-2 overflow-hidden rounded-full bg-[var(--va-surface-2)]">
               <div
                 className="h-full rounded-full"
                 style={{
@@ -415,8 +415,8 @@ export function ReportsPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             {orgIndicators.map(([label, value]) => (
               <div className="card rounded-xl va-surface-muted border p-3" key={label}>
-                <p className="text-xs text-gray-500">{label}</p>
-                <p className="mt-1 text-xl font-bold text-white">
+                <p className="text-xs text-[var(--va-text-muted)]">{label}</p>
+                <p className="mt-1 text-xl font-bold text-[var(--va-text)]">
                   {formatNumber(value, settings.numberSystem)}
                 </p>
               </div>
@@ -436,12 +436,12 @@ export function ReportsPage() {
                   key={log.id || `${log.eventType}-${log.timestamp}`}
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-gray-200">{log.eventType || "نشاط"}</p>
+                    <p className="truncate font-semibold text-[var(--va-text)]">{log.eventType || "نشاط"}</p>
                     {log.details && (
-                      <p className="mt-1 truncate text-xs text-gray-500">{formatLogDetails(log.details)}</p>
+                      <p className="mt-1 truncate text-xs text-[var(--va-text-muted)]">{formatLogDetails(log.details)}</p>
                     )}
                   </div>
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-[var(--va-text-muted)]">
                     {log.timestamp ? formatDateTime(log.timestamp, settings.numberSystem) : ""}
                   </span>
                 </div>
@@ -452,7 +452,7 @@ export function ReportsPage() {
               icon={<History className="h-7 w-7" aria-hidden="true" />}
               title="لا توجد سجلات نشاط بعد"
               description="ستظهر آخر العمليات على الأرشيف هنا فور البدء بالاستخدام."
-              className="bg-gray-950/30"
+              className="bg-[var(--va-surface)]"
             />
           )}
         </FormSection>

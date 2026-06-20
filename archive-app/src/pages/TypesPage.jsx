@@ -60,21 +60,21 @@ function TypeBasicsForm({ draft, setDraft }) {
   return jsxs("div", {
     className: "grid gap-3 md:grid-cols-[5rem_1.5fr_1.2fr]",
     children: [
-      jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
+      jsxs("label", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
         jsx("span", { children: "الأيقونة" }),
         jsx("input", { value: draft.icon || "📁", onChange: (event) => setDraft({ ...draft, icon: event.target.value.slice(0, 4), iconSpec: { type: "emoji", value: event.target.value.slice(0, 4) || "📁" } }), className: "input input-bordered w-full text-center text-xl" })
       ] }),
-      jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
+      jsxs("label", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
         jsx("span", { children: "اسم النوع" }),
         jsx("input", { "data-autofocus": true, value: draft.name || "", onChange: (event) => updateName(event.target.value), className: "input input-bordered w-full", placeholder: "مثال: مقابلات" })
       ] }),
-      jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
+      jsxs("label", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
         jsx("span", { children: "اسم داخلي/إنجليزي" }),
         jsx("input", { value: draft.nameEn || "", onChange: (event) => setDraft({ ...draft, nameEn: event.target.value }), dir: "ltr", className: "input input-bordered w-full", placeholder: "interviews" })
       ] }),
       jsxs("div", { className: "space-y-1 md:col-span-3", children: [
-        jsx("span", { className: "text-sm text-gray-300", children: "اللون" }),
-        jsx("div", { className: "flex flex-wrap gap-2", role: "radiogroup", "aria-label": "اختر لون النوع", children: TYPE_COLORS.map((color) => jsx("button", { type: "button", role: "radio", "aria-checked": draft.color === color, onClick: () => setDraft({ ...draft, color }), className: `h-8 w-8 rounded-full border transition-transform ${draft.color === color ? "scale-110 border-white ring-2 ring-white/25" : "border-white/10 hover:scale-105"}`, style: { backgroundColor: color }, "aria-label": `اختيار لون ${color}` }, color)) })
+        jsx("span", { className: "text-sm text-[var(--va-text-2)]", children: "اللون" }),
+        jsx("div", { className: "flex flex-wrap gap-2", role: "radiogroup", "aria-label": "اختر لون النوع", children: TYPE_COLORS.map((color) => jsx("button", { type: "button", role: "radio", "aria-checked": draft.color === color, onClick: () => setDraft({ ...draft, color }), className: `h-8 w-8 rounded-full border transition-transform ${draft.color === color ? "scale-110 border-[var(--va-text)] ring-2 ring-[color-mix(in_oklab,var(--va-text)_25%,transparent)]" : "border-[var(--va-border-soft)] hover:scale-105"}`, style: { backgroundColor: color }, "aria-label": `اختيار لون ${color}` }, color)) })
       ] })
     ]
   });
@@ -102,11 +102,11 @@ function SubtypesEditor({ draft, setDraft }) {
   const subtypes = draft.subtypes || [];
 
   return jsxs("section", {
-    className: "rounded-2xl va-surface-subtle border p-4",
+    className: "rounded-2xl va-surface-muted border p-4",
     children: [
       jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
-        jsx("h3", { className: "text-sm font-bold text-white", children: "الفروع" }),
-        jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: `${subtypes.length} فرع` })
+        jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "الفروع" }),
+        jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-muted)]", children: `${subtypes.length} فرع` })
       ] }),
       jsxs("div", { className: "mt-3 flex gap-2", children: [
         jsx("input", {
@@ -125,10 +125,10 @@ function SubtypesEditor({ draft, setDraft }) {
           children: "إضافة"
         })
       ] }),
-      subtypes.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-2", children: subtypes.map((subtype) => jsxs("span", { className: "inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-gray-200", children: [
+      subtypes.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-2", children: subtypes.map((subtype) => jsxs("span", { className: "inline-flex items-center gap-2 rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1.5 text-sm text-[var(--va-text-2)]", children: [
         subtype.name,
-        jsx("button", { type: "button", onClick: () => removeSubtype(subtype.id), className: "rounded-full p-0.5 text-gray-400 hover:bg-red-500/15 hover:text-red-300", "aria-label": `حذف الفرع ${subtype.name}`, children: jsx(X, { className: "h-3.5 w-3.5" }) })
-      ] }, subtype.id)) }) : jsx("p", { className: "mt-3 text-xs text-gray-500", children: "لا توجد فروع بعد. أضف فرعاً لتقسيم العناصر داخل هذا النوع." })
+        jsx("button", { type: "button", onClick: () => removeSubtype(subtype.id), className: "rounded-full p-0.5 text-[var(--va-text-muted)] hover:bg-red-500/15 hover:text-red-300", "aria-label": `حذف الفرع ${subtype.name}`, children: jsx(X, { className: "h-3.5 w-3.5" }) })
+      ] }, subtype.id)) }) : jsx("p", { className: "mt-3 text-xs text-[var(--va-text-muted)]", children: "لا توجد فروع بعد. أضف فرعاً لتقسيم العناصر داخل هذا النوع." })
     ]
   });
 }
@@ -177,12 +177,12 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
   const showOptionsInput = FIELD_OPTION_TYPES.includes(fieldDraft.type);
 
   return jsxs("section", {
-    className: "rounded-2xl va-surface-subtle border p-4",
+    className: "rounded-2xl va-surface-muted border p-4",
     children: [
       jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
         jsxs("div", { className: "flex items-center gap-2", children: [
-          jsx("h3", { className: "text-sm font-bold text-white", children: "الحقول المخصصة" }),
-          fields.length ? jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-medium text-gray-300", children: `${fields.length}` }) : null
+          jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "الحقول المخصصة" }),
+          fields.length ? jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-xs font-medium text-[var(--va-text-2)]", children: `${fields.length}` }) : null
         ] }),
         jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-xs va-accent-text-on-soft", children: "يدعم ملف محلي" })
       ] }),
@@ -202,7 +202,7 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
           children: FIELD_TYPE_OPTIONS.map((type) => jsx("option", { value: type.id, children: type.label }, type.id))
         }),
         jsxs("label", {
-          className: `inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors ${fieldDraft.required ? "border-amber-500/35 bg-amber-500/15 text-amber-100" : "border-white/10 bg-gray-950/35 text-gray-300 hover:bg-white/5"}`,
+          className: `inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors ${fieldDraft.required ? "border-amber-500/35 bg-amber-500/15 text-amber-100" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
           children: [
             jsx("input", { type: "checkbox", checked: fieldDraft.required, onChange: (event) => setFieldDraft({ ...fieldDraft, required: event.target.checked }) }),
             "مطلوب"
@@ -218,12 +218,12 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
       ] }),
       jsxs("div", { className: "mt-2 grid gap-2 sm:grid-cols-2", children: [
         jsxs("label", { className: "rounded-xl va-surface-muted border px-3 py-2", children: [
-          jsx("span", { className: "block text-[11px] font-medium text-gray-400", children: "المجموعة / التبويب (اختياري)" }),
-          jsx("input", { value: fieldDraft.group, onChange: (event) => setFieldDraft({ ...fieldDraft, group: event.target.value }), className: "mt-1 min-h-9 w-full bg-transparent text-sm text-white outline-none", placeholder: "مثال: معلومات أساسية", "aria-label": "مجموعة الحقل" })
+          jsx("span", { className: "block text-[11px] font-medium text-[var(--va-text-muted)]", children: "المجموعة / التبويب (اختياري)" }),
+          jsx("input", { value: fieldDraft.group, onChange: (event) => setFieldDraft({ ...fieldDraft, group: event.target.value }), className: "mt-1 min-h-9 w-full bg-transparent text-sm text-[var(--va-text)] outline-none", placeholder: "مثال: معلومات أساسية", "aria-label": "مجموعة الحقل" })
         ] }),
         showOptionsInput ? jsxs("label", { className: "rounded-xl va-surface-muted border px-3 py-2", children: [
-          jsx("span", { className: "block text-[11px] font-medium text-gray-400", children: "خيارات الحقل (مفصولة بفاصلة)" }),
-          jsx("input", { value: fieldDraft.options, onChange: (event) => setFieldDraft({ ...fieldDraft, options: event.target.value }), className: "mt-1 min-h-9 w-full bg-transparent text-sm text-white outline-none", placeholder: "خيار 1، خيار 2، خيار 3", "aria-label": "قيم الخيارات" })
+          jsx("span", { className: "block text-[11px] font-medium text-[var(--va-text-muted)]", children: "خيارات الحقل (مفصولة بفاصلة)" }),
+          jsx("input", { value: fieldDraft.options, onChange: (event) => setFieldDraft({ ...fieldDraft, options: event.target.value }), className: "mt-1 min-h-9 w-full bg-transparent text-sm text-[var(--va-text)] outline-none", placeholder: "خيار 1، خيار 2، خيار 3", "aria-label": "قيم الخيارات" })
         ] }) : null
       ] }),
       fields.length ? jsx("div", { className: "mt-3 space-y-2", children: fields.map((field, index) => {
@@ -234,23 +234,23 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
         children: [
           jsxs("div", { className: "grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]", children: [
             jsxs("div", { className: "min-w-0", children: [
-              jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [
+              jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-[var(--va-text)]", children: [
                 jsx("span", { className: "truncate", children: field.label }),
-                field.group ? jsx("span", { className: "shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-normal text-gray-400", children: field.group }) : null
+                field.group ? jsx("span", { className: "shrink-0 rounded border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--va-text-muted)]", children: field.group }) : null
               ] }),
-              jsx("p", { className: "truncate text-xs text-gray-500 font-mono", dir: "ltr", children: field.storageKey || field.name })
+              jsx("p", { className: "truncate text-xs text-[var(--va-text-muted)] font-mono", dir: "ltr", children: field.storageKey || field.name })
             ] }),
             jsxs("div", { className: "flex flex-wrap items-center gap-1", children: [
-              jsx("span", { className: "shrink-0 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300", children: FIELD_TYPE_OPTIONS.find((type) => type.id === field.type)?.label || field.type }),
+              jsx("span", { className: "shrink-0 rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2.5 py-1 text-xs text-[var(--va-text-2)]", children: FIELD_TYPE_OPTIONS.find((type) => type.id === field.type)?.label || field.type }),
               affectedCount > 0 && jsx("span", { className: "shrink-0 rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-100", children: `مستخدم في ${affectedCount}` })
             ] }),
             jsxs("div", { className: "flex shrink-0 items-center gap-1", children: [
-              jsx("button", { type: "button", onClick: () => moveField(index, -1), disabled: index === 0, "aria-label": "تحريك لأعلى", className: "rounded-lg border border-white/10 bg-white/5 p-1.5 text-gray-300 transition-colors hover:bg-white/10 disabled:opacity-30", children: jsx(ChevronUp, { className: "h-3.5 w-3.5" }) }),
-              jsx("button", { type: "button", onClick: () => moveField(index, 1), disabled: index === fields.length - 1, "aria-label": "تحريك لأسفل", className: "rounded-lg border border-white/10 bg-white/5 p-1.5 text-gray-300 transition-colors hover:bg-white/10 disabled:opacity-30", children: jsx(ChevronDown, { className: "h-3.5 w-3.5" }) })
+              jsx("button", { type: "button", onClick: () => moveField(index, -1), disabled: index === 0, "aria-label": "تحريك لأعلى", className: "rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-1.5 text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-elevated)] disabled:opacity-30", children: jsx(ChevronUp, { className: "h-3.5 w-3.5" }) }),
+              jsx("button", { type: "button", onClick: () => moveField(index, 1), disabled: index === fields.length - 1, "aria-label": "تحريك لأسفل", className: "rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-1.5 text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-elevated)] disabled:opacity-30", children: jsx(ChevronDown, { className: "h-3.5 w-3.5" }) })
             ] }),
             jsxs("div", { className: "flex shrink-0 items-center gap-1", children: [
-              jsx("button", { type: "button", onClick: () => toggleField(field.id, "required"), "aria-pressed": !!field.required, className: `rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${field.required ? "border-amber-500/35 bg-amber-500/15 text-amber-100" : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10"}`, children: field.required ? "مطلوب" : "اختياري" }),
-              jsx("button", { type: "button", onClick: () => setEditingFieldId(editingFieldId === field.id ? null : field.id), "aria-pressed": editingFieldId === field.id, "aria-label": "تحرير الحقل", className: `rounded-lg border p-1.5 transition-colors ${editingFieldId === field.id ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"}`, children: jsx(PenLine, { className: "h-3.5 w-3.5" }) }),
+              jsx("button", { type: "button", onClick: () => toggleField(field.id, "required"), "aria-pressed": !!field.required, className: `rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${field.required ? "border-amber-500/35 bg-amber-500/15 text-amber-100" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-muted)] hover:bg-[var(--va-elevated)]"}`, children: field.required ? "مطلوب" : "اختياري" }),
+              jsx("button", { type: "button", onClick: () => setEditingFieldId(editingFieldId === field.id ? null : field.id), "aria-pressed": editingFieldId === field.id, "aria-label": "تحرير الحقل", className: `rounded-lg border p-1.5 transition-colors ${editingFieldId === field.id ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)] hover:bg-[var(--va-elevated)]"}`, children: jsx(PenLine, { className: "h-3.5 w-3.5" }) }),
               jsx("button", { type: "button", onClick: () => requestRemoveField(field), "aria-label": `حذف الحقل ${field.label}`, className: "rounded-lg border border-transparent p-1.5 text-red-300 transition-colors hover:border-red-500/25 hover:bg-red-500/10", children: jsx(Trash2, { className: "h-3.5 w-3.5" }) })
             ] })
           ] }),
@@ -263,26 +263,26 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
                 " مادة. حذفه من النموذج سيخفي هذه القيم من واجهات التحرير، ولن يحذف المواد نفسها."
               ] })
             ] }),
-            impact?.sampleItems?.length ? jsx("div", { className: "mt-2 flex flex-wrap gap-1.5", children: impact.sampleItems.map((item) => jsx("span", { className: "rounded-full border border-amber-500/20 bg-gray-950/25 px-2 py-0.5 text-[11px]", children: item.title }, item.id)) }) : null,
+            impact?.sampleItems?.length ? jsx("div", { className: "mt-2 flex flex-wrap gap-1.5", children: impact.sampleItems.map((item) => jsx("span", { className: "rounded-full border border-amber-500/20 bg-[var(--va-surface-2)] px-2 py-0.5 text-[11px]", children: item.title }, item.id)) }) : null,
             jsxs("div", { className: "mt-3 flex flex-wrap gap-2", children: [
-              jsx("button", { type: "button", onClick: () => setPendingDeleteFieldId(null), className: "rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: "إلغاء" }),
+              jsx("button", { type: "button", onClick: () => setPendingDeleteFieldId(null), className: "rounded-lg border border-[var(--va-border-soft)] px-3 py-1.5 text-xs text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "إلغاء" }),
               jsx("button", { type: "button", onClick: () => removeField(field.id), className: "rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-100 hover:bg-red-500/20", children: "إخفاء الحقل من النوع" })
             ] })
           ] }) : null,
-          editingFieldId === field.id ? jsxs("div", { className: "mt-3 grid gap-2 border-t border-white/10 pt-3 sm:grid-cols-2", children: [
-            jsxs("label", { className: "block text-xs text-gray-400", children: [
+          editingFieldId === field.id ? jsxs("div", { className: "mt-3 grid gap-2 border-t border-[var(--va-border-soft)] pt-3 sm:grid-cols-2", children: [
+            jsxs("label", { className: "block text-xs text-[var(--va-text-muted)]", children: [
               jsx("span", { className: "block", children: "المجموعة / التبويب" }),
               jsx("input", { value: field.group || "", onChange: (event) => updateField(field.id, { group: event.target.value }), className: "input input-bordered w-full mt-1", placeholder: "بدون مجموعة" })
             ] }),
-            FIELD_OPTION_TYPES.includes(field.type) ? jsxs("label", { className: "block text-xs text-gray-400", children: [
+            FIELD_OPTION_TYPES.includes(field.type) ? jsxs("label", { className: "block text-xs text-[var(--va-text-muted)]", children: [
               jsx("span", { className: "block", children: "الخيارات (مفصولة بفاصلة)" }),
               jsx("input", { value: (field.options || []).join("، "), onChange: (event) => updateField(field.id, { options: parseFieldOptions(event.target.value) }), className: "input input-bordered w-full mt-1", placeholder: "خيار 1، خيار 2" })
             ] }) : null,
-            jsxs("div", { className: "block text-xs text-gray-400", children: [
+            jsxs("div", { className: "block text-xs text-[var(--va-text-muted)]", children: [
               jsx("span", { className: "block", children: "إلزامية الحفظ" }),
-              jsx("button", { type: "button", onClick: () => updateField(field.id, { requiredToSave: !field.requiredToSave }), "aria-pressed": !!field.requiredToSave, className: `mt-1 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border px-3 text-sm transition-colors ${field.requiredToSave ? "border-amber-500/35 bg-amber-500/15 text-amber-100" : "border-white/10 bg-gray-950/35 text-gray-300 hover:bg-white/5"}`, children: field.requiredToSave ? "يمنع الحفظ إن كان فارغاً" : "غير إلزامي للحفظ" })
+              jsx("button", { type: "button", onClick: () => updateField(field.id, { requiredToSave: !field.requiredToSave }), "aria-pressed": !!field.requiredToSave, className: `mt-1 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border px-3 text-sm transition-colors ${field.requiredToSave ? "border-amber-500/35 bg-amber-500/15 text-amber-100" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`, children: field.requiredToSave ? "يمنع الحفظ إن كان فارغاً" : "غير إلزامي للحفظ" })
             ] }),
-            jsxs("div", { className: "block text-xs text-gray-400 sm:col-span-2", children: [
+            jsxs("div", { className: "block text-xs text-[var(--va-text-muted)] sm:col-span-2", children: [
               jsx("span", { className: "block", children: "إظهار شرطي — أظهر هذا الحقل فقط عندما يساوي حقلٌ آخر قيمةً معيّنة" }),
               jsxs("div", { className: "mt-1 grid gap-2 sm:grid-cols-2", children: [
                 jsxs("select", { value: field.showWhen?.fieldKey || "", onChange: (event) => updateField(field.id, { showWhen: event.target.value ? { fieldKey: event.target.value, equals: field.showWhen?.equals ?? "" } : null }), className: "select select-bordered w-full", children: [
@@ -295,7 +295,7 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }) {
           ] }) : null
         ]
       }, field.id);
-      }) }) : jsx("p", { className: "mt-3 text-xs text-gray-500", children: "لا توجد حقول مخصصة بعد." })
+      }) }) : jsx("p", { className: "mt-3 text-xs text-[var(--va-text-muted)]", children: "لا توجد حقول مخصصة بعد." })
     ]
   });
 }
@@ -362,18 +362,18 @@ function createTypeFromTemplate(template) {
 
 function TypeFormPreview({ draft }) {
   return jsxs("section", {
-    className: "rounded-2xl va-surface-subtle border p-4",
+    className: "rounded-2xl va-surface-muted border p-4",
     children: [
       jsxs("div", { className: "flex items-start gap-3", children: [
         jsx("span", { className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl", style: { backgroundColor: `${draft.color || "#6366f1"}22`, color: draft.color || "#6366f1" }, children: draft.icon || "📁" }),
         jsxs("div", { className: "min-w-0", children: [
-          jsx("h3", { className: "text-base font-bold text-white", children: draft.name || "نوع جديد" }),
-          jsx("p", { className: "mt-1 text-xs text-gray-500", children: `${formatNumber(draft.subtypes?.length || 0)} فروع · ${formatNumber(draft.fields?.length || 0)} حقول` })
+          jsx("h3", { className: "text-base font-bold text-[var(--va-text)]", children: draft.name || "نوع جديد" }),
+          jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: `${formatNumber(draft.subtypes?.length || 0)} فروع · ${formatNumber(draft.fields?.length || 0)} حقول` })
         ] })
       ] }),
-      jsx("div", { className: "mt-4 grid gap-2 sm:grid-cols-2", children: (draft.fields || []).slice(0, 6).map((field) => jsxs("label", { className: "rounded-xl va-surface-muted border p-3 text-xs text-gray-400", children: [
+      jsx("div", { className: "mt-4 grid gap-2 sm:grid-cols-2", children: (draft.fields || []).slice(0, 6).map((field) => jsxs("label", { className: "rounded-xl va-surface-muted border p-3 text-xs text-[var(--va-text-muted)]", children: [
         jsx("span", { className: "block", children: field.label }),
-        jsx("span", { className: "mt-2 block min-h-9 rounded-lg border border-white/10 bg-gray-950/35 px-3 py-2 text-gray-600", children: FIELD_TYPE_OPTIONS.find((option) => option.id === field.type)?.label || field.type })
+        jsx("span", { className: "mt-2 block min-h-9 rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-2 text-[var(--va-text-muted)]", children: FIELD_TYPE_OPTIONS.find((option) => option.id === field.type)?.label || field.type })
       ] }, field.id)) }),
       !(draft.fields || []).length && jsx("p", { className: "mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100", children: "لا توجد حقول بعد. سيظهر نموذج إضافة المادة بالحقول الأساسية فقط." })
     ]
@@ -405,20 +405,20 @@ function TypeEditor({ type, fieldUsage = {}, contentTypes = [], videoItems = [],
     dir: "rtl",
     children: [
       jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-        jsx("h2", { className: "text-base font-bold text-white", children: type ? "تعديل نوع محتوى" : "نوع محتوى جديد" }),
+        jsx("h2", { className: "text-base font-bold text-[var(--va-text)]", children: type ? "تعديل نوع محتوى" : "نوع محتوى جديد" }),
         jsxs("div", { className: "flex flex-wrap gap-2", children: [
-          jsx("button", { type: "button", onClick: onCancel, disabled: saving, className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40", children: "إلغاء" }),
-          activeStepIndex > 0 && jsx("button", { type: "button", onClick: goBack, className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5", children: "السابق" }),
+          jsx("button", { type: "button", onClick: onCancel, disabled: saving, className: "rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] disabled:cursor-not-allowed disabled:opacity-40", children: "إلغاء" }),
+          activeStepIndex > 0 && jsx("button", { type: "button", onClick: goBack, className: "rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "السابق" }),
           activeStep !== "review" ? jsx("button", { type: "button", onClick: goNext, disabled: activeStep === "basics" && !draft.name.trim(), className: "btn btn-primary", children: "التالي" }) : jsx("button", { type: "button", onClick: save, disabled: !draft.name.trim() || !validation.canSave || saving, className: "btn btn-primary", children: saving ? "يحفظ..." : type ? "حفظ النوع" : "إنشاء النوع" })
         ] })
       ] }),
       jsx(WorkflowStepper, { steps: TYPE_EDITOR_STEPS, activeStepId: activeStep, completedStepIds: TYPE_EDITOR_STEPS.slice(0, activeStepIndex).map((step) => step.id), compact: true, className: "sm:grid-cols-2 xl:grid-cols-4" }),
       jsx(TypeValidationPanel, { validation }),
       activeStep === "basics" && jsxs("div", { className: "space-y-4", children: [
-        !type && jsx("div", { className: "grid gap-2 sm:grid-cols-2 xl:grid-cols-3", children: TYPE_CREATION_TEMPLATES.map((template) => jsxs("button", { type: "button", onClick: () => applyTemplate(template), className: "rounded-xl va-surface-subtle border p-3 text-right hover:border-emerald-500/25", children: [
+        !type && jsx("div", { className: "grid gap-2 sm:grid-cols-2 xl:grid-cols-3", children: TYPE_CREATION_TEMPLATES.map((template) => jsxs("button", { type: "button", onClick: () => applyTemplate(template), className: "rounded-xl va-surface-muted border p-3 text-right hover:border-emerald-500/25", children: [
           jsx("span", { className: "text-xl", children: template.icon }),
-          jsx("span", { className: "mt-2 block text-sm font-semibold text-white", children: template.name }),
-          jsx("span", { className: "mt-1 block text-xs text-gray-500", children: `${template.subtypes.length} فروع · ${template.fields.length} حقول` })
+          jsx("span", { className: "mt-2 block text-sm font-semibold text-[var(--va-text)]", children: template.name }),
+          jsx("span", { className: "mt-1 block text-xs text-[var(--va-text-muted)]", children: `${template.subtypes.length} فروع · ${template.fields.length} حقول` })
         ] }, template.id)) }),
         jsx(TypeBasicsForm, { draft, setDraft })
       ] }),
@@ -429,9 +429,9 @@ function TypeEditor({ type, fieldUsage = {}, contentTypes = [], videoItems = [],
       ] }),
       activeStep === "review" && jsxs("div", { className: "grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]", children: [
         jsx(TypeFormPreview, { draft }),
-        jsxs("div", { className: "rounded-2xl va-surface-subtle border p-4", children: [
-          jsx("h3", { className: "text-sm font-bold text-white", children: "ملخص قبل الحفظ" }),
-          jsx("ul", { className: "va-rtl-list mt-3 space-y-2 text-sm text-gray-400", children: [
+        jsxs("div", { className: "rounded-2xl va-surface-muted border p-4", children: [
+          jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "ملخص قبل الحفظ" }),
+          jsx("ul", { className: "va-rtl-list mt-3 space-y-2 text-sm text-[var(--va-text-muted)]", children: [
             `الاسم: ${draft.name || "بدون اسم"}`,
             `الفروع: ${draft.subtypes?.length || 0}`,
             `الحقول: ${draft.fields?.length || 0}`,
@@ -460,28 +460,28 @@ function TypeImpactSheet({ type, impact, settings = {}, onCancel, onArchive }) {
     "aria-labelledby": "type-impact-title",
     dir: "rtl",
     children: jsxs("section", {
-      className: "max-h-[calc(100vh-2rem)] w-full overflow-auto rounded-2xl border border-amber-500/25 bg-gray-950 p-5 text-right shadow-2xl sm:max-w-2xl",
+      className: "max-h-[calc(100vh-2rem)] w-full overflow-auto rounded-2xl border border-amber-500/25 bg-[var(--va-elevated)] p-5 text-right shadow-2xl sm:max-w-2xl",
       children: [
         jsxs("div", { className: "flex items-start justify-between gap-3", children: [
           jsxs("div", { className: "flex min-w-0 items-start gap-3", children: [
             jsx("span", { className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/10 text-amber-100", children: jsx(AlertTriangle, { className: "h-5 w-5" }) }),
             jsxs("div", { className: "min-w-0", children: [
-              jsx("h2", { id: "type-impact-title", className: "text-base font-bold text-white", children: `تحليل أثر أرشفة ${type?.name || "نوع المحتوى"}` }),
-              jsx("p", { className: "mt-1 text-sm leading-6 text-gray-400", children: "الأرشفة لا تحذف المواد، لكنها تمنع استخدام النوع في إنشاء مواد جديدة وقد تخفي حقوله من مسارات التحرير اليومية." })
+              jsx("h2", { id: "type-impact-title", className: "text-base font-bold text-[var(--va-text)]", children: `تحليل أثر أرشفة ${type?.name || "نوع المحتوى"}` }),
+              jsx("p", { className: "mt-1 text-sm leading-6 text-[var(--va-text-muted)]", children: "الأرشفة لا تحذف المواد، لكنها تمنع استخدام النوع في إنشاء مواد جديدة وقد تخفي حقوله من مسارات التحرير اليومية." })
             ] })
           ] }),
-          jsx("button", { type: "button", onClick: onCancel, className: "rounded-lg p-2 text-gray-400 hover:bg-white/5 hover:text-white", "aria-label": "إغلاق", children: jsx(X, { className: "h-4 w-4" }) })
+          jsx("button", { type: "button", onClick: onCancel, className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", "aria-label": "إغلاق", children: jsx(X, { className: "h-4 w-4" }) })
         ] }),
         jsx("div", { className: "mt-5 grid gap-3 sm:grid-cols-3", children: [
           ["مواد مرتبطة", impact?.affectedCount || 0],
           ["قيم حقول محفوظة", impact?.filledFieldCount || 0],
           ["حقول متأثرة", fieldImpacts.length]
         ].map(([label, value]) => jsxs("div", { className: "rounded-xl va-surface-muted border p-3", children: [
-          jsx("p", { className: "text-xs text-gray-500", children: label }),
-          jsx("p", { className: "mt-2 text-xl font-bold text-white", children: formatNumber(value, numberSystem) })
+          jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: label }),
+          jsx("p", { className: "mt-2 text-xl font-bold text-[var(--va-text)]", children: formatNumber(value, numberSystem) })
         ] }, label)) }),
         fieldImpacts.length ? jsxs("section", { className: "mt-4 rounded-xl va-surface-muted border p-3", children: [
-          jsx("h3", { className: "text-sm font-bold text-white", children: "الحقول التي تحتوي بيانات" }),
+          jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "الحقول التي تحتوي بيانات" }),
           jsx("div", { className: "mt-2 flex flex-wrap gap-2", children: fieldImpacts.map((field) => jsxs("span", { className: "rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs text-amber-100", children: [
             field.label,
             " · ",
@@ -489,19 +489,19 @@ function TypeImpactSheet({ type, impact, settings = {}, onCancel, onArchive }) {
           ] }, field.fieldId)) })
         ] }) : null,
         subtypeRows.length ? jsxs("section", { className: "mt-4 rounded-xl va-surface-muted border p-3", children: [
-          jsx("h3", { className: "text-sm font-bold text-white", children: "الفروع المستخدمة" }),
-          jsx("div", { className: "mt-2 flex flex-wrap gap-2", children: subtypeRows.map((subtype) => jsxs("span", { className: "rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-200", children: [
+          jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "الفروع المستخدمة" }),
+          jsx("div", { className: "mt-2 flex flex-wrap gap-2", children: subtypeRows.map((subtype) => jsxs("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1 text-xs text-[var(--va-text-2)]", children: [
             subtype.name,
             " · ",
             formatNumber(subtype.count, numberSystem)
           ] }, subtype.id)) })
         ] }) : null,
         impact?.sampleItems?.length ? jsxs("section", { className: "mt-4 rounded-xl va-surface-muted border p-3", children: [
-          jsx("h3", { className: "text-sm font-bold text-white", children: "عينات مواد مرتبطة" }),
-          jsx("div", { className: "mt-2 grid gap-2 sm:grid-cols-2", children: impact.sampleItems.map((item) => jsx("div", { className: "truncate rounded-lg border border-white/10 bg-gray-950/30 px-3 py-2 text-sm text-gray-300", children: item.title }, item.id)) })
+          jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "عينات مواد مرتبطة" }),
+          jsx("div", { className: "mt-2 grid gap-2 sm:grid-cols-2", children: impact.sampleItems.map((item) => jsx("div", { className: "truncate rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-2 text-sm text-[var(--va-text-2)]", children: item.title }, item.id)) })
         ] }) : null,
         jsxs("div", { className: "mt-5 flex flex-wrap justify-end gap-2", children: [
-          jsx("button", { type: "button", onClick: onCancel, className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-200 hover:bg-white/5", children: "إلغاء" }),
+          jsx("button", { type: "button", onClick: onCancel, className: "rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "إلغاء" }),
           jsx("button", { type: "button", onClick: onArchive, className: "rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-50 hover:bg-red-500/20", children: "أرشفة مع إبقاء المواد" })
         ] })
       ]
@@ -516,7 +516,7 @@ function TypeCard({ type, count, active, index, onOpen, onEdit, onArchive }) {
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.18, delay: Math.min(index, 10) * 0.025 },
     onClick: onOpen,
-    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${active ? "va-accent-border va-accent-bg-soft" : "border-white/10 bg-gray-900/45 hover:border-white/20"}`,
+    className: `va-entity-card cursor-pointer rounded-2xl border p-4 text-right transition-all ${active ? "va-accent-border va-accent-bg-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface)] hover:border-[var(--va-border-strong)]"}`,
     style: { boxShadow: `inset -3px 0 0 0 ${accentColor}${active ? "88" : "44"}` },
     children: [
       jsxs("div", { className: "flex items-start justify-between gap-3", children: [
@@ -527,14 +527,14 @@ function TypeCard({ type, count, active, index, onOpen, onEdit, onArchive }) {
             children: type.icon || "📁"
           }),
           jsxs("div", { className: "min-w-0", children: [
-            jsx("h3", { className: "truncate text-base font-bold text-white", children: type.name || "نوع بدون اسم" }),
-            jsx("p", { className: "mt-1 text-xs text-gray-600", children: `${formatNumber(count)} عنصر، ${formatNumber(type.subtypes?.length || 0)} فرع، ${formatNumber(type.fields?.length || 0)} حقل` }),
+            jsx("h3", { className: "truncate text-base font-bold text-[var(--va-text)]", children: type.name || "نوع بدون اسم" }),
+            jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: `${formatNumber(count)} عنصر، ${formatNumber(type.subtypes?.length || 0)} فرع، ${formatNumber(type.fields?.length || 0)} حقل` }),
             type.status === "archived" && jsx("span", { className: "mt-2 inline-block rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200", children: "مؤرشف" })
           ] })
         ] }),
         jsxs("div", { className: "flex shrink-0 gap-1", onClick: (event) => event.stopPropagation(), children: [
-          jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": `تعديل ${type.name}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
-          jsx("button", { type: "button", onClick: onArchive, className: "rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-300", "aria-label": `أرشفة ${type.name}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
+          jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", "aria-label": `تعديل ${type.name}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
+          jsx("button", { type: "button", onClick: onArchive, className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-red-500/10 hover:text-red-300", "aria-label": `أرشفة ${type.name}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
         ] })
       ] })
     ]
@@ -551,7 +551,7 @@ function TypeDetailScreen({ type, count = 0, settings = {}, onBack, onEdit, onAr
     className: "va-preview-panel space-y-5 rounded-2xl va-surface-muted border p-4 text-right",
     dir: "rtl",
     children: [
-      jsxs("header", { className: "grid gap-4 border-b border-white/5 pb-4 lg:grid-cols-[auto_1fr_auto]", children: [
+      jsxs("header", { className: "grid gap-4 border-b border-[var(--va-border-soft)] pb-4 lg:grid-cols-[auto_1fr_auto]", children: [
         jsxs("button", {
           type: "button",
           onClick: onBack,
@@ -566,8 +566,8 @@ function TypeDetailScreen({ type, count = 0, settings = {}, onBack, onEdit, onAr
             children: type?.icon || "📁"
           }),
           jsxs("div", { className: "min-w-0", children: [
-            jsx("h2", { className: "text-xl font-bold text-white", children: type?.name || "نوع محتوى" }),
-            jsx("p", { className: "mt-1 truncate text-xs text-gray-500", dir: "ltr", children: type?.nameEn || type?.id || "" }),
+            jsx("h2", { className: "text-xl font-bold text-[var(--va-text)]", children: type?.name || "نوع محتوى" }),
+            jsx("p", { className: "mt-1 truncate text-xs text-[var(--va-text-muted)]", dir: "ltr", children: type?.nameEn || type?.id || "" }),
             type?.status === "archived" && jsx("span", { className: "mt-2 inline-block rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200", children: "مؤرشف" })
           ] })
         ] }),
@@ -580,39 +580,39 @@ function TypeDetailScreen({ type, count = 0, settings = {}, onBack, onEdit, onAr
         ["مواد تستخدمه", count],
         ["الفروع", subtypes.length],
         ["الحقول المخصصة", fields.length]
-      ].map(([label, value]) => jsxs("div", { className: "rounded-2xl border border-white/10 bg-white/5 p-4", children: [
-        jsx("p", { className: "text-xs text-gray-500", children: label }),
-        jsx("p", { className: "mt-2 text-2xl font-bold text-white", children: formatNumber(value, numberSystem) })
+      ].map(([label, value]) => jsxs("div", { className: "rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-4", children: [
+        jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: label }),
+        jsx("p", { className: "mt-2 text-2xl font-bold text-[var(--va-text)]", children: formatNumber(value, numberSystem) })
       ] }, label)) }),
-      jsxs("section", { className: "rounded-2xl va-surface-subtle border p-4", children: [
+      jsxs("section", { className: "rounded-2xl va-surface-muted border p-4", children: [
         jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-          jsx("h3", { className: "text-sm font-bold text-white", children: "الفروع" }),
-          jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: formatNumber(subtypes.length, numberSystem) })
+          jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "الفروع" }),
+          jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-muted)]", children: formatNumber(subtypes.length, numberSystem) })
         ] }),
-        subtypes.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-2", children: subtypes.map((subtype) => jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-gray-300", children: subtype.name }, subtype.id)) }) : jsx("p", { className: "mt-3 rounded-xl border border-dashed border-white/10 p-4 text-center text-sm text-gray-500", children: "لا توجد فروع لهذا النوع." })
+        subtypes.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-2", children: subtypes.map((subtype) => jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1.5 text-sm text-[var(--va-text-2)]", children: subtype.name }, subtype.id)) }) : jsx("p", { className: "mt-3 rounded-xl border border-dashed border-[var(--va-border-soft)] p-4 text-center text-sm text-[var(--va-text-muted)]", children: "لا توجد فروع لهذا النوع." })
       ] }),
-      jsxs("section", { className: "rounded-2xl va-surface-subtle border p-4", children: [
+      jsxs("section", { className: "rounded-2xl va-surface-muted border p-4", children: [
         jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-          jsx("h3", { className: "text-sm font-bold text-white", children: "الحقول المخصصة" }),
-          jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: formatNumber(fields.length, numberSystem) })
+          jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "الحقول المخصصة" }),
+          jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-muted)]", children: formatNumber(fields.length, numberSystem) })
         ] }),
         fields.length ? jsx("div", { className: "mt-3 grid gap-3 md:grid-cols-2", children: fields.map((field) => {
           const fieldType = FIELD_TYPE_OPTIONS.find((typeOption) => typeOption.id === field.type)?.label || field.type;
           return jsxs("article", { className: "rounded-xl va-surface-muted border p-3", children: [
             jsxs("div", { className: "flex flex-wrap items-start justify-between gap-2", children: [
               jsxs("div", { className: "min-w-0", children: [
-                jsxs("p", { className: "flex flex-wrap items-center gap-2 text-sm font-semibold text-white", children: [
+                jsxs("p", { className: "flex flex-wrap items-center gap-2 text-sm font-semibold text-[var(--va-text)]", children: [
                   field.label,
                   field.required || field.requiredToSave ? jsx("span", { className: "rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-100", children: "مطلوب" }) : null
                 ] }),
-                jsx("p", { className: "mt-1 truncate font-mono text-xs text-gray-500", dir: "ltr", children: field.storageKey || field.name })
+                jsx("p", { className: "mt-1 truncate font-mono text-xs text-[var(--va-text-muted)]", dir: "ltr", children: field.storageKey || field.name })
               ] }),
-              jsx("span", { className: "shrink-0 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300", children: fieldType })
+              jsx("span", { className: "shrink-0 rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2.5 py-1 text-xs text-[var(--va-text-2)]", children: fieldType })
             ] }),
-            field.group && jsx("p", { className: "mt-2 text-xs text-gray-500", children: `المجموعة: ${field.group}` }),
-            (field.options || []).length ? jsx("div", { className: "mt-2 flex flex-wrap gap-1.5", children: field.options.slice(0, 8).map((option) => jsx("span", { className: "rounded-full border border-white/10 bg-gray-950/35 px-2 py-0.5 text-[11px] text-gray-400", children: option }, option)) }) : null
+            field.group && jsx("p", { className: "mt-2 text-xs text-[var(--va-text-muted)]", children: `المجموعة: ${field.group}` }),
+            (field.options || []).length ? jsx("div", { className: "mt-2 flex flex-wrap gap-1.5", children: field.options.slice(0, 8).map((option) => jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-[11px] text-[var(--va-text-muted)]", children: option }, option)) }) : null
           ] }, field.id);
-        }) }) : jsx("p", { className: "mt-3 rounded-xl border border-dashed border-white/10 p-4 text-center text-sm text-gray-500", children: "لا توجد حقول مخصصة لهذا النوع." })
+        }) }) : jsx("p", { className: "mt-3 rounded-xl border border-dashed border-[var(--va-border-soft)] p-4 text-center text-sm text-[var(--va-text-muted)]", children: "لا توجد حقول مخصصة لهذا النوع." })
       ] })
     ]
   });
@@ -757,12 +757,12 @@ export function TypesPage() {
             initial: { opacity: 0, y: 8 },
             animate: { opacity: 1, y: 0 },
             transition: { duration: 0.18, delay: index * 0.03 },
-            className: "rounded-2xl va-surface-subtle border p-4",
+            className: "rounded-2xl va-surface-muted border p-4",
             children: [
               jsxs("div", { className: "flex items-start justify-between gap-3", children: [
                 jsxs("div", { className: "min-w-0", children: [
-                  jsx("p", { className: "text-xs text-gray-500", children: stat.label }),
-                  jsx("p", { className: "mt-2 text-2xl font-bold text-white", children: stat.value })
+                  jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: stat.label }),
+                  jsx("p", { className: "mt-2 text-2xl font-bold text-[var(--va-text)]", children: stat.value })
                 ] }),
                 jsx("span", { className: "va-icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", children: jsx(Icon, { className: "h-5 w-5" }) })
               ] })
@@ -792,14 +792,14 @@ export function TypesPage() {
           type: "button",
           onClick: toggleJourney,
           "aria-expanded": journeyOpen,
-          className: "flex w-full items-center justify-between gap-3 p-4 text-right transition-colors hover:bg-white/5",
+          className: "flex w-full items-center justify-between gap-3 p-4 text-right transition-colors hover:bg-[var(--va-surface-2)]",
           children: [
             jsxs("span", { className: "flex min-w-0 items-center gap-2", children: [
               jsx(Palette, { className: "h-5 w-5 shrink-0 va-accent-text" }),
-              jsx("h2", { className: "text-sm font-bold text-white", children: "رحلة بناء نوع محتوى" }),
-              jsx("span", { className: "hidden truncate text-xs text-gray-500 sm:inline", children: "الهوية ← الفروع ← الحقول ← الاستخدام" })
+              jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "رحلة بناء نوع محتوى" }),
+              jsx("span", { className: "hidden truncate text-xs text-[var(--va-text-muted)] sm:inline", children: "الهوية ← الفروع ← الحقول ← الاستخدام" })
             ] }),
-            jsx(ChevronDown, { className: `h-4 w-4 shrink-0 text-gray-400 transition-transform ${journeyOpen ? "rotate-180" : ""}` })
+            jsx(ChevronDown, { className: `h-4 w-4 shrink-0 text-[var(--va-text-muted)] transition-transform ${journeyOpen ? "rotate-180" : ""}` })
           ]
         }),
         journeyOpen && jsx("div", { className: "grid gap-2 px-4 pb-4 md:grid-cols-4", children: [
@@ -807,27 +807,27 @@ export function TypesPage() {
           ["الفروع", "تقسيم داخلي واضح"],
           ["الحقول", "بيانات مخصصة لكل نوع"],
           ["الاستخدام", "ظهور منظم في الإضافة والأرشيف"]
-        ].map(([label, detail], index) => jsxs("div", { className: "rounded-xl va-surface-subtle border p-3", children: [
+        ].map(([label, detail], index) => jsxs("div", { className: "rounded-xl va-surface-muted border p-3", children: [
           jsxs("div", { className: "flex items-center gap-2", children: [
             jsx("span", { className: "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border va-accent-border va-accent-bg-soft text-[10px] font-bold va-accent-text-on-soft", children: index + 1 }),
-            jsx("p", { className: "text-sm font-semibold text-white", children: label })
+            jsx("p", { className: "text-sm font-semibold text-[var(--va-text)]", children: label })
           ] }),
-          jsx("p", { className: "mt-1 text-xs leading-5 text-gray-500", children: detail })
+          jsx("p", { className: "mt-1 text-xs leading-5 text-[var(--va-text-muted)]", children: detail })
         ] }, label)) })
       ] }),
       jsxs("section", { className: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]", children: [
         jsxs("div", { className: "space-y-4", children: [
           jsxs("div", { className: "va-filter-surface grid gap-3 rounded-2xl va-surface-muted border p-3 md:grid-cols-[minmax(0,1fr)_auto]", children: [
             jsxs("label", { className: "relative block", children: [
-              jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
-              jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث في الأنواع والفروع...", className: "input input-bordered w-full py-2 pl-3 pr-10 placeholder:text-gray-600" })
+              jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
+              jsx("input", { value: query, onChange: (event) => setQuery(event.target.value), placeholder: "بحث في الأنواع والفروع...", className: "input input-bordered w-full py-2 pl-3 pr-10 placeholder:text-[var(--va-text-muted)]" })
             ] }),
-            jsxs("label", { className: "inline-flex min-h-11 items-center gap-2 va-surface-muted rounded-xl border px-3 text-sm text-gray-300", children: [
+            jsxs("label", { className: "inline-flex min-h-11 items-center gap-2 va-surface-muted rounded-xl border px-3 text-sm text-[var(--va-text-2)]", children: [
               jsx("input", { type: "checkbox", checked: includeArchived, onChange: (event) => setIncludeArchived(event.target.checked) }),
               "إظهار المؤرشف"
             ] })
           ] }),
-          filteredTypes.length ? jsx("div", { className: "grid gap-3 lg:grid-cols-2", children: filteredTypes.map((type, index) => jsx(TypeCard, { type, index, count: usageCounts[type.id] || 0, active: selectedType?.id === type.id, onOpen: () => openTypeDetail(type), onEdit: () => openTypeEditor(type), onArchive: () => archiveType(type) }, type.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
+          filteredTypes.length ? jsx("div", { className: "grid gap-3 lg:grid-cols-2", children: filteredTypes.map((type, index) => jsx(TypeCard, { type, index, count: usageCounts[type.id] || 0, active: selectedType?.id === type.id, onOpen: () => openTypeDetail(type), onEdit: () => openTypeEditor(type), onArchive: () => archiveType(type) }, type.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)]", children: jsx(EmptyState, {
             type: "types",
             title: "لا توجد أنواع مطابقة",
             description: "امسح البحث أو أنشئ نوعًا جديدًا."
@@ -837,32 +837,32 @@ export function TypesPage() {
           jsxs("div", { className: "flex items-start gap-3", children: [
             jsx("span", { className: "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl", style: { backgroundColor: `${selectedType.color || "#6366f1"}22`, color: selectedType.color || "#6366f1" }, children: selectedType.icon || "📁" }),
             jsxs("div", { className: "min-w-0", children: [
-              jsx("h2", { className: "text-lg font-bold text-white", children: selectedType.name }),
-              jsx("p", { className: "mt-1 text-xs text-gray-600", dir: "ltr", children: selectedType.nameEn || selectedType.id }),
-              jsx("p", { className: "mt-2 text-sm text-gray-500", children: `${formatNumber(usageCounts[selectedType.id] || 0, settings.numberSystem)} عنصر يستخدم هذا النوع` })
+              jsx("h2", { className: "text-lg font-bold text-[var(--va-text)]", children: selectedType.name }),
+              jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", dir: "ltr", children: selectedType.nameEn || selectedType.id }),
+              jsx("p", { className: "mt-2 text-sm text-[var(--va-text-muted)]", children: `${formatNumber(usageCounts[selectedType.id] || 0, settings.numberSystem)} عنصر يستخدم هذا النوع` })
             ] })
           ] }),
           jsxs("div", { className: "mt-5 space-y-4", children: [
             jsxs("section", { children: [
-              jsx("h3", { className: "mb-2 text-sm font-bold text-white", children: "الفروع" }),
-              (selectedType.subtypes || []).length ? jsx("div", { className: "flex flex-wrap gap-2", children: selectedType.subtypes.map((subtype) => jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-gray-300", children: subtype.name }, subtype.id)) }) : jsx("p", { className: "text-xs text-gray-600", children: "لا توجد فروع." })
+              jsx("h3", { className: "mb-2 text-sm font-bold text-[var(--va-text)]", children: "الفروع" }),
+              (selectedType.subtypes || []).length ? jsx("div", { className: "flex flex-wrap gap-2", children: selectedType.subtypes.map((subtype) => jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1 text-sm text-[var(--va-text-2)]", children: subtype.name }, subtype.id)) }) : jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: "لا توجد فروع." })
             ] }),
             jsxs("section", { children: [
-              jsx("h3", { className: "mb-2 text-sm font-bold text-white", children: "الحقول" }),
+              jsx("h3", { className: "mb-2 text-sm font-bold text-[var(--va-text)]", children: "الحقول" }),
               (selectedType.fields || []).length ? jsx("div", { className: "space-y-2", children: selectedType.fields.map((field) => jsxs("div", { className: "rounded-xl va-surface-muted border p-3", children: [
                 jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2", children: [
-                  jsx("p", { className: "text-sm font-semibold text-white", children: field.label }),
-                  jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: FIELD_TYPE_OPTIONS.find((type) => type.id === field.type)?.label || field.type })
+                  jsx("p", { className: "text-sm font-semibold text-[var(--va-text)]", children: field.label }),
+                  jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-muted)]", children: FIELD_TYPE_OPTIONS.find((type) => type.id === field.type)?.label || field.type })
                 ] }),
-                jsx("p", { className: "mt-1 text-xs text-gray-600", dir: "ltr", children: field.storageKey || field.name })
-              ] }, field.id)) }) : jsx("p", { className: "text-xs text-gray-600", children: "لا توجد حقول مخصصة." })
+                jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", dir: "ltr", children: field.storageKey || field.name })
+              ] }, field.id)) }) : jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: "لا توجد حقول مخصصة." })
             ] })
           ] })
         ] : [
           jsxs("div", { className: "flex flex-col items-center justify-center py-8 text-center", children: [
-            jsx(FolderOpen, { className: "h-12 w-12 text-gray-700" }),
-            jsx("p", { className: "mt-3 text-sm font-medium text-gray-500", children: "اختر نوعًا لعرض تفاصيله" }),
-            jsx("p", { className: "mt-1 text-xs text-gray-600", children: "انقر على أي نوع في القائمة لعرض الفروع والحقول هنا." })
+            jsx(FolderOpen, { className: "h-12 w-12 text-[var(--va-text-muted)]" }),
+            jsx("p", { className: "mt-3 text-sm font-medium text-[var(--va-text-muted)]", children: "اختر نوعًا لعرض تفاصيله" }),
+            jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: "انقر على أي نوع في القائمة لعرض الفروع والحقول هنا." })
           ] })
         ] })
       ] })

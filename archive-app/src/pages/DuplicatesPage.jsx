@@ -90,22 +90,22 @@ function detectDuplicates(items) {
 function ConfidencePill({ score }) {
   const pct = Math.round(score * 100);
   const cls =
-    pct >= 95 ? "bg-red-500/20 text-red-300" :
-    pct >= 80 ? "bg-amber-500/20 text-amber-300" :
-                "bg-yellow-500/20 text-yellow-300";
+    pct >= 95 ? "bg-rose-500/15 text-rose-300 border-rose-500/25" :
+    pct >= 80 ? "bg-amber-500/15 text-amber-300 border-amber-500/25" :
+                "bg-amber-500/12 text-amber-200 border-amber-500/20";
   return jsx("span", {
-    className: `badge badge-sm rounded-full px-2 py-0.5 text-xs font-medium ${cls}`,
+    className: `badge badge-sm inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium font-[family-name:var(--va-font-mono)] ${cls}`,
     children: `${pct}% تطابق`
   });
 }
 
 function ItemMini({ item }) {
   return jsxs("div", {
-    className: "card rounded-xl border border-white/8 bg-white/[0.03] p-3",
+    className: "card rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3",
     children: [
-      jsx("p", { className: "truncate text-sm font-medium text-gray-100", children: item.title || item.id }),
+      jsx("p", { className: "truncate text-sm font-medium text-[var(--va-text)]", children: item.title || item.id }),
       jsxs("p", {
-        className: "mt-0.5 text-xs text-gray-500",
+        className: "mt-0.5 text-xs text-[var(--va-text-muted)]",
         children: [
           item.type || "—",
           item.createdAt ? ` · ${new Date(item.createdAt).toLocaleDateString("ar-SA")}` : ""
@@ -119,7 +119,7 @@ function PairCard({ pair, onDismiss, onDelete }) {
   const [expanded, setExpanded] = React.useState(false);
 
   return jsxs("div", {
-    className: "card rounded-2xl border border-white/8 bg-white/[0.03] p-4",
+    className: "card rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 shadow-[var(--va-elev-1)]",
     children: [
       jsxs("div", {
         className: "flex items-center gap-3",
@@ -130,7 +130,7 @@ function PairCard({ pair, onDismiss, onDelete }) {
             children: [
               jsx(ConfidencePill, { score: pair.score }),
               jsx("p", {
-                className: "mt-1 text-xs text-gray-500",
+                className: "mt-1 text-xs text-[var(--va-text-muted)]",
                 children: pair.reasons.join(" · ")
               })
             ]
@@ -138,7 +138,7 @@ function PairCard({ pair, onDismiss, onDelete }) {
           jsx("button", {
             type: "button",
             onClick: () => setExpanded((e) => !e),
-            className: "btn btn-ghost btn-circle btn-sm text-gray-500 hover:text-gray-300",
+            className: "btn btn-ghost btn-circle btn-sm text-[var(--va-text-muted)] hover:text-[var(--va-text-2)]",
             "aria-label": expanded ? "طي" : "توسيع",
             children: expanded
               ? jsx(ChevronDown, { className: "h-4 w-4" })
@@ -158,13 +158,13 @@ function PairCard({ pair, onDismiss, onDelete }) {
               jsx("button", {
                 type: "button",
                 onClick: () => onDelete(pair.a.id),
-                className: "btn btn-sm btn-error flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/20 transition-colors",
+                className: "btn btn-sm btn-error flex-1 flex items-center justify-center gap-1.5 rounded-[var(--va-radius-md)] border border-rose-500/25 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20 transition-colors",
                 children: [jsx(Trash2, { className: "h-3.5 w-3.5" }), "حذف الأقدم"]
               }),
               jsx("button", {
                 type: "button",
                 onClick: () => onDismiss(pair.a.id, pair.b.id),
-                className: "btn btn-sm btn-ghost flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-400 hover:bg-white/5 transition-colors",
+                className: "btn btn-sm btn-ghost flex-1 flex items-center justify-center gap-1.5 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] px-3 py-1.5 text-xs text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] transition-colors",
                 children: [jsx(X, { className: "h-3.5 w-3.5" }), "ليسا مكررَين"]
               })
             ]
@@ -239,11 +239,11 @@ export default function DuplicatesPage() {
           jsxs("div", {
             children: [
               jsxs("h1", {
-                className: "flex items-center gap-2 text-lg font-bold text-gray-100",
+                className: "flex items-center gap-2 text-lg font-bold text-[var(--va-text)]",
                 children: [jsx(Copy, { className: "h-5 w-5 text-amber-400" }), "كشف المكررات"]
               }),
               jsx("p", {
-                className: "mt-1 text-sm text-gray-500",
+                className: "mt-1 text-sm text-[var(--va-text-muted)]",
                 children: "يفحص العناصر النشطة بحثاً عن عناوين متكررة أو ملفات مكررة"
               })
             ]
@@ -252,7 +252,7 @@ export default function DuplicatesPage() {
             type: "button",
             onClick: runScan,
             disabled: scanning,
-            className: "btn btn-sm inline-flex items-center gap-1.5 rounded-xl bg-amber-600/20 px-3 py-1.5 text-sm font-medium text-amber-300 hover:bg-amber-600/30 disabled:opacity-50 transition-colors",
+            className: "btn btn-sm inline-flex items-center gap-1.5 rounded-[var(--va-radius-md)] border border-amber-500/25 bg-amber-500/15 px-3 py-1.5 text-sm font-medium text-amber-300 hover:bg-amber-500/25 disabled:opacity-50 transition-colors",
             children: scanning
               ? [jsx(Loader2, { className: "h-4 w-4 animate-spin" }), "جاري الفحص…"]
               : "ابدأ الفحص"
@@ -265,8 +265,8 @@ export default function DuplicatesPage() {
         children: jsxs("div", {
           className: "mx-auto max-w-xs",
           children: [
-            jsx(Copy, { className: "mx-auto mb-3 h-10 w-10 text-gray-700" }),
-            jsx("p", { className: "text-sm text-gray-500", children: "اضغط \"ابدأ الفحص\" للبحث عن العناصر المكررة" })
+            jsx(Copy, { className: "mx-auto mb-3 h-10 w-10 text-[var(--va-text-muted)]" }),
+            jsx("p", { className: "text-sm text-[var(--va-text-muted)]", children: "اضغط \"ابدأ الفحص\" للبحث عن العناصر المكررة" })
           ]
         })
       }),
@@ -275,17 +275,17 @@ export default function DuplicatesPage() {
         children: [
           jsxs("div", {
             role: "alert",
-            className: `alert mb-4 flex items-center gap-3 rounded-xl border p-3 ${
+            className: `alert mb-4 flex items-center gap-3 rounded-[var(--va-radius-lg)] border p-3 ${
               visiblePairs.length === 0
-                ? "alert-success border-green-500/20 bg-green-500/10"
-                : "alert-warning border-amber-500/20 bg-amber-500/10"
+                ? "alert-success border-emerald-500/25 bg-emerald-500/10"
+                : "alert-warning border-amber-500/25 bg-amber-500/10"
             }`,
             children: [
               visiblePairs.length === 0
-                ? jsx(CheckCircle2, { className: "h-5 w-5 text-green-400" })
+                ? jsx(CheckCircle2, { className: "h-5 w-5 text-emerald-400" })
                 : jsx(AlertTriangle, { className: "h-5 w-5 text-amber-400" }),
               jsx("p", {
-                className: `text-sm ${visiblePairs.length === 0 ? "text-green-300" : "text-amber-300"}`,
+                className: `text-sm ${visiblePairs.length === 0 ? "text-emerald-300" : "text-amber-300"}`,
                 children: visiblePairs.length === 0
                   ? "لم يُعثر على مكررات — الأرشيف نظيف"
                   : `عُثر على ${visiblePairs.length} زوج محتمل من المكررات`
@@ -296,13 +296,13 @@ export default function DuplicatesPage() {
           visiblePairs.length > 0 && jsxs("div", {
             className: "mb-4 relative",
             children: [
-              jsx(Search, { className: "absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" }),
+              jsx(Search, { className: "absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--va-text-muted)] pointer-events-none" }),
               jsx("input", {
                 type: "search",
                 value: query,
                 onChange: (e) => setQuery(e.target.value),
                 placeholder: "فلترة حسب العنوان…",
-                className: "input input-bordered w-full rounded-xl border border-white/10 bg-white/[0.04] py-2 pr-9 pl-3 text-sm text-gray-100 placeholder-gray-600 focus:border-blue-500 focus:outline-none"
+                className: "input input-bordered w-full rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-[var(--va-surface)] py-2 pr-9 pl-3 text-sm text-[var(--va-text)] placeholder:text-[var(--va-text-muted)] focus-visible:border-emerald-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/45"
               })
             ]
           }),

@@ -82,12 +82,12 @@ export function ActivityPage() {
       }),
       jsx(ActivityFilterBar, { value: filters, onChange: handleFiltersChange }),
       jsx("p", {
-        className: "text-xs text-gray-500",
+        className: "text-xs text-[var(--va-text-muted)]",
         dir: "rtl",
         children: `${formatNumber(filteredEntries.length, settings.numberSystem)} نشاط من ${formatNumber(activityLog.length, settings.numberSystem)} مسجل`
       }),
       activityLoading && activityLog.length === 0 ? jsx("section", {
-        className: "va-card rounded-2xl border border-white/10 va-surface-muted p-4 space-y-2",
+        className: "va-card rounded-2xl border border-[var(--va-border-soft)] va-surface-muted p-4 space-y-2",
         role: "status",
         "aria-live": "polite",
         "aria-label": "جارٍ تحميل سجل النشاط",
@@ -98,7 +98,7 @@ export function ActivityPage() {
         onUndo: handleUndo,
         onRedo: handleRedo
       }) : jsx("section", {
-        className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35",
+        className: "va-card rounded-2xl border border-dashed border-[var(--va-border-strong)] bg-[var(--va-surface)]",
         children: jsx(EmptyState, {
           icon: jsx(FileText, { className: "h-16 w-16" }),
           title: activityLog.length ? "لا توجد نتائج مطابقة" : "لا يوجد نشاط مسجل",
@@ -109,7 +109,7 @@ export function ActivityPage() {
       }),
       jsx(Pagination, { page: currentPage, totalPages, onPageChange: setPage, totalItems: filteredEntries.length }),
       jsxs("p", {
-        className: "flex items-center gap-2 text-xs text-gray-600",
+        className: "flex items-center gap-2 text-xs text-[var(--va-text-muted)]",
         dir: "rtl",
         children: [jsx(Clock, { className: "h-3.5 w-3.5" }), "التراجع متاح حالياً لعمليات تعديل العناصر فقط (المرحلة الأولى)."]
       })

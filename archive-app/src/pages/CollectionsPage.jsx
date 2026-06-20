@@ -304,10 +304,10 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
         }),
         jsxs("div", { className: "min-w-0 flex-1", children: [
           jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-            jsx("h2", { className: "text-lg font-bold text-white", children: collection.name || "مجموعة" }),
+            jsx("h2", { className: "text-lg font-bold text-[var(--va-text)]", children: collection.name || "مجموعة" }),
             jsxs("span", { className: "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium", style: { borderColor: `${panelAccent}35`, backgroundColor: `${panelAccent}14`, color: panelAccent }, children: [jsx(Video, { className: "h-3 w-3 opacity-70" }), `${formatNumber(items.length)} عنصر`] })
           ] }),
-          jsx("p", { className: "mt-1 text-sm text-gray-500", children: collection.description || (collection.type === "smart" ? "مجموعة ذكية تتحدث حسب قواعدها." : "مجموعة يدوية لتنظيم العناصر.") })
+          jsx("p", { className: "mt-1 text-sm text-[var(--va-text-muted)]", children: collection.description || (collection.type === "smart" ? "مجموعة ذكية تتحدث حسب قواعدها." : "مجموعة يدوية لتنظيم العناصر.") })
         ] }),
         shareEnabled && jsxs("button", {
           type: "button",
@@ -325,10 +325,10 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
       jsxs("div", {
         className: "flex items-center justify-between gap-2",
         children: [
-          jsxs("p", { className: "text-sm font-semibold text-gray-300", children: ["العناصر ", jsx("span", { className: "text-gray-500", children: `(${formatNumber(items.length)})` })] }),
+          jsxs("p", { className: "text-sm font-semibold text-[var(--va-text-2)]", children: ["العناصر ", jsx("span", { className: "text-[var(--va-text-muted)]", children: `(${formatNumber(items.length)})` })] }),
           jsxs("div", { className: "flex items-center gap-2", children: [
             items.length > 6 && jsx("input", { value: itemQuery, onChange: (event) => setItemQuery(event.target.value), placeholder: "تصفية...", "aria-label": "تصفية عناصر المجموعة", className: "input input-bordered w-full" }),
-            items.length > 0 && jsx("button", { type: "button", onClick: () => onCopyTitles?.(items), "aria-label": "نسخ عناوين العناصر", title: "نسخ عناوين العناصر", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white", children: jsx(Copy, { className: "h-4 w-4" }) })
+            items.length > 0 && jsx("button", { type: "button", onClick: () => onCopyTitles?.(items), "aria-label": "نسخ عناوين العناصر", title: "نسخ عناوين العناصر", className: "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", children: jsx(Copy, { className: "h-4 w-4" }) })
           ] })
         ]
       }),
@@ -341,12 +341,12 @@ function CollectionDetails({ collection, items, availableItems, typeLabel, onAdd
           onOpen: () => onOpenItem(item),
           onRemove: () => onRemoveItem(item.id)
         }, item.id))
-      }) : jsx("p", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/30 p-4 text-center text-xs text-gray-500", children: "لا عناصر مطابقة للتصفية." })) : jsxs("div", {
-        className: "rounded-xl border border-dashed border-white/10 bg-gray-950/30 p-6 text-center",
+      }) : jsx("p", { className: "rounded-xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-4 text-center text-xs text-[var(--va-text-muted)]", children: "لا عناصر مطابقة للتصفية." })) : jsxs("div", {
+        className: "rounded-xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-6 text-center",
         children: [
-          jsx(Video, { className: "mx-auto h-10 w-10 text-gray-600" }),
-          jsx("p", { className: "mt-2 text-sm font-semibold text-gray-300", children: "المجموعة فارغة" }),
-          jsx("p", { className: "mt-1 text-xs text-gray-600", children: canManageItems ? "أضف عناصر من القائمة أعلاه." : "ستظهر العناصر عندما تطابق قواعد المجموعة الذكية." })
+          jsx(Video, { className: "mx-auto h-10 w-10 text-[var(--va-text-muted)]" }),
+          jsx("p", { className: "mt-2 text-sm font-semibold text-[var(--va-text-2)]", children: "المجموعة فارغة" }),
+          jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: canManageItems ? "أضف عناصر من القائمة أعلاه." : "ستظهر العناصر عندما تطابق قواعد المجموعة الذكية." })
         ]
       })
     ]
@@ -389,7 +389,7 @@ function SaveFilterModal({ onSave, onCancel, initialQuery }) {
         ] }),
         jsxs("label", {
           htmlFor: isLiveId,
-          className: "flex items-center gap-3 cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 hover:bg-white/8 transition-colors",
+          className: "flex items-center gap-3 cursor-pointer rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-2.5 hover:bg-[var(--va-elevated)] transition-colors",
           children: [
             jsx("input", {
               id: isLiveId,
@@ -399,14 +399,14 @@ function SaveFilterModal({ onSave, onCancel, initialQuery }) {
               className: "h-4 w-4 accent-cyan-400"
             }),
             jsxs("span", { className: "flex-1 text-sm", children: [
-              jsx("span", { className: "font-medium text-white", children: "مجموعة ذكية (حية)" }),
-              jsx("span", { className: "block text-xs text-gray-500 mt-0.5", children: "يُعاد تشغيل الاستعلام تلقائياً في كل زيارة" })
+              jsx("span", { className: "font-medium text-[var(--va-text)]", children: "مجموعة ذكية (حية)" }),
+              jsx("span", { className: "block text-xs text-[var(--va-text-muted)] mt-0.5", children: "يُعاد تشغيل الاستعلام تلقائياً في كل زيارة" })
             ] }),
             jsx(Zap, { className: "h-4 w-4 text-cyan-400 shrink-0" })
           ]
         }),
         initialQuery && jsx("p", {
-          className: "rounded-lg border border-white/10 bg-gray-950/40 px-3 py-2 text-xs text-gray-500 font-mono truncate",
+          className: "rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-2 text-xs text-[var(--va-text-muted)] font-[family-name:var(--va-font-mono)] truncate",
           title: JSON.stringify(initialQuery),
           children: `استعلام: "${typeof initialQuery === "string" ? initialQuery : JSON.stringify(initialQuery)}"`
         })
@@ -748,10 +748,10 @@ export function CollectionsPage() {
           ["عناصر مرتبطة", summary.linkedItems, Video]
         ].map(([label, value, Icon]) => jsxs("div", { className: "va-metric-card rounded-2xl va-surface-muted border p-4 text-right", children: [
           jsxs("div", { className: "flex items-center justify-between gap-3", children: [
-            jsx("span", { className: "text-sm text-gray-500", children: label }),
+            jsx("span", { className: "text-sm text-[var(--va-text-muted)]", children: label }),
             jsx(Icon, { className: "h-5 w-5 va-accent-text" })
           ] }),
-          jsx("p", { className: "mt-2 text-2xl font-bold text-white", children: formatNumber(value, settings.numberSystem) })
+          jsx("p", { className: "mt-2 text-2xl font-bold text-[var(--va-text)] font-[family-name:var(--va-font-mono)]", children: formatNumber(value, settings.numberSystem) })
         ] }, label))
       }),
       virtualCollections.length > 0 && jsx(EntityFoldersPanel, {
@@ -764,7 +764,7 @@ export function CollectionsPage() {
         getEntityMeta: (collection) => collection.type === "smart" ? "ذكية" : "يدوية"
       }),
       virtualCollections.length === 0 ? jsx("div", {
-        className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35",
+        className: "va-card rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)]",
         children: jsx(EmptyState, {
           icon: jsx(FolderOpen, { className: "h-16 w-16" }),
           title: "ابدأ تنظيم الأرشيف",
@@ -805,7 +805,7 @@ export function CollectionsPage() {
           onEdit: () => editCollection(collection),
           onDelete: () => deleteCollection(collection),
           onDrop: collection.type !== "smart" ? (ids) => addItemsToCollection?.(collection.id, ids) : undefined
-        }, collection.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35", children: jsx(EmptyState, {
+        }, collection.id)) }) : jsx("div", { className: "va-card rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)]", children: jsx(EmptyState, {
           icon: jsx(FolderOpen, { className: "h-16 w-16" }),
           title: virtualCollections.length ? "لا توجد مجموعات مطابقة" : "ابدأ تنظيم الأرشيف",
           description: virtualCollections.length ? "امسح البحث أو استخدم كلمة أبسط." : "أنشئ مجموعة يدوية لتجميع الفيديوهات المهمة.",
@@ -822,7 +822,7 @@ export function CollectionsPage() {
           jsxs("div", { className: "flex items-center justify-between gap-3", children: [
             jsxs("div", { className: "flex items-center gap-2", children: [
               jsx(Zap, { className: "h-4 w-4 text-cyan-400" }),
-              jsx("h2", { className: "text-base font-bold text-white", children: "المجموعات الذكية المحفوظة" }),
+              jsx("h2", { className: "text-base font-bold text-[var(--va-text)]", children: "المجموعات الذكية المحفوظة" }),
               savedFilters.length > 0 && jsx("span", {
                 className: "rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[10px] font-medium text-cyan-300",
                 children: formatNumber(savedFilters.length)
@@ -835,13 +835,13 @@ export function CollectionsPage() {
               children: [jsx(Plus, { className: "h-3 w-3" }), "حفظ البحث الحالي"]
             })
           ] }),
-          loadingFilters ? jsx("p", { className: "text-xs text-gray-500 py-2", children: "جارٍ التحميل..." }) :
+          loadingFilters ? jsx("p", { className: "text-xs text-[var(--va-text-muted)] py-2", children: "جارٍ التحميل..." }) :
           savedFilters.length === 0 ? jsxs("div", {
             className: "rounded-xl border border-dashed border-cyan-500/20 bg-cyan-500/5 px-4 py-6 text-center",
             children: [
               jsx(Zap, { className: "mx-auto h-8 w-8 text-cyan-500/40 mb-2" }),
-              jsx("p", { className: "text-sm font-semibold text-gray-400", children: "لا توجد مجموعات ذكية بعد" }),
-              jsx("p", { className: "text-xs text-gray-600 mt-1", children: "احفظ بحثاً لإنشاء مجموعة ذكية تتحدّث تلقائياً." })
+              jsx("p", { className: "text-sm font-semibold text-[var(--va-text-2)]", children: "لا توجد مجموعات ذكية بعد" }),
+              jsx("p", { className: "text-xs text-[var(--va-text-muted)] mt-1", children: "احفظ بحثاً لإنشاء مجموعة ذكية تتحدّث تلقائياً." })
             ]
           }) :
           jsx("div", {

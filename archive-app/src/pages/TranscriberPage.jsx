@@ -146,7 +146,7 @@ export function TranscriberPage() {
           jsx("span", { className: "shrink-0 font-[family-name:var(--va-font-mono)] text-xs va-accent-text", children: secondsToClock(seg.start) }),
           jsx("span", { className: "text-[var(--va-text-2)]", children: seg.text })
         ] }, i)) })
-      ] }) : jsx("div", { className: "rounded-2xl border border-dashed border-white/10 bg-gray-900/30", children: jsx(UXStateBlock, {
+      ] }) : jsx("div", { className: "rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)]", children: jsx(UXStateBlock, {
         icon: jsx(FileAudio, { className: "h-14 w-14" }),
         title: "لا يوجد تفريغ بعد",
         description: "اختر ملفًا واختر مصدر التفريغ ثم اضغط ابدأ التفريغ."

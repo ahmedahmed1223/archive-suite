@@ -26,10 +26,10 @@ function MessageBubble({ message }) {
   return jsx("div", {
     className: `flex ${isUser ? "justify-start" : "justify-end"}`,
     children: jsx("div", {
-      className: `max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
+      className: `max-w-[85%] whitespace-pre-wrap rounded-[var(--va-radius-lg)] px-3 py-2 text-sm ${
         isUser
-          ? "va-accent-bg-soft va-accent-text-on-soft"
-          : "bg-white/5 text-gray-200"
+          ? "bg-emerald-500/12 text-emerald-500 border border-emerald-500/25"
+          : "bg-[var(--va-surface-2)] text-[var(--va-text-2)] border border-[var(--va-border-soft)]"
       }`,
       children: message.content
     })
@@ -97,9 +97,9 @@ export function CopilotPanel() {
   if (!copilotOpen) return null;
 
   const emptyState = jsxs("div", {
-    className: "flex flex-col items-center gap-2 py-8 text-center text-sm text-gray-500",
+    className: "flex flex-col items-center gap-2 py-8 text-center text-sm text-[var(--va-text-muted)]",
     children: [
-      jsx(Bot, { className: "h-8 w-8 va-accent-text", "aria-hidden": "true" }),
+      jsx(Bot, { className: "h-8 w-8 text-emerald-500", "aria-hidden": "true" }),
       jsx("p", { children: "اسأل المساعد عن الأرشيف أو اختر اقتراحًا أدناه." })
     ]
   });
@@ -109,23 +109,23 @@ export function CopilotPanel() {
     "aria-label": "المساعد الذكي",
     dir: "rtl",
     className:
-      "va-copilot-panel fixed inset-y-0 left-0 z-[70] flex h-full w-[min(92vw,380px)] flex-col border-r border-white/10 bg-gray-950 text-right shadow-2xl",
+      "va-copilot-panel fixed inset-y-0 left-0 z-[70] flex h-full w-[min(92vw,380px)] flex-col border-r border-[var(--va-border-soft)] bg-[var(--va-surface)] text-right text-[var(--va-text)] shadow-[var(--va-elev-popover)]",
     children: [
       jsxs("header", {
-        className: "flex items-center justify-between gap-2 border-b border-white/10 p-4",
+        className: "flex items-center justify-between gap-2 border-b border-[var(--va-border-soft)] p-4",
         children: [
           jsxs("div", {
             className: "flex items-center gap-2",
             children: [
               jsx("span", {
                 className:
-                  "flex h-9 w-9 items-center justify-center rounded-xl va-accent-bg shadow-lg",
-                children: jsx(Bot, { className: "h-5 w-5 text-white" })
+                  "flex h-9 w-9 items-center justify-center rounded-[var(--va-radius-lg)] bg-emerald-500 shadow-[var(--va-elev-2)]",
+                children: jsx(Bot, { className: "h-5 w-5 text-[var(--va-text-inverse)]" })
               }),
               jsxs("div", {
                 children: [
-                  jsx("p", { className: "text-sm font-bold text-white", children: "المساعد الذكي" }),
-                  jsx("p", { className: "text-xs text-gray-500", children: "مساعدك أثناء العمل" })
+                  jsx("p", { className: "text-sm font-bold text-[var(--va-text)]", children: "المساعد الذكي" }),
+                  jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: "مساعدك أثناء العمل" })
                 ]
               })
             ]
@@ -135,7 +135,7 @@ export function CopilotPanel() {
             onClick: () => setCopilotOpen(false),
             "aria-label": "إغلاق المساعد الذكي",
             className:
-              "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white",
+              "inline-flex h-8 w-8 items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] text-[var(--va-text-muted)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]",
             children: jsx(X, { className: "h-4 w-4" })
           })
         ]
@@ -148,21 +148,21 @@ export function CopilotPanel() {
           : copilotMessages.map((message) => jsx(MessageBubble, { message }, message.id))
       }),
       suggestedPrompts.length > 0 && jsx("div", {
-        className: "flex flex-wrap gap-2 border-t border-white/10 p-3",
+        className: "flex flex-wrap gap-2 border-t border-[var(--va-border-soft)] p-3",
         children: suggestedPrompts.map((prompt) =>
           jsx("button", {
             type: "button",
             onClick: () => void send(prompt),
             disabled: ai.isBusy,
             className:
-              "rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-gray-300 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-40",
+              "rounded-full border border-[var(--va-border-strong)] bg-[var(--va-surface-2)] px-3 py-1 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-elevated)] hover:text-[var(--va-text)] disabled:opacity-40",
             children: prompt
           }, prompt)
         )
       }),
       jsxs("form", {
         onSubmit: handleSubmit,
-        className: "flex items-center gap-2 border-t border-white/10 p-3",
+        className: "flex items-center gap-2 border-t border-[var(--va-border-soft)] p-3",
         children: [
           jsx("input", {
             type: "text",
@@ -172,7 +172,7 @@ export function CopilotPanel() {
             placeholder: "اكتب رسالتك…",
             "aria-label": "رسالة إلى المساعد الذكي",
             className:
-              "min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:border-white/20 focus:outline-none"
+              "min-w-0 flex-1 rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-[var(--va-surface-2)] px-3 py-2 text-sm text-[var(--va-text)] placeholder:text-[var(--va-text-muted)] focus:border-emerald-500/60 focus:outline-none"
           }),
           jsx("button", {
             type: "submit",

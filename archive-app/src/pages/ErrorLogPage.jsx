@@ -90,14 +90,14 @@ export function ErrorLogPage() {
             })
           ] }),
           jsx("ul", { className: "mt-3 space-y-2", children: pending.map((entry) => jsxs("li", {
-            className: "flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-gray-950/30 p-2.5 text-sm",
+            className: "flex items-center justify-between gap-2 rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-2.5 text-sm",
             children: [
               jsxs("div", { className: "min-w-0", children: [
-                jsx("p", { className: "truncate font-medium text-white", children: entry.label }),
-                jsxs("p", { className: "text-xs text-gray-500", children: [`محاولات: ${entry.attempts}`, entry.lastError ? ` · ${entry.lastError}` : ""] })
+                jsx("p", { className: "truncate font-medium text-[var(--va-text)]", children: entry.label }),
+                jsxs("p", { className: "text-xs text-[var(--va-text-muted)]", children: [`محاولات: ${entry.attempts}`, entry.lastError ? ` · ${entry.lastError}` : ""] })
               ] }),
               jsxs("div", { className: "flex shrink-0 gap-1", children: [
-                jsx("button", { type: "button", onClick: () => retryOne(entry.id), className: "inline-flex h-8 items-center gap-1 rounded-lg border border-white/10 px-2 text-xs text-gray-200 hover:bg-white/5", children: "إعادة" }),
+                jsx("button", { type: "button", onClick: () => retryOne(entry.id), className: "inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--va-border-soft)] px-2 text-xs text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "إعادة" }),
                 jsx("button", { type: "button", onClick: () => removeRecovery(entry.id), "aria-label": "تجاهل", className: "inline-flex h-8 w-8 items-center justify-center rounded-lg text-red-300 hover:bg-red-500/10", children: jsx(Trash2, { className: "h-4 w-4" }) })
               ] })
             ]
@@ -108,7 +108,7 @@ export function ErrorLogPage() {
         jsx("div", { className: "flex flex-wrap gap-1", children: SEVERITY_FILTERS.map((option) => jsx("button", {
           type: "button",
           onClick: () => setSeverity(option.value),
-          className: `rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${severity === option.value ? "va-accent-bg-soft va-accent-text-on-soft border va-accent-border" : "text-gray-400 hover:text-white"}`,
+          className: `rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${severity === option.value ? "va-accent-bg-soft va-accent-text-on-soft border va-accent-border" : "text-[var(--va-text-muted)] hover:text-[var(--va-text)]"}`,
           children: option.label
         }, option.value || "all")) }),
         jsx("input", {
@@ -121,12 +121,12 @@ export function ErrorLogPage() {
         errors.length > 0 ? jsxs("button", {
           type: "button",
           onClick: () => { clearErrorLog(); showToast?.("تم مسح سجل الأخطاء", "info"); },
-          className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5",
+          className: "inline-flex items-center gap-1.5 rounded-lg border border-[var(--va-border-soft)] px-3 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]",
           children: [jsx(Trash2, { className: "h-4 w-4" }), "مسح السجل"]
         }) : null
       ] }),
       filtered.length === 0 ? jsx("div", {
-        className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35",
+        className: "va-card rounded-2xl border border-dashed border-[var(--va-border-strong)] bg-[var(--va-surface)]",
         children: jsx(EmptyState, {
           icon: jsx(AlertOctagon, { className: "h-16 w-16" }),
           title: errors.length ? "لا أخطاء مطابقة للفلاتر" : "لا أخطاء مسجّلة",
@@ -138,9 +138,9 @@ export function ErrorLogPage() {
           className: "space-y-2",
           children: [
             jsx(ErrorDetailsPanel, { report, onCopy }),
-            jsxs("div", { className: "flex items-center justify-between px-1 text-xs text-gray-600", children: [
+            jsxs("div", { className: "flex items-center justify-between px-1 text-xs text-[var(--va-text-muted)]", children: [
               jsx("span", { children: formatDateTime(report.timestamp) }),
-              jsx("button", { type: "button", onClick: () => removeError(report.id), className: "text-gray-500 hover:text-red-300", children: "إزالة" })
+              jsx("button", { type: "button", onClick: () => removeError(report.id), className: "text-[var(--va-text-muted)] hover:text-rose-400", children: "إزالة" })
             ] })
           ]
         }, report.id))
