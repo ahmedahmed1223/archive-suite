@@ -32,7 +32,7 @@ import { ArchivePageHero } from "../features/archive/ArchivePageHero.jsx";
 import { ArchivePageResults } from "../features/archive/ArchivePageResults.jsx";
 import { useArchivePageState } from "../features/archive/useArchivePageState.js";
 import { useTypeToJump } from "../features/archive/useTypeToJump.js";
-import { STATE_META } from "../features/archive/itemStatus.js";
+import { STATE_META, WORKFLOW_STATES, getItemState } from "../features/archive/itemStatus.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 import { resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { createMediaClient } from "../features/media/mediaClient.js";
@@ -74,6 +74,51 @@ function MediaJobsBoard({ enabled, jobs, busy, onRefresh, onRetry }) {
       ] }, job.id);
     }) }) : enabled ? jsx("p", { className: "mt-3 text-sm text-[var(--va-text-muted)]", children: "لا توجد مهام وسائط حديثة." }) : null
   ] });
+}
+
+const STATUS_COLOR_MAP = {
+  draft:     "border-[var(--va-border-soft)] text-[var(--va-text-muted)]",
+  editing:   "border-blue-500/30 text-blue-400",
+  review:    "border-amber-500/30 text-amber-400",
+  approved:  "border-[var(--va-status-success)]/30 text-[var(--va-status-success)]",
+  published: "border-green-500/30 text-green-400",
+  archived:  "border-zinc-500/30 text-[var(--va-text-muted)]"
+};
+
+function WorkflowPipelineBar({ videoItems, filterStatus, setFilterStatus }) {
+  const counts = React.useMemo(() => {
+    const map = { all: 0 };
+    WORKFLOW_STATES.forEach((s) => { map[s] = 0; });
+    videoItems.filter((i) => !i.isDeleted).forEach((i) => {
+      const s = getItemState(i);
+      map.all = (map.all || 0) + 1;
+      if (map[s] !== undefined) map[s]++;
+    });
+    return map;
+  }, [videoItems]);
+
+  if (counts.all === 0) return null;
+
+  return jsx("div", {
+    className: "flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1",
+    role: "group",
+    "aria-label": "تصفية حسب حالة سير العمل",
+    children: [
+      jsx("button", {
+        key: "all",
+        type: "button",
+        onClick: () => setFilterStatus("all"),
+        className: `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${filterStatus === "all" ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
+        children: `الكل · ${counts.all}`
+      }),
+      ...WORKFLOW_STATES.filter((s) => counts[s] > 0).map((s) => jsx("button", {
+        type: "button",
+        onClick: () => setFilterStatus(filterStatus === s ? "all" : s),
+        className: `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${filterStatus === s ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : `${STATUS_COLOR_MAP[s]} hover:bg-[var(--va-surface-2)]`}`,
+        children: `${STATE_META[s]?.label || s} · ${counts[s]}`
+      }, s))
+    ]
+  });
 }
 
 export function ArchivePage() {
@@ -345,6 +390,7 @@ export function ArchivePage() {
         busy: mediaBusy
       }),
       activeTopMode === "detailed" && jsx(ArchivePageDetailedFilters, { ...state }),
+      jsx(WorkflowPipelineBar, { videoItems, filterStatus, setFilterStatus }),
       jsx(ArchiveFilterChips, {
         searchQuery: localSearch,
         filterTypeLabel: filterType !== "all" ? typeById.get(filterType)?.name || filterType : null,
