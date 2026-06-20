@@ -5,6 +5,8 @@ import { resolveBackendChoice } from "../../bootstrap/backendChoice.js";
 import { useChunkedUpload } from "../../hooks/useChunkedUpload.js";
 import { useAppStore } from "../../stores/appStore.js";
 import { mergeUploadIntoVideoItem } from "../../features/upload/uploadLink.js";
+import { getStorageProvider } from "@archive/core";
+import { queueUploadedFile } from "../../features/file-manager/ingestQueue.js";
 
 function completedUploadSnapshot(entry = {}, result = {}) {
   const duplicate = result?.duplicate || entry.status === "duplicate";
@@ -45,9 +47,10 @@ async function patchLinkedItem(upload) {
  * Persistent upload runner. Pages enqueue files, this root-level component owns
  * the actual transfer so navigation does not abort background uploads.
  */
-export function UploadQueueController() {
+export function UploadQueueController({ onStored } = {}) {
   const uploads = useAppStore((state) => state.uploads);
   const updateUpload = useAppStore((state) => state.updateUpload);
+  const autoQueueUploads = useAppStore((state) => state.settings?.fileManager?.autoQueueUploads !== false);
   const backendChoice = React.useMemo(() => resolveBackendChoice(), []);
   const runningIds = React.useRef(new Set());
 
@@ -75,9 +78,24 @@ export function UploadQueueController() {
         const completed = completedUploadSnapshot(latest, result);
         useAppStore.getState().updateUpload?.(upload.id, completed);
         await patchLinkedItem(completed);
+        await onStored?.(completed, upload.file);
+        if (!completed.linkedItemId) {
+          let storage = null;
+          try { storage = getStorageProvider(); } catch { /* startup may still be wiring providers */ }
+          await queueUploadedFile({
+            key: completed.key || completed.storageKey || completed.fileKey,
+            name: upload.file?.name || completed.name,
+            size: upload.file?.size || completed.size,
+            mimeType: upload.file?.type || completed.mimeType
+          }, {
+            globalDefault: autoQueueUploads,
+            uploadOverride: upload.queueForArchive,
+            storage
+          }).catch(() => null);
+        }
       });
     }
-  }, [uploads, uploader]);
+  }, [autoQueueUploads, onStored, uploads, uploader]);
 
   return null;
 }

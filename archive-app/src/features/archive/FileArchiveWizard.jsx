@@ -50,7 +50,9 @@ export function FileArchiveWizard({
   contentTypes = [],
   videoItems = [],
   addVideoItem,
-  showToast
+  showToast,
+  initialStoredFiles = [],
+  onArchived
 }) {
   const fileInputId = React.useId();
   const folderInputId = React.useId();
@@ -66,8 +68,26 @@ export function FileArchiveWizard({
       setRows([]);
       setNotes("");
       setIsSaving(false);
+      return;
     }
-  }, [open]);
+    if (initialStoredFiles.length) {
+      setRows(initialStoredFiles.map((entry, index) => {
+        const name = entry.name || entry.fileKey?.slice(entry.fileKey.lastIndexOf("/") + 1) || `file-${index + 1}`;
+        const file = { name, size: entry.size || 0, type: entry.mimeType || "", lastModified: 0 };
+        return {
+          id: entry.queueId || `${entry.fileKey}-${index}`,
+          file,
+          title: name.replace(/\.[^.]+$/, ""),
+          path: entry.fileKey,
+          localFile: { name, size: file.size, type: file.type, relativePath: entry.fileKey, storageKey: entry.fileKey },
+          stored: true,
+          queueId: entry.queueId || null,
+          duplicate: false,
+          selected: true
+        };
+      }));
+    }
+  }, [initialStoredFiles, open]);
 
   React.useEffect(() => {
     if (!typeId && firstType?.id) setTypeId(firstType.id);
@@ -111,11 +131,14 @@ export function FileArchiveWizard({
         const item = createImportedVideoItem(row, { typeId, subtypeId, notes });
         addedIds.push(item.id);
         const savedItem = await addVideoItem?.(item);
-        useAppStore.getState().enqueueUploads?.([row.file], {
-          source: "fileArchiveWizard",
-          linkedItemId: (savedItem || item).id,
-          fieldKey: "localFile"
-        });
+        if (!row.stored) {
+          useAppStore.getState().enqueueUploads?.([row.file], {
+            source: "fileArchiveWizard",
+            linkedItemId: (savedItem || item).id,
+            fieldKey: "localFile"
+          });
+        }
+        await onArchived?.({ row, item: savedItem || item });
       }
       const { showNotification, bulkDeleteItems } = useAppStore.getState();
       showNotification?.(
