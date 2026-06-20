@@ -45,9 +45,9 @@
     --va-v1-info: var(--va-status-info);
     --va-v1-warning: var(--va-status-warning);
     --va-v1-danger: var(--va-status-danger);
-    --va-v1-text: #f9fafb;
-    --va-v1-text-secondary: #cbd5e1;
-    --va-v1-text-muted: #94a3b8;
+    --va-v1-text: var(--va-text);
+    --va-v1-text-secondary: var(--va-text-2);
+    --va-v1-text-muted: var(--va-text-muted);
     --space-1: 0.25rem;
     --space-2: 0.5rem;
     --space-3: 0.75rem;

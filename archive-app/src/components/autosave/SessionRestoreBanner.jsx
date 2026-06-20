@@ -35,11 +35,11 @@ export function SessionRestoreBanner({ session, onRestore, onDismiss }) {
           transition={{ duration: 0.2 }}
           className="overflow-hidden"
         >
-          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-gray-800/50 px-4 py-3 text-sm">
-            <History className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
-            <p className="min-w-0 flex-1 text-gray-300">
-              استئناف جلسة سابقة في <span className="font-medium text-white">{pageLabel}</span>
-              {hasFilters && <span className="text-gray-400"> مع الفلاتر المحفوظة</span>}
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-4 py-3 text-sm">
+            <History className="h-4 w-4 shrink-0 text-[var(--va-text-muted)]" aria-hidden="true" />
+            <p className="min-w-0 flex-1 text-[var(--va-text-2)]">
+              استئناف جلسة سابقة في <span className="font-medium text-[var(--va-text)]">{pageLabel}</span>
+              {hasFilters && <span className="text-[var(--va-text-muted)]"> مع الفلاتر المحفوظة</span>}
             </p>
             <button
               type="button"
@@ -52,7 +52,7 @@ export function SessionRestoreBanner({ session, onRestore, onDismiss }) {
               type="button"
               onClick={onDismiss}
               aria-label="تجاهل"
-              className="shrink-0 rounded-lg p-1 text-gray-500 hover:bg-white/10 hover:text-white"
+              className="shrink-0 rounded-lg p-1 text-[var(--va-text-muted)] hover:bg-[var(--va-border-soft)] hover:text-[var(--va-text)]"
             >
               <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>

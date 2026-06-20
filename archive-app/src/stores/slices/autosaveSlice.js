@@ -1,4 +1,4 @@
-import { STORES, dbDelete, dbGet, dbPut } from "../../services/storageAccess.js";
+import { STORES, dbDelete, dbGet, dbGetAll, dbPut } from "../../services/storageAccess.js";
 import {
   createBulkProgress,
   createDraft,
@@ -23,6 +23,8 @@ export const autosaveActionKeys = [
   "loadDraftsFromStorage",
   "saveSession",
   "getSession",
+  "deleteSession",
+  "loadSessionsFromStorage",
   "updateBulkProgress",
   "createBulkOp",
   "setAutosaveStatus"
@@ -80,6 +82,20 @@ export function createAutosaveActions({ set, get }) {
       return session;
     },
     getSession: (page) => get().workSessions.find((item) => item.page === page) || null,
+    deleteSession: async (page) => {
+      const target = get().workSessions.find((item) => item.page === page);
+      if (!target) return false;
+      set((state) => ({ workSessions: state.workSessions.filter((item) => item.page !== page) }));
+      await dbDelete(STORES.WORK_SESSIONS, target.id).catch(() => {});
+      return true;
+    },
+    loadSessionsFromStorage: async () => {
+      const sessions = await dbGetAll(STORES.WORK_SESSIONS).catch(() => []);
+      if (Array.isArray(sessions) && sessions.length) {
+        set({ workSessions: sessions });
+      }
+      return get().workSessions;
+    },
     createBulkOp: async (opts = {}) => {
       const progress = createBulkProgress({ ...opts, status: opts.status || "running" });
       set((state) => ({ bulkProgresses: upsertById(state.bulkProgresses, progress) }));
