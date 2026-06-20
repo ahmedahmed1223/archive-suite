@@ -98,6 +98,51 @@ export function classifyDatabaseTarget(url, engine) {
 
 const VALID_FILE_STORES = new Set(["disk", "dropbox", "s3", "azure", "gdrive", "ftp", "smb", "sftp", "webdav"]);
 
+const FILE_STORE_ENV_FIELDS = Object.freeze({
+  disk: { rootDir: "FILE_STORE_DIR" },
+  dropbox: { accessToken: "DROPBOX_ACCESS_TOKEN", accessTokenExpiresAt: "DROPBOX_ACCESS_TOKEN_EXPIRES_AT", refreshToken: "DROPBOX_REFRESH_TOKEN", appKey: "DROPBOX_APP_KEY", appSecret: "DROPBOX_APP_SECRET", rootPath: "DROPBOX_ROOT_PATH", selectUser: "DROPBOX_SELECT_USER", selectAdmin: "DROPBOX_SELECT_ADMIN" },
+  s3: { bucket: "S3_BUCKET", prefix: "S3_PREFIX", region: "S3_REGION", endpoint: "S3_ENDPOINT", accessKeyId: "S3_ACCESS_KEY_ID", secretAccessKey: "S3_SECRET_ACCESS_KEY", forcePathStyle: "S3_FORCE_PATH_STYLE" },
+  azure: { connectionString: "AZURE_STORAGE_CONNECTION_STRING", container: "AZURE_STORAGE_CONTAINER", accountName: "AZURE_STORAGE_ACCOUNT", accountKey: "AZURE_STORAGE_KEY", accountUrl: "AZURE_STORAGE_ACCOUNT_URL", sasToken: "AZURE_STORAGE_SAS", prefix: "AZURE_STORAGE_PREFIX" },
+  gdrive: { folderId: "GDRIVE_FOLDER_ID", credentials: "GDRIVE_CREDENTIALS", prefix: "GDRIVE_PREFIX" },
+  ftp: { host: "FTP_HOST", port: "FTP_PORT", user: "FTP_USER", password: "FTP_PASSWORD", secure: "FTP_SECURE", root: "FTP_ROOT" },
+  smb: { share: "SMB_SHARE", domain: "SMB_DOMAIN", username: "SMB_USERNAME", password: "SMB_PASSWORD", root: "SMB_ROOT" },
+  sftp: { host: "SFTP_HOST", port: "SFTP_PORT", username: "SFTP_USERNAME", password: "SFTP_PASSWORD", privateKey: "SFTP_PRIVATE_KEY", passphrase: "SFTP_PASSPHRASE", root: "SFTP_ROOT" },
+  webdav: { url: "WEBDAV_URL", username: "WEBDAV_USERNAME", password: "WEBDAV_PASSWORD", bearerToken: "WEBDAV_BEARER_TOKEN", root: "WEBDAV_ROOT" }
+});
+
+function normalizeOptionValue(field, value) {
+  if (value === undefined || value === null) return undefined;
+  if (["forcePathStyle", "secure"].includes(field)) return value === true || String(value).toLowerCase() === "true";
+  if (field === "port") return Number(value) || undefined;
+  return value;
+}
+
+export function resolveFileStoreOptions(kind, fileStore = {}, env = process.env) {
+  const fields = FILE_STORE_ENV_FIELDS[kind] || {};
+  const saved = fileStore?.[kind] && typeof fileStore[kind] === "object" ? fileStore[kind] : {};
+  const result = {};
+  for (const [field, envName] of Object.entries(fields)) {
+    const value = Object.hasOwn(saved, field) ? saved[field] : env[envName];
+    const normalized = normalizeOptionValue(field, value);
+    if (normalized !== undefined && normalized !== "") result[field] = normalized;
+  }
+  return result;
+}
+
+function providerConfigured(kind, options) {
+  const has = (...fields) => fields.every((field) => Boolean(options[field]));
+  if (kind === "disk") return true;
+  if (kind === "dropbox") return Boolean(options.accessToken) || has("refreshToken", "appKey", "appSecret");
+  if (kind === "s3") return has("bucket", "accessKeyId", "secretAccessKey");
+  if (kind === "azure") return has("connectionString", "container") || has("accountName", "accountKey", "container") || has("accountUrl", "sasToken", "container");
+  if (kind === "gdrive") return has("folderId", "credentials");
+  if (kind === "ftp") return has("host", "user");
+  if (kind === "smb") return has("share", "username");
+  if (kind === "sftp") return has("host", "username") && Boolean(options.password || options.privateKey);
+  if (kind === "webdav") return has("url");
+  return false;
+}
+
 function normalizeFileStoreKind(value) {
   const kind = String(value || "").trim().toLowerCase();
   return VALID_FILE_STORES.has(kind) ? kind : "";
@@ -109,20 +154,26 @@ export function resolveFileStoreConfig({ file = {}, env = process.env } = {}) {
   const envKind = normalizeFileStoreKind(env.FILE_STORE);
   const fileStore = fileKind || envKind || "disk";
   const source = fileKind ? "file" : envKind ? "env" : "default";
-  const disk = file?.fileStore?.disk || {};
-  const dropbox = file?.fileStore?.dropbox || {};
+  const saved = file?.fileStore || {};
+  const options = resolveFileStoreOptions(fileStore, saved, env);
+  const providers = [...VALID_FILE_STORES].map((id) => {
+    const providerOptions = resolveFileStoreOptions(id, saved, env);
+    return { id, configured: providerConfigured(id, providerOptions), active: id === fileStore, missingEnv: [] };
+  });
   return {
     fileStore,
     fileStoreSource: source, // file | env | default
-    fileStoreDir: disk.rootDir || env.FILE_STORE_DIR,
-    dropboxAccessToken: dropbox.accessToken || env.DROPBOX_ACCESS_TOKEN,
-    dropboxAccessTokenExpiresAt: dropbox.accessTokenExpiresAt || env.DROPBOX_ACCESS_TOKEN_EXPIRES_AT,
-    dropboxRefreshToken: dropbox.refreshToken || env.DROPBOX_REFRESH_TOKEN,
-    dropboxAppKey: dropbox.appKey || env.DROPBOX_APP_KEY,
-    dropboxAppSecret: dropbox.appSecret || env.DROPBOX_APP_SECRET,
-    dropboxRootPath: dropbox.rootPath || env.DROPBOX_ROOT_PATH,
-    dropboxSelectUser: dropbox.selectUser || env.DROPBOX_SELECT_USER,
-    dropboxSelectAdmin: dropbox.selectAdmin || env.DROPBOX_SELECT_ADMIN
+    fileStoreOptions: options,
+    fileStoreProviders: providers,
+    fileStoreDir: fileStore === "disk" ? options.rootDir : resolveFileStoreOptions("disk", saved, env).rootDir,
+    dropboxAccessToken: resolveFileStoreOptions("dropbox", saved, env).accessToken,
+    dropboxAccessTokenExpiresAt: resolveFileStoreOptions("dropbox", saved, env).accessTokenExpiresAt,
+    dropboxRefreshToken: resolveFileStoreOptions("dropbox", saved, env).refreshToken,
+    dropboxAppKey: resolveFileStoreOptions("dropbox", saved, env).appKey,
+    dropboxAppSecret: resolveFileStoreOptions("dropbox", saved, env).appSecret,
+    dropboxRootPath: resolveFileStoreOptions("dropbox", saved, env).rootPath,
+    dropboxSelectUser: resolveFileStoreOptions("dropbox", saved, env).selectUser,
+    dropboxSelectAdmin: resolveFileStoreOptions("dropbox", saved, env).selectAdmin
   };
 }
 

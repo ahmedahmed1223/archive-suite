@@ -57,6 +57,7 @@ export function fetchFileStoreConfig(opts = {}) {
 
 export function saveFileStoreConfig({
   kind = "disk",
+  config,
   diskRootDir = "",
   dropboxRootPath = "",
   dropboxAccessToken = "",
@@ -67,7 +68,8 @@ export function saveFileStoreConfig({
   dropboxSelectAdmin = "",
   ...opts
 } = {}) {
-  const fileStore = kind === "dropbox"
+  const generic = config && typeof config === "object" ? { kind, [kind]: config } : null;
+  const fileStore = generic || (kind === "dropbox"
     ? {
       kind,
       dropbox: {
@@ -85,8 +87,16 @@ export function saveFileStoreConfig({
       disk: {
         rootDir: String(diskRootDir || "").trim()
       }
-    };
+    });
   return call("/api/admin/config", { method: "POST", body: { fileStore }, ...opts });
+}
+
+export function testFileStoreProvider({ kind = "disk", config = {}, ...opts } = {}) {
+  return call("/api/files/test-provider", {
+    method: "POST",
+    body: { kind, [kind]: config },
+    ...opts
+  });
 }
 
 export function startDropboxOAuth({

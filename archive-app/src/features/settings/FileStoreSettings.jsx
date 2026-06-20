@@ -8,7 +8,7 @@ import { getBackendUrl, resolveBackendChoice } from "../../bootstrap/backendChoi
 import { getCloudToken, getCloudUser } from "../../bootstrap/cloudSession.js";
 import {
   canManageFileStore, fetchFileStoreConfig, fetchFileStoreStatus,
-  saveFileStoreConfig, startDropboxOAuth, FileStoreConfigError
+  saveFileStoreConfig, startDropboxOAuth, testFileStoreProvider, FileStoreConfigError
 } from "./fileStoreConfigClient.js";
 
 const FIELD = "input input-bordered w-full";
@@ -19,7 +19,21 @@ const PROVIDER_LABELS = {
   s3: "S3-compatible",
   azure: "Azure Blob",
   gdrive: "Google Drive",
+  ftp: "FTP / FTPS",
+  smb: "SMB / CIFS",
+  sftp: "SFTP / SSH",
+  webdav: "WebDAV",
   unknown: "غير معروف"
+};
+
+const PROVIDER_FIELDS = {
+  s3: [["bucket", "Bucket"], ["region", "Region"], ["endpoint", "Endpoint URL"], ["prefix", "Prefix"], ["accessKeyId", "Access key"], ["secretAccessKey", "Secret key", "password"], ["forcePathStyle", "Force path style", "checkbox"]],
+  azure: [["container", "Container"], ["connectionString", "Connection string", "password"], ["accountName", "Account name"], ["accountKey", "Account key", "password"], ["accountUrl", "Account URL"], ["sasToken", "SAS token", "password"], ["prefix", "Prefix"]],
+  gdrive: [["folderId", "Folder ID"], ["credentials", "Service account JSON", "password"], ["prefix", "Prefix"]],
+  ftp: [["host", "Host"], ["port", "Port", "number"], ["user", "Username"], ["password", "Password", "password"], ["root", "Root path"], ["secure", "FTPS", "checkbox"]],
+  smb: [["share", "Share"], ["domain", "Domain"], ["username", "Username"], ["password", "Password", "password"], ["root", "Root path"]],
+  sftp: [["host", "Host"], ["port", "Port", "number"], ["username", "Username"], ["password", "Password", "password"], ["privateKey", "Private key", "password"], ["passphrase", "Key passphrase", "password"], ["root", "Root path"]],
+  webdav: [["url", "Server URL"], ["username", "Username"], ["password", "Password", "password"], ["bearerToken", "Bearer token", "password"], ["root", "Root path"]]
 };
 
 function providerLabel(status) {
@@ -54,6 +68,7 @@ export function FileStoreSettings() {
   const [dropboxAppSecret, setDropboxAppSecret] = React.useState("");
   const [dropboxSelectUser, setDropboxSelectUser] = React.useState("");
   const [dropboxSelectAdmin, setDropboxSelectAdmin] = React.useState("");
+  const [providerConfig, setProviderConfig] = React.useState({});
   const [loadErr, setLoadErr] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
@@ -81,7 +96,8 @@ export function FileStoreSettings() {
       .then((next) => {
         if (!alive) return;
         setConfig(next);
-        setKind(next?.kind === "dropbox" ? "dropbox" : "disk");
+        setKind(PROVIDER_LABELS[next?.kind] ? next.kind : "disk");
+        setProviderConfig(next?.config || {});
         setDiskRootDir(next?.disk?.rootDir || "");
         setDropboxRootPath(next?.dropbox?.rootPath || "");
         setDropboxAppKey(next?.dropbox?.appKey || "");
@@ -112,6 +128,7 @@ export function FileStoreSettings() {
     try {
       const result = await saveFileStoreConfig({
         kind,
+        ...(kind !== "disk" && kind !== "dropbox" ? { config: providerConfig } : {}),
         diskRootDir,
         dropboxRootPath,
         dropboxAccessToken,
@@ -132,6 +149,23 @@ export function FileStoreSettings() {
       showToast?.(message, "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const runProviderTest = async () => {
+    setLoading(true);
+    try {
+      const candidate = kind === "disk"
+        ? { rootDir: diskRootDir }
+        : kind === "dropbox"
+          ? { rootPath: dropboxRootPath, accessToken: dropboxAccessToken, refreshToken: dropboxRefreshToken, appKey: dropboxAppKey, appSecret: dropboxAppSecret, selectUser: dropboxSelectUser, selectAdmin: dropboxSelectAdmin }
+          : providerConfig;
+      const result = await testFileStoreProvider({ kind, config: candidate, ...deps });
+      showToast?.(`نجح الاتصال خلال ${result?.latencyMs ?? 0}ms.`, "success");
+    } catch (error) {
+      showToast?.(error instanceof FileStoreConfigError ? error.message : "فشل اختبار الاتصال.", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -218,9 +252,9 @@ export function FileStoreSettings() {
           jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-white", children: [jsx(KeyRound, { className: "h-4 w-4 text-cyan-300" }), "الإعداد المحفوظ"] }),
           config && jsxs("span", { className: "rounded-full border border-white/10 px-2.5 py-1 text-xs text-gray-400", children: [config.source || "file", " / ", config.kind || "disk"] })
         ] }),
-        jsxs("div", { className: "mt-3 inline-flex overflow-hidden rounded-xl border border-white/10", role: "group", "aria-label": "نوع مخزن الملفات", children: [
-          jsx("button", { type: "button", onClick: () => setKind("disk"), "aria-pressed": kind === "disk", className: `px-3 py-1.5 text-xs font-semibold ${kind === "disk" ? "bg-cyan-500/15 text-cyan-100" : "text-gray-400 hover:bg-white/5"}`, children: "قرص الخادم" }),
-          jsx("button", { type: "button", onClick: () => setKind("dropbox"), "aria-pressed": kind === "dropbox", className: `px-3 py-1.5 text-xs font-semibold ${kind === "dropbox" ? "bg-cyan-500/15 text-cyan-100" : "text-gray-400 hover:bg-white/5"}`, children: "Dropbox" })
+        jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
+          jsx("span", { children: "نوع مخزن الملفات" }),
+          jsx("select", { value: kind, onChange: (event) => { setKind(event.target.value); setProviderConfig(event.target.value === config?.kind ? config?.config || {} : {}); }, className: "select select-bordered w-full", children: Object.entries(PROVIDER_LABELS).filter(([id]) => id !== "unknown").map(([id, name]) => jsx("option", { value: id, children: name }, id)) })
         ] }),
 
         kind === "dropbox"
@@ -254,10 +288,12 @@ export function FileStoreSettings() {
                 jsx("input", { value: dropboxSelectAdmin, onChange: (e) => setDropboxSelectAdmin(e.target.value), dir: "ltr", placeholder: "dbid:...", className: FIELD })
               ] })
             ] })
-          : jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
+          : kind === "disk" ? jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
               jsx("span", { children: "مسار ملفات الخادم" }),
               jsx("input", { value: diskRootDir, onChange: (e) => setDiskRootDir(e.target.value), dir: "ltr", placeholder: ".archive-files", className: FIELD })
-            ] }),
+            ] }) : jsx("div", { className: "mt-3 grid gap-2 md:grid-cols-2", children: (PROVIDER_FIELDS[kind] || []).map(([field, fieldLabel, type = "text"]) => type === "checkbox"
+              ? jsxs("label", { className: "flex items-center gap-3 rounded-lg border border-white/10 p-3 text-sm text-gray-300", children: [jsx("input", { type: "checkbox", checked: Boolean(providerConfig[field]), onChange: (event) => setProviderConfig((current) => ({ ...current, [field]: event.target.checked })), className: "toggle toggle-primary" }), jsx("span", { children: fieldLabel })] }, field)
+              : jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [jsxs("span", { children: [fieldLabel, config?.config?.[`has${field[0].toUpperCase()}${field.slice(1)}`] ? " (محفوظ)" : ""] }), jsx("input", { type, value: providerConfig[field] ?? "", onChange: (event) => setProviderConfig((current) => ({ ...current, [field]: type === "number" ? Number(event.target.value) : event.target.value })), dir: "ltr", className: FIELD })] }, field)) }),
 
         jsxs("div", { className: "mt-3 flex flex-wrap items-center gap-2", children: [
           jsxs("button", { type: "button", onClick: runSave, disabled: saving || loading, className: "btn btn-primary gap-2", children: [saving ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(Save, { className: "h-4 w-4" }), "حفظ (يتطلّب إعادة تشغيل)"] }),
@@ -267,7 +303,7 @@ export function FileStoreSettings() {
       ] }),
 
       jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-        jsxs("button", { type: "button", onClick: refresh, disabled: loading, className: "btn btn-ghost gap-2", children: [loading ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(RefreshCw, { className: "h-4 w-4" }), "اختبار الاتصال"] }),
+        jsxs("button", { type: "button", onClick: runProviderTest, disabled: loading, className: "btn btn-ghost gap-2", children: [loading ? jsx(Loader2, { className: "h-4 w-4 animate-spin" }) : jsx(RefreshCw, { className: "h-4 w-4" }), "اختبار الإعداد الحالي"] }),
         status?.kind === "dropbox" && jsx("p", { className: "text-xs leading-6 text-gray-500", children: "اختبار الاتصال يستخدم المخزن النشط الآن؛ الإعداد المحفوظ يظهر بعد إعادة التشغيل." })
       ] })
     ] })

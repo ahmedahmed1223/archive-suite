@@ -28,6 +28,7 @@ import { normalizeDatabaseEngine } from "../config/secrets.js";
 export function buildFileStore(options = {}) {
   const config = typeof options.resolveConfig === "function" ? options.resolveConfig() : resolveServerConfig();
   const choice = (options.fileStore || config.fileStore || process.env.FILE_STORE || "disk").toLowerCase();
+  const providerOptions = options.fileStoreOptions || config.fileStoreOptions || {};
   if (choice === "dropbox") {
     return createDropboxFileStore({
       accessToken: options.dropboxAccessToken || config.dropboxAccessToken || process.env.DROPBOX_ACCESS_TOKEN,
@@ -41,27 +42,27 @@ export function buildFileStore(options = {}) {
     });
   }
   if (choice === "s3") {
-    return createS3FileStore({}); // reads S3_* from env
+    return createS3FileStore(providerOptions);
   }
   if (choice === "azure") {
-    return createAzureBlobFileStore({}); // reads AZURE_STORAGE_* from env
+    return createAzureBlobFileStore(providerOptions);
   }
   if (choice === "gdrive") {
-    return createGoogleDriveFileStore({}); // reads GDRIVE_* from env
+    return createGoogleDriveFileStore(providerOptions);
   }
   if (choice === "ftp") {
-    return createFtpFileStore({}); // reads FTP_* from env
+    return createFtpFileStore(providerOptions);
   }
   if (choice === "smb") {
-    return createSmbFileStore({}); // reads SMB_* from env
+    return createSmbFileStore(providerOptions);
   }
   if (choice === "sftp") {
-    return createSftpFileStore({}); // reads SFTP_* from env
+    return createSftpFileStore(providerOptions);
   }
   if (choice === "webdav") {
-    return createWebDavFileStore({}); // reads WEBDAV_* from env
+    return createWebDavFileStore(providerOptions);
   }
-  return createDiskFileStore({ rootDir: options.fileStoreDir || config.fileStoreDir || process.env.FILE_STORE_DIR });
+  return createDiskFileStore({ rootDir: options.fileStoreDir || providerOptions.rootDir || config.fileStoreDir || process.env.FILE_STORE_DIR });
 }
 
 // The cloud (server) boot seam — symmetric with the SPA's registerLocalProviders.

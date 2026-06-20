@@ -44,9 +44,10 @@ import {
   readDropboxOAuthState
 } from "../dropbox/oauth.js";
 import { resolveServerConfig, loadServerConfigFile, saveServerConfigFile } from "../config/serverConfig.js";
+import { buildFileStore } from "../bootstrap/registerCloudProviders.js";
 import {
   buildConfigView, validateDbConfig, mergeDbConfig, validateFileStoreConfig,
-  mergeFileStoreConfig, testDatabaseConnection
+  mergeFileStoreConfig, testDatabaseConnection, testFileStoreConnection
 } from "./adminConfig.js";
 import { createRateLimiter, clientIp, userKeyFromHeader } from "./rateLimit.js";
 import { captureException } from "../monitoring/sentryService.js";
@@ -316,6 +317,8 @@ export function createApiServer({
   loadConfigFile = loadServerConfigFile,
   saveConfig = saveServerConfigFile,
   testDbConnection = testDatabaseConnection,
+  buildFileStoreCandidate = buildFileStore,
+  testFileStore = testFileStoreConnection,
   notificationSendMail = defaultSendMail,
   version = process.env.npm_package_version || process.env.APP_VERSION || "0.0.0",
   dropboxOAuthFetch,
@@ -1535,6 +1538,25 @@ export function createApiServer({
         return send(res, 200, { ok: true, result: { saved: true, restartRequired: true, ...view } });
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Save failed" });
+      }
+    }
+
+    if (req.method === "POST" && url.split("?")[0] === "/api/files/test-provider") {
+      if (overLimit(res, "rpc", req)) return undefined;
+      if (!requireAdmin(req, res)) return undefined;
+      try {
+        const candidate = validateFileStoreConfig(await readJsonBody(req));
+        const merged = mergeFileStoreConfig(loadConfigFile(), candidate);
+        const resolved = resolveConfig({ file: merged, env: process.env });
+        const store = buildFileStoreCandidate({
+          fileStore: candidate.kind,
+          fileStoreOptions: resolved.fileStoreOptions,
+          resolveConfig: () => resolved
+        });
+        const result = await testFileStore(store);
+        return send(res, result.ok ? 200 : 502, { ok: result.ok, result, ...(result.ok ? {} : { error: result.error }) });
+      } catch (error) {
+        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "FileStore test failed" });
       }
     }
 
