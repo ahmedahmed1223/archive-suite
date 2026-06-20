@@ -1,6 +1,6 @@
 import * as React from "react";
 import { motion } from "framer-motion";
-import { BarChart3, ExternalLink, Hash, Layers, Copy, HeartPulse } from "lucide-react";
+import { BarChart3, Download, ExternalLink, Hash, Layers, Copy, HeartPulse } from "lucide-react";
 
 import { PageHero } from "../components/ui/V1Primitives.jsx";
 import { Surface, Badge, EmptyState } from "../components/ui/index.js";
@@ -76,6 +76,23 @@ function ListPanel({ title, icon, children }) {
   );
 }
 
+const TIME_RANGES = [
+  { id: "30d", label: "30 يوم" },
+  { id: "90d", label: "90 يوم" },
+  { id: "1y",  label: "سنة" },
+  { id: "all", label: "الكل" }
+];
+
+function filterByRange(items, rangeId) {
+  if (rangeId === "all") return items;
+  const days = rangeId === "30d" ? 30 : rangeId === "90d" ? 90 : 365;
+  const cutoff = Date.now() - days * 86400000;
+  return items.filter((item) => {
+    const ts = item.createdAt || item.updatedAt || "";
+    return ts && new Date(ts).getTime() >= cutoff;
+  });
+}
+
 export function AnalyticsPage() {
   const {
     videoItems = [],
@@ -86,10 +103,31 @@ export function AnalyticsPage() {
     setSelectedItemId,
   } = useAppStore();
 
-  const analytics = React.useMemo(
-    () => buildArchiveAnalytics(videoItems, folders, virtualCollections),
-    [videoItems, folders, virtualCollections]
+  const [timeRange, setTimeRange] = React.useState("all");
+
+  const filteredItems = React.useMemo(
+    () => filterByRange(videoItems, timeRange),
+    [videoItems, timeRange]
   );
+
+  const analytics = React.useMemo(
+    () => buildArchiveAnalytics(filteredItems, folders, virtualCollections),
+    [filteredItems, folders, virtualCollections]
+  );
+
+  function exportCsv() {
+    const rows = [
+      ["id", "title", "type", "createdAt", "updatedAt", "tags"].join(","),
+      ...filteredItems.map((item) =>
+        [item.id, `"${(item.title || "").replace(/"/g, '""')}"`, item.type || "", item.createdAt || "", item.updatedAt || "", `"${(item.tags || []).join("|")}"`].join(",")
+      )
+    ].join("\n");
+    const blob = new Blob([rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `archive-analytics-${timeRange}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
 
   const typeName = React.useCallback(
     (type) => contentTypes.find((entry) => entry.id === type)?.name || type,
@@ -117,6 +155,29 @@ export function AnalyticsPage() {
         title="تحليلات الأرشيف"
         description="لوحة شخصية تكشف نمو الأرشيف وصحته وأنماط استخدامه — النمو الشهري، أكثر الوسوم، العناصر غير المصنفة، والمكررات المحتملة."
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-1">
+          {TIME_RANGES.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTimeRange(id)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${timeRange === id ? "va-accent-bg-soft va-accent-text-on-soft" : "text-[var(--va-text-muted)] hover:text-[var(--va-text)]"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={exportCsv}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-3 py-1.5 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)]"
+        >
+          <Download className="h-3.5 w-3.5" aria-hidden="true" />
+          تصدير CSV
+        </button>
+      </div>
 
       {isEmpty ? (
         <EmptyState
