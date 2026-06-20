@@ -289,26 +289,30 @@ export function Select({ error = false, className = "", children, ref, ...props 
 export function Switch({ checked = false, onChange, label, disabled = false, id, className = "" }) {
   return (
     <label htmlFor={id} className={cx("inline-flex cursor-pointer items-center gap-2.5", disabled && "cursor-not-allowed opacity-55", className)}>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        disabled={disabled}
-        onClick={() => onChange?.(!checked)}
-        className={cx(
-          "relative h-6 w-11 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/45",
-          checked ? "border-transparent bg-emerald-500" : "border-[var(--va-border-strong)] bg-[var(--va-surface-2)]"
-        )}
-      >
-        <span
+      {/* Wrapper expands the tap target to ≥44px vertically (WCAG 2.5.5) without changing the visual footprint */}
+      <span className="relative inline-flex items-center justify-center min-h-[44px] min-w-[44px]">
+        <button
+          id={id}
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          disabled={disabled}
+          onClick={() => onChange?.(!checked)}
           className={cx(
-            "absolute top-0.5 rounded-full bg-white shadow transition-all",
-            checked ? "left-0.5" : "right-0.5"
+            "relative h-6 w-11 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/45",
+            checked ? "border-transparent bg-emerald-500" : "border-[var(--va-border-strong)] bg-[var(--va-surface-2)]"
           )}
-          style={{ height: "1.125rem", width: "1.125rem" }}
-        />
-      </button>
+        >
+          {/* Use logical CSS inset-inline-start/end so thumb direction follows RTL automatically */}
+          <span
+            className={cx(
+              "absolute top-0.5 rounded-full bg-white shadow transition-all",
+              checked ? "end-0.5" : "start-0.5"
+            )}
+            style={{ height: "1.125rem", width: "1.125rem" }}
+          />
+        </button>
+      </span>
       {label && <span className="text-sm text-[var(--va-text-2)]">{label}</span>}
     </label>
   );

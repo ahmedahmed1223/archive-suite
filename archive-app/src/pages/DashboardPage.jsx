@@ -72,6 +72,7 @@ import {
 } from "../features/archive/savedViews.js";
 import { resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { formatDateTime, formatNumber } from "../utils/formatting.js";
+import { SessionRestoreBanner } from "../components/autosave/SessionRestoreBanner.jsx";
 
 const DASHBOARD_PANEL_TITLES = {
   hero: "مركز التحكم",
@@ -276,9 +277,38 @@ export function DashboardPage() {
     runSystemHealthCheck,
     markItemViewed,
     showToast
+    loadSessionsFromStorage,
+    deleteSession
   } = useAppStore();
   const [commandQuery, setCommandQuery] = React.useState("");
   const [recommendationFeedback, setRecommendationFeedbackState] = React.useState(() => getRecommendationFeedback());
+  const [restorableSession, setRestorableSession] = React.useState(null);
+
+  React.useEffect(() => {
+    loadSessionsFromStorage?.().then((sessions) => {
+      const candidate = (sessions || [])
+        .filter((s) => s.page && s.page !== "dashboard")
+        .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0] || null;
+      setRestorableSession(candidate);
+    }).catch(() => {});
+  }, [loadSessionsFromStorage]);
+
+  function handleSessionRestore(session) {
+    setRestorableSession(null);
+    deleteSession?.(session.page);
+    setCurrentPage(session.page);
+    if (session.filters) {
+      if (session.filters.type) setFilterType?.(session.filters.type);
+      if (session.filters.subtype) setFilterSubtype?.(session.filters.subtype);
+      if (session.filters.query) setSearchQuery?.(session.filters.query);
+      if (session.filters.viewMode) setViewMode?.(session.filters.viewMode);
+    }
+  }
+
+  function handleSessionDismiss() {
+    if (restorableSession) deleteSession?.(restorableSession.page);
+    setRestorableSession(null);
+  }
 
   const stats = React.useMemo(() => createDashboardStats({
     videoItems,
@@ -512,6 +542,11 @@ export function DashboardPage() {
   return jsxs(MotionPage, {
     className: "space-y-2 p-4 sm:p-5 xl:p-6",
     children: [
+      jsx(SessionRestoreBanner, {
+        session: restorableSession,
+        onRestore: handleSessionRestore,
+        onDismiss: handleSessionDismiss
+      }),
       // View mode: just a small "customize" button in the corner, no wrapper panel.
       // Edit mode: full toolbar with save/cancel/reset and any hidden-panel chips.
       !dashEditing && jsx("div", {
