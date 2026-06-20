@@ -52,7 +52,9 @@ run("resolveServerConfig surfaces url + source + target", () => {
 run("resolveFileStoreConfig precedence: file > env > disk default", () => {
   const file = { fileStore: { kind: "dropbox", dropbox: { accessToken: "file-token", refreshToken: "file-refresh", appKey: "file-app", appSecret: "file-secret", rootPath: "/archive", selectUser: "dbid:file-user" } } };
   const env = { FILE_STORE: "disk", DROPBOX_ACCESS_TOKEN: "env-token", DROPBOX_REFRESH_TOKEN: "env-refresh", DROPBOX_APP_KEY: "env-app", DROPBOX_APP_SECRET: "env-secret", DROPBOX_ROOT_PATH: "/env", DROPBOX_SELECT_USER: "dbid:env-user", FILE_STORE_DIR: ".files" };
-  assert.deepEqual(resolveFileStoreConfig({ file, env }), {
+  const fromFile = resolveFileStoreConfig({ file, env });
+  const { fileStoreOptions: fileOptions, fileStoreProviders: fileProviders, ...fileLegacy } = fromFile;
+  assert.deepEqual(fileLegacy, {
     fileStore: "dropbox",
     fileStoreSource: "file",
     fileStoreDir: ".files",
@@ -65,8 +67,12 @@ run("resolveFileStoreConfig precedence: file > env > disk default", () => {
     dropboxSelectUser: "dbid:file-user",
     dropboxSelectAdmin: undefined
   });
+  assert.deepEqual(fileOptions, { accessToken: "file-token", refreshToken: "file-refresh", appKey: "file-app", appSecret: "file-secret", rootPath: "/archive", selectUser: "dbid:file-user" });
+  assert.equal(fileProviders.find((provider) => provider.id === "dropbox")?.configured, true);
 
-  assert.deepEqual(resolveFileStoreConfig({ file: {}, env }), {
+  const fromEnv = resolveFileStoreConfig({ file: {}, env });
+  const { fileStoreOptions: envOptions, fileStoreProviders: envProviders, ...envLegacy } = fromEnv;
+  assert.deepEqual(envLegacy, {
     fileStore: "disk",
     fileStoreSource: "env",
     fileStoreDir: ".files",
@@ -79,6 +85,8 @@ run("resolveFileStoreConfig precedence: file > env > disk default", () => {
     dropboxSelectUser: "dbid:env-user",
     dropboxSelectAdmin: undefined
   });
+  assert.deepEqual(envOptions, { rootDir: ".files" });
+  assert.equal(envProviders.find((provider) => provider.id === "disk")?.configured, true);
 
   assert.equal(resolveFileStoreConfig({ file: {}, env: {} }).fileStore, "disk");
   assert.equal(resolveFileStoreConfig({ file: {}, env: {} }).fileStoreSource, "default");

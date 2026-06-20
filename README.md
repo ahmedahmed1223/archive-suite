@@ -95,6 +95,14 @@ bash setup.sh        # أو: pnpm deploy
 
 بعد أول نشر، غيّر كلمة مرور المدير فورًا وراجع [دليل Docker الإنتاجي](archive-server/DOCKER_DEPLOYMENT.md) لإعداد النطاق، التخزين، النسخ الاحتياطي، والمراقبة.
 
+### إعداد Cloud وFileStore
+
+- يقرأ معالج البداية القيم الافتراضية من `archive-server/.env` عبر `/api/setup/preset-config` ويملأ نوع الخادم وعنوانه وحساب المدير ومزوّد الملفات تلقائيًا.
+- كلمة مرور `ADMIN_PASSWORD` تظهر في معالج البداية لأول دخول فقط؛ يجب تغييرها فور اكتمال الإعداد.
+- `PGADMIN_PASSWORD` مخصّصة لتسجيل الدخول إلى واجهة pgAdmin، بينما `POSTGRES_PASSWORD` مخصّصة لاتصال قاعدة البيانات المحفوظ داخلها. مهمة `pgadmin-init` تزامنهما على volumes الجديدة والقديمة.
+- يدعم FileStore: القرص، Dropbox، S3، Azure Blob، Google Drive، FTP/FTPS، SMB/CIFS، SFTP/SSH، وWebDAV.
+- صفحة **مدير الملفات** مستقلة عن الأرشيف: رفع، بحث، مجلدات، تنزيل، نسخ، نقل، وحذف. الرفع يضاف افتراضيًا إلى صندوق التجهيز، لكنه لا ينشئ مادة أرشيف تلقائيًا؛ تبدأ الأرشفة فقط بأمر المستخدم.
+
 ## توصيف الأجزاء
 
 ### `archive-app/`
@@ -121,7 +129,7 @@ bash setup.sh        # أو: pnpm deploy
 
 - واجهة API وAuth وRealtime.
 - تكامل Postgres وPocketBase.
-- دعم تخزين Dropbox وS3 وAzure Blob وGoogle Drive.
+- دعم تخزين القرص وDropbox وS3 وAzure Blob وGoogle Drive وFTP وSMB وSFTP وWebDAV.
 - تكامل AI متعدد المزودين.
 
 ## ملاحظات تقنية
