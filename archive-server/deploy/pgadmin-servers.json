@@ -8,7 +8,7 @@
       "MaintenanceDB": "archive",
       "Username": "archive",
       "SSLMode": "prefer",
-      "Comment": "Default bundled Postgres connection. Password is prompted from PGADMIN_PASSWORD/POSTGRES_PASSWORD and is not stored here."
+      "Comment": "Bundled Postgres connection. Authentication uses the generated pgpass file from POSTGRES_PASSWORD."
     }
   }
 }
