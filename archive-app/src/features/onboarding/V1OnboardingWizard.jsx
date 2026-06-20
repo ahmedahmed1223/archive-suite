@@ -76,6 +76,12 @@ import { fetchServerHealth } from "../server-status/serverHealthClient.js";
 import { validatePasswordStrength } from "../../utils/passwordHash.js";
 import { applyAccentColor } from "../../theme/accentColor.js";
 import { PresetConfigScreen } from "./PresetConfigScreen.jsx";
+import { FileStoreSetupStep } from "./FileStoreSetupStep.jsx";
+import {
+  DEFAULT_FILE_STORE_PROVIDERS,
+  createPresetFormState,
+  selectBackendPreset
+} from "./presetModel.js";
 import { normalizeRoleProfileId } from "./roleProfiles.js";
 import { seedDemoData } from "./DemoModeSeeder.js";
 
@@ -265,6 +271,9 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   const [serverDbParts, setServerDbParts] = React.useState({ host: "", port: "5432", database: "archive", user: "archive", password: "", file: "./archive.sqlite" });
   const [cloudUsername, setCloudUsername] = React.useState("admin");
   const [cloudPassword, setCloudPassword] = React.useState("");
+  const [fileStoreChoice, setFileStoreChoice] = React.useState("disk");
+  const [fileStoreTest, setFileStoreTest] = React.useState(null);
+  const [fileStoreTesting, setFileStoreTesting] = React.useState(false);
   const [storageTest, setStorageTest] = React.useState(null);
   const [storageTesting, setStorageTesting] = React.useState(false);
   const [password, setPassword] = React.useState("");
@@ -283,8 +292,9 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   const steps = React.useMemo(() => {
     let list = EXTRA_STEPS;
     if (!replayMode && securityMode === "quick") list = list.filter((step) => step.id !== "admin");
+    if (storageChoice !== "postgres" && storageChoice !== "pocketbase") list = list.filter((step) => step.id !== "file-store");
     return list;
-  }, [replayMode, securityMode]);
+  }, [replayMode, securityMode, storageChoice]);
   const [stepId, setStepId] = React.useState(settings.ui?.lastOnboardingStep && EXTRA_STEPS.some((step) => step.id === settings.ui.lastOnboardingStep) ? settings.ui.lastOnboardingStep : "welcome");
   const [presetConfig, setPresetConfig] = React.useState(null);
   const [showPresetScreen, setShowPresetScreen] = React.useState(false);
@@ -294,10 +304,15 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     fetch("/api/setup/preset-config")
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data?.ok && data.config?.isFullyConfigured) {
-          setPresetConfig(data.config);
-          setShowPresetScreen(true);
-        }
+        if (!data?.ok || !data.config) return;
+        const form = createPresetFormState(data.config);
+        setPresetConfig(data.config);
+        setStorageChoice(form.storageChoice);
+        setStorageUrl(form.storageUrl);
+        setCloudUsername(form.cloudUsername);
+        setCloudPassword(form.cloudPassword);
+        setFileStoreChoice(form.fileStoreChoice);
+        setShowPresetScreen(false);
       })
       .catch(() => undefined);
   }, [mode, replayMode]);
@@ -324,6 +339,9 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     || /^https?:\/\/.+/i.test(storageUrl.trim());
   const firebaseConfigState = React.useMemo(() => parseFirebaseConfigText(firebaseConfigText), [firebaseConfigText]);
   const canContinueStorage = storageChoice === "firebase" ? firebaseConfigState.ok : storageUrlValid;
+  const fileStoreProviders = presetConfig?.fileStore?.providers?.length
+    ? presetConfig.fileStore.providers
+    : DEFAULT_FILE_STORE_PROVIDERS;
   React.useEffect(() => {
     if (!availableStorageOptions.some((option) => option.id === storageChoice)) {
       setStorageChoice("local");
@@ -386,6 +404,26 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
       setStorageTest({ ok: false, text: error?.message || "فشل اختبار الاتصال." });
     } finally {
       setStorageTesting(false);
+    }
+  };
+  const runFileStoreConnectionTest = async (kind = fileStoreChoice) => {
+    setFileStoreTesting(true);
+    setFileStoreTest(null);
+    try {
+      const provider = fileStoreProviders.find((item) => item.id === kind);
+      if (!provider?.configured) {
+        const missing = provider?.missingEnv?.length ? `: ${provider.missingEnv.join(", ")}` : "";
+        setFileStoreTest({ ok: false, text: `المزود غير مكتمل الإعداد${missing}` });
+        return;
+      }
+      setFileStoreTest({
+        ok: true,
+        text: provider?.active
+          ? "المخزن النشط مهيأ. سيجري اختبار القراءة والكتابة الحي بعد تسجيل الدخول."
+          : "إعداد المزود مكتمل وسيُحفظ للتفعيل بعد إعادة تشغيل الخادم."
+      });
+    } finally {
+      setFileStoreTesting(false);
     }
   };
   const prefersReducedMotion = useReducedMotion();
@@ -576,7 +614,13 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
           return;
         }
       }
-      await updateSettings(completionPatch);
+      await updateSettings({
+        ...completionPatch,
+        ui: {
+          ...(completionPatch.ui || {}),
+          onboardingFileStoreChoice: fileStoreChoice
+        }
+      });
       setTheme(themeChoice);
 
       if (!replayMode && securityMode === "secure") {
@@ -596,7 +640,8 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
         showToast?.("تم تفعيل البدء السريع بدون كلمة مرور. يمكنك إضافة الحماية لاحقاً من الإعدادات.", "warning");
       }
 
-      onComplete?.({ replayMode, securityMode, roleProfile, firstTaskChoice, serverUpdatePolicy });
+      setCloudPassword("");
+      onComplete?.({ replayMode, securityMode, roleProfile, firstTaskChoice, serverUpdatePolicy, fileStoreChoice });
     } catch (errorObject) {
       handleAppError(errorObject, "معالج بدء التشغيل", { message: "تعذر إكمال معالج البداية" });
       setError("تعذر إكمال المعالج. راجع فحص النظام أو حاول مرة أخرى.");
@@ -755,7 +800,16 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
           const Icon = STORAGE_ICONS[option.id] || Database;
           return jsx(OptionButton, {
             active: storageChoice === option.id,
-            onClick: () => setStorageChoice(option.id),
+            onClick: () => {
+              setStorageChoice(option.id);
+              if (option.id === "postgres" || option.id === "pocketbase") {
+                const next = selectBackendPreset(presetConfig || {}, option.id);
+                setStorageUrl(next.storageUrl);
+                setCloudUsername(next.cloudUsername);
+                setCloudPassword(next.cloudPassword);
+              }
+              setStorageTest(null);
+            },
             children: jsxs("div", { className: "flex items-start gap-3", children: [
               jsx(Icon, { className: "mt-0.5 h-5 w-5 shrink-0 va-accent-text" }),
               jsxs("div", { children: [
@@ -945,6 +999,20 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
           "البيانات تنتقل بين الأوضاع عبر «التصدير/الاستيراد» في مركز البيانات بنفس الصيغة — لا تفقد شيئاً عند التبديل."
         ] })
       ] });
+    }
+
+    if (activeStep.id === "file-store") {
+      return jsx(FileStoreSetupStep, {
+        providers: fileStoreProviders,
+        value: fileStoreChoice,
+        onChange: (kind) => {
+          setFileStoreChoice(kind);
+          setFileStoreTest(null);
+        },
+        onTest: runFileStoreConnectionTest,
+        testing: fileStoreTesting,
+        testResult: fileStoreTest
+      });
     }
 
     if (activeStep.id === "appearance") {
@@ -1145,8 +1213,12 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                         config: presetConfig,
                         onUsePreset: () => {
                           if (presetConfig.backend === "pocketbase" || presetConfig.backend === "postgres") {
-                            setStorageChoice(presetConfig.backend);
-                            if (presetConfig.pocketbaseUrl) setStorageUrl(presetConfig.pocketbaseUrl);
+                            const form = createPresetFormState(presetConfig);
+                            setStorageChoice(form.storageChoice);
+                            setStorageUrl(form.storageUrl);
+                            setCloudUsername(form.cloudUsername);
+                            setCloudPassword(form.cloudPassword);
+                            setFileStoreChoice(form.fileStoreChoice);
                           }
                           setShowPresetScreen(false);
                           const lastStep = steps[steps.length - 1];
