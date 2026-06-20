@@ -24,6 +24,17 @@ function assertExcludes(file, forbidden) {
 const rootPkg = json("package.json");
 const appPkg = json("archive-app/package.json");
 const serverPkg = json("archive-server/package.json");
+const corePkg = json("archive-core/package.json");
+
+for (const [name, pkg] of Object.entries({ root: rootPkg, app: appPkg, core: corePkg, server: serverPkg })) {
+  assert.equal(pkg.engines?.node, ">=22.12.0", `${name} package should require Node.js 22.12+`);
+}
+
+assertIncludes("archive-server/.env.example", "BACKEND=postgres");
+assertExcludes("INSTALL.md", "Node.js 18+");
+assertIncludes("INSTALL.md", "Node.js 22.12+");
+assertIncludes("DEPLOYMENT.md", "Node.js 22.12+");
+assertIncludes("scripts/node-version.mjs", 'MIN_NODE_VERSION = "22.12.0"');
 
 for (const script of [
   "audit:ui",

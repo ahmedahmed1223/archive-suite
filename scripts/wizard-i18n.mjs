@@ -52,7 +52,7 @@ export const MESSAGES = {
 
   // environment detection
   osLabel: { en: ({ os }) => `Operating system: ${os}`, ar: ({ os }) => `نظام التشغيل: ${os}` },
-  nodeTooOld: { en: ({ version }) => `Node.js 22+ required. Current: ${version} — download from https://nodejs.org`, ar: ({ version }) => `يتطلب Node.js 22+. الحالي: ${version} — حمّل من https://nodejs.org` },
+  nodeTooOld: { en: ({ version }) => `Node.js 22.12+ required. Current: ${version} — download from https://nodejs.org`, ar: ({ version }) => `يتطلب Node.js 22.12 أو أحدث. الحالي: ${version} — حمّل من https://nodejs.org` },
   dockerRunning: { en: "Docker is running", ar: "Docker يعمل" },
   dockerMissing: { en: "Docker is not installed or not running.", ar: "Docker غير مثبّت أو لا يعمل." },
   dockerHintWin: { en: "  Start Docker Desktop then retry: https://docs.docker.com/desktop/install/windows-install/", ar: "  شغّل Docker Desktop ثم أعد المحاولة: https://docs.docker.com/desktop/install/windows-install/" },
@@ -152,7 +152,6 @@ export const MESSAGES = {
   setupBanner: { en: "Archive Suite — Setup Wizard", ar: "Archive Suite — معالج التثبيت" },
   setupIntro: { en: "This wizard will guide you step by step to run the system.", ar: "هذا المعالج سيُرشدك خطوة بخطوة لتشغيل النظام." },
   setupStep1: { en: "Check Node.js version", ar: "فحص إصدار Node.js" },
-  nodeTooOld18: { en: ({ version }) => `Node.js 18+ required. Current: ${version}`, ar: ({ version }) => `يتطلب النظام Node.js 18 أو أحدث. الإصدار الحالي: ${version}` },
   nodeDownload: { en: "Download Node.js from: https://nodejs.org", ar: "قم بتحميل Node.js من: https://nodejs.org" },
   setupStep2: { en: "Check Docker", ar: "فحص Docker" },
   dockerInstalled: { en: "Docker installed", ar: "Docker مثبّت" },

@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolveWizardLang, hasExplicitLang, createTranslator, MESSAGES } from "./wizard-i18n.mjs";
+import { MIN_NODE_VERSION, isSupportedNodeVersion } from "./node-version.mjs";
 
 test("defaults to English", () => {
   assert.equal(resolveWizardLang([], {}), "en");
@@ -35,6 +36,14 @@ test("translator interpolates params", () => {
   const en = createTranslator("en");
   assert.equal(en("publicMode", { domain: "x.com" }), "Public mode: https://x.com");
   assert.equal(en("composeExit", { code: 7 }), "docker compose exited with code 7");
+});
+
+test("setup and deployment require the workspace Node minimum", () => {
+  assert.equal(MIN_NODE_VERSION, "22.12.0");
+  assert.equal(isSupportedNodeVersion("v22.11.0"), false);
+  assert.equal(isSupportedNodeVersion("v22.12.0"), true);
+  assert.equal(isSupportedNodeVersion("v24.0.0"), true);
+  assert.match(createTranslator("en")("nodeTooOld", { version: "v18.20.0" }), /22\.12\+/);
 });
 
 test("unknown key returns the key itself", () => {

@@ -23,6 +23,7 @@ import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { platform } from "node:os";
 import { resolveWizardLang, hasExplicitLang, createTranslator } from "./wizard-i18n.mjs";
+import { isSupportedNodeVersion } from "./node-version.mjs";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -76,10 +77,8 @@ function genSecret() { return randomBytes(32).toString("hex"); }
 async function checkNode() {
   step(1, t("setupStep1"));
   const v = process.version;
-  const major = parseInt(v.slice(1), 10);
-  if (major < 18) {
-    err(t("nodeTooOld18", { version: v }));
-    err(t("nodeDownload"));
+  if (!isSupportedNodeVersion(v)) {
+    err(t("nodeTooOld", { version: v }));
     process.exit(1);
   }
   ok(`Node.js ${v}`);

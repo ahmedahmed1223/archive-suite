@@ -2,7 +2,7 @@
 
 ## المتطلبات
 
-- [Node.js 18+](https://nodejs.org)
+- [Node.js 22.12+](https://nodejs.org)
 - [Docker Desktop](https://docs.docker.com/desktop/) (أو Docker Engine + Compose على Linux)
 
 ---
@@ -62,7 +62,7 @@ pnpm server        # backend على http://localhost:3000
 
 # بناء الإنتاج
 pnpm build:spa     # SPA offline
-pnpm build:cloud   # PocketBase cloud
+pnpm build:cloud   # نسخة Cloud (PostgreSQL افتراضياً)
 
 # اختبارات
 pnpm verify        # type-check + tests لجميع الحزم
