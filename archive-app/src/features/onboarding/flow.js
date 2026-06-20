@@ -1,6 +1,7 @@
 export const ONBOARDING_STEPS = [
   { id: "welcome", label: "البدء", detail: "فهم أين تحفظ البيانات وكيف تبدأ أول مهمة." },
   { id: "storage", label: "التخزين", detail: "اختيار مكان حفظ البيانات: هذا الجهاز أو خادم سحابي." },
+  { id: "file-store", label: "مخزن الملفات", detail: "اختيار مكان حفظ الوسائط والملفات الأصلية على الخادم." },
   { id: "security", label: "الحماية", detail: "اختيار الإعداد الآمن أو البدء السريع." },
   { id: "admin", label: "المدير", detail: "تعريف كلمة مرور المدير عند اختيار الإعداد الآمن." },
   { id: "appearance", label: "المظهر", detail: "اختيار Ink Slate أو Warm Off-white ولون التفاعل." },
