@@ -162,6 +162,7 @@ export function TagAutocomplete({
   onPick,
   inputMode,
   type = "text",
+  showDiscoveryHint = true,
   onKeyDown: onExternalKeyDown,
   ...props
 }) {
@@ -169,6 +170,7 @@ export function TagAutocomplete({
   const [match, setMatch] = React.useState(null);
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
   const inputRef = React.useRef(null);
+  const hintId = React.useId();
   const triggers = React.useMemo(() => ({
     vocabulary: getAutocompleteTrigger(settings, "vocabulary", "@"),
     tags: getAutocompleteTrigger(settings, "tags", "#")
@@ -237,6 +239,23 @@ export function TagAutocomplete({
     updateMatch(nextValue, event.target.selectionStart ?? nextValue.length);
   };
 
+  const insertTrigger = (kind) => {
+    const trigger = triggers[kind];
+    if (!trigger) return;
+    const current = String(value || "");
+    const caret = inputRef.current?.selectionStart ?? current.length;
+    const needsSpace = caret > 0 && !/\s|[,،]/.test(current[caret - 1]);
+    const insertion = `${needsSpace ? " " : ""}${trigger}`;
+    const nextValue = `${current.slice(0, caret)}${insertion}${current.slice(caret)}`;
+    const nextCaret = caret + insertion.length;
+    onChange?.(nextValue);
+    updateMatch(nextValue, nextCaret);
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange?.(nextCaret, nextCaret);
+    });
+  };
+
   const handleKeyDown = (event) => {
     if (match && suggestions.length > 0) {
       if (event.key === "ArrowDown") {
@@ -270,18 +289,44 @@ export function TagAutocomplete({
     onFocus: (event) => updateMatch(event.currentTarget.value, event.currentTarget.selectionStart ?? String(value || "").length),
     onClick: (event) => updateMatch(event.currentTarget.value, event.currentTarget.selectionStart ?? String(value || "").length),
     onBlur: () => setTimeout(close, 180),
-    placeholder,
+    placeholder: placeholder || (allowed.includes("tags") && allowed.includes("vocabulary")
+      ? "اكتب # للوسوم أو @ للقاموس"
+      : allowed.includes("tags") ? "اكتب # لاستدعاء الوسوم" : allowed.includes("vocabulary") ? "اكتب @ لاستدعاء القاموس" : ""),
     dir,
     className: `w-full rounded-xl border border-white/10 bg-gray-800/50 px-3 py-2 text-sm text-white outline-none transition focus:border-[var(--va-action,#10b981)] focus:ring-2 focus:ring-[var(--va-action,#10b981)]/10 ${className}`,
     autoComplete: "off",
     inputMode,
-    ...props
+    ...props,
+    "aria-describedby": [props["aria-describedby"], showDiscoveryHint && allowed.length ? hintId : ""].filter(Boolean).join(" ") || undefined
   };
 
   return jsxs("div", {
     className: "relative",
     children: [
       multiline ? jsx("textarea", { ...commonProps, rows }) : jsx("input", { ...commonProps, type }),
+      showDiscoveryHint && allowed.length > 0 && jsxs("div", {
+        id: hintId,
+        className: "mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--va-text-muted)]",
+        children: [
+          jsx("span", { children: "استدعاء سريع:" }),
+          allowed.includes("tags") && jsxs("button", {
+            type: "button",
+            onMouseDown: (event) => event.preventDefault(),
+            onClick: () => insertTrigger("tags"),
+            className: "badge badge-ghost badge-sm gap-1 font-normal hover:badge-primary",
+            "aria-label": "إدراج رمز استدعاء الوسوم",
+            children: [jsx(Hash, { className: "h-3 w-3" }), "# الوسوم"]
+          }),
+          allowed.includes("vocabulary") && jsxs("button", {
+            type: "button",
+            onMouseDown: (event) => event.preventDefault(),
+            onClick: () => insertTrigger("vocabulary"),
+            className: "badge badge-ghost badge-sm gap-1 font-normal hover:badge-primary",
+            "aria-label": "إدراج رمز استدعاء القاموس",
+            children: [jsx(BookOpen, { className: "h-3 w-3" }), "@ القاموس"]
+          })
+        ]
+      }),
       match && suggestions.length > 0 && jsxs("div", {
         className: "absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-white/10 bg-gray-900/95 text-right shadow-2xl shadow-black/40 backdrop-blur-xl",
         role: "listbox",
