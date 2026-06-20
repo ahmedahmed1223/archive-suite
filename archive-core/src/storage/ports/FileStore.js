@@ -11,6 +11,11 @@
  */
 export const FILE_STORE_METHODS = ["putBlob", "getBlob", "getUrl", "remove", "list"];
 
+// Optional capabilities used by the server-side file manager. Adapters may
+// implement any subset; the server supplies safe fallbacks through the five
+// required blob methods above.
+export const FILE_STORE_OPTIONAL_METHODS = ["describe", "stat", "listEntries", "createFolder", "copy", "move"];
+
 export function isFileStore(candidate) {
   return Boolean(candidate) && FILE_STORE_METHODS.every((method) => typeof candidate[method] === "function");
 }
