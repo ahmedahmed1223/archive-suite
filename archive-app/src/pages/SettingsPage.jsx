@@ -97,6 +97,7 @@ import {
 import { resolveSidebarLayoutMode } from "../features/navigation/sidebarLayoutModel.js";
 import { reportError } from "../utils/errorReporting.js";
 import { normalizeRoleProfileId } from "../features/onboarding/roleProfiles.js";
+import { CloudControlTab } from "../features/settings/CloudControlTab.jsx";
 
 const NOTIFICATION_TYPE_LABELS = {
   info: "معلومات",
@@ -1200,6 +1201,7 @@ export function SettingsPage() {
     general: renderGeneral,
     appearance: renderAppearance,
     data: renderData,
+    cloud: () => jsx(CloudControlTab, {}),
     ai: renderAi,
     security: renderSecurity,
     shortcuts: renderShortcuts,
