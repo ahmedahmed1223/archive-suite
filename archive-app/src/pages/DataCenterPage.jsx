@@ -715,8 +715,8 @@ export function DataCenterPage() {
         children: [
           jsxs("div", {
             children: [
-              jsx("h3", { className: "text-xl font-bold text-white", children: "تصدير منظم" }),
-              jsx("p", { className: "mt-1 text-sm leading-relaxed text-gray-400", children: "اختر الصيغة، راجع الملخص، ثم صدّر بيانات جاهزة للأرشفة أو التحليل." })
+              jsx("h3", { className: "text-xl font-bold text-[var(--va-text)]", children: "تصدير منظم" }),
+              jsx("p", { className: "mt-1 text-sm leading-relaxed text-[var(--va-text-muted)]", children: "اختر الصيغة، راجع الملخص، ثم صدّر بيانات جاهزة للأرشفة أو التحليل." })
             ]
           }),
           jsx(ActionButton, {
@@ -748,7 +748,7 @@ export function DataCenterPage() {
           jsxs("label", {
             className: "space-y-2",
             children: [
-              jsx("span", { className: "text-xs text-gray-500", children: "نوع المحتوى" }),
+              jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "نوع المحتوى" }),
               jsxs("select", {
                 value: typeFilter,
                 onChange: (event) => setTypeFilter(event.target.value),
@@ -763,7 +763,7 @@ export function DataCenterPage() {
           jsxs("label", {
             className: "space-y-2",
             children: [
-              jsx("span", { className: "text-xs text-gray-500", children: "المجموعة" }),
+              jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "المجموعة" }),
               jsxs("select", {
                 value: collectionFilter,
                 onChange: (event) => setCollectionFilter(event.target.value),
@@ -776,7 +776,7 @@ export function DataCenterPage() {
             ]
           }),
           jsxs("label", {
-            className: "flex min-h-[66px] items-center gap-3 va-surface-muted rounded-xl border px-3 py-2 text-sm text-gray-300",
+            className: "flex min-h-[66px] items-center gap-3 va-surface-muted rounded-xl border px-3 py-2 text-sm text-[var(--va-text-2)]",
             children: [
               jsx("input", {
                 type: "checkbox",
@@ -800,8 +800,8 @@ export function DataCenterPage() {
         children: [
           jsxs("div", {
             children: [
-              jsx("h3", { className: "text-xl font-bold text-white", children: "استيراد آمن" }),
-              jsx("p", { className: "mt-1 max-w-2xl text-sm leading-relaxed text-gray-400", children: "يدعم JSON وملف النقل وExcel الذي صدّره التطبيق فقط. تظهر معاينة قبل أي كتابة، ويتم إنشاء نسخة احتياطية تلقائياً." })
+              jsx("h3", { className: "text-xl font-bold text-[var(--va-text)]", children: "استيراد آمن" }),
+              jsx("p", { className: "mt-1 max-w-2xl text-sm leading-relaxed text-[var(--va-text-muted)]", children: "يدعم JSON وملف النقل وExcel الذي صدّره التطبيق فقط. تظهر معاينة قبل أي كتابة، ويتم إنشاء نسخة احتياطية تلقائياً." })
             ]
           }),
           jsx(ActionButton, {
@@ -836,11 +836,11 @@ export function DataCenterPage() {
         children: importPreview
           ? jsx(PreviewSummary, { preview: importPreview })
           : jsxs("div", {
-            className: "rounded-xl border border-dashed border-white/10 bg-gray-950/25 p-6 text-center",
+            className: "rounded-xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)] p-6 text-center",
             children: [
-              jsx(Upload, { className: "mx-auto h-8 w-8 text-gray-500" }),
-              jsx("p", { className: "mt-3 text-sm font-medium text-gray-300", children: "لم يتم اختيار ملف بعد" }),
-              jsx("p", { className: "mt-1 text-xs text-gray-500", children: "اختر ملفاً لرؤية الجديد والمكرر والمتعارض قبل التنفيذ." }),
+              jsx(Upload, { className: "mx-auto h-8 w-8 text-[var(--va-text-muted)]" }),
+              jsx("p", { className: "mt-3 text-sm font-medium text-[var(--va-text-2)]", children: "لم يتم اختيار ملف بعد" }),
+              jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: "اختر ملفاً لرؤية الجديد والمكرر والمتعارض قبل التنفيذ." }),
               jsx("div", {
                 className: "mt-5 grid gap-2 text-right sm:grid-cols-3",
                 children: [
@@ -848,10 +848,10 @@ export function DataCenterPage() {
                   ["Excel", "ملف صادر من التطبيق فقط"],
                   ["آمن", "لا كتابة قبل المعاينة"]
                 ].map(([label, detail]) => jsxs("div", {
-                  className: "rounded-xl border border-white/5 bg-white/[0.03] p-3",
+                  className: "rounded-xl border border-[var(--va-border-soft)] bg-white/[0.03] p-3",
                   children: [
                     jsx("p", { className: "text-xs font-semibold va-accent-text-on-soft", children: label }),
-                    jsx("p", { className: "mt-1 text-[11px] leading-5 text-gray-500", children: detail })
+                    jsx("p", { className: "mt-1 text-[11px] leading-5 text-[var(--va-text-muted)]", children: detail })
                   ]
                 }, label))
               })
@@ -902,8 +902,8 @@ export function DataCenterPage() {
         children: [
           jsxs("div", {
             children: [
-              jsx("h3", { className: "text-xl font-bold text-white", children: "نقل بين الأجهزة" }),
-              jsx("p", { className: "mt-1 max-w-2xl text-sm leading-relaxed text-gray-400", children: "ملف النقل هو الخيار الموصى به: يحتوي checksum وملخص محتوى ولا ينقل كلمات المرور." })
+              jsx("h3", { className: "text-xl font-bold text-[var(--va-text)]", children: "نقل بين الأجهزة" }),
+              jsx("p", { className: "mt-1 max-w-2xl text-sm leading-relaxed text-[var(--va-text-muted)]", children: "ملف النقل هو الخيار الموصى به: يحتوي checksum وملخص محتوى ولا ينقل كلمات المرور." })
             ]
           }),
           jsx(ActionButton, {
@@ -918,10 +918,10 @@ export function DataCenterPage() {
         className: "mt-5 grid gap-4 md:grid-cols-[1fr_0.9fr]",
         children: [
           jsxs("div", {
-            className: "rounded-xl border border-white/5 bg-gray-950/25 p-4",
+            className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4",
             children: [
               jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-                jsx("h4", { className: "text-sm font-semibold text-white", children: "هوية هذا الجهاز" }),
+                jsx("h4", { className: "text-sm font-semibold text-[var(--va-text)]", children: "هوية هذا الجهاز" }),
                 deviceId && jsx("span", {
                   className: "rounded-full border va-accent-border va-accent-bg-soft px-2 py-0.5 text-[11px] font-mono va-accent-text-on-soft",
                   dir: "ltr",
@@ -937,15 +937,15 @@ export function DataCenterPage() {
                 className: "input input-bordered mt-3 w-full",
                 placeholder: "مثال: جهاز الأرشفة الرئيسي"
               }),
-              jsx("p", { className: "mt-3 text-xs leading-relaxed text-gray-500", children: "هذه الهوية تُضمَّن في كل ملف نقل لتمييز الجهاز المرسل وتُخزّن محلياً فقط. الاسم قابل للتعديل أما المعرّف فثابت." })
+              jsx("p", { className: "mt-3 text-xs leading-relaxed text-[var(--va-text-muted)]", children: "هذه الهوية تُضمَّن في كل ملف نقل لتمييز الجهاز المرسل وتُخزّن محلياً فقط. الاسم قابل للتعديل أما المعرّف فثابت." })
             ]
           }),
           jsxs("div", {
-            className: "rounded-xl border border-white/5 bg-gray-950/25 p-4",
+            className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4",
             children: [
-              jsx("h4", { className: "text-sm font-semibold text-white", children: "قائمة تحقق النقل" }),
+              jsx("h4", { className: "text-sm font-semibold text-[var(--va-text)]", children: "قائمة تحقق النقل" }),
               jsx("ul", {
-                className: "va-rtl-list va-bullet-list mt-3 space-y-2 text-sm text-gray-400",
+                className: "va-rtl-list va-bullet-list mt-3 space-y-2 text-sm text-[var(--va-text-muted)]",
                 children: [
                   "إنشاء نسخة احتياطية قبل الاستيراد.",
                   "التحقق من checksum قبل الكتابة.",
@@ -962,8 +962,8 @@ export function DataCenterPage() {
         children: [
           jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
             jsxs("div", { children: [
-              jsx("h4", { className: "text-sm font-semibold text-white", children: "تصدير تغييرات فقط (Delta)" }),
-              jsx("p", { className: "mt-1 max-w-xl text-xs leading-relaxed text-gray-400", children: "يصدّر فقط العناصر التي تغيّرت منذ آخر مزامنة مع جهاز محدد. مفيد عند العمل بين جهازين بشكل دوري — أصغر بكثير من النقل الكامل." })
+              jsx("h4", { className: "text-sm font-semibold text-[var(--va-text)]", children: "تصدير تغييرات فقط (Delta)" }),
+              jsx("p", { className: "mt-1 max-w-xl text-xs leading-relaxed text-[var(--va-text-muted)]", children: "يصدّر فقط العناصر التي تغيّرت منذ آخر مزامنة مع جهاز محدد. مفيد عند العمل بين جهازين بشكل دوري — أصغر بكثير من النقل الكامل." })
             ] }),
             jsx(ActionButton, {
               onClick: () => handleExport("delta"),
@@ -975,7 +975,7 @@ export function DataCenterPage() {
           jsxs("div", {
             className: "mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]",
             children: [
-              jsxs("label", { className: "block text-xs text-gray-400", children: [
+              jsxs("label", { className: "block text-xs text-[var(--va-text-muted)]", children: [
                 jsx("span", { className: "block mb-1", children: "اختر جهاز معروف" }),
                 jsxs("select", {
                   value: deltaTargetId,
@@ -987,7 +987,7 @@ export function DataCenterPage() {
                   ]
                 })
               ] }),
-              !deltaTargetId && jsxs("label", { className: "block text-xs text-gray-400", children: [
+              !deltaTargetId && jsxs("label", { className: "block text-xs text-[var(--va-text-muted)]", children: [
                 jsx("span", { className: "block mb-1", children: "أو أدخل اسم جهاز جديد" }),
                 jsx("input", {
                   value: deltaNewDeviceName,
@@ -996,16 +996,16 @@ export function DataCenterPage() {
                   className: "input input-bordered w-full"
                 })
               ] }),
-              jsxs("div", { className: "flex flex-col items-end justify-end text-right text-xs text-gray-400", children: [
-                jsxs("span", { className: "rounded-full border border-white/10 bg-gray-950/45 px-2.5 py-1", children: [
+              jsxs("div", { className: "flex flex-col items-end justify-end text-right text-xs text-[var(--va-text-muted)]", children: [
+                jsxs("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-2.5 py-1", children: [
                   "تغييرات معلّقة: ",
                   jsx("strong", { className: "va-accent-text-on-soft", children: formatNumber(deltaPlan.total) })
                 ] }),
-                deltaPlan.total > 0 && jsx("span", { className: "mt-1 text-[11px] text-gray-500", children: `${formatNumber(deltaPlan.newCount)} جديد + ${formatNumber(deltaPlan.updatedCount)} محدّث` })
+                deltaPlan.total > 0 && jsx("span", { className: "mt-1 text-[11px] text-[var(--va-text-muted)]", children: `${formatNumber(deltaPlan.newCount)} جديد + ${formatNumber(deltaPlan.updatedCount)} محدّث` })
               ] })
             ]
           }),
-          syncPeerList.length === 0 && jsx("p", { className: "mt-3 text-[11px] leading-5 text-gray-500", children: "لا توجد أجهزة محفوظة بعد. أنشئ delta لأول مرة وسيتم حفظ هذا الجهاز كنقطة مرجعية." })
+          syncPeerList.length === 0 && jsx("p", { className: "mt-3 text-[11px] leading-5 text-[var(--va-text-muted)]", children: "لا توجد أجهزة محفوظة بعد. أنشئ delta لأول مرة وسيتم حفظ هذا الجهاز كنقطة مرجعية." })
         ]
       }),
       transferNextStep && jsxs("div", {
@@ -1026,8 +1026,8 @@ export function DataCenterPage() {
         children: [
           jsxs("div", {
             children: [
-              jsx("h3", { className: "text-xl font-bold text-white", children: "النسخ الاحتياطي" }),
-              jsx("p", { className: "mt-1 text-sm leading-relaxed text-gray-400", children: `الجدولة الحالية: ${settings.backupSchedule === "manual" ? "يدوي" : settings.backupSchedule || "يدوي"}، النسخة التالية: ${nextBackupLabel}` })
+              jsx("h3", { className: "text-xl font-bold text-[var(--va-text)]", children: "النسخ الاحتياطي" }),
+              jsx("p", { className: "mt-1 text-sm leading-relaxed text-[var(--va-text-muted)]", children: `الجدولة الحالية: ${settings.backupSchedule === "manual" ? "يدوي" : settings.backupSchedule || "يدوي"}، النسخة التالية: ${nextBackupLabel}` })
             ]
           }),
           jsx(ActionButton, {
@@ -1052,8 +1052,8 @@ export function DataCenterPage() {
               jsxs("div", {
                 className: "min-w-0",
                 children: [
-                  jsx("p", { className: "truncate text-sm font-semibold text-white", children: backup.name || backup.id }),
-                  jsx("p", { className: "mt-1 text-xs text-gray-500", children: `${backup.timestamp ? formatDateTime(backup.timestamp) : "بدون تاريخ"} - ${formatFileSize(backup.size || 0)} - ${formatNumber(backup.itemCount || 0)} عنصر` })
+                  jsx("p", { className: "truncate text-sm font-semibold text-[var(--va-text)]", children: backup.name || backup.id }),
+                  jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: `${backup.timestamp ? formatDateTime(backup.timestamp) : "بدون تاريخ"} - ${formatFileSize(backup.size || 0)} - ${formatNumber(backup.itemCount || 0)} عنصر` })
                 ]
               }),
               jsxs("div", {
@@ -1076,11 +1076,11 @@ export function DataCenterPage() {
             ]
           }, backup.id))
           : jsxs("div", {
-            className: "rounded-xl border border-dashed border-white/10 bg-gray-950/25 p-6 text-center",
+            className: "rounded-xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)] p-6 text-center",
             children: [
-              jsx(Database, { className: "mx-auto h-8 w-8 text-gray-500" }),
-              jsx("p", { className: "mt-3 text-sm font-medium text-gray-300", children: "لا توجد نسخ احتياطية بعد" }),
-              jsx("p", { className: "mt-1 text-xs text-gray-500", children: "أنشئ نسخة قبل الاستيراد أو النقل أو التعديلات الكبيرة." })
+              jsx(Database, { className: "mx-auto h-8 w-8 text-[var(--va-text-muted)]" }),
+              jsx("p", { className: "mt-3 text-sm font-medium text-[var(--va-text-2)]", children: "لا توجد نسخ احتياطية بعد" }),
+              jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: "أنشئ نسخة قبل الاستيراد أو النقل أو التعديلات الكبيرة." })
             ]
           })
       })
@@ -1121,19 +1121,19 @@ export function DataCenterPage() {
         children: [
           jsxs("div", { className: "flex flex-wrap items-end justify-between gap-3", children: [
             jsxs("div", { children: [
-              jsx("h2", { className: "text-lg font-bold text-white", children: "صحة النظام اليومية" }),
-              jsx("p", { className: "mt-1 max-w-2xl text-sm leading-6 text-gray-500", children: isAdmin ? "تفاصيل تشغيلية للمدير دون عرض أسرار أو رموز وصول." : "حالة مبسطة لما يحتاجه العمل اليومي." })
+              jsx("h2", { className: "text-lg font-bold text-[var(--va-text)]", children: "صحة النظام اليومية" }),
+              jsx("p", { className: "mt-1 max-w-2xl text-sm leading-6 text-[var(--va-text-muted)]", children: isAdmin ? "تفاصيل تشغيلية للمدير دون عرض أسرار أو رموز وصول." : "حالة مبسطة لما يحتاجه العمل اليومي." })
             ] }),
-            jsx("button", { type: "button", onClick: () => { loadAllData?.(); loadBackups(); }, disabled: isWorking, className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-40", children: [jsx(RefreshCw, { className: "h-4 w-4" }), "إعادة فحص"] })
+            jsx("button", { type: "button", onClick: () => { loadAllData?.(); loadBackups(); }, disabled: isWorking, className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-3 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] disabled:opacity-40", children: [jsx(RefreshCw, { className: "h-4 w-4" }), "إعادة فحص"] })
           ] }),
           jsx("div", { className: "grid gap-3 md:grid-cols-2 xl:grid-cols-3", children: healthCards.map((card) => {
             const tone = card.status === "ok" ? "emerald" : card.status === "error" ? "rose" : "amber";
             return jsxs("article", { className: "rounded-2xl va-surface-muted border p-4 text-right", children: [
               jsxs("div", { className: "flex items-start justify-between gap-3", children: [
                 jsxs("div", { className: "min-w-0", children: [
-                  jsx("p", { className: "text-sm font-bold text-white", children: card.label }),
-                  jsx("p", { className: "mt-1 text-xs leading-6 text-gray-500", children: card.message }),
-                  card.detail ? jsx("p", { className: "mt-2 truncate text-[11px] text-gray-600", dir: "auto", title: card.detail, children: card.detail }) : null
+                  jsx("p", { className: "text-sm font-bold text-[var(--va-text)]", children: card.label }),
+                  jsx("p", { className: "mt-1 text-xs leading-6 text-[var(--va-text-muted)]", children: card.message }),
+                  card.detail ? jsx("p", { className: "mt-2 truncate text-[11px] text-[var(--va-text-muted)]", dir: "auto", title: card.detail, children: card.detail }) : null
                 ] }),
                 jsx(StatusBadge, { tone, children: card.status === "ok" ? "جيد" : card.status === "error" ? "خطأ" : "انتبه" })
               ] })
@@ -1149,8 +1149,8 @@ export function DataCenterPage() {
             children: [
               jsxs("div", {
                 children: [
-                  jsx("h2", { className: "text-lg font-bold text-white", children: "اختر مهمة البيانات" }),
-                  jsx("p", { className: "mt-1 max-w-2xl text-sm leading-6 text-gray-500", children: "ابدأ من نية واضحة: تصدير، استيراد، نقل، أو نسخة احتياطية. كل مهمة تعرض فحصها وتأكيدها قبل التنفيذ." })
+                  jsx("h2", { className: "text-lg font-bold text-[var(--va-text)]", children: "اختر مهمة البيانات" }),
+                  jsx("p", { className: "mt-1 max-w-2xl text-sm leading-6 text-[var(--va-text-muted)]", children: "ابدأ من نية واضحة: تصدير، استيراد، نقل، أو نسخة احتياطية. كل مهمة تعرض فحصها وتأكيدها قبل التنفيذ." })
                 ]
               }),
               jsx(StatusBadge, {
@@ -1196,10 +1196,10 @@ export function DataCenterPage() {
                 className: "flex items-center gap-2",
                 children: [
                   jsx(Eye, { className: "h-5 w-5 va-accent-text" }),
-                  jsx("h3", { className: "text-sm font-bold text-white", children: "مسار تنفيذ المهمة" })
+                  jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "مسار تنفيذ المهمة" })
                 ]
               }),
-              jsx("p", { className: "text-xs text-gray-500", children: "كل عملية تمر بفحص واضح قبل أي كتابة على البيانات." })
+              jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: "كل عملية تمر بفحص واضح قبل أي كتابة على البيانات." })
             ]
           }),
           jsx(TaskStageRail, { stages: processStages }),
@@ -1219,13 +1219,13 @@ export function DataCenterPage() {
         className: "min-h-[520px]",
         children: [
           jsxs("div", {
-            className: "mb-5 flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-start md:justify-between",
+            className: "mb-5 flex flex-col gap-3 border-b border-[var(--va-border-soft)] pb-4 md:flex-row md:items-start md:justify-between",
             children: [
               jsxs("div", {
                 children: [
                   jsx("p", { className: "text-xs font-semibold va-accent-text", children: "المهمة الحالية" }),
-                  jsx("h2", { className: "mt-1 text-2xl font-bold text-white", children: activeTask.label }),
-                  jsx("p", { className: "mt-2 max-w-3xl text-sm leading-7 text-gray-500", children: activeTask.detail })
+                  jsx("h2", { className: "mt-1 text-2xl font-bold text-[var(--va-text)]", children: activeTask.label }),
+                  jsx("p", { className: "mt-2 max-w-3xl text-sm leading-7 text-[var(--va-text-muted)]", children: activeTask.detail })
                 ]
               }),
               jsxs("div", {
@@ -1236,7 +1236,7 @@ export function DataCenterPage() {
                     children: activeTask.risk
                   }),
                   jsx("span", {
-                    className: "rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-gray-400",
+                    className: "rounded-full border border-[var(--va-border-soft)] bg-white/[0.03] px-3 py-1 text-[var(--va-text-muted)]",
                     children: activeTask.actionLabel
                   })
                 ]
@@ -1245,7 +1245,7 @@ export function DataCenterPage() {
           }),
           activePanel,
           operationMessage && jsx("div", {
-            className: "mt-5 va-surface-deep rounded-xl border p-3 text-sm leading-relaxed text-gray-300",
+            className: "mt-5 va-surface-deep rounded-xl border p-3 text-sm leading-relaxed text-[var(--va-text-2)]",
             dir: "auto",
             children: operationMessage
           })

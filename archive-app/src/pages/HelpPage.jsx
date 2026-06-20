@@ -661,10 +661,10 @@ export function HelpPage() {
                     children: [
                       jsxs("div", { className: "flex items-start justify-between gap-3", children: [
                         jsxs("span", { className: "min-w-0", children: [
-                          jsx("span", { className: "va-label block truncate text-white", children: card.title }),
+                          jsx("span", { className: "va-label block truncate text-[var(--va-text)]", children: card.title }),
                           jsx("span", { className: "va-faint mt-1 block truncate text-xs", children: card.breadcrumb })
                         ] }),
-                        jsx("span", { className: "rounded-lg border border-white/10 px-2 py-1 text-[10px] va-faint", children: card.heavy ? "متقدم" : card.group })
+                        jsx("span", { className: "rounded-lg border border-[var(--va-border-soft)] px-2 py-1 text-[10px] va-faint", children: card.heavy ? "متقدم" : card.group })
                       ] }),
                       jsx("p", { className: "va-bidi-text va-body va-muted mt-3 line-clamp-3", dir: "rtl", children: card.hint }),
                       jsx("span", { className: "va-label va-accent-text mt-3 inline-flex", children: "افتح القسم المرتبط" })

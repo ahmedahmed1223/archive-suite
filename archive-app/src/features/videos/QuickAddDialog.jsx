@@ -264,7 +264,7 @@ export function QuickAddDialog({ open, onOpenChange }) {
           role: "tab",
           "aria-selected": active,
           onClick: () => setMode(item.id),
-          className: `inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"}`,
+          className: `inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${active ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
           children: [jsx(ModeIcon, { className: "h-4 w-4" }), item.label]
         }, item.id);
       }) }) : jsx("p", { className: "rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-100", children: "لا توجد أوامر إنشاء متاحة لصلاحيتك الحالية." }),
@@ -272,34 +272,34 @@ export function QuickAddDialog({ open, onOpenChange }) {
         jsxs("div", { className: "mb-3 flex items-center gap-2", children: [
           jsx("span", { className: "flex h-8 w-8 items-center justify-center rounded-lg border va-accent-border va-accent-bg-soft va-accent-text-on-soft", children: jsx(Icon, { className: "h-4 w-4" }) }),
           jsxs("div", { children: [
-            jsx("h3", { className: "text-sm font-bold text-white", children: meta.title }),
-            mode === "comment" && latestItem ? jsx("p", { className: "text-xs text-gray-500", children: `على: ${latestItem.title || "آخر مادة"}` }) : null,
-            mode === "task" && latestProject ? jsx("p", { className: "text-xs text-gray-500", children: `داخل: ${latestProject.name || "آخر مشروع"}` }) : null
+            jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: meta.title }),
+            mode === "comment" && latestItem ? jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: `على: ${latestItem.title || "آخر مادة"}` }) : null,
+            mode === "task" && latestProject ? jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: `داخل: ${latestProject.name || "آخر مشروع"}` }) : null
           ] })
         ] }),
-        mode === "field" && activeTypes.length ? jsxs("label", { className: "mb-3 block space-y-1 text-sm text-gray-300", children: [
+        mode === "field" && activeTypes.length ? jsxs("label", { className: "mb-3 block space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("span", { children: "نوع المحتوى المستهدف" }),
-          jsx("select", { value: targetTypeId, onChange: (event) => setTargetTypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: activeTypes.map((type) => jsx("option", { value: type.id, children: type.name }, type.id)) })
+          jsx("select", { value: targetTypeId, onChange: (event) => setTargetTypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-[var(--va-text)] outline-none", children: activeTypes.map((type) => jsx("option", { value: type.id, children: type.name }, type.id)) })
         ] }) : null,
-        mode === "video" && activeTypes.length ? jsxs("label", { className: "mb-3 block space-y-1 text-sm text-gray-300", children: [
+        mode === "video" && activeTypes.length ? jsxs("label", { className: "mb-3 block space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("span", { children: "نوع المادة" }),
-          jsxs("select", { value: typeId, onChange: (event) => setTypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", children: [
+          jsxs("select", { value: typeId, onChange: (event) => setTypeId(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-[var(--va-text)] outline-none", children: [
             jsx("option", { value: "", children: "بدون نوع" }),
             ...activeTypes.map((type) => jsx("option", { value: type.id, children: type.name }, type.id))
           ] })
         ] }) : null,
-        !isComment ? jsxs("label", { className: "block space-y-1 text-sm text-gray-300", children: [
+        !isComment ? jsxs("label", { className: "block space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("span", { children: mode === "field" ? "اسم الحقل" : mode === "term" ? "المصطلح" : mode === "tag" ? "اسم الوسم" : "الاسم" }),
-          jsx("input", { "data-autofocus": true, value: name, onChange: (event) => setName(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none", placeholder: mode === "video" ? "عنوان المادة" : "اسم واضح وقصير" })
+          jsx("input", { "data-autofocus": true, value: name, onChange: (event) => setName(event.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-[var(--va-text)] outline-none", placeholder: mode === "video" ? "عنوان المادة" : "اسم واضح وقصير" })
         ] }) : null,
-        isComment ? jsxs("label", { className: "block space-y-1 text-sm text-gray-300", children: [
+        isComment ? jsxs("label", { className: "block space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("span", { children: "نص التعليق" }),
-          jsx("textarea", { "data-autofocus": true, value: description, onChange: (event) => setDescription(event.target.value), rows: 3, className: "w-full va-surface-deep rounded-xl border p-3 text-sm text-white outline-none", placeholder: "اكتب التعليق..." })
-        ] }) : mode !== "field" && mode !== "tag" ? jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
+          jsx("textarea", { "data-autofocus": true, value: description, onChange: (event) => setDescription(event.target.value), rows: 3, className: "w-full va-surface-deep rounded-xl border p-3 text-sm text-[var(--va-text)] outline-none", placeholder: "اكتب التعليق..." })
+        ] }) : mode !== "field" && mode !== "tag" ? jsxs("label", { className: "mt-3 block space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("span", { children: mode === "video" ? "ملاحظات" : "وصف مختصر" }),
-          jsx("textarea", { value: description, onChange: (event) => setDescription(event.target.value), rows: 2, className: "w-full va-surface-deep rounded-xl border p-3 text-sm text-white outline-none", placeholder: "اختياري" })
+          jsx("textarea", { value: description, onChange: (event) => setDescription(event.target.value), rows: 2, className: "w-full va-surface-deep rounded-xl border p-3 text-sm text-[var(--va-text)] outline-none", placeholder: "اختياري" })
         ] }) : null,
-        (mode === "video" || mode === "term") ? jsxs("label", { className: "mt-3 block space-y-1 text-sm text-gray-300", children: [
+        (mode === "video" || mode === "term") ? jsxs("label", { className: "mt-3 block space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("span", { children: mode === "video" ? "وسوم" : "مرادفات" }),
           jsx(TagAutocomplete, { value: tagsText, onChange: setTagsText, allowed: mode === "video" ? ["tags", "vocabulary"] : [], placeholder: mode === "video" ? "مفصولة بفواصل" : "مرادفات مفصولة بفواصل" })
         ] }) : null,
@@ -316,7 +316,7 @@ export function QuickAddDialog({ open, onOpenChange }) {
             })
           : null
       ] }),
-      jsx("p", { className: "text-xs leading-6 text-gray-500", children: "المسودة تحفظ محليًا أثناء الكتابة. استخدم حفظ وفتح للانتقال إلى الصفحة المناسبة بعد الإنشاء." })
+      jsx("p", { className: "text-xs leading-6 text-[var(--va-text-muted)]", children: "المسودة تحفظ محليًا أثناء الكتابة. استخدم حفظ وفتح للانتقال إلى الصفحة المناسبة بعد الإنشاء." })
     ] })
   });
 }

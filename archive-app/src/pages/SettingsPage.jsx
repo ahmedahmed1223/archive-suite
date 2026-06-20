@@ -562,8 +562,8 @@ export function SettingsPage() {
             jsxs("div", {
               className: "rounded-xl va-surface-subtle border p-3",
               children: [
-                jsx("p", { className: "text-sm text-gray-300", children: settings.ui?.onboardingSecurityMode === "quick" ? "الحماية مؤجلة عبر البدء السريع." : "الإعداد الآمن هو المسار الحالي." }),
-                jsx("p", { className: "mt-1 text-xs text-gray-500", children: settings.ui?.onboardingCoreUiSeenAt ? `شوهد شرح الواجهة: ${formatDateTime(settings.ui.onboardingCoreUiSeenAt)}` : "شرح الواجهة لم يسجل بعد." })
+                jsx("p", { className: "text-sm text-[var(--va-text-2)]", children: settings.ui?.onboardingSecurityMode === "quick" ? "الحماية مؤجلة عبر البدء السريع." : "الإعداد الآمن هو المسار الحالي." }),
+                jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: settings.ui?.onboardingCoreUiSeenAt ? `شوهد شرح الواجهة: ${formatDateTime(settings.ui.onboardingCoreUiSeenAt)}` : "شرح الواجهة لم يسجل بعد." })
               ]
             }),
             jsxs("button", { type: "button", onClick: openOnboardingWizard, className: "btn btn-primary gap-2", children: [jsx(RefreshCw, { className: "h-4 w-4" }), "تشغيل معالج البداية"] })
@@ -626,7 +626,7 @@ export function SettingsPage() {
         aside: jsxs("div", {
           className: "flex flex-wrap gap-2",
           children: [
-            jsx("button", { type: "button", onClick: resetAppearanceDraft, className: "rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-300 hover:bg-white/5", children: "استعادة الافتراضي" }),
+            jsx("button", { type: "button", onClick: resetAppearanceDraft, className: "rounded-xl border border-[var(--va-border-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "استعادة الافتراضي" }),
             isAdmin && jsx("button", { type: "button", onClick: applyAppearanceForAll, className: "rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-100 hover:bg-amber-500/15", children: "تطبيق على كل المستخدمين" }),
             jsx("button", { type: "button", onClick: applyAppearanceDraft, className: "btn btn-primary btn-xs", children: "تطبيق المظهر" })
           ]
@@ -699,7 +699,7 @@ export function SettingsPage() {
                   columns: "sm:grid-cols-3",
                   onChange: (value) => patchAppearanceDraft({ sidebarMode: value })
                 }),
-                jsx("p", { className: "rounded-xl va-surface-subtle border p-3 text-xs text-gray-500", children: `المظهر المطبّق الآن: ${isDark ? "ليلي" : "نهاري"}. المعاينة تتغير قبل الحفظ الفعلي.` })
+                jsx("p", { className: "rounded-xl va-surface-subtle border p-3 text-xs text-[var(--va-text-muted)]", children: `المظهر المطبّق الآن: ${isDark ? "ليلي" : "نهاري"}. المعاينة تتغير قبل الحفظ الفعلي.` })
               ]
             }),
             jsx(AppearanceStudioPreview, { draft: appearanceDraft, numberSystem: settings.numberSystem })
@@ -711,17 +711,17 @@ export function SettingsPage() {
         description: "قوالب شخصية لا تحتوي أسراراً: العرض الافتراضي، عدد العناصر، الكثافة، الشريط، الخط، واللون.",
         icon: jsx(LayoutGrid, { className: "h-5 w-5 va-accent-text" }),
         aside: jsxs("div", { className: "flex flex-wrap gap-2", children: [
-          jsx("button", { type: "button", onClick: exportAppearanceProfile, className: "rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-300 hover:bg-white/5", children: "تصدير JSON" }),
-          jsx("button", { type: "button", onClick: () => appearanceImportRef.current?.click(), className: "rounded-xl border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-300 hover:bg-white/5", children: "استيراد JSON" }),
+          jsx("button", { type: "button", onClick: exportAppearanceProfile, className: "rounded-xl border border-[var(--va-border-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "تصدير JSON" }),
+          jsx("button", { type: "button", onClick: () => appearanceImportRef.current?.click(), className: "rounded-xl border border-[var(--va-border-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "استيراد JSON" }),
           jsx("input", { ref: appearanceImportRef, type: "file", accept: "application/json,.json", onChange: importAppearanceProfile, className: "sr-only" })
         ] }),
         children: jsx("div", { className: "grid gap-3 md:grid-cols-2 xl:grid-cols-4", children: APPEARANCE_PRESETS.map((preset) => jsxs("button", {
           type: "button",
           onClick: () => applyAppearancePreset(preset),
-          className: "min-h-28 rounded-xl border border-white/10 bg-gray-950/30 p-3 text-right transition-colors hover:border-emerald-500/25 hover:bg-emerald-500/10",
+          className: "min-h-28 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3 text-right transition-colors hover:border-emerald-500/25 hover:bg-emerald-500/10",
           children: [
-            jsx("span", { className: "block text-sm font-bold text-white", children: preset.name }),
-            jsx("span", { className: "mt-1 block text-xs leading-6 text-gray-500", children: preset.detail })
+            jsx("span", { className: "block text-sm font-bold text-[var(--va-text)]", children: preset.name }),
+            jsx("span", { className: "mt-1 block text-xs leading-6 text-[var(--va-text-muted)]", children: preset.detail })
           ]
         }, preset.id)) })
       }),
@@ -777,8 +777,8 @@ export function SettingsPage() {
         jsxs("div", {
           className: "rounded-xl va-surface-subtle border p-3",
           children: [
-            jsx("p", { className: "text-sm font-semibold text-white", children: "إدارة الأيقونات الفعلية" }),
-            jsx("p", { className: "mt-1 text-xs leading-relaxed text-gray-500", children: "انتقل إلى إدارة الأنواع لإضافة أيقونة أو غلاف لكل نوع وفرع." }),
+            jsx("p", { className: "text-sm font-semibold text-[var(--va-text)]", children: "إدارة الأيقونات الفعلية" }),
+            jsx("p", { className: "mt-1 text-xs leading-relaxed text-[var(--va-text-muted)]", children: "انتقل إلى إدارة الأنواع لإضافة أيقونة أو غلاف لكل نوع وفرع." }),
             jsx("button", { type: "button", onClick: () => setCurrentPage?.("types"), className: "btn btn-primary mt-3", children: "فتح إدارة الأنواع" })
           ]
         })
@@ -815,7 +815,7 @@ export function SettingsPage() {
           ]
         }),
         jsxs("p", {
-          className: "rounded-xl va-surface-subtle border p-3 text-sm text-gray-400",
+          className: "rounded-xl va-surface-subtle border p-3 text-sm text-[var(--va-text-muted)]",
           children: [
             "مثال: ",
             jsx("span", { className: "font-mono va-accent-text-on-soft", dir: "ltr", children: `${settings.autocompleteTriggers?.vocabulary || "@"}م` }),
@@ -853,8 +853,8 @@ export function SettingsPage() {
             jsxs("div", {
               className: "rounded-xl va-surface-subtle border p-3",
               children: [
-                jsx("p", { className: "text-sm font-semibold text-white", children: aiStatus.title }),
-                jsx("p", { className: "mt-1 text-xs leading-6 text-gray-500", dir: backendChoice.url ? "ltr" : "rtl", children: aiStatus.detail })
+                jsx("p", { className: "text-sm font-semibold text-[var(--va-text)]", children: aiStatus.title }),
+                jsx("p", { className: "mt-1 text-xs leading-6 text-[var(--va-text-muted)]", dir: backendChoice.url ? "ltr" : "rtl", children: aiStatus.detail })
               ]
             }),
             jsx("div", {
@@ -866,8 +866,8 @@ export function SettingsPage() {
               ].map(([label, value]) => jsxs("div", {
                 className: "rounded-xl va-surface-subtle border p-3",
                 children: [
-                  jsx("p", { className: "text-xs text-gray-500", children: label }),
-                  jsx("p", { className: "mt-1 text-sm font-semibold text-white", dir: /token|http|pocketbase|postgres/i.test(value) ? "ltr" : "rtl", children: value })
+                  jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: label }),
+                  jsx("p", { className: "mt-1 text-sm font-semibold text-[var(--va-text)]", dir: /token|http|pocketbase|postgres/i.test(value) ? "ltr" : "rtl", children: value })
                 ]
               }, label))
             }),
@@ -887,7 +887,7 @@ export function SettingsPage() {
                     jsx("button", {
                       type: "button",
                       onClick: () => setActiveTab("maintenance"),
-                      className: "rounded-xl border border-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10",
+                      className: "rounded-xl border border-[var(--va-border-soft)] px-3 py-2 text-xs font-semibold text-[var(--va-text)] hover:bg-[var(--va-surface-2)]",
                       children: "فتح تبويب الصيانة"
                     })
                   ]
@@ -935,7 +935,7 @@ export function SettingsPage() {
         children: jsxs("div", {
           className: "space-y-3",
           children: [
-            jsx("p", { className: "rounded-xl va-surface-subtle border p-3 text-sm leading-7 text-gray-400", children: "في cloud، يستدعي التطبيق /api/ai/transcribe ويرسل الصوت كـ blob. في المحلي لا يوجد adapter صوت مستقل بعد، لذلك تظهر الحالة كتوجيه وليس كزر تشغيل وهمي." }),
+            jsx("p", { className: "rounded-xl va-surface-subtle border p-3 text-sm leading-7 text-[var(--va-text-muted)]", children: "في cloud، يستدعي التطبيق /api/ai/transcribe ويرسل الصوت كـ blob. في المحلي لا يوجد adapter صوت مستقل بعد، لذلك تظهر الحالة كتوجيه وليس كزر تشغيل وهمي." }),
             jsx("div", {
               className: "grid gap-3 md:grid-cols-2",
               children: [
@@ -991,7 +991,7 @@ export function SettingsPage() {
         jsxs("div", {
           className: "flex flex-wrap items-center justify-between gap-3 rounded-xl va-surface-subtle border p-3",
           children: [
-            jsx("p", { className: "text-sm text-gray-400", children: settings.lastBackupAt ? `آخر نسخة: ${formatDateTime(settings.lastBackupAt)}` : "لا توجد نسخة احتياطية مسجلة بعد." }),
+            jsx("p", { className: "text-sm text-[var(--va-text-muted)]", children: settings.lastBackupAt ? `آخر نسخة: ${formatDateTime(settings.lastBackupAt)}` : "لا توجد نسخة احتياطية مسجلة بعد." }),
             jsx("button", { type: "button", onClick: () => setCurrentPage?.("backup"), className: "btn btn-primary", children: "فتح مركز البيانات" })
           ]
         })
@@ -1014,7 +1014,7 @@ export function SettingsPage() {
           className: "flex flex-wrap items-center gap-2",
           children: [
             jsx("button", { type: "button", onClick: handlePasswordSave, disabled: passwordSave.isSaving, className: "btn btn-primary", children: isPasswordSet ? "تحديث كلمة المرور" : "تعيين كلمة المرور" }),
-            jsx("button", { type: "button", onClick: lockApp, className: "rounded-xl border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5", children: "قفل التطبيق الآن" }),
+            jsx("button", { type: "button", onClick: lockApp, className: "rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "قفل التطبيق الآن" }),
             jsx(SaveIndicator, { state: passwordSave.state, onRetry: handlePasswordSave })
           ]
         }),
@@ -1038,9 +1038,9 @@ export function SettingsPage() {
         jsx(ToggleRow, { label: "تفعيل مهلة الجلسة", checked: !!settings.enableSessionTimeout, onChange: (checked) => saveSettings({ enableSessionTimeout: checked }, "تم تحديث مهلة الجلسة") }),
         jsx(ToggleRow, { label: "تحذيرات المحتوى", checked: !!settings.contentWarningsEnabled, onChange: (checked) => saveSettings({ contentWarningsEnabled: checked }, "تم تحديث تحذيرات المحتوى") }),
         jsxs("div", {
-          className: "mt-4 pt-4 border-t border-white/10",
+          className: "mt-4 pt-4 border-t border-[var(--va-border-soft)]",
           children: [
-            jsx("h3", { className: "mb-3 text-sm font-semibold text-white", children: "المصادقة الثنائية (2FA)" }),
+            jsx("h3", { className: "mb-3 text-sm font-semibold text-[var(--va-text)]", children: "المصادقة الثنائية (2FA)" }),
             jsx(TwoFactorSettings, {})
           ]
         })
@@ -1077,7 +1077,7 @@ export function SettingsPage() {
           className: "space-y-3",
           children: [
             sqliteError && jsx("p", { className: "rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-200", children: sqliteError }),
-            jsx("p", { className: "text-sm text-gray-500", children: settings.systemHealth?.lastCheckAt ? `آخر فحص: ${formatDateTime(settings.systemHealth.lastCheckAt)}` : "لم يتم تشغيل فحص كامل بعد." }),
+            jsx("p", { className: "text-sm text-[var(--va-text-muted)]", children: settings.systemHealth?.lastCheckAt ? `آخر فحص: ${formatDateTime(settings.systemHealth.lastCheckAt)}` : "لم يتم تشغيل فحص كامل بعد." }),
             jsxs("div", {
               className: "flex flex-wrap items-center gap-2",
               children: [
@@ -1135,24 +1135,24 @@ export function SettingsPage() {
                 description: "يُستخدم عند إضافة إشعارات جديدة للسجل."
               })
             ] }),
-            jsxs("div", { className: "rounded-xl border border-white/10 bg-gray-950/30 p-3", children: [
-              jsx("p", { className: "text-sm font-semibold text-white", children: "كتم فئات من toast" }),
-              jsx("p", { className: "mt-1 text-xs leading-6 text-gray-500", children: "الكتم يمنع ظهور التنبيه العابر، لكنه يبقي الإشعار داخل المركز للرجوع إليه." }),
+            jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [
+              jsx("p", { className: "text-sm font-semibold text-[var(--va-text)]", children: "كتم فئات من toast" }),
+              jsx("p", { className: "mt-1 text-xs leading-6 text-[var(--va-text-muted)]", children: "الكتم يمنع ظهور التنبيه العابر، لكنه يبقي الإشعار داخل المركز للرجوع إليه." }),
               jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: NOTIFICATION_CATEGORIES.map((category) => jsx(ToggleRow, {
                 label: NOTIFICATION_CATEGORY_LABELS[category] || category,
                 checked: !(settings.notifications?.mutedCategories || []).includes(category),
                 onChange: (enabled) => toggleMutedCategory(category, !enabled)
               }, category)) })
             ] }),
-            jsxs("div", { className: "rounded-xl border border-white/10 bg-gray-950/30 p-3", children: [
-              jsx("p", { className: "text-sm font-semibold text-white", children: "أنواع تظهر كـ toast" }),
+            jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [
+              jsx("p", { className: "text-sm font-semibold text-[var(--va-text)]", children: "أنواع تظهر كـ toast" }),
               jsx("div", { className: "mt-3 grid gap-2 sm:grid-cols-2", children: Object.entries(NOTIFICATION_TYPE_LABELS).map(([type, label]) => jsx(ToggleRow, {
                 label,
                 checked: settings.notifications?.toastByType?.[type] !== false,
                 onChange: (enabled) => toggleToastType(type, enabled)
               }, type)) })
             ] }),
-            jsx("div", { className: "rounded-xl border border-white/10 bg-gray-950/30 p-3", children: jsx(NotificationPreferences, {}) })
+            jsx("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: jsx(NotificationPreferences, {}) })
           ]
         })
       }),
@@ -1177,13 +1177,13 @@ export function SettingsPage() {
       jsx(SettingsCard, {
         title: "Webhooks الصادرة",
         description: "يُطلق الخادم طلب POST إلى العناوين المسجّلة عند إنشاء السجلات أو تحديثها أو حذفها، مع توقيع HMAC-SHA256.",
-        icon: jsx("span", { className: "text-xs font-mono text-gray-400", children: "POST" }),
+        icon: jsx("span", { className: "text-xs font-mono text-[var(--va-text-muted)]", children: "POST" }),
         children: jsx(WebhooksSettings, {})
       }),
       jsx(SettingsCard, {
         title: "مفاتيح API",
         description: "مفاتيح برمجية للقراءة الخارجية، منفصلة عن جلسات المستخدم. يظهر المفتاح مرة واحدة فقط عند الإنشاء.",
-        icon: jsx("span", { className: "text-xs font-mono text-gray-400", children: "API" }),
+        icon: jsx("span", { className: "text-xs font-mono text-[var(--va-text-muted)]", children: "API" }),
         children: jsx(ApiKeysSettings, {})
       })
     ]
@@ -1192,7 +1192,7 @@ export function SettingsPage() {
   const renderPermissions = () => jsx(SettingsCard, {
     title: "صلاحيات الحقول (Field ACL)",
     description: "حدّد أي الأدوار تستطيع رؤية كل حقل مخصص. الحقول غير المقيّدة مرئية للجميع. يُطبَّق القيد في جلب السجلات على الخادم.",
-    icon: jsx("span", { className: "text-xs text-gray-400", children: "🔒" }),
+    icon: jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "🔒" }),
     children: jsx(FieldPermissionsSettings, {})
   });
 
@@ -1218,7 +1218,7 @@ export function SettingsPage() {
         actions: jsxs("div", {
           className: "flex flex-wrap gap-2",
           children: [
-            jsx("span", { className: "rounded-full border border-white/10 bg-gray-950/35 px-3 py-2 text-xs text-gray-400", children: `التبويب: ${tabState.activeLabel}` }),
+            jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-3 py-2 text-xs text-[var(--va-text-muted)]", children: `التبويب: ${tabState.activeLabel}` }),
             jsx("span", { className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-2 text-xs va-accent-text-on-soft", children: "حفظ مباشر" })
           ]
         })

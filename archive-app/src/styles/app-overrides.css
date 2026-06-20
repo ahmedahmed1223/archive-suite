@@ -366,7 +366,10 @@
   .va-accent-text { color: var(--va-v1-accent); }
   .va-accent-bg { background-color: var(--va-v1-accent); }
   .va-accent-bg-soft { background-color: var(--va-v1-accent-soft); }
-  .va-accent-text-on-soft { color: var(--va-v1-accent); }
+  /* High-contrast text for use ON the soft-accent surface (va-accent-bg-soft).
+     Pure accent was unreadable on the bg-derived soft fill in many themes, so we
+     base it on the theme text color with a light accent tint. */
+  .va-accent-text-on-soft { color: color-mix(in oklab, var(--va-text), var(--va-v1-accent) 26%); }
   .va-accent-border { border-color: color-mix(in oklab, var(--va-v1-accent) 32%, transparent); }
   .va-tone-accent {
     background-color: var(--va-v1-accent-soft);
