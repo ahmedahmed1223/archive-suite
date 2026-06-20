@@ -34,8 +34,9 @@ describe("getSeenSteps / isTourDismissed", () => {
 });
 
 describe("shouldAutoStartTour", () => {
-  it("auto-starts for a fresh user with an empty archive", () => {
-    expect(shouldAutoStartTour({ itemCount: 0, settings: {}, steps })).toBe(true);
+  it("auto-starts only after an explicit opt-in", () => {
+    expect(shouldAutoStartTour({ itemCount: 0, settings: {}, steps })).toBe(false);
+    expect(shouldAutoStartTour({ itemCount: 0, settings: { ui: { tourAutoStartEnabled: true } }, steps })).toBe(true);
   });
 
   it("does not auto-start once items exist", () => {

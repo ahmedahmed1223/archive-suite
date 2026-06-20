@@ -185,7 +185,7 @@ export function UsageOnboardingPanel() {
     if (pageId) setCurrentPage?.(pageId);
   }, [setCurrentPage]);
 
-  if (!shouldShowUsageOnboarding({ itemCount, dismissed })) return null;
+  if (!shouldShowUsageOnboarding({ itemCount, dismissed, enabled: settings.ui?.usageOnboardingEnabled === true })) return null;
 
   return jsx(UsageOnboarding, {
     itemCount,

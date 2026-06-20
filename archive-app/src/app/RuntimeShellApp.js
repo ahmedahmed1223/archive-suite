@@ -161,29 +161,13 @@ export function App() {
 
   React.useEffect(() => {
     if (isLoading || authState !== "ready" || !settings.helpAutoOpenPending) return;
-    const tourPending = shouldShowV1Tour({ settings, currentPage: "dashboard" });
-    if (tourPending) {
-      updateSettings({ helpAutoOpenPending: false });
-      return;
-    }
-    try {
-      const route = parseAppRoute();
-      if (!route.page || route.page === "dashboard") {
-        setCurrentPage("help");
-        showToast("فتحنا دليل البدء السريع مرة واحدة لمساعدتك على الانطلاق.", "info");
-      }
-    } catch {
-    }
+    // Never stack help or a tour immediately after the setup wizard. Discovery
+    // remains available on demand from Help without interrupting first use.
     updateSettings({ helpAutoOpenPending: false });
   }, [
     isLoading,
     authState,
     settings.helpAutoOpenPending,
-    settings.ui?.v1TourCompleted,
-    settings.ui?.v1OnboardingCompleted,
-    settings.ui?.onboardingCompleted,
-    setCurrentPage,
-    showToast,
     updateSettings
   ]);
 

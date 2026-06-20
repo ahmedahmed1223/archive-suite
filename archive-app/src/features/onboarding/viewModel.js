@@ -113,6 +113,10 @@ export function createOnboardingCompletionPatch({
   };
   if (!replayMode) {
     ui.firstTaskChoiceUsed = false;
+    ui.v1TourCompleted = true;
+    ui.v1TourVersion = PRODUCT_TOUR_VERSION;
+    ui.tourDismissed = true;
+    ui.usageOnboardingDismissed = true;
   }
   return {
     theme: normalizedThemeChoice,
@@ -127,6 +131,7 @@ export function createOnboardingCompletionPatch({
 
 export function shouldShowV1Tour({ settings = {}, currentPage = "dashboard", hasDirectRoute = false } = {}) {
   if (hasDirectRoute || currentPage !== "dashboard") return false;
+  if (settings.ui?.v1TourAutoStartEnabled !== true) return false;
   const completedOnboarding = settings.ui?.v1OnboardingCompleted || settings.ui?.onboardingCompleted;
   if (!completedOnboarding) return false;
   if (!settings.ui?.v1TourCompleted) return true;

@@ -97,7 +97,7 @@ describe("isUsageOnboardingComplete", () => {
 
 describe("shouldShowUsageOnboarding", () => {
   it("shows for a fresh, non-dismissed archive", () => {
-    expect(shouldShowUsageOnboarding({ itemCount: 0, dismissed: false })).toBe(true);
+    expect(shouldShowUsageOnboarding({ itemCount: 0, dismissed: false, enabled: true })).toBe(true);
   });
 
   it("hides once dismissed", () => {
@@ -108,8 +108,8 @@ describe("shouldShowUsageOnboarding", () => {
     expect(shouldShowUsageOnboarding({ itemCount: 5, dismissed: false })).toBe(false);
   });
 
-  it("defaults to showing with no arguments", () => {
-    expect(shouldShowUsageOnboarding()).toBe(true);
+  it("defaults to hidden until explicitly enabled", () => {
+    expect(shouldShowUsageOnboarding()).toBe(false);
   });
 });
 
