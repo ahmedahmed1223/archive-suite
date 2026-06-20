@@ -33,6 +33,7 @@ import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { platform } from "node:os";
 import { resolveWizardLang, hasExplicitLang, createTranslator } from "./wizard-i18n.mjs";
+import { isSupportedNodeVersion } from "./node-version.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
@@ -157,8 +158,7 @@ function detectEnvironment() {
   const os = platform();
   ok(t("osLabel", { os: os === "win32" ? "Windows" : os === "darwin" ? "macOS" : "Linux" }));
 
-  const nodeMajor = parseInt(process.version.slice(1), 10);
-  if (nodeMajor < 22) {
+  if (!isSupportedNodeVersion(process.version)) {
     err(t("nodeTooOld", { version: process.version }));
     process.exit(1);
   }

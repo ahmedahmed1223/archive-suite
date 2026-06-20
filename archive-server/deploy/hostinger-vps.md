@@ -101,7 +101,7 @@ nano .env
 ```ini
 DOMAIN=archive.example.com
 ACME_EMAIL=you@example.com
-BACKEND=pocketbase           # أو postgres (مع POSTGRES_PASSWORD قوية)
+BACKEND=postgres             # الافتراضي الإنتاجي؛ PocketBase متاح للنشر الخفيف/القديم
 ARCHIVE_PUBLIC_DEPLOY=1
 JWT_SECRET=<openssl rand -base64 48>
 ADMIN_PASSWORD=<strong first admin password>
