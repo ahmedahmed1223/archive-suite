@@ -32,7 +32,7 @@ function PermissionPicker({ permission, onChange, disabled }) {
     children: SHARE_PERMISSIONS.map((level) => {
       const active = level.id === permission;
       return jsxs("label", {
-        className: `btn h-auto flex-col gap-1 px-2 py-2.5 text-xs ${active ? "btn-primary" : "btn-outline border-white/15 text-gray-300"}`,
+        className: `btn h-auto flex-col gap-1 px-2 py-2.5 text-xs ${active ? "btn-primary" : "btn-outline border-[var(--va-border-soft)] text-[var(--va-text-2)]"}`,
         title: level.description,
         children: [
           jsx("input", {
@@ -166,22 +166,22 @@ export function ShareDialog({
     dir: "rtl",
     className: "modal modal-open fixed inset-0 z-[3000] flex items-end justify-center p-4 sm:items-center",
     children: jsxs("div", {
-      className: "modal-box relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d0d0d] p-0 text-right shadow-2xl",
+      className: "modal-box relative w-full max-w-lg rounded-2xl border border-[var(--va-border-soft)] bg-[#0d0d0d] p-0 text-right shadow-2xl",
       children: [
         jsxs("div", {
-          className: "flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4",
+          className: "flex items-start justify-between gap-3 border-b border-[var(--va-border-soft)] px-5 py-4",
           children: [
             jsxs("div", { className: "flex items-center gap-2.5", children: [
               jsx("span", { className: "flex h-9 w-9 items-center justify-center rounded-xl va-accent-bg-soft va-accent-text", children: jsx(Share2, { className: "h-4 w-4" }) }),
               jsxs("div", { children: [
-                jsx("h2", { className: "text-base font-bold text-white", children: "مشاركة مع صلاحيات" }),
-                jsx("p", { className: "text-xs text-gray-500", children: label || "اختر مستوى الوصول ومدة الصلاحية." })
+                jsx("h2", { className: "text-base font-bold text-[var(--va-text)]", children: "مشاركة مع صلاحيات" }),
+                jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: label || "اختر مستوى الوصول ومدة الصلاحية." })
               ] })
             ] }),
             jsx("button", {
               type: "button",
               onClick: onClose,
-              className: "rounded-lg border border-white/10 p-1.5 text-gray-500 transition-colors hover:text-gray-300",
+              className: "rounded-lg border border-[var(--va-border-soft)] p-1.5 text-[var(--va-text-muted)] transition-colors hover:text-[var(--va-text-2)]",
               "aria-label": "إغلاق",
               children: jsx(X, { className: "h-4 w-4" })
             })
@@ -190,14 +190,14 @@ export function ShareDialog({
 
         jsxs("div", { className: "space-y-4 px-5 py-4", children: [
           jsxs("div", { className: "space-y-2", children: [
-            jsx("span", { className: "text-xs font-semibold text-gray-400", children: "مستوى الصلاحية" }),
+            jsx("span", { className: "text-xs font-semibold text-[var(--va-text-muted)]", children: "مستوى الصلاحية" }),
             jsx(PermissionPicker, { permission, onChange: setPermission, disabled: isBusy })
           ] }),
 
           jsxs("div", { className: "space-y-2", children: [
-            jsx("span", { className: "text-xs font-semibold text-gray-400", children: "مدة الصلاحية" }),
+            jsx("span", { className: "text-xs font-semibold text-[var(--va-text-muted)]", children: "مدة الصلاحية" }),
             jsx("select", {
-              className: "select select-bordered w-full bg-white/5 text-sm text-gray-200",
+              className: "select select-bordered w-full bg-[var(--va-surface-2)] text-sm text-[var(--va-text-2)]",
               value: expiresInDays,
               disabled: isBusy,
               onChange: (e) => setExpiresInDays(Number(e.target.value)),
@@ -206,20 +206,20 @@ export function ShareDialog({
           ] }),
 
           jsxs("label", { className: "block space-y-2", children: [
-            jsx("span", { className: "text-xs font-semibold text-gray-400", children: "كلمة مرور اختيارية" }),
+            jsx("span", { className: "text-xs font-semibold text-[var(--va-text-muted)]", children: "كلمة مرور اختيارية" }),
             jsx("input", {
               type: "password",
               value: password,
               disabled: isBusy,
               onChange: (e) => setPassword(e.target.value),
-              className: "input input-bordered w-full bg-white/5 text-sm text-gray-200",
+              className: "input input-bordered w-full bg-[var(--va-surface-2)] text-sm text-[var(--va-text-2)]",
               placeholder: "اتركها فارغة لرابط مفتوح"
             })
           ] }),
 
-          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-3", children: [
+          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-white/[0.03] p-3 space-y-3", children: [
             jsxs("label", { className: "block space-y-2", children: [
-              jsxs("span", { className: "inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400", children: [
+              jsxs("span", { className: "inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--va-text-muted)]", children: [
                 jsx(Mail, { className: "h-3.5 w-3.5", "aria-hidden": true }),
                 "دعوة بالبريد الإلكتروني"
               ] }),
@@ -228,19 +228,19 @@ export function ShareDialog({
                 value: inviteEmail,
                 disabled: isBusy,
                 onChange: (e) => setInviteEmail(e.target.value),
-                className: "input input-bordered w-full bg-white/5 text-sm text-gray-200",
+                className: "input input-bordered w-full bg-[var(--va-surface-2)] text-sm text-[var(--va-text-2)]",
                 placeholder: "reviewer@example.com",
                 "aria-label": "بريد المستلم"
               })
             ] }),
             jsxs("label", { className: "block space-y-2", children: [
-              jsx("span", { className: "text-xs font-semibold text-gray-400", children: "رسالة اختيارية" }),
+              jsx("span", { className: "text-xs font-semibold text-[var(--va-text-muted)]", children: "رسالة اختيارية" }),
               jsx("textarea", {
                 value: inviteMessage,
                 disabled: isBusy,
                 onChange: (e) => setInviteMessage(e.target.value),
                 rows: 2,
-                className: "textarea textarea-bordered w-full bg-white/5 text-sm text-gray-200",
+                className: "textarea textarea-bordered w-full bg-[var(--va-surface-2)] text-sm text-[var(--va-text-2)]",
                 placeholder: "اكتب سياقاً قصيراً للمستلم",
                 "aria-label": "رسالة الدعوة"
               })
@@ -248,7 +248,7 @@ export function ShareDialog({
           ] }),
 
           grant && jsxs("div", {
-            className: "badge badge-ghost h-auto w-full justify-start gap-2 whitespace-normal rounded-xl border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300",
+            className: "badge badge-ghost h-auto w-full justify-start gap-2 whitespace-normal rounded-xl border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-2 text-xs text-[var(--va-text-2)]",
             children: [jsx(ShieldCheck, { className: "h-3.5 w-3.5 shrink-0 va-accent-text" }), jsx("span", { children: describeShareGrant(grant) })]
           }),
 
@@ -301,12 +301,12 @@ export function ShareDialog({
         ] }),
 
         jsxs("div", {
-          className: "flex items-center justify-end gap-3 border-t border-white/10 px-5 py-4",
+          className: "flex items-center justify-end gap-3 border-t border-[var(--va-border-soft)] px-5 py-4",
           children: [
             jsx("button", {
               type: "button",
               onClick: onClose,
-              className: "btn btn-ghost btn-sm text-gray-300",
+              className: "btn btn-ghost btn-sm text-[var(--va-text-2)]",
               children: state.status === "ready" ? "إغلاق" : "إلغاء"
             }),
             state.status !== "ready" && jsxs("button", {

@@ -73,14 +73,14 @@ function ConditionRow({ condition, index, onChange, onRemove, disableRemove }) {
         value: condition.field,
         "aria-label": "الحقل",
         onChange: (event) => onChange(index, { field: event.target.value }),
-        className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40",
+        className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-[var(--va-text)] outline-none focus:border-cyan-500/40",
         children: Object.entries(RULE_FIELDS).map(([key, spec]) => jsx("option", { value: key, children: spec.label }, key))
       }),
       jsx("select", {
         value: condition.operator,
         "aria-label": "العملية",
         onChange: (event) => onChange(index, { operator: event.target.value }),
-        className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40",
+        className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-[var(--va-text)] outline-none focus:border-cyan-500/40",
         children: fieldSpec.operators.map((op) => jsx("option", { value: op, children: OPERATOR_LABELS[op] || op }, op))
       }),
       showValue ? jsx("input", {
@@ -88,7 +88,7 @@ function ConditionRow({ condition, index, onChange, onRemove, disableRemove }) {
         "aria-label": "قيمة الشرط",
         onChange: (event) => onChange(index, { value: event.target.value }),
         placeholder: ARRAY_OPERATORS.has(condition.operator) ? "افصل بفاصلة" : "القيمة",
-        className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40"
+        className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-[var(--va-text)] outline-none focus:border-cyan-500/40"
       }) : jsx("span", { className: "px-2 text-xs text-[var(--va-text-muted)]", children: "—" }),
       jsx("button", {
         type: "button",
@@ -108,7 +108,7 @@ function actionValueControl(action, index, onChange, collections) {
       value: action.value,
       "aria-label": "قيمة الإجراء",
       onChange: (event) => onChange(index, { value: event.target.value }),
-      className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40",
+      className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-[var(--va-text)] outline-none focus:border-cyan-500/40",
       children: [
         jsx("option", { value: "", children: "اختر الحالة" }, "blank"),
         ...WORKFLOW_STATES.map((state) => jsx("option", { value: state, children: STATE_META[state]?.label || state }, state))
@@ -120,7 +120,7 @@ function actionValueControl(action, index, onChange, collections) {
       value: action.value,
       "aria-label": "قيمة الإجراء",
       onChange: (event) => onChange(index, { value: event.target.value }),
-      className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40",
+      className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-[var(--va-text)] outline-none focus:border-cyan-500/40",
       children: [
         jsx("option", { value: "", children: "اختر المجموعة" }, "blank"),
         ...collections.map((col) => jsx("option", { value: col.id, children: col.name || col.id }, col.id))
@@ -132,7 +132,7 @@ function actionValueControl(action, index, onChange, collections) {
     "aria-label": "قيمة الإجراء",
     onChange: (event) => onChange(index, { value: event.target.value }),
     placeholder: "وسوم مفصولة بفاصلة",
-    className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40"
+    className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-[var(--va-text)] outline-none focus:border-cyan-500/40"
   });
 }
 
@@ -145,7 +145,7 @@ function ActionRow({ action, index, onChange, onRemove, disableRemove, collectio
         value: action.type,
         "aria-label": "نوع الإجراء",
         onChange: (event) => onChange(index, { type: event.target.value, value: "" }),
-        className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40",
+        className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-[var(--va-text)] outline-none focus:border-cyan-500/40",
         children: Object.values(AUTOMATION_ACTIONS).map((type) => jsx("option", { value: type, children: ACTION_LABELS[type] || type }, type))
       }),
       actionValueControl(action, index, onChange, collections),
@@ -344,7 +344,7 @@ export function AutomationPage() {
         })
       ] }),
       automationRules.length === 0 ? jsx("div", {
-        className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35",
+        className: "va-card rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)]",
         children: jsx(EmptyState, {
           icon: jsx(Workflow, { className: "h-16 w-16" }),
           title: "لا قواعد أتمتة بعد",

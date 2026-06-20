@@ -49,7 +49,7 @@ const LEVEL_TONE = {
   [METRIC_LEVELS.OK]:      "text-green-400",
   [METRIC_LEVELS.WARN]:    "text-amber-400",
   [METRIC_LEVELS.CRIT]:    "text-red-400",
-  [METRIC_LEVELS.UNKNOWN]: "text-gray-500"
+  [METRIC_LEVELS.UNKNOWN]: "text-[var(--va-text-muted)]"
 };
 
 const LEVEL_BAR = {
@@ -90,25 +90,25 @@ function MetricGauge({ id, percent, level, label, detail }) {
   const meta = METRIC_META[id] || { label: id, Icon: Server };
   const widthPct = Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : 0;
   return jsxs("div", {
-    className: "card rounded-xl border border-white/8 bg-white/[0.03] p-4",
+    className: "card rounded-xl border border-[var(--va-border-soft)] bg-white/[0.03] p-4",
     children: [
       jsxs("div", {
         className: "mb-2 flex items-center gap-2",
         children: [
           jsx(meta.Icon, { className: `h-4 w-4 ${LEVEL_TONE[level]}` }),
-          jsx("span", { className: "text-xs text-gray-400", children: meta.label }),
+          jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: meta.label }),
           jsx("span", { className: "flex-1" }),
           jsx("span", { className: `text-sm font-bold ${LEVEL_TONE[level]}`, children: label })
         ]
       }),
       jsx("div", {
-        className: "h-2 w-full overflow-hidden rounded-full bg-white/5",
+        className: "h-2 w-full overflow-hidden rounded-full bg-[var(--va-surface-2)]",
         children: jsx("div", {
           className: `h-full rounded-full ${LEVEL_BAR[level]}`,
           style: { width: `${widthPct}%` }
         })
       }),
-      detail && jsx("p", { className: "mt-1.5 text-xs text-gray-600", children: detail })
+      detail && jsx("p", { className: "mt-1.5 text-xs text-[var(--va-text-muted)]", children: detail })
     ]
   });
 }
@@ -118,16 +118,16 @@ function ServiceRow({ id, name, status, detail, actions = [], actionsEnabled, pe
   const down = status === "down";
   const dot = ok ? "bg-green-400" : down ? "bg-red-400" : "bg-gray-500";
   const statusLabel = ok ? "يعمل" : down ? "متوقف" : "غير معروف";
-  const statusTone = ok ? "text-green-400" : down ? "text-red-400" : "text-gray-500";
+  const statusTone = ok ? "text-green-400" : down ? "text-red-400" : "text-[var(--va-text-muted)]";
   return jsxs("div", {
-    className: "flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5",
+    className: "flex items-center gap-3 rounded-lg border border-[var(--va-border-soft)] bg-white/[0.02] px-3 py-2.5",
     children: [
       jsx("span", { className: `inline-block h-2.5 w-2.5 shrink-0 rounded-full ${dot}`, "aria-hidden": "true" }),
       jsxs("div", {
         className: "min-w-0 flex-1",
         children: [
-          jsx("p", { className: "truncate text-sm text-gray-200", children: name }),
-          detail && jsx("p", { className: "truncate text-xs text-gray-600", children: detail })
+          jsx("p", { className: "truncate text-sm text-[var(--va-text-2)]", children: name }),
+          detail && jsx("p", { className: "truncate text-xs text-[var(--va-text-muted)]", children: detail })
         ]
       }),
       jsx("span", { className: `shrink-0 text-xs font-medium ${statusTone}`, children: statusLabel }),
@@ -143,8 +143,8 @@ function ServiceRow({ id, name, status, detail, actions = [], actionsEnabled, pe
               title: allowed ? action.label : CONTROL_DISABLED_NOTE,
               "aria-label": `${action.label} ${name}`,
               onClick: () => onAction?.(id, action.id),
-              className: `btn btn-xs btn-ghost gap-1 rounded-lg border border-white/5 ${
-                allowed ? "text-gray-300 hover:bg-white/5 hover:text-white" : "cursor-not-allowed text-gray-600 opacity-50"
+              className: `btn btn-xs btn-ghost gap-1 rounded-lg border border-[var(--va-border-soft)] ${
+                allowed ? "text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]" : "cursor-not-allowed text-[var(--va-text-muted)] opacity-50"
               }`,
               children: jsx(action.Icon, { className: `h-3.5 w-3.5 ${pending ? "animate-spin" : ""}` })
             }, action.id);
@@ -229,13 +229,13 @@ export default function SystemControlPage() {
             className: "flex items-center gap-3",
             children: [
               jsx("div", {
-                className: "flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04]",
-                children: jsx(Server, { className: "h-5 w-5 text-gray-300" })
+                className: "flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--va-border-soft)] bg-white/[0.04]",
+                children: jsx(Server, { className: "h-5 w-5 text-[var(--va-text-2)]" })
               }),
               jsxs("div", {
                 children: [
-                  jsx("h1", { className: "text-base font-bold text-gray-100", children: "مركز تحكم النظام" }),
-                  jsx("p", { className: "text-xs text-gray-500", children: "مراقبة حالة النظام والموارد والخدمات (للقراءة فقط)" })
+                  jsx("h1", { className: "text-base font-bold text-[var(--va-text)]", children: "مركز تحكم النظام" }),
+                  jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: "مراقبة حالة النظام والموارد والخدمات (للقراءة فقط)" })
                 ]
               })
             ]
@@ -244,7 +244,7 @@ export default function SystemControlPage() {
             className: "flex items-center gap-2",
             children: [
               jsxs("label", {
-                className: "flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-xs text-gray-400",
+                className: "flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-3 py-1.5 text-xs text-[var(--va-text-muted)]",
                 children: [
                   jsx("input", {
                     type: "checkbox",
@@ -259,7 +259,7 @@ export default function SystemControlPage() {
                 type: "button",
                 onClick: handleRefresh,
                 disabled: checking,
-                className: "btn btn-sm btn-ghost gap-1.5 rounded-xl border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white",
+                className: "btn btn-sm btn-ghost gap-1.5 rounded-xl border border-[var(--va-border-soft)] text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]",
                 children: [
                   jsx(RefreshCw, { className: `h-4 w-4 ${checking ? "animate-spin" : ""}` }),
                   checking ? "جاري الفحص…" : "فحص الآن"
@@ -271,14 +271,14 @@ export default function SystemControlPage() {
       }),
 
       jsxs("div", {
-        className: "mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-4",
+        className: "mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--va-border-soft)] bg-white/[0.03] p-4",
         children: [
           jsx(overallCfg.Icon, { className: `h-6 w-6 shrink-0 ${overallCfg.tone}` }),
           jsxs("div", {
             children: [
               jsx("p", { className: `text-sm font-semibold ${overallCfg.tone}`, children: overallCfg.label }),
               jsxs("p", {
-                className: "text-xs text-gray-600",
+                className: "text-xs text-[var(--va-text-muted)]",
                 children: [
                   model.backend ? `${model.backend}` : "محلي",
                   model.version ? ` · ${model.version}` : "",
@@ -293,12 +293,12 @@ export default function SystemControlPage() {
       }),
 
       jsxs("div", {
-        className: "stats stats-vertical mb-5 w-full border border-white/8 bg-white/[0.02] sm:stats-horizontal",
+        className: "stats stats-vertical mb-5 w-full border border-[var(--va-border-soft)] bg-white/[0.02] sm:stats-horizontal",
         children: [
           jsxs("div", {
             className: "stat",
             children: [
-              jsx("div", { className: "stat-figure text-gray-500", children: jsx(Clock, { className: "h-5 w-5" }) }),
+              jsx("div", { className: "stat-figure text-[var(--va-text-muted)]", children: jsx(Clock, { className: "h-5 w-5" }) }),
               jsx("div", { className: "stat-title text-xs", children: "مدة التشغيل" }),
               jsx("div", { className: "stat-value text-lg", children: model.uptimeSec != null ? formatUptime(model.uptimeSec) : "—" })
             ]
@@ -306,7 +306,7 @@ export default function SystemControlPage() {
           jsxs("div", {
             className: "stat",
             children: [
-              jsx("div", { className: "stat-figure text-gray-500", children: jsx(Database, { className: "h-5 w-5" }) }),
+              jsx("div", { className: "stat-figure text-[var(--va-text-muted)]", children: jsx(Database, { className: "h-5 w-5" }) }),
               jsx("div", { className: "stat-title text-xs", children: "المحرّك" }),
               jsx("div", { className: "stat-value text-lg", children: model.engine || model.backend || "محلي" })
             ]
@@ -314,7 +314,7 @@ export default function SystemControlPage() {
           jsxs("div", {
             className: "stat",
             children: [
-              jsx("div", { className: "stat-figure text-gray-500", children: jsx(Server, { className: "h-5 w-5" }) }),
+              jsx("div", { className: "stat-figure text-[var(--va-text-muted)]", children: jsx(Server, { className: "h-5 w-5" }) }),
               jsx("div", { className: "stat-title text-xs", children: "الخدمات" }),
               jsx("div", { className: "stat-value text-lg", children: String(model.services.length) })
             ]
@@ -325,7 +325,7 @@ export default function SystemControlPage() {
       model.metrics.length > 0 && jsxs("section", {
         className: "mb-5",
         children: [
-          jsx("h2", { className: "mb-2 text-sm font-semibold text-gray-300", children: "الموارد" }),
+          jsx("h2", { className: "mb-2 text-sm font-semibold text-[var(--va-text-2)]", children: "الموارد" }),
           jsx("div", {
             className: "grid grid-cols-1 gap-3 sm:grid-cols-3",
             children: model.metrics.map((m) =>
@@ -336,7 +336,7 @@ export default function SystemControlPage() {
       }),
 
       model.metrics.length === 0 && jsxs("div", {
-        className: "alert mb-5 flex items-start gap-2 rounded-xl border border-white/8 bg-white/[0.02] p-3 text-xs text-gray-500",
+        className: "alert mb-5 flex items-start gap-2 rounded-xl border border-[var(--va-border-soft)] bg-white/[0.02] p-3 text-xs text-[var(--va-text-muted)]",
         children: [
           jsx(Cpu, { className: "mt-0.5 h-4 w-4 shrink-0" }),
           jsx("span", { children: "مقاييس الموارد (المعالج/الذاكرة/القرص) غير متوفرة من الخادم الحالي." })
@@ -346,7 +346,7 @@ export default function SystemControlPage() {
       jsxs("section", {
         className: "mb-5",
         children: [
-          jsx("h2", { className: "mb-2 text-sm font-semibold text-gray-300", children: "الخدمات" }),
+          jsx("h2", { className: "mb-2 text-sm font-semibold text-[var(--va-text-2)]", children: "الخدمات" }),
           model.services.length > 0
             ? jsx("div", {
                 className: "flex flex-col gap-2",
@@ -363,7 +363,7 @@ export default function SystemControlPage() {
                   }, svc.id)
                 )
               })
-            : jsx("p", { className: "text-xs text-gray-600", children: "لا توجد خدمات معروضة." })
+            : jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: "لا توجد خدمات معروضة." })
         ]
       }),
 
