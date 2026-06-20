@@ -1,7 +1,7 @@
 /**
  * BottomNav — DaisyUI dock-based fixed bottom navigation for mobile.
  *
- * Replaces the plain BottomTabBar with:
+ * The single mobile navigation surface:
  *   - DaisyUI `dock` component for accessibility + theme support
  *   - Badge counters (unread notifications, pending uploads)
  *   - Active indicator dot
@@ -9,7 +9,7 @@
  *
  * Connected to: MobileShell.jsx, AppRouter.jsx
  */
-import { Archive, CirclePlus, LayoutGrid, Bell, Search } from "lucide-react";
+import { Archive, CirclePlus, LayoutGrid, Menu, Search } from "lucide-react";
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { useAppStore } from "../../stores/index.js";
@@ -19,13 +19,14 @@ const TABS = [
   { id: "archive",   labelAr: "الأرشيف",  Icon: Archive,    badgeKey: null },
   { id: "add",       labelAr: "إضافة",    Icon: CirclePlus, badgeKey: null },
   { id: "search",    labelAr: "بحث",      Icon: Search,     badgeKey: null },
-  { id: "inbox",     labelAr: "الوارد",   Icon: Bell,       badgeKey: "inbox" },
 ];
 
 export function BottomNav() {
   const currentPage       = useAppStore((s) => s.currentPage);
   const setCurrentPage    = useAppStore((s) => s.setCurrentPage);
   const setSelectedItemId = useAppStore((s) => s.setSelectedItemId);
+  const setSidebarOpen     = useAppStore((s) => s.setSidebarOpen);
+  const toggleSidebar      = useAppStore((s) => s.toggleSidebar);
   const inboxItems        = useAppStore((s) => s.inboxItems || []);
   const notifications     = useAppStore((s) => s.notifications || []);
 
@@ -52,12 +53,12 @@ export function BottomNav() {
       "pb-[env(safe-area-inset-bottom,0px)]",
       "md:hidden",
     ].join(" "),
-    children: TABS.map(({ id, labelAr, Icon, badgeKey }) => {
+    children: [
+      ...TABS.map(({ id, labelAr, Icon, badgeKey }) => {
       const active     = currentPage === id;
       const badgeCount = badgeKey ? (badgeCounts[badgeKey] || 0) : 0;
 
       return jsx("button", {
-        key: id,
         type: "button",
         onClick: () => navigate(id),
         "aria-current": active ? "page" : undefined,
@@ -94,8 +95,29 @@ export function BottomNav() {
             }),
           ],
         }),
-      });
+      }, id);
     }),
+      jsx("button", {
+        type: "button",
+        onClick: () => setSidebarOpen ? setSidebarOpen(true) : toggleSidebar?.(),
+        "aria-label": "المزيد",
+        className: "group relative text-[var(--va-text-muted)] transition-colors hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55",
+        children: jsxs("span", {
+          className: "relative inline-flex flex-col items-center gap-0.5",
+          children: [
+            jsxs("span", { className: "relative inline-flex", children: [
+              jsx(Menu, { className: "h-5 w-5", "aria-hidden": "true" }),
+              badgeCounts.inbox > 0 && jsx("span", {
+                className: "absolute -top-1.5 -start-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--va-status-danger)] px-1 text-[9px] font-bold leading-none text-white ring-2 ring-[var(--va-surface)]",
+                "aria-label": `${badgeCounts.inbox} غير مقروء`,
+                children: badgeCounts.inbox > 9 ? "9+" : String(badgeCounts.inbox)
+              })
+            ] }),
+            jsx("span", { className: "dock-label text-[10px]", children: "المزيد" })
+          ]
+        })
+      }, "more")
+    ],
   });
 }
 

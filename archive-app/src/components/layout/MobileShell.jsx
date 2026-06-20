@@ -4,7 +4,7 @@
  * Provides:
  *   - Document-level swipe gestures for back navigation (swipeRight in RTL)
  *     and pull-to-refresh simulation (swipeDown)
- *   - BottomNav with badge counters (replaces BottomTabBar on mobile)
+ *   - BottomNav as the only mobile navigation surface
  *   - Safe-area-aware padding so content clears the dock
  *
  * Rendered inside AppRouter.jsx; BottomNav has `md:hidden` so only mobile sees it.
