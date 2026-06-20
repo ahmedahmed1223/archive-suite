@@ -7,6 +7,45 @@
  * pdfjs-dist is imported dynamically to keep the main bundle small.
  */
 import { useState, useEffect, useRef } from "react";
+import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Download, ExternalLink, FileText, ZoomIn, ZoomOut } from "lucide-react";
+
+export function clampPdfPage(value, totalPages) {
+  const total = Math.max(1, Number(totalPages) || 1);
+  return Math.max(1, Math.min(total, Math.round(Number(value) || 1)));
+}
+
+export function PdfPageNavigation({ currentPage, totalPages, onPageChange, zoom = 1.5, onZoomChange }) {
+  const [draft, setDraft] = useState(String(currentPage));
+  useEffect(() => setDraft(String(currentPage)), [currentPage]);
+  const submit = (event) => {
+    event.preventDefault();
+    const next = clampPdfPage(draft, totalPages);
+    setDraft(String(next));
+    onPageChange?.(next);
+  };
+  const iconButton = "btn btn-square btn-ghost btn-sm";
+  return (
+    <div className="sticky top-0 z-10 flex w-full flex-wrap items-center justify-center gap-2 border-b border-base-300 bg-base-100/95 p-2 shadow-sm backdrop-blur" dir="rtl" aria-label="أدوات تنقل PDF">
+      <div className="join" dir="ltr">
+        <button type="button" className={`${iconButton} join-item`} onClick={() => onPageChange?.(1)} disabled={currentPage <= 1} aria-label="الصفحة الأولى" title="الصفحة الأولى"><ChevronFirst className="h-4 w-4" /></button>
+        <button type="button" className={`${iconButton} join-item`} onClick={() => onPageChange?.(currentPage - 1)} disabled={currentPage <= 1} aria-label="الصفحة السابقة" title="الصفحة السابقة"><ChevronLeft className="h-4 w-4" /></button>
+        <button type="button" className={`${iconButton} join-item`} onClick={() => onPageChange?.(currentPage + 1)} disabled={currentPage >= totalPages} aria-label="الصفحة التالية" title="الصفحة التالية"><ChevronRight className="h-4 w-4" /></button>
+        <button type="button" className={`${iconButton} join-item`} onClick={() => onPageChange?.(totalPages)} disabled={currentPage >= totalPages} aria-label="الصفحة الأخيرة" title="الصفحة الأخيرة"><ChevronLast className="h-4 w-4" /></button>
+      </div>
+      <form onSubmit={submit} className="flex items-center gap-1.5 text-sm">
+        <label htmlFor="pdf-page-number">صفحة</label>
+        <input id="pdf-page-number" value={draft} onChange={(event) => setDraft(event.target.value)} inputMode="numeric" className="input input-bordered input-sm w-16 text-center" dir="ltr" aria-label="رقم صفحة PDF" />
+        <span dir="ltr">/ {totalPages}</span>
+        <button type="submit" className="btn btn-neutral btn-sm">انتقال</button>
+      </form>
+      <div className="join" dir="ltr">
+        <button type="button" className={`${iconButton} join-item`} onClick={() => onZoomChange?.(Math.max(0.75, zoom - 0.25))} disabled={zoom <= 0.75} aria-label="تصغير PDF" title="تصغير"><ZoomOut className="h-4 w-4" /></button>
+        <button type="button" className="btn btn-ghost btn-sm join-item min-w-16" onClick={() => onZoomChange?.(1.5)} aria-label="إعادة التكبير الافتراضي">{Math.round((zoom / 1.5) * 100)}%</button>
+        <button type="button" className={`${iconButton} join-item`} onClick={() => onZoomChange?.(Math.min(3, zoom + 0.25))} disabled={zoom >= 3} aria-label="تكبير PDF" title="تكبير"><ZoomIn className="h-4 w-4" /></button>
+      </div>
+    </div>
+  );
+}
 
 export function DocumentViewer({ url, mimeType, fileName, pageCount }) {
   const isImage = mimeType?.startsWith("image/");
@@ -32,7 +71,7 @@ export function DocumentViewer({ url, mimeType, fileName, pageCount }) {
   // Generic fallback — offer a download link.
   return (
     <div className="flex flex-col items-center gap-4 p-8 bg-gray-900 rounded-xl">
-      <span className="text-6xl" aria-hidden="true">📄</span>
+      <FileText className="h-14 w-14 text-base-content/45" aria-hidden="true" />
       <p className="text-gray-300">{fileName || "ملف"}</p>
       <a
         href={url}
@@ -53,6 +92,9 @@ function PdfViewer({ url, pageCount }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(pageCount || 1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [zoom, setZoom] = useState(1.5);
+  const [pdfDoc, setPdfDoc] = useState(null);
   const canvasRef = useRef(null);
   const pdfDocRef = useRef(null);
 
@@ -61,6 +103,7 @@ function PdfViewer({ url, pageCount }) {
 
     async function loadPdf() {
       setLoading(true);
+      setError("");
       try {
         const pdfjsLib = await import("pdfjs-dist");
         // Use the CDN worker to avoid bundling the large worker script.
@@ -72,10 +115,11 @@ function PdfViewer({ url, pageCount }) {
 
         if (cancelled) return;
         pdfDocRef.current = doc;
+        setPdfDoc(doc);
         setTotalPages(doc.numPages);
-        await renderPage(doc, 1);
       } catch (err) {
         console.error("PDF load error:", err);
+        if (!cancelled) setError(err?.message || "تعذّر تحميل ملف PDF.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -87,51 +131,45 @@ function PdfViewer({ url, pageCount }) {
     };
   }, [url]);
 
-  async function renderPage(doc, pageNum) {
-    const page = await doc.getPage(pageNum);
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const viewport = page.getViewport({ scale: 1.5 });
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
-  }
+  useEffect(() => {
+    if (!pdfDoc) return;
+    let cancelled = false;
+    const render = async () => {
+      try {
+        const page = await pdfDoc.getPage(currentPage);
+        const canvas = canvasRef.current;
+        if (!canvas || cancelled) return;
+        const viewport = page.getViewport({ scale: zoom });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+      } catch (renderError) {
+        if (!cancelled) setError(renderError?.message || "تعذّر عرض صفحة PDF.");
+      }
+    };
+    render();
+    return () => { cancelled = true; };
+  }, [currentPage, pdfDoc, zoom]);
 
-  async function goToPage(pageNum) {
+  function goToPage(pageNum) {
     if (!pdfDocRef.current) return;
-    setCurrentPage(pageNum);
-    await renderPage(pdfDocRef.current, pageNum);
+    setCurrentPage(clampPdfPage(pageNum, totalPages));
   }
 
   return (
-    <div className="flex flex-col items-center gap-4" dir="ltr">
+    <div className="flex max-h-[85vh] flex-col overflow-hidden border border-base-300 bg-base-200/40" dir="ltr">
+      <PdfPageNavigation currentPage={currentPage} totalPages={totalPages} onPageChange={goToPage} zoom={zoom} onZoomChange={setZoom} />
+      <div className="flex items-center justify-end gap-1 border-b border-base-300 bg-base-100 px-2 py-1" dir="rtl">
+        <a href={url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-xs gap-1"><ExternalLink className="h-3.5 w-3.5" />فتح منفصل</a>
+        <a href={url} download className="btn btn-ghost btn-xs gap-1"><Download className="h-3.5 w-3.5" />تنزيل</a>
+      </div>
       {loading && (
         <div className="text-gray-400 py-8">جاري تحميل PDF...</div>
       )}
-      <canvas ref={canvasRef} className="max-w-full shadow-xl rounded" />
-      {totalPages > 1 && (
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => goToPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage <= 1}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-40 rounded text-white"
-          >
-            السابق
-          </button>
-          <span className="text-gray-300" dir="ltr">
-            {currentPage} / {totalPages}
-          </span>
-          <button
-            type="button"
-            onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage >= totalPages}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-40 rounded text-white"
-          >
-            التالي
-          </button>
-        </div>
-      )}
+      {error && <div className="alert alert-error m-3" dir="rtl"><span>{error}</span></div>}
+      <div className="min-h-0 flex-1 overflow-auto p-3 text-center">
+        <canvas ref={canvasRef} className="mx-auto max-w-none rounded bg-white shadow-xl" aria-label={`صفحة PDF ${currentPage}`} />
+      </div>
     </div>
   );
 }
