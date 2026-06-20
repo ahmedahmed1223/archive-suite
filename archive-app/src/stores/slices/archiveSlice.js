@@ -312,6 +312,21 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       get().addAuditLog?.("bookmark.create", value.id, "bookmark", { itemId, timestamp: value.timestamp });
       return value;
     },
+    updateBookmark: async ({ id, timestamp, label, description } = {}) => {
+      const current = get().bookmarks.find((bookmark) => bookmark.id === id);
+      if (!current) return null;
+      const value = {
+        ...current,
+        timestamp: Math.max(0, Math.round(Number(timestamp) || 0)),
+        label: String(label || "").trim() || current.label || "إشارة",
+        description: String(description || "").trim(),
+        updatedAt: nowIso()
+      };
+      set((state) => ({ bookmarks: state.bookmarks.map((bookmark) => bookmark.id === id ? value : bookmark) }));
+      await dbPut(STORES.BOOKMARKS, value).catch(() => {});
+      get().addAuditLog?.("bookmark.update", value.id, "bookmark", { itemId: value.itemId, timestamp: value.timestamp });
+      return value;
+    },
     removeBookmark: async (id) => {
       set((state) => ({ bookmarks: state.bookmarks.filter((bookmark) => bookmark.id !== id) }));
       await dbDelete(STORES.BOOKMARKS, id).catch(() => {});
