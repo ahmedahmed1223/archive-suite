@@ -10,6 +10,10 @@ import { getBackendUrl } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 import * as defaultApi from "../features/file-manager/fileManagerClient.js";
 import { queueUploadedFile } from "../features/file-manager/ingestQueue.js";
+import { persistIngestQueueRecord } from "../features/file-manager/ingestQueue.js";
+import { buildArchiveHandoff, markQueueArchived } from "../features/file-manager/archiveHandoff.js";
+import { FileArchiveWizard } from "../features/archive/FileArchiveWizard.jsx";
+import { STORES } from "../services/storage/index.js";
 import {
   buildBreadcrumbs, joinFileManagerPath, mergeBrowserEntries, readViewMode,
   saveViewMode, toggleSelection
@@ -28,7 +32,7 @@ function fileName(key = "") {
 }
 
 export function FileManagerPage({ api = defaultApi, queueUpload = queueUploadedFile, storageProvider, onArchive }) {
-  const { settings, updateSettings, showToast, setCurrentPage } = useAppStore();
+  const { settings, updateSettings, showToast, contentTypes, videoItems, addVideoItem } = useAppStore();
   const deps = React.useMemo(() => ({ baseUrl: getBackendUrl(), getToken: getCloudToken }), []);
   const [path, setPath] = React.useState("");
   const [query, setQuery] = React.useState("");
@@ -44,8 +48,17 @@ export function FileManagerPage({ api = defaultApi, queueUpload = queueUploadedF
   const [folderName, setFolderName] = React.useState("");
   const [destinationDialog, setDestinationDialog] = React.useState("");
   const [destination, setDestination] = React.useState("");
+  const [queueOverride, setQueueOverride] = React.useState(null);
+  const [archiveFiles, setArchiveFiles] = React.useState([]);
+  const [archiveQueueRecord, setArchiveQueueRecord] = React.useState(null);
   const uploadInput = React.useRef(null);
   const autoQueue = settings?.fileManager?.autoQueueUploads !== false;
+  const queueThisUpload = typeof queueOverride === "boolean" ? queueOverride : autoQueue;
+
+  const resolveStorage = React.useCallback(() => {
+    if (storageProvider) return storageProvider;
+    try { return getStorageProvider(); } catch { return null; }
+  }, [storageProvider]);
 
   const load = React.useCallback(async ({ append = false, cursor = "" } = {}) => {
     setLoading(true);
@@ -120,11 +133,11 @@ export function FileManagerPage({ api = defaultApi, queueUpload = queueUploadedF
     if (!files.length) return;
     setBusy(true);
     try {
-      const storage = storageProvider || (() => { try { return getStorageProvider(); } catch { return null; } })();
+      const storage = resolveStorage();
       for (const upload of files) {
         const key = joinFileManagerPath(path, upload.name);
         const result = await api.uploadManagedFile({ key, file: upload, ...deps });
-        await queueUpload({ key: result?.key || key, name: upload.name, size: upload.size, mimeType: upload.type }, { globalDefault: autoQueue, storage }).catch(() => null);
+        await queueUpload({ key: result?.key || key, name: upload.name, size: upload.size, mimeType: upload.type }, { globalDefault: autoQueue, uploadOverride: queueOverride, storage }).catch(() => null);
       }
       showToast?.(`تم رفع ${files.length} ملف.`, "success");
       await load();
@@ -132,6 +145,7 @@ export function FileManagerPage({ api = defaultApi, queueUpload = queueUploadedF
       showToast?.(uploadError?.message || "فشل رفع الملفات.", "error");
     } finally {
       event.target.value = "";
+      setQueueOverride(null);
       setBusy(false);
     }
   };
@@ -148,14 +162,19 @@ export function FileManagerPage({ api = defaultApi, queueUpload = queueUploadedF
     }
   };
 
-  const archiveSelected = () => {
+  const archiveSelected = async () => {
     if (selectedKeys.length !== 1) return;
-    const payload = { fileKey: selectedKeys[0], source: "file-manager" };
-    if (onArchive) onArchive(payload);
-    else {
-      sessionStorage.setItem("archive.pendingFile", JSON.stringify(payload));
-      setCurrentPage?.("add");
-    }
+    const entry = entries.find((item) => item.key === selectedKeys[0]) || { key: selectedKeys[0] };
+    if (onArchive) return onArchive({ fileKey: entry.key, source: "file-manager" });
+    const storage = resolveStorage();
+    let queueRecord = null;
+    try {
+      const value = await storage?.getAll?.(STORES.FILE_INGEST_QUEUE);
+      const records = Array.isArray(value) ? value : value?.data || [];
+      queueRecord = records.find((record) => record.fileKey === entry.key) || null;
+    } catch { /* handoff works even if the optional queue cannot be read */ }
+    setArchiveQueueRecord(queueRecord);
+    setArchiveFiles([buildArchiveHandoff(entry, queueRecord)]);
   };
 
   const entryButton = (entry) => {
@@ -184,6 +203,7 @@ export function FileManagerPage({ api = defaultApi, queueUpload = queueUploadedF
         <section className="flex flex-wrap items-center gap-2 border-b border-base-300 pb-3">
           <button type="button" className="btn btn-primary btn-sm gap-2" onClick={() => uploadInput.current?.click()} disabled={busy}><Upload className="h-4 w-4" />رفع ملفات</button>
           <input ref={uploadInput} className="hidden" type="file" multiple onChange={uploadFiles} aria-label="اختيار ملفات للرفع" />
+          <label className="flex items-center gap-2 px-1 text-xs text-base-content/70"><input type="checkbox" className="checkbox checkbox-xs checkbox-primary" checked={queueThisUpload} onChange={(event) => setQueueOverride(event.target.checked)} />تجهيز هذه الدفعة للأرشفة</label>
           <button type="button" className="btn btn-ghost btn-sm gap-2" onClick={() => setFolderDialog(true)}><FolderPlus className="h-4 w-4" />مجلد جديد</button>
           <label className="input input-bordered input-sm flex min-w-[220px] flex-1 items-center gap-2 sm:max-w-md">
             <Search className="h-4 w-4 opacity-60" />
@@ -238,6 +258,19 @@ export function FileManagerPage({ api = defaultApi, queueUpload = queueUploadedF
 
       {folderDialog && <div className="modal modal-open" role="dialog" aria-modal="true" aria-label="إنشاء مجلد"><div className="modal-box max-w-md"><h3 className="text-lg font-bold">مجلد جديد</h3><label className="form-control mt-4"><span className="label-text mb-1">اسم المجلد</span><input autoFocus value={folderName} onChange={(event) => setFolderName(event.target.value)} className="input input-bordered" /></label><div className="modal-action"><button type="button" className="btn btn-ghost" onClick={() => setFolderDialog(false)}>إلغاء</button><button type="button" className="btn btn-primary" disabled={!folderName.trim() || busy} onClick={createFolder}>إنشاء</button></div></div></div>}
       {destinationDialog && <div className="modal modal-open" role="dialog" aria-modal="true" aria-label="اختيار وجهة"><div className="modal-box max-w-md"><h3 className="text-lg font-bold">{destinationDialog === "copy" ? "نسخ إلى" : "نقل إلى"}</h3><label className="form-control mt-4"><span className="label-text mb-1">مسار المجلد الوجهة</span><input autoFocus value={destination} onChange={(event) => setDestination(event.target.value)} className="input input-bordered" dir="ltr" placeholder="ready/2026" /></label><div className="modal-action"><button type="button" className="btn btn-ghost" onClick={() => setDestinationDialog("")}>إلغاء</button><button type="button" className="btn btn-primary" disabled={busy} onClick={() => runAction(destinationDialog, { destination })}>تنفيذ</button></div></div></div>}
+      <FileArchiveWizard
+        open={archiveFiles.length > 0}
+        onOpenChange={(open) => { if (!open) { setArchiveFiles([]); setArchiveQueueRecord(null); } }}
+        initialStoredFiles={archiveFiles}
+        contentTypes={contentTypes || []}
+        videoItems={videoItems || []}
+        addVideoItem={addVideoItem}
+        showToast={showToast}
+        onArchived={async ({ item }) => {
+          if (!archiveQueueRecord) return;
+          await persistIngestQueueRecord(markQueueArchived(archiveQueueRecord, item), { storage: resolveStorage() });
+        }}
+      />
     </main>
   );
 }
