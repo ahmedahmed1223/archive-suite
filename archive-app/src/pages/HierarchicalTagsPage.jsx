@@ -73,7 +73,7 @@ function TagForm({ tag, parentTag, tags, onCancel, onSave }) {
     children: jsxs("div", {
       className: "grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]",
       children: [
-        jsxs("label", { className: "space-y-1 text-sm text-gray-300", children: [
+        jsxs("label", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
           jsx("span", { children: "اسم الوسم" }),
           jsx("input", {
             ref: nameRef,
@@ -84,7 +84,7 @@ function TagForm({ tag, parentTag, tags, onCancel, onSave }) {
             placeholder: "مثال: رياضة / كرة قدم"
           })
         ] }),
-        jsxs("label", { className: "space-y-1 text-sm text-gray-300 md:col-span-2", children: [
+        jsxs("label", { className: "space-y-1 text-sm text-[var(--va-text-2)] md:col-span-2", children: [
           jsx("span", { children: "مرادفات الوسم" }),
           jsx("input", {
             value: aliases,
@@ -94,7 +94,7 @@ function TagForm({ tag, parentTag, tags, onCancel, onSave }) {
           })
         ] }),
         jsxs("div", { className: "space-y-1", children: [
-          jsx("span", { id: colorLabelId, className: "text-sm text-gray-300", children: "اللون" }),
+          jsx("span", { id: colorLabelId, className: "text-sm text-[var(--va-text-2)]", children: "اللون" }),
           jsx(ColorSwatchPicker, { value: color, onChange: setColor, presets: HIERARCHICAL_TAG_COLORS, labelId: colorLabelId, className: "max-w-[280px]" })
         ] })
       ]
@@ -125,29 +125,29 @@ function TagNode({
     "aria-expanded": hasChildren ? isExpanded : undefined,
     children: [
       jsxs("div", {
-        className: "group flex items-center gap-2 rounded-xl border border-transparent p-2 transition-colors hover:border-white/10 hover:bg-white/5",
+        className: "group flex items-center gap-2 rounded-xl border border-transparent p-2 transition-colors hover:border-[var(--va-border-soft)] hover:bg-[var(--va-surface-2)]",
         style: { paddingRight: `${level * 22 + 8}px` },
         children: [
           jsx("button", {
             type: "button",
             onClick: () => hasChildren && onToggle(tag.id),
-            className: `flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${hasChildren ? "text-gray-400 hover:bg-white/10 hover:text-white" : "text-transparent"}`,
+            className: `flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${hasChildren ? "text-[var(--va-text-muted)] hover:bg-[var(--va-elevated)] hover:text-[var(--va-text)]" : "text-transparent"}`,
             "aria-label": isExpanded ? "طي الوسم" : "توسيع الوسم",
             children: hasChildren ? isExpanded ? jsx(ChevronDown, { className: "h-4 w-4" }) : jsx(ChevronLeft, { className: "h-4 w-4" }) : jsx(ChevronLeft, { className: "h-4 w-4" })
           }),
           jsx("span", { className: "h-3 w-3 shrink-0 rounded-full transition-shadow", style: { backgroundColor: tag.color || "#10b981", boxShadow: `0 0 0 2px ${tag.color || "#10b981"}28` } }),
           jsxs("div", { className: "min-w-0 flex-1", children: [
-            jsx("p", { className: "truncate text-sm font-semibold text-white group-hover:text-emerald-200", children: tag.name || "وسم بدون اسم" }),
-            level > 0 && jsx("p", { className: "truncate text-xs text-gray-600", children: getHierarchicalTagPath(tag.id, tags) }),
-            tag.aliases?.length ? jsx("p", { className: "truncate text-[11px] text-gray-600", children: `مرادفات: ${tag.aliases.slice(0, 3).join("، ")}` }) : null
+            jsx("p", { className: "truncate text-sm font-semibold text-[var(--va-text)] group-hover:text-emerald-200", children: tag.name || "وسم بدون اسم" }),
+            level > 0 && jsx("p", { className: "truncate text-xs text-[var(--va-text-muted)]", children: getHierarchicalTagPath(tag.id, tags) }),
+            tag.aliases?.length ? jsx("p", { className: "truncate text-[11px] text-[var(--va-text-muted)]", children: `مرادفات: ${tag.aliases.slice(0, 3).join("، ")}` }) : null
           ] }),
-          usageCount > 0 && jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-500", children: formatNumber(usageCount) }),
+          usageCount > 0 && jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-muted)]", children: formatNumber(usageCount) }),
           jsxs("div", { className: "flex shrink-0 gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100", children: [
-            jsx("button", { type: "button", onClick: () => onCreateChild(tag), className: "rounded-lg p-2 text-gray-500 hover:bg-emerald-500/10 hover:text-emerald-300", "aria-label": `إضافة فرع داخل ${tag.name}`, children: jsx(Plus, { className: "h-4 w-4" }) }),
-            jsx("button", { type: "button", onClick: () => onMove(tag, "up"), className: "rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": "رفع الوسم", children: jsx(ArrowUp, { className: "h-4 w-4" }) }),
-            jsx("button", { type: "button", onClick: () => onMove(tag, "down"), className: "rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": "خفض الوسم", children: jsx(ArrowDown, { className: "h-4 w-4" }) }),
-            jsx("button", { type: "button", onClick: () => onEdit(tag), className: "rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": `تعديل ${tag.name}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
-            jsx("button", { type: "button", onClick: () => onDelete(tag), className: "rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-300", "aria-label": `حذف ${tag.name}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
+            jsx("button", { type: "button", onClick: () => onCreateChild(tag), className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-emerald-500/10 hover:text-emerald-300", "aria-label": `إضافة فرع داخل ${tag.name}`, children: jsx(Plus, { className: "h-4 w-4" }) }),
+            jsx("button", { type: "button", onClick: () => onMove(tag, "up"), className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", "aria-label": "رفع الوسم", children: jsx(ArrowUp, { className: "h-4 w-4" }) }),
+            jsx("button", { type: "button", onClick: () => onMove(tag, "down"), className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", "aria-label": "خفض الوسم", children: jsx(ArrowDown, { className: "h-4 w-4" }) }),
+            jsx("button", { type: "button", onClick: () => onEdit(tag), className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", "aria-label": `تعديل ${tag.name}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
+            jsx("button", { type: "button", onClick: () => onDelete(tag), className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-red-500/10 hover:text-red-300", "aria-label": `حذف ${tag.name}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
           ] })
         ]
       }),
@@ -178,20 +178,20 @@ function FlatTagCard({ tag, tags, index, onEdit, onDelete }) {
     initial: { opacity: 0, y: 8 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.18, delay: Math.min(index, 10) * 0.025 },
-    className: "va-entity-card rounded-2xl va-surface-muted border p-4 text-right transition-all hover:border-white/20",
+    className: "va-entity-card rounded-2xl va-surface-muted border p-4 text-right transition-all hover:border-[var(--va-border-strong)]",
     style: { boxShadow: `inset -3px 0 0 0 ${accentColor}44` },
     children: [
       jsxs("div", { className: "flex items-start justify-between gap-3", children: [
         jsxs("div", { className: "min-w-0 flex-1", children: [
           jsxs("div", { className: "flex items-center gap-2", children: [
             jsx("span", { className: "h-3 w-3 flex-shrink-0 rounded-full", style: { backgroundColor: accentColor, boxShadow: `0 0 0 2px ${accentColor}30` } }),
-            jsx("h3", { className: "truncate text-base font-bold text-white", children: tag.name || "وسم بدون اسم" })
+            jsx("h3", { className: "truncate text-base font-bold text-[var(--va-text)]", children: tag.name || "وسم بدون اسم" })
           ] }),
-          jsx("p", { className: "mt-1.5 truncate text-xs text-gray-500", children: getHierarchicalTagPath(tag.id, tags) || tag.name })
+          jsx("p", { className: "mt-1.5 truncate text-xs text-[var(--va-text-muted)]", children: getHierarchicalTagPath(tag.id, tags) || tag.name })
         ] }),
         jsxs("div", { className: "flex shrink-0 gap-1", children: [
-          jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-gray-500 hover:bg-white/5 hover:text-white", "aria-label": `تعديل ${tag.name}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
-          jsx("button", { type: "button", onClick: onDelete, className: "rounded-lg p-2 text-gray-500 hover:bg-red-500/10 hover:text-red-300", "aria-label": `حذف ${tag.name}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
+          jsx("button", { type: "button", onClick: onEdit, className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]", "aria-label": `تعديل ${tag.name}`, children: jsx(PenLine, { className: "h-4 w-4" }) }),
+          jsx("button", { type: "button", onClick: onDelete, className: "rounded-lg p-2 text-[var(--va-text-muted)] hover:bg-red-500/10 hover:text-red-300", "aria-label": `حذف ${tag.name}`, children: jsx(Trash2, { className: "h-4 w-4" }) })
         ] })
       ] })
     ]
@@ -362,8 +362,8 @@ export function HierarchicalTagsPage() {
         title: "الوسوم الهرمية",
         description: "وسوم جذرية وفرعية تظهر في حقول الوسوم عند كتابة الرمز # مع حفظ المسار الكامل للوسم.",
         actions: jsxs("div", { className: "flex flex-wrap gap-2", children: [
-          hierarchicalTags.length > 0 && jsxs("button", { type: "button", onClick: expandAll, className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5", children: [jsx(ChevronDown, { className: "h-4 w-4" }), "توسيع الكل"] }),
-          hierarchicalTags.length > 0 && jsxs("button", { type: "button", onClick: collapseAll, className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-300 hover:bg-white/5", children: [jsx(ChevronLeft, { className: "h-4 w-4" }), "طي الكل"] }),
+          hierarchicalTags.length > 0 && jsxs("button", { type: "button", onClick: expandAll, className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-3 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: [jsx(ChevronDown, { className: "h-4 w-4" }), "توسيع الكل"] }),
+          hierarchicalTags.length > 0 && jsxs("button", { type: "button", onClick: collapseAll, className: "inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-3 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: [jsx(ChevronLeft, { className: "h-4 w-4" }), "طي الكل"] }),
           jsxs("button", { type: "button", onClick: startCreateRoot, className: "btn btn-primary gap-2", children: [jsx(Plus, { className: "h-4 w-4" }), "وسم جذر"] })
         ] })
       }),
@@ -380,29 +380,29 @@ export function HierarchicalTagsPage() {
       }),
       hierarchicalTags.length > 0 && jsxs("section", { className: "grid gap-3 xl:grid-cols-4", children: [
         jsxs("div", { className: "rounded-2xl va-surface-muted border p-4 text-right", children: [
-          jsx("h2", { className: "text-sm font-bold text-white", children: "الأكثر استخداماً" }),
-          workspace.usage.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-2", children: workspace.usage.slice(0, 10).map((row) => jsx("button", { type: "button", onClick: () => setQuery(row.name), className: "rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-300 hover:bg-white/10", children: `${row.name} · ${formatNumber(row.count)}` }, row.key)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: "لا توجد وسوم مستخدمة بعد." })
+          jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "الأكثر استخداماً" }),
+          workspace.usage.length ? jsx("div", { className: "mt-3 flex flex-wrap gap-2", children: workspace.usage.slice(0, 10).map((row) => jsx("button", { type: "button", onClick: () => setQuery(row.name), className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1 text-xs text-[var(--va-text-2)] hover:bg-[var(--va-elevated)]", children: `${row.name} · ${formatNumber(row.count)}` }, row.key)) }) : jsx("p", { className: "mt-3 text-sm text-[var(--va-text-muted)]", children: "لا توجد وسوم مستخدمة بعد." })
         ] }),
         jsxs("div", { className: "rounded-2xl va-surface-muted border p-4 text-right", children: [
-          jsx("h2", { className: "text-sm font-bold text-white", children: "مقترحة من المواد" }),
-          workspace.suggestions.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.suggestions.slice(0, 5).map((row) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl va-surface-subtle border px-3 py-2", children: [
-            jsx("span", { className: "truncate text-sm text-gray-200", children: row.name }),
+          jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "مقترحة من المواد" }),
+          workspace.suggestions.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.suggestions.slice(0, 5).map((row) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl va-surface-muted border px-3 py-2", children: [
+            jsx("span", { className: "truncate text-sm text-[var(--va-text-2)]", children: row.name }),
             jsx("button", { type: "button", onClick: () => createSuggestedTag(row), className: "shrink-0 rounded-lg border va-accent-border va-accent-bg-soft px-2 py-1 text-xs font-semibold va-accent-text-on-soft hover:bg-emerald-500/15", children: "اعتماد" })
-          ] }, row.key)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: "لا توجد وسوم غير رسمية متكررة." })
+          ] }, row.key)) }) : jsx("p", { className: "mt-3 text-sm text-[var(--va-text-muted)]", children: "لا توجد وسوم غير رسمية متكررة." })
         ] }),
         jsxs("div", { className: "rounded-2xl va-surface-muted border p-4 text-right", children: [
-          jsx("h2", { className: "text-sm font-bold text-white", children: "غير مستخدمة" }),
-          workspace.unused.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.unused.slice(0, 5).map((tag) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl va-surface-subtle border px-3 py-2", children: [
-            jsx("span", { className: "truncate text-sm text-gray-200", children: tag.name }),
+          jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "غير مستخدمة" }),
+          workspace.unused.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.unused.slice(0, 5).map((tag) => jsxs("div", { className: "flex items-center justify-between gap-2 rounded-xl va-surface-muted border px-3 py-2", children: [
+            jsx("span", { className: "truncate text-sm text-[var(--va-text-2)]", children: tag.name }),
             jsx("button", { type: "button", onClick: () => deleteUnusedTag(tag), className: "shrink-0 rounded-lg border border-red-500/25 bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-100 hover:bg-red-500/15", children: "حذف" })
-          ] }, tag.id)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: "كل الوسوم مستخدمة." })
+          ] }, tag.id)) }) : jsx("p", { className: "mt-3 text-sm text-[var(--va-text-muted)]", children: "كل الوسوم مستخدمة." })
         ] }),
         jsxs("div", { className: "rounded-2xl va-surface-muted border p-4 text-right", children: [
-          jsx("h2", { className: "text-sm font-bold text-white", children: "مكررة أو متقاربة" }),
-          workspace.duplicates.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.duplicates.slice(0, 4).map((group) => jsxs("div", { className: "rounded-xl va-surface-subtle border p-3", children: [
-            jsx("p", { className: "text-sm font-semibold text-white", children: group.entries.map((tag) => tag.name).join("، ") }),
+          jsx("h2", { className: "text-sm font-bold text-[var(--va-text)]", children: "مكررة أو متقاربة" }),
+          workspace.duplicates.length ? jsx("div", { className: "mt-3 space-y-2", children: workspace.duplicates.slice(0, 4).map((group) => jsxs("div", { className: "rounded-xl va-surface-muted border p-3", children: [
+            jsx("p", { className: "text-sm font-semibold text-[var(--va-text)]", children: group.entries.map((tag) => tag.name).join("، ") }),
             jsx("button", { type: "button", onClick: () => mergeDuplicateTags(group), className: "mt-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-100 hover:bg-amber-500/15", children: "دمج" })
-          ] }, group.key)) }) : jsx("p", { className: "mt-3 text-sm text-gray-500", children: workspace.aliasWarnings.length ? workspace.aliasWarnings[0].message : "لا توجد مكررات ظاهرة." })
+          ] }, group.key)) }) : jsx("p", { className: "mt-3 text-sm text-[var(--va-text-muted)]", children: workspace.aliasWarnings.length ? workspace.aliasWarnings[0].message : "لا توجد مكررات ظاهرة." })
         ] })
       ] }),
       hierarchicalTags.length > 0 && jsx("section", {
@@ -416,8 +416,8 @@ export function HierarchicalTagsPage() {
           children: [
             jsxs("div", { className: "flex items-start justify-between gap-3", children: [
               jsxs("div", { className: "min-w-0", children: [
-                jsx("p", { className: "text-xs text-gray-500", children: label }),
-                jsx("p", { className: "mt-2 text-2xl font-bold text-white", children: formatNumber(value) })
+                jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: label }),
+                jsx("p", { className: "mt-2 text-2xl font-bold text-[var(--va-text)]", children: formatNumber(value) })
               ] }),
               jsx("span", { className: "va-icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", children: jsx(Icon, { className: "h-5 w-5" }) })
             ] })
@@ -437,7 +437,7 @@ export function HierarchicalTagsPage() {
         className: "va-filter-surface rounded-2xl va-surface-muted border p-4",
         children: [
           jsxs("label", { className: "relative block", children: [
-            jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+            jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
             jsx("input", {
               value: query,
               onChange: (event) => setQuery(event.target.value),
@@ -445,7 +445,7 @@ export function HierarchicalTagsPage() {
               className: "input input-bordered w-full"
             })
           ] }),
-          jsx("p", { className: "mt-3 text-xs text-gray-500", children: query.trim() ? `${formatNumber(filteredTags.length)} نتيجة بحث` : "يمكن ترتيب الوسوم أو إضافة فروع من نفس الشجرة." })
+          jsx("p", { className: "mt-3 text-xs text-[var(--va-text-muted)]", children: query.trim() ? `${formatNumber(filteredTags.length)} نتيجة بحث` : "يمكن ترتيب الوسوم أو إضافة فروع من نفس الشجرة." })
         ]
       }),
       query.trim() ? filteredTags.length ? jsx("section", {
@@ -462,7 +462,7 @@ export function HierarchicalTagsPage() {
           onDelete: () => deleteTag(tag)
         }, tag.id))
       }) : jsx("section", {
-        className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35",
+        className: "va-card rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)]",
         children: jsx(EmptyState, {
           type: "search",
           title: "لا توجد وسوم مطابقة",
@@ -492,7 +492,7 @@ export function HierarchicalTagsPage() {
           getTagUsageCount
         }, tag.id))
       }) : jsx("section", {
-        className: "va-card rounded-2xl border border-dashed border-white/10 bg-gray-900/35",
+        className: "va-card rounded-2xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)]",
         children: jsx(EmptyState, {
           icon: jsx(FolderTree, { className: "h-16 w-16" }),
           title: "ابدأ شجرة الوسوم",

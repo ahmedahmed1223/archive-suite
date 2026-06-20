@@ -1,0 +1,65 @@
+<div dir="rtl">
+  <h2>أي تصميم يجعل إعداد الخادم أسهل؟</h2>
+  <p class="subtitle">كلا الخيارين يعبئ القيم من إعداد الخادم، يخفي كلمة المرور، ويطلب تغييرها بعد أول دخول.</p>
+
+  <div class="cards">
+    <div class="card" data-choice="guided" onclick="toggleSelect(this)">
+      <div class="card-image">
+        <div class="mockup" style="direction:rtl;text-align:right">
+          <div class="mockup-header">الخيار A: إعداد ذكي موجّه</div>
+          <div class="mockup-body">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+              <div style="border:2px solid #22c55e;padding:10px;border-radius:7px;background:#22c55e12"><strong>PostgreSQL</strong><br><small>موصى به</small></div>
+              <div style="border:1px solid #64748b;padding:10px;border-radius:7px"><strong>PocketBase</strong><br><small>خفيف</small></div>
+              <div style="border:1px solid #64748b;padding:10px;border-radius:7px"><strong>محلي</strong><br><small>دون خادم</small></div>
+            </div>
+            <div class="label">تم اكتشاف الإعداد تلقائيًا</div>
+            <input class="mock-input" value="نفس نطاق التطبيق /api" readonly>
+            <input class="mock-input" value="admin" readonly>
+            <input class="mock-input" value="••••••••••••" readonly>
+            <div style="padding:9px;border-radius:7px;background:#f59e0b18;margin:9px 0;font-size:12px">تنبيه: غيّر كلمة المرور الافتراضية بعد أول دخول.</div>
+            <button class="mock-button">اختبار الاتصال والمتابعة</button>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>A. إعداد ذكي موجّه</h3>
+        <p>اختيار الخادم أولًا، ثم القيم المكتشفة وحالة الاتصال في مسار واحد قصير. الأنسب لمعظم المستخدمين.</p>
+      </div>
+    </div>
+
+    <div class="card" data-choice="advanced" onclick="toggleSelect(this)">
+      <div class="card-image">
+        <div class="mockup" style="direction:rtl;text-align:right">
+          <div class="mockup-header">الخيار B: لوحة إعداد متقدمة</div>
+          <div class="mockup-body" style="display:grid;grid-template-columns:130px 1fr;gap:12px">
+            <div class="mock-sidebar" style="min-width:0">
+              <strong>PostgreSQL</strong><br><br>
+              PocketBase<br><br>
+              محلي<br><br>
+              Firebase
+            </div>
+            <div>
+              <div class="label">تفاصيل PostgreSQL</div>
+              <input class="mock-input" value="http://server:8787">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <input class="mock-input" value="admin">
+                <input class="mock-input" value="••••••••">
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <input class="mock-input" value="archive">
+                <input class="mock-input" value="5432">
+              </div>
+              <div style="padding:8px;border-radius:7px;background:#22c55e18;margin:8px 0;font-size:12px">الخادم وقاعدة البيانات جاهزان</div>
+              <button class="mock-button">حفظ الإعداد المتقدم</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>B. لوحة إعداد متقدمة</h3>
+        <p>تعرض تفاصيل أكثر من البداية، وتناسب مسؤولي النظام، لكنها أثقل على المستخدم الجديد.</p>
+      </div>
+    </div>
+  </div>
+</div>

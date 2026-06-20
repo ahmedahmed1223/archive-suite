@@ -33,14 +33,14 @@ import {
 // Presentational metadata for each connection state.
 const CONNECTION_PRESENTATION = {
   online: { label: "متصل", icon: Cloud, className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" },
-  offline: { label: "غير متصل", icon: CloudOff, className: "border-gray-500/30 bg-gray-500/10 text-gray-300" },
+  offline: { label: "غير متصل", icon: CloudOff, className: "border-[var(--va-border-strong)] bg-[var(--va-surface-2)] text-[var(--va-text-2)]" },
   syncing: { label: "جارٍ المزامنة", icon: Loader2, className: "border-cyan-500/30 bg-cyan-500/10 text-cyan-200" }
 };
 
 const OP_STATUS_PRESENTATION = {
   pending: { label: "معلّقة", className: "border-amber-500/30 bg-amber-500/10 text-amber-200" },
   inFlight: { label: "قيد التنفيذ", className: "border-cyan-500/30 bg-cyan-500/10 text-cyan-200" },
-  failed: { label: "فاشلة", className: "border-red-500/30 bg-red-500/10 text-red-200" },
+  failed: { label: "فاشلة", className: "border-rose-500/30 bg-rose-500/10 text-rose-200" },
   done: { label: "مكتملة", className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" }
 };
 
@@ -83,16 +83,16 @@ function ConnectionBadge({ state }) {
 function SyncOpRow({ op }) {
   const status = OP_STATUS_PRESENTATION[op.status] || OP_STATUS_PRESENTATION.pending;
   return jsxs("div", {
-    className: "flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-gray-950/30 p-3",
+    className: "flex flex-wrap items-center justify-between gap-2 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3",
     children: [
       jsxs("div", { className: "min-w-0", children: [
-        jsxs("p", { className: "truncate text-sm font-semibold text-white", children: [
+        jsxs("p", { className: "truncate text-sm font-semibold text-[var(--va-text)]", children: [
           OP_ACTION_LABEL[op.action] || op.action, " · ", op.entity
         ] }),
-        jsxs("p", { className: "mt-0.5 truncate text-[11px] font-mono text-gray-500", dir: "ltr", children: [
+        jsxs("p", { className: "mt-0.5 truncate text-[11px] font-[family-name:var(--va-font-mono)] text-[var(--va-text-muted)]", dir: "ltr", children: [
           op.entityId || "—", op.attempts > 0 ? ` · محاولات: ${op.attempts}` : ""
         ] }),
-        op.error && jsx("p", { className: "mt-1 truncate text-[11px] text-red-300", children: op.error })
+        op.error && jsx("p", { className: "mt-1 truncate text-[11px] text-rose-300", children: op.error })
       ] }),
       jsxs("div", { className: "flex shrink-0 items-center gap-2", children: [
         jsx("span", { className: `rounded-full border px-2 py-0.5 text-[11px] ${status.className}`, children: status.label }),
@@ -100,14 +100,14 @@ function SyncOpRow({ op }) {
           type: "button",
           onClick: () => updateSyncOpStatus(op.id, "pending"),
           "aria-label": "إعادة المحاولة",
-          className: "inline-flex h-7 w-7 items-center justify-center rounded-lg text-cyan-300 hover:bg-cyan-500/10",
+          className: "inline-flex h-7 w-7 items-center justify-center rounded-[var(--va-radius-sm)] text-cyan-300 hover:bg-cyan-500/10",
           children: jsx(RefreshCw, { className: "h-3.5 w-3.5" })
         }),
         jsx("button", {
           type: "button",
           onClick: () => removeSyncOp(op.id),
           "aria-label": "إزالة العملية",
-          className: "inline-flex h-7 w-7 items-center justify-center rounded-lg text-red-300 hover:bg-red-500/10",
+          className: "inline-flex h-7 w-7 items-center justify-center rounded-[var(--va-radius-sm)] text-rose-300 hover:bg-rose-500/10",
           children: jsx(Trash2, { className: "h-3.5 w-3.5" })
         })
       ] })
@@ -124,7 +124,7 @@ function ConflictRow({ conflict, onResolve }) {
     children: [
       jsxs("div", { className: "flex flex-wrap items-start justify-between gap-2", children: [
         jsxs("div", { className: "min-w-0", children: [
-          jsx("p", { className: "truncate text-sm font-bold text-white", dir: "auto", children: title }),
+          jsx("p", { className: "truncate text-sm font-bold text-[var(--va-text)]", dir: "auto", children: title }),
           jsxs("p", { className: "mt-0.5 text-[11px] text-amber-200/80", children: [
             typeLabel,
             fields.length > 0 ? ` · ${formatNumber(fields.length)} حقل متعارض` : ""
@@ -173,47 +173,47 @@ function SyncStatusPanel() {
   };
 
   return jsxs("section", {
-    className: "space-y-4 rounded-2xl border border-white/10 bg-gray-950/30 p-4",
+    className: "space-y-4 rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 shadow-[var(--va-elev-1)]",
     children: [
       jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-        jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [
+        jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-[var(--va-text)]", children: [
           jsx(Cloud, { className: "h-5 w-5 va-accent-text" }),
           "حالة المزامنة الحيّة"
         ] }),
         jsx(ConnectionBadge, { state: connectionState })
       ] }),
       jsxs("div", { className: "grid grid-cols-2 gap-2 sm:grid-cols-4", children: [
-        jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
+        jsxs("div", { className: "rounded-[var(--va-radius-sm)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2 text-center", children: [
           jsx("p", { className: "text-[11px] text-amber-200", children: "معلّقة" }),
-          jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(summary.pending) })
+          jsx("p", { className: "mt-0.5 text-base font-bold text-[var(--va-text)] font-[family-name:var(--va-font-mono)]", children: formatNumber(summary.pending) })
         ] }),
-        jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
+        jsxs("div", { className: "rounded-[var(--va-radius-sm)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2 text-center", children: [
           jsx("p", { className: "text-[11px] text-cyan-200", children: "قيد التنفيذ" }),
-          jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(summary.inFlight) })
+          jsx("p", { className: "mt-0.5 text-base font-bold text-[var(--va-text)] font-[family-name:var(--va-font-mono)]", children: formatNumber(summary.inFlight) })
         ] }),
-        jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
-          jsx("p", { className: "text-[11px] text-red-200", children: "فاشلة" }),
-          jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(summary.failed) })
+        jsxs("div", { className: "rounded-[var(--va-radius-sm)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2 text-center", children: [
+          jsx("p", { className: "text-[11px] text-rose-200", children: "فاشلة" }),
+          jsx("p", { className: "mt-0.5 text-base font-bold text-[var(--va-text)] font-[family-name:var(--va-font-mono)]", children: formatNumber(summary.failed) })
         ] }),
-        jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
+        jsxs("div", { className: "rounded-[var(--va-radius-sm)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2 text-center", children: [
           jsx("p", { className: "text-[11px] text-emerald-200", children: "مكتملة" }),
-          jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(summary.done) })
+          jsx("p", { className: "mt-0.5 text-base font-bold text-[var(--va-text)] font-[family-name:var(--va-font-mono)]", children: formatNumber(summary.done) })
         ] })
       ] }),
       jsxs("div", { className: "space-y-2", children: [
-        jsx("h3", { className: "text-sm font-semibold text-gray-300", children: "طابور العمليات" }),
+        jsx("h3", { className: "text-sm font-semibold text-[var(--va-text-2)]", children: "طابور العمليات" }),
         ops.length > 0
           ? jsx("div", { className: "space-y-2", children: ops.map((op) => jsx(SyncOpRow, { op }, op.id)) })
-          : jsx("p", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/20 p-3 text-center text-xs text-gray-500", children: "لا عمليات مزامنة معلّقة حالياً." })
+          : jsx("p", { className: "rounded-[var(--va-radius-md)] border border-dashed border-[var(--va-border-strong)] bg-[var(--va-surface-2)] p-3 text-center text-xs text-[var(--va-text-muted)]", children: "لا عمليات مزامنة معلّقة حالياً." })
       ] }),
       jsxs("div", { className: "space-y-2", children: [
-        jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-gray-300", children: [
+        jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-[var(--va-text-2)]", children: [
           jsx(AlertTriangle, { className: "h-4 w-4 text-amber-300" }),
           "التعارضات المكتشفة"
         ] }),
         conflicts.length > 0
           ? jsx("div", { className: "space-y-2", children: conflicts.map((conflict) => jsx(ConflictRow, { conflict, onResolve: handleResolve }, conflict.id)) })
-          : jsx("p", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/20 p-3 text-center text-xs text-gray-500", children: "لا تعارضات بانتظار الحل." })
+          : jsx("p", { className: "rounded-[var(--va-radius-md)] border border-dashed border-[var(--va-border-strong)] bg-[var(--va-surface-2)] p-3 text-center text-xs text-[var(--va-text-muted)]", children: "لا تعارضات بانتظار الحل." })
       ] })
     ]
   });
@@ -282,35 +282,35 @@ function SyncEventRow({ entry, index }) {
     initial: { opacity: 0, y: 6 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.18, delay: Math.min(index, 12) * 0.02 },
-    className: "rounded-2xl border border-white/10 bg-gray-950/30 p-4",
+    className: "rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 shadow-[var(--va-elev-1)]",
     children: [
       jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
         jsxs("div", { className: "flex min-w-0 items-start gap-3", children: [
           jsx("span", {
-            className: `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${toneClass}`,
+            className: `flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--va-radius-md)] border ${toneClass}`,
             children: jsx(Icon, { className: "h-5 w-5" })
           }),
           jsxs("div", { className: "min-w-0", children: [
             jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-              jsx("h3", { className: "text-sm font-bold text-white", children: presentation.label }),
-              entry.username && jsx("span", { className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400", children: entry.username })
+              jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: presentation.label }),
+              entry.username && jsx("span", { className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-muted)]", children: entry.username })
             ] }),
-            jsx("p", { className: "mt-1 text-xs leading-relaxed text-gray-400", children: presentation.description }),
+            jsx("p", { className: "mt-1 text-xs leading-relaxed text-[var(--va-text-muted)]", children: presentation.description }),
             chips && chips.length > 0 && jsx("div", { className: "mt-2 flex flex-wrap gap-1.5", children: chips.map((chip, chipIndex) => jsx("span", {
-              className: "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-gray-300",
+              className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-0.5 text-[11px] text-[var(--va-text-2)]",
               children: chip
             }, `${entry.id}-chip-${chipIndex}`)) })
           ] })
         ] }),
         jsx("time", {
-          className: "shrink-0 text-xs text-gray-500 font-mono",
+          className: "shrink-0 text-xs text-[var(--va-text-muted)] font-[family-name:var(--va-font-mono)]",
           dir: "ltr",
           dateTime: entry.timestamp,
           children: formatDateTime(entry.timestamp)
         })
       ] }),
       entry.details?.checksum && jsxs("p", {
-        className: "mt-3 truncate text-[11px] text-gray-600 font-mono",
+        className: "mt-3 truncate text-[11px] text-[var(--va-text-muted)] font-[family-name:var(--va-font-mono)]",
         dir: "ltr",
         title: entry.details.checksum,
         children: ["checksum: ", entry.details.checksum.slice(0, 24), "…"]
@@ -325,28 +325,28 @@ function DeviceSummaryCard({ device, eventsByType }) {
   const totalSync = exportCount + importCount;
 
   return jsxs("div", {
-    className: "rounded-2xl border va-accent-border bg-gradient-to-br from-emerald-500/10 via-cyan-500/5 to-transparent p-4",
+    className: "rounded-[var(--va-radius-lg)] border va-accent-border bg-gradient-to-br from-emerald-500/10 via-cyan-500/5 to-transparent p-4",
     children: [
       jsxs("div", { className: "flex items-start justify-between gap-3", children: [
         jsxs("div", { className: "min-w-0", children: [
-          jsx("p", { className: "text-xs text-gray-400", children: "هذا الجهاز" }),
-          jsx("h2", { className: "mt-1 truncate text-base font-bold text-white", children: device.deviceName || "بدون اسم" }),
-          jsx("p", { className: "mt-1 truncate text-[11px] font-mono text-gray-500", dir: "ltr", children: device.deviceId || "—" })
+          jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: "هذا الجهاز" }),
+          jsx("h2", { className: "mt-1 truncate text-base font-bold text-[var(--va-text)]", children: device.deviceName || "بدون اسم" }),
+          jsx("p", { className: "mt-1 truncate text-[11px] font-[family-name:var(--va-font-mono)] text-[var(--va-text-muted)]", dir: "ltr", children: device.deviceId || "—" })
         ] }),
-        jsx("span", { className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border va-accent-border va-accent-bg-soft va-accent-text-on-soft", children: jsx(HardDrive, { className: "h-5 w-5" }) })
+        jsx("span", { className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--va-radius-md)] border va-accent-border va-accent-bg-soft va-accent-text-on-soft", children: jsx(HardDrive, { className: "h-5 w-5" }) })
       ] }),
       jsxs("div", { className: "mt-4 grid grid-cols-3 gap-2", children: [
-        jsxs("div", { className: "rounded-lg border border-white/10 bg-gray-950/35 p-2 text-center", children: [
-          jsx("p", { className: "text-[11px] text-gray-500", children: "إجمالي" }),
-          jsx("p", { className: "mt-0.5 text-base font-bold text-white", children: formatNumber(totalSync) })
+        jsxs("div", { className: "rounded-[var(--va-radius-sm)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2 text-center", children: [
+          jsx("p", { className: "text-[11px] text-[var(--va-text-muted)]", children: "إجمالي" }),
+          jsx("p", { className: "mt-0.5 text-base font-bold text-[var(--va-text)] font-[family-name:var(--va-font-mono)]", children: formatNumber(totalSync) })
         ] }),
-        jsxs("div", { className: "rounded-lg border va-accent-border va-accent-bg-soft p-2 text-center", children: [
+        jsxs("div", { className: "rounded-[var(--va-radius-sm)] border va-accent-border va-accent-bg-soft p-2 text-center", children: [
           jsx("p", { className: "text-[11px] va-accent-text-on-soft", children: "صادرة" }),
-          jsx("p", { className: "mt-0.5 text-base font-bold va-accent-text-on-soft", children: formatNumber(exportCount) })
+          jsx("p", { className: "mt-0.5 text-base font-bold va-accent-text-on-soft font-[family-name:var(--va-font-mono)]", children: formatNumber(exportCount) })
         ] }),
-        jsxs("div", { className: "rounded-lg border border-cyan-500/15 bg-cyan-500/5 p-2 text-center", children: [
+        jsxs("div", { className: "rounded-[var(--va-radius-sm)] border border-cyan-500/15 bg-cyan-500/5 p-2 text-center", children: [
           jsx("p", { className: "text-[11px] text-cyan-200", children: "واردة" }),
-          jsx("p", { className: "mt-0.5 text-base font-bold text-cyan-100", children: formatNumber(importCount) })
+          jsx("p", { className: "mt-0.5 text-base font-bold text-cyan-100 font-[family-name:var(--va-font-mono)]", children: formatNumber(importCount) })
         ] })
       ] })
     ]
@@ -393,14 +393,14 @@ export function SyncLogPage() {
           className: "rounded-full border va-accent-border va-accent-bg-soft px-3 py-1.5 text-xs va-accent-text-on-soft",
           children: ["آخر عملية: ", formatDateTime(lastEventAt)]
         }) : jsx("span", {
-          className: "rounded-full border border-white/10 bg-gray-950/35 px-3 py-1.5 text-xs text-gray-400",
+          className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1.5 text-xs text-[var(--va-text-muted)]",
           children: "لا توجد عمليات بعد"
         })
       }),
       jsx(SyncStatusPanel, {}),
       jsxs("section", { className: "grid gap-4 md:grid-cols-[minmax(0,1fr)_280px]", children: [
         syncEvents.length ? jsx("div", { className: "space-y-3", children: syncEvents.map((entry, index) => jsx(SyncEventRow, { entry, index }, entry.id)) }) : jsx("div", {
-          className: "rounded-2xl border border-dashed border-white/10 bg-gray-950/30",
+          className: "rounded-[var(--va-radius-lg)] border border-dashed border-[var(--va-border-strong)] bg-[var(--va-surface)]",
           children: jsx(EmptyState, {
             icon: jsx(GitMerge, { className: "h-10 w-10" }),
             title: "لا توجد عمليات مزامنة بعد",
@@ -409,8 +409,8 @@ export function SyncLogPage() {
         }),
         jsxs("aside", { className: "space-y-3", children: [
           jsx(DeviceSummaryCard, { device, eventsByType }),
-          jsxs("div", { className: "rounded-2xl border border-white/10 bg-gray-950/30 p-4 text-xs leading-relaxed text-gray-400", children: [
-            jsxs("p", { className: "flex items-center gap-2 font-semibold text-white", children: [
+          jsxs("div", { className: "rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 text-xs leading-relaxed text-[var(--va-text-muted)]", children: [
+            jsxs("p", { className: "flex items-center gap-2 font-semibold text-[var(--va-text)]", children: [
               jsx(CheckCircle2, { className: "h-4 w-4 va-accent-text" }),
               "كل البيانات محلية"
             ] }),

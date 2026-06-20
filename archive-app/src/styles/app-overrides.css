@@ -373,6 +373,10 @@
     border-color: color-mix(in oklab, var(--va-v1-accent) 32%, transparent);
     color: var(--va-v1-accent);
   }
+  /* Surface fill helpers — used in 200+ places app-wide but previously undefined
+     (silent no-ops, so panels had no background in light mode). */
+  .va-surface-subtle { background-color: var(--va-surface-2); }
+  .va-surface-deep { background-color: var(--va-bg); }
   .va-v1-page {
     color: var(--va-v1-text);
   }

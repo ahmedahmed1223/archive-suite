@@ -173,24 +173,24 @@ export function NotificationDrawer() {
             role: "dialog",
             "aria-modal": "true",
             "aria-label": "مركز الإشعارات",
-            className: "relative ms-auto flex h-full w-full max-w-[440px] flex-col border-s border-white/10 bg-[var(--color-bg-surface,#0b1626)] text-white shadow-2xl shadow-black/35",
+            className: "relative ms-auto flex h-full w-full max-w-[440px] flex-col border-s border-[var(--va-border-soft)] bg-[var(--va-surface)] text-[var(--va-text)] shadow-[var(--va-elev-popover)]",
             initial: { x: prefersReducedMotion ? 0 : -32, opacity: 0 },
             animate: { x: 0, opacity: 1 },
             exit: { x: prefersReducedMotion ? 0 : -32, opacity: 0 },
             transition: { duration: slideDuration, ease: "easeOut" },
             children: [
               jsxs("header", {
-                className: "flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3",
+                className: "flex items-center justify-between gap-3 border-b border-[var(--va-border-soft)] px-4 py-3",
                 children: [
                   jsxs("div", {
                     className: "flex min-w-0 items-center gap-2",
                     children: [
-                      jsx(Bell, { className: "h-5 w-5 text-[var(--va-action)]" }),
+                      jsx(Bell, { className: "h-5 w-5 text-emerald-500" }),
                       jsxs("div", {
                         className: "min-w-0",
                         children: [
                           jsx("h2", { className: "truncate text-sm font-bold", children: "مركز الإشعارات" }),
-                          jsx("p", { className: "text-xs text-gray-500", children: counts.unread ? `${counts.unread} غير مقروء من ${counts.all}` : `${counts.all} إشعار نشط` })
+                          jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: counts.unread ? `${counts.unread} غير مقروء من ${counts.all}` : `${counts.all} إشعار نشط` })
                         ]
                       })
                     ]
@@ -200,18 +200,18 @@ export function NotificationDrawer() {
                     type: "button",
                     onClick: () => toggle?.(),
                     "aria-label": "إغلاق",
-                    className: "rounded-lg p-2 text-gray-400 hover:bg-white/5 hover:text-white",
+                    className: "rounded-[var(--va-radius-md)] p-2 text-[var(--va-text-muted)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]",
                     children: jsx(X, { className: "h-4 w-4" })
                   })
                 ]
               }),
-              jsxs("div", { className: "space-y-2 border-b border-white/10 px-3 py-3", children: [
+              jsxs("div", { className: "space-y-2 border-b border-[var(--va-border-soft)] px-3 py-3", children: [
                 jsxs("label", { className: "relative block", children: [
-                  jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+                  jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
                   jsx("input", {
                     value: query,
                     onChange: (event) => setQuery(event.target.value),
-                    className: "min-h-10 w-full rounded-xl border border-white/10 bg-gray-950/35 py-2 pe-3 ps-10 text-sm outline-none placeholder:text-gray-600 focus:border-[var(--va-action)]",
+                    className: "min-h-10 w-full rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-[var(--va-surface-2)] py-2 pe-3 ps-10 text-sm text-[var(--va-text)] outline-none placeholder:text-[var(--va-text-muted)] focus:border-emerald-500/60",
                     placeholder: "بحث في العنوان أو التفاصيل أو الهدف",
                     "aria-label": "بحث في الإشعارات"
                   })
@@ -229,16 +229,16 @@ export function NotificationDrawer() {
                       "aria-selected": active,
                       onClick: () => setFilter(tab.id),
                       className: `shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${active
-                        ? "bg-[color-mix(in_srgb,var(--va-action)_22%,transparent)] text-white"
-                        : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
+                        ? "bg-emerald-500/15 text-emerald-500"
+                        : "text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]"}`,
                       children: [tab.label, " · ", tabCount]
                     }, tab.id);
                   })
                 }),
-                jsx("div", { className: "grid grid-cols-3 gap-1 rounded-xl border border-white/10 bg-gray-950/25 p-1", children: READ_FILTERS.map((item) => jsx("button", {
+                jsx("div", { className: "grid grid-cols-3 gap-1 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-1", children: READ_FILTERS.map((item) => jsx("button", {
                   type: "button",
                   onClick: () => setReadState(item.id),
-                  className: `rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors ${readState === item.id ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-200"}`,
+                  className: `rounded-[var(--va-radius-sm)] px-2 py-1.5 text-xs font-semibold transition-colors ${readState === item.id ? "bg-[var(--va-elevated)] text-[var(--va-text)] shadow-[var(--va-elev-1)]" : "text-[var(--va-text-muted)] hover:text-[var(--va-text)]"}`,
                   children: item.label
                 }, item.id)) })
               ] }),
@@ -248,22 +248,22 @@ export function NotificationDrawer() {
                   ? jsxs("div", {
                     className: "flex h-full flex-col items-center justify-center px-4 py-12 text-center",
                     children: [
-                      jsx(Bell, { className: "h-10 w-10 text-gray-600" }),
-                      jsx("p", { className: "mt-4 text-sm font-semibold text-gray-300", children: history.length === 0 ? "لا توجد إشعارات بعد" : "لا توجد نتائج مطابقة" }),
-                      jsx("p", { className: "mt-1 text-xs text-gray-500", children: history.length === 0 ? "ستظهر هنا إشعارات العمل والتنبيهات التشغيلية." : "غيّر البحث أو الفلاتر الحالية." })
+                      jsx(Bell, { className: "h-10 w-10 text-[var(--va-text-muted)]" }),
+                      jsx("p", { className: "mt-4 text-sm font-semibold text-[var(--va-text-2)]", children: history.length === 0 ? "لا توجد إشعارات بعد" : "لا توجد نتائج مطابقة" }),
+                      jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: history.length === 0 ? "ستظهر هنا إشعارات العمل والتنبيهات التشغيلية." : "غيّر البحث أو الفلاتر الحالية." })
                     ]
                   })
                   : jsx("div", {
                     className: "space-y-4",
                     children: groups.map((group) => jsxs("section", {
                       children: [
-                        jsx("h3", { className: "px-1 pb-2 text-xs font-bold text-gray-500", children: group.label }),
+                        jsx("h3", { className: "px-1 pb-2 text-xs font-bold text-[var(--va-text-muted)]", children: group.label }),
                         jsx("ul", { className: "space-y-2", children: group.items.map((item) => {
                           const meta = TYPE_ICON[item.type] || TYPE_ICON.info;
                           const Icon = meta.Icon;
                           const actionLabel = getActionLabel(item);
                           return jsxs("li", {
-                            className: `rounded-xl border p-3 ${item.readAt ? "border-white/5 bg-white/[0.02]" : "border-[color-mix(in_srgb,var(--va-action)_28%,transparent)] bg-[color-mix(in_srgb,var(--va-action)_8%,transparent)]"}`,
+                            className: `rounded-[var(--va-radius-lg)] border p-3 ${item.readAt ? "border-[var(--va-border-soft)] bg-[var(--va-surface-2)]" : "border-emerald-500/30 bg-emerald-500/[0.08]"}`,
                             children: [
                               jsxs("div", {
                                 className: "flex items-start gap-3",
@@ -273,41 +273,41 @@ export function NotificationDrawer() {
                                     className: "min-w-0 flex-1",
                                     children: [
                                       jsxs("div", { className: "flex items-start justify-between gap-2", children: [
-                                        jsx("p", { className: "text-sm font-semibold text-white", children: item.title || "إشعار" }),
-                                        !item.readAt && jsx("span", { className: "mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--va-action)]", "aria-label": "غير مقروء" })
+                                        jsx("p", { className: "text-sm font-semibold text-[var(--va-text)]", children: item.title || "إشعار" }),
+                                        !item.readAt && jsx("span", { className: "mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500", "aria-label": "غير مقروء" })
                                       ] }),
-                                      jsx("p", { className: "mt-1 whitespace-pre-wrap text-xs leading-6 text-gray-400", dir: "auto", children: item.message }),
+                                      jsx("p", { className: "mt-1 whitespace-pre-wrap text-xs leading-6 text-[var(--va-text-2)]", dir: "auto", children: item.message }),
                                       typeof item.progress === "number" && jsxs("div", {
                                         className: "mt-2",
                                         children: [
                                           jsx("div", {
-                                            className: "h-1.5 w-full overflow-hidden rounded-full bg-white/10",
+                                            className: "h-1.5 w-full overflow-hidden rounded-full bg-[var(--va-surface-2)]",
                                             role: "progressbar",
                                             "aria-valuenow": Math.round(item.progress),
                                             "aria-valuemin": 0,
                                             "aria-valuemax": 100,
                                             "aria-label": "تقدّم العملية",
                                             children: jsx("div", {
-                                              className: "h-full rounded-full bg-[var(--va-action)] transition-[width] duration-300",
+                                              className: "h-full rounded-full bg-emerald-500 transition-[width] duration-300",
                                               style: { width: `${Math.min(100, Math.max(0, item.progress))}%` }
                                             })
                                           }),
-                                          jsxs("p", { className: "mt-1 text-[10px] font-semibold text-gray-500", children: [Math.round(item.progress), "%"] })
+                                          jsxs("p", { className: "mt-1 text-[10px] font-semibold text-[var(--va-text-muted)]", children: [Math.round(item.progress), "%"] })
                                         ]
                                       })
                                     ]
                                   })
                                 ]
                               }),
-                              jsxs("p", { className: "mt-2 flex flex-wrap items-center gap-2 text-[10px] text-gray-600", children: [
+                              jsxs("p", { className: "mt-2 flex flex-wrap items-center gap-2 text-[10px] text-[var(--va-text-muted)]", children: [
                                 jsx("span", { children: formatRelativeTime(item.createdAt) }),
-                                item.targetLabel && jsx("span", { className: "max-w-[12rem] truncate rounded-full bg-white/5 px-2 py-0.5", title: item.targetLabel, children: item.targetLabel })
+                                item.targetLabel && jsx("span", { className: "max-w-[12rem] truncate rounded-full bg-[var(--va-surface-2)] px-2 py-0.5", title: item.targetLabel, children: item.targetLabel })
                               ] }),
                               jsxs("div", { className: "mt-3 flex flex-wrap gap-2", children: [
-                                actionLabel && jsxs("button", { type: "button", onClick: () => runNotificationAction(item), className: "inline-flex items-center gap-1.5 rounded-lg border border-[color-mix(in_srgb,var(--va-action)_28%,transparent)] bg-[color-mix(in_srgb,var(--va-action)_10%,transparent)] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[color-mix(in_srgb,var(--va-action)_18%,transparent)]", children: [jsx(ExternalLink, { className: "h-3.5 w-3.5" }), actionLabel] }),
-                                !item.readAt && jsx("button", { type: "button", onClick: () => markRead?.([item.id]), className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/5", children: [jsx(CheckCircle2, { className: "h-3.5 w-3.5" }), "مقروء"] }),
-                                item.technicalDetails && jsx("button", { type: "button", onClick: () => copyTechnicalDetails(item), className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-gray-300 hover:bg-white/5", children: "نسخ التفاصيل" }),
-                                !item.archivedAt && jsx("button", { type: "button", onClick: () => archiveNotification?.(item.id), className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-gray-300 hover:bg-white/5", children: [jsx(Archive, { className: "h-3.5 w-3.5" }), "أرشفة"] })
+                                actionLabel && jsxs("button", { type: "button", onClick: () => runNotificationAction(item), className: "inline-flex items-center gap-1.5 rounded-[var(--va-radius-md)] border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-500 transition-colors hover:bg-emerald-500/18", children: [jsx(ExternalLink, { className: "h-3.5 w-3.5" }), actionLabel] }),
+                                !item.readAt && jsx("button", { type: "button", onClick: () => markRead?.([item.id]), className: "inline-flex items-center gap-1.5 rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] px-2.5 py-1.5 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)]", children: [jsx(CheckCircle2, { className: "h-3.5 w-3.5" }), "مقروء"] }),
+                                item.technicalDetails && jsx("button", { type: "button", onClick: () => copyTechnicalDetails(item), className: "inline-flex items-center gap-1.5 rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] px-2.5 py-1.5 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)]", children: "نسخ التفاصيل" }),
+                                !item.archivedAt && jsx("button", { type: "button", onClick: () => archiveNotification?.(item.id), className: "inline-flex items-center gap-1.5 rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] px-2.5 py-1.5 text-xs text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)]", children: [jsx(Archive, { className: "h-3.5 w-3.5" }), "أرشفة"] })
                               ] })
                             ]
                           }, item.id);
@@ -317,19 +317,19 @@ export function NotificationDrawer() {
                   })
               }),
               history.length > 0 && jsx("footer", {
-                className: "grid gap-2 border-t border-white/10 px-4 py-3 sm:grid-cols-2",
+                className: "grid gap-2 border-t border-[var(--va-border-soft)] px-4 py-3 sm:grid-cols-2",
                 children: [
                   jsxs("button", {
                     type: "button",
                     onClick: () => markAllRead?.(),
                     disabled: counts.unread === 0,
-                    className: "inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-gray-200 hover:bg-white/5 disabled:opacity-45",
+                    className: "inline-flex w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] px-3 py-2 text-xs font-semibold text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] disabled:opacity-45",
                     children: [jsx(CheckCircle2, { className: "h-3.5 w-3.5" }), "تحديد الكل كمقروء"]
                   }),
                   jsxs("button", {
                     type: "button",
                     onClick: clearWithConfirm,
-                    className: "inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/10",
+                    className: "inline-flex w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-[color-mix(in_oklab,var(--va-status-danger)_22%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_8%,transparent)] px-3 py-2 text-xs font-semibold text-[var(--va-status-danger)] transition-colors hover:bg-[color-mix(in_oklab,var(--va-status-danger)_14%,transparent)]",
                     children: [jsx(Trash2, { className: "h-3.5 w-3.5" }), "مسح السجل"]
                   })
                 ]

@@ -514,7 +514,7 @@ export function GraphViewPage() {
       />
 
       {graphError ? (
-        <div className="rounded-[var(--va-radius-lg)] border border-red-500/30 bg-red-950/20 p-4 text-sm text-red-300" role="alert">
+        <div className="rounded-[var(--va-radius-lg)] border border-[color-mix(in_oklab,var(--va-status-danger)_40%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_12%,transparent)] p-4 text-sm text-[var(--va-status-danger)]" role="alert">
           {graphError}
         </div>
       ) : null}

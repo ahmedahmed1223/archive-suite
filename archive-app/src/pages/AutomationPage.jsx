@@ -67,7 +67,7 @@ function ConditionRow({ condition, index, onChange, onRemove, disableRemove }) {
   const showValue = !VALUELESS_OPERATORS.has(condition.operator);
   return jsxs("div", {
     className:
-      "grid items-center gap-2 rounded-xl border border-white/10 bg-gray-950/30 p-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]",
+      "grid items-center gap-2 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]",
     children: [
       jsx("select", {
         value: condition.field,
@@ -89,7 +89,7 @@ function ConditionRow({ condition, index, onChange, onRemove, disableRemove }) {
         onChange: (event) => onChange(index, { value: event.target.value }),
         placeholder: ARRAY_OPERATORS.has(condition.operator) ? "افصل بفاصلة" : "القيمة",
         className: "min-h-10 w-full va-surface-deep rounded-lg border px-2 text-sm text-white outline-none focus:border-cyan-500/40"
-      }) : jsx("span", { className: "px-2 text-xs text-gray-600", children: "—" }),
+      }) : jsx("span", { className: "px-2 text-xs text-[var(--va-text-muted)]", children: "—" }),
       jsx("button", {
         type: "button",
         onClick: () => onRemove(index),
@@ -139,7 +139,7 @@ function actionValueControl(action, index, onChange, collections) {
 function ActionRow({ action, index, onChange, onRemove, disableRemove, collections }) {
   return jsxs("div", {
     className:
-      "grid items-center gap-2 rounded-xl border border-white/10 bg-gray-950/30 p-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]",
+      "grid items-center gap-2 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]",
     children: [
       jsx("select", {
         value: action.type,
@@ -225,25 +225,25 @@ function RuleEditorModal({ rule, videoItems, folders, collections, onCancel, onS
     isEditing: Boolean(rule),
     size: "xl",
     children: jsxs("div", { className: "space-y-4", children: [
-      jsxs("div", { className: "space-y-1 text-sm text-gray-300", children: [
+      jsxs("div", { className: "space-y-1 text-sm text-[var(--va-text-2)]", children: [
         jsx("label", { htmlFor: nameId, className: "block", children: "اسم القاعدة" }),
-        jsx("input", { id: nameId, "data-autofocus": true, value: form.name, onChange: (e) => form.setName(e.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-white outline-none focus:border-cyan-500/40", placeholder: "مثال: وسم مقاطع العمل تلقائياً" })
+        jsx("input", { id: nameId, "data-autofocus": true, value: form.name, onChange: (e) => form.setName(e.target.value), className: "min-h-11 w-full va-surface-deep rounded-xl border px-3 text-sm text-[var(--va-text)] outline-none focus:border-cyan-500/40", placeholder: "مثال: وسم مقاطع العمل تلقائياً" })
       ] }),
-      jsxs("div", { className: "flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2", children: [
-        jsx("span", { className: "px-1 text-sm text-gray-400", children: "عندما" }),
+      jsxs("div", { className: "flex items-center gap-2 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2", children: [
+        jsx("span", { className: "px-1 text-sm text-[var(--va-text-2)]", children: "عندما" }),
         ...Object.values(AUTOMATION_TRIGGERS).map((value) => jsx("button", {
           type: "button",
           onClick: () => form.setTrigger(value),
-          className: `rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${form.trigger === value ? "bg-cyan-500/20 text-cyan-200 border border-cyan-500/30" : "text-gray-400 hover:text-white"}`,
+          className: `rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${form.trigger === value ? "bg-cyan-500/20 text-cyan-200 border border-cyan-500/30" : "text-[var(--va-text-muted)] hover:text-[var(--va-text)]"}`,
           children: TRIGGER_LABELS[value]
         }, value))
       ] }),
-      jsxs("div", { className: "flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2", children: [
-        jsx("span", { className: "px-1 text-sm text-gray-400", children: "إذا (تطابق)" }),
+      jsxs("div", { className: "flex items-center gap-2 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2", children: [
+        jsx("span", { className: "px-1 text-sm text-[var(--va-text-2)]", children: "إذا (تطابق)" }),
         ...["all", "any"].map((mode) => jsx("button", {
           type: "button",
           onClick: () => form.setMatch(mode),
-          className: `rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${form.match === mode ? "bg-cyan-500/20 text-cyan-200 border border-cyan-500/30" : "text-gray-400 hover:text-white"}`,
+          className: `rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${form.match === mode ? "bg-cyan-500/20 text-cyan-200 border border-cyan-500/30" : "text-[var(--va-text-muted)] hover:text-[var(--va-text)]"}`,
           children: mode === "all" ? "كل الشروط (و)" : "أي شرط (أو)"
         }, mode))
       ] }),
@@ -253,7 +253,7 @@ function RuleEditorModal({ rule, videoItems, folders, collections, onCancel, onS
         disableRemove: form.conditions.length <= 1
       }, index)) }),
       jsxs("button", { type: "button", onClick: () => form.setConditions((prev) => [...prev, blankCondition()]), className: "inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-3 py-1.5 text-sm font-medium text-cyan-300 hover:bg-cyan-500/15", children: [jsx(Plus, { className: "h-3.5 w-3.5" }), "إضافة شرط"] }),
-      jsx("div", { className: "border-t border-white/10 pt-3 text-sm font-semibold text-gray-300", children: "عندئذٍ نفّذ" }),
+      jsx("div", { className: "border-t border-[var(--va-border-soft)] pt-3 text-sm font-semibold text-[var(--va-text-2)]", children: "عندئذٍ نفّذ" }),
       jsx("div", { className: "space-y-2", children: form.actions.map((action, index) => jsx(ActionRow, {
         action, index, onChange: updateAction, collections,
         onRemove: (i) => form.setActions((prev) => (prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i))),
@@ -269,12 +269,12 @@ function RuleEditorModal({ rule, videoItems, folders, collections, onCancel, onS
 
 function RuleCard({ rule, onToggle, onEdit, onRemove }) {
   return jsxs("div", {
-    className: "flex flex-col gap-2 rounded-2xl border border-white/10 bg-gray-900/40 p-4",
+    className: "flex flex-col gap-2 rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 shadow-[var(--va-elev-1)]",
     children: [
       jsxs("div", { className: "flex items-start justify-between gap-3", children: [
         jsxs("div", { className: "min-w-0", children: [
-          jsx("p", { className: "truncate text-sm font-bold text-white", dir: "auto", children: rule.name || "بدون اسم" }),
-          jsx("p", { className: "mt-1 text-xs text-gray-400", dir: "rtl", children: describeRule(rule) })
+          jsx("p", { className: "truncate text-sm font-bold text-[var(--va-text)]", dir: "auto", children: rule.name || "بدون اسم" }),
+          jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", dir: "rtl", children: describeRule(rule) })
         ] }),
         jsx("button", {
           type: "button",
@@ -282,12 +282,12 @@ function RuleCard({ rule, onToggle, onEdit, onRemove }) {
           "aria-checked": rule.enabled,
           "aria-label": rule.enabled ? "تعطيل القاعدة" : "تفعيل القاعدة",
           onClick: () => onToggle(rule.id),
-          className: `relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${rule.enabled ? "bg-cyan-500/70" : "bg-white/15"}`,
+          className: `relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${rule.enabled ? "bg-cyan-500/70" : "bg-[var(--va-surface-2)] border border-[var(--va-border-strong)]"}`,
           children: jsx("span", { className: `inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${rule.enabled ? "translate-x-1" : "translate-x-6"}` })
         })
       ] }),
       jsxs("div", { className: "flex items-center justify-end gap-2", children: [
-        jsx("button", { type: "button", onClick: () => onEdit(rule), className: "rounded-lg border border-white/10 px-3 py-1 text-xs text-gray-300 hover:bg-white/5", children: "تعديل" }),
+        jsx("button", { type: "button", onClick: () => onEdit(rule), className: "rounded-lg border border-[var(--va-border-soft)] px-3 py-1 text-xs text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: "تعديل" }),
         jsx("button", { type: "button", onClick: () => onRemove(rule.id), "aria-label": "حذف القاعدة", className: "inline-flex h-7 w-7 items-center justify-center rounded-lg text-red-300 hover:bg-red-500/10", children: jsx(Trash2, { className: "h-3.5 w-3.5" }) })
       ] })
     ]
@@ -335,7 +335,7 @@ export function AutomationPage() {
         description: "قواعد «عندما… إذا… عندئذٍ» لأتمتة الخطوات المتكررة بأمان — أضف وسوماً، عيّن الحالة، أو أضف لمجموعة."
       }),
       jsxs("section", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-        jsxs("span", { className: "text-sm text-gray-500", children: [`${formatNumber(automationRules.length)} قاعدة`] }),
+        jsxs("span", { className: "text-sm text-[var(--va-text-muted)]", children: [`${formatNumber(automationRules.length)} قاعدة`] }),
         jsxs("button", {
           type: "button",
           onClick: () => setEditing("new"),

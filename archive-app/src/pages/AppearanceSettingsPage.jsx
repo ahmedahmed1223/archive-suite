@@ -2,6 +2,8 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { Palette, Download, Upload, ChevronDown } from "lucide-react";
 
+import { PageHero } from "../components/ui/V1Primitives.jsx";
+import { Button, Switch } from "../components/ui/index.js";
 import { DAISY_THEME_OPTIONS, getStoredDaisyTheme, storeDaisyTheme } from "../features/theme/daisyThemes.js";
 import {
   CUSTOM_DAISY_THEME_FIELDS,
@@ -24,8 +26,8 @@ import { DensitySelector } from "../components/theme/DensitySelector.jsx";
 // ---------------------------------------------------------------------------
 function Section({ title, children }) {
   return (
-    <section className="rounded-2xl border border-base-300/40 bg-base-200/30 p-4 sm:p-5">
-      <h2 className="mb-4 text-sm font-bold text-base-content/80 uppercase tracking-wide">
+    <section className="rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 shadow-[var(--va-elev-1)] sm:p-5">
+      <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-[var(--va-text-2)]">
         {title}
       </h2>
       {children}
@@ -58,32 +60,18 @@ function CustomThemeEditor({ customTheme, onChange }) {
     <div className="space-y-3">
       {/* Enable / disable toggle */}
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-base-content/70">تفعيل السمة المخصصة</span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={customTheme.enabled}
-          aria-label={customTheme.enabled ? "تعطيل السمة المخصصة" : "تفعيل السمة المخصصة"}
-          onClick={handleToggleEnabled}
-          className={[
-            "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
-            customTheme.enabled ? "bg-primary/70" : "bg-base-300/60",
-          ].join(" ")}
-        >
-          <span
-            className={[
-              "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-              customTheme.enabled ? "translate-x-1" : "translate-x-6",
-            ].join(" ")}
-          />
-        </button>
+        <span className="text-sm text-[var(--va-text-2)]">تفعيل السمة المخصصة</span>
+        <Switch
+          checked={customTheme.enabled}
+          onChange={handleToggleEnabled}
+        />
       </div>
 
       {/* Expand / collapse fields */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 rounded-lg border border-base-300/40 bg-base-200/40 px-3 py-2 text-sm text-base-content/70 hover:bg-base-200/70"
+        className="flex w-full items-center justify-between gap-2 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-2 text-sm text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-elevated)]"
       >
         <span>تحرير الألوان</span>
         <ChevronDown
@@ -94,7 +82,7 @@ function CustomThemeEditor({ customTheme, onChange }) {
       {open && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {CUSTOM_DAISY_THEME_FIELDS.map((field) => (
-            <label key={field.key} className="flex items-center gap-2 rounded-lg border border-base-300/30 bg-base-200/20 px-2 py-1.5">
+            <label key={field.key} className="flex items-center gap-2 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-2 py-1.5">
               <input
                 type="color"
                 value={customTheme.vars[field.key] ?? field.defaultValue}
@@ -102,7 +90,7 @@ function CustomThemeEditor({ customTheme, onChange }) {
                 className="h-7 w-7 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
                 aria-label={field.label}
               />
-              <span className="truncate text-xs text-base-content/70">{field.label}</span>
+              <span className="truncate text-xs text-[var(--va-text-2)]">{field.label}</span>
             </label>
           ))}
         </div>
@@ -178,17 +166,11 @@ export function AppearanceSettingsPage() {
       dir="rtl"
     >
       {/* Page header */}
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Palette className="h-5 w-5" />
-        </span>
-        <div>
-          <h1 className="text-lg font-bold text-base-content">المظهر</h1>
-          <p className="text-sm text-base-content/60">
-            تخصيص السمة والكثافة والألوان ومشاركة الإعدادات.
-          </p>
-        </div>
-      </div>
+      <PageHero
+        icon={<Palette className="h-6 w-6 va-accent-text" />}
+        title="المظهر"
+        description="تخصيص السمة والكثافة والألوان ومشاركة الإعدادات."
+      />
 
       {/* 1. Theme grid */}
       <Section title="السمة">
@@ -220,23 +202,21 @@ export function AppearanceSettingsPage() {
       {/* 4. Import / Export */}
       <Section title="استيراد / تصدير">
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={handleExport}
-            className="inline-flex items-center gap-2 rounded-xl border border-base-300/40 bg-base-200/40 px-4 py-2 text-sm font-semibold text-base-content/80 hover:bg-base-200/70"
+            leadingIcon={<Download className="h-4 w-4" />}
           >
-            <Download className="h-4 w-4" />
             تصدير الإعدادات
-          </button>
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-xl border border-base-300/40 bg-base-200/40 px-4 py-2 text-sm font-semibold text-base-content/80 hover:bg-base-200/70"
+            leadingIcon={<Upload className="h-4 w-4" />}
           >
-            <Upload className="h-4 w-4" />
             استيراد
-          </button>
+          </Button>
 
           <input
             ref={fileInputRef}
@@ -249,7 +229,7 @@ export function AppearanceSettingsPage() {
         </div>
 
         {importError && (
-          <p className="mt-3 rounded-lg border border-error/40 bg-error/10 px-3 py-2 text-sm text-error">
+          <p className="mt-3 rounded-[var(--va-radius-md)] border border-[var(--va-status-danger)]/40 bg-[var(--va-status-danger)]/10 px-3 py-2 text-sm text-[var(--va-status-danger)]" role="alert">
             {importError}
           </p>
         )}

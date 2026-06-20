@@ -118,15 +118,15 @@ function fieldKey(field) {
 function LocalFilePicker({ value, onFileSelect }) {
   const file = normalizeLocalFileValue(value);
   const inputRef = React.useRef(null);
-  return jsxs("div", { className: "rounded-xl border border-dashed border-white/10 bg-gray-950/35 p-3", children: [
+  return jsxs("div", { className: "rounded-xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3", children: [
     jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-      jsxs("div", { className: "flex min-w-0 items-center gap-2 text-sm text-gray-300", children: [
+      jsxs("div", { className: "flex min-w-0 items-center gap-2 text-sm text-[var(--va-text-2)]", children: [
         jsx(HardDrive, { className: "h-4 w-4 shrink-0 va-accent-text" }),
         jsx("span", { className: "truncate", dir: "auto", children: file?.name || "لم يتم اختيار ملف" })
       ] }),
       jsx("button", { type: "button", onClick: () => inputRef.current?.click(), className: "btn btn-primary btn-sm", children: "استعراض" })
     ] }),
-    file && jsxs("div", { className: "mt-2 space-y-1 text-xs text-gray-600", children: [
+    file && jsxs("div", { className: "mt-2 space-y-1 text-xs text-[var(--va-text-muted)]", children: [
       file.size > 0 && jsx("p", { children: formatFileSize(file.size) }),
       (file.relativePath || file.path) && jsx("p", { dir: "ltr", className: "truncate text-left", children: file.relativePath || file.path })
     ] }),
@@ -163,8 +163,8 @@ function GroupedFields({ fields, renderField, gap = "gap-4" }) {
         role: "tab",
         "aria-selected": active === index,
         onClick: () => setActive(index),
-        className: `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${active === index ? "va-accent-bg-soft va-accent-text-on-soft" : "text-gray-400 hover:bg-white/5 hover:text-white"}`,
-        children: [group.name, jsx("span", { className: "rounded-full bg-white/10 px-1.5 text-[10px]", children: `${group.fields.length}` })]
+        className: `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${active === index ? "va-accent-bg-soft va-accent-text-on-soft" : "text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)]"}`,
+        children: [group.name, jsx("span", { className: "rounded-full bg-[var(--va-surface-2)] px-1.5 text-[10px]", children: `${group.fields.length}` })]
       }, group.name)) }) : null,
       jsx("div", { className: `grid ${gap} md:grid-cols-2`, children: visible.map(renderField) })
     ]
@@ -206,9 +206,9 @@ function ReadonlyField({ field, value }) {
     const file = normalizeLocalFileValue(value);
     if (!file) return "—";
     return jsxs("div", { className: "space-y-1", children: [
-      jsx("p", { className: "font-semibold text-gray-200", dir: "auto", children: file.name || "ملف محلي" }),
-      file.size > 0 && jsx("p", { className: "text-xs text-gray-600", children: `${formatFileSize(file.size)} - ${file.extension || "بدون امتداد"}` }),
-      file.path && jsx("p", { className: "break-all text-xs text-gray-600", dir: "ltr", children: file.path })
+      jsx("p", { className: "font-semibold text-[var(--va-text)]", dir: "auto", children: file.name || "ملف محلي" }),
+      file.size > 0 && jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: `${formatFileSize(file.size)} - ${file.extension || "بدون امتداد"}` }),
+      file.path && jsx("p", { className: "break-all text-xs text-[var(--va-text-muted)]", dir: "ltr", children: file.path })
     ] });
   }
   if (Array.isArray(value)) return value.length ? value.join("، ") : "—";
@@ -233,13 +233,13 @@ function FieldAclControls({ fieldKey, acl, onChange }) {
     jsx("button", {
       type: "button",
       onClick: () => onChange(fieldKey, []),
-      className: `rounded-lg border px-2 py-1 text-[11px] ${unrestricted ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-white/10 text-gray-500 hover:bg-white/5"}`,
+      className: `rounded-lg border px-2 py-1 text-[11px] ${unrestricted ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)]"}`,
       children: "كل الأدوار"
     }),
     ...FIELD_ACL_ROLES.map((role) => jsx("button", {
       type: "button",
       onClick: () => toggle(role),
-      className: `rounded-lg border px-2 py-1 text-[11px] ${selected.includes(role) ? "border-amber-500/30 bg-amber-500/10 text-amber-100" : "border-white/10 text-gray-500 hover:bg-white/5"}`,
+      className: `rounded-lg border px-2 py-1 text-[11px] ${selected.includes(role) ? "border-amber-500/30 bg-amber-500/10 text-amber-100" : "border-[var(--va-border-soft)] text-[var(--va-text-muted)] hover:bg-[var(--va-surface-2)]"}`,
       children: FIELD_ROLE_LABELS[role] || role
     }, role))
   ] });
@@ -283,18 +283,18 @@ function TranscriptSyncWorkbench({ segments = [], currentTime = 0, onSeek }) {
 
   if (!segments.length) {
     return jsxs("section", { className: "rounded-2xl va-surface-subtle border p-4 text-right", dir: "rtl", children: [
-      jsxs("h3", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(FileText, { className: "h-4 w-4 va-accent-text" }), "مشغل التفريغ المتزامن"] }),
-      jsx("p", { className: "mt-2 text-sm leading-6 text-gray-500", children: "لا يوجد تفريغ زمني لهذه المادة بعد. أضف تفريغاً في الملاحظات أو metadata.transcript مع timecodes ليتحول إلى قائمة قابلة للقفز." })
+      jsxs("h3", { className: "flex items-center gap-2 text-base font-bold text-[var(--va-text)]", children: [jsx(FileText, { className: "h-4 w-4 va-accent-text" }), "مشغل التفريغ المتزامن"] }),
+      jsx("p", { className: "mt-2 text-sm leading-6 text-[var(--va-text-muted)]", children: "لا يوجد تفريغ زمني لهذه المادة بعد. أضف تفريغاً في الملاحظات أو metadata.transcript مع timecodes ليتحول إلى قائمة قابلة للقفز." })
     ] });
   }
 
   return jsxs("section", { className: "rounded-2xl va-surface-subtle border p-4 text-right", dir: "rtl", children: [
     jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
       jsxs("div", { className: "min-w-0", children: [
-        jsxs("h3", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(FileText, { className: "h-4 w-4 va-accent-text" }), "مشغل التفريغ المتزامن"] }),
-        jsx("p", { className: "mt-1 text-xs text-gray-500", children: `${formatNumber(segments.length)} مقطع زمني. السطر النشط يتبع وقت التشغيل الحالي.` })
+        jsxs("h3", { className: "flex items-center gap-2 text-base font-bold text-[var(--va-text)]", children: [jsx(FileText, { className: "h-4 w-4 va-accent-text" }), "مشغل التفريغ المتزامن"] }),
+        jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: `${formatNumber(segments.length)} مقطع زمني. السطر النشط يتبع وقت التشغيل الحالي.` })
       ] }),
-      jsx("span", { dir: "ltr", className: "rounded-full border border-white/10 bg-gray-950/35 px-3 py-1 font-mono text-xs text-gray-300", children: segments.find((segment) => segment.index === activeIndex)?.timecode || "0:00" })
+      jsx("span", { dir: "ltr", className: "rounded-full border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-1 font-[family-name:var(--va-font-mono)] text-xs text-[var(--va-text-2)]", children: segments.find((segment) => segment.index === activeIndex)?.timecode || "0:00" })
     ] }),
     jsxs("label", { className: "mt-3 block", children: [
       jsx("span", { className: "sr-only", children: "بحث داخل التفريغ" }),
@@ -314,14 +314,14 @@ function TranscriptSyncWorkbench({ segments = [], currentTime = 0, onSeek }) {
         },
         type: "button",
         onClick: () => segment.seconds !== null && segment.seconds !== undefined ? onSeek?.(segment.seconds) : undefined,
-        className: `grid w-full gap-2 rounded-xl border p-3 text-right transition-colors sm:grid-cols-[4.5rem_minmax(0,1fr)] ${active ? "va-accent-border va-accent-bg-soft text-white" : "border-white/10 bg-gray-950/25 text-gray-300 hover:border-emerald-500/20 hover:bg-white/5"}`,
+        className: `grid w-full gap-2 rounded-xl border p-3 text-right transition-colors sm:grid-cols-[4.5rem_minmax(0,1fr)] ${active ? "va-accent-border va-accent-bg-soft text-[var(--va-text)]" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)] hover:border-emerald-500/20 hover:bg-[var(--va-surface-2)]"}`,
         children: [
-          jsx("span", { dir: "ltr", className: `font-mono text-xs ${active ? "va-accent-text-on-soft" : "text-gray-500"}`, children: segment.timecode || "—" }),
+          jsx("span", { dir: "ltr", className: `font-[family-name:var(--va-font-mono)] text-xs ${active ? "va-accent-text-on-soft" : "text-[var(--va-text-muted)]"}`, children: segment.timecode || "—" }),
           jsx("span", { className: "text-sm leading-7", children: renderText(segment.text) })
         ]
       }, `${segment.index}-${segment.seconds ?? "none"}`);
     }) }),
-    visibleSegments.length === 0 && jsx("p", { className: "mt-3 rounded-xl border border-white/10 bg-gray-950/25 p-3 text-sm text-gray-500", children: "لا توجد أسطر مطابقة داخل التفريغ." })
+    visibleSegments.length === 0 && jsx("p", { className: "mt-3 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3 text-sm text-[var(--va-text-muted)]", children: "لا توجد أسطر مطابقة داخل التفريغ." })
   ] });
 }
 
@@ -363,7 +363,7 @@ function PreviewAction({ onClick, children, icon, primary = false, disabled = fa
     type: "button",
     onClick,
     disabled,
-    className: `${primary ? "btn btn-primary btn-sm" : "border-white/10 bg-white/[0.035] text-gray-300 hover:bg-white/[0.06] hover:text-white inline-flex min-h-9 items-center justify-center rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45"} gap-1.5`,
+    className: `${primary ? "btn btn-primary btn-sm" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)] hover:bg-[var(--va-elevated)] hover:text-[var(--va-text)] inline-flex min-h-9 items-center justify-center rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45"} gap-1.5`,
     children: [icon, children]
   });
 }
@@ -374,20 +374,20 @@ function MediaPreviewFallback({ state, descriptor, onCopyPath, onEditPath, onMet
   const hasPath = Boolean(descriptor?.path);
 
   return jsxs("div", {
-    className: "flex aspect-video w-full flex-col justify-between bg-gray-950 p-4 text-right",
+    className: "flex aspect-video w-full flex-col justify-between bg-[var(--va-bg)] p-4 text-right",
     dir: "rtl",
     children: [
       jsxs("div", {
         className: "flex min-h-0 flex-1 flex-col items-center justify-center text-center",
         children: [
           jsx("span", {
-            className: `inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] ${content.tone}`,
+            className: `inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] ${content.tone}`,
             children: jsx(Icon, { className: `h-6 w-6 ${state === MEDIA_PREVIEW_STATUS.LOADING ? "animate-spin" : ""}` })
           }),
-          jsx("h2", { className: "mt-3 text-base font-bold text-white", children: content.title }),
-          jsx("p", { className: "mt-1 max-w-sm text-xs leading-6 text-gray-500", children: content.description }),
+          jsx("h2", { className: "mt-3 text-base font-bold text-[var(--va-text)]", children: content.title }),
+          jsx("p", { className: "mt-1 max-w-sm text-xs leading-6 text-[var(--va-text-muted)]", children: content.description }),
           hasPath && jsx("p", {
-            className: "mt-3 max-w-full break-all rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-left font-mono text-[11px] text-gray-400",
+            className: "mt-3 max-w-full break-all rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-3 py-2 text-left font-[family-name:var(--va-font-mono)] text-[11px] text-[var(--va-text-2)]",
             dir: "ltr",
             children: descriptor.path
           })

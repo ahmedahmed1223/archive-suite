@@ -32,7 +32,7 @@ const TYPE_META = {
   video: { label: "فيديو", icon: Film, tone: "text-violet-200 border-violet-500/20 bg-violet-500/10" },
   audio: { label: "صوت", icon: Music, tone: "text-amber-200 border-amber-500/20 bg-amber-500/10" },
   document: { label: "مستند", icon: FileText, tone: "va-accent-text-on-soft va-accent-border va-accent-bg-soft" },
-  file: { label: "ملف", icon: FileText, tone: "text-gray-300 border-white/10 bg-white/5" }
+  file: { label: "ملف", icon: FileText, tone: "text-[var(--va-text-2)] border-[var(--va-border-soft)] bg-[var(--va-surface-2)]" }
 };
 
 function FileThumb({ row, fileStore }) {
@@ -52,10 +52,10 @@ function FileThumb({ row, fileStore }) {
   const meta = TYPE_META[row.type] || TYPE_META.file;
   const Icon = meta.icon;
   return jsx("div", {
-    className: "flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-gray-950/40",
+    className: "flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)]",
     children: url
       ? jsx("img", { src: url, alt: "", loading: "lazy", className: "h-full w-full object-cover" })
-      : jsx(Icon, { className: "h-7 w-7 text-gray-500" })
+      : jsx(Icon, { className: "h-7 w-7 text-[var(--va-text-muted)]" })
   });
 }
 
@@ -168,30 +168,30 @@ export function UploaderPage() {
 
       jsxs("section", { className: "va-control-surface space-y-3 rounded-2xl va-surface-muted border p-4", children: [
         jsxs("div", { className: "grid gap-3 md:grid-cols-2", children: [
-          jsxs("label", { htmlFor: folderId, className: "block space-y-1 text-sm text-gray-300", children: [
+          jsxs("label", { htmlFor: folderId, className: "block space-y-1 text-sm text-[var(--va-text-2)]", children: [
             jsx("span", { children: "مجلّد الرفع والاستعراض" }),
             jsx("input", { id: folderId, value: folder, onChange: (e) => setFolder(e.target.value), placeholder: "مثال: thumbnails", dir: "ltr", className: "input input-bordered w-full" })
           ] }),
-          jsxs("label", { htmlFor: searchId, className: "block space-y-1 text-sm text-gray-300", children: [
+          jsxs("label", { htmlFor: searchId, className: "block space-y-1 text-sm text-[var(--va-text-2)]", children: [
             jsx("span", { children: "بحث في النتائج" }),
             jsxs("div", { className: "relative", children: [
-              jsx(Search, { className: "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" }),
+              jsx(Search, { className: "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
               jsx("input", { id: searchId, value: query, onChange: (e) => setQuery(e.target.value), placeholder: "filename, folder, type", dir: "ltr", className: "input input-bordered w-full" })
             ] })
           ] })
         ] }),
-        jsxs("label", { htmlFor: inputId, className: "block cursor-pointer rounded-2xl border border-dashed border-white/15 bg-gray-950/30 p-6 text-center hover:border-emerald-500/30", children: [
-          busy ? jsx(Loader2, { className: "mx-auto h-10 w-10 animate-spin va-accent-text" }) : jsx(FileUp, { className: "mx-auto h-10 w-10 text-gray-500" }),
-          jsx("p", { className: "mt-2 text-sm font-semibold text-white", children: busy ? "جارٍ الرفع…" : "اختر ملفات للرفع" }),
-          jsx("p", { className: "mt-1 text-xs text-gray-500", children: "يمكن اختيار عدة ملفات" }),
+        jsxs("label", { htmlFor: inputId, className: "block cursor-pointer rounded-2xl border border-dashed border-[var(--va-border-strong)] bg-[var(--va-surface)] p-6 text-center transition-colors hover:border-emerald-500/40", children: [
+          busy ? jsx(Loader2, { className: "mx-auto h-10 w-10 animate-spin va-accent-text" }) : jsx(FileUp, { className: "mx-auto h-10 w-10 text-[var(--va-text-muted)]" }),
+          jsx("p", { className: "mt-2 text-sm font-semibold text-[var(--va-text)]", children: busy ? "جارٍ الرفع…" : "اختر ملفات للرفع" }),
+          jsx("p", { className: "mt-1 text-xs text-[var(--va-text-muted)]", children: "يمكن اختيار عدة ملفات" }),
           jsx("input", { id: inputId, type: "file", "aria-label": "اختيار ملفات للرفع", multiple: true, className: "hidden", disabled: busy, onChange: (e) => upload(e.target.files) })
         ] })
       ] }),
 
       jsxs("section", { className: "space-y-3 rounded-2xl va-surface-muted border p-4", children: [
         jsxs("div", { className: "flex items-center justify-between gap-3", children: [
-          jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-white", children: [jsx(FolderOpen, { className: "h-4 w-4 va-accent-text" }), `الملفات (${formatNumber(visibleRows.length)} / ${formatNumber(rows.length)})`] }),
-          jsxs("button", { type: "button", onClick: refresh, disabled: loading, className: "inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-200 hover:bg-white/5 disabled:opacity-40", children: [loading ? jsx(Loader2, { className: "h-3.5 w-3.5 animate-spin" }) : jsx(RefreshCw, { className: "h-3.5 w-3.5" }), "تحديث"] })
+          jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-[var(--va-text)]", children: [jsx(FolderOpen, { className: "h-4 w-4 va-accent-text" }), `الملفات (${formatNumber(visibleRows.length)} / ${formatNumber(rows.length)})`] }),
+          jsxs("button", { type: "button", onClick: refresh, disabled: loading, className: "inline-flex items-center gap-1.5 rounded-lg border border-[var(--va-border-soft)] px-3 py-1.5 text-xs text-[var(--va-text)] transition-colors hover:bg-[var(--va-surface-2)] disabled:opacity-40", children: [loading ? jsx(Loader2, { className: "h-3.5 w-3.5 animate-spin" }) : jsx(RefreshCw, { className: "h-3.5 w-3.5" }), "تحديث"] })
         ] }),
         !fileStore ? jsx(UXStateBlock, {
           state: "error",
@@ -203,12 +203,12 @@ export function UploaderPage() {
             jsx(FileThumb, { row, fileStore }),
             jsxs("div", { className: "min-w-0 flex-1", children: [
               jsx("button", { type: "button", onClick: () => open(row.key), dir: "ltr", className: "block max-w-full truncate text-left text-sm font-semibold va-accent-text-on-soft hover:underline", title: row.key, children: row.name }),
-              row.folder && jsx("p", { dir: "ltr", className: "mt-0.5 truncate text-xs text-gray-500", title: row.folder, children: row.folder }),
+              row.folder && jsx("p", { dir: "ltr", className: "mt-0.5 truncate text-xs text-[var(--va-text-muted)]", title: row.folder, children: row.folder }),
               jsx("span", { className: `mt-2 inline-flex rounded-full border px-2 py-0.5 text-xs ${meta.tone}`, children: meta.label })
             ] }),
             jsxs("div", { className: "flex shrink-0 items-center gap-1", children: [
-              jsx("button", { type: "button", onClick: () => open(row.key), "aria-label": `فتح ${row.key}`, className: "rounded-lg p-1.5 text-gray-500 hover:bg-white/5 hover:text-emerald-200", children: jsx(ExternalLink, { className: "h-4 w-4" }) }),
-              jsx("button", { type: "button", onClick: () => remove(row.key), "aria-label": `حذف ${row.key}`, className: "rounded-lg p-1.5 text-gray-500 hover:bg-red-500/10 hover:text-red-300", children: jsx(Trash2, { className: "h-4 w-4" }) })
+              jsx("button", { type: "button", onClick: () => open(row.key), "aria-label": `فتح ${row.key}`, className: "rounded-lg p-1.5 text-[var(--va-text-muted)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-emerald-300", children: jsx(ExternalLink, { className: "h-4 w-4" }) }),
+              jsx("button", { type: "button", onClick: () => remove(row.key), "aria-label": `حذف ${row.key}`, className: "rounded-lg p-1.5 text-[var(--va-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-300", children: jsx(Trash2, { className: "h-4 w-4" }) })
             ] })
           ] }, row.key);
         }) }) : jsx(UXStateBlock, {
