@@ -58,7 +58,7 @@ export function createStartupProgressState(overrides = {}) {
   };
 }
 
-export async function runStartupSequence({ onStep, loadAllData, initAuth } = {}) {
+export async function runStartupSequence({ onStep, loadAllData, initAuth, requiresIndexedDb = true } = {}) {
   const steps = STARTUP_STEPS.map((step) => ({ ...step, status: "pending" }));
   const warnings = [];
 
@@ -81,7 +81,7 @@ export async function runStartupSequence({ onStep, loadAllData, initAuth } = {})
 
   try {
     report(0);
-    if (typeof indexedDB === "undefined") {
+    if (requiresIndexedDb && typeof indexedDB === "undefined") {
       throw new Error("IndexedDB غير متاح في هذا المتصفح.");
     }
     report(0, "done");

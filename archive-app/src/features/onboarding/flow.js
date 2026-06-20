@@ -18,6 +18,7 @@ export const ONBOARDING_STORAGE_OPTIONS = [
     label: "SQL على الخادم",
     detail: "موصى به. مصدر حقيقة مركزي عبر archive-server مع مراقبة صحة قاعدة البيانات.",
     needsUrl: true,
+    allowsSameOrigin: true,
     urlPlaceholder: "https://archive.example.com"
   },
   {

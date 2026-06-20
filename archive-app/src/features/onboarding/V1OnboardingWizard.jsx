@@ -316,10 +316,14 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   // A cloud backend needs a URL before we let the user move on. Local needs
   // nothing. A loose http(s) check keeps the error helpful without being a
   // full URL parser.
-  const storageNeedsUrl = storageChoice === "postgres" || storageChoice === "pocketbase";
-  const storageUrlValid = !storageNeedsUrl || /^https?:\/\/.+/i.test(storageUrl.trim());
+  const selectedStorageOption = availableStorageOptions.find((option) => option.id === storageChoice);
+  const storageUsesServer = storageChoice === "postgres" || storageChoice === "pocketbase";
+  const storageAllowsSameOrigin = Boolean(selectedStorageOption?.allowsSameOrigin);
+  const storageUrlValid = !storageUsesServer
+    || (storageAllowsSameOrigin && !storageUrl.trim())
+    || /^https?:\/\/.+/i.test(storageUrl.trim());
   const firebaseConfigState = React.useMemo(() => parseFirebaseConfigText(firebaseConfigText), [firebaseConfigText]);
-  const canContinueStorage = storageChoice === "firebase" ? firebaseConfigState.ok : (!storageNeedsUrl || storageUrlValid);
+  const canContinueStorage = storageChoice === "firebase" ? firebaseConfigState.ok : storageUrlValid;
   React.useEffect(() => {
     if (!availableStorageOptions.some((option) => option.id === storageChoice)) {
       setStorageChoice("local");
@@ -549,13 +553,13 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     // only client-side choices (local/Firebase); user-owned server backends
     // are still forced back to local at boot.
     try {
-      if (!forceLocal && storageNeedsUrl && cloudUsername.trim() && cloudPassword) {
+      if (!forceLocal && storageUsesServer && cloudUsername.trim() && cloudPassword) {
         await loginToCloud({ baseUrl: storageUrl.trim(), username: cloudUsername.trim(), password: cloudPassword });
       }
       if (!forceLocal || storageChoice === "local" || storageChoice === "firebase") {
         setBackendChoice(
           normalizeBackendChoice(storageChoice),
-          storageNeedsUrl ? storageUrl.trim() : "",
+          storageUsesServer ? storageUrl.trim() : "",
           {
             localEngine,
             firebaseConfig: storageChoice === "firebase" ? firebaseConfigState.config : null
@@ -772,7 +776,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             onChange: (event) => setStorageUrl(event.target.value),
             placeholder: selected.urlPlaceholder || "https://...",
             className: "input input-bordered w-full",
-            "aria-invalid": storageNeedsUrl && !storageUrlValid,
+            "aria-invalid": storageUsesServer && !storageUrlValid,
             "aria-label": "عنوان الخادم"
           }),
           jsx("p", { className: "text-xs leading-6 text-gray-500", children: "نفس النطاق الذي نشرت عليه الخادم. سيُستخدم بعد إعادة التحميل لربط هذا الجهاز بالخادم." })
@@ -875,7 +879,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                 }, key)) }))
           ]
         }),
-        storageNeedsUrl && jsxs("section", {
+        storageUsesServer && jsxs("section", {
           className: "rounded-2xl border border-white/10 bg-white/[0.03] p-4",
           "aria-label": "تسجيل الدخول للخادم",
           children: [

@@ -97,6 +97,13 @@ export async function loginToCloud({ baseUrl = "", username, password, fetchImpl
   }
 
   let payload;
+  const contentType = response.headers?.get?.("content-type") || "";
+  if (/text\/html/i.test(contentType)) {
+    throw new CloudLoginError(
+      "مسار الدخول أعاد واجهة HTML بدلاً من API. تأكد من تشغيل archive-server وضبط proxy لمسار /api.",
+      { status: response.status }
+    );
+  }
   try {
     payload = await response.json();
   } catch {
