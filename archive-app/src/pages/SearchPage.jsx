@@ -151,6 +151,84 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
   });
 }
 
+function SearchInputWithSuggestions({ query, setQuery, showSuggestions, setShowSuggestions, recentSearches, videoItems, handleVoiceIntent, handleVoiceUnsupported, handleVoiceError, searchInputRef }) {
+  const containerRef = React.useRef(null);
+
+  const suggestions = React.useMemo(() => {
+    if (!query.trim() || query.trim().length < 2) return [];
+    const lc = query.trim().toLowerCase();
+    const tagSet = new Set();
+    videoItems.forEach((item) => {
+      (item.tags || []).forEach((t) => { if (t.toLowerCase().includes(lc)) tagSet.add(t); });
+    });
+    const recentMatches = (recentSearches || []).filter((s) => s.toLowerCase().includes(lc) && s !== query);
+    return [
+      ...recentMatches.slice(0, 3).map((s) => ({ type: "recent", value: s })),
+      ...[...tagSet].slice(0, 5).map((t) => ({ type: "tag", value: t }))
+    ].slice(0, 7);
+  }, [query, videoItems, recentSearches]);
+
+  React.useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setShowSuggestions(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [setShowSuggestions]);
+
+  return jsxs("div", {
+    ref: containerRef,
+    className: "relative",
+    children: [
+      jsxs("label", {
+        className: "relative block",
+        children: [
+          jsx(Search, { className: "pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
+          jsx("input", {
+            ref: searchInputRef,
+            value: query,
+            onChange: (event) => { setQuery(event.target.value); setShowSuggestions(true); },
+            onFocus: () => setShowSuggestions(true),
+            placeholder: "ابحث في العنوان أو الوسوم أو الملاحظات",
+            "aria-label": "كلمات البحث",
+            "aria-autocomplete": "list",
+            type: "search",
+            className: "input input-bordered w-full"
+          }),
+          jsx("span", {
+            className: "absolute start-2 top-1/2 -translate-y-1/2",
+            children: jsx(VoiceSearchButton, { onIntent: handleVoiceIntent, onUnsupported: handleVoiceUnsupported, onError: handleVoiceError })
+          })
+        ]
+      }),
+      showSuggestions && suggestions.length > 0 && jsx("ul", {
+        role: "listbox",
+        "aria-label": "اقتراحات البحث",
+        className: "absolute start-0 end-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] shadow-[var(--va-elev-popover)]",
+        children: suggestions.map(({ type: sType, value }) => jsxs("li", {
+          role: "option",
+          children: [
+            jsx("button", {
+              type: "button",
+              className: "flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)] focus:bg-[var(--va-surface-2)] focus:outline-none",
+              onClick: () => { setQuery(value); setShowSuggestions(false); },
+              children: jsxs(React.Fragment, {
+                children: [
+                  sType === "recent"
+                    ? jsx(Search, { className: "h-3.5 w-3.5 shrink-0 text-[var(--va-text-muted)]" })
+                    : jsx(Tags, { className: "h-3.5 w-3.5 shrink-0 va-accent-text" }),
+                  jsx("span", { className: "min-w-0 truncate", children: value }),
+                  jsx("span", { className: "ms-auto shrink-0 text-xs text-[var(--va-text-muted)]", children: sType === "recent" ? "سابق" : "وسم" })
+                ]
+              })
+            })
+          ]
+        }, value))
+      })
+    ]
+  });
+}
+
 export function SearchPage() {
   const {
     videoItems = [],
@@ -172,6 +250,8 @@ export function SearchPage() {
 
   const initialRouteState = React.useMemo(() => parseSearchRouteParams(parseAppRoute().params), []);
   const [query, setQuery] = React.useState(initialRouteState.query || "");
+  const [debouncedQuery, setDebouncedQuery] = React.useState(initialRouteState.query || "");
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
   const [type, setType] = React.useState(initialRouteState.type || "all");
   const [subtype, setSubtype] = React.useState(initialRouteState.subtype || "all");
   const [favoritesOnly, setFavoritesOnly] = React.useState(initialRouteState.favoritesOnly || false);
@@ -192,16 +272,21 @@ export function SearchPage() {
   const subtypes = activeType?.subtypes || [];
   const activeFilterCount = getSearchActiveFilterCount({ query, type, subtype, favoritesOnly, missingFieldsOnly, dateFrom, dateTo });
 
+  React.useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedQuery(query), 150);
+    return () => window.clearTimeout(id);
+  }, [query]);
+
   const results = React.useMemo(() => getSearchResults({
     videoItems,
-    query,
+    query: debouncedQuery,
     type,
     subtype,
     favoritesOnly,
     missingFieldsOnly,
     dateFrom,
     dateTo
-  }), [dateFrom, dateTo, favoritesOnly, missingFieldsOnly, query, subtype, type, videoItems]);
+  }), [dateFrom, dateTo, favoritesOnly, missingFieldsOnly, debouncedQuery, subtype, type, videoItems]);
 
   const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -440,28 +525,17 @@ export function SearchPage() {
           jsxs("div", {
             className: "grid gap-3 xl:grid-cols-[minmax(260px,1fr)_220px_180px_160px]",
             children: [
-              jsxs("label", {
-                className: "relative block",
-                children: [
-                  jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),
-                  jsx("input", {
-                    ref: searchInputRef,
-                    value: query,
-                    onChange: (event) => setQuery(event.target.value),
-                    placeholder: "ابحث في العنوان أو الوسوم أو الملاحظات",
-                    "aria-label": "كلمات البحث",
-                    type: "search",
-                    className: "input input-bordered w-full"
-                  }),
-                  jsx("span", {
-                    className: "absolute left-2 top-1/2 -translate-y-1/2",
-                    children: jsx(VoiceSearchButton, {
-                      onIntent: handleVoiceIntent,
-                      onUnsupported: handleVoiceUnsupported,
-                      onError: handleVoiceError
-                    })
-                  })
-                ]
+              jsx(SearchInputWithSuggestions, {
+                query,
+                setQuery,
+                showSuggestions,
+                setShowSuggestions,
+                recentSearches,
+                videoItems,
+                handleVoiceIntent,
+                handleVoiceUnsupported,
+                handleVoiceError,
+                searchInputRef
               }),
               jsxs("select", {
                 "aria-label": "تصفية البحث حسب نوع المحتوى",
