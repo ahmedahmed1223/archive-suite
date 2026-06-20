@@ -575,15 +575,26 @@ export function SettingsPage() {
         description: "اختيارات عامة تؤثر على طريقة فتح الأرشيف والتعامل مع البيانات.",
         icon: jsx(Archive, { className: "h-5 w-5 va-accent-text" }),
         children: jsxs("div", {
-          className: "grid gap-3 md:grid-cols-2",
+          className: "space-y-3",
           children: [
-            jsx(SegmentedChoices, { label: "العرض الافتراضي للأرشيف", value: settings.defaultView || "grid", options: VIEW_OPTIONS, onChange: (value) => saveSettings({ defaultView: value }, "تم تحديث العرض الافتراضي") }),
-            jsx(SelectRow, {
-              label: "عدد العناصر الافتراضي",
-              value: String(settings.itemsPerPage || 24),
-              onChange: (value) => saveSettings({ itemsPerPage: Number(value) }, "تم تحديث عدد العناصر"),
-              options: [12, 24, 48, 96].map((value) => ({ value: String(value), label: `${formatNumber(value)} عنصر` })),
-              description: "يستخدم كنقطة بداية للصفحات الجديدة."
+            jsxs("div", {
+              className: "grid gap-3 md:grid-cols-2",
+              children: [
+                jsx(SegmentedChoices, { label: "العرض الافتراضي للأرشيف", value: settings.defaultView || "grid", options: VIEW_OPTIONS, onChange: (value) => saveSettings({ defaultView: value }, "تم تحديث العرض الافتراضي") }),
+                jsx(SelectRow, {
+                  label: "عدد العناصر الافتراضي",
+                  value: String(settings.itemsPerPage || 24),
+                  onChange: (value) => saveSettings({ itemsPerPage: Number(value) }, "تم تحديث عدد العناصر"),
+                  options: [12, 24, 48, 96].map((value) => ({ value: String(value), label: `${formatNumber(value)} عنصر` })),
+                  description: "يستخدم كنقطة بداية للصفحات الجديدة."
+                })
+              ]
+            }),
+            jsx(ToggleRow, {
+              label: "التعديل السريع في اللوحة الجانبية",
+              description: "عند التفعيل، تفتح عملية التعديل لوحة جانبية منزلقة بدلاً من الانتقال لصفحة التفاصيل الكاملة.",
+              checked: !!settings.ui?.editInSidePanel,
+              onChange: (checked) => patchUi({ editInSidePanel: checked }, "تم تحديث وضع التعديل")
             })
           ]
         })
