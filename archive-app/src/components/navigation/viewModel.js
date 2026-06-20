@@ -40,7 +40,8 @@ export function getPrimaryPageAction(pageId = "dashboard") {
     add: { label: "فتح الأرشيف", targetPage: "archive" },
     backup: { label: "استيراد بيانات", targetPage: "backup", dataTab: "import" },
     help: { label: "مركز التحكم", targetPage: "dashboard" },
-    settings: { label: "فحص النظام", targetPage: "settings", settingsTab: "maintenance" }
+    settings: { label: "فحص النظام", targetPage: "settings", settingsTab: "maintenance" },
+    "file-manager": { label: "رفع ملفات", targetPage: "file-manager", event: "videoarchive:file-manager-upload" }
   };
   return actions[pageId] || { label: "فتح الأرشيف", targetPage: "archive" };
 }

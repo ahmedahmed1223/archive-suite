@@ -104,6 +104,9 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
   };
 
   const primaryAction = (() => {
+    if (currentPage === "file-manager") {
+      return { label: "رفع ملفات", Icon: Upload, onClick: () => window.dispatchEvent(new CustomEvent("videoarchive:file-manager-upload")) };
+    }
     if (["archive", "dashboard", "search"].includes(currentPage)) {
       return { label: "إضافة فيديو", Icon: CirclePlus, onClick: () => goToPage("add") };
     }
