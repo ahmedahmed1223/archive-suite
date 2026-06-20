@@ -5,7 +5,9 @@ packages:
 allowBuilds:
   '@firebase/util': false
   '@prisma/engines': true
+  cpu-features: false
   esbuild: true
   prisma: true
   protobufjs: false
   sharp: true
+  ssh2: false

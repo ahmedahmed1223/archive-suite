@@ -10,6 +10,8 @@ import { createAzureBlobFileStore } from "../adapters/files-azure/index.js";
 import { createGoogleDriveFileStore } from "../adapters/files-gdrive/index.js";
 import { createFtpFileStore } from "../adapters/files-ftp/index.js";
 import { createSmbFileStore } from "../adapters/files-smb/index.js";
+import { createSftpFileStore } from "../adapters/files-sftp/index.js";
+import { createWebDavFileStore } from "../adapters/files-webdav/index.js";
 import { createAiProvider } from "../ai/createAiProvider.js";
 import { resolveServerConfig } from "../config/serverConfig.js";
 import { normalizeDatabaseEngine } from "../config/secrets.js";
@@ -52,6 +54,12 @@ export function buildFileStore(options = {}) {
   }
   if (choice === "smb") {
     return createSmbFileStore({}); // reads SMB_* from env
+  }
+  if (choice === "sftp") {
+    return createSftpFileStore({}); // reads SFTP_* from env
+  }
+  if (choice === "webdav") {
+    return createWebDavFileStore({}); // reads WEBDAV_* from env
   }
   return createDiskFileStore({ rootDir: options.fileStoreDir || config.fileStoreDir || process.env.FILE_STORE_DIR });
 }
