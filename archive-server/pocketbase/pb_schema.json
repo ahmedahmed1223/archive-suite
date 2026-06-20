@@ -757,5 +757,60 @@
     "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
     "deleteRule": "",
     "options": {}
+  },
+  {
+    "id": "file_ingest_queue",
+    "name": "file_ingest_queue",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "file_ingest_queue_uid",
+        "name": "uid",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": { "min": null, "max": null, "pattern": "" }
+      },
+      {
+        "system": false,
+        "id": "file_ingest_queue_data",
+        "name": "data",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": { "maxSize": 2000000 }
+      },
+      {
+        "system": false,
+        "id": "file_ingest_queue_syncVersion",
+        "name": "syncVersion",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": { "min": null, "max": null, "noDecimal": false }
+      },
+      {
+        "system": false,
+        "id": "file_ingest_queue_lastModifiedBy",
+        "name": "lastModifiedBy",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": { "maxSize": 2000000 }
+      }
+    ],
+    "indexes": ["CREATE UNIQUE INDEX `idx_uid_file_ingest_queue` ON `file_ingest_queue` (`uid`)"],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "updateRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "deleteRule": "@request.auth.role = \"admin\" || @request.auth.role = \"editor\"",
+    "options": {}
   }
 ]

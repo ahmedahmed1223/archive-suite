@@ -861,12 +861,12 @@ run("settings view model", () => {
 });
 
 run("onboarding view model", () => {
-  // welcome=0, storage=1, security=2, admin=3, appearance=4 (storage step
-  // added in spB-B3 wizard UI).
-  assert.equal(getOnboardingStepIndex("appearance"), 4);
+  // welcome=0, storage=1, file-store=2, security=3, admin=4, appearance=5.
+  assert.equal(getOnboardingStepIndex("appearance"), 5);
   assert.equal(getNextOnboardingStep("appearance").id, "interface");
   assert.equal(getOnboardingStepIndex("storage"), 1);
-  assert.equal(getNextOnboardingStep("storage").id, "security");
+  assert.equal(getNextOnboardingStep("storage").id, "file-store");
+  assert.equal(getNextOnboardingStep("file-store").id, "security");
   assert.equal(getFirstTaskDestination("import-backup"), "backup");
   assert.equal(getOnboardingDestination("create-type"), "types");
   assert.equal(shouldShowStartupOnboarding({ authState: "setup", settings: { ui: { v1OnboardingCompleted: false } } }), true);

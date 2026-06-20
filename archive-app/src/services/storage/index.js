@@ -13,7 +13,8 @@ const DATA_STORES = [
   STORES.HTAGS,
   STORES.AUDIT_LOGS,
   STORES.PROJECTS,
-  STORES.ACTIVITY_LOG
+  STORES.ACTIVITY_LOG,
+  STORES.FILE_INGEST_QUEUE
 ];
 
 const STORE_KEY_PATHS = {
@@ -148,6 +149,7 @@ export async function getIndexedDbDataSnapshot() {
     auditLogs: await dbGetAll(STORES.AUDIT_LOGS).catch(() => []),
     projects: await dbGetAll(STORES.PROJECTS).catch(() => []),
     activityLog: await dbGetAll(STORES.ACTIVITY_LOG).catch(() => []),
+    fileIngestQueue: await dbGetAll(STORES.FILE_INGEST_QUEUE).catch(() => []),
     exportedAt: new Date().toISOString(),
     version: "2.0"
   };
@@ -207,6 +209,7 @@ export async function writeNormalizedDataToIndexedDb(data = {}) {
     auditLogs: ensureArrayOrEmpty(data, "auditLogs"),
     projects: ensureArrayOrEmpty(data, "projects"),
     activityLog: ensureArrayOrEmpty(data, "activityLog"),
+    fileIngestQueue: ensureArrayOrEmpty(data, "fileIngestQueue"),
     users: Array.isArray(data.users) ? data.users : null,
     settings: data.settings && typeof data.settings === "object" ? data.settings : null
   };
@@ -242,6 +245,7 @@ export async function writeNormalizedDataToIndexedDb(data = {}) {
     auditLogs: putMany(STORES.AUDIT_LOGS, payload.auditLogs),
     projects: putMany(STORES.PROJECTS, payload.projects),
     activityLog: putMany(STORES.ACTIVITY_LOG, payload.activityLog),
+    fileIngestQueue: putMany(STORES.FILE_INGEST_QUEUE, payload.fileIngestQueue),
     users: payload.users && payload.users.length ? putMany(STORES.USERS, payload.users) : 0
   };
 

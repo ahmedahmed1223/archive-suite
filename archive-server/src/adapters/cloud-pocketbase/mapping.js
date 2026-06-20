@@ -29,7 +29,8 @@ export const SNAPSHOT_COLLECTION_BY_DOMAIN_KEY = Object.freeze({
   hierarchicalTags: "hierarchical_tags",
   users: "users",
   auditLogs: "audit_logs",
-  projects: "projects"
+  projects: "projects",
+  fileIngestQueue: "file_ingest_queue"
 });
 
 // `app_settings` is a singleton bag keyed by `key="app_settings"` rather than
