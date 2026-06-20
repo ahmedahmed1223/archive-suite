@@ -27,6 +27,14 @@ export default defineConfig(({ mode }) => {
   const isAistudio = target === "aistudio";
   const inlineSingleFile = !isCloud && !isAnalyze;
   const outDir = isCloud ? "dist-cloud" : isAistudio ? "dist-aistudio" : "dist";
+  const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || "http://127.0.0.1:8787";
+  const apiProxy = {
+    "/api": {
+      target: apiProxyTarget,
+      changeOrigin: true,
+      secure: false
+    }
+  };
 
   return {
     test: {
@@ -60,10 +68,12 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 3000
     },
     server: {
-      host: "127.0.0.1"
+      host: "127.0.0.1",
+      proxy: apiProxy
     },
     preview: {
-      host: "127.0.0.1"
+      host: "127.0.0.1",
+      proxy: apiProxy
     }
   };
 });

@@ -20,6 +20,7 @@ import { registerCloudProviders } from "./bootstrap/registerCloudProviders.js";
 import { startApiServer } from "./api/server.js";
 import { createEventBus } from "./api/eventBus.js";
 import { loginUser, seedAdminIfMissing } from "./auth/authService.js";
+import { resolveAuthSigningSecret } from "./auth/authConfig.js";
 import { resolveServerConfig } from "./config/serverConfig.js";
 import { assertProductionSecrets } from "./config/productionGuard.js";
 import { logger } from "./logger.js";
@@ -36,7 +37,7 @@ import { createInMemoryMediaJobStore } from "./media/mediaJobs.js";
 const BACKEND = process.env.BACKEND || "pocketbase";
 const PORT = Number(process.env.API_PORT || 8787);
 const CORS_ORIGIN = process.env.API_CORS_ORIGIN || "";
-const JWT_SECRET = process.env.JWT_SECRET || "";
+const AUTH_SECRET = resolveAuthSigningSecret(process.env);
 const TOKEN_TTL_SEC = Number(process.env.JWT_TTL_SEC || 12 * 60 * 60);
 
 async function buildExtraHealth({ prisma, mediaJobStore }) {
@@ -155,11 +156,13 @@ async function main() {
     }
   });
 
-  // Auth wiring. When JWT_SECRET is set, /api/rpc requires a Bearer token and
+  // Auth wiring. The dedicated JWT_AUTH_SECRET is preferred; JWT_SECRET is a
+  // backward-compatible fallback. The same effective secret signs login
+  // tokens and verifies protected API requests.
   // /api/auth/login issues one (verified against the users store). Optionally
   // seed a first admin from env so a fresh deploy has a login.
   let login;
-  if (JWT_SECRET) {
+  if (AUTH_SECRET) {
     const provider = getStorageProvider();
     const seed = await seedAdminIfMissing({
       provider,
@@ -169,12 +172,12 @@ async function main() {
     if (seed.seeded) {
       logger.info({ username: seed.username }, "Seeded first admin from env.");
     }
-    login = (body) => loginUser(body, { provider, secret: JWT_SECRET, expiresInSec: TOKEN_TTL_SEC, totpToken: body?.totpToken });
+    login = (body) => loginUser(body, { provider, secret: AUTH_SECRET, expiresInSec: TOKEN_TTL_SEC, totpToken: body?.totpToken });
     logger.info("Auth ENABLED — /api/rpc requires a Bearer token.");
   } else {
     logger.warn(
-      "JWT_SECRET is not set — the RPC API is UNAUTHENTICATED. " +
-      "Set JWT_SECRET (and ADMIN_USERNAME/ADMIN_PASSWORD) before exposing this server publicly."
+      "JWT_AUTH_SECRET/JWT_SECRET is not set — the RPC API is UNAUTHENTICATED. " +
+      "Set an auth secret (and ADMIN_USERNAME/ADMIN_PASSWORD) before exposing this server publicly."
     );
   }
 
@@ -191,7 +194,7 @@ async function main() {
     port: PORT,
     backend: registration.backend,
     corsOrigin: CORS_ORIGIN,
-    authSecret: JWT_SECRET,
+    authSecret: AUTH_SECRET,
     login,
     prisma,
     rateLimit: {

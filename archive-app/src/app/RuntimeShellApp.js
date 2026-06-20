@@ -40,6 +40,7 @@ import {
   shouldShowV1Tour
 } from "../features/onboarding/index.js";
 import { useServerStatusMonitor } from "../features/server-status/useServerStatusMonitor.js";
+import { resolveBackendChoice } from "../bootstrap/backendChoice.js";
 
 // ─── Focused sub-modules ──────────────────────────────────────────────────────
 import { AppProviders } from "./AppProviders.jsx";
@@ -115,6 +116,7 @@ export function App() {
             mode: settings.ui?.startupMode || "balanced",
             loadAllData,
             initAuth,
+            requiresIndexedDb: resolveBackendChoice().backend === "local",
             onStep: setStartupProgress
           });
           if (!result.ok && result.fatalError) {
