@@ -386,6 +386,11 @@ export function AddVideoPage() {
   const canSave = title.trim() && typeId;
   const parsedTags = React.useMemo(() => parseVideoTags(tags), [tags]);
   const missingRequiredFields = React.useMemo(() => getMissingRequiredFields(fields, metadata), [fields, metadata]);
+  const stepsWithDetail = React.useMemo(() => STEPS.map((step) => {
+    if (step.id !== "fields" || !fields.length) return step;
+    const reqCount = fields.filter((f) => f.required).length;
+    return { ...step, detail: reqCount > 0 ? `${fields.length} حقل (${reqCount} مطلوب)` : `${fields.length} حقل` };
+  }), [fields]);
   const readyChecks = React.useMemo(() => [
     { id: "title", label: "عنوان واضح", ok: !!title.trim() },
     { id: "type", label: "تصنيف محدد", ok: !!typeId },
@@ -620,7 +625,7 @@ export function AddVideoPage() {
                     jsx(currentStep.icon, { className: "h-5 w-5 shrink-0 va-accent-text" })
                   ]
                 }),
-                jsx("p", { className: "mt-2 text-xs leading-6 text-[var(--va-text-muted)]", children: currentStep.detail }),
+                jsx("p", { className: "mt-2 text-xs leading-6 text-[var(--va-text-muted)]", children: (stepsWithDetail.find((s) => s.id === currentStep.id) || currentStep).detail }),
                 jsx("div", {
                   className: "mt-3 grid grid-cols-4 gap-1",
                   "aria-hidden": true,
@@ -633,9 +638,9 @@ export function AddVideoPage() {
             jsx("div", {
               className: "hidden md:block",
               children: jsx(WorkflowStepper, {
-                steps: STEPS,
+                steps: stepsWithDetail,
                 activeStepId: currentStep.id,
-                completedStepIds: STEPS.slice(0, stepIndex).map((step) => step.id),
+                completedStepIds: stepsWithDetail.slice(0, stepIndex).map((step) => step.id),
                 onStepClick: (stepId) => setStepIndex(Math.max(0, STEPS.findIndex((step) => step.id === stepId))),
                 className: "sm:grid-cols-4",
                 compact: true
