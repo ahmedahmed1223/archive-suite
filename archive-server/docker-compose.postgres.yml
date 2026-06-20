@@ -247,8 +247,32 @@ services:
           cpus: '1'
           memory: 2G
 
+  pgadmin-init:
+    image: dpage/pgadmin4:9.15
+    container_name: archive-pgadmin-init
+    restart: "no"
+    user: root
+    entrypoint: ["/bin/sh", "/opt/archive/pgadmin-init.sh"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Set PGADMIN_EMAIL in .env}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?Set PGADMIN_PASSWORD in .env}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-archive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./deploy/pgadmin-init.sh:/opt/archive/pgadmin-init.sh:ro
+      - ./deploy/pgadmin-sync-user.py:/opt/archive/pgadmin-sync-user.py:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - archive
+
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:9.15
     container_name: archive-pgadmin
     restart: unless-stopped
     user: root
@@ -258,6 +282,8 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: "True"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "True"
       PGADMIN_CONFIG_SESSION_DB_PATH: "'/var/lib/pgadmin/sessions'"
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
+      PGPASS_FILE: /var/lib/pgadmin/pgpass
     volumes:
       - pgadmin_data:/var/lib/pgadmin
       - ./deploy/pgadmin-servers.json:/pgadmin4/servers.json:ro
@@ -266,6 +292,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      pgadmin-init:
+        condition: service_completed_successfully
     networks:
       - archive
     deploy:
