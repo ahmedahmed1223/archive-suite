@@ -16,6 +16,7 @@ export const PAGE_NATIVE_MIGRATION = {
   collections: { status: "native", notes: "Page JSX lives in src/pages/CollectionsPage.jsx with native cards, detail preview, and manual item management." },
   projects: { status: "native", notes: "Page JSX lives in src/pages/ProjectsPage.jsx with native montage timeline, rough-cut builder, reordering, and JSON/EDL/MP4 export." },
   "production-tasks": { status: "native", notes: "Page JSX lives in src/pages/ProductionTasksPage.jsx with project task creation, assignee linking, material linking, and kanban task status columns." },
+  "file-manager": { status: "native", notes: "Page JSX lives in src/pages/FileManagerPage.jsx; browses the file store with upload/move/copy and archive-when-ready actions." },
   uploader: { status: "native", notes: "Page JSX lives in src/pages/UploaderPage.jsx; uploads media to the FileStore port (local/disk/Dropbox/S3) with listing and removal." },
   transcriber: { status: "native", notes: "Page JSX lives in src/pages/TranscriberPage.jsx; transcribes audio/video via the AiProvider port — cloud Whisper or in-browser (G2) — with timestamped segments." },
   vocabulary: { status: "native", notes: "Page JSX lives in src/pages/VocabularyPage.jsx; vocabulary filtering and @ autocomplete data are now driven by src/features/vocabulary." },
