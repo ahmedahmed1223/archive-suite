@@ -22,6 +22,7 @@ const ProjectsPage        = lazy(() => import("../pages/ProjectsPage.jsx"));
 const ProductionTasksPage = lazy(() => import("../pages/ProductionTasksPage.jsx"));
 const TranscriberPage     = lazy(() => import("../pages/TranscriberPage.jsx"));
 const UploaderPage        = lazy(() => import("../pages/UploaderPage.jsx"));
+const FileManagerPage     = lazy(() => import("../pages/FileManagerPage.jsx"));
 const VocabularyPage      = lazy(() => import("../pages/VocabularyPage.jsx"));
 const HierarchicalTagsPage = lazy(() => import("../pages/HierarchicalTagsPage.jsx"));
 const UsersPage           = lazy(() => import("../pages/UsersPage.jsx"));
@@ -72,6 +73,7 @@ export const PAGE_COMPONENTS = {
   "production-tasks": ProductionTasksPage,
   transcriber: TranscriberPage,
   uploader:    UploaderPage,
+  "file-manager": FileManagerPage,
   vocabulary:  VocabularyPage,
   htags:       HierarchicalTagsPage,
   reports:     ReportsPage,
