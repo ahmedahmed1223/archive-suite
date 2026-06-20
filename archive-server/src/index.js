@@ -24,6 +24,7 @@ import { resolveServerConfig } from "./config/serverConfig.js";
 import { assertProductionSecrets } from "./config/productionGuard.js";
 import { logger } from "./logger.js";
 import { startBackupScheduler, stopBackupScheduler } from "./backup/backupScheduler.js";
+import { startDueDateScheduler, stopDueDateScheduler } from "./workflow/dueDateScheduler.js";
 import { sendPushToUser } from "./notifications/webPushService.js";
 import { createVersionRetentionService } from "./versions/versionRetentionService.js";
 import { initMetrics } from "./monitoring/metrics.js";
@@ -130,6 +131,9 @@ async function main() {
     throw new Error(`Unknown BACKEND "${BACKEND}" — expected "postgres" or "pocketbase".`);
   }
 
+  // Workflow due-date reminders (no-op when WORKFLOW_DUE_REMINDERS_ENABLED is unset).
+  startDueDateScheduler(getStorageProvider(), prisma, sendPushToUser);
+
   // Start scheduled backups (no-op when BACKUP_ENABLED is unset).
   // On failure, push a system alert to all admin users (fire-and-forget).
   startBackupScheduler(getStorageProvider(), {
@@ -214,8 +218,9 @@ async function main() {
     isShuttingDown = true;
     logger.info({ signal }, "Received signal, draining connections...");
 
-    // Stop the backup scheduler before draining HTTP.
+    // Stop schedulers before draining HTTP.
     stopBackupScheduler();
+    stopDueDateScheduler();
     stopVersionRetention?.();
 
     // Stop accepting new connections; wait for in-flight requests to finish.
