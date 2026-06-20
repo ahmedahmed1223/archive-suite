@@ -13,6 +13,7 @@ export const SETTINGS_TABS = [
   { id: "appearance", label: "المظهر", role: "personal", roleLabel: "شخصي" },
   { id: "general", label: "عام", role: "personal", roleLabel: "شخصي" },
   { id: "data", label: "البيانات", role: "admin", roleLabel: "مسؤول" },
+  { id: "cloud", label: "Cloud Control", role: "admin", roleLabel: "مسؤول" },
   { id: "ai", label: "مزود الذكاء", role: "admin", roleLabel: "مسؤول" },
   { id: "shortcuts", label: "الاختصارات", role: "admin", roleLabel: "مسؤول" },
   { id: "webhooks",    label: "Webhooks",   role: "admin", roleLabel: "مسؤول" },
