@@ -24,6 +24,7 @@ import { resolveServerConfig } from "./config/serverConfig.js";
 import { assertProductionSecrets } from "./config/productionGuard.js";
 import { logger } from "./logger.js";
 import { startBackupScheduler, stopBackupScheduler } from "./backup/backupScheduler.js";
+import { sendPushToUser } from "./notifications/webPushService.js";
 import { createVersionRetentionService } from "./versions/versionRetentionService.js";
 import { initMetrics } from "./monitoring/metrics.js";
 import { initRedis, closeRedis, isRedisAvailable } from "./cache/redisCache.js";
@@ -130,7 +131,25 @@ async function main() {
   }
 
   // Start scheduled backups (no-op when BACKUP_ENABLED is unset).
-  startBackupScheduler(getStorageProvider());
+  // On failure, push a system alert to all admin users (fire-and-forget).
+  startBackupScheduler(getStorageProvider(), {
+    onFailure: async (err) => {
+      if (!prisma?.user) return;
+      try {
+        const admins = await prisma.user.findMany({ where: { role: "admin" }, select: { id: true } });
+        for (const { id } of admins) {
+          sendPushToUser({
+            prisma,
+            userId: id,
+            type: "system",
+            title: "فشل النسخ الاحتياطي",
+            body: err?.message || "حدث خطأ أثناء إنشاء النسخة الاحتياطية.",
+            tag: "backup-failure"
+          });
+        }
+      } catch { /* don't block on notification errors */ }
+    }
+  });
 
   // Auth wiring. When JWT_SECRET is set, /api/rpc requires a Bearer token and
   // /api/auth/login issues one (verified against the users store). Optionally

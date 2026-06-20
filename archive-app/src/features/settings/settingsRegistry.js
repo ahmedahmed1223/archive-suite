@@ -94,6 +94,17 @@ export const SETTINGS_REGISTRY = [
     default: { vocabulary: "@", tags: "#" },
     keywords: ["autocomplete", "trigger", "مفردات", "وسوم"],
   },
+  {
+    id: "editInSidePanel",
+    category: "general",
+    tab: "general",
+    label: "التعديل السريع في اللوحة الجانبية",
+    description: "عند التفعيل، تفتح عملية التعديل لوحة جانبية منزلقة بدلاً من صفحة التفاصيل الكاملة.",
+    path: "ui.editInSidePanel",
+    type: "boolean",
+    default: false,
+    keywords: ["edit", "side panel", "drawer", "quick edit", "تعديل", "لوحة", "جانبي"],
+  },
 
   // ── Appearance ──────────────────────────────────────────────────────────────
   {

@@ -16,16 +16,20 @@ export { verifyBackupChecksum, decryptBackupFile };
 
 let schedulerTimer = null;
 
-export function startBackupScheduler(provider) {
+export function startBackupScheduler(provider, { onFailure } = {}) {
   if (!process.env.BACKUP_ENABLED) {
     log.debug("Backup scheduler disabled (set BACKUP_ENABLED=true).");
     return;
   }
   mkdirSync(BACKUP_DIR, { recursive: true });
   log.info({ intervalHours: BACKUP_INTERVAL_MS / 3_600_000 }, "Backup scheduler started.");
-  runBackup(provider).catch(err => log.error({ err }, "Startup backup failed."));
+  const handleError = (err) => {
+    log.error({ err }, "Backup failed.");
+    onFailure?.(err);
+  };
+  runBackup(provider).catch(handleError);
   schedulerTimer = setInterval(() => {
-    runBackup(provider).catch(err => log.error({ err }, "Scheduled backup failed."));
+    runBackup(provider).catch(handleError);
   }, BACKUP_INTERVAL_MS);
   schedulerTimer?.unref?.();
 }
