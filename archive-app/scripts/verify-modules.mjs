@@ -871,8 +871,9 @@ run("onboarding view model", () => {
   assert.equal(getOnboardingDestination("create-type"), "types");
   assert.equal(shouldShowStartupOnboarding({ authState: "setup", settings: { ui: { v1OnboardingCompleted: false } } }), true);
   assert.equal(shouldShowStartupOnboarding({ authState: "login", settings: { ui: { v1OnboardingCompleted: false } } }), false);
-  assert.equal(shouldShowV1Tour({ settings: { ui: { v1OnboardingCompleted: true, v1TourCompleted: false } }, currentPage: "dashboard" }), true);
-  assert.equal(shouldShowV1Tour({ settings: { ui: { v1OnboardingCompleted: true, v1TourCompleted: true, v1TourVersion: "old" } }, currentPage: "dashboard" }), true);
+  assert.equal(shouldShowV1Tour({ settings: { ui: { v1OnboardingCompleted: true, v1TourCompleted: false } }, currentPage: "dashboard" }), false);
+  assert.equal(shouldShowV1Tour({ settings: { ui: { v1OnboardingCompleted: true, v1TourAutoStartEnabled: true, v1TourCompleted: false } }, currentPage: "dashboard" }), true);
+  assert.equal(shouldShowV1Tour({ settings: { ui: { v1OnboardingCompleted: true, v1TourAutoStartEnabled: true, v1TourCompleted: true, v1TourVersion: "old" } }, currentPage: "dashboard" }), true);
   assert.equal(shouldShowV1Tour({ settings: { ui: { v1OnboardingCompleted: true, v1TourCompleted: true, v1TourVersion: PRODUCT_TOUR_VERSION } }, currentPage: "dashboard" }), false);
   assert.deepEqual(createOnboardingUiPatch({
     stepId: "interface",
@@ -913,7 +914,11 @@ run("onboarding view model", () => {
     lastOnboardingStep: "completed",
     visualDensity: "compact",
     onboardingReplayCompletedAt: null,
-    firstTaskChoiceUsed: false
+    firstTaskChoiceUsed: false,
+    v1TourCompleted: true,
+    v1TourVersion: PRODUCT_TOUR_VERSION,
+    tourDismissed: true,
+    usageOnboardingDismissed: true
   });
   assert.equal(normalizeRoleProfileId("admin"), "admin");
   assert.equal(normalizeRoleProfileId("unknown"), "editor");

@@ -72,8 +72,10 @@ run("validate/merge FileStore config supports disk + Dropbox without leaking old
   assert.deepEqual(validateFileStoreConfig({ kind: "disk", disk: { rootDir: " .files " } }),
     { kind: "disk", disk: { rootDir: ".files" } });
   assert.deepEqual(validateFileStoreConfig({ kind: "dropbox", dropbox: { accessToken: " token ", refreshToken: " refresh ", appKey: " app ", appSecret: " secret ", rootPath: " /archive ", selectUser: " dbid:user1 " } }),
-    { kind: "dropbox", dropbox: { accessToken: "token", refreshToken: "refresh", appKey: "app", appSecret: "secret", rootPath: "/archive", selectUser: "dbid:user1", selectAdmin: "" } });
-  assert.throws(() => validateFileStoreConfig({ kind: "s3" }), (e) => e.statusCode === 400);
+    { kind: "dropbox", dropbox: { accessToken: "token", refreshToken: "refresh", appKey: "app", appSecret: "secret", rootPath: "/archive", selectUser: "dbid:user1" } });
+  assert.deepEqual(validateFileStoreConfig({ kind: "s3", s3: { bucket: " media ", forcePathStyle: true } }),
+    { kind: "s3", s3: { bucket: "media", forcePathStyle: true } });
+  assert.throws(() => validateFileStoreConfig({ kind: "unknown" }), (e) => e.statusCode === 400);
 
   const existing = { fileStore: { dropbox: { accessToken: "old-token", refreshToken: "old-refresh", appSecret: "old-secret", rootPath: "/old" } } };
   const kept = mergeFileStoreConfig(existing, { kind: "dropbox", dropbox: { rootPath: "/new", appKey: "app" } });

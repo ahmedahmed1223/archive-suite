@@ -67,6 +67,7 @@ async function login() {
 let token = "";
 let lastHealth = null;
 const uploadedKeys = [];
+let textKey = "";
 
 function authHeaders(extra = {}) {
   return { Authorization: `Bearer ${token}`, ...extra };
@@ -127,6 +128,33 @@ await run("login and health", async () => {
   return `ffmpeg ${ffmpeg.version || "available"}`;
 });
 
+await run("onboarding preset resolves Cloud and every FileStore choice", async () => {
+  const setup = await fetch(`${BASE}/api/setup/status`).then(json);
+  let preset;
+  let source = "setup endpoint";
+  if (setup.needsSetup) {
+    const res = await fetch(`${BASE}/api/setup/preset-config`);
+    const body = await json(res);
+    if (!res.ok || !body.ok) throw new Error(body.error || `preset failed (${res.status})`);
+    preset = body.config;
+  } else {
+    const inspectPreset = [
+      "import { getPresetConfig } from './archive-server/src/api/presetConfig.js'",
+      "const p = await getPresetConfig()",
+      "console.log(JSON.stringify({ backend: p.backend, adminUsername: p.adminUsername, fileStore: { active: p.fileStore.active, providers: p.fileStore.providers.map(({ id }) => ({ id })) } }))"
+    ].join("; ");
+    const output = execFileSync("docker", ["exec", "archive-server", "node", "--input-type=module", "-e", inspectPreset], { encoding: "utf8", timeout: 60_000 });
+    preset = JSON.parse(output.trim());
+    source = "protected runtime config";
+  }
+  if (preset.backend !== "postgres" || preset.adminUsername !== env.ADMIN_USERNAME) throw new Error("preset did not resolve the configured Postgres admin");
+  const ids = new Set(preset.fileStore?.providers?.map((provider) => provider.id));
+  for (const id of ["disk", "dropbox", "s3", "azure", "gdrive", "ftp", "smb", "sftp", "webdav"]) {
+    if (!ids.has(id)) throw new Error(`preset is missing FileStore provider ${id}`);
+  }
+  return `${ids.size} providers, active=${preset.fileStore.active}, ${source}`;
+});
+
 await run("frontend cloud same-origin API proxy", async () => {
   const page = await fetch(FRONTEND_BASE);
   if (!page.ok) throw new Error(`frontend failed (${page.status})`);
@@ -163,6 +191,29 @@ await run("pgAdmin login page is reachable with default server seed", async () =
   return "Archive Postgres seeded";
 });
 
+await run("pgAdmin persisted account and Postgres passfile accept current passwords", async () => {
+  const verifyPassword = [
+    "import os",
+    "import config",
+    "from pathlib import Path",
+    "import psycopg",
+    "config.SQLITE_PATH='/var/lib/pgadmin/pgadmin4.db'",
+    "from pgadmin import create_app",
+    "from pgadmin.model import User",
+    "from flask_security.utils import verify_password",
+    "app=create_app(config.APP_NAME + '-credential-check')",
+    "ctx=app.app_context(); ctx.push()",
+    "u=User.query.filter_by(username=os.environ['EXPECTED_PGADMIN_EMAIL']).first()",
+    "assert u and verify_password(os.environ['EXPECTED_PGADMIN_PASSWORD'], u.password)",
+    "pg=Path('/var/lib/pgadmin/pgpass').read_text().strip().split(':', 4)",
+    "conn=psycopg.connect(host=pg[0], port=pg[1], dbname=os.environ['EXPECTED_POSTGRES_DB'], user=pg[3], password=pg[4])",
+    "assert conn.execute('SELECT 1').fetchone()[0] == 1",
+    "conn.close()"
+  ].join("; ");
+  execFileSync("docker", ["exec", "-e", `EXPECTED_PGADMIN_EMAIL=${env.PGADMIN_EMAIL}`, "-e", `EXPECTED_PGADMIN_PASSWORD=${env.PGADMIN_PASSWORD}`, "-e", `EXPECTED_POSTGRES_DB=${env.POSTGRES_DB || "archive"}`, "archive-pgadmin", "/venv/bin/python", "-c", verifyPassword], { stdio: "pipe", timeout: 60_000 });
+  return "web account + SQL connection";
+});
+
 await run("SQL persistence via cloud RPC", async () => {
   const id = TEST_ID;
   await rpc("add", ["video_items", { id, title: "Cloud live SQL test", type: "video", tags: ["cloud-live"] }]);
@@ -176,6 +227,7 @@ await run("SQL persistence via cloud RPC", async () => {
 
 await run("file upload, list, download, and delete path", async () => {
   const key = `live-tests/${TEST_ID}.txt`;
+  textKey = key;
   const bytes = Buffer.from("archive cloud upload check\n", "utf8");
   await putFile(key, bytes, "text/plain");
   const listed = await fetch(`${BASE}/api/files?prefix=${encodeURIComponent("live-tests/")}`, {
@@ -185,6 +237,43 @@ await run("file upload, list, download, and delete path", async () => {
   const downloaded = await getFile(key);
   if (!downloaded.equals(bytes)) throw new Error("downloaded bytes do not match upload");
   return `${bytes.length} bytes round-tripped`;
+});
+
+await run("file manager browse, folder, copy, move, and delete actions", async () => {
+  const folder = `live-tests/${TEST_ID}-folder`;
+  const movedFolder = `live-tests/${TEST_ID}-moved`;
+  for (const path of [folder, movedFolder]) {
+    const res = await fetch(`${BASE}/api/files/folders`, { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ path }) });
+    const body = await json(res);
+    if (!res.ok || !body.ok) throw new Error(body.error || `create folder failed (${res.status})`);
+    uploadedKeys.push(`${path}/.archive-folder`);
+  }
+  const action = async (payload) => {
+    const res = await fetch(`${BASE}/api/files/actions`, { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(payload) });
+    const body = await json(res);
+    if (!res.ok || !body.ok || body.result?.results?.some((item) => !item.ok)) throw new Error(body.error || `${payload.action} failed`);
+    return body.result;
+  };
+  await action({ action: "copy", keys: [textKey], destination: folder });
+  const copied = `${folder}/${path.basename(textKey)}`;
+  await action({ action: "move", keys: [copied], destination: movedFolder });
+  const moved = `${movedFolder}/${path.basename(textKey)}`;
+  uploadedKeys.push(moved);
+  const browser = await fetch(`${BASE}/api/files/browser?path=${encodeURIComponent(movedFolder)}&query=${encodeURIComponent(TEST_ID)}`, { headers: authHeaders() }).then(json);
+  if (!browser.result?.entries?.some((entry) => entry.key === moved)) throw new Error("moved file was not visible in browser API");
+  await action({ action: "delete", keys: [moved] });
+  uploadedKeys.splice(uploadedKeys.indexOf(moved), 1);
+  return "folder/copy/move/browse/delete";
+});
+
+await run("pending archive queue persists in SQL without creating an archive item", async () => {
+  const id = `${TEST_ID}_queue`;
+  const record = { id, fileKey: textKey, name: path.basename(textKey), status: "pending", archiveItemId: null, createdAt: new Date().toISOString() };
+  await rpc("put", ["file_ingest_queue", record]);
+  const stored = await rpc("get", ["file_ingest_queue", id]);
+  if (stored?.status !== "pending" || stored?.archiveItemId !== null) throw new Error("queue record was not persisted as pending");
+  await rpc("delete", ["file_ingest_queue", id]);
+  return "pending queue round-trip";
 });
 
 let videoKey = "";
