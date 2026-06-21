@@ -276,7 +276,7 @@ export function DashboardPage() {
     updateSettings,
     runSystemHealthCheck,
     markItemViewed,
-    showToast
+    showToast,
     loadSessionsFromStorage,
     deleteSession
   } = useAppStore();
