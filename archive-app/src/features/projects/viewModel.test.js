@@ -144,6 +144,41 @@ describe("professional montage project model", () => {
     });
   });
 
+  it("preserves optional multitrack editing fields without changing legacy fields", () => {
+    const project = createProjectValue({
+      id: "p-multi",
+      timelineTracks: [{ id: "v2", type: "video", name: "Overlay", order: 0 }],
+      timelinePreferences: { snapping: false, rippleMode: "off" },
+      roughCuts: [{
+        id: "c-multi",
+        itemId: "i1",
+        inSec: 0,
+        outSec: 5,
+        timelineStartSec: 7,
+        linkedGroupId: "linked-1",
+        blendMode: "screen",
+        filterStack: [{ id: "blur-1", type: "blur", params: { radius: 3 } }],
+        audio: { volumeDb: -3, pan: 0.2, fadeInSec: 0.5 },
+        keyframes: [{ id: "k1", property: "opacity", timeSec: 2, value: 0.5, easing: "linear" }]
+      }]
+    });
+
+    const timeline = buildProjectTimeline(project, new Map([["i1", { path: "source.mp4" }]]));
+
+    expect(project.timelineTracks[0]).toMatchObject({ id: "v2", type: "video" });
+    expect(project.timelinePreferences).toMatchObject({ snapping: false, rippleMode: "off" });
+    expect(timeline.clips[0]).toMatchObject({
+      timelineStart: 7,
+      startSec: 7,
+      linkedGroupId: "linked-1",
+      blendMode: "screen",
+      audio: { volumeDb: -3, pan: 0.2, fadeInSec: 0.5 },
+      keyframes: [{ id: "k1", property: "opacity", timeSec: 2, value: 0.5, easing: "linear" }]
+    });
+    expect(timeline.tracks[0]).toMatchObject({ id: "v2", type: "video" });
+    expect(timeline.totalDuration).toBe(12);
+  });
+
   it("splits and duplicates clips without losing effects", () => {
     const project = createProjectValue({
       id: "p1",

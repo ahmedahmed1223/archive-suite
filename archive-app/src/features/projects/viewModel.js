@@ -1,4 +1,6 @@
 import { normalizeArabicSearchText } from "../../utils/formatting.js";
+import { normalizeClipFilters as normalizeFilterStack } from "../montage/filterRegistry.js";
+import { normalizeMultiTrackProject } from "../montage/multiTrackModel.js";
 
 // G5 — Projects / montage workflow (data + logic layer, storage-agnostic).
 //
@@ -75,6 +77,29 @@ export function normalizeClipTransform(value = {}) {
   };
 }
 
+function normalizeClipAudio(value = {}, fallbackVolumeDb = 0) {
+  return {
+    volumeDb: normalizeVolumeDb(value.volumeDb ?? fallbackVolumeDb),
+    pan: clampNumber(value.pan, 0, -1, 1),
+    muted: Boolean(value.muted),
+    fadeInSec: clampNumber(value.fadeInSec, 0, 0, 30),
+    fadeOutSec: clampNumber(value.fadeOutSec, 0, 0, 30)
+  };
+}
+
+function normalizeClipKeyframes(value = []) {
+  return (Array.isArray(value) ? value : [])
+    .filter((keyframe) => keyframe && trimString(keyframe.property))
+    .map((keyframe, index) => ({
+      id: trimString(keyframe.id) || `keyframe-${index + 1}`,
+      property: trimString(keyframe.property),
+      timeSec: toNum(keyframe.timeSec),
+      value: keyframe.value,
+      easing: trimString(keyframe.easing) || "linear"
+    }))
+    .sort((a, b) => a.timeSec - b.timeSec);
+}
+
 export function normalizeTimelineSettings(settings = {}) {
   const fps = Number(settings.fps);
   const resolution = trimString(settings.resolution) || DEFAULT_TIMELINE_SETTINGS.resolution;
@@ -95,7 +120,7 @@ export function createRoughCutValue(partial = {}) {
   const inSec = toNum(partial.inSec);
   let outSec = toNum(partial.outSec);
   if (outSec <= inSec) outSec = inSec; // clamped; isValidRoughCut flags zero-length
-  return {
+  const value = {
     id: partial.id || uid("cut"),
     itemId: String(partial.itemId || ""),
     inSec,
@@ -112,6 +137,22 @@ export function createRoughCutValue(partial = {}) {
     filters: normalizeClipFilters(partial.filters),
     transform: normalizeClipTransform(partial.transform)
   };
+  if (Number.isFinite(Number(partial.timelineStartSec)) && Number(partial.timelineStartSec) >= 0) {
+    value.timelineStartSec = Number(partial.timelineStartSec);
+  }
+  if (partial.linkedGroupId) value.linkedGroupId = trimString(partial.linkedGroupId);
+  if (partial.blendMode) value.blendMode = trimString(partial.blendMode) || "normal";
+  if (partial.opacity !== undefined) value.opacity = clampNumber(partial.opacity, 1, 0, 1);
+  const stackInput = Array.isArray(partial.filterStack)
+    ? partial.filterStack
+    : Array.isArray(partial.filters) ? partial.filters : null;
+  if (stackInput) value.filterStack = normalizeFilterStack(stackInput);
+  if (partial.audio && typeof partial.audio === "object") {
+    value.audio = normalizeClipAudio(partial.audio, value.volumeDb);
+  }
+  if (Array.isArray(partial.keyframes)) value.keyframes = normalizeClipKeyframes(partial.keyframes);
+  if (partial.mediaType || partial.trackType) value.mediaType = trimString(partial.mediaType || partial.trackType);
+  return value;
 }
 
 export function createProjectTaskValue(partial = {}) {
@@ -155,7 +196,7 @@ export function roughCutDuration(cut) {
 
 export function createProjectValue(partial = {}) {
   const now = new Date().toISOString();
-  return {
+  const project = {
     id: partial.id || uid("project"),
     name: String(partial.name || "").trim(),
     description: String(partial.description || "").trim(),
@@ -170,6 +211,15 @@ export function createProjectValue(partial = {}) {
     createdAt: partial.createdAt || now,
     updatedAt: now
   };
+  if (Array.isArray(partial.timelineTracks)) {
+    project.timelineTracks = normalizeMultiTrackProject({ timelineTracks: partial.timelineTracks }).timelineTracks;
+  }
+  if (partial.timelinePreferences && typeof partial.timelinePreferences === "object") {
+    project.timelinePreferences = normalizeMultiTrackProject({
+      timelinePreferences: partial.timelinePreferences
+    }).timelinePreferences;
+  }
+  return project;
 }
 
 export function createProjectMarkerValue(partial = {}) {
@@ -351,10 +401,12 @@ export function getProjectDuration(project) {
  * Backend-agnostic; the UI or a server exporter can turn this into MP4/FCPXML.
  */
 export function buildProjectTimeline(project, itemsById = new Map()) {
-  let timelineStart = 0;
-  const clips = getOrderedRoughCuts(project).filter(isValidRoughCut).map((cut) => {
+  const normalizedProject = normalizeMultiTrackProject(project);
+  let totalDuration = 0;
+  const clips = normalizedProject.roughCuts.filter(isValidRoughCut).map((cut) => {
     const item = itemsById.get?.(cut.itemId) || null;
     const duration = roughCutDuration(cut);
+    const timelineStart = toNum(cut.timelineStartSec);
     const clip = {
       id: cut.id,
       itemId: cut.itemId,
@@ -363,6 +415,7 @@ export function buildProjectTimeline(project, itemsById = new Map()) {
       sourceIn: cut.inSec,
       sourceOut: cut.outSec,
       timelineStart,
+      startSec: timelineStart,
       duration,
       notes: cut.notes || "",
       color: cut.color || "",
@@ -372,19 +425,37 @@ export function buildProjectTimeline(project, itemsById = new Map()) {
       volumeDb: normalizeVolumeDb(cut.volumeDb),
       transition: normalizeClipTransition(cut.transition),
       filters: normalizeClipFilters(cut.filters),
-      transform: normalizeClipTransform(cut.transform)
+      filterStack: normalizeFilterStack(cut.filterStack || (Array.isArray(cut.filters) ? cut.filters : [])),
+      transform: normalizeClipTransform(cut.transform),
+      opacity: cut.opacity === undefined ? normalizeClipTransform(cut.transform).opacity : clampNumber(cut.opacity, 1, 0, 1),
+      blendMode: trimString(cut.blendMode) || "normal",
+      linkedGroupId: trimString(cut.linkedGroupId) || null,
+      audio: normalizeClipAudio(cut.audio, cut.volumeDb),
+      keyframes: normalizeClipKeyframes(cut.keyframes)
     };
-    timelineStart += duration;
+    totalDuration = Math.max(totalDuration, timelineStart + duration);
     return clip;
   });
   const settings = normalizeTimelineSettings(project.timelineSettings);
+  const primaryVideoTrackId = normalizedProject.timelineTracks.find((track) => track.type === "video")?.id || "v1";
+  const edlWarnings = [];
+  const omittedTrackClips = clips.filter((clip) => clip.trackId !== primaryVideoTrackId).length;
+  if (omittedTrackClips) {
+    edlWarnings.push({ code: "edl-omits-secondary-tracks", count: omittedTrackClips });
+  }
+  if (clips.some((clip) => clip.filterStack.length || clip.keyframes.length || clip.blendMode !== "normal")) {
+    edlWarnings.push({ code: "edl-omits-effects" });
+  }
   return {
     project: { id: project.id, name: project.name },
     fps: settings.fps,
     settings,
+    tracks: normalizedProject.timelineTracks,
+    preferences: normalizedProject.timelinePreferences,
     markers: sortedMarkers(project.markers || []),
-    totalDuration: timelineStart,
+    totalDuration,
     clips,
+    edlWarnings,
     version: "1.0"
   };
 }
@@ -412,9 +483,12 @@ export function secondsToTimecode(seconds, fps = 25) {
  */
 export function buildEdl(project, itemsById = new Map(), { fps = 25 } = {}) {
   const timeline = buildProjectTimeline(project, itemsById);
+  const primaryVideoTrackId = timeline.tracks.find((track) => track.type === "video")?.id || "v1";
+  const clips = timeline.clips.filter((clip) => clip.trackId === primaryVideoTrackId);
   const lines = [`TITLE: ${project.name || "Untitled"}`, "FCM: NON-DROP FRAME"];
+  for (const warning of timeline.edlWarnings) lines.push(`* WARNING: ${warning.code}`);
   let record = 0;
-  timeline.clips.forEach((clip, i) => {
+  clips.forEach((clip, i) => {
     const num = String(i + 1).padStart(3, "0");
     const srcIn = secondsToTimecode(clip.sourceIn, fps);
     const srcOut = secondsToTimecode(clip.sourceOut, fps);
