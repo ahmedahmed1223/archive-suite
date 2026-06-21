@@ -13,7 +13,7 @@ describe("StatusTransitionMenu", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
-  it("lets an admin open the menu and post a transition", async () => {
+  it("lets an admin open the menu and post a transition with confirm form", async () => {
     const fetchImpl = vi.fn(async () => ({
       ok: true,
       status: 200,
@@ -31,10 +31,18 @@ describe("StatusTransitionMenu", () => {
       />
     );
 
+    // Step 1: open menu
     fireEvent.click(screen.getByRole("button", { name: /تغيير الحالة/ }));
     // review + admin → editing & approved
     expect(screen.getByRole("menuitem", { name: "تحرير" })).toBeInTheDocument();
+
+    // Step 2: click a transition option → shows confirm form
     fireEvent.click(screen.getByRole("menuitem", { name: "معتمد" }));
+    expect(screen.getByText(/الانتقال إلى/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "تأكيد" })).toBeInTheDocument();
+
+    // Step 3: confirm the transition
+    fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
 
     await waitFor(() => expect(onChanged).toHaveBeenCalledWith({ id: "r1", status: "approved" }));
     const [url, init] = fetchImpl.mock.calls[0];
@@ -57,8 +65,12 @@ describe("StatusTransitionMenu", () => {
       />
     );
 
+    // Step 1: open menu, pick transition
     fireEvent.click(screen.getByRole("button", { name: /تغيير الحالة/ }));
     fireEvent.click(screen.getByRole("menuitem", { name: "مراجعة" }));
+
+    // Step 2: confirm → triggers the failed API call
+    fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("غير مسموح"));
   });
