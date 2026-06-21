@@ -32,6 +32,11 @@ const ROOT = resolve(__dirname, "..");
 const SERVER_DIR = join(ROOT, "archive-server");
 const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(SERVER_DIR, ".env");
 const COMPOSE_FILE = join(SERVER_DIR, "docker-compose.postgres.yml");
+// Dev override layered on top of the production compose: maps frontend → :8080
+// (matches the httplocalhost8080.bat name the user double-clicks) and exposes
+// Postgres on :15432 so pgAdmin/CLI tools on the host can reach it without exec.
+// Applied only when present so production-like deploys can drop the file.
+const COMPOSE_LOCAL_OVERRIDE = join(SERVER_DIR, "docker-compose.postgres.local.yml");
 const BACKUP_DIR = join(SERVER_DIR, "backups");
 const SET_DB_PROVIDER = join(SERVER_DIR, "scripts", "set-db-provider.mjs");
 
@@ -106,7 +111,8 @@ function dockerComposeCmd() {
 function compose(actionArgs, { inherit = true, input } = {}) {
   const dc = dockerComposeCmd();
   if (!dc) { err("Docker (with Compose) was not found. Install Docker first."); return { status: 127 }; }
-  const args = [...dc.pre, "-f", COMPOSE_FILE, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...actionArgs];
+  const overrideArgs = existsSync(COMPOSE_LOCAL_OVERRIDE) ? ["-f", COMPOSE_LOCAL_OVERRIDE] : [];
+  const args = [...dc.pre, "-f", COMPOSE_FILE, ...overrideArgs, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...actionArgs];
   return spawnSync(dc.bin, args, { cwd: SERVER_DIR, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input });
 }
 

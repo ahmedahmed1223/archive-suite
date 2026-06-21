@@ -82,6 +82,20 @@ export function App() {
   const [startupRecovery, setStartupRecovery] = React.useState(null);
   const [onboardingWizardMode, setOnboardingWizardMode] = React.useState(null);
   const [authState, setAuthState] = React.useState("loading");
+  // Cloud-only: ask the server whether setup is already complete before deciding
+  // to show the wizard. Without this the SPA falls back to settings.onboardingRequired
+  // (defaults to true), tries to persist via /api/rpc, and hits 401 — surfacing
+  // "تعذر إكمال معالج البداية" on every fresh browser session. null = not asked yet,
+  // true = server has users, false = needs setup.
+  const [serverSetupComplete, setServerSetupComplete] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/setup/status")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (!cancelled && data && typeof data.needsSetup === "boolean") setServerSetupComplete(!data.needsSetup); })
+      .catch(() => { /* offline / spa build / non-cloud: leave null, fall through to local-state routing */ });
+    return () => { cancelled = true; };
+  }, []);
   const loadInitRef = React.useRef(false);
   const initialSyncRef = React.useRef(false);
   const startupHealthRef = React.useRef(false);
@@ -220,6 +234,14 @@ export function App() {
       // lets the user pick storage AND provisions the admin locally via
       // setMasterPassword/skipPasswordSetup (no server). So all fresh installs now
       // unify onto `setup`; FirstRunPage is retired as a reachable surface.
+      // If the cloud server has already been configured (admin seeded from .env,
+      // earlier setup run, etc.), the SPA must NOT show the wizard — the wizard
+      // would try to persist settings/users via /api/rpc without a token and hit 401.
+      // Fall through to login so the user can sign in with the existing admin.
+      if (serverSetupComplete === true) {
+        setAuthState("login");
+        return;
+      }
       if (settings.onboardingRequired || settings.initialAdminPassword || (!isPasswordSet && !hasUsers)) {
         setAuthState("setup");
         return;
@@ -240,7 +262,7 @@ export function App() {
       return;
     }
     setAuthState("login");
-  }, [isLoading, isAuthenticated, currentUser, isLocked, isPasswordSet, isIdleLocked]);
+  }, [isLoading, isAuthenticated, currentUser, isLocked, isPasswordSet, isIdleLocked, serverSetupComplete]);
 
   React.useEffect(() => {
     const openOnboarding = (event) => {
