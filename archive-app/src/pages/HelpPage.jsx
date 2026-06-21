@@ -494,6 +494,9 @@ export function HelpPage() {
 
   const restartV1Tour = () => {
     updateSettings({ ui: { ...(settings.ui || {}), v1TourCompleted: false, v1TourVersion: null, lastOnboardingStep: "tour-restart" } });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("videoarchive:onboarding-open", { detail: { mode: "replay" } }));
+    }
   };
 
   // §1152: start the interactive feature-discovery tour. The controller mounted

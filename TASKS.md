@@ -338,8 +338,9 @@
 
 > **السياق:** تجربة الإطلاق الحالية (`V1OnboardingWizard`، 9 خطوات في `ONBOARDING_STEPS`) كثيرة وتُعقّد الدخول الأول. المطلوب: شاشة هبوط بخيارين فقط (سريع/متقدم)، ودمج كل الجولات والتعريفات في معالج «جولة الميزات» واحد قابل للتجاهل ولإعادة التشغيل من المساعدة، ونقل الخطوات الثانوية إلى صفحة المساعدة، وتحسين `setup.bat`/`control-center` ليكون أكثر مرونة ووضوحاً.
 
-- [ ] `[P0]` ⏱️M **شاشة هبوط بخيارين فقط (Boot Choice)** — تعرض «بدء سريع» و«إعداد متقدم» قبل أي معالج. «بدء سريع» يطبّق الإعدادات الافتراضية بنقرة واحدة: حساب admin افتراضي + قاعدة بيانات محلية + تخزين محلي + ثيم النظام، ثم يدخل للوحة التحكم مباشرة. «إعداد متقدم» يفتح `V1OnboardingWizard` الحالي بكل خطواته.
-  - الملفات: `archive-app/src/features/onboarding/BootChoiceScreen.jsx` (جديد)، `archive-app/src/app/RuntimeShellApp.js` (تركيب البوابة قبل الويزارد)، `archive-app/src/features/onboarding/usageOnboarding.js` (دالة تطبيق الافتراضيات).
+- [x] `[P0]` ⏱️M **شاشة هبوط بخيارين فقط (Boot Choice)** — تعرض «بدء سريع» و«إعداد متقدم» قبل أي معالج. «بدء سريع» يطبّق الإعدادات الافتراضية بنقرة واحدة: حساب admin افتراضي + قاعدة بيانات محلية + تخزين محلي + ثيم النظام، ثم يدخل للوحة التحكم مباشرة. «إعداد متقدم» يفتح `V1OnboardingWizard` الحالي بكل خطواته.
+  - ✅ مُنجز (2026-06-21 wave-25, commit `738c469`): `BootChoiceScreen.jsx` (130 سطر) يعرض بطاقتين فقط مع رمز Rocket/Cog. «بدء سريع» يستدعي `skipPasswordSetup` + يسجّل دخول admin + يحدّث `settings.ui.bootChoice="quick"` + `onboardingCompleted=true`. RuntimeShellApp يحرس بـ `bootChoice || v1OnboardingCompleted` فلا يعيد عرض الشاشة. تم تأكيد البصري حياً: شاشة الخيارين تظهر على state نظيف، الضغط على بدء سريع يدخل #/dashboard مع الشريط الجانبي. 933 اختبار ناجح (+2 جديدة).
+  - الملفات: `archive-app/src/features/onboarding/BootChoiceScreen.jsx`، `BootChoiceScreen.test.jsx`، `index.js`، `archive-app/src/app/RuntimeShellApp.js`.
   - القبول: عند فتح التطبيق لأول مرة تظهر شاشة الخيارين فقط؛ زر «بدء سريع» يكمل التهيئة دون أي خطوة إضافية ويصل للداشبورد؛ زر «إعداد متقدم» يظهر الويزارد الحالي كما هو.
   - المصدر: طلب المستخدم 2026-06-21.
 
@@ -348,8 +349,9 @@
   - القبول: الجولة تظهر مرة واحدة، تُتجاهل دائماً عند الضغط على «تخطّى نهائياً» (لا تعود في الإطلاق التالي)، ولا تحجب الواجهة.
   - المصدر: طلب المستخدم 2026-06-21.
 
-- [ ] `[P1]` ⏱️S **زر «شغّل جولة الميزات» في صفحة المساعدة** — إضافة بطاقة في `HelpPage` تُطلق `FeatureTour` في أي وقت عبر `window.dispatchEvent("videoarchive:onboarding-open", { mode: "replay" })`.
-  - الملفات: `archive-app/src/pages/HelpPage.jsx`.
+- [x] `[P1]` ⏱️S **زر «شغّل جولة الميزات» في صفحة المساعدة** — إضافة بطاقة في `HelpPage` تُطلق `FeatureTour` في أي وقت عبر `window.dispatchEvent("videoarchive:onboarding-open", { mode: "replay" })`.
+  - ✅ مُنجز (2026-06-21 wave-25): زر «إعادة الجولة» الموجود في `HelpPage` كان يُصفّر علامات `v1TourCompleted` فقط دون فتح أي معالج؛ الآن يطلق أيضاً حدث `videoarchive:onboarding-open` بـ `mode: "replay"` (يستقبله `RuntimeShellApp:268-270` ويفتح `V1OnboardingWizard` في وضع التشغيل المتأخر).
+  - الملفات: `archive-app/src/pages/HelpPage.jsx:495-500`.
   - القبول: المستخدم يستطيع إعادة عرض الجولة من المساعدة بنقرة واحدة.
   - المصدر: طلب المستخدم 2026-06-21.
 
