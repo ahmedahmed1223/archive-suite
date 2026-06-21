@@ -175,8 +175,9 @@
   - القبول: ترتيب المقاطع بالسحب يعمل ويُحفظ؛ عرض البلوك = مدته.
   - المصدر: new_tail (F13)، dev-roadmap (P2-01).
 
-- [ ] `[P1]` ⏱️L **Clip Thumbnails + طبقة التعليقات الزمنية على الخط الزمني** — خلفية thumbnail لكل block + إشارات ▲ للتعليقات (`addTemporalComment` موجودة).
-  - الملفات: `archive-app/src/pages/ProjectsPage.jsx`.
+- [x] `[P1]` ⏱️L **Clip Thumbnails + طبقة التعليقات الزمنية على الخط الزمني** — خلفية thumbnail لكل block + إشارات ▲ للتعليقات (`addTemporalComment` موجودة).
+  - ✅ مُنجز (2026-06-21 wave-25, commit `6c1c912`): `TimelineClip` يقبل `thumbnailUrl` و`comments[]`؛ الصورة تُرسم كخلفية مغطاة مع تدرّج داكن، والتعليقات تظهر كدبابيس MessageCircle ملوّنة (أصفر مفتوح/أخضر محلول) فوق القصاصة عند موضعها الزمني. الضغط على الدبوس يُصدر `clip.comment-focus` → ProjectsPage يختار القصاصة ويقفز بـ playhead إلى `atSec`. ProjectsPage يبني `thumbnailsByItemId` من `items[].thumbnail` و`commentsByClipId` من `project.comments`.
+  - الملفات: `archive-app/src/components/montage/TimelineClip.jsx`، `MultiTrackTimeline.jsx`، `MontageWorkspace.css`، `pages/ProjectsPage.jsx`.
   - القبول: thumbnail يظهر لكل مقطع؛ الضغط على إشارة يعرض التعليق.
   - المصدر: new_tail (F14, F15).
 
