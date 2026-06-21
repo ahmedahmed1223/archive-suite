@@ -204,7 +204,8 @@
   - القبول: قائمة 5000 عنصر تتمرّر بسلاسة دون تجمّد.
   - المصدر: ux_plan (Sprint 4)، guide_v6 (ArchivePage).
 
-- [x] `[P1]` ⏱️L **Lazy Loading للمكتبات الثقيلة (xlsx)** — xlsx عبر dynamic import؛ خفض الحزمة الأولية.
+- [x] `[P1]` ⏱️L **Lazy Loading للمكتبات الثقيلة** — Cytoscape, Recharts, pdfjs, xlsx, sql.js عبر dynamic import.
+  - ✅ مُنجز (wave-22): تحقّق كامل — كل الصفحات تستخدم React.lazy()؛ Cytoscape/pdfjs/sql.js لها dynamic import مباشر؛ xlsx أُصلح (wave-22) من static import إلى dynamic import حقيقي في vendor/xlsx.js + DataCenterPage + ReportsPage. لا حاجة لمزيد من التغييرات.
   - الملفات: `archive-app/src/pages/{GraphViewPage,AnalyticsPage}.jsx`، نقاط الاستيراد.
   - القبول: لا تُحمَّل المكتبة إلا عند فتح صفحتها؛ قياس بـ rollup-plugin-visualizer.
   - المصدر: ux_plan (perf)، f45ea5a29 (GraphView lazy)، dev-roadmap (P5-01).
