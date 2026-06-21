@@ -17,6 +17,7 @@
     "dev": "pnpm --filter @archive/app run dev",
     "dev:app": "pnpm --filter @archive/app run dev",
     "server": "pnpm --filter archive-server run start",
+    "build": "pnpm --filter @archive/app run build",
     "build:app": "pnpm --filter @archive/app run build",
     "build:spa": "pnpm --filter @archive/app run build:spa",
     "build:cloud": "pnpm --filter @archive/app run build:cloud",

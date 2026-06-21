@@ -1836,32 +1836,18 @@ run("backend choice — corrupted JSON in storage falls back to default", () => 
   assert.equal(getBackendUrl({ storage }), "");
 });
 
-run("backend choice — resolve honors AI Studio force-local flag", () => {
+run("backend choice — resolve honors persisted choice (cloud-only, no force-local)", () => {
   const storage = createMemoryStorage();
   setBackendChoice("pocketbase", "https://pb.example.com", { storage });
 
-  // Normal mode: persisted choice wins.
+  // Cloud-only direction: the AI Studio force-local path was removed, so nothing
+  // overrides the persisted choice and shouldForceLocalBackend is always false.
   assert.equal(shouldForceLocalBackend(), false);
   const normal = resolveBackendChoice({ storage });
   assert.equal(normal.backend, "pocketbase");
   assert.equal(normal.url, "https://pb.example.com");
   assert.equal(normal.localEngine, "indexeddb");
   assert.equal(normal.forced, false);
-
-  // AI Studio bundle sets __VITE_AISTUDIO__ via vite define; we simulate it
-  // on globalThis and confirm resolve forces local regardless of the saved
-  // pocketbase choice.
-  globalThis.__VITE_AISTUDIO__ = true;
-  try {
-    assert.equal(shouldForceLocalBackend(), true);
-    const forced = resolveBackendChoice({ storage });
-    assert.equal(forced.backend, "local");
-    assert.equal(forced.url, "");
-    assert.equal(forced.localEngine, "indexeddb");
-    assert.equal(forced.forced, true);
-  } finally {
-    delete globalThis.__VITE_AISTUDIO__;
-  }
 });
 
 run("backend choice — cloud mode registers cloud session, files, and sync providers", () => {

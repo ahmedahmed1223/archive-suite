@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --configLoader runner",
-    "build": "vite build --mode spa --configLoader runner",
+    "build": "vite build --mode cloud --configLoader runner",
     "build:spa": "vite build --mode spa --configLoader runner",
     "build:cloud": "vite build --mode cloud --configLoader runner",
     "test": "vitest run",
