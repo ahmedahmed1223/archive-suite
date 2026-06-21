@@ -12,7 +12,6 @@ node_modules
 # Build outputs (rebuilt in Docker)
 **/dist
 **/dist-cloud
-**/dist-aistudio
 **/build
 **/.vite
 

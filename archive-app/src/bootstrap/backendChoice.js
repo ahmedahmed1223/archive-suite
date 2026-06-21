@@ -109,21 +109,11 @@ export function normalizeLocalEngine(value) {
 /**
  * Whether to *force* the local backend regardless of stored choice.
  *
- * Why force: AI Studio runs the SPA inside a sandboxed iframe that can't
- * reach a remote PocketBase or Postgres server (CSP + cross-origin). The
- * aistudio build sets __VITE_AISTUDIO__ = true via vite.config.js so the
- * boot path skips the saved choice and starts in local mode every time.
- *
- * Reading the flag goes through globalThis so unit tests can override it
- * without needing vite to inject the define.
+ * Cloud-only direction: no build target forces local boot anymore (the AI Studio
+ * target was removed), so this is always false. Kept as a stable seam in case a
+ * future target needs to force local boot.
  */
 export function shouldForceLocalBackend() {
-  // Vite injects __VITE_AISTUDIO__ into the bundle; in Node tests it's
-  // undefined unless explicitly set on globalThis.
-  if (typeof globalThis !== "undefined") {
-    if (globalThis.__VITE_AISTUDIO__ === true) return true;
-    if (globalThis.__AISTUDIO_FORCE_LOCAL__ === true) return true;
-  }
   return false;
 }
 

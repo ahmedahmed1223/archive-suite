@@ -59,8 +59,7 @@ export default defineConfig(({ mode }) => {
         : []),
     ],
     define: {
-      __VITE_TARGET__: JSON.stringify(target),
-      __VITE_AISTUDIO__: JSON.stringify(false)
+      __VITE_TARGET__: JSON.stringify(target)
     },
     build: {
       outDir,

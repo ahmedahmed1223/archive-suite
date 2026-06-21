@@ -31,10 +31,8 @@ tasks.md
 # Build/test artifacts.
 dist/
 dist-cloud/
-dist-aistudio/
 **/dist/
 **/dist-cloud/
-**/dist-aistudio/
 **/test-results/
 **/playwright-report/
 **/blob-report/

@@ -19,7 +19,6 @@ ui_audit.md
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
-dist-aistudio/
 
 # Local agent tooling
 .claude/
