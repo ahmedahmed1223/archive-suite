@@ -84,7 +84,19 @@ import {
 import { getBackendUrl, resolveBackendChoice } from "../bootstrap/backendChoice.js";
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 import { parseVideoTags } from "../features/videos/viewModel.js";
-import { TimelineTrack } from "../components/montage/TimelineTrack.jsx";
+import {
+  addTimelineTrack,
+  frameToSeconds,
+  moveClipToTrack,
+  normalizeMultiTrackProject,
+  removeTimelineTrack,
+  reorderTimelineTracks,
+  resolveSnappedTime,
+  splitMultiTrackClip,
+  trimMultiTrackClip,
+  updateTimelineTrack
+} from "../features/montage/multiTrackModel.js";
+import { MultiTrackTimeline } from "../components/montage/MultiTrackTimeline.jsx";
 import { MontageToolStrip } from "../components/montage/MontageToolStrip.jsx";
 import { MontageWorkspace } from "../components/montage/MontageWorkspace.jsx";
 import { VideoPlayer } from "../components/media/VideoPlayer.jsx";
@@ -996,6 +1008,8 @@ function ProjectEditor({
   const [markOut, setMarkOut] = React.useState(10);
   const [currentTime, setCurrentTime] = React.useState(0);
   const [timelineZoom, setTimelineZoom] = React.useState(12);
+  const [selectedTool, setSelectedTool] = React.useState("select");
+  const normalizedTimeline = React.useMemo(() => normalizeMultiTrackProject(project || {}), [project]);
 
   React.useEffect(() => {
     const nextSource = project?.itemIds?.find((id) => itemsById.has(id)) || items[0]?.id || "";
@@ -1003,9 +1017,9 @@ function ProjectEditor({
   }, [items, itemsById, project?.id, project?.itemIds]);
 
   React.useEffect(() => {
-    const ordered = getOrderedRoughCuts(project);
+    const ordered = normalizedTimeline.roughCuts;
     setSelectedClipId((current) => (current && ordered.some((clip) => clip.id === current) ? current : ordered[0]?.id || null));
-  }, [project]);
+  }, [normalizedTimeline.roughCuts]);
 
   if (!project) {
     return jsxs("section", {
@@ -1018,8 +1032,8 @@ function ProjectEditor({
     });
   }
 
-  const ordered = getOrderedRoughCuts(project);
-  const total = getProjectDuration(project);
+  const ordered = normalizedTimeline.roughCuts;
+  const total = ordered.reduce((end, clip) => Math.max(end, (Number(clip.timelineStartSec) || 0) + roughCutDuration(clip)), 0);
   const selectedSource = itemsById.get(selectedSourceId) || items[0] || null;
   const selectedClip = ordered.find((clip) => clip.id === selectedClipId) || null;
   const selectedClipItem = selectedClip ? itemsById.get(selectedClip.itemId) : null;
@@ -1052,6 +1066,112 @@ function ProjectEditor({
   const duplicateSelectedClip = () => {
     if (!selectedClip) return;
     onDuplicateCut?.(selectedClip.id);
+  };
+
+  const commitTimeline = ({ timelineTracks = normalizedTimeline.timelineTracks, roughCuts = normalizedTimeline.roughCuts } = {}) => {
+    onPatch({
+      timelineTracks,
+      roughCuts,
+      timelinePreferences: normalizedTimeline.timelinePreferences
+    });
+  };
+
+  const handleTimelineCommand = (command) => {
+    if (!command?.type) return;
+    if (command.type === "clip.select") {
+      setSelectedClipId(command.clipId);
+      return;
+    }
+    if (command.type === "track.add") {
+      commitTimeline({ timelineTracks: addTimelineTrack(normalizedTimeline.timelineTracks, { type: command.trackType }) });
+      return;
+    }
+    if (command.type === "track.patch") {
+      commitTimeline({ timelineTracks: updateTimelineTrack(normalizedTimeline.timelineTracks, command.trackId, command.patch) });
+      return;
+    }
+    if (command.type === "track.reorder") {
+      const tracks = [...normalizedTimeline.timelineTracks].sort((a, b) => a.order - b.order);
+      const index = tracks.findIndex((track) => track.id === command.trackId);
+      const target = tracks[index + command.direction];
+      if (index >= 0 && target) commitTimeline({ timelineTracks: reorderTimelineTracks(tracks, command.trackId, target.id) });
+      return;
+    }
+    if (command.type === "track.delete") {
+      const result = removeTimelineTrack({
+        tracks: normalizedTimeline.timelineTracks,
+        clips: normalizedTimeline.roughCuts,
+        trackId: command.trackId,
+        strategy: command.strategy,
+        destinationTrackId: command.destinationTrackId
+      });
+      if (result.ok) commitTimeline({ timelineTracks: result.tracks, roughCuts: result.clips });
+      return;
+    }
+    if (command.type === "clip.delete") {
+      const roughCuts = normalizedTimeline.roughCuts
+        .filter((clip) => clip.id !== command.clipId)
+        .map((clip, order) => ({ ...clip, order }));
+      if (selectedClipId === command.clipId) setSelectedClipId(roughCuts[0]?.id || null);
+      commitTimeline({ roughCuts });
+      return;
+    }
+    if (command.type === "clip.split") {
+      const result = splitMultiTrackClip({
+        clips: normalizedTimeline.roughCuts,
+        clipId: command.clipId,
+        timelineSec: command.atSec,
+        idFactory: () => `cut_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`
+      });
+      if (result.ok) {
+        setSelectedClipId(result.rightId);
+        commitTimeline({ roughCuts: result.clips });
+      }
+      return;
+    }
+    if (command.type === "clip.trim") {
+      const result = trimMultiTrackClip({
+        clips: normalizedTimeline.roughCuts,
+        tracks: normalizedTimeline.timelineTracks,
+        clipId: command.clipId,
+        edge: command.edge,
+        sourceSec: command.sourceSec,
+        rippleMode: normalizedTimeline.timelinePreferences.rippleMode
+      });
+      if (result.ok) commitTimeline({ roughCuts: result.clips });
+      return;
+    }
+    if (!["clip.move", "clip.nudge", "clip.move-track"].includes(command.type)) return;
+
+    const clip = normalizedTimeline.roughCuts.find((entry) => entry.id === command.clipId);
+    if (!clip) return;
+    const tracks = [...normalizedTimeline.timelineTracks].sort((a, b) => a.order - b.order);
+    let trackId = command.trackId || clip.trackId;
+    let startSec = command.startSec ?? clip.timelineStartSec;
+    if (command.type === "clip.nudge") {
+      startSec = Math.max(0, Number(startSec || 0) + frameToSeconds(command.frames, project.timelineSettings?.fps || 25));
+    }
+    if (command.type === "clip.move-track") {
+      const currentIndex = tracks.findIndex((track) => track.id === clip.trackId);
+      const target = tracks[currentIndex + command.direction];
+      if (!target) return;
+      trackId = target.id;
+    }
+    const snapTargets = normalizedTimeline.roughCuts
+      .filter((entry) => entry.id !== clip.id)
+      .flatMap((entry) => [
+        Number(entry.timelineStartSec) || 0,
+        (Number(entry.timelineStartSec) || 0) + roughCutDuration(entry)
+      ]);
+    snapTargets.push(...(project.markers || []).map((marker) => Number(marker.atSec) || 0));
+    startSec = resolveSnappedTime({
+      candidateSec: startSec,
+      fps: project.timelineSettings?.fps || 25,
+      snapping: normalizedTimeline.timelinePreferences.snapping,
+      targets: snapTargets
+    });
+    const result = moveClipToTrack({ clips: normalizedTimeline.roughCuts, tracks, clipId: clip.id, trackId, startSec });
+    if (result.ok) commitTimeline({ roughCuts: result.clips });
   };
 
   const workspaceHeader = jsxs("div", { className: "montage-project-header", children: [
@@ -1133,16 +1253,17 @@ function ProjectEditor({
         jsx("select", { value: timelineZoom, onChange: (event) => setTimelineZoom(Number(event.target.value)), className: "select select-bordered select-xs", "aria-label": "تكبير الخط الزمني", children: TIMELINE_ZOOM.map((zoom) => jsx("option", { value: zoom.value, children: zoom.label }, zoom.value)) })
       ] })
     ] }),
-    ordered.length ? jsx(TimelineTrack, {
-      clips: ordered,
-      selectedId: selectedClipId,
-      onSelect: setSelectedClipId,
-      onMoveClip: onReorderClips,
-      pxPerSecond: timelineZoom
-    }) : jsx("p", { className: "montage-timeline-stage__empty", children: "الخط الزمني فارغ. حدد In وOut ثم أضف القصاصة." }),
-    ordered.length ? jsx("div", { className: "montage-timeline-stage__rows", children: ordered.map((cut, index) => jsx(TimelineRow, {
-      cut, index, total: ordered.length, itemsById, onMove: onMoveCut, onRemove: onRemoveCut
-    }, cut.id)) }) : null
+    jsx(MultiTrackTimeline, {
+      tracks: normalizedTimeline.timelineTracks,
+      clips: normalizedTimeline.roughCuts,
+      selectedClipId,
+      fps: project.timelineSettings?.fps || 25,
+      pixelsPerSecond: timelineZoom,
+      markers: project.markers || [],
+      playheadSec: currentTime,
+      activeTool: selectedTool,
+      onCommand: handleTimelineCommand
+    })
   ] });
 
   const inspector = jsxs("div", { className: "montage-workspace__panel-stack", children: [
@@ -1182,7 +1303,11 @@ function ProjectEditor({
   return jsx(MontageWorkspace, {
     header: workspaceHeader,
     toolbar: jsx(MontageToolStrip, {
-      preferences: project.timelinePreferences || {},
+      preferences: normalizedTimeline.timelinePreferences,
+      selectedTool,
+      onAction: (action) => {
+        if (action?.type === "tool.select") setSelectedTool(action.tool);
+      },
       onPreferencesChange: (timelinePreferences) => onPatch({ timelinePreferences })
     }),
     mediaBin,

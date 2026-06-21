@@ -436,3 +436,341 @@
     transition: none;
   }
 }
+
+.multitrack-timeline {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--mw-border);
+  background: var(--mw-canvas);
+  color: var(--mw-text);
+}
+
+.multitrack-timeline__toolbar {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 2px 5px;
+  border-bottom: 1px solid var(--mw-border);
+  background: var(--mw-surface-2);
+}
+
+.multitrack-timeline__toolbar .btn {
+  min-height: 27px;
+  height: 27px;
+  border-radius: 3px;
+  color: var(--mw-muted);
+  font-size: 0.6875rem;
+}
+
+.multitrack-timeline__scroll {
+  max-width: 100%;
+  overflow: auto;
+  direction: rtl;
+  scrollbar-color: var(--mw-border) var(--mw-canvas);
+  scrollbar-width: thin;
+}
+
+.multitrack-timeline__matrix {
+  position: relative;
+  display: grid;
+  grid-template-columns: 188px var(--timeline-surface-width);
+  grid-auto-rows: 54px;
+  width: max-content;
+  direction: rtl;
+}
+
+.multitrack-timeline__corner,
+.multitrack-ruler {
+  position: sticky;
+  top: 0;
+  z-index: 7;
+  height: 28px;
+  align-self: start;
+  border-bottom: 1px solid var(--mw-border);
+  background: var(--mw-surface-2);
+}
+
+.multitrack-timeline__corner {
+  inset-inline-start: 0;
+  display: flex;
+  align-items: center;
+  padding-inline: 8px;
+  border-inline-end: 1px solid var(--mw-border);
+  color: var(--mw-muted);
+  font-size: 0.6875rem;
+}
+
+.multitrack-ruler {
+  position: sticky;
+  overflow: hidden;
+  background-color: var(--mw-surface-1);
+  background-image: repeating-linear-gradient(to left, transparent 0 47px, rgb(148 163 184 / 0.16) 48px);
+  font-family: var(--va-font-mono);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.multitrack-ruler span {
+  position: absolute;
+  top: 6px;
+  color: var(--mw-muted);
+  transform: translateX(50%);
+}
+
+.multitrack-ruler i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-warning);
+}
+
+.multitrack-timeline__sticky-header {
+  position: sticky;
+  z-index: 6;
+  inset-inline-start: 0;
+  min-width: 0;
+  border-inline-end: 1px solid var(--mw-border);
+  border-bottom: 1px solid var(--mw-border);
+  background: var(--mw-surface-2);
+}
+
+.multitrack-timeline__surface {
+  min-width: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--mw-border) 72%, transparent);
+  background-color: var(--mw-surface-1);
+  background-image: repeating-linear-gradient(to left, transparent 0 47px, rgb(148 163 184 / 0.09) 48px);
+}
+
+.multitrack-header {
+  display: grid;
+  grid-template-rows: 22px 28px;
+  min-width: 0;
+  height: 53px;
+  padding: 2px 5px;
+}
+
+.multitrack-header__identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+}
+
+.multitrack-header__code {
+  flex: none;
+  color: var(--mw-accent);
+  font-family: var(--va-font-mono);
+  font-size: 0.625rem;
+}
+
+.multitrack-header__name {
+  width: 100%;
+  height: 20px !important;
+  min-height: 20px !important;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0 !important;
+  background: transparent;
+  color: var(--mw-text);
+  font-size: 0.6875rem;
+  line-height: 20px;
+  outline: none;
+}
+
+.multitrack-header__name:focus {
+  border-color: var(--mw-accent);
+}
+
+.multitrack-header__controls {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 1px;
+}
+
+.multitrack-header__button {
+  min-width: 24px !important;
+  width: 24px;
+  min-height: 24px !important;
+  height: 24px;
+  border-radius: 2px;
+  color: var(--mw-muted);
+}
+
+.multitrack-header__button.btn-active {
+  background: color-mix(in srgb, var(--mw-accent) 16%, transparent);
+  color: var(--mw-accent);
+}
+
+.multitrack-lane {
+  position: relative;
+  height: 53px;
+  overflow: hidden;
+  transition: background var(--va-duration-fast) var(--va-ease-default);
+}
+
+.multitrack-lane.is-over {
+  background: color-mix(in srgb, var(--mw-accent) 12%, transparent);
+  outline: 1px solid var(--mw-accent);
+  outline-offset: -1px;
+}
+
+.multitrack-lane.is-locked {
+  background-color: rgb(0 0 0 / 0.18);
+}
+
+.multitrack-clip {
+  position: absolute;
+  top: 5px;
+  display: flex;
+  height: 42px;
+  min-width: 28px;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--mw-accent) 48%, var(--mw-border));
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--mw-accent) 32%, var(--mw-surface-3));
+  color: var(--mw-text);
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+}
+
+.multitrack-clip:focus-visible,
+.multitrack-clip.is-selected {
+  border-color: var(--mw-accent);
+  box-shadow: inset 0 0 0 1px var(--mw-accent), 0 0 0 1px rgb(0 0 0 / 0.6);
+}
+
+.multitrack-clip.is-invalid {
+  border-color: var(--color-error);
+  background: color-mix(in srgb, var(--color-error) 28%, var(--mw-surface-3));
+}
+
+.multitrack-clip.is-dragging {
+  z-index: 9;
+  opacity: 0.7;
+  cursor: grabbing;
+}
+
+.multitrack-clip__content {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  align-content: center;
+  padding-inline: 5px;
+  pointer-events: none;
+}
+
+.multitrack-clip__content strong,
+.multitrack-clip__content small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multitrack-clip__content strong {
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.multitrack-clip__content small {
+  color: color-mix(in srgb, currentColor 72%, transparent);
+  font-family: var(--va-font-mono);
+  font-size: 0.5625rem;
+}
+
+.multitrack-clip__trim {
+  width: 4px;
+  flex: none;
+  background: rgb(255 255 255 / 0.16);
+  cursor: ew-resize;
+}
+
+.multitrack-clip__state {
+  width: 12px;
+  flex: none;
+  margin: auto 3px;
+}
+
+.multitrack-playhead {
+  position: absolute;
+  z-index: 8;
+  top: 28px;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-error);
+  pointer-events: none;
+}
+
+.multitrack-playhead::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  inset-inline-start: -4px;
+  border-inline: 4px solid transparent;
+  border-top: 6px solid var(--color-error);
+}
+
+.multitrack-drag-overlay {
+  min-width: 7rem;
+  border: 1px solid var(--mw-accent);
+  border-radius: 3px;
+  background: var(--mw-surface-3);
+  padding: 7px;
+  color: var(--mw-text);
+  box-shadow: var(--va-shadow-lg);
+  font-size: 0.75rem;
+}
+
+.multitrack-delete-dialog {
+  position: absolute;
+  z-index: 12;
+  inset-inline: 8px;
+  bottom: 8px;
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 12rem) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-warning);
+  border-radius: 4px;
+  background: var(--mw-surface-3);
+  padding: 8px;
+  box-shadow: var(--va-shadow-xl);
+  color: var(--mw-text);
+  font-size: 0.75rem;
+}
+
+.multitrack-delete-dialog__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.multitrack-delete-dialog .btn,
+.multitrack-delete-dialog .select {
+  min-height: 30px;
+  height: 30px;
+  border-radius: 3px;
+}
+
+@media (max-width: 760px) {
+  .multitrack-timeline__matrix {
+    grid-template-columns: 148px var(--timeline-surface-width);
+  }
+
+  .multitrack-playhead {
+    inset-inline-start: calc(148px + var(--playhead-position, 0px));
+  }
+
+  .multitrack-delete-dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .multitrack-delete-dialog__actions {
+    flex-wrap: wrap;
+  }
+}

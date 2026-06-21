@@ -54,6 +54,11 @@ describe("normalizeMultiTrackProject", () => {
 });
 
 describe("dynamic track operations", () => {
+  it("numbers new tracks within their own media type", () => {
+    const added = addTimelineTrack(createDefaultTracks(), { type: "video" }, { idFactory: () => "v2" });
+    expect(added.at(-1)).toMatchObject({ id: "v2", name: "Video 2" });
+  });
+
   it("adds and edits dynamic tracks immutably", () => {
     const tracks = createDefaultTracks();
     const added = addTimelineTrack(

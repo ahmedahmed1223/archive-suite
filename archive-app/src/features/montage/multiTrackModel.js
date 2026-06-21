@@ -127,7 +127,9 @@ export function addTimelineTrack(tracks, partial = {}, { idFactory } = {}) {
   if (!TRACK_TYPE_SET.has(type)) throw new Error(`Unsupported track type: ${type || "empty"}`);
   const id = String(partial.id || (idFactory ? idFactory(type, ordered) : defaultIdFactory(type, ordered))).trim();
   if (!id || ordered.some((track) => track.id === id)) throw new Error(`Track id already exists: ${id}`);
-  return [...ordered, makeTrack({ ...partial, id, type }, ordered.length)];
+  const typeIndex = ordered.filter((track) => track.type === type).length;
+  const name = String(partial.name || defaultTrackName(type, typeIndex)).trim();
+  return [...ordered, makeTrack({ ...partial, id, type, name }, ordered.length)];
 }
 
 export function updateTimelineTrack(tracks, trackId, patch = {}) {
