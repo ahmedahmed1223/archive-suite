@@ -43,6 +43,12 @@ test.describe('Projects workstation', () => {
     await expect(page.getByText(/1 قصاصة/).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /JSON/ })).toBeEnabled();
     await expect(page.getByText('اختر قصاصة من الخط الزمني')).toBeHidden();
+    await page.getByRole('button', { name: 'إضافة مسار فيديو' }).click();
+    const secondVideoTrack = page.getByLabel('اسم مسار Video 2');
+    await expect(secondVideoTrack).toBeVisible();
+    await secondVideoTrack.fill('B-Roll E2E');
+    await secondVideoTrack.press('Enter');
+    await expect(page.getByLabel('اسم مسار B-Roll E2E')).toBeVisible();
     await expect(page.getByText('أدوات القطع')).toBeVisible();
     await page.getByLabel('نوع الانتقال').selectOption('dissolve');
     await page.getByLabel('مدة الانتقال').fill('0.8');
