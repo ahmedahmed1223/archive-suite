@@ -43,6 +43,7 @@ import { KbdHint } from "../components/common/Kbd.jsx";
 import { ArchiveImprovementSuggestions } from "../components/recommendations/ArchiveImprovementSuggestions.jsx";
 import { SuggestionsPanel } from "../components/suggestions/SuggestionsPanel.jsx";
 import { buildSuggestions } from "../features/suggestions/suggestionEngine.js";
+import { buildDiscoverySections } from "../features/discover/discoveryEngine.js";
 import {
   createDashboardStats,
   getDailyFocusItems,
@@ -85,6 +86,7 @@ const DASHBOARD_PANEL_TITLES = {
   distribution: "توزيع المحتوى",
   orgMetrics: "مؤشرات تنظيمية",
   recentItems: "آخر المواد",
+  todaysDigest: "اكتشاف اليوم",
   recentActivity: "آخر نشاط"
 };
 const DASHBOARD_PANEL_IDS = Object.keys(DASHBOARD_PANEL_TITLES);
@@ -330,6 +332,16 @@ export function DashboardPage() {
     sqliteError
   }), [isPasswordSet, recentItems, settings, sqliteError, stats]);
   const distribution = React.useMemo(() => getTypeDistribution(videoItems, contentTypes), [contentTypes, videoItems]);
+  const todaysDigestItems = React.useMemo(() => {
+    const sections = buildDiscoverySections({
+      videoItems,
+      auditLogs,
+      limit: 3,
+      seed: `digest:${new Date().toISOString().slice(0, 10)}`
+    });
+    const forgotten = sections.find((section) => section.id === "forgotten");
+    return (forgotten?.items || []).slice(0, 3);
+  }, [auditLogs, videoItems]);
   const dashboardSuggestions = React.useMemo(
     () => filterDismissedRecommendations(getArchiveImprovementSuggestions(videoItems, { contentTypes, limit: 4 }), recommendationFeedback),
     [contentTypes, recommendationFeedback, videoItems]
@@ -782,6 +794,22 @@ export function DashboardPage() {
           }, item.id))
         })
       }, "recentItems"),
+
+      todaysDigestItems.length > 0 && jsx(CommandPanel, {
+        title: "اكتشاف اليوم",
+        description: "مواد بعيدة عن المراجعة تستحق نظرة سريعة اليوم.",
+        icon: jsx(Sparkles, { className: "h-5 w-5 va-accent-text" }),
+        actions: jsx("button", { type: "button", onClick: () => goTo("discover"), className: "text-sm va-accent-text hover:text-emerald-200", children: "افتح الاستكشاف" }),
+        children: jsx("div", {
+          className: "grid gap-2 lg:grid-cols-2",
+          children: todaysDigestItems.map((item) => jsx(ResultPreview, {
+            title: item.title || "بدون عنوان",
+            meta: item.discoveryReason || "مادة منسية",
+            icon: jsx(Sparkles, { className: "h-4 w-4" }),
+            onClick: () => openItem(item)
+          }, item.id))
+        })
+      }, "todaysDigest"),
 
       jsx(CommandPanel, {
         title: "آخر نشاط",
