@@ -1,7 +1,8 @@
 @echo off
-REM Archive Suite — Windows one-click guided deployment.
-REM Double-click this file (or run from a terminal) to launch the wizard.
-REM It checks Docker, generates secrets, and brings up the PostgreSQL stack.
+REM Archive Suite — Windows Control Center.
+REM Double-click this file (or run from a terminal) to open the management console:
+REM   install/deploy, start/stop/restart servers, health, diagnostics, config, backup.
+REM Pass a subcommand to run it non-interactively, e.g.  Setup-Archive.bat status
 
 cd /d "%~dp0"
 
@@ -14,7 +15,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-node "scripts\deploy-wizard.mjs" %*
+node "scripts\control-center.mjs" %*
 
 echo.
 pause
