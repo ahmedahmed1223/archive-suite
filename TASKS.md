@@ -170,6 +170,7 @@
 > الحالة: ProjectsPage فيه `roughCuts`/`inSec/outSec`/transitions/looks/filters/EDL+JSON+MP4 لكن **قائمة نصية بلا خط زمني مرئي** (تم التحقق: لا `MultiTrack`).
 
 - [ ] `[P0]` ⏱️XL **خط زمني مرئي متعدد المسارات (Multi-Track Timeline)** — تحويل القائمة النصية إلى Canvas أفقي: 3 فيديو + 2 صوت + 1 عنوان، سحب/إفلات بين المسارات، نقاط تقطيع قابلة للسحب.
+  - 🚧 **قيد التنفيذ بواسطة وكيل آخر — لا يُلتقط** — التصميم جاهز في `archive-app/docs/superpowers/specs/2026-06-21-professional-multitrack-montage-workspace-design.md` (commits `cd7be43`/`d21f1de`).
   - الملفات: `archive-app/src/pages/ProjectsPage.jsx` + مكوّن timeline جديد؛ ربط `reorderRoughCut()`/`splitRoughCut()`.
   - القبول: ترتيب المقاطع بالسحب يعمل ويُحفظ؛ عرض البلوك = مدته.
   - المصدر: new_tail (F13)، dev-roadmap (P2-01).
@@ -291,9 +292,12 @@
   - ✅ مُنجز (2026-06-21 wave-23): `debouncedQuery` 150ms؛ `SearchInputWithSuggestions` يعرض 7 اقتراحات؛ زر «فلاتر» مع شارة عدد الفلاتر النشطة يُفتح/يُغلق لوحة الفلاتر بحركة انزلاق — تضم النوع/الفرع/التاريخ/المفضلة/حقول ناقصة/الكثافة.
   - الملفات: `archive-app/src/pages/SearchPage.jsx`.
   - المصدر: guide_v6 (SearchPage)، ux_plan (S2).
-- [ ] `[P2]` ⏱️M **Dashboard: Widget Gallery + DnD كامل + Getting-Started Checklist + Today's Digest** — تفعيل `react-grid-layout` + قائمة مهام أول 7 أيام + بطاقة من `buildDiscoverySections()`.
+- [ ] `[P2]` ⏱️M **Dashboard: Widget Gallery + DnD كامل + Getting-Started Checklist** — تفعيل `react-grid-layout` + قائمة مهام أول 7 أيام.
   - الملفات: `archive-app/src/pages/DashboardPage.jsx`.
-  - المصدر: guide_v6 (Dashboard)، sessions_new (F4, F15).
+  - المصدر: guide_v6 (Dashboard)، sessions_new (F4).
+- [x] `[P2]` ⏱️S **Dashboard: Today's Digest** — بطاقة «اكتشاف اليوم» تعرض ٣ مواد منسيّة من `buildDiscoverySections()` (forgotten section, daily seed). أُضيفت لوحة جديدة `todaysDigest` في `DashboardPage.jsx`.
+  - ✅ مُنجز (2026-06-21 wave-24): import + useMemo + CommandPanel + DASHBOARD_PANEL_TITLES. تمرير `pnpm verify:app` + 925 اختبار vitest أخضر.
+  - المصدر: sessions_new (F15)، f45ea5a29 (DiscoverPage).
 
 ### صفحات متخصصة
 - [ ] `[P2]` ⏱️XL **GraphViewPage: تفعيل Cytoscape الكامل** — Force-directed + ألوان حسب النوع + حجم حسب الروابط + Zoom/Pan/Filter + Node hover + lazy load.
