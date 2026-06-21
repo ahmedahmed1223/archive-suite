@@ -2,6 +2,15 @@ import "./styles/design-tokens.css";
 import "./styles/tailwind.css";
 import "./styles/app-overrides.css";
 
+// Self-hosted brand fonts — offline-safe woff2 bundled via @fontsource. The
+// --va-font-ui / --va-font-mono tokens resolve to these; system stack is the fallback.
+import "@fontsource/ibm-plex-sans-arabic/400.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
+import "@fontsource/ibm-plex-sans-arabic/600.css";
+import "@fontsource/ibm-plex-sans-arabic/700.css";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
+
 // Load Sentry only when configured so the default SPA bundle does not pay for
 // the SDK on first paint. When enabled, it still initializes before React
 // renders and AppProviders can wrap the tree with Sentry.ErrorBoundary.
