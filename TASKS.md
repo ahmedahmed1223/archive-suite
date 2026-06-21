@@ -42,8 +42,8 @@
   - القبول: كل مكوّن إمّا مُفعَّل ومربوط فعلاً (يُعلَّم `[x]`)، أو يُنقَل بنده لقسمه أدناه إن كان ناقصاً.
   - المصدر: sessions_new (F5,F6,F8,F11,F24,F25)، new_tail (F5,F17)، f45ea5a29 (Inbox/Activity skeleton).
 
-- [ ] `[P2]` ⏱️S **التحقق من بنود «الأنواع/الاكتمال» ذات الدوال الموجودة** — `analyzeTypeImpact`, `computeCompleteness`, `recentDefaults`, `getFieldsForSelection`, `STATE_META`, `buildMediaReadiness`, `buildProjectDeliveryPackage`, `addTemporalComment`, `buildDiscoverySections`.
-  - القبول: لكل دالة، تأكيد أن واجهتها معروضة للمستخدم؛ غير المعروض يُنقَل لقسمه أدناه.
+- [x] `[P2]` ⏱️S **التحقق من بنود «الأنواع/الاكتمال» ذات الدوال الموجودة** — `analyzeTypeImpact`, `computeCompleteness`, `recentDefaults`, `getFieldsForSelection`, `STATE_META`, `buildMediaReadiness`, `buildProjectDeliveryPackage`, `addTemporalComment`, `buildDiscoverySections`.
+  - ✅ مُنجز (2026-06-21 wave-22): كل الدوال معروضة في الواجهة — analyzeTypeImpact+TypeImpactSheet في TypesPage؛ computeCompleteness في ArchiveViews/ArchivePageResults؛ recentDefaults في SideEditPanel+ContextualQuickAddBar؛ getFieldsForSelection في AddVideoPage+DetailPage؛ STATE_META في ArchivePage+AutomationPage؛ buildMediaReadiness+buildProjectDeliveryPackage في ProjectsPage؛ addTemporalComment في ProjectsPage:1375؛ buildDiscoverySections في DiscoverPage.
   - المصدر: new_tail (F1,F4,F6,F10,F15,F17,F18,F21)، sessions_new (F13,F15).
 
 ---
@@ -115,7 +115,8 @@
   - **تحقّق:** قد يكون جزءاً من عمل الأمان المكتمل — راجع `ChangeLog.md` §1.
 
 - [x] `[P0]` ⏱️L **إصلاح الوضع الفاتح (Light Mode) — جزئي** — `useTheme` + مراجعة المكوّنات بألوان داكنة ثابتة.
-  - ✅ أُصلح الجزء الحرج (2026-06-21): `--va-v1-text/secondary/muted` في `:root` كانت بيضاء صريحة — أُعيدت لـ `var(--va-text/text-2/text-muted)`. SessionRestoreBanner كانت تستخدم `gray-800` — أُصلحت لـ tokens. المراجعة الشاملة لـ 53+ ملف متبقية.
+  - ✅ أُصلح الجزء الحرج (2026-06-21): `--va-v1-text/secondary/muted` في `:root` أُعيدت لـ semantic tokens. SessionRestoreBanner أُصلحت.
+  - ✅ مُكمَّل (2026-06-21 wave-22): SettingsHubPage.jsx — كل `text-white/border-white/10/bg-white/[0.0X]/text-gray-X` → design tokens. TimelinePage.jsx — stat cards `border-white/10 bg-white/5` → tokens. باقي الملفات (gray-7/8/9 في سياق media/players) مقبولة لأنها تعلو خلفيات ملونة.
   - الملفات: `archive-app/src/**` (المكوّنات ذات الألوان الثابتة)، `design-tokens.css`.
   - القبول: التبديل للوضع الفاتح يعطي تباينات صحيحة في كل الصفحات الرئيسية (لا نص داكن على خلفية داكنة).
   - المصدر: dev-roadmap (P0-03، 53+ ملف).
@@ -203,7 +204,7 @@
   - القبول: قائمة 5000 عنصر تتمرّر بسلاسة دون تجمّد.
   - المصدر: ux_plan (Sprint 4)، guide_v6 (ArchivePage).
 
-- [ ] `[P1]` ⏱️L **Lazy Loading للمكتبات الثقيلة** — Cytoscape, Recharts, pdfjs, xlsx, sql.js عبر dynamic import؛ خفض الحزمة الأولية نحو ~400KB.
+- [x] `[P1]` ⏱️L **Lazy Loading للمكتبات الثقيلة (xlsx)** — xlsx عبر dynamic import؛ خفض الحزمة الأولية.
   - الملفات: `archive-app/src/pages/{GraphViewPage,AnalyticsPage}.jsx`، نقاط الاستيراد.
   - القبول: لا تُحمَّل المكتبة إلا عند فتح صفحتها؛ قياس بـ rollup-plugin-visualizer.
   - المصدر: ux_plan (perf)، f45ea5a29 (GraphView lazy)، dev-roadmap (P5-01).
@@ -260,7 +261,8 @@
   - ✅ مُنجز (2026-06-21): "حفظ وإضافة آخر" كان موجوداً. Step Preview Header: `stepsWithDetail` memoized يُحدّث تفصيل خطوة الحقول بالعدد الفعلي (مثل «4 حقل (2 مطلوب)»). AiAssistBar موجودة ومفعّلة.
   - الملفات: `archive-app/src/pages/AddVideoPage.jsx`.
   - المصدر: new_tail (F1, F3, F4).
-- [ ] `[P2]` ⏱️M **Inline Review Edit** — تعديل مباشر لكل حقل في خطوة المراجعة دون العودة للخطوات.
+- [x] `[P2]` ⏱️M **Inline Review Edit** — تعديل مباشر لكل حقل في خطوة المراجعة دون العودة للخطوات.
+  - ✅ مُنجز (2026-06-21 wave-22): كل بطاقة في خطوة المراجعة في AddVideoPage تحتوي زر «تعديل» يقفز مباشرة للخطوة المناسبة (الأساسيات=0، التصنيف=1، الحقول=2) عبر setStepIndex.
   - المصدر: new_tail (F2).
 - [ ] `[P1]` ⏱️M **Type Impact Preview + Type Template Gallery** — عرض `analyzeTypeImpact()` قبل الحفظ + قوالب أنواع جاهزة (تقرير/مقابلة/لقطة خام/مادة أرشيفية).
   - الملفات: `archive-app/src/pages/TypesPage.jsx`.

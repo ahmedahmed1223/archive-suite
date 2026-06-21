@@ -703,14 +703,17 @@ export function AddVideoPage() {
           children: [
             jsx(RequiredFieldSummary, { checks: requiredChecks }),
             jsx("div", { className: "grid gap-3 md:grid-cols-2", children: [
-              ["العنوان", title || "غير محدد"],
-              ["التصنيف", [selectedType?.name, subtypes.find((s) => s.id === subtypeId)?.name].filter(Boolean).join(" / ") || "غير محدد"],
-              ["المصدر", path || metadata?.localFile?.name || "غير محدد"],
-              ["الوسوم", parsedTags.length ? `${parsedTags.length} وسم` : "لا توجد"],
-              ["الملاحظات", notes || "—"],
-              ["حقول مخصصة", Object.keys(metadata).filter((k) => k !== "localFile").length ? `${Object.keys(metadata).filter((k) => k !== "localFile").length} حقل` : "لا توجد"]
-            ].map(([label, value]) => jsxs("div", { className: "va-surface-muted rounded-xl border p-3", children: [
-              jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: label }, "label"),
+              ["العنوان", title || "غير محدد", 0],
+              ["التصنيف", [selectedType?.name, subtypes.find((s) => s.id === subtypeId)?.name].filter(Boolean).join(" / ") || "غير محدد", 1],
+              ["المصدر", path || metadata?.localFile?.name || "غير محدد", 0],
+              ["الوسوم", parsedTags.length ? `${parsedTags.length} وسم` : "لا توجد", 1],
+              ["الملاحظات", notes || "—", 0],
+              ["حقول مخصصة", Object.keys(metadata).filter((k) => k !== "localFile").length ? `${Object.keys(metadata).filter((k) => k !== "localFile").length} حقل` : "لا توجد", 2]
+            ].map(([label, value, toStep]) => jsxs("div", { className: "va-surface-muted rounded-xl border p-3", children: [
+              jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+                jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: label }, "label"),
+                jsx("button", { type: "button", onClick: () => setStepIndex(toStep), className: "text-[10px] va-accent-text hover:underline shrink-0", children: "تعديل" }, "edit-btn")
+              ] }, "header"),
               jsx("p", { className: "mt-1 truncate text-sm font-semibold text-[var(--va-text)]", title: value, children: value }, "value")
             ] }, label)) })
           ]

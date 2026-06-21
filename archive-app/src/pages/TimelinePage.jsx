@@ -99,9 +99,9 @@ export function TimelinePage() {
           ] })
         ] }),
         jsxs("div", { className: "grid grid-cols-3 gap-2 text-xs sm:min-w-[22rem]", children: [
-          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "العناصر" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.total) })] }),
-          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الأشرطة" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.lanes.length) })] }),
-          jsxs("div", { className: "rounded-xl border border-white/10 bg-white/5 p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الفترات" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(timeline.buckets.length) })] })
+          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "العناصر" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.total) })] }),
+          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الأشرطة" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.lanes.length) })] }),
+          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الفترات" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(timeline.buckets.length) })] })
         ] })
       ] }),
       Object.keys(typeTotals).length > 0 ? jsx("section", {

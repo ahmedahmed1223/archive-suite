@@ -1,7 +1,6 @@
-import * as XLSX from "xlsx";
-
-export { XLSX };
+let _cache = null;
 
 export async function loadXlsx() {
-  return XLSX;
+  if (!_cache) _cache = await import("xlsx");
+  return _cache;
 }

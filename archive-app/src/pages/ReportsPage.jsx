@@ -13,7 +13,7 @@ import {
   Users
 } from "lucide-react";
 import * as React from "react";
-import { XLSX } from "../vendor/xlsx.js";
+import { loadXlsx } from "../vendor/xlsx.js";
 
 import {
   downloadArchiveBlob
@@ -230,7 +230,8 @@ export function ReportsPage() {
     );
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
+    const XLSX = await loadXlsx();
     const workbook = XLSX.utils.book_new();
     workbook.Workbook = { Views: [{ RTL: true }] };
     const appendSheet = (name, rows) => {
