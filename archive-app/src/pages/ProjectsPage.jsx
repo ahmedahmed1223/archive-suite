@@ -85,6 +85,8 @@ import { getBackendUrl, resolveBackendChoice } from "../bootstrap/backendChoice.
 import { getCloudToken } from "../bootstrap/cloudSession.js";
 import { parseVideoTags } from "../features/videos/viewModel.js";
 import { TimelineTrack } from "../components/montage/TimelineTrack.jsx";
+import { MontageToolStrip } from "../components/montage/MontageToolStrip.jsx";
+import { MontageWorkspace } from "../components/montage/MontageWorkspace.jsx";
 import { VideoPlayer } from "../components/media/VideoPlayer.jsx";
 import { getMediaPreviewDescriptor, MEDIA_PREVIEW_STATUS } from "../features/archive/mediaPreview.js";
 
@@ -985,7 +987,7 @@ function ProjectEditor({
   onAddCut, onMoveCut, onRemoveCut, onUpdateCut, onSplitCut, onDuplicateCut, onReorderClips,
   onAddMarker, onAddComment, onImportMaterial, onUpdateMaterial, onAttachMaterial,
   onExport, onDownloadPackage, mp4Enabled, mp4Mode, serverFfmpeg, exporting, exportEvents,
-  contentTypes, onOpenProductionTasks, onBack
+  contentTypes, onBack
 }) {
   const [sourceQuery, setSourceQuery] = React.useState("");
   const [selectedSourceId, setSelectedSourceId] = React.useState(project?.itemIds?.[0] || items[0]?.id || "");
@@ -1052,148 +1054,141 @@ function ProjectEditor({
     onDuplicateCut?.(selectedClip.id);
   };
 
-  return jsxs("section", {
-    className: "va-preview-panel space-y-4 rounded-2xl va-surface-muted border p-4 text-right",
-    dir: "rtl",
-    children: [
-      jsxs("header", { className: "grid gap-3 border-b border-[var(--va-border-soft)] pb-4 xl:grid-cols-[auto_1fr_auto]", children: [
-        onBack && jsxs("button", {
-          type: "button",
-          onClick: onBack,
-          className: "btn btn-ghost btn-sm gap-2 self-start",
-          "aria-label": "رجوع للمشاريع",
-          children: [jsx(ArrowRight, { className: "h-4 w-4" }), "رجوع"]
-        }),
-        jsxs("div", { className: "min-w-0 space-y-2", children: [
-          jsx("input", {
-            value: project.name,
-            onChange: (e) => onPatch({ name: e.target.value }),
-            placeholder: "اسم المشروع",
-            "aria-label": "اسم المشروع",
-            className: "w-full bg-transparent text-xl font-bold text-[var(--va-text)] outline-none placeholder:text-[var(--va-text-muted)]"
-          }),
-          jsx("textarea", {
-            value: project.description,
-            onChange: (e) => onPatch({ description: e.target.value }),
-            placeholder: "وصف موجز للمشروع (اختياري)",
-            "aria-label": "وصف المشروع",
-            className: "textarea textarea-bordered min-h-16 w-full"
-          })
-        ] }),
-        jsxs("div", { className: "grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 xl:min-w-[28rem]", children: [
-          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "المدة" }), jsx("p", { className: "mt-1 font-semibold text-[var(--va-text)]", children: formatClock(total) })] }),
-          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "قصاصات" }), jsx("p", { className: "mt-1 font-semibold text-[var(--va-text)]", children: `${formatNumber(validCuts.length)} / ${formatNumber(ordered.length)}` })] }),
-          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "معتمدة" }), jsx("p", { className: "mt-1 font-semibold text-[var(--va-text)]", children: formatNumber(approvedCount) })] }),
-          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "تنبيهات" }), jsx("p", { className: mediaIssues ? "mt-1 font-semibold text-amber-200" : "mt-1 font-semibold text-emerald-200", children: formatNumber(mediaIssues) })] })
-        ] })
-      ] }),
+  const workspaceHeader = jsxs("div", { className: "montage-project-header", children: [
+    onBack && jsx("div", { className: "montage-project-header__back tooltip tooltip-bottom", "data-tip": "العودة للمشاريع", children: jsx("button", {
+      type: "button",
+      onClick: onBack,
+      className: "btn btn-ghost btn-xs btn-square",
+      "aria-label": "رجوع للمشاريع",
+      children: jsx(ArrowRight, { className: "h-4 w-4" })
+    }) }),
+    jsxs("div", { className: "montage-project-header__identity", children: [
+      jsx("input", {
+        value: project.name,
+        onChange: (event) => onPatch({ name: event.target.value }),
+        placeholder: "اسم المشروع",
+        "aria-label": "اسم المشروع",
+        className: "montage-project-header__title"
+      }),
+      jsx("input", {
+        value: project.description,
+        onChange: (event) => onPatch({ description: event.target.value }),
+        placeholder: "وصف المشروع",
+        "aria-label": "وصف المشروع",
+        className: "montage-project-header__description"
+      })
+    ] }),
+    jsxs("div", { className: "montage-project-header__status", children: [
+      jsx("span", { className: "montage-project-header__saved", children: "محفوظ" }),
+      jsx("span", { children: `${project.timelineSettings?.fps || 25}fps` }),
+      jsx("span", { children: project.timelineSettings?.resolution || "1920x1080" }),
+      jsx("span", { className: "montage-project-header__timecode", children: secondsToTimecode(total, project.timelineSettings?.fps || 25) }),
+      jsx("span", { children: `${formatNumber(validCuts.length)} قصاصة` }),
+      mediaIssues ? jsx("span", { className: "montage-project-header__warning", children: `${formatNumber(mediaIssues)} تنبيه` }) : null,
+      approvedCount ? jsx("span", { children: `${formatNumber(approvedCount)} معتمدة` }) : null
+    ] })
+  ] });
 
-      jsxs("div", { className: "grid gap-4 2xl:grid-cols-[21rem_minmax(0,1fr)_22rem]", children: [
-        jsxs("div", { className: "min-w-0 space-y-4", children: [
-          jsx(MaterialImportPanel, {
-            contentTypes,
-            onImport: async (draft) => {
-              const created = await onImportMaterial?.(project.id, draft);
-              if (created?.id) setSelectedSourceId(created.id);
-              return created;
-            }
-          }),
-          jsx(SourceBin, {
-            items,
-            query: sourceQuery,
-            onQuery: setSourceQuery,
-            selectedId: selectedSourceId,
-            onSelect: setSelectedSourceId,
-            projectItemIds: project.itemIds || []
-          }),
-          jsx(MaterialInspector, {
-            item: selectedSource,
-            contentTypes,
-            projectItemIds: project.itemIds || [],
-            onUpdate: onUpdateMaterial,
-            onAttach: (itemId) => onAttachMaterial?.(project.id, itemId)
-          })
-        ] }),
-        jsxs("div", { className: "min-w-0 space-y-4", children: [
-          jsx(PreviewComposer, {
-            item: selectedSource,
-            markIn,
-            markOut,
-            onSetMarkIn: setMarkIn,
-            onSetMarkOut: setMarkOut,
-            onAddCut,
-            onTimeChange: setCurrentTime
-          }),
-          jsxs("section", { className: "rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [
-            jsxs("div", { className: "mb-3 flex flex-wrap items-center justify-between gap-2", children: [
-              jsxs("h3", { className: "flex items-center gap-2 text-sm font-semibold text-[var(--va-text)]", children: [jsx(ListVideo, { className: "h-4 w-4 va-accent-text" }), "الخط الزمني الاحترافي"] }),
-              jsxs("div", { className: "flex items-center gap-2", children: [
-                jsx("span", { className: "rounded-full bg-[var(--va-surface-2)] px-2 py-0.5 text-xs text-[var(--va-text-muted)]", children: `${formatNumber(ordered.length)} قصاصة · ${formatClock(total)}` }),
-                jsx("select", { value: timelineZoom, onChange: (e) => setTimelineZoom(Number(e.target.value)), className: "select select-bordered select-sm", "aria-label": "تكبير الخط الزمني", children: TIMELINE_ZOOM.map((zoom) => jsx("option", { value: zoom.value, children: zoom.label }, zoom.value)) })
-              ] })
-            ] }),
-            ordered.length ? jsx(TimelineTrack, {
-              clips: ordered,
-              selectedId: selectedClipId,
-              onSelect: setSelectedClipId,
-              onMoveClip: onReorderClips,
-              pxPerSecond: timelineZoom
-            }) : jsx("p", { className: "rounded-xl border border-dashed border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 text-center text-sm text-[var(--va-text-muted)]", children: "الخطّ الزمني فارغ — اختر مصدرًا وحدد In/Out ثم أضف القصاصة." }),
-            ordered.length ? jsx("div", { className: "mt-3 space-y-2", children: ordered.map((cut, i) => jsx(TimelineRow, {
-              cut, index: i, total: ordered.length, itemsById, onMove: onMoveCut, onRemove: onRemoveCut
-            }, cut.id)) }) : null
-          ] })
-        ] }),
-        jsxs("div", { className: "space-y-4", children: [
-          jsx(ClipInspector, {
-            clip: selectedClip,
-            item: selectedClipItem,
-            comments: selectedClipComments,
-            currentTime,
-            onUpdate: updateClip,
-            onUseCurrent: useCurrentOnClip,
-            onSplit: splitSelectedClip,
-            onDuplicate: duplicateSelectedClip,
-            onAddComment,
-            onRemove: () => selectedClip && onRemoveCut(selectedClip.id)
-          }),
-          jsx(TimelineSettingsPanel, {
-            settings: project.timelineSettings,
-            onChange: (timelineSettings) => onPatch({ timelineSettings })
-          }),
-          jsx(MarkerPanel, {
-            markers: project.markers || [],
-            currentTime,
-            onAddMarker
-          }),
-          jsx(ExportCenter, {
-            canExport: mp4Enabled,
-            exportMode: mp4Mode,
-            serverFfmpeg,
-            hasValidCuts: validCuts.length > 0,
-            exporting,
-            onExport,
-            onDownloadPackage,
-            exportEvents
-          })
-        ] })
-      ] }),
+  const mediaBin = jsxs("div", { className: "montage-workspace__panel-stack", children: [
+    jsx(MaterialImportPanel, {
+      contentTypes,
+      onImport: async (draft) => {
+        const created = await onImportMaterial?.(project.id, draft);
+        if (created?.id) setSelectedSourceId(created.id);
+        return created;
+      }
+    }),
+    jsx(SourceBin, {
+      items,
+      query: sourceQuery,
+      onQuery: setSourceQuery,
+      selectedId: selectedSourceId,
+      onSelect: setSelectedSourceId,
+      projectItemIds: project.itemIds || []
+    }),
+    jsx(MaterialInspector, {
+      item: selectedSource,
+      contentTypes,
+      projectItemIds: project.itemIds || [],
+      onUpdate: onUpdateMaterial,
+      onAttach: (itemId) => onAttachMaterial?.(project.id, itemId)
+    })
+  ] });
 
-      jsxs("section", { className: "rounded-2xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4", children: [
-        jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
-          jsxs("div", { children: [
-            jsxs("p", { className: "flex items-center gap-2 text-sm font-semibold text-[var(--va-text)]", children: [jsx(ClipboardList, { className: "h-4 w-4 va-accent-text" }), "مهام الإنتاج في قسم مستقل"] }),
-            jsx("p", { className: "mt-1 text-sm text-[var(--va-text-muted)]", children: "تم نقل إضافة المهام ولوحة الحالات إلى صفحة مهام الإنتاج حتى تبقى محطة المونتاج مخصصة للقص والتايملاين والتصدير." })
-          ] }),
-          jsxs("button", {
-            type: "button",
-            onClick: onOpenProductionTasks,
-            className: "btn btn-ghost gap-2",
-            children: [jsx(ArrowRight, { className: "h-4 w-4" }), "افتح مهام الإنتاج من القائمة"]
-          })
-        ] })
+  const monitor = jsx(PreviewComposer, {
+    item: selectedSource,
+    markIn,
+    markOut,
+    onSetMarkIn: setMarkIn,
+    onSetMarkOut: setMarkOut,
+    onAddCut,
+    onTimeChange: setCurrentTime
+  });
+
+  const timeline = jsxs("div", { className: "montage-timeline-stage", children: [
+    jsxs("div", { className: "montage-timeline-stage__bar", children: [
+      jsxs("h3", { children: [jsx(ListVideo, { className: "h-4 w-4" }), "الخط الزمني"] }),
+      jsxs("div", { className: "montage-timeline-stage__controls", children: [
+        jsx("span", { children: `${formatNumber(ordered.length)} قصاصة · ${formatClock(total)}` }),
+        jsx("select", { value: timelineZoom, onChange: (event) => setTimelineZoom(Number(event.target.value)), className: "select select-bordered select-xs", "aria-label": "تكبير الخط الزمني", children: TIMELINE_ZOOM.map((zoom) => jsx("option", { value: zoom.value, children: zoom.label }, zoom.value)) })
       ] })
-    ]
+    ] }),
+    ordered.length ? jsx(TimelineTrack, {
+      clips: ordered,
+      selectedId: selectedClipId,
+      onSelect: setSelectedClipId,
+      onMoveClip: onReorderClips,
+      pxPerSecond: timelineZoom
+    }) : jsx("p", { className: "montage-timeline-stage__empty", children: "الخط الزمني فارغ. حدد In وOut ثم أضف القصاصة." }),
+    ordered.length ? jsx("div", { className: "montage-timeline-stage__rows", children: ordered.map((cut, index) => jsx(TimelineRow, {
+      cut, index, total: ordered.length, itemsById, onMove: onMoveCut, onRemove: onRemoveCut
+    }, cut.id)) }) : null
+  ] });
+
+  const inspector = jsxs("div", { className: "montage-workspace__panel-stack", children: [
+    jsx(ClipInspector, {
+      clip: selectedClip,
+      item: selectedClipItem,
+      comments: selectedClipComments,
+      currentTime,
+      onUpdate: updateClip,
+      onUseCurrent: useCurrentOnClip,
+      onSplit: splitSelectedClip,
+      onDuplicate: duplicateSelectedClip,
+      onAddComment,
+      onRemove: () => selectedClip && onRemoveCut(selectedClip.id)
+    }),
+    jsx(TimelineSettingsPanel, {
+      settings: project.timelineSettings,
+      onChange: (timelineSettings) => onPatch({ timelineSettings })
+    }),
+    jsx(MarkerPanel, {
+      markers: project.markers || [],
+      currentTime,
+      onAddMarker
+    }),
+    jsx(ExportCenter, {
+      canExport: mp4Enabled,
+      exportMode: mp4Mode,
+      serverFfmpeg,
+      hasValidCuts: validCuts.length > 0,
+      exporting,
+      onExport,
+      onDownloadPackage,
+      exportEvents
+    })
+  ] });
+
+  return jsx(MontageWorkspace, {
+    header: workspaceHeader,
+    toolbar: jsx(MontageToolStrip, {
+      preferences: project.timelinePreferences || {},
+      onPreferencesChange: (timelinePreferences) => onPatch({ timelinePreferences })
+    }),
+    mediaBin,
+    monitor,
+    inspector,
+    timeline
   });
 }
 
@@ -1253,7 +1248,6 @@ export function ProjectsPage() {
     deleteProject,
     addVideoItem,
     updateVideoItem,
-    setCurrentPage,
     showToast,
     showNotification
   } = useAppStore();
@@ -1546,6 +1540,43 @@ export function ProjectsPage() {
     }
   };
 
+  if (openedProject) {
+    return jsx(motion.div, {
+      initial: { opacity: 0 },
+      animate: { opacity: 1 },
+      transition: { duration: 0.16 },
+      className: "va-page-shell min-w-0 p-2 sm:p-3",
+      dir: "rtl",
+      children: jsx(ProjectEditor, {
+        project: openedProject,
+        items: activeItems,
+        itemsById,
+        onBack: closeProject,
+        onPatch: patchProject,
+        onAddCut: addCut,
+        onMoveCut: moveCut,
+        onRemoveCut: removeCut,
+        onUpdateCut: updateCut,
+        onSplitCut: splitCut,
+        onDuplicateCut: duplicateCut,
+        onReorderClips: reorderClipsVisual,
+        onAddMarker: addMarker,
+        onAddComment: addComment,
+        onImportMaterial: importMaterial,
+        onUpdateMaterial: updateMaterial,
+        onAttachMaterial: attachMaterialToProject,
+        onExport: runExport,
+        onDownloadPackage: downloadDeliveryPackage,
+        mp4Enabled,
+        mp4Mode,
+        serverFfmpeg,
+        exporting,
+        exportEvents,
+        contentTypes
+      })
+    });
+  }
+
   return jsxs(motion.div, {
     initial: { opacity: 0, y: 8 },
     animate: { opacity: 1, y: 0 },
@@ -1594,33 +1625,6 @@ export function ProjectsPage() {
           onAction: openCreate,
           hintItems: ["نقاط قص in/out", "لوحة مهام", "تصدير EDL/JSON/MP4"]
         })
-      }) : openedProject ? jsx(ProjectEditor, {
-        project: openedProject,
-        items: activeItems,
-        itemsById,
-        onBack: closeProject,
-        onPatch: patchProject,
-        onAddCut: addCut,
-        onMoveCut: moveCut,
-        onRemoveCut: removeCut,
-        onUpdateCut: updateCut,
-        onSplitCut: splitCut,
-        onDuplicateCut: duplicateCut,
-        onReorderClips: reorderClipsVisual,
-        onAddMarker: addMarker,
-        onAddComment: addComment,
-        onImportMaterial: importMaterial,
-        onUpdateMaterial: updateMaterial,
-        onAttachMaterial: attachMaterialToProject,
-        onExport: runExport,
-        onDownloadPackage: downloadDeliveryPackage,
-        mp4Enabled,
-        mp4Mode,
-        serverFfmpeg,
-        exporting,
-        exportEvents,
-        contentTypes,
-        onOpenProductionTasks: () => setCurrentPage?.("production-tasks")
       }) : jsxs("section", { className: "space-y-4", children: [
         jsxs("label", { className: "va-filter-surface relative block rounded-2xl va-surface-muted border p-3", children: [
           jsx(Search, { className: "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--va-text-muted)]" }),

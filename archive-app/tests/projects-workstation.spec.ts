@@ -4,6 +4,7 @@ import { goToPage, seedLocalArchive } from './helpers/seed';
 test.describe('Projects workstation', () => {
   test('creates a project and adds a rough cut from the source bin', async ({ page }) => {
     test.setTimeout(60_000);
+    await page.setViewportSize({ width: 1600, height: 1000 });
     await seedLocalArchive(page);
     await goToPage(page, '#/projects');
 
@@ -11,6 +12,10 @@ test.describe('Projects workstation', () => {
     await page.getByLabel('اسم المشروع').fill('تقرير E2E');
     await page.getByRole('button', { name: 'إنشاء المشروع' }).click();
 
+    await expect(page.getByRole('region', { name: 'مكتبة مواد المشروع' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('region', { name: 'شاشة البرنامج' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'مفتش القصاصة' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'الخط الزمني' })).toBeVisible();
     await expect(page.getByText('مكتبة المصادر')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('استيراد مواد للمونتاج')).toBeVisible();
     await expect(page.getByText('إعدادات المادة المحددة')).toBeVisible();
@@ -35,10 +40,9 @@ test.describe('Projects workstation', () => {
     await page.getByLabel('Out').first().fill('4');
     await page.getByRole('button', { name: 'إضافة للتايملاين' }).click();
 
-    await expect(page.getByText(/1 قصاصة/)).toBeVisible();
+    await expect(page.getByText(/1 قصاصة/).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /JSON/ })).toBeEnabled();
     await expect(page.getByText('اختر قصاصة من الخط الزمني')).toBeHidden();
-
     await expect(page.getByText('أدوات القطع')).toBeVisible();
     await page.getByLabel('نوع الانتقال').selectOption('dissolve');
     await page.getByLabel('مدة الانتقال').fill('0.8');
@@ -46,9 +50,9 @@ test.describe('Projects workstation', () => {
     await page.getByLabel('Scale').fill('1.2');
     await page.getByLabel('Rotation').fill('3');
     await page.getByRole('button', { name: /نسخ القصاصة/ }).click();
-    await expect(page.getByText(/2 قصاصة/)).toBeVisible();
+    await expect(page.getByText(/2 قصاصة/).first()).toBeVisible();
     await page.getByRole('button', { name: 'قص في المنتصف' }).click();
-    await expect(page.getByText(/3 قصاصة/)).toBeVisible();
+    await expect(page.getByText(/3 قصاصة/).first()).toBeVisible();
 
     await page.getByPlaceholder('علامة زمنية: افتتاح، ذروة، نهاية...').fill('افتتاح');
     await page.getByRole('button', { name: 'إضافة', exact: true }).click();
@@ -60,8 +64,7 @@ test.describe('Projects workstation', () => {
 
     await expect(page.getByRole('button', { name: /حزمة تسليم/ })).toBeEnabled();
     await expect(page.getByText('لوحة المهام')).toBeHidden();
-    await expect(page.getByText('مهام الإنتاج في قسم مستقل')).toBeVisible();
-
+    await expect(page.getByText('مهام الإنتاج في قسم مستقل')).toBeHidden();
     await goToPage(page, '#/production-tasks');
     await expect(page.getByText('مهام الإنتاج').first()).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('تقرير E2E').first()).toBeVisible();
