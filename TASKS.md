@@ -169,9 +169,9 @@
 
 > الحالة: ProjectsPage فيه `roughCuts`/`inSec/outSec`/transitions/looks/filters/EDL+JSON+MP4 لكن **قائمة نصية بلا خط زمني مرئي** (تم التحقق: لا `MultiTrack`).
 
-- [ ] `[P0]` ⏱️XL **خط زمني مرئي متعدد المسارات (Multi-Track Timeline)** — تحويل القائمة النصية إلى Canvas أفقي: 3 فيديو + 2 صوت + 1 عنوان، سحب/إفلات بين المسارات، نقاط تقطيع قابلة للسحب.
-  - 🚧 **قيد التنفيذ بواسطة وكيل آخر — لا يُلتقط** — التصميم جاهز في `archive-app/docs/superpowers/specs/2026-06-21-professional-multitrack-montage-workspace-design.md` (commits `cd7be43`/`d21f1de`).
-  - الملفات: `archive-app/src/pages/ProjectsPage.jsx` + مكوّن timeline جديد؛ ربط `reorderRoughCut()`/`splitRoughCut()`.
+- [x] `[P0]` ⏱️XL **خط زمني مرئي متعدد المسارات (Multi-Track Timeline)** — تحويل القائمة النصية إلى Canvas أفقي: 3 فيديو + 2 صوت + 1 عنوان، سحب/إفلات بين المسارات، نقاط تقطيع قابلة للسحب.
+  - ✅ مُنجز (2026-06-21 wave-25, commit `c5fb487`): `MultiTrackTimeline.jsx` + `TimelineClip.jsx` + `TrackHeader.jsx` بواجهة @dnd-kit (PointerSensor + TouchSensor + KeyboardSensor)؛ مسارات video/audio/title/adjustment ديناميكية مع snap-to-frame، ripple modes، marker overlay، حوار حذف مسار مع نقل القصاصات. ProjectsPage يستخدم `handleTimelineCommand` لإدارة كل عمليات الخط الزمني عبر multiTrackModel. 22 اختبار unit + E2E يغطي إضافة وتسمية مسار فيديو ثانٍ.
+  - الملفات: `archive-app/src/components/montage/MultiTrackTimeline.jsx`، `TimelineClip.jsx`، `TrackHeader.jsx`، `multiTrackModel.js`، `pages/ProjectsPage.jsx`.
   - القبول: ترتيب المقاطع بالسحب يعمل ويُحفظ؛ عرض البلوك = مدته.
   - المصدر: new_tail (F13)، dev-roadmap (P2-01).
 
