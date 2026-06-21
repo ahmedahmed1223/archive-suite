@@ -256,6 +256,48 @@ function DailyFocusPanel({ items = [], onAction }) {
   });
 }
 
+function formatClockTime(date) {
+  return new Intl.DateTimeFormat("ar-EG-u-nu-arab", { hour: "2-digit", minute: "2-digit", hour12: true }).format(date);
+}
+
+function formatClockDate(date) {
+  return new Intl.DateTimeFormat("ar-EG-u-nu-arab", { weekday: "long", day: "numeric", month: "long" }).format(date);
+}
+
+function LiveClockBadge() {
+  const [now, setNow] = React.useState(() => new Date());
+  React.useEffect(() => {
+    // Re-render on the next minute boundary; ticking every second wakes the
+    // dashboard 60x more often than the displayed precision (HH:MM) needs.
+    let timeoutId = 0;
+    const schedule = (current) => {
+      const msToNextMinute = (60 - current.getSeconds()) * 1000 - current.getMilliseconds();
+      timeoutId = window.setTimeout(() => {
+        const next = new Date();
+        setNow(next);
+        schedule(next);
+      }, Math.max(1000, msToNextMinute));
+    };
+    schedule(new Date());
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+  return jsxs("div", {
+    className: "flex items-center gap-2 rounded-xl border border-[var(--va-border-soft)] bg-white/[0.035] px-3 py-1.5 text-[var(--va-text-2)]",
+    role: "status",
+    "aria-label": `الوقت ${formatClockTime(now)} — التاريخ ${formatClockDate(now)}`,
+    children: [
+      jsx(Clock3, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }),
+      jsxs("div", {
+        className: "flex flex-col leading-tight",
+        children: [
+          jsx("span", { className: "text-sm font-semibold tabular-nums text-[var(--va-text)]", children: formatClockTime(now) }),
+          jsx("span", { className: "text-[10px] text-[var(--va-text-muted)]", children: formatClockDate(now) })
+        ]
+      })
+    ]
+  });
+}
+
 export function DashboardPage() {
   const {
     videoItems = [],
@@ -622,15 +664,21 @@ export function DashboardPage() {
                           })
                         ]
                       }),
-                      jsxs("button", {
-                        type: "button",
-                        onClick: () => goTo("add"),
-                        className: "btn btn-sm btn-primary gap-2",
-                        title: "إضافة فيديو — اختصار A",
+                      jsxs("div", {
+                        className: "flex flex-wrap items-center gap-2",
                         children: [
-                          jsx(Video, { className: "h-4 w-4" }),
-                          "إضافة فيديو",
-                          jsx(KbdHint, { keys: ["A"], className: "opacity-80" })
+                          jsx(LiveClockBadge, {}),
+                          jsxs("button", {
+                            type: "button",
+                            onClick: () => goTo("add"),
+                            className: "btn btn-sm btn-primary gap-2",
+                            title: "إضافة فيديو — اختصار A",
+                            children: [
+                              jsx(Video, { className: "h-4 w-4" }),
+                              "إضافة فيديو",
+                              jsx(KbdHint, { keys: ["A"], className: "opacity-80" })
+                            ]
+                          })
                         ]
                       })
                     ]
