@@ -8,7 +8,6 @@
     "build": "vite build --mode spa --configLoader runner",
     "build:spa": "vite build --mode spa --configLoader runner",
     "build:cloud": "vite build --mode cloud --configLoader runner",
-    "build:aistudio": "vite build --mode aistudio --configLoader runner",
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "node scripts/verify-modules.mjs",

@@ -10,9 +10,8 @@ pnpm dev                    # frontend dev server
 pnpm server                 # backend server
 
 # Build
-pnpm build:spa              # SPA build
-pnpm build:cloud            # cloud build
-pnpm build:aistudio         # AI Studio build
+pnpm build:spa              # SPA build (offline)
+pnpm build:cloud            # cloud build (primary)
 
 # Test & verify
 pnpm verify                 # run all package verify scripts
@@ -36,6 +35,6 @@ pnpm release:verify         # full verify + build + security check
 
 ## Notes
 
-- Three build modes: `spa` (offline), `cloud` (PocketBase), `aistudio` (AI Studio embedded)
+- Two build modes: `spa` (offline) and `cloud` (PocketBase/Postgres) — cloud is the primary direction
 - Server supports multiple storage backends: S3, Azure, Dropbox, Google Drive
 - AI SDK integrates Anthropic, OpenAI, Google, Groq, Mistral, OpenRouter
