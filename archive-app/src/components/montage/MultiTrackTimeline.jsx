@@ -26,7 +26,7 @@ function clipDuration(clip) {
   return Math.max(0, Number(clip.outSec || 0) - Number(clip.inSec || 0));
 }
 
-function TrackLane({ track, clips, selectedClipId, invalidClipIds, pixelsPerSecond, playheadSec, activeTool, onCommand }) {
+function TrackLane({ track, clips, selectedClipId, invalidClipIds, pixelsPerSecond, playheadSec, activeTool, onCommand, thumbnailsByItemId, commentsByClipId }) {
   const { isOver, setNodeRef } = useDroppable({ id: `track:${track.id}`, data: { trackId: track.id } });
   return (
     <div ref={setNodeRef} className={`multitrack-lane${isOver ? " is-over" : ""}${track.locked ? " is-locked" : ""}`} data-track-id={track.id}>
@@ -40,6 +40,8 @@ function TrackLane({ track, clips, selectedClipId, invalidClipIds, pixelsPerSeco
           playheadSec={playheadSec}
           activeTool={activeTool}
           onCommand={onCommand}
+          thumbnailUrl={thumbnailsByItemId?.get(clip.itemId) || undefined}
+          comments={commentsByClipId?.get(clip.id) || []}
         />
       ))}
     </div>
@@ -76,7 +78,9 @@ export function MultiTrackTimeline({
   markers = [],
   playheadSec = 0,
   activeTool = "select",
-  onCommand
+  onCommand,
+  thumbnailsByItemId,
+  commentsByClipId
 }) {
   const orderedTracks = React.useMemo(() => [...tracks].sort((a, b) => a.order - b.order), [tracks]);
   const scale = Math.max(4, Math.min(80, Number(pixelsPerSecond) || 12));
@@ -152,6 +156,8 @@ export function MultiTrackTimeline({
                     playheadSec={playheadSec}
                     activeTool={activeTool}
                     onCommand={onCommand}
+                    thumbnailsByItemId={thumbnailsByItemId}
+                    commentsByClipId={commentsByClipId}
                   />
                 </div>
               </React.Fragment>

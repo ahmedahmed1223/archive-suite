@@ -83,4 +83,32 @@ describe("MultiTrackTimeline", () => {
     expect(onCommand).toHaveBeenCalledTimes(1);
     expect(onCommand).toHaveBeenCalledWith({ type: "clip.trim", clipId: "clip-1", edge: "out", sourceSec: 7 });
   });
+
+  it("renders a thumbnail background and a temporal comment pin that emits a focus command", async () => {
+    const user = userEvent.setup();
+    const onCommand = vi.fn();
+    const thumbnails = new Map([["item-1", "https://cdn.example/poster.jpg"]]);
+    const commentMap = new Map([[
+      "clip-1",
+      [{ id: "c-1", atSec: 2.5, body: "ضبط الإضاءة", status: "open" }]
+    ]]);
+    const { container } = render(
+      <MultiTrackTimeline
+        tracks={tracks}
+        clips={clips}
+        thumbnailsByItemId={thumbnails}
+        commentsByClipId={commentMap}
+        onCommand={onCommand}
+      />
+    );
+
+    const clip = container.querySelector(".multitrack-clip.has-thumbnail");
+    expect(clip).not.toBeNull();
+    expect(clip.getAttribute("style")).toContain("poster.jpg");
+
+    const pin = container.querySelector(".multitrack-clip__comment-pin");
+    expect(pin).not.toBeNull();
+    await user.click(pin);
+    expect(onCommand).toHaveBeenCalledWith({ type: "clip.comment-focus", clipId: "clip-1", commentId: "c-1", atSec: 2.5 });
+  });
 });

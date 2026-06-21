@@ -1,12 +1,12 @@
 import * as React from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { Lock, TriangleAlert } from "lucide-react";
+import { Lock, MessageCircle, TriangleAlert } from "lucide-react";
 
 function durationOf(clip) {
   return Math.max(0, Number(clip.outSec || 0) - Number(clip.inSec || 0));
 }
 
-export function TimelineClip({ clip, selected, invalid, pixelsPerSecond, playheadSec, activeTool = "select", onCommand }) {
+export function TimelineClip({ clip, selected, invalid, pixelsPerSecond, playheadSec, activeTool = "select", onCommand, thumbnailUrl, comments = [] }) {
   const trimGesture = React.useRef(null);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `clip:${clip.id}`,
@@ -69,6 +69,19 @@ export function TimelineClip({ clip, selected, invalid, pixelsPerSecond, playhea
     }
   };
 
+  const clipStartSec = Math.max(0, Number(clip.timelineStartSec) || 0);
+  const visibleComments = duration > 0
+    ? comments.filter((comment) => {
+        const at = Number(comment?.atSec);
+        return Number.isFinite(at) && at >= clipStartSec && at <= clipStartSec + duration;
+      })
+    : [];
+  const backgroundStyle = thumbnailUrl
+    ? { backgroundImage: `linear-gradient(180deg, rgba(15,17,21,0.55), rgba(15,17,21,0.85)), url(${JSON.stringify(thumbnailUrl).slice(1, -1)})` }
+    : clip.color
+      ? { background: clip.color }
+      : undefined;
+
   return (
     <div
       ref={setNodeRef}
@@ -76,12 +89,12 @@ export function TimelineClip({ clip, selected, invalid, pixelsPerSecond, playhea
       tabIndex={0}
       aria-label={`قصاصة ${label}`}
       aria-pressed={selected}
-      className={`multitrack-clip${selected ? " is-selected" : ""}${invalid ? " is-invalid" : ""}${isDragging ? " is-dragging" : ""}`}
+      className={`multitrack-clip${selected ? " is-selected" : ""}${invalid ? " is-invalid" : ""}${isDragging ? " is-dragging" : ""}${thumbnailUrl ? " has-thumbnail" : ""}`}
       style={{
-        insetInlineStart: `${Math.max(0, Number(clip.timelineStartSec) || 0) * pixelsPerSecond}px`,
+        insetInlineStart: `${clipStartSec * pixelsPerSecond}px`,
         width: `${Math.max(28, duration * pixelsPerSecond)}px`,
-        background: clip.color || undefined,
-        transform: dragTransform
+        transform: dragTransform,
+        ...(backgroundStyle || {})
       }}
       {...listeners}
       {...attributes}
@@ -96,10 +109,33 @@ export function TimelineClip({ clip, selected, invalid, pixelsPerSecond, playhea
       <span className="multitrack-clip__trim" data-edge="in" aria-hidden="true" onPointerDown={(event) => startTrim("in", event)} onPointerUp={finishTrim} />
       <span className="multitrack-clip__content">
         <strong>{label}</strong>
-        <small>{duration.toFixed(2)}s</small>
+        <small>{duration.toFixed(2)}s{visibleComments.length ? ` · ${visibleComments.length} 💬` : ""}</small>
       </span>
       {clip.locked ? <Lock aria-hidden="true" className="multitrack-clip__state" /> : null}
       {invalid ? <TriangleAlert aria-hidden="true" className="multitrack-clip__state" /> : null}
+      {visibleComments.length ? (
+        <span className="multitrack-clip__comments" aria-hidden="true">
+          {visibleComments.map((comment) => {
+            const at = Number(comment.atSec) - clipStartSec;
+            return (
+              <button
+                key={comment.id || `${at}-${comment.body?.slice(0, 8)}`}
+                type="button"
+                className={`multitrack-clip__comment-pin${comment.status === "resolved" ? " is-resolved" : ""}`}
+                title={comment.body}
+                aria-label={`تعليق عند ${at.toFixed(1)} ثانية: ${comment.body}`}
+                style={{ insetInlineStart: `${at * pixelsPerSecond}px` }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCommand?.({ type: "clip.comment-focus", clipId: clip.id, commentId: comment.id, atSec: comment.atSec });
+                }}
+              >
+                <MessageCircle aria-hidden="true" className="h-3 w-3" />
+              </button>
+            );
+          })}
+        </span>
+      ) : null}
       <span className="multitrack-clip__trim" data-edge="out" aria-hidden="true" onPointerDown={(event) => startTrim("out", event)} onPointerUp={finishTrim} />
     </div>
   );
