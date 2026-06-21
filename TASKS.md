@@ -265,7 +265,8 @@
 - [x] `[P2]` ⏱️M **Inline Review Edit** — تعديل مباشر لكل حقل في خطوة المراجعة دون العودة للخطوات.
   - ✅ مُنجز (2026-06-21 wave-22): كل بطاقة في خطوة المراجعة في AddVideoPage تحتوي زر «تعديل» يقفز مباشرة للخطوة المناسبة (الأساسيات=0، التصنيف=1، الحقول=2) عبر setStepIndex.
   - المصدر: new_tail (F2).
-- [ ] `[P1]` ⏱️M **Type Impact Preview + Type Template Gallery** — عرض `analyzeTypeImpact()` قبل الحفظ + قوالب أنواع جاهزة (تقرير/مقابلة/لقطة خام/مادة أرشيفية).
+- [x] `[P1]` ⏱️M **Type Impact Preview + Type Template Gallery** — عرض `analyzeTypeImpact()` قبل الحفظ + قوالب أنواع جاهزة (تقرير/مقابلة/لقطة خام/مادة أرشيفية).
+  - ✅ مُنجز (2026-06-21 wave-23): أُضيفت قوالب «تقرير» و«لقطة خام» و«مادة أرشيفية» إلى TYPE_CREATION_TEMPLATES (8 قوالب الآن). TypeEditor — خطوة المراجعة تعرض لوحة «تأثير التعديل» عند تعديل نوع موجود: عدد المواد المتأثرة + الحقول المضافة/المحذوفة + 3 عينات.
   - الملفات: `archive-app/src/pages/TypesPage.jsx`.
   - المصدر: new_tail (F6, F7).
 - [ ] `[P2]` ⏱️L **Conditional Fields Visual Builder + حقل Relation جديد** — واجهة بناء `normalizeShowWhen` + `{ id: "relation" }` في `FIELD_TYPE_OPTIONS` لربط المواد.
@@ -273,8 +274,9 @@
   - المصدر: new_tail (F8, F9).
 
 ### Workflow / الأرشيف
-- [x] `[P1]` ⏱️M **Workflow Pipeline Bar** — شريط أعداد الحالات (فلتر فوري).
-  - ✅ مُنجز جزئياً (2026-06-21): `WorkflowPipelineBar` مضاف في ArchivePage — يعرض أعداد الحالات (مسودة/تحرير/مراجعة/معتمد/منشور/مؤرشف) مع فلترة فورية بالنقر. Transition Reason + Due Dates UI لا تزال مطلوبة.
+- [x] `[P1]` ⏱️M **Workflow Pipeline Bar + Transition Reason + Due Dates** — شريط أعداد الحالات (فلتر فوري) + نموذج تأكيد الانتقال مع سبب وتاريخ استحقاق.
+  - ✅ مُنجز (2026-06-21): `WorkflowPipelineBar` مضاف في ArchivePage — يعرض أعداد الحالات مع فلترة فورية بالنقر.
+  - ✅ مُكمَّل (2026-06-21 wave-23): `StatusTransitionMenu` — تدفق تأكيد من خطوتين: اختيار الحالة → نموذج مصغر بحقل «سبب التغيير» (اختياري، 500 حرف) وحقل «تاريخ الاستحقاق» (اختياري) → زر تأكيد. الحقلان يُرسَلان في POST /api/workflow/transition (note + dueDate) التي يدعمها الخادم فعلاً.
   - الملفات: `archive-app/src/pages/{ArchivePage,DetailPage}.jsx`، `itemStatus.js`.
   - المصدر: new_tail (F10, F11, F12).
 - [x] `[P2]` ⏱️M **Completeness Column** — عمود اكتمال اختياري في جدول الأرشيف.
@@ -285,8 +287,8 @@
   - المصدر: new_tail (F21)، guide_v6 (ArchivePage).
 
 ### البحث / Dashboard
-- [x] `[P1]` ⏱️M **Instant Search (debounce 150ms) + Query Suggestions** — نتائج فورية أثناء الكتابة + اقتراحات من vocabulary/tags.
-  - ✅ مُنجز جزئياً (2026-06-21): `debouncedQuery` 150ms مضاف؛ `SearchInputWithSuggestions` يعرض 7 اقتراحات (عمليات سابقة + وسوم) أثناء الكتابة. Filter Panel الجانبي لا يزال مطلوباً.
+- [x] `[P1]` ⏱️M **Instant Search (debounce 150ms) + Query Suggestions + Filter Panel** — نتائج فورية أثناء الكتابة + اقتراحات + لوحة فلاتر قابلة للطي.
+  - ✅ مُنجز (2026-06-21 wave-23): `debouncedQuery` 150ms؛ `SearchInputWithSuggestions` يعرض 7 اقتراحات؛ زر «فلاتر» مع شارة عدد الفلاتر النشطة يُفتح/يُغلق لوحة الفلاتر بحركة انزلاق — تضم النوع/الفرع/التاريخ/المفضلة/حقول ناقصة/الكثافة.
   - الملفات: `archive-app/src/pages/SearchPage.jsx`.
   - المصدر: guide_v6 (SearchPage)، ux_plan (S2).
 - [ ] `[P2]` ⏱️M **Dashboard: Widget Gallery + DnD كامل + Getting-Started Checklist + Today's Digest** — تفعيل `react-grid-layout` + قائمة مهام أول 7 أيام + بطاقة من `buildDiscoverySections()`.
