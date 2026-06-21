@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Archive Suite — Linux/macOS guided deployment launcher.
-# Usage: bash setup.sh                       # interactive wizard
-#        bash setup.sh --public --domain=... # see scripts/deploy-wizard.mjs for flags
+# Archive Suite — Linux/macOS Control Center launcher.
+# Usage: bash setup.sh                  # open the management console (Deploy is option 1)
+#        bash setup.sh status|start|stop|restart|logs|health|deploy|diagnostics|config|backup
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -17,4 +17,4 @@ if [ "$NODE_MAJOR" -lt 22 ]; then
   exit 1
 fi
 
-exec node scripts/deploy-wizard.mjs "$@"
+exec node scripts/control-center.mjs "$@"

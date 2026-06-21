@@ -35,6 +35,7 @@
     "docker:config:postgres": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.postgres.yml config",
     "release:verify": "pnpm run verify && pnpm run build:spa && pnpm run build:cloud && pnpm run security:baseline && node scripts/verify-release-readiness.mjs",
     "setup": "node scripts/setup.mjs",
-    "deploy": "node scripts/deploy-wizard.mjs"
+    "deploy": "node scripts/deploy-wizard.mjs",
+    "control": "node scripts/control-center.mjs"
   }
 }
