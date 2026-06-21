@@ -9,6 +9,13 @@
 //
 // Run with: node src/index.js  (Dockerfile.server CMD)
 
+// Load .env BEFORE any other imports — most config (BACKEND, DATABASE_URL,
+// auth secrets, AI keys) is read at module evaluation time. Docker passes
+// --env-file so it's already populated there, but `pnpm server` on the host
+// has no .env loader otherwise and silently falls back to BACKEND=pocketbase.
+// Errors are ignored: an absent .env is valid (env may come from the shell).
+try { await import("dotenv/config"); } catch {}
+
 // Sentry must be initialised before any other imports so it can instrument
 // the full module graph. It is a no-op when SENTRY_DSN is not set.
 import { initSentry } from "./monitoring/sentryService.js";
