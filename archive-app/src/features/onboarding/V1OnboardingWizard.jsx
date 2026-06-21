@@ -97,11 +97,15 @@ const FIRST_TASK_OPTIONS = [
 
 const EXTRA_STEPS = [
   ...ONBOARDING_STEPS.flatMap((step) => step.id === "security"
-    ? [step, { id: "role", label: "نمط الاستخدام", detail: "تخصيص المسارات المبرزة حسب طريقة عملك." }]
+    ? [step, { id: "role", label: "نمط الاستخدام", detail: "تخصيص المسارات المبرزة حسب طريقة عملك.", tier: "advanced" }]
     : [step]
   ),
-  { id: "first-task", label: "البداية", detail: "اختيار أول شاشة بعد الإعداد." }
+  { id: "first-task", label: "البداية", detail: "اختيار أول شاشة بعد الإعداد.", tier: "basic" }
 ];
+
+function normalizeAdvancedSetupMode(value) {
+  return value === "advanced" ? "advanced" : "basic";
+}
 
 const arabicNumber = new Intl.NumberFormat("ar");
 
@@ -253,7 +257,13 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   } = useAppStore();
   const authStore = useAuthStore();
   const { setTheme } = useTheme();
-  const [securityMode, setSecurityMode] = React.useState(() => normalizeOnboardingSecurityMode(settings.ui?.onboardingSecurityMode || "secure"));
+  const [advancedSetupMode, setAdvancedSetupMode] = React.useState(() => normalizeAdvancedSetupMode(settings.ui?.advancedSetupMode || "basic"));
+  const [securityMode, setSecurityMode] = React.useState(() => {
+    // In Simple mode we force "secure" so the admin step is always present
+    // and the wizard's 3-step promise (storage → admin → first-task) holds.
+    if (!settings.ui?.advancedSetupMode || settings.ui.advancedSetupMode === "basic") return "secure";
+    return normalizeOnboardingSecurityMode(settings.ui?.onboardingSecurityMode || "secure");
+  });
   const [themeChoice, setThemeChoice] = React.useState(() => normalizeOnboardingThemeChoice(settings.ui?.onboardingThemeChoice || settings.theme || "dark"));
   const [accentColor, setAccentColor] = React.useState(() => normalizeOnboardingAccentChoice(settings.accentColor || "teal"));
   const [visualDensity, setVisualDensity] = React.useState(settings.ui?.visualDensity === "compact" ? "compact" : "comfortable");
@@ -293,8 +303,9 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
     let list = EXTRA_STEPS;
     if (!replayMode && securityMode === "quick") list = list.filter((step) => step.id !== "admin");
     if (storageChoice !== "postgres" && storageChoice !== "pocketbase") list = list.filter((step) => step.id !== "file-store");
+    if (!replayMode && advancedSetupMode === "basic") list = list.filter((step) => step.tier !== "advanced");
     return list;
-  }, [replayMode, securityMode, storageChoice]);
+  }, [advancedSetupMode, replayMode, securityMode, storageChoice]);
   const [stepId, setStepId] = React.useState(settings.ui?.lastOnboardingStep && EXTRA_STEPS.some((step) => step.id === settings.ui.lastOnboardingStep) ? settings.ui.lastOnboardingStep : "welcome");
   const [presetConfig, setPresetConfig] = React.useState(null);
   const [showPresetScreen, setShowPresetScreen] = React.useState(false);
@@ -460,10 +471,30 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
         onboardingThemeChoice: themeChoice,
         roleProfile,
         firstTaskChoice,
-        serverUpdatePolicy
+        serverUpdatePolicy,
+        advancedSetupMode
       }
     });
-  }, [firstTaskChoice, replayMode, roleProfile, securityMode, serverUpdatePolicy, settings.ui, themeChoice, updateSettings]);
+  }, [advancedSetupMode, firstTaskChoice, replayMode, roleProfile, securityMode, serverUpdatePolicy, settings.ui, themeChoice, updateSettings]);
+
+  const toggleAdvancedSetupMode = React.useCallback(() => {
+    setAdvancedSetupMode((current) => {
+      const next = current === "advanced" ? "basic" : "advanced";
+      // Flipping back to Simple forces "secure" so the admin step survives the
+      // tier filter — otherwise basic would shrink to just storage + first-task.
+      if (next === "basic") setSecurityMode("secure");
+      if (!replayMode) {
+        updateSettings?.({
+          ui: {
+            ...(settings.ui || {}),
+            advancedSetupMode: next,
+            onboardingSecurityMode: next === "basic" ? "secure" : securityMode
+          }
+        });
+      }
+      return next;
+    });
+  }, [replayMode, securityMode, settings.ui, updateSettings]);
 
   const moveToStepIndex = React.useCallback((nextIndex, direction = "next", { validate = true } = {}) => {
     const boundedIndex = Math.max(0, Math.min(steps.length - 1, nextIndex));
@@ -1243,6 +1274,13 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                 jsx(ChevronRight, { className: "h-4 w-4" }),
                 "السابق"
               ] })
+            }),
+            !replayMode && jsx("button", {
+              type: "button",
+              onClick: toggleAdvancedSetupMode,
+              "aria-pressed": advancedSetupMode === "advanced",
+              className: "text-xs font-semibold text-[var(--va-text-muted)] underline-offset-4 hover:text-[var(--va-text)] hover:underline focus-visible:outline-none focus-visible:underline",
+              children: advancedSetupMode === "advanced" ? "إخفاء الخيارات المتقدمة" : "المزيد من الخيارات"
             }),
             jsxs("div", { className: "flex flex-wrap justify-end gap-2", children: [
               replayMode && jsx(SecondaryButton, { onClick: onCancel, children: "إغلاق" }),
