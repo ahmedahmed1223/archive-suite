@@ -276,7 +276,10 @@
   - ✅ مُنجز جزئياً (2026-06-21): `WorkflowPipelineBar` مضاف في ArchivePage — يعرض أعداد الحالات (مسودة/تحرير/مراجعة/معتمد/منشور/مؤرشف) مع فلترة فورية بالنقر. Transition Reason + Due Dates UI لا تزال مطلوبة.
   - الملفات: `archive-app/src/pages/{ArchivePage,DetailPage}.jsx`، `itemStatus.js`.
   - المصدر: new_tail (F10, F11, F12).
-- [ ] `[P2]` ⏱️M **Completeness Column + Batch Fix + Inline Cell Editing + Saved Views persistence** — عمود اكتمال اختياري + إصلاح بالجملة + تحرير داخل الجدول + حفظ عرض الأعمدة/الفرز.
+- [x] `[P2]` ⏱️M **Completeness Column** — عمود اكتمال اختياري في جدول الأرشيف.
+  - ✅ مُنجز (2026-06-21 wave-22): عمود «الاكتمال» أُضيف في tableColumns.js (default=false) مع renderer في ArchiveViews.jsx — شريط تقدم ملون + نسبة مئوية. يُفعَّل من قائمة الأعمدة.
+  - Batch Fix + Inline Cell Editing + Saved Views — لا تزال مطلوبة.
+- [ ] `[P2]` ⏱️M **Batch Fix + Inline Cell Editing + Saved Views persistence** — إصلاح بالجملة + تحرير داخل الجدول + حفظ عرض الأعمدة/الفرز.
   - الملفات: `archive-app/src/features/archive/*`, `tableColumns.js`, `InlineCellEditor.jsx`.
   - المصدر: new_tail (F21)، guide_v6 (ArchivePage).
 

@@ -21,6 +21,7 @@ export const ARCHIVE_TABLE_COLUMNS = [
   { id: "created", label: "تاريخ الإنشاء", default: false, width: 160, minWidth: 120 },
   { id: "updated", label: "آخر تحديث", default: true, width: 160, minWidth: 120 },
   { id: "viewed", label: "آخر مشاهدة", default: false, width: 160, minWidth: 120 },
+  { id: "completeness", label: "الاكتمال", default: false, width: 100, minWidth: 80 },
   { id: "actions", label: "إجراءات", default: true, width: 180, minWidth: 140, locked: true }
 ];
 
