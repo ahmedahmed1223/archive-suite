@@ -20,7 +20,6 @@
     "build:app": "pnpm --filter @archive/app run build",
     "build:spa": "pnpm --filter @archive/app run build:spa",
     "build:cloud": "pnpm --filter @archive/app run build:cloud",
-    "build:aistudio": "pnpm --filter @archive/app run build:aistudio",
     "verify": "pnpm --filter @archive/app run verify && pnpm --filter @archive/core run verify && pnpm --filter archive-server run verify",
     "verify:app": "pnpm --filter @archive/app run verify",
     "verify:core": "pnpm --filter @archive/core run verify",
@@ -33,7 +32,7 @@
     "verify:cloud-deploy": "node scripts/verify-cloud-deploy.mjs",
     "docker:config": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml config",
     "docker:config:postgres": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.postgres.yml config",
-    "release:verify": "pnpm run verify && pnpm run build:spa && pnpm run build:cloud && pnpm run build:aistudio && pnpm run security:baseline && node scripts/verify-release-readiness.mjs",
+    "release:verify": "pnpm run verify && pnpm run build:spa && pnpm run build:cloud && pnpm run security:baseline && node scripts/verify-release-readiness.mjs",
     "setup": "node scripts/setup.mjs",
     "deploy": "node scripts/deploy-wizard.mjs"
   }

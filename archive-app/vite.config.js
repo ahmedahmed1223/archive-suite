@@ -22,11 +22,10 @@ import { visualizer } from "rollup-plugin-visualizer";
 // Run `pnpm analyze` or `vite build --mode analyze` to generate dist/bundle-stats.html
 export default defineConfig(({ mode }) => {
   const isAnalyze = mode === "analyze";
-  const target = mode === "cloud" ? "cloud" : mode === "aistudio" ? "aistudio" : "spa";
+  const target = mode === "cloud" ? "cloud" : "spa";
   const isCloud = target === "cloud";
-  const isAistudio = target === "aistudio";
   const inlineSingleFile = !isCloud && !isAnalyze;
-  const outDir = isCloud ? "dist-cloud" : isAistudio ? "dist-aistudio" : "dist";
+  const outDir = isCloud ? "dist-cloud" : "dist";
   const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || "http://127.0.0.1:8787";
   const apiProxy = {
     "/api": {
@@ -61,7 +60,7 @@ export default defineConfig(({ mode }) => {
     ],
     define: {
       __VITE_TARGET__: JSON.stringify(target),
-      __VITE_AISTUDIO__: JSON.stringify(isAistudio)
+      __VITE_AISTUDIO__: JSON.stringify(false)
     },
     build: {
       outDir,
