@@ -38,3 +38,5 @@ dist-cloud/
 **/blob-report/
 **/.vite/
 .claude/
+# transient brainstorm artifacts
+.superpowers/
