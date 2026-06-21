@@ -34,6 +34,7 @@ import { appConfirm } from "../components/common/ConfirmDialog.js";
 import { getGlobalShortcutAction } from "../stores/globalShortcuts.js";
 import { applyAccentColor } from "../theme/accentColor.js";
 import {
+  BootChoiceScreen,
   PRODUCT_TOUR_VERSION,
   V1OnboardingWizard,
   shouldShowStartupOnboarding,
@@ -529,6 +530,17 @@ export function App() {
   }
 
   if (onboardingWizardMode) {
+    // §22.1: a fresh install (startup mode, no prior bootChoice) gets the
+    // two-button BootChoiceScreen first. "Quick" finishes inline and closes
+    // the wizard; "Advanced" falls through to V1OnboardingWizard with the
+    // user's choice recorded so we don't keep prompting on re-render.
+    const bootChoice = settings.ui?.bootChoice;
+    if (onboardingWizardMode === "startup" && !bootChoice && !settings.ui?.v1OnboardingCompleted) {
+      return jsx(BootChoiceScreen, {
+        onAdvanced: () => { /* re-render picks up bootChoice="advanced" from settings */ },
+        onComplete: () => setOnboardingWizardMode(null)
+      });
+    }
     return jsx(V1OnboardingWizard, {
       open: true,
       mode: onboardingWizardMode,
