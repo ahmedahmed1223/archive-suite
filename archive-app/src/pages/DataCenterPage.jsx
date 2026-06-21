@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
-import { XLSX } from "../vendor/xlsx.js";
+import { loadXlsx } from "../vendor/xlsx.js";
 import {
   dbGetAll,
   STORES
@@ -375,6 +375,7 @@ export function DataCenterPage() {
         downloadArchiveBlob(new Blob([json], { type: "application/json;charset=utf-8" }), makeFileName("video-archive-export", "json"));
         setOperationMessage("تم تنزيل ملف JSON بنجاح.");
       } else if (kind === "excel") {
+        const XLSX = await loadXlsx();
         const { workbook, checksum } = createArchiveExcelWorkbook(XLSX, {
           ...useAppStore.getState(),
           ...exportPayload
@@ -497,7 +498,7 @@ export function DataCenterPage() {
     setOperationMessage("");
     try {
       const parsed = await readArchiveImportFile(file, {
-        loadXlsx: async () => XLSX,
+        loadXlsx,
         normalizePayload: normalizeBackupData
       });
       if (!parsed.valid) {
