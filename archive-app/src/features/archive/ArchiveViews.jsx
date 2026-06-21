@@ -1251,6 +1251,22 @@ function renderTableCell({ column, item, size, showDeleted, bulkMode, onPreview,
       return jsx("td", { className: `${size.cell} text-xs text-gray-500`, style: { minWidth: column.width }, children: item.updatedAt ? formatDateTime(item.updatedAt) : "—" }, column.id);
     case "viewed":
       return jsx("td", { className: `${size.cell} text-xs text-gray-500`, style: { minWidth: column.width }, children: item.lastViewedAt ? formatDateTime(item.lastViewedAt) : "—" }, column.id);
+    case "completeness": {
+      const comp = computeCompleteness(item);
+      const tier = COMPLETENESS_TIERS[comp.tier] || COMPLETENESS_TIERS.mid;
+      return jsx("td", {
+        className: `${size.cell}`,
+        style: { minWidth: column.width },
+        title: comp.missing.length ? `ينقص: ${comp.missing.join("، ")}` : "توصيف مكتمل",
+        children: jsxs("div", {
+          className: "flex items-center gap-1.5",
+          children: [
+            jsx("div", { className: "h-1 flex-1 overflow-hidden rounded-full bg-white/10", children: jsx("div", { className: "h-full rounded-full transition-all", style: { width: `${comp.percent}%`, background: tier.color } }) }),
+            jsx("span", { className: "w-7 shrink-0 text-right text-[10px] font-mono", style: { color: tier.color }, children: `${comp.percent}%` })
+          ]
+        })
+      }, column.id);
+    }
     case "actions":
       return jsx("td", {
         className: size.cell,
