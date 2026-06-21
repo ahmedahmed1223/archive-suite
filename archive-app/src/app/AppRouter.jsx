@@ -173,7 +173,9 @@ export function AppRouter() {
                   className: "sr-only",
                   children: currentPageTitle,
                 }),
-                jsx(AppPageContextBar, { currentPage, currentPageTitle }),
+                currentPage !== "projects"
+                  ? jsx(AppPageContextBar, { currentPage, currentPageTitle })
+                  : null,
                 isKnownPage
                   ? jsx(React.Suspense, {
                       fallback: jsx(PageLoadingFallback, { title: currentPageTitle }),
