@@ -365,6 +365,27 @@
   - القبول: `setup help` يعرض مساعدة كاملة منظّمة؛ `setup quick` يُتمّ الإطلاق بنقرة واحدة؛ `setup doctor` يُبلّغ عن أي خلل بيئي قبل أي عملية.
   - المصدر: طلب المستخدم 2026-06-21.
 
+- [x] `[P1]` ⏱️S **التحقق من تحميل تلقائي لإعدادات SQL/PocketBase في «الإعداد المتقدم»** — التحقق أن المعالج المتقدم يكشف `.env` ويستخدم القيم الموجودة بنقرة واحدة.
+  - ✅ مُنجز مسبقاً (موجة سابقة): `V1OnboardingWizard.jsx:299-310` يستدعي `/api/setup/preset-config` عند الفتح ويخزّن `presetConfig`. عند توفّر إعداد كامل يُعرض `PresetConfigScreen` (الأسطر 1211–1240) يظهر backend/DATABASE_URL/ADMIN_EMAIL/JWT_SECRET/dbReachable مع زر «استخدام الإعدادات المكتشفة» يكمل الإعداد بنقرة واحدة. يدعم postgres وpocketbase معاً (`createPresetFormState`).
+  - الملفات: `archive-app/src/features/onboarding/V1OnboardingWizard.jsx`، `PresetConfigScreen.jsx`، `archive-server/src/index.js` (نقطة `/api/setup/preset-config`).
+  - المصدر: طلب المستخدم 2026-06-21.
+
+- [ ] `[P1]` ⏱️M **وضع «بسيط/متقدم» داخل المعالج المتقدم** — تبسيط معالج الإعداد المتقدم بحيث يبدأ في «بسيط» (3 خطوات: backend + admin + start) ويوفّر زر «المزيد من الخيارات» يكشف الخطوات المتقدمة (file-store، appearance، interface، shortcuts، data، server update policy). يحفظ التفضيل في `settings.ui.advancedSetupMode`.
+  - الملفات: `archive-app/src/features/onboarding/V1OnboardingWizard.jsx` (تقسيم `ONBOARDING_STEPS` لمجموعة أساسية + موسّعة)، `archive-app/src/features/onboarding/flow.js` (وسم `tier: "basic" | "advanced"`).
+  - القبول: في الوضع «بسيط» يظهر 3 خطوات فقط؛ النقر على «المزيد» يكشف الباقي دون إعادة بدء المعالج.
+  - المصدر: طلب المستخدم 2026-06-21.
+
+- [ ] `[P1]` ⏱️XL **دعم Microsoft SQL Server كـ backend جديد** — إضافة `sqlserver` كخيار في `BACKEND_CHOICES` + Prisma provider جديد + ترحيل schema المعادل + نقطة في `/api/setup/preset-config` تكشف `SQLSERVER_URL`.
+  - الملفات: `archive-server/prisma/schema.prisma` (provider="sqlserver" بصيغة `Server=...;Database=...;User Id=...;Password=...;`)، `archive-server/scripts/set-db-provider.mjs` (إضافة sqlserver)، `archive-app/src/bootstrap/backendChoice.js` (BACKEND_CHOICES + label عربي)، `archive-app/src/features/onboarding/flow.js` (ONBOARDING_STORAGE_OPTIONS)، `docker-compose.sqlserver.yml` (جديد، صورة mcr.microsoft.com/mssql/server).
+  - القبول: تشغيل التطبيق على SQL Server يعمل من معالج البدء أو من `pnpm --filter archive-server exec prisma migrate deploy` بعد ضبط `DATABASE_URL`.
+  - المصدر: طلب المستخدم 2026-06-21.
+
+- [ ] `[P2]` ⏱️XL **دعم ODBC (عام لقواعد بيانات Windows القديمة)** — جسر عبر `node-odbc` لتشغيل الاستعلامات بدون Prisma (الجزء غير المنطقي من الـ schema). يتطلب طبقة Repository بديلة في `archive-server/src/db/odbcAdapter.js` تكشف نفس واجهة Prisma لمجموعة محدودة من الجداول الأساسية (items, users, settings, audit) — وذلك للمستخدمين الذين يربطون قاعدة بيانات قائمة (DSN موجود في ODBC Data Source Administrator على Windows).
+  - الملفات: `archive-server/src/db/odbcAdapter.js` (جديد)، `archive-server/package.json` (تبعية اختيارية `odbc`)، `archive-app/src/bootstrap/backendChoice.js` (BACKEND_CHOICES.odbc)، توثيق DSN في `docs/`.
+  - القبول: إدخال DSN في معالج الإعداد المتقدم يكشف الاتصال، يجلب جداول المستخدمين، ويسمح بعمليات قراءة/كتابة أساسية.
+  - ملاحظة: حدود المخطّط (لا migrations Prisma) يجب توثيقها بوضوح للمستخدم.
+  - المصدر: طلب المستخدم 2026-06-21.
+
 ---
 
 ## ملخص الموجة
