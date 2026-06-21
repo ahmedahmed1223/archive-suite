@@ -262,6 +262,7 @@ export function SearchPage() {
   const [pageSize, setPageSize] = React.useState(initialRouteState.pageSize || 24);
   const [resultMode, setResultMode] = React.useState(initialRouteState.viewMode || "list");
   const [itemSize, setItemSize] = React.useState(initialRouteState.itemSize || "compact");
+  const [showFilterPanel, setShowFilterPanel] = React.useState(false);
   const searchInputRef = React.useRef(null);
   const filtersRef = React.useRef(null);
   const skipInitialPageReset = React.useRef(true);
@@ -523,116 +524,151 @@ export function SearchPage() {
         className: "va-filter-surface rounded-2xl va-surface-muted border p-4 text-right backdrop-blur-sm",
         children: [
           jsxs("div", {
-            className: "grid gap-3 xl:grid-cols-[minmax(260px,1fr)_220px_180px_160px]",
+            className: "flex gap-2",
             children: [
-              jsx(SearchInputWithSuggestions, {
-                query,
-                setQuery,
-                showSuggestions,
-                setShowSuggestions,
-                recentSearches,
-                videoItems,
-                handleVoiceIntent,
-                handleVoiceUnsupported,
-                handleVoiceError,
-                searchInputRef
+              jsx("div", {
+                className: "min-w-0 flex-1",
+                children: jsx(SearchInputWithSuggestions, {
+                  query,
+                  setQuery,
+                  showSuggestions,
+                  setShowSuggestions,
+                  recentSearches,
+                  videoItems,
+                  handleVoiceIntent,
+                  handleVoiceUnsupported,
+                  handleVoiceError,
+                  searchInputRef
+                })
               }),
-              jsxs("select", {
-                "aria-label": "تصفية البحث حسب نوع المحتوى",
-                value: type,
-                onChange: (event) => {
-                  setType(event.target.value);
-                  setSubtype("all");
-                },
-                className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-[var(--va-text)]",
-                children: [
-                  jsx("option", { value: "all", children: "كل الأنواع" }),
-                  ...contentTypes.map((item) => jsx("option", { value: item.id, children: item.name || item.id }, item.id))
-                ]
-              }),
-              jsxs("select", {
-                "aria-label": "تصفية البحث حسب الفرع",
-                value: subtype,
-                onChange: (event) => setSubtype(event.target.value),
-                disabled: !subtypes.length,
-                className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-[var(--va-text)] disabled:opacity-50",
-                children: [
-                  jsx("option", { value: "all", children: "كل الفروع" }),
-                  ...subtypes.map((item) => jsx("option", { value: item.id, children: item.name || item.id }, item.id))
-                ]
-              }),
-              jsxs("select", {
-                "aria-label": "عدد نتائج البحث في الصفحة",
-                value: pageSize,
-                onChange: (event) => setPageSize(Number(event.target.value)),
-                className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-[var(--va-text)]",
-                children: PAGE_SIZE_OPTIONS.map((value) => jsx("option", { value, children: `${formatNumber(value)} نتيجة` }, value))
-              })
-            ]
-          }),
-          jsxs("div", {
-            className: "mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-[1fr_1fr_auto_auto_auto]",
-            children: [
-              jsxs("label", {
-                className: "block va-surface-muted rounded-xl border p-3",
-                children: [
-                  jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "من تاريخ" }),
-                  jsx("input", { type: "date", value: dateFrom, onChange: (event) => setDateFrom(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
-                ]
-              }),
-              jsxs("label", {
-                className: "block va-surface-muted rounded-xl border p-3",
-                children: [
-                  jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "إلى تاريخ" }),
-                  jsx("input", { type: "date", value: dateTo, onChange: (event) => setDateTo(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
-                ]
-              }),
-              jsx("button", {
+              jsxs("button", {
                 type: "button",
-                onClick: () => setFavoritesOnly((value) => !value),
-                className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${favoritesOnly ? "border-amber-500/30 bg-amber-500/10 text-amber-100" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
-                children: "المفضلة فقط"
-              }),
-              jsx("button", {
-                type: "button",
-                onClick: () => setMissingFieldsOnly((value) => !value),
-                className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${missingFieldsOnly ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
-                children: "حقول ناقصة"
-              }),
-              activeFilterCount > 0 && jsxs("button", {
-                type: "button",
-                onClick: resetSearch,
-                className: "inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]",
-                children: [jsx(RefreshCw, { className: "h-4 w-4" }), "مسح"]
-              })
-            ]
-          }),
-          jsxs("div", {
-            className: "mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--va-border-soft)] pt-3",
-            children: [
-              jsx(SegmentedControl, {
-                label: "عرض النتائج",
-                value: resultMode,
-                options: [
-                  { value: "list", label: "قائمة", icon: jsx(List, { className: "h-3.5 w-3.5" }) },
-                  { value: "grid", label: "بطاقات", icon: jsx(LayoutGrid, { className: "h-3.5 w-3.5" }) }
-                ],
-                onChange: setResultMode
-              }),
-              jsxs("label", {
-                className: "inline-flex min-h-9 items-center gap-2 va-surface-muted rounded-xl border px-2.5 py-1 text-xs text-[var(--va-text-2)]",
+                onClick: () => setShowFilterPanel((value) => !value),
+                "aria-expanded": showFilterPanel,
+                "aria-label": "إظهار/إخفاء لوحة الفلاتر",
+                className: `relative inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${showFilterPanel ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
                 children: [
-                  jsx("span", { className: "text-[var(--va-text-muted)]", children: "الكثافة" }),
-                  jsx("select", {
-                    value: itemSize,
-                    onChange: (event) => setItemSize(event.target.value),
-                    "aria-label": "كثافة نتائج البحث",
-                    className: "min-h-7 rounded-lg border-0 bg-transparent px-1 text-xs font-semibold text-[var(--va-text)] outline-none",
-                    children: ARCHIVE_ITEM_SIZE_OPTIONS.map((option) => jsx("option", { value: option.value, children: ARCHIVE_ITEM_SIZE_LABELS[option.value] || option.label }, option.value))
+                  jsx(SlidersHorizontal, { className: "h-4 w-4" }),
+                  jsx("span", { className: "hidden sm:inline", children: "فلاتر" }),
+                  activeFilterCount > 0 && jsx("span", {
+                    className: "absolute -end-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--va-accent)] text-[10px] font-bold text-white",
+                    children: activeFilterCount
                   })
                 ]
               })
             ]
+          }),
+          showFilterPanel && jsx(motion.div, {
+            initial: { opacity: 0, height: 0 },
+            animate: { opacity: 1, height: "auto" },
+            exit: { opacity: 0, height: 0 },
+            transition: { duration: 0.18 },
+            className: "mt-3 overflow-hidden",
+            children: jsxs("div", {
+              className: "space-y-3 border-t border-[var(--va-border-soft)] pt-3",
+              children: [
+                jsxs("div", {
+                  className: "grid gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_160px]",
+                  children: [
+                    jsxs("select", {
+                      "aria-label": "تصفية البحث حسب نوع المحتوى",
+                      value: type,
+                      onChange: (event) => {
+                        setType(event.target.value);
+                        setSubtype("all");
+                      },
+                      className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-[var(--va-text)]",
+                      children: [
+                        jsx("option", { value: "all", children: "كل الأنواع" }),
+                        ...contentTypes.map((item) => jsx("option", { value: item.id, children: item.name || item.id }, item.id))
+                      ]
+                    }),
+                    jsxs("select", {
+                      "aria-label": "تصفية البحث حسب الفرع",
+                      value: subtype,
+                      onChange: (event) => setSubtype(event.target.value),
+                      disabled: !subtypes.length,
+                      className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-[var(--va-text)] disabled:opacity-50",
+                      children: [
+                        jsx("option", { value: "all", children: "كل الفروع" }),
+                        ...subtypes.map((item) => jsx("option", { value: item.id, children: item.name || item.id }, item.id))
+                      ]
+                    }),
+                    jsxs("select", {
+                      "aria-label": "عدد نتائج البحث في الصفحة",
+                      value: pageSize,
+                      onChange: (event) => setPageSize(Number(event.target.value)),
+                      className: "min-h-11 va-surface-deep rounded-xl border px-3 py-2 text-sm text-[var(--va-text)]",
+                      children: PAGE_SIZE_OPTIONS.map((value) => jsx("option", { value, children: `${formatNumber(value)} نتيجة` }, value))
+                    })
+                  ]
+                }),
+                jsxs("div", {
+                  className: "grid gap-3 sm:grid-cols-2 md:grid-cols-[1fr_1fr_auto_auto_auto]",
+                  children: [
+                    jsxs("label", {
+                      className: "block va-surface-muted rounded-xl border p-3",
+                      children: [
+                        jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "من تاريخ" }),
+                        jsx("input", { type: "date", value: dateFrom, onChange: (event) => setDateFrom(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
+                      ]
+                    }),
+                    jsxs("label", {
+                      className: "block va-surface-muted rounded-xl border p-3",
+                      children: [
+                        jsx("span", { className: "text-xs text-[var(--va-text-muted)]", children: "إلى تاريخ" }),
+                        jsx("input", { type: "date", value: dateTo, onChange: (event) => setDateTo(event.target.value), dir: "ltr", className: "input input-bordered w-full" })
+                      ]
+                    }),
+                    jsx("button", {
+                      type: "button",
+                      onClick: () => setFavoritesOnly((value) => !value),
+                      className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${favoritesOnly ? "border-amber-500/30 bg-amber-500/10 text-amber-100" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
+                      children: "المفضلة فقط"
+                    }),
+                    jsx("button", {
+                      type: "button",
+                      onClick: () => setMissingFieldsOnly((value) => !value),
+                      className: `rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${missingFieldsOnly ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]"}`,
+                      children: "حقول ناقصة"
+                    }),
+                    activeFilterCount > 0 && jsxs("button", {
+                      type: "button",
+                      onClick: resetSearch,
+                      className: "inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]",
+                      children: [jsx(RefreshCw, { className: "h-4 w-4" }), "مسح"]
+                    })
+                  ]
+                }),
+                jsxs("div", {
+                  className: "flex flex-wrap items-center gap-2 border-t border-[var(--va-border-soft)] pt-3",
+                  children: [
+                    jsx(SegmentedControl, {
+                      label: "عرض النتائج",
+                      value: resultMode,
+                      options: [
+                        { value: "list", label: "قائمة", icon: jsx(List, { className: "h-3.5 w-3.5" }) },
+                        { value: "grid", label: "بطاقات", icon: jsx(LayoutGrid, { className: "h-3.5 w-3.5" }) }
+                      ],
+                      onChange: setResultMode
+                    }),
+                    jsxs("label", {
+                      className: "inline-flex min-h-9 items-center gap-2 va-surface-muted rounded-xl border px-2.5 py-1 text-xs text-[var(--va-text-2)]",
+                      children: [
+                        jsx("span", { className: "text-[var(--va-text-muted)]", children: "الكثافة" }),
+                        jsx("select", {
+                          value: itemSize,
+                          onChange: (event) => setItemSize(event.target.value),
+                          "aria-label": "كثافة نتائج البحث",
+                          className: "min-h-7 rounded-lg border-0 bg-transparent px-1 text-xs font-semibold text-[var(--va-text)] outline-none",
+                          children: ARCHIVE_ITEM_SIZE_OPTIONS.map((option) => jsx("option", { value: option.value, children: ARCHIVE_ITEM_SIZE_LABELS[option.value] || option.label }, option.value))
+                        })
+                      ]
+                    })
+                  ]
+                })
+              ]
+            })
           })
         ]
       }),

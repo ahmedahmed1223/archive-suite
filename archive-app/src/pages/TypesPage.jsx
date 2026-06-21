@@ -327,11 +327,13 @@ function TypeValidationPanel({ validation }) {
 
 const TYPE_CREATION_TEMPLATES = [
   { id: "interview", name: "مقابلة", icon: "🎙️", color: "#10b981", subtypes: ["كاملة", "مقتطف", "عن بعد"], fields: [["الضيف", "guest", "text"], ["الموقع", "location", "text"], ["تاريخ التسجيل", "recordedAt", "date"]] },
+  { id: "report", name: "تقرير", icon: "📋", color: "#f59e0b", subtypes: ["إخباري", "تحقيقي", "تحليلي", "ميداني"], fields: [["المراسل", "reporter", "text"], ["المنطقة", "region", "text"], ["المصدر", "source", "text"], ["حالة المراجعة", "reviewStatus", "select", ["يحتاج مراجعة", "قيد المراجعة", "معتمد"]]] },
+  { id: "rawfootage", name: "لقطة خام", icon: "🎞️", color: "#14b8a6", subtypes: ["ميدانية", "استوديو", "B-roll", "كواليس"], fields: [["الموقع", "location", "text"], ["المصور", "cameraman", "text"], ["حقوق الاستخدام", "rights", "select", ["داخلي", "مرخص", "غير معروف"]]] },
+  { id: "archive_material", name: "مادة أرشيفية", icon: "🗄️", color: "#6366f1", subtypes: ["تاريخية", "وثائقية", "إعلامية", "شخصية"], fields: [["السنة", "year", "text"], ["الجهة المانحة", "donor", "text"], ["حقوق الاستخدام", "rights", "select", ["داخلي", "مرخص", "مقيد", "غير معروف"]], ["الحالة المادية", "condition", "select", ["ممتازة", "جيدة", "متدهورة", "تحتاج ترميم"]]] },
   { id: "lecture", name: "محاضرة", icon: "🎓", color: "#3b82f6", subtypes: ["كاملة", "جزء", "أسئلة"], fields: [["المحاضر", "speaker", "text"], ["المحور", "topic", "text"], ["المدة", "duration", "duration"]] },
-  { id: "news", name: "خبر", icon: "🧾", color: "#f59e0b", subtypes: ["عاجل", "تقرير", "تحليل"], fields: [["المصدر", "source", "text"], ["حالة المراجعة", "reviewStatus", "select", ["يحتاج مراجعة", "قيد المراجعة", "معتمد"]]] },
+  { id: "news", name: "خبر", icon: "🧾", color: "#ef4444", subtypes: ["عاجل", "عادي", "تحليل"], fields: [["المصدر", "source", "text"], ["حالة المراجعة", "reviewStatus", "select", ["يحتاج مراجعة", "قيد المراجعة", "معتمد"]]] },
   { id: "photo", name: "صورة", icon: "🖼️", color: "#8b5cf6", subtypes: ["لقطة", "غلاف", "كواليس"], fields: [["المصور", "photographer", "text"], ["حقوق الاستخدام", "rights", "select", ["داخلي", "مرخص", "غير معروف"]]] },
-  { id: "document", name: "مستند", icon: "📄", color: "#6b7280", subtypes: ["PDF", "Word", "ملف داعم"], fields: [["الجهة المالكة", "owner", "text"], ["رقم المرجع", "referenceId", "text"]] },
-  { id: "broll", name: "B-roll", icon: "🎞️", color: "#14b8a6", subtypes: ["طبيعة", "مدينة", "تفاصيل"], fields: [["الموقع", "location", "text"], ["حقوق الاستخدام", "rights", "select", ["داخلي", "مرخص", "غير معروف"]]] }
+  { id: "document", name: "مستند", icon: "📄", color: "#6b7280", subtypes: ["PDF", "Word", "ملف داعم"], fields: [["الجهة المالكة", "owner", "text"], ["رقم المرجع", "referenceId", "text"]] }
 ];
 
 const TYPE_EDITOR_STEPS = [
@@ -429,15 +431,49 @@ function TypeEditor({ type, fieldUsage = {}, contentTypes = [], videoItems = [],
       ] }),
       activeStep === "review" && jsxs("div", { className: "grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]", children: [
         jsx(TypeFormPreview, { draft }),
-        jsxs("div", { className: "rounded-2xl va-surface-muted border p-4", children: [
-          jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "ملخص قبل الحفظ" }),
-          jsx("ul", { className: "va-rtl-list mt-3 space-y-2 text-sm text-[var(--va-text-muted)]", children: [
-            `الاسم: ${draft.name || "بدون اسم"}`,
-            `الفروع: ${draft.subtypes?.length || 0}`,
-            `الحقول: ${draft.fields?.length || 0}`,
-            `حقول مطلوبة: ${(draft.fields || []).filter((field) => field.required || field.requiredToSave).length}`
-          ].map((line) => jsx("li", { children: line }, line)) }),
-          jsx("p", { className: "mt-4 rounded-xl border va-accent-border va-accent-bg-soft p-3 text-xs leading-6 va-accent-text-on-soft", children: "بعد الحفظ سيظهر هذا النوع في صفحة الإضافة وصفحة التفاصيل بنفس ترتيب الحقول." })
+        jsxs("div", { className: "space-y-4", children: [
+          jsxs("div", { className: "rounded-2xl va-surface-muted border p-4", children: [
+            jsx("h3", { className: "text-sm font-bold text-[var(--va-text)]", children: "ملخص قبل الحفظ" }),
+            jsx("ul", { className: "va-rtl-list mt-3 space-y-2 text-sm text-[var(--va-text-muted)]", children: [
+              `الاسم: ${draft.name || "بدون اسم"}`,
+              `الفروع: ${draft.subtypes?.length || 0}`,
+              `الحقول: ${draft.fields?.length || 0}`,
+              `حقول مطلوبة: ${(draft.fields || []).filter((field) => field.required || field.requiredToSave).length}`
+            ].map((line) => jsx("li", { children: line }, line)) }),
+            jsx("p", { className: "mt-4 rounded-xl border va-accent-border va-accent-bg-soft p-3 text-xs leading-6 va-accent-text-on-soft", children: "بعد الحفظ سيظهر هذا النوع في صفحة الإضافة وصفحة التفاصيل بنفس ترتيب الحقول." })
+          ] }),
+          (() => {
+            if (!type) return null;
+            const impact = analyzeTypeImpact(type, videoItems);
+            if (!impact.affectedCount) return null;
+            const removedFields = (type.fields || []).filter((f) => !(draft.fields || []).some((df) => df.id === f.id));
+            const addedFields = (draft.fields || []).filter((f) => !(type.fields || []).some((tf) => tf.id === f.id));
+            const hasChanges = removedFields.length > 0 || addedFields.length > 0 || draft.name !== type.name;
+            if (!hasChanges) return null;
+            return jsxs("div", { className: "rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4", children: [
+              jsxs("div", { className: "flex items-start gap-2", children: [
+                jsx(AlertTriangle, { className: "mt-0.5 h-4 w-4 shrink-0 text-amber-300" }),
+                jsxs("div", { children: [
+                  jsx("h3", { className: "text-sm font-bold text-amber-100", children: `تأثير التعديل على ${formatNumber(impact.affectedCount)} مادة` }),
+                  jsx("p", { className: "mt-1 text-xs text-amber-200/80", children: "التعديلات التالية ستؤثر على المواد المرتبطة بهذا النوع:" })
+                ] })
+              ] }),
+              jsxs("div", { className: "mt-3 space-y-2", children: [
+                removedFields.length > 0 && jsxs("div", { className: "rounded-lg border border-red-500/20 bg-red-500/10 p-2.5", children: [
+                  jsx("p", { className: "text-xs font-semibold text-red-200", children: `حقول ستُزال (${formatNumber(removedFields.length)}):` }),
+                  jsx("p", { className: "mt-1 text-xs text-red-200/70", children: removedFields.map((f) => f.label).join(" · ") })
+                ] }),
+                addedFields.length > 0 && jsxs("div", { className: "rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5", children: [
+                  jsx("p", { className: "text-xs font-semibold text-emerald-200", children: `حقول جديدة (${formatNumber(addedFields.length)}):` }),
+                  jsx("p", { className: "mt-1 text-xs text-emerald-200/70", children: addedFields.map((f) => f.label).join(" · ") })
+                ] }),
+                impact.sampleItems.length > 0 && jsxs("div", { className: "rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-2.5", children: [
+                  jsx("p", { className: "text-xs font-semibold text-[var(--va-text-2)]", children: "عينة من المواد المتأثرة:" }),
+                  jsx("div", { className: "mt-1.5 space-y-1", children: impact.sampleItems.slice(0, 3).map((item) => jsx("p", { className: "truncate text-xs text-[var(--va-text-muted)]", children: item.title }, item.id)) })
+                ] })
+              ] })
+            ] });
+          })()
         ] })
       ] })
     ]
