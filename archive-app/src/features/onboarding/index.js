@@ -5,4 +5,5 @@ export {
   ONBOARDING_THEME_OPTIONS
 } from "./flow.js";
 export { V1OnboardingWizard } from "./V1OnboardingWizard.jsx";
+export { BootChoiceScreen } from "./BootChoiceScreen.jsx";
 export * from "./viewModel.js";
