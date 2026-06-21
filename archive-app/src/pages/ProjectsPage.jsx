@@ -1010,6 +1010,26 @@ function ProjectEditor({
   const [timelineZoom, setTimelineZoom] = React.useState(12);
   const [selectedTool, setSelectedTool] = React.useState("select");
   const normalizedTimeline = React.useMemo(() => normalizeMultiTrackProject(project || {}), [project]);
+  const thumbnailsByItemId = React.useMemo(() => {
+    const map = new Map();
+    for (const item of items) {
+      const thumb = item?.thumbnail;
+      if (thumb && typeof thumb === "string") map.set(item.id, thumb);
+    }
+    return map;
+  }, [items]);
+  const commentsByClipId = React.useMemo(() => {
+    const map = new Map();
+    const list = Array.isArray(project?.comments) ? project.comments : [];
+    for (const comment of list) {
+      const clipId = String(comment?.clipId || "");
+      if (!clipId) continue;
+      const bucket = map.get(clipId) || [];
+      bucket.push(comment);
+      map.set(clipId, bucket);
+    }
+    return map;
+  }, [project?.comments]);
 
   React.useEffect(() => {
     const nextSource = project?.itemIds?.find((id) => itemsById.has(id)) || items[0]?.id || "";
@@ -1080,6 +1100,11 @@ function ProjectEditor({
     if (!command?.type) return;
     if (command.type === "clip.select") {
       setSelectedClipId(command.clipId);
+      return;
+    }
+    if (command.type === "clip.comment-focus") {
+      setSelectedClipId(command.clipId);
+      if (Number.isFinite(Number(command.atSec))) setCurrentTime(Number(command.atSec));
       return;
     }
     if (command.type === "track.add") {
@@ -1262,7 +1287,9 @@ function ProjectEditor({
       markers: project.markers || [],
       playheadSec: currentTime,
       activeTool: selectedTool,
-      onCommand: handleTimelineCommand
+      onCommand: handleTimelineCommand,
+      thumbnailsByItemId,
+      commentsByClipId
     })
   ] });
 
