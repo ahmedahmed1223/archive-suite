@@ -81,7 +81,8 @@ run("adapter satisfies StorageProvider port", () => {
 run("snapshot/replaceAll mapping covers every domain key", () => {
   const expected = [
     "contentTypes", "videoItems", "changeHistory", "bookmarks", "relations",
-    "virtualCollections", "vocabulary", "hierarchicalTags", "users", "auditLogs", "projects"
+    "virtualCollections", "vocabulary", "hierarchicalTags", "users", "auditLogs", "projects",
+    "fileIngestQueue"
   ];
   assert.deepEqual(Object.keys(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY).sort(), expected.sort());
   assert.equal(SETTINGS_COLLECTION, "app_settings");
