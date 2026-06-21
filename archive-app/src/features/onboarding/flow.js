@@ -1,13 +1,18 @@
+// Each step carries a `tier`:
+//   - "basic"    → shown in Simple setup mode (default; 3-step minimum path).
+//   - "advanced" → only shown after "المزيد من الخيارات" is toggled on.
+// Simple shows storage + admin + first-task (admin is gated by securityMode,
+// which is forced to "secure" in basic so the password step is always present).
 export const ONBOARDING_STEPS = [
-  { id: "welcome", label: "البدء", detail: "فهم أين تحفظ البيانات وكيف تبدأ أول مهمة." },
-  { id: "storage", label: "التخزين", detail: "اختيار مكان حفظ البيانات: هذا الجهاز أو خادم سحابي." },
-  { id: "file-store", label: "مخزن الملفات", detail: "اختيار مكان حفظ الوسائط والملفات الأصلية على الخادم." },
-  { id: "security", label: "الحماية", detail: "اختيار الإعداد الآمن أو البدء السريع." },
-  { id: "admin", label: "المدير", detail: "تعريف كلمة مرور المدير عند اختيار الإعداد الآمن." },
-  { id: "appearance", label: "المظهر", detail: "اختيار Ink Slate أو Warm Off-white ولون التفاعل." },
-  { id: "interface", label: "الواجهة", detail: "شرح الشريط الجانبي، شريط السياق، مركز التحكم، ومركز البيانات." },
-  { id: "shortcuts", label: "الاختصارات", detail: "أهم اختصارات لوحة المفاتيح لتسريع العمل اليومي." },
-  { id: "data", label: "البيانات", detail: "كيف تحفظ نسخة احتياطية، تستورد، أو تنقل لجهاز آخر." }
+  { id: "welcome", label: "البدء", detail: "فهم أين تحفظ البيانات وكيف تبدأ أول مهمة.", tier: "advanced" },
+  { id: "storage", label: "التخزين", detail: "اختيار مكان حفظ البيانات: هذا الجهاز أو خادم سحابي.", tier: "basic" },
+  { id: "file-store", label: "مخزن الملفات", detail: "اختيار مكان حفظ الوسائط والملفات الأصلية على الخادم.", tier: "advanced" },
+  { id: "security", label: "الحماية", detail: "اختيار الإعداد الآمن أو البدء السريع.", tier: "advanced" },
+  { id: "admin", label: "المدير", detail: "تعريف كلمة مرور المدير عند اختيار الإعداد الآمن.", tier: "basic" },
+  { id: "appearance", label: "المظهر", detail: "اختيار Ink Slate أو Warm Off-white ولون التفاعل.", tier: "advanced" },
+  { id: "interface", label: "الواجهة", detail: "شرح الشريط الجانبي، شريط السياق، مركز التحكم، ومركز البيانات.", tier: "advanced" },
+  { id: "shortcuts", label: "الاختصارات", detail: "أهم اختصارات لوحة المفاتيح لتسريع العمل اليومي.", tier: "advanced" },
+  { id: "data", label: "البيانات", detail: "كيف تحفظ نسخة احتياطية، تستورد، أو تنقل لجهاز آخر.", tier: "advanced" }
 ];
 
 // Storage backend options surfaced in the setup wizard. The id maps 1:1 to

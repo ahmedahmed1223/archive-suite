@@ -370,9 +370,10 @@
   - الملفات: `archive-app/src/features/onboarding/V1OnboardingWizard.jsx`، `PresetConfigScreen.jsx`، `archive-server/src/index.js` (نقطة `/api/setup/preset-config`).
   - المصدر: طلب المستخدم 2026-06-21.
 
-- [ ] `[P1]` ⏱️M **وضع «بسيط/متقدم» داخل المعالج المتقدم** — تبسيط معالج الإعداد المتقدم بحيث يبدأ في «بسيط» (3 خطوات: backend + admin + start) ويوفّر زر «المزيد من الخيارات» يكشف الخطوات المتقدمة (file-store، appearance، interface، shortcuts، data، server update policy). يحفظ التفضيل في `settings.ui.advancedSetupMode`.
-  - الملفات: `archive-app/src/features/onboarding/V1OnboardingWizard.jsx` (تقسيم `ONBOARDING_STEPS` لمجموعة أساسية + موسّعة)، `archive-app/src/features/onboarding/flow.js` (وسم `tier: "basic" | "advanced"`).
-  - القبول: في الوضع «بسيط» يظهر 3 خطوات فقط؛ النقر على «المزيد» يكشف الباقي دون إعادة بدء المعالج.
+- [x] `[P1]` ⏱️M **وضع «بسيط/متقدم» داخل المعالج المتقدم** — تبسيط معالج الإعداد المتقدم بحيث يبدأ في «بسيط» (3 خطوات: backend + admin + start) ويوفّر زر «المزيد من الخيارات» يكشف الخطوات المتقدمة (file-store، appearance، interface، shortcuts، data، server update policy). يحفظ التفضيل في `settings.ui.advancedSetupMode`.
+  - ✅ مُنجز (2026-06-21 wave-25): `flow.js` يحمل الآن `tier: "basic" | "advanced"` على كل خطوة (basic = `storage`, `admin`, `first-task`). `V1OnboardingWizard` يقرأ `settings.ui.advancedSetupMode` (افتراضي `basic`)، يفلتر الخطوات بـ tier، ويفرض `securityMode="secure"` في الوضع البسيط ليبقى `admin` ضمن الفلتر. أُضيف زر «المزيد من الخيارات»/«إخفاء الخيارات المتقدمة» في footer الـ wizard (`aria-pressed`)؛ التبديل لا يعيد بدء المعالج بل يوسّع/يطوي قائمة الخطوات فوراً ويُحفظ في `settings.ui.advancedSetupMode`.
+  - الملفات: `archive-app/src/features/onboarding/V1OnboardingWizard.jsx` (state + filter + toggle + persist)، `archive-app/src/features/onboarding/flow.js` (وسم `tier` على `ONBOARDING_STEPS`).
+  - القبول: في الوضع «بسيط» يظهر 3 خطوات فقط (storage → admin → first-task)؛ النقر على «المزيد» يكشف الباقي دون إعادة بدء المعالج.
   - المصدر: طلب المستخدم 2026-06-21.
 
 - [ ] `[P1]` ⏱️XL **دعم Microsoft SQL Server كـ backend جديد** — إضافة `sqlserver` كخيار في `BACKEND_CHOICES` + Prisma provider جديد + ترحيل schema المعادل + نقطة في `/api/setup/preset-config` تكشف `SQLSERVER_URL`.
