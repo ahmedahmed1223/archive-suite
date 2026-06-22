@@ -417,8 +417,32 @@ function printMenu() {
   hr();
 }
 
+// One-line preflight summary printed at the top of the interactive menu.
+// Avoids the full Doctor wall of text but still surfaces blockers up front
+// (missing Node/pnpm/Docker, missing .env) so the operator doesn't pick
+// "Start" only to hit an opaque error message.
+function preflightSummary() {
+  const nodeMajor = Number(process.version.slice(1).split(".")[0]);
+  const pnpmOk = spawnSync(PNPM, ["--version"], { stdio: "pipe", encoding: "utf8" }).status === 0;
+  const dockerOk = spawnSync("docker", ["--version"], { stdio: "pipe", encoding: "utf8" }).status === 0;
+  const envOk = existsSync(ENV_PATH);
+  const issues = [];
+  if (nodeMajor < 18) issues.push(`Node ${process.version} (need ≥18)`);
+  if (!pnpmOk) issues.push("pnpm missing — run: npm i -g pnpm");
+  if (!dockerOk) issues.push("Docker missing — required for the Postgres stack");
+  if (!envOk) issues.push(`.env not found — run option 1 (Deploy) first`);
+  if (issues.length === 0) {
+    ok(`Preflight: Node ${process.version} · pnpm OK · Docker OK · .env present`);
+  } else {
+    warn("Preflight found issues:");
+    for (const issue of issues) log(`   ${C.y}-${C.x} ${issue}`);
+    log(`   ${C.d}Run option 'd' (Doctor) for the full report.${C.x}`);
+  }
+}
+
 async function interactive() {
   printBanner();
+  preflightSummary();
   for (;;) {
     printMenu();
     const choice = await ask("Choose an option");
@@ -451,12 +475,20 @@ const COMMANDS = {
   diagnostics: runDiagnostics, update: updateAndRebuild, deploy: runDeploy,
   help: () => {
     printBanner();
+    console.log(`${C.b}  Quick-start examples:${C.x}`);
+    console.log(`  ${C.d}# First-time setup on this machine (interactive wizard, then start, then health):${C.x}`);
+    console.log(`  ${C.c}setup quick${C.x}`);
+    console.log(`  ${C.d}# Verify the environment before deploying (Node/pnpm/Docker/.env/port):${C.x}`);
+    console.log(`  ${C.c}setup doctor${C.x}`);
+    console.log(`  ${C.d}# Run the interactive menu (default when no command is given):${C.x}`);
+    console.log(`  ${C.c}setup${C.x}`);
+    console.log("");
     console.log(`${C.b}  Commands:${C.x}`);
     console.log(`  ${C.c}quick${C.x}            Deploy + start + health check in one step`);
     console.log(`  ${C.c}doctor${C.x}           Check Node/pnpm/Docker/ports before deploying`);
     console.log(`  ${C.c}deploy${C.x}           Run the full deployment wizard`);
-    console.log(`  ${C.c}start/stop/restart${C.x} Manage the Docker stack`);
-    console.log(`  ${C.c}status/health/logs${C.x} Monitor the running server`);
+    console.log(`  ${C.c}start | stop | restart${C.x}  Manage the Docker stack`);
+    console.log(`  ${C.c}status | health | logs${C.x}  Monitor the running server`);
     console.log(`  ${C.c}config${C.x}           View .env (secrets masked)`);
     console.log(`  ${C.c}set-url${C.x}          Set APP_BASE_URL + PUBLIC_DOMAIN`);
     console.log(`  ${C.c}set-admin${C.x}        Update admin credentials`);
@@ -469,8 +501,13 @@ const COMMANDS = {
     console.log(`  ${C.c}restore${C.x}          Restore a backup`);
     console.log(`  ${C.c}diagnostics${C.x}      Run pnpm verify:server + verify:app`);
     console.log(`  ${C.c}update${C.x}           git pull → install → build → migrate → restart`);
-    console.log(`\n  ${C.d}Usage: node scripts/control-center.mjs <command>${C.x}`);
-    console.log(`  ${C.d}Or run with no arguments for the interactive menu.${C.x}\n`);
+    console.log(`\n${C.b}  Troubleshooting:${C.x}`);
+    console.log(`  ${C.d}- "Stack not running" → run 'setup start' or 'setup doctor' to diagnose.${C.x}`);
+    console.log(`  ${C.d}- "No .env found"     → run 'setup deploy' to provision a fresh configuration.${C.x}`);
+    console.log(`  ${C.d}- Port already in use → check 'setup config' for PORT/SERVER_PORT, change with 'setup set-url'.${C.x}`);
+    console.log(`\n${C.b}  Interactive menu (run 'setup' without arguments):${C.x}`);
+    printMenu();
+    console.log(`  ${C.d}Usage: node scripts/control-center.mjs <command>${C.x}\n`);
   },
 };
 
