@@ -65,6 +65,7 @@ import { handleControlRoute } from "./controlRoutes.js";
 import { handleRightsRoute } from "./routes/rights.js";
 import { publicOpenApiSpec } from "./publicOpenApi.js";
 import { exportRecords } from "../export/exportService.js";
+import { handleExportRoute } from "./routes/export.js";
 import { createControlAgent } from "../control/controlAgent.js";
 import { importPreviewService } from "../import/importPreview.js";
 import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
@@ -2547,6 +2548,13 @@ export function createApiServer({
       readJsonBody,
       prisma,
     })) {
+      return undefined;
+    }
+
+    // ── Per-item metadata export (§22.x) ─────────────────────────────────────
+    // GET /api/items/:id/export/pbcore.xml     → application/xml
+    // GET /api/items/:id/export/dublincore.rdf → application/rdf+xml
+    if (await handleExportRoute({ url, req, res, requireAuth, resolveStorage, send })) {
       return undefined;
     }
 
