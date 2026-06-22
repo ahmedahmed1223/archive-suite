@@ -10,7 +10,6 @@ import { createProjectValue } from "../../features/projects/viewModel.js";
 import { diffVideoItemFields } from "../../features/archive/itemHistory.js";
 import {
   STORES,
-  dbClear,
   dbDelete,
   dbGet,
   dbGetAll,
@@ -24,6 +23,7 @@ import { undoRedoManager } from "../../components/common/undoManager.js";
 import { ACTIONS, PermissionError, requirePermission } from "../../features/users/permissions.js";
 import { ensureDeviceIdentity } from "../../utils/deviceIdentity.js";
 import { stampSyncMetadata } from "../../features/sync/syncMetadata.js";
+import { appendHistory } from "./historySlice.js";
 
 // Read the active deviceId from settings on every stamp call so a
 // rename or rare regeneration is reflected without having to thread
@@ -92,10 +92,8 @@ export const archiveInitialState = {
   virtualCollections: [],
   vocabulary: [],
   hierarchicalTags: [],
-  users: [],
   auditLogs: [],
   projects: [],
-  currentUser: null,
   searchQuery: "",
   filterType: "all",
   filterSubtype: "all",
@@ -278,7 +276,7 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       const deviceId = getActiveDeviceId(get);
       const value = stampSyncMetadata(createVideoItemValue(item), { deviceId });
       const record = normalizeChangeRecord({ itemId: value.id, action: "create", title: value.title, timestamp: nowIso() });
-      set((state) => ({ videoItems: [value, ...state.videoItems], changeHistory: [record, ...state.changeHistory] }));
+      set((state) => ({ videoItems: [value, ...state.videoItems], changeHistory: appendHistory(state.changeHistory, record) }));
       await dbPut(STORES.ITEMS, value);
       await dbPut(STORES.HISTORY, record);
       get().addAuditLog?.("video.create", value.id, "video", { title: value.title });
@@ -344,7 +342,7 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       const record = normalizeChangeRecord({ itemId: updated.id, action: "update", title: updated.title, changes, timestamp: nowIso() });
       set((state) => ({
         videoItems: state.videoItems.map((current) => current.id === updated.id ? updated : current),
-        changeHistory: [record, ...state.changeHistory]
+        changeHistory: appendHistory(state.changeHistory, record)
       }));
       await dbPut(STORES.ITEMS, updated);
       await dbPut(STORES.HISTORY, record);
@@ -903,56 +901,6 @@ export function createArchiveActions({ set, get, getAuthStore }) {
       if (!tag) return 0;
       const names = new Set([tag.name, tag.path, tag.fullPath].filter(Boolean));
       return get().videoItems.filter((item) => (item.tags || []).some((value) => names.has(value))).length;
-    },
-    addUser: async (user) => {
-      checkPermission(get, getAuthStore, ACTIONS.USER_MANAGE);
-      const value = normalizeUser(user);
-      if (get().users.some((item) => item.username.toLowerCase() === value.username.toLowerCase())) return false;
-      set((state) => ({ users: [...state.users, value] }));
-      await dbPut(STORES.USERS, value);
-      get().addAuditLog?.("user.create", value.id, "user", { username: value.username, role: value.role });
-      return value;
-    },
-    updateUser: async (user) => {
-      const updated = normalizeUser(user);
-      set((state) => ({
-        users: state.users.map((item) => item.id === updated.id ? updated : item),
-        currentUser: state.currentUser?.id === updated.id ? updated : state.currentUser
-      }));
-      await dbPut(STORES.USERS, updated);
-      if (getAuthStore().getState().currentUser?.id === updated.id) getAuthStore().setState({ currentUser: updated });
-      return updated;
-    },
-    deleteUser: async (id, options = {}) => {
-      if (!options.skipUndo) checkPermission(get, getAuthStore, ACTIONS.USER_MANAGE);
-      const target = get().users.find((item) => item.id === id);
-      if (!target) return false;
-      const wasActive = target.isActive !== false;
-      const updated = { ...target, isActive: false, updatedAt: nowIso() };
-      const result = await get().updateUser(updated);
-      if (wasActive) {
-        get().addAuditLog?.("user.deactivate", id, "user", { username: target.username });
-      }
-      if (!options.skipUndo && wasActive) {
-        const label = `تعطيل ${target.displayName || target.username || "المستخدم"}`;
-        undoRedoManager.push({
-          label,
-          undo: async () => {
-            await get().updateUser({ ...target, isActive: true });
-          },
-          redo: () => get().deleteUser(id, { skipUndo: true })
-        });
-        get().showNotification?.(label, {
-          type: "info",
-          title: "تم التعطيل",
-          action: { label: "تراجع", run: () => undoRedoManager.undo() }
-        });
-      }
-      return result;
-    },
-    clearHistory: async () => {
-      set({ changeHistory: [] });
-      await dbClear(STORES.HISTORY);
     },
     getStats: () => ({
       totalItems: get().videoItems.length,
