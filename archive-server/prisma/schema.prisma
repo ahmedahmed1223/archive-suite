@@ -109,6 +109,7 @@ model ArchiveItem {
   summary       String?
   isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
+  archivedAt    DateTime? @map("archived_at") // set by retention sweep when action="archive"
   syncVersion   Int       @default(0)
   ownerId       String? // references typed_users.id
   metadata      Json? // flexible overflow for extra fields
@@ -120,6 +121,7 @@ model ArchiveItem {
   @@index([createdAt])
   @@index([store, isDeleted])
   @@index([categoryId])
+  @@index([archivedAt])
   @@map("typed_archive_items")
 }
 
@@ -352,4 +354,26 @@ model ItemRelation {
   @@index([sourceId])
   @@index([targetId])
   @@map("item_relations")
+}
+
+/// Retention rules for the archive (§22 retention policy).
+/// Each rule defines a lifetime for items matching its scope.
+/// action="archive" → set archivedAt on the item.
+/// action="delete"  → secureOverwrite the file then delete the row.
+/// The daily sweep is triggered by scanRetention() in src/retention/retentionPolicy.js.
+/// TODO: wire the sweep to a setInterval in src/index.js (24-hour cadence).
+model RetentionRule {
+  id           String   @id @default(cuid())
+  name         String
+  scope        String   @default("all") // "all" | "type:<typeId>" | "tag:<tag>"
+  lifetimeDays Int      @map("lifetime_days")
+  action       String   @default("archive") // "archive" | "delete"
+  active       Boolean  @default(true)
+  createdBy    String?  @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([active])
+  @@index([scope])
+  @@map("retention_rules")
 }

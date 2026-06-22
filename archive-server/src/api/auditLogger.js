@@ -13,9 +13,10 @@ const DESTRUCTIVE_OPS = new Set([
   "backup.restore",  // restores a stored backup over the live data (replaceAll)
   "delete",          // single record delete
   "deleteBatch",     // batch delete
-  "emptyTrash",   // permanent delete of all trashed items
-  "put",          // upsert — log role/permission changes only
-  "putBatch",     // bulk upsert
+  "emptyTrash",      // permanent delete of all trashed items
+  "put",             // upsert — log role/permission changes only
+  "putBatch",        // bulk upsert
+  "secure-delete",   // DoD 5220.22-M file wipe (chain-of-custody)
 ]);
 
 const ROLE_FIELDS = new Set(["role", "isActive", "passwordHash"]);
