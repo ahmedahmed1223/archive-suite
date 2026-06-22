@@ -48,6 +48,7 @@ import { buildFileStore } from "../bootstrap/registerCloudProviders.js";
 import {
   copyEntry, createFolder, listEntries, moveEntry, normalizeFileKey, removeEntries
 } from "../files/fileStoreOperations.js";
+import { secureOverwrite } from "../retention/secureDelete.js";
 import {
   buildConfigView, validateDbConfig, mergeDbConfig, validateFileStoreConfig,
   mergeFileStoreConfig, testDatabaseConnection, testFileStoreConnection
@@ -1729,8 +1730,37 @@ export function createApiServer({
           return undefined;
         }
         if (req.method === "DELETE") {
-          await files.remove(key);
-          return send(res, 200, { ok: true, result: true });
+          // Attempt DoD 5220.22-M secure wipe when the store is disk-backed.
+          // Cloud stores (S3, Azure, etc.) have no local path — fall back to
+          // the standard remove() which calls the provider's own delete API.
+          let secureResult = null;
+          const storeInfo = typeof files.describe === "function" ? files.describe() : {};
+          if (storeInfo.kind === "disk" && storeInfo.rootDir) {
+            const nodePath = await import("node:path");
+            const localPath = nodePath.default.resolve(storeInfo.rootDir, key.replace(/\//g, nodePath.default.sep));
+            try {
+              secureResult = await secureOverwrite(localPath);
+              // File is already unlinked by secureOverwrite — log chain-of-custody.
+              auditLog({
+                method: "secure-delete",
+                args: [key],
+                claims: claims || {},
+                ip: clientIp(req),
+                result: {
+                  fileSizeBytes: secureResult.fileSizeBytes,
+                  passes: secureResult.passes,
+                  skipped: secureResult.skipped || false,
+                },
+              });
+            } catch (wipeErr) {
+              // If the file doesn't exist locally, fall through to files.remove().
+              reqLog.warn({ key, err: wipeErr?.message }, "secureOverwrite failed — falling back to standard remove");
+              await files.remove(key);
+            }
+          } else {
+            await files.remove(key);
+          }
+          return send(res, 200, { ok: true, result: true, secureDelete: secureResult !== null });
         }
       } catch (error) {
         return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "File operation failed" });
