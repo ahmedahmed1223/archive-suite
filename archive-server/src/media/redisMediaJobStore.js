@@ -14,6 +14,7 @@
 
 import { createLogger } from "../logger.js";
 import { createInMemoryMediaJobStore } from "./mediaJobs.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("redis-media-jobs");
 
@@ -146,7 +147,7 @@ function wrapWithPersistence(inner, redis, pruneFn) {
  * @param {object} [opts] - Forwarded to createInMemoryMediaJobStore().
  */
 export async function tryCreateRedisMediaJobStore(opts = {}) {
-  const url = process.env.REDIS_URL;
+  const url = config.redisUrl;
   if (!url) return null;
 
   let redis;

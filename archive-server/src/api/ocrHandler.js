@@ -2,9 +2,10 @@
 // Called by POST /api/ocr (multipart form-data with `file` field).
 
 import { createLogger } from "../logger.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("ocr");
-const OCR_URL = process.env.OCR_SERVICE_URL;
+const OCR_URL = config.ocrServiceUrl;
 
 export async function handleOcr(req, res) {
   if (!OCR_URL) {
@@ -16,7 +17,7 @@ export async function handleOcr(req, res) {
   // Forward multipart request directly to OCR service using native fetch
   try {
     // Read body into buffer, enforcing a maximum size to prevent memory exhaustion.
-    const MAX_OCR_BYTES = parseInt(process.env.MAX_OCR_BYTES || "", 10) || 20 * 1024 * 1024; // 20 MB
+    const MAX_OCR_BYTES = config.maxOcrBytes;
     const chunks = [];
     let totalBytes = 0;
     for await (const chunk of req) {

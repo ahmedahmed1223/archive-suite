@@ -2,6 +2,7 @@ import { createSdkAiProvider } from "./sdkProvider.js";
 import { createCloudAiProvider } from "./aiProvider.js";
 import { createTranscriber } from "./transcription.js";
 import { createLogger } from "../logger.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("ai");
 
@@ -18,7 +19,7 @@ const log = createLogger("ai");
 //
 // @param {object} cfg - { provider, apiKey, model, baseUrl, impl, transcribe:{provider,apiKey,model,baseUrl} }
 export function createAiProvider(cfg = {}) {
-  const impl = cfg.impl || process.env.AI_IMPL || "sdk";
+  const impl = cfg.impl || config.aiImpl;
 
   let base;
   if (impl === "manual") {

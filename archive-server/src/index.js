@@ -40,21 +40,22 @@ import { initRedis, closeRedis, isRedisAvailable } from "./cache/redisCache.js";
 import { startPresenceServer } from "./collaboration/presenceServer.js";
 import { tryCreateRedisMediaJobStore } from "./media/redisMediaJobStore.js";
 import { createInMemoryMediaJobStore } from "./media/mediaJobs.js";
+import { config } from "./config/env.js";
 
-const BACKEND = process.env.BACKEND || "pocketbase";
-const PORT = Number(process.env.API_PORT || 8787);
-const CORS_ORIGIN = process.env.API_CORS_ORIGIN || "";
+const BACKEND = config.backend;
+const PORT = config.port;
+const CORS_ORIGIN = config.corsOrigin;
 const AUTH_SECRET = resolveAuthSigningSecret(process.env);
-const TOKEN_TTL_SEC = Number(process.env.JWT_TTL_SEC || 12 * 60 * 60);
+const TOKEN_TTL_SEC = config.jwtTtlSec;
 
 async function buildExtraHealth({ prisma, mediaJobStore }) {
-  const redisConfigured = Boolean(process.env.REDIS_URL);
+  const redisConfigured = Boolean(config.redisUrl);
   const health = {
     redis: {
       configured: redisConfigured,
       ok: redisConfigured ? isRedisAvailable() : null,
       cache: redisConfigured ? (isRedisAvailable() ? "connected" : "unavailable") : "disabled",
-      mediaJobs: process.env.REDIS_URL ? "redis" : "memory"
+      mediaJobs: config.redisUrl ? "redis" : "memory"
     }
   };
   if (prisma) {
@@ -132,7 +133,7 @@ async function main() {
   } else if (BACKEND === "pocketbase") {
     registration = registerCloudProviders({
       backend: "pocketbase",
-      url: process.env.POCKETBASE_URL || "http://127.0.0.1:8090"
+      url: config.pocketbaseUrl
     });
     logger.info("PocketBase backend ready.");
   } else {
@@ -173,8 +174,8 @@ async function main() {
     const provider = getStorageProvider();
     const seed = await seedAdminIfMissing({
       provider,
-      username: process.env.ADMIN_USERNAME,
-      password: process.env.ADMIN_PASSWORD
+      username: config.adminUsername,
+      password: config.adminPassword
     });
     if (seed.seeded) {
       logger.info({ username: seed.username }, "Seeded first admin from env.");
@@ -193,7 +194,7 @@ async function main() {
   const mediaJobStore =
     (await tryCreateRedisMediaJobStore()) ?? createInMemoryMediaJobStore();
   logger.info(
-    { backend: process.env.REDIS_URL ? "redis" : "memory" },
+    { backend: config.redisUrl ? "redis" : "memory" },
     "Media job store initialised."
   );
 
@@ -205,9 +206,9 @@ async function main() {
     login,
     prisma,
     rateLimit: {
-      rpcMax: Number(process.env.RATE_LIMIT_RPC_MAX || 600),
-      loginMax: Number(process.env.RATE_LIMIT_LOGIN_MAX || 10),
-      windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000)
+      rpcMax: config.rateLimitRpcMax,
+      loginMax: config.rateLimitLoginMax,
+      windowMs: config.rateLimitWindowMs
     },
     // Realtime fan-out: pushes broadcast to SSE clients on /api/sync/events.
     eventBus: createEventBus(),
