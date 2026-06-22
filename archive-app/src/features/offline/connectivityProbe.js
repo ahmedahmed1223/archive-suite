@@ -2,20 +2,32 @@
  * Connectivity probe: supplements navigator.onLine with a real server ping.
  * navigator.onLine returns true on LANs/captive portals with no internet;
  * this probe catches that by fetching /api/health.
+ *
+ * The "local" backend (IndexedDB or SQLite-WASM) is fully self-contained —
+ * losing internet does not affect functionality, so we treat that mode as
+ * permanently online and skip the probe entirely.
  */
 
 import { useState, useEffect, useRef } from "react";
+import { getBackendChoice } from "../../bootstrap/backendChoice.js";
 
 const PROBE_URL      = "/api/health";
 const PROBE_INTERVAL = 30_000; // 30 s between checks
 const PROBE_TIMEOUT  =  6_000; //  6 s per attempt
 
+/** True when the active backend doesn't depend on a remote server. */
+export function isLocalBackend() {
+  return getBackendChoice() === "local";
+}
+
 /**
  * Fire a single connectivity check against the server.
- * Resolves true when the server responds with any 2xx status.
+ * Resolves true when the server responds with any 2xx status, or
+ * unconditionally when running on the local backend (no server to probe).
  * @returns {Promise<boolean>}
  */
 export async function probeConnectivity() {
+  if (isLocalBackend()) return true;
   if (!navigator.onLine) return false;
   try {
     const controller = new AbortController();
@@ -36,11 +48,12 @@ export async function probeConnectivity() {
  * React hook that tracks real server connectivity.
  * Probes immediately, then every PROBE_INTERVAL ms.
  * Also reacts to browser online/offline events instantly.
+ * In local backend mode, short-circuits to a static online status.
  *
- * @returns {{ isOnline: boolean, lastCheckedAt: number | null }}
+ * @returns {{ isOnline: boolean, lastCheckedAt: number | null, isLocalBackend: boolean }}
  */
 export function useConnectivity() {
-  const [isOnline, setIsOnline]           = useState(navigator.onLine);
+  const [isOnline, setIsOnline]           = useState(() => isLocalBackend() ? true : navigator.onLine);
   const [lastCheckedAt, setLastCheckedAt] = useState(null);
   const intervalRef = useRef(null);
 
@@ -51,6 +64,10 @@ export function useConnectivity() {
   }
 
   useEffect(() => {
+    if (isLocalBackend()) {
+      setIsOnline(true);
+      return;
+    }
     check();
     intervalRef.current = setInterval(check, PROBE_INTERVAL);
 
@@ -67,5 +84,5 @@ export function useConnectivity() {
     };
   }, []);
 
-  return { isOnline, lastCheckedAt };
+  return { isOnline, lastCheckedAt, isLocalBackend: isLocalBackend() };
 }
