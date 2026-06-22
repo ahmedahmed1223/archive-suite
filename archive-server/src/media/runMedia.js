@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
-import fs from "node:fs";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { createReadStream, createWriteStream } from "node:fs";
+import { mkdir, readFile, rm } from "node:fs/promises";
+import { pipeline } from "node:stream/promises";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 import {
@@ -44,26 +45,79 @@ export function sanitizeMediaOutputKey(prefix, sourceKey, suffix, ext) {
   return `${prefix}/${safeBaseName(sourceKey)}-${suffix}.${ext}`;
 }
 
-async function blobToBuffer(blob) {
-  if (Buffer.isBuffer(blob)) return blob;
-  if (blob instanceof Uint8Array) return Buffer.from(blob);
-  if (typeof blob === "string") return Buffer.from(blob);
-  if (blob && typeof blob.arrayBuffer === "function") return Buffer.from(await blob.arrayBuffer());
-  return Buffer.alloc(0);
+/** Project-controlled media staging directory (not os.tmpdir()). */
+function mediaWorkDir() {
+  if (process.env.STORAGE_DIR) {
+    return path.join(process.env.STORAGE_DIR, "media-work");
+  }
+  const here = fileURLToPath(new URL(".", import.meta.url));
+  return path.join(here, "..", "..", "var", "media-work");
+}
+
+/**
+ * Stream blob from the FileStore directly to a temp file on disk.
+ * Uses getStream() when available; falls back to getBlob() without
+ * loading the entire payload into a single Buffer.
+ */
+async function writeBlobToFile(fileStore, key, destPath) {
+  // Prefer streaming adapter
+  if (typeof fileStore.getStream === "function") {
+    const readable = await fileStore.getStream(key);
+    if (readable) {
+      await pipeline(readable, createWriteStream(destPath));
+      return;
+    }
+  }
+
+  // Fallback: getBlob returns Buffer / Uint8Array / Web Blob / string
+  const blob = await fileStore.getBlob(key);
+  if (!blob) return null; // signal "not found" to caller
+
+  if (Buffer.isBuffer(blob) || blob instanceof Uint8Array) {
+    // Write through a stream so we don't retain a second copy
+    await pipeline(
+      (async function* () { yield blob; })(),
+      createWriteStream(destPath)
+    );
+  } else if (blob && typeof blob.stream === "function") {
+    // Web Blob with streaming support
+    const { Readable } = await import("node:stream");
+    await pipeline(Readable.fromWeb(blob.stream()), createWriteStream(destPath));
+  } else if (blob && typeof blob.arrayBuffer === "function") {
+    const buf = Buffer.from(await blob.arrayBuffer());
+    await pipeline(
+      (async function* () { yield buf; })(),
+      createWriteStream(destPath)
+    );
+  } else if (typeof blob === "string") {
+    await pipeline(
+      (async function* () { yield Buffer.from(blob); })(),
+      createWriteStream(destPath)
+    );
+  }
+  return true;
 }
 
 async function withTempFileFromStore(fileStore, key, fn) {
   if (!key) throw new MediaError("مفتاح الملف مطلوب.", { code: "NO_KEY" });
-  if (typeof fileStore?.getBlob !== "function") {
+  if (typeof fileStore?.getBlob !== "function" && typeof fileStore?.getStream !== "function") {
     throw new MediaError("مخزن الملفات لا يدعم قراءة الملفات.", { code: "FILESTORE_UNSUPPORTED", statusCode: 501 });
   }
-  const blob = await fileStore.getBlob(key);
-  if (!blob) throw new MediaError("الملف غير موجود في مخزن الملفات. ارفع الملف أولاً.", { code: "SOURCE_MISSING", statusCode: 404 });
-  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "archive-media-"));
+
+  const base = mediaWorkDir();
+  // Use a unique subdirectory per job so concurrent jobs don't collide
+  const { randomUUID } = await import("node:crypto");
+  const dir = path.join(base, `archive-media-${randomUUID()}`);
+  await mkdir(dir, { recursive: true });
+
   const ext = path.extname(path.posix.basename(String(key).replace(/\\/g, "/"))) || ".bin";
   const src = path.join(dir, `source${ext}`);
-  await writeFile(src, await blobToBuffer(blob));
+
   try {
+    const found = await writeBlobToFile(fileStore, key, src);
+    if (found === null) {
+      throw new MediaError("الملف غير موجود في مخزن الملفات. ارفع الملف أولاً.", { code: "SOURCE_MISSING", statusCode: 404 });
+    }
     return await fn(src, dir);
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -132,11 +186,20 @@ export async function runMediaDerivative({
     const out = path.join(dir, `out.${ext}`);
     const args = argsFor(type, src, params, out, metadata);
     await runFfmpeg(ffmpegPath, args, { timeoutMs: timeoutMs || defaultTimeoutFor(type), onProgress });
-    const bytes = await readFile(out);
+
     if (typeof fileStore?.putBlob !== "function") {
       throw new MediaError("مخزن الملفات لا يدعم كتابة النواتج.", { code: "FILESTORE_UNSUPPORTED", statusCode: 501 });
     }
-    const result = await fileStore.putBlob(outputKey, bytes, { contentType });
+
+    let result;
+    if (typeof fileStore.putStream === "function") {
+      // Stream the ffmpeg output file directly to the store — no readFile buffer
+      result = await fileStore.putStream(outputKey, createReadStream(out), { contentType });
+    } else {
+      // Fallback: read into memory (adapter doesn't support streaming)
+      const bytes = await readFile(out);
+      result = await fileStore.putBlob(outputKey, bytes, { contentType });
+    }
     const url = typeof fileStore.getUrl === "function" ? await fileStore.getUrl(outputKey) : result?.url;
     return { outputKey, url: url || result?.url || null, contentType };
   });

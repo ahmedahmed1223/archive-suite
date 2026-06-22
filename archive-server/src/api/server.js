@@ -1672,30 +1672,49 @@ export function createApiServer({
       try {
         const files = resolveFileStore();
         if (req.method === "PUT") {
-          const bytes = await readRawBody(req);
           const declaredMime = req.headers["content-type"] || "";
-          const detectedMime = detectImageMimeType(bytes) || declaredMime;
 
-          // Run image processing pipeline for supported image types.
-          // Stores srcset-ready WebP variants alongside the original.
-          // Gracefully no-ops if Sharp is unavailable or the file is not an image.
+          // Image types need a Buffer so we can run the Sharp processing pipeline
+          // (detect MIME from magic bytes, generate srcset variants).
+          // Everything else — video, audio, archives, binary blobs — streams directly
+          // to the file store without ever being fully held in memory.
+          let result;
           let imageMetadata = null;
-          if (PROCESSABLE_IMAGE_TYPES.has(detectedMime)) {
-            const { variants, metadata } = await processImage(bytes, detectedMime);
-            imageMetadata = metadata;
-            // Store each variant under a predictable key: <original-key>@<name>.webp
-            for (const variant of variants) {
-              const variantKey = `${key}@${variant.name}.webp`;
-              try {
-                await files.putBlob(variantKey, variant.buffer, { contentType: "image/webp" });
-              } catch (variantErr) {
-                // Variant storage failures are non-fatal — log and continue.
-                reqLog.warn({ variantKey, err: variantErr?.message }, "Image variant storage failed");
+
+          if (PROCESSABLE_IMAGE_TYPES.has(declaredMime)) {
+            // Buffer path: images only (typically <20 MB; bounded by content-type)
+            const bytes = await readRawBody(req);
+            const detectedMime = detectImageMimeType(bytes) || declaredMime;
+
+            // Run image processing pipeline for supported image types.
+            // Stores srcset-ready WebP variants alongside the original.
+            // Gracefully no-ops if Sharp is unavailable or the file is not an image.
+            if (PROCESSABLE_IMAGE_TYPES.has(detectedMime)) {
+              const { variants, metadata } = await processImage(bytes, detectedMime);
+              imageMetadata = metadata;
+              // Store each variant under a predictable key: <original-key>@<name>.webp
+              for (const variant of variants) {
+                const variantKey = `${key}@${variant.name}.webp`;
+                try {
+                  await files.putBlob(variantKey, variant.buffer, { contentType: "image/webp" });
+                } catch (variantErr) {
+                  // Variant storage failures are non-fatal — log and continue.
+                  reqLog.warn({ variantKey, err: variantErr?.message }, "Image variant storage failed");
+                }
               }
             }
-          }
 
-          const result = await files.putBlob(key, bytes, { contentType: declaredMime });
+            result = await files.putBlob(key, bytes, { contentType: declaredMime });
+          } else {
+            // Stream path: pass the request body directly to the store.
+            // putStream is preferred; putBlob with a stream works for adapters
+            // that accept Readable (disk, S3 multipart, etc.).
+            if (typeof files.putStream === "function") {
+              result = await files.putStream(key, req, { contentType: declaredMime });
+            } else {
+              result = await files.putBlob(key, req, { contentType: declaredMime });
+            }
+          }
           notifyUploadComplete({
             prisma,
             sendMail: notificationSendMail,
@@ -1777,8 +1796,8 @@ export function createApiServer({
 
         if (req.method === "PUT" && subPath.startsWith("chunks/")) {
           const chunkIndex = parseInt(subPath.slice("chunks/".length), 10);
-          const data = await readRawBody(req);
-          const result = await receiveChunk({ uploadId, chunkIndex, data, userId: claims.sub });
+          // Pass req as a Readable stream — receiveChunk streams it directly to disk
+          const result = await receiveChunk({ uploadId, chunkIndex, data: req, userId: claims.sub });
           return send(res, 200, { ok: true, ...result });
         }
 
