@@ -1,4 +1,5 @@
 import pino from "pino";
+import { config } from "./config/env.js";
 
 /**
  * Shared Pino logger for archive-server.
@@ -7,9 +8,7 @@ import pino from "pino";
  * Format: JSON in production, pretty-printed in development (via pino-pretty).
  * Redacted paths: never log secrets, passwords, or auth headers.
  */
-const level =
-  process.env.LOG_LEVEL ||
-  (process.env.NODE_ENV === "production" ? "info" : "debug");
+const level = config.logLevel;
 
 export const logger = pino({
   level,

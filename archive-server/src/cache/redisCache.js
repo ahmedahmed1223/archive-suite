@@ -4,6 +4,7 @@
  * Supports: get/set/del/flush with optional TTL and JSON serialization.
  */
 import { createLogger } from "../logger.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("redis");
 
@@ -11,7 +12,7 @@ let redis = null;
 let isAvailable = false;
 
 export async function initRedis() {
-  const url = process.env.REDIS_URL;
+  const url = config.redisUrl;
   if (!url) {
     log.debug("Redis disabled — set REDIS_URL to enable caching.");
     return;

@@ -1,5 +1,6 @@
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { config } from "../../config/env.js";
 
 function fail(message, statusCode = 400) {
   const error = new Error(message);
@@ -42,7 +43,7 @@ async function walk(dir, root, output = []) {
   return output;
 }
 
-export function createDiskFileStore({ rootDir = process.env.FILE_STORE_DIR || ".archive-files" } = {}) {
+export function createDiskFileStore({ rootDir = config.fileStoreDir } = {}) {
   const root = path.resolve(rootDir);
   return {
     describe() {

@@ -17,7 +17,8 @@ import { randomBytes } from "node:crypto";
 import QRCode from "qrcode";
 import bcrypt from "bcryptjs";
 
-const ISSUER = process.env.TOTP_ISSUER || "Archive Suite";
+import { config } from "../config/env.js";
+const ISSUER = config.totpIssuer;
 const WINDOW = 1; // Allow ±1 time step (30 s window each side)
 
 /**

@@ -14,6 +14,7 @@
  */
 
 import { createLogger } from "../logger.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("workflow:due-date");
 
@@ -22,7 +23,7 @@ const TERMINAL_STATES = new Set(["published", "archived"]);
 const UPCOMING_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // Check interval — configurable via WORKFLOW_DUE_CHECK_HOURS env, default 1 hour.
-const CHECK_INTERVAL_MS = parseInt(process.env.WORKFLOW_DUE_CHECK_HOURS || "1", 10) * 3_600_000;
+const CHECK_INTERVAL_MS = config.workflowDueCheckHours * 3_600_000;
 
 // In-memory dedup: keys are "<store>:<id>:<alertType>:<YYYY-MM-DD>".
 // Prevents spamming the same alert multiple times in the same calendar day.
@@ -129,7 +130,7 @@ export async function runDueDateCheck(provider, prisma, sendPushToUser) {
  * @param {Function} sendPushFn     - sendPushToUser (injectable for tests)
  */
 export function startDueDateScheduler(provider, prisma, sendPushFn) {
-  if (!process.env.WORKFLOW_DUE_REMINDERS_ENABLED) {
+  if (!config.workflowDueRemindersEnabled) {
     log.debug("Workflow due-date reminders disabled (set WORKFLOW_DUE_REMINDERS_ENABLED=true).");
     return;
   }

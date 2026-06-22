@@ -16,20 +16,21 @@ let sentry = null;
  */
 export async function initSentry() {
   if (sentry) return; // already initialised
-  if (!process.env.SENTRY_DSN) return; // disabled — DSN not configured
+  const { config } = await import("../config/env.js");
+  if (!config.sentryDsn) return; // disabled — DSN not configured
 
   try {
     const mod = await import("@sentry/node");
     mod.init({
-      dsn: process.env.SENTRY_DSN,
-      environment: process.env.NODE_ENV || "development",
+      dsn: config.sentryDsn,
+      environment: config.nodeEnv,
       tracesSampleRate: 0.1,
       // Suppress noisy connection-reset errors that are harmless in practice.
       ignoreErrors: ["ECONNRESET", "ERR_STREAM_DESTROYED"],
     });
     sentry = mod;
     // Use console.log directly here since Pino logger imports happen after initSentry.
-    console.log("[sentry] Initialized (environment=%s)", process.env.NODE_ENV || "development");
+    console.log("[sentry] Initialized (environment=%s)", config.nodeEnv);
   } catch (err) {
     // Fail open — missing package or bad DSN must not crash the server.
     console.warn("[sentry] Failed to initialize:", err.message);

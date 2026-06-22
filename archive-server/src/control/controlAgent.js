@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import { spawn } from "node:child_process";
+import { config } from "../config/env.js";
 
-const DEFAULT_MODE = process.env.CONTROL_AGENT_MODE || "read-only";
+const DEFAULT_MODE = config.controlAgentMode;
 const DEFAULT_LOG_LIMIT = 100;
 const CONTROL_ACTIONS = new Set(["start", "stop", "restart", "apply-config"]);
 
@@ -99,7 +100,7 @@ function buildCommand({ action, mode, service }) {
   const normalizedAction = action === "apply-config" ? "restart" : action;
   if (mode === "docker") {
     const target = service.dockerService || service.id;
-    const composeFile = service.composeFile || process.env.COMPOSE_FILE || "docker-compose.yml";
+    const composeFile = service.composeFile || config.composeFile;
     return { command: "docker", args: ["compose", "-f", composeFile, normalizedAction, target] };
   }
   if (mode === "linux-native") {
@@ -131,7 +132,7 @@ function buildCommand({ action, mode, service }) {
 
 export function createControlAgent({
   mode = DEFAULT_MODE,
-  actionsEnabled = enabledFromEnv(process.env.CONTROL_AGENT_ACTIONS || process.env.CONTROL_AGENT_ACTIONS_ENABLED),
+  actionsEnabled = enabledFromEnv(config.controlAgentActions),
   now = () => new Date(),
   platform = os.platform,
   uptime = os.uptime,
@@ -139,8 +140,8 @@ export function createControlAgent({
   cpus = os.cpus,
   totalmem = os.totalmem,
   freemem = os.freemem,
-  diskUsage = () => safeDiskUsage(process.env.FILE_STORE_DIR || process.cwd()),
-  services = parseServices(process.env.CONTROL_AGENT_SERVICES),
+  diskUsage = () => safeDiskUsage(config.fileStoreDir || process.cwd()),
+  services = parseServices(JSON.stringify(config.controlAgentServices)),
   readLogs = null,
   executor = defaultExecutor
 } = {}) {

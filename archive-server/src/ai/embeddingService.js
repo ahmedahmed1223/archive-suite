@@ -11,12 +11,13 @@
  */
 import { createLogger } from "../logger.js";
 import { Prisma } from "../generated/prisma/client.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("embeddings");
 
 // Embedding model to use (1536 dimensions)
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "text-embedding-3-small";
-const EMBEDDING_API_KEY = process.env.OPENAI_API_KEY || process.env.AI_API_KEY || "";
+const EMBEDDING_MODEL = config.embeddingModel;
+const EMBEDDING_API_KEY = config.openaiApiKey;
 
 /**
  * Generate an embedding vector for a text string.
