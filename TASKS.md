@@ -362,8 +362,9 @@
 
 - [x] `[P1]` ⏱️M **تحسين `setup.bat`/`control-center.mjs` — أوامر مختصرة + مساعدة موسّعة + تشخيص أولي**
   - ✅ مُنجز (2026-06-22 wave-26): `quick` (deploy+start+health)، `doctor` (Node/pnpm/Docker/port check مع تقرير ملوّن)، `help` موسّعة بكل الأوامر + أمثلة. القائمة التفاعلية أُضيف لها قسم «Quick Actions» مع [q] و[d].
+  - ✅ إضافات (2026-06-22 wave-27): (أ) `preflightSummary()` يعمل تلقائياً عند فتح القائمة التفاعلية ويعرض حالة Node/pnpm/Docker/.env بسطر واحد، ويُبلّغ عن المشاكل بأسطر `- ...` مع الإحالة لـ `doctor` للتفاصيل الكاملة. (ب) `help` صار يطبع قسم «Quick-start examples»، شبكة الأوامر، قسم «Troubleshooting» بثلاث وصفات (stack not running / no .env / port in use)، ثم قائمة القائمة التفاعلية كاملة. صلّحت اختبار `control-center.test.mjs` الذي كان فاشلاً مسبقاً (يفترض أن `help` يتضمّن أقسام المنيو).
   - الملفات: `scripts/control-center.mjs`.
-  - المصدر: طلب المستخدم 2026-06-21.
+  - المصدر: طلب المستخدم 2026-06-21، 2026-06-22.
 
 - [x] `[P1]` ⏱️S **التحقق من تحميل تلقائي لإعدادات SQL/PocketBase في «الإعداد المتقدم»** — التحقق أن المعالج المتقدم يكشف `.env` ويستخدم القيم الموجودة بنقرة واحدة.
   - ✅ مُنجز مسبقاً (موجة سابقة): `V1OnboardingWizard.jsx:299-310` يستدعي `/api/setup/preset-config` عند الفتح ويخزّن `presetConfig`. عند توفّر إعداد كامل يُعرض `PresetConfigScreen` (الأسطر 1211–1240) يظهر backend/DATABASE_URL/ADMIN_EMAIL/JWT_SECRET/dbReachable مع زر «استخدام الإعدادات المكتشفة» يكمل الإعداد بنقرة واحدة. يدعم postgres وpocketbase معاً (`createPresetFormState`).
@@ -403,6 +404,12 @@
   - ✅ مُنجز (2026-06-22 wave-26): `connectivityProbe.js` أضاف `isLocalBackend()` يرجع `true` عندما يكون `getBackendChoice() === "local"`؛ `probeConnectivity` يرجع `true` فوراً في هذا الوضع، و`useConnectivity` يتخطّى الـ interval ويُعيد `{ isOnline: true, isLocalBackend: true }`. `OfflineBanner.jsx` (الفعلي تحت `components/offline/`) يقرأ الآن `isLocalBackend` + `settings.ui.offlineBannerDismissed`، ويُضمّن زر إغلاق `X` + زر «لا تظهر مجدداً» في الشريط العلوي. المنطق الجديد: إذا كان الوضع محلي والطابور فارغ → لا شريط؛ إذا كان أوفلاين والطابور فارغ والمستخدم أغلقه → لا شريط؛ خلاف ذلك يظهر مع أزرار الإغلاق.
   - الملفات: `archive-app/src/features/offline/connectivityProbe.js` (export `isLocalBackend` + short-circuit في `probeConnectivity` و`useConnectivity`)، `archive-app/src/components/offline/OfflineBanner.jsx` (state إغلاق للجلسة + قراءة/كتابة `settings.ui.offlineBannerDismissed` + زرّا الإغلاق).
   - القبول: في الوضع المحلي لا يظهر شريط «غير متصل» أبداً حتى عند فصل الواي-فاي؛ في الخوادم البعيدة يظهر مع زر إغلاق يحترم إعداد المستخدم؛ تغيير الـ backend في وقت التشغيل يُحدّث التقييم فوراً.
+  - المصدر: طلب المستخدم 2026-06-22.
+
+- [x] `[P0]` ⏱️S **إصلاح: «تذكر الجلسة على هذا الجهاز» لا يحفظ بيانات الدخول** — خانة «تذكر الجلسة» في `LoginScreen` كانت لا تُبقي المستخدم مسجَّلاً بعد إعادة التحميل في حالتين فعليّتين: (أ) مسار الخادم السحابي (postgres/pocketbase/firebase) كان يحذف `SESSION_KEY` بشكل غير مشروط بعد signIn، ولا يُكتب أي مرجع، و`initAuth` ليس لديه أي فرع لاستعادة جلسة سحابية → المستخدم السحابي يُسجَّل خروجه بعد كل reload رغم تفعيل الخانة. (ب) المسار المحلي كان يكتب `SESSION_KEY` بعد `await updateUser(...)` ضد IndexedDB، فإذا فشلت كتابة قاعدة البيانات (quota، transaction abort) فقدنا الـ session مع أن المصادقة نجحت.
+  - ✅ مُنجز (2026-06-22 wave-27): (أ) `authSlice.js` في فرع السحابي يكتب الآن علامة `cloud:<userId>:<expiresAt>` في `SESSION_KEY` عندما `rememberMe=true`، ويحذفها عندما `false`. `initAuth` صار يفهم العلامة `cloud` ويستدعي `getSessionProvider().getCurrentUser()` + `getToken()` لإعادة بناء `currentUser` على reload. (ب) في الفرع المحلي قدّمت كتابة `SESSION_KEY` قبل `await updateUser(...)` وغلّفت تحديث المستخدم في `try/catch` فلا تكسر فشلات قاعدة البيانات «تذكر الجلسة» بعد الآن.
+  - الملفات: `archive-app/src/stores/slices/authSlice.js` (initAuth: فرع cloud؛ login: cloud branch يحترم rememberMe + local branch يقدّم كتابة الجلسة)، `archive-app/src/stores/slices/authSlice.remember.test.js` (7 اختبارات regression جديدة).
+  - القبول: 7 اختبارات vitest تغطّي: SESSION_KEY يُكتَب في الوضع المحلي مع rememberMe=true، يُحذف مع false، يبقى محفوظاً حتى عند فشل updateUser، الفرع السحابي يكتب علامة "cloud" مع rememberMe=true ويحذف مع false، initAuth يستعيد المستخدم السحابي من SessionProvider، ويُنظّف العلامة عند انقطاع الجلسة السحابية. اختبارات المشروع الكاملة: 945 ناجحة (كان 938).
   - المصدر: طلب المستخدم 2026-06-22.
 
 ---

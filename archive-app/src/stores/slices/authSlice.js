@@ -121,6 +121,28 @@ export function createAuthStore({ createStore, useAppStore }) {
         if (raw) getLocalStorage().removeItem(SESSION_KEY);
         return false;
       }
+      // Cloud sessions are flagged with the literal "cloud" token. The bearer
+      // is owned by the SessionProvider (cookie or in-memory); we just hold a
+      // remember-me marker so we know to ask the provider on reload.
+      if (session.token === "cloud") {
+        try {
+          const provider = getSessionProvider();
+          const cloudUser = provider?.getCurrentUser?.();
+          const token = provider?.getToken?.();
+          if (cloudUser && token) {
+            const normalized = normalizeCloudUser(cloudUser, cloudUser.username);
+            const refreshed = packSession({ token: "cloud", userId: normalized.id, expiresAt: Date.now() + SESSION_TTL_MS });
+            getLocalStorage().setItem(SESSION_KEY, refreshed);
+            set({ currentUser: normalized, isAuthenticated: true, authError: null, mustChangePassword: false });
+            useAppStore.setState({ currentUser: normalized, isLocked: false });
+            return true;
+          }
+        } catch {
+          // Fall through and clear the stale marker.
+        }
+        getLocalStorage().removeItem(SESSION_KEY);
+        return false;
+      }
       const user = useAppStore.getState().users.find((item) => item.id === session.userId && item.isActive);
       if (!user) {
         getLocalStorage().removeItem(SESSION_KEY);
@@ -153,7 +175,16 @@ export function createAuthStore({ createStore, useAppStore }) {
             password
           });
           const cloudUser = normalizeCloudUser(cloudSession.user, trimmedUsername);
-          getLocalStorage().removeItem(SESSION_KEY);
+          // Honor "remember me" for cloud backends too: write a marker that
+          // initAuth recognizes on reload, then asks the SessionProvider for
+          // the live user. Without this, cloud users were silently logged out
+          // on every refresh regardless of the checkbox.
+          if (rememberMe) {
+            const expiresAt = Date.now() + SESSION_TTL_MS;
+            getLocalStorage().setItem(SESSION_KEY, packSession({ token: "cloud", userId: cloudUser.id, expiresAt }));
+          } else {
+            getLocalStorage().removeItem(SESSION_KEY);
+          }
           set({
             currentUser: cloudUser,
             isAuthenticated: true,
@@ -234,12 +265,21 @@ export function createAuthStore({ createStore, useAppStore }) {
       const token = generateSessionToken();
       const expiresAt = Date.now() + SESSION_TTL_MS;
       const updated = { ...migratedUser, lastLoginAt: nowIso(), updatedAt: nowIso() };
-      await useAppStore.getState().updateUser(updated);
 
+      // Persist the remember-me marker BEFORE the IndexedDB user-update. If
+      // dbPut fails for any reason (quota, transaction abort), we still want
+      // the session to survive a reload — the user can re-login next time
+      // and the lastLoginAt timestamp will be retried then.
       if (rememberMe) {
         getLocalStorage().setItem(SESSION_KEY, packSession({ token, userId: updated.id, expiresAt }));
       } else {
         getLocalStorage().removeItem(SESSION_KEY);
+      }
+
+      try {
+        await useAppStore.getState().updateUser(updated);
+      } catch {
+        // Non-fatal: the in-memory state and session token are already set.
       }
 
       set({
