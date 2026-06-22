@@ -334,6 +334,41 @@ model ShareComment {
   @@map("share_comments")
 }
 
+/// Rights & license record for an archive item (§22 — Rights Management).
+/// One row per item; the item identity is the string uid stored in the
+/// generic StorageRow / ArchiveItem tables. We use a plain String FK so the
+/// model works regardless of which table the item actually lives in.
+model RightsRecord {
+  id              String      @id @default(cuid())
+  /// uid of the archive item this record belongs to (StorageRow.uid / ArchiveItem.id)
+  itemId          String      @map("item_id")
+  rightsHolder    String      @map("rights_holder")
+  licenseType     LicenseType @map("license_type")
+  embargoStart    DateTime?   @map("embargo_start")
+  embargoEnd      DateTime?   @map("embargo_end")
+  expiresAt       DateTime?   @map("expires_at")
+  /// ISO 3166-1 alpha-2 country codes stored as a JSON array (e.g. ["SA","AE"]).
+  /// Json used for broad engine compatibility (PostgreSQL, SQLite).
+  geoRestrictions Json        @default("[]") @map("geo_restrictions")
+  notes           String?
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@unique([itemId])
+  @@index([itemId])
+  @@index([expiresAt])
+  @@index([licenseType])
+  @@map("rights_records")
+}
+
+enum LicenseType {
+  OWNED
+  LICENSED
+  PUBLIC_DOMAIN
+  FAIR_USE
+  UNKNOWN
+}
+
 /// Manual semantic relations between archive items (§18.5).
 /// `type` is one of: is_part_of / contains / references / depends_on /
 ///   related_to / alternative_of / copy_of / precedes / follows.

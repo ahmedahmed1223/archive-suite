@@ -62,6 +62,7 @@ import {
 } from "../monitoring/metrics.js";
 import { handleOcr } from "./ocrHandler.js";
 import { handleControlRoute } from "./controlRoutes.js";
+import { handleRightsRoute } from "./routes/rights.js";
 import { publicOpenApiSpec } from "./publicOpenApi.js";
 import { exportRecords } from "../export/exportService.js";
 import { createControlAgent } from "../control/controlAgent.js";
@@ -2530,6 +2531,22 @@ export function createApiServer({
         "Content-Length": String(result.buffer.length),
       });
       res.end(result.buffer);
+      return undefined;
+    }
+
+    // ── Rights & License management (§22) ────────────────────────────────────
+    if (await handleRightsRoute({
+      req,
+      res,
+      url,
+      params: requestUrl.searchParams,
+      sendJson: send,
+      requireAuth,
+      requireEditor,
+      overLimit,
+      readJsonBody,
+      prisma,
+    })) {
       return undefined;
     }
 
