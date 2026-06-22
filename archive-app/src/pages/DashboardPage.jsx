@@ -261,7 +261,18 @@ function formatClockTime(date) {
 }
 
 function formatClockDate(date) {
+  // Gregorian weekday + day + month for the primary line.
   return new Intl.DateTimeFormat("ar-EG-u-nu-arab", { weekday: "long", day: "numeric", month: "long" }).format(date);
+}
+
+function formatClockHijri(date) {
+  // Compact Hijri (day + month only) for the secondary line; the year is
+  // implied by the visible Gregorian date so it would waste pixels here.
+  try {
+    return new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", { day: "numeric", month: "long" }).format(date);
+  } catch {
+    return "";
+  }
 }
 
 function LiveClockBadge() {
@@ -281,17 +292,22 @@ function LiveClockBadge() {
     schedule(new Date());
     return () => window.clearTimeout(timeoutId);
   }, []);
+  const gregorian = formatClockDate(now);
+  const hijri = formatClockHijri(now);
   return jsxs("div", {
     className: "flex items-center gap-2 rounded-xl border border-[var(--va-border-soft)] bg-white/[0.035] px-3 py-1.5 text-[var(--va-text-2)]",
     role: "status",
-    "aria-label": `الوقت ${formatClockTime(now)} — التاريخ ${formatClockDate(now)}`,
+    "aria-label": hijri
+      ? `الوقت ${formatClockTime(now)} — ${gregorian} — ${hijri} هـ`
+      : `الوقت ${formatClockTime(now)} — التاريخ ${gregorian}`,
     children: [
       jsx(Clock3, { className: "h-4 w-4 va-accent-text", "aria-hidden": "true" }),
       jsxs("div", {
         className: "flex flex-col leading-tight",
         children: [
           jsx("span", { className: "text-sm font-semibold tabular-nums text-[var(--va-text)]", children: formatClockTime(now) }),
-          jsx("span", { className: "text-[10px] text-[var(--va-text-muted)]", children: formatClockDate(now) })
+          jsx("span", { className: "text-[10px] text-[var(--va-text-muted)]", children: gregorian }),
+          hijri && jsx("span", { className: "text-[10px] text-[var(--va-text-muted)] opacity-80", "aria-hidden": "true", children: `${hijri} هـ` })
         ]
       })
     ]
