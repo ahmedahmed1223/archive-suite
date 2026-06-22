@@ -399,6 +399,12 @@
   - المصدر: طلب المستخدم 2026-06-21.
   - المصدر: طلب المستخدم 2026-06-21.
 
+- [ ] `[P2]` ⏱️S **تنبيه «غير متصل بالإنترنت» قابل للإغلاق + اعتبار وضع local/local-SQL أونلاين** — حالياً `OfflineBanner.jsx` يعرض شريطاً ثابتاً معتمداً فقط على `navigator.onLine` ولا يمكن إخفاؤه؛ هذا يربك في الوضع المحلي (`backendChoice === "local"` أو `localEngine === "sqlite"`) حيث التطبيق يعمل بكامل وظائفه دون إنترنت أصلاً.
+  - المطلوب: (أ) زر إغلاق X في `OfflineBanner` يخفي الشريط للجلسة الحالية مع خيار «لا تظهره مجدداً» يحفظ في `settings.ui.offlineBannerDismissed`؛ (ب) تحسين منطق العرض في `useOnlineStatus`/`OfflineBanner` بحيث لا يظهر التنبيه عندما يكون `getBackendChoice() === "local"` لأن انقطاع الإنترنت لا يؤثّر على التشغيل؛ (ج) للخوادم البعيدة (postgres/pocketbase/firebase) يبقى السلوك الحالي مع إضافة فحص حي للخادم (`fetchServerHealth`) لتمييز «انقطاع الإنترنت» عن «انقطاع الخادم».
+  - الملفات: `archive-app/src/components/common/OfflineBanner.jsx` (زر إغلاق + قراءة `getBackendChoice` + `settings.ui.offlineBannerDismissed`)، `archive-app/src/hooks/useOnlineStatus.js` (إضافة `useEffectiveOnlineStatus` يجمع `navigator.onLine` + اختيار backend)، `archive-app/src/i18n/locales/ar.json` و`en.json` (نص «لا تظهر مجدداً»).
+  - القبول: في الوضع المحلي لا يظهر شريط «غير متصل» أبداً حتى عند فصل الواي-فاي؛ في الخوادم البعيدة يظهر مع زر إغلاق يحترم إعداد المستخدم؛ تغيير الـ backend في وقت التشغيل يُحدّث التقييم فوراً.
+  - المصدر: طلب المستخدم 2026-06-22.
+
 ---
 
 ## ملخص الموجة
