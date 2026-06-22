@@ -100,8 +100,10 @@
   - المصدر: broadcast-report (ingest)، dev-roadmap (new-feature #5 Smart Ingest).
 
 - [ ] `[P2]` ⏱️M **مفردات إعلامية عربية منظمة + تقويم هجري** — أنواع البرامج/تصنيفات/أدوار + Umm al-Qura (هجري/ميلادي مزدوج).
-  - الملفات: `archive-app/src/features/vocabulary/*`، أدوات التاريخ.
-  - القبول: عرض تاريخ مزدوج؛ مفردات معتمدة قابلة للاختيار.
+  - ✅ تقويم هجري مُنجز (2026-06-22 wave-28): `archive-app/src/utils/hijriDate.js` يعرض `formatHijriDate` (Umm al-Qura عبر `Intl.DateTimeFormat` بـ `calendar: "islamic-umalqura"`، أرقام عربية-هندية)، `formatGregorianDate`، و`formatDualDate` (ميلادي · هجري). 6 اختبارات vitest. ربط `LiveClockBadge` في `DashboardPage` ليعرض `٠٣:٣٣ م | الاثنين، ٢٢ يونيو | ٧ محرم هـ` مع `aria-label` مُدمج للقارئ.
+  - متبقّي: المفردات الإعلامية المنظمة (أنواع البرامج/تصنيفات/أدوار) — يحتاج جلسة منفصلة.
+  - الملفات: `archive-app/src/utils/hijriDate.js` (جديد) + `.test.js` + `archive-app/src/pages/DashboardPage.jsx` (`formatClockHijri` + سطر هجري في الـ badge).
+  - القبول: تاريخ مزدوج معروض في الـ Dashboard hero ومتاح كـ utility لأي صفحة أخرى.
   - المصدر: broadcast-report، dev-roadmap (P3-07, P3-08).
 
 ---
