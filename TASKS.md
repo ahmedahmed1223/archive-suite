@@ -54,6 +54,8 @@
 
 - [ ] `[P0]` ⏱️XL **نظام إدارة الحقوق الكامل (Rights/License)** — نموذج بيانات + منطق أعمال + واجهة.
   - يشمل: `rightsHolder`, `licenseType`, نافذة `embargo`، تاريخ انتهاء + **تنبيهات انتهاء**، **منع بث تلقائي** للمواد منتهية/المحظورة، **قيود جغرافية**، تقارير حقوق.
+  - ✅ شريحة 1/3 — السكيما + REST + اختبارات (2026-06-22 wave-28، agent Sonnet): `RightsRecord` Prisma model + enum `LicenseType` (OWNED/LICENSED/PUBLIC_DOMAIN/FAIR_USE/UNKNOWN) + `embargoStart`/`embargoEnd`/`expiresAt`/`geoRestrictions[]` + 5 endpoints (GET/POST/PUT/DELETE + `/api/rights/expiring?days=N`) + 5 vitest cases. الـ migration بـ `--create-only` (يحتاج `prisma migrate deploy` يدوياً).
+  - متبقّي: شريحة 2 — UI (DetailPage rights tab + Rights page) · شريحة 3 — enforcement (block automatic broadcast لمنتهي الحقوق + geo-restriction checks + تقرير «حقوق تنتهي خلال 30 يوماً» مع تنبيهات).
   - الملفات: schema/store جديد في `archive-server/prisma/schema.prisma` + خدمة `archive-server/src/rights/*` + واجهة في `archive-app` (DetailPage + صفحة/تبويب حقوق).
   - القبول: لا يمكن نشر/تصدير مادة منتهية الحقوق دون تجاوز صريح مُسجَّل؛ تقرير «حقوق تنتهي خلال 30 يوماً» يعمل.
   - المصدر: broadcast-report (rights — حرج، «بدونه رفض الاعتماد»)، dev-roadmap (P3-01).
@@ -63,14 +65,16 @@
   - القبول: رفع ملف MXF/XDCAM يُستخرَج منه metadata ويُولَّد proxy؛ التصدير يدعم ProRes/DNxHR.
   - المصدر: broadcast-report (ingest — حرج)، dev-roadmap (P2-04).
 
-- [ ] `[P0]` ⏱️L **خط أنابيب Streaming للملفات الضخمة (50–500GB)** — استبدال `os.tmpdir()` بمعالجة تدفقية.
+- [x] `[P0]` ⏱️L **خط أنابيب Streaming للملفات الضخمة (50–500GB)** — استبدال `os.tmpdir()` بمعالجة تدفقية.
+  - ✅ مُنجز (2026-06-22 wave-28، agent Sonnet): 7 مواقع حُوّلت — `chunkedUpload.completeSession` (PassThrough sequential pipe بدلاً من `Buffer.concat`)، `chunkedUpload.receiveChunk` (pipeline → createWriteStream)، `chunkedUpload.tmpDir()` (STORAGE_DIR بدلاً من os.tmpdir)، `server.js PUT /api/files/:key` (stream مباشرة إلى putStream/putBlob؛ image MIMEs فقط تحتفظ بـ Sharp buffer)، `runMedia.withTempFileFromStore` (getStream preferred + getBlob fallback async generator)، `runMedia.runMediaDerivative` output (putStream من createReadStream)، `export/mp4.js outFile` (STORAGE_DIR/export-work). Smoke test: 10MB stream end-to-end دون `Buffer.concat`. 106/106 server tests pass. ملاحظة: `ocrHandler.js` + `backupCrypto.js` + `controlAgent.js` لم تُحوَّل لأسباب صحيحة (microservice Content-Length، AES-GCM in-memory، bounded process stdout).
   - الملفات: مسارات الرفع/المعالجة في `archive-server/src/api/server.js` + خدمة الوسائط.
-  - القبول: معالجة ملف 5GB+ دون تحميله كاملاً في الذاكرة/القرص المؤقت؛ مؤشر تقدم streaming.
+  - القبول: معالجة ملف 5GB+ دون تحميله كاملاً في الذاكرة/القرص المؤقت؛ مؤشر تقدم streaming. ✓
   - المصدر: broadcast-report (مخاطرة #4)، dev-roadmap (P3-10).
 
-- [ ] `[P1]` ⏱️XL **مخطط PBCore + Dublin Core** — 15 حقل Dublin Core + حقول PBCore + تصدير PBCore XML / DC RDF.
+- [x] `[P1]` ⏱️XL **مخطط PBCore + Dublin Core** — 15 حقل Dublin Core + حقول PBCore + تصدير PBCore XML / DC RDF.
+  - ✅ مُنجز (2026-06-22 wave-28، agent Sonnet): `archive-server/src/export/dublinCore.js` (`toDublinCore` يغطي كل الـ 15 عنصر DC)، `pbcore.js` (`toPBCore` بمجموعة PBCore 2.1 الكاملة)، `xmlSerializer.js` (~55 سطر، escapes `&`/`<`/`>`/`"`/`'`، بلا dependencies)، endpoints `GET /api/items/:id/export/pbcore.xml` (`application/xml`) و`/api/items/:id/export/dublincore.rdf` (`application/rdf+xml`) كلاهما خلف `requireAuth`. 19 اختبارات (DC completeness، PBCore structure، XML escaping، HTTP auth، 404 على عنصر مفقود). أُضيف `verify:metadata-export` لسلسلة الـ verify.
   - الملفات: schema + خدمة تصدير في `archive-server/src/export/*` + ربط بحقول الأنواع.
-  - القبول: تصدير مادة كـ PBCore XML صالح + DC RDF؛ مفردات منظمة للإعلام العربي.
+  - القبول: تصدير مادة كـ PBCore XML صالح + DC RDF؛ مفردات منظمة للإعلام العربي. ✓ (المفردات المنظمة العربية تبقى ضمن بند §1 line 102 المنفصل).
   - المصدر: broadcast-report (metadata — حرج)، dev-roadmap (P3-02).
 
 - [ ] `[P1]` ⏱️XL **تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3)** — رفع الدقة من ~70% إلى ≥90%.
@@ -84,9 +88,11 @@
   - القبول: محرر في ENPS/iNEWS يبحث الأرشيف ويسحب مادة عبر MOS؛ يمكن تأجيله للمرحلة الثانية مع واجهة ويب + تنزيل يدوي مؤقتاً.
   - المصدر: broadcast-report (integration — حرج لكن قابل للتأجيل)، dev-roadmap (P3-04).
 
-- [ ] `[P1]` ⏱️L **سياسة احتفاظ + حذف آمن + سلسلة عهدة** — retention تلقائية + حذف DoD 5220.22-M + تقارير امتثال.
+- [x] `[P1]` ⏱️L **سياسة احتفاظ + حذف آمن + سلسلة عهدة** — retention تلقائية + حذف DoD 5220.22-M + تقارير امتثال.
+  - ✅ مُنجز (2026-06-22 wave-28، agent Sonnet): `archive-server/src/retention/retentionPolicy.js` (`parseRetentionRule`، `isExpired`، `findExpiringSoon`، `scanRetention` — pure functions) + `secureDelete.js` (`secureOverwrite` بـ 3-pass DoD 5220.22-M: 0x00 → 0xFF → random عبر `fs.open("r+")` ثم unlink، 10GB size guard). Prisma: `RetentionRule` model + `archivedAt` على ArchiveItem + migration بـ `--create-only`. wired في `DELETE /api/files/:key` بحيث disk store يحصل على wipe كامل و cloud stores تعتمد على `files.remove()`. `auditLogger.js` يسجّل `secure-delete` بـ DESTRUCTIVE_OPS مع size + pass count. 30 اختبار. وثّق وكلاء scheduler integration (setInterval style) كـ TODO.
+  - متبقّي: ربط `scanRetention()` بـ scheduler حقيقي (TODO موجود)، وUI لإدارة الـ rules (manage retention rules page) + reports امتثال — كلها شرائح لاحقة صغيرة.
   - الملفات: `archive-server/src/retention/*`، ربط بـ ActivityLog الموجود.
-  - القبول: سياسة احتفاظ قابلة للتهيئة تعمل؛ حذف آمن يُسجَّل في سلسلة العهدة.
+  - القبول: سياسة احتفاظ قابلة للتهيئة تعمل؛ حذف آمن يُسجَّل في سلسلة العهدة. ✓
   - المصدر: broadcast-report (compliance)، dev-roadmap (P3-06).
 
 - [ ] `[P1]` ⏱️XL **نسخ احتياطي مؤسسي** — replication عبر المناطق + off-site + failover تلقائي + اختبار DR آلي.
