@@ -2,6 +2,8 @@
 // deploy); for a multi-instance setup this would move to Redis. Enough to
 // blunt brute-force (login) and abuse (rpc) on a single-tenant server.
 
+import { config } from "../config/env.js";
+
 /**
  * @param {object} options
  * @param {number} options.max - max requests allowed per window
@@ -76,6 +78,7 @@ export function userKeyFromHeader(req) {
  * X-Real-IP from Caddy is the most reliable source for the client's address.
  */
 export function clientIp(req) {
+  // Re-read per-call so tests can override process.env.TRUST_PROXY directly.
   const trustProxy = process.env.TRUST_PROXY !== "0";
 
   if (trustProxy) {

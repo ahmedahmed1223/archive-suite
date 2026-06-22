@@ -5,11 +5,12 @@ import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { createLogger } from "../logger.js";
 import { writeBackupChecksum, encryptBackupFile, verifyBackupChecksum, decryptBackupFile } from "./backupCrypto.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("backup");
 
-export const BACKUP_DIR = process.env.BACKUP_DIR || "backups";
-export const BACKUP_INTERVAL_MS = parseInt(process.env.BACKUP_INTERVAL_HOURS || "24", 10) * 3_600_000;
+export const BACKUP_DIR = config.backupDir;
+export const BACKUP_INTERVAL_MS = config.backupIntervalHours * 3_600_000;
 
 // Re-export so callers don't need to import backupCrypto directly.
 export { verifyBackupChecksum, decryptBackupFile };
@@ -17,7 +18,7 @@ export { verifyBackupChecksum, decryptBackupFile };
 let schedulerTimer = null;
 
 export function startBackupScheduler(provider, { onFailure } = {}) {
-  if (!process.env.BACKUP_ENABLED) {
+  if (!config.backupEnabled) {
     log.debug("Backup scheduler disabled (set BACKUP_ENABLED=true).");
     return;
   }
@@ -43,7 +44,7 @@ export async function runBackup(provider) {
   const filename = `backup-${stamp}.json.gz`;
   const filepath = join(BACKUP_DIR, filename);
   const t0       = Date.now();
-  const encKey   = process.env.BACKUP_ENCRYPTION_KEY;
+  const encKey   = config.backupEncryptionKey;
 
   log.info({ filename, encrypted: !!encKey }, "Backup started.");
   try {
@@ -226,9 +227,9 @@ export function listBackups() {
 }
 
 async function applyRetention() {
-  const keepDays  = parseInt(process.env.BACKUP_RETENTION_DAYS   || "7",  10);
-  const keepWeeks = parseInt(process.env.BACKUP_RETENTION_WEEKS  || "4",  10);
-  const keepMonths= parseInt(process.env.BACKUP_RETENTION_MONTHS || "3",  10);
+  const keepDays   = config.backupRetentionDays;
+  const keepWeeks  = config.backupRetentionWeeks;
+  const keepMonths = config.backupRetentionMonths;
   const backups = listBackups();
   const now = Date.now();
   const keep = new Set();

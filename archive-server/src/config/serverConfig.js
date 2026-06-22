@@ -10,6 +10,7 @@ import {
   normalizeDatabaseEngine
 } from "./secrets.js";
 import { createLogger } from "../logger.js";
+import { config as envConfig } from "./env.js";
 
 const log = createLogger("serverConfig");
 
@@ -21,7 +22,7 @@ const log = createLogger("serverConfig");
 // next boot. resolveServerConfig() is pure given { file, env } so it's fully
 // unit-tested; the file I/O helpers are thin and separate.
 
-export const DEFAULT_CONFIG_PATH = process.env.SERVER_CONFIG_PATH || "config/server-config.json";
+export const DEFAULT_CONFIG_PATH = envConfig.serverConfigPath;
 
 /** Read the persisted config JSON (returns {} when missing/invalid). */
 export function loadServerConfigFile(file = DEFAULT_CONFIG_PATH) {

@@ -15,6 +15,7 @@ import { createWebDavFileStore } from "../adapters/files-webdav/index.js";
 import { createAiProvider } from "../ai/createAiProvider.js";
 import { resolveServerConfig } from "../config/serverConfig.js";
 import { normalizeDatabaseEngine } from "../config/secrets.js";
+import { config as envConfig } from "../config/env.js";
 
 // Pick the FileStore backend behind /api/files/*. Selected by FILE_STORE:
 //   disk    (default) — local disk (FILE_STORE_DIR).
@@ -27,18 +28,18 @@ import { normalizeDatabaseEngine } from "../config/secrets.js";
 // Exported so it can be unit-tested in isolation.
 export function buildFileStore(options = {}) {
   const config = typeof options.resolveConfig === "function" ? options.resolveConfig() : resolveServerConfig();
-  const choice = (options.fileStore || config.fileStore || process.env.FILE_STORE || "disk").toLowerCase();
+  const choice = (options.fileStore || config.fileStore || envConfig.fileStore).toLowerCase();
   const providerOptions = options.fileStoreOptions || config.fileStoreOptions || {};
   if (choice === "dropbox") {
     return createDropboxFileStore({
-      accessToken: options.dropboxAccessToken || config.dropboxAccessToken || process.env.DROPBOX_ACCESS_TOKEN,
-      accessTokenExpiresAt: options.dropboxAccessTokenExpiresAt || config.dropboxAccessTokenExpiresAt || process.env.DROPBOX_ACCESS_TOKEN_EXPIRES_AT,
-      refreshToken: options.dropboxRefreshToken || config.dropboxRefreshToken || process.env.DROPBOX_REFRESH_TOKEN,
-      appKey: options.dropboxAppKey || config.dropboxAppKey || process.env.DROPBOX_APP_KEY,
-      appSecret: options.dropboxAppSecret || config.dropboxAppSecret || process.env.DROPBOX_APP_SECRET,
-      rootPath: options.dropboxRootPath || config.dropboxRootPath || process.env.DROPBOX_ROOT_PATH,
-      selectUser: options.dropboxSelectUser || config.dropboxSelectUser || process.env.DROPBOX_SELECT_USER,
-      selectAdmin: options.dropboxSelectAdmin || config.dropboxSelectAdmin || process.env.DROPBOX_SELECT_ADMIN
+      accessToken: options.dropboxAccessToken || config.dropboxAccessToken,
+      accessTokenExpiresAt: options.dropboxAccessTokenExpiresAt || config.dropboxAccessTokenExpiresAt,
+      refreshToken: options.dropboxRefreshToken || config.dropboxRefreshToken,
+      appKey: options.dropboxAppKey || config.dropboxAppKey,
+      appSecret: options.dropboxAppSecret || config.dropboxAppSecret,
+      rootPath: options.dropboxRootPath || config.dropboxRootPath,
+      selectUser: options.dropboxSelectUser || config.dropboxSelectUser,
+      selectAdmin: options.dropboxSelectAdmin || config.dropboxSelectAdmin
     });
   }
   if (choice === "s3") {
@@ -62,7 +63,7 @@ export function buildFileStore(options = {}) {
   if (choice === "webdav") {
     return createWebDavFileStore(providerOptions);
   }
-  return createDiskFileStore({ rootDir: options.fileStoreDir || providerOptions.rootDir || config.fileStoreDir || process.env.FILE_STORE_DIR });
+  return createDiskFileStore({ rootDir: options.fileStoreDir || providerOptions.rootDir || config.fileStoreDir || envConfig.fileStoreDir });
 }
 
 // The cloud (server) boot seam — symmetric with the SPA's registerLocalProviders.
@@ -77,7 +78,7 @@ export function buildFileStore(options = {}) {
 //
 // Defaults to pocketbase for backward compatibility with the v0.1 deploy.
 export function registerCloudProviders(options = {}) {
-  const backend = options.backend || process.env.BACKEND || "pocketbase";
+  const backend = options.backend || envConfig.backend;
   const config = typeof options.resolveConfig === "function" ? options.resolveConfig() : resolveServerConfig();
   const wireAdditionalPorts = (provider) => {
     const files = buildFileStore(options);
@@ -86,16 +87,16 @@ export function registerCloudProviders(options = {}) {
     registerSyncProvider(sync);
     // AI is optional — registered only when a provider+key is configured.
     // Keys stay server-side (env), proxied to the SPA via /api/ai/*.
-    const aiProviderId = options.aiProvider || process.env.AI_PROVIDER;
-    const aiApiKey = options.aiApiKey || process.env.AI_API_KEY;
+    const aiProviderId = options.aiProvider || envConfig.aiProvider;
+    const aiApiKey = options.aiApiKey || envConfig.aiApiKey;
     // Transcription is independent: it may run even without a chat provider
     // (e.g. transcribe-only deployment), and vice versa.
-    const transcribeProviderId = options.transcribeProvider || process.env.TRANSCRIBE_PROVIDER;
+    const transcribeProviderId = options.transcribeProvider || envConfig.transcribeProvider;
     const transcribe = transcribeProviderId ? {
       provider: transcribeProviderId,
-      apiKey: options.transcribeApiKey || process.env.TRANSCRIBE_API_KEY,
-      model: options.transcribeModel || process.env.TRANSCRIBE_MODEL,
-      baseUrl: options.transcribeBaseUrl || process.env.TRANSCRIBE_BASE_URL
+      apiKey: options.transcribeApiKey || envConfig.transcribeApiKey,
+      model: options.transcribeModel || envConfig.transcribeModel,
+      baseUrl: options.transcribeBaseUrl || envConfig.transcribeBaseUrl
     } : undefined;
     let ai = null;
     const hasChat = aiProviderId && (aiApiKey || aiProviderId === "ollama");
@@ -106,9 +107,9 @@ export function registerCloudProviders(options = {}) {
         // "not configured" if no key — transcription works regardless.
         provider: aiProviderId || "openrouter",
         apiKey: aiApiKey,
-        model: options.aiModel || process.env.AI_MODEL,
-        baseUrl: options.aiBaseUrl || process.env.AI_BASE_URL,
-        impl: options.aiImpl || process.env.AI_IMPL,
+        model: options.aiModel || envConfig.aiModel,
+        baseUrl: options.aiBaseUrl || envConfig.aiBaseUrl,
+        impl: options.aiImpl || envConfig.aiImpl,
         transcribe,
         appTitle: "Video Archive"
       });
@@ -125,12 +126,12 @@ export function registerCloudProviders(options = {}) {
     }
     const provider = createPostgresStorageProvider(options.prisma);
     registerStorageProvider(provider);
-    const engine = normalizeDatabaseEngine(options.databaseEngine || config.databaseEngine || process.env.DATABASE_PROVIDER);
+    const engine = normalizeDatabaseEngine(options.databaseEngine || config.databaseEngine);
     return { backend, engine, provider, prisma: options.prisma, ...wireAdditionalPorts(provider) };
   }
 
   if (backend === "pocketbase") {
-    const url = options.url || process.env.POCKETBASE_URL || "http://127.0.0.1:8090";
+    const url = options.url || envConfig.pocketbaseUrl;
     const client = new PocketBase(url);
     const provider = createPocketBaseStorageProvider(client);
     registerStorageProvider(provider);
