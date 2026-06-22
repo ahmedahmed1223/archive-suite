@@ -23,8 +23,10 @@ const EXPORT_COLUMNS = [
   { key: "mimeType", label: "MIME", description: "نوع MIME عند توفره", example: "application/pdf" },
 ];
 
+import { config } from "../config/env.js";
+
 const PDF_FONT_CANDIDATES = [
-  process.env.ARCHIVE_PDF_FONT_PATH,
+  config.pdfFontPath,
   "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
   "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",

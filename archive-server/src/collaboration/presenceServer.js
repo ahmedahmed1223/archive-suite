@@ -17,6 +17,7 @@
  */
 import { WebSocketServer } from "ws";
 import { createLogger } from "../logger.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("presence");
 
@@ -78,7 +79,7 @@ export function startPresenceServer(httpServer) {
 async function handleAuth(ws, client, token, authTimeout) {
   try {
     const { verifyJwt } = await import("../auth/jwt.js");
-    const secret = process.env.JWT_AUTH_SECRET || process.env.JWT_SECRET;
+    const secret = config.jwtAuthSecret || config.jwtSecret;
     const payload = verifyJwt(token, secret);
     client.userId = payload.sub;
     client.username = payload.username || payload.sub;

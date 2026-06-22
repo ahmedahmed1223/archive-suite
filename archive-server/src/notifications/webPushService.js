@@ -17,6 +17,7 @@
  */
 
 import { createLogger } from "../logger.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("webPush");
 
@@ -37,21 +38,21 @@ async function defaultSendImpl(subscription, payload) {
   if (!_webPush) {
     _webPush = (await import("web-push")).default;
     _webPush.setVapidDetails(
-      process.env.VAPID_SUBJECT || "mailto:admin@example.com",
-      process.env.VAPID_PUBLIC_KEY,
-      process.env.VAPID_PRIVATE_KEY
+      config.vapidSubject,
+      config.vapidPublicKey,
+      config.vapidPrivateKey
     );
   }
   return _webPush.sendNotification(subscription, payload);
 }
 
 /** True when VAPID keys are configured (the feature is otherwise dormant). */
-export function isPushConfigured(env = process.env) {
-  return Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY);
+export function isPushConfigured() {
+  return Boolean(config.vapidPublicKey && config.vapidPrivateKey);
 }
 
-export function getVapidPublicKey(env = process.env) {
-  return env.VAPID_PUBLIC_KEY || "";
+export function getVapidPublicKey() {
+  return config.vapidPublicKey;
 }
 
 /**

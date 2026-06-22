@@ -13,6 +13,7 @@
  */
 
 import { createLogger } from "../logger.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("tokenBlacklist");
 
@@ -30,7 +31,7 @@ let _redis = null;
 
 async function getRedis() {
   if (_redis) return _redis;
-  const url = process.env.REDIS_URL;
+  const url = config.redisUrl;
   if (!url) return null;
   try {
     const { default: Redis } = await import("ioredis");

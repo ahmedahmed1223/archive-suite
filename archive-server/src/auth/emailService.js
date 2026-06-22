@@ -5,6 +5,7 @@
  */
 import nodemailer from "nodemailer";
 import { createLogger } from "../logger.js";
+import { config } from "../config/env.js";
 
 const log = createLogger("email");
 
@@ -18,20 +19,20 @@ function escapeHtml(s) {
 }
 
 function createTransport() {
-  const host = process.env.SMTP_HOST;
+  const host = config.smtpHost;
   if (!host) return null; // SMTP not configured — emails silently dropped
 
   return nodemailer.createTransport({
     host,
-    port: parseInt(process.env.SMTP_PORT || "587", 10),
-    secure: process.env.SMTP_SECURE === "true",
-    auth: process.env.SMTP_USER
-      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    port: config.smtpPort,
+    secure: config.smtpSecure,
+    auth: config.smtpUser
+      ? { user: config.smtpUser, pass: config.smtpPass }
       : undefined,
   });
 }
 
-const FROM = process.env.SMTP_FROM || "Archive Suite <noreply@example.com>";
+const FROM = config.smtpFrom;
 
 /**
  * Generic sendMail helper.

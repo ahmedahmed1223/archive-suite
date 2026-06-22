@@ -1,4 +1,5 @@
 import { Prisma } from "../../generated/prisma/client.js";
+import { config } from "../../config/env.js";
 import { generateEmbedding, buildEmbeddingText } from "../../ai/embeddingService.js";
 import {
   defaultKeyPathFor,
@@ -42,7 +43,7 @@ function chunks(arr, size) {
 // before they touch the DB. This prevents runaway writes that could bloat
 // the database or exceed Postgres's per-row / per-column limits.
 // Override via MAX_RECORD_BYTES env var (bytes). Default: 10 MB.
-const MAX_RECORD_BYTES = parseInt(process.env.MAX_RECORD_BYTES || "", 10) || 10 * 1024 * 1024;
+const MAX_RECORD_BYTES = config.maxRecordBytes;
 
 function assertRecordSize(record) {
   const size = Buffer.byteLength(JSON.stringify(record), "utf8");

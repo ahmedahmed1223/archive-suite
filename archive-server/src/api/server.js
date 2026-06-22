@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
+import { config } from "../config/env.js";
 
 import { getFileStore, getSyncProvider, getAiProvider, getStorageProvider } from "@archive/core";
 
@@ -303,8 +304,8 @@ export function createApiServer({
   login,
   rateLimit = {},
   eventBus = null,
-  mediaRootDir = process.env.FILE_STORE_DIR || ".archive-files",
-  ffmpegPath = process.env.FFMPEG_PATH || "ffmpeg",
+  mediaRootDir = config.fileStoreDir,
+  ffmpegPath = config.ffmpegPath,
   runExport = exportTimelineToMp4,
   checkFfmpeg = checkFfmpegAvailability,
   extraHealth = null,
@@ -314,7 +315,7 @@ export function createApiServer({
   runMediaDerivativeImpl = runMediaDerivative,
   resolveStorage = getStorageProvider,
   shareSecret = authSecret,
-  shareExpiryDays = Number(process.env.SHARE_EXPIRY_DAYS) || 30,
+  shareExpiryDays = config.shareExpiryDays,
   prisma = null,
   resolveConfig = resolveServerConfig,
   loadConfigFile = loadServerConfigFile,
@@ -323,20 +324,20 @@ export function createApiServer({
   buildFileStoreCandidate = buildFileStore,
   testFileStore = testFileStoreConnection,
   notificationSendMail = defaultSendMail,
-  version = process.env.npm_package_version || process.env.APP_VERSION || "0.0.0",
+  version = config.appVersion,
   dropboxOAuthFetch,
   controlAgent = createControlAgent(),
   importPreview = importPreviewService
 } = {}) {
   // Prefer dedicated per-token-type secrets; fall back to the legacy JWT_SECRET
   // (via authSecret/shareSecret) so existing deployments keep working.
-  const resolvedAuthSecret   = process.env.JWT_AUTH_SECRET    || authSecret;
-  const resolvedShareSecret  = process.env.JWT_SHARE_SECRET   || shareSecret;
-  const resolvedOauthSecret  = process.env.OAUTH_STATE_SECRET || resolvedAuthSecret || resolvedShareSecret;
+  const resolvedAuthSecret   = config.jwtAuthSecret   || authSecret;
+  const resolvedShareSecret  = config.jwtShareSecret  || shareSecret;
+  const resolvedOauthSecret  = config.oauthStateSecret || resolvedAuthSecret || resolvedShareSecret;
 
   const authRequired = Boolean(resolvedAuthSecret);
   const oauthSecret = resolvedOauthSecret;
-  const refreshExpiresInSec = Number(process.env.REFRESH_EXPIRES_IN_SEC) || DEFAULT_REFRESH_EXPIRES_IN_SEC;
+  const refreshExpiresInSec = config.refreshExpiresInSec;
   const resolvedControlAgent = controlAgent && typeof controlAgent.status === "function"
     ? controlAgent
     : createControlAgent();
@@ -378,7 +379,7 @@ export function createApiServer({
   // api_keys, webhooks, notification_preferences, push_subscriptions, config —
   // unreachable even if a new one is added later. Operators extend it via env.
   const PUBLIC_READABLE_STORES = new Set(
-    String(process.env.PUBLIC_API_STORES || "video_items,media_items,document_items,audio_items,image_items")
+    config.publicApiStores
       .split(",").map((s) => s.trim()).filter(Boolean)
   );
 
@@ -495,7 +496,7 @@ export function createApiServer({
         eventBus,
         conversionService: conversionSvc,
         resolveFileStore,
-        concurrency: Number(process.env.MEDIA_JOB_CONCURRENCY) || 1,
+        concurrency: config.mediaJobConcurrency,
         runMediaDerivativeImpl,
         runExport,
         mediaRootDir
@@ -866,7 +867,7 @@ export function createApiServer({
         // Always return 200 even if user not found (prevent username enumeration)
         if (user && user.email) {
           const token = createResetToken(user.id, user.username, user.email);
-          const baseUrl = process.env.APP_BASE_URL || `${requestOrigin(req)}`;
+          const baseUrl = config.appBaseUrl || `${requestOrigin(req)}`;
           const resetUrl = `${baseUrl}/reset-password?token=${token}`;
           await sendPasswordResetEmail({ to: user.email, resetUrl, username: user.username });
         }
@@ -1443,8 +1444,8 @@ export function createApiServer({
       try {
         const body = await readJsonBody(req);
         const cfg = resolveConfig();
-        const appKey = String(body?.appKey || cfg.dropboxAppKey || process.env.DROPBOX_APP_KEY || "").trim();
-        const redirectUri = String(body?.redirectUri || process.env.DROPBOX_REDIRECT_URI || `${requestOrigin(req)}/api/dropbox/oauth/callback`).trim();
+        const appKey = String(body?.appKey || cfg.dropboxAppKey || "").trim();
+        const redirectUri = String(body?.redirectUri || config.dropboxRedirectUri || `${requestOrigin(req)}/api/dropbox/oauth/callback`).trim();
         const state = createDropboxOAuthState({
           secret: oauthSecret,
           rootPath: body?.rootPath ?? cfg.dropboxRootPath ?? "",
@@ -1472,8 +1473,8 @@ export function createApiServer({
         const cfg = resolveConfig();
         const token = await exchangeDropboxOAuthCode({
           code,
-          appKey: cfg.dropboxAppKey || process.env.DROPBOX_APP_KEY,
-          appSecret: cfg.dropboxAppSecret || process.env.DROPBOX_APP_SECRET,
+          appKey: cfg.dropboxAppKey,
+          appSecret: cfg.dropboxAppSecret,
           redirectUri: state.redirectUri,
           fetchImpl: dropboxOAuthFetch
         });
