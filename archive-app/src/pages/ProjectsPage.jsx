@@ -139,6 +139,22 @@ const LOOK_LABELS = {
   mono: "أبيض وأسود"
 };
 
+const LOOK_SWATCHES = {
+  none: "linear-gradient(120deg, #4b5563 0%, #9ca3af 100%)",
+  cinematic: "linear-gradient(120deg, #0c1a2e 0%, #1e3a5f 50%, #0369a1 100%)",
+  news: "linear-gradient(120deg, #1e40af 0%, #93c5fd 50%, #eff6ff 100%)",
+  warm: "linear-gradient(120deg, #92400e 0%, #d97706 50%, #fde68a 100%)",
+  mono: "linear-gradient(120deg, #111827 0%, #6b7280 50%, #f9fafb 100%)"
+};
+
+const TRANSITION_ICONS = {
+  cut: "▮|▮",
+  fade: "◼→◻",
+  dissolve: "⊕",
+  wipeleft: "◀",
+  wiperight: "▶"
+};
+
 const TIMELINE_ZOOM = [
   { label: "مضغوط", value: 6 },
   { label: "متوازن", value: 12 },
@@ -697,16 +713,17 @@ function ClipInspector({
             jsxs("p", { className: "flex items-center gap-2 text-xs font-semibold text-[var(--va-text)]", children: [jsx(Film, { className: "h-4 w-4 va-accent-text" }), "الانتقال" ] }),
             jsx("span", { className: "text-[11px] text-[var(--va-text-muted)]", children: transition.type === "cut" ? "بدون مزج" : `${transition.durationSec || 0.5}s` })
           ] }),
-          jsxs("div", { className: "grid gap-2 sm:grid-cols-2", children: [
-            jsxs("label", { className: "text-xs text-[var(--va-text-muted)]", children: [
-              "نوع الانتقال",
-              jsx("select", {
-                value: transition.type || "cut",
-                onChange: (e) => patchNested("transition", { type: e.target.value, durationSec: e.target.value === "cut" ? 0 : transition.durationSec || 0.5 }),
-                className: "select select-bordered mt-1 w-full",
-                children: MONTAGE_TRANSITIONS.map((type) => jsx("option", { value: type, children: TRANSITION_LABELS[type] || type }, type))
-              })
-            ] }),
+          jsxs("div", { className: "space-y-2", children: [
+            jsx("p", { className: "text-xs text-[var(--va-text-muted)]", children: "نوع الانتقال" }),
+            jsx("div", { className: "flex flex-wrap gap-1.5", children: MONTAGE_TRANSITIONS.map((type) => jsxs("button", {
+              type: "button",
+              onClick: () => patchNested("transition", { type, durationSec: type === "cut" ? 0 : (transition.durationSec || 0.5) }),
+              className: `flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors ${transition.type === type ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)] hover:border-[var(--va-border-soft)]"}`,
+              children: [
+                jsx("span", { className: "font-mono text-[11px] leading-none", "aria-hidden": "true", dir: "ltr", children: TRANSITION_ICONS[type] }),
+                jsx("span", { children: TRANSITION_LABELS[type] || type })
+              ]
+            }, type)) }),
             jsxs("label", { className: "text-xs text-[var(--va-text-muted)]", children: [
               "مدة الانتقال",
               jsx("input", {
@@ -727,11 +744,22 @@ function ClipInspector({
             jsxs("p", { className: "flex items-center gap-2 text-xs font-semibold text-[var(--va-text)]", children: [jsx(Wand2, { className: "h-4 w-4 va-accent-text" }), "فلاتر وتصحيح اللون" ] }),
             jsx("button", { type: "button", onClick: () => applyPreset("none"), className: "btn btn-ghost btn-xs", children: "Reset" })
           ] }),
-          jsx("div", { className: "mb-3 flex flex-wrap gap-2", children: MONTAGE_LOOKS.map((look) => jsx("button", {
+          jsx("div", { className: "mb-3 flex flex-wrap gap-2", children: MONTAGE_LOOKS.map((look) => jsxs("button", {
             type: "button",
             onClick: () => applyPreset(look),
-            className: `rounded-lg border px-2 py-1 text-xs ${filters.look === look ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-[var(--va-border-soft)] bg-[var(--va-surface-2)] text-[var(--va-text-2)] hover:border-[var(--va-border-soft)]"}`,
-            children: LOOK_LABELS[look] || look
+            title: LOOK_LABELS[look] || look,
+            className: `flex flex-col items-center overflow-hidden rounded-lg border-2 p-0 transition-colors ${filters.look === look ? "va-accent-border" : "border-[var(--va-border-soft)] hover:border-[var(--va-border-soft)]"}`,
+            children: [
+              jsx("span", {
+                "aria-hidden": "true",
+                className: "block h-8 w-14",
+                style: { background: LOOK_SWATCHES[look] || "#6b7280" }
+              }),
+              jsx("span", {
+                className: `block px-1.5 py-1 text-[10px] font-medium ${filters.look === look ? "va-accent-text" : "text-[var(--va-text-2)]"}`,
+                children: LOOK_LABELS[look] || look
+              })
+            ]
           }, look)) }),
           jsxs("div", { className: "grid gap-2 sm:grid-cols-3", children: [
             jsxs("label", { className: "text-xs text-[var(--va-text-muted)]", children: [
