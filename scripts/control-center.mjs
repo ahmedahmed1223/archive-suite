@@ -288,8 +288,91 @@ function runDeploy() {
   return runNode(join(__dirname, "deploy-wizard.mjs")).status;
 }
 
+// ─── Quick start (deploy + start + health) ────────────────────────────────────
+async function quickStart() {
+  titleLine("Quick start — deploy → start → health check");
+  log("Step 1/3: Deploy");
+  const deployStatus = runNode(join(__dirname, "deploy-wizard.mjs")).status;
+  if (deployStatus !== 0) return err("Deploy failed. Aborting quick start.");
+  log("\nStep 2/3: Start stack");
+  serverStart();
+  log("\nStep 3/3: Health check");
+  await healthCheck();
+  const env = readEnv();
+  const port = env.PORT || env.SERVER_PORT || "8787";
+  ok(`Stack should be reachable at http://localhost:${port}`);
+}
+
+// ─── Doctor — environment pre-flight check ───────────────────────────────────
+async function runDoctor() {
+  titleLine("Doctor — environment pre-flight check");
+  let issues = 0;
+
+  // Node.js version
+  const nodeMajor = Number(process.version.slice(1).split(".")[0]);
+  if (nodeMajor >= 18) {
+    ok(`Node.js ${process.version}`);
+  } else {
+    err(`Node.js ${process.version} — version 18+ required`);
+    issues++;
+  }
+
+  // pnpm
+  const pnpmCheck = spawnSync(PNPM, ["--version"], { stdio: "pipe", encoding: "utf8" });
+  if (pnpmCheck.status === 0) {
+    ok(`pnpm ${(pnpmCheck.stdout || "").trim()}`);
+  } else {
+    err("pnpm not found — install: npm i -g pnpm");
+    issues++;
+  }
+
+  // Docker
+  const dockerCheck = spawnSync("docker", ["--version"], { stdio: "pipe", encoding: "utf8" });
+  if (dockerCheck.status === 0) {
+    ok(`Docker — ${(dockerCheck.stdout || "").trim()}`);
+  } else {
+    warn("Docker not found — required for the Postgres stack (not needed for local/PocketBase mode)");
+  }
+
+  // Docker Compose
+  const dc = dockerComposeCmd();
+  if (dc) {
+    ok("Docker Compose — available");
+  } else {
+    warn("Docker Compose not found — install Docker Desktop or docker-compose v2");
+  }
+
+  // .env file
+  if (existsSync(ENV_PATH)) {
+    ok(`.env found at ${ENV_PATH}`);
+  } else {
+    warn(`.env not found at ${ENV_PATH} — run Deploy first`);
+  }
+
+  // Server health (non-fatal if not running)
+  const env = readEnv();
+  const port = env.PORT || env.SERVER_PORT || "8787";
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(2000) });
+    ok(`Port ${port} — server responding (HTTP ${res.status})`);
+  } catch {
+    log(`  ${C.d}Port ${port} — not responding (server may not be started yet — run 'start')${C.x}`);
+  }
+
+  // Summary
+  hr();
+  if (issues === 0) {
+    ok("All checks passed. Run 'setup quick' to deploy and start, or 'node scripts/control-center.mjs start'.");
+  } else {
+    err(`${issues} critical issue(s) found — resolve them before deploying.`);
+  }
+}
+
 // ─── Menu ───────────────────────────────────────────────────────────────────
 const MENU = [
+  ["sec", "— Quick Actions —"],
+  ["q", "Quick start (deploy+start+health)", quickStart],
+  ["d", "Doctor (pre-flight check)", runDoctor],
   ["sec", "— Deploy —"],
   ["1", "Deploy / Re-provision", runDeploy],
   ["sec", "— Server —"],
@@ -351,14 +434,44 @@ async function interactive() {
 
 // ─── Non-interactive subcommands ──────────────────────────────────────────────
 const COMMANDS = {
+  // Quick entry points
+  quick: quickStart, doctor: runDoctor,
+  // Server
   status: serverStatus, start: serverStart, stop: serverStop, restart: serverRestart,
   logs: () => serverLogs({ follow: false }), health: healthCheck,
+  // Config
   config: showConfig, "set-url": setPublicUrl,
+  // Security
   "rotate-secrets": rotateSecrets, "set-admin": setAdmin,
+  // Database
   "migrate-status": migrateStatus, migrate: migrateDeploy, "db-provider": dbProvider,
+  // Backups
   backup: backupNow, backups: listBackups, restore: restoreBackup,
+  // Maintenance
   diagnostics: runDiagnostics, update: updateAndRebuild, deploy: runDeploy,
-  help: () => { printBanner(); printMenu(); },
+  help: () => {
+    printBanner();
+    console.log(`${C.b}  Commands:${C.x}`);
+    console.log(`  ${C.c}quick${C.x}            Deploy + start + health check in one step`);
+    console.log(`  ${C.c}doctor${C.x}           Check Node/pnpm/Docker/ports before deploying`);
+    console.log(`  ${C.c}deploy${C.x}           Run the full deployment wizard`);
+    console.log(`  ${C.c}start/stop/restart${C.x} Manage the Docker stack`);
+    console.log(`  ${C.c}status/health/logs${C.x} Monitor the running server`);
+    console.log(`  ${C.c}config${C.x}           View .env (secrets masked)`);
+    console.log(`  ${C.c}set-url${C.x}          Set APP_BASE_URL + PUBLIC_DOMAIN`);
+    console.log(`  ${C.c}set-admin${C.x}        Update admin credentials`);
+    console.log(`  ${C.c}rotate-secrets${C.x}   Regenerate JWT_SECRET and SESSION_SECRET`);
+    console.log(`  ${C.c}migrate-status${C.x}   Show Prisma migration state`);
+    console.log(`  ${C.c}migrate${C.x}          Apply pending Prisma migrations`);
+    console.log(`  ${C.c}db-provider${C.x}      Switch database provider`);
+    console.log(`  ${C.c}backup${C.x}           pg_dump the running database`);
+    console.log(`  ${C.c}backups${C.x}          List available backups`);
+    console.log(`  ${C.c}restore${C.x}          Restore a backup`);
+    console.log(`  ${C.c}diagnostics${C.x}      Run pnpm verify:server + verify:app`);
+    console.log(`  ${C.c}update${C.x}           git pull → install → build → migrate → restart`);
+    console.log(`\n  ${C.d}Usage: node scripts/control-center.mjs <command>${C.x}`);
+    console.log(`  ${C.d}Or run with no arguments for the interactive menu.${C.x}\n`);
+  },
 };
 
 const cmd = process.argv.slice(2).find((a) => !a.startsWith("-"));
