@@ -61,7 +61,9 @@
   - المصدر: broadcast-report (rights — حرج، «بدونه رفض الاعتماد»)، dev-roadmap (P3-01).
 
 - [ ] `[P0]` ⏱️XL **دعم صيغ البث: MXF / XDCAM / ProRes / DNxHR** — ترميز + demux + استخراج metadata مدمجة.
-  - الملفات: `archive-server/src/media/ffmpegPlan.js`/`mediaPlan.js` (إضافة encoders + parsers)، إعدادات FFmpeg.
+  - ✅ شريحة 1/2 — خطّة الـ ffmpeg (2026-06-22 wave-29، agent Sonnet): `archive-server/src/media/broadcastPlan.js` يحدد الـ codecs (MXF demux، XDCAM، ProRes 4 levels، DNxHR 5 levels) + `probeBroadcastMetadata` يستخرج timecode/duration/reel-name من ffprobe JSON. `archive-server/src/export/broadcast.js` يعرض `renderProRes422` و`renderDnxhrHq` مع injected runner. 24 اختبار، verify chain مُحدّث.
+  - متبقّي: تشغيل ffmpeg الفعلي على MXF حقيقية + تفعيل المسار في رفع الملفات.
+  - الملفات: `archive-server/src/media/broadcastPlan.js` + `archive-server/src/export/broadcast.js`.
   - القبول: رفع ملف MXF/XDCAM يُستخرَج منه metadata ويُولَّد proxy؛ التصدير يدعم ProRes/DNxHR.
   - المصدر: broadcast-report (ingest — حرج)، dev-roadmap (P2-04).
 
@@ -145,7 +147,8 @@
   - القبول: كل ملف ≤400 سطر؛ `pnpm verify:server` أخضر.
   - المصدر: dev-roadmap (P1-01).
 
-- [ ] `[P1]` ⏱️L **تفكيك `archiveSlice` + إصلاح تسرّب الذاكرة** — استخراج شرائح (itemCrud/collection/project/media/history) + تقليم `workflowHistory`/`itemHistory`.
+- [x] `[P1]` ⏱️L **تفكيك `archiveSlice` + إصلاح تسرّب الذاكرة** — استخراج شرائح (itemCrud/collection/project/media/history) + تقليم `workflowHistory`/`itemHistory`.
+  - ✅ مُنجز (2026-06-22 wave-29، agent Sonnet): `archive-app/src/stores/slices/userSlice.js` (93 سطر، `addUser`/`updateUser`/`deleteUser` + `userInitialState`) و`historySlice.js` (42 سطر، `clearHistory`/`appendHistory` مع `MAX_HISTORY_ENTRIES = 500` cap FIFO). archiveSlice.js من 970 → 918 سطر. `appStore.js` وصلَ slices الجديدة قبل `archiveInitialState`. 12 اختبار جديد (9 unit + 1 stress عند 600 entry). 954/954 frontend tests green في الـ slice، ثم 993/993 بعد دمج Design System v2.
   - الملفات: `archive-app/src/**/archiveSlice*`.
   - القبول: كل شريحة ≤250 سطر؛ الذاكرة ≤150MB مع 50K عنصر.
   - المصدر: dev-roadmap (P0-08, P1-02).
@@ -156,6 +159,8 @@
   - المصدر: dev-roadmap (P1-04, P1-05, P5-03).
 
 - [ ] `[P1]` ⏱️XL **نظام تصميم موحّد v2** — مكتبة مكوّنات أساسية (Button/Input/Card/Dialog/Badge/Switch/Tabs) تستخدم tokens حصراً + توسيع tokens (status/density/duration/skeleton).
+  - ✅ شريحة 1/3 — primitives أربعة (2026-06-22 wave-29، agent Sonnet): `archive-app/src/components/ui/ButtonV2.jsx` (variants primary/secondary/ghost/destructive، sizes sm/md/lg، loading state، tap target ≥44px)، `InputV2.jsx` (text/email/password/number، error state مع aria-invalid، prefix/suffix slots RTL-safe)، `CardV2.jsx` (compound `<Card.Header/Body/Footer>`، variants solid/subtle)، `DialogV2.jsx` (native `<dialog>` element مع showModal/focus trap/ESC، header/body/footer slots). barrel في `components/ui/index.js`. 33 اختبار (target كان 12). 978/978 frontend tests pass في الـ slice. **TODO معروف**: 13 tokens مستخدمة في `app-overrides.css` بحاجة هجرة إلى `design-tokens.css`: `--va-text`/`-text-2`/`-text-muted`/`-text-inverse`، `--va-surface`/`-surface-2`/`-elevated`/`-bg`، `--va-border-soft`/`-border-strong`، `--va-status-danger`، `--va-elev-1`/`-2`/`-popover`.
+  - متبقّي: Badge / Switch / Tabs / Toast / Tooltip + توسيع tokens + هجرة call sites القديمة إلى v2.
   - الملفات: `archive-app/src/components/ui/*`، `archive-app/src/styles/design-tokens.css`.
   - القبول: صفر ألوان مُرمّزة في المكتبة؛ tokens الجديدة موثّقة ومستخدمة.
   - المصدر: dev-roadmap (P1-06)، ux_plan/guide_v6 (Design Tokens).
@@ -164,7 +169,8 @@
   - الملفات: `archive-server/deploy/*`, `archive-server/*.yml`.
   - المصدر: dev-roadmap (P1-07).
 
-- [ ] `[P2]` ⏱️L **تبسيط متغيّرات البيئة 69→25** — توحيد في تكوين مركزي بقيم افتراضية ذكية.
+- [x] `[P2]` ⏱️L **تبسيط متغيّرات البيئة 69→25** — توحيد في تكوين مركزي بقيم افتراضية ذكية.
+  - ✅ مُنجز (2026-06-22 wave-29، agent Sonnet): 69 → 25 var operator-facing. `archive-server/src/config/env.js` يجمع كل قراءات `process.env` في `config` object مع validation وdefaults ذكية. 20 production source files حُوّلت من `process.env.X` إلى `import { config } from "./config/env.js"; config.x`. 5 أبرز التغييرات: (1) `CONTROL_AGENT_ACTIONS_ENABLED` → دمج في `CONTROL_AGENT_ACTIONS`؛ (2) `OPENAI_API_KEY` → fallback إلى `AI_API_KEY` عبر `config.openaiApiKey`؛ (3) 37 tuning vars (`RATE_LIMIT_*`، `BACKUP_RETENTION_*`، `SMTP_PORT/SECURE/FROM`، `SHARE_EXPIRY_DAYS`، إلخ) خُفّضت إلى defaults؛ (4) جميع `process.env` reads في 20 ملف → single boot-time evaluation؛ (5) `ARCHIVE_PDF_FONT_PATH`/`FFMPEG_PATH`/`SERVER_CONFIG_PATH`/`COMPOSE_FILE`/`APP_VERSION` أُزيلت من `.env.example` (تفاصيل تطبيق داخلية). 27 اختبار جديد لـ env config. `docs/env-migration.md` يخرّط الأسماء القديمة → الجديدة.
   - الملفات: `archive-server/src/config/*`, `.env.example`.
   - المصدر: dev-roadmap (P0-10).
 
