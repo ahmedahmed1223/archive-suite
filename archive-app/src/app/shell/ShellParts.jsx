@@ -1,5 +1,6 @@
 ﻿import {
   AlertTriangle,
+  Archive,
   Bell,
   CheckCircle2,
   Compass,
@@ -26,6 +27,7 @@
   Video,
   X
 } from "lucide-react";
+import { CORE_UI_TOUR_ITEMS, ONBOARDING_SHORTCUTS } from "../../features/onboarding/flow.js";
 import { AnimatePresence, motion } from "framer-motion";
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -316,8 +318,8 @@ export function LockScreen() {
           autoComplete="current-password"
           placeholder="كلمة المرور"
         />
-        {error && <p className="mt-3 text-sm text-[var(--va-status-danger)]">{error}</p>}
-        <button type="submit" disabled={busy} className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)] disabled:cursor-not-allowed disabled:opacity-55">
+        {error && <p role="alert" aria-live="assertive" className="mt-3 text-sm text-[var(--va-status-danger)]">{error}</p>}
+        <button type="submit" disabled={busy} className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)] disabled:cursor-not-allowed disabled:opacity-55">
           فتح
         </button>
       </form>
@@ -386,12 +388,12 @@ export function LoginScreen() {
             <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 accent-emerald-500" />
             تذكر الجلسة على هذا الجهاز
           </label>
-          {authError && <p role="alert" className="alert alert-error mt-4 block rounded-[var(--va-radius-md)] border border-[color-mix(in_oklab,var(--va-status-danger)_30%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_10%,var(--va-surface))] p-3 text-sm text-[var(--va-status-danger)]">{authError}</p>}
-          <button type="submit" disabled={isLoading} className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)] disabled:cursor-not-allowed disabled:opacity-55">
+          {authError && <p role="alert" aria-live="assertive" className="alert alert-error mt-4 block rounded-[var(--va-radius-md)] border border-[color-mix(in_oklab,var(--va-status-danger)_30%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_10%,var(--va-surface))] p-3 text-sm text-[var(--va-status-danger)]">{authError}</p>}
+          <button type="submit" disabled={isLoading} className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)] disabled:cursor-not-allowed disabled:opacity-55">
             {isLoading ? "جار التحقق..." : "دخول"}
           </button>
           {users.length === 0 && (
-            <button type="button" onClick={() => skipPasswordSetup?.()} className="mt-3 inline-flex w-full items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-[var(--va-surface)] px-4 py-3 text-sm text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-elevated)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">
+            <button type="button" onClick={() => skipPasswordSetup?.()} className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-[var(--va-surface)] px-4 py-3 text-sm text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-elevated)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">
               البدء السريع بدون كلمة مرور
             </button>
           )}
@@ -777,56 +779,144 @@ export function ForceChangePasswordDialog() {
           autoComplete="new-password"
           placeholder="كلمة المرور الجديدة"
         />
-        {error && <p className="mt-3 text-sm text-[var(--va-status-danger)]">{error}</p>}
-        <button type="submit" className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">حفظ كلمة المرور</button>
+        {error && <p role="alert" aria-live="assertive" className="mt-3 text-sm text-[var(--va-status-danger)]">{error}</p>}
+        <button type="submit" className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">حفظ كلمة المرور</button>
       </form>
     </div>,
     document.body
   );
 }
 
-function createTourSteps(role = "viewer") {
-  if (role === "admin") {
-    return [
-      { title: "ربط المخزن", body: "ابدأ من الإعدادات أو مركز البيانات: افحص SQL وFileStore وAI قبل دخول الفريق." },
-      { title: "رفع وفهرسة", body: "استخدم Uploader لإنشاء مواد من الملفات، ثم راقب مهام الوسائط والصحة اليومية." },
-      { title: "توصيف الفريق", body: "راجع الأنواع والقاموس والوسوم حتى يستخدم المحررون لغة موحدة." },
-      { title: "المشاركة والتصدير", body: "استخدم مركز البيانات للتقارير، EDL/NLE، النسخ الاحتياطي، وحزم النقل الآمنة." }
-    ];
-  }
-  if (role === "editor") {
-    return [
-      { title: "إنشاء سريع", body: "ابدأ بمادة أو مصطلح أو وسم من أي صفحة، ثم افتح التفاصيل عند الحاجة." },
-      { title: "رفع وتفريغ", body: "ارفع الملفات، شغّل التفريغ، واستخدم البحث داخل النص للوصول إلى المقطع." },
-      { title: "توصيف يومي", body: "استخدم @ للقاموس و# للوسوم، وراجع فجوات التوصيف قبل التسليم." },
-      { title: "مونتاج ومشاركة", body: "أضف المادة إلى مشروع، ابن rough cuts، ثم صدّر JSON/EDL أو شارك رابطاً محدود النطاق." }
-    ];
-  }
+const FEATURE_TOUR_SLIDE_ICONS = [Compass, Archive, Command, Sparkles];
+
+function createFeatureTourSlides() {
   return [
-    { title: "البحث والمراجعة", body: "ابدأ من الأرشيف أو البحث المتقدم للوصول إلى المادة والانتقال إلى مقاطع التفريغ." },
-    { title: "التعليقات والذكر", body: "أضف تعليقاً أو اذكر زميلاً عند وجود ملاحظة، وستظهر الإشارة في مركز الإشعارات." },
-    { title: "التصدير المسموح", body: "استخدم التقارير أو مركز البيانات للملفات المسموحة حسب صلاحيتك دون تعديل بنية الأرشيف." }
+    {
+      title: "مكوّنات الواجهة الأساسية",
+      body: "تعرّف على أربعة مكوّنات تستخدمها يومياً.",
+      detailItems: CORE_UI_TOUR_ITEMS.map((item) => ({ label: item.label, detail: item.detail })),
+    },
+    {
+      title: "الأرشيف والبحث",
+      body: "أضف مواد جديدة وصنّفها بالأنواع والوسوم، ثم ابحث فورياً في العناوين والنصوص والتفريغ الصوتي.",
+    },
+    {
+      title: "اختصارات لوحة المفاتيح",
+      body: "هذه الاختصارات تُسرّع عملك اليومي. اضغط ? في أي وقت لعرض القائمة الكاملة.",
+      shortcuts: ONBOARDING_SHORTCUTS,
+    },
+    {
+      title: "الذكاء الاصطناعي والتصدير",
+      body: "تفريغ صوتي تلقائي، اقتراح وسوم، مونتاج مرئي متعدد المسارات، ومشاركة روابط محدودة الصلاحيات — كل ذلك من داخل الأرشيف.",
+    },
   ];
 }
 
-export function V1ProductTour({ open, role = "viewer", onComplete, onSkip }) {
+export function V1ProductTour({ open, onComplete, onSkip }) {
   const [index, setIndex] = React.useState(0);
-  const tourSteps = React.useMemo(() => createTourSteps(role), [role]);
+  const slides = React.useMemo(() => createFeatureTourSlides(), []);
   React.useEffect(() => {
     if (open) setIndex(0);
-  }, [open, role]);
+  }, [open]);
   if (!open) return null;
-  const step = tourSteps[index] || tourSteps[0];
-  const last = index >= tourSteps.length - 1;
+  const slide = slides[index] || slides[0];
+  const last = index >= slides.length - 1;
+  const SlideIcon = FEATURE_TOUR_SLIDE_ICONS[index] || Compass;
   return createPortal(
-    <div dir="rtl" className="fixed inset-0 z-[var(--va-z-modal)] flex items-end justify-center bg-black/55 p-4 text-right text-[var(--va-text)] backdrop-blur-sm sm:items-center">
-      <section className="va-surface-muted w-full max-w-lg rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-6 shadow-[var(--va-elev-popover)]">
-        <p className="text-xs font-semibold va-accent-text">جولة تشغيل {index + 1} / {tourSteps.length}</p>
-        <h2 className="mt-3 text-2xl font-bold">{step.title}</h2>
-        <p className="mt-3 text-sm leading-7 text-[var(--va-text-2)]">{step.body}</p>
-        <div className="mt-6 flex flex-wrap justify-between gap-3">
-          <button type="button" onClick={onSkip} className="inline-flex items-center rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-transparent px-4 py-2 text-sm text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">تخطي</button>
-          <button type="button" onClick={() => last ? onComplete?.() : setIndex((value) => value + 1)} className="inline-flex h-10 items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]">
+    <div
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="feature-tour-title"
+      className="fixed inset-0 z-[var(--va-z-modal)] flex items-end justify-center bg-black/55 p-4 text-right text-[var(--va-text)] backdrop-blur-sm sm:items-center"
+    >
+      <section className="w-full max-w-lg rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-6 shadow-[var(--va-elev-popover)]">
+        {/* slide header */}
+        <div className="flex items-start gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--va-radius-md)] va-accent-bg-soft">
+            <SlideIcon className="h-5 w-5 va-accent-text" aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold va-accent-text">{index + 1} / {slides.length}</p>
+            <h2 id="feature-tour-title" className="mt-1 text-xl font-bold">{slide.title}</h2>
+          </div>
+        </div>
+        <p className="mt-4 text-sm leading-7 text-[var(--va-text-2)]">{slide.body}</p>
+
+        {/* CORE_UI_TOUR_ITEMS list */}
+        {slide.detailItems && (
+          <ul className="mt-4 space-y-2">
+            {slide.detailItems.map((item) => (
+              <li
+                key={item.label}
+                className="flex items-start gap-3 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3"
+              >
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full va-accent-bg" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">{item.label}</p>
+                  <p className="text-xs leading-5 text-[var(--va-text-muted)]">{item.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* keyboard shortcuts grid */}
+        {slide.shortcuts && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {slide.shortcuts.map((s) => (
+              <div
+                key={s.label}
+                className="flex items-center gap-2 rounded-[var(--va-radius-md)] border border-[var(--va-border-soft)] bg-[var(--va-surface-2)] px-3 py-2"
+              >
+                <div className="flex shrink-0 gap-1">
+                  {s.keys.map((k) => (
+                    <kbd
+                      key={k}
+                      className="rounded border border-[var(--va-border-strong)] bg-[var(--va-surface)] px-1.5 py-0.5 font-mono text-[11px]"
+                    >
+                      {k}
+                    </kbd>
+                  ))}
+                </div>
+                <span className="min-w-0 truncate text-xs text-[var(--va-text-2)]">{s.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* dot progress + nav */}
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="inline-flex items-center rounded-[var(--va-radius-md)] border border-[var(--va-border-strong)] bg-transparent px-4 py-2 text-sm text-[var(--va-text-2)] transition-colors hover:bg-[var(--va-surface-2)] hover:text-[var(--va-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]"
+          >
+            تخطّى نهائياً
+          </button>
+
+          {/* slide dots */}
+          <div className="flex items-center gap-1.5" role="tablist" aria-label="الشرائح">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={i === index}
+                aria-label={`الشريحة ${i + 1}`}
+                onClick={() => setIndex(i)}
+                className={`h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 ${
+                  i === index ? "w-5 va-accent-bg" : "w-2 bg-[var(--va-border-strong)] hover:bg-[var(--va-text-muted)]"
+                }`}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => (last ? onComplete?.() : setIndex((v) => v + 1))}
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[var(--va-radius-md)] border border-transparent bg-emerald-500 px-4 text-sm font-medium text-[var(--va-text-inverse)] transition-colors hover:bg-emerald-600 active:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--va-elevated)]"
+          >
             {last ? "إنهاء الجولة" : "التالي"}
           </button>
         </div>
