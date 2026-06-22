@@ -1,9 +1,18 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
-import os from "node:os";
+import { fileURLToPath } from "node:url";
 
 import { buildFfmpegArgs, ExportError } from "./ffmpegPlan.js";
+
+/** Project-controlled export staging directory (not os.tmpdir()). */
+function exportWorkDir() {
+  if (process.env.STORAGE_DIR) {
+    return path.join(process.env.STORAGE_DIR, "export-work");
+  }
+  const here = fileURLToPath(new URL(".", import.meta.url));
+  return path.join(here, "..", "..", "var", "export-work");
+}
 
 // Runs the ffmpeg export. ffmpeg is bundled in the server Docker image
 // (Dockerfile.server: apk add ffmpeg), so this works inside the SAME stack —
@@ -37,7 +46,10 @@ export async function exportTimelineToMp4(timeline, {
   timeoutMs = 10 * 60 * 1000
 } = {}) {
   if (!rootDir) throw new ExportError("جذر الملفات (rootDir) مطلوب للتصدير.", { code: "NO_ROOT" });
-  const output = outFile || path.join(os.tmpdir(), `archive-export-${Date.now()}.mp4`);
+  const workDir = exportWorkDir();
+  // Ensure the directory exists; callers can pass outFile to override entirely.
+  fs.mkdirSync(workDir, { recursive: true });
+  const output = outFile || path.join(workDir, `archive-export-${Date.now()}.mp4`);
 
   const args = buildFfmpegArgs(timeline, {
     output,
