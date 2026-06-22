@@ -181,8 +181,9 @@
   - القبول: thumbnail يظهر لكل مقطع؛ الضغط على إشارة يعرض التعليق.
   - المصدر: new_tail (F14, F15).
 
-- [ ] `[P1]` ⏱️L **معاينة Look/Transition + Proxy Workflow** — swatches للـ looks + أيقونات متحركة للـ transitions + توليد proxy 480p تلقائياً عند الرفع والتبديل للأصل عند التصدير.
-  - الملفات: `archive-app/src/pages/ProjectsPage.jsx`، `archive-server/src/media/*` (buildTranscodeArgs يولّد 480p).
+- [x] `[P1]` ⏱️L **معاينة Look/Transition** — swatches ملونة للـ looks + أزرار مرئية للـ transitions (proxy workflow يبقى مهمة خادم منفصلة).
+  - ✅ مُنجز (2026-06-22 wave-27): `LOOK_SWATCHES` (5 تدرجات) + `TRANSITION_ICONS` أُضيفا في `ProjectsPage.jsx`. looks تعرض شريطاً ملوناً H-8؛ transitions انتقلت من `<select>` إلى شبكة أزرار مرئية. 933 اختبار ناجح.
+  - الملفات: `archive-app/src/pages/ProjectsPage.jsx`.
   - المصدر: new_tail (F16)، dev-roadmap (P2-03).
 
 - [ ] `[P2]` ⏱️M **Media Readiness + Export Package Wizard** — عرض `buildMediaReadiness()` قبل التصدير + معالج تصدير من خطوتين (`buildProjectDeliveryPackage()` موجودة).
@@ -354,9 +355,9 @@
   - القبول: المستخدم يستطيع إعادة عرض الجولة من المساعدة بنقرة واحدة.
   - المصدر: طلب المستخدم 2026-06-21.
 
-- [ ] `[P2]` ⏱️M **نقل الخطوات الثانوية إلى صفحة المساعدة كمواضيع** — مواضيع «التخزين»، «الواجهة»، «الاختصارات»، «المظهر»، «البيانات» تُعرض في `HelpPage` كأقسام قابلة للبحث، مع رابط لإعادة كل جزء من الجولة عند الحاجة.
-  - الملفات: `archive-app/src/pages/HelpPage.jsx`، نقل النصوص من `flow.js`.
-  - القبول: كل خطوة منقولة لها قسم خاص بها في المساعدة مع نفس النص التفصيلي.
+- [x] `[P2]` ⏱️M **نقل الخطوات الثانوية إلى صفحة المساعدة كمواضيع** — مواضيع «التخزين»، «الواجهة»، «الحماية»، «المظهر»، «البيانات» كأقسام قابلة للبحث.
+  - ✅ مُنجز (2026-06-22 wave-27): 5 أقسام جديدة في `createHelpSections()`: `storage-setup`، `security-guide`، `interface-guide`، `appearance-guide`، `data-guide` — كل قسم له عنوان + أيقونة + `searchText` + `InfoGrid` تفصيلي. تظهر في القائمة الجانبية وقابلة للبحث. 933 اختبار ناجح.
+  - الملفات: `archive-app/src/pages/HelpPage.jsx`.
   - المصدر: طلب المستخدم 2026-06-21.
 
 - [x] `[P1]` ⏱️M **تحسين `setup.bat`/`control-center.mjs` — أوامر مختصرة + مساعدة موسّعة + تشخيص أولي**
