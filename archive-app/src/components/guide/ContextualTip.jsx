@@ -56,7 +56,11 @@ export function ContextualTip({ pageId }) {
   if (!tip) return null;
 
   return jsxs("div", {
-    className: "va-card-subtle mt-3 flex items-start gap-3 rounded-xl border va-accent-border va-accent-bg-soft p-3 text-right",
+    // Responsive surface:
+    //  - gap/padding scale with viewport so narrow phones don't waste room
+    //  - text-start (logical) + dir="rtl" keep alignment correct in RTL
+    //  - max-w-prose caps reading width on very wide screens
+    className: "va-card-subtle mt-3 flex max-w-prose items-start gap-2 rounded-xl border va-accent-border va-accent-bg-soft p-2.5 text-start sm:gap-3 sm:p-3",
     dir: "rtl",
     role: "note",
     "aria-label": "تلميح سياقي",
@@ -69,21 +73,25 @@ export function ContextualTip({ pageId }) {
       jsxs("div", {
         className: "min-w-0 flex-1",
         children: [
-          jsx("p", { className: "va-bidi-text text-sm leading-6 text-gray-200", dir: "rtl", children: tip.body }),
+          // break-words stops long URL-like or compound Arabic tokens from
+          // pushing the card wider than its container on narrow screens.
+          jsx("p", { className: "va-bidi-text text-sm leading-6 text-gray-200 break-words", dir: "rtl", children: tip.body }),
           jsx("button", {
             type: "button",
             onClick: handleOpenHelp,
-            className: "va-accent-text mt-1 inline-flex text-xs font-medium hover:underline",
+            className: "va-accent-text mt-1 inline-flex min-h-9 items-center text-xs font-medium hover:underline focus-visible:outline-none focus-visible:underline",
             children: "اعرف المزيد في المساعدة"
           })
         ]
       }),
+      // Touch-comfortable dismiss target: ≥36px on mobile, slightly tighter
+      // 32px on sm+ to keep desktop densities tidy.
       jsx("button", {
         type: "button",
         onClick: handleDismiss,
-        className: "shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-white/10 hover:text-white",
+        className: "shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 sm:h-8 sm:w-8",
         "aria-label": "إخفاء التلميح",
-        children: jsx(X, { className: "h-3.5 w-3.5" })
+        children: jsx(X, { className: "h-4 w-4 sm:h-3.5 sm:w-3.5" })
       })
     ]
   });

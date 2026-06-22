@@ -171,8 +171,12 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
           style: { padding: "0.85rem var(--va-page-gutter, 1.5rem)", gap: "1rem" },
           children: [
             // navbar-start = title area (RTL: visual right side)
+            // !w-auto cancels DaisyUI's default 50% width so flex-1 can actually
+            // claim the remaining row space on mobile (otherwise the title block
+            // is squeezed into ~half the navbar even when nothing fills the other
+            // half, and the ContextualTip card wraps into a tall narrow strip).
             jsxs("div", {
-              className: "navbar-start va-context-title min-w-0 flex-1 !block",
+              className: "navbar-start va-context-title min-w-0 flex-1 !w-auto !block",
               children: [
                 jsxs("div", {
                   className: "mb-1 flex flex-wrap items-center gap-2 text-xs text-[var(--va-text-muted)]",
@@ -191,7 +195,9 @@ export function PageContextBar({ currentPage, currentPageTitle }) {
                   ]
                 }),
                 jsx("h2", { className: "truncate text-lg font-bold text-[var(--va-text)] sm:text-xl", children: meta.title || currentPageTitle }),
-                meta.hint && jsx("p", { className: "mt-1 line-clamp-2 text-sm leading-relaxed text-[var(--va-text-2)]", children: meta.hint }),
+                // ContextualTip already renders meta.hint as its body with a
+                // help link + dismiss button. Rendering it here as a plain <p>
+                // duplicated the same text right above the card.
                 jsx(ContextualTip, { pageId: currentPage })
               ]
             }),
