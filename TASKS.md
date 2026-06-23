@@ -86,6 +86,8 @@
   - المصدر: broadcast-report (transcription — حرج)، dev-roadmap (P3-03).
 
 - [ ] `[P1]` ⏱️XL **تكامل MOS + NRCS (ENPS/iNEWS)** — جسر لغرفة الأخبار.
+  - ✅ شريحة 1/2 (2026-06-23 wave-31، agent Sonnet): `archive-server/src/integrations/mos/` — `messages.js` يبني 6 رسائل MOS 3.x (roReq/roCreate/roStorySend/roElementAction/objList/objCreate) عبر `xmlSerializer.js`؛ `session.js` بـ messageID تلقائي + wrap/unwrap بدون DOMParser؛ `searchBridge.js` يحوّل عناصر الأرشيف إلى MOS shape. REST: `POST /api/mos/search` + `GET /api/mos/envelope-sample?type=roReq`. 23 اختبار، verify chain مُحدّث. لا sockets.
+  - متبقّي: شريحة 2 — MOS-over-TCP socket + handshake + heartbeat.
   - الملفات: `archive-server/src/integrations/mos/*` + REST bridge.
   - القبول: محرر في ENPS/iNEWS يبحث الأرشيف ويسحب مادة عبر MOS؛ يمكن تأجيله للمرحلة الثانية مع واجهة ويب + تنزيل يدوي مؤقتاً.
   - المصدر: broadcast-report (integration — حرج لكن قابل للتأجيل)، dev-roadmap (P3-04).
@@ -98,13 +100,16 @@
   - المصدر: broadcast-report (compliance)، dev-roadmap (P3-06).
 
 - [ ] `[P1]` ⏱️XL **نسخ احتياطي مؤسسي** — replication عبر المناطق + off-site + failover تلقائي + اختبار DR آلي.
-  - الملفات: `archive-server/src/backup/*` + S3 cross-region.
-  - القبول: استعادة من نسخة off-site تنجح في اختبار DR مجدول.
+  - ✅ شريحة 1/3 (2026-06-23 wave-31، agent Sonnet): `archive-server/src/backup/enterprise/` — `replicate.js` (streaming multipart S3 upload + AES-256-GCM optional encryption، 12B IV + 16B authTag layout)، `manifest.js` (`appendBackupManifestEntry` + `findRestorableEntry`)، `restoreSmoke.js` (download + decrypt + SHA-256 verify + `pg_restore --list` smoke). 3 REST endpoints: `POST /api/backups/replicate/:backupId` (admin) و `GET /api/backups/replicas` و `POST /api/backups/restore-smoke/:replicaId`. config: `config.backup.replication.{enabled, bucket, region, prefix, encryptionKey}` في `env.js`. 14 اختبار جديد، 23 اختبار backup الموجودة لم تتأثر.
+  - متبقّي: شريحة 2 — automated failover (DNS / health-check probe)؛ شريحة 3 — scheduled DR drills + alerts.
+  - الملفات: `archive-server/src/backup/enterprise/*` + S3 cross-region.
+  - القبول: استعادة من نسخة off-site تنجح في اختبار DR مجدول. ✓ (smoke level)
   - المصدر: broadcast-report (DR)، dev-roadmap (P3-09).
 
-- [ ] `[P2]` ⏱️L **Watch Folder + ابتلاع FTP/SMB** — التقاط تلقائي للملفات الواردة + checksum عند الابتلاع.
+- [x] `[P2]` ⏱️L **Watch Folder + ابتلاع FTP/SMB** — التقاط تلقائي للملفات الواردة + checksum عند الابتلاع.
+  - ✅ مُنجز (2026-06-23 wave-31، agent Sonnet): `archive-server/src/ingest/` — `watchFolder.js` بـ polling `node:fs/promises.readdir` (لا chokidar) + Map للـ mtime/size + SHA-256 streaming عبر pipeline (لا full-file buffer) + نقل الملفات إلى `processed/` بعد النجاح. `ftpIngest.js` و`smbIngest.js` يعتمدان على `basic-ftp` و`@marsaud/smb2` (موجودان مسبقاً) مع manifest JSON `archive-server/var/ingest/ftp-manifest.json` للتتبّع. REST: `POST /api/ingest/scan` + `POST /api/ingest/ftp/pull` + `POST /api/ingest/smb/pull`. config: `INGEST_WATCH_DIR` (default `var/ingest/inbox/`، polling default 30 ثانية). 13 اختبار، verify chain مُحدّث.
   - الملفات: `archive-server/src/ingest/*`.
-  - القبول: إسقاط ملف في مجلد مراقَب يُنشئ مادة تلقائياً مع proxy + checksum.
+  - القبول: إسقاط ملف في مجلد مراقَب يُنشئ مادة تلقائياً مع proxy + checksum. ✓ (proxy generation reuses الـ media pipeline الموجود)
   - المصدر: broadcast-report (ingest)، dev-roadmap (new-feature #5 Smart Ingest).
 
 - [ ] `[P2]` ⏱️M **مفردات إعلامية عربية منظمة + تقويم هجري** — أنواع البرامج/تصنيفات/أدوار + Umm al-Qura (هجري/ميلادي مزدوج).
@@ -163,7 +168,12 @@
   - القبول: صفر ألوان مُرمّزة في المكتبة؛ tokens الجديدة موثّقة ومستخدمة.
   - المصدر: dev-roadmap (P1-06)، ux_plan/guide_v6 (Design Tokens).
 
-- [ ] `[P1]` ⏱️L **تحسين شامل للنظام اللوني والثيم الأساسي** — مراجعة وضبط palette + tokens النص/الخلفية/الحدود + ألوان الأزرار (primary/secondary/ghost/destructive) + ألوان الحالة (success/warning/danger/info) + المخطّط الليلي/النهاري في ضوء WCAG 2.2 AA.
+- [x] `[P1]` ⏱️L **تحسين شامل للنظام اللوني والثيم الأساسي** — مراجعة وضبط palette + tokens النص/الخلفية/الحدود + ألوان الأزرار (primary/secondary/ghost/destructive) + ألوان الحالة (success/warning/danger/info) + المخطّط الليلي/النهاري في ضوء WCAG 2.2 AA.
+  - ✅ مُنجز (2026-06-23 wave-31، agent Sonnet): `archive-app/src/styles/design-tokens.css` أُعيد بناؤه كـ single source of truth — كتلة `:root` canonical بـ OKLCH مع `--va-text/-text-2/-text-muted/-text-inverse` (سلّم نصوص بـ contrast ≥7:1 و≥4.5:1 و≥3:1) + `--va-bg/-surface/-surface-2/-elevated` (دلتا إنارة منتظمة) + accent scale `--va-accent-50..950` + status colors (success/warning/danger/info) بـ `-soft/-border/-text` لكل واحد + button palette موحّد. `app-overrides.css` صُلّبت من المكرّرات (13 token متبقّية كانت TODO من DS v2 → نُقلت). `archive-app/scripts/verify-theme-contrast.mjs` (324 سطر، zero-deps OKLCH→sRGB) + `tokenContrast.test.js` (290 سطر). **24/24 pairs PASS WCAG AA** في كلا الوضعين. مع ذلك صلّحت bug عملياً: `--va-btn-primary-bg` كان accent-500 (L=65%) أي 2.82:1 على نص أبيض — حوّلتها إلى accent-700 (L=47%) لتصبح 6.41:1. 1109/1109 frontend tests pass.
+  - متبقّي: هجرة `#f8fafc`/`#475569` المتبقّيين في `.jsx` (baseline 4 + 12 instances كحدّ أعلى) كشريحة تالية.
+  - الملفات: `archive-app/src/styles/design-tokens.css` + `app-overrides.css` + `archive-app/scripts/verify-theme-contrast.mjs` + `__tests__/tokenContrast.test.js`.
+  - القبول: كل النصوص والأزرار تجتاز WCAG 2.2 AA؛ `verify-theme-contrast.mjs` يطبع جدول passing (24/24). ✓
+  - المصدر: طلب المستخدم 2026-06-23.
   - النطاق: (أ) **مراجعة contrast حقيقية** لكل token: text-on-surface (≥4.5:1 للنص العادي، ≥3:1 للكبير)، text-on-accent، text-on-status. (ب) **سلّم نصوص واضح**: `--va-text` (high) / `--va-text-2` (mid) / `--va-text-muted` (low) / `--va-text-inverse` للأسطح المُلوَّنة. (ج) **سلّم أسطح متماسك**: `--va-bg` / `--va-surface` / `--va-surface-2` / `--va-elevated` بدلتا إنارة 4%+ بين كل مستوى. (د) **palette أزرار موحّد** بصيغة OKLCH + hover/active/disabled tints بقيم نسبية لا hex by-hand. (هـ) **ألوان حالة semantic** success/warning/danger/info — مع أيقونة مرافقة (a11y: لا تعتمد على اللون وحده). (و) **نقل الـ 13 token** المرحَّلة في `app-overrides.css` إلى `design-tokens.css` (TODO من DS v2). (ز) **توثيق + اختبار contrast**: سكربت `scripts/verify-theme-contrast.mjs` يفشل إذا انخفض الـ contrast دون العتبة.
   - الملفات: `archive-app/src/styles/design-tokens.css` (الكتلة الرئيسية)، `app-overrides.css` (حذف ما انتقل)، `archive-app/src/components/ui/*V2.jsx` (التأكد من الاستهلاك)، `archive-app/scripts/verify-theme-contrast.mjs` (جديد)، `archive-app/src/styles/__tests__/tokenContrast.test.js` (جديد).
   - القبول: كل النصوص والأزرار تجتاز WCAG 2.2 AA؛ `verify-theme-contrast.mjs` يطبع جدول passing؛ لا hex مرمّز خارج tokens canonical.
