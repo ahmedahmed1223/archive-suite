@@ -63,7 +63,10 @@ export function ServerStatusBadge({ compact = false }) {
   const meta = STATE_META[status?.state] || STATE_META.local;
   const Icon = meta.Icon;
   const label = backendLabel(status || {});
-  const title = `${label} - ${meta.label}${status?.lastLatencyMs != null ? ` - ${status.lastLatencyMs}ms` : ""}`;
+  // The state suffix (e.g., "محلي") often already lives inside the engine
+  // label ("IndexedDB محلي") — render the suffix only when it adds new info.
+  const stateSuffix = meta.label && !label.includes(meta.label) ? meta.label : "";
+  const title = `${label}${stateSuffix ? ` - ${stateSuffix}` : ""}${status?.lastLatencyMs != null ? ` - ${status.lastLatencyMs}ms` : ""}`;
 
   const refresh = async () => {
     const choice = resolveBackendChoice();
@@ -93,7 +96,7 @@ export function ServerStatusBadge({ compact = false }) {
         children: [
           jsx(Icon, { className: `h-3.5 w-3.5 ${status?.state === "reconnecting" ? "animate-spin" : ""}` }),
           !compact && jsx("span", { className: "max-w-[12rem] truncate", children: label }),
-          jsx("span", { children: meta.label })
+          stateSuffix && jsx("span", { children: stateSuffix })
         ]
       }),
       open && jsxs("div", {
