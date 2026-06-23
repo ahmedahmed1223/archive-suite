@@ -456,7 +456,8 @@ export async function handleMediaRoute({
           if (typeof files.putStream === "function") {
             result = await files.putStream(key, req, { contentType: declaredMime });
           } else {
-            result = await files.putBlob(key, req, { contentType: declaredMime });
+            const bytes = await readRawBody(req);
+            result = await files.putBlob(key, bytes, { contentType: declaredMime });
           }
         }
         notifyUploadComplete({ prisma, sendMail: notificationSendMail, userId: claims.sub, recordTitle: key });
