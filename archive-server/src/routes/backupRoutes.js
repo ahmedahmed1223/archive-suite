@@ -1,8 +1,9 @@
-// Backup routes — list, run, preview, restore.
+// Backup routes — list, run, preview, restore + enterprise replication.
 // Extracted from api/server.js. No business logic changed.
 
 import { listBackups, runBackup, restoreBackup, previewBackup } from "../backup/backupScheduler.js";
 import { auditLog } from "../api/auditLogger.js";
+import { handleReplicationRoute } from "../backup/enterprise/replicationRoutes.js";
 
 /**
  * Handles all /api/admin/backups* routes.
@@ -15,6 +16,7 @@ export async function handleBackupRoute({
   send,
   overLimit,
   readJsonBody,
+  requireAuth,
   requireAdmin,
   resolveStorage,
   clientIp,
@@ -78,6 +80,11 @@ export async function handleBackupRoute({
     } catch (error) {
       return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Restore failed" }), true;
     }
+  }
+
+  // Enterprise replication routes (/api/backups/replicate/*, /api/backups/replicas, /api/backups/restore-smoke/*)
+  if (await handleReplicationRoute({ req, res, url, send, overLimit, requireAuth, requireAdmin })) {
+    return true;
   }
 
   return false; // not handled
