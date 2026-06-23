@@ -474,6 +474,39 @@
     border-width: 0;
   }
 
+  /* ── Skip-link — hidden off-screen until keyboard-focused; then jumps
+   * into the top-start corner with a visible pill. Previously the class
+   * had no CSS rule, so the bare <a> rendered as a visible vertical
+   * artifact on small screens and pushed the layout. ── */
+  .va-skip-link {
+    position: fixed;
+    inset-block-start: 0.5rem;
+    inset-inline-start: 0.5rem;
+    z-index: 9999;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--va-radius-md, 0.5rem);
+    background: var(--va-surface, #1f2937);
+    color: var(--va-text, #f3f4f6);
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: var(--va-elev-2, 0 4px 12px rgba(0,0,0,0.25));
+    /* Off-screen until focused — clip-path keeps it accessible to AT. */
+    clip-path: inset(50%);
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .va-skip-link:focus,
+  .va-skip-link:focus-visible {
+    clip-path: none;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    outline: 2px solid var(--va-accent-500, var(--va-action, #14b8a6));
+    outline-offset: 2px;
+  }
+
   /* ── Smooth scrolling for main content areas ── */
   html { scroll-behavior: smooth; }
   .va-page-shell,
