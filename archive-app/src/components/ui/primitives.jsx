@@ -545,3 +545,120 @@ export function Dialog({
 }
 
 export { Check as DialogCheckIcon };
+
+/* ───────────────────────────── ToastV2 ───────────────────────────── */
+
+/**
+ * ToastV2 — accessible, portal-rendered toast notification.
+ * Auto-dismisses after `duration` ms. RTL-safe positioning via inset-inline-end.
+ *
+ * @param {{ message: string, type?: "success"|"error"|"warning"|"info", onDismiss?: () => void, duration?: number }} props
+ */
+
+const TOAST_TYPE_STYLES = {
+  success: "border-[var(--va-status-success)] bg-[color-mix(in_oklab,var(--va-status-success)_12%,var(--va-elevated))] text-[var(--va-status-success)]",
+  error:   "border-[var(--va-status-danger)]  bg-[color-mix(in_oklab,var(--va-status-danger)_12%,var(--va-elevated))]  text-[var(--va-status-danger)]",
+  warning: "border-[var(--va-status-warning)] bg-[color-mix(in_oklab,var(--va-status-warning)_12%,var(--va-elevated))] text-[var(--va-status-warning)]",
+  info:    "border-[var(--va-status-info)]    bg-[color-mix(in_oklab,var(--va-status-info)_12%,var(--va-elevated))]    text-[var(--va-status-info)]",
+};
+
+export function ToastV2({ message, type = "info", onDismiss, duration = 4000 }) {
+  React.useEffect(() => {
+    if (!onDismiss) return undefined;
+    const id = setTimeout(onDismiss, duration);
+    return () => clearTimeout(id);
+  }, [onDismiss, duration]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      role="alert"
+      aria-live="assertive"
+      dir="rtl"
+      style={{
+        position: "fixed",
+        bottom: "var(--va-space-6)",
+        insetInlineEnd: "50%",
+        transform: "translateX(50%)",
+        zIndex: "var(--va-z-toast)",
+        minWidth: "18rem",
+        maxWidth: "calc(100vw - var(--va-space-8))",
+      }}
+      className={cx(
+        "flex items-start gap-3 rounded-[var(--va-radius-lg)] border px-4 py-3 text-sm font-medium shadow-[var(--va-elev-popover)]",
+        TOAST_TYPE_STYLES[type] || TOAST_TYPE_STYLES.info
+      )}
+    >
+      <span className="flex-1 text-[var(--va-text)]">{message}</span>
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="إغلاق"
+          className="shrink-0 rounded-[var(--va-radius-sm)] p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
+        >
+          ×
+        </button>
+      )}
+    </div>,
+    document.body
+  );
+}
+
+/* ───────────────────────────── TooltipV2 ───────────────────────────── */
+
+/**
+ * TooltipV2 — lightweight CSS-position tooltip, no external lib.
+ * Shows on hover and focus (keyboard accessible). RTL-safe: start/end sides
+ * use inset-inline-start / inset-inline-end logical properties.
+ *
+ * @param {{ content: string|React.ReactNode, children: React.ReactNode, placement?: "top"|"bottom"|"start"|"end" }} props
+ */
+
+const TOOLTIP_PLACEMENT = {
+  top:    { bottom: "calc(100% + var(--va-space-2))", insetInlineStart: "50%", transform: "translateX(-50%)" },
+  bottom: { top:    "calc(100% + var(--va-space-2))", insetInlineStart: "50%", transform: "translateX(-50%)" },
+  start:  { top: "50%", insetInlineEnd: "calc(100% + var(--va-space-2))", transform: "translateY(-50%)" },
+  end:    { top: "50%", insetInlineStart: "calc(100% + var(--va-space-2))", transform: "translateY(-50%)" },
+};
+
+export function TooltipV2({ content, children, placement = "top" }) {
+  const [visible, setVisible] = React.useState(false);
+  const tooltipId = React.useId();
+
+  const show = () => setVisible(true);
+  const hide = () => setVisible(false);
+
+  const positionStyles = TOOLTIP_PLACEMENT[placement] || TOOLTIP_PLACEMENT.top;
+
+  return (
+    <span
+      style={{ position: "relative", display: "inline-flex" }}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onFocus={show}
+      onBlur={hide}
+    >
+      {React.cloneElement(React.Children.only(children), {
+        "aria-describedby": visible ? tooltipId : undefined,
+      })}
+      {visible && (
+        <span
+          id={tooltipId}
+          role="tooltip"
+          style={{
+            position: "absolute",
+            zIndex: "var(--va-z-tooltip)",
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+            ...positionStyles,
+          }}
+          className="rounded-[var(--va-radius-sm)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] px-2 py-1 text-xs text-[var(--va-text)] shadow-[var(--va-elev-popover)]"
+        >
+          {content}
+        </span>
+      )}
+    </span>
+  );
+}
