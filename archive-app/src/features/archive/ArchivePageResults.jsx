@@ -426,8 +426,13 @@ export function ArchivePageResults(props) {
     [contentTypes]
   );
 
-  // Virtual list — only active on mobile (< 768 px) with > 20 items.
-  // itemHeight 120 px matches a standard archive card height in list/grid view.
+  // Virtual list — active on mobile (< 768 px) with > 20 items, or desktop > 50 items.
+  // List view uses container-level scrolling (64 px rows) with sessionStorage scroll persistence.
+  // Grid and other views fall back to window-level scrolling with a 200 px estimate.
+  const renderViewModeForVirtual = getArchiveRenderViewMode(activeViewMode);
+  const isListView = renderViewModeForVirtual === "list";
+  const virtualEstimateSize = isListView ? 72 : 200;
+
   const {
     containerRef: virtualContainerRef,
     visibleItems: virtualItems,
@@ -436,7 +441,13 @@ export function ArchivePageResults(props) {
     shouldVirtualize,
     totalCount,
     visibleCount,
-  } = useVirtualList({ items: visibleItems || [], itemHeight: 120 });
+  } = useVirtualList({
+    items: visibleItems || [],
+    estimateSize: virtualEstimateSize,
+    overscan: 5,
+    scrollKey: isListView ? "archive-scroll-pos" : undefined,
+    containerScroll: isListView,
+  });
 
   // Show the skeleton only on the *first* load: once data exists or
   // filters narrowed it to zero, the EmptyState below is the right
@@ -525,8 +536,16 @@ export function ArchivePageResults(props) {
             "aria-multiselectable": "true",
             "aria-label": "قائمة العناصر المؤرشفة",
             className: "outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 rounded-2xl",
-            children: jsxs("div", {
+            children: jsx("div", {
+              // List view uses a scrollable container so the virtual scroller tracks
+              // the container's own scrollTop rather than window.scrollY. This keeps
+              // the rest of the page fixed and lets the virtual window fire correctly.
+              // For other views we fall back to the natural document flow.
               ref: virtualContainerRef,
+              dir: "rtl",
+              style: isListView
+                ? { height: "calc(100vh - 200px)", overflowY: "auto" }
+                : undefined,
               children: [
                 viewSupportsVirtualization && topSpacerHeight > 0 && jsx("div", { style: { height: topSpacerHeight }, "aria-hidden": "true" }),
                 renderItemsForViewMode({
