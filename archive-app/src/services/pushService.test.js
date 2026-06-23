@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   urlBase64ToUint8Array,
   isPushSupported,
   subscribeToPush,
   unsubscribeFromPush
 } from "./pushService.js";
+import { setCloudToken, clearCloudToken } from "../bootstrap/cloudSession.js";
 
 function memoryStorage(token = "jwt-token") {
   const map = new Map([["va.cloudToken.v1", token]]);
@@ -41,6 +42,11 @@ describe("isPushSupported", () => {
 });
 
 describe("subscribeToPush", () => {
+  // §20.1: getCloudToken() reads from module memory, not from the passed storage.
+  // Seed the memory token so authHeaders() produces "Bearer jwt-token".
+  beforeEach(() => { setCloudToken("jwt-token"); });
+  afterEach(() => { clearCloudToken(); });
+
   function happyDeps() {
     const subscription = {
       endpoint: "https://push.test/ep1",
