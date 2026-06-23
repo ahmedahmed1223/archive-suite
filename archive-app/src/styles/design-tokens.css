@@ -9,6 +9,70 @@
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
+ * Semantic surface, text, border, status, and elevation tokens (light mode).
+ *
+ * These are the canonical definitions. app-overrides.css re-declares them
+ * inside @layer app-overrides for dark mode and for the legacy alias shim.
+ * Keeping them here ensures downstream consumers (v2 primitives, new features)
+ * can always reference these names without importing app-overrides.css.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+:root {
+  /* Backgrounds / surfaces */
+  --va-bg:        #f6f4ee;
+  --va-surface:   #fffdf9;
+  --va-surface-2: #f1ece3;
+  --va-elevated:  #ffffff;
+
+  /* Text */
+  --va-text:         #14202e;
+  --va-text-2:       #475569;
+  --va-text-muted:   #7b8a9a;
+  --va-text-inverse: #ffffff;
+
+  /* Borders */
+  --va-border-soft:   rgba(15, 23, 42, 0.08);
+  --va-border-strong: rgba(15, 23, 42, 0.14);
+
+  /* Status colours */
+  --va-status-info:    #2563eb;
+  --va-status-success: #0d9488;
+  --va-status-warning: #d98a1f;
+  --va-status-danger:  #e11d48;
+
+  /* Elevation shadows */
+  --va-elev-1:       0 1px 2px rgba(15, 23, 42, 0.05);
+  --va-elev-2:       0 6px 16px -8px rgba(15, 23, 42, 0.14);
+  --va-elev-popover: 0 18px 40px -12px rgba(15, 23, 42, 0.22);
+}
+
+/* Dark mode overrides for semantic surface / text / border / status / elevation tokens. */
+html.dark {
+  --va-bg:        #060e1a;
+  --va-surface:   #0c1726;
+  --va-surface-2: #111c2e;
+  --va-elevated:  #111f33;
+
+  --va-text:         #f8fafc;
+  --va-text-2:       #cbd5e1;
+  --va-text-muted:   #94a3b8;
+  --va-text-inverse: #04211c;
+
+  --va-border-soft:   rgba(255, 255, 255, 0.07);
+  --va-border-strong: rgba(255, 255, 255, 0.12);
+
+  --va-status-info:    #38bdf8;
+  --va-status-success: #2dd4bf;
+  --va-status-warning: #f4b860;
+  --va-status-danger:  #fb7185;
+
+  --va-elev-1:       0 1px 2px rgba(0, 0, 0, 0.35);
+  --va-elev-2:       0 8px 24px -10px rgba(0, 0, 0, 0.55);
+  --va-elev-popover: 0 24px 50px -16px rgba(0, 0, 0, 0.65);
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
  * Accent palette — full 11-stop scale that drives both semantic tokens and
  * Tailwind's emerald overrides below.
  *
