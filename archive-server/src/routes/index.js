@@ -6,3 +6,4 @@ export { handleMediaRoute } from "./mediaRoutes.js";
 export { handleShareRoute } from "./shareRoutes.js";
 export { handleBackupRoute } from "./backupRoutes.js";
 export { handleAdminRoute } from "./adminRoutes.js";
+export { handleUserDataRoute } from "./userDataRoutes.js";
