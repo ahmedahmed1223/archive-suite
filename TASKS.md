@@ -118,11 +118,9 @@
 
 ## 2. الأساس المعماري (Architecture & Foundation) — net-new
 
-- [ ] `[P0]` ⏱️L **ترحيل JWT إلى HttpOnly Cookie + refresh rotation** — استبدال تخزين التوكن في `localStorage`.
-  - الملفات: `archive-server/src/auth/*`, `archive-server/src/api/server.js`, عميل الـ frontend.
-  - القبول: لا توكن في `localStorage`؛ Cookie بـ `HttpOnly+Secure+SameSite=Strict` + تدوير refresh.
+- [x] `[P0]` ⏱️L **ترحيل JWT إلى HttpOnly Cookie + refresh rotation** — استبدال تخزين التوكن في `localStorage`.
+  - ✅ مُنجز (2026-06-23 wave-30، agent A): `tokenService.js` (sign/verify). POST `/api/auth/refresh` يدوّر cookie `va_refresh` (HttpOnly+Secure+SameSite=Strict). `cloudSession.js` يخزّن access token في MODULE MEMORY فقط. `createSilentRenewal` يُجدّد 60ث قبل انتهاء الصلاحية. 16 اختبار. 1043 tests green.
   - المصدر: dev-roadmap (P0-01)، ux_plan (security).
-  - **تحقّق:** قد يكون جزءاً من عمل الأمان المكتمل — راجع `ChangeLog.md` §1.
 
 - [x] `[P0]` ⏱️L **إصلاح الوضع الفاتح (Light Mode) — جزئي** — `useTheme` + مراجعة المكوّنات بألوان داكنة ثابتة.
   - ✅ أُصلح الجزء الحرج (2026-06-21): `--va-v1-text/secondary/muted` في `:root` أُعيدت لـ semantic tokens. SessionRestoreBanner أُصلحت.
@@ -142,9 +140,8 @@
   - القبول: تبديل لحظي بين 3 لغات دون إعادة تحميل؛ لا سلاسل عربية مُرمّزة في المكوّنات.
   - المصدر: dev-roadmap (P0-06)، ux_plan (Sprint 3).
 
-- [ ] `[P1]` ⏱️XL **تفكيك `server.js` إلى وحدات** — تقسيم الملف الضخم إلى authRoutes/mediaRoutes/shareRoutes/backupRoutes/adminRoutes (لا ملف >400 سطر).
-  - الملفات: `archive-server/src/api/server.js` → `archive-server/src/api/routes/*`.
-  - القبول: كل ملف ≤400 سطر؛ `pnpm verify:server` أخضر.
+- [x] `[P1]` ⏱️XL **تفكيك `server.js` إلى وحدات** — تقسيم الملف الضخم إلى authRoutes/mediaRoutes/shareRoutes/backupRoutes/adminRoutes (لا ملف >400 سطر).
+  - ✅ مُنجز (2026-06-23 wave-30، agent B): `archive-server/src/routes/` — 5 وحدات + barrel index. server.js تقلّص إلى middleware + mount + startup فقط.
   - المصدر: dev-roadmap (P1-01).
 
 - [x] `[P1]` ⏱️L **تفكيك `archiveSlice` + إصلاح تسرّب الذاكرة** — استخراج شرائح (itemCrud/collection/project/media/history) + تقليم `workflowHistory`/`itemHistory`.
@@ -159,8 +156,9 @@
   - المصدر: dev-roadmap (P1-04, P1-05, P5-03).
 
 - [ ] `[P1]` ⏱️XL **نظام تصميم موحّد v2** — مكتبة مكوّنات أساسية (Button/Input/Card/Dialog/Badge/Switch/Tabs) تستخدم tokens حصراً + توسيع tokens (status/density/duration/skeleton).
-  - ✅ شريحة 1/3 — primitives أربعة (2026-06-22 wave-29، agent Sonnet): `archive-app/src/components/ui/ButtonV2.jsx` (variants primary/secondary/ghost/destructive، sizes sm/md/lg، loading state، tap target ≥44px)، `InputV2.jsx` (text/email/password/number، error state مع aria-invalid، prefix/suffix slots RTL-safe)، `CardV2.jsx` (compound `<Card.Header/Body/Footer>`، variants solid/subtle)، `DialogV2.jsx` (native `<dialog>` element مع showModal/focus trap/ESC، header/body/footer slots). barrel في `components/ui/index.js`. 33 اختبار (target كان 12). 978/978 frontend tests pass في الـ slice. **TODO معروف**: 13 tokens مستخدمة في `app-overrides.css` بحاجة هجرة إلى `design-tokens.css`: `--va-text`/`-text-2`/`-text-muted`/`-text-inverse`، `--va-surface`/`-surface-2`/`-elevated`/`-bg`، `--va-border-soft`/`-border-strong`، `--va-status-danger`، `--va-elev-1`/`-2`/`-popover`.
-  - متبقّي: Badge / Switch / Tabs / Toast / Tooltip + توسيع tokens + هجرة call sites القديمة إلى v2.
+  - ✅ شريحة 1/3 — primitives أربعة (2026-06-22 wave-29): ButtonV2/InputV2/CardV2/DialogV2. 33 اختبار.
+  - ✅ شريحة 2/3 — (2026-06-23 wave-30، agent C): `BadgeV2.jsx` (5 variants، dot indicator)، `SwitchV2.jsx` (role=switch، 44px tap target، RTL logical props)، `TabsV2.jsx` (compound، keyboard nav ArrowKey/Home/End، ARIA tablist/tab/tabpanel). `design-tokens.css`: كتلة `:root` canonical لـ 14 رمز `--va-*` بقيم light+dark. 38 اختبار جديد. 1043 tests green.
+  - متبقّي: Toast / Tooltip + هجرة call sites القديمة إلى v2.
   - الملفات: `archive-app/src/components/ui/*`، `archive-app/src/styles/design-tokens.css`.
   - القبول: صفر ألوان مُرمّزة في المكتبة؛ tokens الجديدة موثّقة ومستخدمة.
   - المصدر: dev-roadmap (P1-06)، ux_plan/guide_v6 (Design Tokens).
@@ -216,9 +214,8 @@
 
 ## 4. الأداء وإمكانية الوصول (Performance & a11y) — جزئياً net-new
 
-- [ ] `[P1]` ⏱️L **Virtual Scrolling في ArchivePage** — قوائم +1000 عنصر عبر TanStack Virtual / react-window.
-  - الملفات: `archive-app/src/features/archive/*`.
-  - القبول: قائمة 5000 عنصر تتمرّر بسلاسة دون تجمّد.
+- [x] `[P1]` ⏱️L **Virtual Scrolling في ArchivePage** — قوائم +1000 عنصر عبر TanStack Virtual / react-window.
+  - ✅ مُنجز (2026-06-23 wave-30، agent D): `useVirtualList.js` — estimateSize/overscan/scrollKey/containerScroll، sessionStorage scroll-position save+restore. `ArchivePageResults.jsx`: list view container-scroll (72px rows، overscan 5، RTL-safe). 8 اختبار جديد. 1043 tests green.
   - المصدر: ux_plan (Sprint 4)، guide_v6 (ArchivePage).
 
 - [x] `[P1]` ⏱️L **Lazy Loading للمكتبات الثقيلة** — Cytoscape, Recharts, pdfjs, xlsx, sql.js عبر dynamic import.
