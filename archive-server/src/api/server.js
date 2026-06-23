@@ -30,6 +30,7 @@ import { handleControlRoute } from "./controlRoutes.js";
 import { handleRightsRoute } from "./routes/rights.js";
 import { publicOpenApiSpec } from "./publicOpenApi.js";
 import { handleExportRoute } from "./routes/export.js";
+import { handleMosRoute } from "../integrations/mos/mosRoutes.js";
 import { createControlAgent } from "../control/controlAgent.js";
 import { importPreviewService } from "../import/importPreview.js";
 import { sendMail as defaultSendMail } from "../auth/emailService.js";
@@ -675,6 +676,12 @@ export function createApiServer({
 
     // ── Per-item metadata export ──────────────────────────────────────────────
     if (await handleExportRoute({ url, req, res, requireAuth, resolveStorage, send })) {
+      return undefined;
+    }
+
+    // ── MOS / NRCS integration (slice 1 — search bridge + envelope samples) ──
+    if (await handleMosRoute({ req, res, url, params: requestUrl.searchParams,
+        sendJson: send, requireAuth, overLimit, readJsonBody, resolveStorage, prisma })) {
       return undefined;
     }
 
