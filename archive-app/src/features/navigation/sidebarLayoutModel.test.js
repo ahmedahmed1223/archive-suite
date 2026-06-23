@@ -32,13 +32,24 @@ describe("resolveSidebarResponsiveState", () => {
 });
 
 describe("getSidebarDrawerFrame", () => {
-  it("uses DaisyUI drawer classes for the mobile sidebar shell", () => {
-    expect(getSidebarDrawerFrame({ open: true }).rootClassName).toContain("drawer drawer-end");
-    expect(getSidebarDrawerFrame({ open: true }).rootClassName).toContain("drawer-open");
-    expect(getSidebarDrawerFrame({ open: true }).sideClassName).toContain("drawer-side");
-    expect(getSidebarDrawerFrame({ open: true }).overlayClassName).toContain("drawer-overlay");
+  it("returns a mobile-only fixed overlay shell that is interactive only when open", () => {
+    const opened = getSidebarDrawerFrame({ open: true });
+    const closed = getSidebarDrawerFrame({ open: false });
 
-    expect(getSidebarDrawerFrame({ open: false }).rootClassName).not.toContain("drawer-open");
+    // Mobile-only — gated by md:hidden so it never paints on desktop.
+    expect(opened.rootClassName).toContain("md:hidden");
+    // Closed: pointer events disabled at the root so the dead area never
+    // captures clicks meant for the page underneath.
+    expect(closed.rootClassName).toContain("pointer-events-none");
+    expect(opened.rootClassName).not.toContain("pointer-events-none");
+
+    // The overlay layer covers the viewport and is itself clickable.
+    expect(opened.sideClassName).toContain("fixed inset-0");
+    expect(opened.overlayClassName).toContain("pointer-events-auto");
+
+    // Panel anchors to the logical inline-start edge (visual right in RTL).
+    expect(opened.panelClassName).toContain("start-0");
+    expect(opened.panelClassName).toContain("overflow-y-auto");
   });
 });
 
