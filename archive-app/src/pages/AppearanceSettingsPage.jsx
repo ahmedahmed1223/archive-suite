@@ -4,12 +4,19 @@ import { Palette, Download, Upload, ChevronDown } from "lucide-react";
 
 import { PageHero } from "../components/ui/V1Primitives.jsx";
 import { Button, Switch } from "../components/ui/index.js";
-import { DAISY_THEME_OPTIONS, getStoredDaisyTheme, storeDaisyTheme } from "../features/theme/daisyThemes.js";
+import {
+  DAISY_THEME_OPTIONS,
+  getStoredDaisyTheme,
+  storeDaisyTheme,
+  normalizeDaisyTheme,
+  applyDaisyTheme,
+} from "../features/theme/daisyThemes.js";
 import {
   CUSTOM_DAISY_THEME_FIELDS,
   getStoredCustomDaisyTheme,
   storeCustomDaisyTheme,
   applyCustomDaisyTheme,
+  normalizeCustomDaisyTheme,
 } from "../features/theme/customDaisyTheme.js";
 import {
   getStoredDensity,
@@ -20,6 +27,7 @@ import { downloadThemeFile, importThemeConfig } from "../features/theme/themeExp
 
 import { ThemePreviewCard } from "../components/theme/ThemePreviewCard.jsx";
 import { DensitySelector } from "../components/theme/DensitySelector.jsx";
+import { useAppStore } from "../stores/index.js";
 
 // ---------------------------------------------------------------------------
 // Section wrapper
@@ -103,30 +111,60 @@ function CustomThemeEditor({ customTheme, onChange }) {
 // Main page
 // ---------------------------------------------------------------------------
 export function AppearanceSettingsPage() {
-  const [daisyTheme, setDaisyTheme] = React.useState(() => getStoredDaisyTheme());
-  const [density, setDensity] = React.useState(() => getStoredDensity());
-  const [customTheme, setCustomTheme] = React.useState(() => getStoredCustomDaisyTheme());
+  // The app store (settings.ui.*) is the source of truth that AppRouter reads
+  // to drive the live theme effect; localStorage mirrors it for reload survival.
+  // Reading from the store here keeps this page consistent with SettingsPage and
+  // prevents navigation/store re-renders from reverting a freshly picked theme.
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
+  const showToast = useAppStore((s) => s.showToast);
+
+  const ui = settings?.ui || {};
+  const patchUi = (uiPatch, message) =>
+    updateSettings?.({ ui: { ...ui, ...uiPatch } }) !== false && message
+      ? showToast?.(message, "success")
+      : undefined;
+
+  const [daisyTheme, setDaisyTheme] = React.useState(() => ui.daisyTheme || getStoredDaisyTheme());
+  const [density, setDensity] = React.useState(() => ui.visualDensity || getStoredDensity());
+  const [customTheme, setCustomTheme] = React.useState(
+    () => normalizeCustomDaisyTheme(ui.customDaisyTheme || getStoredCustomDaisyTheme())
+  );
   const [importError, setImportError] = React.useState(null);
   const fileInputRef = React.useRef(null);
+
+  // Keep local state in sync if the theme changes elsewhere (e.g. SettingsPage).
+  React.useEffect(() => { setDaisyTheme(ui.daisyTheme || getStoredDaisyTheme()); }, [ui.daisyTheme]);
+  React.useEffect(() => { setDensity(ui.visualDensity || getStoredDensity()); }, [ui.visualDensity]);
+  React.useEffect(() => {
+    setCustomTheme(normalizeCustomDaisyTheme(ui.customDaisyTheme || getStoredCustomDaisyTheme()));
+  }, [ui.customDaisyTheme]);
 
   // ---- handlers ----
 
   const handleThemeSelect = (themeId) => {
-    setDaisyTheme(themeId);
-    storeDaisyTheme(themeId);
-    // Dispatch DOM event so existing listeners (AppShell, etc.) update.
-    document.dispatchEvent(new CustomEvent("daisytheme:change", { detail: { theme: themeId } }));
+    const normalized = normalizeDaisyTheme(themeId);
+    setDaisyTheme(normalized);
+    storeDaisyTheme(normalized);
+    applyDaisyTheme(normalized);
+    // Persist into the store so AppRouter's theme effect re-runs — previously the
+    // pick only reached localStorage + an unobserved DOM event, so the gallery
+    // appeared not to apply and reverted on navigation.
+    patchUi({ daisyTheme: normalized });
   };
 
   const handleDensityChange = (id) => {
     setDensity(id);
     setStoredDensity(id);
     applyDensityToDocument(id);
+    patchUi({ visualDensity: id });
   };
 
   const handleCustomThemeChange = (next) => {
-    setCustomTheme(next);
-    storeCustomDaisyTheme(next);
+    const normalized = normalizeCustomDaisyTheme(next);
+    setCustomTheme(normalized);
+    storeCustomDaisyTheme(normalized);
+    patchUi({ customDaisyTheme: normalized });
   };
 
   const handleExport = () => {
