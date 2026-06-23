@@ -63,6 +63,14 @@ export function FileArchiveWizard({
   const [notes, setNotes] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
 
+  // initialStoredFiles is often passed as a fresh default `[]` array literal
+  // on every parent render, so depending on the array identity caused an
+  // infinite render loop (setRows → re-render → new [] default → effect runs
+  // again). We instead key the effect on `open` (the actual trigger) and
+  // dereference initialStoredFiles via a ref so the latest value is read on
+  // each open transition without joining the dep list.
+  const initialStoredFilesRef = React.useRef(initialStoredFiles);
+  initialStoredFilesRef.current = initialStoredFiles;
   React.useEffect(() => {
     if (!open) {
       setRows([]);
@@ -70,8 +78,9 @@ export function FileArchiveWizard({
       setIsSaving(false);
       return;
     }
-    if (initialStoredFiles.length) {
-      setRows(initialStoredFiles.map((entry, index) => {
+    const stored = initialStoredFilesRef.current;
+    if (stored.length) {
+      setRows(stored.map((entry, index) => {
         const name = entry.name || entry.fileKey?.slice(entry.fileKey.lastIndexOf("/") + 1) || `file-${index + 1}`;
         const file = { name, size: entry.size || 0, type: entry.mimeType || "", lastModified: 0 };
         return {
@@ -87,7 +96,7 @@ export function FileArchiveWizard({
         };
       }));
     }
-  }, [initialStoredFiles, open]);
+  }, [open]);
 
   React.useEffect(() => {
     if (!typeId && firstType?.id) setTypeId(firstType.id);
