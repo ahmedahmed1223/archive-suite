@@ -106,13 +106,21 @@ export function resolveSidebarResponsiveState({
 }
 
 export function getSidebarDrawerFrame({ open = false } = {}) {
+  // Plain fixed overlay + absolutely-positioned side panel. Previously we
+  // used DaisyUI's .drawer / .drawer-side grid mechanics, but the outer
+  // container also had `fixed inset-0` which collapses DaisyUI's grid and
+  // left `.drawer-side` with zero height — the toggle button showed but
+  // the panel itself wasn't visible on mobile.
   return {
-    rootClassName: `drawer drawer-end fixed inset-0 z-[60] pointer-events-none md:hidden ${open ? "drawer-open" : ""}`.trim(),
-    contentClassName: "drawer-content pointer-events-none",
+    rootClassName: `md:hidden ${open ? "" : "pointer-events-none"}`.trim(),
+    contentClassName: "",
     toggleClassName: "pointer-events-auto fixed right-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-[61] inline-flex h-11 w-11 items-center justify-center rounded-[var(--va-radius-lg)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] text-[var(--va-text)] shadow-[var(--va-elev-2)] backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/55 md:hidden",
-    sideClassName: "drawer-side pointer-events-auto z-[60]",
-    overlayClassName: "drawer-overlay bg-black/55 backdrop-blur-sm",
-    panelClassName: "va-sidebar min-h-full flex flex-col border-s border-[var(--va-border-soft)] bg-[var(--va-surface)] shadow-[var(--va-elev-popover)]",
+    sideClassName: "fixed inset-0 z-[60]",
+    overlayClassName: "absolute inset-0 pointer-events-auto bg-black/55 backdrop-blur-sm",
+    // `start-0` (inset-inline-start: 0) anchors the panel on the
+    // inline-start edge — visual right in RTL, visual left in LTR — same
+    // side as the toggle button.
+    panelClassName: "absolute inset-y-0 start-0 pointer-events-auto va-sidebar h-full overflow-y-auto flex flex-col border-s border-[var(--va-border-soft)] bg-[var(--va-surface)] shadow-[var(--va-elev-popover)]",
     panelStyle: { width: "min(88vw, 320px)" }
   };
 }
