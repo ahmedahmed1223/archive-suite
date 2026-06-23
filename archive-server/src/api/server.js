@@ -42,6 +42,7 @@ import {
   handleBackupRoute,
   handleAdminRoute,
   handleUserDataRoute,
+  handleIngestRoute,
 } from "../routes/index.js";
 
 // Minimal dependency-free HTTP server exposing the StorageProvider port to the
@@ -675,6 +676,11 @@ export function createApiServer({
 
     // ── Per-item metadata export ──────────────────────────────────────────────
     if (await handleExportRoute({ url, req, res, requireAuth, resolveStorage, send })) {
+      return undefined;
+    }
+
+    // ── Ingest routes (/api/ingest/*) ─────────────────────────────────────────
+    if (await handleIngestRoute({ req, res, url, send, requireAuth, readJsonBody, resolveStorage })) {
       return undefined;
     }
 
