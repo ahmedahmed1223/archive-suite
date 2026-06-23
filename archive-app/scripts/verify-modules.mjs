@@ -2301,6 +2301,10 @@ await runAsync("auth store routes cloud backend login through loginToCloud", asy
 
 await runAsync("loginToCloud surfaces bad credentials as CloudLoginError", async () => {
   const storage = memStorage();
+  // The access token lives in a module-level singleton (§20.1) that survives
+  // across tests; reset it so this case is isolated from earlier successful
+  // logins and asserts only that a 401 leaves no token behind.
+  clearCloudToken({ storage });
   const fetchImpl = async () => ({ ok: false, status: 401, json: async () => ({ ok: false, error: "بيانات الدخول غير صحيحة." }) });
   await assert.rejects(
     () => loginToCloud({ baseUrl: "", username: "admin", password: "bad", fetchImpl, storage }),
