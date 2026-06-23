@@ -136,6 +136,18 @@ export const config = Object.freeze({
   backupRetentionMonths: num(e.BACKUP_RETENTION_MONTHS, 3),
   backupEncryptionKey:   str(e.BACKUP_ENCRYPTION_KEY, ""),
 
+  // ── Backup replication (enterprise off-site / S3 cross-region) ────────────
+  backup: Object.freeze({
+    replication: Object.freeze({
+      enabled:       bool(e.BACKUP_REPLICATION_ENABLED, false),
+      bucket:        str(e.BACKUP_REPLICATION_BUCKET, ""),
+      region:        str(e.BACKUP_REPLICATION_REGION, "us-east-1"),
+      prefix:        str(e.BACKUP_REPLICATION_PREFIX, "backups"),
+      // 32-byte AES-256-GCM key as 64 hex chars; leave empty to skip encryption
+      encryptionKey: str(e.BACKUP_REPLICATION_ENCRYPTION_KEY, ""),
+    }),
+  }),
+
   // ── Workflow ──────────────────────────────────────────────────────────────
   workflowDueRemindersEnabled: bool(e.WORKFLOW_DUE_REMINDERS_ENABLED, false),
   workflowDueCheckHours:       num(e.WORKFLOW_DUE_CHECK_HOURS, 1),
