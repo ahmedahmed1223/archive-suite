@@ -163,6 +163,12 @@
   - القبول: صفر ألوان مُرمّزة في المكتبة؛ tokens الجديدة موثّقة ومستخدمة.
   - المصدر: dev-roadmap (P1-06)، ux_plan/guide_v6 (Design Tokens).
 
+- [ ] `[P1]` ⏱️L **تحسين شامل للنظام اللوني والثيم الأساسي** — مراجعة وضبط palette + tokens النص/الخلفية/الحدود + ألوان الأزرار (primary/secondary/ghost/destructive) + ألوان الحالة (success/warning/danger/info) + المخطّط الليلي/النهاري في ضوء WCAG 2.2 AA.
+  - النطاق: (أ) **مراجعة contrast حقيقية** لكل token: text-on-surface (≥4.5:1 للنص العادي، ≥3:1 للكبير)، text-on-accent، text-on-status. (ب) **سلّم نصوص واضح**: `--va-text` (high) / `--va-text-2` (mid) / `--va-text-muted` (low) / `--va-text-inverse` للأسطح المُلوَّنة. (ج) **سلّم أسطح متماسك**: `--va-bg` / `--va-surface` / `--va-surface-2` / `--va-elevated` بدلتا إنارة 4%+ بين كل مستوى. (د) **palette أزرار موحّد** بصيغة OKLCH + hover/active/disabled tints بقيم نسبية لا hex by-hand. (هـ) **ألوان حالة semantic** success/warning/danger/info — مع أيقونة مرافقة (a11y: لا تعتمد على اللون وحده). (و) **نقل الـ 13 token** المرحَّلة في `app-overrides.css` إلى `design-tokens.css` (TODO من DS v2). (ز) **توثيق + اختبار contrast**: سكربت `scripts/verify-theme-contrast.mjs` يفشل إذا انخفض الـ contrast دون العتبة.
+  - الملفات: `archive-app/src/styles/design-tokens.css` (الكتلة الرئيسية)، `app-overrides.css` (حذف ما انتقل)، `archive-app/src/components/ui/*V2.jsx` (التأكد من الاستهلاك)، `archive-app/scripts/verify-theme-contrast.mjs` (جديد)، `archive-app/src/styles/__tests__/tokenContrast.test.js` (جديد).
+  - القبول: كل النصوص والأزرار تجتاز WCAG 2.2 AA؛ `verify-theme-contrast.mjs` يطبع جدول passing؛ لا hex مرمّز خارج tokens canonical.
+  - المصدر: طلب المستخدم 2026-06-23.
+
 - [ ] `[P2]` ⏱️L **إكمال K8s + توحيد Docker Compose** — ملفات compose → ملف واحد بـ profiles؛ إضافة Redis+Whisper لـ K8s + kustomization.
   - الملفات: `archive-server/deploy/*`, `archive-server/*.yml`.
   - المصدر: dev-roadmap (P1-07).
