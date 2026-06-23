@@ -1,11 +1,22 @@
-// Cloud session — stores the JWT issued by archive-server's /api/auth/login
-// and exposes a login helper. Lives in localStorage (like backendChoice) so it
-// survives reloads and is readable at boot before the store loads.
+// Cloud session — manages the JWT issued by archive-server's /api/auth/login.
+//
+// Security model (§20.1):
+//   - Access token: kept in MODULE MEMORY only (never written to localStorage).
+//     It is short-lived (15 min) and re-obtained on reload via the HttpOnly
+//     refresh cookie. The cookie is set/rotated exclusively by the server.
+//   - Non-sensitive user metadata (id, username, role): kept in localStorage
+//     so the UI can render the avatar/name before the first refresh completes.
+//   - The legacy TOKEN_KEY is actively cleared so old access tokens are removed
+//     from any browser that previously stored them.
 //
 // Only relevant when the backend is a cloud one; local backend never calls these.
 
 const TOKEN_KEY = "va.cloudToken.v1";
-const USER_KEY = "va.cloudUser.v1";
+const USER_KEY  = "va.cloudUser.v1";
+
+// In-memory access-token store — survives component re-renders but NOT page
+// reloads (by design: reload forces a fresh /api/auth/refresh via cookie).
+let _memoryToken = "";
 
 function safeLocalStorage() {
   try {
@@ -14,25 +25,25 @@ function safeLocalStorage() {
   return null;
 }
 
-/** Current JWT, or "" if none. */
-export function getCloudToken({ storage = safeLocalStorage() } = {}) {
-  if (!storage) return "";
-  try {
-    return storage.getItem(TOKEN_KEY) || "";
-  } catch {
-    return "";
-  }
+/**
+ * Current access JWT from memory, or "" if none.
+ * The `storage` param is accepted for test-compatibility but ignored for the
+ * token itself — only user metadata lives in storage.
+ */
+export function getCloudToken({ storage: _storage } = {}) {
+  return _memoryToken;
 }
 
+/**
+ * Store the access token in memory.
+ * Actively removes any previously localStorage-stored token so old values
+ * cannot survive a re-login on the same browser.
+ */
 export function setCloudToken(token, { storage = safeLocalStorage() } = {}) {
-  if (!storage) return false;
-  try {
-    if (token) storage.setItem(TOKEN_KEY, String(token));
-    else storage.removeItem(TOKEN_KEY);
-    return true;
-  } catch {
-    return false;
-  }
+  _memoryToken = token ? String(token) : "";
+  // Actively evict any legacy token persisted by an older version of this file.
+  try { storage?.removeItem(TOKEN_KEY); } catch { /* best-effort */ }
+  return true;
 }
 
 export function clearCloudToken(options = {}) {

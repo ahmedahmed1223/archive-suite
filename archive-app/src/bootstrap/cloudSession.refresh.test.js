@@ -1,9 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   refreshCloudToken,
   getTokenExpiryMs,
   createSilentRenewal,
-  CloudLoginError
+  CloudLoginError,
+  getCloudToken,
+  clearCloudToken
 } from "./cloudSession.js";
 
 // Minimal in-memory localStorage stand-in (vitest jsdom storage is shared).
@@ -22,8 +24,13 @@ function fakeJwt(payload) {
   return `${b64({ alg: "HS256", typ: "JWT" })}.${b64(payload)}.sig`;
 }
 
+// §20.1 — clear in-memory token state between tests so they don't bleed.
+beforeEach(() => {
+  clearCloudToken();
+});
+
 describe("refreshCloudToken", () => {
-  it("posts with credentials and persists the new token + user", async () => {
+  it("posts with credentials and keeps the new token in memory (not localStorage)", async () => {
     const storage = memoryStorage();
     const fetchImpl = vi.fn(async () => ({
       ok: true,
@@ -38,7 +45,11 @@ describe("refreshCloudToken", () => {
       "https://api.test/api/auth/refresh",
       expect.objectContaining({ method: "POST", credentials: "include" })
     );
-    expect(storage.getItem("va.cloudToken.v1")).toBe("new-token");
+    // Token must be accessible via getCloudToken() (in-memory) …
+    expect(getCloudToken()).toBe("new-token");
+    // … but must NOT be written to localStorage (P0 security fix §20.1)
+    expect(storage.getItem("va.cloudToken.v1")).toBeNull();
+    // Non-sensitive user metadata is still persisted.
     expect(JSON.parse(storage.getItem("va.cloudUser.v1")).id).toBe("u1");
   });
 
@@ -99,7 +110,8 @@ describe("createSilentRenewal", () => {
 
     await timers[0].fn(); // fire the renewal
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    expect(storage.getItem("va.cloudToken.v1")).toBe(nextToken);
+    // Token lives in memory (§20.1 — not in localStorage)
+    expect(getCloudToken()).toBe(nextToken);
     expect(timers).toHaveLength(2); // rescheduled from the new token
     expect(timers[1].delay).toBe(20 * 60_000 - 60_000);
   });

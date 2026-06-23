@@ -8,7 +8,6 @@ import { logger, createLogger } from "../logger.js";
 import { auditLog } from "./auditLogger.js";
 import { dispatchRpc } from "./rpcHandler.js";
 import { dispatchAi } from "./aiHandler.js";
-import { handleSearch } from "./searchHandler.js";
 import { checkFfmpegAvailability, exportTimelineToMp4 } from "../export/mp4.js";
 import { createInMemoryMediaJobStore } from "../media/mediaJobs.js";
 import { createConversionService } from "../conversion/conversionService.js";
@@ -16,53 +15,17 @@ import { createConversionJobRunner } from "../conversion/conversionJobRunner.js"
 import { createSharePermissionService } from "../share/sharePermissionService.js";
 import { createShareInvitationService } from "../share/invitationService.js";
 import { runMediaDerivative, runMediaProbe } from "../media/runMedia.js";
-import { verifyJwt, signJwt } from "../auth/jwt.js";
-import { revokeToken } from "../auth/tokenBlacklist.js";
-import {
-  issueRefreshToken,
-  rotateRefreshToken,
-  revokeRefreshFamily,
-  peekRefreshFamily,
-  DEFAULT_REFRESH_EXPIRES_IN_SEC
-} from "../auth/refreshTokenStore.js";
-import {
-  isPushConfigured,
-  getVapidPublicKey,
-  saveSubscription as savePushSubscription,
-  removeSubscription as removePushSubscription,
-  sendPushToUser
-} from "../notifications/webPushService.js";
-import { getWorkflowDefinition, applyTransition } from "../workflow/stateMachine.js";
-import { fireWebhooks } from "../webhooks/webhookService.js";
-import { createApiKey, listApiKeys, revokeApiKey, verifyApiKey, API_SCOPES } from "../auth/apiKeyService.js";
-import { generateTotpSecret, verifyTotpToken, generateRecoveryCodes, verifyRecoveryCode } from "../auth/totpService.js";
-import { mintShareToken, readShareTokenPayload } from "../share/token.js";
-import { filterSnapshotForShare } from "../share/scope.js";
-import {
-  buildDropboxOAuthUrl,
-  createDropboxOAuthState,
-  exchangeDropboxOAuthCode,
-  readDropboxOAuthState
-} from "../dropbox/oauth.js";
+import { verifyJwt } from "../auth/jwt.js";
 import { resolveServerConfig, loadServerConfigFile, saveServerConfigFile } from "../config/serverConfig.js";
 import { buildFileStore } from "../bootstrap/registerCloudProviders.js";
-import {
-  copyEntry, createFolder, listEntries, moveEntry, normalizeFileKey, removeEntries
-} from "../files/fileStoreOperations.js";
-import { secureOverwrite } from "../retention/secureDelete.js";
-import {
-  buildConfigView, validateDbConfig, mergeDbConfig, validateFileStoreConfig,
-  mergeFileStoreConfig, testDatabaseConnection, testFileStoreConnection
-} from "./adminConfig.js";
+import { testDatabaseConnection, testFileStoreConnection } from "./adminConfig.js";
 import { createRateLimiter, clientIp, userKeyFromHeader } from "./rateLimit.js";
 import { captureException } from "../monitoring/sentryService.js";
-import { listBackups, runBackup, restoreBackup, previewBackup } from "../backup/backupScheduler.js";
 import { getPresetConfig } from "./presetConfig.js";
 import {
   getMetricsOutput, getContentType,
   incActiveRequests, decActiveRequests, recordRequest
 } from "../monitoring/metrics.js";
-import { handleOcr } from "./ocrHandler.js";
 import { handleControlRoute } from "./controlRoutes.js";
 import { handleRightsRoute } from "./routes/rights.js";
 import { publicOpenApiSpec } from "./publicOpenApi.js";
@@ -70,19 +33,16 @@ import { exportRecords } from "../export/exportService.js";
 import { handleExportRoute } from "./routes/export.js";
 import { createControlAgent } from "../control/controlAgent.js";
 import { importPreviewService } from "../import/importPreview.js";
-import { processImage, detectImageMimeType, PROCESSABLE_IMAGE_TYPES } from "../media/imageProcessor.js";
-import bcrypt from "bcryptjs";
-import { sendPasswordResetEmail, sendMail as defaultSendMail } from "../auth/emailService.js";
-import { createResetToken, consumeResetToken } from "../auth/resetTokenStore.js";
-import { notifyRecordShared, notifyUploadComplete } from "../notifications/notificationService.js";
+import { sendMail as defaultSendMail } from "../auth/emailService.js";
+
+// Route modules — each handler returns true if it handled the request.
 import {
-  initSession as initUploadSession,
-  receiveChunk,
-  completeSession as completeUploadSession,
-  abortSession as abortUploadSession,
-  sessionStatus as uploadSessionStatus,
-  CHUNK_BYTES as UPLOAD_CHUNK_BYTES,
-} from "./chunkedUpload.js";
+  handleAuthRoute,
+  handleMediaRoute,
+  handleShareRoute,
+  handleBackupRoute,
+  handleAdminRoute,
+} from "../routes/index.js";
 
 // Minimal dependency-free HTTP server exposing the StorageProvider port to the
 // SPA over a single RPC endpoint. Node's built-in http keeps the runtime image
@@ -700,27 +660,13 @@ export function createApiServer({
       }
     }
 
-    // GET /api/auth/me — returns the current user's profile (id, username, role,
-    // totpEnabled). Requires Bearer auth. Used by the frontend 2FA settings panel.
-    if (req.method === "GET" && url === "/api/auth/me") {
-      const claims = requireAuthClaims(req, res);
-      if (!claims) return undefined;
-      try {
-        const user = await resolveStorage().get("users", claims.sub);
-        if (!user) return send(res, 404, { ok: false, error: "User not found." });
-        return send(res, 200, {
-          ok: true,
-          user: {
-            id: user.id,
-            username: user.username,
-            role: user.role || "editor",
-            totpEnabled: !!user.totpEnabled,
-            totpRecoveryCodesRemaining: user.totpRecoveryCodes?.length ?? 0,
-          },
-        });
-      } catch (error) {
-        return send(res, error?.statusCode || 500, { ok: false, error: error?.message || "Failed." });
-      }
+    // ── Auth routes (/api/auth/*) ─────────────────────────────────────────────
+    if (url.startsWith("/api/auth")) {
+      if (await handleAuthRoute({
+        req, res, url, send, overLimit, readJsonBody,
+        requireAuthClaims, resolveStorage, resolvedAuthSecret,
+        refreshExpiresInSec, login, authRequired, bearerToken, clientIp,
+      })) return undefined;
     }
 
     // First-run registration — only succeeds when no users exist yet.
