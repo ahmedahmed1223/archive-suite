@@ -1,121 +1,14 @@
 @layer app-overrides {
 
-:root {
-    /* ── New single source of truth for semantic surfaces (light / editorial
-       daylight). Legacy --color-* and --va-v1-* below now alias these so the
-       three namespaces collapse to one. ── */
-    --va-bg: #f6f4ee;
-    --va-surface: #fffdf9;
-    --va-surface-2: #f1ece3;
-    --va-elevated: #ffffff;
-    --va-overlay: #ffffff;
-    --va-border-soft: rgba(15, 23, 42, 0.08);
-    --va-border-strong: rgba(15, 23, 42, 0.14);
-    --va-text: #14202e;
-    --va-text-2: #475569;
-    --va-text-muted: #7b8a9a;
-    --va-text-inverse: #ffffff;
-    --va-highlight: #d98a1f;
-    --va-highlight-soft: #fbf0db;
-    --va-status-info: #2563eb;
-    --va-status-success: #0d9488;
-    --va-status-warning: #d98a1f;
-    --va-status-danger: #e11d48;
-    --va-elev-1: 0 1px 2px rgba(15, 23, 42, 0.05);
-    --va-elev-2: 0 6px 16px -8px rgba(15, 23, 42, 0.14);
-    --va-elev-popover: 0 18px 40px -12px rgba(15, 23, 42, 0.22);
-
-    /* Legacy aliases → new tokens (compat shim; remove in T17). */
-    --color-bg-primary: var(--va-bg);
-    --color-bg-surface: var(--va-surface);
-    --color-bg-elevated: var(--va-elevated);
-    --color-text-primary: var(--va-text);
-    --color-text-secondary: var(--va-text-2);
-    --color-text-muted: var(--va-text-muted);
-    --color-border: var(--va-border-soft);
-    --color-accent: #14b8a6;
-    --va-v1-bg: var(--va-bg);
-    --va-v1-surface: var(--va-surface);
-    --va-v1-surface-2: var(--va-surface-2);
-    --va-v1-elevated: var(--va-elevated);
-    --va-v1-border: var(--va-border-strong);
-    --va-v1-accent: #14b8a6;
-    --va-v1-accent-strong: #0f766e;
-    --va-v1-accent-soft: #dff7f3;
-    --va-v1-info: var(--va-status-info);
-    --va-v1-warning: var(--va-status-warning);
-    --va-v1-danger: var(--va-status-danger);
-    --va-v1-text: var(--va-text);
-    --va-v1-text-secondary: var(--va-text-2);
-    --va-v1-text-muted: var(--va-text-muted);
-    --space-1: 0.25rem;
-    --space-2: 0.5rem;
-    --space-3: 0.75rem;
-    --space-4: 1rem;
-    --space-6: 1.5rem;
-    --space-8: 2rem;
-    --radius-control: 0.5rem;
-    --radius-panel: 0.75rem;
-    --va-bottom-tabs-height: 56px;
-    --va-mobile-action-bar-height: 4.75rem;
-    --va-mobile-chrome-gap: 0.75rem;
-    --va-mobile-nav-bottom: calc(var(--va-bottom-tabs-height) + env(safe-area-inset-bottom, 0px));
-    --va-mobile-action-bar-bottom: calc(var(--va-mobile-nav-bottom) + var(--va-mobile-chrome-gap));
-    --va-mobile-floating-bottom: calc(var(--va-mobile-nav-bottom) + var(--va-mobile-action-bar-height) + var(--va-mobile-chrome-gap));
-  }
-  html.dark {
-    /* New source of truth — dark / layered navy. */
-    --va-bg: #060e1a;
-    --va-surface: #0c1726;
-    --va-surface-2: #111c2e;
-    --va-elevated: #111f33;
-    --va-overlay: #16263b;
-    --va-border-soft: rgba(255, 255, 255, 0.07);
-    --va-border-strong: rgba(255, 255, 255, 0.12);
-    --va-text: #f8fafc;
-    --va-text-2: #cbd5e1;
-    --va-text-muted: #94a3b8;
-    --va-text-inverse: #04211c;
-    --va-highlight: #f4b860;
-    --va-highlight-soft: rgba(244, 184, 96, 0.14);
-    --va-status-info: #38bdf8;
-    --va-status-success: #2dd4bf;
-    --va-status-warning: #f4b860;
-    --va-status-danger: #fb7185;
-    --va-elev-1: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --va-elev-2: 0 8px 24px -10px rgba(0, 0, 0, 0.55);
-    --va-elev-popover: 0 24px 50px -16px rgba(0, 0, 0, 0.65);
-
-    /* Legacy aliases → new tokens. */
-    --color-bg-primary: var(--va-bg);
-    --color-bg-surface: var(--va-surface);
-    --color-bg-elevated: var(--va-elevated);
-    --color-text-primary: var(--va-text);
-    --color-text-secondary: var(--va-text-2);
-    --color-text-muted: var(--va-text-muted);
-    --color-border: var(--va-border-soft);
-    --color-accent: #14b8a6;
-    --va-v1-bg: var(--va-bg);
-    --va-v1-surface: var(--va-surface);
-    --va-v1-surface-2: var(--va-surface-2);
-    --va-v1-elevated: var(--va-elevated);
-    --va-v1-border: var(--va-border-strong);
-    --va-v1-accent: #14b8a6;
-    --va-v1-accent-strong: #0f766e;
-    --va-v1-accent-soft: #0f3f3b;
-    --va-v1-info: var(--va-status-info);
-    --va-v1-warning: var(--va-status-warning);
-    --va-v1-danger: var(--va-status-danger);
-    --va-v1-text: #f9fafb;
-    --va-v1-text-secondary: #cbd5e1;
-    --va-v1-text-muted: #94a3b8;
-  }
+  /* ── Base document styles ────────────────────────────────────────────────── */
   html, body, #root { direction: rtl; text-align: right; }
   body {
     background: var(--va-bg);
     color: var(--va-text);
     font-family: var(--va-font-ui);
   }
+
+  /* ── RTL / LTR directional overrides ─────────────────────────────────────── */
   [dir="ltr"], [dir="ltr"] * { direction: ltr; }
   [dir="auto"], .va-bidi-text {
     unicode-bidi: plaintext;
@@ -126,6 +19,8 @@
     unicode-bidi: plaintext;
     text-align: start;
   }
+
+  /* ── Help page typography ─────────────────────────────────────────────────── */
   .help-page {
     direction: rtl;
     text-align: right;
@@ -236,6 +131,8 @@
     direction: ltr;
     unicode-bidi: isolate;
   }
+
+  /* ── Context bar ──────────────────────────────────────────────────────────── */
   .va-stepper-rtl {
     direction: rtl;
   }
@@ -272,6 +169,8 @@
     justify-content: flex-end;
     gap: .5rem;
   }
+
+  /* ── Login screen ─────────────────────────────────────────────────────────── */
   .login-screen-shell {
     color-scheme: dark;
   }
@@ -294,6 +193,8 @@
       radial-gradient(circle at 72% 18%, color-mix(in srgb, var(--va-action) 14%, transparent), transparent 34rem),
       linear-gradient(145deg, #07111f, #0b1626 48%, #07111f);
   }
+
+  /* ── Onboarding / boot choice ─────────────────────────────────────────────── */
   .va-onboarding-choice strong,
   .va-core-ui-item strong {
     display: block;
@@ -334,9 +235,13 @@
     background: color-mix(in srgb, var(--va-action) 14%, transparent);
     color: #99f6e4;
   }
+
+  /* ── Media ────────────────────────────────────────────────────────────────── */
   .va-html5-preview video {
     display: block;
   }
+
+  /* ── Theme panel (legacy component) ──────────────────────────────────────── */
   .theme-panel {
     background: color-mix(in srgb, var(--color-bg-elevated) 92%, transparent);
     border: 1px solid var(--color-border);
@@ -354,11 +259,8 @@
     border-color: var(--color-border);
     color: var(--color-text-primary);
   }
-  /* Accent + surface helper utilities. These class names were used across ~40
-     components (V1Primitives, activity, data-center, archive filters, …) but had
-     NO definition anywhere — they rendered as silent no-ops. Defined here against
-     the accent tokens (managed by theme/accentColor.js) + the new --va-* surfaces
-     so accent-soft fills, borders, and on-soft text finally render. */
+
+  /* ── Accent + surface helper utilities ────────────────────────────────────── */
   .va-surface-muted {
     background: var(--va-surface-2);
     border-color: var(--va-border-soft);
@@ -366,9 +268,6 @@
   .va-accent-text { color: var(--va-v1-accent); }
   .va-accent-bg { background-color: var(--va-v1-accent); }
   .va-accent-bg-soft { background-color: var(--va-v1-accent-soft); }
-  /* High-contrast text for use ON the soft-accent surface (va-accent-bg-soft).
-     Pure accent was unreadable on the bg-derived soft fill in many themes, so we
-     base it on the theme text color with a light accent tint. */
   .va-accent-text-on-soft { color: color-mix(in oklab, var(--va-text), var(--va-v1-accent) 26%); }
   .va-accent-border { border-color: color-mix(in oklab, var(--va-v1-accent) 32%, transparent); }
   .va-tone-accent {
@@ -376,10 +275,10 @@
     border-color: color-mix(in oklab, var(--va-v1-accent) 32%, transparent);
     color: var(--va-v1-accent);
   }
-  /* Surface fill helpers — used in 200+ places app-wide but previously undefined
-     (silent no-ops, so panels had no background in light mode). */
   .va-surface-subtle { background-color: var(--va-surface-2); }
   .va-surface-deep { background-color: var(--va-bg); }
+
+  /* ── V1 panel / page primitives ───────────────────────────────────────────── */
   .va-v1-page {
     color: var(--va-v1-text);
   }
@@ -421,47 +320,14 @@
   .va-v1-metric {
     min-height: 96px;
     border-color: color-mix(in srgb, var(--va-v1-border) 68%, transparent);
-    /* theme-aware surface (white in light, dark in dark) — was a hardcoded dark gradient */
     background: color-mix(in srgb, var(--color-bg-elevated) 60%, transparent);
   }
   .va-v1-warning {
     border-color: color-mix(in srgb, var(--va-v1-warning) 42%, transparent);
     background: linear-gradient(180deg, rgba(245,158,11,.14), rgba(245,158,11,.07));
   }
-  @media (max-width: 640px) {
-    .va-v1-panel {
-      border-radius: .875rem;
-      box-shadow: none;
-    }
-    .va-v1-panel::before {
-      inset-inline: .75rem;
-    }
-    .va-v1-action {
-      justify-content: space-between;
-    }
-    .va-context-bar {
-      position: static;
-    }
-    .va-context-bar-inner {
-      align-items: stretch;
-      flex-direction: column;
-      padding: .75rem 1rem;
-    }
-    .va-context-title {
-      padding-inline-start: 3.75rem;
-    }
-    .va-context-actions {
-      justify-content: stretch;
-    }
-    .va-context-actions > * {
-      flex: 1 1 auto;
-    }
-    .va-core-ui-map {
-      grid-template-columns: 1fr;
-    }
-  }
-  /* ── Screen-reader only utility — visually hides content while keeping it
-   * accessible to assistive technologies (WCAG 2.1 SC 1.3.1). ── */
+
+  /* ── Screen-reader only utility ───────────────────────────────────────────── */
   .sr-only {
     position: absolute;
     width: 1px;
@@ -474,10 +340,7 @@
     border-width: 0;
   }
 
-  /* ── Skip-link — hidden off-screen until keyboard-focused; then jumps
-   * into the top-start corner with a visible pill. Previously the class
-   * had no CSS rule, so the bare <a> rendered as a visible vertical
-   * artifact on small screens and pushed the layout. ── */
+  /* ── Skip-link — hidden off-screen until keyboard-focused ────────────────── */
   .va-skip-link {
     position: fixed;
     inset-block-start: 0.5rem;
@@ -490,7 +353,6 @@
     font-weight: 600;
     text-decoration: none;
     box-shadow: var(--va-elev-2, 0 4px 12px rgba(0,0,0,0.25));
-    /* Off-screen until focused — clip-path keeps it accessible to AT. */
     clip-path: inset(50%);
     width: 1px;
     height: 1px;
@@ -507,31 +369,24 @@
     outline-offset: 2px;
   }
 
-  /* ── Smooth scrolling for main content areas ── */
+  /* ── Smooth scrolling ─────────────────────────────────────────────────────── */
   html { scroll-behavior: smooth; }
   .va-page-shell,
   main,
   [data-scroll-region] { scroll-behavior: smooth; }
 
-  /* ── Overscroll behaviour ── */
+  /* ── Overscroll behaviour ─────────────────────────────────────────────────── */
   html, body { overscroll-behavior: none; }
   .va-page-shell,
   main { overscroll-behavior-y: contain; }
 
-  /* ── Touch interaction improvements ── */
+  /* ── Touch interaction improvements ──────────────────────────────────────── */
   button, [role="button"], input, select, textarea { touch-action: manipulation; }
   button, [role="button"], a, select, textarea, input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
   button[aria-label], [role="button"][aria-label], button.h-8, button.h-7, button.h-6 {
     min-width: 44px;
     min-height: 44px;
   }
-  /* Touch targets on mobile — WCAG 2.1 AAA recommends 44×44 CSS pixels.
-   * Tailwind utilities like min-h-9 (36px) and min-h-10 (40px) override
-   * the base button rule because of specificity, so we explicitly force
-   * the baseline on small screens. Icon-only chips inside compact
-   * toolbars still get 44px so RTL/Arabic users with imprecise touch
-   * have a fair chance of hitting them. Non-interactive groups
-   * (`role="group"`, segmented controls) are exempt. */
   @media (max-width: 640px) {
     button.min-h-9,
     button.min-h-10,
@@ -544,7 +399,6 @@
       min-height: 44px;
     }
   }
-  /* Tap highlight — suppress default blue flash on mobile, use accent instead */
   button, [role="button"], a, label {
     -webkit-tap-highlight-color: color-mix(in srgb, var(--va-action) 12%, transparent);
   }
@@ -554,6 +408,8 @@
   [data-slot="switch"] { min-width: 2.75rem !important; min-height: 1.5rem !important; }
   /* intentional: cancels the universal min-height:44px rule for checkbox/radio inputs inside Radix slots */
   [data-slot="checkbox"] input, [data-slot="radio-group-item"] input { min-width: 0 !important; min-height: 0 !important; }
+
+  /* ── Field toggle row ─────────────────────────────────────────────────────── */
   .field-toggle-row {
     min-height: 44px;
     display: flex;
@@ -596,6 +452,8 @@
   }
   .field-toggle-row-on .field-toggle-knob { background: var(--va-action); }
   .field-toggle-row-on .field-toggle-knob::after { transform: translateX(-1.12rem); background: color-mix(in srgb, var(--va-action) 12%, #ffffff); }
+
+  /* ── Settings tabs ────────────────────────────────────────────────────────── */
   .va-settings-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -612,7 +470,6 @@
     border-radius: .75rem;
     padding: .55rem .75rem;
     color: var(--color-text-muted);
-    /* theme-aware surface — was a hardcoded dark fill */
     background: color-mix(in srgb, var(--color-bg-elevated) 50%, transparent);
     font-size: .8125rem;
     font-weight: 600;
@@ -625,6 +482,8 @@
     border-color: color-mix(in srgb, var(--va-action) 45%, transparent);
     background: color-mix(in srgb, var(--va-action) 18%, transparent);
   }
+
+  /* ── Choice row (RTL checkbox/radio alignment) ────────────────────────────── */
   .va-choice-row {
     direction: rtl;
     text-align: right;
@@ -642,20 +501,16 @@
   [dir="rtl"] [data-slot="switch-thumb"][data-state="checked"] {
     transform: translateX(calc(-100% + 2px)) !important;
   }
-  /* ── Keyboard focus indicators — visible only during keyboard navigation ── */
-  /* Suppress the default focus ring when using mouse/touch (focus-visible handles keyboard) */
+
+  /* ── Keyboard focus indicators ────────────────────────────────────────────── */
   :focus:not(:focus-visible) {
     outline: none;
   }
-
-  /* Global keyboard focus ring — uses the accent token so it follows teal/indigo */
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
     border-radius: 4px;
   }
-
-  /* Enhanced focus ring for primary interactive elements — adds a soft glow halo */
   button:focus-visible,
   a:focus-visible,
   [tabindex]:focus-visible,
@@ -669,17 +524,8 @@
     outline-offset: 2px;
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 20%, transparent);
   }
-  @media (max-width: 640px) {
-    .va-settings-tabs {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      padding-bottom: .15rem;
-      scrollbar-width: thin;
-    }
-    .va-settings-tab {
-      flex: 0 0 auto;
-    }
-  }
+
+  /* ── RTL absolute position shims ─────────────────────────────────────────── */
   [dir="rtl"] .absolute.right-3,
   [dir="rtl"] .absolute.right-3\.5 {
     inset-inline-start: .75rem;
@@ -704,6 +550,8 @@
   }
   [dir="rtl"] .border-r { border-inline-end-width: 1px; border-right-width: 0; }
   [dir="rtl"] .border-l { border-inline-start-width: 1px; border-left-width: 0; }
+
+  /* ── Dialog ───────────────────────────────────────────────────────────────── */
   .va-dialog-overlay {
     position: fixed;
     inset: 0;
@@ -761,22 +609,23 @@
   .va-dialog-confirm { background: var(--color-accent); color: white; border-color: transparent; }
   .va-dialog-danger .va-dialog-confirm { background: #dc2626; }
   .va-dialog-cancel { background: transparent; color: var(--color-text-secondary); }
+
+  /* ── Empty state ──────────────────────────────────────────────────────────── */
   .va-empty-state {
     min-height: clamp(18rem, 42vh, 28rem);
     border: 1px solid color-mix(in srgb, var(--va-v1-border) 70%, transparent);
     border-radius: var(--radius-panel);
-    /* transparent so it inherits the (theme-aware) card/panel it sits inside —
-     * was a hardcoded dark gradient that became a gray blob in light mode */
     background: transparent;
   }
   .va-empty-icon {
     border-color: color-mix(in srgb, var(--va-action) 24%, var(--color-border));
-    /* explicit theme-aware fill so the icon tile is not see-through */
     background: color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
   }
   .va-empty-corner {
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--va-v1-bg) 78%, transparent);
   }
+
+  /* ── Archive toolbar / toolbar ────────────────────────────────────────────── */
   .va-archive-header {
     align-items: flex-start;
   }
@@ -794,12 +643,13 @@
   .va-archive-summary {
     min-height: 44px;
     border-color: color-mix(in srgb, var(--va-v1-border) 62%, transparent);
-    /* theme-aware surface — was a hardcoded dark gradient */
     background: color-mix(in srgb, var(--color-bg-elevated) 55%, transparent);
   }
   .va-summary-reset {
     margin-inline-start: auto;
   }
+
+  /* ── Mobile FAB ───────────────────────────────────────────────────────────── */
   .va-mobile-fab {
     position: fixed;
     inset-inline-end: max(1rem, env(safe-area-inset-right, 0px));
@@ -822,29 +672,106 @@
     outline: 2px solid color-mix(in srgb, var(--va-action) 40%, #ffffff);
     outline-offset: 3px;
   }
+
   @supports (padding: max(0px)) {
     .safe-area-bottom, .fixed-bottom-bar {
       padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
     }
   }
+
+  /* ── Scrollbar styling ────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255,255,255,.12);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,.22);
+  }
+  * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.12) transparent; }
+
+  /* ── Transition improvements ──────────────────────────────────────────────── */
+  .va-entity-card,
+  .va-metric-card,
+  .va-preview-panel {
+    transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  }
+
+  /* ── Selection highlight ──────────────────────────────────────────────────── */
+  ::selection {
+    background: color-mix(in srgb, var(--va-action) 22%, transparent);
+    color: inherit;
+  }
+
+  /* ── WCAG AA contrast lift for muted text on dark surfaces ───────────────── */
+  html.dark .text-gray-700 { color: #9ca3af; }
+  html.dark .text-gray-600 { color: #9ca3af; }
+  html.dark .text-gray-500 { color: #b3bbc8; }
+  html.dark .hover\:text-gray-700:hover,
+  html.dark .hover\:text-gray-600:hover { color: #b3bbc8; }
+  html.dark .hover\:text-gray-500:hover { color: #c8cfd8; }
+  html.dark .placeholder\:text-gray-500::placeholder,
+  html.dark .placeholder-gray-500::placeholder { color: #9ca3af; }
+  html.dark .placeholder\:text-gray-600::placeholder,
+  html.dark .placeholder-gray-600::placeholder { color: #9ca3af; }
+
+  /* ── Button base sizing ───────────────────────────────────────────────────── */
+  .va-primary-button,
+  .va-secondary-button,
+  .va-tool-button {
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0;
+  }
+
+  /* ── Badge sizing ─────────────────────────────────────────────────────────── */
+  .va-status-badge,
+  .va-count-badge,
+  .va-number-badge {
+    min-height: 1.5rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    letter-spacing: 0;
+  }
+
+  /* ── Card border utilities ────────────────────────────────────────────────── */
+  .va-card,
+  .va-entity-card,
+  .va-video-card,
+  .va-preview-panel,
+  .va-control-surface,
+  .va-filter-surface {
+    border-color: color-mix(in srgb, var(--va-border, rgba(255,255,255,0.1)) 72%, transparent);
+  }
+
+  html.light :is(.va-card, .va-entity-card, .va-video-card, .va-preview-panel, .va-control-surface, .va-filter-surface) {
+    border-color: color-mix(in srgb, var(--color-border, transparent) 82%, transparent);
+  }
+
+  /* ── Responsive overrides ─────────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .va-settings-tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: .15rem;
+      scrollbar-width: thin;
+    }
+    .va-settings-tab {
+      flex: 0 0 auto;
+    }
+  }
+
   @media (min-width: 768px) and (max-width: 1024px) {
     .w-\[280px\] { width: min(248px, 32vw); }
     main > div { max-width: 100%; }
     .lg\:grid-cols-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
-  @media (min-width: 768px) {
-    :root {
-      --va-mobile-nav-bottom: 0px;
-      --va-mobile-action-bar-bottom: 1rem;
-      --va-mobile-floating-bottom: 1rem;
-    }
-  }
+
   @media (max-width: 640px) {
     html, body, #root { overflow-x: clip; }
     table { min-width: 0; width: 100%; }
-    /* NOTE: don't kill .overflow-x-auto on mobile — horizontal tab
-     * scrollers and code blocks rely on it. The table rule above
-     * already prevents tables from forcing the body to scroll. */
     .va-empty-state {
       min-height: 18rem;
       padding-block: 3rem;
@@ -859,10 +786,7 @@
       justify-content: center;
       margin-inline-start: 0;
     }
-    /* Compact page padding on small screens */
-    /* intentional: mobile media-query override for fixed bottom chrome padding */
     .va-page-shell { padding: .75rem !important; }
-    /* Horizontal scroll for filter pill rows */
     .va-filter-pills-row {
       overflow-x: auto;
       flex-wrap: nowrap;
@@ -870,94 +794,42 @@
       scrollbar-width: none;
     }
     .va-filter-pills-row::-webkit-scrollbar { display: none; }
-    /* Metric cards: 2-column grid on mobile */
     .va-metrics-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    /* Collection details panel: full width below cards list */
     .va-preview-panel {
       margin-top: 0;
     }
-  }
-
-  /* ── Scrollbar styling (WebKit) ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: rgba(255,255,255,.12);
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,.22);
-  }
-  /* Firefox scrollbar */
-  * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.12) transparent; }
-
-  /* ── Transition improvements for interactive state changes ── */
-  .va-entity-card,
-  .va-metric-card,
-  .va-preview-panel {
-    transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-  }
-
-  /* ── Selection highlight ── */
-  ::selection {
-    background: color-mix(in srgb, var(--va-action) 22%, transparent);
-    color: inherit;
-  }
-
-  /* ── WCAG AA contrast lift for muted text on dark surfaces ──
-   * Tailwind defaults give ratios on #07111f (--va-v1-bg):
-   *   gray-400 (#9ca3af) → 9.5:1   AAA ✓
-   *   gray-500 (#6b7280) → 5.2:1   AA body ✓
-   *   gray-600 (#4b5563) → 2.8:1   FAILS AA ✗
-   *   gray-700 (#374151) → 1.6:1   FAILS AA ✗
-   * We bump 500/600/700 up one stop in dark mode so existing markup
-   * keeps the visual hierarchy but clears WCAG 1.4.3.
-   * Light mode (no html.dark) is unaffected — the original values
-   * already pass contrast over #f7f4ee. */
-  html.dark .text-gray-700 { color: #9ca3af; }
-  html.dark .text-gray-600 { color: #9ca3af; }
-  html.dark .text-gray-500 { color: #b3bbc8; }
-  /* Same lift for hover variants so contrast survives interaction. */
-  html.dark .hover\:text-gray-700:hover,
-  html.dark .hover\:text-gray-600:hover { color: #b3bbc8; }
-  html.dark .hover\:text-gray-500:hover { color: #c8cfd8; }
-  /* Placeholder text follows the same rule. */
-  html.dark .placeholder\:text-gray-500::placeholder,
-  html.dark .placeholder-gray-500::placeholder { color: #9ca3af; }
-  html.dark .placeholder\:text-gray-600::placeholder,
-  html.dark .placeholder-gray-600::placeholder { color: #9ca3af; }
-
-  .va-primary-button,
-  .va-secondary-button,
-  .va-tool-button {
-    min-height: 2.5rem;
-    align-items: center;
-    justify-content: center;
-    letter-spacing: 0;
-  }
-
-  .va-status-badge,
-  .va-count-badge,
-  .va-number-badge {
-    min-height: 1.5rem;
-    line-height: 1.2;
-    white-space: nowrap;
-    letter-spacing: 0;
-  }
-
-  .va-card,
-  .va-entity-card,
-  .va-video-card,
-  .va-preview-panel,
-  .va-control-surface,
-  .va-filter-surface {
-    border-color: color-mix(in srgb, var(--va-border, rgba(255,255,255,0.1)) 72%, transparent);
-  }
-
-  html.light :is(.va-card, .va-entity-card, .va-video-card, .va-preview-panel, .va-control-surface, .va-filter-surface) {
-    border-color: color-mix(in srgb, var(--color-border, transparent) 82%, transparent);
+    .va-v1-panel {
+      border-radius: .875rem;
+      box-shadow: none;
+    }
+    .va-v1-panel::before {
+      inset-inline: .75rem;
+    }
+    .va-v1-action {
+      justify-content: space-between;
+    }
+    .va-context-bar {
+      position: static;
+    }
+    .va-context-bar-inner {
+      align-items: stretch;
+      flex-direction: column;
+      padding: .75rem 1rem;
+    }
+    .va-context-title {
+      padding-inline-start: 3.75rem;
+    }
+    .va-context-actions {
+      justify-content: stretch;
+    }
+    .va-context-actions > * {
+      flex: 1 1 auto;
+    }
+    .va-core-ui-map {
+      grid-template-columns: 1fr;
+    }
   }
 
 } /* end @layer app-overrides */
