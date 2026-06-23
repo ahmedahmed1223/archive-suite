@@ -168,4 +168,7 @@ export const config = Object.freeze({
 
   // ── Dropbox OAuth redirect (used in OAuth flow only) ──────────────────────
   dropboxRedirectUri: str(e.DROPBOX_REDIRECT_URI, ""),
+
+  // ── Ingest pipeline ───────────────────────────────────────────────────────
+  ingestWatchDir: str(e.INGEST_WATCH_DIR, "archive-server/var/ingest/inbox"),
 });

@@ -43,6 +43,7 @@ import {
   handleBackupRoute,
   handleAdminRoute,
   handleUserDataRoute,
+  handleIngestRoute,
 } from "../routes/index.js";
 
 // Minimal dependency-free HTTP server exposing the StorageProvider port to the
@@ -682,6 +683,11 @@ export function createApiServer({
     // ── MOS / NRCS integration (slice 1 — search bridge + envelope samples) ──
     if (await handleMosRoute({ req, res, url, params: requestUrl.searchParams,
         sendJson: send, requireAuth, overLimit, readJsonBody, resolveStorage, prisma })) {
+      return undefined;
+    }
+
+    // ── Ingest routes (/api/ingest/*) ─────────────────────────────────────────
+    if (await handleIngestRoute({ req, res, url, send, requireAuth, readJsonBody, resolveStorage })) {
       return undefined;
     }
 

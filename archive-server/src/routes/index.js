@@ -7,3 +7,4 @@ export { handleShareRoute } from "./shareRoutes.js";
 export { handleBackupRoute } from "./backupRoutes.js";
 export { handleAdminRoute } from "./adminRoutes.js";
 export { handleUserDataRoute } from "./userDataRoutes.js";
+export { handleIngestRoute } from "./ingestRoutes.js";
