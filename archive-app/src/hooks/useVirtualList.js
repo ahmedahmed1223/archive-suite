@@ -1,13 +1,17 @@
 /**
  * Virtual list for performance — active when the current viewport needs it.
  * Only renders items near the viewport. Uses scroll/resize listeners.
+ *
+ * Supports both window-level scrolling (legacy) and container-level scrolling.
+ * When a scrollKey is provided the scroll position is persisted to sessionStorage
+ * so back-navigation restores the previous scroll offset.
  */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 const MOBILE_MIN_ITEMS_TO_VIRTUALIZE = 20;
 const DESKTOP_MIN_ITEMS_TO_VIRTUALIZE = 50;
 const MOBILE_VIEWPORT_QUERY = "(max-width: 767px)";
-const OVERSCAN = 5;              // extra items above/below viewport
+const DEFAULT_OVERSCAN = 5;
 
 function isMobileViewport() {
   if (typeof window === "undefined") return false;
@@ -17,14 +21,47 @@ function isMobileViewport() {
   return window.innerWidth <= 767;
 }
 
-export function useVirtualList({ items = [], itemHeight = 120 } = {}) {
+/**
+ * @param {object} options
+ * @param {Array}   options.items          - The full list of items to virtualize.
+ * @param {number}  [options.itemHeight]   - Fixed row height in px (legacy param, kept for compat).
+ * @param {number}  [options.estimateSize] - Alias for itemHeight; takes precedence when provided.
+ * @param {number}  [options.overscan]     - Extra items above/below viewport (default 5).
+ * @param {string}  [options.scrollKey]    - sessionStorage key for scroll-position persistence.
+ * @param {boolean} [options.containerScroll] - When true, tracks container scroll instead of window scroll.
+ *
+ * @returns {{
+ *   containerRef: React.RefObject,
+ *   visibleItems: Array<{item: *, index: number, style: object}>,
+ *   topSpacerHeight: number,
+ *   bottomSpacerHeight: number,
+ *   totalSize: number,
+ *   shouldVirtualize: boolean,
+ *   totalCount: number,
+ *   visibleCount: number,
+ * }}
+ */
+export function useVirtualList({
+  items = [],
+  itemHeight = 120,
+  estimateSize,
+  overscan = DEFAULT_OVERSCAN,
+  scrollKey,
+  containerScroll = false,
+} = {}) {
+  // estimateSize takes precedence over itemHeight for forward-compat
+  const rowHeight = estimateSize ?? itemHeight;
+
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: items.length });
   const [isMobile, setIsMobile] = useState(isMobileViewport);
   const containerRef = useRef(null);
+  // Track whether we have restored the saved scroll position yet
+  const scrollRestoredRef = useRef(false);
 
   const minItemsToVirtualize = isMobile ? MOBILE_MIN_ITEMS_TO_VIRTUALIZE : DESKTOP_MIN_ITEMS_TO_VIRTUALIZE;
   const shouldVirtualize = items.length > minItemsToVirtualize;
 
+  // Viewport-width tracking (mobile/desktop threshold switch)
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
@@ -37,6 +74,40 @@ export function useVirtualList({ items = [], itemHeight = 120 } = {}) {
     };
   }, []);
 
+  // Save scroll position to sessionStorage when scrolling
+  const saveScrollPosition = useCallback((scrollTop) => {
+    if (!scrollKey || typeof sessionStorage === "undefined") return;
+    try {
+      sessionStorage.setItem(scrollKey, String(scrollTop));
+    } catch {
+      // sessionStorage can throw in private mode; silently ignore
+    }
+  }, [scrollKey]);
+
+  // Restore saved scroll position after mount
+  useEffect(() => {
+    if (!scrollKey || !containerRef.current || scrollRestoredRef.current) return;
+    if (typeof sessionStorage === "undefined") return;
+
+    try {
+      const saved = sessionStorage.getItem(scrollKey);
+      if (saved !== null) {
+        const offset = Number(saved);
+        if (!Number.isNaN(offset) && offset > 0) {
+          if (containerScroll && containerRef.current) {
+            containerRef.current.scrollTop = offset;
+          } else {
+            window.scrollTo({ top: offset, behavior: "instant" });
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+    scrollRestoredRef.current = true;
+  }, [scrollKey, containerScroll]);
+
+  // Main virtualization effect — recalculates visible range on scroll/resize
   useEffect(() => {
     if (!shouldVirtualize || !containerRef.current) {
       setVisibleRange({ start: 0, end: items.length });
@@ -50,33 +121,54 @@ export function useVirtualList({ items = [], itemHeight = 120 } = {}) {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
-        const scrollTop = window.scrollY;
-        const viewportH = window.innerHeight;
-        const containerTop = container.getBoundingClientRect().top + scrollTop;
+        let scrollTop;
+        let viewportH;
 
-        const start = Math.max(
-          0,
-          Math.floor((scrollTop - containerTop) / itemHeight) - OVERSCAN
-        );
-        const end = Math.min(
-          items.length,
-          Math.ceil((scrollTop - containerTop + viewportH) / itemHeight) + OVERSCAN
-        );
+        if (containerScroll && container) {
+          scrollTop = container.scrollTop;
+          viewportH = container.clientHeight;
 
-        setVisibleRange({ start, end });
+          const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+          const end = Math.min(
+            items.length,
+            Math.ceil((scrollTop + viewportH) / rowHeight) + overscan
+          );
+          setVisibleRange({ start, end });
+          saveScrollPosition(scrollTop);
+        } else {
+          scrollTop = window.scrollY;
+          viewportH = window.innerHeight;
+          const containerTop = container.getBoundingClientRect().top + scrollTop;
+
+          const start = Math.max(
+            0,
+            Math.floor((scrollTop - containerTop) / rowHeight) - overscan
+          );
+          const end = Math.min(
+            items.length,
+            Math.ceil((scrollTop - containerTop + viewportH) / rowHeight) + overscan
+          );
+          setVisibleRange({ start, end });
+          saveScrollPosition(scrollTop);
+        }
+
         ticking = false;
       });
     };
 
     update(); // Initial calculation
-    window.addEventListener("scroll", update, { passive: true });
+
+    const target = containerScroll ? container : window;
+    target.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update, { passive: true });
 
     return () => {
-      window.removeEventListener("scroll", update);
+      target.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [items.length, itemHeight, shouldVirtualize]);
+  }, [items.length, rowHeight, overscan, shouldVirtualize, containerScroll, saveScrollPosition]);
+
+  const totalSize = items.length * rowHeight;
 
   // Items to render (visible slice + overscan)
   const visibleItems = shouldVirtualize
@@ -88,9 +180,9 @@ export function useVirtualList({ items = [], itemHeight = 120 } = {}) {
     : items.map((item, index) => ({ item, index, style: {} }));
 
   // Top/bottom spacers maintain scroll height without rendering off-screen items
-  const topSpacerHeight = shouldVirtualize ? visibleRange.start * itemHeight : 0;
+  const topSpacerHeight = shouldVirtualize ? visibleRange.start * rowHeight : 0;
   const bottomSpacerHeight = shouldVirtualize
-    ? (items.length - visibleRange.end) * itemHeight
+    ? (items.length - visibleRange.end) * rowHeight
     : 0;
 
   return {
@@ -98,6 +190,7 @@ export function useVirtualList({ items = [], itemHeight = 120 } = {}) {
     visibleItems,
     topSpacerHeight,
     bottomSpacerHeight,
+    totalSize,
     shouldVirtualize,
     totalCount: items.length,
     visibleCount: visibleItems.length,
