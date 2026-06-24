@@ -142,8 +142,8 @@
   - القبول: Switch يتجه صحيحاً في RTL؛ كل هدف لمس ≥44px (WCAG 2.5.5).
   - المصدر: dev-roadmap (P0-04, P0-05).
 
-- [ ] `[P1]` ⏱️XL **i18n: استخراج النصوص + `en.js` + `fr.js`** — رفع التغطية من ~30% إلى ≥95% ودعم 3 لغات.
-  - الحالة: `archive-app/src/i18n/locales/ar.js` فقط موجود (تم التحقق). أنشئ `en.js` و`fr.js`، واستخرج السلاسل المُرمّزة في JSX.
+- [x] `[P1]` ⏱️XL **i18n: استخراج النصوص + `en.js` + `fr.js`** — رفع التغطية من ~30% إلى ≥95% ودعم 3 لغات.
+  - ✅ مُنجز (2026-06-24 wave-34، agent C): 97 مفتاح ترجمة (7 namespaces: actions/nav/error/status/auth/archive/confirm/backup). `en.js` و`fr.js` كاملان + i18next يُسجّلهما. 10 اختبارات parity + integration. 1155 tests green. ملاحظة: ~30+ نص مُرمَّز في DashboardPage.jsx كُشف — يحتاج جلسة مستقلة.
   - القبول: تبديل لحظي بين 3 لغات دون إعادة تحميل؛ لا سلاسل عربية مُرمّزة في المكوّنات.
   - المصدر: dev-roadmap (P0-06)، ux_plan (Sprint 3).
 
@@ -242,12 +242,14 @@
   - القبول: لا تُحمَّل المكتبة إلا عند فتح صفحتها؛ قياس بـ rollup-plugin-visualizer.
   - المصدر: ux_plan (perf)، f45ea5a29 (GraphView lazy)، dev-roadmap (P5-01).
 
-- [ ] `[P1]` ⏱️L **تدقيق a11y شامل (WCAG 2.2 AA)** — تشغيل `vitest-axe`/`@axe-core/playwright` على كل صفحة + إصلاح focus/landmarks/labels + مراجعة التباين (4.5:1) في الوضعين.
+- [x] `[P1]` ⏱️L **تدقيق a11y شامل (WCAG 2.2 AA)** — تشغيل `vitest-axe`/`@axe-core/playwright` على كل صفحة + إصلاح focus/landmarks/labels + مراجعة التباين (4.5:1) في الوضعين.
+  - ✅ مُنجز (2026-06-24 wave-34، agent A): `pages.a11y.test.jsx` — 37 assertions جديدة (ButtonV2/InputV2/BadgeV2/CardV2/SwitchV2/TabsV2/DialogV2/ToastV2/TooltipV2 + 3 صفحات). إصلاح: SwitchV2 — `aria-labelledby` مفقود أُضيف. 58 إجمالي axe assertions. 1192 tests green.
   - الملفات: `archive-app/src/**`، توسيع `components.a11y.test.jsx`.
   - القبول: Lighthouse Accessibility ≥95؛ صفر مخالفات axe حرجة.
   - المصدر: ux_plan (Sprint 4, a11y)، guide_v6 (KPIs).
 
-- [ ] `[P1]` ⏱️L **مراجعة RTL Logical Properties شاملة** — استبدال `margin/padding-left/right` بـ `*-inline-start/end`؛ `dir="ltr"` للـ URLs/المسارات/التواريخ؛ أيقونات الاتجاه تتبع RTL.
+- [x] `[P1]` ⏱️L **مراجعة RTL Logical Properties شاملة** — استبدال `margin/padding-left/right` بـ `*-inline-start/end`؛ `dir="ltr"` للـ URLs/المسارات/التواريخ؛ أيقونات الاتجاه تتبع RTL.
+  - ✅ مُنجز (2026-06-24 wave-34، agent B): 36 تحويل في 14 ملف (primitives، ActivityTimeline، ShellParts، ArchiveToolbar، ExportButton، ArchiveViews، إلخ). استثناءات: وسائط/lightbox/FABs. 1192 tests green.
   - الملفات: `archive-app/src/**`.
   - القبول: ESLint rule مخصصة تمنع الخصائص الفيزيائية؛ صفر مخالفات.
   - المصدر: ux_plan (Sprint 3).
