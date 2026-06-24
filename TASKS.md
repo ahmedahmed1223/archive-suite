@@ -216,7 +216,8 @@
   - الملفات: `archive-app/src/pages/ProjectsPage.jsx`.
   - المصدر: new_tail (F16)، dev-roadmap (P2-03).
 
-- [ ] `[P2]` ⏱️M **Media Readiness + Export Package Wizard** — عرض `buildMediaReadiness()` قبل التصدير + معالج تصدير من خطوتين (`buildProjectDeliveryPackage()` موجودة).
+- [x] `[P2]` ⏱️M **Media Readiness + Export Package Wizard** — عرض `buildMediaReadiness()` قبل التصدير + معالج تصدير من خطوتين (`buildProjectDeliveryPackage()` موجودة).
+  - ✅ مُنجز (2026-06-24 wave-35، agent B): `MediaReadinessPanel.jsx` (readiness % + color bar + blocking issues + "تصدير على أي حال"). `ExportPackageWizard.jsx` (DialogV2، خطوتان: محتوى/صيغة، 4 formats). 12 اختبار. 1218 tests green.
   - الملفات: `archive-app/src/pages/ProjectsPage.jsx`.
   - المصدر: new_tail (F17, F18).
 
@@ -316,7 +317,8 @@
 - [x] `[P2]` ⏱️M **Completeness Column** — عمود اكتمال اختياري في جدول الأرشيف.
   - ✅ مُنجز (2026-06-21 wave-22): عمود «الاكتمال» أُضيف في tableColumns.js (default=false) مع renderer في ArchiveViews.jsx — شريط تقدم ملون + نسبة مئوية. يُفعَّل من قائمة الأعمدة.
   - Batch Fix + Inline Cell Editing + Saved Views — لا تزال مطلوبة.
-- [ ] `[P2]` ⏱️M **Batch Fix + Inline Cell Editing + Saved Views persistence** — إصلاح بالجملة + تحرير داخل الجدول + حفظ عرض الأعمدة/الفرز.
+- [x] `[P2]` ⏱️M **Batch Fix + Inline Cell Editing + Saved Views persistence** — إصلاح بالجملة + تحرير داخل الجدول + حفظ عرض الأعمدة/الفرز.
+  - ✅ مُنجز (2026-06-24 wave-35، agent A): `BatchFixToolbar.jsx` (3 dropdowns: حالة/نوع/فرع، updateVideoItem بالجملة، showToast). `useSavedViews.js` (localStorage، cap 20، save/delete). 13 اختبار. 1206 tests green.
   - الملفات: `archive-app/src/features/archive/*`, `tableColumns.js`, `InlineCellEditor.jsx`.
   - المصدر: new_tail (F21)، guide_v6 (ArchivePage).
 
