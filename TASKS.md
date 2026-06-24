@@ -56,14 +56,14 @@
   - يشمل: `rightsHolder`, `licenseType`, نافذة `embargo`، تاريخ انتهاء + **تنبيهات انتهاء**، **منع بث تلقائي** للمواد منتهية/المحظورة، **قيود جغرافية**، تقارير حقوق.
   - ✅ شريحة 1/3 — السكيما + REST + اختبارات (2026-06-22 wave-28، agent Sonnet): `RightsRecord` Prisma model + enum `LicenseType` (OWNED/LICENSED/PUBLIC_DOMAIN/FAIR_USE/UNKNOWN) + `embargoStart`/`embargoEnd`/`expiresAt`/`geoRestrictions[]` + 5 endpoints (GET/POST/PUT/DELETE + `/api/rights/expiring?days=N`) + 5 vitest cases. الـ migration بـ `--create-only` (يحتاج `prisma migrate deploy` يدوياً).
   - ✅ شريحة 2/3 — UI (2026-06-24 wave-32، agent A): `RightsPanel.jsx` في `archive-app/src/features/rights/` — شارة لون حسب نوع الرخصة، تحذيرات «منتهية»/«تحت الحجب»/«تنتهي قريباً»، نموذج تحرير بـ BadgeV2، cloud-only guard، design tokens + CSS logical props. تبويب «الحقوق» في DetailPage. 10 اختبارات vitest.
-  - متبقّي: شريحة 3 — enforcement (block automatic broadcast لمنتهي الحقوق + geo-restriction checks + تقرير «حقوق تنتهي خلال 30 يوماً» مع تنبيهات).
+  - ✅ شريحة 3/3 — enforcement (2026-06-24 wave-33، agent A): `rightsEnforcement.js` (pure: checkRightsForExport/isExpiringSoon/buildRightsSummary)، wire في export.js (403 RIGHTS_BLOCKED)، `expiryAlerts.js` (RIGHTS_EXPIRY_ALERT audit)، GET /api/rights/:itemId/enforcement. 13 اختبار.
   - الملفات: schema/store جديد في `archive-server/prisma/schema.prisma` + خدمة `archive-server/src/rights/*` + واجهة في `archive-app` (DetailPage + صفحة/تبويب حقوق).
   - القبول: لا يمكن نشر/تصدير مادة منتهية الحقوق دون تجاوز صريح مُسجَّل؛ تقرير «حقوق تنتهي خلال 30 يوماً» يعمل.
   - المصدر: broadcast-report (rights — حرج، «بدونه رفض الاعتماد»)، dev-roadmap (P3-01).
 
 - [ ] `[P0]` ⏱️XL **دعم صيغ البث: MXF / XDCAM / ProRes / DNxHR** — ترميز + demux + استخراج metadata مدمجة.
   - ✅ شريحة 1/2 — خطّة الـ ffmpeg (2026-06-22 wave-29، agent Sonnet): `archive-server/src/media/broadcastPlan.js` يحدد الـ codecs (MXF demux، XDCAM، ProRes 4 levels، DNxHR 5 levels) + `probeBroadcastMetadata` يستخرج timecode/duration/reel-name من ffprobe JSON. `archive-server/src/export/broadcast.js` يعرض `renderProRes422` و`renderDnxhrHq` مع injected runner. 24 اختبار، verify chain مُحدّث.
-  - متبقّي: تشغيل ffmpeg الفعلي على MXF حقيقية + تفعيل المسار في رفع الملفات.
+  - ✅ شريحة 2/2 — (2026-06-24 wave-33، agent B): `broadcastIngest.js` (isBroadcastFile + extractBroadcastMetadata injectable)، wire في watchFolder onIngest payload، GET /api/media/:id/broadcast-metadata، POST /api/export/broadcast (ProRes/DNxHR). 25 اختبار، 165 tests green.
   - الملفات: `archive-server/src/media/broadcastPlan.js` + `archive-server/src/export/broadcast.js`.
   - القبول: رفع ملف MXF/XDCAM يُستخرَج منه metadata ويُولَّد proxy؛ التصدير يدعم ProRes/DNxHR.
   - المصدر: broadcast-report (ingest — حرج)، dev-roadmap (P2-04).
@@ -88,7 +88,7 @@
 
 - [ ] `[P1]` ⏱️XL **تكامل MOS + NRCS (ENPS/iNEWS)** — جسر لغرفة الأخبار.
   - ✅ شريحة 1/2 (2026-06-23 wave-31، agent Sonnet): `archive-server/src/integrations/mos/` — `messages.js` يبني 6 رسائل MOS 3.x (roReq/roCreate/roStorySend/roElementAction/objList/objCreate) عبر `xmlSerializer.js`؛ `session.js` بـ messageID تلقائي + wrap/unwrap بدون DOMParser؛ `searchBridge.js` يحوّل عناصر الأرشيف إلى MOS shape. REST: `POST /api/mos/search` + `GET /api/mos/envelope-sample?type=roReq`. 23 اختبار، verify chain مُحدّث. لا sockets.
-  - متبقّي: شريحة 2 — MOS-over-TCP socket + handshake + heartbeat.
+  - ✅ شريحة 2/2 — (2026-06-24 wave-33، agent C): `tcpClient.js` (connect/disconnect/send/getStatus، reconnect، heartbeat 30s، send queue max 100). REST: POST /connect، POST /disconnect، GET /status، POST /send (admin-only). 8 اختبارات node:test بـ echo server حقيقي.
   - الملفات: `archive-server/src/integrations/mos/*` + REST bridge.
   - القبول: محرر في ENPS/iNEWS يبحث الأرشيف ويسحب مادة عبر MOS؛ يمكن تأجيله للمرحلة الثانية مع واجهة ويب + تنزيل يدوي مؤقتاً.
   - المصدر: broadcast-report (integration — حرج لكن قابل للتأجيل)، dev-roadmap (P3-04).
