@@ -3,11 +3,13 @@ import { jsx, jsxs } from "react/jsx-runtime";
 import { motion } from "framer-motion";
 import { AlertOctagon, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 
+import { appConfirm } from "../components/common/ConfirmDialog.js";
 import { PageHero } from "../components/ui/V1Primitives.jsx";
 import { EmptyState } from "../components/common/EmptyState.jsx";
 import { ErrorDetailsPanel } from "../components/errors/ErrorDetailsPanel.jsx";
 import {
   clearErrorLog,
+  countBySeverity,
   filterErrors,
   listErrors,
   removeError,
@@ -21,7 +23,7 @@ import {
   subscribeRecovery
 } from "../features/errors/recoveryQueue.js";
 import { useAppStore } from "../stores/index.js";
-import { formatDateTime } from "../utils/formatting.js";
+import { formatDateTime, formatNumber } from "../utils/formatting.js";
 
 const SEVERITY_FILTERS = [
   { value: "", label: "الكل" },
@@ -31,6 +33,8 @@ const SEVERITY_FILTERS = [
   { value: "info", label: "معلومة" }
 ];
 
+// listErrors returns a cached, frozen snapshot — safe to pass directly as the
+// getSnapshot argument to useSyncExternalStore without re-creating it each call.
 function useErrorLog() {
   return React.useSyncExternalStore(subscribeErrorLog, listErrors, listErrors);
 }
@@ -50,6 +54,7 @@ export function ErrorLogPage() {
     () => filterErrors(errors, { severity, query }),
     [errors, severity, query]
   );
+  const severityCounts = React.useMemo(() => countBySeverity(errors), [errors]);
 
   const onCopy = (ok) => showToast?.(ok ? "تم نسخ تقرير الخطأ" : "تعذّر النسخ", ok ? "success" : "error");
 
@@ -62,6 +67,18 @@ export function ErrorLogPage() {
     showToast?.(`أُعيدت المحاولة — نجح ${succeeded}، فشل ${failed}`, failed ? "warning" : "success");
   };
 
+  // Destructive clear needs explicit confirmation so a misclick can't wipe the
+  // log of unreviewed criticals.
+  const onClearLog = async () => {
+    const ok = await appConfirm(
+      `سيتم حذف ${formatNumber(errors.length)} تقريراً نهائياً. لا يمكن التراجع عن هذا الإجراء.`,
+      { title: "مسح سجل الأخطاء", confirmLabel: "مسح السجل", cancelLabel: "إلغاء", kind: "danger" }
+    );
+    if (!ok) return;
+    clearErrorLog();
+    showToast?.("تم مسح سجل الأخطاء", "info");
+  };
+
   return jsxs(motion.div, {
     initial: { opacity: 0, y: 8 },
     animate: { opacity: 1, y: 0 },
@@ -72,7 +89,7 @@ export function ErrorLogPage() {
       jsx(PageHero, {
         icon: jsx(AlertOctagon, { className: "h-6 w-6 va-accent-text" }),
         title: "سجل الأخطاء والاسترداد",
-        description: "كل الأخطاء بطبقات مبسطة وتقنية، مع طابور للعمليات المعلّقة وإعادة محاولة بضغطة."
+        description: "كل الأخطاء بطبقات مبسطة وتقنية، مع طابور للعمليات المعلّقة وإعادة محاولة بضغطة. الأخطاء المتكررة تُجمّع تلقائياً."
       }),
       pending.length > 0 ? jsxs("section", {
         className: "rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4",
@@ -105,12 +122,20 @@ export function ErrorLogPage() {
         ]
       }) : null,
       jsxs("section", { className: "flex flex-wrap items-center gap-2", children: [
-        jsx("div", { className: "flex flex-wrap gap-1", children: SEVERITY_FILTERS.map((option) => jsx("button", {
-          type: "button",
-          onClick: () => setSeverity(option.value),
-          className: `rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${severity === option.value ? "va-accent-bg-soft va-accent-text-on-soft border va-accent-border" : "text-[var(--va-text-muted)] hover:text-[var(--va-text)]"}`,
-          children: option.label
-        }, option.value || "all")) }),
+        jsx("div", { className: "flex flex-wrap gap-1", role: "group", "aria-label": "تصفية حسب الخطورة", children: SEVERITY_FILTERS.map((option) => {
+          const count = option.value ? (severityCounts[option.value] || 0) : errors.length;
+          const active = severity === option.value;
+          return jsxs("button", {
+            type: "button",
+            onClick: () => setSeverity(option.value),
+            "aria-pressed": active,
+            className: `inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${active ? "va-accent-bg-soft va-accent-text-on-soft border va-accent-border" : "border border-transparent text-[var(--va-text-muted)] hover:text-[var(--va-text)] hover:bg-[var(--va-surface-2)]"}`,
+            children: [
+              option.label,
+              count > 0 ? jsx("span", { className: `rounded-full px-1.5 text-[11px] ${active ? "va-accent-text-on-soft/70" : "bg-[var(--va-surface-2)] text-[var(--va-text-muted)]"}`, children: formatNumber(count) }) : null
+            ]
+          }, option.value || "all");
+        }) }),
         jsx("input", {
           value: query,
           onChange: (event) => setQuery(event.target.value),
@@ -120,8 +145,8 @@ export function ErrorLogPage() {
         }),
         errors.length > 0 ? jsxs("button", {
           type: "button",
-          onClick: () => { clearErrorLog(); showToast?.("تم مسح سجل الأخطاء", "info"); },
-          className: "inline-flex items-center gap-1.5 rounded-lg border border-[var(--va-border-soft)] px-3 py-2 text-sm text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]",
+          onClick: onClearLog,
+          className: "inline-flex items-center gap-1.5 rounded-lg border border-[var(--va-border-soft)] px-3 py-2 text-sm text-[var(--va-text-2)] hover:bg-red-500/10 hover:text-red-300",
           children: [jsx(Trash2, { className: "h-4 w-4" }), "مسح السجل"]
         }) : null
       ] }),
@@ -138,8 +163,13 @@ export function ErrorLogPage() {
           className: "space-y-2",
           children: [
             jsx(ErrorDetailsPanel, { report, onCopy }),
-            jsxs("div", { className: "flex items-center justify-between px-1 text-xs text-[var(--va-text-muted)]", children: [
-              jsx("span", { children: formatDateTime(report.timestamp) }),
+            jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-[var(--va-text-muted)]", children: [
+              jsxs("span", { children: [
+                formatDateTime(report.timestamp),
+                report.count && report.count > 1
+                  ? jsxs("span", { className: "ms-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-amber-100", children: ["تكرر ", formatNumber(report.count), " مرة"] })
+                  : null
+              ] }),
               jsx("button", { type: "button", onClick: () => removeError(report.id), className: "text-[var(--va-text-muted)] hover:text-rose-400", children: "إزالة" })
             ] })
           ]
