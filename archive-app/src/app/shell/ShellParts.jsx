@@ -141,7 +141,7 @@ export class AppErrorBoundary extends React.Component {
         dir="rtl"
         role="alert"
         aria-live="assertive"
-        className="m-6 rounded-[var(--va-radius-xl)] border border-[color-mix(in_oklab,var(--va-status-danger)_32%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_10%,var(--va-surface))] p-6 text-right text-[var(--va-text)]"
+        className="m-6 rounded-[var(--va-radius-xl)] border border-[color-mix(in_oklab,var(--va-status-danger)_32%,transparent)] bg-[color-mix(in_oklab,var(--va-status-danger)_10%,var(--va-surface))] p-6 text-start text-[var(--va-text)]"
       >
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-[var(--va-status-danger)]" aria-hidden="true" />
@@ -182,7 +182,7 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
   const currentStep = steps.find((step) => step.id === currentStepId) || steps[0];
   const completedStepIds = steps.filter((step) => step.status === "done").map((step) => step.id);
   return (
-    <main dir="rtl" className="va-onboarding-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-right text-[var(--va-text)]">
+    <main dir="rtl" className="va-onboarding-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-start text-[var(--va-text)]">
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -260,7 +260,7 @@ export function SplashScreen({ steps = STARTUP_STEPS, currentStepId, progress = 
 export function StartupRecoveryScreen({ report, onRetry, onOpenDiagnostics }) {
   const message = report?.fatalError?.userMessage || report?.fatalError?.message || "تعذر بدء التطبيق بشكل كامل.";
   return (
-    <main dir="rtl" className="va-onboarding-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-right text-[var(--va-text)]">
+    <main dir="rtl" className="va-onboarding-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-start text-[var(--va-text)]">
       <section className="va-onboarding-panel w-full max-w-xl rounded-[var(--va-radius-xl)] border border-[color-mix(in_oklab,var(--va-status-danger)_28%,transparent)] bg-[var(--va-elevated)] p-7 shadow-[var(--va-elev-2)]">
         <ShieldAlert className="h-10 w-10 text-[var(--va-status-danger)]" />
         <h1 className="mt-4 text-2xl font-bold">شاشة استرداد بدء التشغيل</h1>
@@ -305,7 +305,7 @@ export function LockScreen() {
   };
 
   return (
-    <main dir="rtl" className="va-auth-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-right text-[var(--va-text)]">
+    <main dir="rtl" className="va-auth-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-start text-[var(--va-text)]">
       <form onSubmit={submit} className="va-auth-card w-full max-w-md rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-7 shadow-[var(--va-elev-2)]">
         <Lock className="h-10 w-10 va-accent-text" />
         <h1 className="mt-4 text-2xl font-bold">التطبيق مقفل</h1>
@@ -350,7 +350,7 @@ export function LoginScreen() {
   };
 
   return (
-    <main dir="rtl" className="va-onboarding-shell va-auth-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-right text-[var(--va-text)]">
+    <main dir="rtl" className="va-onboarding-shell va-auth-shell flex min-h-screen items-center justify-center bg-[var(--va-bg)] p-6 text-start text-[var(--va-text)]">
       <section className="va-onboarding-panel va-auth-card grid w-full max-w-5xl overflow-hidden rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] shadow-[var(--va-elev-popover)] md:grid-cols-[0.9fr_1.1fr]">
         <aside className="va-accent-bg-soft p-7">
           <Sparkles className="h-11 w-11 va-accent-text-on-soft" />
@@ -427,7 +427,7 @@ export function ToastNotification() {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] left-1/2 z-[var(--va-z-toast)] flex w-[min(92vw,380px)] -translate-x-1/2 flex-col gap-2 text-right md:bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] lg:left-4 lg:translate-x-0"
+      className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] start-1/2 z-[var(--va-z-toast)] flex w-[min(92vw,380px)] -translate-x-1/2 flex-col gap-2 text-start md:bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] lg:start-4 lg:translate-x-0"
     >
       <AnimatePresence initial={false}>
         {topItems.map((notification) => (
@@ -629,7 +629,7 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
   const showRecentLabel = !query.trim() && recentCommandIds.length > 0;
 
   return createPortal(
-    <div dir="rtl" className="fixed inset-0 z-[var(--va-z-command)] bg-black/55 p-4 text-right backdrop-blur-sm" onMouseDown={() => onOpenChange?.(false)}>
+    <div dir="rtl" className="fixed inset-0 z-[var(--va-z-command)] bg-black/55 p-4 text-start backdrop-blur-sm" onMouseDown={() => onOpenChange?.(false)}>
       <motion.section
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -648,7 +648,7 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="اكتب أمرًا أو صفحة، أو ابحث عن فيديو..."
-            className="min-h-11 flex-1 bg-transparent text-right text-[var(--va-text)] outline-none placeholder:text-[var(--va-text-muted)]"
+            className="min-h-11 flex-1 bg-transparent text-start text-[var(--va-text)] outline-none placeholder:text-[var(--va-text-muted)]"
             aria-label="بحث الأوامر"
             aria-autocomplete="list"
           />
@@ -673,7 +673,7 @@ export function CommandPalette({ open, onOpenChange, onOpenShortcuts, onOpenQuic
                     data-command-index={index}
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => runCommand(command)}
-                    className={`flex w-full items-center gap-3 rounded-[var(--va-radius-lg)] px-4 py-3 text-right transition-colors ${active ? "bg-[color-mix(in_srgb,var(--va-action)_16%,transparent)] text-[var(--va-text)]" : "hover:bg-[var(--va-surface-2)]"}`}
+                    className={`flex w-full items-center gap-3 rounded-[var(--va-radius-lg)] px-4 py-3 text-start transition-colors ${active ? "bg-[color-mix(in_srgb,var(--va-action)_16%,transparent)] text-[var(--va-text)]" : "hover:bg-[var(--va-surface-2)]"}`}
                   >
                     <Icon className={`h-5 w-5 shrink-0 ${active ? "text-[var(--va-action)]" : "text-[var(--va-text-muted)]"}`} />
                     <span className="min-w-0 flex-1">
@@ -768,7 +768,7 @@ export function ForceChangePasswordDialog() {
   };
 
   return createPortal(
-    <div dir="rtl" className="fixed inset-0 z-[var(--va-z-modal)] flex items-center justify-center bg-black/55 p-4 text-right text-[var(--va-text)] backdrop-blur-sm">
+    <div dir="rtl" className="fixed inset-0 z-[var(--va-z-modal)] flex items-center justify-center bg-black/55 p-4 text-start text-[var(--va-text)] backdrop-blur-sm">
       <form onSubmit={submit} className="va-surface-muted w-full max-w-md rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-6 shadow-[var(--va-elev-popover)]">
         <KeyRound className="h-9 w-9 va-accent-text" />
         <h2 className="mt-4 text-xl font-bold">تغيير كلمة المرور مطلوب</h2>
@@ -828,7 +828,7 @@ export function V1ProductTour({ open, onComplete, onSkip }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="feature-tour-title"
-      className="fixed inset-0 z-[var(--va-z-modal)] flex items-end justify-center bg-black/55 p-4 text-right text-[var(--va-text)] backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[var(--va-z-modal)] flex items-end justify-center bg-black/55 p-4 text-start text-[var(--va-text)] backdrop-blur-sm sm:items-center"
     >
       <section className="w-full max-w-lg rounded-[var(--va-radius-xl)] border border-[var(--va-border-soft)] bg-[var(--va-elevated)] p-6 shadow-[var(--va-elev-popover)]">
         {/* slide header */}

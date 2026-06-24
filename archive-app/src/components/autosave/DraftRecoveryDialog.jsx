@@ -64,7 +64,7 @@ export function DraftRecoveryDialog({ isOpen, draft, onRestore, onDiscard, onClo
             className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-gray-900 p-5 shadow-2xl"
           >
             <button type="button" onClick={onClose} aria-label="إغلاق"
-              className="absolute left-4 top-4 rounded-lg p-1.5 text-gray-400 hover:bg-white/10 hover:text-white">
+              className="absolute start-4 top-4 rounded-lg p-1.5 text-gray-400 hover:bg-white/10 hover:text-white">
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
 

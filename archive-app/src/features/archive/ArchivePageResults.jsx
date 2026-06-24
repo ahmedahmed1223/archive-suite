@@ -577,7 +577,7 @@ export function ArchivePageResults(props) {
             onPageChange: goToPage
           }),
           selectedIds.size > 0 && jsx("div", {
-            className: "fixed left-1/2 z-40 -translate-x-1/2 flex items-center gap-3 rounded-full border border-gray-600 bg-gray-800/95 px-4 py-2 shadow-xl backdrop-blur-sm text-sm",
+            className: "fixed start-1/2 z-40 -translate-x-1/2 flex items-center gap-3 rounded-full border border-gray-600 bg-gray-800/95 px-4 py-2 shadow-xl backdrop-blur-sm text-sm",
             style: { bottom: "var(--va-mobile-floating-bottom)" },
             dir: "rtl",
             role: "status",

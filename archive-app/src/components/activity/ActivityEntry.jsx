@@ -53,7 +53,7 @@ export function ActivityEntry({ entry, settings = {}, onUndo, onRedo }) {
   const canRedo = entry.undoable && entry.undone && typeof onRedo === "function";
 
   return jsxs("article", {
-    className: `va-entity-card rounded-2xl va-surface-muted border p-4 text-right transition-colors hover:border-emerald-500/25 ${entry.undone ? "opacity-60" : ""}`,
+    className: `va-entity-card rounded-2xl va-surface-muted border p-4 text-start transition-colors hover:border-emerald-500/25 ${entry.undone ? "opacity-60" : ""}`,
     dir: "rtl",
     children: [
       jsxs("div", {
