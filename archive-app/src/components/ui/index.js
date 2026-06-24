@@ -10,3 +10,5 @@ export { DialogV2 } from "./DialogV2.jsx";
 export { BadgeV2 } from "./BadgeV2.jsx";
 export { SwitchV2 } from "./SwitchV2.jsx";
 export { TabsV2 } from "./TabsV2.jsx";
+export { ToastV2, ToastContainer } from "./ToastV2.jsx";
+export { TooltipV2 } from "./TooltipV2.jsx";

@@ -11,10 +11,11 @@
  */
 import { useState } from "react";
 import { extractTextFromImage } from "../../services/ocrService.js";
+import { useToast } from "../../hooks/useToast.js";
 
 export function OcrButton({ file, fileUrl, mimeType, onResult }) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { showToast, ToastContainer } = useToast();
 
   // OCR is only supported for image types.
   const isSupported = mimeType?.startsWith("image/");
@@ -22,7 +23,6 @@ export function OcrButton({ file, fileUrl, mimeType, onResult }) {
 
   async function handleOcr() {
     setLoading(true);
-    setError(null);
     try {
       // Prefer the File object; fall back to fetching from URL.
       let imageFile = file;
@@ -34,15 +34,16 @@ export function OcrButton({ file, fileUrl, mimeType, onResult }) {
       if (!imageFile) throw new Error("لا يوجد ملف للتعرف الضوئي.");
       const result = await extractTextFromImage(imageFile);
       onResult?.(result);
+      showToast({ message: "تم استخراج النص بنجاح", variant: "success" });
     } catch (err) {
-      setError(err.message);
+      showToast({ message: err.message || "تعذّر التعرف الضوئي", variant: "error" });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div>
+    <>
       <button
         type="button"
         onClick={handleOcr}
@@ -51,7 +52,7 @@ export function OcrButton({ file, fileUrl, mimeType, onResult }) {
       >
         {loading ? "جاري التعرف على النص..." : "استخراج النص (OCR)"}
       </button>
-      {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-    </div>
+      <ToastContainer />
+    </>
   );
 }

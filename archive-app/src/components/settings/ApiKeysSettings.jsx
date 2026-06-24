@@ -3,10 +3,10 @@
  * Issue / list / revoke programmatic API keys. The plaintext key is shown
  * exactly once, right after creation — afterwards only the prefix is visible.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { KeyRound, Plus, Trash2, Copy, Check } from "lucide-react";
 import { getCloudToken } from "../../bootstrap/cloudSession.js";
-import { useAppStore } from "../../stores/index.js";
+import { useToast } from "../../hooks/useToast.js";
 
 const SCOPE_OPTIONS = [
   { id: "read", label: "قراءة" },
@@ -21,7 +21,7 @@ function authHeaders() {
 export function ApiKeysSettings({ baseUrl = "", fetchImpl }) {
   const doFetch = fetchImpl || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : null);
   const base = String(baseUrl || "").replace(/\/+$/, "");
-  const showToast = useAppStore((s) => s.showToast);
+  const { showToast, ToastContainer } = useToast();
 
   const [keys, setKeys] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -66,7 +66,7 @@ export function ApiKeysSettings({ baseUrl = "", fetchImpl }) {
       setExpiresAt("");
       loadKeys();
     } catch (err) {
-      showToast?.(err?.message || "فشل إنشاء المفتاح.", "error");
+      showToast({ message: err?.message || "فشل إنشاء المفتاح.", variant: "error" });
     } finally {
       setBusy(false);
     }
@@ -78,10 +78,10 @@ export function ApiKeysSettings({ baseUrl = "", fetchImpl }) {
         method: "DELETE", headers: authHeaders(),
       });
       if (!res.ok) throw new Error();
-      showToast?.("أُبطل المفتاح", "info");
+      showToast({ message: "أُبطل المفتاح", variant: "info" });
       loadKeys();
     } catch {
-      showToast?.("تعذّر إبطال المفتاح", "error");
+      showToast({ message: "تعذّر إبطال المفتاح", variant: "error" });
     }
   }, [base, doFetch, loadKeys, showToast]);
 
@@ -91,11 +91,12 @@ export function ApiKeysSettings({ baseUrl = "", fetchImpl }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      showToast?.("تعذّر النسخ", "error");
+      showToast({ message: "تعذّر النسخ", variant: "error" });
     }
   }, [createdKey, showToast]);
 
   return (
+    <Fragment>
     <section aria-labelledby="apikeys-heading" className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 id="apikeys-heading" className="flex items-center gap-2 text-base font-semibold">
@@ -214,5 +215,7 @@ export function ApiKeysSettings({ baseUrl = "", fetchImpl }) {
         </ul>
       )}
     </section>
+    <ToastContainer />
+    </Fragment>
   );
 }
