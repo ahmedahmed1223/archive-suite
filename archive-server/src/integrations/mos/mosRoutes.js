@@ -1,6 +1,7 @@
 /**
- * mosRoutes.js — REST endpoints for MOS/NRCS integration (slice 1).
+ * mosRoutes.js — REST endpoints for MOS/NRCS integration (slices 1 + 2).
  *
+ * ── Slice 1 (search / samples) ──────────────────────────────────────────────
  * POST /api/mos/search
  *   Body: { query: string }
  *   Auth: Bearer JWT required
@@ -10,12 +11,40 @@
  *   Auth: Bearer JWT required
  *   Returns: application/xml sample envelope for the requested type
  *
- * No sockets opened here — slice 2 wires real MOS-over-TCP.
+ * ── Slice 2 (TCP management, admin-only) ────────────────────────────────────
+ * POST /api/mos/connect
+ *   Body: { host, port?, mosID?, ncsID? }
+ *   Auth: admin role required
+ *   Starts the singleton MOS TCP client and connects to the NCS.
+ *
+ * POST /api/mos/disconnect
+ *   Auth: admin role required
+ *   Stops the singleton TCP client.
+ *
+ * GET  /api/mos/status
+ *   Auth: admin role required
+ *   Returns the current TCP client status from getStatus().
+ *
+ * POST /api/mos/send
+ *   Body: { type, payload }
+ *   Auth: admin role required
+ *   Sends a MOS message via the active TCP connection.
  */
 
 import { searchArchiveForMos } from "./searchBridge.js";
 import { objList, roReq, roCreate, roStorySend, roElementAction, objCreate } from "./messages.js";
 import { createMosSession } from "./session.js";
+import { createMosTcpClient } from "./tcpClient.js";
+
+// ── TCP singleton ─────────────────────────────────────────────────────────────
+
+/** @type {ReturnType<typeof createMosTcpClient> | null} */
+let tcpClient = null;
+
+const DEFAULT_MOS_ID = "ARCHIVE.MOS.1";
+const DEFAULT_NCS_ID = "NRCS.1";
+
+// ── Stores ────────────────────────────────────────────────────────────────────
 
 // Stores searched for items (mirrors the pattern in routes/export.js)
 const ITEM_STORES = [
@@ -147,6 +176,130 @@ export async function handleMosRoute({
     });
     res.end(buf);
     return true;
+  }
+
+  // ── POST /api/mos/connect ────────────────────────────────────────────────
+  if (req.method === "POST" && url.split("?")[0] === "/api/mos/connect") {
+    const claims = requireAuth(req, res);
+    if (!claims) return true;
+    if (!["admin", "owner"].includes(claims.role)) {
+      return send(403, { ok: false, error: "Admin role required." });
+    }
+
+    let body;
+    try {
+      body = await readJsonBody(req);
+    } catch (err) {
+      return send(400, { ok: false, error: err?.message || "Invalid request body." });
+    }
+
+    const host = String(body?.host ?? "").trim();
+    if (!host) return send(400, { ok: false, error: "host is required." });
+
+    const port = Number(body?.port ?? 10540);
+    const mosID = String(body?.mosID ?? DEFAULT_MOS_ID).trim();
+    const ncsID = String(body?.ncsID ?? DEFAULT_NCS_ID).trim();
+
+    // Disconnect existing client if any
+    if (tcpClient) {
+      try { tcpClient.disconnect(); } catch { /* ignore */ }
+      tcpClient = null;
+    }
+
+    tcpClient = createMosTcpClient({
+      host, port, mosID, ncsID,
+      onMessage: (msg) => {
+        // Messages received from NCS are logged; callers can extend via WebSocket
+        console.error(`[mos-tcp] received message type=${msg.type} id=${msg.messageID}`);
+      },
+      onConnected: () => {
+        console.error(`[mos-tcp] connected to ${host}:${port}`);
+      },
+      onDisconnected: (err) => {
+        console.error(`[mos-tcp] disconnected from ${host}:${port}${err ? " — " + err.message : ""}`);
+      },
+    });
+
+    tcpClient.connect();
+    return send(200, { ok: true, status: tcpClient.getStatus() });
+  }
+
+  // ── POST /api/mos/disconnect ─────────────────────────────────────────────
+  if (req.method === "POST" && url.split("?")[0] === "/api/mos/disconnect") {
+    const claims = requireAuth(req, res);
+    if (!claims) return true;
+    if (!["admin", "owner"].includes(claims.role)) {
+      return send(403, { ok: false, error: "Admin role required." });
+    }
+
+    if (!tcpClient) {
+      return send(200, { ok: true, message: "No active TCP connection." });
+    }
+    tcpClient.disconnect();
+    tcpClient = null;
+    return send(200, { ok: true, message: "TCP client disconnected." });
+  }
+
+  // ── GET /api/mos/status ──────────────────────────────────────────────────
+  if (req.method === "GET" && url.split("?")[0] === "/api/mos/status") {
+    const claims = requireAuth(req, res);
+    if (!claims) return true;
+    if (!["admin", "owner"].includes(claims.role)) {
+      return send(403, { ok: false, error: "Admin role required." });
+    }
+
+    const status = tcpClient ? tcpClient.getStatus() : { connected: false, host: null, port: null, reconnectAttempts: 0, queueSize: 0 };
+    return send(200, { ok: true, status });
+  }
+
+  // ── POST /api/mos/send ───────────────────────────────────────────────────
+  if (req.method === "POST" && url.split("?")[0] === "/api/mos/send") {
+    const claims = requireAuth(req, res);
+    if (!claims) return true;
+    if (!["admin", "owner"].includes(claims.role)) {
+      return send(403, { ok: false, error: "Admin role required." });
+    }
+
+    if (!tcpClient) {
+      return send(409, { ok: false, error: "No active TCP connection. Call POST /api/mos/connect first." });
+    }
+
+    let body;
+    try {
+      body = await readJsonBody(req);
+    } catch (err) {
+      return send(400, { ok: false, error: err?.message || "Invalid request body." });
+    }
+
+    const type = String(body?.type ?? "").trim();
+    if (!type) return send(400, { ok: false, error: "type is required." });
+
+    const status = tcpClient.getStatus();
+    const session = createMosSession({
+      mosID: status.host ? (body?.mosID ?? DEFAULT_MOS_ID) : DEFAULT_MOS_ID,
+      ncsID: status.host ? (body?.ncsID ?? DEFAULT_NCS_ID) : DEFAULT_NCS_ID,
+    });
+    const env = session.wrap();
+    const payload = body?.payload ?? {};
+
+    let xml;
+    try {
+      switch (type) {
+        case "roReq":         xml = roReq({ ...env, ...payload }); break;
+        case "roCreate":      xml = roCreate({ ...env, ...payload }); break;
+        case "roStorySend":   xml = roStorySend({ ...env, ...payload }); break;
+        case "roElementAction": xml = roElementAction({ ...env, ...payload }); break;
+        case "objList":       xml = objList({ ...env, ...payload }); break;
+        case "objCreate":     xml = objCreate({ ...env, ...payload }); break;
+        default:
+          return send(400, { ok: false, error: `Unknown MOS message type: ${type}` });
+      }
+    } catch (err) {
+      return send(400, { ok: false, error: `Failed to build message: ${err?.message}` });
+    }
+
+    tcpClient.send(xml);
+    return send(200, { ok: true, type, queued: !tcpClient.getStatus().connected, messageID: env.messageID });
   }
 
   return false;
