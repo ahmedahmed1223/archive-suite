@@ -55,7 +55,8 @@
 - [ ] `[P0]` ⏱️XL **نظام إدارة الحقوق الكامل (Rights/License)** — نموذج بيانات + منطق أعمال + واجهة.
   - يشمل: `rightsHolder`, `licenseType`, نافذة `embargo`، تاريخ انتهاء + **تنبيهات انتهاء**، **منع بث تلقائي** للمواد منتهية/المحظورة، **قيود جغرافية**، تقارير حقوق.
   - ✅ شريحة 1/3 — السكيما + REST + اختبارات (2026-06-22 wave-28، agent Sonnet): `RightsRecord` Prisma model + enum `LicenseType` (OWNED/LICENSED/PUBLIC_DOMAIN/FAIR_USE/UNKNOWN) + `embargoStart`/`embargoEnd`/`expiresAt`/`geoRestrictions[]` + 5 endpoints (GET/POST/PUT/DELETE + `/api/rights/expiring?days=N`) + 5 vitest cases. الـ migration بـ `--create-only` (يحتاج `prisma migrate deploy` يدوياً).
-  - متبقّي: شريحة 2 — UI (DetailPage rights tab + Rights page) · شريحة 3 — enforcement (block automatic broadcast لمنتهي الحقوق + geo-restriction checks + تقرير «حقوق تنتهي خلال 30 يوماً» مع تنبيهات).
+  - ✅ شريحة 2/3 — UI (2026-06-24 wave-32، agent A): `RightsPanel.jsx` في `archive-app/src/features/rights/` — شارة لون حسب نوع الرخصة، تحذيرات «منتهية»/«تحت الحجب»/«تنتهي قريباً»، نموذج تحرير بـ BadgeV2، cloud-only guard، design tokens + CSS logical props. تبويب «الحقوق» في DetailPage. 10 اختبارات vitest.
+  - متبقّي: شريحة 3 — enforcement (block automatic broadcast لمنتهي الحقوق + geo-restriction checks + تقرير «حقوق تنتهي خلال 30 يوماً» مع تنبيهات).
   - الملفات: schema/store جديد في `archive-server/prisma/schema.prisma` + خدمة `archive-server/src/rights/*` + واجهة في `archive-app` (DetailPage + صفحة/تبويب حقوق).
   - القبول: لا يمكن نشر/تصدير مادة منتهية الحقوق دون تجاوز صريح مُسجَّل؛ تقرير «حقوق تنتهي خلال 30 يوماً» يعمل.
   - المصدر: broadcast-report (rights — حرج، «بدونه رفض الاعتماد»)، dev-roadmap (P3-01).
@@ -101,7 +102,8 @@
 
 - [ ] `[P1]` ⏱️XL **نسخ احتياطي مؤسسي** — replication عبر المناطق + off-site + failover تلقائي + اختبار DR آلي.
   - ✅ شريحة 1/3 (2026-06-23 wave-31، agent Sonnet): `archive-server/src/backup/enterprise/` — `replicate.js` (streaming multipart S3 upload + AES-256-GCM optional encryption، 12B IV + 16B authTag layout)، `manifest.js` (`appendBackupManifestEntry` + `findRestorableEntry`)، `restoreSmoke.js` (download + decrypt + SHA-256 verify + `pg_restore --list` smoke). 3 REST endpoints: `POST /api/backups/replicate/:backupId` (admin) و `GET /api/backups/replicas` و `POST /api/backups/restore-smoke/:replicaId`. config: `config.backup.replication.{enabled, bucket, region, prefix, encryptionKey}` في `env.js`. 14 اختبار جديد، 23 اختبار backup الموجودة لم تتأثر.
-  - متبقّي: شريحة 2 — automated failover (DNS / health-check probe)؛ شريحة 3 — scheduled DR drills + alerts.
+  - ✅ شريحة 2/3 — (2026-06-24 wave-32، agent C): `healthProbe.js` (polling fetch، failThreshold، onFailoverNeeded/onRecovered callbacks)، `drDrill.js` (runDrillNow + scheduler، bounded 100-entry history)، `drRoutes.js` (GET health-probe، POST drill-now admin، GET drill-history). 10 اختبارات. verify:server green.
+  - متبقّي: شريحة 3 — scheduled DR drills UI + alerts.
   - الملفات: `archive-server/src/backup/enterprise/*` + S3 cross-region.
   - القبول: استعادة من نسخة off-site تنجح في اختبار DR مجدول. ✓ (smoke level)
   - المصدر: broadcast-report (DR)، dev-roadmap (P3-09).
@@ -163,7 +165,7 @@
 - [ ] `[P1]` ⏱️XL **نظام تصميم موحّد v2** — مكتبة مكوّنات أساسية (Button/Input/Card/Dialog/Badge/Switch/Tabs) تستخدم tokens حصراً + توسيع tokens (status/density/duration/skeleton).
   - ✅ شريحة 1/3 — primitives أربعة (2026-06-22 wave-29): ButtonV2/InputV2/CardV2/DialogV2. 33 اختبار.
   - ✅ شريحة 2/3 — (2026-06-23 wave-30، agent C): `BadgeV2.jsx` (5 variants، dot indicator)، `SwitchV2.jsx` (role=switch، 44px tap target، RTL logical props)، `TabsV2.jsx` (compound، keyboard nav ArrowKey/Home/End، ARIA tablist/tab/tabpanel). `design-tokens.css`: كتلة `:root` canonical لـ 14 رمز `--va-*` بقيم light+dark. 38 اختبار جديد. 1043 tests green.
-  - متبقّي: Toast / Tooltip + هجرة call sites القديمة إلى v2.
+  - ✅ شريحة 3/3 — (2026-06-24 wave-32، agent B): `ToastV2.jsx` (4 variants، 3 positions، CSS-only animations، role=alert، Escape dismiss)، `TooltipV2.jsx` (4 logical positions، delay 300ms، aria-describedby)، `useToast.js` hook (queue max 3، auto-dismiss)، 24 اختبار جديد. 2 call sites هُجِّرت (OcrButton + ApiKeysSettings). 1143 tests green.
   - الملفات: `archive-app/src/components/ui/*`، `archive-app/src/styles/design-tokens.css`.
   - القبول: صفر ألوان مُرمّزة في المكتبة؛ tokens الجديدة موثّقة ومستخدمة.
   - المصدر: dev-roadmap (P1-06)، ux_plan/guide_v6 (Design Tokens).
