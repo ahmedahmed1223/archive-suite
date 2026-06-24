@@ -1,11 +1,14 @@
 // Rights & License REST API (§22 — نظام إدارة الحقوق الكامل)
 //
 // Routes (all require Bearer auth; editor+ for writes):
-//   GET    /api/rights?itemId=<uid>      — fetch the rights record for an item
-//   POST   /api/rights                   — create/upsert a rights record
-//   PUT    /api/rights/:id               — update a rights record by its own id
-//   DELETE /api/rights/:id               — delete a rights record
-//   GET    /api/rights/expiring?days=30  — list records expiring within N days
+//   GET    /api/rights?itemId=<uid>             — fetch the rights record for an item
+//   POST   /api/rights                          — create/upsert a rights record
+//   PUT    /api/rights/:id                      — update a rights record by its own id
+//   DELETE /api/rights/:id                      — delete a rights record
+//   GET    /api/rights/expiring?days=30         — list records expiring within N days
+//   GET    /api/rights/:itemId/enforcement      — enforcement status for an item
+
+import { buildRightsSummary } from "../../rights/rightsEnforcement.js"
 
 const VALID_LICENSE_TYPES = new Set(["OWNED", "LICENSED", "PUBLIC_DOMAIN", "FAIR_USE", "UNKNOWN"])
 
@@ -193,6 +196,22 @@ export async function handleRightsRoute({
       return send(201, { ok: true, record: formatRecord(record) })
     } catch (err) {
       return send(err?.statusCode || 500, { ok: false, error: err?.message || "Failed to create rights record." })
+    }
+  }
+
+  // ── GET /api/rights/:itemId/enforcement ──────────────────────────────────
+  const enforcementMatch = /^\/api\/rights\/([^/]+)\/enforcement$/.exec(url.split("?")[0])
+  if (req.method === "GET" && enforcementMatch) {
+    const claims = requireAuth(req, res)
+    if (!claims) return true
+    if (!prisma) return send(501, { ok: false, error: "Rights management requires the Postgres backend." })
+    const itemId = decodeURIComponent(enforcementMatch[1])
+    try {
+      const record = await prisma.rightsRecord.findUnique({ where: { itemId } })
+      const summary = buildRightsSummary({ record: record ?? null })
+      return send(200, { ok: true, ...summary })
+    } catch (err) {
+      return send(500, { ok: false, error: err?.message || "Failed to fetch enforcement status." })
     }
   }
 

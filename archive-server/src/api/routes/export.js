@@ -12,6 +12,7 @@
 import { toDublinCore } from "../../export/dublinCore.js";
 import { toPBCore } from "../../export/pbcore.js";
 import { escapeXml, serializeElement, serializeDocument } from "../../export/xmlSerializer.js";
+import { checkRightsForExport as defaultRightsChecker } from "../../rights/rightsEnforcement.js";
 
 // Stores searched in priority order when looking up an item by id.
 const ITEM_STORES = [
@@ -125,6 +126,60 @@ function renderPBCoreXml(pb) {
 }
 
 /**
+ * Check rights enforcement for a given item before allowing export.
+ * Returns true if the request was blocked (response already sent), false if ok to proceed.
+ *
+ * Rules:
+ *   - No prisma (local mode) → skip check, allow
+ *   - No rights record → allow (unmanaged)
+ *   - licenseType === "OWNED" → allow (owned content, no restrictions apply)
+ *   - Otherwise run checkRightsForExport; 403 on block
+ *
+ * @param {object} params
+ * @param {string}      params.id
+ * @param {object}      params.req
+ * @param {object}      params.res
+ * @param {Function}    params.send
+ * @param {object|null} params.prisma
+ * @param {Function}    params.rightsChecker
+ * @returns {Promise<boolean>} true = blocked (403 sent), false = allowed
+ */
+async function checkItemRights({ id, req, res, send, prisma, rightsChecker }) {
+  if (!prisma) return false;
+
+  let record = null;
+  try {
+    record = await prisma.rightsRecord.findUnique({ where: { itemId: id } });
+  } catch {
+    // DB error — fail open to avoid blocking legitimate exports silently
+    return false;
+  }
+
+  if (!record) return false;
+  if (record.licenseType === "OWNED") return false;
+
+  const requestingCountry = req.headers?.["x-requesting-country"] || undefined;
+  const result = rightsChecker({ record, requestingCountry });
+
+  if (!result.allowed) {
+    const messages = {
+      EXPIRED: "This item's license has expired and cannot be exported.",
+      EMBARGO: "This item is currently under embargo and cannot be exported.",
+      GEO_RESTRICTED: "Export is not permitted in your region.",
+    };
+    send(res, 403, {
+      ok: false,
+      error: "RIGHTS_BLOCKED",
+      reason: result.reason,
+      message: messages[result.reason] || "Export blocked by rights policy.",
+    });
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Attach the /api/items/:id/export/* routes to the raw Node HTTP request
  * handling used by server.js.
  *
@@ -132,15 +187,26 @@ function renderPBCoreXml(pb) {
  * and the already-bound helper functions.
  *
  * @param {object} params
- * @param {string} params.url - normalised URL path (no query string)
- * @param {object} params.req - Node IncomingMessage
- * @param {object} params.res - Node ServerResponse
- * @param {Function} params.requireAuth - () => boolean (sends 401 on failure)
+ * @param {string}   params.url            - normalised URL path (no query string)
+ * @param {object}   params.req            - Node IncomingMessage
+ * @param {object}   params.res            - Node ServerResponse
+ * @param {Function} params.requireAuth    - () => boolean (sends 401 on failure)
  * @param {Function} params.resolveStorage - () => StorageProvider
- * @param {Function} params.send - (res, status, payload) => void
+ * @param {Function} params.send           - (res, status, payload) => void
+ * @param {object|null} [params.prisma]    - Prisma client; null in local/SPA mode
+ * @param {Function} [params.rightsChecker] - injectable rights check fn (tests)
  * @returns {Promise<boolean>} true when the route matched and was handled
  */
-export async function handleExportRoute({ url, req, res, requireAuth, resolveStorage, send }) {
+export async function handleExportRoute({
+  url,
+  req,
+  res,
+  requireAuth,
+  resolveStorage,
+  send,
+  prisma = null,
+  rightsChecker = defaultRightsChecker,
+}) {
   // Match /api/items/:id/export/pbcore.xml
   const pbcoreMatch = /^\/api\/items\/([^/]+)\/export\/pbcore\.xml$/.exec(url);
   if (pbcoreMatch && req.method === "GET") {
@@ -153,6 +219,8 @@ export async function handleExportRoute({ url, req, res, requireAuth, resolveSto
         send(res, 404, { ok: false, error: "Item not found." });
         return true;
       }
+      const blocked = await checkItemRights({ id, req, res, send, prisma, rightsChecker });
+      if (blocked) return true;
       const pb = toPBCore(item);
       const xml = renderPBCoreXml(pb);
       const buf = Buffer.from(xml, "utf-8");
@@ -180,6 +248,8 @@ export async function handleExportRoute({ url, req, res, requireAuth, resolveSto
         send(res, 404, { ok: false, error: "Item not found." });
         return true;
       }
+      const blocked = await checkItemRights({ id, req, res, send, prisma, rightsChecker });
+      if (blocked) return true;
       const dc = toDublinCore(item);
       const xml = renderDublinCoreRdf(dc, id);
       const buf = Buffer.from(xml, "utf-8");
