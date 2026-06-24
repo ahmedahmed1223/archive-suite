@@ -110,6 +110,7 @@ import {
 } from "../features/media/viewModel.js";
 import { TimeBookmarkButton, TimeBookmarkList, TimeBookmarkTimelineMarkers } from "../components/media/TimeBookmarks.jsx";
 import { ConversionPanel } from "../features/media/ConversionPanel.jsx";
+import { RightsPanel } from "../features/rights/RightsPanel.jsx";
 
 function fieldKey(field) {
   return field.storageKey || field.name || field.id;
@@ -839,7 +840,8 @@ export function DetailPage() {
     { id: "versions", label: "السجل التاريخي", icon: History },
     { id: "media", label: "الوسائط", icon: HardDrive },
     { id: "ai", label: "AI", icon: Sparkles },
-    { id: "relations", label: "العلاقات", icon: Gauge }
+    { id: "relations", label: "العلاقات", icon: Gauge },
+    ...(backendChoice.backend !== "local" ? [{ id: "rights", label: "الحقوق", icon: ShieldAlert }] : [])
   ];
 
   const previewState = previewDescriptor.status === MEDIA_PREVIEW_STATUS.PLAYABLE
@@ -1622,6 +1624,13 @@ export function DetailPage() {
           ] }) : null,
           activeDetailTab === "versions" && item?.id
             ? jsx("section", { className: "rounded-xl va-surface-subtle border", dir: "rtl", "aria-label": "السجل التاريخي للسجل", children: jsx(RecordVersionHistory, { recordId: item.id, store: "videoItems" }) })
+            : null,
+          activeDetailTab === "rights" && item?.id
+            ? jsx("section", { children: jsx(RightsPanel, {
+                itemId: item.id,
+                baseUrl: backendChoice.url,
+                getToken: getCloudToken
+              }) })
             : null,
           activeDetailTab === "history" && itemHistory.length ? jsxs("section", { children: [
             jsxs("h2", { className: "flex items-center gap-2 text-base font-bold text-[var(--va-text)]", children: [jsx(Clock3, { className: "h-4 w-4 va-accent-text" }), "سجل التعديلات"] }),
