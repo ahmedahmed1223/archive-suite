@@ -43,6 +43,10 @@ export function SwitchV2({
   ...rest
 }) {
   const switchId = id ?? React.useId();
+  // Stable id for the visible label text so the switch span can reference it
+  // via aria-labelledby (htmlFor alone does not provide an accessible name
+  // to a span with role="switch" — only to native form controls).
+  const labelId = `${switchId}-label`;
 
   // Support both controlled (checked prop) and uncontrolled usage.
   const isControlled = controlledChecked !== undefined;
@@ -75,6 +79,7 @@ export function SwitchV2({
         tabIndex={disabled ? -1 : 0}
         aria-checked={checked}
         aria-disabled={disabled || undefined}
+        aria-labelledby={label ? labelId : undefined}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         className={cx(
@@ -123,7 +128,7 @@ export function SwitchV2({
       }}
     >
       {switchEl}
-      <span className="text-sm text-[var(--va-text)]">{label}</span>
+      <span id={labelId} className="text-sm text-[var(--va-text)]">{label}</span>
     </label>
   );
 }
