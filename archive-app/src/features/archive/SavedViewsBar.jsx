@@ -41,7 +41,7 @@ export function SavedViewsBar({ views = [], currentFilters, canSave = false, onA
           jsx("button", {
             type: "button",
             onClick: () => onApply?.(view),
-            className: "rounded-r-full px-2.5 py-1 font-medium text-gray-200 transition-colors hover:bg-white/[0.06] hover:text-white",
+            className: "rounded-e-full px-2.5 py-1 font-medium text-gray-200 transition-colors hover:bg-white/[0.06] hover:text-white",
             title: `تطبيق "${view.name}"`,
             children: view.name
           }, "apply"),
@@ -56,7 +56,7 @@ export function SavedViewsBar({ views = [], currentFilters, canSave = false, onA
             type: "button",
             onClick: () => onRemove?.(view.id),
             "aria-label": `حذف عرض ${view.name}`,
-            className: "rounded-l-full px-1.5 py-1 text-gray-500 opacity-0 transition-opacity hover:bg-red-500/10 hover:text-red-300 focus:opacity-100 group-hover:opacity-100",
+            className: "rounded-s-full px-1.5 py-1 text-gray-500 opacity-0 transition-opacity hover:bg-red-500/10 hover:text-red-300 focus:opacity-100 group-hover:opacity-100",
             children: jsx(X, { className: "h-3 w-3" })
           }, "remove")
         ]

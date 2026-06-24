@@ -25,7 +25,7 @@ export function ActivityTimeline({ entries = [], settings = {}, onUndo, onRedo }
           ]
         }),
         jsx("div", {
-          className: "space-y-3 border-r border-white/10 pr-4",
+          className: "space-y-3 border-e border-white/10 pe-4",
           children: group.entries.map((entry) => jsx(ActivityEntry, {
             entry,
             settings,

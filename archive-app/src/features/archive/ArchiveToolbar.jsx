@@ -55,7 +55,7 @@ export function ArchiveSortMenu({ sortField = "updatedAt", sortDirection = "desc
       open && jsxs("div", {
         ref: menuRef,
         role: "menu",
-        className: "absolute right-0 top-full z-30 mt-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)] p-1 shadow-2xl",
+        className: "absolute end-0 top-full z-30 mt-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[var(--color-bg-surface,#0b1626)] p-1 shadow-2xl",
         children: [
           jsx("p", { className: "px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500", children: "ترتيب حسب" }),
           ...ARCHIVE_SORT_OPTIONS.map((option) => jsxs("button", {
@@ -66,7 +66,7 @@ export function ArchiveSortMenu({ sortField = "updatedAt", sortDirection = "desc
               onChange?.({ sortField: option.value, sortDirection });
               setOpen(false);
             },
-            className: `flex w-full items-center justify-between rounded-lg px-3 py-2 text-right text-xs transition-colors ${sortField === option.value ? "bg-[color-mix(in_srgb,var(--va-action)_16%,transparent)] text-white" : "text-gray-300 hover:bg-white/5"}`,
+            className: `flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-xs transition-colors ${sortField === option.value ? "bg-[color-mix(in_srgb,var(--va-action)_16%,transparent)] text-white" : "text-gray-300 hover:bg-white/5"}`,
             children: [
               jsx("span", { children: option.label }),
               sortField === option.value && jsx("span", { className: "text-[10px] text-[color-mix(in_srgb,var(--va-action)_70%,#ffffff)]", children: "النشط" })

@@ -125,7 +125,7 @@ export function ExportButton({ selectedIds = [] }) {
           <div
             role="menu"
             dir="rtl"
-            className="absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-white/10 va-surface-muted shadow-lg"
+            className="absolute end-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-white/10 va-surface-muted shadow-lg"
           >
             {FORMATS.map((f) => (
               <button
@@ -133,11 +133,11 @@ export function ExportButton({ selectedIds = [] }) {
                 type="button"
                 role="menuitem"
                 onClick={() => handleExport(f.id)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm hover:bg-white/5"
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-start text-sm hover:bg-white/5"
               >
                 <f.icon className="h-4 w-4 shrink-0 text-gray-400" />
                 <span className="font-semibold text-gray-200">{f.label}</span>
-                <span className="mr-auto text-xs text-gray-500">{f.desc}</span>
+                <span className="me-auto text-xs text-gray-500">{f.desc}</span>
               </button>
             ))}
           </div>

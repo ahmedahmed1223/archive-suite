@@ -223,7 +223,7 @@ export function BackupManager({ authToken }) {
                   <p className="text-sm font-mono text-gray-200 truncate" dir="ltr">{b.filename}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {new Date(b.createdAt).toLocaleString("ar")} · {fmt(b.sizeBytes)}
-                    {b.encrypted && <span className="mr-2 text-amber-400">🔒 مشفّرة</span>}
+                    {b.encrypted && <span className="me-2 text-amber-400">🔒 مشفّرة</span>}
                   </p>
                 </div>
                 <button

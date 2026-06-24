@@ -292,10 +292,10 @@ export function ArchivePageHero(props) {
                 onChange: (event) => setLocalSearch(event.target.value),
                 placeholder: "بحث بالعنوان أو الوسوم أو الملاحظات",
                 "aria-label": "بحث في الأرشيف",
-                className: "min-h-10 w-full va-surface-deep rounded-xl border py-2 pl-3 pr-12 text-sm text-white outline-none focus:border-[var(--va-action,#10b981)]"
+                className: "min-h-10 w-full va-surface-deep rounded-xl border py-2 ps-3 pe-12 text-sm text-white outline-none focus:border-[var(--va-action,#10b981)]"
               }),
               jsx("span", {
-                className: "pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2",
+                className: "pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2",
                 children: jsx(KbdHint, { keys: ["/"], className: "opacity-70" })
               })
             ]

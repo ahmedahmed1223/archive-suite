@@ -227,11 +227,11 @@ function controlBorder(error) {
 
 export function Field({ label, htmlFor, hint, error, required = false, className = "", children }) {
   return (
-    <div className={cx("space-y-1.5 text-right", className)} dir="rtl">
+    <div className={cx("space-y-1.5 text-start", className)} dir="rtl">
       {label && (
         <label htmlFor={htmlFor} className="block text-sm font-medium text-[var(--va-text-2)]">
           {label}
-          {required && <span className="mr-1 text-[var(--va-status-danger)]">*</span>}
+          {required && <span className="me-1 text-[var(--va-status-danger)]">*</span>}
         </label>
       )}
       {children}
@@ -273,13 +273,13 @@ export function Select({ error = false, className = "", children, ref, ...props 
       <select
         ref={ref}
         aria-invalid={error || undefined}
-        className={cx(CONTROL_BASE, controlBorder(error), "h-10 appearance-none px-3 pl-9 text-sm", className)}
+        className={cx(CONTROL_BASE, controlBorder(error), "h-10 appearance-none px-3 ps-9 text-sm", className)}
         {...props}
       >
         {children}
       </select>
       <ChevronDown
-        className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-[var(--va-text-muted)]"
+        className="pointer-events-none absolute inset-y-0 start-3 my-auto h-4 w-4 text-[var(--va-text-muted)]"
         aria-hidden="true"
       />
     </div>

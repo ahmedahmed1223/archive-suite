@@ -134,7 +134,7 @@ export function AppRouter() {
     dir: "rtl",
     // Token-driven shell background works in both themes; resolvedTheme retained
     // for downstream theme wiring but no longer drives a hardcoded hex.
-    className: "va-app-shell flex min-h-screen text-right bg-[var(--va-bg)] text-[var(--va-text)]",
+    className: "va-app-shell flex min-h-screen text-start bg-[var(--va-bg)] text-[var(--va-text)]",
     "data-density":
       settings.ui?.visualDensity === "compact" ? "compact" : "comfortable",
     "data-accent": settings.accentColor || "teal",
@@ -157,7 +157,7 @@ export function AppRouter() {
         tabIndex: -1,
         dir: "rtl",
         className:
-          "flex-1 min-w-0 overflow-y-auto overflow-x-hidden max-h-screen text-right pt-16 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pt-0 md:pb-0",
+          "flex-1 min-w-0 overflow-y-auto overflow-x-hidden max-h-screen text-start pt-16 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pt-0 md:pb-0",
         role: "main",
         children: jsx(ErrorBoundary, {
           children: jsxs(
