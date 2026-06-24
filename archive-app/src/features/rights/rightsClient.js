@@ -9,7 +9,7 @@ function buildHeaders(token) {
 }
 
 function stripTrailingSlash(url) {
-  return String(url || '').replace(//+$/, '');
+  return String(url || '').replace(/\/+$/, '');
 }
 
 export async function fetchItemRights({ base = '', getToken, itemId, fetchImpl }) {
