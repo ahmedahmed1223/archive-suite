@@ -139,12 +139,16 @@ export const config = Object.freeze({
   // ── Backup replication (enterprise off-site / S3 cross-region) ────────────
   backup: Object.freeze({
     replication: Object.freeze({
-      enabled:       bool(e.BACKUP_REPLICATION_ENABLED, false),
-      bucket:        str(e.BACKUP_REPLICATION_BUCKET, ""),
-      region:        str(e.BACKUP_REPLICATION_REGION, "us-east-1"),
-      prefix:        str(e.BACKUP_REPLICATION_PREFIX, "backups"),
+      enabled:            bool(e.BACKUP_REPLICATION_ENABLED, false),
+      bucket:             str(e.BACKUP_REPLICATION_BUCKET, ""),
+      region:             str(e.BACKUP_REPLICATION_REGION, "us-east-1"),
+      prefix:             str(e.BACKUP_REPLICATION_PREFIX, "backups"),
       // 32-byte AES-256-GCM key as 64 hex chars; leave empty to skip encryption
-      encryptionKey: str(e.BACKUP_REPLICATION_ENCRYPTION_KEY, ""),
+      encryptionKey:      str(e.BACKUP_REPLICATION_ENCRYPTION_KEY, ""),
+      // Health probe target URL (default: self)
+      probeUrl:           str(e.BACKUP_REPLICATION_PROBE_URL, ""),
+      // Interval between scheduled DR drills in hours (default: 24)
+      drillIntervalHours: num(e.BACKUP_DR_DRILL_INTERVAL_HOURS, 24),
     }),
   }),
 
