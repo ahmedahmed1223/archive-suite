@@ -101,6 +101,8 @@ import { MontageToolStrip } from "../components/montage/MontageToolStrip.jsx";
 import { MontageWorkspace } from "../components/montage/MontageWorkspace.jsx";
 import { VideoPlayer } from "../components/media/VideoPlayer.jsx";
 import { getMediaPreviewDescriptor, MEDIA_PREVIEW_STATUS } from "../features/archive/mediaPreview.js";
+import { MediaReadinessPanel } from "../components/montage/MediaReadinessPanel.jsx";
+import { ExportPackageWizard } from "../components/montage/ExportPackageWizard.jsx";
 
 /** Friendly clock for a duration in seconds → H:MM:SS or M:SS. */
 function formatClock(totalSeconds) {
@@ -901,7 +903,7 @@ function TemporalCommentsPanel({ clip, comments = [], currentTime = 0, onAddComm
   });
 }
 
-function ExportCenter({ canExport, exportMode = "server", serverFfmpeg, hasValidCuts, exporting, onExport, onDownloadPackage, exportEvents = [] }) {
+function ExportCenter({ canExport, exportMode = "server", serverFfmpeg, hasValidCuts, exporting, onExport, onDownloadPackage, onOpenExportWizard, exportEvents = [] }) {
   const exportStateLabel = canExport
     ? exportMode === "wasm" ? "MP4 عبر wasm" : "MP4 جاهز"
     : "MP4 يحتاج خادمًا أو wasm";
@@ -918,9 +920,10 @@ function ExportCenter({ canExport, exportMode = "server", serverFfmpeg, hasValid
         jsx("span", { className: `rounded-full border px-2 py-0.5 text-xs ${canExport ? "va-accent-border va-accent-bg-soft va-accent-text-on-soft" : "border-amber-500/25 bg-amber-500/10 text-amber-100"}`, children: exportStateLabel })
       ] }),
       jsxs("div", { className: "flex flex-wrap gap-2", children: [
+        jsxs("button", { type: "button", onClick: () => onOpenExportWizard?.() || onExport("json"), disabled: !hasValidCuts, className: "btn btn-primary gap-2", children: [jsx(PackageCheck, { className: "h-4 w-4" }), "تصدير"] }),
         jsxs("button", { type: "button", onClick: () => onExport("json"), disabled: !hasValidCuts, className: "btn btn-ghost gap-2", children: [jsx(FileJson, { className: "h-4 w-4" }), "JSON"] }),
         jsxs("button", { type: "button", onClick: () => onExport("edl"), disabled: !hasValidCuts, className: "btn btn-ghost gap-2", children: [jsx(Download, { className: "h-4 w-4" }), "EDL"] }),
-        jsxs("button", { type: "button", onClick: () => onExport("mp4"), disabled: !canExport || exporting || !hasValidCuts, className: "btn btn-primary gap-2", children: [jsx(Film, { className: "h-4 w-4" }), exporting ? "جارٍ تصدير MP4..." : "MP4"] }),
+        jsxs("button", { type: "button", onClick: () => onExport("mp4"), disabled: !canExport || exporting || !hasValidCuts, className: "btn btn-ghost gap-2", children: [jsx(Film, { className: "h-4 w-4" }), exporting ? "جارٍ تصدير MP4..." : "MP4"] }),
         jsxs("button", { type: "button", onClick: onDownloadPackage, disabled: !hasValidCuts, className: "btn btn-ghost gap-2", children: [jsx(PackageCheck, { className: "h-4 w-4" }), "حزمة تسليم"] })
       ] }),
       jsx("p", { className: serverFfmpeg?.available || exportMode === "wasm" ? "mt-3 text-xs text-emerald-200" : "mt-3 text-xs text-amber-200", children: ffmpegDetail }),
@@ -1037,6 +1040,8 @@ function ProjectEditor({
   const [currentTime, setCurrentTime] = React.useState(0);
   const [timelineZoom, setTimelineZoom] = React.useState(12);
   const [selectedTool, setSelectedTool] = React.useState("select");
+  const [showReadinessPanel, setShowReadinessPanel] = React.useState(false);
+  const [showExportWizard, setShowExportWizard] = React.useState(false);
   const normalizedTimeline = React.useMemo(() => normalizeMultiTrackProject(project || {}), [project]);
   const thumbnailsByItemId = React.useMemo(() => {
     const map = new Map();
@@ -1343,6 +1348,19 @@ function ProjectEditor({
       currentTime,
       onAddMarker
     }),
+    showReadinessPanel && jsx(MediaReadinessPanel, {
+      project,
+      items,
+      onExport: (kind) => {
+        setShowReadinessPanel(false);
+        if (kind === "wizard") {
+          setShowExportWizard(true);
+        } else {
+          onExport(kind);
+        }
+      },
+      onCancel: () => setShowReadinessPanel(false)
+    }),
     jsx(ExportCenter, {
       canExport: mp4Enabled,
       exportMode: mp4Mode,
@@ -1351,7 +1369,25 @@ function ProjectEditor({
       exporting,
       onExport,
       onDownloadPackage,
+      onOpenExportWizard: () => setShowReadinessPanel(true),
       exportEvents
+    }),
+    jsx(ExportPackageWizard, {
+      open: showExportWizard,
+      onClose: () => setShowExportWizard(false),
+      project,
+      items,
+      itemsById,
+      onExport: (kind, opts) => {
+        setShowExportWizard(false);
+        if (kind === "all") {
+          onExport("json");
+          onExport("edl");
+          onDownloadPackage();
+        } else {
+          onExport(kind);
+        }
+      }
     })
   ] });
 
