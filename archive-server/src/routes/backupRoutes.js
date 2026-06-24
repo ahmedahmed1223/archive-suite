@@ -4,6 +4,7 @@
 import { listBackups, runBackup, restoreBackup, previewBackup } from "../backup/backupScheduler.js";
 import { auditLog } from "../api/auditLogger.js";
 import { handleReplicationRoute } from "../backup/enterprise/replicationRoutes.js";
+import { handleDrRoute } from "../backup/enterprise/drRoutes.js";
 
 /**
  * Handles all /api/admin/backups* routes.
@@ -84,6 +85,11 @@ export async function handleBackupRoute({
 
   // Enterprise replication routes (/api/backups/replicate/*, /api/backups/replicas, /api/backups/restore-smoke/*)
   if (await handleReplicationRoute({ req, res, url, send, overLimit, requireAuth, requireAdmin })) {
+    return true;
+  }
+
+  // DR drill + health-probe routes (/api/backups/health-probe, /api/backups/drill-now, /api/backups/drill-history)
+  if (await handleDrRoute({ req, res, url, send, overLimit, requireAuth, requireAdmin })) {
     return true;
   }
 
