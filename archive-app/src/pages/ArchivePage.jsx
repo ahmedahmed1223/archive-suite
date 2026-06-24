@@ -27,6 +27,7 @@ import { BulkActionBar } from "../features/archive/BulkActionBar.jsx";
 import { FileArchiveWizard } from "../features/archive/FileArchiveWizard.jsx";
 import { ImportFromUrlDialog } from "../features/import/ImportFromUrlDialog.jsx";
 import { SavedViewsBar } from "../features/archive/SavedViewsBar.jsx";
+import { BatchFixToolbar } from "../features/archive/BatchFixToolbar.jsx";
 import { ArchivePageDetailedFilters } from "../features/archive/ArchivePageDetailedFilters.jsx";
 import { ArchivePageHero } from "../features/archive/ArchivePageHero.jsx";
 import { ArchivePageResults } from "../features/archive/ArchivePageResults.jsx";
@@ -412,6 +413,14 @@ export function ArchivePage() {
         onApply: applySavedView,
         onSave: saveCurrentView,
         onRemove: removeView
+      }),
+      storeSelectedItems.length > 0 && jsx(BatchFixToolbar, {
+        selectedItems: storeSelectedItems,
+        videoItems,
+        contentTypes,
+        updateVideoItem,
+        showToast,
+        onClear: exitBulkMode
       }),
       jsx(MediaJobsBoard, {
         enabled: mediaToolsEnabled,
