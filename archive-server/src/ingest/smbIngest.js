@@ -49,6 +49,7 @@ function call(client, method, ...args) {
  * @param {string}   [options.domain]       - default "WORKGROUP"
  * @param {string}   options.localPath      - local directory to download files into
  * @param {string}   [options.manifestPath]
+ * @param {number}   [options.timeoutMs=15000] - max time for the SMB operation
  * @returns {Promise<{ pulled: string[], skipped: number }>}
  */
 export async function pullFromSmb({
@@ -59,6 +60,7 @@ export async function pullFromSmb({
   domain = "WORKGROUP",
   localPath,
   manifestPath = DEFAULT_MANIFEST_PATH,
+  timeoutMs = 15_000,
 }) {
   if (!share || !user) {
     const err = new Error("SMB pull requires share and user");
@@ -74,15 +76,32 @@ export async function pullFromSmb({
   const SMB2 = (await import("@marsaud/smb2")).default;
   const client = new SMB2({ share, domain, username: user, password, autoCloseTimeout: 0 });
 
+  // Wrap every SMB call in AbortSignal.timeout so a stalled/unsupported
+  // connection (e.g. ntlm MD4 ERR_OSSL_EVP_UNSUPPORTED on Node 24) can never
+  // hang the process.  The native SMB2 object is callback-based, so we race the
+  // `call()` promise against the signal.
+  const withTimeout = (promise, label) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => {
+          const err = new Error(`SMB ${label} timed out after ${timeoutMs}ms`);
+          err.statusCode = 504;
+          err.code = "ETIMEDOUT";
+          reject(err);
+        }, timeoutMs)
+      ),
+    ]);
+
   try {
     const ingested = await loadManifest(manifestPath);
 
     let names;
     try {
-      names = await call(client, "readdir", remotePath || ".");
+      names = await withTimeout(call(client, "readdir", remotePath || "."), "readdir");
     } catch (err) {
       const e = new Error(`SMB readdir failed: ${err?.message}`);
-      e.statusCode = 502;
+      e.statusCode = err.statusCode || 502;
       throw e;
     }
 
@@ -103,7 +122,7 @@ export async function pullFromSmb({
       // Read via SMB then write locally — @marsaud/smb2 streams internally.
       let data;
       try {
-        data = await call(client, "readFile", remoteKey);
+        data = await withTimeout(call(client, "readFile", remoteKey), "readFile");
       } catch {
         // Skip entries that can't be read (could be sub-directories, etc.)
         continue;
@@ -127,5 +146,10 @@ export async function pullFromSmb({
     return { pulled, skipped };
   } finally {
     try { client.disconnect(); } catch { /* already closed */ }
+    // The @marsaud/smb2 client.disconnect() only calls socket.end() which
+    // sends FIN but leaves the TCP handle open until the peer closes.  When the
+    // connection never fully established (e.g. NTLM crypto error), the socket
+    // can linger indefinitely, keeping the Node process alive.  Destroy it.
+    try { client.socket?.destroy(); } catch { /* best-effort */ }
   }
 }
