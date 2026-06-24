@@ -15,6 +15,7 @@ import { readdir, stat, mkdir, rename } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, basename } from "node:path";
+import { extractBroadcastMetadata } from "../media/broadcastIngest.js";
 
 /** Derive a rough MIME type from the file extension. */
 function mimeFromExt(filePath) {
@@ -110,8 +111,9 @@ export function createWatchFolderService({
       try {
         const checksum = await computeChecksum(filePath);
         const mimeType = mimeFromExt(filePath);
+        const broadcastMeta = await extractBroadcastMetadata(filePath);
 
-        await onIngest({ filePath, size, mimeType, checksum });
+        await onIngest({ filePath, size, mimeType, checksum, ...(broadcastMeta ? { broadcastMeta } : {}) });
 
         // Move to processed/ on success.
         await mkdir(processedDir, { recursive: true });
