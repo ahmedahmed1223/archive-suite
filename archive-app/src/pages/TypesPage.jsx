@@ -44,6 +44,56 @@ import { formatNumber } from "../utils/formatting.js";
 import { reportError } from "../utils/errorReporting.js";
 
 
+/**
+ * Keyboard-accessible color radio group.
+ *
+ * WAI-ARIA radiogroup pattern: Arrow keys move the selection, Home/End jump to
+ * the first/last swatch, and the active swatch is the tab stop (roving tabindex)
+ * — so keyboard-only users can pick a type color without reaching for a mouse.
+ */
+function ColorPicker({ value, onChange }) {
+  const colors = TYPE_COLORS;
+  const activeIndex = Math.max(0, colors.indexOf(value));
+  const refs = React.useRef([]);
+
+  const focusAt = (index) => {
+    const target = refs.current[index];
+    if (target) target.focus();
+  };
+  const selectAt = (index) => onChange(colors[index]);
+
+  const onKeyDown = (event) => {
+    const lastIndex = colors.length - 1;
+    let next = activeIndex;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = activeIndex >= lastIndex ? 0 : activeIndex + 1;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = activeIndex <= 0 ? lastIndex : activeIndex - 1;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = lastIndex;
+    else return;
+    event.preventDefault();
+    selectAt(next);
+    focusAt(next);
+  };
+
+  return jsx("div", {
+    className: "flex flex-wrap gap-2",
+    role: "radiogroup",
+    "aria-label": "اختر لون النوع",
+    onKeyDown,
+    children: colors.map((color, index) => jsx("button", {
+      ref: (el) => { refs.current[index] = el; },
+      type: "button",
+      role: "radio",
+      "aria-checked": color === value,
+      tabIndex: color === value || (value == null && index === 0) ? 0 : -1,
+      onClick: () => onChange(color),
+      className: `h-8 w-8 rounded-full border transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_oklab,var(--va-text)_25%,transparent)] ${color === value ? "scale-110 border-[var(--va-text)] ring-2 ring-[color-mix(in_oklab,var(--va-text)_25%,transparent)]" : "border-[var(--va-border-soft)] hover:scale-105"}`,
+      style: { backgroundColor: color },
+      "aria-label": `اختيار لون ${color}`
+    }, color))
+  });
+}
+
 function TypeBasicsForm({ draft, setDraft }) {
   const updateName = (name) => {
     const previousAutoSlug = !draft.nameEn || draft.nameEn === suggestSafeTypeSlug(draft.name || "");
@@ -74,7 +124,7 @@ function TypeBasicsForm({ draft, setDraft }) {
       ] }),
       jsxs("div", { className: "space-y-1 md:col-span-3", children: [
         jsx("span", { className: "text-sm text-[var(--va-text-2)]", children: "اللون" }),
-        jsx("div", { className: "flex flex-wrap gap-2", role: "radiogroup", "aria-label": "اختر لون النوع", children: TYPE_COLORS.map((color) => jsx("button", { type: "button", role: "radio", "aria-checked": draft.color === color, onClick: () => setDraft({ ...draft, color }), className: `h-8 w-8 rounded-full border transition-transform ${draft.color === color ? "scale-110 border-[var(--va-text)] ring-2 ring-[color-mix(in_oklab,var(--va-text)_25%,transparent)]" : "border-[var(--va-border-soft)] hover:scale-105"}`, style: { backgroundColor: color }, "aria-label": `اختيار لون ${color}` }, color)) })
+        jsx(ColorPicker, { value: draft.color, onChange: (color) => setDraft({ ...draft, color }) })
       ] })
     ]
   });

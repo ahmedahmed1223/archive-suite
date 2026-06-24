@@ -27,6 +27,8 @@ import { startVideoArchive } from "./app/startVideoArchive.js";
 import { useAppStore } from "./stores/index.js";
 import { applyInitialDaisyTheme } from "./theme/applyInitialDaisyTheme.js";
 import { applyInitialTheme } from "./theme/applyInitialTheme.js";
+import { installGlobalErrorHandler } from "./utils/globalErrorHandler.js";
+import { loadErrorLog, loadRecoveryQueue } from "./bootstrap/preloadStores.js";
 
 // Bind storage adapters before anything touches the storage port.
 //
@@ -48,4 +50,13 @@ if (wiring.backend !== "local") {
 
 applyInitialDaisyTheme();
 applyInitialTheme();
+
+// Capture crashes that escape React's ErrorBoundary (raw handlers, timers,
+// rejected promises) into the central error log, and hydrate the persisted
+// error log + recovery queue before React mounts so the Error Log page shows
+// prior session data on first paint.
+installGlobalErrorHandler();
+loadErrorLog();
+loadRecoveryQueue();
+
 startVideoArchive();

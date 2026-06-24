@@ -1,5 +1,6 @@
 import { Component } from "react";
 import { useT } from "../../i18n/useT.js";
+import { recordError } from "../../features/errors/errorLogStore.js";
 
 /**
  * Inner functional component so the class ErrorBoundary can use hooks for
@@ -78,6 +79,19 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+    // Surface render-time crashes in the central error log so they aren't only
+    // visible to someone watching the devtools console. The component stack is
+    // folded into the report so the recovery copy/stack path keeps it. Never
+    // rethrows — logging must not mask the original error.
+    try {
+      const enriched = error instanceof Error ? error : new Error(String(error));
+      if (info && info.componentStack && !enriched.stack?.includes("componentStack")) {
+        enriched.stack = `${enriched.stack || ""}\n-- componentStack --\n${info.componentStack}`;
+      }
+      recordError(enriched, { operation: "react.render", severity: "critical" });
+    } catch {
+      /* never let logging break error handling */
+    }
   }
 
   render() {
