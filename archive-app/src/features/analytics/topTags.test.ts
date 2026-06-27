@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { computeTopTags } from "./topTags.js";
 
-const item = (tags, isDeleted = false) => ({ tags, isDeleted });
+const item = (tags?: unknown[] | null, isDeleted = false) => ({ tags, isDeleted });
 
 describe("computeTopTags", () => {
   it("counts tag frequency across items", () => {
