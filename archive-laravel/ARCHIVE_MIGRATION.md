@@ -31,9 +31,10 @@ reaches contract parity.
 
 ## Next Route Groups
 
-1. Move the public share viewer route to Next.js.
-2. Add route-level integration testing against a running Laravel API.
-3. Queue-backed media workflows and richer audit event taxonomy.
+1. Add route-level integration testing against a running Laravel API.
+2. Queue-backed media workflows and richer audit event taxonomy.
+3. Continue moving low-risk public/share screens into Next.js after parity
+   checks pass.
 
 ## Verification
 

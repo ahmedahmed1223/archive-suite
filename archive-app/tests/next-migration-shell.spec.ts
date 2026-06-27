@@ -20,3 +20,11 @@ test('renders the Next.js login migration screen', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'تسجيل الدخول' })).toBeVisible();
   await expect(page.getByText('va_refresh')).toBeVisible();
 });
+
+test('renders the Next.js public share viewer route', async ({ page }) => {
+  await page.goto('/share/demo-token', { waitUntil: 'networkidle' });
+
+  await expect(page.getByRole('heading', { name: 'عارض المشاركة العامة.' })).toBeVisible();
+  await expect(page.getByLabel('عارض المشاركة')).toContainText('demo-token');
+  await expect(page.getByText('/api/v1/share/:token')).toBeVisible();
+});

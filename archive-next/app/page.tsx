@@ -39,6 +39,7 @@ export default function HomePage() {
               <li>يبقى Vite/React هو التطبيق التشغيلي.</li>
               <li>تنتقل الصفحات إلى Next.js تدريجيا بعد Playwright.</li>
               <li>Laravel يطبّق نفس العقد قبل تحويل المرور إليه.</li>
+              <li>عارض المشاركة العامة بدأ على `/share/:token`.</li>
             </ul>
           </article>
 
