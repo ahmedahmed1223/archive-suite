@@ -16,10 +16,6 @@ class AuthenticateArchiveApiRequest
      */
     public function handle(Request $request, Closure $next): Response|JsonResponse
     {
-        if ($this->authenticateApiKey($request)) {
-            return $next($request);
-        }
-
         $session = $this->sessionFromBearer($request) ?? $this->sessionFromCookie($request);
 
         if (! $session) {
@@ -31,19 +27,6 @@ class AuthenticateArchiveApiRequest
         $request->attributes->set('archive_user', $session->user);
 
         return $next($request);
-    }
-
-    private function authenticateApiKey(Request $request): bool
-    {
-        $expected = config('archive.api_key');
-
-        if (! is_string($expected) || $expected === '') {
-            return false;
-        }
-
-        $provided = $request->header('X-Archive-Api-Key');
-
-        return is_string($provided) && hash_equals($expected, $provided);
     }
 
     private function sessionFromBearer(Request $request): ?ApiSession

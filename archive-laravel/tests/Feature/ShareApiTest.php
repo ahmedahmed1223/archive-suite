@@ -4,17 +4,11 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\AuthenticatesArchiveRequests;
 
 class ShareApiTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        config(['archive.api_key' => 'test-secret']);
-    }
+    use RefreshDatabase, AuthenticatesArchiveRequests;
 
     public function test_it_creates_and_reads_a_public_share_payload(): void
     {
@@ -65,11 +59,4 @@ class ShareApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function authHeaders(): array
-    {
-        return ['X-Archive-Api-Key' => 'test-secret'];
-    }
 }

@@ -4,17 +4,11 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\AuthenticatesArchiveRequests;
 
 class RightsApiTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        config(['archive.api_key' => 'test-secret']);
-    }
+    use RefreshDatabase, AuthenticatesArchiveRequests;
 
     public function test_it_upserts_and_fetches_a_rights_record(): void
     {
@@ -83,20 +77,4 @@ class RightsApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
-    public function test_it_rejects_api_key_fallback_when_key_is_not_configured(): void
-    {
-        config(['archive.api_key' => null]);
-
-        $this->getJson('/api/v1/rights?itemId=item-1', $this->authHeaders())
-            ->assertUnauthorized()
-            ->assertJsonPath('ok', false);
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function authHeaders(): array
-    {
-        return ['X-Archive-Api-Key' => 'test-secret'];
-    }
 }

@@ -63,8 +63,10 @@ Use Laravel for the backend domain and operational services, and Next.js for the
      `audit_logs` through `archive.audit`.
    - Status 2026-06-27: Laravel auth routes now issue short-lived bearer
      access tokens plus a `va_refresh` HttpOnly refresh cookie backed by
-     `api_sessions`; `X-Archive-Api-Key` remains only as an internal migration
-     fallback.
+     `api_sessions`.
+   - Status 2026-06-27: the internal `X-Archive-Api-Key` fallback was removed;
+     Laravel protected routes now require bearer access tokens or the refresh
+     cookie flow.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
@@ -90,6 +92,6 @@ Astro is good for content-heavy sites and islands, but this product is an operat
   checks are added.
 - Keep `archive-laravel` parallel to the Node server until auth, records,
   search, files, rights, and share route groups match the contract.
-- Next Laravel route groups should remove the internal API-key fallback after
-  the Next.js browser client uses the HttpOnly refresh-cookie flow end to end.
+- Next work should add the first real browser auth screen on top of the typed
+  Next.js auth client, then start moving low-risk public/share routes.
 - Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.
