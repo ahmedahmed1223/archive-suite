@@ -42,6 +42,9 @@ Use Laravel for the backend domain and operational services, and Next.js for the
      `/api/v1/health` and `/api/v1/public/openapi.json`, with Feature tests.
    - Status 2026-06-27: baseline migrations exist for `storage_rows` and
      `rights_records`, matching the first records/rights contract surfaces.
+   - Status 2026-06-27: the first rights route group exists under
+     `/api/v1/rights`, including fetch, upsert, expiring records, and
+     enforcement status Feature tests.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
@@ -62,4 +65,6 @@ Astro is good for content-heavy sites and islands, but this product is an operat
   checks are added.
 - Keep `archive-laravel` parallel to the Node server until auth, records,
   search, files, rights, and share route groups match the contract.
+- Next Laravel route groups should prioritize auth/session hardening before
+  exposing mutating endpoints outside local test use.
 - Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.
