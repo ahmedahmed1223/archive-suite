@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuditArchiveApiRequest;
 use App\Http\Middleware\RequireArchiveApiKey;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'archive.audit' => AuditArchiveApiRequest::class,
             'archive.api_key' => RequireArchiveApiKey::class,
         ]);
     })

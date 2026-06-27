@@ -35,7 +35,7 @@ Route::prefix('v1')->group(function (): void {
 
     Route::get('/share/{token}', [ShareController::class, 'show']);
 
-    Route::middleware('archive.api_key')->group(function (): void {
+    Route::middleware(['archive.api_key', 'archive.audit'])->group(function (): void {
         Route::get('/records', [RecordsController::class, 'index']);
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::get('/search', [SearchController::class, 'index']);

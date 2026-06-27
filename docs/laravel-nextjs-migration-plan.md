@@ -59,6 +59,8 @@ Use Laravel for the backend domain and operational services, and Next.js for the
      traversal checks.
    - Status 2026-06-27: Laravel public share routes exist for protected share
      creation and public token payload reads backed by `share_links`.
+   - Status 2026-06-27: Laravel protected mutating API calls are recorded in
+     `audit_logs` through `archive.audit`.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
