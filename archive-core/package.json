@@ -20,6 +20,7 @@
   "scripts": {
     "verify": "node scripts/verify-core.mjs",
     "check": "node scripts/verify-core.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -157,7 +157,9 @@
   - القبول: كل شريحة ≤250 سطر؛ الذاكرة ≤150MB مع 50K عنصر.
   - المصدر: dev-roadmap (P0-08, P1-02).
 
-- [ ] `[P1]` ⏱️XXL **ترحيل تدريجي إلى TypeScript** — frontend + server (الحالة: لا `tsconfig` على مستوى التطبيق — تم التحقق).
+- [ ] `[P1]` ⏱️XXL **ترحيل تدريجي إلى TypeScript** — frontend + server (الحالة: الأساس بدأ).
+  - ✅ شريحة 0 — أساس الترحيل (2026-06-27): أُضيفت `tsconfig.base.json` + `tsconfig.json` جذري + `tsconfig.json` لكل من `archive-app` و`archive-core` و`archive-server`، مع سكربتات `typecheck` على مستوى الحزم والجذر. أُضيفت ملفات types أولية (`archive-app/src/types/runtime.ts`, `archive-core/src/types/ports.ts`, `archive-server/src/types/runtime.ts`) دون تغيير runtime. أُضيفت تبعية `typescript` ومرّت بوابة `pnpm run typecheck` للحزم الثلاث. هذا الأساس مناسب لمسار Next.js لأنه يستخدم `moduleResolution: "Bundler"` ولا يحوّل entrypoints الحالية بعد.
+  - ✅ شريحة 1 — تحويل leaf utilities آمن (2026-06-27): حُوّلت `hijriDate`, `subtitleParser`, و`transcriptToSrt` إلى ملفات `.ts` مع إبقاء ملفات `.js` كواجهات إعادة تصدير حتى لا تنكسر الاستيرادات الحالية ولا مسار Vite. مرّت اختبارات الواجهة و`pnpm run typecheck`.
   - الترتيب: stores → ports → hooks (frontend)؛ ports → adapters → services → routes (server).
   - القبول: `tsconfig` مع `strictNullChecks`؛ ≥80% ملفات جديدة بـ TS (هدف مرحلي).
   - المصدر: dev-roadmap (P1-04, P1-05, P5-03).
@@ -192,6 +194,23 @@
 
 - [ ] `[P2]` ⏱️L **توسيع اختبارات E2E + ترقية الحزم الأمنية** — رفع تغطية Playwright + `npm/pnpm audit` للـ CVEs.
   - المصدر: dev-roadmap (P0-09, P1-08, P5-04).
+
+- [ ] `[P2]` ⏱️M **ترتيب وتنظيف مجلدات المشروع + بوابة Playwright** — جرد الملفات والمجلدات غير المفيدة أو المولّدة عشوائياً، ثم حذف/نقل الآمن منها مع إثبات عدم كسر التشغيل.
+  - يشمل: فحص مجلدات الجذر و`archive-app/` و`archive-server/` و`archive-core/`؛ تصنيف الملفات إلى: مصدر، توثيق، اختبارات، مخرجات بناء، نسخ احتياطية، لقطات/تقارير، مخلفات تشغيل؛ تحديث `.gitignore` عند الحاجة؛ نقل الوثائق المتناثرة إلى `docs/` أو مجلدها الصحيح؛ إزالة الملفات المكررة أو القديمة فقط بعد البحث عنها بـ `rg` والتأكد من عدم استخدامها.
+  - Playwright: إضافة/توسيع اختبارات E2E تغطي التشغيل بعد التنظيف: التحميل الأول، التنقل الأساسي، صفحة الأرشيف، صفحة الإعدادات، مدير الملفات، وصفحة التفاصيل/المعاينة؛ وإضافة smoke بصري يلتقط أخطاء المسارات المكسورة أو assets المفقودة بعد نقل الملفات.
+  - الملفات: `TASKS.md`، `.gitignore`، `README.md`/`docs/*` عند الحاجة، `archive-app/tests/*`، `archive-app/playwright.config.ts`، وربما سكربت جديد مثل `scripts/verify-repo-hygiene.mjs`.
+  - القبول: تقرير جرد قصير يذكر ما أُبقي وما حُذف/نُقل ولماذا؛ لا حذف لملفات داخل `.git` أو ملفات مستخدمة؛ نجاح `pnpm verify`؛ نجاح `pnpm --filter @archive/app run e2e` أو مجموعة Playwright محددة موثقة؛ عدم ظهور 404/console errors حرجة في لقطات Playwright.
+  - المصدر: طلب المستخدم 2026-06-27.
+
+- [ ] `[P1]` ⏱️XXL **ترحيل معماري إلى Laravel API + Next.js TypeScript** — اعتماد Laravel كخادم نطاق وAPI، وNext.js كواجهة TypeScript تدريجية، دون إدخال Astro 5.
+  - شريحة 0 — قرار معماري: Laravel مسؤول عن Auth/Policies/Queues/Files/Media jobs/REST API، وNext.js مسؤول عن الواجهة، SSR/ISR للصفحات العامة، وclient app للصفحات التشغيلية الثقيلة. حفظ القرار في `docs/laravel-nextjs-migration-plan.md`.
+  - شريحة 1 — عقد API قبل النقل: تثبيت OpenAPI/JSON contract للكيانات الحالية (`items`, `types`, `folders`, `rights`, `files`, `auth`) حتى يمكن تشغيل Next.js فوق الخادم الحالي ثم Laravel لاحقاً.
+  - شريحة 2 — Next.js shell: إنشاء حزمة `archive-next` لاحقاً بـ TypeScript، App Router، RTL، design tokens الحالية، وتوجيه تدريجي يبدأ بصفحات عامة/مساعدة/تقارير قبل صفحات العمل الثقيلة.
+  - شريحة 3 — Laravel API: إنشاء `archive-laravel` لاحقاً مع Sanctum أو session cookies، migrations مطابقة للـ Prisma schema، queues للمعالجة الثقيلة، وطبقة file storage متوافقة مع التخزين المحلي/S3.
+  - شريحة 4 — تشغيل متوازٍ: إبقاء Vite/React الحالي إلى أن تمر Playwright smoke على Next.js، ثم نقل صفحة بصفحة مع بوابة `typecheck`, `build`, وE2E.
+  - الملفات: `docs/laravel-nextjs-migration-plan.md`, `TASKS.md`, عقود API لاحقاً تحت `docs/api/`, وحزم جديدة لاحقاً فقط بعد قرار scaffold.
+  - القبول: لا اعتماديات Astro؛ `pnpm run typecheck` ينجح؛ خطة Laravel/Next واضحة؛ أي scaffold جديد لا يكسر Vite الحالي.
+  - المصدر: طلب المستخدم 2026-06-27.
 
 ---
 
@@ -452,7 +471,7 @@
 | الفئة | عدد البنود الرئيسية | الأولوية الغالبة |
 |---|---|---|
 | §1 جاهزية البث المؤسسي | 10 | P0–P2 |
-| §2 الأساس المعماري | 11 | P0–P2 |
+| §2 الأساس المعماري | 13 | P0–P2 |
 | §3 محرّر المونتاج | 6 | P0–P2 |
 | §4 الأداء وa11y | 6 | P1–P2 |
 | §5 الإعدادات والتنقّل | 4 | P1–P2 |

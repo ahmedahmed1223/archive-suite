@@ -10,6 +10,7 @@
     "build:cloud": "vite build --mode cloud --configLoader runner",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify": "node scripts/verify-modules.mjs && node scripts/verify-theme-contrast.mjs",
     "verify:contrast": "node scripts/verify-theme-contrast.mjs",
     "visual:matrix": "node scripts/visual-matrix.mjs",

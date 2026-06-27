@@ -61,7 +61,7 @@ test.describe('Auth — login screen', () => {
     const inputLocator = page.locator('input[type="password"], input[type="text"]');
     const loginFormVisible = await inputLocator.first().isVisible().catch(() => false);
     if (!loginFormVisible) {
-      test.skip('Login form not shown because onboarding/setup flow is active');
+      test.skip(true, 'Login form not shown because onboarding/setup flow is active');
       return;
     }
 
@@ -96,7 +96,7 @@ test.describe('Auth — login screen', () => {
     const submitButton = page.locator('button[type="submit"]').first();
     const submitVisible = await submitButton.isVisible({ timeout: 8_000 }).catch(() => false);
     if (!submitVisible) {
-      test.skip('Submit button not shown because onboarding/setup flow is active');
+      test.skip(true, 'Submit button not shown because onboarding/setup flow is active');
       return;
     }
     const label = await submitButton.textContent();

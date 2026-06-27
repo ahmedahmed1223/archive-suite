@@ -8,6 +8,7 @@
     "start": "tsx src/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify": "tsx scripts/verify-config.mjs && tsx scripts/verify-server-config.mjs && tsx scripts/verify-pgadmin-init.mjs && tsx scripts/verify-server.mjs && tsx scripts/verify-postgres-adapter.mjs && tsx scripts/verify-api.mjs && tsx scripts/verify-notifications.mjs && tsx scripts/verify-workflow.mjs && tsx scripts/verify-apikeys.mjs && tsx scripts/verify-auth.mjs && tsx scripts/verify-realtime.mjs && tsx scripts/verify-ai.mjs && tsx scripts/verify-ai-sdk.mjs && tsx scripts/verify-export.mjs && tsx scripts/verify-media.mjs && tsx scripts/verify-files-dropbox.mjs && tsx scripts/verify-files-s3.mjs && tsx scripts/verify-files-azure.mjs && tsx scripts/verify-files-gdrive.mjs && tsx scripts/verify-share.mjs && tsx scripts/verify-admin-config.mjs && tsx scripts/verify-db-provider.mjs && tsx scripts/verify-deployment.mjs && tsx scripts/verify-backup.mjs && tsx scripts/verify-metadata-export.mjs && tsx scripts/verify-retention.mjs && tsx scripts/verify-broadcast-codecs.mjs && tsx scripts/verify-mos.mjs && tsx scripts/verify-ingest.mjs && tsx scripts/verify-backup-replication.mjs && tsx scripts/verify-dr-drill.mjs",
     "verify:backup": "tsx scripts/verify-backup.mjs",
     "verify:backup-replication": "tsx scripts/verify-backup-replication.mjs",
