@@ -57,6 +57,8 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Status 2026-06-27: Laravel file browser routes exist at `/api/v1/files`
      and `/api/v1/files/browser`, backed by `ARCHIVE_FILE_ROOT` with path
      traversal checks.
+   - Status 2026-06-27: Laravel public share routes exist for protected share
+     creation and public token payload reads backed by `share_links`.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
