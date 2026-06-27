@@ -64,6 +64,8 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Current Vite app remains the fallback.
    - Playwright gates must pass on each moved route.
    - Switch traffic route-by-route only after parity is proven.
+   - Status 2026-06-27: `pnpm run e2e:next` runs the first Next.js smoke test
+     through the existing Playwright harness against `E2E_BASE_URL`.
 
 ## Why Not Astro Now
 
