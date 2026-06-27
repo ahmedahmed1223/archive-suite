@@ -29,6 +29,7 @@ body {
 
 a {
   color: inherit;
+  text-decoration: none;
 }
 
 .shell {
@@ -126,4 +127,68 @@ a {
   color: var(--va-accent-strong);
   background: color-mix(in oklch, var(--va-accent) 10%, var(--va-surface));
   font-size: 0.85rem;
+}
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.auth-copy h1 {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--va-text-2);
+  font-size: 0.95rem;
+}
+
+.auth-form input {
+  inline-size: 100%;
+  min-block-size: 44px;
+  border: 1px solid var(--va-border-soft);
+  border-radius: 8px;
+  padding: 0.7rem 0.85rem;
+  background: var(--va-surface);
+  color: var(--va-text);
+  font: inherit;
+}
+
+.auth-form button {
+  min-block-size: 44px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  background: var(--va-accent-strong);
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-form button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.form-status {
+  min-block-size: 2.5rem;
+  margin: 0;
+  color: var(--va-text-muted);
+  line-height: 1.7;
+}
+
+@media (max-width: 760px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
 }

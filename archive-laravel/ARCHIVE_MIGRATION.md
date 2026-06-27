@@ -31,8 +31,8 @@ reaches contract parity.
 
 ## Next Route Groups
 
-1. Build the first Next.js browser auth screen on top of the typed auth client.
-2. Move the public share viewer route to Next.js.
+1. Move the public share viewer route to Next.js.
+2. Add route-level integration testing against a running Laravel API.
 3. Queue-backed media workflows and richer audit event taxonomy.
 
 ## Verification
