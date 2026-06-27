@@ -28,7 +28,9 @@ export interface AuthSession {
 
 export interface ArchiveRecord {
   id: string;
+  uid?: string;
   title: string;
+  description?: string;
   store?: string;
   type?: string;
   subtype?: string | null;
@@ -64,7 +66,7 @@ export interface ArchiveApiClient {
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[] }>>;
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
-  share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown> }>>;
+  share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
 }
 
 export interface AuthRequestOptions {
