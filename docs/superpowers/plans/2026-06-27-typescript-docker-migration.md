@@ -205,3 +205,27 @@ Run matching Vitest slices for upload link, ingest queue, and archive handoff.
 Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
 
 Current count after Task 8: 806 JS/JSX files and 59 TS/TSX files, excluding generated folders.
+
+### Task 9: Convert File-Manager View Model
+
+**Files:**
+- Modify/add: `archive-app/src/features/file-manager/viewModel.{js,ts}`
+- Rename: `archive-app/src/features/file-manager/viewModel.test.js` -> `.ts`
+
+- [x] **Step 1: Convert path, breadcrumb, selection, and view-mode helpers**
+
+Keep path validation behavior intact and type browser entries, breadcrumbs, and storage adapter shapes.
+
+- [x] **Step 2: Convert matching test**
+
+Rename the test to `.test.ts` and type the in-memory storage helper.
+
+- [x] **Step 3: Verify app type safety and behavior**
+
+Run: `pnpm run typecheck:app`
+Expected: PASS.
+
+Run: `pnpm --filter @archive/app run test -- src/features/file-manager/viewModel.test.ts`
+Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
+
+Current count after Task 9: 805 JS/JSX files and 61 TS/TSX files, excluding generated folders.
