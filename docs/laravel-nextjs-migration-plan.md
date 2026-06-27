@@ -63,6 +63,9 @@ Use Laravel for the backend domain and operational services, and Next.js for the
      `audit_logs` through `archive.audit`.
    - Status 2026-06-27: `audit_logs` now includes searchable event taxonomy
      fields: event, resource type/id, actor, and outcome.
+   - Status 2026-06-27: Laravel media workflow jobs now have a contract,
+     `media_jobs` tracking table, protected API routes, and a queue job boundary
+     for thumbnail/transcode/transcription work.
    - Status 2026-06-27: Laravel auth routes now issue short-lived bearer
      access tokens plus a `va_refresh` HttpOnly refresh cookie backed by
      `api_sessions`.
@@ -103,6 +106,7 @@ Astro is good for content-heavy sites and islands, but this product is an operat
   checks are added.
 - Keep `archive-laravel` parallel to the Node server until auth, records,
   search, files, rights, and share route groups match the contract.
-- Next work should continue moving low-risk public/share screens and expand the
-  route-level integration suite beyond the share viewer.
+- Next work should continue moving low-risk public/share screens, expand the
+  route-level integration suite beyond the share viewer, and replace media job
+  placeholders with real processors.
 - Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.
