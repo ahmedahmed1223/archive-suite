@@ -67,3 +67,22 @@ export function installGlobalErrorHandler() {
 export function __resetGlobalErrorHandlerForTests() {
   installed = false;
 }
+
+/** Test-only: return the installed state for assertions. */
+export function __isGlobalErrorHandlerInstalled() {
+  return installed;
+}
+
+/**
+ * Test-only: directly invoke the handler logic without touching window.
+ * This lets tests verify the core behavior in non-jsdom environments.
+ */
+export function __handleWindowError(event) {
+  const error = event?.error || new Error(event?.message || "Unknown window error");
+  recordError(error, { operation: "window.error", severity: "critical" });
+}
+
+export function __handleUnhandledRejection(event) {
+  const error = normalizeRejection(event?.reason);
+  recordError(error, { operation: "promise.unhandled", severity: "error" });
+}
