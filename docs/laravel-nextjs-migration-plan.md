@@ -77,6 +77,9 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Status 2026-06-27: the Next.js API client now supports the Laravel
      login/me/refresh/logout flow with `credentials: "include"` and optional
      bearer access tokens for protected routes.
+   - Status 2026-06-27: `/login` exists in `archive-next` as the first browser
+     auth screen using the typed Laravel auth client; Playwright covers it on
+     desktop and mobile.
 
 ## Why Not Astro Now
 

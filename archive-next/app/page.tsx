@@ -10,7 +10,7 @@ export default function HomePage() {
           <strong>Archive Suite</strong>
           <span>Next.js migration shell</span>
         </div>
-        <span className="badge">TypeScript + RTL</span>
+        <a className="badge" href="/login">تجربة تسجيل الدخول</a>
       </header>
 
       <section className="content">
