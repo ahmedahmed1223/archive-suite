@@ -83,6 +83,9 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Status 2026-06-27: `/share/[token]` exists in `archive-next` as the first
      low-risk public viewer route. It uses the typed share client and is covered
      by the Next.js Playwright smoke suite on desktop and mobile.
+   - Status 2026-06-27: Next.js can proxy `/api/v1/*` to a live Laravel API
+     through `ARCHIVE_API_BASE_URL`, and `pnpm run e2e:next:integration`
+     verifies `/share/[token]` against a seeded Laravel SQLite database.
 
 ## Why Not Astro Now
 
@@ -98,6 +101,6 @@ Astro is good for content-heavy sites and islands, but this product is an operat
   checks are added.
 - Keep `archive-laravel` parallel to the Node server until auth, records,
   search, files, rights, and share route groups match the contract.
-- Next work should add route-level integration tests that run Next.js against a
-  live Laravel API, then continue moving low-risk public/share screens.
+- Next work should continue moving low-risk public/share screens and expand the
+  route-level integration suite beyond the share viewer.
 - Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.

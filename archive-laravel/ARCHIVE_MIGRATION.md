@@ -25,16 +25,19 @@ reaches contract parity.
   `/auth/logout` use `api_sessions`, short-lived bearer access tokens, and a
   `va_refresh` HttpOnly refresh cookie. `X-Archive-Api-Key` fallback has been
   removed.
+- Next integration status: `NextIntegrationSeeder` provides a stable public
+  share fixture for `pnpm run e2e:next:integration` through the Next.js API
+  rewrite.
 - Shared contract source: `../docs/api/archive-contract.openapi.json`.
 - Local PHP/Composer are not required yet; tests can run through Docker using
   the Composer image.
 
 ## Next Route Groups
 
-1. Add route-level integration testing against a running Laravel API.
-2. Queue-backed media workflows and richer audit event taxonomy.
-3. Continue moving low-risk public/share screens into Next.js after parity
+1. Queue-backed media workflows and richer audit event taxonomy.
+2. Continue moving low-risk public/share screens into Next.js after parity
    checks pass.
+3. Expand route-level integration testing to authenticated flows.
 
 ## Verification
 
@@ -42,4 +45,11 @@ From the repository root, when Docker is available:
 
 ```powershell
 docker run --rm -v "D:\archiveaq\Arch_App:/app" -w /app/archive-laravel composer:latest php artisan test
+```
+
+For the Next.js plus Laravel route-level smoke, seed a temporary SQLite database
+with `Database\Seeders\NextIntegrationSeeder`, run Laravel, then run:
+
+```powershell
+pnpm run e2e:next:integration
 ```

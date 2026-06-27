@@ -22,6 +22,7 @@
     "build:app": "pnpm --filter @archive/app run build",
     "build:next": "pnpm --filter @archive/next run build",
     "e2e:next": "pnpm --filter @archive/app exec playwright test tests/next-migration-shell.spec.ts",
+    "e2e:next:integration": "pnpm --filter @archive/app exec playwright test tests/next-laravel-integration.spec.ts",
     "build:spa": "pnpm --filter @archive/app run build:spa",
     "build:cloud": "pnpm --filter @archive/app run build:cloud",
     "verify": "pnpm --filter @archive/app run verify && pnpm --filter @archive/core run verify && pnpm --filter archive-server run verify",
