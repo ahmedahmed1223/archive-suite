@@ -61,6 +61,8 @@ Use Laravel for the backend domain and operational services, and Next.js for the
      creation and public token payload reads backed by `share_links`.
    - Status 2026-06-27: Laravel protected mutating API calls are recorded in
      `audit_logs` through `archive.audit`.
+   - Status 2026-06-27: `audit_logs` now includes searchable event taxonomy
+     fields: event, resource type/id, actor, and outcome.
    - Status 2026-06-27: Laravel auth routes now issue short-lived bearer
      access tokens plus a `va_refresh` HttpOnly refresh cookie backed by
      `api_sessions`.

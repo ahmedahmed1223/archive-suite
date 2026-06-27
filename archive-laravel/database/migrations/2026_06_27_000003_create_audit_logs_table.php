@@ -11,6 +11,11 @@ return new class extends Migration
         Schema::create('audit_logs', function (Blueprint $table): void {
             $table->id();
             $table->string('action')->index();
+            $table->string('event')->nullable()->index();
+            $table->string('resource_type')->nullable()->index();
+            $table->string('resource_id')->nullable()->index();
+            $table->unsignedBigInteger('actor_id')->nullable()->index();
+            $table->string('outcome')->default('success')->index();
             $table->unsignedSmallInteger('status_code')->nullable();
             $table->json('metadata')->nullable();
             $table->string('ip_address')->nullable();
