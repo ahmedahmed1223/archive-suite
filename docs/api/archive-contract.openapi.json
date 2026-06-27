@@ -22,6 +22,7 @@
     { "name": "Search" },
     { "name": "Files" },
     { "name": "Folders" },
+    { "name": "Media" },
     { "name": "Rights" },
     { "name": "Share" }
   ],
@@ -416,6 +417,62 @@
             }
           },
           "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media/jobs": {
+      "post": {
+        "tags": ["Media"],
+        "summary": "Queue a media processing workflow",
+        "operationId": "queueMediaWorkflow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaJobRequest" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Media workflow queued",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaJobResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media/jobs/{id}": {
+      "get": {
+        "tags": ["Media"],
+        "summary": "Read media workflow status",
+        "operationId": "getMediaWorkflow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media workflow status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaJobResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -855,6 +912,49 @@
               "record": { "$ref": "#/components/schemas/RightsRecord" }
             },
             "additionalProperties": true
+          }
+        ]
+      },
+      "MediaOperation": {
+        "type": "string",
+        "enum": ["thumbnail", "transcode", "transcription"]
+      },
+      "MediaJobRequest": {
+        "type": "object",
+        "required": ["recordId", "operation"],
+        "properties": {
+          "recordId": { "type": "string" },
+          "operation": { "$ref": "#/components/schemas/MediaOperation" },
+          "sourcePath": { "type": ["string", "null"] },
+          "options": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "MediaJob": {
+        "type": "object",
+        "required": ["id", "recordId", "operation", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "recordId": { "type": "string" },
+          "operation": { "$ref": "#/components/schemas/MediaOperation" },
+          "status": { "type": "string", "enum": ["queued", "processing", "completed", "failed"] },
+          "sourcePath": { "type": ["string", "null"] },
+          "options": { "type": "object", "additionalProperties": true },
+          "result": { "type": ["object", "null"], "additionalProperties": true },
+          "error": { "type": ["string", "null"] },
+          "queuedAt": { "type": ["string", "null"], "format": "date-time" },
+          "startedAt": { "type": ["string", "null"], "format": "date-time" },
+          "completedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "MediaJobResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["job"],
+            "properties": {
+              "job": { "$ref": "#/components/schemas/MediaJob" }
+            }
           }
         ]
       },

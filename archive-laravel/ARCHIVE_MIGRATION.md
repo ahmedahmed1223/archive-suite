@@ -20,6 +20,9 @@ reaches contract parity.
   implemented with `share_links` and `storage_rows` lookups.
 - Audit status: protected mutating API requests are logged to `audit_logs` with
   searchable event taxonomy, resource identity, actor, and outcome fields.
+- Media workflow status: `/api/v1/media/jobs` queues tracked jobs in
+  `media_jobs`; `ProcessMediaWorkflow` marks placeholder thumbnail/transcode/
+  transcription work through queued lifecycle states.
 - Rights API status: fetch, upsert, expiring records, and enforcement checks
   are implemented for local parity testing.
 - Auth status: `/api/v1/auth/login`, `/auth/me`, `/auth/refresh`, and
@@ -35,7 +38,7 @@ reaches contract parity.
 
 ## Next Route Groups
 
-1. Queue-backed media workflows.
+1. Replace placeholder media job completion with real processors.
 2. Continue moving low-risk public/share screens into Next.js after parity
    checks pass.
 3. Expand route-level integration testing to authenticated flows.

@@ -53,12 +53,13 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/records/bulk'] => ['records.bulk_upsert', 'record'],
             ['POST', 'api/v1/rights'] => ['rights.upsert', 'rights_record'],
             ['POST', 'api/v1/share'] => ['share.create', 'share_link'],
+            ['POST', 'api/v1/media/jobs'] => ['media.workflow.queue', 'media_job'],
             ['POST', 'api/v1/auth/logout'] => ['auth.logout', 'api_session'],
             default => [strtolower($method).'.'.str_replace('/', '.', trim($route, '/')), null],
         };
 
-        if ($route === 'api/v1/rights') {
-            $resourceId = $request->string('itemId')->toString() ?: null;
+        if ($route === 'api/v1/rights' || $route === 'api/v1/media/jobs') {
+            $resourceId = $request->string($route === 'api/v1/rights' ? 'itemId' : 'recordId')->toString() ?: null;
         }
 
         if ($route === 'api/v1/auth/logout') {
