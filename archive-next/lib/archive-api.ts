@@ -1,16 +1,29 @@
 import contract from "../../docs/api/archive-contract.openapi.json";
 
-export type ApiEnvelope<T extends Record<string, unknown> = Record<string, unknown>> =
+export type ApiEnvelope<T extends object = Record<string, unknown>> =
   | ({ ok: true } & T)
   | { ok: false; error: string; code?: string; details?: unknown };
 
 export interface ArchiveUser {
   id: string;
-  username: string;
-  role: "admin" | "editor" | "viewer";
+  username?: string;
+  role?: "admin" | "editor" | "viewer";
+  roles?: string[];
+  name?: string;
   displayName?: string;
   email?: string;
   totpEnabled?: boolean;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthSession {
+  user: ArchiveUser;
+  accessToken: string;
+  expiresAt: string;
 }
 
 export interface ArchiveRecord {
@@ -42,10 +55,20 @@ export interface RightsRecord {
 
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
-  me(): Promise<ApiEnvelope<{ user: ArchiveUser }>>;
-  search(params: { q?: string; store?: string; limit?: number }): Promise<ApiEnvelope<{ records: ArchiveRecord[] }>>;
-  rights(itemId: string): Promise<ApiEnvelope<{ record: RightsRecord }>>;
+  login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
+  me(options?: AuthRequestOptions): Promise<ApiEnvelope<{ user: ArchiveUser }>>;
+  refresh(): Promise<ApiEnvelope<AuthSession>>;
+  logout(options?: AuthRequestOptions): Promise<ApiEnvelope>;
+  search(
+    params: { q?: string; store?: string; limit?: number },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ records: ArchiveRecord[] }>>;
+  rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown> }>>;
+}
+
+export interface AuthRequestOptions {
+  accessToken?: string;
 }
 
 export function getContractSummary() {
@@ -63,10 +86,33 @@ export function createArchiveApiClient({
   baseUrl?: string;
   fetchImpl?: typeof fetch;
 } = {}): ArchiveApiClient {
-  async function get<T extends Record<string, unknown>>(path: string): Promise<ApiEnvelope<T>> {
+  async function request<T extends object>(
+    path: string,
+    {
+      method = "GET",
+      body,
+      accessToken
+    }: {
+      method?: "GET" | "POST";
+      body?: unknown;
+      accessToken?: string;
+    } = {}
+  ): Promise<ApiEnvelope<T>> {
+    const headers = new Headers({ Accept: "application/json" });
+
+    if (body !== undefined) {
+      headers.set("Content-Type", "application/json");
+    }
+
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
+    }
+
     const response = await fetchImpl(`${baseUrl}${path}`, {
-      headers: { Accept: "application/json" },
-      credentials: "include"
+      method,
+      headers,
+      credentials: "include",
+      body: body === undefined ? undefined : JSON.stringify(body)
     });
 
     const payload = (await response.json().catch(() => ({
@@ -81,17 +127,26 @@ export function createArchiveApiClient({
     return payload;
   }
 
+  const get = <T extends object>(path: string, options?: AuthRequestOptions) =>
+    request<T>(path, { accessToken: options?.accessToken });
+
+  const post = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
+    request<T>(path, { method: "POST", body, accessToken: options?.accessToken });
+
   return {
     health: () => get("/health"),
-    me: () => get("/auth/me"),
-    search: ({ q = "", store = "", limit = 20 }) => {
+    login: (payload: LoginRequest) => post<AuthSession>("/auth/login", payload),
+    me: (options?: AuthRequestOptions) => get("/auth/me", options),
+    refresh: () => post<AuthSession>("/auth/refresh"),
+    logout: (options?: AuthRequestOptions) => post("/auth/logout", undefined, options),
+    search: ({ q = "", store = "", limit = 20 }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       if (store) params.set("store", store);
       params.set("limit", String(limit));
-      return get(`/search?${params.toString()}`);
+      return get(`/search?${params.toString()}`, options);
     },
-    rights: (itemId: string) => get(`/rights?itemId=${encodeURIComponent(itemId)}`),
+    rights: (itemId: string, options?: AuthRequestOptions) => get(`/rights?itemId=${encodeURIComponent(itemId)}`, options),
     share: (token: string) => get(`/share/${encodeURIComponent(token)}`)
   };
 }

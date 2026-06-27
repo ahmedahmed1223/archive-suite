@@ -48,6 +48,7 @@ export default function HomePage() {
               <li>typecheck لكل workspace.</li>
               <li>build مستقل لـ Next.js.</li>
               <li>اختبارات E2E لكل مسار منقول.</li>
+              <li>عميل Auth يدعم Bearer + HttpOnly refresh cookie.</li>
             </ul>
           </article>
         </div>

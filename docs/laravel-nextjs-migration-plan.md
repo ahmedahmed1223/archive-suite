@@ -72,6 +72,9 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Switch traffic route-by-route only after parity is proven.
    - Status 2026-06-27: `pnpm run e2e:next` runs the first Next.js smoke test
      through the existing Playwright harness against `E2E_BASE_URL`.
+   - Status 2026-06-27: the Next.js API client now supports the Laravel
+     login/me/refresh/logout flow with `credentials: "include"` and optional
+     bearer access tokens for protected routes.
 
 ## Why Not Astro Now
 
