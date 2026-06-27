@@ -40,6 +40,8 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Keep file storage compatible with local disk and S3-style stores.
    - Status 2026-06-27: initial `archive-laravel` scaffold exists. It serves
      `/api/v1/health` and `/api/v1/public/openapi.json`, with Feature tests.
+   - Status 2026-06-27: baseline migrations exist for `storage_rows` and
+     `rights_records`, matching the first records/rights contract surfaces.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
