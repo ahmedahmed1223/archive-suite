@@ -115,3 +115,35 @@ Run: `rg --files -g "*.js" -g "*.jsx" -g "!node_modules/**" -g "!.claude/**" -g 
 Record the new conversion slice and remaining migration direction.
 
 Current count after this slice: 816 JS/JSX files and 30 TS/TSX files, excluding generated folders.
+
+### Task 6: Convert Shared Core Ports and Small Runtime Utilities
+
+**Files:**
+- Modify/add: `archive-core/src/storage/ports/*.{js,ts}`
+- Modify/add: `archive-core/src/storage/index.{js,ts}`
+- Modify/add: `archive-core/src/core/index.{js,ts}`
+- Modify/add: `archive-app/src/features/analytics/topTags.{js,ts}`
+- Rename: `archive-app/src/features/analytics/topTags.test.js` -> `.ts`
+- Modify/add: `archive-app/src/utils/classNames.{js,ts}`
+- Modify/add: `archive-app/src/features/ui/countUp.{js,ts}`
+- Rename: `archive-app/src/features/ui/countUp.test.js` -> `.ts`
+- Modify/add: `archive-server/src/api/rateLimit.{js,ts}`
+- Rename: `archive-server/src/api/__tests__/rateLimit.test.js` -> `.ts`
+
+- [x] **Step 1: Convert `archive-core` ports to TS implementations with JS bridges**
+
+Expected: `pnpm run verify:core`, `pnpm run typecheck:core`, and `pnpm --filter @archive/core test` pass.
+
+- [x] **Step 2: Convert frontend top-tags utility and test**
+
+Expected: app test slice and `pnpm run typecheck:app` pass.
+
+- [x] **Step 3: Convert server rate limiter and test**
+
+Expected: server test slice and `pnpm run typecheck:server` pass.
+
+- [x] **Step 4: Run full gates**
+
+Expected: `pnpm run typecheck`, compose config gates, Docker image build, and Docker dev smoke pass.
+
+Current count after Task 6: 813 JS/JSX files and 45 TS/TSX files, excluding generated folders.
