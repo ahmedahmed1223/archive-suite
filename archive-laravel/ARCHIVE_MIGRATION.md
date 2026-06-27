@@ -11,15 +11,16 @@ reaches contract parity.
   `/api/v1/rights`.
 - First schema group: `storage_rows` and `rights_records`.
 - Rights API status: fetch, upsert, expiring records, and enforcement checks
-  are implemented for local parity testing. Authentication hardening is still
-  pending before production exposure.
+  are implemented for local parity testing.
+- Temporary auth status: protected route groups use `ARCHIVE_API_KEY` through
+  `X-Archive-Api-Key` or Bearer token until Sanctum/session cookies are added.
 - Shared contract source: `../docs/api/archive-contract.openapi.json`.
 - Local PHP/Composer are not required yet; tests can run through Docker using
   the Composer image.
 
 ## Next Route Groups
 
-1. Auth/session using HttpOnly cookies, then Sanctum/session hardening.
+1. Replace the temporary API-key guard with HttpOnly cookies or Sanctum.
 2. Generic records compatibility over `storage_rows`-style payloads.
 3. Search and file browser endpoints.
 4. Public share viewer payloads.
