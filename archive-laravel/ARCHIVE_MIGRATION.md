@@ -18,6 +18,7 @@ reaches contract parity.
   over `ARCHIVE_FILE_ROOT` with path traversal protection.
 - Share API status: protected share creation and public token payload reads are
   implemented with `share_links` and `storage_rows` lookups.
+- Audit status: protected mutating API requests are logged to `audit_logs`.
 - Rights API status: fetch, upsert, expiring records, and enforcement checks
   are implemented for local parity testing.
 - Temporary auth status: protected route groups use `ARCHIVE_API_KEY` through
@@ -29,7 +30,7 @@ reaches contract parity.
 ## Next Route Groups
 
 1. Replace the temporary API-key guard with HttpOnly cookies or Sanctum.
-2. Queue-backed media and audit workflows.
+2. Queue-backed media workflows and richer audit event taxonomy.
 
 ## Verification
 
