@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuditArchiveApiRequest;
-use App\Http\Middleware\RequireArchiveApiKey;
+use App\Http\Middleware\AuthenticateArchiveApiRequest;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,9 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->encryptCookies(except: [
+            'va_refresh',
+        ]);
+
         $middleware->alias([
             'archive.audit' => AuditArchiveApiRequest::class,
-            'archive.api_key' => RequireArchiveApiKey::class,
+            'archive.auth' => AuthenticateArchiveApiRequest::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

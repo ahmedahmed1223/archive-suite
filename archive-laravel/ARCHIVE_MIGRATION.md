@@ -21,16 +21,19 @@ reaches contract parity.
 - Audit status: protected mutating API requests are logged to `audit_logs`.
 - Rights API status: fetch, upsert, expiring records, and enforcement checks
   are implemented for local parity testing.
-- Temporary auth status: protected route groups use `ARCHIVE_API_KEY` through
-  `X-Archive-Api-Key` or Bearer token until Sanctum/session cookies are added.
+- Auth status: `/api/v1/auth/login`, `/auth/me`, `/auth/refresh`, and
+  `/auth/logout` use `api_sessions`, short-lived bearer access tokens, and a
+  `va_refresh` HttpOnly refresh cookie. `X-Archive-Api-Key` remains as an
+  internal migration fallback only.
 - Shared contract source: `../docs/api/archive-contract.openapi.json`.
 - Local PHP/Composer are not required yet; tests can run through Docker using
   the Composer image.
 
 ## Next Route Groups
 
-1. Replace the temporary API-key guard with HttpOnly cookies or Sanctum.
-2. Queue-backed media workflows and richer audit event taxonomy.
+1. Wire the Next.js browser client to the HttpOnly refresh-cookie flow.
+2. Remove the internal API-key fallback after browser auth parity is proven.
+3. Queue-backed media workflows and richer audit event taxonomy.
 
 ## Verification
 

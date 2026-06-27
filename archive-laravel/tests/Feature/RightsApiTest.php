@@ -83,12 +83,12 @@ class RightsApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
-    public function test_it_reports_missing_api_key_configuration(): void
+    public function test_it_rejects_api_key_fallback_when_key_is_not_configured(): void
     {
         config(['archive.api_key' => null]);
 
         $this->getJson('/api/v1/rights?itemId=item-1', $this->authHeaders())
-            ->assertStatus(503)
+            ->assertUnauthorized()
             ->assertJsonPath('ok', false);
     }
 

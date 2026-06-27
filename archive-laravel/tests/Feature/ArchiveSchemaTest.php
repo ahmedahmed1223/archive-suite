@@ -14,6 +14,9 @@ class ArchiveSchemaTest extends TestCase
     {
         $this->assertTrue(Schema::hasTable('storage_rows'));
         $this->assertTrue(Schema::hasTable('rights_records'));
+        $this->assertTrue(Schema::hasTable('share_links'));
+        $this->assertTrue(Schema::hasTable('audit_logs'));
+        $this->assertTrue(Schema::hasTable('api_sessions'));
 
         foreach (['store', 'uid', 'data', 'sync_version', 'last_modified_by'] as $column) {
             $this->assertTrue(Schema::hasColumn('storage_rows', $column), "storage_rows should include {$column}");
