@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\FilesController;
 use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\RightsController;
@@ -35,7 +36,13 @@ Route::prefix('v1')->group(function (): void {
 
     Route::get('/share/{token}', [ShareController::class, 'show']);
 
-    Route::middleware(['archive.api_key', 'archive.audit'])->group(function (): void {
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+
+    Route::middleware(['archive.auth', 'archive.audit'])->group(function (): void {
+        Route::get('/auth/me', [AuthController::class, 'me']);
+        Route::post('/auth/logout', [AuthController::class, 'logout']);
+
         Route::get('/records', [RecordsController::class, 'index']);
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::get('/search', [SearchController::class, 'index']);
