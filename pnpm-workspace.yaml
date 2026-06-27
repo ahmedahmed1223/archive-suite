@@ -1,6 +1,7 @@
 packages:
   - "archive-app"
   - "archive-core"
+  - "archive-next"
   - "archive-server"
 allowBuilds:
   '@firebase/util': false

@@ -37,6 +37,7 @@ dist-cloud/
 **/playwright-report/
 **/blob-report/
 **/.vite/
+**/.next/
 .claude/
 # transient brainstorm artifacts
 .superpowers/
