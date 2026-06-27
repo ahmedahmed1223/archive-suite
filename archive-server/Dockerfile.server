@@ -29,6 +29,7 @@ COPY archive-server/package.json archive-server/package.json
 RUN pnpm install --frozen-lockfile --filter archive-server... --filter @archive/core
 COPY archive-core ./archive-core
 COPY archive-server ./archive-server
+ENV DATABASE_PROVIDER=postgresql
 RUN pnpm --filter archive-server run prisma:generate
 
 # ── 3. runtime: lean, secure final image ────────────────────────────────────────
