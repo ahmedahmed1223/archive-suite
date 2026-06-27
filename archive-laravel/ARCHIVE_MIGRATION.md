@@ -7,9 +7,11 @@ reaches contract parity.
 ## Current Status
 
 - Laravel scaffold: v13.
-- First route groups: `/api/v1/health`, `/api/v1/public/openapi.json`, and
-  `/api/v1/rights`.
+- First route groups: `/api/v1/health`, `/api/v1/public/openapi.json`,
+  `/api/v1/records`, `/api/v1/records/bulk`, and `/api/v1/rights`.
 - First schema group: `storage_rows` and `rights_records`.
+- Records API status: bulk upsert and cursor-based listing are implemented for
+  migration compatibility over flexible `ArchiveRecord` payloads.
 - Rights API status: fetch, upsert, expiring records, and enforcement checks
   are implemented for local parity testing.
 - Temporary auth status: protected route groups use `ARCHIVE_API_KEY` through
@@ -21,10 +23,9 @@ reaches contract parity.
 ## Next Route Groups
 
 1. Replace the temporary API-key guard with HttpOnly cookies or Sanctum.
-2. Generic records compatibility over `storage_rows`-style payloads.
-3. Search and file browser endpoints.
-4. Public share viewer payloads.
-5. Queue-backed media and audit workflows.
+2. Search and file browser endpoints.
+3. Public share viewer payloads.
+4. Queue-backed media and audit workflows.
 
 ## Verification
 

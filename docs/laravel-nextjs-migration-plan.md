@@ -48,6 +48,9 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Status 2026-06-27: Laravel rights routes are protected by a temporary
      internal API-key middleware (`ARCHIVE_API_KEY`) while Sanctum/session
      cookies remain the target production auth model.
+   - Status 2026-06-27: Laravel records compatibility routes exist for
+     `GET /api/v1/records` and `POST /api/v1/records/bulk`, backed by
+     `storage_rows` and covered by Feature tests.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
