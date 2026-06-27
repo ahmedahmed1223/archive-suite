@@ -2,6 +2,7 @@
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\RightsController;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('/health', function (): JsonResponse {
@@ -27,4 +28,9 @@ Route::prefix('v1')->group(function (): void {
 
         return response()->json(json_decode((string) file_get_contents($contractPath), true));
     });
+
+    Route::get('/rights/expiring', [RightsController::class, 'expiring']);
+    Route::get('/rights/{itemId}/enforcement', [RightsController::class, 'enforcement']);
+    Route::get('/rights', [RightsController::class, 'show']);
+    Route::post('/rights', [RightsController::class, 'store']);
 });
