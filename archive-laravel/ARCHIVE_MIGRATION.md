@@ -8,6 +8,7 @@ reaches contract parity.
 
 - Laravel scaffold: v13.
 - First route group: `/api/v1/health` and `/api/v1/public/openapi.json`.
+- First schema group: `storage_rows` and `rights_records`.
 - Shared contract source: `../docs/api/archive-contract.openapi.json`.
 - Local PHP/Composer are not required yet; tests can run through Docker using
   the Composer image.

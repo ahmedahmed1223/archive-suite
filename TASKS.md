@@ -211,6 +211,7 @@
   - ✅ شريحة 2b — Next.js API client أولي (2026-06-27): أُضيف `archive-next/lib/archive-api.ts` بعميل typed خفيف لـ health/me/search/rights/share مبني على عقد API، واستُخدم في الصفحة الرئيسية. مرّت `pnpm run typecheck` و`pnpm run build:next`.
   - شريحة 3 — Laravel API: إنشاء `archive-laravel` لاحقاً مع Sanctum أو session cookies، migrations مطابقة للـ Prisma schema، queues للمعالجة الثقيلة، وطبقة file storage متوافقة مع التخزين المحلي/S3.
   - ✅ شريحة 3/4 — Laravel scaffold أولي (2026-06-27): أُنشئ `archive-laravel` عبر Composer داخل Docker بـ Laravel 13، وأُضيفت routes أولية `/api/v1/health` و`/api/v1/public/openapi.json` تقرأ العقد المشترك، مع اختبار Feature. مرّ `docker run --rm -v "D:\archiveaq\Arch_App:/app" -w /app/archive-laravel composer:latest php artisan test` بنتيجة 4 اختبارات و21 assertion.
+  - ✅ شريحة 3b — Laravel schema أساس (2026-06-27): أُضيف migration لـ `storage_rows` و`rights_records` مطابق كبداية لعقد records/rights، مع اختبار `ArchiveSchemaTest`. مرّت Laravel tests بنتيجة 5 اختبارات و37 assertion.
   - شريحة 4 — تشغيل متوازٍ: إبقاء Vite/React الحالي إلى أن تمر Playwright smoke على Next.js، ثم نقل صفحة بصفحة مع بوابة `typecheck`, `build`, وE2E.
   - الملفات: `docs/laravel-nextjs-migration-plan.md`, `TASKS.md`, عقود API لاحقاً تحت `docs/api/`, وحزم جديدة لاحقاً فقط بعد قرار scaffold.
   - القبول: لا اعتماديات Astro؛ `pnpm run typecheck` ينجح؛ خطة Laravel/Next واضحة؛ أي scaffold جديد لا يكسر Vite الحالي.
