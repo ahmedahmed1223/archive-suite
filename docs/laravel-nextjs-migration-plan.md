@@ -30,6 +30,8 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Start with low-risk pages: help, reports shell, public share viewer, and settings overview.
    - Status 2026-06-27: initial `archive-next` package exists with a TypeScript
      App Router shell that imports `docs/api/archive-contract.openapi.json`.
+   - Status 2026-06-27: `archive-next/lib/archive-api.ts` provides the first
+     typed API client for health, current user, search, rights, and share routes.
 
 4. Scaffold Laravel API after domain mapping.
    - Map Prisma models to Laravel migrations.
