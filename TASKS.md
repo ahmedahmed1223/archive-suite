@@ -161,6 +161,7 @@
 - [ ] `[P1]` ⏱️XXL **ترحيل تدريجي إلى TypeScript** — frontend + server (الحالة: الأساس بدأ).
   - ✅ شريحة 0 — أساس الترحيل (2026-06-27): أُضيفت `tsconfig.base.json` + `tsconfig.json` جذري + `tsconfig.json` لكل من `archive-app` و`archive-core` و`archive-server`، مع سكربتات `typecheck` على مستوى الحزم والجذر. أُضيفت ملفات types أولية (`archive-app/src/types/runtime.ts`, `archive-core/src/types/ports.ts`, `archive-server/src/types/runtime.ts`) دون تغيير runtime. أُضيفت تبعية `typescript` ومرّت بوابة `pnpm run typecheck` للحزم الثلاث. هذا الأساس مناسب لمسار Next.js لأنه يستخدم `moduleResolution: "Bundler"` ولا يحوّل entrypoints الحالية بعد.
   - ✅ شريحة 1 — تحويل leaf utilities آمن (2026-06-27): حُوّلت `hijriDate`, `subtitleParser`, و`transcriptToSrt` إلى ملفات `.ts` مع إبقاء ملفات `.js` كواجهات إعادة تصدير حتى لا تنكسر الاستيرادات الحالية ولا مسار Vite. مرّت اختبارات الواجهة و`pnpm run typecheck`.
+  - ✅ شريحة 2 — core/server leaf migration + Docker gate (2026-06-27): حُوّل `archive-core/src/utils/arabicNormalize.ts` واختباره إلى TypeScript مع إبقاء `arabicNormalize.js` كواجهة توافق، وحُوّل `archive-server/src/auth/authConfig.ts` واختباره إلى TypeScript مع أنواع صريحة للـ env fallback. أُصلحت `archive-server/.env.example` حتى لا تفشل Compose بسبب متغيرات Postgres/pgAdmin/Grafana/Redis الناقصة أو التعليقات inline التي تُقرأ كقيم. أُصلح `archive-server/Dockerfile.server` لنسخ `tsconfig.base.json` في build/runtime بعد أن فشل بناء صورة السيرفر بسبب `File '../tsconfig.base.json' not found`. العد الحالي خارج المخرجات: 816 JS/JSX و30 TS/TSX. مرّت `pnpm run typecheck`, اختبارات core/server المحددة، `pnpm run docker:config`, `pnpm run docker:config:postgres`, `docker compose ... build frontend`, `docker compose ... build server`, وDocker dev smoke على `http://127.0.0.1:8080/` و`http://127.0.0.1:8090/api/health`.
   - الترتيب: stores → ports → hooks (frontend)؛ ports → adapters → services → routes (server).
   - القبول: `tsconfig` مع `strictNullChecks`؛ ≥80% ملفات جديدة بـ TS (هدف مرحلي).
   - المصدر: dev-roadmap (P1-04, P1-05, P5-03).
@@ -185,6 +186,7 @@
   - المصدر: طلب المستخدم 2026-06-23.
 
 - [ ] `[P2]` ⏱️L **إكمال K8s + توحيد Docker Compose** — ملفات compose → ملف واحد بـ profiles؛ إضافة Redis+Whisper لـ K8s + kustomization.
+  - ✅ إصلاح بوابة Compose وصورة السيرفر (2026-06-27): أُضيفت placeholder آمنة للمتغيرات المطلوبة في `archive-server/.env.example` (`POSTGRES_*`, `REDIS_PASSWORD`, `PGADMIN_*`, `GRAFANA_PASSWORD`, أسرار JWT)، ونُقلت التعليقات من inline إلى أسطر مستقلة حتى لا تُفسَّر كقيم داخل Docker Compose. أُضيف `tsconfig.base.json` إلى `archive-server/Dockerfile.server` في مراحل build/runtime حتى لا يفشل Prisma/tsx بعد بدء ترحيل TypeScript. مرّت `docker:config` و`docker:config:postgres` وبناء صورة السيرفر.
   - الملفات: `archive-server/deploy/*`, `archive-server/*.yml`.
   - المصدر: dev-roadmap (P1-07).
 
