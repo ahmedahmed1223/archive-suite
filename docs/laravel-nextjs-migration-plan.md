@@ -36,6 +36,8 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Use Sanctum or HttpOnly session cookies.
    - Move background work to queues rather than request handlers.
    - Keep file storage compatible with local disk and S3-style stores.
+   - Status 2026-06-27: initial `archive-laravel` scaffold exists. It serves
+     `/api/v1/health` and `/api/v1/public/openapi.json`, with Feature tests.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
@@ -54,4 +56,6 @@ Astro is good for content-heavy sites and islands, but this product is an operat
   - Initial contract: `docs/api/archive-contract.openapi.json`.
 - Keep `archive-next` as a migration shell until route-level parity and E2E
   checks are added.
+- Keep `archive-laravel` parallel to the Node server until auth, records,
+  search, files, rights, and share route groups match the contract.
 - Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.
