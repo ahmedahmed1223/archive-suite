@@ -44,6 +44,7 @@ function makeSettings(timestamp: string) {
       lastOnboardingStep: 'daily-start',
       onboardingSecurityMode: 'quick',
       onboardingThemeChoice: 'dark',
+      bootChoice: 'quick',
       visualDensity: 'comfortable',
       startupMode: 'balanced',
       lastSettingsTab: 'general',

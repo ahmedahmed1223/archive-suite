@@ -91,7 +91,6 @@ function makeSettings(timestamp: string, {
       deviceName: 'A11y V4 Matrix',
       daisyTheme,
       motionLevel,
-      v1TourCompleted: true,
       v1TourVersion: '2026-06-05-media-workstation',
       helpAutoOpenPending: false
     },

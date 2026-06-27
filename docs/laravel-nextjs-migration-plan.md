@@ -1,0 +1,53 @@
+# Laravel + Next.js Migration Plan
+
+> Date: 2026-06-27
+> Decision: pause Astro 5 work. Continue TypeScript and plan a Laravel API plus Next.js frontend migration.
+
+## Recommendation
+
+Use Laravel for the backend domain and operational services, and Next.js for the user interface. Do not replace the current app in one step. Run the new stack beside the existing Vite/React app until the API contracts and Playwright smoke tests are stable.
+
+## Target Responsibilities
+
+- Laravel: authentication, authorization policies, REST API, database migrations, file/storage abstraction, background queues, media jobs, audit logs, integrations, and admin-safe operational endpoints.
+- Next.js: TypeScript UI, RTL Arabic shell, App Router, route-level loading/error states, server rendering for public/share pages, and client-heavy screens for archive operations.
+- Current Vite app: stays as the working production surface during migration.
+- TypeScript: remains the shared discipline for frontend code, tests, API clients, and future Next.js modules.
+
+## Migration Order
+
+1. Define API contracts first.
+   - Write OpenAPI or JSON examples for items, content types, folders, files, auth/session, rights, and search.
+   - Keep these contracts framework-neutral so both the current Node server and Laravel can satisfy them.
+
+2. Keep TypeScript moving.
+   - Continue converting leaf utilities, API clients, ports, hooks, and stores.
+   - Avoid converting the current React root until a Next.js shell exists.
+
+3. Scaffold Next.js only after contracts are clear.
+   - Use a new package such as `archive-next`.
+   - Reuse design tokens and Playwright helpers.
+   - Start with low-risk pages: help, reports shell, public share viewer, and settings overview.
+
+4. Scaffold Laravel API after domain mapping.
+   - Map Prisma models to Laravel migrations.
+   - Use Sanctum or HttpOnly session cookies.
+   - Move background work to queues rather than request handlers.
+   - Keep file storage compatible with local disk and S3-style stores.
+
+5. Run both stacks in parallel.
+   - Current Vite app remains the fallback.
+   - Playwright gates must pass on each moved route.
+   - Switch traffic route-by-route only after parity is proven.
+
+## Why Not Astro Now
+
+Astro is good for content-heavy sites and islands, but this product is an operational archive application with deep authenticated workflows, stateful dashboards, offline/local storage, and future backend migration needs. Next.js fits the planned TypeScript frontend better, and Laravel gives a stronger backend platform for policies, queues, storage, and enterprise integrations.
+
+## Immediate Next Tasks
+
+- Keep the TypeScript foundation and leaf conversions.
+- Remove Astro dependencies, scripts, config, and generated artifacts.
+- Add API contract documentation before scaffolding Laravel or Next.js.
+  - Initial contract: `docs/api/archive-contract.openapi.json`.
+- Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.

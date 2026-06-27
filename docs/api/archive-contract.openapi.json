@@ -1,0 +1,916 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Archive Suite API Contract",
+    "version": "0.1.0",
+    "description": "Framework-neutral API contract for the Laravel API and Next.js migration. The current Node server is the reference implementation until Laravel reaches parity."
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Versioned API base"
+    },
+    {
+      "url": "/api",
+      "description": "Legacy-compatible API base"
+    }
+  ],
+  "tags": [
+    { "name": "Health" },
+    { "name": "Auth" },
+    { "name": "Records" },
+    { "name": "Search" },
+    { "name": "Files" },
+    { "name": "Folders" },
+    { "name": "Rights" },
+    { "name": "Share" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Server and backend health",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Health information",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Authenticate a user",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/AuthSuccess" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Return the current authenticated user",
+        "operationId": "getCurrentUser",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/OkEnvelope" },
+                    {
+                      "type": "object",
+                      "required": ["user"],
+                      "properties": {
+                        "user": { "$ref": "#/components/schemas/User" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Rotate the HttpOnly refresh cookie and issue a new access token",
+        "operationId": "refreshSession",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/AuthSuccess" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Revoke the current session",
+        "operationId": "logout",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records": {
+      "get": {
+        "tags": ["Records"],
+        "summary": "List records from a store",
+        "operationId": "listRecords",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "store",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record page",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/bulk": {
+      "post": {
+        "tags": ["Records"],
+        "summary": "Bulk upsert records for migration and sync compatibility",
+        "operationId": "bulkUpsertRecords",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BulkRecordsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Search archive records",
+        "operationId": "searchRecords",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "schema": { "type": "string" } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
+          },
+          { "name": "semantic", "in": "query", "schema": { "type": "boolean", "default": false } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search result page",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SearchResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/files": {
+      "get": {
+        "tags": ["Files"],
+        "summary": "List files in the active file store",
+        "operationId": "listFiles",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Files",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FileListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/files/browser": {
+      "get": {
+        "tags": ["Files"],
+        "summary": "Browse a virtual file-store path",
+        "operationId": "browseFiles",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "path", "in": "query", "schema": { "type": "string", "default": "" } },
+          { "name": "query", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Directory listing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FileBrowserResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/files/{key}": {
+      "get": {
+        "tags": ["Files"],
+        "summary": "Download or stream a file through the API",
+        "operationId": "getFile",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/FileKey" }],
+        "responses": {
+          "200": { "description": "Binary file stream" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "put": {
+        "tags": ["Files"],
+        "summary": "Upload or replace a file by key",
+        "operationId": "putFile",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/FileKey" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": { "type": "string", "format": "binary" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/FileWriteSuccess" },
+          "201": { "$ref": "#/components/responses/FileWriteSuccess" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Files"],
+        "summary": "Delete a file by key",
+        "operationId": "deleteFile",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/FileKey" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/folders": {
+      "get": {
+        "tags": ["Folders"],
+        "summary": "List logical archive folders",
+        "operationId": "listFolders",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Folders",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FolderListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/rights": {
+      "get": {
+        "tags": ["Rights"],
+        "summary": "Fetch a rights record by archive item id",
+        "operationId": "getRightsByItem",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rights record",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RightsRecordResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Rights"],
+        "summary": "Create or upsert a rights record",
+        "operationId": "upsertRights",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RightsRecordInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Rights record saved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RightsRecordResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/rights/expiring": {
+      "get": {
+        "tags": ["Rights"],
+        "summary": "List rights records expiring soon",
+        "operationId": "listExpiringRights",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 365, "default": 30 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expiring rights",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RightsRecordListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/rights/{itemId}/enforcement": {
+      "get": {
+        "tags": ["Rights"],
+        "summary": "Return rights enforcement status for an item",
+        "operationId": "getRightsEnforcement",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Enforcement summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RightsEnforcementResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/share": {
+      "post": {
+        "tags": ["Share"],
+        "summary": "Create a scoped public share link",
+        "operationId": "createShare",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateShareRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Share created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreateShareResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/share/{token}": {
+      "get": {
+        "tags": ["Share"],
+        "summary": "Read a public share payload",
+        "operationId": "getShare",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Share payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SharePayloadResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "va_refresh"
+      }
+    },
+    "parameters": {
+      "FileKey": {
+        "name": "key",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    },
+    "responses": {
+      "Ok": {
+        "description": "Success",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/OkEnvelope" }
+          }
+        }
+      },
+      "Error": {
+        "description": "Error response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" }
+          }
+        }
+      },
+      "AuthSuccess": {
+        "description": "Authenticated session",
+        "headers": {
+          "Set-Cookie": {
+            "description": "HttpOnly refresh cookie when cookie auth is enabled",
+            "schema": { "type": "string" }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/AuthResponse" }
+          }
+        }
+      },
+      "FileWriteSuccess": {
+        "description": "File write result",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/FileWriteResponse" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "OkEnvelope": {
+        "type": "object",
+        "required": ["ok"],
+        "properties": {
+          "ok": { "const": true }
+        }
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "required": ["ok", "error"],
+        "properties": {
+          "ok": { "const": false },
+          "error": { "type": "string" },
+          "code": { "type": "string" },
+          "details": {}
+        }
+      },
+      "HealthResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["backend", "engine", "uptimeSec"],
+            "properties": {
+              "backend": { "type": "string" },
+              "engine": { "type": "string" },
+              "uptimeSec": { "type": "integer" },
+              "version": { "type": "string" },
+              "authRequired": { "type": "boolean" },
+              "db": {
+                "type": "object",
+                "properties": {
+                  "ok": { "type": "boolean" },
+                  "latencyMs": { "type": "number" },
+                  "error": { "type": "string" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": { "type": "string", "minLength": 1 },
+          "password": { "type": "string", "minLength": 1 },
+          "totp": { "type": "string" },
+          "rememberMe": { "type": "boolean", "default": false }
+        }
+      },
+      "AuthResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["user"],
+            "properties": {
+              "token": { "type": "string" },
+              "user": { "$ref": "#/components/schemas/User" }
+            }
+          }
+        ]
+      },
+      "User": {
+        "type": "object",
+        "required": ["id", "username", "role"],
+        "properties": {
+          "id": { "type": "string" },
+          "username": { "type": "string" },
+          "displayName": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "enum": ["admin", "editor", "viewer"] },
+          "totpEnabled": { "type": "boolean" },
+          "totpRecoveryCodesRemaining": { "type": "integer" }
+        }
+      },
+      "ArchiveRecord": {
+        "type": "object",
+        "required": ["id", "title"],
+        "properties": {
+          "id": { "type": "string" },
+          "uid": { "type": "string" },
+          "store": { "type": "string" },
+          "title": { "type": "string" },
+          "type": { "type": "string" },
+          "subtype": { "type": ["string", "null"] },
+          "description": { "type": "string" },
+          "path": { "type": "string" },
+          "thumbnail": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "metadata": { "type": "object", "additionalProperties": true },
+          "isDeleted": { "type": "boolean", "default": false },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "syncVersion": { "type": "integer" }
+        },
+        "additionalProperties": true
+      },
+      "RecordListResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["records"],
+            "properties": {
+              "records": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ArchiveRecord" }
+              },
+              "nextCursor": { "type": ["string", "null"] }
+            }
+          }
+        ]
+      },
+      "BulkRecordsRequest": {
+        "type": "object",
+        "required": ["store", "records"],
+        "properties": {
+          "store": { "type": "string" },
+          "records": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ArchiveRecord" },
+            "maxItems": 10000
+          }
+        }
+      },
+      "SearchResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["records"],
+            "properties": {
+              "records": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ArchiveRecord" }
+              },
+              "facets": { "type": "object", "additionalProperties": true },
+              "nextCursor": { "type": ["string", "null"] }
+            }
+          }
+        ]
+      },
+      "FileEntry": {
+        "type": "object",
+        "required": ["key", "name", "kind"],
+        "properties": {
+          "key": { "type": "string" },
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "kind": { "type": "string", "enum": ["file", "folder"] },
+          "mimeType": { "type": "string" },
+          "size": { "type": "integer" },
+          "lastModified": { "type": "string", "format": "date-time" },
+          "url": { "type": "string" }
+        },
+        "additionalProperties": true
+      },
+      "FileListResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["files"],
+            "properties": {
+              "files": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/FileEntry" }
+              }
+            }
+          }
+        ]
+      },
+      "FileBrowserResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["path", "entries"],
+            "properties": {
+              "path": { "type": "string" },
+              "entries": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/FileEntry" }
+              }
+            }
+          }
+        ]
+      },
+      "FileWriteResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "properties": {
+              "key": { "type": "string" },
+              "url": { "type": "string" }
+            }
+          }
+        ]
+      },
+      "Folder": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "parentId": { "type": ["string", "null"] },
+          "itemIds": { "type": "array", "items": { "type": "string" } },
+          "entityRefs": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/EntityRef" }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": true
+      },
+      "EntityRef": {
+        "type": "object",
+        "required": ["type", "id"],
+        "properties": {
+          "type": { "type": "string" },
+          "id": { "type": "string" }
+        }
+      },
+      "FolderListResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["folders"],
+            "properties": {
+              "folders": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Folder" }
+              }
+            }
+          }
+        ]
+      },
+      "LicenseType": {
+        "type": "string",
+        "enum": ["OWNED", "LICENSED", "PUBLIC_DOMAIN", "FAIR_USE", "UNKNOWN"]
+      },
+      "RightsRecordInput": {
+        "type": "object",
+        "required": ["itemId", "rightsHolder", "licenseType"],
+        "properties": {
+          "itemId": { "type": "string" },
+          "rightsHolder": { "type": "string" },
+          "licenseType": { "$ref": "#/components/schemas/LicenseType" },
+          "embargoStart": { "type": ["string", "null"], "format": "date-time" },
+          "embargoEnd": { "type": ["string", "null"], "format": "date-time" },
+          "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+          "geoRestrictions": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[A-Z]{2}$" }
+          },
+          "notes": { "type": ["string", "null"], "maxLength": 4000 }
+        }
+      },
+      "RightsRecord": {
+        "allOf": [
+          { "$ref": "#/components/schemas/RightsRecordInput" },
+          {
+            "type": "object",
+            "required": ["id", "createdAt", "updatedAt"],
+            "properties": {
+              "id": { "type": "string" },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "RightsRecordResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["record"],
+            "properties": {
+              "record": { "$ref": "#/components/schemas/RightsRecord" }
+            }
+          }
+        ]
+      },
+      "RightsRecordListResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["records"],
+            "properties": {
+              "records": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RightsRecord" }
+              }
+            }
+          }
+        ]
+      },
+      "RightsEnforcementResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["allowed"],
+            "properties": {
+              "allowed": { "type": "boolean" },
+              "blocked": { "type": "boolean" },
+              "reason": { "type": "string" },
+              "warnings": { "type": "array", "items": { "type": "string" } },
+              "record": { "$ref": "#/components/schemas/RightsRecord" }
+            },
+            "additionalProperties": true
+          }
+        ]
+      },
+      "CreateShareRequest": {
+        "type": "object",
+        "required": ["scope"],
+        "properties": {
+          "scope": {
+            "type": "object",
+            "properties": {
+              "itemIds": { "type": "array", "items": { "type": "string" } },
+              "collectionIds": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": true
+          },
+          "permission": { "type": "string", "enum": ["view", "comment"], "default": "view" },
+          "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+          "password": { "type": "string" }
+        }
+      },
+      "CreateShareResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["token", "shareUrl"],
+            "properties": {
+              "token": { "type": "string" },
+              "shareUrl": { "type": "string" },
+              "path": { "type": "string" },
+              "expiresAt": { "type": ["string", "null"], "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "SharePayloadResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["scope"],
+            "properties": {
+              "scope": { "type": "object", "additionalProperties": true },
+              "records": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ArchiveRecord" }
+              },
+              "permission": { "type": "string" },
+              "comments": {
+                "type": "array",
+                "items": { "type": "object", "additionalProperties": true }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

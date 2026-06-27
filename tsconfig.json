@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./archive-app" },
+    { "path": "./archive-core" },
+    { "path": "./archive-server" }
+  ]
+}

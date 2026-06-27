@@ -1,0 +1,21 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/services/storage/schema.js",
+    "tests/**/*.ts",
+    "playwright.config.ts"
+  ],
+  "exclude": [
+    "dist",
+    "dist-cloud",
+    "dist-aistudio",
+    "node_modules",
+    "playwright-report",
+    "test-results"
+  ]
+}

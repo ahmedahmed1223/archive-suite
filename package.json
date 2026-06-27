@@ -25,11 +25,16 @@
     "verify:app": "pnpm --filter @archive/app run verify",
     "verify:core": "pnpm --filter @archive/core run verify",
     "verify:server": "pnpm --filter archive-server run verify",
+    "typecheck": "pnpm --filter @archive/app run typecheck && pnpm --filter @archive/core run typecheck && pnpm --filter archive-server run typecheck",
+    "typecheck:app": "pnpm --filter @archive/app run typecheck",
+    "typecheck:core": "pnpm --filter @archive/core run typecheck",
+    "typecheck:server": "pnpm --filter archive-server run typecheck",
     "audit:ui": "pnpm --filter @archive/app run audit:ui",
     "audit:ui:headed": "pnpm --filter @archive/app run audit:ui:headed",
     "audit:ui:server": "pnpm --filter @archive/app run audit:ui:server",
     "audit:all": "pnpm run verify && pnpm run audit:ui",
     "security:baseline": "node scripts/verify-security-baseline.mjs",
+    "verify:api-contracts": "node scripts/verify-api-contracts.mjs",
     "verify:cloud-deploy": "node scripts/verify-cloud-deploy.mjs",
     "docker:config": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml config",
     "docker:config:postgres": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.postgres.yml config",
@@ -37,5 +42,8 @@
     "setup": "node scripts/setup.mjs",
     "deploy": "node scripts/deploy-wizard.mjs",
     "control": "node scripts/control-center.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
   }
 }
