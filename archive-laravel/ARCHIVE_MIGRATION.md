@@ -16,6 +16,8 @@ reaches contract parity.
   store filtering and cursor pagination; semantic search is not implemented yet.
 - Files API status: local file listing and browser endpoints are implemented
   over `ARCHIVE_FILE_ROOT` with path traversal protection.
+- Share API status: protected share creation and public token payload reads are
+  implemented with `share_links` and `storage_rows` lookups.
 - Rights API status: fetch, upsert, expiring records, and enforcement checks
   are implemented for local parity testing.
 - Temporary auth status: protected route groups use `ARCHIVE_API_KEY` through
@@ -27,8 +29,7 @@ reaches contract parity.
 ## Next Route Groups
 
 1. Replace the temporary API-key guard with HttpOnly cookies or Sanctum.
-2. Public share viewer payloads.
-3. Queue-backed media and audit workflows.
+2. Queue-backed media and audit workflows.
 
 ## Verification
 
