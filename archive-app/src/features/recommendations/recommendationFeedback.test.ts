@@ -6,11 +6,11 @@ import {
 } from "./recommendationFeedback.js";
 
 function createMemoryStorage() {
-  const data = new Map();
+  const data = new Map<string, string>();
   return {
-    getItem: (key) => data.get(key) ?? null,
-    setItem: (key, value) => data.set(key, String(value)),
-    removeItem: (key) => data.delete(key)
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => data.set(key, String(value)),
+    removeItem: (key: string) => data.delete(key)
   };
 }
 

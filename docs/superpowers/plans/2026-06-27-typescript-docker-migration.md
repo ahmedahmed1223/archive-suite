@@ -147,3 +147,33 @@ Expected: server test slice and `pnpm run typecheck:server` pass.
 Expected: `pnpm run typecheck`, compose config gates, Docker image build, and Docker dev smoke pass.
 
 Current count after Task 6: 813 JS/JSX files and 45 TS/TSX files, excluding generated folders.
+
+### Task 7: Convert Pure Frontend View Models
+
+**Files:**
+- Modify/add: `archive-app/src/features/theme/appearancePreview.{js,ts}`
+- Rename: `archive-app/src/features/theme/appearancePreview.test.js` -> `.ts`
+- Modify/add: `archive-app/src/features/settings/keyboardShortcuts.{js,ts}`
+- Rename: `archive-app/src/features/settings/keyboardShortcuts.test.js` -> `.ts`
+- Modify/add: `archive-app/src/features/help/viewModel.{js,ts}`
+- Rename: `archive-app/src/features/help/viewModel.test.js` -> `.ts`
+- Modify/add: `archive-app/src/features/recommendations/recommendationFeedback.{js,ts}`
+- Rename: `archive-app/src/features/recommendations/recommendationFeedback.test.js` -> `.ts`
+
+- [x] **Step 1: Convert low-risk view models with JS bridges**
+
+Preserve public exports from `.js` files while moving implementations to typed `.ts` files.
+
+- [x] **Step 2: Convert matching tests**
+
+Rename matching tests to `.test.ts` and add explicit test helper types where TypeScript requires them.
+
+- [x] **Step 3: Verify app type safety and behavior**
+
+Run: `pnpm run typecheck:app`
+Expected: PASS.
+
+Run matching Vitest slices for theme, settings, help, and recommendations.
+Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
+
+Current count after Task 7: 809 JS/JSX files and 53 TS/TSX files, excluding generated folders.
