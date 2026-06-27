@@ -18,9 +18,12 @@ describe("file manager view model", () => {
 
   it("toggles selection and persists only list or grid", () => {
     expect([...toggleSelection(new Set(["a"]), "a")]).toEqual([]);
-    const storage = { setItem: (key, value) => { storage[key] = value; } };
+    const storageValues: Record<string, string> = {};
+    const storage = {
+      setItem: (key: string, value: string) => { storageValues[key] = value; }
+    };
     expect(saveViewMode("grid", storage)).toBe("grid");
-    expect(storage["archive.fileManager.view"]).toBe("grid");
+    expect(storageValues["archive.fileManager.view"]).toBe("grid");
     expect(saveViewMode("invalid", storage)).toBe("list");
   });
 });
