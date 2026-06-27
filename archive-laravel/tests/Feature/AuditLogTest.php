@@ -20,7 +20,27 @@ class AuditLogTest extends TestCase
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'POST /api/v1/records/bulk',
+            'event' => 'records.bulk_upsert',
+            'resource_type' => 'record',
+            'outcome' => 'success',
             'status_code' => 200,
+        ]);
+    }
+
+    public function test_it_classifies_resource_specific_audit_events(): void
+    {
+        $this->postJson('/api/v1/rights', [
+            'itemId' => 'rights-audit-1',
+            'rightsHolder' => 'Archive Team',
+            'licenseType' => 'OWNED',
+        ], $this->authHeaders())->assertCreated();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'rights.upsert',
+            'resource_type' => 'rights_record',
+            'resource_id' => 'rights-audit-1',
+            'outcome' => 'success',
+            'status_code' => 201,
         ]);
     }
 
