@@ -2,18 +2,20 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
+use Tests\Support\AuthenticatesArchiveRequests;
 
 class FilesApiTest extends TestCase
 {
+    use RefreshDatabase, AuthenticatesArchiveRequests;
+
     private string $fileRoot;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        config(['archive.api_key' => 'test-secret']);
 
         $this->fileRoot = storage_path('framework/testing/archive-files');
         File::deleteDirectory($this->fileRoot);
@@ -63,11 +65,4 @@ class FilesApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function authHeaders(): array
-    {
-        return ['X-Archive-Api-Key' => 'test-secret'];
-    }
 }

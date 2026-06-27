@@ -23,16 +23,16 @@ reaches contract parity.
   are implemented for local parity testing.
 - Auth status: `/api/v1/auth/login`, `/auth/me`, `/auth/refresh`, and
   `/auth/logout` use `api_sessions`, short-lived bearer access tokens, and a
-  `va_refresh` HttpOnly refresh cookie. `X-Archive-Api-Key` remains as an
-  internal migration fallback only.
+  `va_refresh` HttpOnly refresh cookie. `X-Archive-Api-Key` fallback has been
+  removed.
 - Shared contract source: `../docs/api/archive-contract.openapi.json`.
 - Local PHP/Composer are not required yet; tests can run through Docker using
   the Composer image.
 
 ## Next Route Groups
 
-1. Wire the Next.js browser client to the HttpOnly refresh-cookie flow.
-2. Remove the internal API-key fallback after browser auth parity is proven.
+1. Build the first Next.js browser auth screen on top of the typed auth client.
+2. Move the public share viewer route to Next.js.
 3. Queue-backed media workflows and richer audit event taxonomy.
 
 ## Verification

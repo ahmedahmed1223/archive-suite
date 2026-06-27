@@ -5,17 +5,11 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
+use Tests\Support\AuthenticatesArchiveRequests;
 
 class AuditLogTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        config(['archive.api_key' => 'test-secret']);
-    }
+    use RefreshDatabase, AuthenticatesArchiveRequests;
 
     public function test_it_audits_mutating_archive_api_requests(): void
     {
@@ -37,11 +31,4 @@ class AuditLogTest extends TestCase
         $this->assertSame(0, DB::table('audit_logs')->count());
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function authHeaders(): array
-    {
-        return ['X-Archive-Api-Key' => 'test-secret'];
-    }
 }

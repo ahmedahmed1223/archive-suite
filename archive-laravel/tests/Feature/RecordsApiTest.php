@@ -4,17 +4,11 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\AuthenticatesArchiveRequests;
 
 class RecordsApiTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        config(['archive.api_key' => 'test-secret']);
-    }
+    use RefreshDatabase, AuthenticatesArchiveRequests;
 
     public function test_it_bulk_upserts_and_lists_records_with_cursor_pagination(): void
     {
@@ -63,11 +57,4 @@ class RecordsApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function authHeaders(): array
-    {
-        return ['X-Archive-Api-Key' => 'test-secret'];
-    }
 }

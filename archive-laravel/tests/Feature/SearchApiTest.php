@@ -4,17 +4,11 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\AuthenticatesArchiveRequests;
 
 class SearchApiTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        config(['archive.api_key' => 'test-secret']);
-    }
+    use RefreshDatabase, AuthenticatesArchiveRequests;
 
     public function test_it_searches_records_by_keyword(): void
     {
@@ -65,11 +59,4 @@ class SearchApiTest extends TestCase
         ], $this->authHeaders())->assertOk();
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function authHeaders(): array
-    {
-        return ['X-Archive-Api-Key' => 'test-secret'];
-    }
 }
