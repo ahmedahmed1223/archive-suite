@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class RecordsController extends Controller
         ]);
 
         $limit = (int) ($validated['limit'] ?? 50);
-        $cursorUid = isset($validated['cursor']) ? $this->decodeCursor($validated['cursor']) : null;
+        $cursorUid = isset($validated['cursor']) ? StorageRowPayload::decodeCursor($validated['cursor']) : null;
 
         $query = DB::table('storage_rows')
             ->where('store', $validated['store'])
@@ -36,13 +37,13 @@ class RecordsController extends Controller
         $rows = $query->get();
         $hasMore = $rows->count() > $limit;
         $pageRows = $rows->take($limit);
-        $records = $pageRows->map(fn (stdClass $row): array => $this->formatRow($row))->values();
+        $records = $pageRows->map(fn (stdClass $row): array => StorageRowPayload::format($row))->values();
         $lastRow = $pageRows->last();
 
         return response()->json([
             'ok' => true,
             'records' => $records,
-            'nextCursor' => $hasMore && $lastRow instanceof stdClass ? $this->encodeCursor($lastRow->uid) : null,
+            'nextCursor' => $hasMore && $lastRow instanceof stdClass ? StorageRowPayload::encodeCursor($lastRow->uid) : null,
         ]);
     }
 
@@ -77,7 +78,7 @@ class RecordsController extends Controller
 
         foreach ($records as $record) {
             $uid = (string) ($record['uid'] ?? $record['id']);
-            $normalized = ['store' => $validated['store'], 'uid' => $uid] + $record;
+            $normalized = ['uid' => $uid] + $record;
 
             DB::table('storage_rows')->updateOrInsert(
                 ['store' => $validated['store'], 'uid' => $uid],
@@ -96,31 +97,4 @@ class RecordsController extends Controller
         return response()->json(['ok' => true, 'count' => $count]);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function formatRow(stdClass $row): array
-    {
-        $data = json_decode((string) $row->data, true);
-
-        return [
-            'store' => $row->store,
-            'uid' => $row->uid,
-            'id' => $data['id'] ?? $row->uid,
-            ...($data ?: []),
-            'syncVersion' => $row->sync_version,
-            'createdAt' => $row->created_at,
-            'updatedAt' => $row->updated_at,
-        ];
-    }
-
-    private function encodeCursor(string $uid): string
-    {
-        return rtrim(strtr(base64_encode($uid), '+/', '-_'), '=');
-    }
-
-    private function decodeCursor(string $cursor): string
-    {
-        return (string) base64_decode(strtr($cursor, '-_', '+/'), true);
-    }
 }

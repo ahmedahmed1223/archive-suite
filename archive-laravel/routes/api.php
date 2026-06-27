@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\RightsController;
+use App\Http\Controllers\Api\V1\SearchController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,7 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware('archive.api_key')->group(function (): void {
         Route::get('/records', [RecordsController::class, 'index']);
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
+        Route::get('/search', [SearchController::class, 'index']);
 
         Route::get('/rights/expiring', [RightsController::class, 'expiring']);
         Route::get('/rights/{itemId}/enforcement', [RightsController::class, 'enforcement']);

@@ -51,6 +51,9 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Status 2026-06-27: Laravel records compatibility routes exist for
      `GET /api/v1/records` and `POST /api/v1/records/bulk`, backed by
      `storage_rows` and covered by Feature tests.
+   - Status 2026-06-27: Laravel search route exists at `/api/v1/search` as a
+     keyword compatibility layer over `storage_rows`; semantic search remains
+     a later route-level enhancement.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
