@@ -45,6 +45,9 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Status 2026-06-27: the first rights route group exists under
      `/api/v1/rights`, including fetch, upsert, expiring records, and
      enforcement status Feature tests.
+   - Status 2026-06-27: Laravel rights routes are protected by a temporary
+     internal API-key middleware (`ARCHIVE_API_KEY`) while Sanctum/session
+     cookies remain the target production auth model.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
@@ -65,6 +68,6 @@ Astro is good for content-heavy sites and islands, but this product is an operat
   checks are added.
 - Keep `archive-laravel` parallel to the Node server until auth, records,
   search, files, rights, and share route groups match the contract.
-- Next Laravel route groups should prioritize auth/session hardening before
-  exposing mutating endpoints outside local test use.
+- Next Laravel route groups should move from the temporary API-key guard to
+  HttpOnly cookie sessions or Sanctum before browser-facing production use.
 - Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.
