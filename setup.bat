@@ -1,21 +1,65 @@
 @echo off
-REM Archive Suite — Windows Control Center.
-REM Double-click this file (or run from a terminal) to open the management console:
-REM   install/deploy, start/stop/restart servers, health, diagnostics, config, backup.
-REM Pass a subcommand to run it non-interactively, e.g.  Setup-Archive.bat status
+setlocal EnableExtensions
+
+REM Archive Suite - Windows Control Center launcher.
+REM Usage:
+REM   setup.bat
+REM   setup.bat deploy
+REM   setup.bat status
+REM   setup.bat start
+REM   setup.bat stop
+REM   setup.bat health
+REM   setup.bat logs
+REM
+REM The documented Setup-Archive.bat file calls this launcher.
 
 cd /d "%~dp0"
+
+set "ARCHIVE_PAUSE=0"
+if "%~1"=="" set "ARCHIVE_PAUSE=1"
 
 where node >nul 2>nul
 if errorlevel 1 (
   echo.
-  echo   [X] Node.js not found. Install Node 22+ from https://nodejs.org then re-run.
+  echo   [X] Node.js was not found.
+  echo       Install Node.js 22+ from https://nodejs.org, then run this file again.
   echo.
-  pause
-  exit /b 1
+  goto :fail
+)
+
+for /f "usebackq delims=" %%v in (`node -p "process.versions.node.split('.')[0]" 2^>nul`) do set "NODE_MAJOR=%%v"
+if not defined NODE_MAJOR (
+  echo.
+  echo   [X] Could not read the installed Node.js version.
+  echo.
+  goto :fail
+)
+
+if %NODE_MAJOR% LSS 22 (
+  echo.
+  echo   [X] Node.js 22+ is required. Found:
+  node -v
+  echo.
+  goto :fail
 )
 
 node "scripts\control-center.mjs" %*
+set "ARCHIVE_EXIT=%ERRORLEVEL%"
 
-echo.
-pause
+if not "%ARCHIVE_EXIT%"=="0" (
+  echo.
+  echo   [X] Control Center exited with code %ARCHIVE_EXIT%.
+  goto :finish
+)
+
+goto :finish
+
+:fail
+set "ARCHIVE_EXIT=1"
+
+:finish
+if "%ARCHIVE_PAUSE%"=="1" (
+  echo.
+  pause
+)
+exit /b %ARCHIVE_EXIT%
