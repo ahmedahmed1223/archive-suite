@@ -54,6 +54,9 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Status 2026-06-27: Laravel search route exists at `/api/v1/search` as a
      keyword compatibility layer over `storage_rows`; semantic search remains
      a later route-level enhancement.
+   - Status 2026-06-27: Laravel file browser routes exist at `/api/v1/files`
+     and `/api/v1/files/browser`, backed by `ARCHIVE_FILE_ROOT` with path
+     traversal checks.
 
 5. Run both stacks in parallel.
    - Current Vite app remains the fallback.
