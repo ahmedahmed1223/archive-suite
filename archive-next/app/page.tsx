@@ -1,15 +1,6 @@
-import contract from "../../docs/api/archive-contract.openapi.json";
+import { getContractSummary } from "@/lib/archive-api";
 
-type OpenApiContract = {
-  info?: {
-    title?: string;
-    version?: string;
-  };
-  paths?: Record<string, unknown>;
-};
-
-const apiContract = contract as OpenApiContract;
-const routeCount = Object.keys(apiContract.paths ?? {}).length;
+const apiContract = getContractSummary();
 
 export default function HomePage() {
   return (
@@ -37,8 +28,8 @@ export default function HomePage() {
           <article className="panel">
             <h2>عقد API</h2>
             <p>
-              {apiContract.info?.title} v{apiContract.info?.version} يحتوي على{" "}
-              {routeCount} مسارا أساسيا.
+              {apiContract.title} v{apiContract.version} يحتوي على{" "}
+              {apiContract.routeCount} مسارا أساسيا.
             </p>
           </article>
 
