@@ -1,0 +1,129 @@
+:root {
+  color-scheme: light;
+  --va-bg: oklch(97.1% 0.011 97);
+  --va-surface: oklch(99.3% 0.007 97);
+  --va-surface-2: oklch(94% 0.018 97);
+  --va-text: oklch(16.8% 0.028 243);
+  --va-text-2: oklch(38.1% 0.039 243);
+  --va-text-muted: oklch(54% 0.03 243);
+  --va-border-soft: rgb(15 23 42 / 0.08);
+  --va-accent: oklch(54.2% 0.135 181);
+  --va-accent-strong: oklch(42% 0.112 181);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--va-bg);
+  color: var(--va-text);
+  font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem clamp(1rem, 4vw, 2.5rem);
+  border-block-end: 1px solid var(--va-border-soft);
+  background: color-mix(in oklch, var(--va-surface) 92%, transparent);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.brand strong {
+  font-size: 1rem;
+}
+
+.brand span {
+  color: var(--va-text-muted);
+  font-size: 0.875rem;
+}
+
+.content {
+  width: min(1120px, calc(100% - 2rem));
+  margin-inline: auto;
+  padding-block: clamp(1.5rem, 5vw, 4rem);
+}
+
+.hero {
+  display: grid;
+  gap: 1rem;
+  max-width: 760px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--va-text-2);
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-block-start: 2rem;
+}
+
+.panel {
+  border: 1px solid var(--va-border-soft);
+  border-radius: 8px;
+  background: var(--va-surface);
+  padding: 1rem;
+}
+
+.panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.panel p,
+.panel li {
+  color: var(--va-text-2);
+  line-height: 1.7;
+}
+
+.panel ul {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+}
+
+.badge {
+  inline-size: fit-content;
+  border: 1px solid color-mix(in oklch, var(--va-accent) 40%, transparent);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  color: var(--va-accent-strong);
+  background: color-mix(in oklch, var(--va-accent) 10%, var(--va-surface));
+  font-size: 0.85rem;
+}

@@ -28,6 +28,8 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Use a new package such as `archive-next`.
    - Reuse design tokens and Playwright helpers.
    - Start with low-risk pages: help, reports shell, public share viewer, and settings overview.
+   - Status 2026-06-27: initial `archive-next` package exists with a TypeScript
+     App Router shell that imports `docs/api/archive-contract.openapi.json`.
 
 4. Scaffold Laravel API after domain mapping.
    - Map Prisma models to Laravel migrations.
@@ -50,4 +52,6 @@ Astro is good for content-heavy sites and islands, but this product is an operat
 - Remove Astro dependencies, scripts, config, and generated artifacts.
 - Add API contract documentation before scaffolding Laravel or Next.js.
   - Initial contract: `docs/api/archive-contract.openapi.json`.
+- Keep `archive-next` as a migration shell until route-level parity and E2E
+  checks are added.
 - Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.
