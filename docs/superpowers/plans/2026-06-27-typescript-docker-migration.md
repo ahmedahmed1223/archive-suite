@@ -177,3 +177,31 @@ Run matching Vitest slices for theme, settings, help, and recommendations.
 Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
 
 Current count after Task 7: 809 JS/JSX files and 53 TS/TSX files, excluding generated folders.
+
+### Task 8: Convert Upload and File-Manager Utilities
+
+**Files:**
+- Modify/add: `archive-app/src/features/upload/uploadLink.{js,ts}`
+- Rename: `archive-app/src/features/upload/uploadLink.test.js` -> `.ts`
+- Modify/add: `archive-app/src/features/file-manager/ingestQueue.{js,ts}`
+- Rename: `archive-app/src/features/file-manager/ingestQueue.test.js` -> `.ts`
+- Modify/add: `archive-app/src/features/file-manager/archiveHandoff.{js,ts}`
+- Rename: `archive-app/src/features/file-manager/archiveHandoff.test.js` -> `.ts`
+
+- [x] **Step 1: Convert upload linking utility**
+
+Use flexible file and metadata types to support browser `File` objects and test/upload mocks.
+
+- [x] **Step 2: Convert ingest queue and archive handoff together**
+
+Keep queue status literals typed and preserve JS bridge exports for current imports.
+
+- [x] **Step 3: Verify app type safety and behavior**
+
+Run: `pnpm run typecheck:app`
+Expected: PASS.
+
+Run matching Vitest slices for upload link, ingest queue, and archive handoff.
+Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
+
+Current count after Task 8: 806 JS/JSX files and 59 TS/TSX files, excluding generated folders.

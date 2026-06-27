@@ -16,7 +16,7 @@ describe("file archive handoff", () => {
   });
 
   it("marks the queue archived only with a saved item id", () => {
-    const record = { id: "q1", fileKey: "a.mp4", status: "pending" };
+    const record = { id: "q1", fileKey: "a.mp4", status: "pending" as const };
     expect(markQueueArchived(record, { id: "item1" }, "2026-06-20T00:00:00.000Z")).toMatchObject({ status: "archived", archiveItemId: "item1" });
     expect(() => markQueueArchived(record, {})).toThrow(/saved archive item/i);
   });

@@ -19,6 +19,8 @@ describe("upload metadata linking", () => {
       upload: { id: "up_1", status: "queued" }
     });
 
+    if (!patch) throw new Error("Expected upload-linked patch to be created");
+
     expect(patch.title).toBe("lesson-one");
     expect(patch.path).toBe("raw/lesson-one.mp4");
     expect(patch.metadata.localFile).toMatchObject({
