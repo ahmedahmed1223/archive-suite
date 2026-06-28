@@ -58,7 +58,7 @@ export interface ArchiveRouteParams {
   gridColumns?: ArchiveGridColumns | string;
 }
 
-function normalizeArchiveViewMode(viewMode = "grid"): ArchiveViewMode {
+export function normalizeArchiveViewMode(viewMode = "grid"): ArchiveViewMode {
   if (viewMode === "masonry") return "gallery";
   if (viewMode === "tiles") return "compact";
   if (viewMode === "table") return "details";
@@ -72,32 +72,32 @@ export function getArchiveRenderViewMode(viewMode = "grid"): string {
   return normalized;
 }
 
-function normalizeArchiveItemSize(itemSize = "compact"): ArchiveItemSize {
+export function normalizeArchiveItemSize(itemSize = "compact"): ArchiveItemSize {
   return ARCHIVE_ITEM_SIZES.has(itemSize as ArchiveItemSize) ? itemSize as ArchiveItemSize : "compact";
 }
 
-function normalizeArchivePageSize(pageSize: unknown = 24): number {
+export function normalizeArchivePageSize(pageSize: unknown = 24): number {
   const value = Number(pageSize);
   return ARCHIVE_PAGE_SIZES.has(value) ? value : 24;
 }
 
-function normalizeArchivePage(page: unknown = 1): number {
+export function normalizeArchivePage(page: unknown = 1): number {
   const value = Number(page);
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
 }
 
-function normalizeArchiveTopMode(topMode = "quick"): ArchiveTopMode {
+export function normalizeArchiveTopMode(topMode = "quick"): ArchiveTopMode {
   return ARCHIVE_TOP_MODES.has(topMode as ArchiveTopMode) ? topMode as ArchiveTopMode : "quick";
 }
 
-function normalizeArchiveGridRows(rows: unknown = 3): number {
+export function normalizeArchiveGridRows(rows: unknown = 3): number {
   const value = Number(rows);
   if (!Number.isFinite(value)) return 3;
   const normalized = Math.floor(value);
   return normalized >= ARCHIVE_GRID_ROW_MIN && normalized <= ARCHIVE_GRID_ROW_MAX ? normalized : 3;
 }
 
-function normalizeArchiveGridColumns(columns: unknown): ArchiveGridColumns {
+export function normalizeArchiveGridColumns(columns: unknown): ArchiveGridColumns {
   if (columns === "auto" || columns == null) return "auto";
   const value = Number(columns);
   if (!Number.isFinite(value)) return "auto";
