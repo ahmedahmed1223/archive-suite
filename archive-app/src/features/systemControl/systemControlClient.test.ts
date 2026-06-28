@@ -1,10 +1,37 @@
 import { describe, expect, test } from "vitest";
 import { fetchControlLogs, fetchControlStatus, runControlAction, SystemControlError } from "./systemControlClient.js";
 
+type FetchInit = {
+  method?: string;
+  headers: Record<string, string>;
+  body?: string;
+};
+
+type FetchCall = [string, FetchInit];
+
+interface ControlStatusResult {
+  checkedAt: string;
+  metrics: {
+    cpu: {
+      percent: number;
+    };
+  };
+  services: Array<{ id: string; status: string }>;
+}
+
+interface ControlLogsResult {
+  lines: Array<{ line: string }>;
+}
+
+interface ControlActionResult {
+  action: string;
+  service: string;
+}
+
 describe("systemControlClient", () => {
   test("fetchControlStatus sends bearer auth and unwraps result", async () => {
-    const calls = [];
-    const fetchImpl = async (url, init) => {
+    const calls: FetchCall[] = [];
+    const fetchImpl = async (url: string, init: FetchInit) => {
       calls.push([url, init]);
       return {
         ok: true,
@@ -23,23 +50,23 @@ describe("systemControlClient", () => {
       };
     };
 
-    const result = await fetchControlStatus({
+    const result = await fetchControlStatus<ControlStatusResult>({
       baseUrl: "https://archive.example/",
       token: "jwt-token",
       fetchImpl,
       checkedAt: "2026-06-18T00:00:00.000Z"
     });
 
-    expect(calls[0][0]).toBe("https://archive.example/api/control/status");
-    expect(calls[0][1].headers.Authorization).toBe("Bearer jwt-token");
+    expect(calls[0]?.[0]).toBe("https://archive.example/api/control/status");
+    expect(calls[0]?.[1].headers.Authorization).toBe("Bearer jwt-token");
     expect(result.checkedAt).toBe("2026-06-18T00:00:00.000Z");
     expect(result.metrics.cpu.percent).toBe(12);
     expect(result.services[0].id).toBe("api");
   });
 
   test("fetchControlLogs encodes service and limit", async () => {
-    const calls = [];
-    const fetchImpl = async (url, init) => {
+    const calls: FetchCall[] = [];
+    const fetchImpl = async (url: string, init: FetchInit) => {
       calls.push([url, init]);
       return {
         ok: true,
@@ -50,15 +77,15 @@ describe("systemControlClient", () => {
       };
     };
 
-    const result = await fetchControlLogs({
+    const result = await fetchControlLogs<ControlLogsResult>({
       service: "archive api",
       limit: 5,
       token: "jwt-token",
       fetchImpl
     });
 
-    expect(calls[0][0]).toBe("/api/control/logs?service=archive+api&limit=5");
-    expect(calls[0][1].headers.Authorization).toBe("Bearer jwt-token");
+    expect(calls[0]?.[0]).toBe("/api/control/logs?service=archive+api&limit=5");
+    expect(calls[0]?.[1].headers.Authorization).toBe("Bearer jwt-token");
     expect(result.lines[0].line).toBe("started");
   });
 
@@ -80,8 +107,8 @@ describe("systemControlClient", () => {
   });
 
   test("runControlAction posts the selected service and action", async () => {
-    const calls = [];
-    const fetchImpl = async (url, init) => {
+    const calls: FetchCall[] = [];
+    const fetchImpl = async (url: string, init: FetchInit) => {
       calls.push([url, init]);
       return {
         ok: true,
@@ -92,7 +119,7 @@ describe("systemControlClient", () => {
       };
     };
 
-    const result = await runControlAction({
+    const result = await runControlAction<ControlActionResult>({
       baseUrl: "https://archive.example",
       action: "restart",
       service: "api",
@@ -100,10 +127,10 @@ describe("systemControlClient", () => {
       fetchImpl
     });
 
-    expect(calls[0][0]).toBe("https://archive.example/api/control/restart");
-    expect(calls[0][1].method).toBe("POST");
-    expect(calls[0][1].headers.Authorization).toBe("Bearer jwt-token");
-    expect(JSON.parse(calls[0][1].body)).toEqual({ service: "api" });
+    expect(calls[0]?.[0]).toBe("https://archive.example/api/control/restart");
+    expect(calls[0]?.[1].method).toBe("POST");
+    expect(calls[0]?.[1].headers.Authorization).toBe("Bearer jwt-token");
+    expect(JSON.parse(calls[0]?.[1].body || "{}")).toEqual({ service: "api" });
     expect(result.action).toBe("restart");
   });
 });
