@@ -9,15 +9,22 @@
  *      branch to restore a cloud session, so cloud users were always logged
  *      out on reload regardless of the checkbox.
  */
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const SESSION_KEY = "va_session";
+type TestUser = {
+  id: string;
+  username: string;
+  passwordHash?: string;
+  isActive?: boolean;
+  [key: string]: any;
+};
 
 const mockState = {
-  users: [],
-  updateUserCalls: [],
+  users: [] as TestUser[],
+  updateUserCalls: [] as TestUser[],
   updateUserShouldThrow: false,
-  cloudUser: null,
+  cloudUser: null as null | Record<string, any>,
   cloudToken: ""
 };
 
@@ -32,10 +39,10 @@ vi.mock("@archive/core", () => ({
 }));
 
 vi.mock("../../utils/passwordHash.js", () => ({
-  hashPassword: vi.fn(async (p) => `bcrypt$${p}`),
+  hashPassword: vi.fn(async (p: string) => `bcrypt$${p}`),
   isLegacyHash: () => false,
   validatePasswordStrength: () => [],
-  verifyPassword: vi.fn(async (input, hash) => hash === `bcrypt$${input}`)
+  verifyPassword: vi.fn(async (input: string, hash: string) => hash === `bcrypt$${input}`)
 }));
 
 vi.mock("../../features/users/permissions.js", () => ({
@@ -47,17 +54,18 @@ vi.mock("../../bootstrap/backendChoice.js", () => ({
 }));
 
 vi.mock("../storeCore.js", () => ({
-  generateId: (prefix) => `${prefix}_test`,
+  generateId: (prefix: string) => `${prefix}_test`,
   nowIso: () => "2026-06-22T00:00:00.000Z"
 }));
 
-import { createAuthStore } from "./authSlice.js";
 import { resolveBackendChoice } from "../../bootstrap/backendChoice.js";
+import { createAuthStore } from "./authSlice.js";
+const resolveBackendChoiceMock = vi.mocked(resolveBackendChoice) as any;
 
 function makeStore() {
-  const fakeStore = (initializer) => {
-    let state = {};
-    const set = (patch) => {
+  const fakeStore = (initializer: any) => {
+    let state: any = {};
+    const set = (patch: any) => {
       state = typeof patch === "function"
         ? { ...state, ...patch(state) }
         : { ...state, ...patch };
@@ -67,22 +75,22 @@ function makeStore() {
     state = { ...state, ...api };
     return {
       getState: () => state,
-      setState: (patch) => set(patch)
+      setState: (patch: any) => set(patch)
     };
   };
   const appState = {
     users: mockState.users,
-    currentUser: null,
-    updateUser: async (user) => {
+    currentUser: null as null | TestUser,
+    updateUser: async (user: TestUser) => {
       mockState.updateUserCalls.push(user);
       if (mockState.updateUserShouldThrow) throw new Error("db write failed");
-      appState.users = appState.users.map((item) => item.id === user.id ? user : item);
+      appState.users = appState.users.map((item: TestUser) => item.id === user.id ? user : item);
       return user;
     }
   };
   const useAppStore = {
     getState: () => appState,
-    setState: (patch) => Object.assign(appState, typeof patch === "function" ? patch(appState) : patch)
+    setState: (patch: any) => Object.assign(appState, typeof patch === "function" ? patch(appState) : patch)
   };
   return createAuthStore({ createStore: fakeStore, useAppStore });
 }
@@ -96,7 +104,7 @@ beforeEach(() => {
   mockState.updateUserShouldThrow = false;
   mockState.cloudUser = null;
   mockState.cloudToken = "";
-  resolveBackendChoice.mockReturnValue({ backend: "local", url: "" });
+  resolveBackendChoiceMock.mockReturnValue({ backend: "local", url: "" });
 });
 
 describe("local backend — remember me", () => {
@@ -106,7 +114,7 @@ describe("local backend — remember me", () => {
     expect(ok).toBe(true);
     const raw = localStorage.getItem(SESSION_KEY);
     expect(raw).toBeTruthy();
-    expect(raw.split(":")).toHaveLength(3);
+    expect(raw?.split(":")).toHaveLength(3);
   });
 
   it("clears SESSION_KEY when rememberMe is false", async () => {
@@ -129,7 +137,7 @@ describe("local backend — remember me", () => {
 
 describe("cloud backend — remember me", () => {
   beforeEach(() => {
-    resolveBackendChoice.mockReturnValue({ backend: "postgres", url: "https://api.example" });
+    resolveBackendChoiceMock.mockReturnValue({ backend: "postgres", url: "https://api.example" });
   });
 
   it("writes a cloud marker when rememberMe is true (regression)", async () => {
@@ -138,7 +146,7 @@ describe("cloud backend — remember me", () => {
     expect(ok).toBe(true);
     const raw = localStorage.getItem(SESSION_KEY);
     expect(raw).toBeTruthy();
-    expect(raw.split(":")[0]).toBe("cloud");
+    expect(raw?.split(":")[0]).toBe("cloud");
   });
 
   it("clears SESSION_KEY when rememberMe is false", async () => {
