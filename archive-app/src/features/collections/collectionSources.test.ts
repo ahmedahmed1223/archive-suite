@@ -6,7 +6,7 @@ import {
   describeSources
 } from "./collectionSources.js";
 
-const item = (overrides = {}) => ({
+const item = (overrides: Record<string, unknown> = {}) => ({
   id: "v1",
   type: "video",
   subtype: "",
@@ -23,7 +23,7 @@ const item = (overrides = {}) => ({
   ...overrides
 });
 
-const rulesSource = (tag) => ({
+const rulesSource = (tag: string) => ({
   kind: "rules",
   ruleset: {
     kind: "rules",
@@ -84,8 +84,8 @@ describe("resolveMultiSourceItems", () => {
     const collection = {
       sources: [
         { kind: "manual", itemIds: ["v2"] },
-        rulesSource("عمل"), // v1, v3
-        { kind: "query", query: "تقرير" } // v1 again -> deduped
+        rulesSource("عمل"),
+        { kind: "query", query: "تقرير" }
       ]
     };
     const result = resolveMultiSourceItems(collection, items);
@@ -121,7 +121,7 @@ describe("resolveMultiSourceItems", () => {
   });
 
   test("tolerates a non-array videoItems argument", () => {
-    expect(resolveMultiSourceItems({ sources: [rulesSource("عمل")] }, null)).toEqual([]);
+    expect(resolveMultiSourceItems({ sources: [rulesSource("عمل")] }, undefined)).toEqual([]);
   });
 });
 

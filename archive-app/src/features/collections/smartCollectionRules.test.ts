@@ -8,8 +8,8 @@ import {
   describeRuleset
 } from "./smartCollectionRules.js";
 
-const item = (overrides = {}) => ({
-  id: overrides.id || "v1",
+const item = (overrides: Record<string, unknown> = {}) => ({
+  id: typeof overrides.id === "string" ? overrides.id : "v1",
   type: "video",
   subtype: "",
   title: "اجتماع الفريق",
@@ -43,7 +43,8 @@ describe("createSmartRuleset", () => {
 
   test("createRuleCondition falls back to first valid operator", () => {
     const condition = createRuleCondition({ field: "tags", operator: "nope", value: "x" });
-    expect(condition.operator).toBe("includesAny");
+    expect(condition).not.toBeNull();
+    expect(condition!.operator).toBe("includesAny");
   });
 });
 

@@ -26,7 +26,7 @@
 - Create: `archive-core/src/types/ports.ts`
 - Create: `archive-server/src/types/runtime.ts`
 
-- [ ] **Step 1: Add TypeScript as a workspace dev dependency**
+- [x] **Step 1: Add TypeScript as a workspace dev dependency**
 
 Run:
 
@@ -36,15 +36,15 @@ pnpm add -Dw typescript
 
 Expected: `package.json` gains `devDependencies.typescript`, and `pnpm-lock.yaml` records the exact package version.
 
-- [ ] **Step 2: Add the base config**
+- [x] **Step 2: Add the base config**
 
 Create `tsconfig.base.json` with strict defaults, `allowJs: true`, `checkJs: false`, `moduleResolution: "Bundler"`, `noEmit: true`, and React JSX support. This keeps JavaScript source accepted while only new/converted TypeScript is enforced.
 
-- [ ] **Step 3: Add package configs**
+- [x] **Step 3: Add package configs**
 
 Create one `tsconfig.json` in each package. Include TypeScript files only (`src/**/*.ts`, `src/**/*.tsx`, and existing Playwright `.ts` files for the app). Do not include every `.js` file yet; that would turn a migration foundation into a repo-wide cleanup task.
 
-- [ ] **Step 4: Add typecheck scripts**
+- [x] **Step 4: Add typecheck scripts**
 
 Add:
 
@@ -54,11 +54,11 @@ Add:
 
 to each package and a root script that runs app, core, and server typechecks in order.
 
-- [ ] **Step 5: Add seed type files**
+- [x] **Step 5: Add seed type files**
 
 Add small `.ts` type-only files under each package so `tsc -p` has real package-local TypeScript inputs and future conversions have a stable place for shared types.
 
-- [ ] **Step 6: Verify the foundation**
+- [x] **Step 6: Verify the foundation**
 
 Run:
 
@@ -74,23 +74,23 @@ Expected: all three package typechecks exit 0.
 - Convert candidates after Task 1: `archive-app/src/utils/hijriDate.js`, `archive-app/src/features/media/transcriptToSrt.js`, `archive-app/src/features/media/subtitleParser.js`
 - Keep JavaScript facade files when a Node-only script imports the old `.js` path.
 
-- [ ] **Step 1: Pick one leaf module with pure tests**
+- [x] **Step 1: Pick one leaf module with pure tests**
 
 Choose a module with no JSX, no browser side effects, and existing Vitest coverage.
 
-- [ ] **Step 2: Convert implementation to `.ts`**
+- [x] **Step 2: Convert implementation to `.ts`**
 
 Rename the implementation file to `.ts` only when its importers are Vite/Vitest-safe. If Node imports the exact `.js` file, keep a `.js` facade that re-exports compiled-compatible code until the package runtime path changes.
 
-- [ ] **Step 3: Convert or preserve tests**
+- [x] **Step 3: Convert or preserve tests**
 
 Prefer converting the paired test to `.test.ts`. Keep assertions unchanged so behavior remains stable.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run the exact Vitest file for the converted module.
 
-- [ ] **Step 5: Run package typecheck**
+- [x] **Step 5: Run package typecheck**
 
 Run the owning package `typecheck` command.
 
@@ -101,15 +101,15 @@ Run the owning package `typecheck` command.
 - Modify later: shared API client/types under `archive-app/src/` or a new shared package
 - Keep: `archive-app/src/main.js` until a Next.js shell is established.
 
-- [ ] **Step 1: Keep TypeScript module resolution compatible with Vite and Next.js**
+- [x] **Step 1: Keep TypeScript module resolution compatible with Vite and Next.js**
 
 Use `moduleResolution: "Bundler"` for the app. This matches Vite now and stays compatible with a future Next.js frontend package.
 
-- [ ] **Step 2: Do not convert the React root before the Next.js shell**
+- [x] **Step 2: Do not convert the React root before the Next.js shell**
 
 Keep `src/main.js`, `startVideoArchive.js`, and `RuntimeShellApp.js` as JavaScript until the Next.js shell has route parity and Playwright smoke tests pass.
 
-- [ ] **Step 3: Keep framework-specific typings isolated**
+- [x] **Step 3: Keep framework-specific typings isolated**
 
 When Next.js is scaffolded, keep `next-env.d.ts` and Next-specific config inside the new Next package. Do not add Next-only types to the current Vite package.
 
@@ -119,7 +119,7 @@ When Next.js is scaffolded, keep `next-env.d.ts` and Next-specific config inside
 - Modify later: package `tsconfig.json` files
 - Modify later: selected `src/**/*.js` modules as they become `.ts`/`.tsx`
 
-- [ ] **Step 1: Track converted surface area**
+- [x] **Step 1: Track converted surface area**
 
 Update the TypeScript task in `TASKS.md` after each migration wave with counts for `.ts/.tsx` files and remaining JavaScript hot spots.
 
@@ -127,6 +127,6 @@ Update the TypeScript task in `TASKS.md` after each migration wave with counts f
 
 After a package has enough converted code, enable stricter local settings in that package only. Do not flip `checkJs` globally until the repository is ready.
 
-- [ ] **Step 3: Gate releases**
+- [x] **Step 3: Gate releases**
 
 After `typecheck` is stable across several waves, add `pnpm run typecheck` to `release:verify`.

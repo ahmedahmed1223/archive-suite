@@ -8,7 +8,7 @@ import {
   timelineTypeTotals
 } from "./timelineSelectors.js";
 
-const item = (id, createdAt, overrides = {}) => ({
+const item = (id: string, createdAt: string, overrides: Record<string, unknown> = {}) => ({
   id,
   type: "video",
   isDeleted: false,
@@ -34,8 +34,9 @@ describe("buildTimeline", () => {
       item("b", "2026-06-20T00:00:00"),
       item("c", "2026-05-10T00:00:00")
     ]);
+    const juneBucket = tl.buckets.find((b) => b.key === "2026-06");
     expect(tl.buckets.map((b) => b.key)).toEqual(["2026-05", "2026-06"]);
-    expect(tl.buckets.find((b) => b.key === "2026-06").count).toBe(2);
+    expect(juneBucket?.count).toBe(2);
     expect(tl.total).toBe(3);
     expect(tl.maxCount).toBe(2);
   });
@@ -63,9 +64,11 @@ describe("buildTimeline", () => {
 
   test("reports the date range (from <= to, timezone-independent)", () => {
     const tl = buildTimeline([item("a", "2026-01-01T00:00:00"), item("b", "2026-12-31T00:00:00")]);
-    expect(new Date(tl.range.from).getTime()).toBeLessThanOrEqual(new Date(tl.range.to).getTime());
-    expect(tl.range.from).toBeTruthy();
-    expect(tl.range.to).toBeTruthy();
+    const from = tl.range.from;
+    const to = tl.range.to;
+    expect(from).toBeTruthy();
+    expect(to).toBeTruthy();
+    expect(new Date(from!).getTime()).toBeLessThanOrEqual(new Date(to!).getTime());
   });
 
   test("falls back to month for unknown granularity", () => {

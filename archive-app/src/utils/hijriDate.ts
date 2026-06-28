@@ -6,9 +6,10 @@
  * match the rest of the app's date surfaces.
  */
 
-type DateInput = Date | string | number;
+type DateInput = Date | string | number | null | undefined;
 
 function safeDate(input: DateInput): Date | null {
+  if (input == null) return null;
   if (input instanceof Date) return Number.isFinite(input.getTime()) ? input : null;
   const parsed = new Date(input);
   return Number.isFinite(parsed.getTime()) ? parsed : null;

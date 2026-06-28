@@ -4,6 +4,7 @@ import {
   parseSubtitles,
   segmentsToCues,
   getActiveCue,
+  type Cue,
 } from "./subtitleParser.js";
 
 describe("parseTimecode", () => {
@@ -57,7 +58,8 @@ describe("parseSubtitles", () => {
   });
 
   it("handles CRLF line endings and sorts by start", () => {
-    const srt = "2\r\n00:00:05,000 --> 00:00:06,000\r\nsecond\r\n\r\n1\r\n00:00:01,000 --> 00:00:02,000\r\nfirst";
+    const srt =
+      "2\r\n00:00:05,000 --> 00:00:06,000\r\nsecond\r\n\r\n1\r\n00:00:01,000 --> 00:00:02,000\r\nfirst";
     const cues = parseSubtitles(srt);
     expect(cues.map((c) => c.text)).toEqual(["first", "second"]);
     expect(cues.map((c) => c.index)).toEqual([1, 2]);
@@ -82,7 +84,7 @@ describe("segmentsToCues", () => {
 });
 
 describe("getActiveCue", () => {
-  const cues = [
+  const cues: Cue[] = [
     { index: 1, start: 0, end: 2, text: "a" },
     { index: 2, start: 2, end: 4, text: "b" },
   ];

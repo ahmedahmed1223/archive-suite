@@ -4,6 +4,7 @@ import {
   formatVttTimecode,
   transcriptToSrt,
   transcriptToVtt,
+  type TranscriptResult,
 } from "./transcriptToSrt.js";
 import { parseSubtitles } from "./subtitleParser.js";
 
@@ -25,7 +26,7 @@ describe("formatSrtTimecode / formatVttTimecode", () => {
   });
 });
 
-const transcript = {
+const transcript: TranscriptResult = {
   segments: [
     { start: 0, end: 2, text: " hello " },
     { start: 2, end: 4.5, text: "world" },

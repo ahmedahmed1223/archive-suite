@@ -34,6 +34,7 @@
     "typecheck:core": "pnpm --filter @archive/core run typecheck",
     "typecheck:next": "pnpm --filter @archive/next run typecheck",
     "typecheck:server": "pnpm --filter archive-server run typecheck",
+    "verify:typescript-migration": "pnpm run typecheck && pnpm --filter @archive/app run test src/utils/hijriDate.test.ts src/features/media/transcriptToSrt.test.ts src/features/media/subtitleParser.test.ts src/features/media/viewModel.test.ts src/features/media/scrubberPreview.test.ts src/features/collections/smartCollectionRules.test.ts src/features/collections/collectionSources.test.ts src/features/errors/recoveryQueue.test.ts src/features/errors/errorReportBuilder.test.ts src/features/errors/errorLogStore.test.ts src/features/views/kanbanModel.test.ts src/features/dnd/dndController.test.ts src/features/timeline/timelineSelectors.test.ts src/features/dashboard/dashboardLayoutModel.test.ts src/features/workflow/recentDefaults.test.ts src/features/users/viewModel.test.ts src/features/activityLog/viewModel.test.ts src/features/montage/waveform.test.ts src/features/montage/timelineModel.test.ts src/features/montage/renderGraph.test.ts src/features/montage/multiTrackModel.test.ts src/features/montage/filterRegistry.test.ts",
     "audit:ui": "pnpm --filter @archive/app run audit:ui",
     "audit:ui:headed": "pnpm --filter @archive/app run audit:ui:headed",
     "audit:ui:server": "pnpm --filter @archive/app run audit:ui:server",
@@ -43,7 +44,7 @@
     "verify:cloud-deploy": "node scripts/verify-cloud-deploy.mjs",
     "docker:config": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml config",
     "docker:config:postgres": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.postgres.yml config",
-    "release:verify": "pnpm run verify && pnpm run build:spa && pnpm run build:cloud && pnpm run security:baseline && node scripts/verify-release-readiness.mjs",
+    "release:verify": "pnpm run verify:typescript-migration && pnpm run verify && pnpm run build:spa && pnpm run build:cloud && pnpm run security:baseline && node scripts/verify-release-readiness.mjs",
     "setup": "node scripts/setup.mjs",
     "deploy": "node scripts/deploy-wizard.mjs",
     "control": "node scripts/control-center.mjs"
