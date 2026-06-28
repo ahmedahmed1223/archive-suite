@@ -229,3 +229,29 @@ Run: `pnpm --filter @archive/app run test -- src/features/file-manager/viewModel
 Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
 
 Current count after Task 9: 805 JS/JSX files and 61 TS/TSX files, excluding generated folders.
+
+### Task 10: Convert Import Source Utilities
+
+**Files:**
+- Modify/add: `archive-app/src/features/import/importSources.{js,ts}`
+- Rename: `archive-app/src/features/import/importSources.test.js` -> `.ts`
+- Modify/add: `archive-app/src/features/import/importPreviewClient.{js,ts}`
+- Rename: `archive-app/src/features/import/importPreviewClient.test.js` -> `.ts`
+
+- [x] **Step 1: Convert import source detection and manifest parsing**
+
+Keep source classification, draft generation, and local-folder manifest validation network-free and typed.
+
+- [x] **Step 2: Convert import preview client**
+
+Type the injected fetch contract, response payload, and custom error status.
+
+- [x] **Step 3: Verify app type safety and behavior**
+
+Run: `pnpm run typecheck:app`
+Expected: PASS.
+
+Run: `pnpm --filter @archive/app run test -- src/features/import/importPreviewClient.test.ts src/features/import/importSources.test.ts`
+Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
+
+Current count after Task 10: 803 JS/JSX files and 65 TS/TSX files, excluding generated folders.

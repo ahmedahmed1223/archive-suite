@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { ImportPreviewError, previewImportSources } from "./importPreviewClient.js";
 
+type PreviewFetchCall = [string, { method: string; headers: Record<string, string>; body: string }];
+
 describe("previewImportSources", () => {
   it("posts URLs with bearer auth and returns preview items", async () => {
-    const calls = [];
-    const fetchImpl = async (url, init) => {
+    const calls: PreviewFetchCall[] = [];
+    const fetchImpl = async (url: string, init: PreviewFetchCall[1]) => {
       calls.push([url, init]);
       return {
         ok: true,
@@ -27,7 +29,7 @@ describe("previewImportSources", () => {
     expect(calls[0][1].method).toBe("POST");
     expect(calls[0][1].headers.Authorization).toBe("Bearer jwt-token");
     expect(JSON.parse(calls[0][1].body)).toEqual({ urls: ["https://example.com/a"] });
-    expect(items[0].title).toBe("Preview");
+    expect(items[0]).toMatchObject({ title: "Preview" });
   });
 
   it("throws ImportPreviewError on HTTP failure", async () => {

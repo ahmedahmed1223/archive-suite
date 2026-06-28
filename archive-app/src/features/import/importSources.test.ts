@@ -151,6 +151,7 @@ describe("parseImportLines", () => {
 describe("buildImportDraft", () => {
   it("builds a YouTube draft with a video type and source metadata", () => {
     const draft = buildImportDraft(detectImportSource("https://youtu.be/dQw4w9WgXcQ"));
+    if (!draft) throw new Error("Expected YouTube import draft");
     expect(draft).toMatchObject({
       title: "YouTube: dQw4w9WgXcQ",
       type: "video",
@@ -165,12 +166,14 @@ describe("buildImportDraft", () => {
 
   it("builds a Google Drive draft referencing the file id", () => {
     const draft = buildImportDraft(detectImportSource("https://drive.google.com/file/d/1A2B3C4D5E6F7G8H/view"));
+    if (!draft) throw new Error("Expected Google Drive import draft");
     expect(draft.title).toBe("Google Drive: 1A2B3C4D5E6F7G8H");
     expect(draft.metadata.sourceId).toBe("1A2B3C4D5E6F7G8H");
   });
 
   it("builds a web draft with a readable title from the last path segment", () => {
     const draft = buildImportDraft(detectImportSource("https://example.com/blog/my-cool-post"));
+    if (!draft) throw new Error("Expected web import draft");
     expect(draft.title).toBe("my cool post");
     expect(draft.metadata.importSource).toBe(IMPORT_KINDS.WEB);
     expect(draft.metadata.sourceId).toBeUndefined();
@@ -178,6 +181,7 @@ describe("buildImportDraft", () => {
 
   it("falls back to the host when the web URL has no path", () => {
     const draft = buildImportDraft(detectImportSource("https://example.com/"));
+    if (!draft) throw new Error("Expected host fallback import draft");
     expect(draft.title).toBe("example.com");
   });
 
