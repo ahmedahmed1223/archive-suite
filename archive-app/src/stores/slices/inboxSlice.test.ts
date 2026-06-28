@@ -11,10 +11,10 @@ vi.mock("../../services/storageAccess.js", () => ({
 
 import * as storage from "../../services/storageAccess.js";
 
-function makeStore(extra = {}) {
+function makeStore(extra: Record<string, any> = {}) {
   let state = { ...inboxInitialState, ...extra };
   const get = () => state;
-  const set = (patch) => {
+  const set = (patch: any) => {
     state = typeof patch === "function" ? { ...state, ...patch(state) } : { ...state, ...patch };
   };
   const actions = createInboxActions({ set, get });
@@ -23,10 +23,10 @@ function makeStore(extra = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  storage.dbGetAll.mockResolvedValue([]);
-  storage.dbPut.mockResolvedValue(undefined);
-  storage.dbDelete.mockResolvedValue(undefined);
-  storage.dbPutBatch.mockResolvedValue(undefined);
+  (storage as any).dbGetAll.mockResolvedValue([]);
+  (storage as any).dbPut.mockResolvedValue(undefined);
+  (storage as any).dbDelete.mockResolvedValue(undefined);
+  (storage as any).dbPutBatch.mockResolvedValue(undefined);
 });
 
 describe("inboxInitialState", () => {
@@ -44,8 +44,8 @@ describe("captureInboxItem", () => {
   it("adds item to list and persists", async () => {
     const { get, actions } = makeStore();
     const item = await actions.captureInboxItem({ title: "اختبار", url: "", tags: [] });
-    expect(item).toBeTruthy();
-    expect(item.title).toBe("اختبار");
+    expect(item).not.toBeNull();
+    expect((item as any).title).toBe("اختبار");
     expect(get().inboxItems).toHaveLength(1);
     expect(storage.dbPut).toHaveBeenCalledOnce();
   });
@@ -62,7 +62,7 @@ describe("captureInboxItem", () => {
     const { get, actions } = makeStore();
     await actions.captureInboxItem({ title: "أول", url: "", tags: [] });
     await actions.captureInboxItem({ title: "ثاني", url: "", tags: [] });
-    expect(get().inboxItems[0].title).toBe("ثاني");
+    expect((get().inboxItems as any[])[0].title).toBe("ثاني");
   });
 });
 
@@ -150,7 +150,7 @@ describe("setInboxSort", () => {
     const { get, actions } = makeStore({ inboxItems: items });
     actions.setInboxSort(INBOX_SORT.TITLE);
     expect(get().inboxSort).toBe(INBOX_SORT.TITLE);
-    const titles = get().inboxItems.map((i) => i.title);
+    const titles = (get().inboxItems as any[]).map((i) => i.title);
     expect(titles).toEqual([...titles].sort((a, b) => a.localeCompare(b, "ar")));
   });
 
@@ -165,11 +165,11 @@ describe("loadInboxFromStorage", () => {
   it("filters out archived items", async () => {
     const active = { id: "a1", key: "inbox:a1", title: "نشط", archived: false, capturedAt: new Date().toISOString() };
     const archived = { id: "a2", key: "inbox:a2", title: "مؤرشف", archived: true, capturedAt: new Date().toISOString() };
-    storage.dbGetAll.mockResolvedValue([active, archived]);
+    (storage as any).dbGetAll.mockResolvedValue([active, archived]);
     const { get, actions } = makeStore();
     await actions.loadInboxFromStorage();
     expect(get().inboxItems).toHaveLength(1);
-    expect(get().inboxItems[0].id).toBe("a1");
+    expect((get().inboxItems as any[])[0].id).toBe("a1");
   });
 });
 
@@ -188,8 +188,8 @@ describe("updateInboxItem", () => {
     };
     const { get, actions } = makeStore({ inboxItems: [item] });
     await actions.updateInboxItem("upd1", { title: "جديد" });
-    expect(get().inboxItems[0].title).toBe("جديد");
-    expect(get().inboxItems[0].notes).toBe("");
+    expect((get().inboxItems as any[])[0].title).toBe("جديد");
+    expect((get().inboxItems as any[])[0].notes).toBe("");
     expect(storage.dbPut).toHaveBeenCalledOnce();
   });
 });
