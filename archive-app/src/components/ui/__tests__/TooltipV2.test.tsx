@@ -9,7 +9,7 @@ import { TooltipV2 } from "../TooltipV2.jsx";
 // TooltipV2 clones its single child and adds event handlers to it.
 // The child must be a plain DOM element — not a wrapper component — so that
 // the cloned props (onMouseEnter, onFocus, aria-describedby, etc.) reach the DOM.
-function renderTooltip(content, delay = 0) {
+function renderTooltip(content: React.ReactNode, delay = 0) {
   return render(
     <TooltipV2 content={content} delay={delay}>
       <button type="button">زر</button>

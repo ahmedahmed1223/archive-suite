@@ -45,14 +45,14 @@ describe("BadgeV2", () => {
   it("renders dot indicator when dot=true", () => {
     render(<BadgeV2 dot>مع نقطة</BadgeV2>);
     // The dot span is aria-hidden; we query by aria-hidden presence
-    const badge = screen.getByText("مع نقطة").closest("span");
+    const badge = screen.getByText("مع نقطة").closest("span")!;
     const dot = badge.querySelector('[aria-hidden="true"]');
     expect(dot).toBeInTheDocument();
   });
 
   it("does not render dot indicator when dot=false (default)", () => {
     render(<BadgeV2>بدون نقطة</BadgeV2>);
-    const badge = screen.getByText("بدون نقطة").closest("span");
+    const badge = screen.getByText("بدون نقطة").closest("span")!;
     const dot = badge.querySelector('[aria-hidden="true"]');
     expect(dot).not.toBeInTheDocument();
   });
