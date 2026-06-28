@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
 import { OfflineBanner } from "./OfflineBanner.jsx";
@@ -21,9 +22,9 @@ vi.mock("../../features/offline/offlineQueue.js", () => ({
 }));
 
 vi.mock("../../stores/index.js", () => ({
-  useAppStore: (selector) => {
-    const state = { settings: mockSettings, updateSettings: mockUpdateSettings };
-    return typeof selector === "function" ? selector(state) : state;
+  useAppStore: (selector: (state: any) => unknown) => {
+    const mockSettingsState = { settings: mockSettings, updateSettings: mockUpdateSettings };
+    return typeof selector === "function" ? selector(mockSettingsState) : mockSettingsState;
   }
 }));
 
