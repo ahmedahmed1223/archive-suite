@@ -255,3 +255,27 @@ Run: `pnpm --filter @archive/app run test -- src/features/import/importPreviewCl
 Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
 
 Current count after Task 10: 803 JS/JSX files and 65 TS/TSX files, excluding generated folders.
+
+### Task 11: Convert File-Manager API Client
+
+**Files:**
+- Modify/add: `archive-app/src/features/file-manager/fileManagerClient.{js,ts}`
+- Rename: `archive-app/src/features/file-manager/fileManagerClient.test.js` -> `.ts`
+
+- [x] **Step 1: Convert API client and error shape**
+
+Type the custom error, injected fetch contract, JSON payloads, upload/download helpers, and request options.
+
+- [x] **Step 2: Convert matching test**
+
+Rename the test to `.test.ts` and type the fetch call capture used for assertions.
+
+- [x] **Step 3: Verify app type safety and behavior**
+
+Run: `pnpm run typecheck:app`
+Expected: PASS.
+
+Run: `pnpm --filter @archive/app run test -- src/features/file-manager/fileManagerClient.test.ts`
+Expected: PASS. First run hit an unrelated transient timeout in `ArchivePage.virtual.test.jsx`; rerun passed the full app suite.
+
+Current count after Task 11: 802 JS/JSX files and 67 TS/TSX files, excluding generated folders.
