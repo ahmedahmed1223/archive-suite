@@ -2,13 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import { saveFileStoreConfig, testFileStoreProvider } from "./fileStoreConfigClient.js";
 
-function response(result) {
+type FetchInit = {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+};
+
+function response(result: unknown) {
   return { ok: true, status: 200, json: async () => ({ ok: true, result }) };
 }
 
 describe("fileStoreConfigClient", () => {
   it("saves any provider config and sends bearer auth", async () => {
-    const fetchImpl = vi.fn(async () => response({ saved: true }));
+    const fetchImpl = vi.fn(async (_url: string, _init: FetchInit) => response({ saved: true }));
     await saveFileStoreConfig({
       kind: "sftp",
       config: { host: "box", username: "archive", password: "secret" },
@@ -23,7 +29,7 @@ describe("fileStoreConfigClient", () => {
   });
 
   it("tests a provider without saving it", async () => {
-    const fetchImpl = vi.fn(async () => response({ ok: true }));
+    const fetchImpl = vi.fn(async (_url: string, _init: FetchInit) => response({ ok: true }));
     await testFileStoreProvider({ kind: "webdav", config: { url: "https://dav" }, fetchImpl });
     expect(fetchImpl).toHaveBeenCalledWith("/api/files/test-provider", expect.objectContaining({
       body: JSON.stringify({ kind: "webdav", webdav: { url: "https://dav" } })

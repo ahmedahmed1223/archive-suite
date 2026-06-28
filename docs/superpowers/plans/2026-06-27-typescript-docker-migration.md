@@ -279,3 +279,27 @@ Run: `pnpm --filter @archive/app run test -- src/features/file-manager/fileManag
 Expected: PASS. First run hit an unrelated transient timeout in `ArchivePage.virtual.test.jsx`; rerun passed the full app suite.
 
 Current count after Task 11: 802 JS/JSX files and 67 TS/TSX files, excluding generated folders.
+
+### Task 12: Convert File-Store Config Client
+
+**Files:**
+- Modify/add: `archive-app/src/features/settings/fileStoreConfigClient.{js,ts}`
+- Rename: `archive-app/src/features/settings/fileStoreConfigClient.test.js` -> `.ts`
+
+- [x] **Step 1: Convert FileStore config API client**
+
+Type the custom error status, management guard, injected fetch contract, config request payloads, provider test payloads, and Dropbox OAuth payload.
+
+- [x] **Step 2: Convert matching test**
+
+Rename the test to `.test.ts` and type the fetch mock used for request assertions.
+
+- [x] **Step 3: Verify app type safety and behavior**
+
+Run: `pnpm run typecheck:app`
+Expected: PASS.
+
+Run: `pnpm --filter @archive/app run test -- src/features/settings/fileStoreConfigClient.test.ts`
+Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
+
+Current count after Task 12: 801 JS/JSX files and 69 TS/TSX files, excluding generated folders.
