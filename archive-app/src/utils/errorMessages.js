@@ -1,4 +1,4 @@
-const MESSAGES = {
+export * from "./errorMessages.ts";
   unknownError:         { ar: "حدث خطأ غير معروف",           en: "An unknown error occurred" },
   operationFailed:      { ar: "تعذّر تنفيذ العملية",          en: "Operation failed" },
   networkError:         { ar: "خطأ في الشبكة، تحقق من الاتصال", en: "Network error, check your connection" },

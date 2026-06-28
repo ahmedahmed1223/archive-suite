@@ -8,23 +8,21 @@ import {
   clearCloudToken
 } from "./cloudSession.js";
 
-// Minimal in-memory localStorage stand-in (vitest jsdom storage is shared).
 function memoryStorage() {
-  const map = new Map();
+  const map = new Map<string, string>();
   return {
-    getItem: (k) => (map.has(k) ? map.get(k) : null),
-    setItem: (k, v) => map.set(k, String(v)),
-    removeItem: (k) => map.delete(k)
+    getItem: (k: string) => (map.has(k) ? map.get(k)! : null),
+    setItem: (k: string, v: string) => map.set(k, String(v)),
+    removeItem: (k: string) => map.delete(k)
   };
 }
 
-function fakeJwt(payload) {
-  const b64 = (obj) =>
+function fakeJwt(payload: Record<string, unknown>) {
+  const b64 = (obj: unknown) =>
     btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   return `${b64({ alg: "HS256", typ: "JWT" })}.${b64(payload)}.sig`;
 }
 
-// §20.1 — clear in-memory token state between tests so they don't bleed.
 beforeEach(() => {
   clearCloudToken();
 });
@@ -45,12 +43,9 @@ describe("refreshCloudToken", () => {
       "https://api.test/api/auth/refresh",
       expect.objectContaining({ method: "POST", credentials: "include" })
     );
-    // Token must be accessible via getCloudToken() (in-memory) …
     expect(getCloudToken()).toBe("new-token");
-    // … but must NOT be written to localStorage (P0 security fix §20.1)
     expect(storage.getItem("va.cloudToken.v1")).toBeNull();
-    // Non-sensitive user metadata is still persisted.
-    expect(JSON.parse(storage.getItem("va.cloudUser.v1")).id).toBe("u1");
+    expect(JSON.parse(storage.getItem("va.cloudUser.v1")!)).toEqual({ id: "u1", username: "admin" });
   });
 
   it("throws CloudLoginError with status on a 401", async () => {
@@ -83,7 +78,7 @@ describe("createSilentRenewal", () => {
   it("schedules renewal ~1 min before expiry and reschedules from the new token", async () => {
     const storage = memoryStorage();
     const nowMs = 1_000_000_000_000;
-    const firstToken = fakeJwt({ sub: "u1", exp: (nowMs + 10 * 60_000) / 1000 }); // +10 min
+    const firstToken = fakeJwt({ sub: "u1", exp: (nowMs + 10 * 60_000) / 1000 });
     const nextToken = fakeJwt({ sub: "u1", exp: (nowMs + 20 * 60_000) / 1000 });
 
     const fetchImpl = vi.fn(async () => ({
@@ -92,27 +87,26 @@ describe("createSilentRenewal", () => {
       json: async () => ({ ok: true, token: nextToken, user: { id: "u1" } })
     }));
 
-    const timers = [];
+    const timers: Array<{ fn: () => void | Promise<void>; delay?: number }> = [];
     const renewal = createSilentRenewal({
       fetchImpl,
       storage,
       now: () => nowMs,
       setTimer: (fn, delay) => {
         timers.push({ fn, delay });
-        return timers.length - 1;
+        return (timers.length - 1) as unknown as ReturnType<typeof setTimeout>;
       },
       clearTimer: () => {}
     });
 
     renewal.start(firstToken);
     expect(timers).toHaveLength(1);
-    expect(timers[0].delay).toBe(10 * 60_000 - 60_000); // exp − margin
+    expect(timers[0].delay).toBe(10 * 60_000 - 60_000);
 
-    await timers[0].fn(); // fire the renewal
+    await timers[0].fn();
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    // Token lives in memory (§20.1 — not in localStorage)
     expect(getCloudToken()).toBe(nextToken);
-    expect(timers).toHaveLength(2); // rescheduled from the new token
+    expect(timers).toHaveLength(2);
     expect(timers[1].delay).toBe(20 * 60_000 - 60_000);
   });
 
@@ -125,14 +119,14 @@ describe("createSilentRenewal", () => {
       json: async () => ({ ok: false, error: "dead session" })
     }));
 
-    const timers = [];
+    const timers: Array<{ fn: () => void | Promise<void>; delay?: number }> = [];
     const renewal = createSilentRenewal({
       fetchImpl,
       storage,
       onExpired,
       setTimer: (fn, delay) => {
         timers.push({ fn, delay });
-        return timers.length - 1;
+        return (timers.length - 1) as unknown as ReturnType<typeof setTimeout>;
       },
       clearTimer: () => {}
     });
@@ -142,7 +136,7 @@ describe("createSilentRenewal", () => {
 
     expect(onExpired).toHaveBeenCalledTimes(1);
     expect(onExpired.mock.calls[0][0]).toBeInstanceOf(CloudLoginError);
-    expect(timers).toHaveLength(1); // no reschedule after expiry
+    expect(timers).toHaveLength(1);
   });
 
   it("retries on network failure instead of giving up", async () => {
@@ -151,13 +145,13 @@ describe("createSilentRenewal", () => {
       throw new Error("offline");
     });
 
-    const timers = [];
+    const timers: Array<{ fn: () => void | Promise<void>; delay?: number }> = [];
     const renewal = createSilentRenewal({
       fetchImpl,
       storage,
       setTimer: (fn, delay) => {
         timers.push({ fn, delay });
-        return timers.length - 1;
+        return (timers.length - 1) as unknown as ReturnType<typeof setTimeout>;
       },
       clearTimer: () => {}
     });
@@ -165,7 +159,7 @@ describe("createSilentRenewal", () => {
     renewal.start(fakeJwt({ sub: "u1", exp: Date.now() / 1000 + 600 }));
     await timers[0].fn();
 
-    expect(timers).toHaveLength(2); // retry scheduled
+    expect(timers).toHaveLength(2);
     expect(timers[1].delay).toBe(5_000);
   });
 });
