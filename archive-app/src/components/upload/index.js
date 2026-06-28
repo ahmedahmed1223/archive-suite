@@ -1,1 +1,1 @@
-export { AutoTagSuggestions } from "./AutoTagSuggestions.jsx";
+export * from "./index.ts";

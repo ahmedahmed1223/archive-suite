@@ -1,1 +1,1 @@
-export { PresenceIndicator } from "./PresenceIndicator.jsx";
+export * from "./index.ts";
