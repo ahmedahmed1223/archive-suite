@@ -1,6 +1,2 @@
-export {
-  SystemControlError,
-  fetchControlLogs,
-  fetchControlStatus,
-  runControlAction
-} from "./systemControlClient.ts";
+export * from "./systemControlClient.ts";
+
