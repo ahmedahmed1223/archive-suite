@@ -70,9 +70,15 @@ function readEnv() {
   const out = {};
   for (const line of readEnvRaw().split(/\r?\n/)) {
     const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m) out[m[1]] = m[2];
+    if (m) out[m[1]] = parseEnvValue(m[2]);
   }
   return out;
+}
+function parseEnvValue(value) {
+  const raw = String(value ?? "").trim();
+  if (raw.startsWith("#")) return "";
+  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) return raw.slice(1, -1);
+  return raw.replace(/\s+#.*$/, "").trim();
 }
 function setVar(content, key, value) {
   const re = new RegExp(`^(${key}=).*`, "m");
@@ -97,8 +103,22 @@ const genPassword = () => randomBytes(18).toString("base64").replace(/[+/=]/g, "
 
 // ─── Process helpers ──────────────────────────────────────────────────────────
 const PNPM = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const runPnpm = (args, cwd = ROOT) => spawnSync(PNPM, args, { cwd, stdio: "inherit", shell: process.platform === "win32" });
+function quoteCmdArg(value) {
+  const text = String(value);
+  if (/^[A-Za-z0-9_./:=@+-]+$/.test(text)) return text;
+  return `"${text.replace(/"/g, '\\"')}"`;
+}
+function runPnpm(args, cwd = ROOT, options = {}) {
+  const env = options.env ? { ...process.env, ...options.env } : process.env;
+  if (process.platform !== "win32") return spawnSync(PNPM, args, { cwd, stdio: "inherit", env });
+  const command = [PNPM, ...args].map(quoteCmdArg).join(" ");
+  return spawnSync(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", command], { cwd, stdio: "inherit", env });
+}
 const runNode = (file, args = [], cwd = ROOT) => spawnSync(process.execPath, [file, ...args], { cwd, stdio: "inherit" });
+const checkPnpm = () => {
+  if (process.platform !== "win32") return spawnSync(PNPM, ["--version"], { stdio: "pipe", encoding: "utf8" });
+  return spawnSync(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", `${PNPM} --version`], { stdio: "pipe", encoding: "utf8" });
+};
 
 // ─── Docker compose ─────────────────────────────────────────────────────────
 function dockerComposeCmd() {
@@ -115,31 +135,69 @@ function compose(actionArgs, { inherit = true, input } = {}) {
   const args = [...dc.pre, "-f", COMPOSE_FILE, ...overrideArgs, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...actionArgs];
   return spawnSync(dc.bin, args, { cwd: SERVER_DIR, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input });
 }
+function defaultHealthUrl(env = readEnv()) {
+  if (env.HEALTH_URL) return env.HEALTH_URL;
+  if (existsSync(COMPOSE_LOCAL_OVERRIDE)) return "http://127.0.0.1:8080/api/health";
+  const baseUrl = env.APP_BASE_URL && /^https?:\/\//.test(env.APP_BASE_URL) ? env.APP_BASE_URL.replace(/\/+$/, "") : "";
+  if (baseUrl && /^https?:\/\/(localhost|127\.0\.0\.1)(?::\d+)?/i.test(baseUrl)) return `${baseUrl}/api/health`;
+  const port = env.PORT || env.SERVER_PORT || env.API_PORT || "8787";
+  return `http://127.0.0.1:${port}/api/health`;
+}
+function appUrl(env = readEnv()) {
+  if (existsSync(COMPOSE_LOCAL_OVERRIDE)) return "http://localhost:8080";
+  if (env.APP_BASE_URL && /^https?:\/\//.test(env.APP_BASE_URL)) return env.APP_BASE_URL.replace(/\/+$/, "");
+  return "http://localhost";
+}
+function localToolEnv() {
+  const env = readEnv();
+  if (existsSync(COMPOSE_LOCAL_OVERRIDE) && env.DATABASE_URL) {
+    env.DATABASE_URL = env.DATABASE_URL.replace("@postgres:5432", "@127.0.0.1:15432");
+  }
+  return env;
+}
 
 // ─── Server control ───────────────────────────────────────────────────────────
 function serverStatus() {
   titleLine("Server status");
-  if (!existsSync(COMPOSE_FILE)) return warn("No compose file yet — run Deploy first.");
-  compose(["ps"]);
+  if (!existsSync(COMPOSE_FILE)) { warn("No compose file yet — run Deploy first."); return 1; }
+  return compose(["ps"]).status ?? 1;
 }
-function serverStart() { titleLine("Starting (docker compose up -d)"); if (compose(["up", "-d"]).status === 0) ok("Stack started."); }
-function serverStop() { titleLine("Stopping (docker compose down)"); if (compose(["down"]).status === 0) ok("Stack stopped."); }
-function serverRestart() { titleLine("Restarting (docker compose restart)"); if (compose(["restart"]).status === 0) ok("Stack restarted."); }
+function serverStart() {
+  titleLine("Starting (docker compose up -d)");
+  const status = compose(["up", "-d"]).status ?? 1;
+  if (status === 0) ok("Stack started."); else err(`Docker compose start failed (exit ${status}).`);
+  return status;
+}
+function serverStop() {
+  titleLine("Stopping (docker compose down)");
+  const status = compose(["down"]).status ?? 1;
+  if (status === 0) ok("Stack stopped."); else err(`Docker compose stop failed (exit ${status}).`);
+  return status;
+}
+function serverRestart() {
+  titleLine("Restarting (docker compose restart)");
+  const status = compose(["restart"]).status ?? 1;
+  if (status === 0) ok("Stack restarted."); else err(`Docker compose restart failed (exit ${status}).`);
+  return status;
+}
 function serverLogs({ follow = false } = {}) {
   titleLine("Service logs (last 200 lines)" + (follow ? " — following, Ctrl+C to stop" : ""));
-  compose(["logs", "--tail=200", ...(follow ? ["-f"] : [])]);
+  return compose(["logs", "--tail=200", ...(follow ? ["-f"] : [])]).status ?? 1;
 }
 async function healthCheck() {
   titleLine("Health check");
   const env = readEnv();
-  const port = env.PORT || env.SERVER_PORT || "8787";
-  const url = `http://127.0.0.1:${port}/api/health`;
+  const url = defaultHealthUrl(env);
   log(`GET ${url}`);
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     const body = await res.text();
     (res.ok ? ok : warn)(`HTTP ${res.status}. ${body.slice(0, 200)}`);
-  } catch (e) { err(`No response on port ${port} — is the server running? (${e.name})`); }
+    return res.ok ? 0 : 1;
+  } catch (e) {
+    err(`No response from ${url} — is the stack running? (${e.name})`);
+    return 1;
+  }
 }
 
 // ─── Configuration (Phase 2) ──────────────────────────────────────────────────
@@ -195,13 +253,14 @@ async function setAdmin() {
 // ─── Database (Phase 4) ────────────────────────────────────────────────────────
 function migrateStatus() {
   titleLine("Database migration status (prisma migrate status)");
-  runPnpm(["--filter", "archive-server", "exec", "prisma", "migrate", "status"]);
+  return runPnpm(["--filter", "archive-server", "exec", "prisma", "migrate", "status"], ROOT, { env: localToolEnv() }).status ?? 1;
 }
 async function migrateDeploy() {
   titleLine("Apply pending migrations (prisma migrate deploy)");
-  if (!(await confirm("Apply all pending migrations to the configured database?"))) return log("Cancelled.");
-  const r = runPnpm(["--filter", "archive-server", "exec", "prisma", "migrate", "deploy"]);
+  if (!(await confirm("Apply all pending migrations to the configured database?"))) { log("Cancelled."); return 0; }
+  const r = runPnpm(["--filter", "archive-server", "exec", "prisma", "migrate", "deploy"], ROOT, { env: localToolEnv() });
   if (r.status === 0) ok("Migrations applied.");
+  return r.status ?? 1;
 }
 async function dbProvider() {
   titleLine("Switch database provider");
@@ -258,11 +317,14 @@ async function restoreBackup() {
 // ─── Maintenance (Phase 5) ─────────────────────────────────────────────────────
 function runDiagnostics() {
   titleLine("Diagnostics — server + app verification");
+  let failed = 0;
   for (const target of ["verify:server", "verify:app"]) {
     log(`\n${C.b}pnpm ${target}${C.x}`);
     const r = runPnpm(["run", target]);
     (r.status === 0 ? ok : err)(`${target} ${r.status === 0 ? "passed" : `exit ${r.status}`}`);
+    if (r.status !== 0) failed = r.status || 1;
   }
+  return failed;
 }
 async function updateAndRebuild() {
   titleLine("Update & rebuild");
@@ -293,14 +355,15 @@ async function quickStart() {
   titleLine("Quick start — deploy → start → health check");
   log("Step 1/3: Deploy");
   const deployStatus = runNode(join(__dirname, "deploy-wizard.mjs")).status;
-  if (deployStatus !== 0) return err("Deploy failed. Aborting quick start.");
+  if (deployStatus !== 0) { err("Deploy failed. Aborting quick start."); return deployStatus || 1; }
   log("\nStep 2/3: Start stack");
-  serverStart();
+  const startStatus = serverStart();
+  if (startStatus !== 0) return startStatus;
   log("\nStep 3/3: Health check");
-  await healthCheck();
+  const healthStatus = await healthCheck();
   const env = readEnv();
-  const port = env.PORT || env.SERVER_PORT || "8787";
-  ok(`Stack should be reachable at http://localhost:${port}`);
+  if (healthStatus === 0) ok(`Stack should be reachable at ${appUrl(env)}`);
+  return healthStatus;
 }
 
 // ─── Doctor — environment pre-flight check ───────────────────────────────────
@@ -310,15 +373,15 @@ async function runDoctor() {
 
   // Node.js version
   const nodeMajor = Number(process.version.slice(1).split(".")[0]);
-  if (nodeMajor >= 18) {
+  if (nodeMajor >= 22) {
     ok(`Node.js ${process.version}`);
   } else {
-    err(`Node.js ${process.version} — version 18+ required`);
+    err(`Node.js ${process.version} — version 22+ required`);
     issues++;
   }
 
   // pnpm
-  const pnpmCheck = spawnSync(PNPM, ["--version"], { stdio: "pipe", encoding: "utf8" });
+  const pnpmCheck = checkPnpm();
   if (pnpmCheck.status === 0) {
     ok(`pnpm ${(pnpmCheck.stdout || "").trim()}`);
   } else {
@@ -351,12 +414,12 @@ async function runDoctor() {
 
   // Server health (non-fatal if not running)
   const env = readEnv();
-  const port = env.PORT || env.SERVER_PORT || "8787";
+  const url = defaultHealthUrl(env);
   try {
-    const res = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(2000) });
-    ok(`Port ${port} — server responding (HTTP ${res.status})`);
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
+    ok(`${url} — server responding (HTTP ${res.status})`);
   } catch {
-    log(`  ${C.d}Port ${port} — not responding (server may not be started yet — run 'start')${C.x}`);
+    log(`  ${C.d}${url} — not responding (server may not be started yet — run 'start')${C.x}`);
   }
 
   // Summary
@@ -366,6 +429,7 @@ async function runDoctor() {
   } else {
     err(`${issues} critical issue(s) found — resolve them before deploying.`);
   }
+  return issues === 0 ? 0 : 1;
 }
 
 // ─── Menu ───────────────────────────────────────────────────────────────────
@@ -423,11 +487,11 @@ function printMenu() {
 // "Start" only to hit an opaque error message.
 function preflightSummary() {
   const nodeMajor = Number(process.version.slice(1).split(".")[0]);
-  const pnpmOk = spawnSync(PNPM, ["--version"], { stdio: "pipe", encoding: "utf8" }).status === 0;
+  const pnpmOk = checkPnpm().status === 0;
   const dockerOk = spawnSync("docker", ["--version"], { stdio: "pipe", encoding: "utf8" }).status === 0;
   const envOk = existsSync(ENV_PATH);
   const issues = [];
-  if (nodeMajor < 18) issues.push(`Node ${process.version} (need ≥18)`);
+  if (nodeMajor < 22) issues.push(`Node ${process.version} (need ≥22)`);
   if (!pnpmOk) issues.push("pnpm missing — run: npm i -g pnpm");
   if (!dockerOk) issues.push("Docker missing — required for the Postgres stack");
   if (!envOk) issues.push(`.env not found — run option 1 (Deploy) first`);
@@ -515,8 +579,9 @@ const cmd = process.argv.slice(2).find((a) => !a.startsWith("-"));
 if (cmd) {
   const fn = COMMANDS[cmd];
   if (!fn) { err(`Unknown command "${cmd}". Try: ${Object.keys(COMMANDS).join(", ")}`); process.exit(1); }
-  await fn();
+  const status = await fn();
   if (_rl) _rl.close();
+  if (typeof status === "number" && status !== 0) process.exit(status);
 } else {
   await interactive();
 }

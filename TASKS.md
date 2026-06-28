@@ -448,6 +448,7 @@
 - [x] `[P1]` ⏱️M **تحسين `setup.bat`/`control-center.mjs` — أوامر مختصرة + مساعدة موسّعة + تشخيص أولي**
   - ✅ مُنجز (2026-06-22 wave-26): `quick` (deploy+start+health)، `doctor` (Node/pnpm/Docker/port check مع تقرير ملوّن)، `help` موسّعة بكل الأوامر + أمثلة. القائمة التفاعلية أُضيف لها قسم «Quick Actions» مع [q] و[d].
   - ✅ إضافات (2026-06-22 wave-27): (أ) `preflightSummary()` يعمل تلقائياً عند فتح القائمة التفاعلية ويعرض حالة Node/pnpm/Docker/.env بسطر واحد، ويُبلّغ عن المشاكل بأسطر `- ...` مع الإحالة لـ `doctor` للتفاصيل الكاملة. (ب) `help` صار يطبع قسم «Quick-start examples»، شبكة الأوامر، قسم «Troubleshooting» بثلاث وصفات (stack not running / no .env / port in use)، ثم قائمة القائمة التفاعلية كاملة. صلّحت اختبار `control-center.test.mjs` الذي كان فاشلاً مسبقاً (يفترض أن `help` يتضمّن أقسام المنيو).
+  - ✅ إصلاح تشغيل setup الحالي (2026-06-28): صُلّح فحص `pnpm` على Windows حتى لا يفشل `doctor` كذباً، وصارت أوامر `status/start/health/migrate-status/diagnostics` تعيد exit code حقيقياً إلى `setup.bat`. صار `health` يفحص endpoint المستخدم الصحيح في وضع Postgres المحلي `http://127.0.0.1:8080/api/health` بدلاً من منفذ الخادم الداخلي غير المنشور `8787`، وصارت أوامر Prisma المحلية تستخدم `127.0.0.1:15432` بدلاً من hostname الداخلي `postgres:5432`. أُصلحت قراءة `.env` حتى لا تظهر التعليقات inline كقيم.
   - الملفات: `scripts/control-center.mjs`.
   - المصدر: طلب المستخدم 2026-06-21، 2026-06-22.
 
