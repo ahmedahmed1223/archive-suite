@@ -6,11 +6,10 @@ describe("downsamplePeaks", () => {
     const samples = [0, 0.5, -1, 0.25, 0.1, -0.2, 0.9, -0.3];
     const peaks = downsamplePeaks(samples, 4);
     expect(peaks).toHaveLength(4);
-    peaks.forEach((p) => {
-      expect(p).toBeGreaterThanOrEqual(0);
-      expect(p).toBeLessThanOrEqual(1);
+    peaks.forEach((peak) => {
+      expect(peak).toBeGreaterThanOrEqual(0);
+      expect(peak).toBeLessThanOrEqual(1);
     });
-    // global max abs is 1 (sample -1) → bucket containing it should be 1.
     expect(Math.max(...peaks)).toBe(1);
   });
 
@@ -46,7 +45,7 @@ describe("peaksToBars", () => {
 
   it("applies a visible floor for silent buckets", () => {
     const bars = peaksToBars([0, 0], 40);
-    bars.forEach((b) => expect(b).toBeGreaterThan(0));
+    bars.forEach((bar) => expect(bar).toBeGreaterThan(0));
   });
 
   it("clamps out-of-range peaks", () => {
@@ -70,9 +69,9 @@ describe("placeholderPeaks", () => {
   it("produces normalized values in [0,1]", () => {
     const peaks = placeholderPeaks({ id: "x", outSec: 9 }, 32);
     expect(peaks).toHaveLength(32);
-    peaks.forEach((p) => {
-      expect(p).toBeGreaterThanOrEqual(0);
-      expect(p).toBeLessThanOrEqual(1);
+    peaks.forEach((peak) => {
+      expect(peak).toBeGreaterThanOrEqual(0);
+      expect(peak).toBeLessThanOrEqual(1);
     });
   });
 

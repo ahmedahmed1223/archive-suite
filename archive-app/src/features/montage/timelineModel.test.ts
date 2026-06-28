@@ -60,10 +60,10 @@ describe("timeToPx / pxToTime", () => {
 describe("buildClipLayout", () => {
   it("positions clips sequentially with cumulative start", () => {
     const layout = buildClipLayout(clips, { pxPerSecond: 10 });
-    expect(layout.map((c) => c.startSec)).toEqual([0, 10, 20]);
-    expect(layout.map((c) => c.durationSec)).toEqual([10, 10, 4]);
-    expect(layout.map((c) => c.startPx)).toEqual([0, 100, 200]);
-    expect(layout.map((c) => c.widthPx)).toEqual([100, 100, 40]);
+    expect(layout.map((clip) => clip.startSec)).toEqual([0, 10, 20]);
+    expect(layout.map((clip) => clip.durationSec)).toEqual([10, 10, 4]);
+    expect(layout.map((clip) => clip.startPx)).toEqual([0, 100, 200]);
+    expect(layout.map((clip) => clip.widthPx)).toEqual([100, 100, 40]);
   });
 
   it("preserves clip identity fields", () => {
@@ -74,7 +74,7 @@ describe("buildClipLayout", () => {
   it("respects the order field, not array index", () => {
     const shuffled = [clips[2], clips[0], clips[1]];
     const layout = buildClipLayout(shuffled, { pxPerSecond: 10 });
-    expect(layout.map((c) => c.id)).toEqual(["a", "b", "c"]);
+    expect(layout.map((clip) => clip.id)).toEqual(["a", "b", "c"]);
   });
 
   it("returns an empty layout for empty input", () => {
@@ -84,26 +84,25 @@ describe("buildClipLayout", () => {
 
   it("defaults to a positive scale when pxPerSecond is invalid", () => {
     const layout = buildClipLayout(clips, { pxPerSecond: 0 });
-    expect(layout[1].startPx).toBe(10); // scale 1
+    expect(layout[1].startPx).toBe(10);
   });
 });
 
 describe("moveClip", () => {
   it("reorders a clip to the position containing newStartSec", () => {
-    // c starts at sec 20; move it to sec 0 → front
     const moved = moveClip(clips, "c", 0);
-    expect(moved.map((c) => c.id)).toEqual(["c", "a", "b"]);
-    expect(moved.map((c) => c.order)).toEqual([0, 1, 2]);
+    expect(moved.map((clip) => clip.id)).toEqual(["c", "a", "b"]);
+    expect(moved.map((clip) => clip.order)).toEqual([0, 1, 2]);
   });
 
   it("moves a clip to the end when newStartSec is past the timeline", () => {
     const moved = moveClip(clips, "a", 999);
-    expect(moved.map((c) => c.id)).toEqual(["b", "c", "a"]);
+    expect(moved.map((clip) => clip.id)).toEqual(["b", "c", "a"]);
   });
 
   it("clamps a negative newStartSec to the front", () => {
     const moved = moveClip(clips, "b", -50);
-    expect(moved.map((c) => c.id)).toEqual(["b", "a", "c"]);
+    expect(moved.map((clip) => clip.id)).toEqual(["b", "a", "c"]);
   });
 
   it("does not mutate the input array or clip objects", () => {
@@ -114,42 +113,42 @@ describe("moveClip", () => {
 
   it("returns an ordered copy for an unknown id", () => {
     const result = moveClip(clips, "zzz", 5);
-    expect(result.map((c) => c.id)).toEqual(["a", "b", "c"]);
+    expect(result.map((clip) => clip.id)).toEqual(["a", "b", "c"]);
   });
 
   it("does not move locked clips", () => {
-    const locked = clips.map((clip) => clip.id === "b" ? { ...clip, locked: true } : clip);
+    const locked = clips.map((clip) => (clip.id === "b" ? { ...clip, locked: true } : clip));
     const moved = moveClip(locked, "b", 0);
-    expect(moved.map((c) => c.id)).toEqual(["a", "b", "c"]);
+    expect(moved.map((clip) => clip.id)).toEqual(["a", "b", "c"]);
   });
 });
 
 describe("trimClip", () => {
   it("updates source in/out immutably", () => {
     const next = trimClip(clips, "a", { startSec: 2, endSec: 8 });
-    const a = next.find((c) => c.id === "a");
+    const a = next.find((clip) => clip.id === "a");
     expect(a).toMatchObject({ inSec: 2, outSec: 8 });
-    expect(clips[0].inSec).toBe(0); // original untouched
+    expect(clips[0].inSec).toBe(0);
   });
 
   it("keeps the unspecified bound", () => {
     const next = trimClip(clips, "b", { startSec: 7 });
-    const b = next.find((c) => c.id === "b");
-    expect(b.inSec).toBe(7);
-    expect(b.outSec).toBe(15);
+    const b = next.find((clip) => clip.id === "b");
+    expect(b!.inSec).toBe(7);
+    expect(b!.outSec).toBe(15);
   });
 
   it("clamps so end is never before start", () => {
     const next = trimClip(clips, "a", { startSec: 9, endSec: 3 });
-    const a = next.find((c) => c.id === "a");
-    expect(a.inSec).toBe(3);
-    expect(a.outSec).toBe(3);
+    const a = next.find((clip) => clip.id === "a");
+    expect(a!.inSec).toBe(3);
+    expect(a!.outSec).toBe(3);
   });
 
   it("clamps negatives to zero", () => {
     const next = trimClip(clips, "c", { startSec: -5 });
-    const c = next.find((c) => c.id === "c");
-    expect(c.inSec).toBe(0);
+    const c = next.find((clip) => clip.id === "c");
+    expect(c!.inSec).toBe(0);
   });
 
   it("leaves other clips untouched and ignores unknown ids", () => {
@@ -158,7 +157,7 @@ describe("trimClip", () => {
   });
 
   it("does not trim locked clips", () => {
-    const locked = clips.map((clip) => clip.id === "a" ? { ...clip, locked: true } : clip);
+    const locked = clips.map((clip) => (clip.id === "a" ? { ...clip, locked: true } : clip));
     const next = trimClip(locked, "a", { startSec: 2, endSec: 8 });
     expect(next.find((clip) => clip.id === "a")).toMatchObject({ inSec: 0, outSec: 10, locked: true });
   });

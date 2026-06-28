@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-
 import {
   ACTIVITY_ACTIONS,
   ACTIVITY_TARGET_TYPES,
@@ -12,14 +11,11 @@ import {
 
 describe("buildDiff", () => {
   it("returns only changed fields with before/after pairs", () => {
-    // Arrange
     const before = { title: "قديم", tags: ["a"], views: 3 };
     const after = { title: "جديد", tags: ["a"], views: 3 };
 
-    // Act
     const diff = buildDiff(before, after);
 
-    // Assert
     expect(diff).toEqual({ title: { before: "قديم", after: "جديد" } });
   });
 
@@ -76,14 +72,14 @@ describe("createActivityEntry", () => {
   });
 
   it("falls back to update/item for unknown action and targetType", () => {
-    const entry = createActivityEntry({ action: "explode", targetType: "galaxy" });
+    const entry = createActivityEntry({ action: "explode", targetType: "galaxy" } as never);
     expect(entry.action).toBe(ACTIVITY_ACTIONS.UPDATE);
     expect(entry.targetType).toBe(ACTIVITY_TARGET_TYPES.ITEM);
   });
 
   it("auto-builds the diff from before/after snapshots", () => {
     const entry = createActivityEntry({
-      snapshot: { before: { title: "أ" }, after: { title: "ب" } }
+      snapshot: { before: { title: "أ" }, after: { title: "ب" } } as never
     });
     expect(entry.snapshot.diff).toEqual({ title: { before: "أ", after: "ب" } });
   });
@@ -91,8 +87,8 @@ describe("createActivityEntry", () => {
 
 describe("filterActivityEntries", () => {
   const entries = [
-    createActivityEntry({ action: "create", targetType: "item", targetName: "مادة أولى", userName: "أحمد" }),
-    createActivityEntry({ action: "delete", targetType: "folder", targetName: "مجلد قديم", userName: "سارة" })
+    createActivityEntry({ action: "create", targetType: "item", targetName: "مادة أولى", userName: "أحمد" } as never),
+    createActivityEntry({ action: "delete", targetType: "folder", targetName: "مجلد قديم", userName: "سارة" } as never)
   ];
 
   it("filters by action and targetType", () => {
@@ -110,7 +106,6 @@ describe("filterActivityEntries", () => {
 describe("groupActivitiesByDay", () => {
   it("groups entries by day, newest day first, labelling today", () => {
     const today = createActivityEntry({ timestamp: new Date().toISOString() });
-    // Local-time timestamp (no Z) keeps the expected day stable across timezones.
     const older = createActivityEntry({ timestamp: "2020-01-05T12:00:00" });
 
     const groups = groupActivitiesByDay([older, today]);

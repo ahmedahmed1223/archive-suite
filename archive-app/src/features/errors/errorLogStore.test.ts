@@ -10,15 +10,15 @@ import {
 } from "./errorLogStore.js";
 
 function memoryStorage() {
-  const map = new Map();
+  const map = new Map<string, string>();
   return {
-    getItem: (key) => (map.has(key) ? map.get(key) : null),
-    setItem: (key, value) => map.set(key, value),
-    removeItem: (key) => map.delete(key)
+    getItem: (key: string) => (map.has(key) ? map.get(key) : null),
+    setItem: (key: string, value: string) => map.set(key, value),
+    removeItem: (key: string) => map.delete(key)
   };
 }
 
-let storage;
+let storage: any;
 beforeEach(() => {
   __resetErrorLogForTests();
   storage = memoryStorage();
@@ -101,7 +101,6 @@ describe("error grouping / dedup", () => {
 
   test("firstSeen is preserved on group, lastSeen updates", () => {
     const r1 = recordError(new Error("evict"), { operation: "x" }, storage);
-    // Advance simulated time by updating timestamp context
     recordError(new Error("evict"), { operation: "x" }, storage);
     const entry = listErrors()[0];
     expect(entry.firstSeen).toBe(r1.firstSeen);
@@ -115,7 +114,7 @@ describe("cached snapshot", () => {
     recordError("stable", {}, storage);
     const a = listErrors();
     const b = listErrors();
-    expect(a).toBe(b); // same frozen reference
+    expect(a).toBe(b);
   });
 
   test("snapshot invalidates on recordError", () => {

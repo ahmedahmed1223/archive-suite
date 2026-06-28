@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   getRecentDefaults,
-  recordRecentType,
-  recordRecentTags,
+  recordRecentCollection,
   recordRecentFolder,
-  recordRecentCollection
+  recordRecentTags,
+  recordRecentType
 } from "./recentDefaults.js";
 
 const KEY = "videoArchive:recentDefaults";
@@ -58,7 +58,7 @@ describe("recordRecentTags", () => {
     const { tags } = getRecentDefaults();
     expect(tags).toContain("sports");
     expect(tags).toContain("news");
-    expect(tags.filter(t => t === "news").length).toBe(1);
+    expect(tags.filter((t) => t === "news").length).toBe(1);
   });
 
   it("ignores empty arrays", () => {

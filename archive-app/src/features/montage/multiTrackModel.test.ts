@@ -30,7 +30,7 @@ describe("normalizeMultiTrackProject", () => {
     expect(project.timelineTracks).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "v1", type: "video", magnetic: true })
     ]));
-    expect(project.roughCuts.map((clip) => [clip.trackId, clip.timelineStartSec])).toEqual([
+    expect(project.roughCuts.map((clip: { trackId?: string; timelineStartSec?: number }) => [clip.trackId, clip.timelineStartSec])).toEqual([
       ["v1", 0],
       ["v1", 4]
     ]);
@@ -161,8 +161,8 @@ describe("ripple and collision behavior", () => {
 
   it("ripples later clips on the magnetic primary track only", () => {
     const next = rippleAfterEdit({ clips, tracks, editedClipId: "a", deltaSec: 2, scope: "primary" });
-    expect(next.find((clip) => clip.id === "b").timelineStartSec).toBe(6);
-    expect(next.find((clip) => clip.id === "overlay").timelineStartSec).toBe(1);
+    expect(next.find((clip) => clip.id === "b")!.timelineStartSec).toBe(6);
+    expect(next.find((clip) => clip.id === "overlay")!.timelineStartSec).toBe(1);
   });
 
   it("respects locked tracks when rippling all unlocked tracks", () => {
@@ -173,8 +173,8 @@ describe("ripple and collision behavior", () => {
       deltaSec: 1,
       scope: "all-unlocked"
     });
-    expect(next.find((clip) => clip.id === "b").timelineStartSec).toBe(5);
-    expect(next.find((clip) => clip.id === "overlay").timelineStartSec).toBe(1);
+    expect(next.find((clip) => clip.id === "b")!.timelineStartSec).toBe(5);
+    expect(next.find((clip) => clip.id === "overlay")!.timelineStartSec).toBe(1);
   });
 
   it("detects true overlap per track", () => {
@@ -205,8 +205,8 @@ describe("trim and split", () => {
       rippleMode: "primary"
     });
     expect(result.ok).toBe(true);
-    expect(result.clips.find((clip) => clip.id === "a").outSec).toBe(10);
-    expect(result.clips.find((clip) => clip.id === "b").timelineStartSec).toBe(8);
+    expect(result.clips.find((clip) => clip.id === "a")!.outSec).toBe(10);
+    expect(result.clips.find((clip) => clip.id === "b")!.timelineStartSec).toBe(8);
   });
 
   it("splits a clip at timeline time and keeps source continuity", () => {
@@ -252,6 +252,6 @@ describe("track ordering and guarded removal", () => {
     });
     expect(result.ok).toBe(true);
     expect(result.tracks.map((track) => track.id)).toEqual(["v1", "a1"]);
-    expect(result.clips[0].trackId).toBe("v1");
+    expect(result.clips[0]!.trackId).toBe("v1");
   });
 });

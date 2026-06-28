@@ -1,11 +1,5 @@
 import { describe, expect, test } from "vitest";
-
-import {
-  createInvitationMetadata,
-  createTemporaryPassword,
-  createUserValue,
-  isValidInviteEmail
-} from "./viewModel.js";
+import { createInvitationMetadata, createTemporaryPassword, createUserValue, isValidInviteEmail } from "./viewModel.js";
 
 describe("users view model invitations", () => {
   test("validates invitation email shape", () => {

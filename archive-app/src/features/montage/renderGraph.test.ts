@@ -62,7 +62,7 @@ describe("montage render graph", () => {
       audio: { volumeDb: -4, pan: 0.25 },
       keyframes: [{ id: "k1", property: "transform.x", timeSec: 1, value: 20, easing: "linear" }]
     });
-    expect(graph.layers[0].filters[0]).toMatchObject({ type: "sharpen", exportOnly: true });
+    expect((graph.layers[0]!.filters as Array<Record<string, unknown>>)[0]).toMatchObject({ type: "sharpen", exportOnly: true });
     expect(graph.warnings.map((warning) => warning.code)).toEqual(expect.arrayContaining(["missing-source", "export-only-filter"]));
   });
 
