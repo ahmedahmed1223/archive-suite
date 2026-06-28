@@ -7,7 +7,11 @@
 
 {
 	# Operator email for ACME (renewal warnings, key recovery).
-	email {$ACME_EMAIL}
+	# {$ACME_EMAIL} expands to empty when unset, and Caddy rejects `email` with
+	# no argument — crashing the whole container on boot. The `:default` keeps
+	# the directive syntactically valid. On localhost Caddy uses its internal CA
+	# so ACME email is unused; for a real public deploy set ACME_EMAIL in .env.
+	email {$ACME_EMAIL:admin@example.com}
 
 	# Sensible defaults for security headers — applied to all sites below.
 	servers {
