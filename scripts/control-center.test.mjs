@@ -39,12 +39,14 @@ test("config prints known keys and masks secrets", () => {
   const envFile = join(dir, ".env");
   writeFileSync(
     envFile,
-    "ACCESS_MODE=internal\nPORT=8787\nADMIN_USERNAME=admin\nDATABASE_URL=postgres://u:topsecret@h:5432/db\n"
+    "ACCESS_MODE=internal\nPORT=8787 # local port\nADMIN_USERNAME=admin\nAI_PROVIDER= # provider comment\nDATABASE_URL=postgres://u:topsecret@h:5432/db\n"
   );
   const r = run(["config"], { ARCHIVE_ENV_PATH: envFile });
   assert.equal(r.status, 0);
   assert.match(r.stdout, /ACCESS_MODE/);
   assert.match(r.stdout, /admin/);
+  assert.ok(!r.stdout.includes("local port"), "inline comments must not be treated as env values");
+  assert.ok(!r.stdout.includes("provider comment"), "empty values with comments must remain empty");
   assert.ok(!r.stdout.includes("topsecret"), "DATABASE_URL must be masked, not shown in full");
 });
 
@@ -60,4 +62,23 @@ test("backups command renders without throwing", () => {
   const r = run(["backups"], { ARCHIVE_ENV_PATH: join(dir, ".env") });
   assert.equal(r.status, 0);
   assert.match(r.stdout, /Backups/);
+});
+
+test("health exits non-zero when the configured server port is not responding", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-"));
+  const envFile = join(dir, ".env");
+  writeFileSync(envFile, "HEALTH_URL=http://127.0.0.1:9/api/health\n");
+  const r = run(["health"], { ARCHIVE_ENV_PATH: envFile });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr + r.stdout, /No response from http:\/\/127\.0\.0\.1:9\/api\/health/);
+});
+
+test("doctor uses the Windows-safe pnpm invocation and reports the environment", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-"));
+  const envFile = join(dir, ".env");
+  writeFileSync(envFile, "PORT=9\n");
+  const r = run(["doctor"], { ARCHIVE_ENV_PATH: envFile });
+  const out = r.stderr + r.stdout;
+  assert.match(out, /Doctor/);
+  assert.doesNotMatch(out, /pnpm not found/);
 });
