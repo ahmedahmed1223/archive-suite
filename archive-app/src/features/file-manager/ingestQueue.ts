@@ -102,8 +102,8 @@ export async function persistIngestQueueRecord(
   record: IngestQueueRecord,
   { storage }: PersistQueueOptions = {}
 ): Promise<IngestQueueRecord> {
-  if (storage?.put) return storage.put(STORES.FILE_INGEST_QUEUE, record);
-  return dbPut(STORES.FILE_INGEST_QUEUE, record);
+  if (storage?.put) return storage.put(STORES.FILE_INGEST_QUEUE, record) as Promise<IngestQueueRecord>;
+  return dbPut(STORES.FILE_INGEST_QUEUE, record) as Promise<IngestQueueRecord>;
 }
 
 export async function queueUploadedFile(

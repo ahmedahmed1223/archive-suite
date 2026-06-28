@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { STORES } from "../../../services/storage/schema.js";
 import {
@@ -48,7 +48,7 @@ describe("sanitizeDocId", () => {
 
   it("throws on an empty id", () => {
     expect(() => sanitizeDocId("")).toThrow();
-    expect(() => sanitizeDocId(null)).toThrow();
+    expect(() => sanitizeDocId(null as unknown as string)).toThrow();
   });
 });
 
@@ -86,8 +86,8 @@ describe("recordToDoc", () => {
   });
 
   it("throws on a non-object record", () => {
-    expect(() => recordToDoc(null)).toThrow();
-    expect(() => recordToDoc("nope")).toThrow();
+    expect(() => recordToDoc(null as unknown as Record<string, unknown>)).toThrow();
+    expect(() => recordToDoc("nope" as unknown as Record<string, unknown>)).toThrow();
   });
 });
 

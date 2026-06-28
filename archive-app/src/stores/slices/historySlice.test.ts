@@ -13,10 +13,10 @@ vi.mock("../../services/storageAccess.js", () => ({
 
 import * as storage from "../../services/storageAccess.js";
 
-function makeStore(extra = {}) {
+function makeStore(extra: Record<string, any> = {}) {
   let state = { ...historyInitialState, ...extra };
   const get = () => state;
-  const set = (patch) => {
+  const set = (patch: any) => {
     state = typeof patch === "function" ? { ...state, ...patch(state) } : { ...state, ...patch };
   };
   const actions = createHistoryActions({ set, get });
@@ -25,10 +25,8 @@ function makeStore(extra = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  storage.dbClear.mockResolvedValue(undefined);
+  (storage as any).dbClear.mockResolvedValue(undefined);
 });
-
-// ── appendHistory unit tests ────────────────────────────────────────────────
 
 describe("appendHistory", () => {
   it("prepends the new record", () => {
@@ -46,10 +44,8 @@ describe("appendHistory", () => {
   });
 
   it("evicts oldest entries FIFO when cap is exceeded", () => {
-    // Fill to exactly MAX_HISTORY_ENTRIES entries, newest first
     const existing = Array.from({ length: MAX_HISTORY_ENTRIES }, (_, i) => ({ id: `entry_${i}` }));
     const result = appendHistory(existing, { id: "new" });
-    // The last entry in `existing` (index MAX-1, the oldest) must be gone
     const ids = result.map((r) => r.id);
     expect(ids).not.toContain(`entry_${MAX_HISTORY_ENTRIES - 1}`);
     expect(ids[0]).toBe("new");
@@ -67,8 +63,6 @@ describe("appendHistory", () => {
     expect(result[0]).toEqual({ id: "first" });
   });
 });
-
-// ── clearHistory action tests ────────────────────────────────────────────────
 
 describe("clearHistory", () => {
   it("empties the in-memory changeHistory array", async () => {
@@ -93,18 +87,14 @@ describe("clearHistory", () => {
   });
 });
 
-// ── cap stress test ──────────────────────────────────────────────────────────
-
 describe("MAX_HISTORY_ENTRIES cap (stress)", () => {
   it(`stays at ${MAX_HISTORY_ENTRIES} after pushing ${MAX_HISTORY_ENTRIES + 100} records`, () => {
-    let history = [];
+    let history: any[] = [];
     for (let i = 0; i < MAX_HISTORY_ENTRIES + 100; i++) {
       history = appendHistory(history, { id: `r_${i}` });
     }
     expect(history).toHaveLength(MAX_HISTORY_ENTRIES);
-    // Newest record is always at index 0
     expect(history[0].id).toBe(`r_${MAX_HISTORY_ENTRIES + 99}`);
-    // The very first records pushed (oldest) must have been evicted
     expect(history.map((r) => r.id)).not.toContain("r_0");
   });
 });

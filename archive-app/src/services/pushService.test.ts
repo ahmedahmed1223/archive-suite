@@ -10,15 +10,14 @@ import { setCloudToken, clearCloudToken } from "../bootstrap/cloudSession.js";
 function memoryStorage(token = "jwt-token") {
   const map = new Map([["va.cloudToken.v1", token]]);
   return {
-    getItem: (k) => (map.has(k) ? map.get(k) : null),
-    setItem: (k, v) => map.set(k, String(v)),
-    removeItem: (k) => map.delete(k)
+    getItem: (k: string) => (map.has(k) ? map.get(k)! : null),
+    setItem: (k: string, v: string) => map.set(k, String(v)),
+    removeItem: (k: string) => map.delete(k)
   };
 }
 
 describe("urlBase64ToUint8Array", () => {
   it("decodes base64url into bytes", () => {
-    // "AQID" = [1, 2, 3]
     expect(Array.from(urlBase64ToUint8Array("AQID"))).toEqual([1, 2, 3]);
   });
 
@@ -42,8 +41,6 @@ describe("isPushSupported", () => {
 });
 
 describe("subscribeToPush", () => {
-  // §20.1: getCloudToken() reads from module memory, not from the passed storage.
-  // Seed the memory token so authHeaders() produces "Bearer jwt-token".
   beforeEach(() => { setCloudToken("jwt-token"); });
   afterEach(() => { clearCloudToken(); });
 
@@ -52,17 +49,17 @@ describe("subscribeToPush", () => {
       endpoint: "https://push.test/ep1",
       toJSON: () => ({ endpoint: "https://push.test/ep1", keys: { p256dh: "p", auth: "a" } })
     };
-    const registration = {
+    const registration: any = {
       pushManager: { subscribe: vi.fn(async () => subscription), getSubscription: vi.fn(async () => subscription) }
     };
-    const notification = { requestPermission: vi.fn(async () => "granted") };
-    const fetchImpl = vi.fn(async (url) => {
+    const notification: any = { requestPermission: vi.fn(async (): Promise<NotificationPermission> => "granted") };
+    const fetchImpl = vi.fn(async (url: string) => {
       if (String(url).endsWith("/api/push/vapid-public-key")) {
         return { ok: true, status: 200, json: async () => ({ ok: true, key: "AQID" }) };
       }
       return { ok: true, status: 200, json: async () => ({ ok: true }) };
     });
-    return { subscription, registration, notification, fetchImpl };
+    return { registration, notification, fetchImpl };
   }
 
   it("requests permission, fetches the VAPID key, subscribes, and saves to the server", async () => {
@@ -76,17 +73,16 @@ describe("subscribeToPush", () => {
     expect(registration.pushManager.subscribe).toHaveBeenCalledWith(
       expect.objectContaining({ userVisibleOnly: true })
     );
-    // Both server calls carry the Bearer token.
-    const calls = fetchImpl.mock.calls;
+    const calls: any[] = fetchImpl.mock.calls;
     expect(calls[0][0]).toBe("https://api.test/api/push/vapid-public-key");
-    expect(calls[0][1].headers.Authorization).toBe("Bearer jwt-token");
+    expect((calls[0][1] as RequestInit).headers).toMatchObject({ Authorization: "Bearer jwt-token" });
     expect(calls[1][0]).toBe("https://api.test/api/push/subscribe");
-    expect(JSON.parse(calls[1][1].body).subscription.endpoint).toBe("https://push.test/ep1");
+    expect(JSON.parse((calls[1][1] as RequestInit).body as string).subscription.endpoint).toBe("https://push.test/ep1");
   });
 
   it("throws when permission is denied", async () => {
     const { registration, fetchImpl } = happyDeps();
-    const notification = { requestPermission: vi.fn(async () => "denied") };
+    const notification: any = { requestPermission: vi.fn(async (): Promise<NotificationPermission> => "denied") };
 
     await expect(
       subscribeToPush({ fetchImpl, registration, notification, storage: memoryStorage() })
@@ -111,7 +107,7 @@ describe("subscribeToPush", () => {
 describe("unsubscribeFromPush", () => {
   it("unsubscribes locally and tells the server", async () => {
     const subscription = { endpoint: "https://push.test/ep1", unsubscribe: vi.fn(async () => true) };
-    const registration = { pushManager: { getSubscription: vi.fn(async () => subscription) } };
+    const registration: any = { pushManager: { getSubscription: vi.fn(async () => subscription) } };
     const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true }) }));
 
     const result = await unsubscribeFromPush({ baseUrl: "https://api.test", fetchImpl, registration, storage: memoryStorage() });
@@ -122,11 +118,12 @@ describe("unsubscribeFromPush", () => {
       "https://api.test/api/push/unsubscribe",
       expect.objectContaining({ method: "POST" })
     );
-    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).endpoint).toBe("https://push.test/ep1");
+    const calls: any[] = fetchImpl.mock.calls;
+    expect(JSON.parse((calls[0][1] as RequestInit).body as string).endpoint).toBe("https://push.test/ep1");
   });
 
   it("is a no-op when there is no subscription", async () => {
-    const registration = { pushManager: { getSubscription: vi.fn(async () => null) } };
+    const registration: any = { pushManager: { getSubscription: vi.fn(async () => null) } };
     const fetchImpl = vi.fn();
 
     const result = await unsubscribeFromPush({ fetchImpl, registration, storage: memoryStorage() });

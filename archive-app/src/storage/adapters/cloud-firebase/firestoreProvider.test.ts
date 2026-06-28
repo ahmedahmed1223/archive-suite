@@ -3,47 +3,43 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { STORES } from "../../../services/storage/schema.js";
 import { createFirestoreProvider, isFirebaseConfigValid } from "./index.js";
 
-// Minimal in-memory Firestore double. Docs live in a flat Map keyed by
-// `${collectionPath}/${docId}`. Refs are plain { path, id } objects; the module
-// functions (doc/collection/getDoc/...) operate on that Map. This lets us
-// exercise the whole adapter without the real firebase SDK.
 function createFakeFirestore() {
-  const store = new Map();
+  const store = new Map<string, Record<string, unknown>>();
 
-  function key(path, id) {
+  function key(path: string, id: string) {
     return `${path}/${id}`;
   }
 
   const fs = {
     getFirestore: () => ({ store }),
-    doc: (_db, path, id) => ({ kind: "doc", path, id }),
-    collection: (_db, path) => ({ kind: "collection", path }),
-    async getDoc(ref) {
+    doc: (_db: unknown, path: string, id: string) => ({ kind: "doc", path, id }),
+    collection: (_db: unknown, path: string) => ({ kind: "collection", path }),
+    async getDoc(ref: { path: string; id: string }) {
       const data = store.get(key(ref.path, ref.id));
       return {
         exists: () => data !== undefined,
         data: () => data
       };
     },
-    async getDocs(ref) {
-      const entries = [];
+    async getDocs(ref: { path: string }) {
+      const entries: Array<{ id: string; data: () => Record<string, unknown> }> = [];
       for (const [k, value] of store.entries()) {
         const [collPath, id] = splitKey(k);
         if (collPath === ref.path) entries.push({ id, data: () => value });
       }
-      return { forEach: (cb) => entries.forEach(cb) };
+      return { forEach: (cb: (entry: { id: string; data: () => Record<string, unknown> }) => void) => entries.forEach(cb) };
     },
-    async setDoc(ref, data) {
+    async setDoc(ref: { path: string; id: string }, data: Record<string, unknown>) {
       store.set(key(ref.path, ref.id), data);
     },
-    async deleteDoc(ref) {
+    async deleteDoc(ref: { path: string; id: string }) {
       store.delete(key(ref.path, ref.id));
     },
     writeBatch() {
-      const ops = [];
+      const ops: Array<() => void> = [];
       return {
-        set: (ref, data) => ops.push(() => store.set(key(ref.path, ref.id), data)),
-        delete: (ref) => ops.push(() => store.delete(key(ref.path, ref.id))),
+        set: (ref: { path: string; id: string }, data: Record<string, unknown>) => ops.push(() => store.set(key(ref.path, ref.id), data)),
+        delete: (ref: { path: string; id: string }) => ops.push(() => store.delete(key(ref.path, ref.id))),
         async commit() {
           ops.forEach((op) => op());
         }
@@ -54,7 +50,7 @@ function createFakeFirestore() {
   return { fs, store };
 }
 
-function splitKey(k) {
+function splitKey(k: string) {
   const idx = k.lastIndexOf("/");
   return [k.slice(0, idx), k.slice(idx + 1)];
 }
@@ -63,7 +59,7 @@ const CONFIG = { apiKey: "k", projectId: "p", appId: "a" };
 
 function makeProvider() {
   const { fs, store } = createFakeFirestore();
-  const appModule = { initializeApp: (cfg) => ({ cfg }) };
+  const appModule = { initializeApp: (cfg: unknown) => ({ cfg }) };
   const provider = createFirestoreProvider({
     firebaseConfig: CONFIG,
     firebaseAppModule: appModule,
@@ -96,8 +92,8 @@ describe("createFirestoreProvider", () => {
 });
 
 describe("Firestore CRUD", () => {
-  let provider;
-  let store;
+  let provider: ReturnType<typeof createFirestoreProvider>;
+  let store: Map<string, Record<string, unknown>>;
 
   beforeEach(() => {
     ({ provider, store } = makeProvider());
@@ -152,9 +148,9 @@ describe("snapshot and replaceAll", () => {
     });
 
     const snap = await provider.snapshot();
-    expect(snap.videoItems.map((r) => r.id).sort()).toEqual(["v-1", "v-2"]);
-    expect(snap.contentTypes).toHaveLength(1);
-    expect(snap.settings.theme).toBe("light");
+    expect((snap.videoItems as Array<{ id: string }>).map((r) => r.id).sort()).toEqual(["v-1", "v-2"]);
+    expect((snap.contentTypes as Array<unknown>)).toHaveLength(1);
+    expect((snap.settings as { theme: string }).theme).toBe("light");
     expect(snap.version).toBe("2.0");
   });
 
