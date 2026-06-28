@@ -11,12 +11,19 @@ import { useToast } from "../../../hooks/useToast.js";
 
 // Silence framer-motion in jsdom — it doesn't need real animation
 vi.mock("framer-motion", async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal<typeof import("framer-motion")>();
   return {
     ...actual,
-    AnimatePresence: ({ children }) => children,
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     motion: {
-      div: ({ children, ...rest }) => {
+      div: ({ children, ...rest }: React.HTMLAttributes<HTMLDivElement> & {
+        children?: React.ReactNode;
+        initial?: unknown;
+        animate?: unknown;
+        exit?: unknown;
+        transition?: unknown;
+        variants?: unknown;
+      }) => {
         const { initial, animate, exit, transition, variants, ...domProps } = rest;
         return <div {...domProps}>{children}</div>;
       },

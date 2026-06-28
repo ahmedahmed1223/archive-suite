@@ -51,7 +51,7 @@ describe("InputV2", () => {
   });
 
   it("forwards ref to the input element", () => {
-    const ref = React.createRef();
+    const ref = React.createRef<HTMLInputElement>();
     render(<InputV2 ref={ref} />);
     expect(ref.current?.tagName).toBe("INPUT");
   });

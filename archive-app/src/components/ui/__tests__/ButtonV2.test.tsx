@@ -70,7 +70,7 @@ describe("ButtonV2", () => {
   });
 
   it("forwards ref to the button element", () => {
-    const ref = React.createRef();
+    const ref = React.createRef<HTMLButtonElement>();
     render(<ButtonV2 ref={ref}>مرجع</ButtonV2>);
     expect(ref.current?.tagName).toBe("BUTTON");
   });

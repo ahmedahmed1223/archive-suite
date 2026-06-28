@@ -14,12 +14,12 @@ describe("CardV2", () => {
 
   it("applies solid variant border class by default", () => {
     const { container } = render(<CardV2>محتوى</CardV2>);
-    expect(container.firstChild.className).toMatch(/border-\[var\(--va-border-soft\)\]/);
+    expect((container.firstElementChild as HTMLElement).className).toMatch(/border-\[var\(--va-border-soft\)\]/);
   });
 
   it("applies subtle variant (no border-soft shadow)", () => {
     const { container } = render(<CardV2 variant="subtle">محتوى</CardV2>);
-    expect(container.firstChild.className).toMatch(/border-transparent/);
+    expect((container.firstElementChild as HTMLElement).className).toMatch(/border-transparent/);
   });
 
   it("renders Header, Body, Footer compound parts", () => {
@@ -43,11 +43,11 @@ describe("CardV2", () => {
 
   it("CardV2.Body renders with secondary text class", () => {
     const { container } = render(<CardV2.Body>جسم</CardV2.Body>);
-    expect(container.firstChild.className).toMatch(/va-text-2/);
+    expect((container.firstElementChild as HTMLElement).className).toMatch(/va-text-2/);
   });
 
   it("CardV2.Footer renders with justify-end layout", () => {
     const { container } = render(<CardV2.Footer>تذييل</CardV2.Footer>);
-    expect(container.firstChild.className).toMatch(/justify-end/);
+    expect((container.firstElementChild as HTMLElement).className).toMatch(/justify-end/);
   });
 });

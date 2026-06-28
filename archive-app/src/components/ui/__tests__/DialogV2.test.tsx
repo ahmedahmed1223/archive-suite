@@ -50,7 +50,7 @@ describe("DialogV2", () => {
         محتوى
       </DialogV2>
     );
-    const dialog = container.querySelector("dialog");
+    const dialog = container.querySelector("dialog")!;
     expect(dialog).toHaveAttribute("aria-modal", "true");
   });
 
@@ -60,7 +60,7 @@ describe("DialogV2", () => {
         محتوى
       </DialogV2>
     );
-    const dialog = container.querySelector("dialog");
+    const dialog = container.querySelector("dialog")!;
     const labelledBy = dialog.getAttribute("aria-labelledby");
     expect(labelledBy).toBeTruthy();
     expect(container.querySelector(`#${labelledBy}`)).toHaveTextContent("عنوان");
