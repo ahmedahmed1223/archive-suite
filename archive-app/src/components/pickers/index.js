@@ -1,1 +1,1 @@
-export { IconPicker } from "./IconPicker.jsx";
+export * from "./index.ts";

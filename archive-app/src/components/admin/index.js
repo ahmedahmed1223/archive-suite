@@ -1,1 +1,1 @@
-export { BackupManager } from "./BackupManager.jsx";
+export * from "./index.ts";

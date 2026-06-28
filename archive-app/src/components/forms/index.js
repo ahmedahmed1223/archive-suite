@@ -1,1 +1,1 @@
-export { TagAutocomplete } from "./TagAutocomplete.jsx";
+export * from "./index.ts";
