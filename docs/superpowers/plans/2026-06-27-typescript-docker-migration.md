@@ -303,3 +303,27 @@ Run: `pnpm --filter @archive/app run test -- src/features/settings/fileStoreConf
 Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
 
 Current count after Task 12: 801 JS/JSX files and 69 TS/TSX files, excluding generated folders.
+
+### Task 13: Convert System Control Client
+
+**Files:**
+- Modify/add: `archive-app/src/features/systemControl/systemControlClient.{js,ts}`
+- Rename: `archive-app/src/features/systemControl/systemControlClient.test.js` -> `.ts`
+
+- [x] **Step 1: Convert system control API client**
+
+Type the custom error status, injected fetch contract, auth headers, control status/log/action request options, and unwrap payload behavior.
+
+- [x] **Step 2: Convert matching test**
+
+Rename the test to `.test.ts` and type the response payloads plus fetch call capture used for assertions.
+
+- [x] **Step 3: Verify app type safety and behavior**
+
+Run: `pnpm run typecheck:app`
+Expected: PASS.
+
+Run: `pnpm --filter @archive/app run test -- src/features/systemControl/systemControlClient.test.ts`
+Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
+
+Current count after Task 13: 800 JS/JSX files and 71 TS/TSX files, excluding generated folders.
