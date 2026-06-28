@@ -4,14 +4,16 @@ import { parseFirebaseConfigText, sanitizeFirebaseConfig } from "./firebaseConfi
 
 describe("firebaseConfig helpers", () => {
   it("parses pasted Firebase config and keeps only safe client fields", () => {
-    const parsed = parseFirebaseConfigText(JSON.stringify({
-      apiKey: "k",
-      projectId: "archive-test",
-      appId: "app",
-      authDomain: "archive-test.firebaseapp.com",
-      storageBucket: "archive-test.appspot.com",
-      privateKey: "must-not-survive"
-    }));
+    const parsed = parseFirebaseConfigText(
+      JSON.stringify({
+        apiKey: "k",
+        projectId: "archive-test",
+        appId: "app",
+        authDomain: "archive-test.firebaseapp.com",
+        storageBucket: "archive-test.appspot.com",
+        privateKey: "must-not-survive"
+      })
+    );
 
     expect(parsed.ok).toBe(true);
     expect(parsed.config).toEqual({

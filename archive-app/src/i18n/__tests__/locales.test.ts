@@ -7,17 +7,9 @@ import ar from "../locales/ar.js";
 import en from "../locales/en.js";
 import fr from "../locales/fr.js";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function allKeys(obj) {
+function allKeys(obj: Record<string, unknown>) {
   return Object.keys(obj);
 }
-
-// ---------------------------------------------------------------------------
-// Key parity
-// ---------------------------------------------------------------------------
 
 describe("Locale key parity", () => {
   const arKeys = allKeys(ar);
@@ -47,10 +39,6 @@ describe("Locale key parity", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// No undefined values
-// ---------------------------------------------------------------------------
-
 describe("No undefined values", () => {
   it("no key in en.js has an undefined value", () => {
     const undefinedKeys = Object.entries(en)
@@ -66,10 +54,6 @@ describe("No undefined values", () => {
     expect(undefinedKeys, `Undefined values in fr.js: ${undefinedKeys.join(", ")}`).toHaveLength(0);
   });
 });
-
-// ---------------------------------------------------------------------------
-// All values are non-empty strings
-// ---------------------------------------------------------------------------
 
 describe("All values are non-empty strings", () => {
   it("all en.js values are non-empty strings", () => {
@@ -87,18 +71,12 @@ describe("All values are non-empty strings", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// i18next integration
-// ---------------------------------------------------------------------------
-
 describe("i18next integration", () => {
-  let i18n;
+  let i18n: any;
 
   beforeAll(async () => {
-    // Import after locale files are defined so resources are registered
     const mod = await import("../index.js");
     i18n = mod.default;
-    // Wait for init to complete if it returned a promise
     if (i18n.isInitialized === false) {
       await new Promise((resolve) => i18n.on("initialized", resolve));
     }

@@ -7,10 +7,10 @@ import { localFileStore } from "../storage/adapters/files-local/index.js";
 import { localSessionProvider } from "../storage/adapters/local-session/index.js";
 
 function createMemoryStorage() {
-  const store = new Map();
+  const store = new Map<string, string>();
   return {
-    getItem: (key) => (store.has(key) ? store.get(key) : null),
-    setItem: (key, value) => store.set(key, String(value))
+    getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
+    setItem: (key: string, value: string) => store.set(key, String(value))
   };
 }
 
@@ -19,8 +19,9 @@ describe("registerByBackendChoice firebase", () => {
     const storage = createMemoryStorage();
     const firebaseConfig = { apiKey: "k", projectId: "archive-test", appId: "app", storageBucket: "bucket" };
     setBackendChoice("firebase", "", { storage, firebaseConfig });
-    const previousStorage = globalThis.localStorage;
-    const previousWindow = globalThis.window;
+    const g = globalThis as any;
+    const previousStorage = g.localStorage;
+    const previousWindow = g.window;
     const firestore = {
       engine: "firebase-storage",
       open() {},
@@ -38,8 +39,8 @@ describe("registerByBackendChoice firebase", () => {
     const session = { signIn() {}, signOut() {}, getCurrentUser() {}, getToken() {}, onChange() {} };
     const files = { putBlob() {}, getBlob() {}, getUrl() {}, remove() {}, list() {} };
     try {
-      globalThis.localStorage = storage;
-      globalThis.window = { localStorage: storage };
+      g.localStorage = storage;
+      g.window = { localStorage: storage };
       const result = registerByBackendChoice({
         createFirestoreProvider: () => firestore,
         createFirebaseSessionProvider: () => session,
@@ -55,10 +56,10 @@ describe("registerByBackendChoice firebase", () => {
       expect(getSessionProvider()).not.toBe(localSessionProvider);
       expect(getFileStore()).not.toBe(localFileStore);
     } finally {
-      if (previousStorage === undefined) delete globalThis.localStorage;
-      else globalThis.localStorage = previousStorage;
-      if (previousWindow === undefined) delete globalThis.window;
-      else globalThis.window = previousWindow;
+      if (previousStorage === undefined) delete g.localStorage;
+      else g.localStorage = previousStorage;
+      if (previousWindow === undefined) delete g.window;
+      else g.window = previousWindow;
     }
   });
 });

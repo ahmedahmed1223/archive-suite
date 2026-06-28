@@ -6,13 +6,13 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { useVirtualList } from "./useVirtualList.js";
 
-const makeItems = (count) => Array.from({ length: count }, (_, index) => ({ id: index }));
+const makeItems = (count: number) => Array.from({ length: count }, (_, index) => ({ id: index }));
 
-function setViewportWidth(width) {
+function setViewportWidth(width: number) {
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
     writable: true,
-    value: width
+    value: width,
   });
 }
 
