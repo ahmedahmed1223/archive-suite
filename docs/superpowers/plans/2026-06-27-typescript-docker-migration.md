@@ -327,3 +327,27 @@ Run: `pnpm --filter @archive/app run test -- src/features/systemControl/systemCo
 Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
 
 Current count after Task 13: 800 JS/JSX files and 71 TS/TSX files, excluding generated folders.
+
+### Task 14: Convert Voice Search Utilities
+
+**Files:**
+- Modify/add: `archive-app/src/features/search/voiceSearch.{js,ts}`
+- Rename: `archive-app/src/features/search/voiceSearch.test.js` -> `.ts`
+
+- [x] **Step 1: Convert voice search intent utilities**
+
+Type voice intent kinds, command prefix metadata, speech recognition scope detection, speech transcript event extraction, and parsed intent payloads.
+
+- [x] **Step 2: Convert matching test**
+
+Rename the test to `.test.ts` and use lightweight test types for speech recognition scope mocks.
+
+- [x] **Step 3: Verify app type safety and behavior**
+
+Run: `pnpm run typecheck:app`
+Expected: PASS.
+
+Run: `pnpm --filter @archive/app run test -- src/features/search/voiceSearch.test.ts`
+Expected: PASS. Current Vitest argument handling ran the full app suite successfully.
+
+Current count after Task 14: 799 JS/JSX files and 73 TS/TSX files, excluding generated folders.

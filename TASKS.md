@@ -170,6 +170,7 @@
   - ✅ شريحة 8 — file-manager API client (2026-06-28): حُوّل `fileManagerClient` إلى TypeScript مع bridge، وحُوّل اختباره إلى `.test.ts` مع fetch mock typed. العد الحالي خارج المخرجات: 802 JS/JSX و67 TS/TSX. مرّ `pnpm run typecheck:app`، وأُعيد اختبار الشريحة بعد timeout عابر في اختبار virtual list غير مرتبط فمرّت suite الواجهة كاملة (142 ملف اختبار/1237 اختبار).
   - ✅ شريحة 9 — file-store config client (2026-06-28): حُوّل `fileStoreConfigClient` إلى TypeScript مع bridge، وحُوّل اختباره إلى `.test.ts` مع fetch mock typed. العد الحالي خارج المخرجات: 801 JS/JSX و69 TS/TSX. مرّ `pnpm run typecheck:app` واختبار الشريحة الذي شغّل suite الواجهة كاملة (142 ملف اختبار/1237 اختبار).
   - ✅ شريحة 10 — system control client (2026-06-28): حُوّل `systemControlClient` إلى TypeScript مع bridge، وحُوّل اختباره إلى `.test.ts` مع typed payloads وfetch mock. العد الحالي خارج المخرجات: 800 JS/JSX و71 TS/TSX. مرّ `pnpm run typecheck:app` واختبار الشريحة الذي شغّل suite الواجهة كاملة (142 ملف اختبار/1237 اختبار).
+  - ✅ شريحة 11 — voice search intent utilities (2026-06-28): حُوّل `voiceSearch` إلى TypeScript مع bridge، وحُوّل اختباره إلى `.test.ts` مع أنواع scope وspeech event خفيفة. العد الحالي خارج المخرجات: 799 JS/JSX و73 TS/TSX. مرّ `pnpm run typecheck:app` واختبار الشريحة الذي شغّل suite الواجهة كاملة (142 ملف اختبار/1237 اختبار).
   - الترتيب: stores → ports → hooks (frontend)؛ ports → adapters → services → routes (server).
   - القبول: `tsconfig` مع `strictNullChecks`؛ ≥80% ملفات جديدة بـ TS (هدف مرحلي).
   - المصدر: dev-roadmap (P1-04, P1-05, P5-03).

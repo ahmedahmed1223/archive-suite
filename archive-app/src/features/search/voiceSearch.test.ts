@@ -4,7 +4,8 @@ import {
   extractSpeechTranscript,
   getSpeechRecognitionConstructor,
   isVoiceSearchSupported,
-  parseVoiceSearchIntent
+  parseVoiceSearchIntent,
+  type VoiceSearchScope
 } from "./voiceSearch.js";
 
 describe("voice search support", () => {
@@ -12,9 +13,9 @@ describe("voice search support", () => {
     function StandardRecognition() {}
     function WebkitRecognition() {}
 
-    expect(getSpeechRecognitionConstructor({ SpeechRecognition: StandardRecognition })).toBe(StandardRecognition);
-    expect(getSpeechRecognitionConstructor({ webkitSpeechRecognition: WebkitRecognition })).toBe(WebkitRecognition);
-    expect(isVoiceSearchSupported({ webkitSpeechRecognition: WebkitRecognition })).toBe(true);
+    expect(getSpeechRecognitionConstructor({ SpeechRecognition: StandardRecognition } as VoiceSearchScope)).toBe(StandardRecognition);
+    expect(getSpeechRecognitionConstructor({ webkitSpeechRecognition: WebkitRecognition } as VoiceSearchScope)).toBe(WebkitRecognition);
+    expect(isVoiceSearchSupported({ webkitSpeechRecognition: WebkitRecognition } as VoiceSearchScope)).toBe(true);
     expect(isVoiceSearchSupported({})).toBe(false);
   });
 });
