@@ -1,1 +1,1 @@
-export * from "./xlsx.js";
+export * from "./index.ts";
