@@ -16,7 +16,7 @@ interface LoggerLike {
 }
 
 interface ArchiveItemLike {
-  id?: string;
+  id: string;
   store?: string;
   documentType?: string | null;
   mimeType?: string | null;
@@ -159,7 +159,7 @@ export async function runRetentionSweep({
     },
   });
 
-  const { toArchive, toDelete } = scanRetention(items, activeRules, now.getTime()) as {
+  const { toArchive, toDelete } = scanRetention(items as any, activeRules, now.getTime()) as {
     toArchive: ArchiveItemLike[];
     toDelete: ArchiveItemLike[];
   };
