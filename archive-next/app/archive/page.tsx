@@ -93,7 +93,7 @@ export default function ArchivePage() {
               <div className="grid" aria-label="السجلات المحفوظة">
                 {state.records.map((record) => (
                   <article className="panel" key={record.id}>
-                    <h2>{record.title}</h2>
+                    <h2><a href={`/archive/${encodeURIComponent(record.id)}`}>{record.title}</a></h2>
                     {record.description ? (
                       <p>{record.description}</p>
                     ) : null}

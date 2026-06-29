@@ -82,6 +82,7 @@ export interface ArchiveApiClient {
     params: { q?: string; store?: string; limit?: number },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[] }>>;
+  record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
@@ -166,8 +167,9 @@ export function createArchiveApiClient({
       params.set("limit", String(limit));
       return get(`/search?${params.toString()}`, options);
     },
-    rights: (itemId: string, options?: AuthRequestOptions) => get(`/rights?itemId=${encodeURIComponent(itemId)}`, options),
-    mediaJob: (id: string, options?: AuthRequestOptions) => get(`/media/jobs/${encodeURIComponent(id)}`, options),
+    record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
+    rights: (itemId: string, options?: AuthRequestOptions) => get<{ record: RightsRecord }>(`/rights?itemId=${encodeURIComponent(itemId)}`, options),
+    mediaJob: (id: string, options?: AuthRequestOptions) => get<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}`, options),
     share: (token: string) => get(`/share/${encodeURIComponent(token)}`)
   };
 }
