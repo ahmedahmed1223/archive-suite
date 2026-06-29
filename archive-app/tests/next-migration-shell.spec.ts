@@ -28,3 +28,36 @@ test('renders the Next.js public share viewer route', async ({ page }) => {
   await expect(page.getByLabel('عارض المشاركة')).toContainText('demo-token');
   await expect(page.getByText('/api/v1/share/:token')).toBeVisible();
 });
+
+test('renders the Next.js help migration route', async ({ page }) => {
+  await page.goto('/help', { waitUntil: 'networkidle' });
+
+  await expect(page.getByRole('heading', { name: 'مركز مساعدة Next.js' })).toBeVisible();
+  await expect(page.getByLabel('مركز مساعدة Next.js')).toContainText('مسار منخفض المخاطر');
+  await expect(page.getByText('عقود API')).toBeVisible();
+});
+
+test('renders the Next.js reports migration route', async ({ page }) => {
+  await page.goto('/reports', { waitUntil: 'networkidle' });
+
+  await expect(page.getByRole('heading', { name: 'تقارير Next.js التجريبية.' })).toBeVisible();
+  await expect(page.getByLabel('تقارير Next.js')).toContainText('بوابة القبول');
+  await expect(page.getByText(/App Router/)).toBeVisible();
+});
+
+test('renders the Next.js settings migration route', async ({ page }) => {
+  await page.goto('/settings', { waitUntil: 'networkidle' });
+
+  await expect(page.getByRole('heading', { name: 'إعدادات Next.js المبدئية.' })).toBeVisible();
+  await expect(page.getByLabel('إعدادات Next.js')).toContainText('جلسات Laravel');
+  await expect(page.getByText('refresh cookie HttpOnly')).toBeVisible();
+});
+
+test('renders the Next.js media jobs route wired for Laravel backend status', async ({ page }) => {
+  await page.goto('/media/jobs', { waitUntil: 'networkidle' });
+
+  await expect(page.getByRole('heading', { name: 'Media jobs عبر Laravel.' })).toBeVisible();
+  await expect(page.getByLabel('فحص media jobs')).toContainText('/api/v1/media/jobs/:id');
+  await expect(page.getByLabel('معرّف job')).toBeVisible();
+  await expect(page.getByLabel('Access token')).toBeVisible();
+});

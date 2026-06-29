@@ -10,7 +10,13 @@ export default function HomePage() {
           <strong>Archive Suite</strong>
           <span>Next.js migration shell</span>
         </div>
-        <a className="badge" href="/login">تجربة تسجيل الدخول</a>
+        <nav className="route-links" aria-label="مسارات Next.js">
+          <a className="badge" href="/help">المساعدة</a>
+          <a className="badge" href="/reports">التقارير</a>
+          <a className="badge" href="/settings">الإعدادات</a>
+          <a className="badge" href="/media/jobs">media jobs</a>
+          <a className="badge" href="/login">تجربة تسجيل الدخول</a>
+        </nav>
       </header>
 
       <section className="content">
@@ -40,6 +46,8 @@ export default function HomePage() {
               <li>تنتقل الصفحات إلى Next.js تدريجيا بعد Playwright.</li>
               <li>Laravel يطبّق نفس العقد قبل تحويل المرور إليه.</li>
               <li>عارض المشاركة العامة بدأ على `/share/:token`.</li>
+              <li>المساعدة والتقارير والإعدادات صارت مسارات Next.js منخفضة المخاطر.</li>
+              <li>واجهة media jobs تعرض حالة Laravel queue بدون نقل منطق backend إلى Next.js.</li>
             </ul>
           </article>
 

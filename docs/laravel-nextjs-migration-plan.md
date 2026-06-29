@@ -32,6 +32,10 @@ Use Laravel for the backend domain and operational services, and Next.js for the
      App Router shell that imports `docs/api/archive-contract.openapi.json`.
    - Status 2026-06-27: `archive-next/lib/archive-api.ts` provides the first
      typed API client for health, current user, search, rights, and share routes.
+   - Status 2026-06-29: `archive-next` now owns the frontend migration surface
+     for `/help`, `/reports`, `/settings`, and `/media/jobs`, all implemented as
+     TypeScript App Router routes. Backend state and work remain behind Laravel
+     `/api/v1/*` routes.
 
 4. Scaffold Laravel API after domain mapping.
    - Map Prisma models to Laravel migrations.
@@ -91,6 +95,13 @@ Use Laravel for the backend domain and operational services, and Next.js for the
    - Status 2026-06-27: Next.js can proxy `/api/v1/*` to a live Laravel API
      through `ARCHIVE_API_BASE_URL`, and `pnpm run e2e:next:integration`
      verifies `/share/[token]` against a seeded Laravel SQLite database.
+   - Status 2026-06-29: the Next.js frontend shell now exposes the migrated
+     help, reports, settings, public share, login, and media job status routes.
+     The media jobs UI calls the typed `mediaJob()` client against
+     `/api/v1/media/jobs/:id`; job creation, queue lifecycle, and processors stay
+     in Laravel. Verified with `pnpm run typecheck:next`,
+     `pnpm run build:next`, and
+     `E2E_BASE_URL=http://127.0.0.1:8993 pnpm run e2e:next` (14 passed).
 
 ## Why Not Astro Now
 
@@ -102,11 +113,15 @@ Astro is good for content-heavy sites and islands, but this product is an operat
 - Remove Astro dependencies, scripts, config, and generated artifacts.
 - Add API contract documentation before scaffolding Laravel or Next.js.
   - Initial contract: `docs/api/archive-contract.openapi.json`.
-- Keep `archive-next` as a migration shell until route-level parity and E2E
-  checks are added.
+- Keep `archive-next` as the TypeScript frontend migration surface. Current
+  migrated low-risk routes are `/help`, `/reports`, `/settings`, `/login`,
+  `/share/[token]`, and `/media/jobs`.
 - Keep `archive-laravel` parallel to the Node server until auth, records,
   search, files, rights, and share route groups match the contract.
-- Next work should continue moving low-risk public/share screens, expand the
-  route-level integration suite beyond the share viewer, and replace media job
-  placeholders with real processors.
+- Keep Laravel as the backend/API boundary for auth, policies, file access,
+  audit logs, media jobs, and queues. Next.js should not absorb backend
+  processors.
+- Remaining work: expand authenticated operational route parity, run live
+  integration checks for more than the share viewer, and replace Laravel media
+  job placeholders with real processors.
 - Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.
