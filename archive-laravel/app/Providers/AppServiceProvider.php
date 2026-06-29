@@ -3,8 +3,11 @@
 namespace App\Providers;
 
 use App\Services\Ingest\FakeIngestTransport;
+use App\Services\Ingest\FtpIngestTransport;
 use App\Services\Ingest\IngestScanner;
 use App\Services\Ingest\IngestTransport;
+use App\Services\Ingest\PhpFtpClient;
+use App\Services\Ingest\SmbIngestTransport;
 use App\Services\Media\FakeMediaProcessor;
 use App\Services\Media\FakeProcessRunner;
 use App\Services\Media\MediaProcessor;
@@ -40,8 +43,21 @@ class AppServiceProvider extends ServiceProvider
             $this->app->bind(MediaProcessor::class, FakeMediaProcessor::class);
         }
 
-        // Ingest transport: fake by default (for testing; real FTP/SMB deferred)
-        $this->app->bind(IngestTransport::class, FakeIngestTransport::class);
+        // Ingest transport: selection via env INGEST_TRANSPORT (fake|ftp|smb)
+        // Default remains fake to preserve existing tests and offline mode
+        $transportType = config('ingest.transport', 'fake');
+
+        match ($transportType) {
+            'ftp' => $this->app->bind(
+                IngestTransport::class,
+                fn () => new FtpIngestTransport(new PhpFtpClient())
+            ),
+            'smb' => $this->app->bind(
+                IngestTransport::class,
+                fn ($app) => new SmbIngestTransport($app->make(ProcessRunner::class))
+            ),
+            default => $this->app->bind(IngestTransport::class, FakeIngestTransport::class),
+        };
 
         // Ingest scanner: wire disk and directory from config
         $this->app->bind(IngestScanner::class, fn () => new IngestScanner(
