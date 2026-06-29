@@ -63,6 +63,13 @@ a {
   font-size: 0.875rem;
 }
 
+.route-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .content {
   width: min(1120px, calc(100% - 2rem));
   margin-inline: auto;
@@ -205,6 +212,15 @@ a {
 }
 
 @media (max-width: 760px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .route-links {
+    justify-content: flex-start;
+  }
+
   .auth-layout {
     grid-template-columns: 1fr;
   }

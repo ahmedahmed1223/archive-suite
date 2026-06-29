@@ -55,6 +55,23 @@ export interface RightsRecord {
   updatedAt: string;
 }
 
+export type MediaOperation = "thumbnail" | "transcode" | "transcription";
+export type MediaJobStatus = "queued" | "processing" | "completed" | "failed";
+
+export interface MediaJob {
+  id: string;
+  recordId: string;
+  operation: MediaOperation;
+  status: MediaJobStatus;
+  sourcePath?: string | null;
+  options?: Record<string, unknown>;
+  result?: Record<string, unknown> | null;
+  error?: string | null;
+  queuedAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
   login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
@@ -66,6 +83,7 @@ export interface ArchiveApiClient {
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[] }>>;
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
+  mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
 }
 
@@ -149,6 +167,7 @@ export function createArchiveApiClient({
       return get(`/search?${params.toString()}`, options);
     },
     rights: (itemId: string, options?: AuthRequestOptions) => get(`/rights?itemId=${encodeURIComponent(itemId)}`, options),
+    mediaJob: (id: string, options?: AuthRequestOptions) => get(`/media/jobs/${encodeURIComponent(id)}`, options),
     share: (token: string) => get(`/share/${encodeURIComponent(token)}`)
   };
 }
