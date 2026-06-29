@@ -1,0 +1,23 @@
+FROM php:8.3-cli
+
+# Install system dependencies including ffmpeg
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libzip-dev \
+    && docker-php-ext-install zip pdo pdo_pgsql \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Install PHP dependencies
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    && composer install --no-interaction --no-dev
+
+# Copy application code
+COPY . .
+
+# Run queue worker
+CMD ["php", "artisan", "queue:work", "--max-jobs=1000", "--max-time=3600"]
