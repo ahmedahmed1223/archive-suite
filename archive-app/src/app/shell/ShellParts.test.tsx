@@ -4,8 +4,9 @@ import { runStartupSequence } from "./ShellParts.jsx";
 
 describe("runStartupSequence", () => {
   it("does not require IndexedDB for a cloud backend", async () => {
-    const previous = globalThis.indexedDB;
-    delete globalThis.indexedDB;
+    const indexedDbGlobal = globalThis as { indexedDB?: IDBFactory };
+    const previous = indexedDbGlobal.indexedDB;
+    delete indexedDbGlobal.indexedDB;
     const loadAllData = vi.fn().mockResolvedValue(undefined);
     const initAuth = vi.fn().mockResolvedValue(undefined);
 
@@ -19,8 +20,8 @@ describe("runStartupSequence", () => {
       expect(loadAllData).toHaveBeenCalledOnce();
       expect(initAuth).toHaveBeenCalledOnce();
     } finally {
-      if (previous === undefined) delete globalThis.indexedDB;
-      else globalThis.indexedDB = previous;
+      if (previous === undefined) delete indexedDbGlobal.indexedDB;
+      else indexedDbGlobal.indexedDB = previous;
     }
   });
 });

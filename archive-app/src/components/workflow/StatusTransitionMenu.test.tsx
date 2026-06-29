@@ -45,9 +45,9 @@ describe("StatusTransitionMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
 
     await waitFor(() => expect(onChanged).toHaveBeenCalledWith({ id: "r1", status: "approved" }));
-    const [url, init] = fetchImpl.mock.calls[0];
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit?];
     expect(url).toBe("https://api.test/api/workflow/transition");
-    expect(JSON.parse(init.body)).toEqual({ store: "video_items", id: "r1", to: "approved" });
+    expect(JSON.parse(init?.body as string)).toEqual({ store: "video_items", id: "r1", to: "approved" });
   });
 
   it("shows the server error when a transition fails", async () => {

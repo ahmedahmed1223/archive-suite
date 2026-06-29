@@ -16,7 +16,14 @@ import { useVirtualList } from "../hooks/useVirtualList.js";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeItems(count) {
+type ArchiveTestItem = {
+  id: string;
+  title: string;
+};
+
+type VirtualListHookResult = ReturnType<typeof useVirtualList<ArchiveTestItem>>;
+
+function makeItems(count: number): ArchiveTestItem[] {
   return Array.from({ length: count }, (_, index) => ({
     id: `item-${index}`,
     title: `Archive item ${index}`,
@@ -27,7 +34,7 @@ function makeItems(count) {
  * Simulate a container scroll event so the virtual scroller recalculates the
  * visible range. We need to flush the rAF callback manually.
  */
-function simulateContainerScroll(container, scrollTop) {
+function simulateContainerScroll(container: Element, scrollTop: number) {
   Object.defineProperty(container, "scrollTop", {
     configurable: true,
     writable: true,
@@ -48,7 +55,7 @@ function simulateContainerScroll(container, scrollTop) {
 describe("useVirtualList — virtual scrolling behaviour", () => {
   beforeEach(() => {
     // JSDOM does not implement rAF; stub it so effects run synchronously.
-    vi.stubGlobal("requestAnimationFrame", (cb) => { cb(); return 1; });
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => { cb(0); return 1; });
 
     // Default viewport: desktop width (≥ 768 px), so threshold is > 50 items.
     Object.defineProperty(window, "innerWidth", {
@@ -82,7 +89,7 @@ describe("useVirtualList — virtual scrolling behaviour", () => {
 
   it("renders only a subset of rows for 200 items (not all 200)", () => {
     const items = makeItems(200);
-    let hookResult = null;
+    let hookResult: VirtualListHookResult | null = null;
 
     // Mount via a component so containerRef attaches to a real DOM element
     // and the scroll-range calculation can fire.
@@ -105,21 +112,21 @@ describe("useVirtualList — virtual scrolling behaviour", () => {
 
     // With an attached container and containerHeight provided through clientHeight,
     // the hook calculates a bounded visible range.
-    expect(hookResult.shouldVirtualize).toBe(true);
-    expect(hookResult.totalCount).toBe(200);
+    expect(hookResult!.shouldVirtualize).toBe(true);
+    expect(hookResult!.totalCount).toBe(200);
     // Without clientHeight set in JSDOM the visible range may default to all items.
     // Set clientHeight and trigger a recalculation.
     const container = document.querySelector("[data-testid='probe-container']");
-    Object.defineProperty(container, "clientHeight", {
+    Object.defineProperty(container!, "clientHeight", {
       configurable: true,
       writable: true,
       value: 500,
     });
-    act(() => { container.dispatchEvent(new Event("scroll")); });
+    act(() => { container!.dispatchEvent(new Event("scroll")); });
 
     // After attaching, visibleCount should be less than 200
     // (500px ÷ 72px = ~6 visible + 2*5 overscan = ~16 rows maximum)
-    expect(hookResult.visibleCount).toBeLessThan(200);
+    expect(hookResult!.visibleCount).toBeLessThan(200);
 
     unmount();
   });
@@ -159,7 +166,7 @@ describe("useVirtualList — virtual scrolling behaviour", () => {
     const { unmount } = render(React.createElement(VirtualListWrapper));
     const container = document.querySelector("[data-testid='vlist-container']");
 
-    act(() => { simulateContainerScroll(container, 360); });
+    act(() => { simulateContainerScroll(container!, 360); });
 
     const stored = sessionStorage.getItem(scrollKey);
     // After a scroll event the position should be persisted
@@ -251,7 +258,7 @@ describe("ArchivePageResults — virtual list in list view", () => {
       "../features/archive/ArchivePageResults.jsx"
     );
 
-    vi.stubGlobal("requestAnimationFrame", (cb) => { cb(); return 1; });
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => { cb(0); return 1; });
 
     const items = makeItems(200);
 
@@ -311,7 +318,7 @@ describe("ArchivePageResults — virtual list in list view", () => {
       "../features/archive/ArchivePageResults.jsx"
     );
 
-    vi.stubGlobal("requestAnimationFrame", (cb) => { cb(); return 1; });
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => { cb(0); return 1; });
 
     const baseProps = {
       isLoading: false,

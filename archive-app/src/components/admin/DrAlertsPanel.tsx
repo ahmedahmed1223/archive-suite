@@ -63,6 +63,7 @@ export function DrAlertsPanel({ authToken, isAdmin = false, pollIntervalMs = 30_
   const [drillMsg, setDrillMsg] = useState<{ err: boolean; text: string } | null>(null);
   const [loadingProbe, setLoadingProbe] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(false);
 
   const authHeaders = { Authorization: `Bearer ${authToken}` };
 
@@ -71,12 +72,12 @@ export function DrAlertsPanel({ authToken, isAdmin = false, pollIntervalMs = 30_
       const r = await fetch("/api/backups/health-probe", { headers: authHeaders });
       if (r.ok) {
         const d = await r.json();
-        setProbe(d.probe ?? null);
+        if (mountedRef.current) setProbe(d.probe ?? null);
       }
     } catch {
       // ignore — probe status stays stale
     } finally {
-      setLoadingProbe(false);
+      if (mountedRef.current) setLoadingProbe(false);
     }
   }, [authToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -85,7 +86,7 @@ export function DrAlertsPanel({ authToken, isAdmin = false, pollIntervalMs = 30_
       const r = await fetch("/api/backups/drill-history", { headers: authHeaders });
       if (r.ok) {
         const d = await r.json();
-        setHistory(d.history ?? []);
+        if (mountedRef.current) setHistory(d.history ?? []);
       }
     } catch {
       // ignore
@@ -93,10 +94,12 @@ export function DrAlertsPanel({ authToken, isAdmin = false, pollIntervalMs = 30_
   }, [authToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchProbe();
     fetchHistory();
     intervalRef.current = setInterval(fetchProbe, pollIntervalMs);
     return () => {
+      mountedRef.current = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [fetchProbe, fetchHistory, pollIntervalMs]);
@@ -111,15 +114,17 @@ export function DrAlertsPanel({ authToken, isAdmin = false, pollIntervalMs = 30_
       });
       const d = await r.json().catch(() => ({}));
       if (r.ok) {
-        setDrillMsg({ err: false, text: d.drill?.passed ? "اجتاز الحفر DR بنجاح ✓" : "انتهى الحفر DR — بعض الفحوصات فشلت" });
+        if (mountedRef.current) {
+          setDrillMsg({ err: false, text: d.drill?.passed ? "اجتاز الحفر DR بنجاح ✓" : "انتهى الحفر DR — بعض الفحوصات فشلت" });
+        }
         fetchHistory();
       } else {
-        setDrillMsg({ err: true, text: d.error || "فشل تشغيل الحفر" });
+        if (mountedRef.current) setDrillMsg({ err: true, text: d.error || "فشل تشغيل الحفر" });
       }
     } catch {
-      setDrillMsg({ err: true, text: "فشل الاتصال بالخادم" });
+      if (mountedRef.current) setDrillMsg({ err: true, text: "فشل الاتصال بالخادم" });
     } finally {
-      setDrilling(false);
+      if (mountedRef.current) setDrilling(false);
     }
   };
 

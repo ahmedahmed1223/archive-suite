@@ -75,7 +75,7 @@ describe("MultiTrackTimeline", () => {
   it("coalesces a trim gesture into one command at pointer up", () => {
     const onCommand = vi.fn();
     const { container } = render(<MultiTrackTimeline tracks={tracks} clips={clips} pixelsPerSecond={10} onCommand={onCommand} />);
-    const outHandle = container.querySelector('[data-edge="out"]');
+    const outHandle = container.querySelector('[data-edge="out"]') as Element;
 
     fireEvent.pointerDown(outHandle, { clientX: 100, pointerId: 1 });
     fireEvent.pointerUp(outHandle, { clientX: 80, pointerId: 1 });
@@ -104,11 +104,11 @@ describe("MultiTrackTimeline", () => {
 
     const clip = container.querySelector(".multitrack-clip.has-thumbnail");
     expect(clip).not.toBeNull();
-    expect(clip.getAttribute("style")).toContain("poster.jpg");
+    expect(clip!.getAttribute("style")).toContain("poster.jpg");
 
     const pin = container.querySelector(".multitrack-clip__comment-pin");
     expect(pin).not.toBeNull();
-    await user.click(pin);
+    await user.click(pin!);
     expect(onCommand).toHaveBeenCalledWith({ type: "clip.comment-focus", clipId: "clip-1", commentId: "c-1", atSec: 2.5 });
   });
 });

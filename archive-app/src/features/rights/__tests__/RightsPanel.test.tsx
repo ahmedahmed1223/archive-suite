@@ -27,6 +27,10 @@ import { fetchItemRights, saveItemRights } from "../../../features/rights/rights
 import { getBackendChoice } from "../../../bootstrap/backendChoice.js";
 import { RightsPanel } from "../RightsPanel.jsx";
 
+const mockedFetchItemRights = vi.mocked(fetchItemRights);
+const mockedSaveItemRights = vi.mocked(saveItemRights);
+const mockedGetBackendChoice = vi.mocked(getBackendChoice);
+
 const EMPTY_RECORD = { ok: true, record: null };
 const FULL_RECORD = {
   ok: true,
@@ -74,20 +78,20 @@ const EMBARGO_ACTIVE_RECORD = {
 describe("RightsPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchItemRights.mockResolvedValue(EMPTY_RECORD);
-    saveItemRights.mockResolvedValue({ ok: true, record: {} });
-    getBackendChoice.mockReturnValue("postgres");
+    mockedFetchItemRights.mockResolvedValue(EMPTY_RECORD);
+    mockedSaveItemRights.mockResolvedValue({ ok: true, record: {} });
+    mockedGetBackendChoice.mockReturnValue("postgres");
   });
 
   it("renders nothing when backend is local", async () => {
-    getBackendChoice.mockReturnValue("local");
+    mockedGetBackendChoice.mockReturnValue("local");
     const { container } = render(<RightsPanel itemId="item-1" />);
     // Should render null / empty — no heading
     expect(container.firstChild).toBeNull();
   });
 
   it("shows loading state initially then renders panel heading", async () => {
-    fetchItemRights.mockImplementation(
+    mockedFetchItemRights.mockImplementation(
       () => new Promise((resolve) => setTimeout(() => resolve(EMPTY_RECORD), 50))
     );
     render(<RightsPanel itemId="item-1" />);
@@ -105,7 +109,7 @@ describe("RightsPanel", () => {
   });
 
   it("populates fields from fetched record", async () => {
-    fetchItemRights.mockResolvedValue(FULL_RECORD);
+    mockedFetchItemRights.mockResolvedValue(FULL_RECORD);
     render(<RightsPanel itemId="item-42" />);
     await screen.findByDisplayValue("وكالة الأنباء");
     // Select shows Arabic label; verify by combobox value
@@ -116,13 +120,13 @@ describe("RightsPanel", () => {
   });
 
   it("shows expired warning when expiresAt is in the past", async () => {
-    fetchItemRights.mockResolvedValue(EXPIRED_RECORD);
+    mockedFetchItemRights.mockResolvedValue(EXPIRED_RECORD);
     render(<RightsPanel itemId="item-99" />);
     await screen.findByText(/منتهية/i);
   });
 
   it("shows embargo warning when currently under embargo", async () => {
-    fetchItemRights.mockResolvedValue(EMBARGO_ACTIVE_RECORD);
+    mockedFetchItemRights.mockResolvedValue(EMBARGO_ACTIVE_RECORD);
     render(<RightsPanel itemId="item-77" />);
     // The warning badge text is exactly "🔒 تحت الحجب" — query by role to distinguish it from the field labels
     await screen.findByRole("status");
@@ -139,7 +143,7 @@ describe("RightsPanel", () => {
   });
 
   it("renders license type badge", async () => {
-    fetchItemRights.mockResolvedValue(FULL_RECORD);
+    mockedFetchItemRights.mockResolvedValue(FULL_RECORD);
     render(<RightsPanel itemId="item-42" />);
     // Wait for the panel to finish loading (heading is always rendered post-load)
     await screen.findByRole("heading", { name: "الحقوق والترخيص" });
@@ -165,7 +169,7 @@ describe("RightsPanel", () => {
     const soon = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)
       .toISOString()
       .slice(0, 10);
-    fetchItemRights.mockResolvedValue({
+    mockedFetchItemRights.mockResolvedValue({
       ok: true,
       record: {
         id: "r4",

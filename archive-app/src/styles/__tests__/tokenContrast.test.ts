@@ -18,6 +18,12 @@ import {
   contrastRatio,
 } from "../../../scripts/verify-theme-contrast.mjs";
 
+type TokenMap = Map<string, string>;
+type Rgb = [number, number, number];
+type PairResult =
+  | { skipped: true; ratio: null; pass?: never }
+  | { skipped: false; ratio: number; pass: boolean };
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -28,25 +34,25 @@ const TOKEN_FILE = resolve(__dirname, "../design-tokens.css");
 // mutable state between test runs)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function parseTokens(css) {
-  const map = new Map();
+function parseTokens(css: string): TokenMap {
+  const map = new Map<string, string>();
   const re = /(--[\w-]+)\s*:\s*([^;}{]+);/g;
-  let m;
+  let m: RegExpExecArray | null;
   while ((m = re.exec(css)) !== null) {
     map.set(m[1].trim(), m[2].trim());
   }
   return map;
 }
 
-function parseTokensForSelector(css, selector) {
+function parseTokensForSelector(css: string, selector: string): TokenMap {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp(escaped + "\\s*\\{([^}]*)\\}", "s");
   const match = css.match(re);
-  if (!match) return new Map();
+  if (!match) return new Map<string, string>();
   return parseTokens(match[1]);
 }
 
-function resolveToken(name, tokens) {
+function resolveToken(name: string, tokens: TokenMap): string | null {
   const raw = tokens.get(name);
   if (!raw) return null;
   if (raw.startsWith("var(")) {
@@ -56,7 +62,7 @@ function resolveToken(name, tokens) {
   return raw;
 }
 
-function toRgb(colorStr) {
+function toRgb(colorStr: string | null): Rgb | null {
   if (!colorStr) return null;
   const s = colorStr.trim();
   if (/^oklch/i.test(s)) {
@@ -64,9 +70,10 @@ function toRgb(colorStr) {
   }
   const hex = s.match(/^#([0-9a-fA-F]{3,6})$/);
   if (hex) {
-    const h = hex[1].length === 3
-      ? hex[1].split("").map((c) => c + c).join("")
-      : hex[1];
+    const rawHex = hex[1];
+    const h = rawHex.length === 3
+      ? rawHex.split("").map((c: string) => c + c).join("")
+      : rawHex;
     return [
       parseInt(h.slice(0, 2), 16),
       parseInt(h.slice(2, 4), 16),
@@ -85,7 +92,7 @@ const lightTokens = parseTokens(css);
 const darkOverrides = parseTokensForSelector(css, "html.dark");
 const darkTokens = new Map([...lightTokens, ...darkOverrides]);
 
-function checkPair(textToken, surfaceToken, tokens, threshold) {
+function checkPair(textToken: string, surfaceToken: string, tokens: TokenMap, threshold: number): PairResult {
   const textVal    = resolveToken(textToken, tokens);
   const surfaceVal = resolveToken(surfaceToken, tokens);
   const textRgb    = toRgb(textVal);
@@ -255,7 +262,7 @@ const MIGRATED_HEX = [
   "#475569",   // --va-text-2 light
 ].map((h) => h.toLowerCase());
 
-function walkJsx(dir, acc = []) {
+function walkJsx(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     const stat = statSync(full);
@@ -278,7 +285,7 @@ describe("No migrated hex literals in JSX source", () => {
   // migrate sites.
   for (const hex of MIGRATED_HEX) {
     it(`bare ${hex} count in .jsx/.js does not grow (regression baseline)`, () => {
-      const matches = [];
+      const matches: string[] = [];
       for (const file of jsxFiles) {
         if (file.includes("scripts") || file.includes("__tests__")) continue;
         const content = readFileSync(file, "utf8").toLowerCase();
@@ -287,7 +294,7 @@ describe("No migrated hex literals in JSX source", () => {
         }
       }
       // Snapshot the count at wave-31 merge time. Future slices tighten this.
-      const baselines = { "#f8fafc": 4, "#475569": 12 };
+      const baselines: Record<string, number> = { "#f8fafc": 4, "#475569": 12 };
       const cap = baselines[hex] ?? 0;
       expect(matches.length).toBeLessThanOrEqual(cap);
     });
