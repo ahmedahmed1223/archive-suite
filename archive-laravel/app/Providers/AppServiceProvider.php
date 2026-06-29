@@ -14,6 +14,7 @@ use App\Services\Media\MediaProcessor;
 use App\Services\Media\ProcessRunner;
 use App\Services\Media\RealMediaProcessor;
 use App\Services\Media\SymfonyProcessRunner;
+use App\Services\Media\WhisperTranscriber;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -26,6 +27,18 @@ class AppServiceProvider extends ServiceProvider
         // Process runner: real by default, fake in tests/offline mode
         $this->app->bind(ProcessRunner::class, fn () => new SymfonyProcessRunner());
 
+        // Whisper transcriber: uses injected ProcessRunner for testability
+        $this->app->bind(
+            WhisperTranscriber::class,
+            fn ($app) => new WhisperTranscriber(
+                $app->make(ProcessRunner::class),
+                config('media.whisper_binary'),
+                config('media.whisper_model'),
+                config('media.whisper_language'),
+                config('media.whisper_output_format'),
+            )
+        );
+
         // Media processor: fake by default (existing tests unaffected)
         // Set MEDIA_PROCESSOR=real to use ffmpeg-backed processor
         $processorType = config('media.processor');
@@ -34,9 +47,9 @@ class AppServiceProvider extends ServiceProvider
                 MediaProcessor::class,
                 fn ($app) => new RealMediaProcessor(
                     $app->make(ProcessRunner::class),
+                    $app->make(WhisperTranscriber::class),
                     config('media.ffmpeg_path'),
                     config('media.ffprobe_path'),
-                    config('media.transcription_binary'),
                 )
             );
         } else {
