@@ -395,7 +395,7 @@ model ItemRelation {
 /// Each rule defines a lifetime for items matching its scope.
 /// action="archive" → set archivedAt on the item.
 /// action="delete"  → secureOverwrite the file then mark the row isDeleted/deletedAt.
-/// The daily sweep is triggered by src/retention/retentionScheduler.js.
+/// The daily sweep is triggered by src/retention/retentionScheduler.ts.
 model RetentionRule {
   id           String   @id @default(cuid())
   name         String

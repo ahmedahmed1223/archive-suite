@@ -17,7 +17,30 @@ const silentLogger = {
   debug: vi.fn(),
 };
 
-function oldItem(overrides = {}) {
+type ArchiveItemFixture = {
+  id: string;
+  store: string;
+  documentType: string;
+  mimeType: string;
+  fileKey: string | null;
+  tags: string[];
+  metadata: Record<string, unknown> | null;
+  createdAt: Date;
+  archivedAt: Date | null;
+  isDeleted: boolean;
+};
+
+type RetentionRuleFixture = {
+  id: string;
+  name: string;
+  scope: string;
+  lifetimeDays: number;
+  action: "archive" | "delete";
+  active: boolean;
+  createdAt: Date;
+};
+
+function oldItem(overrides: Partial<ArchiveItemFixture> = {}): ArchiveItemFixture {
   return {
     id: "item-1",
     store: "videos",
@@ -33,7 +56,7 @@ function oldItem(overrides = {}) {
   };
 }
 
-function rule(overrides = {}) {
+function rule(overrides: Partial<RetentionRuleFixture> = {}): RetentionRuleFixture {
   return {
     id: "rule-1",
     name: "Delete old videos",
@@ -46,7 +69,13 @@ function rule(overrides = {}) {
   };
 }
 
-function makePrisma({ items = [], rules = [] } = {}) {
+function makePrisma({
+  items = [],
+  rules = [],
+}: {
+  items?: ArchiveItemFixture[];
+  rules?: RetentionRuleFixture[];
+} = {}) {
   return {
     retentionRule: {
       findMany: vi.fn().mockResolvedValue(rules),
