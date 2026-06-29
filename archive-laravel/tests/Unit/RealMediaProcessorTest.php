@@ -6,6 +6,7 @@ use App\Models\MediaJob;
 use App\Services\Media\FakeProcessRunner;
 use App\Services\Media\FfmpegProgressParser;
 use App\Services\Media\RealMediaProcessor;
+use App\Services\Media\WhisperTranscriber;
 use PHPUnit\Framework\TestCase;
 
 class RealMediaProcessorTest extends TestCase
@@ -18,7 +19,14 @@ class RealMediaProcessorTest extends TestCase
     {
         parent::setUp();
         $this->runner = new FakeProcessRunner();
-        $this->processor = new RealMediaProcessor($this->runner, 'ffmpeg', 'ffprobe');
+        $transcriber = new WhisperTranscriber(
+            $this->runner,
+            'faster-whisper',
+            'large-v3',
+            'ar',
+            'vtt'
+        );
+        $this->processor = new RealMediaProcessor($this->runner, $transcriber, 'ffmpeg', 'ffprobe');
     }
 
     public function test_thumbnail_builds_correct_command(): void

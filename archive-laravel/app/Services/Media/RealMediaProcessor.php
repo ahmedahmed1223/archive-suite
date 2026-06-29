@@ -8,9 +8,9 @@ class RealMediaProcessor implements MediaProcessor
 {
     public function __construct(
         private readonly ProcessRunner $runner,
+        private readonly WhisperTranscriber $transcriber,
         private readonly string $ffmpegPath = 'ffmpeg',
         private readonly string $ffprobePath = 'ffprobe',
-        private readonly string $transcriptionBinary = 'transcribe',
     ) {}
 
     /**
@@ -89,27 +89,8 @@ class RealMediaProcessor implements MediaProcessor
 
     private function processTranscription(MediaJob $job): array
     {
-        // ponytail: placeholder for external transcription binary; replace with whisper/etc as needed
-        $sourceKey = $job->source_path;
-        $outputKey = "{$job->record_id}/transcript.vtt";
+        $artifact = $this->transcriber->transcribe($job->source_path, $job->record_id);
 
-        $command = [
-            $this->transcriptionBinary,
-            $sourceKey,
-            '-o', $outputKey,
-        ];
-
-        $result = $this->runner->run($command);
-        if ($result['exitCode'] !== 0) {
-            throw new \RuntimeException("Transcription failed: {$result['stderr']}");
-        }
-
-        return [
-            [
-                'kind' => 'transcript',
-                'key' => $outputKey,
-                'url' => null,
-            ],
-        ];
+        return [$artifact];
     }
 }
