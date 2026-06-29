@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\MediaJob;
+use App\Services\Media\MediaProcessor;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
@@ -15,7 +16,7 @@ class ProcessMediaWorkflow implements ShouldQueue
     {
     }
 
-    public function handle(): void
+    public function handle(MediaProcessor $processor): void
     {
         $mediaJob = MediaJob::query()->find($this->mediaJobId);
 
@@ -30,12 +31,14 @@ class ProcessMediaWorkflow implements ShouldQueue
         ])->save();
 
         try {
+            $artifacts = $processor->process($mediaJob);
+
             $mediaJob->forceFill([
                 'status' => 'completed',
                 'result' => [
                     'operation' => $mediaJob->operation,
                     'recordId' => $mediaJob->record_id,
-                    'artifacts' => [],
+                    'artifacts' => $artifacts,
                 ],
                 'completed_at' => now(),
             ])->save();

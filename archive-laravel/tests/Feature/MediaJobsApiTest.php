@@ -65,7 +65,9 @@ class MediaJobsApiTest extends TestCase
             'queued_at' => now(),
         ]);
 
-        (new ProcessMediaWorkflow($mediaJob->id))->handle();
+        $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
+            $this->app->make(\App\Services\Media\MediaProcessor::class)
+        );
 
         $this->assertDatabaseHas('media_jobs', [
             'id' => $mediaJob->id,
@@ -73,5 +75,169 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->assertSame('transcode', $mediaJob->refresh()->result['operation']);
+    }
+
+    public function test_it_lists_media_jobs(): void
+    {
+        MediaJob::query()->create([
+            'id' => 'media-job-list-1',
+            'record_id' => 'media-record-4',
+            'operation' => 'thumbnail',
+            'status' => 'queued',
+            'queued_at' => now()->subMinute(),
+        ]);
+
+        MediaJob::query()->create([
+            'id' => 'media-job-list-2',
+            'record_id' => 'media-record-5',
+            'operation' => 'transcode',
+            'status' => 'completed',
+            'queued_at' => now(),
+        ]);
+
+        $response = $this->getJson('/api/v1/media/jobs', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $jobs = $response->json('jobs');
+        $this->assertCount(2, $jobs);
+        $this->assertSame('media-job-list-2', $jobs[0]['id']);
+        $this->assertSame('media-job-list-1', $jobs[1]['id']);
+    }
+
+    public function test_list_filters_by_status(): void
+    {
+        MediaJob::query()->create([
+            'id' => 'media-job-filter-1',
+            'record_id' => 'media-record-6',
+            'operation' => 'thumbnail',
+            'status' => 'queued',
+            'queued_at' => now(),
+        ]);
+
+        MediaJob::query()->create([
+            'id' => 'media-job-filter-2',
+            'record_id' => 'media-record-7',
+            'operation' => 'transcode',
+            'status' => 'completed',
+            'queued_at' => now(),
+        ]);
+
+        $response = $this->getJson('/api/v1/media/jobs?status=queued', $this->authHeaders())
+            ->assertOk();
+
+        $jobs = $response->json('jobs');
+        $this->assertCount(1, $jobs);
+        $this->assertSame('queued', $jobs[0]['status']);
+    }
+
+    public function test_list_filters_by_recordId(): void
+    {
+        MediaJob::query()->create([
+            'id' => 'media-job-record-filter-1',
+            'record_id' => 'media-record-8',
+            'operation' => 'thumbnail',
+            'status' => 'queued',
+            'queued_at' => now(),
+        ]);
+
+        MediaJob::query()->create([
+            'id' => 'media-job-record-filter-2',
+            'record_id' => 'media-record-9',
+            'operation' => 'transcode',
+            'status' => 'queued',
+            'queued_at' => now(),
+        ]);
+
+        $response = $this->getJson('/api/v1/media/jobs?recordId=media-record-8', $this->authHeaders())
+            ->assertOk();
+
+        $jobs = $response->json('jobs');
+        $this->assertCount(1, $jobs);
+        $this->assertSame('media-record-8', $jobs[0]['recordId']);
+    }
+
+    public function test_list_respects_limit(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            MediaJob::query()->create([
+                'id' => "media-job-limit-{$i}",
+                'record_id' => "media-record-limit-{$i}",
+                'operation' => 'thumbnail',
+                'status' => 'queued',
+                'queued_at' => now()->subMinutes($i),
+            ]);
+        }
+
+        $response = $this->getJson('/api/v1/media/jobs?limit=2', $this->authHeaders())
+            ->assertOk();
+
+        $jobs = $response->json('jobs');
+        $this->assertCount(2, $jobs);
+    }
+
+    public function test_list_caps_limit_at_100(): void
+    {
+        $response = $this->getJson('/api/v1/media/jobs?limit=500', $this->authHeaders())
+            ->assertOk();
+
+        $this->assertLessThanOrEqual(100, count($response->json('jobs')));
+    }
+
+    public function test_list_requires_authentication(): void
+    {
+        $this->getJson('/api/v1/media/jobs')
+            ->assertUnauthorized();
+    }
+
+    public function test_workflow_job_produces_thumbnail_artifacts(): void
+    {
+        $mediaJob = MediaJob::query()->create([
+            'id' => 'media-job-thumb-artifact',
+            'record_id' => 'media-record-thumb',
+            'operation' => 'thumbnail',
+            'status' => 'queued',
+            'queued_at' => now(),
+        ]);
+
+        $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
+            $this->app->make(\App\Services\Media\MediaProcessor::class)
+        );
+
+        $refreshed = $mediaJob->refresh();
+        $this->assertSame('completed', $refreshed->status);
+        $this->assertIsArray($refreshed->result['artifacts']);
+        $this->assertNotEmpty($refreshed->result['artifacts']);
+        $this->assertSame('thumbnail', $refreshed->result['artifacts'][0]['kind']);
+    }
+
+    public function test_workflow_job_produces_transcription_artifacts(): void
+    {
+        $mediaJob = MediaJob::query()->create([
+            'id' => 'media-job-transcript-artifact',
+            'record_id' => 'media-record-transcript',
+            'operation' => 'transcription',
+            'status' => 'queued',
+            'queued_at' => now(),
+        ]);
+
+        $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
+            $this->app->make(\App\Services\Media\MediaProcessor::class)
+        );
+
+        $refreshed = $mediaJob->refresh();
+        $this->assertSame('completed', $refreshed->status);
+        $this->assertIsArray($refreshed->result['artifacts']);
+        $this->assertNotEmpty($refreshed->result['artifacts']);
+        $this->assertSame('transcript', $refreshed->result['artifacts'][0]['kind']);
+    }
+
+    public function test_store_rejects_invalid_operation(): void
+    {
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-invalid',
+            'operation' => 'invalid_operation',
+        ], $this->authHeaders())
+            ->assertUnprocessable();
     }
 }
