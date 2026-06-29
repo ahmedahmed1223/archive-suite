@@ -2419,3 +2419,25 @@
   - يرتبط بـ: §17.15 (إعادة تصميم الجوال الكاملة — هذه الجولة تصلح العيوب الحرجة قبلها)، §13.3 (BottomTabBar المنجز).
   - الجهد: 1-2 أسبوع.
   - المصدر: توجيه المستخدم (10 يونيو 2026 — دفعة ثانية). منجز: 11 يونيو 2026.
+
+---
+
+## ترحيل TypeScript التدريجي (frontend + server) — مكتمل 2026-06-29
+
+> ملخّص خطة `[P1] ⏱️XXL` المُنجَزة بالكامل (31 شريحة، 2026-06-27 → 2026-06-29)، نُقلت هنا من `TASKS.md` لإفساح المجال لخطة جديدة. التفاصيل الكاملة لكل شريحة محفوظة في تاريخ git وملفات الذاكرة (`tasks-state-2026-06-29`).
+
+**النتيجة النهائية:**
+- `archive-app/src` و`archive-server/src`: **صفر** تنفيذات JavaScript فعلية — كل المنطق TS/TSX خلف جسور توافق `.js`.
+- `archive-core/src`: يحتفظ بجسور التوافق عمداً حتى يحتاج `dist` لنشر خارجي (قرار نهائي).
+- العدّ النهائي: **845 ملف TS/TSX** مقابل 663 جسر `.js` (منها 659 جسر توافق + 4 اختبارات تكامل `.mjs` مقصودة).
+- بوابة موحّدة: `pnpm run typecheck` (0 أخطاء عبر الحزم الأربع) أُضيفت إلى بداية `release:verify`.
+
+**المسار (31 شريحة):**
+- **الأساس (ش0):** `tsconfig.base.json` + tsconfig لكل حزمة + سكربتات typecheck، `moduleResolution: "Bundler"`.
+- **frontend (ش1–28):** leaf utilities → pure view models → API clients → feature modules → store slices → components/TSX → app shell → آخر 34 اختباراً. أُغلق `archive-app/src` بالكامل (تنفيذات JS = 0).
+- **server (ش29–30):** Task 10 (94 ملف خدمة عبر 8 وكلاء Haiku، 173 خطأ نوع عولج) + Task 11 (47 ملف: adapters/api/routes/index). أُعيد توليد 136 جسر server حتمياً لإصلاح جسور ذاتية المرجع وأخطاء `export default` لا يكشفها typecheck.
+- **الإغلاق (ش31):** Tasks 9 و12 — تثبيت قرار الجسور، إصلاح حلّ بريد المستخدم من Prisma وتمرير `transcribe.fetchImpl` وفحص readiness خلف الجسور.
+
+**التحقق النهائي:** `pnpm run release:verify` كامل — typecheck + 143 ملف اختبار app / 1246 اختبار + verify للحزم + `build:spa` + `build:cloud` + `security:baseline` + release readiness.
+
+**القرار الموثّق:** الجسور `.js` تبقى (عائد وقت تشغيل صفري، إزالتها churn عبر 1383 استيراداً بلا فائدة وظيفية)؛ تُلغى فقط جسور `archive-core` عند الحاجة لنشر `dist`.
