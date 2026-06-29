@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\Ingest\FakeIngestTransport;
+use App\Services\Ingest\IngestScanner;
+use App\Services\Ingest\IngestTransport;
 use App\Services\Media\FakeMediaProcessor;
 use App\Services\Media\FakeProcessRunner;
 use App\Services\Media\MediaProcessor;
@@ -36,6 +39,15 @@ class AppServiceProvider extends ServiceProvider
         } else {
             $this->app->bind(MediaProcessor::class, FakeMediaProcessor::class);
         }
+
+        // Ingest transport: fake by default (for testing; real FTP/SMB deferred)
+        $this->app->bind(IngestTransport::class, FakeIngestTransport::class);
+
+        // Ingest scanner: wire disk and directory from config
+        $this->app->bind(IngestScanner::class, fn () => new IngestScanner(
+            config('ingest.disk'),
+            config('ingest.directory'),
+        ));
     }
 
     /**
