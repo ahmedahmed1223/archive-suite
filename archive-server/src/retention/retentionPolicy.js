@@ -15,7 +15,7 @@
  * disk; CRUD for that model lives in the API layer, not here.
  *
  * Scheduler integration:
- *   src/retention/retentionScheduler.js wires scanRetention() to the server's
+ *   src/retention/retentionScheduler.ts wires scanRetention() to the server's
  *   daily scheduler from src/index.js. This module stays pure for offline tests.
  */
 
