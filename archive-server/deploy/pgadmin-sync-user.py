@@ -1,15 +1,12 @@
 import sys
 
-import config
-
 
 def main(email, password, sqlite_path):
+    import config
     config.SQLITE_PATH = sqlite_path
 
     from pgadmin import create_app
-    from pgadmin.model import Role, User
-    from pgadmin.tools.user_management import create_user, update_user
-    from pgadmin.utils.constants import INTERNAL
+    from pgadmin.model import db, Role, User
 
     app = create_app(config.APP_NAME + "-credential-sync")
     with app.app_context():
@@ -17,29 +14,26 @@ def main(email, password, sqlite_path):
         if admin_role is None:
             raise RuntimeError("pgAdmin Administrator role is missing")
 
-        user = User.query.filter_by(username=email, auth_source=INTERNAL).first()
+        user = User.query.filter_by(username=email, auth_source="internal").first()
         if user is None:
-            ok, message = create_user({
-                "email": email,
-                "role": admin_role.id,
-                "active": True,
-                "auth_source": INTERNAL,
-                "newPassword": password,
-                "confirmPassword": password,
-            })
+            # Create the user directly via the model
+            user = User(
+                username=email,
+                email=email,
+                roles=[admin_role],
+                active=True,
+                auth_source="internal",
+            )
+            user.password = password
+            db.session.add(user)
             action = "created"
         else:
-            ok, message = update_user(user.id, {
-                "role": admin_role.id,
-                "active": True,
-                "locked": False,
-                "newPassword": password,
-                "confirmPassword": password,
-            })
+            user.password = password
+            user.active = True
+            user.locked = False
             action = "updated"
 
-        if not ok:
-            raise RuntimeError(message or "pgAdmin user synchronization failed")
+        db.session.commit()
         print(f"pgAdmin user {action}: {email}")
 
 
