@@ -234,7 +234,7 @@
     - [x] شريحة 5c — صفحة Next `/files` (تصفّح + إنشاء مشاركة) فوق `files`/`share`؛ أُضيف `files()`/`createShare()` و`ArchiveFile` للعميل. ‼️ **فجوات حقول** للتسوية عند القطع: Laravel يرسل `lastModified` (الواجهة تتوقع `modifiedAt`) و`shareUrl` (الواجهة تتوقع `url`)، و`POST /share` يتوقع `scope:{itemIds}`.
     - [x] شريحة 5d-prep — أُضيف `GET /records/{id}` في Laravel (`store` اختياري، يبحث عبر المتاجر عند غيابه) + إدخاله في العقد + 3 اختبارات Feature. بوابة خضراء: 36 اختبار Laravel + `verify:api-contracts`. (يتبقّى تسوية أسماء حقول files/share — تُحسم في 5e عند القطع.)
     - [ ] شريحة 5d — Laravel يقود: نقل `media` pipeline + `ingest` بالكامل من Node (قرار المستخدم: استبدال كامل لعامل الوسائط). مفكَّكة:
-      - [ ] 5d.1 — تكافؤ التنسيق في Laravel: `GET /media/jobs` (قائمة + فلاتر)، تحقّق العمليات (thumbnail/transcode/transcription)، واجهة `MediaProcessor` + `FakeMediaProcessor`، ربط `ProcessMediaWorkflow` ليخزّن artifacts. العقد + اختبارات. بوابة: `php artisan test` + `verify:api-contracts`.
+      - [x] 5d.1 — تكافؤ التنسيق في Laravel: `GET /media/jobs` (قائمة + فلاتر)، تحقّق العمليات (thumbnail/transcode/transcription)، واجهة `MediaProcessor` + `FakeMediaProcessor`، ربط `ProcessMediaWorkflow` ليخزّن artifacts. العقد + اختبارات. بوابة: `php artisan test` + `verify:api-contracts`.
       - [ ] 5d.2 — معالج ffmpeg فعلي + Dockerfile/worker image (بنية تحتية، يُتحقّق بـ smoke لا unit).
       - [ ] 5d.3 — نقل ingest (broadcastIngest/watch folder/checksum) إلى Laravel queues.
       - [ ] 5d.4 — صفحات Next تستهلك قائمة/إنشاء media jobs.

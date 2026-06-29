@@ -50,6 +50,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/search', [SearchController::class, 'index']);
         Route::get('/files', [FilesController::class, 'index']);
         Route::get('/files/browser', [FilesController::class, 'browser']);
+        Route::get('/media/jobs', [MediaJobsController::class, 'index']);
         Route::post('/media/jobs', [MediaJobsController::class, 'store']);
         Route::get('/media/jobs/{id}', [MediaJobsController::class, 'show']);
         Route::post('/share', [ShareController::class, 'store']);

@@ -39,6 +39,34 @@ class MediaJobsController extends Controller
         ], 202);
     }
 
+    public function index(Request $request): JsonResponse
+    {
+        $status = $request->query('status');
+        $recordId = $request->query('recordId');
+        $limit = (int) ($request->query('limit', 20));
+        $limit = min(max($limit, 1), 100); // Cap between 1-100
+
+        $query = MediaJob::query();
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        if ($recordId) {
+            $query->where('record_id', $recordId);
+        }
+
+        $jobs = $query
+            ->orderByDesc('queued_at')
+            ->limit($limit)
+            ->get();
+
+        return response()->json([
+            'ok' => true,
+            'jobs' => $jobs->map(fn (MediaJob $job) => $this->payload($job))->values()->toArray(),
+        ]);
+    }
+
     public function show(string $id): JsonResponse
     {
         $mediaJob = MediaJob::query()->find($id);

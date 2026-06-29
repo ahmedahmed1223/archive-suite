@@ -466,6 +466,54 @@
       }
     },
     "/media/jobs": {
+      "get": {
+        "tags": ["Media"],
+        "summary": "List media processing workflows",
+        "operationId": "listMediaWorkflows",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["queued", "processing", "completed", "failed"] }
+          },
+          {
+            "name": "recordId",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of media workflows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/OkEnvelope" },
+                    {
+                      "type": "object",
+                      "required": ["jobs"],
+                      "properties": {
+                        "jobs": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/MediaJob" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
       "post": {
         "tags": ["Media"],
         "summary": "Queue a media processing workflow",
