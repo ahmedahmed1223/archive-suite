@@ -41,5 +41,28 @@ class NextIntegrationSeeder extends Seeder
                 'updated_at' => $now,
             ]
         );
+
+        // A media job tied to the record above so /media/jobs renders a real row from Laravel.
+        DB::table('media_jobs')->updateOrInsert(
+            ['id' => 'next-laravel-media-job'],
+            [
+                'record_id' => $uid,
+                'operation' => 'thumbnail',
+                'status' => 'completed',
+                'source_path' => null,
+                'options' => json_encode([], JSON_UNESCAPED_UNICODE),
+                'result' => json_encode([
+                    'operation' => 'thumbnail',
+                    'recordId' => $uid,
+                    'artifacts' => [['kind' => 'thumbnail', 'key' => $uid.'/thumb.jpg']],
+                ], JSON_UNESCAPED_UNICODE),
+                'error' => null,
+                'queued_at' => $now,
+                'started_at' => $now,
+                'completed_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
     }
 }
