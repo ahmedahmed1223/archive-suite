@@ -15,10 +15,8 @@
  * disk; CRUD for that model lives in the API layer, not here.
  *
  * Scheduler integration:
- *   TODO: wire scanRetention() to a setInterval in src/index.js alongside the
- *   other hourly/daily schedulers (versionRetentionService, dueDateScheduler).
- *   A 24-hour interval (86_400_000 ms) is appropriate; call .unref() on the
- *   timer so it doesn't prevent graceful shutdown.
+ *   src/retention/retentionScheduler.js wires scanRetention() to the server's
+ *   daily scheduler from src/index.js. This module stays pure for offline tests.
  */
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -146,20 +144,7 @@ export function findExpiringSoon(items, rule, days, now = Date.now()) {
  * This function is pure — it does NOT write to the database. The caller
  * (the scheduler in src/index.js) is responsible for persisting the results:
  *   - "archive" → set archivedAt = new Date() on the ArchiveItem row
- *   - "delete"  → call secureOverwrite(filePath) then delete the DB row
- *
- * TODO: wire this to a setInterval in src/index.js (24-hour cadence).
- * Example:
- *   import { scanRetention } from "./retention/retentionPolicy.js";
- *   const timer = setInterval(async () => {
- *     const [items, rules] = await Promise.all([
- *       prisma.archiveItem.findMany({ where: { isDeleted: false, archivedAt: null } }),
- *       prisma.retentionRule.findMany({ where: { active: true } }),
- *     ]);
- *     const { toArchive, toDelete } = scanRetention(items, rules);
- *     // ... apply
- *   }, 24 * 60 * 60 * 1000);
- *   timer.unref();
+ *   - "delete"  → call secureOverwrite(filePath) then mark isDeleted/deletedAt
  *
  * @param {object[]} items  - items to evaluate (ArchiveItem-shaped)
  * @param {object[]} rules  - RetentionRule rows from the DB

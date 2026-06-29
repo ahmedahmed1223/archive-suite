@@ -35,6 +35,7 @@ import { startBackupScheduler, stopBackupScheduler } from "./backup/backupSchedu
 import { startDueDateScheduler, stopDueDateScheduler } from "./workflow/dueDateScheduler.js";
 import { sendPushToUser } from "./notifications/webPushService.js";
 import { createVersionRetentionService } from "./versions/versionRetentionService.js";
+import { createRetentionScheduler } from "./retention/retentionScheduler.js";
 import { initMetrics } from "./monitoring/metrics.js";
 import { initRedis, closeRedis, isRedisAvailable } from "./cache/redisCache.js";
 import { startPresenceServer } from "./collaboration/presenceServer.js";
@@ -121,6 +122,7 @@ async function main() {
   let registration;
   let prisma = null;
   let stopVersionRetention = null;
+  let stopRetentionScheduler = null;
 
   if (BACKEND === "postgres") {
     prisma = await buildPrismaClient();
@@ -130,6 +132,8 @@ async function main() {
     logger.info("Postgres backend ready.");
     const versionRetention = createVersionRetentionService(prisma, logger);
     stopVersionRetention = versionRetention.scheduleHourly();
+    const retentionScheduler = createRetentionScheduler({ prisma, files: registration.files, logger });
+    stopRetentionScheduler = retentionScheduler.start();
   } else if (BACKEND === "pocketbase") {
     registration = registerCloudProviders({
       backend: "pocketbase",
@@ -233,6 +237,7 @@ async function main() {
     stopBackupScheduler();
     stopDueDateScheduler();
     stopVersionRetention?.();
+    stopRetentionScheduler?.();
 
     // Stop accepting new connections; wait for in-flight requests to finish.
     server.close(async () => {

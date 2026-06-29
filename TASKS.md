@@ -98,7 +98,8 @@
 
 - [x] `[P1]` ⏱️L **سياسة احتفاظ + حذف آمن + سلسلة عهدة** — retention تلقائية + حذف DoD 5220.22-M + تقارير امتثال.
   - ✅ مُنجز (2026-06-22 wave-28، agent Sonnet): `archive-server/src/retention/retentionPolicy.js` (`parseRetentionRule`، `isExpired`، `findExpiringSoon`، `scanRetention` — pure functions) + `secureDelete.js` (`secureOverwrite` بـ 3-pass DoD 5220.22-M: 0x00 → 0xFF → random عبر `fs.open("r+")` ثم unlink، 10GB size guard). Prisma: `RetentionRule` model + `archivedAt` على ArchiveItem + migration بـ `--create-only`. wired في `DELETE /api/files/:key` بحيث disk store يحصل على wipe كامل و cloud stores تعتمد على `files.remove()`. `auditLogger.js` يسجّل `secure-delete` بـ DESTRUCTIVE_OPS مع size + pass count. 30 اختبار. وثّق وكلاء scheduler integration (setInterval style) كـ TODO.
-  - متبقّي: ربط `scanRetention()` بـ scheduler حقيقي (TODO موجود)، وUI لإدارة الـ rules (manage retention rules page) + reports امتثال — كلها شرائح لاحقة صغيرة.
+  - ✅ شريحة scheduler (2026-06-29): أُضيف `retentionScheduler.js` لتشغيل `scanRetention()` يومياً مع `setInterval().unref()` عند تشغيل Postgres، ويطبق archive عبر `archivedAt` والحذف الآمن عبر Disk FileStore أو `files.remove()` لمزودات التخزين السحابية، ثم soft-delete بـ `isDeleted/deletedAt`. أضيفت 6 اختبارات Vitest. مرّت `retentionScheduler.test.js`، و`node archive-server\scripts\verify-retention.mjs`، و`archive-server` typecheck.
+  - متبقّي: UI لإدارة الـ rules (manage retention rules page) + reports امتثال — شرائح لاحقة صغيرة.
   - الملفات: `archive-server/src/retention/*`، ربط بـ ActivityLog الموجود.
   - القبول: سياسة احتفاظ قابلة للتهيئة تعمل؛ حذف آمن يُسجَّل في سلسلة العهدة. ✓
   - المصدر: broadcast-report (compliance)، dev-roadmap (P3-06).

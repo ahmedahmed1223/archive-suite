@@ -394,9 +394,8 @@ model ItemRelation {
 /// Retention rules for the archive (§22 retention policy).
 /// Each rule defines a lifetime for items matching its scope.
 /// action="archive" → set archivedAt on the item.
-/// action="delete"  → secureOverwrite the file then delete the row.
-/// The daily sweep is triggered by scanRetention() in src/retention/retentionPolicy.js.
-/// TODO: wire the sweep to a setInterval in src/index.js (24-hour cadence).
+/// action="delete"  → secureOverwrite the file then mark the row isDeleted/deletedAt.
+/// The daily sweep is triggered by src/retention/retentionScheduler.js.
 model RetentionRule {
   id           String   @id @default(cuid())
   name         String
