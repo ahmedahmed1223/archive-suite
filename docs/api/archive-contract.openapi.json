@@ -24,7 +24,8 @@
     { "name": "Folders" },
     { "name": "Media" },
     { "name": "Rights" },
-    { "name": "Share" }
+    { "name": "Share" },
+    { "name": "Ingest" }
   ],
   "paths": {
     "/health": {
@@ -623,6 +624,81 @@
           "404": { "$ref": "#/components/responses/Error" }
         }
       }
+    },
+    "/ingest/scan": {
+      "post": {
+        "tags": ["Ingest"],
+        "summary": "Scan ingest directory and create archive records",
+        "operationId": "scanIngest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Ingest scan result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/IngestScanResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/ingest/ftp/pull": {
+      "post": {
+        "tags": ["Ingest"],
+        "summary": "Pull files from FTP source and create archive records",
+        "operationId": "ftpPullIngest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FtpPullRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "FTP pull and ingest result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/IngestScanResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/ingest/smb/pull": {
+      "post": {
+        "tags": ["Ingest"],
+        "summary": "Pull files from SMB source and create archive records",
+        "operationId": "smbPullIngest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SmbPullRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SMB pull and ingest result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/IngestScanResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
     }
   },
   "components": {
@@ -1103,6 +1179,56 @@
             }
           }
         ]
+      },
+      "IngestedFile": {
+        "type": "object",
+        "required": ["id", "fileName", "checksum"],
+        "properties": {
+          "id": { "type": "string" },
+          "fileName": { "type": "string" },
+          "checksum": { "type": "string" }
+        }
+      },
+      "IngestScanResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["ingested", "skipped"],
+            "properties": {
+              "ingested": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/IngestedFile" }
+              },
+              "skipped": { "type": "integer", "minimum": 0 }
+            }
+          }
+        ]
+      },
+      "FtpPullRequest": {
+        "type": "object",
+        "required": ["host", "user", "password"],
+        "properties": {
+          "host": { "type": "string" },
+          "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+          "user": { "type": "string" },
+          "password": { "type": "string" },
+          "remotePath": { "type": "string" },
+          "localPath": { "type": "string" },
+          "secure": { "type": "boolean" }
+        }
+      },
+      "SmbPullRequest": {
+        "type": "object",
+        "required": ["share", "user", "password"],
+        "properties": {
+          "share": { "type": "string" },
+          "path": { "type": "string" },
+          "user": { "type": "string" },
+          "password": { "type": "string" },
+          "domain": { "type": "string" },
+          "localPath": { "type": "string" }
+        }
       }
     }
   }

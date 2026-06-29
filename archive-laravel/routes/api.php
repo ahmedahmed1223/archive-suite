@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\FilesController;
+use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\RightsController;
@@ -59,5 +60,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/rights/{itemId}/enforcement', [RightsController::class, 'enforcement']);
         Route::get('/rights', [RightsController::class, 'show']);
         Route::post('/rights', [RightsController::class, 'store']);
+
+        Route::post('/ingest/scan', [IngestController::class, 'scan']);
+        Route::post('/ingest/ftp/pull', [IngestController::class, 'ftpPull']);
+        Route::post('/ingest/smb/pull', [IngestController::class, 'smbPull']);
     });
 });

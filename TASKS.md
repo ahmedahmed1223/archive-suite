@@ -236,7 +236,7 @@
     - [ ] شريحة 5d — Laravel يقود: نقل `media` pipeline + `ingest` بالكامل من Node (قرار المستخدم: استبدال كامل لعامل الوسائط). مفكَّكة:
       - [x] 5d.1 — تكافؤ التنسيق في Laravel: `GET /media/jobs` (قائمة + فلاتر)، تحقّق العمليات (thumbnail/transcode/transcription)، واجهة `MediaProcessor` + `FakeMediaProcessor`، ربط `ProcessMediaWorkflow` ليخزّن artifacts. العقد + اختبارات. بوابة: `php artisan test` + `verify:api-contracts`.
       - [x] 5d.2 — معالج ffmpeg فعلي + Dockerfile/worker image (بنية تحتية، يُتحقّق بـ smoke لا unit).
-      - [ ] 5d.3 — نقل ingest (broadcastIngest/watch folder/checksum) إلى Laravel queues.
+      - [x] 5d.3 — نقل ingest (broadcastIngest/watch folder/checksum) إلى Laravel queues.
       - [ ] 5d.4 — صفحات Next تستهلك قائمة/إنشاء media jobs.
     - [ ] شريحة 5e — بوابة القطع لكل مجموعة وصلت parity: E2E تكامل Next↔Laravel، قلب flag، توثيق إيقاف البناء net-new على Node.
   - الملفات: `docs/laravel-nextjs-migration-plan.md`, `TASKS.md`, عقود API لاحقاً تحت `docs/api/`, وحزم جديدة لاحقاً فقط بعد قرار scaffold.
