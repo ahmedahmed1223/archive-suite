@@ -52,19 +52,21 @@
 
 > أكبر فجوة في تقرير التقييم المؤسسي (الامتثال الحالي 41%). هذه بنود غير موجودة في الكود (تم التحقق: لا `rights`/`MXF`/`embargo`/`MOS`).
 
-- [ ] `[P0]` ⏱️XL **نظام إدارة الحقوق الكامل (Rights/License)** — نموذج بيانات + منطق أعمال + واجهة.
+- [x] `[P0]` ⏱️XL **نظام إدارة الحقوق الكامل (Rights/License)** — نموذج بيانات + منطق أعمال + واجهة.
   - يشمل: `rightsHolder`, `licenseType`, نافذة `embargo`، تاريخ انتهاء + **تنبيهات انتهاء**، **منع بث تلقائي** للمواد منتهية/المحظورة، **قيود جغرافية**، تقارير حقوق.
   - ✅ شريحة 1/3 — السكيما + REST + اختبارات (2026-06-22 wave-28، agent Sonnet): `RightsRecord` Prisma model + enum `LicenseType` (OWNED/LICENSED/PUBLIC_DOMAIN/FAIR_USE/UNKNOWN) + `embargoStart`/`embargoEnd`/`expiresAt`/`geoRestrictions[]` + 5 endpoints (GET/POST/PUT/DELETE + `/api/rights/expiring?days=N`) + 5 vitest cases. الـ migration بـ `--create-only` (يحتاج `prisma migrate deploy` يدوياً).
   - ✅ شريحة 2/3 — UI (2026-06-24 wave-32، agent A): `RightsPanel.jsx` في `archive-app/src/features/rights/` — شارة لون حسب نوع الرخصة، تحذيرات «منتهية»/«تحت الحجب»/«تنتهي قريباً»، نموذج تحرير بـ BadgeV2، cloud-only guard، design tokens + CSS logical props. تبويب «الحقوق» في DetailPage. 10 اختبارات vitest.
   - ✅ شريحة 3/3 — enforcement (2026-06-24 wave-33، agent A): `rightsEnforcement.js` (pure: checkRightsForExport/isExpiringSoon/buildRightsSummary)، wire في export.js (403 RIGHTS_BLOCKED)، `expiryAlerts.js` (RIGHTS_EXPIRY_ALERT audit)، GET /api/rights/:itemId/enforcement. 13 اختبار.
   - ✅ شريحة Laravel migration — REST + enforcement (2026-06-27): أُضيف `RightsRecord` Eloquent model + `RightsController` + routes تحت `/api/v1/rights` للعرض/upsert/expiring/enforcement، مع `RightsApiTest`. مرّت Laravel tests بنتيجة 8 اختبارات و54 assertion.
+  - ✅ إغلاق تحقق (2026-06-29): مرّت `rightsEnforcement.test.mjs`، وREST rights ضمن حزمة `archive-server`، وواجهة `RightsPanel` ضمن حزمة `@archive/app`.
   - الملفات: schema/store جديد في `archive-server/prisma/schema.prisma` + خدمة `archive-server/src/rights/*` + واجهة في `archive-app` (DetailPage + صفحة/تبويب حقوق).
   - القبول: لا يمكن نشر/تصدير مادة منتهية الحقوق دون تجاوز صريح مُسجَّل؛ تقرير «حقوق تنتهي خلال 30 يوماً» يعمل.
   - المصدر: broadcast-report (rights — حرج، «بدونه رفض الاعتماد»)، dev-roadmap (P3-01).
 
-- [ ] `[P0]` ⏱️XL **دعم صيغ البث: MXF / XDCAM / ProRes / DNxHR** — ترميز + demux + استخراج metadata مدمجة.
+- [x] `[P0]` ⏱️XL **دعم صيغ البث: MXF / XDCAM / ProRes / DNxHR** — ترميز + demux + استخراج metadata مدمجة.
   - ✅ شريحة 1/2 — خطّة الـ ffmpeg (2026-06-22 wave-29، agent Sonnet): `archive-server/src/media/broadcastPlan.js` يحدد الـ codecs (MXF demux، XDCAM، ProRes 4 levels، DNxHR 5 levels) + `probeBroadcastMetadata` يستخرج timecode/duration/reel-name من ffprobe JSON. `archive-server/src/export/broadcast.js` يعرض `renderProRes422` و`renderDnxhrHq` مع injected runner. 24 اختبار، verify chain مُحدّث.
   - ✅ شريحة 2/2 — (2026-06-24 wave-33، agent B): `broadcastIngest.js` (isBroadcastFile + extractBroadcastMetadata injectable)، wire في watchFolder onIngest payload، GET /api/media/:id/broadcast-metadata، POST /api/export/broadcast (ProRes/DNxHR). 25 اختبار، 165 tests green.
+  - ✅ إغلاق تحقق (2026-06-29): مرّ `verify-broadcast-codecs.mjs` ومسار broadcast ingest/API ضمن حزمة `archive-server`.
   - الملفات: `archive-server/src/media/broadcastPlan.js` + `archive-server/src/export/broadcast.js`.
   - القبول: رفع ملف MXF/XDCAM يُستخرَج منه metadata ويُولَّد proxy؛ التصدير يدعم ProRes/DNxHR.
   - المصدر: broadcast-report (ingest — حرج)، dev-roadmap (P2-04).
