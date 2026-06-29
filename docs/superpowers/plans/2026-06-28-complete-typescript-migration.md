@@ -295,11 +295,9 @@ pnpm --filter @archive/app run verify
 - Modify/create: `archive-core/tsconfig.build.json` if build output is introduced.
 - Convert/remove: remaining `archive-core/src/**/*.js` facades.
 
-- [ ] **Step 1: Choose runtime strategy**
+> **2026-06-29 finding (attempted + reverted):** Tried Option A (point exports at `.ts`, rewrite core internal specifiers `.js`→`.ts`, delete the 9 facades, add `allowImportingTsExtensions` to core tsconfig). Result: **net-negative, reverted.** Two blockers — (1) `verify-core.mjs` runs under raw `node` and imports `index.js`; (2) consuming packages' `tsc` compiles core's `.ts` files under *their own* tsconfig, so `.ts` import specifiers raise **TS5097** in app/server/next typecheck. Removing facades would force `allowImportingTsExtensions` across every consumer's tsconfig — high blast radius, zero functional gain. The facade pattern + Node v24 type-stripping already makes `@archive/core` a TS-source package consumed cleanly by Vite/tsx/node/vitest. **Decision: keep the 9 `.js` facades as the terminal state.** Only revisit if a real `dist` build (Option B) is needed for external/published consumption.
 
-Use one of:
-- keep source `.ts` only if all consumers use bundler/tsx resolution safely;
-- or emit `dist/**/*.js` and point package exports to dist.
+- [x] **Step 1: Choose runtime strategy** — keep `.ts` sources with thin `.js` re-export facades (current state). Pure-`.ts`/facade-removal evaluated and rejected (see finding above). `dist` build (Option B) deferred until external publishing requires it.
 
 - [ ] **Step 2: Update exports**
 
