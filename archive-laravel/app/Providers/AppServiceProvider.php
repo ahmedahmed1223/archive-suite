@@ -3,7 +3,11 @@
 namespace App\Providers;
 
 use App\Services\Media\FakeMediaProcessor;
+use App\Services\Media\FakeProcessRunner;
 use App\Services\Media\MediaProcessor;
+use App\Services\Media\ProcessRunner;
+use App\Services\Media\RealMediaProcessor;
+use App\Services\Media\SymfonyProcessRunner;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,7 +17,25 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(MediaProcessor::class, FakeMediaProcessor::class);
+        // Process runner: real by default, fake in tests/offline mode
+        $this->app->bind(ProcessRunner::class, fn () => new SymfonyProcessRunner());
+
+        // Media processor: fake by default (existing tests unaffected)
+        // Set MEDIA_PROCESSOR=real to use ffmpeg-backed processor
+        $processorType = config('media.processor');
+        if ($processorType === 'real') {
+            $this->app->bind(
+                MediaProcessor::class,
+                fn ($app) => new RealMediaProcessor(
+                    $app->make(ProcessRunner::class),
+                    config('media.ffmpeg_path'),
+                    config('media.ffprobe_path'),
+                    config('media.transcription_binary'),
+                )
+            );
+        } else {
+            $this->app->bind(MediaProcessor::class, FakeMediaProcessor::class);
+        }
     }
 
     /**
