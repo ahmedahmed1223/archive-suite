@@ -26,7 +26,7 @@ class ShareApiTest extends TestCase
         ], $this->authHeaders())
             ->assertCreated()
             ->assertJsonPath('ok', true)
-            ->assertJsonStructure(['token', 'shareUrl', 'path']);
+            ->assertJsonStructure(['token', 'url', 'path']);
 
         $token = $response->json('token');
         $this->assertIsString($token);

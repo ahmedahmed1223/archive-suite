@@ -40,7 +40,7 @@ class ShareController extends Controller
         return response()->json([
             'ok' => true,
             'token' => $share->token,
-            'shareUrl' => url('/api/v1/share/'.$share->token),
+            'url' => url('/api/v1/share/'.$share->token),
             'path' => '/share/'.$share->token,
             'expiresAt' => $share->expires_at?->toISOString(),
         ], 201);

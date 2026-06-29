@@ -119,7 +119,7 @@ class FilesController extends Controller
             'kind' => $file->isDir() ? 'folder' : 'file',
             'mimeType' => $file->isFile() ? (mime_content_type($path) ?: 'application/octet-stream') : null,
             'size' => $file->isFile() ? $file->getSize() : null,
-            'lastModified' => date(DATE_ATOM, $file->getMTime()),
+            'modifiedAt' => date(DATE_ATOM, $file->getMTime()),
         ];
     }
 
