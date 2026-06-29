@@ -57,4 +57,56 @@ class RecordsApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_it_reads_a_single_record_by_id(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [
+                ['uid' => 'item-001', 'id' => 'item-001', 'title' => 'Test Record', 'description' => 'A test', 'syncVersion' => 1],
+            ],
+        ], $this->authHeaders())
+            ->assertOk();
+
+        $this->getJson('/api/v1/records/item-001?store=archive-items', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('record.id', 'item-001')
+            ->assertJsonPath('record.uid', 'item-001')
+            ->assertJsonPath('record.title', 'Test Record')
+            ->assertJsonPath('record.description', 'A test')
+            ->assertJsonPath('record.syncVersion', 1);
+    }
+
+    public function test_it_reads_a_single_record_by_id_without_store_param(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [
+                ['uid' => 'item-002', 'id' => 'item-002', 'title' => 'No Store Lookup'],
+            ],
+        ], $this->authHeaders())
+            ->assertOk();
+
+        $this->getJson('/api/v1/records/item-002', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('record.id', 'item-002')
+            ->assertJsonPath('record.title', 'No Store Lookup');
+    }
+
+    public function test_it_returns_404_for_nonexistent_record(): void
+    {
+        $this->getJson('/api/v1/records/nonexistent-id?store=archive-items', $this->authHeaders())
+            ->assertNotFound()
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'not_found');
+    }
+
+    public function test_it_rejects_unauthenticated_record_detail_requests(): void
+    {
+        $this->getJson('/api/v1/records/item-001?store=archive-items')
+            ->assertUnauthorized()
+            ->assertJsonPath('ok', false);
+    }
+
 }
