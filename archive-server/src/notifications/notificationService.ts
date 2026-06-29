@@ -98,7 +98,7 @@ export function notifyUploadComplete({ prisma, sendMail, userId, userEmail, reco
   prisma: any;
   sendMail: (opts: MailOptions) => Promise<void>;
   userId: string;
-  userEmail: string;
+  userEmail?: string | null;
   recordTitle?: string;
 }): void {
   setImmediate(async () => {

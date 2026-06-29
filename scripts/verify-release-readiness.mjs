@@ -74,7 +74,8 @@ assertIncludes("archive-server/docker-compose.postgres.yml", "dockerfile: archiv
 assertExcludes("archive-server/docker-compose.postgres.yml", "APP_REPO");
 assertExcludes("archive-server/docker-compose.yml", "APP_REPO");
 
-assertIncludes("archive-server/src/index.js", "assertProductionSecrets");
+assertIncludes("archive-server/src/index.js", "./index.ts");
+assertIncludes("archive-server/src/index.ts", "assertProductionSecrets");
 assertIncludes("archive-server/scripts/verify-deployment.mjs", "assertProductionSecrets");
 
 const audit = read("archive-app/scripts/comprehensive-ui-audit.mjs");
