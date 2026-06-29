@@ -41,6 +41,15 @@ export interface ArchiveRecord {
   [key: string]: unknown;
 }
 
+export interface ArchiveFile {
+  key: string;
+  name?: string;
+  size?: number;
+  modifiedAt?: string;
+  store?: string;
+  [key: string]: unknown;
+}
+
 export interface RightsRecord {
   id: string;
   itemId: string;
@@ -86,6 +95,8 @@ export interface ArchiveApiClient {
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
+  files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
+  createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
 }
 
 export interface AuthRequestOptions {
@@ -170,6 +181,14 @@ export function createArchiveApiClient({
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
     rights: (itemId: string, options?: AuthRequestOptions) => get<{ record: RightsRecord }>(`/rights?itemId=${encodeURIComponent(itemId)}`, options),
     mediaJob: (id: string, options?: AuthRequestOptions) => get<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}`, options),
-    share: (token: string) => get(`/share/${encodeURIComponent(token)}`)
+    share: (token: string) => get(`/share/${encodeURIComponent(token)}`),
+    files: (params?: { q?: string }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.q) queryParams.set("q", params.q);
+      const query = queryParams.toString();
+      return get<{ files: ArchiveFile[] }>(`/files${query ? `?${query}` : ""}`, options);
+    },
+    createShare: (payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions) =>
+      post<{ token: string; url?: string }>("/share", { scope: { itemIds: payload.itemIds }, permission: payload.permission, expiresAt: payload.expiresAt }, options)
   };
 }

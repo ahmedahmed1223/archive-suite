@@ -231,8 +231,9 @@
   - **خطة التنفيذ القادمة (شرائح عمودية، Laravel يقود عند نقص endpoint، Next يتبع، ثم بوابة قطع):**
     - [x] شريحة 5a — صفحة Next لقائمة الأرشيف + البحث فوق `search` الموجود في Laravel: مسار `/archive` بـ App Router، حقل بحث، شبكة سجلات typed عبر `createArchiveApiClient().search()`، حالات loading/error/empty، RTL. بوابة: `typecheck:next` + `build:next` + smoke في `e2e:next`.
     - [x] شريحة 5b — صفحة Next للتفاصيل `/archive/[id]` تعرض سجلاً واحداً + حقوقه عبر `rights()`؛ أُضيف `record(id)` للعميل. ‼️ **فجوة parity:** `GET /records/{id}` غير موجود في Laravel (موجود `/records` list + `/records/bulk` فقط) — يُضاف ضمن 5d/5e قبل القطع، والصفحة تتعامل مع `ok:false` بسلاسة حالياً.
-    - [ ] شريحة 5c — صفحة Next للرفع/المشاركة فوق `files`/`share` الموجودة. بوابة كما 5a.
-    - [ ] شريحة 5d — Laravel يقود: تثبيت `media` jobs pipeline + `ingest` (Node-only حالياً) ثم صفحة Next مستهلِكة. بوابة: Laravel `php artisan test` + `verify:api-contracts` + بوابة Next.
+    - [x] شريحة 5c — صفحة Next `/files` (تصفّح + إنشاء مشاركة) فوق `files`/`share`؛ أُضيف `files()`/`createShare()` و`ArchiveFile` للعميل. ‼️ **فجوات حقول** للتسوية عند القطع: Laravel يرسل `lastModified` (الواجهة تتوقع `modifiedAt`) و`shareUrl` (الواجهة تتوقع `url`)، و`POST /share` يتوقع `scope:{itemIds}`.
+    - [ ] شريحة 5d-prep — Laravel يقود إغلاق فجوات parity المكتشفة قبل الثقيل: `GET /records/{id}` + إدخاله في العقد؛ تسوية أسماء حقول files/share في العقد أو محوّل العميل. بوابة: `php artisan test` + `verify:api-contracts` + `typecheck:next`.
+    - [ ] شريحة 5d — Laravel يقود: تثبيت `media` jobs pipeline + `ingest` (Node-only حالياً، مسار XL مستقل متعدد الشرائح) ثم صفحة Next مستهلِكة. بوابة: Laravel `php artisan test` + `verify:api-contracts` + بوابة Next.
     - [ ] شريحة 5e — بوابة القطع لكل مجموعة وصلت parity: E2E تكامل Next↔Laravel، قلب flag، توثيق إيقاف البناء net-new على Node.
   - الملفات: `docs/laravel-nextjs-migration-plan.md`, `TASKS.md`, عقود API لاحقاً تحت `docs/api/`, وحزم جديدة لاحقاً فقط بعد قرار scaffold.
   - القبول: لا اعتماديات Astro؛ `pnpm run typecheck` ينجح؛ Next.js هو مسار الواجهة TypeScript، وLaravel هو backend/API والـ queues؛ أي scaffold جديد لا يكسر Vite الحالي.

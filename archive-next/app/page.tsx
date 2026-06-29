@@ -13,6 +13,7 @@ export default function HomePage() {
         <nav className="route-links" aria-label="مسارات Next.js">
           <a className="badge" href="/help">المساعدة</a>
           <a className="badge" href="/archive">قائمة السجلات</a>
+          <a className="badge" href="/files">استعراض الملفات</a>
           <a className="badge" href="/reports">التقارير</a>
           <a className="badge" href="/settings">الإعدادات</a>
           <a className="badge" href="/media/jobs">media jobs</a>
