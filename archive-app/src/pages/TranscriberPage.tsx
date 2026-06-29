@@ -44,7 +44,7 @@ export function TranscriberPage() {
   const { showToast, showNotification, addVideoItem } = useAppStore();
   const cloudProvider = React.useMemo(() => { try { return getAiProvider(); } catch { return null; } }, []);
   const hasLocal = typeof window !== "undefined";
-  const modes = React.useMemo(() => availableTranscribeModes({ cloudProvider, hasLocal }), [cloudProvider, hasLocal]);
+  const modes = React.useMemo(() => availableTranscribeModes({ cloudProvider: cloudProvider as any, hasLocal }), [cloudProvider, hasLocal]);
 
   const [mode, setMode] = React.useState(() => modes[0] || "local");
   const [file, setFile] = React.useState(null);
@@ -78,7 +78,7 @@ export function TranscriberPage() {
       try {
         const { provider } = resolveTranscribeProvider({
           mode,
-          cloudProvider,
+          cloudProvider: cloudProvider as any,
           localFactory: () => createLocalXenovaAiProvider()
         });
         const out = await (provider as any).transcribe({ blob: file, mimeType: (file as any).type, name: (file as any).name });
