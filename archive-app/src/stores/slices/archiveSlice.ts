@@ -1,0 +1,920 @@
+import { getFileStore } from "@archive/core";
+
+import { createVideoItemValue } from "../../features/videos/viewModel.js";
+import {
+  createContentTypeValue,
+  getMissingDefaultArchiveContentTypes
+} from "../../features/types/viewModel.js";
+import { createVirtualCollectionValue } from "../../features/collections/viewModel.js";
+import { createProjectValue } from "../../features/projects/viewModel.js";
+import { diffVideoItemFields } from "../../features/archive/itemHistory.js";
+import {
+  STORES,
+  dbDelete,
+  dbGet,
+  dbGetAll,
+  dbPut
+} from "../../services/storageAccess.js";
+import { generateId, nowIso } from "../storeCore.js";
+import { defaultSettings, mergeSettings } from "../settingsDefaults.js";
+import { normalizeChangeRecord, normalizeUser } from "../storeModels.js";
+import { persistList, persistSettings } from "../storePersistence.js";
+import { undoRedoManager } from "../../components/common/undoManager.js";
+import { ACTIONS, PermissionError, requirePermission } from "../../features/users/permissions.js";
+import { ensureDeviceIdentity } from "../../utils/deviceIdentity.js";
+import { stampSyncMetadata } from "../../features/sync/syncMetadata.js";
+import { appendHistory } from "./historySlice.js";
+
+type StoreCtx = { set: any; get: () => any };
+
+// Read the active deviceId from settings on every stamp call so a
+// rename or rare regeneration is reflected without having to thread
+// the value through every mutation signature.
+function getActiveDeviceId(get: any) {
+  return get().settings?.ui?.deviceId || null;
+}
+
+const DERIVED_MEDIA_PREFIXES = ["thumbnails/", "audio/", "derived/", "previews/"];
+
+function collectDerivedMediaKeys(item: any = {}) {
+  const media = item.metadata?.media || {};
+  return [
+    item.thumbnail,
+    media.thumbnailKey,
+    media.audioKey,
+    media.previewKey,
+    media.derivedKey
+  ]
+    .filter(Boolean)
+    .map(String)
+    .filter((key: any, index: any, list: any) => DERIVED_MEDIA_PREFIXES.some((prefix: any) => key.startsWith(prefix)) && list.indexOf(key) === index);
+}
+
+async function cleanupDerivedMedia(item: any) {
+  const keys = collectDerivedMediaKeys(item);
+  if (!keys.length) return;
+  let fileStore = null;
+  try {
+    fileStore = getFileStore();
+  } catch {
+    return;
+  }
+  await Promise.all(keys.map((key: any) => (fileStore as any).remove?.(key).catch(() => {})));
+}
+
+/**
+ * Slice-level permission guard. Reads currentUser from the auth store
+ * and throws PermissionError if the action isn't allowed. The thrown
+ * error is caught at the slice boundary, logged to audit_logs as a
+ * denial, and surfaced as a toast — UI hiding (useCanPerform) and
+ * this guard together form defense in depth.
+ */
+function checkPermission(get: any, getAuthStore: any, action: any) {
+  const user = getAuthStore().getState().currentUser;
+  try {
+    requirePermission(user, action);
+    return true;
+  } catch (error: any) {
+    // Record the denial in audit_logs so admins can see attempts.
+    get().addAuditLog?.("permission.denied", null, "auth", {
+      action,
+      role: error.role,
+      username: error.username
+    });
+    throw error;
+  }
+}
+
+export const archiveInitialState = {
+  videoItems: [],
+  contentTypes: [],
+  changeHistory: [],
+  bookmarks: [],
+  relations: [],
+  virtualCollections: [],
+  vocabulary: [],
+  hierarchicalTags: [],
+  auditLogs: [],
+  projects: [],
+  searchQuery: "",
+  filterType: "all",
+  filterSubtype: "all",
+  viewMode: "grid",
+  selectedItems: []
+};
+
+export const archiveActionKeys = [
+  "addVideoItem",
+  "updateVideoItem",
+  "deleteVideoItem",
+  "restoreVideoItem",
+  "toggleFavorite",
+  "markItemViewed",
+  "addItemComment",
+  "deleteItemComment",
+  "bulkDeleteItems",
+  "bulkRestoreItems",
+  "bulkAddTags",
+  "bulkMoveToCollection",
+  "bulkSetType",
+  "bulkSetProject",
+  "emptyTrash",
+  "setSearchQuery",
+  "setFilterType",
+  "setFilterSubtype",
+  "setViewMode",
+  "setSelectedItemId",
+  "toggleBulkSelect",
+  "selectAllItems",
+  "setSelectedItems",
+  "clearSelection"
+];
+
+// Guard against concurrent loadAllData calls (React StrictMode double-invoke,
+// simultaneous storage-event + startup, etc.).
+let _loadAllDataInFlight = false;
+
+export function createArchiveActions({ set, get, getAuthStore }: any & StoreCtx) {
+  // Failure-safe activity logging for collection operations. Never blocks the mutation.
+  const logCollectionActivity = (action: any, collection: any, snapshot: any = {}) => {
+    try {
+      const authState = getAuthStore().getState();
+      Promise.resolve(
+        get().addActivityEntry?.({
+          action,
+          targetType: "collection",
+          targetId: collection?.id || null,
+          targetName: collection?.name || "",
+          userId: authState.currentUser?.id || "system",
+          userName: authState.currentUser?.username || "النظام",
+          snapshot,
+          undoable: false
+        })
+      ).catch(() => {});
+    } catch {
+      /* never block the collection operation */
+    }
+  };
+
+  return {
+    loadAllData: async () => {
+      if (_loadAllDataInFlight) return;
+      _loadAllDataInFlight = true;
+      set({ isLoading: true });
+      try {
+        const settingsDoc = await dbGet(STORES.SETTINGS, "app_settings").catch(() => null);
+        let settings = mergeSettings(defaultSettings(), settingsDoc || {});
+        // Resolve (or generate) this device's stable identity. The
+        // identity lives primarily in localStorage; we mirror it
+        // into settings.ui so transfer packages can read it without
+        // an extra fetch, and so a settings reset doesn't accidentally
+        // change deviceId.
+        const identity = ensureDeviceIdentity({
+          deviceId: settings.ui?.deviceId || null,
+          deviceName: settings.ui?.deviceName || null
+        });
+        if (identity.deviceId !== settings.ui?.deviceId || identity.deviceName !== settings.ui?.deviceName) {
+          settings = mergeSettings(settings, { ui: { deviceId: identity.deviceId, deviceName: identity.deviceName } });
+          await persistSettings(settings).catch(() => {});
+        }
+        const users = ((await dbGetAll(STORES.USERS).catch(() => [] as any)) as any).map(normalizeUser as any);
+        const storedContentTypes = (await dbGetAll(STORES.TYPES).catch(() => [] as any)) as any;
+        const missingDefaultTypes = getMissingDefaultArchiveContentTypes(storedContentTypes);
+        for (const type of missingDefaultTypes) {
+          await dbPut(STORES.TYPES, type).catch(() => {});
+        }
+
+        set({
+          contentTypes: [...storedContentTypes, ...missingDefaultTypes],
+          videoItems: await dbGetAll(STORES.ITEMS).catch(() => []),
+          changeHistory: await dbGetAll(STORES.HISTORY).catch(() => []),
+          bookmarks: await dbGetAll(STORES.BOOKMARKS).catch(() => []),
+          relations: await dbGetAll(STORES.RELATIONS).catch(() => []),
+          itemRelations: await dbGetAll(STORES.ITEM_RELATIONS).catch(() => []),
+          virtualCollections: await dbGetAll(STORES.COLLECTIONS).catch(() => []),
+          projects: await dbGetAll(STORES.PROJECTS).catch(() => []),
+          vocabulary: await dbGetAll(STORES.VOCABULARY).catch(() => []),
+          hierarchicalTags: await dbGetAll(STORES.HTAGS).catch(() => []),
+          users,
+          auditLogs: await dbGetAll(STORES.AUDIT_LOGS).catch(() => []),
+          settings,
+          isPasswordSet: users.some((user: any) => !!user.passwordHash) || !!(settings as any).masterPasswordHash,
+          isLocked: users.some((user: any) => !!user.passwordHash) || !!(settings as any).masterPasswordHash,
+          isLoading: false
+        });
+      } catch (error: any) {
+        set({ isLoading: false, sqliteError: error?.message || "تعذر تحميل البيانات من IndexedDB" });
+        get().showToast(error?.message || "تعذر تحميل البيانات", "error");
+      } finally {
+        _loadAllDataInFlight = false;
+      }
+    },
+    setSearchQuery: (searchQuery: any) => set({ searchQuery }),
+    setFilterType: (filterType: any) => set({ filterType }),
+    setFilterSubtype: (filterSubtype: any) => set({ filterSubtype }),
+    setViewMode: (viewMode: any) => set({ viewMode }),
+    toggleBulkSelect: (id: any) => set((state: any) => ({
+      selectedItems: state.selectedItems.includes(id) ? state.selectedItems.filter((item: any) => item !== id) : [...state.selectedItems, id]
+    })),
+    selectAllItems: () => set((state: any) => ({ selectedItems: state.videoItems.filter((item: any) => !item.isDeleted).map((item: any) => item.id) })),
+    setSelectedItems: (ids: any) => set({ selectedItems: Array.isArray(ids) ? ids : [] }),
+    clearSelection: () => set({ selectedItems: [] }),
+    addAuditLog: async (eventType: any, targetId: any, targetType: any, details: any) => {
+      const authState = getAuthStore().getState();
+      const log = {
+        id: generateId("audit"),
+        userId: authState.currentUser?.id || "system",
+        username: authState.currentUser?.username || "النظام",
+        eventType,
+        targetId,
+        targetType,
+        details,
+        timestamp: nowIso()
+      };
+      set((state: any) => ({ auditLogs: [log, ...state.auditLogs].slice(0, 1000) }));
+      await dbPut(STORES.AUDIT_LOGS, log).catch(() => {});
+      return log;
+    },
+    addItemComment: async (itemId: any, text: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.COMMENT_CREATE);
+      const clean = String(text || "").trim();
+      if (!itemId || !clean) return null;
+      const authState = getAuthStore().getState();
+      const log = {
+        id: generateId("comment"),
+        userId: authState.currentUser?.id || "system",
+        username: authState.currentUser?.username || "النظام",
+        eventType: "comment.create",
+        targetId: itemId,
+        targetType: "video",
+        details: { text: clean },
+        timestamp: nowIso()
+      };
+      set((state: any) => ({ auditLogs: [log, ...state.auditLogs].slice(0, 1000) }));
+      await dbPut(STORES.AUDIT_LOGS, log).catch(() => {});
+      return log;
+    },
+    deleteItemComment: async (commentId: any) => {
+      const target = get().auditLogs.find((log: any) => log.id === commentId && log.eventType === "comment.create");
+      if (!target || target.details?.deletedAt) return false;
+      const authState = getAuthStore().getState();
+      const isOwner = target.userId && target.userId === authState.currentUser?.id;
+      if (!isOwner) checkPermission(get, getAuthStore, ACTIONS.COMMENT_DELETE);
+      const updated = {
+        ...target,
+        details: {
+          ...(target.details || {}),
+          deletedAt: nowIso(),
+          deletedBy: authState.currentUser?.id || "system"
+        }
+      };
+      set((state: any) => ({ auditLogs: state.auditLogs.map((log: any) => (log.id === commentId ? updated : log)) }));
+      await dbPut(STORES.AUDIT_LOGS, updated).catch(() => {});
+      get().addAuditLog?.("comment.delete", target.targetId, "video", { commentId });
+      return true;
+    },
+    addVideoItem: async (item: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.VIDEO_CREATE);
+      const deviceId = getActiveDeviceId(get);
+      const value = stampSyncMetadata(createVideoItemValue(item), { deviceId } as any);
+      const record = normalizeChangeRecord({ itemId: value.id, action: "create", title: value.title, timestamp: nowIso() });
+      set((state: any) => ({ videoItems: [value, ...state.videoItems], changeHistory: appendHistory(state.changeHistory, record) }));
+      await dbPut(STORES.ITEMS, value);
+      await dbPut(STORES.HISTORY, record);
+      get().addAuditLog?.("video.create", value.id, "video", { title: value.title });
+      try {
+        const authState = getAuthStore().getState();
+        await Promise.resolve(get().addActivityEntry?.({
+          action: "create",
+          targetType: "item",
+          targetId: value.id,
+          targetName: value.title || "",
+          userId: authState.currentUser?.id || "system",
+          userName: authState.currentUser?.username || "النظام",
+          snapshot: { before: null, after: value },
+          undoable: false
+        })).catch(() => {});
+      } catch { /* never block */ }
+      return value;
+    },
+    addBookmark: async ({ itemId, timestamp, label, description } = {} as any) => {
+      if (!itemId) return null;
+      const value = {
+        id: `bm_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+        itemId,
+        timestamp: Math.max(0, Math.round(Number(timestamp) || 0)),
+        label: String(label || "").trim() || "إشارة",
+        description: String(description || "").trim(),
+        createdAt: nowIso()
+      };
+      set((state: any) => ({ bookmarks: [...state.bookmarks, value] }));
+      await dbPut(STORES.BOOKMARKS, value).catch(() => {});
+      get().addAuditLog?.("bookmark.create", value.id, "bookmark", { itemId, timestamp: value.timestamp });
+      return value;
+    },
+    updateBookmark: async ({ id, timestamp, label, description } = {} as any) => {
+      const current = get().bookmarks.find((bookmark: any) => bookmark.id === id);
+      if (!current) return null;
+      const value = {
+        ...current,
+        timestamp: Math.max(0, Math.round(Number(timestamp) || 0)),
+        label: String(label || "").trim() || current.label || "إشارة",
+        description: String(description || "").trim(),
+        updatedAt: nowIso()
+      };
+      set((state: any) => ({ bookmarks: state.bookmarks.map((bookmark: any) => bookmark.id === id ? value : bookmark) }));
+      await dbPut(STORES.BOOKMARKS, value).catch(() => {});
+      get().addAuditLog?.("bookmark.update", value.id, "bookmark", { itemId: value.itemId, timestamp: value.timestamp });
+      return value;
+    },
+    removeBookmark: async (id: any) => {
+      set((state: any) => ({ bookmarks: state.bookmarks.filter((bookmark: any) => bookmark.id !== id) }));
+      await dbDelete(STORES.BOOKMARKS, id).catch(() => {});
+      return true;
+    },
+    updateVideoItem: async (item: any, options: any = {}) => {
+      checkPermission(get, getAuthStore, ACTIONS.VIDEO_UPDATE);
+      const deviceId = getActiveDeviceId(get);
+      const previous = get().videoItems.find((current: any) => current.id === item.id) || null;
+      const updated = stampSyncMetadata(
+        createVideoItemValue({ ...item, updatedAt: nowIso(), id: item.id }),
+        { deviceId, previous } as any
+      );
+      const changes = previous ? diffVideoItemFields(previous, updated) : [];
+      const record = normalizeChangeRecord({ itemId: updated.id, action: "update", title: updated.title, changes, timestamp: nowIso() });
+      set((state: any) => ({
+        videoItems: state.videoItems.map((current: any) => current.id === updated.id ? updated : current),
+        changeHistory: appendHistory(state.changeHistory, record)
+      }));
+      await dbPut(STORES.ITEMS, updated);
+      await dbPut(STORES.HISTORY, record);
+      get().addAuditLog?.("video.update", updated.id, "video", { title: updated.title });
+      // Activity log (§18.1) — additive and failure-safe: logging must never
+      // break the save. skipActivityLog prevents undo/redo re-application from
+      // generating new activity entries.
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "update",
+            targetType: "item",
+            targetId: updated.id,
+            targetName: updated.title || "",
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            snapshot: { before: previous, after: updated },
+            undoable: Boolean(previous)
+          })).catch(() => {});
+        } catch {
+          // never block the update on activity logging
+        }
+      }
+      if (!options.skipUndo && previous) {
+        undoRedoManager.push({
+          label: `تعديل ${updated.title || "عنصر"}`,
+          undo: () => get().updateVideoItem(previous, { skipUndo: true, skipActivityLog: true }),
+          redo: () => get().updateVideoItem(updated, { skipUndo: true, skipActivityLog: true })
+        });
+      }
+      return updated;
+    },
+    deleteVideoItem: async (id: any, options: any = {}) => {
+      if (!options.skipUndo) checkPermission(get, getAuthStore, ACTIONS.VIDEO_DELETE);
+      const target = get().videoItems.find((item: any) => item.id === id);
+      if (!target) return false;
+      const deviceId = getActiveDeviceId(get);
+      const updated = stampSyncMetadata({ ...target, isDeleted: true, updatedAt: nowIso() }, { deviceId, previous: target } as any);
+      set((state: any) => ({ videoItems: state.videoItems.map((item: any) => item.id === id ? updated : item) }));
+      await dbPut(STORES.ITEMS, updated);
+      get().addAuditLog?.("video.delete", id, "video", { title: target.title });
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "delete",
+            targetType: "item",
+            targetId: id,
+            targetName: target.title || "",
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            snapshot: { before: target, after: null },
+            undoable: true
+          })).catch(() => {});
+        } catch { /* never block */ }
+      }
+      if (!options.skipUndo) {
+        undoRedoManager.push({
+          label: `حذف ${target.title || "فيديو"}`,
+          undo: () => get().restoreVideoItem(id, { skipUndo: true, skipActivityLog: true }),
+          redo: () => get().deleteVideoItem(id, { skipUndo: true, skipActivityLog: true })
+        });
+        get().showNotification?.(`تم حذف ${target.title || "الفيديو"}`, {
+          type: "info",
+          title: "تم الحذف",
+          action: { label: "تراجع", run: () => undoRedoManager.undo() }
+        });
+      }
+      return true;
+    },
+    restoreVideoItem: async (id: any, options: any = {}) => {
+      if (!options.skipUndo) checkPermission(get, getAuthStore, ACTIONS.VIDEO_RESTORE);
+      const target = get().videoItems.find((item: any) => item.id === id);
+      if (!target) return false;
+      const deviceId = getActiveDeviceId(get);
+      const updated = stampSyncMetadata({ ...target, isDeleted: false, updatedAt: nowIso() }, { deviceId, previous: target } as any);
+      set((state: any) => ({ videoItems: state.videoItems.map((item: any) => item.id === id ? updated : item) }));
+      await dbPut(STORES.ITEMS, updated);
+      get().addAuditLog?.("video.restore", id, "video", { title: target.title });
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "restore",
+            targetType: "item",
+            targetId: id,
+            targetName: target.title || "",
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            snapshot: { before: target, after: updated },
+            undoable: true
+          })).catch(() => {});
+        } catch { /* never block */ }
+      }
+      if (!options.skipUndo) {
+        undoRedoManager.push({
+          label: `استعادة ${target.title || "فيديو"}`,
+          undo: () => get().deleteVideoItem(id, { skipUndo: true, skipActivityLog: true }),
+          redo: () => get().restoreVideoItem(id, { skipUndo: true, skipActivityLog: true })
+        });
+      }
+      return true;
+    },
+    toggleFavorite: async (id: any) => {
+      const target = get().videoItems.find((item: any) => item.id === id);
+      if (!target) return false;
+      const deviceId = getActiveDeviceId(get);
+      const updated = stampSyncMetadata({ ...target, isFavorite: !target.isFavorite, updatedAt: nowIso() }, { deviceId, previous: target } as any);
+      set((state: any) => ({ videoItems: state.videoItems.map((item: any) => item.id === id ? updated : item) }));
+      await dbPut(STORES.ITEMS, updated);
+      return true;
+    },
+    markItemViewed: async (id: any) => {
+      const target = get().videoItems.find((item: any) => item.id === id);
+      if (!target) return false;
+      const stamp = nowIso();
+      if (target.lastViewedAt === stamp) return true;
+      const updated = { ...target, lastViewedAt: stamp };
+      set((state: any) => ({ videoItems: state.videoItems.map((item: any) => item.id === id ? updated : item) }));
+      // Persist quietly without touching updatedAt so the "آخر التحديث" timestamp stays meaningful.
+      await dbPut(STORES.ITEMS, updated).catch(() => {});
+      return true;
+    },
+    bulkDeleteItems: async (ids: any = [], options: any = {}) => {
+      if (!options.skipUndo) checkPermission(get, getAuthStore, ACTIONS.VIDEO_BULK_DELETE);
+      const idSet = new Set(ids);
+      const previous = get().videoItems.filter((item: any) => idSet.has(item.id)).map((item: any) => ({ ...item }));
+      if (!previous.length) return false;
+      const deviceId = getActiveDeviceId(get);
+      const updated = get().videoItems.map((item: any) => idSet.has(item.id)
+        ? stampSyncMetadata({ ...item, isDeleted: true, updatedAt: nowIso() }, { deviceId, previous: item } as any)
+        : item);
+      set({ videoItems: updated, selectedItems: [] });
+      await persistList(STORES.ITEMS, updated.filter((item: any) => idSet.has(item.id)));
+      get().addAuditLog?.("video.bulkDelete", null, "video", { count: previous.length, ids });
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "bulk_delete",
+            targetType: "item",
+            targetId: ids[0] || null,
+            targetName: `${previous.length} عنصر`,
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            relatedIds: ids,
+            undoable: true
+          })).catch(() => {});
+        } catch { /* never block */ }
+      }
+      if (!options.skipUndo) {
+        const label = `حذف ${previous.length} فيديو`;
+        undoRedoManager.push({
+          label,
+          undo: async () => {
+            const restored = get().videoItems.map((item: any) => idSet.has(item.id) ? { ...item, isDeleted: false } : item);
+            set({ videoItems: restored });
+            await persistList(STORES.ITEMS, restored.filter((item: any) => idSet.has(item.id)));
+          },
+          redo: () => get().bulkDeleteItems(ids, { skipUndo: true, skipActivityLog: true })
+        });
+        get().showNotification?.(label, {
+          type: "info",
+          title: "تم الحذف",
+          action: { label: "تراجع", run: () => undoRedoManager.undo() }
+        });
+      }
+      return true;
+    },
+    bulkRestoreItems: async (ids: any = [], options: any = {}) => {
+      const idSet = new Set(ids);
+      const previous = get().videoItems.filter((item: any) => idSet.has(item.id) && item.isDeleted).map((item: any) => ({ ...item }));
+      if (!previous.length) return false;
+      const deviceId = getActiveDeviceId(get);
+      const updated = get().videoItems.map((item: any) => idSet.has(item.id)
+        ? stampSyncMetadata({ ...item, isDeleted: false, updatedAt: nowIso() }, { deviceId, previous: item } as any)
+        : item);
+      set({ videoItems: updated, selectedItems: [] });
+      await persistList(STORES.ITEMS, updated.filter((item: any) => idSet.has(item.id)));
+      if (!options.skipActivityLog) {
+        try {
+          const authState = getAuthStore().getState();
+          await Promise.resolve(get().addActivityEntry?.({
+            action: "restore",
+            targetType: "item",
+            targetId: ids[0] || null,
+            targetName: `${previous.length} عنصر`,
+            userId: authState.currentUser?.id || "system",
+            userName: authState.currentUser?.username || "النظام",
+            relatedIds: ids,
+            undoable: true
+          })).catch(() => {});
+        } catch { /* never block */ }
+      }
+      if (!options.skipUndo) {
+        const label = `استعادة ${previous.length} فيديو`;
+        undoRedoManager.push({
+          label,
+          undo: () => get().bulkDeleteItems(ids, { skipUndo: true, skipActivityLog: true }),
+          redo: () => get().bulkRestoreItems(ids, { skipUndo: true, skipActivityLog: true })
+        });
+        get().showNotification?.(label, {
+          type: "info",
+          title: "تمت الاستعادة",
+          action: { label: "تراجع", run: () => undoRedoManager.undo() }
+        });
+      }
+      return true;
+    },
+    bulkAddTags: async (ids: any = [], tags: any = [], options: any = {}) => {
+      if (!ids.length || !tags.length) return false;
+      const idSet = new Set(ids);
+      const tagSet = new Set(tags.map((value: any) => String(value || "").trim()).filter(Boolean));
+      if (!tagSet.size) return false;
+      const previous = get().videoItems.filter((item: any) => idSet.has(item.id)).map((item: any) => ({ id: item.id, tags: [...(item.tags || [])] }));
+      const deviceId = getActiveDeviceId(get);
+      const updated = get().videoItems.map((item: any) => {
+        if (!idSet.has(item.id)) return item;
+        const merged = Array.from(new Set([...(item.tags || []), ...tagSet]));
+        return stampSyncMetadata({ ...item, tags: merged, updatedAt: nowIso() }, { deviceId, previous: item } as any);
+      });
+      set({ videoItems: updated });
+      await persistList(STORES.ITEMS, updated.filter((item: any) => idSet.has(item.id)));
+      if (!options.skipUndo) {
+        const label = `إضافة ${tagSet.size} وسم لـ ${previous.length} فيديو`;
+        undoRedoManager.push({
+          label,
+          undo: async () => {
+            const reverted = get().videoItems.map((item: any) => {
+              const original = previous.find((entry: any) => entry.id === item.id);
+              return original ? { ...item, tags: original.tags, updatedAt: nowIso() } : item;
+            });
+            set({ videoItems: reverted });
+            await persistList(STORES.ITEMS, reverted.filter((item: any) => idSet.has(item.id)));
+          },
+          redo: () => get().bulkAddTags(ids, tags, { skipUndo: true })
+        });
+        get().showNotification?.(label, {
+          type: "success",
+          title: "تمت إضافة الوسوم",
+          action: { label: "تراجع", run: () => undoRedoManager.undo() }
+        });
+      }
+      return true;
+    },
+    bulkMoveToCollection: async (ids: any = [], collectionId: any, options: any = {}) => {
+      if (!ids.length || !collectionId) return false;
+      const collection = get().virtualCollections.find((item: any) => item.id === collectionId);
+      if (!collection) return false;
+      const previousIds = [...(collection.itemIds || [])];
+      const merged = Array.from(new Set([...previousIds, ...ids]));
+      const updated = { ...collection, itemIds: merged, updatedAt: nowIso() };
+      set((state: any) => ({ virtualCollections: state.virtualCollections.map((item: any) => item.id === collectionId ? updated : item) }));
+      await dbPut(STORES.COLLECTIONS, updated);
+      if (!options.skipUndo) {
+        const label = `نقل ${ids.length} فيديو إلى ${collection.name}`;
+        undoRedoManager.push({
+          label,
+          undo: async () => {
+            const reverted = { ...updated, itemIds: previousIds, updatedAt: nowIso() };
+            set((state: any) => ({ virtualCollections: state.virtualCollections.map((item: any) => item.id === collectionId ? reverted : item) }));
+            await dbPut(STORES.COLLECTIONS, reverted);
+          },
+          redo: () => get().bulkMoveToCollection(ids, collectionId, { skipUndo: true })
+        });
+        get().showNotification?.(label, {
+          type: "success",
+          title: "تم النقل",
+          action: { label: "تراجع", run: () => undoRedoManager.undo() }
+        });
+      }
+      return true;
+    },
+    bulkSetType: async (ids: any = [], typeId: any, options: any = {}) => {
+      if (!ids.length || !typeId) return false;
+      const idSet = new Set(ids);
+      const previous = get().videoItems.filter((item: any) => idSet.has(item.id)).map((item: any) => ({ id: item.id, type: item.type }));
+      const deviceId = getActiveDeviceId(get);
+      const updated = get().videoItems.map((item: any) => {
+        if (!idSet.has(item.id)) return item;
+        return stampSyncMetadata({ ...item, type: typeId, updatedAt: nowIso() }, { deviceId, previous: item } as any);
+      });
+      set({ videoItems: updated });
+      await persistList(STORES.ITEMS, updated.filter((item: any) => idSet.has(item.id)));
+      if (!options.skipUndo) {
+        const label = `تغيير نوع ${previous.length} عنصر`;
+        undoRedoManager.push({
+          label,
+          undo: async () => {
+            const reverted = get().videoItems.map((item: any) => {
+              const orig = previous.find((e: any) => e.id === item.id);
+              return orig ? stampSyncMetadata({ ...item, type: orig.type, updatedAt: nowIso() }, { deviceId } as any) : item;
+            });
+            set({ videoItems: reverted });
+            await persistList(STORES.ITEMS, reverted.filter((item: any) => idSet.has(item.id)));
+          },
+          redo: () => get().bulkSetType(ids, typeId, { skipUndo: true })
+        });
+        get().showNotification?.(label, { type: "success", title: "تم تغيير النوع", action: { label: "تراجع", run: () => undoRedoManager.undo() } });
+      }
+      return true;
+    },
+    bulkSetProject: async (ids: any = [], projectId: any, options: any = {}) => {
+      if (!ids.length) return false;
+      const idSet = new Set(ids);
+      const previous = get().videoItems.filter((item: any) => idSet.has(item.id)).map((item: any) => ({ id: item.id, project: item.project ?? null }));
+      const deviceId = getActiveDeviceId(get);
+      const updated = get().videoItems.map((item: any) => {
+        if (!idSet.has(item.id)) return item;
+        return stampSyncMetadata({ ...item, project: projectId || null, updatedAt: nowIso() }, { deviceId, previous: item } as any);
+      });
+      set({ videoItems: updated });
+      await persistList(STORES.ITEMS, updated.filter((item: any) => idSet.has(item.id)));
+      if (!options.skipUndo) {
+        const label = `تغيير مشروع ${previous.length} عنصر`;
+        undoRedoManager.push({
+          label,
+          undo: async () => {
+            const reverted = get().videoItems.map((item: any) => {
+              const orig = previous.find((e: any) => e.id === item.id);
+              return orig ? stampSyncMetadata({ ...item, project: orig.project, updatedAt: nowIso() }, { deviceId } as any) : item;
+            });
+            set({ videoItems: reverted });
+            await persistList(STORES.ITEMS, reverted.filter((item: any) => idSet.has(item.id)));
+          },
+          redo: () => get().bulkSetProject(ids, projectId, { skipUndo: true })
+        });
+        get().showNotification?.(label, { type: "success", title: "تم تغيير المشروع", action: { label: "تراجع", run: () => undoRedoManager.undo() } });
+      }
+      return true;
+    },
+    emptyTrash: async () => {
+      checkPermission(get, getAuthStore, ACTIONS.VIDEO_BULK_DELETE);
+      const deleted = get().videoItems.filter((item: any) => item.isDeleted);
+      set((state: any) => ({ videoItems: state.videoItems.filter((item: any) => !item.isDeleted) }));
+      await Promise.all(deleted.map(cleanupDerivedMedia));
+      for (const item of deleted) await dbDelete(STORES.ITEMS, item.id);
+      if (deleted.length > 0) {
+        get().addAuditLog?.("video.emptyTrash", null, "video", { count: deleted.length });
+      }
+    },
+    addContentType: async (type: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.TYPES_MANAGE);
+      const value = createContentTypeValue(type);
+      set((state: any) => ({ contentTypes: [...state.contentTypes, value] }));
+      await dbPut(STORES.TYPES, value);
+      return value;
+    },
+    updateContentType: async (type: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.TYPES_MANAGE);
+      const updated = createContentTypeValue({ ...type, id: type.id, createdAt: type.createdAt });
+      set((state: any) => ({ contentTypes: state.contentTypes.map((item: any) => item.id === updated.id ? updated : item) }));
+      await dbPut(STORES.TYPES, updated);
+      return updated;
+    },
+    deleteContentType: async (id: any, options: any = {}) => {
+      if (!options.skipUndo) checkPermission(get, getAuthStore, ACTIONS.TYPES_MANAGE);
+      const previous = get().contentTypes.find((item: any) => item.id === id);
+      const updated = get().contentTypes.map((item: any) => item.id === id ? { ...item, status: "archived", archivedAt: nowIso(), updatedAt: nowIso() } : item);
+      set({ contentTypes: updated });
+      const target = updated.find((item: any) => item.id === id);
+      if (target) await dbPut(STORES.TYPES, target);
+      get().addAuditLog?.("type.archive", id, "type", { name: previous?.name });
+      if (!options.skipUndo && previous && previous.status !== "archived") {
+        const restored = { ...previous, status: previous.status || "active", archivedAt: null, updatedAt: nowIso() };
+        const label = `أرشفة نوع ${previous.name || ""}`.trim();
+        undoRedoManager.push({
+          label,
+          undo: async () => {
+            set((state: any) => ({ contentTypes: state.contentTypes.map((item: any) => item.id === id ? restored : item) }));
+            await dbPut(STORES.TYPES, restored);
+          },
+          redo: () => get().deleteContentType(id, { skipUndo: true })
+        });
+        get().showNotification?.(label, {
+          type: "info",
+          title: "تمت الأرشفة",
+          action: { label: "تراجع", run: () => undoRedoManager.undo() }
+        });
+      }
+      return true;
+    },
+    addVirtualCollection: async (collection: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.COLLECTIONS_MANAGE);
+      const value = createVirtualCollectionValue(collection);
+      set((state: any) => ({ virtualCollections: [value, ...state.virtualCollections] }));
+      await dbPut(STORES.COLLECTIONS, value);
+      logCollectionActivity("create", value, { before: null, after: value });
+      return value;
+    },
+    updateVirtualCollection: async (collection: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.COLLECTIONS_MANAGE);
+      const previous = get().virtualCollections.find((item: any) => item.id === collection.id) || null;
+      const updated = createVirtualCollectionValue({ ...collection, id: collection.id, createdAt: collection.createdAt });
+      set((state: any) => ({ virtualCollections: state.virtualCollections.map((item: any) => item.id === updated.id ? updated : item) }));
+      await dbPut(STORES.COLLECTIONS, updated);
+      logCollectionActivity("update", updated, { before: previous, after: updated });
+      return updated;
+    },
+    deleteVirtualCollection: async (id: any, options: any = {}) => {
+      if (!options.skipUndo) checkPermission(get, getAuthStore, ACTIONS.COLLECTIONS_MANAGE);
+      const target = get().virtualCollections.find((item: any) => item.id === id);
+      if (!target) return false;
+      set((state: any) => ({ virtualCollections: state.virtualCollections.filter((item: any) => item.id !== id) }));
+      await dbDelete(STORES.COLLECTIONS, id);
+      get().addAuditLog?.("collection.delete", id, "collection", { name: target.name });
+      logCollectionActivity("delete", target, { before: target, after: null });
+      if (!options.skipUndo) {
+        undoRedoManager.push({
+          label: `حذف مجموعة ${target.name || ""}`.trim(),
+          undo: async () => {
+            await get().addVirtualCollection(target);
+          },
+          redo: () => get().deleteVirtualCollection(id, { skipUndo: true })
+        });
+        get().showNotification?.(`تم حذف المجموعة "${target.name || ""}"`.trim(), {
+          type: "info",
+          title: "تم الحذف",
+          action: { label: "تراجع", run: () => undoRedoManager.undo() }
+        });
+      }
+      return true;
+    },
+    addItemsToCollection: async (collectionId: any, itemIds: any = []) => {
+      const collection = get().virtualCollections.find((item: any) => item.id === collectionId);
+      if (!collection) return false;
+      const updated = { ...collection, itemIds: [...new Set([...(collection.itemIds || []), ...itemIds])], updatedAt: nowIso() };
+      return get().updateVirtualCollection(updated);
+    },
+    removeItemsFromCollection: async (collectionId: any, itemIds: any = []) => {
+      const ids = new Set(itemIds);
+      const collection = get().virtualCollections.find((item: any) => item.id === collectionId);
+      if (!collection) return false;
+      const updated = { ...collection, itemIds: (collection.itemIds || []).filter((id: any) => !ids.has(id)), updatedAt: nowIso() };
+      return get().updateVirtualCollection(updated);
+    },
+    // ── Projects / montage (G5) — persisted through the StorageProvider, so
+    // they work offline (IndexedDB) and cloud (Postgres/PocketBase) alike. ──
+    addProject: async (project: any) => {
+      const value = createProjectValue(project);
+      set((state: any) => ({ projects: [value, ...state.projects] }));
+      await dbPut(STORES.PROJECTS, value);
+      get().addAuditLog?.("project.create", value.id, "project", { name: value.name });
+      return value;
+    },
+    updateProject: async (project: any) => {
+      const existing = get().projects.find((p: any) => p.id === project.id);
+      const value = createProjectValue({ ...existing, ...project, id: project.id, createdAt: existing?.createdAt });
+      set((state: any) => ({ projects: state.projects.map((p: any) => p.id === value.id ? value : p) }));
+      await dbPut(STORES.PROJECTS, value);
+      return value;
+    },
+    deleteProject: async (id: any) => {
+      const target = get().projects.find((p: any) => p.id === id);
+      if (!target) return false;
+      set((state: any) => ({ projects: state.projects.filter((p: any) => p.id !== id) }));
+      await dbDelete(STORES.PROJECTS, id);
+      get().addAuditLog?.("project.delete", id, "project", { name: target.name });
+      return true;
+    },
+    addVocabularyEntry: async (entry: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.VOCABULARY_MANAGE);
+      const value = { ...entry, id: entry.id || generateId("vocab"), updatedAt: nowIso(), createdAt: entry.createdAt || nowIso() };
+      set((state: any) => ({ vocabulary: [value, ...state.vocabulary] }));
+      await dbPut(STORES.VOCABULARY, value);
+      return value;
+    },
+    updateVocabularyEntry: async (entry: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.VOCABULARY_MANAGE);
+      const updated = { ...entry, updatedAt: nowIso() };
+      set((state: any) => ({ vocabulary: state.vocabulary.map((item: any) => item.id === updated.id ? updated : item) }));
+      await dbPut(STORES.VOCABULARY, updated);
+      return updated;
+    },
+    deleteVocabularyEntry: async (id: any, options: any = {}) => {
+      if (!options.skipUndo) checkPermission(get, getAuthStore, ACTIONS.VOCABULARY_MANAGE);
+      const target = get().vocabulary.find((item: any) => item.id === id);
+      if (!target) return false;
+      set((state: any) => ({ vocabulary: state.vocabulary.filter((item: any) => item.id !== id) }));
+      await dbDelete(STORES.VOCABULARY, id);
+      get().addAuditLog?.("vocabulary.delete", id, "vocabulary", { term: target.term });
+      if (!options.skipUndo) {
+        undoRedoManager.push({
+          label: `حذف مصطلح ${target.term || ""}`.trim(),
+          undo: async () => {
+            await get().addVocabularyEntry(target);
+          },
+          redo: () => get().deleteVocabularyEntry(id, { skipUndo: true })
+        });
+        get().showNotification?.(`تم حذف المصطلح "${target.term || ""}"`.trim(), {
+          type: "info",
+          title: "تم الحذف",
+          action: { label: "تراجع", run: () => undoRedoManager.undo() }
+        });
+      }
+      return true;
+    },
+    addHierarchicalTag: async (tag: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.HTAGS_MANAGE);
+      const value = { ...tag, id: tag.id || generateId("htag"), updatedAt: nowIso(), createdAt: tag.createdAt || nowIso() };
+      set((state: any) => ({ hierarchicalTags: [value, ...state.hierarchicalTags] }));
+      await dbPut(STORES.HTAGS, value);
+      return value;
+    },
+    updateHierarchicalTag: async (tag: any) => {
+      checkPermission(get, getAuthStore, ACTIONS.HTAGS_MANAGE);
+      const updated = { ...tag, updatedAt: nowIso() };
+      set((state: any) => ({ hierarchicalTags: state.hierarchicalTags.map((item: any) => item.id === updated.id ? updated : item) }));
+      await dbPut(STORES.HTAGS, updated);
+      return updated;
+    },
+    deleteHierarchicalTag: async (id: any, options: any = {}) => {
+      if (!options.skipUndo) checkPermission(get, getAuthStore, ACTIONS.HTAGS_MANAGE);
+      const childIds = new Set([id]);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const tag of get().hierarchicalTags) {
+          if (tag.parentId && childIds.has(tag.parentId) && !childIds.has(tag.id)) {
+            childIds.add(tag.id);
+            changed = true;
+          }
+        }
+      }
+      const removed = get().hierarchicalTags.filter((item: any) => childIds.has(item.id));
+      const rootTag = removed.find((item: any) => item.id === id);
+      set((state: any) => ({ hierarchicalTags: state.hierarchicalTags.filter((item: any) => !childIds.has(item.id)) }));
+      for (const tagId of childIds) await dbDelete(STORES.HTAGS, tagId);
+      if (removed.length > 0) {
+        get().addAuditLog?.("htag.delete", id, "htag", { name: rootTag?.name, count: removed.length });
+      }
+      if (!options.skipUndo && removed.length > 0) {
+        const label = removed.length > 1
+          ? `حذف ${rootTag?.name || "وسم"} وفروعه (${removed.length})`
+          : `حذف وسم ${rootTag?.name || ""}`.trim();
+        undoRedoManager.push({
+          label,
+          undo: async () => {
+            for (const tag of removed) {
+              await get().addHierarchicalTag(tag);
+            }
+          },
+          redo: () => get().deleteHierarchicalTag(id, { skipUndo: true })
+        });
+        get().showNotification?.(label, {
+          type: "info",
+          title: "تم الحذف",
+          action: { label: "تراجع", run: () => undoRedoManager.undo() }
+        });
+      }
+      return true;
+    },
+    getTagUsageCount: (tagId: any) => {
+      const tag = get().hierarchicalTags.find((item: any) => item.id === tagId);
+      if (!tag) return 0;
+      const names = new Set([tag.name, tag.path, tag.fullPath].filter(Boolean));
+      return get().videoItems.filter((item: any) => (item.tags || []).some((value: any) => names.has(value))).length;
+    },
+    getStats: () => ({
+      totalItems: get().videoItems.length,
+      activeItems: get().videoItems.filter((item: any) => !item.isDeleted).length,
+      deletedItems: get().videoItems.filter((item: any) => item.isDeleted).length,
+      favoriteItems: get().videoItems.filter((item: any) => item.isFavorite).length,
+      contentTypes: get().contentTypes.length,
+      collections: get().virtualCollections.length
+    }),
+    refreshData: async () => get().loadAllData(),
+    getVideoItemById: (id: any) => get().videoItems.find((item: any) => item.id === id),
+    getSmartSuggestions: () => [],
+    bulkExportItems: async () => false
+  };
+}
