@@ -1,6 +1,6 @@
 /**
  * Unit tests for drDrill.js and healthProbe.js
- * node:test style — 5 tests.
+ * node:test style.
  */
 
 import { test } from "node:test";
@@ -114,4 +114,36 @@ await test("drDrill: getHistory stores results and is bounded to 100 entries", a
   assert.equal(history[0].passed, true);
   // Each history entry should have a ranAt field
   assert.ok(typeof history[0].ranAt === "string", "history entries should have ranAt timestamp");
+});
+
+// ── Test 6 ─────────────────────────────────────────────────────────────────
+
+await test("drDrill: getScheduleStatus exposes running interval and last result", async () => {
+  const entry = makeEntry({ backupId: "scheduled-entry" });
+  const scheduler = createDrDrillScheduler({
+    restoreSmokeRunner: async () => ({ ok: true, errors: [], durationMs: 1 }),
+    manifest: { getEntries: () => [entry] },
+    config: { backup: { replication: { enabled: true, drillIntervalHours: 2, encryptionKey: "" } } },
+    logger: silentLogger,
+  });
+
+  const initial = scheduler.getScheduleStatus();
+  assert.equal(initial.enabled, true);
+  assert.equal(initial.running, false);
+  assert.equal(initial.intervalHours, 2);
+
+  scheduler.start();
+  const running = scheduler.getScheduleStatus();
+  assert.equal(running.running, true);
+  assert.ok(typeof running.startedAt === "string");
+  assert.ok(typeof running.nextRunAt === "string");
+
+  await scheduler.runDrillNow();
+  const afterRun = scheduler.getScheduleStatus();
+  assert.equal(afterRun.historyCount, 1);
+  assert.equal(afterRun.lastResult.replicaId, "scheduled-entry");
+  assert.ok(typeof afterRun.lastRunAt === "string");
+
+  scheduler.stop();
+  assert.equal(scheduler.getScheduleStatus().running, false);
 });

@@ -88,6 +88,7 @@ export function createHealthProbe({
   function start() {
     if (_intervalHandle !== null) return probe;
     _intervalHandle = setInterval(_probe, intervalMs);
+    if (typeof _intervalHandle.unref === "function") _intervalHandle.unref();
     return probe;
   }
 

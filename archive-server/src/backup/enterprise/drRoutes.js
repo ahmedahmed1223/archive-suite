@@ -66,6 +66,11 @@ export const drDrillScheduler = createDrDrillScheduler({
   logger: log,
 });
 
+if (config.backup?.replication?.enabled) {
+  healthProbe.start();
+  drDrillScheduler.start();
+}
+
 // ---------------------------------------------------------------------------
 // Route handler
 // ---------------------------------------------------------------------------
@@ -111,7 +116,8 @@ export async function handleDrRoute({
   if (req.method === "GET" && path === "/api/backups/drill-history") {
     if (!requireAuth(req, res)) return true;
     const history = drDrillScheduler.getHistory().slice(-10).reverse();
-    return send(res, 200, { ok: true, history }), true;
+    const schedule = drDrillScheduler.getScheduleStatus();
+    return send(res, 200, { ok: true, history, schedule }), true;
   }
 
   return false;

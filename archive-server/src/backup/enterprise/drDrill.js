@@ -28,7 +28,7 @@ const MAX_HISTORY = 100;
  * @param {object}   [options.manifest]            Object with getEntries() → entry[]
  * @param {object}   [options.config]              Server config (backup.replication.*)
  * @param {object}   [options.logger]              Pino-compatible logger
- * @returns {{ start: Function, stop: Function, runDrillNow: Function, getHistory: Function }}
+ * @returns {{ start: Function, stop: Function, runDrillNow: Function, getHistory: Function, getScheduleStatus: Function }}
  */
 export function createDrDrillScheduler({
   restoreSmokeRunner = null,
@@ -43,6 +43,9 @@ export function createDrDrillScheduler({
   const _history = [];
 
   let _intervalHandle = null;
+  let _startedAt = null;
+  let _nextRunAt = null;
+  let _lastRunAt = null;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -59,7 +62,7 @@ export function createDrDrillScheduler({
 
   function _getDrillIntervalMs() {
     const hours = config?.backup?.replication?.drillIntervalHours ?? 24;
-    return hours * 60 * 60 * 1000;
+    return Math.max(1, Number(hours) || 24) * 60 * 60 * 1000;
   }
 
   function _pushHistory(entry) {
@@ -73,6 +76,8 @@ export function createDrDrillScheduler({
 
   async function runDrillNow() {
     const t0 = Date.now();
+    const ranAt = new Date().toISOString();
+    _lastRunAt = ranAt;
     const entries = _getEntries();
     const latest = findRestorableEntry(entries);
 
@@ -84,7 +89,7 @@ export function createDrDrillScheduler({
         error: "No restorable replica found in manifest",
       };
       _log.warn({ audit: AUDIT_FAIL, result }, "DR drill skipped — no replica.");
-      _pushHistory({ ...result, ranAt: new Date().toISOString() });
+      _pushHistory({ ...result, ranAt });
       return result;
     }
 
@@ -101,7 +106,7 @@ export function createDrDrillScheduler({
         error: err?.message || String(err),
       };
       _log.warn({ audit: AUDIT_FAIL, result }, "DR drill FAILED (exception).");
-      _pushHistory({ ...result, ranAt: new Date().toISOString() });
+      _pushHistory({ ...result, ranAt });
       return result;
     }
 
@@ -121,7 +126,7 @@ export function createDrDrillScheduler({
       _log.warn({ audit: AUDIT_FAIL, result }, "DR drill FAILED.");
     }
 
-    _pushHistory({ ...result, ranAt: new Date().toISOString() });
+    _pushHistory({ ...result, ranAt });
     return result;
   }
 
@@ -130,11 +135,16 @@ export function createDrDrillScheduler({
   function start() {
     if (_intervalHandle !== null) return scheduler;
     const intervalMs = _getDrillIntervalMs();
+    _startedAt = _startedAt || new Date().toISOString();
+    _nextRunAt = new Date(Date.now() + intervalMs).toISOString();
     _intervalHandle = setInterval(() => {
       runDrillNow().catch((err) => {
         _log.error({ err }, "Unexpected error in scheduled DR drill.");
+      }).finally(() => {
+        _nextRunAt = new Date(Date.now() + intervalMs).toISOString();
       });
     }, intervalMs);
+    if (typeof _intervalHandle.unref === "function") _intervalHandle.unref();
     return scheduler;
   }
 
@@ -143,12 +153,29 @@ export function createDrDrillScheduler({
       clearInterval(_intervalHandle);
       _intervalHandle = null;
     }
+    _nextRunAt = null;
   }
 
   function getHistory() {
     return [..._history];
   }
 
-  const scheduler = { start, stop, runDrillNow, getHistory };
+  function getScheduleStatus() {
+    const intervalMs = _getDrillIntervalMs();
+    const history = getHistory();
+    return {
+      enabled: config?.backup?.replication?.enabled === true,
+      running: _intervalHandle !== null,
+      intervalMs,
+      intervalHours: intervalMs / 60 / 60 / 1000,
+      startedAt: _startedAt,
+      nextRunAt: _nextRunAt,
+      lastRunAt: _lastRunAt,
+      historyCount: history.length,
+      lastResult: history.length ? history[history.length - 1] : null,
+    };
+  }
+
+  const scheduler = { start, stop, runDrillNow, getHistory, getScheduleStatus };
   return scheduler;
 }
