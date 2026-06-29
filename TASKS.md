@@ -240,7 +240,9 @@
       - [x] 5d.4 — صفحات Next تستهلك قائمة/إنشاء media jobs.
     - [~] شريحة 5e — بوابة القطع. مفكَّكة:
       - [x] 5e.1 — تسوية أسماء حقول parity: `lastModified`→`modifiedAt` و`shareUrl`→`url` كأسماء قانونية عبر العقد + Laravel + عميل Next؛ تأكيد `POST /share` يرسل/يقبل `scope:{itemIds}`. بوابة خضراء: 61 اختبار Laravel + `verify:api-contracts` + `typecheck:next`.
-      - [ ] 5e.2 — **خطوة إنتاجية إشرافية (لا تُؤتمت):** تشغيل `e2e:next:integration` حيّ (Next↔Laravel) موسَّعاً ليغطي `/archive`, `/archive/[id]`, `/files`, `/media/jobs`؛ ثم قلب علم الإنتاج لتوجيه الواجهة إلى Laravel؛ ثم حذف مجموعات Node المقابلة (records/search/files/share/media/ingest) بعد تأكيد parity. **قرار «إيقاف البناء net-new على Node» سارٍ من الآن:** أي ميزة جديدة في هذه المجموعات تُبنى على Laravel/Next حصراً.
+      - [x] 5e.2-harness — وُسِّع `e2e:next:integration` ليغطي `/archive`, `/archive/[id]`, `/media/jobs` (DB-backed) + shell `/files`، مع fixture media_job في `NextIntegrationSeeder`. الـ spec يُحلَّل (10 اختبارات) لكنه **لم يُشغَّل** (يحتاج Laravel+Next حيَّين).
+      - [ ] 5e.2-cutover — **خطوة إنتاجية إشرافية (لا تُؤتمت):** تشغيل `e2e:next:integration` حيّ، ثم قلب علم الإنتاج لتوجيه الواجهة إلى Laravel، ثم حذف مجموعات Node المقابلة (records/search/files/share/media/ingest) بعد تأكيد parity. **قرار «إيقاف البناء net-new على Node» سارٍ من الآن:** أي ميزة جديدة في هذه المجموعات تُبنى على Laravel/Next حصراً.
+      - [ ] تأجيلات مطلوبة قبل قطع media فعلياً: تنفيذ ffmpeg/whisper حقيقي (بناء `Dockerfile.worker` + smoke) + ناقلات FTP/SMB حقيقية خلف `IngestTransport`.
   - الملفات: `docs/laravel-nextjs-migration-plan.md`, `TASKS.md`, عقود API لاحقاً تحت `docs/api/`, وحزم جديدة لاحقاً فقط بعد قرار scaffold.
   - القبول: لا اعتماديات Astro؛ `pnpm run typecheck` ينجح؛ Next.js هو مسار الواجهة TypeScript، وLaravel هو backend/API والـ queues؛ أي scaffold جديد لا يكسر Vite الحالي.
   - المصدر: طلب المستخدم 2026-06-27.
