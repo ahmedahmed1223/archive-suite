@@ -101,10 +101,10 @@
   - القبول: سياسة احتفاظ قابلة للتهيئة تعمل؛ حذف آمن يُسجَّل في سلسلة العهدة. ✓
   - المصدر: broadcast-report (compliance)، dev-roadmap (P3-06).
 
-- [ ] `[P1]` ⏱️XL **نسخ احتياطي مؤسسي** — replication عبر المناطق + off-site + failover تلقائي + اختبار DR آلي.
+- [x] `[P1]` ⏱️XL **نسخ احتياطي مؤسسي** — replication عبر المناطق + off-site + failover تلقائي + اختبار DR آلي.
   - ✅ شريحة 1/3 (2026-06-23 wave-31، agent Sonnet): `archive-server/src/backup/enterprise/` — `replicate.js` (streaming multipart S3 upload + AES-256-GCM optional encryption، 12B IV + 16B authTag layout)، `manifest.js` (`appendBackupManifestEntry` + `findRestorableEntry`)، `restoreSmoke.js` (download + decrypt + SHA-256 verify + `pg_restore --list` smoke). 3 REST endpoints: `POST /api/backups/replicate/:backupId` (admin) و `GET /api/backups/replicas` و `POST /api/backups/restore-smoke/:replicaId`. config: `config.backup.replication.{enabled, bucket, region, prefix, encryptionKey}` في `env.js`. 14 اختبار جديد، 23 اختبار backup الموجودة لم تتأثر.
   - ✅ شريحة 2/3 — (2026-06-24 wave-32، agent C): `healthProbe.js` (polling fetch، failThreshold، onFailoverNeeded/onRecovered callbacks)، `drDrill.js` (runDrillNow + scheduler، bounded 100-entry history)، `drRoutes.js` (GET health-probe، POST drill-now admin، GET drill-history). 10 اختبارات. verify:server green.
-  - متبقّي: شريحة 3 — scheduled DR drills UI + alerts.
+  - ✅ شريحة 3/3 — scheduled DR drills UI + alerts (2026-06-29): أضيفت حالة جدولة للحفر الآلي في `drDrill.js` (`getScheduleStatus`: enabled/running/interval/nextRunAt/lastRunAt/lastResult)، وتشغيل تلقائي لـ health probe وDR scheduler عند تفعيل `BACKUP_REPLICATION_ENABLED`. يعرض `GET /api/backups/drill-history` الآن `schedule` بجانب history. حُدّث `DrAlertsPanel` ليقرأ العقد الفعلي (`probe.lastCheck`, `history[].ranAt/replicaId/error`) ويعرض بطاقة الجدولة والتنبيهات عند فشل health probe، توقف الجدولة، أو فشل آخر حفر. أضيف اختبار UI للجدولة/الفشل واختبار scheduler status. مرّت `node archive-server\src\__tests__\drDrill.test.mjs` (6/6)، و`pnpm --filter archive-server run verify:dr` (5/5)، و`DrAlertsPanel.test.tsx` (10/10)، وtypecheck للواجهة والسيرفر.
   - الملفات: `archive-server/src/backup/enterprise/*` + S3 cross-region.
   - القبول: استعادة من نسخة off-site تنجح في اختبار DR مجدول. ✓ (smoke level)
   - المصدر: broadcast-report (DR)، dev-roadmap (P3-09).

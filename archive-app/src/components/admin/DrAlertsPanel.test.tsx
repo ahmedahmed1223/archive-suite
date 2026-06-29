@@ -52,6 +52,35 @@ const sampleHistory = {
   ],
 };
 
+const scheduledFailure = {
+  history: [
+    {
+      passed: false,
+      replicaId: null,
+      ranAt: "2026-06-29T05:45:00.000Z",
+      durationMs: 4,
+      error: "No restorable replica found in manifest",
+    },
+  ],
+  schedule: {
+    enabled: true,
+    running: true,
+    intervalMs: 86_400_000,
+    intervalHours: 24,
+    startedAt: "2026-06-29T00:00:00.000Z",
+    nextRunAt: "2026-06-30T00:00:00.000Z",
+    lastRunAt: "2026-06-29T05:45:00.000Z",
+    historyCount: 1,
+    lastResult: {
+      passed: false,
+      replicaId: null,
+      ranAt: "2026-06-29T05:45:00.000Z",
+      durationMs: 4,
+      error: "No restorable replica found in manifest",
+    },
+  },
+};
+
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("DrAlertsPanel", () => {
@@ -94,6 +123,20 @@ describe("DrAlertsPanel", () => {
     await waitFor(() => expect(screen.getByText("1/2 نسخة · 290ms")).toBeTruthy());
     const items = screen.getAllByRole("listitem");
     expect(items.length).toBe(2);
+  });
+
+  it("shows scheduled drill status and alerts when the last drill failed", async () => {
+    global.fetch = mockFetch({
+      "/api/backups/health-probe": healthyProbe,
+      "/api/backups/drill-history": scheduledFailure,
+    }) as typeof fetch;
+    render(<DrAlertsPanel authToken={TOKEN} />);
+
+    await waitFor(() => expect(screen.getByText("جدولة الحفر الآلي")).toBeTruthy());
+    expect(screen.getByText("مجدول ويعمل")).toBeTruthy();
+    expect(screen.getByText("24 ساعة")).toBeTruthy();
+    expect(screen.getByText("آخر حفر DR فشل")).toBeTruthy();
+    expect(screen.getAllByText(/No restorable replica/).length).toBeGreaterThan(0);
   });
 
   it("shows empty history message when no drills", async () => {
