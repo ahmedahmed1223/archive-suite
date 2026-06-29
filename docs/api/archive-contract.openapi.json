@@ -155,6 +155,51 @@
         }
       }
     },
+    "/records/{id}": {
+      "get": {
+        "tags": ["Records"],
+        "summary": "Read a single record by id",
+        "operationId": "getRecord",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "store",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/OkEnvelope" },
+                    {
+                      "type": "object",
+                      "required": ["record"],
+                      "properties": {
+                        "record": { "$ref": "#/components/schemas/ArchiveRecord" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/bulk": {
       "post": {
         "tags": ["Records"],

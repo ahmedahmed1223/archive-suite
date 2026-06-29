@@ -51,6 +51,42 @@ class RecordsController extends Controller
      * @throws ValidationException
      * @throws JsonException
      */
+    public function show(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'store' => ['nullable', 'string'],
+        ]);
+
+        $store = $request->input('store');
+
+        $row = DB::table('storage_rows')
+            ->when($store !== null, fn ($query) => $query->where('store', $store))
+            ->where(function ($query) use ($id): void {
+                $query->where('uid', $id)
+                    ->orWhere('data->>\'id\'', $id);
+            })
+            ->first();
+
+        if (! $row instanceof stdClass) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Record not found.',
+                'code' => 'not_found',
+            ], 404);
+        }
+
+        $record = StorageRowPayload::format($row);
+
+        return response()->json([
+            'ok' => true,
+            'record' => $record,
+        ]);
+    }
+
+    /**
+     * @throws ValidationException
+     * @throws JsonException
+     */
     public function bulk(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [

@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
 
         Route::get('/records', [RecordsController::class, 'index']);
+        Route::get('/records/{id}', [RecordsController::class, 'show']);
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::get('/search', [SearchController::class, 'index']);
         Route::get('/files', [FilesController::class, 'index']);
