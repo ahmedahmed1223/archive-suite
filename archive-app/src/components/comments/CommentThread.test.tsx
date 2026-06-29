@@ -8,7 +8,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { CommentThread } from "./CommentThread.jsx";
 
 vi.mock("../forms/TagAutocomplete.jsx", () => ({
-  TagAutocomplete: ({ value, onChange, placeholder }) => (
+  TagAutocomplete: ({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder?: string }) => (
     <textarea
       aria-label={placeholder}
       value={value}

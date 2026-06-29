@@ -15,11 +15,12 @@ import React from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { axe } from "vitest-axe";
+import type { RunOptions } from "axe-core";
 
 // toHaveNoViolations is registered globally in src/test-setup.js
 
 // Limit to WCAG 2.x A/AA rules only — avoids experimental / best-practice noise
-const AXE_OPTS = {
+const AXE_OPTS: RunOptions = {
   runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] },
 };
 
@@ -29,16 +30,16 @@ const AXE_OPTS = {
 
 // Silence framer-motion — jsdom cannot animate
 vi.mock("framer-motion", async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal<typeof import("framer-motion")>();
   return {
     ...actual,
-    AnimatePresence: ({ children }) => children,
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
     motion: new Proxy(
       {},
       {
-        get: (_target, tag) =>
+        get: (_target, tag: string) =>
           // Return a plain element with the same tag for any motion.X
-          ({ children, initial, animate, exit, transition, variants, ...rest }) =>
+          ({ children, initial, animate, exit, transition, variants, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) =>
             React.createElement(tag === "div" ? "div" : tag, rest, children),
       }
     ),

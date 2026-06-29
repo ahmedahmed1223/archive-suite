@@ -5,16 +5,31 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { VoiceSearchButton } from "./VoiceSearchButton.jsx";
 
 afterEach(() => {
-  delete window.SpeechRecognition;
-  delete window.webkitSpeechRecognition;
+  const browserWindow = window as Window & {
+    SpeechRecognition?: new () => unknown;
+    webkitSpeechRecognition?: new () => unknown;
+  };
+  delete browserWindow.SpeechRecognition;
+  delete browserWindow.webkitSpeechRecognition;
 });
 
 describe("VoiceSearchButton", () => {
   it("starts Arabic speech recognition and emits a parsed intent", async () => {
     const onIntent = vi.fn();
-    let recognition;
+    const browserWindow = window as Window & {
+      SpeechRecognition?: new () => FakeRecognition;
+      webkitSpeechRecognition?: new () => FakeRecognition;
+    };
+    let recognition: FakeRecognition | undefined;
 
     class FakeRecognition {
+      lang = "";
+      interimResults = false;
+      continuous = false;
+      onstart?: () => void;
+      onresult?: (event: { resultIndex: number; results: Array<Array<{ transcript: string }>> }) => void;
+      onend?: () => void;
+
       constructor() {
         recognition = this;
       }
@@ -26,21 +41,22 @@ describe("VoiceSearchButton", () => {
       abort() {}
     }
 
-    window.SpeechRecognition = FakeRecognition;
+    browserWindow.SpeechRecognition = FakeRecognition;
 
     render(<VoiceSearchButton onIntent={onIntent} />);
 
     fireEvent.click(screen.getByRole("button", { name: "بدء البحث الصوتي" }));
 
-    expect(recognition.lang).toBe("ar-SA");
-    expect(recognition.interimResults).toBe(false);
-    expect(recognition.continuous).toBe(false);
+    expect(recognition).toBeDefined();
+    expect(recognition!.lang).toBe("ar-SA");
+    expect(recognition!.interimResults).toBe(false);
+    expect(recognition!.continuous).toBe(false);
 
-    recognition.onresult?.({
+    recognition!.onresult?.({
       resultIndex: 0,
       results: [[{ transcript: "ابحث عن محاضرات يونيو" }]]
     });
-    recognition.onend?.();
+    recognition!.onend?.();
 
     await waitFor(() => {
       expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({

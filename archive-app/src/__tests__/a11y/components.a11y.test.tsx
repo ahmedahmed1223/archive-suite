@@ -10,10 +10,11 @@ import React from "react";
 import { describe, it, expect, beforeAll } from "vitest";
 import { render } from "@testing-library/react";
 import { axe } from "vitest-axe";
+import type { RunOptions } from "axe-core";
 // toHaveNoViolations is registered globally in src/test-setup.js
 
 // axe options: limit to WCAG 2.x A/AA rules to avoid experimental rule noise
-const AXE_OPTS = {
+const AXE_OPTS: RunOptions = {
   runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] },
 };
 
@@ -277,8 +278,8 @@ import { BackupManager } from "../../components/admin/BackupManager.jsx";
 describe("BackupManager — a11y", () => {
   beforeAll(() => {
     // Provide a global fetch stub so BackupManager's useEffect resolves cleanly
-    global.fetch = async (url) => {
-      if (url.includes("/api/admin/backups")) {
+    global.fetch = (async (url: URL | RequestInfo) => {
+      if (String(url).includes("/api/admin/backups")) {
         return {
           ok: true,
           json: async () => ({
@@ -298,7 +299,7 @@ describe("BackupManager — a11y", () => {
         };
       }
       return { ok: false, json: async () => ({}) };
-    };
+    }) as typeof fetch;
   });
 
   it("has no WCAG violations in the loaded-with-backups state", async () => {
@@ -314,7 +315,7 @@ describe("BackupManager — a11y", () => {
   it("has no WCAG violations in the loading state", async () => {
     // Override fetch to never resolve during this test
     const originalFetch = global.fetch;
-    global.fetch = () => new Promise(() => {});
+    global.fetch = (() => new Promise(() => {})) as typeof fetch;
     const { container } = render(<BackupManager authToken="mock-token" />);
     // Component is in "loading" state (no fetch resolution)
     const results = await axe(container, AXE_OPTS);

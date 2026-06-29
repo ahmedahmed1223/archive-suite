@@ -7,7 +7,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { ShareDialog } from "./ShareDialog.jsx";
 
-function jsonResponse(body, ok = true, status = 200) {
+function jsonResponse(body: unknown, ok = true, status = 200) {
   return { ok, status, json: async () => body };
 }
 
@@ -23,7 +23,7 @@ describe("ShareDialog", () => {
   });
 
   it("mints a collection share with the selected permission", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({
+    const fetchImpl: any = vi.fn(async () => jsonResponse({
       ok: true,
       result: { token: "share-token", title: "مراجعة: مجموعة", expiresAt: "2026-07-18T00:00:00.000Z" }
     }));
@@ -70,7 +70,7 @@ describe("ShareDialog", () => {
   });
 
   it("lets the user revoke a freshly minted share link", async () => {
-    const fetchImpl = vi
+    const fetchImpl: any = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({
         ok: true,
@@ -119,7 +119,7 @@ describe("ShareDialog", () => {
   });
 
   it("sends an email invitation when a recipient email is provided", async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({
+    const fetchImpl: any = vi.fn(async () => jsonResponse({
       ok: true,
       result: {
         token: "invite-token",

@@ -27,7 +27,7 @@ describe("SharedWithMePage", () => {
       token: "share-token",
       label: "archive.example"
     }));
-    expect(JSON.parse(localStorage.getItem("archive_accessed_share_links"))).toHaveLength(1);
+    expect(JSON.parse(localStorage.getItem("archive_accessed_share_links") ?? "[]")).toHaveLength(1);
     expect(screen.getByText("archive.example")).toBeInTheDocument();
   });
 });

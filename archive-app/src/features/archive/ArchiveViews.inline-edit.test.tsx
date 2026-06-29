@@ -27,7 +27,7 @@ function renderTable(props = {}) {
     <VideoTableView
       items={[baseItem]}
       previewItem={null}
-      typeLabel={(item) => typeOptions.find((option) => option.value === item.type)?.label || item.type}
+      typeLabel={(item: { type: string }) => typeOptions.find((option) => option.value === item.type)?.label || item.type}
       subtypeLabel={() => ""}
       typeOptions={typeOptions}
       showDeleted={false}

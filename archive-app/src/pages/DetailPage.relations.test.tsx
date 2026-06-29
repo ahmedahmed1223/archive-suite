@@ -27,6 +27,11 @@ const cloudState = vi.hoisted(() => ({
   token: ""
 }));
 
+type CloudOverrides = {
+  backendChoice?: typeof cloudState.backendChoice;
+  token?: string;
+};
+
 vi.mock("../bootstrap/backendChoice.js", () => ({
   resolveBackendChoice: () => cloudState.backendChoice
 }));
@@ -72,7 +77,7 @@ const baseItems = [
   }
 ];
 
-function renderDetailPage(overrides = {}, cloudOverrides = {}) {
+function renderDetailPage(overrides: Record<string, unknown> = {}, cloudOverrides: CloudOverrides = {}) {
   cloudState.backendChoice = cloudOverrides.backendChoice || { backend: "local", url: "" };
   cloudState.token = cloudOverrides.token || "";
   const state = {
@@ -115,7 +120,7 @@ function renderDetailPage(overrides = {}, cloudOverrides = {}) {
     })),
     ...overrides
   };
-  useAppStore.mockReturnValue(state);
+  vi.mocked(useAppStore).mockReturnValue(state as any);
   return { ...render(<DetailPage />), state };
 }
 

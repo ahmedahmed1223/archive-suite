@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ApiKeysSettings } from "./ApiKeysSettings.jsx";
 
-function jsonRes(body, ok = true, status = 200) {
+function jsonRes(body: unknown, ok = true, status = 200) {
   return { ok, status, json: async () => body };
 }
 
@@ -21,7 +21,8 @@ describe("ApiKeysSettings", () => {
 
     await waitFor(() => expect(screen.getByText("WordPress")).toBeInTheDocument());
     expect(screen.getByText(/ak_1a2b3c4d/)).toBeInTheDocument();
-    expect(fetchImpl.mock.calls[0][0]).toBe("https://api.test/api/api-keys");
+    const firstCall = fetchImpl.mock.calls[0] as unknown as [string, RequestInit?];
+    expect(firstCall[0]).toBe("https://api.test/api/api-keys");
   });
 
   it("creates a key and reveals the plaintext exactly once", async () => {
@@ -40,8 +41,8 @@ describe("ApiKeysSettings", () => {
 
     // the one-time plaintext is shown
     await waitFor(() => expect(screen.getByText("ak_99_PLAINTEXTSECRET")).toBeInTheDocument());
-    const postCall = fetchImpl.mock.calls.find((c) => c[1]?.method === "POST");
-    expect(JSON.parse(postCall[1].body)).toMatchObject({ name: "CI", scopes: ["read"] });
+    const postCall = fetchImpl.mock.calls.find((c) => c[1]?.method === "POST") as [string, RequestInit?] | undefined;
+    expect(JSON.parse(postCall?.[1]?.body as string)).toMatchObject({ name: "CI", scopes: ["read"] });
   });
 
   it("revokes a key via DELETE", async () => {
@@ -56,8 +57,8 @@ describe("ApiKeysSettings", () => {
     fireEvent.click(screen.getByRole("button", { name: /إبطال Old/ }));
 
     await waitFor(() => {
-      const del = fetchImpl.mock.calls.find((c) => c[1]?.method === "DELETE");
-      expect(del[0]).toBe("https://api.test/api/api-keys/k1");
+      const del = fetchImpl.mock.calls.find((c) => c[1]?.method === "DELETE") as [string, RequestInit?] | undefined;
+      expect(del?.[0]).toBe("https://api.test/api/api-keys/k1");
     });
   });
 });

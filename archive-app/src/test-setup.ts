@@ -2,6 +2,16 @@ import { expect, afterEach } from "vitest";
 import * as jestDomMatchers from "@testing-library/jest-dom/matchers";
 import { cleanup } from "@testing-library/react";
 
+declare module "vitest" {
+  interface Assertion<T = any> {
+    toHaveNoViolations(): T;
+  }
+
+  interface AsymmetricMatchersContaining {
+    toHaveNoViolations(): unknown;
+  }
+}
+
 // Register @testing-library/jest-dom DOM matchers (toBeInTheDocument, etc.)
 expect.extend(jestDomMatchers as any);
 
