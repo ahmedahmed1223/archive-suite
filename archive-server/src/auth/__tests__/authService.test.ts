@@ -25,8 +25,8 @@ describe("verifySecret", () => {
   it("rejects empty inputs", async () => {
     expect(await verifySecret("", "hash")).toBe(false);
     expect(await verifySecret("plain", "")).toBe(false);
-    expect(await verifySecret(null, "hash")).toBe(false);
-    expect(await verifySecret("plain", null)).toBe(false);
+    expect(await verifySecret(null as any, "hash")).toBe(false);
+    expect(await verifySecret("plain", null as any)).toBe(false);
   });
 
   it("verifies bcrypt hash when bcryptjs.compare resolves true", async () => {

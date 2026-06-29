@@ -15,6 +15,7 @@
 - Current source count after slice 12: 796 JS/JSX and 76 TS/TSX outside generated outputs.
 - Progress after slice 13: 785 JS/JSX and 101 TS/TSX outside generated outputs. Tasks 1-3 are complete.
 - Progress after slice 14: 778 JS/JSX and 116 TS/TSX outside generated outputs. Tasks 1-4 are complete.
+- Progress after Task 10 (2026-06-29): 663 JS/JSX and 773 TS/TSX outside generated outputs. Tasks 1-8 and 10 complete; `archive-app/src` real-JS = 0 (all facades), `archive-server/src` real-JS = 48 (Task 11 surface only). Core facade strategy (Task 9) and server routes/api/adapters/index (Task 11) remain.
 - Final verification for slice 13: `pnpm run release:verify` passed after the security baseline fixture was aligned.
 - Final verification for slice 14: `pnpm run release:verify` passed with 22 TypeScript migration test files and 216 tests.
 - `archive-app/src` is the largest remaining surface: components, pages, stores, adapters, and feature view models.
@@ -192,21 +193,13 @@ Run `pnpm run typecheck:app`.
 - Convert storage tests where present.
 - Preserve facades for store/adapters imported by non-TypeScript entry points until Task 8.
 
-- [ ] **Step 1: Convert store slice files in small groups**
+- [x] **Step 1: Convert store slice files in small groups** — done across slices 21/24-28; all `archive-app/src/stores/**` are now `.ts` with `.js` facades.
 
-Start with independent slices (`historySlice`, `inboxSlice`, `authSlice.remember` test surface), then move through archive/settings/upload/user slices.
+- [x] **Step 2: Convert storage adapters by backend** — done; all `archive-app/src/storage/adapters/**/index.js` are facades over `.ts`.
 
-- [ ] **Step 2: Convert storage adapters by backend**
+- [x] **Step 3: Run focused tests for changed slices/adapters** — covered by the slice-24-28 full app suite run (143 files / 1245 tests).
 
-Use separate groups for local auth/session/indexeddb/sqlite/sync and cloud firebase/http/sync.
-
-- [ ] **Step 3: Run focused tests for changed slices/adapters**
-
-Run exact changed test files with `pnpm --filter @archive/app exec vitest run ...`.
-
-- [ ] **Step 4: Run app typecheck**
-
-Run `pnpm run typecheck:app`.
+- [x] **Step 4: Run app typecheck** — `pnpm run typecheck:app` green as of slice 28. `archive-app/src` real-JS count is 0.
 
 ### Task 6: App React Components And Pages
 
@@ -332,25 +325,15 @@ pnpm run typecheck
 - Convert matching tests under `archive-server/src/**/__tests__/*.js`
 - Preserve `.js` facades for modules imported by still-JS server entrypoints until Task 11.
 
-- [ ] **Step 1: Convert service clusters independently**
+- [x] **Step 1: Convert service clusters independently** — done 2026-06-29 via 8 Haiku workers (disjoint write sets): auth, export, ai, media, backup, config+share+rights, mos+ingest, and a misc bucket (logger/cache/conversion/files/monitoring/notifications/retention/versions/webhooks/workflow/etc.). 94 files converted to `.ts` with `.js` facades.
 
-Use one worker per cluster, keeping write sets disjoint.
+- [x] **Step 2: Convert matching tests** — `auth/__tests__/{authService,tokenService}.test.ts`, `config/__tests__/{env,serverConfig}.test.ts`, `files/__tests__/fileStoreOperations.test.ts`, `workflow/__tests__/dueDateScheduler.test.ts` converted (no test facades). Root `__tests__/*.mjs` integration tests left as-is.
 
-- [ ] **Step 2: Convert matching tests**
+- [x] **Step 3: Run focused server tests** — `pnpm --filter archive-server test`: 21 files / 228 tests pass.
 
-Rename test files to `.test.ts` when the implementation is converted.
+- [x] **Step 4: Run server typecheck** — `pnpm run typecheck:server` → 0 errors; full `pnpm run typecheck` → 0 errors. (173 conversion type errors were cleared by 5 Haiku build-error-resolver workers, mostly by loosening over-strict "normalize arbitrary record" input types; ambient `.d.ts` added for `ws`/`web-push`/`qrcode`/`nodemailer`.)
 
-- [ ] **Step 3: Run focused server tests**
-
-Run exact changed server tests:
-
-```powershell
-pnpm --filter archive-server test -- src/path/to/file.test.ts
-```
-
-- [ ] **Step 4: Run server typecheck**
-
-Run `pnpm run typecheck:server`.
+> Remaining server real-JS after Task 10: 48 files — all Task 11 surface (`api/**`, `routes/**`, `adapters/**`, `index.js`). Server impl count dropped 142 → 48.
 
 ### Task 11: Server Routes, API, Adapters, Entrypoint
 
@@ -361,26 +344,15 @@ Run `pnpm run typecheck:server`.
 - Convert: `archive-server/src/index.js`
 - Convert remaining server tests.
 
-- [ ] **Step 1: Convert adapters before API routes**
+- [x] **Step 1: Convert adapters before API routes** — done 2026-06-29; all `adapters/**` (cloud-pocketbase/postgres-prisma/sync + files-azure/disk/dropbox/ftp/gdrive/s3/sftp/smb/webdav) converted with `.js` facades.
 
-Adapters define data shapes consumed by routes.
+- [x] **Step 2: Convert API and route files** — `api/**` (server, rpcHandler, searchHandler, handlers, routes/export+rights) and `routes/**` converted; Express-like req/res typed conservatively.
 
-- [ ] **Step 2: Convert API and route files**
+- [x] **Step 3: Convert `src/index.js` last** — `index.ts` created; `index.js` left as facade so the tsx start script is unchanged.
 
-Type request/response helpers conservatively without over-refactoring Express-like handlers.
+- [x] **Step 4: Run server gates** — `pnpm run typecheck:server` → 0; full `pnpm run typecheck` → 0; `pnpm --filter archive-server test` → 29 files / 287 tests pass.
 
-- [ ] **Step 3: Convert `src/index.js` last**
-
-Keep startup behavior unchanged.
-
-- [ ] **Step 4: Run server gates**
-
-Run:
-
-```powershell
-pnpm run typecheck:server
-pnpm run verify:server
-```
+> Done via 4 Haiku conversion workers + 3 Haiku build-error-resolver workers (120 type errors). Coordinator caught two runtime-class facade defects typecheck does NOT flag — 12 self-referential facades (`export * from "./self.js"`) and 33 invalid `export { default }` re-exports — and deterministically regenerated all 136 server facades from ground truth (default re-export only when the `.ts` actually has a default). Added ambient `.d.ts` for `ssh2-sftp-client`. After Task 11: `archive-server/src` real-impl JS = 0. Only Task 9 (core build/export + facade removal) and Task 12 (final strictness/cleanup) remain.
 
 ### Task 12: Final Strictness And Cleanup
 

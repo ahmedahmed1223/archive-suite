@@ -6,7 +6,7 @@ import {
   verifyRefreshToken,
   revokeRefreshFamily,
   peekRefreshFamily,
-  DEFAULT_ACCESS_EXPIRES_IN_SEC
+  DEFAULT_ACCESS_EXPIRES_IN_SEC,
 } from "../tokenService.js";
 
 const SECRET = "test-jwt-secret-32-chars-minimum!";
@@ -48,7 +48,7 @@ describe("signAccessToken", () => {
   });
 
   it("throws when user.id is missing", () => {
-    expect(() => signAccessToken({}, SECRET)).toThrow("user.id");
+    expect(() => signAccessToken({ id: "" } as any, SECRET)).toThrow("user.id");
   });
 });
 
@@ -76,7 +76,7 @@ describe("signRefreshToken", () => {
   });
 
   it("throws when user.id is missing", () => {
-    expect(() => signRefreshToken({}, SECRET)).toThrow("user.id");
+    expect(() => signRefreshToken({ id: "" } as any, SECRET)).toThrow("user.id");
   });
 });
 
@@ -159,7 +159,7 @@ describe("peekRefreshFamily", () => {
   it("returns null for garbage input", () => {
     expect(peekRefreshFamily("not-a-jwt")).toBeNull();
     expect(peekRefreshFamily("")).toBeNull();
-    expect(peekRefreshFamily(null)).toBeNull();
+    expect(peekRefreshFamily(null as any)).toBeNull();
   });
 });
 
@@ -175,6 +175,6 @@ describe("revokeRefreshFamily", () => {
 
   it("does not throw when called with an unknown family id", () => {
     expect(() => revokeRefreshFamily("does-not-exist")).not.toThrow();
-    expect(() => revokeRefreshFamily(null)).not.toThrow();
+    expect(() => revokeRefreshFamily(null as any)).not.toThrow();
   });
 });
