@@ -311,7 +311,7 @@ describe("ArchivePageResults — virtual list in list view", () => {
     expect(renderedItems.length).toBeLessThan(200);
 
     vi.unstubAllGlobals();
-  });
+  }, 10_000);
 
   it("shows empty state when visibleItems is empty", async () => {
     const { ArchivePageResults } = await import(

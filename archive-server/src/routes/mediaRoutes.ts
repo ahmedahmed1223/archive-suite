@@ -463,7 +463,7 @@ export async function handleMediaRoute({
             result = await files.putBlob(key, bytes, { contentType: declaredMime });
           }
         }
-        notifyUploadComplete({ prisma, sendMail: notificationSendMail, userId: claims.sub, userEmail: claims.sub, recordTitle: key });
+        notifyUploadComplete({ prisma, sendMail: notificationSendMail, userId: claims.sub, recordTitle: key });
         sendPushToUser({ prisma, userId: claims.sub, type: "upload", title: `اكتملت معالجة الملف — ${key}`, url: "/" });
         return (
           send(res, 200, { ok: true, result, ...(imageMetadata ? { imageMetadata } : {}) }),
@@ -547,7 +547,7 @@ export async function handleMediaRoute({
       if (req.method === "POST" && subPath === "complete") {
         const files = resolveFileStore();
         const result = await completeUploadSession({ uploadId, userId: claims.sub, files });
-        notifyUploadComplete({ prisma, sendMail: notificationSendMail, userId: claims.sub, userEmail: claims.sub, recordTitle: result?.key || uploadId });
+        notifyUploadComplete({ prisma, sendMail: notificationSendMail, userId: claims.sub, recordTitle: result?.key || uploadId });
         sendPushToUser({ prisma, userId: claims.sub, type: "upload", title: `اكتمل الرفع — ${result?.key || uploadId}`, url: "/" });
         return send(res, 200, { ok: true, result }), true;
       }

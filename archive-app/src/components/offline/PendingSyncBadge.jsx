@@ -1,1 +1,1 @@
-export { PendingSyncBadge, default } from "./PendingSyncBadge.tsx";
+export { PendingSyncBadge } from "./PendingSyncBadge.tsx";

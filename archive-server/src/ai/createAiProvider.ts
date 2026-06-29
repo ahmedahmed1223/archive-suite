@@ -28,6 +28,7 @@ interface AiProviderConfig {
     apiKey?: string;
     model?: string;
     baseUrl?: string;
+    fetchImpl?: typeof fetch;
   };
 }
 
@@ -66,7 +67,7 @@ export function createAiProvider(cfg: AiProviderConfig = {}): AiProvider {
   const tcfg = cfg.transcribe || {};
   if (tcfg.provider) {
     try {
-      const transcriber = createTranscriber({ provider: tcfg.provider, apiKey: tcfg.apiKey, model: tcfg.model, baseUrl: tcfg.baseUrl });
+      const transcriber = createTranscriber({ provider: tcfg.provider, apiKey: tcfg.apiKey, model: tcfg.model, baseUrl: tcfg.baseUrl, fetchImpl: tcfg.fetchImpl });
       const withTranscribe: AiProvider = {
         ...base,
         transcribe: ({ blob, mimeType, name }: { blob?: Blob; mimeType?: string; name?: string } = {}) => transcriber.transcribe(blob, { mimeType, name })

@@ -1,1 +1,1 @@
-export { OfflineBanner, default } from "./OfflineBanner.tsx";
+export { OfflineBanner } from "./OfflineBanner.tsx";
