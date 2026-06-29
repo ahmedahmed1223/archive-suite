@@ -917,7 +917,7 @@
           "kind": { "type": "string", "enum": ["file", "folder"] },
           "mimeType": { "type": "string" },
           "size": { "type": "integer" },
-          "lastModified": { "type": "string", "format": "date-time" },
+          "modifiedAt": { "type": "string", "format": "date-time" },
           "url": { "type": "string" }
         },
         "additionalProperties": true
@@ -1149,10 +1149,10 @@
           { "$ref": "#/components/schemas/OkEnvelope" },
           {
             "type": "object",
-            "required": ["token", "shareUrl"],
+            "required": ["token", "url"],
             "properties": {
               "token": { "type": "string" },
-              "shareUrl": { "type": "string" },
+              "url": { "type": "string" },
               "path": { "type": "string" },
               "expiresAt": { "type": ["string", "null"], "format": "date-time" }
             }

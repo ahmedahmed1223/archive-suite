@@ -238,7 +238,9 @@
       - [x] 5d.2 — معالج ffmpeg فعلي + Dockerfile/worker image (بنية تحتية، يُتحقّق بـ smoke لا unit).
       - [x] 5d.3 — نقل ingest (broadcastIngest/watch folder/checksum) إلى Laravel queues.
       - [x] 5d.4 — صفحات Next تستهلك قائمة/إنشاء media jobs.
-    - [ ] شريحة 5e — بوابة القطع لكل مجموعة وصلت parity: E2E تكامل Next↔Laravel، قلب flag، توثيق إيقاف البناء net-new على Node.
+    - [~] شريحة 5e — بوابة القطع. مفكَّكة:
+      - [x] 5e.1 — تسوية أسماء حقول parity: `lastModified`→`modifiedAt` و`shareUrl`→`url` كأسماء قانونية عبر العقد + Laravel + عميل Next؛ تأكيد `POST /share` يرسل/يقبل `scope:{itemIds}`. بوابة خضراء: 61 اختبار Laravel + `verify:api-contracts` + `typecheck:next`.
+      - [ ] 5e.2 — **خطوة إنتاجية إشرافية (لا تُؤتمت):** تشغيل `e2e:next:integration` حيّ (Next↔Laravel) موسَّعاً ليغطي `/archive`, `/archive/[id]`, `/files`, `/media/jobs`؛ ثم قلب علم الإنتاج لتوجيه الواجهة إلى Laravel؛ ثم حذف مجموعات Node المقابلة (records/search/files/share/media/ingest) بعد تأكيد parity. **قرار «إيقاف البناء net-new على Node» سارٍ من الآن:** أي ميزة جديدة في هذه المجموعات تُبنى على Laravel/Next حصراً.
   - الملفات: `docs/laravel-nextjs-migration-plan.md`, `TASKS.md`, عقود API لاحقاً تحت `docs/api/`, وحزم جديدة لاحقاً فقط بعد قرار scaffold.
   - القبول: لا اعتماديات Astro؛ `pnpm run typecheck` ينجح؛ Next.js هو مسار الواجهة TypeScript، وLaravel هو backend/API والـ queues؛ أي scaffold جديد لا يكسر Vite الحالي.
   - المصدر: طلب المستخدم 2026-06-27.
