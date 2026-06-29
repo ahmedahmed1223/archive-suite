@@ -94,6 +94,9 @@ export interface ArchiveApiClient {
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
+  mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[] }>>;
+  createMediaJob(payload: { recordId: string; operation: MediaOperation; sourcePath?: string; options?: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
+  ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
@@ -181,6 +184,18 @@ export function createArchiveApiClient({
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
     rights: (itemId: string, options?: AuthRequestOptions) => get<{ record: RightsRecord }>(`/rights?itemId=${encodeURIComponent(itemId)}`, options),
     mediaJob: (id: string, options?: AuthRequestOptions) => get<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}`, options),
+    mediaJobs: (params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.status) queryParams.set("status", params.status);
+      if (params?.recordId) queryParams.set("recordId", params.recordId);
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      const query = queryParams.toString();
+      return get<{ jobs: MediaJob[] }>(`/media/jobs${query ? `?${query}` : ""}`, options);
+    },
+    createMediaJob: (payload: { recordId: string; operation: MediaOperation; sourcePath?: string; options?: Record<string, unknown> }, options?: AuthRequestOptions) =>
+      post<{ job: MediaJob }>("/media/jobs", payload, options),
+    ingestScan: (payload?: { subdir?: string }, options?: AuthRequestOptions) =>
+      post<{ ingested: unknown[]; skipped: number }>("/ingest/scan", payload, options),
     share: (token: string) => get(`/share/${encodeURIComponent(token)}`),
     files: (params?: { q?: string }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();

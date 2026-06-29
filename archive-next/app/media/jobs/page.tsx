@@ -1,4 +1,5 @@
 import { MediaJobLookup } from "./MediaJobLookup";
+import { MediaJobsList } from "./MediaJobsList";
 
 const backendNotes = [
   {
@@ -46,6 +47,8 @@ export default function MediaJobsPage() {
         </div>
 
         <MediaJobLookup />
+
+        <MediaJobsList />
       </section>
     </main>
   );
