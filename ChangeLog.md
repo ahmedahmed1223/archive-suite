@@ -2812,3 +2812,7 @@
 ### 4. تحسين الصور (srcset + lazy) — مُنجَز (2026-06-30، وكيل Sonnet)
 
 - [x] `[P2]` ⏱️M **تحسين الصور (srcset + lazy)** — أُضيف مكوّن `ArchiveImage.tsx` (lazy افتراضي، width/height صريحة لمنع CLS، fetchPriority للـ hero، srcSet/sizes جاهزة، decoding=async، fallback عند الخطأ، RTL/tokens) + 8 اختبارات TDD، وتُبنّي في شبكة الأرشيف (`ArchiveViews.VideoThumb`). الخادم يُنتج مقاس thumbnail واحد (640px) فق** فبقي srcSet معلّقًا بتعليق ponytail. 1253→1261 اختبارًا أخضر. ملاحظة: hero في DetailPage مشغّل فيديو لا img.
+
+### 6. TimelinePage — تصدير SVG (مُنجَز 2026-06-30، وكيل Sonnet)
+
+- [x] `[P2]` ⏱️L **TimelinePage أفقي + Zoom levels + Export SVG** — الأفقي و4 مستويات granularity (day/week/month/year) كانت موجودة سلفًا؛ أُضيف `timelineSvgExport.ts` (دالة نقية `buildTimelineSvg` تُنتج SVG مستقل: محور زمني، صفوف lanes، دوائر بحجم العدد، روابط، XML escaping) + 11 اختبار TDD + زر «تصدير SVG» يعيد استخدام `downloadArchiveBlob` (بلا dependency). 1261→1272 أخضر. **PDF مؤجَّل** (لا يوجد pdf helper محلي في archive-app؛ يُضاف عند توفّر مكتبة client-side — ponytail).
