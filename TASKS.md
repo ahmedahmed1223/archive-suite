@@ -41,7 +41,7 @@
 2. §5 ترحيل Laravel/Next — 5e.2-cutover (إشرافي، يدوي) + تحقّق حيّ مؤجَّل
 3. §22 دعم Microsoft SQL Server كـ backend — ⏱️XL
 
-**P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (مشغّل فيديو: Waveform/Transcript · علامة مائية+SRT/VTT/TTML) · §4 (PWA) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
+**P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (مشغّل فيديو: Waveform/Transcript · علامة مائية+SRT/VTT/TTML) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
 
 **P3 — مؤجّل:** §6 بقية الصفحات · §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
 
@@ -99,14 +99,6 @@
 - [ ] `[P2]` ⏱️M **علامة مائية + تصدير SRT/VTT/TTML للفيديو** — ffmpeg overlay + ملفات ترجمة مع الفيديو.
   - الملفات: `archive-server/src/media/*`.
   - المصدر: dev-roadmap (P2-05, P2-06).
-
----
-
-## 4. الأداء وإمكانية الوصول (Performance & a11y) — جزئياً net-new
-
-- [ ] `[P2]` ⏱️L **PWA: Service Worker + Print Styles + تحديث جولة الإعداد** — Workbox offline-first للأصول + background sync + `@media print` للتقارير.
-  - الملفات: `archive-app/` (manifest + SW)، `V1ProductTour`.
-  - المصدر: ux_plan/guide_v6 (Sprint 6).
 
 ---
 

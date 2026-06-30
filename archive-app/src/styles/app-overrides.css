@@ -833,3 +833,147 @@
   }
 
 } /* end @layer app-overrides */
+
+/* ── Print styles ─────────────────────────────────────────────────────────────
+ * Declared outside @layer so they win the cascade unconditionally.
+ * ponytail: black/white literals are intentional — print has no theme.
+ * ──────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* 1 – Hide all chrome: nav, toolbars, action buttons, modals, toasts */
+  .va-sidebar,
+  .va-bottom-tabs,
+  .va-context-bar,
+  .va-mobile-fab,
+  .va-archive-toolbar,
+  .va-dialog-overlay,
+  nav[aria-label],
+  [role="navigation"],
+  [role="complementary"],
+  [role="banner"],
+  [role="toolbar"],
+  [data-radix-popper-content-wrapper],
+  /* daisyUI / generic action buttons */
+  .btn-primary,
+  .btn-ghost,
+  .btn:not([data-print-visible]),
+  /* Framer Motion drag handles & overlays */
+  [data-framer-component-type],
+  /* Toast / notification containers */
+  [role="status"][aria-live],
+  [role="alert"][aria-live] {
+    display: none !important;
+  }
+
+  /* 2 – Page setup: A4-friendly, white canvas, black ink */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm;
+  }
+
+  html,
+  body,
+  #root {
+    /* ponytail: white/black literals — theming doesn't apply on paper */
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+    line-height: 1.5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 3 – Expand content to full width; remove runtime layout constraints */
+  #root,
+  main,
+  .va-page-shell,
+  [data-main-content],
+  #main-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* 4 – Make every section / card printable */
+  section,
+  article,
+  .va-card,
+  .va-v1-panel,
+  .va-metric-card,
+  .va-entity-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* 5 – Page breaks between major report sections */
+  .va-report-section,
+  [data-report-section] {
+    break-before: page;
+    page-break-before: always;
+  }
+  .va-report-section:first-of-type,
+  [data-report-section]:first-of-type {
+    break-before: avoid;
+    page-break-before: avoid;
+  }
+
+  /* 6 – Typography: ensure dark ink, reset backgrounds */
+  h1, h2, h3, h4, h5, h6,
+  p, li, td, th, span, label {
+    color: #000 !important;
+    background: transparent !important;
+    text-shadow: none !important;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #555 !important;
+  }
+  /* Skip href expansion for icon-only or UI links */
+  a[href^="#"]::after,
+  a[aria-hidden]::after,
+  button::after {
+    content: none;
+  }
+
+  /* 7 – Tables: borders visible, no overflow */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+  th, td {
+    border: 1px solid #aaa !important;
+    padding: 4px 6px;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  thead {
+    background: #f0f0f0 !important;
+    font-weight: 700;
+    display: table-header-group;
+  }
+
+  /* 8 – Progress bars: render as plain text percentage via border */
+  .va-progress-rtl > div {
+    border: 1px solid #999 !important;
+    background: #ddd !important;
+  }
+
+  /* 9 – Images & icons: no broken layout */
+  img, svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* 10 – Tailwind utility overrides for print */
+  .overflow-hidden { overflow: visible !important; }
+  .fixed, .sticky { position: static !important; }
+  .backdrop-filter, [style*="backdrop-filter"] { backdrop-filter: none !important; }
+}
