@@ -2808,3 +2808,7 @@
 ### 3. مشغّل فيديو متقدم — الجزء المنجز
 
   - ✅ Frame stepping + Mark In/Out + «أضف لمشروع» (2026-06-30): `VideoPlayer.tsx` — خطوة إطار بـ 1/fps (افتراضي 25fps PAL) عبر `,`/`.` + أزرار ChevronLeft/Right؛ Mark In/Out عبر `i`/`o` مع شرائط مرئية على الـ scrubber + عرض label؛ زر «أضف لمشروع» (FolderPlus) يُشغّل `onAddToProject({markIn,markOut})`؛ في `DetailPage.tsx` لوحة اختيار مشروع inline تُنشئ `createRoughCutValue` وتستدعي `updateProject`. 6 اختبارات جديدة، 1251 test pass.
+
+### 4. تحسين الصور (srcset + lazy) — مُنجَز (2026-06-30، وكيل Sonnet)
+
+- [x] `[P2]` ⏱️M **تحسين الصور (srcset + lazy)** — أُضيف مكوّن `ArchiveImage.tsx` (lazy افتراضي، width/height صريحة لمنع CLS، fetchPriority للـ hero، srcSet/sizes جاهزة، decoding=async، fallback عند الخطأ، RTL/tokens) + 8 اختبارات TDD، وتُبنّي في شبكة الأرشيف (`ArchiveViews.VideoThumb`). الخادم يُنتج مقاس thumbnail واحد (640px) فق** فبقي srcSet معلّقًا بتعليق ponytail. 1253→1261 اختبارًا أخضر. ملاحظة: hero في DetailPage مشغّل فيديو لا img.
