@@ -83,7 +83,7 @@ describe("resolveServerConfig", () => {
   it("picks up SQLSERVER_URL when DATABASE_PROVIDER is sqlserver", () => {
     const env = {
       DATABASE_PROVIDER: "sqlserver",
-      SQLSERVER_URL: "sqlserver://sa:Password-123@sqlserver:1433/archive"
+      SQLSERVER_URL: "sqlserver://sqlserver:1433;database=archive;user=sa;password=Password-123;encrypt=true;trustServerCertificate=true"
     };
     const config = resolveServerConfig({ file: {}, env });
     expect(config.databaseEngine).toBe("sqlserver");

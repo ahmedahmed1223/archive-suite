@@ -76,4 +76,4 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
 # cannot let corepack provision pnpm at start. prisma + tsx are linked in
 # archive-server/node_modules/.bin by the full install above.
 ENTRYPOINT ["archive-server-entrypoint"]
-CMD ["sh", "-c", "cd /app/archive-server && node_modules/.bin/prisma migrate deploy && exec node_modules/.bin/tsx src/index.js"]
+CMD ["sh", "-c", "cd /app/archive-server && node_modules/.bin/prisma migrate deploy --schema prisma/schema.active.prisma && exec node_modules/.bin/tsx src/index.js"]

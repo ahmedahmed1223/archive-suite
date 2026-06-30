@@ -3,6 +3,7 @@
 
 import assert from "node:assert/strict";
 import { applyDbProvider, normalizeDbProvider, DB_PROVIDERS, DEFAULT_DB_PROVIDER } from "./set-db-provider.mjs";
+import { resolvePrismaMigrationsPath } from "../prisma.config.mjs";
 
 const schema = [
   'generator client {',
@@ -40,5 +41,39 @@ assert.equal(applyDbProvider(schema, "bad-engine"), schema);
 // idempotent
 const mysql = applyDbProvider(schema, "mysql");
 assert.equal(applyDbProvider(mysql, "mysql"), mysql);
+
+const sqlServerIncompatibleSchema = [
+  schema,
+  "model StorageRow {",
+  "  data           Json",
+  "  lastModifiedBy Json?",
+  "  metadata      Json? // inline comment",
+  "  embedding      Unsupported(\"vector(1536)\")?",
+  "}",
+  "model ApiKey {",
+  "  scopes String[]",
+  "}",
+  "model RightsRecord {",
+  "  licenseType LicenseType @map(\"license_type\")",
+  "  geoRestrictions Json @default(\"[]\") @map(\"geo_restrictions\")",
+  "}",
+  "enum LicenseType {",
+  "  OWNED",
+  "}"
+].join("\n");
+const sqlServerSchema = applyDbProvider(sqlServerIncompatibleSchema, "sqlserver");
+assert.match(sqlServerSchema, /provider = "sqlserver"/);
+assert.match(sqlServerSchema, /data\s+String @db\.NVarChar\(Max\)/);
+assert.match(sqlServerSchema, /lastModifiedBy\s+String\? @db\.NVarChar\(Max\)/);
+assert.match(sqlServerSchema, /metadata\s+String\? @db\.NVarChar\(Max\) \/\/ inline comment/);
+assert.match(sqlServerSchema, /embedding\s+String\? @db\.NVarChar\(Max\)/);
+assert.match(sqlServerSchema, /scopes\s+String @default\("\[\]"\) @db\.NVarChar\(Max\)/);
+assert.match(sqlServerSchema, /licenseType\s+String @map\("license_type"\)/);
+assert.match(sqlServerSchema, /geoRestrictions\s+String @default\("\[\]"\) @map\("geo_restrictions"\) @db\.NVarChar\(Max\)/);
+assert.doesNotMatch(sqlServerSchema, /enum LicenseType/);
+
+assert.equal(resolvePrismaMigrationsPath("postgresql"), "prisma/migrations");
+assert.equal(resolvePrismaMigrationsPath("sqlserver"), "prisma/migrations-sqlserver");
+assert.equal(resolvePrismaMigrationsPath("mssql"), "prisma/migrations-sqlserver");
 
 console.log("ok: db provider swap (datasource-only, aliases, fallback, idempotent)");

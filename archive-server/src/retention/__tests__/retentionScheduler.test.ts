@@ -217,4 +217,32 @@ describe("createRetentionScheduler", () => {
     stop();
     expect(scheduler.getStatus()).toMatchObject({ scheduled: false, running: false });
   });
+
+  it("keeps logger methods bound to their original logger object", () => {
+    const prisma = makePrisma({ rules: [], items: [] });
+    const pinoLike = {
+      info(payload?: unknown, message?: string) {
+        (this as any).writes.push({ payload, message });
+      },
+      warn(payload?: unknown, message?: string) {
+        (this as any).writes.push({ payload, message });
+      },
+      error(payload?: unknown, message?: string) {
+        (this as any).writes.push({ payload, message });
+      },
+      debug(payload?: unknown, message?: string) {
+        (this as any).writes.push({ payload, message });
+      },
+    };
+    Object.defineProperty(pinoLike, "writes", { value: [] as unknown[], enumerable: false });
+    const scheduler = createRetentionScheduler({
+      prisma,
+      logger: pinoLike,
+    });
+
+    const stop = scheduler.start({ runImmediately: false });
+    stop();
+
+    expect((pinoLike as any).writes.length).toBeGreaterThan(0);
+  });
 });
