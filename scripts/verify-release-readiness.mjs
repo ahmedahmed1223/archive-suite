@@ -25,25 +25,37 @@ const rootPkg = json("package.json");
 const appPkg = json("archive-app/package.json");
 const serverPkg = json("archive-server/package.json");
 const corePkg = json("archive-core/package.json");
+const nextPkg = json("archive-next/package.json");
+const laravelPkg = json("archive-laravel/package.json");
+const laravelComposer = json("archive-laravel/composer.json");
 
-for (const [name, pkg] of Object.entries({ root: rootPkg, app: appPkg, core: corePkg, server: serverPkg })) {
+for (const [name, pkg] of Object.entries({ root: rootPkg, app: appPkg, core: corePkg, next: nextPkg, server: serverPkg })) {
   assert.equal(pkg.engines?.node, ">=22.12.0", `${name} package should require Node.js 22.12+`);
 }
 
-assertIncludes("archive-server/.env.example", "BACKEND=postgres");
 assertExcludes("INSTALL.md", "Node.js 18+");
 assertIncludes("INSTALL.md", "Node.js 22.12+");
 assertIncludes("DEPLOYMENT.md", "Node.js 22.12+");
 assertIncludes("scripts/node-version.mjs", 'MIN_NODE_VERSION = "22.12.0"');
 
+assert.equal(rootPkg.scripts?.dev, "node scripts/dev-laravel-next.mjs", "root dev should run Laravel + Next.js");
+assert.equal(rootPkg.scripts?.build, "pnpm run build:next", "root build should build Next.js");
+assert.equal(rootPkg.scripts?.verify, "pnpm run verify:laravel-next", "root verify should target Laravel + Next.js");
+assert.equal(rootPkg.scripts?.server, "node scripts/laravel-docker.mjs serve", "root server should run Laravel");
+assert.ok(rootPkg.scripts?.["dev:legacy"], "legacy Vite dev should be explicit");
+assert.ok(rootPkg.scripts?.["server:legacy"], "legacy Node server should be explicit");
+assert.ok(rootPkg.scripts?.["verify:legacy"], "legacy verification should be explicit");
+assert.ok(rootPkg.scripts?.["verify:laravel-next:live"], "live Laravel/Next integration gate should exist");
+assert.ok(laravelComposer.scripts?.setup, "Laravel composer setup should exist");
+assert.ok(!laravelComposer.scripts.setup.some((step) => step.includes("npm run build")), "Laravel setup should not build a Laravel Vite frontend");
+assert.ok(!laravelComposer.scripts.dev.some((step) => step.includes("npm run dev") || step.includes("vite")), "Laravel composer dev should not start a Vite frontend");
+assert.ok(!laravelPkg.devDependencies?.vite, "Laravel npm package should not depend on Vite after cutover");
+
 for (const script of [
-  "audit:ui",
-  "audit:ui:headed",
-  "audit:ui:server",
-  "audit:all",
   "security:baseline",
-  "docker:config",
-  "docker:config:postgres",
+  "verify:cutover",
+  "verify:laravel",
+  "verify:laravel-next",
   "release:verify"
 ]) {
   assert.ok(rootPkg.scripts?.[script], `root package.json should expose ${script}`);
@@ -63,16 +75,15 @@ assertIncludes("archive-server/Dockerfile.server", "pnpm --filter archive-server
 assertExcludes("archive-server/Dockerfile.server", "package-lock.json");
 assertExcludes("archive-server/Dockerfile.server", "npm ci");
 
-assertIncludes("archive-server/Dockerfile.frontend", "corepack enable");
-assertIncludes("archive-server/Dockerfile.frontend", "pnpm --filter @archive/app run build:cloud");
-assertExcludes("archive-server/Dockerfile.frontend", "git clone");
-assertExcludes("archive-server/Dockerfile.frontend", "APP_REPO");
-
-assertIncludes("archive-server/docker-compose.postgres.yml", "context: ..");
-assertIncludes("archive-server/docker-compose.postgres.yml", "dockerfile: archive-server/Dockerfile.server");
-assertIncludes("archive-server/docker-compose.postgres.yml", "dockerfile: archive-server/Dockerfile.frontend");
-assertExcludes("archive-server/docker-compose.postgres.yml", "APP_REPO");
-assertExcludes("archive-server/docker-compose.yml", "APP_REPO");
+assertIncludes("archive-next/next.config.mjs", "ARCHIVE_API_BASE_URL");
+assertIncludes("archive-laravel/routes/api.php", "Route::prefix('v1')");
+assertIncludes("archive-laravel/routes/api.php", "archive.auth");
+assertIncludes("archive-laravel/ARCHIVE_MIGRATION.md", "canonical API target");
+assertIncludes("docs/laravel-nextjs-migration-plan.md", "canonical development path");
+assertIncludes("CLAUDE.md", "Frontend (canonical)");
+assertIncludes("CLAUDE.md", "`archive-next`");
+assertIncludes("CLAUDE.md", "Backend (canonical)");
+assertIncludes("CLAUDE.md", "`archive-laravel`");
 
 assertIncludes("archive-server/src/index.js", "./index.ts");
 assertIncludes("archive-server/src/index.ts", "assertProductionSecrets");

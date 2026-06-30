@@ -1,8 +1,8 @@
 # Archive Laravel API Migration
 
-This Laravel application is the parallel API target for Archive Suite. The
-current Node server remains the reference implementation until each route group
-reaches contract parity.
+This Laravel application is the canonical API target for Archive Suite. The
+legacy Node server remains available as a reference/fallback only while the last
+unmatched operational edges are retired.
 
 ## Current Status
 
@@ -29,31 +29,31 @@ reaches contract parity.
   `/auth/logout` use `api_sessions`, short-lived bearer access tokens, and a
   `va_refresh` HttpOnly refresh cookie. `X-Archive-Api-Key` fallback has been
   removed.
-- Next integration status: `NextIntegrationSeeder` provides a stable public
-  share fixture for `pnpm run e2e:next:integration` through the Next.js API
-  rewrite.
+- Next integration status: `NextIntegrationSeeder` provides stable auth,
+  records, share, and media fixtures for `pnpm run verify:laravel-next:live`
+  through the Next.js API rewrite.
 - Shared contract source: `../docs/api/archive-contract.openapi.json`.
-- Local PHP/Composer are not required yet; tests can run through Docker using
-  the Composer image.
+- Local PHP/Composer are not required; root scripts run Laravel tests and dev
+  serve through Docker using the Composer image.
 
-## Next Route Groups
+## Development Rules
 
-1. Replace placeholder media job completion with real processors.
-2. Continue moving low-risk public/share screens into Next.js after parity
-   checks pass.
-3. Expand route-level integration testing to authenticated flows.
+1. New API work starts in Laravel and updates the shared OpenAPI contract first.
+2. New UI work starts in `archive-next`; do not add net-new Vite/Node routes.
+3. Keep Node-only behavior as a parity reference until it is either ported or
+   explicitly retired.
 
 ## Verification
 
 From the repository root, when Docker is available:
 
 ```powershell
-docker run --rm -v "D:\archiveaq\Arch_App:/app" -w /app/archive-laravel composer:latest php artisan test
+pnpm verify:laravel
 ```
 
 For the Next.js plus Laravel route-level smoke, seed a temporary SQLite database
-with `Database\Seeders\NextIntegrationSeeder`, run Laravel, then run:
+with `Database\Seeders\NextIntegrationSeeder`, run Laravel and Next.js, then run:
 
 ```powershell
-pnpm run e2e:next:integration
+pnpm run verify:laravel-next:live
 ```

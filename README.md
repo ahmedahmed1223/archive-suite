@@ -2,11 +2,13 @@
 
 منصة أرشيف ميديا ذكية مبنية لتشغيل تجربة فيديو متكاملة في بيئة محلية وسحابة.
 
-هذا المستودع هو monorepo يحتوي على ثلاثة أجزاء رئيسية:
+هذا المستودع هو monorepo يعتمد الآن **Next.js + Laravel** كمسار التطوير الأساسي:
 
-- `archive-app/` — واجهة المستخدم الأمامية المبنية بـ React و Vite.
+- `archive-next/` — canonical frontend بواجهة Next.js 16 + TypeScript.
+- `archive-laravel/` — canonical backend/API مبني على Laravel 13.
 - `archive-core/` — مكتبة النواة المشتركة التي تطرح منافذ التخزين وAI والمصادقة.
-- `archive-server/` — خادم الإنتاج مع دعم Postgres/PocketBase وAI وخيارات تخزين متعددة.
+- `archive-app/` — legacy Vite SPA، مرجع قديم فقط.
+- `archive-server/` — legacy Node/Prisma server، مرجع/ fallback فقط حتى تُغلق فجوات parity المتبقية.
 
 ## نظرة عامة
 
@@ -21,9 +23,11 @@
 
 ```text
 Arch_App/
-  ├─ archive-app/      # الواجهة الأمامية
+  ├─ archive-next/     # canonical frontend
+  ├─ archive-laravel/  # canonical backend/API
   ├─ archive-core/     # النواة المشتركة
-  ├─ archive-server/   # الخادم والإنتاج
+  ├─ archive-app/      # legacy Vite SPA
+  ├─ archive-server/   # legacy Node/Prisma server
   ├─ .git/
   ├─ .gitignore
   ├─ package.json
@@ -49,10 +53,15 @@ pnpm install
 pnpm run dev
 ```
 
-### تشغيل الخادم
+يشغّل هذا الأمر Laravel داخل Docker وNext.js محلياً. لا تحتاج PHP/Composer محلياً.
+
+### تشغيل أجزاء منفردة
 
 ```powershell
-pnpm run server
+pnpm run dev:next       # Next.js فقط
+pnpm run dev:laravel    # Laravel API فقط عبر Docker
+pnpm run dev:legacy     # واجهة Vite القديمة عند الحاجة للمقارنة
+pnpm run server:legacy  # خادم Node القديم عند الحاجة للمقارنة
 ```
 
 ### التحقق من الصحة
@@ -61,17 +70,29 @@ pnpm run server
 pnpm run verify
 ```
 
+هذا هو gate الجديد للمسار المعتمد: عقد API، TypeScript لـ core/Next، بناء Next، واختبارات Laravel عبر Docker.
+
 للتحقق الجزئي أثناء التطوير:
 
 ```powershell
-pnpm run verify:app
+pnpm run verify:laravel
+pnpm run verify:laravel-next:live
 pnpm run verify:core
-pnpm run verify:server
+pnpm run verify:legacy
+```
+
+`verify:laravel-next:live` يبني Next.js مع `ARCHIVE_API_BASE_URL` موجهاً إلى Laravel ثم يشغّل اختبار Playwright على المسار الإنتاجي. عند تشغيل build إنتاجي يدوي، اضبط نفس المتغير وقت البناء حتى تُولد rewrites:
+
+```powershell
+$env:ARCHIVE_API_BASE_URL="https://api.example.com/api/v1"
+pnpm run build:next
 ```
 
 ## النشر الموجّه (الأسرع)
 
-للنشر الإنتاجي على PostgreSQL عبر معالج واحد على Windows أو Linux:
+تنبيه: معالج النشر Docker القديم ما زال يطلق stack legacy Node/SPA. التطوير اليومي والبوابة الرسمية انتقلا إلى Laravel/Next؛ استخدم أوامر `pnpm dev` و`pnpm verify` للمسار الجديد حتى تُستبدل وصفات Docker الإنتاجية نهائياً.
+
+للنشر legacy على PostgreSQL عبر معالج واحد على Windows أو Linux:
 
 ```bash
 # Windows: انقر نقراً مزدوجاً على Setup-Archive.bat
@@ -105,14 +126,22 @@ bash setup.sh        # أو: pnpm deploy
 
 ## توصيف الأجزاء
 
-### `archive-app/`
+### `archive-next/`
 
-واجهة SPA تدمج:
+واجهة Next.js المعتمدة، وتملك:
 
-- تجربة مستخدم تفاعلية.
-- وضع offline-first.
-- اتصال API لخادم الإنتاج.
-- تكامل `archive-core` كمكتبة مشتركة.
+- App Router وTypeScript.
+- مسارات archive/files/share/media/jobs/login/help/reports/settings.
+- اتصال `/api/v1/*` عبر Laravel API.
+
+### `archive-laravel/`
+
+خادم API المعتمد، ويوفر:
+
+- Auth عبر access token وHttpOnly refresh cookie.
+- records/search/files/share/rights/media/ingest.
+- queues ومعالجات وسائط قابلة للتبديل.
+- audit logs وسياسات API.
 
 ### `archive-core/`
 
@@ -123,27 +152,23 @@ bash setup.sh        # أو: pnpm deploy
 - منافذ AI.
 - بنية قابلة للتوسعة دون ربط مباشر مع مزود تخزين معين.
 
-### `archive-server/`
+### `archive-app/` و`archive-server/`
 
-الخادم الإنتاجي الذي يوفر:
-
-- واجهة API وAuth وRealtime.
-- تكامل Postgres وPocketBase.
-- دعم تخزين القرص وDropbox وS3 وAzure Blob وGoogle Drive وFTP وSMB وSFTP وWebDAV.
-- تكامل AI متعدد المزودين.
+مسار legacy/reference فقط. لا تضف ميزات جديدة هنا إلا إذا كان العمل إصلاحاً يحافظ على مرجع parity أثناء الانتقال.
 
 ## ملاحظات تقنية
 
 - يعتمد المستودع على `pnpm` workspace.
 - استخدام `pnpm-lock.yaml` لضمان اعتمادية قابلة للتكرار.
-- أسماء الحزم داخل الـ workspace هي `@archive/app` و`@archive/core` و`archive-server`.
+- أسماء الحزم داخل الـ workspace تشمل `@archive/next` و`@archive/core`، مع بقاء `@archive/app` و`archive-server` كحزم legacy.
 - جميع الحزم تُدار داخل نفس المستودع.
 
 ## للمطورين
 
 - اعمل في فرع مستقل لكل ميزة أو إصلاح.
 - استخدم `pnpm install` من جذر المشروع.
-- شغل `pnpm run verify` قبل فتح أي PR.
+- شغل `pnpm run verify` قبل فتح أي PR؛ وللتحقق الحي الكامل شغل `pnpm run verify:laravel-next:live`.
+- في بناء Next.js الإنتاجي اضبط `ARCHIVE_API_BASE_URL` وقت البناء، وليس عند التشغيل فقط.
 
 ---
 

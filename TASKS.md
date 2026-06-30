@@ -34,11 +34,10 @@
 
 ## ابدأ من هنا — ترتيب التنفيذ المقترح (للوكيل المنفّذ)
 
-> 26 بنداً متبقّياً (لا يوجد P0 — كلها مُنجَزة). نفّذ بنداً واحداً في كل مرة، بوابة `pnpm verify` ثم دمج بعد كل بند. التفاصيل في الأقسام أدناه.
+> 25 بنداً متبقّياً (لا يوجد P0 — كلها مُنجَزة). نفّذ بنداً واحداً في كل مرة، بوابة `pnpm verify` ثم دمج بعد كل بند. التفاصيل في الأقسام أدناه.
 
 **P1 — أولاً:**
 1. §1 تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3) — ⏱️XL
-2. §5 ترحيل Laravel/Next — 5e.2-cutover (إشرافي، يدوي) + تحقّق حيّ مؤجَّل
 
 **P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (مشغّل فيديو: Waveform/Transcript · علامة مائية+SRT/VTT/TTML) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
 
@@ -75,12 +74,13 @@
   - القبول: تقرير جرد قصير يذكر ما أُبقي وما حُذف/نُقل ولماذا؛ لا حذف لملفات داخل `.git` أو ملفات مستخدمة؛ نجاح `pnpm verify`؛ نجاح `pnpm --filter @archive/app run e2e` أو مجموعة Playwright محددة موثقة؛ عدم ظهور 404/console errors حرجة في لقطات Playwright.
   - المصدر: طلب المستخدم 2026-06-27.
 
-- [ ] `[P1]` ⏱️XXL **ترحيل معماري إلى Laravel API + Next.js TypeScript** — اعتماد Laravel كخادم نطاق وAPI، وNext.js كواجهة TypeScript تدريجية، دون إدخال Astro 5.
+- [x] `[P1]` ⏱️XXL **ترحيل معماري إلى Laravel API + Next.js TypeScript** — اعتماد Laravel كخادم نطاق وAPI، وNext.js كواجهة TypeScript تدريجية، دون إدخال Astro 5.
   - ✅ **المنجز (شرائح 0–5e.1 + 5e.2-harness):** عقود API، Next.js shell + عميل typed، Laravel API كامل (auth/records/search/files/share/rights/audit/media-jobs)، مصادقة httpOnly cookie، صفحات Next التشغيلية، وبوابة `e2e:next:integration` **10/10 حيّة خضراء** (2026-06-30). التفاصيل الكاملة في [`ChangeLog.md`](ChangeLog.md).
-  - [ ] **المتبقّي — 5e.2-cutover (خطوة إنتاجية إشرافية، لا تُؤتمت):** بوابة التحقق الحيّ `e2e:next:integration` ✅ تمرّ؛ القطع نفسه يدوي بإشراف: قلب علم الإنتاج لتوجيه الواجهة إلى Laravel، ثم حذف مجموعات Node المقابلة (records/search/files/share/media/ingest) بعد تأكيد parity. قرار «إيقاف البناء net-new على Node» سارٍ.
-  - [ ] **تحقّق حيّ مؤجَّل (يحتاج بنية حيّة):** smoke لـ `Dockerfile.worker` (ffmpeg/whisper) + خادمَي FTP/SMB بملف وسائط حقيقي — التنفيذات (`RealMediaProcessor`/`WhisperTranscriber`/`Ftp`/`Smb`) مبنية ومُختبَرة بـ fakes (71 اختبار Laravel، راجع ChangeLog).
-  - الملفات: `docs/laravel-nextjs-migration-plan.md`, `TASKS.md`, عقود API لاحقاً تحت `docs/api/`, وحزم جديدة لاحقاً فقط بعد قرار scaffold.
-  - القبول: لا اعتماديات Astro؛ `pnpm run typecheck` ينجح؛ Next.js هو مسار الواجهة TypeScript، وLaravel هو backend/API والـ queues؛ أي scaffold جديد لا يكسر Vite الحالي.
+  - ✅ **cutover الافتراضي منجز (2026-06-30):** أوامر الجذر `pnpm dev` و`pnpm build` و`pnpm verify` تعتمد Laravel + Next.js، وأوامر Vite/Node نُقلت إلى `legacy:*`. أضيفت بوابة `pnpm verify:cutover` لمنع الرجوع غير المقصود، وبوابة حيّة `pnpm verify:laravel-next:live` تشغّل Laravel+Next وتنفذ Playwright integration.
+  - ✅ **قرار التطوير:** أي ميزة جديدة في records/search/files/share/media/ingest تُبنى في Laravel/Next حصراً. `archive-app` و`archive-server` بقيا legacy/reference فقط حتى إطفاء الفجوات التشغيلية غير المكافئة.
+  - ملاحظة hardening غير حاجبة للقطع: smoke حي لـ `Dockerfile.worker` مع ffmpeg/whisper وخادمَي FTP/SMB بملف وسائط حقيقي يبقى بوابة بنية/تشغيل لاحقة؛ التنفيذات مبنية ومختبرة بـ fakes وليست شرطاً لاعتماد Laravel/Next كمسار التطوير.
+  - الملفات: `docs/laravel-nextjs-migration-plan.md`, `archive-laravel/ARCHIVE_MIGRATION.md`, `package.json`, `scripts/*`, `TASKS.md`, `docs/api/*`.
+  - القبول: لا اعتماديات Astro؛ `pnpm run verify` ينجح؛ Next.js هو مسار الواجهة TypeScript، وLaravel هو backend/API والـ queues؛ لا تطوير net-new على Vite/Node.
   - المصدر: طلب المستخدم 2026-06-27.
 
 ---

@@ -8,7 +8,7 @@ export default function HomePage() {
       <header className="topbar">
         <div className="brand">
           <strong>Archive Suite</strong>
-          <span>Next.js migration shell</span>
+          <span>Next.js canonical app</span>
         </div>
         <nav className="route-links" aria-label="مسارات Next.js">
           <a className="badge" href="/help">المساعدة</a>
@@ -23,12 +23,12 @@ export default function HomePage() {
 
       <section className="content">
         <div className="hero">
-          <span className="badge">مرحلة انتقالية آمنة</span>
-          <h1>واجهة Next.js الجديدة تبدأ من عقد API ثابت.</h1>
+          <span className="badge">Next.js + Laravel</span>
+          <h1>واجهة Archive Suite المعتمدة تعمل فوق Laravel API.</h1>
           <p>
-            هذه الحزمة لا تستبدل تطبيق Vite الحالي بعد. هدفها الأول أن تثبت
-            اتجاه Next.js مع TypeScript، وتقرأ العقد المشترك الذي سيستخدمه
-            Laravel لاحقا.
+            هذا هو مسار التطوير الافتراضي الآن: Next.js للواجهة، وLaravel
+            للـ API والمصادقة والملفات والبحث والوسائط. تطبيق Vite وخادم Node
+            بقيا كمرجع legacy فقط حتى تكتمل إزالة الاعتماد عليهما.
           </p>
         </div>
 
@@ -44,12 +44,11 @@ export default function HomePage() {
           <article className="panel">
             <h2>المسار الحالي</h2>
             <ul>
-              <li>يبقى Vite/React هو التطبيق التشغيلي.</li>
-              <li>تنتقل الصفحات إلى Next.js تدريجيا بعد Playwright.</li>
-              <li>Laravel يطبّق نفس العقد قبل تحويل المرور إليه.</li>
-              <li>عارض المشاركة العامة بدأ على `/share/:token`.</li>
-              <li>المساعدة والتقارير والإعدادات صارت مسارات Next.js منخفضة المخاطر.</li>
-              <li>واجهة media jobs تعرض حالة Laravel queue بدون نقل منطق backend إلى Next.js.</li>
+              <li>Next.js هو مسار الواجهة الافتراضي للتطوير.</li>
+              <li>Laravel هو API المعتمد لمسارات `/api/v1/*`.</li>
+              <li>Vite/Node مصنّفان legacy/reference ولا تُبنى عليهما ميزات جديدة.</li>
+              <li>التطوير الجديد يبدأ من العقود المشتركة ثم Laravel ثم Next.</li>
+              <li>واجهة media jobs تعرض حالة Laravel queue دون نقل منطق backend إلى Next.js.</li>
             </ul>
           </article>
 

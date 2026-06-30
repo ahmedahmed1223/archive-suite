@@ -11,8 +11,8 @@ const backendNotes = [
     body: "طلبات /api/v1/media/jobs/:id تمر عبر rewrite إلى Laravel عند ضبط ARCHIVE_API_BASE_URL."
   },
   {
-    title: "الهجرة",
-    body: "يبقى تنفيذ المعالجة الثقيلة داخل Laravel queues، بينما يعرض Next.js الحالة دون نقل منطق الخادم."
+    title: "حدود النظام",
+    body: "تنفيذ المعالجة الثقيلة داخل Laravel queues، بينما يعرض Next.js الحالة دون نقل منطق الخادم."
   }
 ];
 
