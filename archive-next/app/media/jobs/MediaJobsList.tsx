@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation } from "@/lib/archive-api";
 
@@ -31,11 +31,7 @@ export function MediaJobsList() {
   const [ingestState, setIngestState] = useState<IngestState>({ status: "idle" });
   const [statusFilter, setStatusFilter] = useState<MediaJobStatus | "">("");
 
-  useEffect(() => {
-    loadJobs();
-  }, [statusFilter]);
-
-  async function loadJobs() {
+  const loadJobs = useCallback(async () => {
     setListState({ status: "loading" });
     const response = await api.mediaJobs({
       limit: 20,
@@ -53,10 +49,15 @@ export function MediaJobsList() {
     }
 
     setListState({ status: "loaded", jobs: response.jobs });
-  }
+  }, [api, statusFilter]);
+
+  useEffect(() => {
+    void loadJobs();
+  }, [loadJobs]);
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     const data = new FormData(event.currentTarget);
     const recordId = String(data.get("recordId") ?? "").trim();
     const operation = String(data.get("operation") ?? "").trim() as MediaOperation;
@@ -78,11 +79,10 @@ export function MediaJobsList() {
     }
 
     setCreateState({ status: "success", job: response.job });
-    // Reset form and reload list
     setTimeout(() => {
-      event.currentTarget.reset();
+      form.reset();
       setCreateState({ status: "idle" });
-      loadJobs();
+      void loadJobs();
     }, 1500);
   }
 
@@ -101,17 +101,21 @@ export function MediaJobsList() {
       skipped: response.skipped
     });
 
-    // Reset after 3s
     setTimeout(() => {
       setIngestState({ status: "idle" });
     }, 3000);
   }
 
   return (
-    <section className="content" aria-label="Media jobs management">
-      {/* Create Job Form */}
+    <div className="stack" aria-label="Media jobs management">
       <article className="panel">
-        <h2>إنشاء media job جديد</h2>
+        <div className="toolbar-row">
+          <div>
+            <h2>إنشاء media job جديد</h2>
+            <p className="field-note">أنشئ job من record id ثم اختر نوع العملية المناسبة.</p>
+          </div>
+        </div>
+
         <form className="auth-form" onSubmit={handleCreate}>
           <label>
             معرّف السجل
@@ -130,7 +134,7 @@ export function MediaJobsList() {
             </select>
           </label>
 
-          <button type="submit" disabled={createState.status === "creating"}>
+          <button type="submit" className="button button-primary" disabled={createState.status === "creating"}>
             {createState.status === "creating" ? "جار الإنشاء..." : "إنشاء job"}
           </button>
 
@@ -144,10 +148,15 @@ export function MediaJobsList() {
         </form>
       </article>
 
-      {/* Ingest Trigger */}
       <article className="panel">
-        <h2>Ingest Scan</h2>
-        <button onClick={handleIngestScan} disabled={ingestState.status === "scanning"}>
+        <div className="toolbar-row">
+          <div>
+            <h2>Ingest Scan</h2>
+            <p className="field-note">فحص إدخال الملفات وتوليد jobs جديدة عند الحاجة.</p>
+          </div>
+        </div>
+
+        <button className="button button-primary" onClick={handleIngestScan} disabled={ingestState.status === "scanning"}>
           {ingestState.status === "scanning" ? "جار المسح..." : "بدء مسح الدخول"}
         </button>
         <p className="form-status" role={ingestState.status === "error" ? "alert" : "status"}>
@@ -159,13 +168,14 @@ export function MediaJobsList() {
         </p>
       </article>
 
-      {/* Jobs List */}
-      <article className="panel">
-        <h2>قائمة Media Jobs</h2>
-
-        <div style={{ marginBottom: "1rem" }}>
-          <label>
-            تصفية حسب الحالة:
+      <section className="stack" aria-label="قائمة Media Jobs">
+        <div className="toolbar-row">
+          <div>
+            <h2>قائمة Media Jobs</h2>
+            <p className="field-note">فلترة مباشرة حسب الحالة مع إبقاء التفاصيل قابلة للمسح بسرعة.</p>
+          </div>
+          <label className="field-row" style={{ margin: 0 }}>
+            <span className="field-note">الحالة</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as MediaJobStatus | "")}
@@ -179,40 +189,43 @@ export function MediaJobsList() {
           </label>
         </div>
 
-        {listState.status === "loading" && <p>جار التحميل...</p>}
-        {listState.status === "empty" && <p>لا توجد media jobs</p>}
+        {listState.status === "loading" && <p className="form-status">جار التحميل...</p>}
+        {listState.status === "empty" && <p className="empty-state">لا توجد media jobs.</p>}
         {listState.status === "error" && (
-          <p role="alert" style={{ color: "red" }}>
+          <p role="alert" className="form-status status-error">
             خطأ: {listState.message}
           </p>
         )}
 
         {listState.status === "loaded" && (
-          <div className="grid">
+          <div className="stack">
             {listState.jobs.map((job) => (
               <article className="panel" key={job.id}>
-                <h3>{job.operation}</h3>
-                <div style={{ fontSize: "0.875rem", color: "#666" }}>
-                  <p>
-                    <strong>الحالة:</strong> <span className="badge">{job.status}</span>
-                  </p>
-                  <p>
-                    <strong>معرّف السجل:</strong> {job.recordId}
-                  </p>
-                  <p>
-                    <strong>المعرّف:</strong> {job.id}
-                  </p>
+                <div className="toolbar-row">
+                  <h3 style={{ margin: 0 }}>{job.operation}</h3>
+                  <span className="badge">{job.status}</span>
+                </div>
+                <div className="kv-grid">
+                  <div className="kv-item">
+                    <strong>معرّف السجل</strong>
+                    <span>{job.recordId}</span>
+                  </div>
+                  <div className="kv-item">
+                    <strong>المعرّف</strong>
+                    <span style={{ overflowWrap: "anywhere" }}>{job.id}</span>
+                  </div>
                   {job.queuedAt && (
-                    <p>
-                      <strong>وقت الإضافة:</strong> {new Date(job.queuedAt).toLocaleString("ar-SA")}
-                    </p>
+                    <div className="kv-item">
+                      <strong>وقت الإضافة</strong>
+                      <time>{new Date(job.queuedAt).toLocaleString("ar-SA")}</time>
+                    </div>
                   )}
                 </div>
               </article>
             ))}
           </div>
         )}
-      </article>
-    </section>
+      </section>
+    </div>
   );
 }

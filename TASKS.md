@@ -107,6 +107,7 @@
 ## 5. إعادة هيكلة الإعدادات والتنقّل — جزئياً net-new
 
 - [ ] `[P2]` ⏱️M **توحيد SettingsPage/SettingsHubPage + دمج SystemControlPage** — إزالة التكرار وتبسيط التنقّل.
+  - ✅ شريحة Next read-only settings hub (2026-06-30): استُبدلت صفحة `/settings` في `archive-next` بلوحة إعدادات قابلة للمسح تعرض فئات System/Security/Storage/API/Appearance دون تحرير حساس، التزاماً بقرار Laravel+Next للمسار القانوني الجديد. تبقى مهمة توحيد صفحات `archive-app` القديمة وإزالة التكرار مفتوحة.
   - الملفات: `archive-app/src/pages/{SettingsPage,SettingsHubPage,SystemControlPage}.jsx`.
   - المصدر: guide_v6 (§3 جدول التحسينات).
 
@@ -115,6 +116,7 @@
   - المصدر: ux_plan (Sprint 2)، guide_v6 (S2).
 
 - [ ] `[P2]` ⏱️M **لوحة أمان موسّعة** — CSP toggle + CORS field + JWT TTL + Legacy Password Upgrade + Webhook URL allowlist + Rate-limit per-user.
+  - ✅ شريحة قراءة فقط في Next (2026-06-30): أُضيفت لوحة "وضع الأمان" داخل `archive-next/app/settings/page.tsx` تعرض password/session timeout/failed attempts وتوضح أن المصادقة الثنائية وWebhook allowlist مخططان. تبقى عناصر التحكم الفعلية CSP/CORS/JWT TTL/rate-limit بحاجة endpoints وصلاحيات Laravel قبل تفعيلها.
   - الملفات: `archive-app/src/features/settings/*`.
   - المصدر: guide_v6 (§3)، broadcast/ux security.
 

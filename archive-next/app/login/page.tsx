@@ -13,6 +13,14 @@ type LoginState =
 export default function LoginPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LoginState>({ status: "idle" });
+  const navLinks = [
+    { href: "/", label: "الرئيسية" },
+    { href: "/archive", label: "السجلات" },
+    { href: "/files", label: "الملفات" },
+    { href: "/reports", label: "التقارير" },
+    { href: "/help", label: "المساعدة" },
+    { href: "/media/jobs", label: "Media jobs" }
+  ] as const;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,7 +46,13 @@ export default function LoginPage() {
           <strong>Archive Suite</strong>
           <span>Next.js auth migration</span>
         </div>
-        <a className="badge" href="/">حالة الترحيل</a>
+        <nav className="route-links" aria-label="مسارات سريعة">
+          {navLinks.map((link) => (
+            <a key={link.href} className="badge" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <section className="content auth-layout" aria-label="تسجيل الدخول">
@@ -62,7 +76,7 @@ export default function LoginPage() {
             <input name="password" type="password" autoComplete="current-password" required />
           </label>
 
-          <button type="submit" disabled={state.status === "loading"}>
+          <button type="submit" className="button button-primary" disabled={state.status === "loading"}>
             {state.status === "loading" ? "جار التحقق..." : "تسجيل الدخول"}
           </button>
 

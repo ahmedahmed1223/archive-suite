@@ -2856,3 +2856,7 @@
 ### 2. K8s + Docker Compose — تحقق offline للبنية (شريحة، 2026-06-30)
 
 - [~] `[P2]` ⏱️L **إكمال K8s + توحيد Docker Compose** — صُحّحت selectors في `archive-server/k8s/network-policy.yaml` لتطابق labels الفعلية (`server`/`frontend`/`postgres`) بدلاً من أسماء `archive-*` غير الموجودة، وأُضيف `scripts/verify-infra-config.mjs` مع أمر `pnpm run verify:infra`. البوابة تتحقق من وجود ملفات Compose، وتشغّل `docker compose config` لكل البدائل الأساسية، وتفحص `kubectl kustomize`/dry-run عند توفر context. التحقق: `node --check scripts/verify-infra-config.mjs` و`pnpm run verify:infra` نجحا؛ تخطّي dry-run الخاص بـ `kubectl` كان متوقعاً لعدم وجود context محلي. المتبقي لإغلاق البند: توحيد Compose بـ profiles وإضافة Redis/Whisper إلى K8s ثم بوابة CI حيّة.
+
+### 5. Settings + Security posture في Next.js (شريحة، 2026-06-30)
+
+- [~] `[P2]` ⏱️M **توحيد SettingsPage/SettingsHubPage + لوحة أمان موسّعة** — استُبدلت صفحة `/settings` في `archive-next` بواجهة read-only تجمع System/Security/Storage/API/Appearance، وأُضيفت لوحة "وضع الأمان" تعرض كلمة المرور، مهلة الجلسة، ومحاولات الفشل مع عناصر مخططة للمصادقة الثنائية وWebhook allowlist. التحقق: `pnpm run build:next` و`pnpm run typecheck:next`، مع فحص بصري Playwright على desktop/mobile. المتبقي: نقل/توحيد صفحات settings القديمة في `archive-app` وربط عناصر CSP/CORS/JWT TTL/rate-limit بصلاحيات وendpoints Laravel فعلية.
