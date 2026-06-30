@@ -2820,3 +2820,7 @@
 ### 6. Conditional Fields Visual Builder + حقل Relation (مُنجَز 2026-06-30، وكيل Sonnet)
 
 - [x] `[P2]` ⏱️L **Conditional Fields Visual Builder + حقل Relation** — أُضيف نوع `{ id: "relation" }` إلى `FIELD_TYPE_OPTIONS` (محدّد عناصر أرشيف في `AddVideoPage.FieldInput`)، ومكوّن `ShowWhenBuilder` في `TypesPage` يدور حول شكل `showWhen` الموجود (`{fieldKey, equals}`، عامل المساواة فقط). +16 اختبار TDD. 1272→1288 أخضر. مؤجَّل: relation في DetailPage.
+
+### 6. GraphViewPage Cytoscape — مُنجَز مسبقًا (تحقّق 2026-06-30، وكيل Sonnet)
+
+- [x] `[P2]` ⏱️XL **GraphViewPage: تفعيل Cytoscape الكامل** — بند قديم في القائمة لكنه **مُنفَّذ بالكامل فعلاً** (تحقّق الوكيل، لا كود جديد): `GraphViewPage.tsx` + `features/graph/buildGraphModel.ts` (+14 اختبار) — force-directed (cose/concentric)، ألوان حسب النوع، حجم حسب الـ degree (mapData)، zoom/pan + أزرار، فلاتر type/tag/layout، hover/click highlight، lazy import لـ cytoscape (سطر 424). الروابط من: وسوم مشتركة + collections + علاقات يدوية (`itemRelations`). 1288 اختبارًا أخضر دون تغيير.
