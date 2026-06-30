@@ -15,7 +15,7 @@ interface LoggerLike {
   debug?: (payload?: unknown, message?: string) => void;
 }
 
-function bindLogger(logger: LoggerLike | null | undefined): LoggerLike {
+function bindLogger(logger: LoggerLike | null | undefined): Required<LoggerLike> {
   if (!logger) return noopLogger;
   return {
     info: (...args) => (logger.info || noopLogger.info)?.call(logger, ...args),

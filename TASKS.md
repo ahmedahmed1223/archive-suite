@@ -34,12 +34,11 @@
 
 ## ابدأ من هنا — ترتيب التنفيذ المقترح (للوكيل المنفّذ)
 
-> 27 بنداً متبقّياً (لا يوجد P0 — كلها مُنجَزة). نفّذ بنداً واحداً في كل مرة، بوابة `pnpm verify` ثم دمج بعد كل بند. التفاصيل في الأقسام أدناه.
+> 26 بنداً متبقّياً (لا يوجد P0 — كلها مُنجَزة). نفّذ بنداً واحداً في كل مرة، بوابة `pnpm verify` ثم دمج بعد كل بند. التفاصيل في الأقسام أدناه.
 
 **P1 — أولاً:**
 1. §1 تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3) — ⏱️XL
 2. §5 ترحيل Laravel/Next — 5e.2-cutover (إشرافي، يدوي) + تحقّق حيّ مؤجَّل
-3. §22 دعم Microsoft SQL Server كـ backend — ⏱️XL
 
 **P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (مشغّل فيديو: Waveform/Transcript · علامة مائية+SRT/VTT/TTML) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
 
@@ -157,13 +156,13 @@
 
 > **السياق:** تجربة الإطلاق الحالية (`V1OnboardingWizard`، 9 خطوات في `ONBOARDING_STEPS`) كثيرة وتُعقّد الدخول الأول. المطلوب: شاشة هبوط بخيارين فقط (سريع/متقدم)، ودمج كل الجولات والتعريفات في معالج «جولة الميزات» واحد قابل للتجاهل ولإعادة التشغيل من المساعدة، ونقل الخطوات الثانوية إلى صفحة المساعدة، وتحسين `setup.bat`/`control-center` ليكون أكثر مرونة ووضوحاً.
 
-- [~] `[P1]` ⏱️XL **دعم Microsoft SQL Server كـ backend جديد** — إضافة `sqlserver` كخيار في `BACKEND_CHOICES` + Prisma provider جديد + ترحيل schema المعادل + نقطة في `/api/setup/preset-config` تكشف `SQLSERVER_URL`.
+- [x] `[P1]` ⏱️XL **دعم Microsoft SQL Server كـ backend جديد** — إضافة `sqlserver` كخيار في `BACKEND_CHOICES` + Prisma provider جديد + ترحيل schema المعادل + نقطة في `/api/setup/preset-config` تكشف `SQLSERVER_URL`.
   - ✅ شريحة إعداد/تهيئة منجزة (2026-06-30): أضيف `sqlserver` كخيار في الواجهة ومعالج البداية وقراءة preset/config، وأضيف `archive-server/docker-compose.sqlserver.yml` مع `SQLSERVER_URL` وفحص `docker:config:sqlserver`.
   - ✅ شريحة runtime حي منجزة (2026-06-30): أضيف `@prisma/adapter-mssql` مع اختيار adapter حسب `DATABASE_PROVIDER`، وتحول صيغة SQL Server إلى `sqlserver://host:1433;database=...;user=...;password=...;encrypt=true;trustServerCertificate=true`. أضيف توليد `prisma/schema.active.prisma` لمواءمة قيود SQL Server (`Json`/arrays/enums كنص)، ومسار `prisma/migrations-sqlserver`، وتخزين JSON كنص في `StorageRow` مع decode عند القراءة.
-  - ✅ التحقق: `pnpm verify`، `pnpm run docker:config:sqlserver`، بناء `docker compose ... up -d --build server`، وsmoke حي داخل الحاوية على SQL Server: `/api/health` + `/api/auth/login` + `/api/rpc` `put/get/getByField` مع JSON nested.
-  - متبقّي: مواءمة الجداول المباشرة خارج `StorageRow` التي كانت تعتمد `Json`/`String[]`/enum في Prisma (مثل API keys scopes، webhooks events، share scopes، وبعض إعدادات الحقوق) بطبقة encode/decode مخصصة قبل اعتبار SQL Server backend كاملًا لكل المسارات.
-  - الملفات: `archive-server/src/db/prismaAdapter.ts`, `archive-server/prisma/migrations-sqlserver/`, `archive-server/scripts/set-db-provider.mjs`, `archive-server/prisma.config.mjs`, `archive-server/src/adapters/cloud-postgres-prisma/storage.ts`, `archive-app/src/features/settings/dbConfigClient.ts`, `archive-server/docker-compose.sqlserver.yml`.
-  - القبول المتبقي: تشغيل مجموعة smoke موسعة لمسارات Prisma المباشرة على SQL Server بعد إضافة encode/decode لها، وليس فقط مسار التخزين العام.
+  - ✅ شريحة توافق الجداول المباشرة منجزة (2026-06-30): أضيف wrapper لـ Prisma عند `DATABASE_PROVIDER=sqlserver` يرمّز/يفك `Json` و`String[]` المخزّنة كنص في `ArchiveItem` و`RecordVersion` و`SavedFilter` و`Webhook` و`ApiKey` و`ActivityLog` و`ShareInvitation` و`RightsRecord`، مع ترجمة فلتر `events.has` إلى بحث نصي ملائم.
+  - ✅ التحقق: `pnpm verify`، `pnpm run docker:config:sqlserver`، بناء `docker compose ... up -d --build server`، وsmoke حي داخل الحاوية على SQL Server يغطي `/api/health` + `/api/auth/login` + `/api/rpc` + record versions/restore + saved filters + webhooks + API keys + public records + rights + share invitations.
+  - الملفات: `archive-server/src/db/prismaAdapter.ts`, `archive-server/src/db/prismaJsonCompat.ts`, `archive-server/prisma/migrations-sqlserver/`, `archive-server/scripts/set-db-provider.mjs`, `archive-server/prisma.config.mjs`, `archive-server/src/adapters/cloud-postgres-prisma/storage.ts`, `archive-app/src/features/settings/dbConfigClient.ts`, `archive-server/docker-compose.sqlserver.yml`.
+  - القبول: SQL Server backend يعمل عبر المسار العام ومسارات Prisma المباشرة الأساسية؛ يبقى ODBC كبند مستقل أدناه.
   - المصدر: طلب المستخدم 2026-06-21.
 
 - [ ] `[P2]` ⏱️XL **دعم ODBC (عام لقواعد بيانات Windows القديمة)** — جسر عبر `node-odbc` لتشغيل الاستعلامات بدون Prisma (الجزء غير المنطقي من الـ schema). يتطلب طبقة Repository بديلة في `archive-server/src/db/odbcAdapter.js` تكشف نفس واجهة Prisma لمجموعة محدودة من الجداول الأساسية (items, users, settings, audit) — وذلك للمستخدمين الذين يربطون قاعدة بيانات قائمة (DSN موجود في ODBC Data Source Administrator على Windows).

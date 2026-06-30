@@ -38,6 +38,7 @@ import { createRetentionScheduler } from "./retention/retentionScheduler.js";
 import { initMetrics } from "./monitoring/metrics.js";
 import { initRedis, closeRedis, isRedisAvailable } from "./cache/redisCache.js";
 import { createPrismaDriverAdapter } from "./db/prismaAdapter.js";
+import { wrapSqlServerPrismaJsonCompat } from "./db/prismaJsonCompat.js";
 import { startPresenceServer } from "./collaboration/presenceServer.js";
 import { tryCreateRedisMediaJobStore } from "./media/redisMediaJobStore.js";
 import { createInMemoryMediaJobStore } from "./media/mediaJobs.js";
@@ -102,7 +103,7 @@ async function buildPrismaClient() {
   }
   logger.info({ databaseTarget, databaseEngine, databaseSource }, "DB target resolved");
   const adapter = await createPrismaDriverAdapter({ databaseEngine, databaseUrl, logger });
-  return new PrismaClient({ adapter: adapter as any });
+  return wrapSqlServerPrismaJsonCompat(new PrismaClient({ adapter: adapter as any }) as any, databaseEngine);
 }
 
 async function main() {
