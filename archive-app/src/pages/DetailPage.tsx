@@ -111,6 +111,7 @@ import {
 import { TimeBookmarkButton, TimeBookmarkList, TimeBookmarkTimelineMarkers } from "../components/media/TimeBookmarks.jsx";
 import { ConversionPanel } from "../features/media/ConversionPanel.jsx";
 import { RightsPanel } from "../features/rights/RightsPanel.jsx";
+import { createRoughCutValue } from "../features/projects/viewModel.js";
 
 function fieldKey(field: any) {
   return field.storageKey || field.name || field.id;
@@ -470,7 +471,9 @@ export function DetailPage() {
     itemNotes = [],
     loadItemNotesFromStorage,
     addItemNote,
-    removeItemNote
+    removeItemNote,
+    projects = [],
+    updateProject
   } = useAppStore();
 
   const item = videoItems.find((video: any) => video.id === selectedItemId) || null;
@@ -640,6 +643,28 @@ export function DetailPage() {
   );
   const [previewRuntimeState, setPreviewRuntimeState] = React.useState<any>(MEDIA_PREVIEW_STATUS.LOADING);
   const [playbackDuration, setPlaybackDuration] = React.useState(0);
+  const [pendingClip, setPendingClip] = React.useState<{ markIn: number | null; markOut: number | null } | null>(null);
+
+  const handleAddToProject = React.useCallback(({ markIn, markOut }: { markIn: number | null; markOut: number | null }) => {
+    if (!item) return;
+    setPendingClip({ markIn, markOut });
+  }, [item]);
+
+  const handleAddToProjectConfirm = React.useCallback(async (projectId: string) => {
+    if (!item || !pendingClip) return;
+    const project = projects.find((p: any) => p.id === projectId);
+    if (!project) return;
+    const cut = createRoughCutValue({
+      itemId: item.id,
+      inSec: pendingClip.markIn ?? 0,
+      outSec: pendingClip.markOut ?? (item.duration ?? 0),
+      label: item.title || item.name || "",
+      order: (project.roughCuts?.length ?? 0)
+    });
+    await updateProject?.({ ...project, roughCuts: [...(project.roughCuts || []), cut] });
+    showToast?.(`أُضيف "${cut.label || "مقطع"}" إلى "${project.name}"`, "success");
+    setPendingClip(null);
+  }, [item, pendingClip, projects, updateProject, showToast]);
   const itemBookmarks = React.useMemo(
     () => (bookmarks || []).filter((bookmark: any) => bookmark.itemId === item?.id).sort((a: any, b: any) => a.timestamp - b.timestamp),
     [bookmarks, item?.id]
@@ -1249,6 +1274,7 @@ export function DetailPage() {
           onTimeUpdate: (event: any) => setPlaybackTime(event.currentTarget.currentTime || 0),
           onSeeked: (event: any) => setPlaybackTime(event.currentTarget.currentTime || 0),
           onError: () => setPreviewRuntimeState(MEDIA_PREVIEW_STATUS.TIMED_OUT),
+          onAddToProject: projects.length > 0 ? handleAddToProject : undefined,
           loading: previewState === MEDIA_PREVIEW_STATUS.LOADING,
           loadingOverlay: jsx(MediaPreviewFallback, {
             state: MEDIA_PREVIEW_STATUS.LOADING,
@@ -1264,6 +1290,28 @@ export function DetailPage() {
           onEditPath: startPathEdit,
           onMetadataOnly: showMetadataOnly
         }),
+        pendingClip && projects.length > 0 && jsxs("div", { className: "border-t border-[var(--va-border-soft)] bg-[var(--va-surface-2)] p-3 space-y-2", dir: "rtl", children: [
+          jsxs("p", { className: "text-xs font-semibold text-[var(--va-text)]", children: [
+            "أضف مقطع",
+            pendingClip.markIn !== null || pendingClip.markOut !== null
+              ? ` (${secondsToClock(pendingClip.markIn ?? 0)} ← ${secondsToClock(pendingClip.markOut ?? 0)})`
+              : "",
+            " إلى مشروع:"
+          ] }),
+          jsxs("div", { className: "flex flex-wrap gap-2", children: [
+            ...projects.slice(0, 10).map((p: any) => jsx("button", {
+              type: "button",
+              key: p.id,
+              onClick: () => handleAddToProjectConfirm(p.id),
+              className: "rounded-lg border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-3 py-1.5 text-xs text-[var(--va-text)] hover:bg-[var(--va-surface-2)] hover:border-[var(--va-action)]"
+            }, p.id, p.name || "مشروع بلا اسم")),
+            jsx("button", {
+              type: "button",
+              onClick: () => setPendingClip(null),
+              className: "rounded-lg border border-[var(--va-border-soft)] px-3 py-1.5 text-xs text-[var(--va-text-muted)] hover:bg-[var(--va-surface)]"
+            }, "إلغاء")
+          ] })
+        ] }),
         previewState === MEDIA_PREVIEW_STATUS.PLAYABLE && jsxs("div", { className: "border-t border-[var(--va-border-soft)] bg-[var(--va-surface)] p-4 space-y-3", dir: "rtl", children: [
           jsxs("h3", { className: "flex items-center gap-2 text-sm font-bold text-[var(--va-text)]", children: [
             jsx(Clock3, { className: "h-4 w-4 va-accent-text" }),

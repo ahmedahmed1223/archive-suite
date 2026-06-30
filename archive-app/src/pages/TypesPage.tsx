@@ -375,7 +375,15 @@ function TypeValidationPanel({ validation }: any) {
   });
 }
 
+import { getProgramTypeOptions, getGenreOptions, getRoleOptions } from "../utils/broadcastVocabulary.js";
+
+const BROADCAST_PROGRAM_LABELS = getProgramTypeOptions().slice(0, 12).map((o: any) => o.label);
+const BROADCAST_GENRE_LABELS = getGenreOptions().map((o: any) => o.label);
+const BROADCAST_ROLE_LABELS = getRoleOptions().map((o: any) => o.label);
+
 const TYPE_CREATION_TEMPLATES = [
+  { id: "news_bulletin", name: "نشرة إخبارية", icon: "📡", color: "#ef4444", subtypes: ["عاجلة", "رئيسية", "إقليمية", "دولية"], fields: [["المقدم", "anchor", "text"], ["نوع البرنامج", "programType", "select", BROADCAST_PROGRAM_LABELS], ["التصنيف", "genre", "select", BROADCAST_GENRE_LABELS], ["موعد البث", "broadcastAt", "date"]] },
+  { id: "tv_interview", name: "مقابلة تلفزيونية", icon: "🎙️", color: "#10b981", subtypes: ["استوديو", "ميدانية", "هاتفية", "عن بعد"], fields: [["الضيف", "guest", "text"], ["الدور", "guestRole", "select", BROADCAST_ROLE_LABELS], ["الموقع", "location", "text"], ["تاريخ التسجيل", "recordedAt", "date"]] },
   { id: "interview", name: "مقابلة", icon: "🎙️", color: "#10b981", subtypes: ["كاملة", "مقتطف", "عن بعد"], fields: [["الضيف", "guest", "text"], ["الموقع", "location", "text"], ["تاريخ التسجيل", "recordedAt", "date"]] },
   { id: "report", name: "تقرير", icon: "📋", color: "#f59e0b", subtypes: ["إخباري", "تحقيقي", "تحليلي", "ميداني"], fields: [["المراسل", "reporter", "text"], ["المنطقة", "region", "text"], ["المصدر", "source", "text"], ["حالة المراجعة", "reviewStatus", "select", ["يحتاج مراجعة", "قيد المراجعة", "معتمد"]]] },
   { id: "rawfootage", name: "لقطة خام", icon: "🎞️", color: "#14b8a6", subtypes: ["ميدانية", "استوديو", "B-roll", "كواليس"], fields: [["الموقع", "location", "text"], ["المصور", "cameraman", "text"], ["حقوق الاستخدام", "rights", "select", ["داخلي", "مرخص", "غير معروف"]]] },

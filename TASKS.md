@@ -89,7 +89,7 @@
   - القبول: تفريغ مقابلة عربية بدقة ≥90% مع توقيتات وتصدير SRT.
   - المصدر: broadcast-report (transcription — حرج)، dev-roadmap (P3-03).
 
-- [ ] `[P1]` ⏱️XL **تكامل MOS + NRCS (ENPS/iNEWS)** — جسر لغرفة الأخبار.
+- [x] `[P1]` ⏱️XL **تكامل MOS + NRCS (ENPS/iNEWS)** — جسر لغرفة الأخبار.
   - ✅ شريحة 1/2 (2026-06-23 wave-31، agent Sonnet): `archive-server/src/integrations/mos/` — `messages.js` يبني 6 رسائل MOS 3.x (roReq/roCreate/roStorySend/roElementAction/objList/objCreate) عبر `xmlSerializer.js`؛ `session.js` بـ messageID تلقائي + wrap/unwrap بدون DOMParser؛ `searchBridge.js` يحوّل عناصر الأرشيف إلى MOS shape. REST: `POST /api/mos/search` + `GET /api/mos/envelope-sample?type=roReq`. 23 اختبار، verify chain مُحدّث. لا sockets.
   - ✅ شريحة 2/2 — (2026-06-24 wave-33، agent C): `tcpClient.js` (connect/disconnect/send/getStatus، reconnect، heartbeat 30s، send queue max 100). REST: POST /connect، POST /disconnect، GET /status، POST /send (admin-only). 8 اختبارات node:test بـ echo server حقيقي.
   - الملفات: `archive-server/src/integrations/mos/*` + REST bridge.
@@ -118,11 +118,11 @@
   - القبول: إسقاط ملف في مجلد مراقَب يُنشئ مادة تلقائياً مع proxy + checksum. ✓ (proxy generation reuses الـ media pipeline الموجود)
   - المصدر: broadcast-report (ingest)، dev-roadmap (new-feature #5 Smart Ingest).
 
-- [ ] `[P2]` ⏱️M **مفردات إعلامية عربية منظمة + تقويم هجري** — أنواع البرامج/تصنيفات/أدوار + Umm al-Qura (هجري/ميلادي مزدوج).
+- [x] `[P2]` ⏱️M **مفردات إعلامية عربية منظمة + تقويم هجري** — أنواع البرامج/تصنيفات/أدوار + Umm al-Qura (هجري/ميلادي مزدوج).
   - ✅ تقويم هجري مُنجز (2026-06-22 wave-28): `archive-app/src/utils/hijriDate.js` يعرض `formatHijriDate` (Umm al-Qura عبر `Intl.DateTimeFormat` بـ `calendar: "islamic-umalqura"`، أرقام عربية-هندية)، `formatGregorianDate`، و`formatDualDate` (ميلادي · هجري). 6 اختبارات vitest. ربط `LiveClockBadge` في `DashboardPage` ليعرض `٠٣:٣٣ م | الاثنين، ٢٢ يونيو | ٧ محرم هـ` مع `aria-label` مُدمج للقارئ.
-  - متبقّي: المفردات الإعلامية المنظمة (أنواع البرامج/تصنيفات/أدوار) — يحتاج جلسة منفصلة.
-  - الملفات: `archive-app/src/utils/hijriDate.js` (جديد) + `.test.js` + `archive-app/src/pages/DashboardPage.jsx` (`formatClockHijri` + سطر هجري في الـ badge).
-  - القبول: تاريخ مزدوج معروض في الـ Dashboard hero ومتاح كـ utility لأي صفحة أخرى.
+  - ✅ المفردات الإعلامية المنظمة (2026-06-30): `archive-app/src/utils/broadcastVocabulary.ts` — 33 نوع برنامج، 14 تصنيف نوعي، 15 دور إنتاجي، مع `getProgramTypeOptions()` / `getGenreOptions()` / `getRoleOptions()` / `getGroupedProgramTypes()`. ربط في `TypesPage.tsx` بقوالبَي إنشاء: «نشرة إخبارية» و«مقابلة تلفزيونية».
+  - الملفات: `archive-app/src/utils/hijriDate.js` + `archive-app/src/utils/broadcastVocabulary.ts` + `archive-app/src/pages/TypesPage.tsx`.
+  - القبول: تاريخ مزدوج معروض في الـ Dashboard؛ أنواع البرامج/الأدوار متاحة في TypesPage. ✓
   - المصدر: broadcast-report، dev-roadmap (P3-07, P3-08).
 
 ---
@@ -161,7 +161,7 @@
   - القبول: كل شريحة ≤250 سطر؛ الذاكرة ≤150MB مع 50K عنصر.
   - المصدر: dev-roadmap (P0-08, P1-02).
 
-- [ ] `[P1]` ⏱️XL **نظام تصميم موحّد v2** — مكتبة مكوّنات أساسية (Button/Input/Card/Dialog/Badge/Switch/Tabs) تستخدم tokens حصراً + توسيع tokens (status/density/duration/skeleton).
+- [x] `[P1]` ⏱️XL **نظام تصميم موحّد v2** — مكتبة مكوّنات أساسية (Button/Input/Card/Dialog/Badge/Switch/Tabs) تستخدم tokens حصراً + توسيع tokens (status/density/duration/skeleton).
   - ✅ شريحة 1/3 — primitives أربعة (2026-06-22 wave-29): ButtonV2/InputV2/CardV2/DialogV2. 33 اختبار.
   - ✅ شريحة 2/3 — (2026-06-23 wave-30، agent C): `BadgeV2.jsx` (5 variants، dot indicator)، `SwitchV2.jsx` (role=switch، 44px tap target، RTL logical props)، `TabsV2.jsx` (compound، keyboard nav ArrowKey/Home/End، ARIA tablist/tab/tabpanel). `design-tokens.css`: كتلة `:root` canonical لـ 14 رمز `--va-*` بقيم light+dark. 38 اختبار جديد. 1043 tests green.
   - ✅ شريحة 3/3 — (2026-06-24 wave-32، agent B): `ToastV2.jsx` (4 variants، 3 positions، CSS-only animations، role=alert، Escape dismiss)، `TooltipV2.jsx` (4 logical positions، delay 300ms، aria-describedby)، `useToast.js` hook (queue max 3، auto-dismiss)، 24 اختبار جديد. 2 call sites هُجِّرت (OcrButton + ApiKeysSettings). 1143 tests green.
@@ -275,8 +275,10 @@
   - الملفات: `archive-app/src/pages/ProjectsPage.jsx`.
   - المصدر: new_tail (F17, F18).
 
-- [ ] `[P2]` ⏱️L **مشغّل فيديو متقدم في DetailPage** — Frame stepping (`,`/`.`) + Mark In/Out + «أضف لمشروع» مباشرة + Waveform + Transcript Sync.
-  - الملفات: `archive-app/src/pages/DetailPage.jsx`، ربط `TranscriberPage`/`createRoughCutValue`.
+- [~] `[P2]` ⏱️L **مشغّل فيديو متقدم في DetailPage** — Frame stepping (`,`/`.`) + Mark In/Out + «أضف لمشروع» مباشرة + Waveform + Transcript Sync.
+  - ✅ Frame stepping + Mark In/Out + «أضف لمشروع» (2026-06-30): `VideoPlayer.tsx` — خطوة إطار بـ 1/fps (افتراضي 25fps PAL) عبر `,`/`.` + أزرار ChevronLeft/Right؛ Mark In/Out عبر `i`/`o` مع شرائط مرئية على الـ scrubber + عرض label؛ زر «أضف لمشروع» (FolderPlus) يُشغّل `onAddToProject({markIn,markOut})`؛ في `DetailPage.tsx` لوحة اختيار مشروع inline تُنشئ `createRoughCutValue` وتستدعي `updateProject`. 6 اختبارات جديدة، 1251 test pass.
+  - متبقّي: Waveform (يحتاج تحليل صوتي)، Transcript Sync (جزئياً موجود في TranscriberPage).
+  - الملفات: `archive-app/src/components/media/VideoPlayer.tsx` + `archive-app/src/pages/DetailPage.tsx` + `archive-app/src/components/media/VideoPlayer.test.tsx`.
   - المصدر: new_tail (F19, F20).
 
 - [ ] `[P2]` ⏱️M **علامة مائية + تصدير SRT/VTT/TTML للفيديو** — ffmpeg overlay + ملفات ترجمة مع الفيديو.

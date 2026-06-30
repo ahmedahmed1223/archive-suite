@@ -11,6 +11,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Captions,
+  ChevronLeft,
+  ChevronRight,
+  FolderPlus,
   Maximize,
   Minimize,
   Pause,
@@ -45,6 +48,9 @@ export function VideoPlayer({
   onError,
   loading = false,
   loadingOverlay = null,
+  fps = 25,
+  onMarkChange,
+  onAddToProject,
 }: any) {
   const internalRef = useRef(null);
   const ref = videoRef || internalRef;
@@ -62,6 +68,8 @@ export function VideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSpeed, setShowSpeed] = useState(false);
   const [preview, setPreview] = useState(null); // { time, percent } while hovering the scrubber
+  const [markIn, setMarkIn] = useState<number | null>(null);
+  const [markOut, setMarkOut] = useState<number | null>(null);
 
   const hasSubtitles = Array.isArray(cues) && cues.length > 0;
   const pipSupported =
@@ -166,6 +174,31 @@ export function VideoPlayer({
     else (node as any).requestFullscreen?.().catch(() => {});
   }, []);
 
+  const frameStep = useCallback((direction: 1 | -1) => {
+    const video = ref.current;
+    if (!video) return;
+    video.pause();
+    const step = direction / (fps || 25);
+    const next = Math.min(video.duration || 0, Math.max(0, video.currentTime + step));
+    video.currentTime = next;
+  }, [ref, fps]);
+
+  const setMarkInNow = useCallback(() => {
+    const video = ref.current;
+    if (!video) return;
+    const t = video.currentTime;
+    setMarkIn(t);
+    onMarkChange?.({ markIn: t, markOut });
+  }, [ref, markOut, onMarkChange]);
+
+  const setMarkOutNow = useCallback(() => {
+    const video = ref.current;
+    if (!video) return;
+    const t = video.currentTime;
+    setMarkOut(t);
+    onMarkChange?.({ markIn, markOut: t });
+  }, [ref, markIn, onMarkChange]);
+
   const handleKeyDown = useCallback((event: any) => {
     // Ignore when typing into an input/textarea inside the container.
     const tag = event.target?.tagName;
@@ -200,6 +233,22 @@ export function VideoPlayer({
         event.preventDefault();
         toggleMute();
         break;
+      case ",":
+        event.preventDefault();
+        frameStep(-1);
+        break;
+      case ".":
+        event.preventDefault();
+        frameStep(1);
+        break;
+      case "i":
+        event.preventDefault();
+        setMarkInNow();
+        break;
+      case "o":
+        event.preventDefault();
+        setMarkOutNow();
+        break;
       case "c":
         if (hasSubtitles) {
           event.preventDefault();
@@ -209,7 +258,7 @@ export function VideoPlayer({
       default:
         break;
     }
-  }, [togglePlay, seekBy, setVideoVolume, toggleFullscreen, toggleMute, hasSubtitles, onToggleSubtitles, ref]);
+  }, [togglePlay, seekBy, setVideoVolume, toggleFullscreen, toggleMute, frameStep, setMarkInNow, setMarkOutNow, hasSubtitles, onToggleSubtitles, ref]);
 
   return (
     <div
@@ -263,6 +312,17 @@ export function VideoPlayer({
         className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-6 opacity-0 transition-opacity duration-200 focus-within:opacity-100 group-hover:opacity-100"
         dir="ltr"
       >
+        {/* Mark In/Out labels */}
+        {(markIn !== null || markOut !== null) && (
+          <div className="flex items-center gap-3 pb-0.5 text-[11px] font-mono text-gray-300" dir="ltr">
+            <span className="text-[var(--va-accent-400)]">
+              {markIn !== null ? `IN ${secondsToClock(markIn)}` : "IN —"}
+            </span>
+            <span className="text-[var(--va-accent-200)]">
+              {markOut !== null ? `OUT ${secondsToClock(markOut)}` : "OUT —"}
+            </span>
+          </div>
+        )}
         <div
           className="relative"
           onMouseMove={(e: any) => canPreview && updatePreview(e.clientX)}
@@ -287,20 +347,40 @@ export function VideoPlayer({
               </span>
             </div>
           )}
-          <input
-            ref={scrubberRef}
-            type="range"
-            min={0}
-            max={duration || 0}
-            step="any"
-            value={Math.min(current, duration || 0)}
-            onChange={(e: any) => {
-              const video = ref.current;
-              if (video) video.currentTime = Number(e.target.value);
-            }}
-            aria-label="شريط التقدم"
-            className="h-1.5 w-full cursor-pointer accent-[var(--va-action)]"
-          />
+          <div className="relative w-full">
+            <input
+              ref={scrubberRef}
+              type="range"
+              min={0}
+              max={duration || 0}
+              step="any"
+              value={Math.min(current, duration || 0)}
+              onChange={(e: any) => {
+                const video = ref.current;
+                if (video) video.currentTime = Number(e.target.value);
+              }}
+              aria-label="شريط التقدم"
+              className="h-1.5 w-full cursor-pointer accent-[var(--va-action)]"
+            />
+            {/* Mark In tick */}
+            {markIn !== null && duration > 0 && (
+              <div
+                className="pointer-events-none absolute top-0 h-1.5 w-0.5 bg-[var(--va-accent-400)]"
+                style={{ left: `${(markIn / duration) * 100}%` }}
+                aria-hidden="true"
+                title={`Mark In: ${secondsToClock(markIn)}`}
+              />
+            )}
+            {/* Mark Out tick */}
+            {markOut !== null && duration > 0 && (
+              <div
+                className="pointer-events-none absolute top-0 h-1.5 w-0.5 bg-[var(--va-accent-200)]"
+                style={{ left: `${(markOut / duration) * 100}%` }}
+                aria-hidden="true"
+                title={`Mark Out: ${secondsToClock(markOut)}`}
+              />
+            )}
+          </div>
           {canPreview && (
             <video
               ref={previewVideoRef}
@@ -320,6 +400,12 @@ export function VideoPlayer({
           <button type="button" onClick={togglePlay} aria-label={isPlaying ? "إيقاف مؤقت" : "تشغيل"} className="rounded-md p-1.5 hover:bg-white/15">
             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
+          <button type="button" onClick={() => frameStep(-1)} aria-label="إطار سابق (,)" title="إطار سابق (,)" className="rounded-md p-1.5 hover:bg-white/15">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => frameStep(1)} aria-label="إطار تالٍ (.)" title="إطار تالٍ (.)" className="rounded-md p-1.5 hover:bg-white/15">
+            <ChevronRight className="h-4 w-4" />
+          </button>
           <button type="button" onClick={toggleMute} aria-label={muted ? "إلغاء الكتم" : "كتم"} className="rounded-md p-1.5 hover:bg-white/15">
             {muted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
@@ -337,6 +423,18 @@ export function VideoPlayer({
             {secondsToClock(current)} / {secondsToClock(duration)}
           </span>
 
+          {onAddToProject && (
+            <button
+              type="button"
+              onClick={() => onAddToProject({ markIn, markOut })}
+              aria-label="أضف لمشروع"
+              title="أضف لمشروع (Mark In/Out)"
+              className="ms-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-[var(--va-action)] hover:bg-white/15"
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">أضف لمشروع</span>
+            </button>
+          )}
           <div className="relative ms-auto flex items-center gap-1">
             <div className="relative">
               <button
