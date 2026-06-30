@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class NextIntegrationSeeder extends Seeder
 {
@@ -12,6 +14,17 @@ class NextIntegrationSeeder extends Seeder
         $now = now();
         $uid = 'next-laravel-record';
         $token = env('ARCHIVE_E2E_SHARE_TOKEN', 'next-laravel-share');
+
+        // Auth fixture so the harness can log in and exercise the protected
+        // operational pages (/archive, /archive/[id], /media/jobs) which the
+        // cookie-session middleware guards.
+        User::updateOrCreate(
+            ['email' => env('ARCHIVE_E2E_EMAIL', 'it@archive.test')],
+            [
+                'name' => 'Integration User',
+                'password' => Hash::make(env('ARCHIVE_E2E_PASSWORD', 'password123')),
+            ]
+        );
 
         DB::table('storage_rows')->updateOrInsert(
             ['store' => 'archive', 'uid' => $uid],
