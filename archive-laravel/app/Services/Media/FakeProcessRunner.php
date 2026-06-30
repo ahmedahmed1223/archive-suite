@@ -5,6 +5,13 @@ namespace App\Services\Media;
 class FakeProcessRunner implements ProcessRunner
 {
     /**
+     * Last command received by the fake runner.
+     *
+     * @var string[]
+     */
+    private array $lastCommand = [];
+
+    /**
      * Map of command patterns to canned responses.
      * Keyed by the second element (typically the operation or input type).
      *
@@ -43,12 +50,22 @@ class FakeProcessRunner implements ProcessRunner
     }
 
     /**
+     * @return string[]
+     */
+    public function lastCommand(): array
+    {
+        return $this->lastCommand;
+    }
+
+    /**
      * Run a fake command.
      *
      * @param  string[]  $command
      */
     public function run(array $command, ?callable $onProgress = null): array
     {
+        $this->lastCommand = $command;
+
         // For testing: match against common patterns in the command
         $key = 'default';
         foreach ($command as $arg) {

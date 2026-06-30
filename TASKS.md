@@ -51,7 +51,8 @@
 
 - [ ] `[P1]` ⏱️XL **تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3)** — رفع الدقة من ~70% إلى ≥90%.
   - يشمل: GPU، `large-v3`، **timestamps**، **تمييز المتحدثين (diarization)**، تصدير **SRT/VTT/TTML**.
-  - الملفات: `archive-server/src/ai/transcription.js` (موجود client متعدد المزودين + خيار faster-whisper ذاتي الاستضافة — يُبنى فوقه)، deploy للـ GPU.
+  - ✅ شريحة Laravel GPU config منجزة (2026-06-30): `WhisperTranscriber` في المسار القانوني الجديد يقبل `WHISPER_DEVICE` و`WHISPER_COMPUTE_TYPE` ويمررهما إلى faster-whisper (`cuda`/`float16` افتراضياً)، مع بقاء `large-v3` + `ar` + `vtt`. التحقق: `php artisan test --filter=WhisperTranscriberTest` داخل Docker، 6 اختبارات / 13 assertion.
+  - الملفات: `archive-laravel/app/Services/Media/WhisperTranscriber.php`, `archive-laravel/config/media.php`, deploy للـ GPU.
   - القبول: تفريغ مقابلة عربية بدقة ≥90% مع توقيتات وتصدير SRT.
   - المصدر: broadcast-report (transcription — حرج)، dev-roadmap (P3-03).
 

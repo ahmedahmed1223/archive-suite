@@ -81,6 +81,27 @@ class WhisperTranscriberTest extends TestCase
         $this->assertStringContainsString('record-4/transcript.srt', $artifact['key']);
     }
 
+    public function test_transcribe_includes_gpu_device_and_compute_type(): void
+    {
+        $transcriber = new WhisperTranscriber(
+            $this->runner,
+            'faster-whisper',
+            'large-v3',
+            'ar',
+            'vtt',
+            'cuda',
+            'float16'
+        );
+
+        $transcriber->transcribe('archive/audio.mp3', 'record-gpu');
+
+        $command = $this->runner->lastCommand();
+        $this->assertContains('--device', $command);
+        $this->assertContains('cuda', $command);
+        $this->assertContains('--compute_type', $command);
+        $this->assertContains('float16', $command);
+    }
+
     public function test_real_processor_delegates_to_transcriber(): void
     {
         $job = new MediaJob();
