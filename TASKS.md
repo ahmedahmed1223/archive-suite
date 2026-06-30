@@ -41,7 +41,7 @@
 2. §5 ترحيل Laravel/Next — 5e.2-cutover (إشرافي، يدوي) + تحقّق حيّ مؤجَّل
 3. §22 دعم Microsoft SQL Server كـ backend — ⏱️XL
 
-**P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (مشغّل فيديو: Waveform/Transcript · علامة مائية+SRT/VTT/TTML) · §4 (PWA) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §6 (Dashboard widgets · GraphView) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
+**P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (مشغّل فيديو: Waveform/Transcript · علامة مائية+SRT/VTT/TTML) · §4 (PWA) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §6 (Dashboard widgets) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
 
 **P3 — مؤجّل:** §6 بقية الصفحات · §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
 
@@ -137,10 +137,6 @@
   - المصدر: guide_v6 (Dashboard)، sessions_new (F4).
 
 ### صفحات متخصصة
-
-- [ ] `[P2]` ⏱️XL **GraphViewPage: تفعيل Cytoscape الكامل** — Force-directed + ألوان حسب النوع + حجم حسب الروابط + Zoom/Pan/Filter + Node hover + lazy load.
-  - الملفات: `archive-app/src/pages/GraphViewPage.jsx`.
-  - المصدر: f45ea5a29 (GraphView)، guide_v6 (#9)، dev-roadmap (P5/Graph).
 
 - [ ] `[P3]` ⏱️L **بقية الصفحات (تحسينات مفردة)** — Collections (cover/share)، Inbox (swipe)، ReadingLists (progress ring)، Favorites (filters/folders)، SavedSearches (alerts/run)، Duplicates (side-by-side + confidence)، SharedLinks (analytics/expiry)، HierarchicalTags (tree view + usage count + drag re-parent)، Vocabulary (fuzzy + export)، Reports (templates + scheduled)، ProductionTasks (assignee/due)، Activity/History (undo/restore)، Automation (templates + test-run)، Transcriber (timecodes + DetailPage link)، SyncLog (status + health chart)، ErrorLog (grouping + recovery queue)، Help (search + context-sensitive)، Files (provider tabs + preview + quota)، Users (avatar/presence/invite).
   - الملفات: الصفحات المعنية في `archive-app/src/pages/*`.
