@@ -53,8 +53,8 @@ services:
     environment:
       BACKEND: sqlserver
       DATABASE_PROVIDER: sqlserver
-      DATABASE_URL: "${SQLSERVER_URL:-sqlserver://sqlserver:1433;database=${SQLSERVER_DB:-archive};user=sa;password=${SQLSERVER_SA_PASSWORD};encrypt=true;trustServerCertificate=true}"
-      SQLSERVER_URL: "${SQLSERVER_URL:-sqlserver://sqlserver:1433;database=${SQLSERVER_DB:-archive};user=sa;password=${SQLSERVER_SA_PASSWORD};encrypt=true;trustServerCertificate=true}"
+      DATABASE_URL: "${SQLSERVER_URL:-sqlserver://archive:[REDACTED]@sqlserver:1433/archive?encrypt=true&trustServerCertificate=true}"
+      SQLSERVER_URL: "${SQLSERVER_URL:-sqlserver://archive:[REDACTED]@sqlserver:1433/archive?encrypt=true&trustServerCertificate=true}"
       NODE_ENV: production
       ARCHIVE_PUBLIC_DEPLOY: ${ARCHIVE_PUBLIC_DEPLOY:-1}
       API_PORT: "8787"
