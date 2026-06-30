@@ -2832,3 +2832,7 @@
 ### 4. PWA Print Styles — مُنجَز (2026-06-30، وكيل Sonnet)
 
 - [x] `[P2]` ⏱️L **PWA: Service Worker + Print Styles** — البنية الأساسية كانت موجودة (`manifest.json` RTL، `sw.js` v3: cache-first shell + SWR للأصول + network-first/TTL للـ API + background sync + push، وتسجيل في `AppSync.ts`). الناقص الوحيد **أنماط الطباعة** أُضيف: كتلة `@media print` (~100 سطر) في `app-overrides.css` خارج `@layer` — تُخفي الـ chrome (sidebar/tabs/toolbars/أزرار/dialogs)، `@page` A4، أبيض/أسود، عرض كامل، `break-inside: avoid` للبطاقات، فواصل صفحات لـ `[data-report-section]`، جداول بحدود وتكرار thead، روابط تُظهر href. 1319 أخضر (CSS فقط). مؤجَّل: background sync (مبني سلفًا)، تحديث جولة الإعداد (لا مكوّن tour موجود).
+
+### 3. مشغّل فيديو — Waveform (مُنجَز 2026-06-30، وكيل Sonnet)
+
+- جزء من بند §3 «مشغّل فيديو متقدم» (يبقى Transcript Sync فقط): أُضيف `useAudioWaveform.ts` (hook يجلب الوسائط، يفكّ الصوت عبر `AudioContext.decodeAudioData`، يستخرج 120 قمة عبر `downsamplePeaks` الموجود، cache per-src، AbortController + تدرّج صامت عند CORS/فشل) و`WaveformStrip` في `VideoPlayer.tsx` (أشرطة SVG، الجزء المُشغَّل بـ `--va-action`، تتدرّج لعرض الـ scrubber، aria-hidden، placeholderPeaks ديكوري عند تعذّر الفكّ). أعاد استخدام `features/montage/waveform.ts` (13 اختبارًا قائمًا) دون تكرار. 1319 أخضر.
