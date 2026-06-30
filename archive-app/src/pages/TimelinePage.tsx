@@ -1,7 +1,7 @@
 import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { motion } from "framer-motion";
-import { CalendarRange, CircleDot, ExternalLink, GitBranch, ListFilter } from "lucide-react";
+import { CalendarRange, CircleDot, Download, ExternalLink, GitBranch, ListFilter } from "lucide-react";
 
 import { PageHero } from "../components/ui/V1Primitives.jsx";
 import { EmptyState } from "../components/common/EmptyState.jsx";
@@ -14,6 +14,8 @@ import {
   buildTimelineLanes,
   timelineTypeTotals
 } from "../features/timeline/timelineSelectors.js";
+import { buildTimelineSvg } from "../features/timeline/timelineSvgExport.js";
+import { downloadArchiveBlob } from "../services/data-portability/browserDownload.js";
 
 const GRANULARITY_LABELS = { day: "يوم", week: "أسبوع", month: "شهر", year: "سنة" };
 const LANE_GROUP_LABELS = { all: "سلسلة واحدة", type: "حسب النوع", year: "حسب السنة", workflow: "حسب الحالة" };
@@ -50,6 +52,13 @@ export function TimelinePage() {
 
   const activeLane = lanesModel.lanes.find((lane: any) => lane.key === (activeNode as any)?.laneKey) || null;
   const activeBucket = activeLane?.buckets.find((bucket: any) => bucket.key === (activeNode as any)?.bucketKey) || null;
+
+  const exportSvg = React.useCallback(() => {
+    const svg = buildTimelineSvg(lanesModel, { exportedAt: new Date().toISOString() });
+    if (!svg) return;
+    downloadArchiveBlob(new Blob([svg], { type: "image/svg+xml" }), `timeline-${granularity}-${new Date().toISOString().slice(0, 10)}.svg`);
+  }, [lanesModel, granularity]);
+
   const openItem = (item: any) => {
     setSelectedItemId?.(item.id);
     setCurrentPage?.("detail");
@@ -98,10 +107,19 @@ export function TimelinePage() {
             }, value)) })
           ] })
         ] }),
-        jsxs("div", { className: "grid grid-cols-3 gap-2 text-xs sm:min-w-[22rem]", children: [
-          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "العناصر" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.total) })] }),
-          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الأشرطة" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.lanes.length) })] }),
-          jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الفترات" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(timeline.buckets.length) })] })
+        jsxs("div", { className: "flex flex-col gap-2 sm:min-w-[22rem]", children: [
+          jsxs("div", { className: "grid grid-cols-3 gap-2 text-xs", children: [
+            jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "العناصر" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.total) })] }),
+            jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الأشرطة" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(lanesModel.lanes.length) })] }),
+            jsxs("div", { className: "rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] p-3", children: [jsx("p", { className: "text-[var(--va-text-muted)]", children: "الفترات" }), jsx("p", { className: "mt-1 text-lg font-bold text-[var(--va-text)]", children: formatNumber(timeline.buckets.length) })] })
+          ] }),
+          lanesModel.lanes.length > 0 ? jsx("button", {
+            type: "button",
+            onClick: exportSvg,
+            className: "flex items-center justify-center gap-2 rounded-xl border border-[var(--va-border-soft)] bg-[var(--va-surface)] px-3 py-2 text-xs font-semibold text-[var(--va-text-2)] transition-colors hover:border-emerald-500/40 hover:text-[var(--va-text)]",
+            "aria-label": "تصدير SVG",
+            children: jsxs(React.Fragment, { children: [jsx(Download, { className: "h-3.5 w-3.5" }), "تصدير SVG"] })
+          }) : null
         ] })
       ] }),
       Object.keys(typeTotals).length > 0 ? jsx("section", {
