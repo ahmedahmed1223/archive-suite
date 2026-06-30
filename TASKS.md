@@ -41,7 +41,7 @@
 2. §5 ترحيل Laravel/Next — 5e.2-cutover (إشرافي، يدوي) + تحقّق حيّ مؤجَّل
 3. §22 دعم Microsoft SQL Server كـ backend — ⏱️XL
 
-**P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (مشغّل فيديو: Waveform/Transcript · علامة مائية+SRT/VTT/TTML) · §4 (PWA) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §6 (Conditional Fields · Dashboard widgets · GraphView) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
+**P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (مشغّل فيديو: Waveform/Transcript · علامة مائية+SRT/VTT/TTML) · §4 (PWA) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §6 (Dashboard widgets · GraphView) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
 
 **P3 — مؤجّل:** §6 بقية الصفحات · §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
 
@@ -129,12 +129,6 @@
 ## 6. تحسينات الصفحات والميزات (Per-Page UX) — تحقّق ثم نفّذ net-new
 
 > معظم البنود الصغيرة «الجاهزة» مُنفّذة سابقاً (راجع §0 وChangeLog). أدناه الأبرز net-new أو غير المؤكَّد.
-
-### AddVideoPage / الأنواع
-
-- [ ] `[P2]` ⏱️L **Conditional Fields Visual Builder + حقل Relation جديد** — واجهة بناء `normalizeShowWhen` + `{ id: "relation" }` في `FIELD_TYPE_OPTIONS` لربط المواد.
-  - الملفات: `archive-app/src/pages/TypesPage.jsx`، `RelationsPanel.jsx`.
-  - المصدر: new_tail (F8, F9).
 
 ### البحث / Dashboard
 
