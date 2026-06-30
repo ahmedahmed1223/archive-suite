@@ -2824,3 +2824,7 @@
 ### 6. GraphViewPage Cytoscape — مُنجَز مسبقًا (تحقّق 2026-06-30، وكيل Sonnet)
 
 - [x] `[P2]` ⏱️XL **GraphViewPage: تفعيل Cytoscape الكامل** — بند قديم في القائمة لكنه **مُنفَّذ بالكامل فعلاً** (تحقّق الوكيل، لا كود جديد): `GraphViewPage.tsx` + `features/graph/buildGraphModel.ts` (+14 اختبار) — force-directed (cose/concentric)، ألوان حسب النوع، حجم حسب الـ degree (mapData)، zoom/pan + أزرار، فلاتر type/tag/layout، hover/click highlight، lazy import لـ cytoscape (سطر 424). الروابط من: وسوم مشتركة + collections + علاقات يدوية (`itemRelations`). 1288 اختبارًا أخضر دون تغيير.
+
+### 6. Dashboard Widget Gallery + Getting-Started Checklist (مُنجَز 2026-06-30، وكيل Sonnet)
+
+- [x] `[P2]` ⏱️M **Dashboard: Widget Gallery + DnD + Getting-Started Checklist** — الـ DnD (`DashboardGrid`+`dashboardLayoutModel`) كان موجودًا؛ أُضيف: `widgetGalleryModel.ts` (listWidgets/toggle/add/remove يلفّ `setPanelHidden`) + `WidgetGallery.tsx` (لوحة إظهار/إخفاء في وضع التحرير)، و`checklistModel.ts` (`buildGettingStartedChecklist` نقي يحسب 6 خطوات من حالة حقيقية: نوع/مادة/رفع/مجموعة/نسخة احتياطية/حماية + dismiss عبر `dismissedBanners`) + `GettingStartedChecklist.tsx` (بطاقة بشريط تقدّم). +31 اختبار TDD (19 checklist + 12 gallery). 1288→1319 أخضر. مؤجَّل: تمرير uploads slice مخصّص (fallback يفحص filePath/metadata).

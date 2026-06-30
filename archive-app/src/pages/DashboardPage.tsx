@@ -62,6 +62,14 @@ import {
   setPanelAutoHeight,
   hasDashboardLayoutDraftChanges
 } from "../features/dashboard/dashboardLayoutModel.js";
+import {
+  buildGettingStartedChecklist,
+  isChecklistDismissed,
+  dismissChecklist,
+  CHECKLIST_BANNER_ID
+} from "../features/dashboard/checklistModel.js";
+import { GettingStartedChecklist } from "../features/dashboard/GettingStartedChecklist.jsx";
+import { WidgetGallery } from "../features/dashboard/WidgetGallery.jsx";
 import { DashboardGrid } from "../features/dashboard/DashboardGrid.jsx";
 import { appConfirm } from "../components/common/ConfirmDialog.js";
 import { createArchiveRouteParams } from "../features/archive/viewModel.js";
@@ -609,6 +617,23 @@ export function DashboardPage() {
   const toggleDashAuto = (id: any) => setWorkingLayout((l: any) => { const base = l || savedDashboardLayout; return setPanelAutoHeight(base, id, !(base.items[id]?.autoHeight !== false)); });
   const hiddenDashPanels = DASHBOARD_PANEL_IDS.filter((id: any) => activeDashLayout.items[id]?.hidden);
 
+  // Getting-Started Checklist
+  const checklistSteps = React.useMemo(() => buildGettingStartedChecklist({
+    videoItems,
+    contentTypes,
+    virtualCollections,
+    settings
+  }), [videoItems, contentTypes, virtualCollections, settings]);
+  const checklistDismissed = isChecklistDismissed(settings);
+  const showChecklist = !checklistDismissed;
+  const handleDismissChecklist = async () => {
+    await updateSettings({ ui: { ...(settings.ui || {}), dismissedBanners: dismissChecklist(settings) } });
+  };
+
+  // Widget Gallery visibility toggle (inline panel, shown only while editing)
+  const [showWidgetGallery, setShowWidgetGallery] = React.useState(false);
+  React.useEffect(() => { if (!dashEditing) setShowWidgetGallery(false); }, [dashEditing]);
+
   return jsxs(MotionPage, {
     className: "space-y-2 p-4 sm:p-5 xl:p-6",
     children: [
@@ -631,7 +656,8 @@ export function DashboardPage() {
             children: [
               jsxs("button", { type: "button", onClick: saveDashEditing, className: "btn btn-sm btn-primary gap-2", children: [jsx(Save, { className: "h-4 w-4" }), "حفظ"] }, "save"),
               jsxs("button", { type: "button", onClick: cancelDashEditing, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-3 py-1.5 text-sm font-normal text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: [jsx(X, { className: "h-4 w-4" }), "إلغاء"] }, "cancel"),
-              jsxs("button", { type: "button", onClick: resetDashLayout, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-3 py-1.5 text-sm font-normal text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: [jsx(RotateCcw, { className: "h-4 w-4" }), "استعادة الافتراضي"] }, "reset")
+              jsxs("button", { type: "button", onClick: resetDashLayout, className: "btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border border-[var(--va-border-soft)] px-3 py-1.5 text-sm font-normal text-[var(--va-text-2)] hover:bg-[var(--va-surface-2)]", children: [jsx(RotateCcw, { className: "h-4 w-4" }), "استعادة الافتراضي"] }, "reset"),
+              jsxs("button", { type: "button", onClick: () => setShowWidgetGallery((v: boolean) => !v), "aria-pressed": showWidgetGallery, className: `btn btn-sm btn-ghost inline-flex min-h-9 items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-normal hover:bg-[var(--va-surface-2)] ${showWidgetGallery ? "va-accent-border va-accent-text-on-soft va-accent-bg-soft" : "border-[var(--va-border-soft)] text-[var(--va-text-2)]"}`, children: [jsx(LayoutGrid, { className: "h-4 w-4" }), "اللوحات"] }, "gallery")
             ]
           }),
           hiddenDashPanels.length === 0
@@ -642,6 +668,18 @@ export function DashboardPage() {
               ] }, "hidden-list")
         ]
       }, "dash-toolbar"),
+      dashEditing && showWidgetGallery && jsx(WidgetGallery, {
+        layout: activeDashLayout,
+        panelTitles: DASHBOARD_PANEL_TITLES,
+        onLayoutChange: setWorkingLayout,
+        onClose: () => setShowWidgetGallery(false)
+      }, "widget-gallery"),
+
+      showChecklist && jsx(GettingStartedChecklist, {
+        steps: checklistSteps,
+        onDismiss: handleDismissChecklist
+      }, "getting-started"),
+
       jsx(DashboardGrid, {
         titles: DASHBOARD_PANEL_TITLES,
         layout: activeDashLayout,
