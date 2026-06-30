@@ -2837,6 +2837,10 @@
 
 - جزء من بند §3 «مشغّل فيديو متقدم» (يبقى Transcript Sync فقط): أُضيف `useAudioWaveform.ts` (hook يجلب الوسائط، يفكّ الصوت عبر `AudioContext.decodeAudioData`، يستخرج 120 قمة عبر `downsamplePeaks` الموجود، cache per-src، AbortController + تدرّج صامت عند CORS/فشل) و`WaveformStrip` في `VideoPlayer.tsx` (أشرطة SVG، الجزء المُشغَّل بـ `--va-action`، تتدرّج لعرض الـ scrubber، aria-hidden، placeholderPeaks ديكوري عند تعذّر الفكّ). أعاد استخدام `features/montage/waveform.ts` (13 اختبارًا قائمًا) دون تكرار. 1319 أخضر.
 
+### 3. مشغّل فيديو — Transcript Sync مُغلق (تحقّق 2026-06-30)
+
+- [x] `[P2]` ⏱️L **مشغّل فيديو متقدم في DetailPage** — أُغلق المتبقّي الأخير بعد التحقق من التنفيذ الموجود: `TranscriptSyncWorkbench` داخل `DetailPage.tsx` يقرأ `getTranscriptSegments`, يتابع `playbackTime`, يبرز السطر النشط، يتيح البحث داخل التفريغ، ويقفز للفيديو عبر `seekToBookmark`. `VideoPlayer.tsx` يعرض `SubtitleRenderer` فوق الفيديو، و`subtitleParser.ts`/`transcriptToSrt.ts` يدعمان SRT/VTT واستنتاج cues من segments. التحقق: `pnpm --filter @archive/app run test -- src/features/media/subtitleParser.test.ts src/features/media/transcriptToSrt.test.ts src/components/media/VideoPlayer.test.tsx` مرّ ضمن 147 ملف اختبار / 1319 اختبار. لا كود جديد؛ تحديث حالة المهمة فقط.
+
 ### Hardening — ثغرات تدقيق cutover + SQL Server (2026-06-30، وكيل Sonnet)
 
 - 🔴 `archive-server/src/index.ts`: `buildExtraHealth` صار يأخذ `databaseEngine` ويحرس استعلام `pg_extension` (vector) على postgres فقط؛ غير postgres يُرجع `{ok:false, skipped:true, reason:"not-postgres"}` بلا خطأ مضلّل في `/api/health`. +اختبار `buildExtraHealth.test.ts` (3 حالات).

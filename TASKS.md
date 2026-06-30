@@ -34,12 +34,12 @@
 
 ## ابدأ من هنا — ترتيب التنفيذ المقترح (للوكيل المنفّذ)
 
-> 25 بنداً متبقّياً (لا يوجد P0 — كلها مُنجَزة). نفّذ بنداً واحداً في كل مرة، بوابة `pnpm verify` ثم دمج بعد كل بند. التفاصيل في الأقسام أدناه.
+> 24 بنداً متبقّياً (لا يوجد P0 — كلها مُنجَزة). نفّذ بنداً واحداً في كل مرة، بوابة `pnpm verify` ثم دمج بعد كل بند. التفاصيل في الأقسام أدناه.
 
 **P1 — أولاً:**
 1. §1 تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3) — ⏱️XL
 
-**P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (مشغّل فيديو: Waveform/Transcript · علامة مائية+SRT/VTT/TTML) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
+**P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (علامة مائية+SRT/VTT/TTML) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
 
 **P3 — مؤجّل:** §6 بقية الصفحات · §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
 
@@ -89,9 +89,10 @@
 
 > الحالة: ProjectsPage فيه `roughCuts`/`inSec/outSec`/transitions/looks/filters/EDL+JSON+MP4 لكن **قائمة نصية بلا خط زمني مرئي** (تم التحقق: لا `MultiTrack`).
 
-- [~] `[P2]` ⏱️L **مشغّل فيديو متقدم في DetailPage** — Frame stepping (`,`/`.`) + Mark In/Out + «أضف لمشروع» مباشرة + Waveform + Transcript Sync.
+- [x] `[P2]` ⏱️L **مشغّل فيديو متقدم في DetailPage** — Frame stepping (`,`/`.`) + Mark In/Out + «أضف لمشروع» مباشرة + Waveform + Transcript Sync.
   - ✅ Frame stepping + Mark In/Out + «أضف لمشروع» + **Waveform** مُنجَز (2026-06-30) — راجع [`ChangeLog.md`](ChangeLog.md).
-  - متبقّي: **Transcript Sync فقط** (جزئياً موجود في TranscriberPage).
+  - ✅ Transcript Sync كان منفذاً بالفعل داخل `DetailPage`: `TranscriptSyncWorkbench` يتابع وقت التشغيل، يبرز السطر النشط، يسمح بالبحث والقفز للزمن، ويشتق cues للترجمة من التفريغ الزمني أو من SRT/VTT مستورد. دعمه `SubtitleRenderer`, `subtitleParser`, و`transcriptToSrt`.
+  - ✅ التحقق: `pnpm --filter @archive/app run test -- src/features/media/subtitleParser.test.ts src/features/media/transcriptToSrt.test.ts src/components/media/VideoPlayer.test.tsx` مرّ ضمن 147 ملف اختبار / 1319 اختبار.
   - الملفات: `archive-app/src/components/media/VideoPlayer.tsx` + `archive-app/src/pages/DetailPage.tsx` + `archive-app/src/components/media/VideoPlayer.test.tsx`.
   - المصدر: new_tail (F19, F20).
 
