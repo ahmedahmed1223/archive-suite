@@ -124,6 +124,9 @@ export function buildFileStore(options: BuildFileStoreOptions = {}) {
 // backend = "postgres"   → expects a pre-built Prisma client (caller controls
 //                          its lifecycle so tests can inject a fake) and uses
 //                          cloud-postgres-prisma
+// backend = "sqlserver"  → same Prisma-backed storage port as postgres; the
+//                          generated Prisma provider/driver is selected at
+//                          deploy time by DATABASE_PROVIDER.
 //
 // Defaults to pocketbase for backward compatibility with the v0.1 deploy.
 export function registerCloudProviders(options: RegisterCloudProvidersOptions = {}): RegisterResult {
@@ -166,10 +169,10 @@ export function registerCloudProviders(options: RegisterCloudProvidersOptions = 
     return { files, sync, ai };
   };
 
-  if (backend === "postgres") {
+  if (backend === "postgres" || backend === "sqlserver") {
     if (!options.prisma) {
       throw new Error(
-        "Postgres backend requires `options.prisma` — instantiate PrismaClient in your app entry and pass it in."
+        "Prisma SQL backend requires `options.prisma` — instantiate PrismaClient in your app entry and pass it in."
       );
     }
     const provider = createPostgresStorageProvider(options.prisma as any);
@@ -186,5 +189,5 @@ export function registerCloudProviders(options: RegisterCloudProvidersOptions = 
     return { backend, engine: "pocketbase", provider, client, ...wireAdditionalPorts(provider) };
   }
 
-  throw new Error(`Unknown backend "${backend}" — expected "postgres" or "pocketbase".`);
+  throw new Error(`Unknown backend "${backend}" — expected "postgres", "sqlserver", or "pocketbase".`);
 }

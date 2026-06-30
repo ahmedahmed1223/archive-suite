@@ -1780,7 +1780,7 @@ function createMemoryByteStorage(initialBytes = null) {
 run("backend choice — defaults to local when storage is empty or absent", () => {
   assert.equal(DEFAULT_BACKEND, "local");
   assert.equal(DEFAULT_LOCAL_ENGINE, "indexeddb");
-  assert.deepEqual([...BACKEND_CHOICES], ["local", "pocketbase", "postgres", "firebase"]);
+  assert.deepEqual([...BACKEND_CHOICES], ["local", "pocketbase", "postgres", "sqlserver", "firebase"]);
   // No storage at all → default.
   assert.equal(getBackendChoice({ storage: null }), "local");
   // Empty storage → default.
@@ -1795,6 +1795,7 @@ run("backend choice — normalize accepts only the known set", () => {
   assert.equal(normalizeBackendChoice("local"), "local");
   assert.equal(normalizeBackendChoice("pocketbase"), "pocketbase");
   assert.equal(normalizeBackendChoice("postgres"), "postgres");
+  assert.equal(normalizeBackendChoice("sqlserver"), "sqlserver");
   assert.equal(normalizeBackendChoice("firebase"), "firebase");
   assert.equal(normalizeBackendChoice("mysql"), "local");
   assert.equal(normalizeBackendChoice(""), "local");
@@ -1822,6 +1823,12 @@ run("backend choice — round-trip set/get with URL pairing", () => {
   assert.equal(setBackendChoice("postgres", "https://db.example.com/api", { storage }), true);
   assert.equal(getBackendChoice({ storage }), "postgres");
   assert.equal(getBackendUrl({ storage }), "https://db.example.com/api");
+
+  // SQL Server is a first-class server backend choice and uses the same cloud
+  // API surface as the other archive-server deployments.
+  assert.equal(setBackendChoice("sqlserver", "https://mssql.example.com/api", { storage }), true);
+  assert.equal(getBackendChoice({ storage }), "sqlserver");
+  assert.equal(getBackendUrl({ storage }), "https://mssql.example.com/api");
 
   // Firebase keeps its client config with the backend choice.
   const firebaseConfig = { apiKey: "k", projectId: "archive-test", appId: "app" };

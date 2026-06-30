@@ -2,7 +2,7 @@ import * as React from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { CheckCircle2, Circle, Database, Server, Wifi, WifiOff, X, Zap } from "lucide-react";
 
-const BACKEND_LABELS = { postgres: "PostgreSQL", pocketbase: "PocketBase", local: "محلي" };
+const BACKEND_LABELS = { postgres: "PostgreSQL", sqlserver: "SQL Server", pocketbase: "PocketBase", local: "محلي" };
 
 function StatusRow({ label, value, ok, placeholder }: any) {
   return jsxs("div", {
@@ -35,6 +35,7 @@ function StatusRow({ label, value, ok, placeholder }: any) {
 export function PresetConfigScreen({ config, onUsePreset, onManualSetup }: any) {
   const backendLabel = (BACKEND_LABELS as any)[config?.backend] || config?.backend || "—";
   const isPostgres = config?.backend === "postgres";
+  const isSqlServer = config?.backend === "sqlserver";
   const isPocketBase = config?.backend === "pocketbase";
 
   return jsxs("div", {
@@ -72,11 +73,11 @@ export function PresetConfigScreen({ config, onUsePreset, onManualSetup }: any) 
             ok: !!config?.pocketbaseUrl,
             placeholder: "غير مُعدّ"
           }),
-          isPostgres && jsx(StatusRow, {
-            label: "قاعدة بيانات PostgreSQL",
-            value: config?.hasDatabaseUrl ? "DATABASE_URL موجود ✓" : null,
+          (isPostgres || isSqlServer) && jsx(StatusRow, {
+            label: isSqlServer ? "قاعدة بيانات SQL Server" : "قاعدة بيانات PostgreSQL",
+            value: config?.hasDatabaseUrl ? `${isSqlServer ? "SQLSERVER_URL" : "DATABASE_URL"} موجود ✓` : null,
             ok: !!config?.hasDatabaseUrl,
-            placeholder: "DATABASE_URL غير موجود"
+            placeholder: isSqlServer ? "SQLSERVER_URL غير موجود" : "DATABASE_URL غير موجود"
           }),
 
           jsxs("div", {

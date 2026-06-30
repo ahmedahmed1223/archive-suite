@@ -1,5 +1,5 @@
 // @ts-nocheck
-const CLOUD_BACKENDS = new Set(["postgres", "pocketbase"]);
+const CLOUD_BACKENDS = new Set(["postgres", "sqlserver", "pocketbase"]);
 const FILE_STORE_KINDS = new Set(["disk", "s3", "dropbox", "azure", "gdrive", "ftp", "smb", "sftp", "webdav"]);
 
 export const DEFAULT_FILE_STORE_PROVIDERS = Object.freeze([

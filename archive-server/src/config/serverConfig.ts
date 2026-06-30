@@ -87,7 +87,9 @@ export function resolveDatabaseUrl({
     : "";
   const envEngine = env.DATABASE_PROVIDER
     ? normalizeDatabaseEngine(env.DATABASE_PROVIDER)
-    : "";
+    : String(env.BACKEND || "").toLowerCase() === "sqlserver"
+      ? "sqlserver"
+      : "";
   const defaultEngine =
     env.POSTGRES_PASSWORD || env.POSTGRES_USER
       ? DEFAULT_DATABASE_ENGINE
@@ -101,10 +103,13 @@ export function resolveDatabaseUrl({
       source: "file",
     };
   }
-  if (env.DATABASE_URL && isValidDatabaseUrl(env.DATABASE_URL, envEngine || undefined)) {
-    const parsed = parseDatabaseUrl(env.DATABASE_URL, envEngine || undefined);
+  const envDatabaseUrl = envEngine === "sqlserver" && env.SQLSERVER_URL
+    ? env.SQLSERVER_URL
+    : env.DATABASE_URL;
+  if (envDatabaseUrl && isValidDatabaseUrl(envDatabaseUrl, envEngine || undefined)) {
+    const parsed = parseDatabaseUrl(envDatabaseUrl, envEngine || undefined);
     return {
-      url: env.DATABASE_URL || "",
+      url: envDatabaseUrl || "",
       engine: parsed?.engine || envEngine || DEFAULT_DATABASE_ENGINE,
       source: "env",
     };

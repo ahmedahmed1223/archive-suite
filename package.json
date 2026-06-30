@@ -44,6 +44,7 @@
     "verify:cloud-deploy": "node scripts/verify-cloud-deploy.mjs",
     "docker:config": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml config",
     "docker:config:postgres": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.postgres.yml config",
+    "docker:config:sqlserver": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.sqlserver.yml config",
     "release:verify": "pnpm run verify:typescript-migration && pnpm run verify && pnpm run build:spa && pnpm run build:cloud && pnpm run security:baseline && node scripts/verify-release-readiness.mjs",
     "setup": "node scripts/setup.mjs",
     "deploy": "node scripts/deploy-wizard.mjs",

@@ -28,6 +28,10 @@ async function testPostgresReachability(databaseUrl: string): Promise<boolean> {
   }
 }
 
+function isDatabaseBackend(backend: string): boolean {
+  return backend === "postgres" || backend === "sqlserver";
+}
+
 function firstConfigured(env: Record<string, string | undefined>, names: string[] = []): string {
   for (const name of names) {
     const value = String(env?.[name] || "").trim();
@@ -103,7 +107,7 @@ export async function getPresetConfig({
   const backend = String(env[ONBOARDING_CONFIG.backend] || "pocketbase").toLowerCase();
   const serverUrl = String(env[ONBOARDING_CONFIG.serverUrl] || "").replace(/\/+$/, "");
   const pocketbaseUrl = String(env.POCKETBASE_URL || "");
-  const databaseUrl = String(env.DATABASE_URL || "");
+  const databaseUrl = String(backend === "sqlserver" ? env.SQLSERVER_URL || env.DATABASE_URL || "" : env.DATABASE_URL || "");
   const adminUsername = String(env[ONBOARDING_CONFIG.adminUsername] || env.ADMIN_EMAIL || "admin");
   const adminPassword = String(env[ONBOARDING_CONFIG.adminPassword] || "");
   const adminEmail = String(env.ADMIN_EMAIL || "");
@@ -113,7 +117,7 @@ export async function getPresetConfig({
   const hasAdminPassword = Boolean(adminPassword);
   const hasJwtSecret = Boolean(authSecret);
   const hasMasterKey = Boolean(env.MASTER_KEY || env.BACKUP_ENCRYPTION_KEY);
-  const databaseConfigured = backend === "postgres" && Boolean(
+  const databaseConfigured = isDatabaseBackend(backend) && Boolean(
     databaseUrl || env.POSTGRES_USER || env.POSTGRES_PASSWORD || testDatabase
   );
 
@@ -121,7 +125,7 @@ export async function getPresetConfig({
   try {
     if (backend === "pocketbase" && pocketbaseUrl) {
       dbReachable = await testPocketBase(pocketbaseUrl);
-    } else if (backend === "postgres" && databaseConfigured) {
+    } else if (isDatabaseBackend(backend) && databaseConfigured) {
       dbReachable = await testDatabase(databaseUrl, env as Record<string, string | undefined>);
     }
   } catch (err) {
@@ -157,7 +161,7 @@ export async function getPresetConfig({
       providers
     },
     pocketbaseUrl: backend === "pocketbase" ? pocketbaseUrl : "",
-    hasDatabaseUrl: backend === "postgres" && !!databaseUrl,
+    hasDatabaseUrl: isDatabaseBackend(backend) && !!databaseUrl,
     adminEmail: adminEmail || adminUsername,
     hasAdminEmail,
     hasAdminPassword,

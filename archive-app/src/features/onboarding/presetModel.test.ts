@@ -28,5 +28,12 @@ describe("onboarding preset model", () => {
       storageUrl: ""
     });
   });
+
+  it("keeps SQL Server as a cloud backend preset", () => {
+    expect(selectBackendPreset({ ...preset, backend: "sqlserver" }, "sqlserver")).toMatchObject({
+      storageChoice: "sqlserver",
+      storageUrl: ""
+    });
+  });
 });
 

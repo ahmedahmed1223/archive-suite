@@ -85,8 +85,10 @@ import {
 import { normalizeRoleProfileId } from "./roleProfiles.js";
 import { seedDemoData } from "./DemoModeSeeder.js";
 
-const STORAGE_ICONS = { local: Laptop, postgres: Server, pocketbase: Cloud, firebase: Flame };
+const STORAGE_ICONS = { local: Laptop, postgres: Server, sqlserver: Database, pocketbase: Cloud, firebase: Flame };
 const DEFAULT_PORT_BY_ENGINE = { postgresql: "5432", mysql: "3306", sqlserver: "1433" };
+const SERVER_STORAGE_BACKENDS = new Set(["postgres", "sqlserver", "pocketbase"]);
+const DATABASE_STORAGE_BACKENDS = new Set(["postgres", "sqlserver"]);
 
 const FIRST_TASK_OPTIONS = [
   { id: "dashboard", label: "مركز التحكم", detail: "ابدأ من جاهزية اليوم والإجراءات السريعة.", icon: LayoutGrid },
@@ -302,7 +304,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   const steps = React.useMemo(() => {
     let list = EXTRA_STEPS;
     if (!replayMode && securityMode === "quick") list = list.filter((step: any) => step.id !== "admin");
-    if (storageChoice !== "postgres" && storageChoice !== "pocketbase") list = list.filter((step: any) => step.id !== "file-store");
+    if (!SERVER_STORAGE_BACKENDS.has(storageChoice)) list = list.filter((step: any) => step.id !== "file-store");
     if (!replayMode && advancedSetupMode === "basic") list = list.filter((step: any) => step.tier !== "advanced");
     return list;
   }, [advancedSetupMode, replayMode, securityMode, storageChoice]);
@@ -343,7 +345,8 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
   // nothing. A loose http(s) check keeps the error helpful without being a
   // full URL parser.
   const selectedStorageOption = availableStorageOptions.find((option: any) => option.id === storageChoice);
-  const storageUsesServer = storageChoice === "postgres" || storageChoice === "pocketbase";
+  const storageUsesServer = SERVER_STORAGE_BACKENDS.has(storageChoice);
+  const storageUsesDatabaseServer = DATABASE_STORAGE_BACKENDS.has(storageChoice);
   const storageAllowsSameOrigin = Boolean(selectedStorageOption?.allowsSameOrigin);
   const storageUrlValid = !storageUsesServer
     || (storageAllowsSameOrigin && !storageUrl.trim())
@@ -397,7 +400,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
         await loginToCloud({ baseUrl: storageUrl.trim(), username: cloudUsername.trim(), password: cloudPassword });
       }
       const health = await fetchServerHealth({ baseUrl: storageUrl.trim() });
-      if (storageChoice === "postgres" && serverDbUrl.trim()) {
+      if (storageUsesDatabaseServer && serverDbUrl.trim()) {
         const db = await testDbConnection({
           engine: serverEngine,
           url: storageDbCandidateUrl(),
@@ -833,7 +836,8 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             active: storageChoice === option.id,
             onClick: () => {
               setStorageChoice(option.id);
-              if (option.id === "postgres" || option.id === "pocketbase") {
+              if (option.engine) changeServerEngine(option.engine);
+              if (SERVER_STORAGE_BACKENDS.has(option.id)) {
                 const next = selectBackendPreset(presetConfig || {}, option.id);
                 setStorageUrl(next.storageUrl);
                 setCloudUsername(next.cloudUsername);
@@ -907,7 +911,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
             !firebaseConfigState.ok && jsx("p", { className: "mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100", children: `حقول مطلوبة: ${firebaseConfigState.errors.join(", ")}` })
           ]
         }),
-        storageChoice === "postgres" && jsxs("section", {
+        storageUsesDatabaseServer && jsxs("section", {
           className: "rounded-2xl border border-[var(--va-border-soft)] bg-white/[0.03] p-4",
           "aria-label": "إعداد SQL",
           children: [
@@ -999,7 +1003,7 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                 jsx("p", {
                   className: "mt-1 max-w-2xl text-xs leading-6 text-[var(--va-text-muted)]",
                   children: storageChoice === "local"
-                    ? "الوضع المحلي لا يحتاج خادمًا. هذه الخيارات تصبح مهمة عند الانتقال إلى Postgres أو PocketBase."
+                    ? "الوضع المحلي لا يحتاج خادمًا. هذه الخيارات تصبح مهمة عند الانتقال إلى Postgres أو SQL Server أو PocketBase."
                     : "اختر طريقة التعامل مع تحديثات archive-server حتى يعرف المشغل هل البيئة إنتاجية مستقرة أم اختبارية."
                 })
               ] }),
@@ -1243,13 +1247,15 @@ export function V1OnboardingWizard({ open, mode = "startup", onComplete, onCance
                     ? jsx(PresetConfigScreen, {
                         config: presetConfig,
                         onUsePreset: () => {
-                          if ((presetConfig as any).backend === "pocketbase" || (presetConfig as any).backend === "postgres") {
+                          if (SERVER_STORAGE_BACKENDS.has((presetConfig as any).backend)) {
                             const form = createPresetFormState(presetConfig);
                             setStorageChoice(form.storageChoice);
                             setStorageUrl(form.storageUrl);
                             setCloudUsername(form.cloudUsername);
                             setCloudPassword(form.cloudPassword);
                             setFileStoreChoice(form.fileStoreChoice);
+                            const option = ONBOARDING_STORAGE_OPTIONS.find((option: any) => option.id === form.storageChoice);
+                            if ((option as any)?.engine) changeServerEngine((option as any).engine);
                           }
                           setShowPresetScreen(false);
                           const lastStep = steps[steps.length - 1];
