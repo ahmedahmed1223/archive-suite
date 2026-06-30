@@ -2816,3 +2816,7 @@
 ### 6. TimelinePage — تصدير SVG (مُنجَز 2026-06-30، وكيل Sonnet)
 
 - [x] `[P2]` ⏱️L **TimelinePage أفقي + Zoom levels + Export SVG** — الأفقي و4 مستويات granularity (day/week/month/year) كانت موجودة سلفًا؛ أُضيف `timelineSvgExport.ts` (دالة نقية `buildTimelineSvg` تُنتج SVG مستقل: محور زمني، صفوف lanes، دوائر بحجم العدد، روابط، XML escaping) + 11 اختبار TDD + زر «تصدير SVG» يعيد استخدام `downloadArchiveBlob` (بلا dependency). 1261→1272 أخضر. **PDF مؤجَّل** (لا يوجد pdf helper محلي في archive-app؛ يُضاف عند توفّر مكتبة client-side — ponytail).
+
+### 6. Conditional Fields Visual Builder + حقل Relation (مُنجَز 2026-06-30، وكيل Sonnet)
+
+- [x] `[P2]` ⏱️L **Conditional Fields Visual Builder + حقل Relation** — أُضيف نوع `{ id: "relation" }` إلى `FIELD_TYPE_OPTIONS` (محدّد عناصر أرشيف في `AddVideoPage.FieldInput`)، ومكوّن `ShowWhenBuilder` في `TypesPage` يدور حول شكل `showWhen` الموجود (`{fieldKey, equals}`، عامل المساواة فقط). +16 اختبار TDD. 1272→1288 أخضر. مؤجَّل: relation في DetailPage.

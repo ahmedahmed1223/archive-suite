@@ -16,7 +16,8 @@ export const FIELD_TYPE_OPTIONS = [
   { id: "duration", label: "مدة" },
   { id: "thumbnail", label: "صورة مصغرة" },
   { id: "localFile", label: "ملف محلي" },
-  { id: "rating", label: "تقييم" }
+  { id: "rating", label: "تقييم" },
+  { id: "relation", label: "ارتباط بعنصر" }
 ];
 
 const FIELD_TYPE_IDS = new Set(FIELD_TYPE_OPTIONS.map((item) => item.id));

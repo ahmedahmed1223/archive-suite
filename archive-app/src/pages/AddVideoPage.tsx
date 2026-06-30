@@ -212,6 +212,8 @@ function LocalFilePicker({ value, onFileSelect, inputId }: any) {
 function FieldInput({ field, value, onChange, inputId }: any) {
   const key = fieldKey(field);
   const commonClass = "input input-bordered w-full";
+  // ponytail: only used for relation type; hoisted unconditionally to satisfy Rules of Hooks
+  const videoItems = useAppStore((state: any) => field.type === "relation" ? (state.videoItems || []).filter((item: any) => !item.isDeleted) : []);
   if (field.type === "textarea" || field.type === "transcript") {
     return jsx("textarea", { id: inputId, value: value || "", onChange: (event: any) => onChange(key, event.target.value), rows: 3, className: `${commonClass} p-3`, placeholder: field.placeholder || field.label });
   }
@@ -246,6 +248,12 @@ function FieldInput({ field, value, onChange, inputId }: any) {
   }
   if (field.type === "rating") {
     return jsx("div", { className: "flex min-h-11 items-center", children: jsx(StarRating, { value: Number(value) || 0, onChange: (val: any) => onChange(key, val) }) });
+  }
+  if (field.type === "relation") {
+    return jsxs("select", { id: inputId, value: value || "", onChange: (event: any) => onChange(key, event.target.value), className: commonClass, children: [
+      jsx("option", { value: "", children: "اختر عنصراً..." }, "empty"),
+      ...videoItems.map((item: any) => jsx("option", { value: item.id, children: item.title || item.name || item.id }, item.id))
+    ] });
   }
   return jsx("input", { id: inputId, type: field.type === "number" ? "number" : field.type === "date" ? "date" : field.type === "url" ? "url" : "text", value: value || "", onChange: (event: any) => onChange(key, event.target.value), className: commonClass, placeholder: field.placeholder || field.label });
 }

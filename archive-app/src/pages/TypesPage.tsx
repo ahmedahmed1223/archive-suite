@@ -185,6 +185,53 @@ function SubtypesEditor({ draft, setDraft }: any) {
 
 const FIELD_OPTION_TYPES = ["select", "tags", "radio", "multiselect"];
 
+/**
+ * Visual "show-when" condition builder: one row — {field, equals value}.
+ * Produces/edits the same { fieldKey, equals } shape that normalizeShowWhen consumes.
+ * Only supports the single operator normalizeShowWhen evaluates (equals / membership).
+ */
+function ShowWhenBuilder({ showWhen, fields, currentFieldId, onChange }: any) {
+  const candidates = (fields || []).filter((f: any) => f.id !== currentFieldId);
+  const selectedKey = showWhen?.fieldKey || "";
+  const selectedValue = showWhen?.equals ?? "";
+  const selectedField = candidates.find((f: any) => (f.storageKey || f.name) === selectedKey);
+  const hasOptions = selectedField && FIELD_OPTION_TYPES.includes(selectedField.type);
+
+  return jsxs("div", { className: "mt-1 grid gap-2 sm:grid-cols-[1fr_auto_1fr]", children: [
+    jsxs("select", {
+      value: selectedKey,
+      onChange: (e: any) => onChange(e.target.value ? { fieldKey: e.target.value, equals: selectedValue } : null),
+      className: "select select-bordered w-full",
+      "aria-label": "الحقل المحدِّد",
+      children: [
+        jsx("option", { value: "", children: "دائماً (بلا شرط)" }),
+        ...candidates.map((f: any) => jsx("option", { value: f.storageKey || f.name, children: f.label }, f.id))
+      ]
+    }),
+    jsx("span", { className: "flex items-center justify-center text-xs text-[var(--va-text-muted)] px-1", children: "=" }),
+    hasOptions
+      ? jsxs("select", {
+          value: String(selectedValue),
+          disabled: !selectedKey,
+          onChange: (e: any) => onChange(selectedKey ? { fieldKey: selectedKey, equals: e.target.value } : null),
+          className: "select select-bordered w-full disabled:opacity-40",
+          "aria-label": "القيمة المطلوبة",
+          children: [
+            jsx("option", { value: "", children: "أي قيمة" }),
+            ...(selectedField?.options || []).map((opt: any) => jsx("option", { value: opt, children: opt }, opt))
+          ]
+        })
+      : jsx("input", {
+          value: String(selectedValue),
+          disabled: !selectedKey,
+          onChange: (e: any) => onChange(selectedKey ? { fieldKey: selectedKey, equals: e.target.value } : null),
+          placeholder: "القيمة المطلوبة",
+          className: "input input-bordered w-full disabled:opacity-40",
+          "aria-label": "القيمة المطلوبة"
+        })
+  ] });
+}
+
 function FieldsEditor({ draft, setDraft, fieldUsage = {} }: any) {
   const [fieldDraft, setFieldDraft] = React.useState({ label: "", type: "text", options: "", required: false, group: "" });
   const [editingFieldId, setEditingFieldId] = React.useState(null);
@@ -334,13 +381,12 @@ function FieldsEditor({ draft, setDraft, fieldUsage = {} }: any) {
             ] }),
             jsxs("div", { className: "block text-xs text-[var(--va-text-muted)] sm:col-span-2", children: [
               jsx("span", { className: "block", children: "إظهار شرطي — أظهر هذا الحقل فقط عندما يساوي حقلٌ آخر قيمةً معيّنة" }),
-              jsxs("div", { className: "mt-1 grid gap-2 sm:grid-cols-2", children: [
-                jsxs("select", { value: field.showWhen?.fieldKey || "", onChange: (event: any) => updateField(field.id, { showWhen: event.target.value ? { fieldKey: event.target.value, equals: field.showWhen?.equals ?? "" } : null }), className: "select select-bordered w-full", children: [
-                  jsx("option", { value: "", children: "دائماً (بلا شرط)" }),
-                  ...fields.filter((other: any) => other.id !== field.id).map((other: any) => jsx("option", { value: other.storageKey || other.name, children: other.label }, other.id))
-                ] }),
-                jsx("input", { value: field.showWhen?.equals ?? "", onChange: (event: any) => updateField(field.id, { showWhen: field.showWhen?.fieldKey ? { fieldKey: field.showWhen.fieldKey, equals: event.target.value } : null }), disabled: !field.showWhen?.fieldKey, placeholder: "القيمة المطلوبة", className: "input input-bordered w-full disabled:opacity-40" })
-              ] })
+              jsx(ShowWhenBuilder, {
+                showWhen: field.showWhen,
+                fields,
+                currentFieldId: field.id,
+                onChange: (showWhen: any) => updateField(field.id, { showWhen })
+              })
             ] })
           ] }) : null
         ]
