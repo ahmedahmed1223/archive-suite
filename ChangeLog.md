@@ -2836,3 +2836,11 @@
 ### 3. مشغّل فيديو — Waveform (مُنجَز 2026-06-30، وكيل Sonnet)
 
 - جزء من بند §3 «مشغّل فيديو متقدم» (يبقى Transcript Sync فقط): أُضيف `useAudioWaveform.ts` (hook يجلب الوسائط، يفكّ الصوت عبر `AudioContext.decodeAudioData`، يستخرج 120 قمة عبر `downsamplePeaks` الموجود، cache per-src، AbortController + تدرّج صامت عند CORS/فشل) و`WaveformStrip` في `VideoPlayer.tsx` (أشرطة SVG، الجزء المُشغَّل بـ `--va-action`، تتدرّج لعرض الـ scrubber، aria-hidden، placeholderPeaks ديكوري عند تعذّر الفكّ). أعاد استخدام `features/montage/waveform.ts` (13 اختبارًا قائمًا) دون تكرار. 1319 أخضر.
+
+### Hardening — ثغرات تدقيق cutover + SQL Server (2026-06-30، وكيل Sonnet)
+
+- 🔴 `archive-server/src/index.ts`: `buildExtraHealth` صار يأخذ `databaseEngine` ويحرس استعلام `pg_extension` (vector) على postgres فقط؛ غير postgres يُرجع `{ok:false, skipped:true, reason:"not-postgres"}` بلا خطأ مضلّل في `/api/health`. +اختبار `buildExtraHealth.test.ts` (3 حالات).
+- 🟡 `scripts/dev-laravel-next.mjs`: أُضيف `waitForJson` health-wait على Laravel قبل إقلاع Next (مطابقة لـ verify-next-laravel-live)؛ توضيح اتساق seeder (`NextIntegrationSeeder`).
+- 🟡 `CLAUDE.md`: توضيح `pnpm server`=Laravel / `server:legacy`=Node. `storage.ts`: تصحيح تعليق JSONB/NVARCHAR المضلّل.
+- ⚪ `prismaJsonCompat.test.ts`: اختبار `hasSome` متعدد القيم + round-trip. `package.json`: بادئات `build:spa:legacy`/`build:cloud:legacy`.
+- بوابات: verify:cutover ✅ · verify:db-provider ✅ · archive-server tests ✅ (299) · typecheck ✅.

@@ -60,11 +60,13 @@ interface HealthStatus {
   pgvector?: {
     ok: boolean;
     version: string | null;
+    skipped?: boolean;
+    reason?: string;
     error?: string;
   };
 }
 
-async function buildExtraHealth({ prisma, mediaJobStore }: any): Promise<HealthStatus> {
+export async function buildExtraHealth({ prisma, mediaJobStore, databaseEngine }: any): Promise<HealthStatus> {
   const redisConfigured = Boolean(config.redisUrl);
   const health: HealthStatus = {
     redis: {
@@ -75,12 +77,18 @@ async function buildExtraHealth({ prisma, mediaJobStore }: any): Promise<HealthS
     }
   };
   if (prisma) {
-    try {
-      const rows = await prisma.$queryRawUnsafe("select extversion from pg_extension where extname='vector'");
-      const version = Array.isArray(rows) ? rows[0]?.extversion : null;
-      health.pgvector = { ok: Boolean(version), version: version || null };
-    } catch (error: unknown) {
-      health.pgvector = { ok: false, version: null, error: (error as any)?.message || "pgvector check failed" };
+    // ponytail: skip pg_extension query for non-postgres engines — it errors on SQL Server
+    // and produces a misleading ok:false on every health call.
+    if (String(databaseEngine || "").toLowerCase() === "postgres") {
+      try {
+        const rows = await prisma.$queryRawUnsafe("select extversion from pg_extension where extname='vector'");
+        const version = Array.isArray(rows) ? rows[0]?.extversion : null;
+        health.pgvector = { ok: Boolean(version), version: version || null };
+      } catch (error: unknown) {
+        health.pgvector = { ok: false, version: null, error: (error as any)?.message || "pgvector check failed" };
+      }
+    } else if (databaseEngine) {
+      health.pgvector = { ok: false, version: null, skipped: true, reason: "not-postgres" };
     }
   }
   if (mediaJobStore?.backend) {
@@ -119,11 +127,13 @@ async function main() {
 
   let registration: any;
   let prisma: any = null;
+  let activeDatabaseEngine: string | null = null;
   let stopVersionRetention: (() => void) | null = null;
   let stopRetentionScheduler: (() => void) | null = null;
 
   if (BACKEND === "postgres" || BACKEND === "sqlserver") {
     prisma = await buildPrismaClient();
+    activeDatabaseEngine = resolveServerConfig().databaseEngine;
     registration = registerCloudProviders({ backend: BACKEND, prisma });
     // Surface connection problems early with a clear message.
     await registration.provider.open();
@@ -215,7 +225,7 @@ async function main() {
     // Realtime fan-out: pushes broadcast to SSE clients on /api/sync/events.
     eventBus: createEventBus(),
     mediaJobStore,
-    extraHealth: () => buildExtraHealth({ prisma, mediaJobStore }),
+    extraHealth: () => buildExtraHealth({ prisma, mediaJobStore, databaseEngine: activeDatabaseEngine }),
   });
 
   // Attach WebSocket presence server to the same HTTP server instance.
