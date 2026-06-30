@@ -27,7 +27,8 @@ pnpm dev                    # canonical Laravel API + Next.js app
 pnpm dev:next               # Next.js only
 pnpm dev:laravel            # Laravel API only through Docker
 pnpm dev:legacy             # legacy Vite SPA only
-pnpm server:legacy          # legacy Node server only
+pnpm server                 # Laravel API via Docker (same as dev:laravel; NOT the legacy Node server)
+pnpm server:legacy          # legacy Node.js/Prisma server only
 ```
 
 ### Build

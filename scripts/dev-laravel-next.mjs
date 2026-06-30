@@ -3,6 +3,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+async function waitForJson(url, label, timeoutMs = 90000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError = "";
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return response.json().catch(() => ({}));
+      lastError = `${response.status} ${response.statusText}`;
+    } catch (error) {
+      lastError = error.message;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error(`${label} did not become ready at ${url}: ${lastError}`);
+}
+
 const laravelPort = process.env.LARAVEL_PORT || "8950";
 const nextPort = process.env.NEXT_PORT || "8951";
 const laravelUrl = `http://127.0.0.1:${laravelPort}`;
@@ -67,8 +84,14 @@ spawnLogged("laravel", "docker", [
   "composer:latest",
   "sh",
   "-lc",
+  // Seeder: NextIntegrationSeeder (matches verify-next-laravel-live.mjs for consistency).
+  // DatabaseSeeder only creates a bare test user and does NOT delegate to NextIntegrationSeeder.
   "test -f .env || cp .env.example .env; test -d vendor || composer install --no-interaction; php artisan config:clear && php artisan migrate --force && php artisan db:seed --class=NextIntegrationSeeder --force && php artisan serve --host=0.0.0.0 --port=8000",
 ]);
+
+// Wait for Laravel to finish migrate+seed before booting Next — early API calls
+// during Next startup would fail otherwise. Mirrors verify-next-laravel-live.mjs.
+await waitForJson(`${laravelUrl}/api/v1/health`, "Laravel");
 
 const nextCommand = pnpmInvocation([
   "--filter",

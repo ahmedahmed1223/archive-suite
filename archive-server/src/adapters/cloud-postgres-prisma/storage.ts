@@ -406,8 +406,10 @@ export function createPostgresStorageProvider(
         const rows = await row.findMany({ where: { store }, orderBy: { uid: "asc" } });
         return rows.map(decodeRow).find((record) => String(record?.[field] ?? "") === String(value));
       }
-      // General case: JSONB field lookup. The raw query lets Postgres use a
-      // functional index on data->>'field' when one exists (e.g. on `username`).
+      // General case: JSONB field lookup (Postgres path only — jsonMode === "string"
+      // covers SQL Server NVARCHAR above; this branch is only reached when the
+      // driver supports $queryRaw, i.e. Postgres). The raw query lets Postgres use
+      // a functional index on data->>'field' when one exists (e.g. on `username`).
       // NOTE: field name is validated by the caller (RPC layer) to match
       // /^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/ — no parameterisation needed for the
       // identifier itself, but we still use tagged-template literals for the value.
