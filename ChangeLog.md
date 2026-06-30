@@ -2848,3 +2848,7 @@
 - 🟡 `CLAUDE.md`: توضيح `pnpm server`=Laravel / `server:legacy`=Node. `storage.ts`: تصحيح تعليق JSONB/NVARCHAR المضلّل.
 - ⚪ `prismaJsonCompat.test.ts`: اختبار `hasSome` متعدد القيم + round-trip. `package.json`: بادئات `build:spa:legacy`/`build:cloud:legacy`.
 - بوابات: verify:cutover ✅ · verify:db-provider ✅ · archive-server tests ✅ (299) · typecheck ✅.
+
+### 1. تفريغ عربي إنتاجي — Whisper GPU config في Laravel (شريحة، 2026-06-30)
+
+- [~] `[P1]` ⏱️XL **تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3)** — أُضيفت شريحة إعداد GPU في المسار القانوني الجديد `archive-laravel`: `WHISPER_DEVICE` و`WHISPER_COMPUTE_TYPE` في `config/media.php` و`.env.example`، وتم تمريرهما من `AppServiceProvider` إلى `WhisperTranscriber`. أمر faster-whisper صار يضيف `--device cuda` و`--compute_type float16` افتراضياً مع بقاء `large-v3`/`ar`/`vtt`. أضيفت قدرة `FakeProcessRunner::lastCommand()` لاختبار الأمر، ومرّ `php artisan test --filter=WhisperTranscriberTest` داخل Docker: 6 اختبارات / 13 assertion. المتبقي لإغلاق P1: smoke حي على GPU + قياس دقة مقابلة عربية + diarization + تصدير TTML.

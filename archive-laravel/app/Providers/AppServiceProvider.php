@@ -36,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
                 config('media.whisper_model'),
                 config('media.whisper_language'),
                 config('media.whisper_output_format'),
+                config('media.whisper_device'),
+                config('media.whisper_compute_type'),
             )
         );
 

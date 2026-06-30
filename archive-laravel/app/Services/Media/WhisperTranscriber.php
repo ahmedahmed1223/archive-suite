@@ -10,6 +10,8 @@ class WhisperTranscriber
         private readonly string $whisperModel = 'large-v3',
         private readonly string $whisperLanguage = 'ar',
         private readonly string $whisperOutputFormat = 'vtt',
+        private readonly string $whisperDevice = '',
+        private readonly string $whisperComputeType = '',
     ) {}
 
     /**
@@ -32,6 +34,16 @@ class WhisperTranscriber
             '--output_format', $ext,
             '--output_dir', $recordId,
         ];
+
+        if ($this->whisperDevice !== '') {
+            $command[] = '--device';
+            $command[] = $this->whisperDevice;
+        }
+
+        if ($this->whisperComputeType !== '') {
+            $command[] = '--compute_type';
+            $command[] = $this->whisperComputeType;
+        }
 
         $result = $this->runner->run($command);
         if ($result['exitCode'] !== 0) {
