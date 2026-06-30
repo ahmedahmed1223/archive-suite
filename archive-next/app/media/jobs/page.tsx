@@ -16,6 +16,15 @@ const backendNotes = [
   }
 ];
 
+const navLinks = [
+  { href: "/", label: "الرئيسية" },
+  { href: "/archive", label: "السجلات" },
+  { href: "/files", label: "الملفات" },
+  { href: "/reports", label: "التقارير" },
+  { href: "/help", label: "المساعدة" },
+  { href: "/login", label: "تسجيل الدخول" }
+] as const;
+
 export default function MediaJobsPage() {
   return (
     <main className="shell">
@@ -24,31 +33,43 @@ export default function MediaJobsPage() {
           <strong>Archive Suite</strong>
           <span>Next.js media workflow frontend</span>
         </div>
-        <a className="badge" href="/">حالة الترحيل</a>
+        <nav className="route-links" aria-label="مسارات سريعة">
+          {navLinks.map((link) => (
+            <a key={link.href} className="badge" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
-      <section className="content auth-layout" aria-label="Media jobs Laravel">
-        <div className="hero auth-copy">
+      <section className="content stack" aria-label="Media jobs Laravel">
+        <div className="hero">
           <span className="badge">Next.js frontend + Laravel backend</span>
           <h1>Media jobs عبر Laravel.</h1>
           <p>
             هذا المسار يثبت الحدود المطلوبة: Next.js يعرض الواجهة، وLaravel
             يملك API وحالة queue لمسارات media workflow.
           </p>
-
-          <div className="grid" aria-label="حدود التنفيذ">
-            {backendNotes.map((note) => (
-              <article className="panel" key={note.title}>
-                <h2>{note.title}</h2>
-                <p>{note.body}</p>
-              </article>
-            ))}
+          <div className="record-meta" aria-label="ملخص التنفيذ">
+            <span className="badge">واجهة قراءة فقط</span>
+            <span className="badge">Laravel queue</span>
+            <span className="badge">Next.js App Router</span>
           </div>
         </div>
 
-        <MediaJobLookup />
+        <div className="grid" aria-label="حدود التنفيذ">
+          {backendNotes.map((note) => (
+            <article className="panel" key={note.title}>
+              <h2>{note.title}</h2>
+              <p>{note.body}</p>
+            </article>
+          ))}
+        </div>
 
-        <MediaJobsList />
+        <div className="auth-layout" aria-label="أدوات media jobs">
+          <MediaJobLookup />
+          <MediaJobsList />
+        </div>
       </section>
     </main>
   );

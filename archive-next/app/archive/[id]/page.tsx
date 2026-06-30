@@ -15,6 +15,14 @@ export default function ArchiveDetailPage() {
 
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<DetailState>({ status: "loading" });
+  const navLinks = [
+    { href: "/", label: "الرئيسية" },
+    { href: "/archive", label: "السجلات" },
+    { href: "/files", label: "الملفات" },
+    { href: "/reports", label: "التقارير" },
+    { href: "/help", label: "المساعدة" },
+    { href: "/media/jobs", label: "Media jobs" }
+  ] as const;
 
   useEffect(() => {
     let active = true;
@@ -60,7 +68,13 @@ export default function ArchiveDetailPage() {
           <strong>Archive Suite</strong>
           <span>تفاصيل السجل</span>
         </div>
-        <a className="badge" href="/">حالة الترحيل</a>
+        <nav className="route-links" aria-label="مسارات سريعة">
+          {navLinks.map((link) => (
+            <a key={link.href} className="badge" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <section className="content" aria-label="تفاصيل السجل">
@@ -78,29 +92,53 @@ export default function ArchiveDetailPage() {
               <span className="badge">تفاصيل السجل المحفوظ</span>
               <h1>{state.record.title}</h1>
               {state.record.description && <p>{state.record.description}</p>}
+              <div className="record-meta">
+                {state.record.store && <span className="badge">{state.record.store}</span>}
+                {state.record.type && <span className="badge">{state.record.type}</span>}
+                {state.record.updatedAt && (
+                  <span className="badge">
+                    {new Date(state.record.updatedAt).toLocaleDateString("ar-SA")}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="grid">
               <article className="panel">
                 <h2>معلومات السجل</h2>
+                <div className="kv-grid">
+                  {state.record.store && (
+                    <div className="kv-item">
+                      <strong>المخزن</strong>
+                      <span>{state.record.store}</span>
+                    </div>
+                  )}
 
-                {state.record.store && (
-                  <div>
-                    <strong>المخزن:</strong>
-                    <span className="badge">{state.record.store}</span>
-                  </div>
-                )}
+                  {state.record.type && (
+                    <div className="kv-item">
+                      <strong>النوع</strong>
+                      <span>{state.record.type}</span>
+                    </div>
+                  )}
 
-                {state.record.type && (
-                  <div>
-                    <strong>النوع:</strong>
-                    <span className="badge">{state.record.type}</span>
-                  </div>
-                )}
+                  {state.record.createdAt && (
+                    <div className="kv-item">
+                      <strong>تاريخ الإنشاء</strong>
+                      <time>{new Date(state.record.createdAt).toLocaleDateString("ar-SA")}</time>
+                    </div>
+                  )}
+
+                  {state.record.updatedAt && (
+                    <div className="kv-item">
+                      <strong>آخر تحديث</strong>
+                      <time>{new Date(state.record.updatedAt).toLocaleDateString("ar-SA")}</time>
+                    </div>
+                  )}
+                </div>
 
                 {state.record.tags && state.record.tags.length > 0 && (
-                  <div>
-                    <strong>الوسوم:</strong>
+                  <div className="stack">
+                    <strong>الوسوم</strong>
                     <div className="tags">
                       {state.record.tags.map((tag) => (
                         <span key={tag} className="tag">
@@ -110,24 +148,6 @@ export default function ArchiveDetailPage() {
                     </div>
                   </div>
                 )}
-
-                {state.record.createdAt && (
-                  <div>
-                    <strong>تاريخ الإنشاء:</strong>
-                    <time>
-                      {new Date(state.record.createdAt).toLocaleDateString("ar-SA")}
-                    </time>
-                  </div>
-                )}
-
-                {state.record.updatedAt && (
-                  <div>
-                    <strong>آخر تحديث:</strong>
-                    <time>
-                      {new Date(state.record.updatedAt).toLocaleDateString("ar-SA")}
-                    </time>
-                  </div>
-                )}
               </article>
 
               <article className="panel">
@@ -135,58 +155,54 @@ export default function ArchiveDetailPage() {
 
                 {state.rights ? (
                   <>
-                    <div>
-                      <strong>صاحب الحقوق:</strong>
-                      <span>{state.rights.rightsHolder}</span>
+                    <div className="kv-grid">
+                      <div className="kv-item">
+                        <strong>صاحب الحقوق</strong>
+                        <span>{state.rights.rightsHolder}</span>
+                      </div>
+
+                      <div className="kv-item">
+                        <strong>نوع الترخيص</strong>
+                        <span className="badge">{state.rights.licenseType}</span>
+                      </div>
+
+                      {state.rights.embargoStart && (
+                        <div className="kv-item">
+                          <strong>بداية الحظر</strong>
+                          <time>{new Date(state.rights.embargoStart).toLocaleDateString("ar-SA")}</time>
+                        </div>
+                      )}
+
+                      {state.rights.embargoEnd && (
+                        <div className="kv-item">
+                          <strong>نهاية الحظر</strong>
+                          <time>{new Date(state.rights.embargoEnd).toLocaleDateString("ar-SA")}</time>
+                        </div>
+                      )}
+
+                      {state.rights.expiresAt && (
+                        <div className="kv-item">
+                          <strong>تاريخ الانتهاء</strong>
+                          <time>{new Date(state.rights.expiresAt).toLocaleDateString("ar-SA")}</time>
+                        </div>
+                      )}
                     </div>
-
-                    <div>
-                      <strong>نوع الترخيص:</strong>
-                      <span className="badge">{state.rights.licenseType}</span>
-                    </div>
-
-                    {state.rights.embargoStart && (
-                      <div>
-                        <strong>بداية الحظر:</strong>
-                        <time>
-                          {new Date(state.rights.embargoStart).toLocaleDateString("ar-SA")}
-                        </time>
-                      </div>
-                    )}
-
-                    {state.rights.embargoEnd && (
-                      <div>
-                        <strong>نهاية الحظر:</strong>
-                        <time>
-                          {new Date(state.rights.embargoEnd).toLocaleDateString("ar-SA")}
-                        </time>
-                      </div>
-                    )}
-
-                    {state.rights.expiresAt && (
-                      <div>
-                        <strong>تاريخ الانتهاء:</strong>
-                        <time>
-                          {new Date(state.rights.expiresAt).toLocaleDateString("ar-SA")}
-                        </time>
-                      </div>
-                    )}
 
                     {state.rights.notes && (
-                      <div>
-                        <strong>ملاحظات:</strong>
+                      <div className="stack">
+                        <strong>ملاحظات</strong>
                         <p>{state.rights.notes}</p>
                       </div>
                     )}
                   </>
                 ) : (
-                  <p className="form-status">لا توجد بيانات حقوق</p>
+                  <p className="empty-state">لا توجد بيانات حقوق</p>
                 )}
               </article>
             </div>
 
-            <div style={{ marginTop: "2rem" }}>
-              <a href="/archive" className="badge">العودة إلى القائمة</a>
+            <div style={{ marginTop: "1rem" }}>
+              <a href="/archive" className="button button-secondary">العودة إلى القائمة</a>
             </div>
           </>
         )}

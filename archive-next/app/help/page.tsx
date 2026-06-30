@@ -25,6 +25,15 @@ const helpPanels = [
   }
 ] as const;
 
+const navLinks = [
+  { href: "/", label: "الرئيسية" },
+  { href: "/archive", label: "السجلات" },
+  { href: "/files", label: "الملفات" },
+  { href: "/reports", label: "التقارير" },
+  { href: "/media/jobs", label: "Media jobs" },
+  { href: "/login", label: "تسجيل الدخول" }
+] as const;
+
 export default function HelpPage() {
   return (
     <main className="shell">
@@ -33,9 +42,13 @@ export default function HelpPage() {
           <strong>Archive Suite</strong>
           <span>Next.js help migration</span>
         </div>
-        <a className="badge" href="/">
-          حالة الترحيل
-        </a>
+        <nav className="route-links" aria-label="مسارات سريعة">
+          {navLinks.map((link) => (
+            <a key={link.href} className="badge" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <section className="content" aria-label="مركز مساعدة Next.js">
@@ -43,9 +56,9 @@ export default function HelpPage() {
           <span className="badge">مسار منخفض المخاطر</span>
           <h1>مركز مساعدة Next.js</h1>
           <p>
-            هذه صفحة مساعدة عملية تم نقلها إلى Next.js لأنها منخفضة المخاطر:
-            نص ثابت، بلا حالة عميل، وبلا اعتماد على بيانات حساسة. الهدف منها أن
-            تكون نقطة فحص واضحة أثناء ترحيل المسارات من Vite إلى App Router.
+            هذه الصفحة عملية وثابتة ومناسبة للترحيل المبكر: لا تعتمد على حالة
+            عميل، وتبقي نقاط الفحص والتشغيل واضحة أثناء نقل المسارات من Vite
+            إلى App Router.
           </p>
         </div>
 

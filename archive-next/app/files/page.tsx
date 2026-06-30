@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type ArchiveFile } from "@/lib/archive-api";
 
 type FileState =
@@ -15,6 +15,15 @@ type ShareState =
   | { status: "success"; token: string; url?: string }
   | { status: "error"; message: string };
 
+const navLinks = [
+  { href: "/", label: "الرئيسية" },
+  { href: "/archive", label: "السجلات" },
+  { href: "/reports", label: "التقارير" },
+  { href: "/help", label: "المساعدة" },
+  { href: "/media/jobs", label: "Media jobs" },
+  { href: "/login", label: "تسجيل الدخول" }
+] as const;
+
 export default function FilesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<FileState>({ status: "loading" });
@@ -22,8 +31,7 @@ export default function FilesPage() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [shareState, setShareState] = useState<ShareState>({ status: "idle" });
 
-  // Load initial files on mount
-  const loadFiles = async (q: string) => {
+  const loadFiles = useCallback(async (q: string) => {
     setState({ status: "loading" });
     const response = await api.files(q ? { q } : undefined);
 
@@ -36,18 +44,11 @@ export default function FilesPage() {
       status: "ready",
       files: response.files
     });
-  };
+  }, [api]);
 
-  // Initialize on mount
   useEffect(() => {
-    let active = true;
-    loadFiles("").then(() => {
-      if (!active) return;
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+    void loadFiles("");
+  }, [loadFiles]);
 
   const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -93,16 +94,22 @@ export default function FilesPage() {
           <strong>Archive Suite</strong>
           <span>استعراض الملفات</span>
         </div>
-        <a className="badge" href="/">حالة الترحيل</a>
+        <nav className="route-links" aria-label="مسارات سريعة">
+          {navLinks.map((link) => (
+            <a key={link.href} className="badge" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <section className="content" aria-label="استعراض الملفات والمشاركة">
         <div className="hero">
-          <span className="badge">Next.js file browser</span>
+          <span className="badge">مستعرض ملفات Next.js</span>
           <h1>استعرض الملفات المحفوظة.</h1>
           <p>
-            اختر ملفات من مساحة التخزين ثم أنشئ رابط مشاركة عام.
-            ستتمكن من مشاركة الرابط مع الآخرين للوصول إلى الملفات المختارة.
+            اختر ملفات من مساحة التخزين ثم أنشئ رابط مشاركة عام للوصول إلى
+            العناصر المحددة مباشرة.
           </p>
         </div>
 
@@ -114,7 +121,7 @@ export default function FilesPage() {
             onChange={(e) => setQuery(e.target.value)}
             className="search-input"
           />
-          <button type="submit" className="badge">بحث</button>
+          <button type="submit" className="button button-primary">بحث</button>
         </form>
 
         {state.status === "loading" && (
@@ -128,23 +135,23 @@ export default function FilesPage() {
         {state.status === "ready" && (
           <>
             {state.files.length === 0 ? (
-              <p className="form-status">لم يتم العثور على ملفات.</p>
+              <p className="empty-state">لم يتم العثور على ملفات.</p>
             ) : (
               <>
                 <div className="grid" aria-label="قائمة الملفات">
                   {state.files.map((file) => (
                     <article className="panel" key={file.key}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <div className="toolbar-row" style={{ alignItems: "start" }}>
                         <input
                           type="checkbox"
                           checked={selectedKeys.has(file.key)}
                           onChange={() => handleToggleFile(file.key)}
                           aria-label={`تحديد ${file.name || file.key}`}
                         />
-                        <div style={{ flex: 1 }}>
+                        <div style={{ flex: 1, minInlineSize: 0 }}>
                           <h2>{file.name || file.key}</h2>
                           {file.key !== file.name && file.key ? (
-                            <p style={{ fontSize: "0.875rem", color: "var(--text-secondary, #666)" }}>
+                            <p className="field-note" style={{ overflowWrap: "anywhere" }}>
                               {file.key}
                             </p>
                           ) : null}
@@ -171,22 +178,19 @@ export default function FilesPage() {
                   <button
                     onClick={handleCreateShare}
                     disabled={selectedKeys.size === 0 || shareState.status === "creating"}
-                    className="badge"
+                    className="button button-primary"
                   >
                     {shareState.status === "creating" ? "جار الإنشاء..." : "إنشاء رابط مشاركة"}
                   </button>
                   {selectedKeys.size > 0 && (
-                    <span style={{ fontSize: "0.875rem", color: "var(--text-secondary, #666)" }}>
+                    <span className="badge">
                       {selectedKeys.size} ملف محدد
                     </span>
                   )}
                 </div>
 
                 {shareState.status === "success" && (
-                  <div
-                    className="form-status"
-                    style={{ backgroundColor: "var(--color-success, #e8f5e9)", padding: "1rem", borderRadius: "0.25rem", marginTop: "1rem" }}
-                  >
+                  <div className="panel" style={{ marginTop: "0.25rem", borderColor: "color-mix(in oklch, var(--va-success) 26%, var(--va-border-soft))" }}>
                     <p>
                       تم إنشاء رابط المشاركة بنجاح!{" "}
                       <a href={`/share/${encodeURIComponent(shareState.token)}`}>
@@ -202,7 +206,7 @@ export default function FilesPage() {
                 )}
 
                 {shareState.status === "error" && (
-                  <p className="form-status" role="alert" style={{ marginTop: "1rem" }}>
+                  <p className="form-status status-error" role="alert" style={{ marginTop: "1rem" }}>
                     خطأ: {shareState.message}
                   </p>
                 )}

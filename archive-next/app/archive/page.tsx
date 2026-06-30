@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 
 type ArchiveState =
@@ -9,13 +9,21 @@ type ArchiveState =
   | { status: "ready"; records: ArchiveRecord[] }
   | { status: "error"; message: string };
 
+const navLinks = [
+  { href: "/", label: "الرئيسية" },
+  { href: "/files", label: "الملفات" },
+  { href: "/reports", label: "التقارير" },
+  { href: "/help", label: "المساعدة" },
+  { href: "/media/jobs", label: "Media jobs" },
+  { href: "/login", label: "تسجيل الدخول" }
+] as const;
+
 export default function ArchivePage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<ArchiveState>({ status: "loading" });
   const [query, setQuery] = useState("");
 
-  // Load initial records on mount
-  const loadRecords = async (q: string) => {
+  const loadRecords = useCallback(async (q: string) => {
     setState({ status: "loading" });
     const response = await api.search({ q, limit: 20 });
 
@@ -28,18 +36,11 @@ export default function ArchivePage() {
       status: "ready",
       records: response.records
     });
-  };
+  }, [api]);
 
-  // Initialize on mount
   useEffect(() => {
-    let active = true;
-    loadRecords("").then(() => {
-      if (!active) return;
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+    void loadRecords("");
+  }, [loadRecords]);
 
   const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,7 +54,13 @@ export default function ArchivePage() {
           <strong>Archive Suite</strong>
           <span>قائمة السجلات</span>
         </div>
-        <a className="badge" href="/">حالة الترحيل</a>
+        <nav className="route-links" aria-label="مسارات سريعة">
+          {navLinks.map((link) => (
+            <a key={link.href} className="badge" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <section className="content" aria-label="بحث السجلات">
@@ -74,7 +81,7 @@ export default function ArchivePage() {
             onChange={(e) => setQuery(e.target.value)}
             className="search-input"
           />
-          <button type="submit" className="badge">بحث</button>
+          <button type="submit" className="button button-primary">بحث</button>
         </form>
 
         {state.status === "loading" && (
@@ -88,12 +95,14 @@ export default function ArchivePage() {
         {state.status === "ready" && (
           <>
             {state.records.length === 0 ? (
-              <p className="form-status">لم يتم العثور على سجلات.</p>
+              <p className="empty-state">لم يتم العثور على سجلات.</p>
             ) : (
               <div className="grid" aria-label="السجلات المحفوظة">
                 {state.records.map((record) => (
                   <article className="panel" key={record.id}>
-                    <h2><a href={`/archive/${encodeURIComponent(record.id)}`}>{record.title}</a></h2>
+                    <h2>
+                      <a href={`/archive/${encodeURIComponent(record.id)}`}>{record.title}</a>
+                    </h2>
                     {record.description ? (
                       <p>{record.description}</p>
                     ) : null}

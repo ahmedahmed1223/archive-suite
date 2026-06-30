@@ -49,7 +49,7 @@ export function MediaJobLookup() {
         <input name="accessToken" type="password" placeholder="Bearer token اختياري للفحص المحلي" autoComplete="off" />
       </label>
 
-      <button type="submit" disabled={state.status === "loading"}>
+      <button type="submit" className="button button-primary" disabled={state.status === "loading"}>
         {state.status === "loading" ? "جار الفحص..." : "فحص حالة job"}
       </button>
 

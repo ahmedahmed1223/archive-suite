@@ -1,6 +1,14 @@
 import { getContractSummary } from "@/lib/archive-api";
 
 const contract = getContractSummary();
+const navLinks = [
+  { href: "/", label: "الرئيسية" },
+  { href: "/archive", label: "السجلات" },
+  { href: "/files", label: "الملفات" },
+  { href: "/help", label: "المساعدة" },
+  { href: "/media/jobs", label: "Media jobs" },
+  { href: "/login", label: "تسجيل الدخول" }
+] as const;
 
 const reportChecks = [
   {
@@ -25,13 +33,19 @@ export default function ReportsPage() {
           <strong>Archive Suite</strong>
           <span>Next.js reports migration</span>
         </div>
-        <a className="badge" href="/">حالة الترحيل</a>
+        <nav className="route-links" aria-label="مسارات سريعة">
+          {navLinks.map((link) => (
+            <a key={link.href} className="badge" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <section className="content" aria-label="تقارير Next.js">
         <div className="hero">
           <span className="badge">مسار منخفض المخاطر</span>
-          <h1>تقارير Next.js التجريبية.</h1>
+          <h1>تقارير Next.js التشغيلية.</h1>
           <p>
             هذه الصفحة تجهز نقل التقارير العامة والمراجعات الخفيفة إلى App Router
             قبل الاقتراب من الشاشات التشغيلية الثقيلة.
