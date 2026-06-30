@@ -8,7 +8,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: ${MSSQL_PID:-Developer}
-      MSSQL_SA_PASSWORD: ${SQLSERVER_SA_PASSWORD:?Set SQLSERVER_SA_PASSWORD in .env}
+      MSSQL_SA_PASSWORD: ${SQLSERVER_SA_PASSWORD}
     volumes:
       - sqlserver_data:/var/opt/mssql
     networks:
