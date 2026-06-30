@@ -1,17 +1,17 @@
 # Laravel + Next.js Migration Plan
 
 > Date: 2026-06-27
-> Decision: pause Astro 5 work. Continue TypeScript and plan a Laravel API plus Next.js frontend migration.
+> Decision: Laravel API + Next.js frontend are the canonical development path. Astro remains paused. Vite/Node are legacy reference surfaces only.
 
 ## Recommendation
 
-Use Laravel for the backend domain and operational services, and Next.js for the user interface. Do not replace the current app in one step. Run the new stack beside the existing Vite/React app until the API contracts and Playwright smoke tests are stable.
+Use Laravel for the backend domain and operational services, and Next.js for the user interface. The route-level contract and live integration gate have reached cutover readiness, so root development commands now start Laravel + Next.js by default. The old Vite/Node stack remains available only through explicit `legacy:*` commands while unmatched operational edges are retired.
 
 ## Target Responsibilities
 
 - Laravel: authentication, authorization policies, REST API, database migrations, file/storage abstraction, background queues, media jobs, audit logs, integrations, and admin-safe operational endpoints.
 - Next.js: TypeScript UI, RTL Arabic shell, App Router, route-level loading/error states, server rendering for public/share pages, and client-heavy screens for archive operations.
-- Current Vite app: stays as the working production surface during migration.
+- Legacy Vite/Node: reference/fallback only; no net-new product work.
 - TypeScript: remains the shared discipline for frontend code, tests, API clients, and future Next.js modules.
 
 ## Migration Order
@@ -77,10 +77,13 @@ Use Laravel for the backend domain and operational services, and Next.js for the
      Laravel protected routes now require bearer access tokens or the refresh
      cookie flow.
 
-5. Run both stacks in parallel.
-   - Current Vite app remains the fallback.
-   - Playwright gates must pass on each moved route.
-   - Switch traffic route-by-route only after parity is proven.
+5. Cut over defaults.
+   - `pnpm dev`, `pnpm build`, and `pnpm verify` now target Laravel + Next.js.
+   - Legacy Vite/Node commands are explicit (`dev:legacy`, `server:legacy`, `verify:legacy`).
+   - Playwright integration remains the live confidence gate for the canonical stack.
+   - Production-like Next.js builds must receive `ARCHIVE_API_BASE_URL` at
+     build time so `/api/v1/*` rewrites are generated for the Laravel API.
+     The live gate does this automatically before starting Next.js.
    - Status 2026-06-27: `pnpm run e2e:next` runs the first Next.js smoke test
      through the existing Playwright harness against `E2E_BASE_URL`.
    - Status 2026-06-27: the Next.js API client now supports the Laravel
@@ -107,21 +110,10 @@ Use Laravel for the backend domain and operational services, and Next.js for the
 
 Astro is good for content-heavy sites and islands, but this product is an operational archive application with deep authenticated workflows, stateful dashboards, offline/local storage, and future backend migration needs. Next.js fits the planned TypeScript frontend better, and Laravel gives a stronger backend platform for policies, queues, storage, and enterprise integrations.
 
-## Immediate Next Tasks
+## Current Development Rules
 
-- Keep the TypeScript foundation and leaf conversions.
-- Remove Astro dependencies, scripts, config, and generated artifacts.
-- Add API contract documentation before scaffolding Laravel or Next.js.
-  - Initial contract: `docs/api/archive-contract.openapi.json`.
-- Keep `archive-next` as the TypeScript frontend migration surface. Current
-  migrated low-risk routes are `/help`, `/reports`, `/settings`, `/login`,
-  `/share/[token]`, and `/media/jobs`.
-- Keep `archive-laravel` parallel to the Node server until auth, records,
-  search, files, rights, and share route groups match the contract.
-- Keep Laravel as the backend/API boundary for auth, policies, file access,
-  audit logs, media jobs, and queues. Next.js should not absorb backend
-  processors.
-- Remaining work: expand authenticated operational route parity, run live
-  integration checks for more than the share viewer, and replace Laravel media
-  job placeholders with real processors.
-- Decide whether `archive-server` remains as an adapter during Laravel migration or becomes a reference implementation only.
+- New backend work starts in `archive-laravel` and updates `docs/api/archive-contract.openapi.json` first when the API shape changes.
+- New frontend work starts in `archive-next` and consumes Laravel `/api/v1/*` through `archive-next/lib/archive-api.ts`.
+- `archive-app` and `archive-server` are legacy/reference. Use them for parity checks or urgent compatibility fixes only.
+- `pnpm verify` is the default non-live gate; `pnpm verify:laravel-next:live` launches Laravel + Next.js, builds Next.js with the Laravel API rewrite, and runs the Playwright integration smoke.
+- Remaining production hardening is limited to deployment packaging and unmatched legacy-only operational edges, not the default development path.
