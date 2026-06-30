@@ -46,6 +46,7 @@ import { normalizeLocalFileValue } from "../videos/viewModel.js";
 import { StatusBadge } from "../../components/archive/StatusBadge.jsx";
 import { InlineCellEditor } from "../../components/data/InlineCellEditor.jsx";
 import { DocumentViewer } from "../../components/media/DocumentViewer.jsx";
+import { ArchiveImage } from "../../components/ui/ArchiveImage.js";
 
 export const ARCHIVE_VIEW_MODES = [
   { id: "grid", label: "شبكة", Icon: LayoutGrid },
@@ -463,10 +464,14 @@ function VideoThumb({ item }: any) {
     const imgSrc = item.path || item.filePath || item.url || item.thumbnail || "";
     const isBlocked = isLocalFilePath(imgSrc) && /^https?:$/i.test(runtimeProtocol);
     if (imgSrc && !isBlocked && /^(https?:|blob:|data:|file:)/i.test(imgSrc)) {
-      return jsx("img", {
+      // ponytail: srcSet omitted — server produces only one thumbnail size (640px).
+      // Add srcSet/sizes here when the media API exposes multiple width variants.
+      return jsx(ArchiveImage, {
         className: "h-full w-full object-cover",
         src: imgSrc,
         alt: item.title || "",
+        width: 640,
+        height: 360,
         loading: "lazy"
       });
     }
