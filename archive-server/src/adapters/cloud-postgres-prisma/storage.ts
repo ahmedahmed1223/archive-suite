@@ -258,7 +258,7 @@ export function createPostgresStorageProvider(
                 store,
                 recordUid: String(recordUid),
                 version: (latest?.version as number ?? 0) + 1,
-                snapshot: jsonMode === "string" ? JSON.stringify(record) : record,
+                snapshot: record,
                 userId: (record._updatedBy as string | null | undefined) ?? null,
               },
             });

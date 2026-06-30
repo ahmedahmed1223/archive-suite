@@ -18,6 +18,13 @@ import {
 
 const authLog = createLogger("auth");
 
+export function formatRecordVersionSummary(row: any): any {
+  return {
+    ...row,
+    id: typeof row?.id === "bigint" ? row.id.toString() : row?.id,
+  };
+}
+
 /**
  * Handles user-data routes: saved-filters, webhooks, notification-preferences,
  * API keys, public records, workflow, push, record versions, bulk operations.
@@ -343,7 +350,7 @@ export async function handleUserDataRoute({
         where: { store, recordUid: uid }, orderBy: { version: "desc" }, take: 50,
         select: { id: true, version: true, userId: true, createdAt: true },
       });
-      return send(res, 200, { ok: true, versions }), true;
+      return send(res, 200, { ok: true, versions: versions.map(formatRecordVersionSummary) }), true;
     } catch (err) {
       logger.error({ err }, "versions list failed");
       return send(res, 500, { ok: false, error: "versions_failed" }), true;
