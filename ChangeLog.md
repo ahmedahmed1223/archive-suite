@@ -2828,3 +2828,7 @@
 ### 6. Dashboard Widget Gallery + Getting-Started Checklist (مُنجَز 2026-06-30، وكيل Sonnet)
 
 - [x] `[P2]` ⏱️M **Dashboard: Widget Gallery + DnD + Getting-Started Checklist** — الـ DnD (`DashboardGrid`+`dashboardLayoutModel`) كان موجودًا؛ أُضيف: `widgetGalleryModel.ts` (listWidgets/toggle/add/remove يلفّ `setPanelHidden`) + `WidgetGallery.tsx` (لوحة إظهار/إخفاء في وضع التحرير)، و`checklistModel.ts` (`buildGettingStartedChecklist` نقي يحسب 6 خطوات من حالة حقيقية: نوع/مادة/رفع/مجموعة/نسخة احتياطية/حماية + dismiss عبر `dismissedBanners`) + `GettingStartedChecklist.tsx` (بطاقة بشريط تقدّم). +31 اختبار TDD (19 checklist + 12 gallery). 1288→1319 أخضر. مؤجَّل: تمرير uploads slice مخصّص (fallback يفحص filePath/metadata).
+
+### 4. PWA Print Styles — مُنجَز (2026-06-30، وكيل Sonnet)
+
+- [x] `[P2]` ⏱️L **PWA: Service Worker + Print Styles** — البنية الأساسية كانت موجودة (`manifest.json` RTL، `sw.js` v3: cache-first shell + SWR للأصول + network-first/TTL للـ API + background sync + push، وتسجيل في `AppSync.ts`). الناقص الوحيد **أنماط الطباعة** أُضيف: كتلة `@media print` (~100 سطر) في `app-overrides.css` خارج `@layer` — تُخفي الـ chrome (sidebar/tabs/toolbars/أزرار/dialogs)، `@page` A4، أبيض/أسود، عرض كامل، `break-inside: avoid` للبطاقات، فواصل صفحات لـ `[data-report-section]`، جداول بحدود وتكرار thead، روابط تُظهر href. 1319 أخضر (CSS فقط). مؤجَّل: background sync (مبني سلفًا)، تحديث جولة الإعداد (لا مكوّن tour موجود).
