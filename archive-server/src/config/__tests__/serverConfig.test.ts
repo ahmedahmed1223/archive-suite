@@ -79,6 +79,17 @@ describe("resolveServerConfig", () => {
     expect(config.databaseUrl).toContain("localhost");
     expect(config.databaseSource).toBe("env");
   });
+
+  it("picks up SQLSERVER_URL when DATABASE_PROVIDER is sqlserver", () => {
+    const env = {
+      DATABASE_PROVIDER: "sqlserver",
+      SQLSERVER_URL: "sqlserver://sa:Password-123@sqlserver:1433/archive"
+    };
+    const config = resolveServerConfig({ file: {}, env });
+    expect(config.databaseEngine).toBe("sqlserver");
+    expect(config.databaseUrl).toBe(env.SQLSERVER_URL);
+    expect(config.databaseSource).toBe("env");
+  });
 });
 
 describe("resolveFileStoreConfig", () => {

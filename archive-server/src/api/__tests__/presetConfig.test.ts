@@ -33,4 +33,28 @@ describe("getPresetConfig", () => {
       }
     });
   });
+
+  it("returns SQL Server preset readiness from SQLSERVER_URL", async () => {
+    const result = await getPresetConfig({
+      env: {
+        BACKEND: "sqlserver",
+        SQLSERVER_URL: "sqlserver://sa:Password-123@sqlserver:1433/archive",
+        ADMIN_USERNAME: "admin",
+        ADMIN_PASSWORD: "Initial-123!",
+        JWT_AUTH_SECRET: "auth-secret",
+        FILE_STORE: "disk"
+      },
+      testDatabase: async () => true
+    });
+
+    expect(result).toMatchObject({
+      backend: "sqlserver",
+      hasDatabaseUrl: true,
+      database: {
+        configured: true,
+        reachable: true
+      },
+      isFullyConfigured: true
+    });
+  });
 });

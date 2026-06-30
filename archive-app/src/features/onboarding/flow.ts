@@ -24,6 +24,20 @@ export const ONBOARDING_STORAGE_OPTIONS = [
     id: "postgres",
     label: "SQL على الخادم",
     detail: "موصى به. مصدر حقيقة مركزي عبر archive-server مع مراقبة صحة قاعدة البيانات.",
+    engine: "postgresql",
+    envUrl: "DATABASE_URL",
+    composeFile: "archive-server/docker-compose.postgres.yml",
+    allowsSameOrigin: true,
+    needsUrl: true,
+    urlPlaceholder: "https://archive.example.com"
+  },
+  {
+    id: "sqlserver",
+    label: "SQL Server على الخادم",
+    detail: "مسار Microsoft SQL Server عبر archive-server وPrisma provider=sqlserver.",
+    engine: "sqlserver",
+    envUrl: "SQLSERVER_URL",
+    composeFile: "archive-server/docker-compose.sqlserver.yml",
     needsUrl: true,
     allowsSameOrigin: true,
     urlPlaceholder: "https://archive.example.com"

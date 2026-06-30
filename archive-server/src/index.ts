@@ -2,10 +2,10 @@
 // then starts the RPC API the SPA's cloud-http adapter talks to.
 //
 // BACKEND=pocketbase → proxies to a PocketBase instance (POCKETBASE_URL).
-// BACKEND=postgres   → instantiates a Prisma client. PostgreSQL uses the pg
-//                      driver adapter bundled today; other Prisma engines are
-//                      persisted/configured by admin UI and need their matching
-//                      deployment adapter before boot.
+// BACKEND=postgres   → instantiates a Prisma client with PostgreSQL.
+// BACKEND=sqlserver  → instantiates the same Prisma-backed storage surface
+//                      after DATABASE_PROVIDER=sqlserver generation; the
+//                      runtime image still needs the matching Prisma driver.
 //
 // Run with: node src/index.js  (Dockerfile.server CMD)
 
@@ -138,12 +138,12 @@ async function main() {
   let stopVersionRetention: (() => void) | null = null;
   let stopRetentionScheduler: (() => void) | null = null;
 
-  if (BACKEND === "postgres") {
+  if (BACKEND === "postgres" || BACKEND === "sqlserver") {
     prisma = await buildPrismaClient();
-    registration = registerCloudProviders({ backend: "postgres", prisma });
+    registration = registerCloudProviders({ backend: BACKEND, prisma });
     // Surface connection problems early with a clear message.
     await registration.provider.open();
-    logger.info("Postgres backend ready.");
+    logger.info({ backend: BACKEND }, "Prisma SQL backend ready.");
     const versionRetention = createVersionRetentionService(prisma, logger);
     stopVersionRetention = versionRetention.scheduleHourly();
     const retentionScheduler = createRetentionScheduler({ prisma, files: registration.files, logger });
@@ -155,7 +155,7 @@ async function main() {
     });
     logger.info("PocketBase backend ready.");
   } else {
-    throw new Error(`Unknown BACKEND "${BACKEND}" — expected "postgres" or "pocketbase".`);
+    throw new Error(`Unknown BACKEND "${BACKEND}" — expected "postgres", "sqlserver", or "pocketbase".`);
   }
 
   // Workflow due-date reminders (no-op when WORKFLOW_DUE_REMINDERS_ENABLED is unset).

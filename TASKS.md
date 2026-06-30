@@ -188,7 +188,10 @@
 
 > **السياق:** تجربة الإطلاق الحالية (`V1OnboardingWizard`، 9 خطوات في `ONBOARDING_STEPS`) كثيرة وتُعقّد الدخول الأول. المطلوب: شاشة هبوط بخيارين فقط (سريع/متقدم)، ودمج كل الجولات والتعريفات في معالج «جولة الميزات» واحد قابل للتجاهل ولإعادة التشغيل من المساعدة، ونقل الخطوات الثانوية إلى صفحة المساعدة، وتحسين `setup.bat`/`control-center` ليكون أكثر مرونة ووضوحاً.
 
-- [ ] `[P1]` ⏱️XL **دعم Microsoft SQL Server كـ backend جديد** — إضافة `sqlserver` كخيار في `BACKEND_CHOICES` + Prisma provider جديد + ترحيل schema المعادل + نقطة في `/api/setup/preset-config` تكشف `SQLSERVER_URL`.
+- [~] `[P1]` ⏱️XL **دعم Microsoft SQL Server كـ backend جديد** — إضافة `sqlserver` كخيار في `BACKEND_CHOICES` + Prisma provider جديد + ترحيل schema المعادل + نقطة في `/api/setup/preset-config` تكشف `SQLSERVER_URL`.
+  - 🔄 شريحة إعداد/تهيئة منجزة (2026-06-30): أضيف `sqlserver` كخيار في الواجهة ومعالج البداية وقراءة preset/config، وأضيف `archive-server/docker-compose.sqlserver.yml` مع `SQLSERVER_URL` وفحص `docker:config:sqlserver`.
+  - ✅ التحقق: `pnpm --filter @archive/app run verify`، و`pnpm --filter archive-server run test -- src/api/__tests__/presetConfig.test.ts src/config/__tests__/serverConfig.test.ts`، و`pnpm run docker:config:sqlserver`، و`pnpm verify`.
+  - متبقّي: ربط/تثبيت محوّل Prisma runtime المناسب لـ SQL Server وتشغيل `migrate deploy`/smoke حي على SQL Server فعلي؛ الخادم ما زال يحرس التشغيل غير المدعوم برسالة صريحة لأن الصورة الحالية تعتمد `@prisma/adapter-pg`.
   - الملفات: `archive-server/prisma/schema.prisma` (provider="sqlserver" بصيغة `Server=...;Database=...;User Id=...;Password=...;`)، `archive-server/scripts/set-db-provider.mjs` (إضافة sqlserver)، `archive-app/src/bootstrap/backendChoice.js` (BACKEND_CHOICES + label عربي)، `archive-app/src/features/onboarding/flow.js` (ONBOARDING_STORAGE_OPTIONS)، `docker-compose.sqlserver.yml` (جديد، صورة mcr.microsoft.com/mssql/server).
   - القبول: تشغيل التطبيق على SQL Server يعمل من معالج البدء أو من `pnpm --filter archive-server exec prisma migrate deploy` بعد ضبط `DATABASE_URL`.
   - المصدر: طلب المستخدم 2026-06-21.

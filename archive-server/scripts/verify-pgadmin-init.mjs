@@ -11,8 +11,10 @@ assert.doesNotMatch(compose, /dpage\/pgadmin4:latest/);
 assert.match(compose, /condition:\s*service_completed_successfully/);
 assert.match(compose, /PGPASS_FILE/);
 assert.match(init, /pgadmin-sync-user\.py/);
-assert.match(sync, /update_user/);
-assert.match(sync, /create_user/);
+assert.match(sync, /User\.query\.filter_by\(username=email, auth_source="internal"\)\.first\(\)/);
+assert.match(sync, /db\.session\.add\(user\)/);
+assert.match(sync, /user\.password = password/);
+assert.match(sync, /db\.session\.commit\(\)/);
 assert.match(init, /POSTGRES_PASSWORD/);
 assert.match(init, /storage\/\$USER_CONFIG_DIR\/\.pgpass/);
 

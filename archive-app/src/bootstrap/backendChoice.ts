@@ -1,4 +1,4 @@
-export const BACKEND_CHOICES = Object.freeze(["local", "pocketbase", "postgres", "firebase"] as const);
+export const BACKEND_CHOICES = Object.freeze(["local", "pocketbase", "postgres", "sqlserver", "firebase"] as const);
 export const LOCAL_ENGINES = Object.freeze(["indexeddb", "sqlite"] as const);
 export const DEFAULT_BACKEND = "local";
 export const DEFAULT_CLOUD_BACKEND = "postgres";
