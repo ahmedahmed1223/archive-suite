@@ -106,4 +106,69 @@ describe("VideoPlayer interactions", () => {
     renderPlayer({ cues: [] });
     expect(screen.queryByRole("button", { name: /الترجمة/ })).not.toBeInTheDocument();
   });
+
+  it("frame-step buttons pause and seek by ±1/25 of a second", () => {
+    const { ref } = renderPlayer();
+    loadMetadata(ref.current!, 60);
+    ref.current!.currentTime = 10;
+
+    fireEvent.click(screen.getByRole("button", { name: "إطار تالٍ (.)" }));
+    expect(pauseSpy).toHaveBeenCalled();
+    expect(ref.current!.currentTime).toBeCloseTo(10 + 1 / 25, 5);
+
+    pauseSpy.mockClear();
+    const afterForward = ref.current!.currentTime;
+    fireEvent.click(screen.getByRole("button", { name: "إطار سابق (,)" }));
+    expect(pauseSpy).toHaveBeenCalled();
+    expect(ref.current!.currentTime).toBeCloseTo(afterForward - 1 / 25, 5);
+  });
+
+  it("frame-step keyboard shortcuts , and . pause and seek by ±1/25", () => {
+    const { ref } = renderPlayer();
+    loadMetadata(ref.current!, 60);
+    ref.current!.currentTime = 5;
+    const region = screen.getByRole("region", { name: "مشغل الفيديو" });
+
+    fireEvent.keyDown(region, { key: "." });
+    expect(pauseSpy).toHaveBeenCalled();
+    expect(ref.current!.currentTime).toBeCloseTo(5 + 1 / 25, 5);
+
+    pauseSpy.mockClear();
+    fireEvent.keyDown(region, { key: "," });
+    expect(pauseSpy).toHaveBeenCalled();
+    expect(ref.current!.currentTime).toBeCloseTo(5, 5);
+  });
+
+  it("keyboard i/o sets mark in/out and fires onMarkChange", () => {
+    const onMarkChange = vi.fn();
+    const { ref } = renderPlayer({ onMarkChange });
+    loadMetadata(ref.current!, 120);
+    ref.current!.currentTime = 30;
+    const region = screen.getByRole("region", { name: "مشغل الفيديو" });
+
+    fireEvent.keyDown(region, { key: "i" });
+    expect(onMarkChange).toHaveBeenLastCalledWith({ markIn: 30, markOut: null });
+
+    ref.current!.currentTime = 90;
+    fireEvent.keyDown(region, { key: "o" });
+    expect(onMarkChange).toHaveBeenLastCalledWith({ markIn: 30, markOut: 90 });
+  });
+
+  it("add-to-project button is hidden when onAddToProject prop is not provided", () => {
+    renderPlayer();
+    expect(screen.queryByRole("button", { name: "أضف لمشروع" })).not.toBeInTheDocument();
+  });
+
+  it("add-to-project button fires callback with current mark in/out", () => {
+    const onAddToProject = vi.fn();
+    const { ref } = renderPlayer({ onAddToProject });
+    loadMetadata(ref.current!, 60);
+    ref.current!.currentTime = 15;
+    const region = screen.getByRole("region", { name: "مشغل الفيديو" });
+    fireEvent.keyDown(region, { key: "i" });
+
+    fireEvent.click(screen.getByRole("button", { name: "أضف لمشروع" }));
+    expect(onAddToProject).toHaveBeenCalledTimes(1);
+    expect(onAddToProject).toHaveBeenCalledWith({ markIn: 15, markOut: null });
+  });
 });
