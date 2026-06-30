@@ -1,6 +1,18 @@
 import { expect, test } from '@playwright/test';
 
 const shareToken = process.env.ARCHIVE_E2E_SHARE_TOKEN ?? 'next-laravel-share';
+const email = process.env.ARCHIVE_E2E_EMAIL ?? 'it@archive.test';
+const password = process.env.ARCHIVE_E2E_PASSWORD ?? 'password123';
+
+// The operational pages (/archive, /archive/[id], /media/jobs) are guarded by the
+// cookie-session middleware. Log in once per test so the context carries the
+// httpOnly va_refresh cookie; page.request shares the page's cookie jar.
+test.beforeEach(async ({ page }) => {
+  const response = await page.request.post('/api/v1/auth/login', {
+    data: { email, password },
+  });
+  expect(response.ok()).toBeTruthy();
+});
 
 test('renders a public share record through the Next.js to Laravel API rewrite', async ({ page }) => {
   await page.goto(`/share/${shareToken}`, { waitUntil: 'networkidle' });
