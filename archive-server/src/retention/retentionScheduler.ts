@@ -15,6 +15,16 @@ interface LoggerLike {
   debug?: (payload?: unknown, message?: string) => void;
 }
 
+function bindLogger(logger: LoggerLike | null | undefined): LoggerLike {
+  if (!logger) return noopLogger;
+  return {
+    info: (...args) => (logger.info || noopLogger.info)?.call(logger, ...args),
+    warn: (...args) => (logger.warn || noopLogger.warn)?.call(logger, ...args),
+    error: (...args) => (logger.error || noopLogger.error)?.call(logger, ...args),
+    debug: (...args) => (logger.debug || noopLogger.debug)?.call(logger, ...args),
+  };
+}
+
 interface ArchiveItemLike {
   id: string;
   store?: string;
@@ -125,7 +135,7 @@ export async function runRetentionSweep({
   secureOverwrite = defaultSecureOverwrite,
   now = new Date(),
 }: RetentionSweepOptions = {}): Promise<RetentionSweepResult> {
-  const log = { ...noopLogger, ...(logger || {}) };
+  const log = bindLogger(logger);
   const empty: RetentionSweepResult = { scanned: 0, rules: 0, archived: 0, deleted: 0, wiped: 0, removed: 0, skipped: 0, errors: 0 };
 
   if (!prisma?.archiveItem || !prisma?.retentionRule) {
@@ -231,7 +241,7 @@ export function createRetentionScheduler({
   intervalMs = RETENTION_SWEEP_INTERVAL_MS,
   secureOverwrite = defaultSecureOverwrite,
 }: RetentionSchedulerOptions = {}): RetentionScheduler {
-  const log = { ...noopLogger, ...(logger || {}) };
+  const log = bindLogger(logger);
   let timer: ReturnType<typeof setInterval> | null = null;
   let running = false;
   let startedAt: Date | null = null;

@@ -150,7 +150,7 @@ export function validateDbUrl(url: string | unknown, engine: string = "postgresq
       : normalizedEngine === "mysql"
         ? "mysql://user:pass@host:3306/db"
         : normalizedEngine === "sqlserver"
-          ? "sqlserver://user:pass@host:1433/db"
+          ? "sqlserver://host:1433;database=db;user=user;password=pass;encrypt=true;trustServerCertificate=true"
           : "postgresql://user:pass@host:5432/db";
     const e = new Error(`سلسلة اتصال قاعدة البيانات غير صالحة للمحرّك ${normalizedEngine} (مثال: ${example}).`);
     (e as any).statusCode = 400;

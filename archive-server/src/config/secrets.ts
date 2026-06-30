@@ -44,6 +44,75 @@ interface DatabaseUrlParts {
   port: number | null;
   database: string;
   file?: string;
+  options?: string;
+}
+
+function formatSqlServerValue(value: unknown): string {
+  const text = String(value ?? "").trim();
+  return text.includes(";") ? `{${text.replace(/[{}]/g, "")}}` : text;
+}
+
+function splitSqlServerParts(value: string): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let braceDepth = 0;
+  for (const char of value) {
+    if (char === "{" && braceDepth === 0) braceDepth = 1;
+    else if (char === "}" && braceDepth === 1) braceDepth = 0;
+    if (char === ";" && braceDepth === 0) {
+      parts.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current) parts.push(current);
+  return parts;
+}
+
+function unformatSqlServerValue(value: string): string {
+  const trimmed = String(value || "").trim();
+  return trimmed.startsWith("{") && trimmed.endsWith("}")
+    ? trimmed.slice(1, -1)
+    : trimmed;
+}
+
+function parseSqlServerConnectionString(raw: string): DatabaseUrlParts | null {
+  if (!raw.startsWith("sqlserver://") || !raw.includes(";")) return null;
+  const body = raw.replace(/^sqlserver:\/\//, "");
+  const [hostPart, ...paramParts] = splitSqlServerParts(body);
+  const [host, portText] = String(hostPart || "").split(":");
+  const params = new Map<string, { key: string; value: string }>();
+  for (const part of paramParts) {
+    const [key, ...valueParts] = part.split("=");
+    if (!key) continue;
+    params.set(key.trim().toLowerCase(), {
+      key: key.trim(),
+      value: unformatSqlServerValue(valueParts.join("=")),
+    });
+  }
+  const first = (...names: string[]) => {
+    for (const name of names) {
+      const found = params.get(name.toLowerCase());
+      if (found) return found.value;
+    }
+    return "";
+  };
+  const database = first("database", "initial catalog");
+  const user = first("user", "username", "uid", "userid", "user id");
+  const password = first("password", "pwd");
+  const optionParts = [...params.entries()]
+    .filter(([key]) => !["database", "initial catalog", "user", "username", "uid", "userid", "user id", "password", "pwd"].includes(key))
+    .map(([, entry]) => `${entry.key}=${formatSqlServerValue(entry.value)}`);
+  return {
+    engine: "sqlserver",
+    user,
+    password,
+    host: String(host || "").trim(),
+    port: portText ? Number(portText) : 1433,
+    database,
+    options: optionParts.join(";"),
+  };
 }
 
 /** Build a database connection URL from parts (password percent-encoded). */
@@ -84,8 +153,17 @@ export function buildDatabaseUrl({
   const dbName = encodeURIComponent(String(database || "archive"));
   const hostName = String(host || "localhost").trim();
   if (normalized === "sqlserver") {
-    const suffix = options ? `?${String(options).replace(/^\?/, "")}` : "";
-    return `sqlserver://${u}${p}@${hostName}${prt}/${dbName}${suffix}`;
+    const sqlServerParts = [
+      `sqlserver://${hostName}${prt}`,
+      `database=${formatSqlServerValue(database || "archive")}`,
+      `user=${formatSqlServerValue(user || "archive")}`,
+    ];
+    if (password) sqlServerParts.push(`password=${formatSqlServerValue(password)}`);
+    const optionText = String(options || "").replace(/^[?;]/, "").trim();
+    if (optionText) {
+      sqlServerParts.push(...optionText.split(/[;&]/).filter(Boolean));
+    }
+    return sqlServerParts.join(";");
   }
   return `${normalized}://${u}${p}@${hostName}${prt}/${dbName}`;
 }
@@ -101,6 +179,12 @@ export function parseDatabaseUrl(
     ? normalizeDatabaseEngine(expectedEngine)
     : "";
   try {
+    if ((!engine || engine === "sqlserver") && raw.startsWith("sqlserver://") && raw.includes(";")) {
+      const parsed = parseSqlServerConnectionString(raw);
+      if (!parsed) return null;
+      if (engine && parsed.engine !== engine) return null;
+      return parsed;
+    }
     if (raw.startsWith("file:")) {
       if (engine && engine !== "sqlite") return null;
       const file = raw.slice("file:".length);

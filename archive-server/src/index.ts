@@ -4,8 +4,7 @@
 // BACKEND=pocketbase → proxies to a PocketBase instance (POCKETBASE_URL).
 // BACKEND=postgres   → instantiates a Prisma client with PostgreSQL.
 // BACKEND=sqlserver  → instantiates the same Prisma-backed storage surface
-//                      after DATABASE_PROVIDER=sqlserver generation; the
-//                      runtime image still needs the matching Prisma driver.
+//                      with the SQL Server Prisma driver adapter.
 //
 // Run with: node src/index.js  (Dockerfile.server CMD)
 
@@ -38,6 +37,7 @@ import { createVersionRetentionService } from "./versions/versionRetentionServic
 import { createRetentionScheduler } from "./retention/retentionScheduler.js";
 import { initMetrics } from "./monitoring/metrics.js";
 import { initRedis, closeRedis, isRedisAvailable } from "./cache/redisCache.js";
+import { createPrismaDriverAdapter } from "./db/prismaAdapter.js";
 import { startPresenceServer } from "./collaboration/presenceServer.js";
 import { tryCreateRedisMediaJobStore } from "./media/redisMediaJobStore.js";
 import { createInMemoryMediaJobStore } from "./media/mediaJobs.js";
@@ -98,28 +98,11 @@ async function buildPrismaClient() {
   // the POSTGRES_* defaults. Applied on boot.
   const { databaseUrl, databaseEngine, databaseSource, databaseTarget } = resolveServerConfig();
   if (!databaseUrl) {
-    throw new Error("BACKEND=postgres requires a database URL (DATABASE_URL/POSTGRES_* or a saved server config).");
+    throw new Error("Prisma SQL backends require a database URL (DATABASE_URL/SQLSERVER_URL/POSTGRES_* or a saved server config).");
   }
   logger.info({ databaseTarget, databaseEngine, databaseSource }, "DB target resolved");
-  if (databaseEngine !== "postgresql") {
-    throw new Error(
-      `DATABASE_PROVIDER=${databaseEngine} is saved, but this runtime image only bundles the PostgreSQL Prisma adapter. ` +
-      "Install/wire the matching Prisma driver adapter, run migrations, then restart."
-    );
-  }
-  const { PrismaPg } = await import("@prisma/adapter-pg");
-  const poolConfig = {
-    connectionString: databaseUrl,
-    max: 20,                    // maximum number of pooled connections
-    idleTimeoutMillis: 30_000,  // close idle connections after 30 s
-    connectionTimeoutMillis: 5_000 // throw if a new connection takes > 5 s
-  };
-  logger.debug(
-    { poolMax: poolConfig.max, idleTimeoutMs: poolConfig.idleTimeoutMillis, connectionTimeoutMs: poolConfig.connectionTimeoutMillis },
-    "pg pool config"
-  );
-  const adapter = new PrismaPg(poolConfig);
-  return new PrismaClient({ adapter });
+  const adapter = await createPrismaDriverAdapter({ databaseEngine, databaseUrl, logger });
+  return new PrismaClient({ adapter: adapter as any });
 }
 
 async function main() {

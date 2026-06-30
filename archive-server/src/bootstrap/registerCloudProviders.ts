@@ -175,7 +175,9 @@ export function registerCloudProviders(options: RegisterCloudProvidersOptions = 
         "Prisma SQL backend requires `options.prisma` — instantiate PrismaClient in your app entry and pass it in."
       );
     }
-    const provider = createPostgresStorageProvider(options.prisma as any);
+    const provider = createPostgresStorageProvider(options.prisma as any, {
+      jsonMode: backend === "sqlserver" ? "string" : "native",
+    });
     registerStorageProvider(provider);
     const engine = normalizeDatabaseEngine(options.databaseEngine || (config as any).databaseEngine);
     return { backend, engine, provider, prisma: options.prisma, ...wireAdditionalPorts(provider) };

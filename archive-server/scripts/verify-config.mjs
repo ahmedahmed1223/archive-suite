@@ -30,6 +30,14 @@ run("buildDatabaseUrl encodes parts (incl. special-char password)", () => {
     "mysql://u:p@db:3306/archive");
   assert.equal(buildDatabaseUrl({ engine: "sqlite", file: "./archive.sqlite" }),
     "file:./archive.sqlite");
+  assert.equal(buildDatabaseUrl({
+    engine: "sqlserver",
+    user: "sa",
+    password: "Password-123",
+    host: "sqlserver",
+    database: "archive",
+    options: "encrypt=true;trustServerCertificate=true"
+  }), "sqlserver://sqlserver:1433;database=archive;user=sa;password=Password-123;encrypt=true;trustServerCertificate=true");
 });
 
 run("parseDatabaseUrl round-trips + honors expected engine", () => {
@@ -37,6 +45,10 @@ run("parseDatabaseUrl round-trips + honors expected engine", () => {
   assert.deepEqual(parts, { engine: "postgresql", user: "u", password: "p@ss", host: "host", port: 6543, database: "mydb" });
   assert.equal(parseDatabaseUrl("postgres://u@h/db").port, 5432); // default port
   assert.equal(parseDatabaseUrl("mysql://u@h/db").engine, "mysql");
+  assert.deepEqual(
+    parseDatabaseUrl("sqlserver://sqlserver:1433;database=archive;user=sa;password=Password-123;encrypt=true;trustServerCertificate=true", "sqlserver"),
+    { engine: "sqlserver", user: "sa", password: "Password-123", host: "sqlserver", port: 1433, database: "archive", options: "encrypt=true;trustServerCertificate=true" }
+  );
   assert.equal(parseDatabaseUrl("mysql://u@h/db", "postgresql"), null);
   assert.deepEqual(parseDatabaseUrl("file:./archive.sqlite", "sqlite"), { engine: "sqlite", file: "./archive.sqlite", database: "./archive.sqlite", host: "", port: null, user: "", password: "" });
   assert.equal(parseDatabaseUrl(""), null);
@@ -47,6 +59,8 @@ run("maskDatabaseUrl hides the password", () => {
     "postgresql://archive:***@postgres:5432/archive");
   assert.equal(maskDatabaseUrl("postgresql://archive@postgres:5432/archive"),
     "postgresql://archive@postgres:5432/archive"); // no password → nothing to mask
+  assert.equal(maskDatabaseUrl("sqlserver://sqlserver:1433;database=archive;user=sa;password=Password-123;encrypt=true", "sqlserver"),
+    "sqlserver://sqlserver:1433;database=archive;user=sa;password=***;encrypt=true");
   assert.equal(maskDatabaseUrl("not-a-url"), "");
 });
 
@@ -54,6 +68,7 @@ run("isValidDatabaseUrl requires host + database", () => {
   assert.equal(isValidDatabaseUrl("postgresql://u:p@host:5432/db"), true);
   assert.equal(isValidDatabaseUrl("postgresql://u:p@host:5432/"), false); // no db
   assert.equal(isValidDatabaseUrl("mysql://u@host/db"), true);
+  assert.equal(isValidDatabaseUrl("sqlserver://sqlserver:1433;database=archive;user=sa;password=Password-123", "sqlserver"), true);
   assert.equal(isValidDatabaseUrl("mysql://u@host/db", "postgresql"), false);
   assert.equal(isValidDatabaseUrl("file:./archive.sqlite", "sqlite"), true);
   assert.equal(isValidDatabaseUrl(""), false);

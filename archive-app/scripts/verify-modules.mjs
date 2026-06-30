@@ -2800,7 +2800,10 @@ run("db config — canManageDb gate + buildPgUrl", () => {
   assert.equal(buildPgUrl({ host: "db", port: 5432, database: "archive", user: "u", password: "p@ss" }), "postgresql://u:p%40ss@db:5432/archive");
   assert.equal(buildDatabaseUrl({ engine: "mysql", host: "db", database: "archive", user: "u", password: "p" }), "mysql://u:p@db:3306/archive");
   assert.equal(buildDatabaseUrl({ engine: "sqlite", file: "./archive.sqlite" }), "file:./archive.sqlite");
-  assert.equal(buildDatabaseUrl({ engine: "sqlserver", host: "db", database: "archive", user: "sa", password: "p" }), "sqlserver://sa:p@db:1433/archive");
+  assert.equal(
+    buildDatabaseUrl({ engine: "sqlserver", host: "db", database: "archive", user: "sa", password: "p", options: "encrypt=true;trustServerCertificate=true" }),
+    "sqlserver://db:1433;database=archive;user=sa;password=p;encrypt=true;trustServerCertificate=true"
+  );
 });
 
 await runAsync("db config — fetch/test/save use bearer + correct routes; 403 maps", async () => {

@@ -38,7 +38,7 @@ describe("getPresetConfig", () => {
     const result = await getPresetConfig({
       env: {
         BACKEND: "sqlserver",
-        SQLSERVER_URL: "sqlserver://sa:Password-123@sqlserver:1433/archive",
+        SQLSERVER_URL: "sqlserver://sqlserver:1433;database=archive;user=sa;password=Password-123;encrypt=true;trustServerCertificate=true",
         ADMIN_USERNAME: "admin",
         ADMIN_PASSWORD: "Initial-123!",
         JWT_AUTH_SECRET: "auth-secret",

@@ -28,6 +28,11 @@ export function normalizeDatabaseEngine(engine = "postgresql") {
   return DATABASE_ENGINES.includes(value) ? value : "postgresql";
 }
 
+function formatSqlServerValue(value: unknown) {
+  const text = String(value ?? "").trim();
+  return text.includes(";") ? `{${text.replace(/[{}]/g, "")}}` : text;
+}
+
 /** Whether the DB settings UI should be available: cloud backend + admin token. */
 export function canManageDb({ backend, token, role } = {}) {
   const isAdmin = role === "admin" || role === "owner";
@@ -42,7 +47,8 @@ export function buildDatabaseUrl({
   database = "",
   user = "archive",
   password = "",
-  file = "./archive.sqlite"
+  file = "./archive.sqlite",
+  options = ""
 } = {}) {
   const normalized = normalizeDatabaseEngine(engine);
   if (normalized === "sqlite") {
@@ -53,6 +59,17 @@ export function buildDatabaseUrl({
   const p = password ? `:${encodeURIComponent(String(password))}` : "";
   const fallbackPort = normalized === "mysql" ? 3306 : normalized === "sqlserver" ? 1433 : 5432;
   const prt = port ? `:${Number(port)}` : `:${fallbackPort}`;
+  if (normalized === "sqlserver") {
+    const parts = [
+      `sqlserver://${String(host).trim()}${prt}`,
+      `database=${formatSqlServerValue(database || "archive")}`,
+      `user=${formatSqlServerValue(user || "archive")}`,
+    ];
+    if (password) parts.push(`password=${formatSqlServerValue(password)}`);
+    const optionText = String(options || "").replace(/^[?;]/, "").trim();
+    if (optionText) parts.push(...optionText.split(/[;&]/).filter(Boolean));
+    return parts.join(";");
+  }
   return `${normalized}://${u}${p}@${String(host).trim()}${prt}/${String(database).trim()}`;
 }
 

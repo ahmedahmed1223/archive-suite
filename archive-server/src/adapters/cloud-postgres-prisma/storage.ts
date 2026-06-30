@@ -56,6 +56,7 @@ function assertRecordSize(record: Record<string, unknown>): void {
 
 interface StorageProviderOptions {
   keyPathFor?: (store: string) => string;
+  jsonMode?: "native" | "string";
 }
 
 interface PaginationOpts {
@@ -115,6 +116,24 @@ export function createPostgresStorageProvider(
   options: StorageProviderOptions = {}
 ) {
   const keyPathFor = options.keyPathFor || defaultKeyPathFor;
+  const jsonMode = options.jsonMode || "native";
+  const encodeRow = (store: string, record: Record<string, unknown>, keyPath: string) => {
+    const payload = toRow(store, record, keyPath);
+    if (jsonMode !== "string") return payload;
+    return {
+      ...payload,
+      data: JSON.stringify(payload.data ?? null),
+      lastModifiedBy: payload.lastModifiedBy == null ? null : JSON.stringify(payload.lastModifiedBy),
+    };
+  };
+  const decodeRow = (value: Record<string, unknown> | undefined | null) => {
+    if (!value || jsonMode !== "string") return fromRow(value ?? undefined);
+    const parse = (raw: unknown) => {
+      if (typeof raw !== "string") return raw;
+      try { return JSON.parse(raw); } catch { return undefined; }
+    };
+    return fromRow({ ...value, data: parse(value.data), lastModifiedBy: parse(value.lastModifiedBy) });
+  };
   const row = prisma.storageRow;
   if (!row || typeof row.findUnique !== "function") {
     throw new Error("Prisma client missing `storageRow` model — did you run `prisma generate`?");
@@ -143,7 +162,7 @@ export function createPostgresStorageProvider(
       const found = await row.findUnique({
         where: { store_uid: { store, uid: String(key) } }
       });
-      return fromRow(found ?? undefined);
+      return decodeRow(found);
     },
 
     async getAll(store: string, opts?: PaginationOpts) {
@@ -151,7 +170,7 @@ export function createPostgresStorageProvider(
       // When limit is absent, return all rows (backward compat).
       if (!opts || opts.limit === undefined || opts.limit === null) {
         const rows = await row.findMany({ where: { store }, orderBy: { uid: "asc" } });
-        return rows.map(fromRow);
+        return rows.map(decodeRow);
       }
       const { cursor, limit } = opts;
       const where = cursor
@@ -165,7 +184,7 @@ export function createPostgresStorageProvider(
       });
       const hasMore = rows.length > limit;
       const pageRows = hasMore ? rows.slice(0, limit) : rows;
-      const data = pageRows.map(fromRow);
+      const data = pageRows.map(decodeRow);
       const nextCursor = hasMore ? (pageRows[pageRows.length - 1] as Record<string, unknown>).uid : null;
       return { data, nextCursor: nextCursor as string | null, hasMore };
     },
@@ -174,7 +193,7 @@ export function createPostgresStorageProvider(
       if (!record) return record;
       assertRecordSize(record);
       const keyPath = keyPathFor(store);
-      const payload = toRow(store, record, keyPath);
+      const payload = encodeRow(store, record, keyPath);
       // Pre-check existence so webhooks can distinguish create vs update.
       const existingRow = await row.findUnique({
         where: { store_uid: { store: payload.store, uid: payload.uid } },
@@ -201,7 +220,7 @@ export function createPostgresStorageProvider(
       // Non-blocking — failures are logged as warnings, never propagated to the caller.
       // Skipped silently when OPENAI_API_KEY / AI_API_KEY is absent.
       const embeddingText = buildEmbeddingText(record);
-      if (embeddingText) {
+      if (jsonMode === "native" && embeddingText) {
         generateEmbedding(embeddingText).then(async embedding => {
           if (embedding && typeof prisma.$executeRaw === "function") {
             const vectorStr = `[${embedding.join(",")}]`;
@@ -239,7 +258,7 @@ export function createPostgresStorageProvider(
                 store,
                 recordUid: String(recordUid),
                 version: (latest?.version as number ?? 0) + 1,
-                snapshot: record,
+                snapshot: jsonMode === "string" ? JSON.stringify(record) : record,
                 userId: (record._updatedBy as string | null | undefined) ?? null,
               },
             });
@@ -257,7 +276,7 @@ export function createPostgresStorageProvider(
       if (!record) return record;
       assertRecordSize(record);
       const keyPath = keyPathFor(store);
-      await row.create({ data: toRow(store, record, keyPath) });
+      await row.create({ data: encodeRow(store, record, keyPath) });
       return record;
     },
 
@@ -268,7 +287,7 @@ export function createPostgresStorageProvider(
         where: { store_uid: { store, uid: String(key) } },
         select: { data: true },
       }).catch(() => null);
-      const ownerId = (existing?.data as Record<string, unknown> | undefined)?.ownerId;
+      const ownerId = (decodeRow(existing) as Record<string, unknown> | undefined)?.ownerId;
       await row.deleteMany({ where: { store, uid: String(key) } });
       // Fire-and-forget: fire outgoing webhooks for record.deleted.
       fireWebhooks(prisma, "record.deleted", { store, uid: String(key) }, ownerId as string | undefined);
@@ -287,7 +306,7 @@ export function createPostgresStorageProvider(
       for (const record of validItems as Record<string, unknown>[]) {
         assertRecordSize(record);
       }
-      const toInsert = (validItems as Record<string, unknown>[]).map((record) => toRow(store, record, keyPath));
+      const toInsert = (validItems as Record<string, unknown>[]).map((record) => encodeRow(store, record, keyPath));
       // Use createMany in chunks to stay under Postgres's ~65 535-parameter
       // ceiling. skipDuplicates handles upsert-like behaviour: existing uid rows
       // are skipped rather than overwriting (acceptable for batch import; use
@@ -336,7 +355,7 @@ export function createPostgresStorageProvider(
           const rows = await txRow.findMany({ where, orderBy: { uid: "asc" }, take: (limit ?? 0) + 1 });
           const hasMore = rows.length > (limit ?? 0);
           const pageRows = hasMore ? rows.slice(0, limit) : rows;
-          const data = pageRows.map(fromRow).filter(Boolean);
+          const data = pageRows.map(decodeRow).filter(Boolean);
           const nextCursor = hasMore ? (pageRows[pageRows.length - 1] as Record<string, unknown>).uid : null;
           return {
             exportedAt: new Date().toISOString(),
@@ -360,12 +379,12 @@ export function createPostgresStorageProvider(
         // these specific keys so we don't gain anything from a single big query.
         for (const [domainKey, storeName] of Object.entries(SNAPSHOT_COLLECTION_BY_DOMAIN_KEY)) {
           const rows = await txRow.findMany({ where: { store: storeName }, orderBy: { uid: "asc" } });
-          (out as Record<string, unknown>)[domainKey] = rows.map(r => fromRow(r ?? undefined)).filter((value) => value !== undefined);
+          (out as Record<string, unknown>)[domainKey] = rows.map(r => decodeRow(r ?? undefined)).filter((value) => value !== undefined);
         }
         const settingsRow = await txRow.findUnique({
           where: { store_uid: { store: SETTINGS_COLLECTION, uid: SETTINGS_RECORD_KEY } }
         });
-        (out as Record<string, unknown>).settings = fromRow(settingsRow ?? undefined) || undefined;
+        (out as Record<string, unknown>).settings = decodeRow(settingsRow) || undefined;
         return out;
       }, txOpts)) as SnapshotResult;
     },
@@ -381,7 +400,11 @@ export function createPostgresStorageProvider(
         const found = await row.findFirst({
           where: { store, uid: String(value) }
         });
-        return fromRow(found ?? undefined);
+        return decodeRow(found);
+      }
+      if (jsonMode === "string") {
+        const rows = await row.findMany({ where: { store }, orderBy: { uid: "asc" } });
+        return rows.map(decodeRow).find((record) => String(record?.[field] ?? "") === String(value));
       }
       // General case: JSONB field lookup. The raw query lets Postgres use a
       // functional index on data->>'field' when one exists (e.g. on `username`).
@@ -395,7 +418,7 @@ export function createPostgresStorageProvider(
           AND data->>${Prisma.raw(`'${field}'`)} = ${String(value)}
         LIMIT 1
       `;
-      return rows && rows[0] ? fromRow(rows[0] ?? undefined) : undefined;
+      return rows && rows[0] ? decodeRow(rows[0] ?? undefined) : undefined;
     },
 
     async replaceAll(payload: Record<string, unknown> = {}): Promise<ReplaceCounts> {
@@ -428,7 +451,7 @@ export function createPostgresStorageProvider(
           for (const record of validRecords) {
             assertRecordSize(record);
           }
-          const toInsert = validRecords.map((record) => toRow(store, record, keyPath));
+          const toInsert = validRecords.map((record) => encodeRow(store, record, keyPath));
           // Insert in chunks to stay under Postgres's ~65 535-parameter ceiling.
           // The store was just wiped so skipDuplicates is a safety net only.
           for (const chunk of chunks(toInsert, CHUNK_SIZE)) {
@@ -439,7 +462,7 @@ export function createPostgresStorageProvider(
         // Settings is a singleton — upsert the same as PocketBase.
         if (payload.settings && typeof payload.settings === "object") {
           const settingsRecord = { ...payload.settings, key: SETTINGS_RECORD_KEY };
-          const settingsPayload = toRow(SETTINGS_COLLECTION, settingsRecord as Record<string, unknown>, "key");
+          const settingsPayload = encodeRow(SETTINGS_COLLECTION, settingsRecord as Record<string, unknown>, "key");
           await txRow.upsert({
             where: {
               store_uid: { store: SETTINGS_COLLECTION, uid: SETTINGS_RECORD_KEY }
