@@ -62,6 +62,7 @@
 
 - [ ] `[P2]` ⏱️L **إكمال K8s + توحيد Docker Compose** — ملفات compose → ملف واحد بـ profiles؛ إضافة Redis+Whisper لـ K8s + kustomization.
   - ✅ إصلاح بوابة Compose وصورة السيرفر (2026-06-27): أُضيفت placeholder آمنة للمتغيرات المطلوبة في `archive-server/.env.example` (`POSTGRES_*`, `REDIS_PASSWORD`, `PGADMIN_*`, `GRAFANA_PASSWORD`, أسرار JWT)، ونُقلت التعليقات من inline إلى أسطر مستقلة حتى لا تُفسَّر كقيم داخل Docker Compose. أُضيف `tsconfig.base.json` إلى `archive-server/Dockerfile.server` في مراحل build/runtime حتى لا يفشل Prisma/tsx بعد بدء ترحيل TypeScript. مرّت `docker:config` و`docker:config:postgres` وبناء صورة السيرفر.
+  - ✅ شريحة تحقق offline للبنية (2026-06-30): صُحّحت selectors في `archive-server/k8s/network-policy.yaml` لتطابق labels الفعلية (`server`/`frontend`/`postgres`)، وأُضيفت بوابة `pnpm run verify:infra` التي تتحقق من ملفات Docker Compose الأساسية/البدائل، وتفحص kustomize عند توفر `kubectl`. التحقق المحلي: `node --check scripts/verify-infra-config.mjs` و`pnpm run verify:infra` نجحا؛ تم تخطي dry-run الخاص بـ `kubectl` فقط لعدم وجود context محلي.
   - الملفات: `archive-server/deploy/*`, `archive-server/*.yml`.
   - المصدر: dev-roadmap (P1-07).
 

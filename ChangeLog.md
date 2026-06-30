@@ -2852,3 +2852,7 @@
 ### 1. تفريغ عربي إنتاجي — Whisper GPU config في Laravel (شريحة، 2026-06-30)
 
 - [~] `[P1]` ⏱️XL **تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3)** — أُضيفت شريحة إعداد GPU في المسار القانوني الجديد `archive-laravel`: `WHISPER_DEVICE` و`WHISPER_COMPUTE_TYPE` في `config/media.php` و`.env.example`، وتم تمريرهما من `AppServiceProvider` إلى `WhisperTranscriber`. أمر faster-whisper صار يضيف `--device cuda` و`--compute_type float16` افتراضياً مع بقاء `large-v3`/`ar`/`vtt`. أضيفت قدرة `FakeProcessRunner::lastCommand()` لاختبار الأمر، ومرّ `php artisan test --filter=WhisperTranscriberTest` داخل Docker: 6 اختبارات / 13 assertion. المتبقي لإغلاق P1: smoke حي على GPU + قياس دقة مقابلة عربية + diarization + تصدير TTML.
+
+### 2. K8s + Docker Compose — تحقق offline للبنية (شريحة، 2026-06-30)
+
+- [~] `[P2]` ⏱️L **إكمال K8s + توحيد Docker Compose** — صُحّحت selectors في `archive-server/k8s/network-policy.yaml` لتطابق labels الفعلية (`server`/`frontend`/`postgres`) بدلاً من أسماء `archive-*` غير الموجودة، وأُضيف `scripts/verify-infra-config.mjs` مع أمر `pnpm run verify:infra`. البوابة تتحقق من وجود ملفات Compose، وتشغّل `docker compose config` لكل البدائل الأساسية، وتفحص `kubectl kustomize`/dry-run عند توفر context. التحقق: `node --check scripts/verify-infra-config.mjs` و`pnpm run verify:infra` نجحا؛ تخطّي dry-run الخاص بـ `kubectl` كان متوقعاً لعدم وجود context محلي. المتبقي لإغلاق البند: توحيد Compose بـ profiles وإضافة Redis/Whisper إلى K8s ثم بوابة CI حيّة.
