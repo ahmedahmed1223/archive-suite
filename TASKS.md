@@ -91,8 +91,8 @@
 > الحالة: ProjectsPage فيه `roughCuts`/`inSec/outSec`/transitions/looks/filters/EDL+JSON+MP4 لكن **قائمة نصية بلا خط زمني مرئي** (تم التحقق: لا `MultiTrack`).
 
 - [~] `[P2]` ⏱️L **مشغّل فيديو متقدم في DetailPage** — Frame stepping (`,`/`.`) + Mark In/Out + «أضف لمشروع» مباشرة + Waveform + Transcript Sync.
-  - ✅ Frame stepping + Mark In/Out + «أضف لمشروع» مُنجَز (2026-06-30) — راجع [`ChangeLog.md`](ChangeLog.md).
-  - متبقّي: Waveform (يحتاج تحليل صوتي)، Transcript Sync (جزئياً موجود في TranscriberPage).
+  - ✅ Frame stepping + Mark In/Out + «أضف لمشروع» + **Waveform** مُنجَز (2026-06-30) — راجع [`ChangeLog.md`](ChangeLog.md).
+  - متبقّي: **Transcript Sync فقط** (جزئياً موجود في TranscriberPage).
   - الملفات: `archive-app/src/components/media/VideoPlayer.tsx` + `archive-app/src/pages/DetailPage.tsx` + `archive-app/src/components/media/VideoPlayer.test.tsx`.
   - المصدر: new_tail (F19, F20).
 

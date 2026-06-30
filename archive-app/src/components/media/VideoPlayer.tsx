@@ -24,10 +24,51 @@ import {
 } from "lucide-react";
 import { secondsToClock } from "../../features/media/viewModel.js";
 import { previewPercentFromPointer, previewTimeFromPointer } from "../../features/media/scrubberPreview.js";
+import { useAudioWaveform } from "../../features/media/useAudioWaveform.js";
+import { peaksToBars, placeholderPeaks } from "../../features/montage/waveform.js";
 import { SubtitleRenderer } from "./SubtitleRenderer.jsx";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 const SEEK_STEP = 5;
+const WAVEFORM_H = 28; // px — height of the waveform strip
+
+/** Pure SVG waveform strip. Bars are centred; played portion is brighter. */
+function WaveformStrip({ peaks, currentRatio }: { peaks: number[]; currentRatio: number }) {
+  const bars = peaksToBars(peaks, WAVEFORM_H);
+  const n = bars.length;
+  if (n === 0) return null;
+  const w = 100; // viewBox width; scaled by CSS to fill parent
+  const barW = w / n;
+  const playedIdx = Math.round(currentRatio * n);
+
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${WAVEFORM_H}`}
+      preserveAspectRatio="none"
+      className="w-full"
+      style={{ height: WAVEFORM_H, display: "block" }}
+      aria-hidden="true"
+    >
+      {bars.map((h, i) => {
+        const x = i * barW + barW * 0.15;
+        const bw = barW * 0.7;
+        const y = (WAVEFORM_H - h) / 2;
+        const played = i < playedIdx;
+        return (
+          <rect
+            key={i}
+            x={x}
+            y={y}
+            width={bw}
+            height={h}
+            rx={bw / 2}
+            fill={played ? "var(--va-action, #60a5fa)" : "rgba(255,255,255,0.25)"}
+          />
+        );
+      })}
+    </svg>
+  );
+}
 const VOLUME_STEP = 0.1;
 const PREVIEW_W = 160;
 const PREVIEW_H = 90;
@@ -70,6 +111,11 @@ export function VideoPlayer({
   const [preview, setPreview] = useState(null); // { time, percent } while hovering the scrubber
   const [markIn, setMarkIn] = useState<number | null>(null);
   const [markOut, setMarkOut] = useState<number | null>(null);
+
+  const decodedPeaks = useAudioWaveform(src);
+  // Use decoded peaks when available; fall back to deterministic placeholder so the
+  // strip always renders something (placeholder is seeded from src so it's stable).
+  const waveformPeaks = decodedPeaks ?? placeholderPeaks({ id: src ?? "" }, 120);
 
   const hasSubtitles = Array.isArray(cues) && cues.length > 0;
   const pipSupported =
@@ -347,6 +393,8 @@ export function VideoPlayer({
               </span>
             </div>
           )}
+          {/* Waveform strip — purely decorative/informational; aria-hidden */}
+          <WaveformStrip peaks={waveformPeaks} currentRatio={duration > 0 ? current / duration : 0} />
           <div className="relative w-full">
             <input
               ref={scrubberRef}
