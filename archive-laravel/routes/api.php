@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\FilesController;
 use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\RecordsController;
+use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShareController;
@@ -65,6 +66,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/ingest/scan', [IngestController::class, 'scan']);
         Route::post('/ingest/ftp/pull', [IngestController::class, 'ftpPull']);
         Route::post('/ingest/smb/pull', [IngestController::class, 'smbPull']);
+
+        Route::get('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'index']);
+        Route::post('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'store']);
+        Route::patch('/review-comments/{id}', [ReviewCommentsController::class, 'update']);
 
         Route::get('/system/odbc', [SystemController::class, 'odbc']);
         Route::get('/system/odbc/tables/{table}', [SystemController::class, 'odbcReadTable']);

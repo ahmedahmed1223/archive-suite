@@ -90,6 +90,17 @@ export interface SecuritySettings {
   corsOrigins: string[];
 }
 
+export interface ReviewComment {
+  id: string;
+  mediaUid: string;
+  timecodeSeconds: number;
+  author: string;
+  body: string;
+  resolved: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
   login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
@@ -110,6 +121,9 @@ export interface ArchiveApiClient {
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
+  reviewComments(mediaUid: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: ReviewComment[] }>>;
+  createReviewComment(mediaUid: string, payload: { body: string; timecodeSeconds: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
+  updateReviewComment(id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
 }
 
 export interface AuthRequestOptions {
@@ -138,7 +152,7 @@ export function createArchiveApiClient({
       body,
       accessToken
     }: {
-      method?: "GET" | "POST";
+      method?: "GET" | "POST" | "PATCH";
       body?: unknown;
       accessToken?: string;
     } = {}
@@ -178,6 +192,9 @@ export function createArchiveApiClient({
   const post = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
     request<T>(path, { method: "POST", body, accessToken: options?.accessToken });
 
+  const patch = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
+    request<T>(path, { method: "PATCH", body, accessToken: options?.accessToken });
+
   return {
     health: () => get("/health"),
     login: (payload: LoginRequest) => post<AuthSession>("/auth/login", payload),
@@ -216,6 +233,12 @@ export function createArchiveApiClient({
     createShare: (payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions) =>
       post<{ token: string; url?: string }>("/share", { scope: { itemIds: payload.itemIds }, permission: payload.permission, expiresAt: payload.expiresAt }, options),
     getSecuritySettings: (options?: AuthRequestOptions) =>
-      get<{ settings: SecuritySettings }>("/system/security-settings", options)
+      get<{ settings: SecuritySettings }>("/system/security-settings", options),
+    reviewComments: (mediaUid: string, options?: AuthRequestOptions) =>
+      get<{ comments: ReviewComment[] }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, options),
+    createReviewComment: (mediaUid: string, payload: { body: string; timecodeSeconds: number }, options?: AuthRequestOptions) =>
+      post<{ comment: ReviewComment }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, payload, options),
+    updateReviewComment: (id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions) =>
+      patch<{ comment: ReviewComment }>(`/review-comments/${encodeURIComponent(id)}`, payload, options)
   };
 }

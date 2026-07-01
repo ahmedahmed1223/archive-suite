@@ -156,7 +156,10 @@
 
 ## 7. الذكاء الاصطناعي والميزات التنافسية (AI & Competitive) — P3 net-new
 
-- [ ] `[P2]` ⏱️XL **مراجعة بصرية واعتماد (Visual Review — منافس Frame.io)** — تعليق على إطار محدد + annotation + مقارنة side-by-side + رابط مراجعة خارجي.
+- [~] `[P2]` ⏱️XL **مراجعة بصرية واعتماد (Visual Review — منافس Frame.io)** — تعليق على إطار محدد + annotation + مقارنة side-by-side + رابط مراجعة خارجي.
+  - ✅ شريحة 1 (2026-07-01): تعليقات مؤطَّرة بالتوقيت (frame comments). أضيفت migration لـ `review_comments` (id, media_uid, timecode_seconds، author، body، resolved، timestamps)؛ Laravel model وcontroller endpoints (GET/POST/PATCH `/api/v1/media/{mediaUid}/review-comments`، `/review-comments/{id}`)؛ FormRequests للتحقق (body required+4000 char max، timecode ≥0)؛ قيد `archive.auth` + `archive.audit`؛ مسار Next.js minimal `/media/review` مع عميل typed و UI بسيط (قائمة مرتبة حسب timecode، إضافة، تبديل resolved). التحقق: Feature tests 10/10 ✅ (auth, order, CRUD, validation)؛ full suite 145 tests ✅؛ `typecheck:next` و`build:next` ✅.
+  - الملفات: `archive-laravel/database/migrations/2026_07_01_000001_create_review_comments_table.php`، `app/Models/ReviewComment.php`، `app/Http/Controllers/Api/V1/ReviewCommentsController.php`، `app/Http/Requests/{Store,Update}ReviewCommentRequest.php`، `routes/api.php`، `tests/Feature/ReviewCommentsApiTest.php`؛ `archive-next/lib/archive-api.ts` (interface ReviewComment + methods)، `app/media/review/page.tsx`.
+  - المتبقي (slices 2–4): annotation drawing (canvas + brushes)، side-by-side compare (video sync)، external review links (token + public route).
   - المصدر: dev-roadmap (new-feature #1).
 
 - [ ] `[P2]` ⏱️XL **تعاون حي (Live Collaboration)** — حضور فوري + تحرير متزامن + إشعارات WebSocket حقيقية (`PresenceIndicator` موجود).
