@@ -5,10 +5,10 @@ test('renders the Next.js migration shell with API contract status', async ({ pa
 
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('.brand strong')).toHaveText('Archive Suite');
-  await expect(page.getByRole('heading', { name: /واجهة Next\.js الجديدة/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'واجهة Archive Suite المعتمدة فوق Laravel API.' })).toBeVisible();
   await expect(page.getByLabel('حالة الترحيل')).toContainText('عقد API');
   await expect(page.getByLabel('حالة الترحيل')).toContainText('HttpOnly refresh cookie');
-  await expect(page.getByText(/يحتوي على \d+ مسارا أساسيا/)).toBeVisible();
+  await expect(page.getByText(/\d+ مسار API/)).toBeVisible();
 });
 
 test('renders the Next.js login migration screen', async ({ page }) => {
@@ -40,7 +40,7 @@ test('renders the Next.js help migration route', async ({ page }) => {
 test('renders the Next.js reports migration route', async ({ page }) => {
   await page.goto('/reports', { waitUntil: 'networkidle' });
 
-  await expect(page.getByRole('heading', { name: 'تقارير Next.js التجريبية.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'تقارير Next.js التشغيلية.' })).toBeVisible();
   await expect(page.getByLabel('تقارير Next.js')).toContainText('بوابة القبول');
   await expect(page.getByText(/App Router/)).toBeVisible();
 });
@@ -48,9 +48,11 @@ test('renders the Next.js reports migration route', async ({ page }) => {
 test('renders the Next.js settings migration route', async ({ page }) => {
   await page.goto('/settings', { waitUntil: 'networkidle' });
 
-  await expect(page.getByRole('heading', { name: 'إعدادات Next.js المبدئية.' })).toBeVisible();
-  await expect(page.getByLabel('إعدادات Next.js')).toContainText('جلسات Laravel');
-  await expect(page.getByText('refresh cookie HttpOnly')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'إعدادات Archive Suite للقراءة فقط.' })).toBeVisible();
+  await expect(page.getByLabel('إعدادات Archive Suite')).toContainText('System');
+  await expect(page.getByLabel('إعدادات Archive Suite')).toContainText('API');
+  await expect(page.getByLabel('وضع الأمان')).toContainText('مهلة الجلسة');
+  await expect(page.getByLabel('وضع الأمان')).toContainText('Webhook allowlist');
 });
 
 test('renders the Next.js media jobs route wired for Laravel backend status', async ({ page }) => {
@@ -60,4 +62,14 @@ test('renders the Next.js media jobs route wired for Laravel backend status', as
   await expect(page.getByLabel('فحص media jobs')).toContainText('/api/v1/media/jobs/:id');
   await expect(page.getByLabel('معرّف job')).toBeVisible();
   await expect(page.getByLabel('Access token')).toBeVisible();
+});
+
+test('renders the Next.js archive search route without requiring live Laravel data', async ({ page }) => {
+  await page.goto('/archive', { waitUntil: 'networkidle' });
+
+  await expect(page.getByRole('heading', { name: 'بحث السجلات المحفوظة.' })).toBeVisible();
+  await expect(page.getByPlaceholder('ابحث عن السجلات...')).toBeVisible();
+  await page.getByPlaceholder('ابحث عن السجلات...').fill('demo');
+  await page.getByRole('button', { name: 'بحث' }).click();
+  await expect(page.getByPlaceholder('ابحث عن السجلات...')).toHaveValue('demo');
 });
