@@ -17,4 +17,14 @@ return [
     // a HuggingFace auth token (HF_TOKEN env var) with access to pyannote's
     // gated models; off by default since it needs that extra setup.
     'whisper_diarize' => env('WHISPER_DIARIZE', false),
+
+    // Optional ffmpeg overlay for transcode jobs. Per-job options.watermark can
+    // override these values, and options.watermark.enabled=false disables it.
+    'watermark' => [
+        'enabled' => env('MEDIA_WATERMARK_ENABLED', false),
+        'path' => env('MEDIA_WATERMARK_PATH'),
+        'position' => env('MEDIA_WATERMARK_POSITION', 'bottom-right'),
+        'opacity' => env('MEDIA_WATERMARK_OPACITY', 0.85),
+        'margin' => env('MEDIA_WATERMARK_MARGIN', 24),
+    ],
 ];
