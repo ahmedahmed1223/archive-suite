@@ -26,6 +26,7 @@
     { "name": "Rights" },
     { "name": "Share" },
     { "name": "Review" },
+    { "name": "Collaboration" },
     { "name": "Ingest" }
   ],
   "paths": {
@@ -630,6 +631,67 @@
             }
           },
           "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/collaboration/rooms/{roomKey}/presence": {
+      "get": {
+        "tags": ["Collaboration"],
+        "summary": "List active participants in a collaboration room",
+        "operationId": "listCollaborationPresence",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "roomKey",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Presence snapshot",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollaborationPresenceResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Send a collaboration presence heartbeat",
+        "operationId": "sendCollaborationHeartbeat",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "roomKey",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CollaborationHeartbeatRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Presence snapshot after heartbeat",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollaborationPresenceResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -1263,6 +1325,49 @@
               "comments": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/ReviewComment" }
+              }
+            }
+          }
+        ]
+      },
+      "CollaborationStatus": {
+        "type": "string",
+        "enum": ["active", "viewing", "reviewing", "editing", "idle"]
+      },
+      "CollaborationParticipant": {
+        "type": "object",
+        "required": ["id", "roomKey", "userId", "displayName", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "roomKey": { "type": "string" },
+          "userId": { "type": "string" },
+          "displayName": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/CollaborationStatus" },
+          "resourceId": { "type": ["string", "null"] },
+          "cursor": { "type": ["object", "null"], "additionalProperties": true },
+          "lastSeenAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CollaborationHeartbeatRequest": {
+        "type": "object",
+        "properties": {
+          "status": { "$ref": "#/components/schemas/CollaborationStatus" },
+          "resourceId": { "type": "string", "maxLength": 255 },
+          "cursor": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "CollaborationPresenceResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["roomKey", "activeWindowSeconds", "participants"],
+            "properties": {
+              "roomKey": { "type": "string" },
+              "activeWindowSeconds": { "type": "integer", "minimum": 1 },
+              "participants": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CollaborationParticipant" }
               }
             }
           }

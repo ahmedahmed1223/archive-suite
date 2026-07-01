@@ -124,6 +124,25 @@ export interface ReviewLinkDetails {
   comments: ReviewComment[];
 }
 
+export type CollaborationStatus = "active" | "viewing" | "reviewing" | "editing" | "idle";
+
+export interface CollaborationParticipant {
+  id: string;
+  roomKey: string;
+  userId: string;
+  displayName: string;
+  status: CollaborationStatus;
+  resourceId?: string | null;
+  cursor?: Record<string, unknown> | null;
+  lastSeenAt?: string | null;
+}
+
+export interface CollaborationPresencePayload {
+  roomKey: string;
+  activeWindowSeconds: number;
+  participants: CollaborationParticipant[];
+}
+
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
   login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
@@ -149,6 +168,8 @@ export interface ArchiveApiClient {
   updateReviewComment(id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
   reviewLink(token: string): Promise<ApiEnvelope<ReviewLinkDetails>>;
   createReviewLink(payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>>;
+  collaborationPresence(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
+  sendCollaborationHeartbeat(roomKey: string, payload?: { status?: CollaborationStatus; resourceId?: string; cursor?: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
 }
 
 export interface AuthRequestOptions {
@@ -271,6 +292,18 @@ export function createArchiveApiClient({
       post<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>(
         `/media/${encodeURIComponent(payload.mediaUid)}/review-links`,
         { permission: payload.permission, expiresAt: payload.expiresAt },
+        options
+      ),
+    collaborationPresence: (roomKey: string, options?: AuthRequestOptions) =>
+      get<CollaborationPresencePayload>(`/collaboration/rooms/${encodeURIComponent(roomKey)}/presence`, options),
+    sendCollaborationHeartbeat: (
+      roomKey: string,
+      payload?: { status?: CollaborationStatus; resourceId?: string; cursor?: Record<string, unknown> },
+      options?: AuthRequestOptions
+    ) =>
+      post<CollaborationPresencePayload>(
+        `/collaboration/rooms/${encodeURIComponent(roomKey)}/presence`,
+        payload,
         options
       )
   };

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\FilesController;
 use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
@@ -48,6 +49,8 @@ Route::prefix('v1')->group(function (): void {
     // Media streaming: auth only (no per-range audit spam). Range-capable so the
     // browser can stream/seek local archive media over HTTP instead of file://.
     Route::middleware('archive.auth')->get('/files/stream', [FilesController::class, 'stream']);
+    Route::middleware('archive.auth')->get('/collaboration/rooms/{roomKey}/presence', [CollaborationController::class, 'index']);
+    Route::middleware('archive.auth')->post('/collaboration/rooms/{roomKey}/presence', [CollaborationController::class, 'heartbeat']);
 
     Route::middleware(['archive.auth', 'archive.audit'])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
