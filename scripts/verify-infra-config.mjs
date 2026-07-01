@@ -80,8 +80,27 @@ for (const variant of composeVariants) {
 assertIncludes("archive-server/k8s/network-policy.yaml", "app: server");
 assertIncludes("archive-server/k8s/network-policy.yaml", "app: frontend");
 assertIncludes("archive-server/k8s/network-policy.yaml", "app: postgres");
+assertIncludes("archive-server/k8s/network-policy.yaml", "app: redis");
+assertIncludes("archive-server/k8s/network-policy.yaml", "app: whisper-worker");
 assertExcludes("archive-server/k8s/network-policy.yaml", "app: archive-server");
 assertExcludes("archive-server/k8s/network-policy.yaml", "app: archive-frontend");
+
+for (const file of [
+  "archive-server/k8s/redis-deployment.yaml",
+  "archive-server/k8s/redis-service.yaml",
+  "archive-server/k8s/whisper-worker-deployment.yaml",
+]) {
+  assert.ok(existsSync(rel(file)), `missing k8s resource: ${file}`);
+  assertIncludes("archive-server/k8s/kustomization.yaml", path.basename(file));
+}
+
+assertIncludes("archive-server/k8s/configmap.yaml", 'REDIS_URL: "redis://redis:6379"');
+assertIncludes("archive-server/k8s/configmap.yaml", 'MEDIA_PROCESSOR: "real"');
+assertIncludes("archive-server/k8s/configmap.yaml", 'WHISPER_MODEL: "large-v3"');
+assertIncludes("archive-server/k8s/secret.yaml", "APP_KEY:");
+assertIncludes("archive-server/k8s/redis-service.yaml", "app: redis");
+assertIncludes("archive-server/k8s/whisper-worker-deployment.yaml", "app: whisper-worker");
+assertIncludes("archive-server/k8s/whisper-worker-deployment.yaml", "nvidia.com/gpu");
 
 for (const variant of composeVariants) {
   const label = variant.map((file) => `archive-server/${file}`).join(" + ");

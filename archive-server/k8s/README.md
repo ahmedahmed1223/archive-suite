@@ -47,6 +47,9 @@ Before applying, update these files:
 
 **`secret.yaml`** — replace all `CHANGE_ME` placeholders:
 ```bash
+# Generate Laravel APP_KEY for the worker
+php artisan key:generate --show
+
 # Generate a strong JWT secret
 openssl rand -base64 48
 
@@ -56,9 +59,13 @@ openssl rand -base64 24
 
 **`ingress.yaml`** — replace `archive.example.com` with your actual domain.
 
-**`server-deployment.yaml`** and **`frontend-deployment.yaml`** — replace
-`ghcr.io/OWNER/archive-server:latest` and `ghcr.io/OWNER/archive-frontend:latest`
-with your actual image references.
+**Deployment images** — replace placeholder image references in
+`server-deployment.yaml`, `frontend-deployment.yaml`, and
+`whisper-worker-deployment.yaml` with your actual image references. Set
+`HF_TOKEN` in `secret.yaml` only if `WHISPER_DIARIZE=true`. The default worker
+requests one `nvidia.com/gpu` because `WHISPER_DEVICE=cuda`; switch
+`WHISPER_DEVICE`/`WHISPER_COMPUTE_TYPE` and remove the GPU limit for CPU-only
+clusters.
 
 ### 2. Apply with kustomize
 
@@ -71,6 +78,8 @@ kubectl apply -k archive-server/k8s/
 ```bash
 kubectl -n archive rollout status deployment/server
 kubectl -n archive rollout status deployment/frontend
+kubectl -n archive rollout status deployment/redis
+kubectl -n archive rollout status deployment/whisper-worker
 kubectl -n archive rollout status statefulset/postgres
 
 kubectl -n archive get pods
@@ -93,9 +102,12 @@ kubectl -n archive describe certificate archive-tls
 | `postgres-pvc.yaml` | 10 Gi PVC for PostgreSQL data |
 | `postgres-statefulset.yaml` | PostgreSQL 18 StatefulSet |
 | `postgres-service.yaml` | ClusterIP service for postgres:5432 |
+| `redis-deployment.yaml` | Redis cache/queue-adjacent service on port 6379 |
+| `redis-service.yaml` | ClusterIP service for redis:6379 |
 | `server-pvcs.yaml` | PVCs for uploaded files (5 Gi) and config (100 Mi) |
 | `server-deployment.yaml` | Archive Server Node.js API on port 8787 |
 | `server-service.yaml` | ClusterIP service for server:8787 |
+| `whisper-worker-deployment.yaml` | Laravel queue worker image for ffmpeg/faster-whisper media jobs |
 | `frontend-deployment.yaml` | nginx SPA + nginx ConfigMap |
 | `frontend-service.yaml` | ClusterIP service for frontend:80 |
 | `ingress.yaml` | NGINX Ingress with TLS termination |
