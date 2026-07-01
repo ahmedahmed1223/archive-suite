@@ -177,7 +177,8 @@
 
 - [~] `[P2]` ⏱️XL **تعاون حي (Live Collaboration)** — حضور فوري + تحرير متزامن + إشعارات WebSocket حقيقية (`PresenceIndicator` موجود).
   - ✅ شريحة 1 (2026-07-01): **presence heartbeat قانوني في Laravel + Next**. أضيف جدول/model `collaboration_presence` و`CollaborationController` مع endpoints محمية بدون audit spam: `GET/POST /api/v1/collaboration/rooms/{roomKey}/presence`. الـ heartbeat يحدث حضور المستخدم في الغرفة مع `status/resourceId/cursor`، ويعرض المشاركين النشطين ضمن نافذة 45 ثانية، مع فلترة stale participants. أضيفت صفحة Next `/collaboration` وعميل typed في `archive-next/lib/archive-api.ts`، وتوثيق OpenAPI + تحقق `verify:api-contracts`. التحقق: RED ثم GREEN لـ `CollaborationPresenceApiTest` (4 اختبارات / 25 assertion)، و`pnpm run typecheck:next`, `pnpm run build:next`, `pnpm run verify:api-contracts`.
-  - المتبقي لإغلاق البند: WebSocket/Reverb حقيقي بدلاً من polling/heartbeat، طبقة تحرير متزامن/locks conflict-aware، وإشعارات فورية مربوطة بالصفحات التشغيلية.
+  - ✅ شريحة 2 (2026-07-01): **editing locks conflict-aware**. أضيف جدول/model `collaboration_locks` وواجهات `GET/POST /api/v1/collaboration/rooms/{roomKey}/locks` و`POST /locks/release` لحجز مورد داخل غرفة، refresh لنفس المستخدم، 409 `lock_conflict` عند قفل مستخدم آخر، وانتهاء TTL آمن. صفحة `/collaboration` تعرض الأقفال وتتيح حجز/تحرير المورد الحالي. التحقق: RED ثم GREEN لـ `CollaborationLocksApiTest`، وفلتر `Collaboration` مرّ 8 اختبارات / 55 assertion، مع `pnpm run verify:api-contracts`, `pnpm run typecheck:next`, `pnpm run build:next`.
+  - المتبقي لإغلاق البند: WebSocket/Reverb حقيقي بدلاً من polling/heartbeat، وإشعارات فورية مربوطة بالصفحات التشغيلية.
   - المصدر: dev-roadmap (new-feature #2)، sessions_new (F16, F17).
 
 - [ ] `[P3]` ⏱️XL **محرّك قواعد مرئي (Visual Rules Engine)** — سحب/إفلات trigger+conditions+actions فوق `automationSlice`.

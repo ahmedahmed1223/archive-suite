@@ -695,6 +695,112 @@
         }
       }
     },
+    "/collaboration/rooms/{roomKey}/locks": {
+      "get": {
+        "tags": ["Collaboration"],
+        "summary": "List active resource locks in a collaboration room",
+        "operationId": "listCollaborationLocks",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "roomKey",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active resource locks",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollaborationLocksResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Acquire or refresh a resource lock",
+        "operationId": "acquireCollaborationLock",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "roomKey",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CollaborationLockRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lock refreshed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollaborationLockAcquireResponse" }
+              }
+            }
+          },
+          "201": {
+            "description": "Lock acquired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollaborationLockAcquireResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/collaboration/rooms/{roomKey}/locks/release": {
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Release a resource lock held by the current user",
+        "operationId": "releaseCollaborationLock",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "roomKey",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CollaborationLockReleaseRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lock release result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollaborationLockReleaseResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/share": {
       "post": {
         "tags": ["Share"],
@@ -1369,6 +1475,74 @@
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/CollaborationParticipant" }
               }
+            }
+          }
+        ]
+      },
+      "CollaborationLock": {
+        "type": "object",
+        "required": ["id", "roomKey", "resourceId", "userId", "displayName"],
+        "properties": {
+          "id": { "type": "string" },
+          "roomKey": { "type": "string" },
+          "resourceId": { "type": "string" },
+          "userId": { "type": "string" },
+          "displayName": { "type": "string" },
+          "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CollaborationLockRequest": {
+        "type": "object",
+        "required": ["resourceId"],
+        "properties": {
+          "resourceId": { "type": "string", "maxLength": 255 },
+          "ttlSeconds": { "type": "integer", "minimum": 15, "maximum": 300, "default": 90 }
+        }
+      },
+      "CollaborationLockReleaseRequest": {
+        "type": "object",
+        "required": ["resourceId"],
+        "properties": {
+          "resourceId": { "type": "string", "maxLength": 255 }
+        }
+      },
+      "CollaborationLocksResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["roomKey", "locks"],
+            "properties": {
+              "roomKey": { "type": "string" },
+              "locks": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/CollaborationLock" }
+              }
+            }
+          }
+        ]
+      },
+      "CollaborationLockAcquireResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CollaborationLocksResponse" },
+          {
+            "type": "object",
+            "required": ["lock"],
+            "properties": {
+              "lock": { "$ref": "#/components/schemas/CollaborationLock" }
+            }
+          }
+        ]
+      },
+      "CollaborationLockReleaseResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/CollaborationLocksResponse" },
+          {
+            "type": "object",
+            "required": ["released"],
+            "properties": {
+              "released": { "type": "boolean" }
             }
           }
         ]

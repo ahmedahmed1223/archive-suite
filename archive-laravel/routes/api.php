@@ -51,6 +51,9 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware('archive.auth')->get('/files/stream', [FilesController::class, 'stream']);
     Route::middleware('archive.auth')->get('/collaboration/rooms/{roomKey}/presence', [CollaborationController::class, 'index']);
     Route::middleware('archive.auth')->post('/collaboration/rooms/{roomKey}/presence', [CollaborationController::class, 'heartbeat']);
+    Route::middleware('archive.auth')->get('/collaboration/rooms/{roomKey}/locks', [CollaborationController::class, 'locks']);
+    Route::middleware('archive.auth')->post('/collaboration/rooms/{roomKey}/locks', [CollaborationController::class, 'acquireLock']);
+    Route::middleware('archive.auth')->post('/collaboration/rooms/{roomKey}/locks/release', [CollaborationController::class, 'releaseLock']);
 
     Route::middleware(['archive.auth', 'archive.audit'])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
