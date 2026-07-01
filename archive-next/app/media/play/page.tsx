@@ -1,45 +1,88 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MediaPlayer from "@/components/MediaPlayer";
 
 export default function MediaPlayPage() {
   const [pathInput, setPathInput] = useState("");
+  const [diskInput, setDiskInput] = useState("");
   const [path, setPath] = useState("");
+  const [disk, setDisk] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pathParam = params.get("path")?.trim() ?? "";
+    const diskParam = params.get("disk")?.trim() ?? "";
+
+    if (pathParam) {
+      setPathInput(pathParam);
+      setPath(pathParam);
+    }
+
+    if (diskParam) {
+      setDiskInput(diskParam);
+      setDisk(diskParam);
+    }
+  }, []);
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "2rem 1rem", display: "grid", gap: "1.25rem" }}>
-      <header style={{ display: "grid", gap: 4 }}>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>تشغيل المادة</h1>
-        <p style={{ margin: 0, color: "var(--muted, #666)" }}>
-          يُبثّ الملف عبر الخادم (يدعم السحب/التقديم) — يعمل مع الوسائط المحلية دون قيود المتصفح على{" "}
-          <code>file://</code>.
-        </p>
+    <main className="shell">
+      <header className="topbar">
+        <div className="brand">
+          <strong>Archive Suite</strong>
+          <span>Legal media player</span>
+        </div>
+        <nav className="route-links" aria-label="مسارات سريعة">
+          <a className="badge" href="/files">الملفات</a>
+          <a className="badge" href="/media/review">المراجعة</a>
+          <a className="badge" href="/">الرئيسية</a>
+        </nav>
       </header>
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          setPath(pathInput.trim());
-        }}
-        style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
-      >
-        <input
-          value={pathInput}
-          onChange={(event) => setPathInput(event.target.value)}
-          placeholder="مسار المادة داخل الأرشيف، مثل: video/clip.mp4"
-          aria-label="مسار المادة"
-          style={{ flex: 1, minWidth: 240, padding: "0.6rem 0.75rem", borderRadius: 8, border: "1px solid #ccc" }}
-        />
-        <button
-          type="submit"
-          style={{ padding: "0.6rem 1.1rem", borderRadius: 8, border: "none", background: "#1a1a1a", color: "#fff", cursor: "pointer" }}
-        >
-          تشغيل
-        </button>
-      </form>
+      <section className="content stack" aria-label="تشغيل الوسائط">
+        <div className="hero">
+          <span className="badge">HTTP Range</span>
+          <h1>تشغيل المادة.</h1>
+          <p>
+            يُبث الملف عبر Laravel بدلاً من فتحه محلياً، فيعمل السحب داخل
+            الفيديو والصوت عبر المتصفح مع مصادقة النظام.
+          </p>
+        </div>
 
-      {path ? <MediaPlayer path={path} title={path} /> : <p style={{ color: "var(--muted, #888)" }}>أدخل مساراً ثم اضغط «تشغيل».</p>}
+        <form
+          className="search-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setPath(pathInput.trim());
+            setDisk(diskInput.trim());
+          }}
+        >
+          <input
+            value={pathInput}
+            onChange={(event) => setPathInput(event.target.value)}
+            placeholder="مسار المادة داخل الأرشيف، مثل: video/clip.mp4"
+            aria-label="مسار المادة"
+            className="search-input"
+          />
+          <input
+            value={diskInput}
+            onChange={(event) => setDiskInput(event.target.value)}
+            placeholder="disk اختياري"
+            aria-label="قرص التخزين"
+            className="search-input"
+            style={{ flex: "0 1 12rem" }}
+          />
+          <button type="submit" className="button button-primary">تشغيل</button>
+        </form>
+
+        <article className="panel">
+          {path ? (
+            <MediaPlayer path={path} disk={disk || undefined} title={disk ? `${disk}:${path}` : path} />
+          ) : (
+            <div className="empty-state">أدخل مساراً أو اختر ملفاً قابلاً للتشغيل من صفحة الملفات.</div>
+          )}
+        </article>
+      </section>
     </main>
   );
 }
