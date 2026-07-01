@@ -68,5 +68,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/system/odbc', [SystemController::class, 'odbc']);
         Route::get('/system/odbc/tables/{table}', [SystemController::class, 'odbcReadTable']);
+        Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
+        Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
     });
 });
