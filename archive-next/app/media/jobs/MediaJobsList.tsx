@@ -23,6 +23,21 @@ type IngestState =
   | { status: "error"; message: string };
 
 const OPERATIONS: readonly MediaOperation[] = ["thumbnail", "transcode", "transcription"];
+const WATERMARK_POSITIONS = [
+  { value: "bottom-right", label: "أسفل يمين" },
+  { value: "bottom-left", label: "أسفل يسار" },
+  { value: "top-right", label: "أعلى يمين" },
+  { value: "top-left", label: "أعلى يسار" },
+  { value: "center", label: "الوسط" }
+] as const;
+
+function clampNumber(value: number, min: number, max: number, fallback: number) {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, value));
+}
 
 export function MediaJobsList() {
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -30,6 +45,7 @@ export function MediaJobsList() {
   const [createState, setCreateState] = useState<CreateState>({ status: "idle" });
   const [ingestState, setIngestState] = useState<IngestState>({ status: "idle" });
   const [statusFilter, setStatusFilter] = useState<MediaJobStatus | "">("");
+  const [selectedOperation, setSelectedOperation] = useState<MediaOperation | "">("");
 
   const loadJobs = useCallback(async () => {
     setListState({ status: "loading" });
@@ -61,16 +77,44 @@ export function MediaJobsList() {
     const data = new FormData(event.currentTarget);
     const recordId = String(data.get("recordId") ?? "").trim();
     const operation = String(data.get("operation") ?? "").trim() as MediaOperation;
+    const sourcePath = String(data.get("sourcePath") ?? "").trim();
 
     if (!recordId || !operation) {
       setCreateState({ status: "error", message: "أدخل معرّف السجل والعملية" });
       return;
     }
 
+    const options: Record<string, unknown> = {};
+
+    if (operation === "thumbnail") {
+      const atSec = Number(data.get("atSec") ?? 0);
+      options.atSec = clampNumber(atSec, 0, 86400, 0);
+    }
+
+    if (operation === "transcode" && data.get("watermarkEnabled") === "on") {
+      const watermarkPath = String(data.get("watermarkPath") ?? "").trim();
+      const watermarkPosition = String(data.get("watermarkPosition") ?? "bottom-right");
+
+      if (!watermarkPath) {
+        setCreateState({ status: "error", message: "أدخل مسار صورة العلامة المائية قبل إنشاء transcode job." });
+        return;
+      }
+
+      options.watermark = {
+        enabled: true,
+        path: watermarkPath,
+        position: watermarkPosition,
+        opacity: clampNumber(Number(data.get("watermarkOpacity") ?? 0.85), 0, 1, 0.85),
+        margin: Math.round(clampNumber(Number(data.get("watermarkMargin") ?? 24), 0, 512, 24))
+      };
+    }
+
     setCreateState({ status: "creating" });
     const response = await api.createMediaJob({
       recordId,
-      operation
+      operation,
+      ...(sourcePath ? { sourcePath } : {}),
+      ...(Object.keys(options).length > 0 ? { options } : {})
     });
 
     if (!response.ok) {
@@ -81,6 +125,7 @@ export function MediaJobsList() {
     setCreateState({ status: "success", job: response.job });
     setTimeout(() => {
       form.reset();
+      setSelectedOperation("");
       setCreateState({ status: "idle" });
       void loadJobs();
     }, 1500);
@@ -124,7 +169,12 @@ export function MediaJobsList() {
 
           <label>
             نوع العملية
-            <select name="operation" required>
+            <select
+              name="operation"
+              required
+              value={selectedOperation}
+              onChange={(event) => setSelectedOperation(event.target.value as MediaOperation | "")}
+            >
               <option value="">اختر عملية...</option>
               {OPERATIONS.map((op) => (
                 <option key={op} value={op}>
@@ -133,6 +183,67 @@ export function MediaJobsList() {
               ))}
             </select>
           </label>
+
+          <label>
+            مسار الملف المصدر
+            <input name="sourcePath" type="text" placeholder="media/source.mp4" />
+          </label>
+
+          {selectedOperation === "thumbnail" && (
+            <label>
+              لقطة عند الثانية
+              <input name="atSec" type="number" min="0" max="86400" defaultValue="0" />
+            </label>
+          )}
+
+          {selectedOperation === "transcode" && (
+            <div className="state-banner">
+              <div className="helper-row">
+                <strong>Watermark overlay</strong>
+                <label
+                  style={{
+                    alignItems: "center",
+                    color: "var(--va-text-2)",
+                    display: "inline-flex",
+                    gap: "0.45rem"
+                  }}
+                >
+                  <input
+                    name="watermarkEnabled"
+                    type="checkbox"
+                    style={{ inlineSize: "auto", minBlockSize: "auto" }}
+                  />
+                  تفعيل
+                </label>
+              </div>
+
+              <label>
+                مسار صورة العلامة
+                <input name="watermarkPath" type="text" placeholder="branding/watermark.png" />
+              </label>
+
+              <div className="field-row">
+                <label>
+                  الموضع
+                  <select name="watermarkPosition" defaultValue="bottom-right">
+                    {WATERMARK_POSITIONS.map((position) => (
+                      <option key={position.value} value={position.value}>
+                        {position.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  الشفافية
+                  <input name="watermarkOpacity" type="number" min="0" max="1" step="0.05" defaultValue="0.85" />
+                </label>
+                <label>
+                  الهامش
+                  <input name="watermarkMargin" type="number" min="0" max="512" defaultValue="24" />
+                </label>
+              </div>
+            </div>
+          )}
 
           <button type="submit" className="button button-primary" disabled={createState.status === "creating"}>
             {createState.status === "creating" ? "جار الإنشاء..." : "إنشاء job"}
@@ -214,6 +325,12 @@ export function MediaJobsList() {
                     <strong>المعرّف</strong>
                     <span style={{ overflowWrap: "anywhere" }}>{job.id}</span>
                   </div>
+                  {job.sourcePath && (
+                    <div className="kv-item">
+                      <strong>المصدر</strong>
+                      <span style={{ overflowWrap: "anywhere" }}>{job.sourcePath}</span>
+                    </div>
+                  )}
                   {job.queuedAt && (
                     <div className="kv-item">
                       <strong>وقت الإضافة</strong>
@@ -221,6 +338,9 @@ export function MediaJobsList() {
                     </div>
                   )}
                 </div>
+                {job.options && Object.keys(job.options).length > 0 && (
+                  <pre className="token-preview">{JSON.stringify(job.options, null, 2)}</pre>
+                )}
               </article>
             ))}
           </div>

@@ -81,6 +81,13 @@ export interface MediaJob {
   completedAt?: string | null;
 }
 
+export interface CreateMediaJobPayload {
+  recordId: string;
+  operation: MediaOperation;
+  sourcePath?: string;
+  options?: Record<string, unknown>;
+}
+
 export interface SecuritySettings {
   accessTokenTtlMinutes: number;
   perUserRateLimit: number;
@@ -190,7 +197,7 @@ export interface ArchiveApiClient {
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[] }>>;
-  createMediaJob(payload: { recordId: string; operation: MediaOperation; sourcePath?: string; options?: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
+  createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
@@ -303,7 +310,7 @@ export function createArchiveApiClient({
       const query = queryParams.toString();
       return get<{ jobs: MediaJob[] }>(`/media/jobs${query ? `?${query}` : ""}`, options);
     },
-    createMediaJob: (payload: { recordId: string; operation: MediaOperation; sourcePath?: string; options?: Record<string, unknown> }, options?: AuthRequestOptions) =>
+    createMediaJob: (payload: CreateMediaJobPayload, options?: AuthRequestOptions) =>
       post<{ job: MediaJob }>("/media/jobs", payload, options),
     ingestScan: (payload?: { subdir?: string }, options?: AuthRequestOptions) =>
       post<{ ingested: unknown[]; skipped: number }>("/ingest/scan", payload, options),
