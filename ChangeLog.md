@@ -28,6 +28,8 @@
 
 - [x] **توحيد رأس التطبيق والتنقل** — أُضيف `archive-next/components/AppHeader.tsx` كخريطة تنقل مركزية مع تمييز المسار الحالي عبر `aria-current`، واستُبدلت الرؤوس المتكررة في صفحات Next القانونية المستقرة (`/`, `/archive`, `/files`, `/types`, `/errors`, `/settings`, `/reports`, `/help`, `/media/jobs`, `/media/play`, `/collaboration`, `/share/[token]`, `/review/[token]`). التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **تحسين صفحات التشغيل الأساسية** — أضيفت utilities تصميم مشتركة في `globals.css` للانقسام responsive، الجداول القابلة للتمرير، الأزرار الخطرة، النصوص الطويلة، والفواصل؛ واستُخدمت في `/settings`, `/types`, `/errors`, `/files`, و`/archive/[id]` لتقليل التداخل وinline styles، تحسين RTL، ونقل إجراء مسح سجل الأخطاء إلى زر خطر مع تأكيد. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.
