@@ -41,7 +41,9 @@
 **P1 — كلها منجَزة برمجياً، عالقة على تحقق حي بعتاد حقيقي (GPU) — تبقى `[~]`:**
 1. §1 تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3) — ⏱️XL — الكود مكتمل؛ ينتظر تحقق دقة ≥90% على GPU/صوت عربي حقيقي.
 
-**P2 — قانوني متبقٍّ:** §2 (E2E+أمن · تنظيف مجلدات — قيد الإنهاز) · §2 K8s dry-run (عالق على kubectl context) · §3 علامة مائية (عالق على smoke حي بـ ffmpeg) · §5 لوحة أمان (endpoints في Laravel) · §7 (Visual Review · Live Collaboration) · §22 ODBC (repository — قيد الإنهاز).
+**P2 — قانوني متبقٍّ:** §7 (Visual Review · Live Collaboration) — ميزتان XL جديدتان، لم تبدآ.
+  - ✅ أُنجِز هذه الجلسة (2026-07-01): §2 (تنظيف مجلدات · E2E+audit) · §22 ODBC read-repository · §5 لوحة أمان (endpoints + حفظ دائم).
+  - ⏳ عالق على عتاد حقيقي (كود مكتمل): §1 GPU · §2 K8s dry-run (kubectl context) · §3 علامة مائية (ffmpeg smoke).
 
 **P3 — مؤجّل:** §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
 
