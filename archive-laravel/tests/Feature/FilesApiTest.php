@@ -65,4 +65,54 @@ class FilesApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_it_streams_a_full_file_with_range_support(): void
+    {
+        $response = $this->get('/api/v1/files/stream?path=video/clip.txt', $this->authHeaders());
+
+        $response->assertOk();
+        $this->assertSame('bytes', $response->headers->get('Accept-Ranges'));
+        $this->assertSame('archive clip', $response->streamedContent());
+    }
+
+    public function test_it_serves_a_partial_range_request(): void
+    {
+        $response = $this->get('/api/v1/files/stream?path=video/clip.txt', array_merge(
+            $this->authHeaders(),
+            ['Range' => 'bytes=0-6'],
+        ));
+
+        $response->assertStatus(206);
+        $this->assertSame('bytes 0-6/12', $response->headers->get('Content-Range'));
+        $this->assertSame('archive', $response->streamedContent());
+    }
+
+    public function test_it_rejects_an_unsatisfiable_range(): void
+    {
+        $this->get('/api/v1/files/stream?path=video/clip.txt', array_merge(
+            $this->authHeaders(),
+            ['Range' => 'bytes=1000-2000'],
+        ))->assertStatus(416);
+    }
+
+    public function test_it_rejects_a_missing_or_unresolvable_media_path(): void
+    {
+        // ponytail: realpath-based safety can't distinguish missing from traversal,
+        // so both non-existent and escaping paths return 400 (invalid media path).
+        $this->getJson('/api/v1/files/stream?path=video/missing.mp4', $this->authHeaders())
+            ->assertStatus(400)
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_it_rejects_stream_path_traversal(): void
+    {
+        $this->getJson('/api/v1/files/stream?path=../secrets', $this->authHeaders())
+            ->assertStatus(400)
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_it_rejects_unauthenticated_stream(): void
+    {
+        $this->getJson('/api/v1/files/stream?path=video/clip.txt')
+            ->assertUnauthorized();
+    }
 }

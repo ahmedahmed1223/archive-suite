@@ -42,7 +42,7 @@
 1. §1 تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3) — ⏱️XL — الكود مكتمل؛ ينتظر تحقق دقة ≥90% على GPU/صوت عربي حقيقي.
 
 **P2 — قانوني متبقٍّ:** §7 (Visual Review · Live Collaboration) — ميزتان XL جديدتان، لم تبدآ.
-  - ✅ أُنجِز هذه الجلسة (2026-07-01): §2 (تنظيف مجلدات · E2E+audit) · §22 ODBC read-repository · §5 لوحة أمان (endpoints + حفظ دائم).
+  - ✅ أُنجِز هذه الجلسة (2026-07-01): §2 (تنظيف مجلدات · E2E+audit) · §22 ODBC read-repository · §5 لوحة أمان (endpoints + حفظ دائم) · §7 Visual Review شريحة 1 (تعليقات موقّتة) · **مشغّل وسائط قانوني + بثّ HTTP Range** (§3/§7 enabler — حلّ منع التشغيل المحلي).
   - ⏳ عالق على عتاد حقيقي (كود مكتمل): §1 GPU · §2 K8s dry-run (kubectl context) · §3 علامة مائية (ffmpeg smoke).
 
 **P3 — مؤجّل:** §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
@@ -115,6 +115,13 @@
   - الملفات: `archive-laravel/app/Services/Media/RealMediaProcessor.php`, `archive-laravel/config/media.php`, `archive-laravel/.env.example`, `archive-laravel/app/Providers/AppServiceProvider.php`, `archive-laravel/tests/Unit/RealMediaProcessorTest.php`، والمسار القديم `archive-server/src/media/*` بقي للميراث/Node.
   - المتبقي لإغلاقها نهائياً: smoke حي بـ ffmpeg على ملف فيديو حقيقي مع asset علامة مائية فعلي وربط UI/Job preset عند الحاجة.
   - المصدر: dev-roadmap (P2-05, P2-06).
+
+- [~] `[P2]` ⏱️L **مشغّل وسائط قانوني في Next + بثّ HTTP Range (حلّ التشغيل المحلي + كل أماكن التخزين)** — يستبدل مشغّل archive-app المجمّد ويحلّ منع المتصفح لتشغيل `file://`.
+  - ✅ شريحة backbone البثّ (2026-07-01): أُضيف `GET /api/v1/files/stream?path=` في `FilesController::stream` تحت `archive.auth` فقط (بلا audit لتفادي ضجيج كل range request)، يبثّ من `ARCHIVE_FILE_ROOT` عبر `response()->file()` (Symfony `BinaryFileResponse`) الذي يعالج **Range/206/416/Accept-Ranges** ناتيفياً — فالمتصفح يبثّ ويسحب (seek) بلا تحميل الملف كاملاً بالذاكرة، ومصادقة الكوكي `va_refresh` تعمل مع `<video>` (same-origin عبر بروكسي Next). أمان المسار عبر `resolvePath` الموجود (منع traversal). التحقق: `FilesApiTest` **10/10 (41 assertion)** — كامل + جزئي (206) + 416 + 401 + 400 traversal.
+  - ✅ شريحة مشغّل Next (2026-07-01): `archive-next/components/MediaPlayer.tsx` (يميّز صوت/فيديو، `preload="metadata"`، معالجة أخطاء الصيغ، RTL، `onReady` للسحب من تعليقات المراجعة لاحقاً) + صفحة `app/media/play/page.tsx`. التحقق: `typecheck:next` + `build:next` نجحا (`/media/play` static).
+  - المتبقّي: بثّ Range للـ disks البعيدة (s3/ftp/sftp) عبر `Storage::readStream` — المحلي (أكثر حالة «الوضع المحلي») منجز؛ ربط المشغّل بمتصفّح الملفات وصفحة المراجعة؛ waveform/transcript-sync القانوني (نُقل من legacy عند الحاجة).
+  - الملفات: `archive-laravel/app/Http/Controllers/Api/V1/FilesController.php`، `archive-laravel/routes/api.php`، `archive-laravel/tests/Feature/FilesApiTest.php`، `archive-next/components/MediaPlayer.tsx`، `archive-next/app/media/play/page.tsx`.
+  - المصدر: طلب المستخدم 2026-07-01 (تشغيل محلي + كل أماكن التخزين + streaming).
 
 ---
 

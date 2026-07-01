@@ -43,6 +43,10 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 
+    // Media streaming: auth only (no per-range audit spam). Range-capable so the
+    // browser can stream/seek local archive media over HTTP instead of file://.
+    Route::middleware('archive.auth')->get('/files/stream', [FilesController::class, 'stream']);
+
     Route::middleware(['archive.auth', 'archive.audit'])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);

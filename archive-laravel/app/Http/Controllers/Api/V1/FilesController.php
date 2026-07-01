@@ -82,6 +82,35 @@ class FilesController extends Controller
         ]);
     }
 
+    public function stream(Request $request): \Symfony\Component\HttpFoundation\Response
+    {
+        $validated = $request->validate([
+            'path' => ['required', 'string'],
+        ]);
+
+        $root = $this->rootPath();
+        $path = $this->resolvePath($root, (string) $validated['path']);
+
+        if ($path === null) {
+            return response()->json(['ok' => false, 'error' => 'Invalid media path.'], 400);
+        }
+
+        if (! is_file($path)) {
+            return response()->json(['ok' => false, 'error' => 'Media not found.'], 404);
+        }
+
+        $mime = mime_content_type($path) ?: 'application/octet-stream';
+
+        // ponytail: Symfony BinaryFileResponse handles HTTP Range (206 partial /
+        // 416 unsatisfiable), Accept-Ranges, and chunked sending natively, so the
+        // browser streams and seeks local media over HTTP — no file://, no
+        // whole-file buffering. Remote disks (s3/ftp/sftp) are a follow-up slice.
+        return response()->file($path, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, max-age=0, no-cache',
+        ]);
+    }
+
     private function rootPath(): string
     {
         return rtrim((string) config('archive.file_root'), DIRECTORY_SEPARATOR);
