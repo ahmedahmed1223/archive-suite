@@ -2864,3 +2864,7 @@
 ### 2. E2E — Next UI smoke موسّع (شريحة، 2026-07-01)
 
 - [~] `[P2]` ⏱️L **توسيع اختبارات E2E + ترقية الحزم الأمنية** — حُدّث `archive-app/tests/next-migration-shell.spec.ts` بعد اعتماد polish في واجهة Next، وأضيف smoke لمسار `/archive` يتحقق من العنوان وحقل البحث وتفاعل `بحث` دون اشتراط Laravel حي. تم إثبات RED أولاً بتوقعات العناوين القديمة، ثم مرّت البوابة: `E2E_BASE_URL=http://127.0.0.1:9064 pnpm run e2e:next` بنتيجة 16/16 على chromium وmobile-chrome. المتبقي لإغلاق البند: توسيع Playwright للمسارات الأثقل وربط فحص CVEs/audit ضمن بوابة CI.
+
+### 2. K8s — Redis + Whisper worker (شريحة، 2026-07-01)
+
+- [~] `[P2]` ⏱️L **إكمال K8s + توحيد Docker Compose** — أُضيفت موارد `redis-deployment.yaml`/`redis-service.yaml`، و`whisper-worker-deployment.yaml` كعامل Laravel queue لمعالجة ffmpeg/faster-whisper فوق PVC ملفات الأرشيف، مع `REDIS_URL`, `MEDIA_PROCESSOR=real`, إعدادات `WHISPER_*`, وطلب GPU `nvidia.com/gpu: 1`. وُسّعت NetworkPolicy للسماح المحدد بين server/worker/redis/postgres، ووُسّع `verify:infra` للتحقق من الموارد الجديدة. التحقق: `node --check scripts/verify-infra-config.mjs` و`pnpm run verify:infra`؛ dry-run الحي بقي متوقفاً على Kubernetes context.

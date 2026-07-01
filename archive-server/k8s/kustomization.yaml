@@ -8,9 +8,12 @@ resources:
   - postgres-pvc.yaml
   - postgres-statefulset.yaml
   - postgres-service.yaml
+  - redis-deployment.yaml
+  - redis-service.yaml
   - server-pvcs.yaml
   - server-deployment.yaml
   - server-service.yaml
+  - whisper-worker-deployment.yaml
   - frontend-deployment.yaml
   - frontend-service.yaml
   - ingress.yaml
