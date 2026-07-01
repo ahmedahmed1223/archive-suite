@@ -81,6 +81,15 @@ export interface MediaJob {
   completedAt?: string | null;
 }
 
+export interface SecuritySettings {
+  accessTokenTtlMinutes: number;
+  perUserRateLimit: number;
+  webhookUrlAllowlist: string[];
+  legacyPasswordUpgrade: boolean;
+  cspPolicy: string;
+  corsOrigins: string[];
+}
+
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
   login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
@@ -100,6 +109,7 @@ export interface ArchiveApiClient {
   share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
+  getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
 }
 
 export interface AuthRequestOptions {
@@ -204,6 +214,8 @@ export function createArchiveApiClient({
       return get<{ files: ArchiveFile[] }>(`/files${query ? `?${query}` : ""}`, options);
     },
     createShare: (payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions) =>
-      post<{ token: string; url?: string }>("/share", { scope: { itemIds: payload.itemIds }, permission: payload.permission, expiresAt: payload.expiresAt }, options)
+      post<{ token: string; url?: string }>("/share", { scope: { itemIds: payload.itemIds }, permission: payload.permission, expiresAt: payload.expiresAt }, options),
+    getSecuritySettings: (options?: AuthRequestOptions) =>
+      get<{ settings: SecuritySettings }>("/system/security-settings", options)
   };
 }
