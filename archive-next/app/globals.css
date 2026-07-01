@@ -207,6 +207,19 @@ a:hover {
   align-items: center;
 }
 
+.toolbar-start {
+  justify-content: flex-start;
+}
+
+.panel-section-header {
+  border-block-end: 1px solid var(--color-border-secondary);
+  padding-block-end: var(--space-3);
+}
+
+.full-span {
+  grid-column: 1 / -1;
+}
+
 .panel p,
 .panel li {
   color: var(--color-text-secondary);
@@ -506,6 +519,30 @@ textarea.search-input {
 
 .status-error {
   color: var(--color-status-error);
+}
+
+.status-pill[data-status="active"] {
+  border-color: color-mix(in srgb, var(--color-status-success) 42%, var(--color-border-secondary));
+  color: var(--color-status-success);
+}
+
+.status-pill[data-status="viewing"] {
+  border-color: color-mix(in srgb, var(--color-accent-primary) 42%, var(--color-border-secondary));
+  color: var(--color-accent-primary);
+}
+
+.status-pill[data-status="reviewing"] {
+  border-color: color-mix(in srgb, var(--color-accent-secondary) 42%, var(--color-border-secondary));
+  color: var(--color-accent-secondary);
+}
+
+.status-pill[data-status="editing"] {
+  border-color: color-mix(in srgb, var(--color-accent-tertiary) 42%, var(--color-border-secondary));
+  color: var(--color-accent-tertiary);
+}
+
+.status-pill[data-status="idle"] {
+  color: var(--color-text-tertiary);
 }
 
 .token-preview {

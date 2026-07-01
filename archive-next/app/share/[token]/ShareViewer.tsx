@@ -36,23 +36,46 @@ export function ShareViewer({ token }: { token: string }) {
   }, [api, token]);
 
   if (state.status === "loading") {
-    return <p className="form-status">جار تحميل محتوى المشاركة...</p>;
+    return (
+      <div className="state-banner" role="status">
+        <strong>جار تحميل المشاركة</strong>
+        <p className="helper-text">يتم جلب السجلات المسموحة لهذا الرابط.</p>
+      </div>
+    );
   }
 
   if (state.status === "error") {
-    return <p className="form-status" role="alert">{state.message}</p>;
+    return (
+      <div className="state-banner state-banner-error" role="alert">
+        <strong>تعذر تحميل المشاركة</strong>
+        <p className="helper-text">{state.message}</p>
+      </div>
+    );
   }
 
   return (
     <div className="share-list" aria-label="محتوى المشاركة">
-      <p className="form-status">صلاحية المشاركة: {state.permission ?? "view"}</p>
+      <div className="kv-grid">
+        <div className="kv-item">
+          <strong>الصلاحية</strong>
+          <span>{state.permission ?? "view"}</span>
+        </div>
+        <div className="kv-item">
+          <strong>عدد السجلات</strong>
+          <span>{state.records.length}</span>
+        </div>
+      </div>
       {state.records.length === 0 ? (
-        <p className="form-status">لا توجد سجلات في هذه المشاركة.</p>
+        <div className="empty-state">لا توجد سجلات في هذه المشاركة.</div>
       ) : (
         state.records.map((record) => (
           <article className="panel" key={record.uid ?? record.id}>
             <h2>{record.title}</h2>
             {record.description ? <p>{record.description}</p> : null}
+            <div className="record-meta">
+              <span className="badge">{record.type ?? "record"}</span>
+              <span className="badge wrap-anywhere">{record.uid ?? record.id}</span>
+            </div>
           </article>
         ))
       )}
