@@ -15,6 +15,9 @@ use App\Services\Media\ProcessRunner;
 use App\Services\Media\RealMediaProcessor;
 use App\Services\Media\SymfonyProcessRunner;
 use App\Services\Media\WhisperTranscriber;
+use App\Services\Odbc\NativeOdbcConnectionFactory;
+use App\Services\Odbc\OdbcConnectionFactory;
+use App\Services\Odbc\OdbcConnectionProbe;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -26,6 +29,15 @@ class AppServiceProvider extends ServiceProvider
     {
         // Process runner: real by default, fake in tests/offline mode
         $this->app->bind(ProcessRunner::class, fn () => new SymfonyProcessRunner());
+
+        $this->app->bind(OdbcConnectionFactory::class, NativeOdbcConnectionFactory::class);
+        $this->app->bind(
+            OdbcConnectionProbe::class,
+            fn ($app) => new OdbcConnectionProbe(
+                $app->make(OdbcConnectionFactory::class),
+                config('odbc', []),
+            )
+        );
 
         // Whisper transcriber: uses injected ProcessRunner for testability
         $this->app->bind(

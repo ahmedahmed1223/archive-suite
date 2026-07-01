@@ -2876,3 +2876,7 @@
 ### 3. Watermark overlay في Laravel media (شريحة، 2026-07-01)
 
 - [~] `[P2]` ⏱️M **علامة مائية + تصدير SRT/VTT/TTML للفيديو** — أُضيف دعم watermark اختياري إلى `RealMediaProcessor::processTranscode`: عند وجود `options.watermark` أو تفعيل `MEDIA_WATERMARK_*` يُضاف مدخل صورة ثانٍ و`filter_complex` يطبق overlay بمواضع مضبوطة (`top-left/top-right/bottom-left/bottom-right/center`) مع opacity/margin آمنين، مع بقاء السلوك الافتراضي بلا watermark. أضيفت مفاتيح `.env.example` و`config/media.php` ورُبطت في `AppServiceProvider`. التحقق: RED ثم GREEN لـ `node scripts/laravel-docker.mjs test --filter=RealMediaProcessorTest`، ثم `node scripts/laravel-docker.mjs test --filter=Media` بنتيجة 22 اختبار / 85 assertion. المتبقي: smoke حي بـ ffmpeg على ملف فيديو وasset علامة مائية فعلي.
+
+### 22. ODBC readiness في Laravel (شريحة، 2026-07-01)
+
+- [~] `[P2]` ⏱️XL **دعم ODBC (عام لقواعد بيانات Windows القديمة)** — نُقلت بداية الجسر إلى المسار القانوني Laravel + Next.js بدلاً من بناء مسار Node موازٍ: أُضيفت `OdbcConnectionProbe` و`NativeOdbcConnectionFactory` فوق PHP ODBC extension، و`config/odbc.php` + مفاتيح `ODBC_*` في `.env.example`، ونقطة مصادقة `GET /api/v1/system/odbc` تعيد readiness status مع إخفاء `PWD`/`Password` وتعرض أسماء الجداول عند نجاح الاتصال. أُضيف `docs/odbc-laravel-bridge.md` لتوثيق DSN والحدود الحالية. التحقق: RED ثم GREEN لـ `node scripts/laravel-docker.mjs test --filter=Odbc`، ثم `node scripts/laravel-docker.mjs test --filter='Api|Odbc'` بنتيجة 57 اختبار / 305 assertion. المتبقي: Repository read/write محدود وربطه في إعدادات Next.js/معالج الإعداد.

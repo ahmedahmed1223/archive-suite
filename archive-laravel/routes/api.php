@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShareController;
+use App\Http\Controllers\Api\V1\SystemController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Route;
 
@@ -64,5 +65,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/ingest/scan', [IngestController::class, 'scan']);
         Route::post('/ingest/ftp/pull', [IngestController::class, 'ftpPull']);
         Route::post('/ingest/smb/pull', [IngestController::class, 'smbPull']);
+
+        Route::get('/system/odbc', [SystemController::class, 'odbc']);
     });
 });
