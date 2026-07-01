@@ -141,6 +141,31 @@ class FilesApiTest extends TestCase
         File::deleteDirectory(storage_path('framework/testing/archive-disk-local'));
     }
 
+    public function test_it_serves_a_partial_range_request_from_a_configured_local_disk(): void
+    {
+        config(['filesystems.disks.local' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/archive-disk-local'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ]]);
+
+        File::makeDirectory(storage_path('framework/testing/archive-disk-local'), 0755, true);
+        File::put(storage_path('framework/testing/archive-disk-local/fixture.txt'), 'disk file content');
+
+        $response = $this->get('/api/v1/files/stream?path=fixture.txt&disk=local', array_merge(
+            $this->authHeaders(),
+            ['Range' => 'bytes=0-3'],
+        ));
+
+        $response->assertStatus(206);
+        $this->assertSame('bytes 0-3/17', $response->headers->get('Content-Range'));
+        $this->assertSame('disk', $response->streamedContent());
+
+        File::deleteDirectory(storage_path('framework/testing/archive-disk-local'));
+    }
+
     public function test_it_rejects_unknown_disk(): void
     {
         $this->getJson('/api/v1/files/stream?path=video/clip.txt&disk=nonexistent', $this->authHeaders())
