@@ -109,6 +109,21 @@ export interface ReviewComment {
   updatedAt: string;
 }
 
+export type ReviewLinkPermission = "view" | "comment";
+
+export interface ReviewLinkMetadata {
+  permission: ReviewLinkPermission;
+  expiresAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ReviewLinkDetails {
+  mediaUid: string;
+  review: ReviewLinkMetadata;
+  comments: ReviewComment[];
+}
+
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
   login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
@@ -132,6 +147,8 @@ export interface ArchiveApiClient {
   reviewComments(mediaUid: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: ReviewComment[] }>>;
   createReviewComment(mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
   updateReviewComment(id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
+  reviewLink(token: string): Promise<ApiEnvelope<ReviewLinkDetails>>;
+  createReviewLink(payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>>;
 }
 
 export interface AuthRequestOptions {
@@ -247,6 +264,14 @@ export function createArchiveApiClient({
     createReviewComment: (mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions) =>
       post<{ comment: ReviewComment }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, payload, options),
     updateReviewComment: (id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions) =>
-      patch<{ comment: ReviewComment }>(`/review-comments/${encodeURIComponent(id)}`, payload, options)
+      patch<{ comment: ReviewComment }>(`/review-comments/${encodeURIComponent(id)}`, payload, options),
+    reviewLink: (token: string) =>
+      get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
+    createReviewLink: (payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions) =>
+      post<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>(
+        `/media/${encodeURIComponent(payload.mediaUid)}/review-links`,
+        { permission: payload.permission, expiresAt: payload.expiresAt },
+        options
+      )
   };
 }

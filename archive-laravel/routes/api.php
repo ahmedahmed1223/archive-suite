@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
+use App\Http\Controllers\Api\V1\ReviewLinksController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShareController;
@@ -39,6 +40,7 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::get('/share/{token}', [ShareController::class, 'show']);
+    Route::get('/review-links/{token}', [ReviewLinksController::class, 'show']);
 
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/refresh', [AuthController::class, 'refresh']);
@@ -73,6 +75,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'index']);
         Route::post('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'store']);
+        Route::post('/media/{mediaUid}/review-links', [ReviewLinksController::class, 'store']);
         Route::patch('/review-comments/{id}', [ReviewCommentsController::class, 'update']);
 
         Route::get('/system/odbc', [SystemController::class, 'odbc']);

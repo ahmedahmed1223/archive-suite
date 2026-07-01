@@ -25,6 +25,7 @@
     { "name": "Media" },
     { "name": "Rights" },
     { "name": "Share" },
+    { "name": "Review" },
     { "name": "Ingest" }
   ],
   "paths": {
@@ -566,6 +567,68 @@
             }
           },
           "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media/{mediaUid}/review-links": {
+      "post": {
+        "tags": ["Review"],
+        "summary": "Create a public visual review link for media",
+        "operationId": "createReviewLink",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "mediaUid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateReviewLinkRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Review link created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreateReviewLinkResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-links/{token}": {
+      "get": {
+        "tags": ["Review"],
+        "summary": "Read a public visual review link",
+        "operationId": "getReviewLink",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review link payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewLinkPayloadResponse" }
+              }
+            }
+          },
           "404": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -1123,6 +1186,84 @@
             "required": ["job"],
             "properties": {
               "job": { "$ref": "#/components/schemas/MediaJob" }
+            }
+          }
+        ]
+      },
+      "ReviewRect": {
+        "type": "object",
+        "required": ["x", "y", "w", "h"],
+        "properties": {
+          "x": { "type": "number", "minimum": 0, "maximum": 1 },
+          "y": { "type": "number", "minimum": 0, "maximum": 1 },
+          "w": { "type": "number", "minimum": 0, "maximum": 1 },
+          "h": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      },
+      "ReviewComment": {
+        "type": "object",
+        "required": ["id", "mediaUid", "timecodeSeconds", "author", "body", "resolved"],
+        "properties": {
+          "id": { "type": "string" },
+          "mediaUid": { "type": "string" },
+          "timecodeSeconds": { "type": "number", "minimum": 0 },
+          "author": { "type": "string" },
+          "body": { "type": "string" },
+          "annotation": {
+            "type": ["array", "null"],
+            "items": { "$ref": "#/components/schemas/ReviewRect" }
+          },
+          "resolved": { "type": "boolean" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CreateReviewLinkRequest": {
+        "type": "object",
+        "properties": {
+          "permission": { "type": "string", "enum": ["view", "comment"], "default": "view" },
+          "expiresAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CreateReviewLinkResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["token", "url", "path", "mediaUid", "permission"],
+            "properties": {
+              "token": { "type": "string" },
+              "url": { "type": "string" },
+              "path": { "type": "string" },
+              "mediaUid": { "type": "string" },
+              "permission": { "type": "string", "enum": ["view", "comment"] },
+              "expiresAt": { "type": ["string", "null"], "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "ReviewLinkPayloadResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["mediaUid", "review", "comments"],
+            "properties": {
+              "mediaUid": { "type": "string" },
+              "review": {
+                "type": "object",
+                "required": ["permission"],
+                "properties": {
+                  "permission": { "type": "string", "enum": ["view", "comment"] },
+                  "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+                  "createdAt": { "type": ["string", "null"], "format": "date-time" },
+                  "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+                }
+              },
+              "comments": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ReviewComment" }
+              }
             }
           }
         ]
