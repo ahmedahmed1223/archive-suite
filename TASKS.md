@@ -112,8 +112,9 @@
 
 - [~] `[P2]` ⏱️M **علامة مائية + تصدير SRT/VTT/TTML للفيديو** — ffmpeg overlay + ملفات ترجمة مع الفيديو.
   - ✅ شريحة Laravel watermark overlay (2026-07-01): `RealMediaProcessor` صار يدعم watermark اختياري في transcode عبر `options.watermark` أو إعدادات `MEDIA_WATERMARK_*`، ويولّد أمر ffmpeg بمدخل ثانٍ و`filter_complex` مع مواضع `top-left/top-right/bottom-left/bottom-right/center` وopacity/margin مضبوطين. التحقق: RED ثم GREEN لـ `RealMediaProcessorTest`، وفلتر `Media` داخل Docker مرّ: 22 اختبار / 85 assertion.
+  - ✅ شريحة Next media job preset (2026-07-01): نموذج `/media/jobs` صار يرسل `sourcePath` وخيارات `options.watermark` عند اختيار عملية `transcode`، مع حقول path/position/opacity/margin، ويدعم `atSec` للـ thumbnail ويعرض خيارات job المخزّنة في القائمة للمراجعة.
   - الملفات: `archive-laravel/app/Services/Media/RealMediaProcessor.php`, `archive-laravel/config/media.php`, `archive-laravel/.env.example`, `archive-laravel/app/Providers/AppServiceProvider.php`, `archive-laravel/tests/Unit/RealMediaProcessorTest.php`، والمسار القديم `archive-server/src/media/*` بقي للميراث/Node.
-  - المتبقي لإغلاقها نهائياً: smoke حي بـ ffmpeg على ملف فيديو حقيقي مع asset علامة مائية فعلي وربط UI/Job preset عند الحاجة.
+  - المتبقي لإغلاقها نهائياً: smoke حي بـ ffmpeg على ملف فيديو حقيقي مع asset علامة مائية فعلي.
   - المصدر: dev-roadmap (P2-05, P2-06).
 
 - [~] `[P2]` ⏱️L **مشغّل وسائط قانوني في Next + بثّ HTTP Range (حلّ التشغيل المحلي + كل أماكن التخزين)** — يستبدل مشغّل archive-app المجمّد ويحلّ منع المتصفح لتشغيل `file://`.
