@@ -10,11 +10,11 @@ export default async function ReviewLinkPage({ params }: { params: Promise<{ tok
 
       <section className="content auth-layout" aria-label="رابط المراجعة العامة">
         <div className="hero auth-copy">
-          <span className="badge">Next.js review route</span>
+          <span className="badge">مراجعة عامة</span>
           <h1>رابط مراجعة عام.</h1>
           <p>
-            هذا المسار يقرأ الرابط العام من Laravel ويعرض media UID والبيانات
-            المسموحة بدون كشف الرمز نفسه.
+            يعرض بيانات المراجعة والتعليقات المسموحة لهذا الرابط فقط، مع
+            إبقاء الرمز والصلاحيات محكومة من Laravel.
           </p>
         </div>
 

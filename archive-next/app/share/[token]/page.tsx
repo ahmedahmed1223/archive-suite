@@ -10,11 +10,11 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
 
       <section className="content auth-layout" aria-label="عارض المشاركة">
         <div className="hero auth-copy">
-          <span className="badge">Next.js share route</span>
+          <span className="badge">مشاركة عامة</span>
           <h1>عارض المشاركة العامة.</h1>
           <p>
-            هذا المسار ينقل أول تجربة عامة منخفضة المخاطر إلى Next.js ويقرأ
-            payload المشاركة من Laravel عبر عقد `/api/v1/share/:token`.
+            اعرض السجلات التي سُمح بمشاركتها عبر رابط عام دون كشف بيانات
+            إضافية خارج صلاحية الرابط.
           </p>
         </div>
 

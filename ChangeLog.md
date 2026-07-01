@@ -32,6 +32,8 @@
 
 - [x] **تحسين صفحات الوسائط والمراجعة** — أُعيدت صياغة `/media/review` و`/media/compare` باستخدام classes التصميم الحقيقية بدلاً من Tailwind utility classes غير المفعّلة، وأضيفت layouts responsive للمقارنة والمراجعة، وإطار ثابت للمشغل/الـ annotation. حُدث `MediaPlayer` ليقبل أحداث time/play عبر props React بدلاً من listeners يدوية، وخُففت تفاصيل `/media/jobs` بتحويل JSON الخيارات إلى `details`. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **تحسين الصفحات الثانوية والعامة** — حُدثت `/collaboration`, `/reports`, `/help`, `/share/[token]`, و`/review/[token]` لتستخدم لغة منتج مستقرة بدلاً من ملاحظات الترحيل، مع تعريب metadata العامة، حالات loading/error/empty أكثر وضوحاً، وإزالة inline styles/tokens القديمة من التعاون عبر `status-pill` وlayouts مشتركة. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.

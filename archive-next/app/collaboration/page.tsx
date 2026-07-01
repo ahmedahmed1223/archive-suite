@@ -17,22 +17,11 @@ const statusLabels: Record<CollaborationStatus, string> = {
   idle: "خامل"
 };
 
-const statusTone: Record<CollaborationStatus, string> = {
-  active: "var(--va-success)",
-  viewing: "var(--va-accent-strong)",
-  reviewing: "oklch(52% 0.14 295)",
-  editing: "oklch(58% 0.15 75)",
-  idle: "var(--va-text-muted)"
-};
-
 function StatusPill({ status }: { status: CollaborationStatus }) {
   return (
     <span
-      className="badge"
-      style={{
-        borderColor: `color-mix(in oklch, ${statusTone[status]} 38%, transparent)`,
-        color: statusTone[status]
-      }}
+      className="badge status-pill"
+      data-status={status}
     >
       {statusLabels[status] ?? status}
     </span>
@@ -50,8 +39,7 @@ function SectionHeader({
 }) {
   return (
     <div
-      className="panel-title-row"
-      style={{ borderBlockEnd: "1px solid var(--va-border-soft)", paddingBlockEnd: "0.8rem" }}
+      className="panel-title-row panel-section-header"
     >
       <div>
         <h2>{title}</h2>
@@ -225,11 +213,11 @@ export default function CollaborationPage() {
           </p>
           <div className="hero-actions">
             <span className="badge">نافذة النشاط {activeWindowSeconds} ثانية</span>
-            <span className="badge">Editing locks</span>
+            <span className="badge">أقفال التحرير</span>
           </div>
         </div>
 
-        <div className="grid" style={{ gridTemplateColumns: "minmax(280px, 0.9fr) minmax(320px, 1.1fr)" }}>
+        <div className="split-layout">
           <article className="panel auth-form">
             <div className="panel-title-row">
               <div>
@@ -241,23 +229,23 @@ export default function CollaborationPage() {
             <div className="stack">
               <div className="field-row">
                 <label>
-                  <span>Room key</span>
+                  <span>مفتاح الغرفة</span>
                   <input value={roomKey} onChange={(event) => setRoomKey(event.target.value)} />
                 </label>
                 <label>
-                  <span>Resource</span>
+                  <span>المورد</span>
                   <input value={resourceId} onChange={(event) => setResourceId(event.target.value)} />
                 </label>
               </div>
               <label>
-                <span>Status</span>
+                <span>الحالة</span>
                 <select value={status} onChange={(event) => setStatus(event.target.value as CollaborationStatus)}>
                   {Object.entries(statusLabels).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
               </label>
-              <div className="toolbar-row" style={{ justifyContent: "flex-start" }}>
+              <div className="toolbar-row toolbar-start">
                 <button className="button button-primary" type="button" onClick={refreshPresence} disabled={isRefreshing || isSyncing}>
                   {isRefreshing ? "جاري التحديث" : "تحديث الحضور"}
                 </button>
@@ -313,7 +301,7 @@ export default function CollaborationPage() {
             </div>
           </article>
 
-          <article className="panel" style={{ gridColumn: "1 / -1" }}>
+          <article className="panel full-span">
             <SectionHeader
               title="أقفال التحرير"
               description="تمنع الأقفال تعارض الكتابة على المورد نفسه حتى انتهاء المدة أو التحرير اليدوي."

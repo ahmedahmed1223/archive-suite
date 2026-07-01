@@ -9,8 +9,8 @@ const reportChecks = [
     body: `يعتمد المسار على ${contract.title} v${contract.version} قبل نقل أي تقرير تشغيلي حقيقي.`
   },
   {
-    title: "تدرج آمن",
-    body: "تبقى تقارير Vite الحالية هي المصدر العملي، بينما يثبت هذا المسار هيكل Next.js وRTL والروابط."
+    title: "جاهزية العرض",
+    body: "يعرض هذا السطح مؤشرات التقارير الأساسية ويترك البيانات الثقيلة لعقود Laravel حتى لا يتضاعف منطق الحساب داخل الواجهة."
   },
   {
     title: "بوابة القبول",
@@ -23,13 +23,13 @@ export default function ReportsPage() {
     <main className="shell">
       <AppHeader subtitle="التقارير" />
 
-      <section className="content" aria-label="تقارير Next.js">
+      <section className="content" aria-label="التقارير">
         <div className="hero">
-          <span className="badge">مسار منخفض المخاطر</span>
-          <h1>تقارير Next.js التشغيلية.</h1>
+          <span className="badge">تقارير تشغيلية</span>
+          <h1>لوحة التقارير</h1>
           <p>
-            هذه الصفحة تجهز نقل التقارير العامة والمراجعات الخفيفة إلى App Router
-            قبل الاقتراب من الشاشات التشغيلية الثقيلة.
+            نقطة دخول هادئة لمراجعة حالة العقود، جاهزية التقارير، وبوابات
+            القبول قبل فتح التقارير التفصيلية.
           </p>
         </div>
 

@@ -32,30 +32,53 @@ export function ReviewLinkViewer({ token }: { token: string }) {
   }, [api, token]);
 
   if (state.status === "loading") {
-    return <p className="form-status">جار تحميل رابط المراجعة...</p>;
+    return (
+      <div className="state-banner" role="status">
+        <strong>جار تحميل رابط المراجعة</strong>
+        <p className="helper-text">يتم جلب التعليقات والبيانات المسموحة لهذا الرابط.</p>
+      </div>
+    );
   }
 
   if (state.status === "error") {
-    return <p className="form-status" role="alert">{state.message}</p>;
+    return (
+      <div className="state-banner state-banner-error" role="alert">
+        <strong>تعذر تحميل رابط المراجعة</strong>
+        <p className="helper-text">{state.message}</p>
+      </div>
+    );
   }
 
   const { data } = state;
 
   return (
     <div className="share-list" aria-label="محتوى رابط المراجعة">
-      <p className="form-status">Media UID: {data.mediaUid}</p>
-      <p className="form-status">Permission: {data.review.permission}</p>
-      {data.review.expiresAt ? (
-        <p className="form-status">Expires: {data.review.expiresAt}</p>
-      ) : null}
+      <div className="kv-grid">
+        <div className="kv-item">
+          <strong>المادة</strong>
+          <span className="wrap-anywhere">{data.mediaUid}</span>
+        </div>
+        <div className="kv-item">
+          <strong>الصلاحية</strong>
+          <span>{data.review.permission}</span>
+        </div>
+        {data.review.expiresAt ? (
+          <div className="kv-item">
+            <strong>ينتهي</strong>
+            <time>{new Date(data.review.expiresAt).toLocaleString("ar-SA")}</time>
+          </div>
+        ) : null}
+      </div>
       {data.comments.length === 0 ? (
-        <p className="form-status">لا توجد تعليقات متاحة لهذا الرابط.</p>
+        <div className="empty-state">لا توجد تعليقات متاحة لهذا الرابط.</div>
       ) : (
         data.comments.map((comment) => (
           <article className="panel" key={comment.id}>
-            <h2>{comment.author}</h2>
+            <div className="panel-title-row">
+              <h2>{comment.author}</h2>
+              <span className="badge">{Math.floor(comment.timecodeSeconds / 60)}:{Math.floor(comment.timecodeSeconds % 60).toString().padStart(2, "0")}</span>
+            </div>
             <p>{comment.body}</p>
-            <p className="token-preview">TC {comment.timecodeSeconds}</p>
           </article>
         ))
       )}

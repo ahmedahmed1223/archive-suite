@@ -165,6 +165,7 @@
   - ✅ شريحة AppHeader/navigation (2026-07-01): أُضيف `archive-next/components/AppHeader.tsx` كخريطة تنقل موحدة مع حالة `aria-current`، واستُبدلت الرؤوس المتكررة في صفحات Next القانونية المستقرة حتى تتوقف قوائم الروابط عن الانحراف بين الصفحات. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
   - ✅ شريحة operational UI polish (2026-07-01): أضيفت utilities مشتركة (`split-layout`, `dense-grid`, `scroll-x`, `data-table`, `button-danger`, `wrap-anywhere`, `section-divider`) واستُخدمت في `/settings`, `/types`, `/errors`, `/files`, و`/archive/[id]` لتقليل inline styles، تحسين القراءة على RTL، وضبط الأفعال الخطرة. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
   - ✅ شريحة media UI polish (2026-07-01): أُعيد بناء `/media/review` و`/media/compare` على نظام CSS الفعلي بدل Tailwind غير المفعّل، وأضيفت layouts مشتركة للمقارنة والمراجعة وإطار وسائط ثابت، مع نقل مزامنة المشغلات إلى props في `MediaPlayer`. حُسنت `/media/jobs` بتفاصيل قابلة للطي وتعريب أوضح. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+  - ✅ شريحة secondary/public UI polish (2026-07-01): حُسنت صفحات `/collaboration`, `/reports`, `/help`, `/share/[token]`, و`/review/[token]` بإزالة لغة الترحيل، تعريب metadata العامة، تحسين حالات loading/error/empty، وإزالة inline styles/tokens القديمة من التعاون. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
   - الملفات: `archive-next/app/*` (القانوني). المسار القديم `archive-app/src/pages/*` مجمّد.
   - المصدر: f45ea5a29 (كل المجموعات)، guide_v6 (#15–20).
 
