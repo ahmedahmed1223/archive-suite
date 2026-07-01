@@ -157,9 +157,15 @@ importers:
 
   archive-next:
     dependencies:
+      laravel-echo:
+        specifier: ^2.3.7
+        version: 2.3.7(pusher-js@8.5.0)
       next:
         specifier: ^16.0.0
         version: 16.2.9(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      pusher-js:
+        specifier: ^8.5.0
+        version: 8.5.0
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -3199,6 +3205,18 @@ packages:
   jws@4.0.1:
     resolution: {integrity: sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==}
 
+  laravel-echo@2.3.7:
+    resolution: {integrity: sha512-6NoPtOk16PuaykVgcV1MV5665VPtrbyvacBD6AJ8NJdRjTwrOwKrgOYHgq4bz5E1zUbbVi2UJfMN7P7D/yceyQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      pusher-js: '*'
+      socket.io-client: '*'
+    peerDependenciesMeta:
+      pusher-js:
+        optional: true
+      socket.io-client:
+        optional: true
+
   layerr@3.0.0:
     resolution: {integrity: sha512-tv754Ki2dXpPVApOrjTyRo4/QegVb9eVFq4mjqp4+NM5NaX7syQvN5BBNfV/ZpAHCEHV24XdUVrBAoka4jt3pA==}
 
@@ -3669,6 +3687,9 @@ packages:
   pure-rand@6.1.0:
     resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
 
+  pusher-js@8.5.0:
+    resolution: {integrity: sha512-V7uzGi9bqOOOyM/6IkJdpFyjGZj7llz1v0oWnYkZKcYLvbz6VcHVLmzKqkvegjuMumpfIEKGLmWHwFb39XFCpw==}
+
   qrcode@1.5.4:
     resolution: {integrity: sha512-1ca71Zgiu6ORjHqFBDpnSMTR2ReToX4l1Au1VFLyVeBTFavzQnv5JxMFr3ukHVKpSrSA2MCk0lNJSykjUfz7Zg==}
     engines: {node: '>=10.13.0'}
@@ -4090,6 +4111,9 @@ packages:
 
   tweetnacl@0.14.5:
     resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
+
+  tweetnacl@1.0.3:
+    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
 
   typedarray@0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
@@ -7326,6 +7350,10 @@ snapshots:
       jwa: 2.0.1
       safe-buffer: 5.2.1
 
+  laravel-echo@2.3.7(pusher-js@8.5.0):
+    optionalDependencies:
+      pusher-js: 8.5.0
+
   layerr@3.0.0: {}
 
   lightningcss-android-arm64@1.32.0:
@@ -7762,6 +7790,10 @@ snapshots:
   punycode@2.3.1: {}
 
   pure-rand@6.1.0: {}
+
+  pusher-js@8.5.0:
+    dependencies:
+      tweetnacl: 1.0.3
 
   qrcode@1.5.4:
     dependencies:
@@ -8251,6 +8283,8 @@ snapshots:
       fsevents: 2.3.3
 
   tweetnacl@0.14.5: {}
+
+  tweetnacl@1.0.3: {}
 
   typedarray@0.0.6: {}
 

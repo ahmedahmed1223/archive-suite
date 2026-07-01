@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\CollaborationPresenceUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\CollaborationLock;
 use App\Models\CollaborationPresence;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -58,6 +60,8 @@ class CollaborationController extends Controller
             'last_seen_at' => now(),
         ]);
         $presence->save();
+
+        Event::dispatch(new CollaborationPresenceUpdated($roomKey, $this->formatPresence($presence)));
 
         return response()->json([
             'ok' => true,
@@ -169,18 +173,26 @@ class CollaborationController extends Controller
             ->where('last_seen_at', '>=', now()->subSeconds(self::ACTIVE_WINDOW_SECONDS))
             ->orderBy('display_name')
             ->get()
-            ->map(fn (CollaborationPresence $presence): array => [
-                'id' => $presence->id,
-                'roomKey' => $presence->room_key,
-                'userId' => (string) $presence->user_id,
-                'displayName' => $presence->display_name,
-                'status' => $presence->status,
-                'resourceId' => $presence->resource_id,
-                'cursor' => $presence->cursor,
-                'lastSeenAt' => $presence->last_seen_at?->toISOString(),
-            ])
+            ->map(fn (CollaborationPresence $presence): array => $this->formatPresence($presence))
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatPresence(CollaborationPresence $presence): array
+    {
+        return [
+            'id' => $presence->id,
+            'roomKey' => $presence->room_key,
+            'userId' => (string) $presence->user_id,
+            'displayName' => $presence->display_name,
+            'status' => $presence->status,
+            'resourceId' => $presence->resource_id,
+            'cursor' => $presence->cursor,
+            'lastSeenAt' => $presence->last_seen_at?->toISOString(),
+        ];
     }
 
     private function deleteExpiredLocks(string $roomKey): void

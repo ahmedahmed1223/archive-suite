@@ -8,6 +8,7 @@ import {
   type CollaborationParticipant,
   type CollaborationStatus
 } from "@/lib/archive-api";
+import { getEchoClient } from "@/lib/echo";
 
 const statusLabels: Record<CollaborationStatus, string> = {
   active: "نشط",
@@ -118,6 +119,30 @@ export default function CollaborationPage() {
       if (interval) clearInterval(interval);
     };
   }, [api, resourceId, roomKey, status]);
+
+  // Reverb push is additive to the heartbeat polling above: it merges live
+  // deltas immediately, while polling stays as the fallback/reconciliation
+  // path if the socket drops.
+  useEffect(() => {
+    const currentRoomKey = roomKey.trim();
+    if (!currentRoomKey) return;
+
+    const echo = getEchoClient();
+    if (!echo) return;
+
+    const channel = echo.private(`collaboration.room.${currentRoomKey}`);
+    channel.listen(".presence.updated", (event: { participant: CollaborationParticipant }) => {
+      setParticipants((current) => {
+        const next = current.filter((participant) => participant.id !== event.participant.id);
+        next.push(event.participant);
+        return next.sort((a, b) => a.displayName.localeCompare(b.displayName));
+      });
+    });
+
+    return () => {
+      echo.leave(`collaboration.room.${currentRoomKey}`);
+    };
+  }, [roomKey]);
 
   const refreshPresence = async () => {
     const currentRoomKey = roomKey.trim();
