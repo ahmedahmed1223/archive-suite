@@ -80,13 +80,12 @@ export default function ErrorsPage() {
         </div>
 
         <div className="toolbar-row">
-          <label className="field-row" style={{ margin: 0 }}>
+          <label className="field-row field-row-reset">
             <span className="field-note">الدرجة</span>
             <select
-              className="search-input"
+              className="search-input input-narrow"
               value={severityFilter}
               onChange={(event) => setSeverityFilter(event.target.value as ClientErrorSeverity | "")}
-              style={{ flex: "0 1 12rem" }}
             >
               <option value="">الكل</option>
               <option value="error">أخطاء</option>

@@ -3,8 +3,8 @@ import ClientErrorReporter from "@/components/ClientErrorReporter";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Archive Suite Next",
-  description: "Next.js migration shell for Archive Suite"
+  title: "Archive Suite",
+  description: "واجهة إدارة الأرشيف والوسائط في Archive Suite"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

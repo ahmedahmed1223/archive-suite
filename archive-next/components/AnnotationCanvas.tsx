@@ -17,9 +17,8 @@ interface AnnotationCanvasProps {
   onChange?: (rects: AnnotationRect[]) => void;
 }
 
-// ponytail: an SVG with viewBox 0..1 + preserveAspectRatio="none" stretched over the
-// player box means normalized coords map 1:1 to the frame at any size — no scale math
-// on replay. (Letterboxed video slightly offsets vs the true frame; acceptable for MVP.)
+// A normalized SVG overlay maps review rectangles to the visible frame at any
+// player size without replay-time scale calculations.
 export default function AnnotationCanvas({ rectangles, editable = false, onChange }: AnnotationCanvasProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
@@ -70,19 +69,12 @@ export default function AnnotationCanvas({ rectangles, editable = false, onChang
   return (
     <svg
       ref={svgRef}
+      className={`annotation-canvas ${editable ? "annotation-canvas-editable" : "annotation-canvas-readonly"}`}
       viewBox="0 0 1 1"
       preserveAspectRatio="none"
       onPointerDown={handleDown}
       onPointerMove={handleMove}
       onPointerUp={handleUp}
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: editable ? "auto" : "none",
-        cursor: editable ? "crosshair" : "default",
-      }}
     >
       {shapes.map((r, index) => (
         <rect
@@ -91,8 +83,6 @@ export default function AnnotationCanvas({ rectangles, editable = false, onChang
           y={r.y}
           width={r.w}
           height={r.h}
-          fill="rgba(255,80,80,0.15)"
-          stroke="#ff5050"
           strokeWidth={2}
           vectorEffect="non-scaling-stroke"
         />

@@ -47,11 +47,11 @@ export default function ArchivePage() {
         <div className="hero">
           <h1>بحث السجلات المحفوظة.</h1>
           <p>
-            هذا المسار ينقل قائمة السجلات وواجهة البحث الأساسية إلى Next.js.
-            أدخل كلمة مفتاحية للبحث أو اترك الحقل فارغا لعرض جميع السجلات.
+            استعرض قائمة السجلات وابدأ بحثاً مباشراً عبر الكلمات المفتاحية، أو
+            اترك الحقل فارغاً لعرض أحدث السجلات المتاحة.
           </p>
           <div className="hero-actions">
-            <span className="badge">Next.js archive listing</span>
+            <span className="badge">بحث مباشر</span>
             <span className="badge">
               {state.status === "ready" ? `${state.records.length} نتيجة` : "عرض مباشر"}
             </span>

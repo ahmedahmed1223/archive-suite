@@ -3,9 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import type { SyntheticEvent } from "react";
 
-// ponytail: the browser cannot play file:// media in local mode, so we always
-// stream over the authenticated Laravel endpoint (Range-capable). Same-origin
-// through the Next proxy means the httpOnly session cookie rides along.
+// Browsers cannot play file:// media in local mode, so playback always streams
+// through the authenticated Laravel endpoint with Range support.
 const AUDIO_EXTENSIONS = new Set([
   "mp3",
   "wav",

@@ -38,13 +38,13 @@ export default function LoginPage() {
 
       <section className="content auth-layout" aria-label="تسجيل الدخول">
         <div className="hero auth-copy">
-          <h1>تسجيل دخول Next.js عبر جلسات Laravel.</h1>
+          <h1>تسجيل الدخول عبر جلسات Laravel.</h1>
           <p>
-            هذه الصفحة تختبر مسار `login` الجديد: access token قصير العمر في
-            الذاكرة، وrefresh cookie باسم `va_refresh` يظل HttpOnly.
+            يستخدم هذا المسار رمز وصول قصير العمر في الذاكرة، مع refresh
+            cookie آمن باسم `va_refresh` يظل HttpOnly.
           </p>
           <div className="hero-actions">
-            <span className="badge">Laravel session auth</span>
+            <span className="badge">مصادقة الجلسات</span>
             <span className="badge">/api/v1/auth/login</span>
           </div>
         </div>

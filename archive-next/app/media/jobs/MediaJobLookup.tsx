@@ -58,7 +58,7 @@ export function MediaJobLookup() {
           ? `الحالة: ${state.job.status} / العملية: ${state.job.operation}`
           : state.status === "error"
             ? state.message
-            : "يطلب هذا النموذج /api/v1/media/jobs/:id من Laravel عبر rewrite الخاص بـ Next.js."}
+            : "يفحص هذا النموذج حالة المهمة من واجهة Laravel API."}
       </p>
     </form>
   );
