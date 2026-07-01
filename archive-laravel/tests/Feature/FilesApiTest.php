@@ -115,4 +115,67 @@ class FilesApiTest extends TestCase
         $this->getJson('/api/v1/files/stream?path=video/clip.txt')
             ->assertUnauthorized();
     }
+
+    public function test_it_streams_from_a_configured_disk(): void
+    {
+        // Arrange: configure a test 'local' disk with a fixture file
+        config(['filesystems.disks.local' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/archive-disk-local'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ]]);
+
+        File::makeDirectory(storage_path('framework/testing/archive-disk-local'), 0755, true);
+        File::put(storage_path('framework/testing/archive-disk-local/fixture.txt'), 'disk file content');
+
+        // Act: stream from the disk
+        $response = $this->get('/api/v1/files/stream?path=fixture.txt&disk=local', $this->authHeaders());
+
+        // Assert: file is served
+        $response->assertOk();
+        $this->assertSame('disk file content', $response->streamedContent());
+
+        // Cleanup
+        File::deleteDirectory(storage_path('framework/testing/archive-disk-local'));
+    }
+
+    public function test_it_rejects_unknown_disk(): void
+    {
+        $this->getJson('/api/v1/files/stream?path=video/clip.txt&disk=nonexistent', $this->authHeaders())
+            ->assertStatus(400)
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('error', fn (string $msg): bool => str_contains($msg, 'disk'));
+    }
+
+    public function test_it_rejects_path_traversal_on_disk_streams(): void
+    {
+        config(['filesystems.disks.local' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/archive-disk-local'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ]]);
+
+        File::makeDirectory(storage_path('framework/testing/archive-disk-local'), 0755, true);
+
+        // Try to traverse up with .. segment
+        $this->getJson('/api/v1/files/stream?path=..%2Fsecrets&disk=local', $this->authHeaders())
+            ->assertStatus(400)
+            ->assertJsonPath('ok', false);
+
+        File::deleteDirectory(storage_path('framework/testing/archive-disk-local'));
+    }
+
+    public function test_missing_disk_param_uses_archive_file_root(): void
+    {
+        // Regression test: ensure no disk param falls back to ARCHIVE_FILE_ROOT with Range support
+        $response = $this->get('/api/v1/files/stream?path=video/clip.txt', $this->authHeaders());
+
+        $response->assertOk();
+        $this->assertSame('bytes', $response->headers->get('Accept-Ranges'));
+        $this->assertSame('archive clip', $response->streamedContent());
+    }
 }
