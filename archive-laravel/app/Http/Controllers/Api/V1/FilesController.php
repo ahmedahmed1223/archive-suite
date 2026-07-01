@@ -86,8 +86,17 @@ class FilesController extends Controller
     {
         $validated = $request->validate([
             'path' => ['required', 'string'],
+            'disk' => ['nullable', 'string'],
         ]);
 
+        $disk = (string) ($validated['disk'] ?? '');
+
+        // If disk is specified, stream from the configured filesystem disk
+        if ($disk !== '') {
+            return $this->streamFromDisk($disk, (string) $validated['path']);
+        }
+
+        // Fallback: stream from ARCHIVE_FILE_ROOT (original behavior, Range-capable)
         $root = $this->rootPath();
         $path = $this->resolvePath($root, (string) $validated['path']);
 
@@ -102,13 +111,61 @@ class FilesController extends Controller
         $mime = mime_content_type($path) ?: 'application/octet-stream';
 
         // ponytail: Symfony BinaryFileResponse handles HTTP Range (206 partial /
-        // 416 unsatisfiable), Accept-Ranges, and chunked sending natively, so the
-        // browser streams and seeks local media over HTTP — no file://, no
-        // whole-file buffering. Remote disks (s3/ftp/sftp) are a follow-up slice.
+        // 416 unsatisfiable), Accept-Ranges, and chunked sending natively for local files.
+        // Remote disks (s3/ftp/sftp) stream sequentially (no byte-range seek) — true remote
+        // Range is a later optimization; local keeps native Range.
         return response()->file($path, [
             'Content-Type' => $mime,
             'Cache-Control' => 'private, max-age=0, no-cache',
         ]);
+    }
+
+    private function streamFromDisk(string $diskName, string $path): \Symfony\Component\HttpFoundation\Response
+    {
+        // Security: only allow disks in the configured filesystem disks array
+        $allowedDisks = array_keys((array) config('filesystems.disks', []));
+
+        if (! in_array($diskName, $allowedDisks, true)) {
+            return response()->json(['ok' => false, 'error' => 'Invalid disk.'], 400);
+        }
+
+        // Security: reject path traversal (no .. segments or leading slash)
+        if (str_contains($path, '..') || str_starts_with($path, '/')) {
+            return response()->json(['ok' => false, 'error' => 'Invalid file path.'], 400);
+        }
+
+        $disk = \Illuminate\Support\Facades\Storage::disk($diskName);
+
+        // Check file exists
+        if (! $disk->exists($path)) {
+            return response()->json(['ok' => false, 'error' => 'Media not found.'], 404);
+        }
+
+        // Get MIME type
+        $mime = $disk->mimeType($path) ?: 'application/octet-stream';
+
+        // ponytail: Remote disks stream sequentially via response() with no byte-range support yet.
+        // Local disks could use response()->file() for Range support; this path keeps them simple.
+        // Upgrade path: detect if disk is local, fall back to file-based Range, or wrap
+        // remote streams with resumable chunks when throughput matters.
+        return response()->stream(
+            function () use ($disk, $path): void {
+                $stream = $disk->readStream($path);
+                if (is_resource($stream)) {
+                    while (! feof($stream)) {
+                        echo fread($stream, 8192);
+                    }
+                    fclose($stream);
+                }
+            },
+            200,
+            [
+                'Content-Type' => $mime,
+                'Content-Length' => $disk->size($path),
+                'Cache-Control' => 'private, max-age=0, no-cache',
+                'Accept-Ranges' => 'none', // Remote disks don't support byte ranges yet
+            ]
+        );
     }
 
     private function rootPath(): string
