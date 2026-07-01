@@ -2896,3 +2896,7 @@
 ### 7. Live Collaboration — Presence heartbeat (شريحة، 2026-07-01)
 
 - [~] `[P2]` ⏱️XL **تعاون حي (Live Collaboration)** — أضيف أساس حضور قانوني في Laravel/Next: جدول/model `collaboration_presence`، و`CollaborationController` مع endpoints محمية `GET/POST /api/v1/collaboration/rooms/{roomKey}/presence` لتسجيل heartbeat وعرض المشاركين النشطين ضمن نافذة 45 ثانية بدون audit spam. أضيف عميل typed وصفحة Next `/collaboration` تعرض الغرفة، المورد، الحالة، وقائمة المشاركين. وُثّق المسار في OpenAPI وربط بـ `verify:api-contracts`. التحقق: RED ثم GREEN لـ `CollaborationPresenceApiTest` (4/4، 25 assertion)، ومرّت `pnpm run verify:api-contracts`, `pnpm run typecheck:next`, و`pnpm run build:next`. يبقى WebSocket/Reverb الحقيقي والتحرير المتزامن/locks لإغلاق البند كاملاً.
+
+### 7. Live Collaboration — Editing locks (شريحة، 2026-07-01)
+
+- [~] `[P2]` ⏱️XL **تعاون حي (Live Collaboration)** — أضيفت طبقة أقفال تحرير فوق presence: جدول/model `collaboration_locks`، وواجهات محمية `GET/POST /api/v1/collaboration/rooms/{roomKey}/locks` و`POST /locks/release`. يدعم القفل TTL، refresh لنفس المستخدم، تحرير المالك، و409 `lock_conflict` عند محاولة مستخدم آخر حجز المورد نفسه. صفحة Next `/collaboration` تعرض الأقفال وتتيح حجز/تحرير المورد الحالي، والعميل typed والعقد OpenAPI حُدّثا. التحقق: RED ثم GREEN لـ `CollaborationLocksApiTest`، وفلتر `Collaboration` مرّ 8/8 (55 assertion)، ومرّت `pnpm run verify:api-contracts`, `pnpm run typecheck:next`, و`pnpm run build:next`. المتبقي: WebSocket/Reverb وإشعارات فورية بدل polling.

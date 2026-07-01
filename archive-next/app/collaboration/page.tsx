@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   createArchiveApiClient,
+  type CollaborationLock,
   type CollaborationParticipant,
   type CollaborationStatus
 } from "@/lib/archive-api";
@@ -21,9 +22,11 @@ export default function CollaborationPage() {
   const [resourceId, setResourceId] = useState("media-123");
   const [status, setStatus] = useState<CollaborationStatus>("reviewing");
   const [participants, setParticipants] = useState<CollaborationParticipant[]>([]);
+  const [locks, setLocks] = useState<CollaborationLock[]>([]);
   const [activeWindowSeconds, setActiveWindowSeconds] = useState(45);
   const [message, setMessage] = useState<string>("جاهز");
   const [error, setError] = useState<string | null>(null);
+  const [lockMessage, setLockMessage] = useState<string>("لا توجد أقفال محملة بعد");
 
   useEffect(() => {
     let active = true;
@@ -47,6 +50,12 @@ export default function CollaborationPage() {
       } else {
         setError(response.error);
       }
+
+      const locksResponse = await api.collaborationLocks(roomKey.trim());
+      if (!active) return;
+      if (locksResponse.ok) {
+        setLocks(locksResponse.locks);
+      }
     };
 
     beat();
@@ -67,6 +76,50 @@ export default function CollaborationPage() {
       setError(null);
     } else {
       setError(response.error);
+    }
+  };
+
+  const acquireLock = async () => {
+    if (!resourceId.trim()) {
+      setLockMessage("اختر مورداً قبل طلب القفل.");
+      return;
+    }
+
+    const response = await api.acquireCollaborationLock(roomKey.trim(), {
+      resourceId: resourceId.trim(),
+      ttlSeconds: 120
+    });
+
+    if (response.ok) {
+      setLocks(response.locks);
+      setLockMessage(`تم حجز ${response.lock.resourceId} حتى ${response.lock.expiresAt ?? "وقت غير محدد"}`);
+      return;
+    }
+
+    setLockMessage(response.error);
+    if (response.code === "lock_conflict") {
+      const conflict = response as typeof response & { lock?: CollaborationLock };
+      if (conflict.lock) {
+        setLocks([conflict.lock]);
+      }
+    }
+  };
+
+  const releaseLock = async () => {
+    if (!resourceId.trim()) {
+      setLockMessage("اختر مورداً قبل تحرير القفل.");
+      return;
+    }
+
+    const response = await api.releaseCollaborationLock(roomKey.trim(), {
+      resourceId: resourceId.trim()
+    });
+
+    if (response.ok) {
+      setLocks(response.locks);
+      setLockMessage(response.released ? "تم تحرير القفل." : "لا يوجد قفل لك على هذا المورد.");
+    } else {
+      setLockMessage(response.error);
     }
   };
 
@@ -124,6 +177,11 @@ export default function CollaborationPage() {
                 </select>
               </label>
               <button type="button" onClick={refreshPresence}>تحديث الحضور</button>
+              <div className="helper-row">
+                <button type="button" onClick={acquireLock}>حجز المورد</button>
+                <button type="button" onClick={releaseLock}>تحرير القفل</button>
+              </div>
+              <p className="form-status">{lockMessage}</p>
             </div>
           </article>
 
@@ -155,6 +213,32 @@ export default function CollaborationPage() {
                     <p className="helper-text">
                       {participant.resourceId || "لا يوجد مورد محدد"} · {participant.lastSeenAt || "بدون وقت"}
                     </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </article>
+
+          <article className="panel" style={{ gridColumn: "1 / -1" }}>
+            <div className="panel-title-row">
+              <div>
+                <h2>أقفال التحرير</h2>
+                <p>تمنع هذه الطبقة الكتابة المتزامنة على المورد نفسه إلى أن تنتهي مدة القفل أو يحرره مالكه.</p>
+              </div>
+              <span className="badge">{locks.length}</span>
+            </div>
+
+            <div className="stack">
+              {locks.length === 0 ? (
+                <p className="helper-text">لا توجد أقفال نشطة في هذه الغرفة.</p>
+              ) : (
+                locks.map((lock) => (
+                  <div className="state-banner" key={lock.id}>
+                    <div className="helper-row">
+                      <strong>{lock.resourceId}</strong>
+                      <span className="badge">{lock.displayName}</span>
+                    </div>
+                    <p className="helper-text">ينتهي: {lock.expiresAt || "غير محدد"}</p>
                   </div>
                 ))
               )}

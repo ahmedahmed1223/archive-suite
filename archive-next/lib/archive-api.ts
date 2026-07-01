@@ -143,6 +143,21 @@ export interface CollaborationPresencePayload {
   participants: CollaborationParticipant[];
 }
 
+export interface CollaborationLock {
+  id: string;
+  roomKey: string;
+  resourceId: string;
+  userId: string;
+  displayName: string;
+  expiresAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface CollaborationLocksPayload {
+  roomKey: string;
+  locks: CollaborationLock[];
+}
+
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
   login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
@@ -170,6 +185,9 @@ export interface ArchiveApiClient {
   createReviewLink(payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>>;
   collaborationPresence(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
   sendCollaborationHeartbeat(roomKey: string, payload?: { status?: CollaborationStatus; resourceId?: string; cursor?: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
+  collaborationLocks(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationLocksPayload>>;
+  acquireCollaborationLock(roomKey: string, payload: { resourceId: string; ttlSeconds?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationLocksPayload & { lock: CollaborationLock }>>;
+  releaseCollaborationLock(roomKey: string, payload: { resourceId: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationLocksPayload & { released: boolean }>>;
 }
 
 export interface AuthRequestOptions {
@@ -303,6 +321,20 @@ export function createArchiveApiClient({
     ) =>
       post<CollaborationPresencePayload>(
         `/collaboration/rooms/${encodeURIComponent(roomKey)}/presence`,
+        payload,
+        options
+      ),
+    collaborationLocks: (roomKey: string, options?: AuthRequestOptions) =>
+      get<CollaborationLocksPayload>(`/collaboration/rooms/${encodeURIComponent(roomKey)}/locks`, options),
+    acquireCollaborationLock: (roomKey: string, payload: { resourceId: string; ttlSeconds?: number }, options?: AuthRequestOptions) =>
+      post<CollaborationLocksPayload & { lock: CollaborationLock }>(
+        `/collaboration/rooms/${encodeURIComponent(roomKey)}/locks`,
+        payload,
+        options
+      ),
+    releaseCollaborationLock: (roomKey: string, payload: { resourceId: string }, options?: AuthRequestOptions) =>
+      post<CollaborationLocksPayload & { released: boolean }>(
+        `/collaboration/rooms/${encodeURIComponent(roomKey)}/locks/release`,
         payload,
         options
       )
