@@ -129,7 +129,7 @@ export default function FilesPage() {
             رابط مشاركة عام للوصول إلى العناصر المحددة مباشرة.
           </p>
           <div className="hero-actions">
-            <span className="badge">مستعرض ملفات Next.js</span>
+            <span className="badge">مستعرض الملفات</span>
             <span className="badge">
               {selectedKeys.size > 0 ? `${selectedKeys.size} محدد` : "اختيار متعدد"}
             </span>
@@ -169,14 +169,14 @@ export default function FilesPage() {
                   {state.files.map((file) => (
                     <article className="panel panel-compact" key={file.key}>
                       <div className="panel-title-row">
-                        <label className="helper-row" style={{ alignItems: "flex-start" }}>
+                        <label className="file-select-row">
                           <input
                             type="checkbox"
                             checked={selectedKeys.has(file.key)}
                             onChange={() => handleToggleFile(file.key)}
                             aria-label={`تحديد ${file.name || file.key}`}
                           />
-                          <span style={{ display: "grid", gap: "0.25rem", minInlineSize: 0 }}>
+                          <span className="file-name-stack">
                             <strong className="wrap-anywhere">{file.name || file.key}</strong>
                             {file.key !== file.name && file.key ? (
                               <span className="field-note wrap-anywhere">

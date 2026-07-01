@@ -4,16 +4,16 @@ import { MediaJobsList } from "./MediaJobsList";
 
 const backendNotes = [
   {
-    title: "Frontend",
-    body: "هذه الصفحة تعمل داخل Next.js App Router وتبقى مسؤولة فقط عن تجربة المستخدم والقراءة من العميل typed."
+    title: "واجهة المتابعة",
+    body: "تعرض حالة المهام وخياراتها بطريقة قابلة للفحص دون تنفيذ معالجة ثقيلة داخل المتصفح."
   },
   {
-    title: "Backend",
-    body: "طلبات /api/v1/media/jobs/:id تمر عبر rewrite إلى Laravel عند ضبط ARCHIVE_API_BASE_URL."
+    title: "خدمة المعالجة",
+    body: "طلبات /api/v1/media/jobs/:id تقرأ حالة المهام من Laravel وتعرض النتائج عند اكتمالها."
   },
   {
     title: "حدود النظام",
-    body: "تنفيذ المعالجة الثقيلة داخل Laravel queues، بينما يعرض Next.js الحالة دون نقل منطق الخادم."
+    body: "المعالجة الثقيلة تبقى داخل طوابير Laravel، والواجهة تعرض الحالة دون تكرار منطق الخادم."
   }
 ];
 
@@ -22,18 +22,18 @@ export default function MediaJobsPage() {
     <main className="shell">
       <AppHeader subtitle="مسار الوسائط" />
 
-      <section className="content stack" aria-label="Media jobs Laravel">
+      <section className="content stack" aria-label="مهام الوسائط في Laravel">
         <div className="hero">
-          <span className="badge">Next.js frontend + Laravel backend</span>
-          <h1>Media jobs عبر Laravel.</h1>
+          <span className="badge">معالجة وسائط</span>
+          <h1>مهام الوسائط عبر Laravel.</h1>
           <p>
-            هذا المسار يثبت الحدود المطلوبة: Next.js يعرض الواجهة، وLaravel
-            يملك API وحالة queue لمسارات media workflow.
+            تابع عمليات التحويل، اللقطات، والتفريغ من مكان واحد مع عرض واضح
+            لحالة الطوابير والخيارات المرسلة لكل مهمة.
           </p>
           <div className="record-meta" aria-label="ملخص التنفيذ">
-            <span className="badge">واجهة قراءة فقط</span>
+            <span className="badge">واجهة متابعة</span>
             <span className="badge">Laravel queue</span>
-            <span className="badge">Next.js App Router</span>
+            <span className="badge">عميل API موحد</span>
           </div>
         </div>
 

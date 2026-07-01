@@ -11,24 +11,24 @@ import {
 
 const categoryCards = [
   {
-    title: "System",
+    title: "النظام",
     summary: "تجميع إعدادات البيئة العامة، اللغة، والاحتفاظ التشغيلي في وضع قراءة فقط.",
-    items: ["Locale: ar", "Timezone: Europe/Istanbul", "Retention: policy driven"]
+    items: ["اللغة: العربية", "المنطقة الزمنية: Europe/Istanbul", "الاحتفاظ: وفق السياسة"]
   },
   {
-    title: "Storage",
+    title: "التخزين",
     summary: "مؤشرات التخزين تشرح مكان البيانات وحدودها من دون أدوات تحرير.",
-    items: ["Primary store: object storage", "Backups: scheduled", "Quota: monitored"]
+    items: ["المخزن الرئيسي: Object storage", "النسخ الاحتياطي: مجدول", "الحصة: تحت المراقبة"]
   },
   {
-    title: "API",
+    title: "واجهة API",
     summary: "ملخص طبقة التكامل مع العقد والقيود والاعتمادية التي تعتمد عليها الواجهة.",
-    items: ["Version: v1", "Auth: bearer + refresh cookie", "Rate limits: enforced"]
+    items: ["الإصدار: v1", "المصادقة: رمز قصير + تحديث آمن", "حدود الطلب: مفعلة"]
   },
   {
-    title: "Appearance",
+    title: "المظهر",
     summary: "هوية العرض والنسق المرئي الحاليان موثقان هنا للرجوع السريع.",
-    items: ["Theme: light", "Density: compact", "Branding: Archive Suite"]
+    items: ["النسق: فاتح", "الكثافة: مدمجة", "الهوية: Archive Suite"]
   }
 ];
 
@@ -36,7 +36,7 @@ const roadmapItems = [
   {
     title: "المصادقة الثنائية",
     status: "مخطط",
-    note: "مؤجلة حتى يكتمل ترحيل سطح المصادقة والجلسات."
+    note: "مؤجلة حتى يكتمل سطح المصادقة والجلسات."
   },
   {
     title: "تحديث إعدادات الأمان",
@@ -162,16 +162,16 @@ export default function SettingsPage() {
 
   const postureRows = settings
     ? [
-        { label: "Access Token TTL", value: `${settings.accessTokenTtlMinutes} minutes` },
-        { label: "Rate Limit (per minute)", value: `${settings.perUserRateLimit} requests` },
-        { label: "Legacy Password Upgrade", value: settings.legacyPasswordUpgrade ? "Enabled" : "Disabled" },
-        { label: "Webhook Allowlist", value: settings.webhookUrlAllowlist.length > 0 ? `${settings.webhookUrlAllowlist.length} URLs` : "Empty" },
+        { label: "مدة رمز الوصول", value: `${settings.accessTokenTtlMinutes} دقيقة` },
+        { label: "حد الطلبات لكل دقيقة", value: `${settings.perUserRateLimit} طلب` },
+        { label: "ترقية كلمات المرور القديمة", value: settings.legacyPasswordUpgrade ? "مفعلة" : "معطلة" },
+        { label: "قائمة Webhook المسموحة", value: settings.webhookUrlAllowlist.length > 0 ? `${settings.webhookUrlAllowlist.length} رابط` : "فارغة" },
       ]
     : [];
   const odbcRows = odbc
     ? [
         { label: "الحالة", value: odbcStatusLabel(odbc.status) },
-        { label: "ODBC Driver", value: odbc.driverLoaded ? "متاح" : "غير متاح" },
+        { label: "مشغّل ODBC", value: odbc.driverLoaded ? "متاح" : "غير متاح" },
         { label: "DSN", value: odbc.dsn || "غير مضبوط" },
         { label: "الجداول المرئية", value: `${odbc.tables.length}` }
       ]
@@ -190,12 +190,12 @@ export default function SettingsPage() {
           <h1>إعدادات Archive Suite للقراءة فقط.</h1>
           <p>
             هذه اللوحة تجمع مجالات النظام والأمان والتخزين وAPI والمظهر في
-            صفحة واحدة سريعة المسح، مع إبراز ما هو مطبق فعلاً وما هو مؤجل
-            للمرحلة التالية من الترحيل.
+            صفحة واحدة سريعة المسح، مع إبراز ما هو مطبق فعلاً وما ينتظر
+            صلاحيات تحرير أو ربطاً إضافياً.
           </p>
           <div className="hero-actions">
             <span className="badge">لوحة مرجعية</span>
-            <span className="badge">Read only</span>
+            <span className="badge">قراءة فقط</span>
           </div>
         </div>
 
@@ -225,7 +225,7 @@ export default function SettingsPage() {
             {isLoading ? (
               <p className="helper-text">جاري تحميل إعدادات الأمان...</p>
             ) : error ? (
-              <p className="helper-text" style={{ color: "var(--color-status-error)" }}>خطأ: {error}</p>
+              <p className="helper-text status-error">خطأ: {error}</p>
             ) : (
               <>
                 <div className="kv-grid" aria-label="Current security controls">
@@ -240,7 +240,7 @@ export default function SettingsPage() {
                 {settings && settings.cspPolicy && (
                   <div className="section-divider">
                     <strong>CSP Policy (Deploy-time)</strong>
-                    <p className="helper-text" style={{ marginTop: "0.55rem", fontSize: "0.85em", fontFamily: "monospace" }}>
+                    <p className="helper-text mt-tight mono-text">
                       {settings.cspPolicy}
                     </p>
                   </div>
@@ -249,7 +249,7 @@ export default function SettingsPage() {
                 {settings && settings.corsOrigins && settings.corsOrigins.length > 0 && (
                   <div className="section-divider">
                     <strong>CORS Origins (Deploy-time)</strong>
-                    <ul style={{ marginTop: "0.55rem", paddingInlineStart: "1.5rem", fontSize: "0.9em" }}>
+                    <ul className="compact-list mt-tight">
                       {settings.corsOrigins.map((origin) => (
                         <li key={origin}>{origin}</li>
                       ))}
@@ -266,7 +266,7 @@ export default function SettingsPage() {
                     <strong>{item.title}</strong>
                     <StatusBadge>{item.status}</StatusBadge>
                   </div>
-                  <p className="helper-text" style={{ marginTop: "0.55rem" }}>
+                  <p className="helper-text mt-tight">
                     {item.note}
                   </p>
                 </div>
@@ -288,7 +288,7 @@ export default function SettingsPage() {
             {isOdbcLoading ? (
               <p className="helper-text">جاري فحص ODBC...</p>
             ) : odbcError ? (
-              <p className="helper-text" style={{ color: "var(--color-status-error)" }}>خطأ: {odbcError}</p>
+              <p className="helper-text status-error">خطأ: {odbcError}</p>
             ) : odbc ? (
               <>
                 <div className="kv-grid" aria-label="ODBC connection posture">
@@ -345,7 +345,7 @@ export default function SettingsPage() {
                 )}
 
                 {previewError && (
-                  <p className="helper-text" style={{ color: "var(--color-status-error)" }}>خطأ: {previewError}</p>
+                  <p className="helper-text status-error">خطأ: {previewError}</p>
                 )}
 
                 {odbcPreview && (

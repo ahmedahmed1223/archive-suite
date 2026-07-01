@@ -390,12 +390,11 @@ export default function TypesPage() {
               <textarea className="search-input" value={fieldsText} onChange={(event) => setFieldsText(event.target.value)} rows={7} />
             </label>
 
-            <label style={{ alignItems: "center", display: "inline-flex", gap: "0.5rem" }}>
+            <label className="checkbox-row">
               <input
                 type="checkbox"
                 checked={draft.active !== false}
                 onChange={(event) => setDraft({ ...draft, active: event.target.checked })}
-                style={{ inlineSize: "auto", minBlockSize: "auto" }}
               />
               نشط
             </label>

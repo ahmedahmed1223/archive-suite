@@ -663,6 +663,56 @@ textarea.search-input {
   margin: 0;
 }
 
+.mt-tight {
+  margin-block-start: 0.55rem;
+}
+
+.mono-text {
+  font-family: var(--font-family-mono);
+  font-size: 0.85em;
+}
+
+.compact-list {
+  padding-inline-start: var(--space-5);
+  font-size: var(--font-size-sm);
+}
+
+.file-select-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.file-name-stack {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.annotation-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.annotation-canvas-editable {
+  cursor: crosshair;
+  pointer-events: auto;
+}
+
+.annotation-canvas-readonly {
+  cursor: default;
+  pointer-events: none;
+}
+
+.annotation-canvas rect {
+  fill: color-mix(in srgb, var(--color-status-error) 15%, transparent);
+  stroke: var(--color-status-error);
+}
+
 .review-comments-rail {
   max-block-size: 36rem;
   overflow: auto;

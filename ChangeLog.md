@@ -34,6 +34,8 @@
 
 - [x] **تحسين الصفحات الثانوية والعامة** — حُدثت `/collaboration`, `/reports`, `/help`, `/share/[token]`, و`/review/[token]` لتستخدم لغة منتج مستقرة بدلاً من ملاحظات الترحيل، مع تعريب metadata العامة، حالات loading/error/empty أكثر وضوحاً، وإزالة inline styles/tokens القديمة من التعاون عبر `status-pill` وlayouts مشتركة. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **تنظيف لغة المنتج وتفاصيل الأنماط** — أُزيلت بقايا عبارات التحويل والتقنيات الداخلية من الصفحات الظاهرة (`/`, `/archive`, `/files`, `/login`, `/settings`, `/media/jobs`, `/help`) واستُبدلت بلغة تشغيل مستقرة. اكتملت تعريبة إعدادات النظام، ونُقلت أنماط متفرقة إلى classes مشتركة للملفات، سجل الأخطاء، ODBC، والـ annotation overlay. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.
