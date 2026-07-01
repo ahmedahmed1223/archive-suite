@@ -65,12 +65,17 @@ export default function ArchivePage() {
 
       <section className="content" aria-label="بحث السجلات">
         <div className="hero">
-          <span className="badge">Next.js archive listing</span>
           <h1>بحث السجلات المحفوظة.</h1>
           <p>
             هذا المسار ينقل قائمة السجلات وواجهة البحث الأساسية إلى Next.js.
             أدخل كلمة مفتاحية للبحث أو اترك الحقل فارغا لعرض جميع السجلات.
           </p>
+          <div className="hero-actions">
+            <span className="badge">Next.js archive listing</span>
+            <span className="badge">
+              {state.status === "ready" ? `${state.records.length} نتيجة` : "عرض مباشر"}
+            </span>
+          </div>
         </div>
 
         <form className="search-form" onSubmit={handleSearch}>
@@ -84,28 +89,37 @@ export default function ArchivePage() {
           <button type="submit" className="button button-primary">بحث</button>
         </form>
 
-        {state.status === "loading" && (
-          <p className="form-status">جار تحميل السجلات...</p>
-        )}
+        {state.status === "loading" && <p className="form-status" aria-live="polite">جار تحميل السجلات...</p>}
 
         {state.status === "error" && (
-          <p className="form-status" role="alert">{state.message}</p>
+          <div className="state-banner state-banner-error" role="alert">
+            <strong>تعذر تحميل السجلات</strong>
+            <span className="helper-text">{state.message}</span>
+          </div>
         )}
 
         {state.status === "ready" && (
           <>
             {state.records.length === 0 ? (
-              <p className="empty-state">لم يتم العثور على سجلات.</p>
+              <div className="empty-state">
+                <strong>لم يتم العثور على سجلات.</strong>
+                <p className="helper-text">جرّب كلمة أقصر أو أزل الفلتر الحالي.</p>
+              </div>
             ) : (
               <div className="grid" aria-label="السجلات المحفوظة">
                 {state.records.map((record) => (
-                  <article className="panel" key={record.id}>
-                    <h2>
-                      <a href={`/archive/${encodeURIComponent(record.id)}`}>{record.title}</a>
-                    </h2>
-                    {record.description ? (
-                      <p>{record.description}</p>
-                    ) : null}
+                  <article className="panel panel-compact" key={record.id}>
+                    <div className="panel-title-row">
+                      <h2>
+                        <a href={`/archive/${encodeURIComponent(record.id)}`}>{record.title}</a>
+                      </h2>
+                      {record.createdAt ? (
+                        <time className="created-at">
+                          {new Date(record.createdAt).toLocaleDateString("ar-SA")}
+                        </time>
+                      ) : null}
+                    </div>
+                    {record.description ? <p>{record.description}</p> : null}
                     <div className="record-meta">
                       {record.store ? (
                         <span className="badge">{record.store}</span>
@@ -122,11 +136,6 @@ export default function ArchivePage() {
                           </span>
                         ))}
                       </div>
-                    ) : null}
-                    {record.createdAt ? (
-                      <time className="created-at">
-                        {new Date(record.createdAt).toLocaleDateString("ar-SA")}
-                      </time>
                     ) : null}
                   </article>
                 ))}

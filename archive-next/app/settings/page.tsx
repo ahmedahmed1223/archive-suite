@@ -49,6 +49,10 @@ function StatusBadge({ children }: Readonly<{ children: string }>) {
   return <span className="badge">{children}</span>;
 }
 
+const navLinks = [
+  { href: "/", label: "الرئيسية" }
+] as const;
+
 export default function SettingsPage() {
   return (
     <main className="shell">
@@ -57,9 +61,13 @@ export default function SettingsPage() {
           <strong>Archive Suite</strong>
           <span>Settings hub</span>
         </div>
-        <a className="badge" href="/">
-          حالة الترحيل
-        </a>
+        <nav className="route-links" aria-label="مسارات سريعة">
+          {navLinks.map((link) => (
+            <a key={link.href} className="badge" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <section className="content" aria-label="إعدادات Archive Suite">
@@ -70,15 +78,15 @@ export default function SettingsPage() {
             صفحة واحدة سريعة المسح، مع إبراز ما هو مطبق فعلاً وما هو مؤجل
             للمرحلة التالية من الترحيل.
           </p>
+          <div className="hero-actions">
+            <span className="badge">لوحة مرجعية</span>
+            <span className="badge">Read only</span>
+          </div>
         </div>
 
-        <div
-          className="grid"
-          aria-label="فئات الإعدادات"
-          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}
-        >
+        <div className="grid" aria-label="فئات الإعدادات" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
           {categoryCards.map((card) => (
-            <article className="panel" key={card.title}>
+            <article className="panel panel-compact" key={card.title}>
               <h2>{card.title}</h2>
               <p>{card.summary}</p>
               <ul>
@@ -91,11 +99,12 @@ export default function SettingsPage() {
         </div>
 
         <article className="panel" aria-label="وضع الأمان">
-          <h2>وضع الأمان</h2>
-          <p>
-            ملخص للقراءة فقط يوضح سياسة الوصول الحالية والعمل الأمني المؤجل
-            لإصدارات لاحقة.
-          </p>
+          <div className="panel-title-row">
+            <div>
+              <h2>وضع الأمان</h2>
+              <p>ملخص للقراءة فقط يوضح سياسة الوصول الحالية والعمل الأمني المؤجل لإصدارات لاحقة.</p>
+            </div>
+          </div>
 
           <div className="stack">
             <div className="kv-grid" aria-label="Current security controls">
@@ -107,27 +116,14 @@ export default function SettingsPage() {
               ))}
             </div>
 
-            <div style={{ display: "grid", gap: "0.75rem" }}>
+            <div className="stack">
               {roadmapItems.map((item) => (
-                <div
-                  key={item.title}
-                  style={{
-                    borderBlockStart: "1px solid var(--va-border-soft)",
-                    paddingBlockStart: "0.9rem"
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "0.75rem"
-                    }}
-                  >
+                <div key={item.title} style={{ borderBlockStart: "1px solid var(--va-border-soft)", paddingBlockStart: "0.9rem" }}>
+                  <div className="helper-row">
                     <strong>{item.title}</strong>
                     <StatusBadge>{item.status}</StatusBadge>
                   </div>
-                  <p style={{ margin: "0.55rem 0 0", color: "var(--va-text-2)", lineHeight: 1.7 }}>
+                  <p className="helper-text" style={{ marginTop: "0.55rem" }}>
                     {item.note}
                   </p>
                 </div>

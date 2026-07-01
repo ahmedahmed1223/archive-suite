@@ -10,17 +10,18 @@ type LoginState =
   | { status: "success"; user: ArchiveUser; expiresAt: string }
   | { status: "error"; message: string };
 
+const navLinks = [
+  { href: "/", label: "الرئيسية" },
+  { href: "/archive", label: "السجلات" },
+  { href: "/files", label: "الملفات" },
+  { href: "/reports", label: "التقارير" },
+  { href: "/help", label: "المساعدة" },
+  { href: "/media/jobs", label: "Media jobs" }
+] as const;
+
 export default function LoginPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LoginState>({ status: "idle" });
-  const navLinks = [
-    { href: "/", label: "الرئيسية" },
-    { href: "/archive", label: "السجلات" },
-    { href: "/files", label: "الملفات" },
-    { href: "/reports", label: "التقارير" },
-    { href: "/help", label: "المساعدة" },
-    { href: "/media/jobs", label: "Media jobs" }
-  ] as const;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,12 +58,15 @@ export default function LoginPage() {
 
       <section className="content auth-layout" aria-label="تسجيل الدخول">
         <div className="hero auth-copy">
-          <span className="badge">Laravel session auth</span>
           <h1>تسجيل دخول Next.js عبر جلسات Laravel.</h1>
           <p>
             هذه الصفحة تختبر مسار `login` الجديد: access token قصير العمر في
             الذاكرة، وrefresh cookie باسم `va_refresh` يظل HttpOnly.
           </p>
+          <div className="hero-actions">
+            <span className="badge">Laravel session auth</span>
+            <span className="badge">/api/v1/auth/login</span>
+          </div>
         </div>
 
         <form className="panel auth-form" onSubmit={handleSubmit}>
@@ -80,13 +84,31 @@ export default function LoginPage() {
             {state.status === "loading" ? "جار التحقق..." : "تسجيل الدخول"}
           </button>
 
-          <p className="form-status" role="status">
-            {state.status === "success"
-              ? `تم تسجيل الدخول كـ ${state.user.email ?? state.user.name ?? state.user.id}`
-              : state.status === "error"
-                ? state.message
-                : "جاهز للاتصال بـ /api/v1/auth/login."}
-          </p>
+          <div
+            className={`state-banner ${
+              state.status === "error"
+                ? "state-banner-error"
+                : state.status === "success"
+                  ? "state-banner-success"
+                  : ""
+            }`}
+            role="status"
+          >
+            <strong>
+              {state.status === "success"
+                ? "تم تسجيل الدخول"
+                : state.status === "error"
+                  ? "تعذر تسجيل الدخول"
+                  : "جاهز"}
+            </strong>
+            <span className="helper-text">
+              {state.status === "success"
+                ? `تم تسجيل الدخول كـ ${state.user.email ?? state.user.name ?? state.user.id} · ينتهي ${state.expiresAt}`
+                : state.status === "error"
+                  ? state.message
+                  : "جاهز للاتصال بـ /api/v1/auth/login."}
+            </span>
+          </div>
         </form>
       </section>
     </main>
