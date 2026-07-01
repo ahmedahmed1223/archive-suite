@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Events\CollaborationPresenceUpdated;
 use App\Models\CollaborationPresence;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -41,6 +43,30 @@ class CollaborationPresenceApiTest extends TestCase
         $this->postJson('/api/v1/collaboration/rooms/review-1/presence', [
             'status' => 'reviewing',
         ])->assertUnauthorized();
+    }
+
+    public function test_heartbeat_broadcasts_presence_update(): void
+    {
+        Event::fake([CollaborationPresenceUpdated::class]);
+
+        $accessToken = $this->login();
+
+        $this->postJson('/api/v1/collaboration/rooms/review-1/presence', [
+            'status' => 'reviewing',
+            'resourceId' => 'media-123',
+        ], [
+            'Authorization' => 'Bearer '.$accessToken,
+        ])->assertOk();
+
+        Event::assertDispatched(CollaborationPresenceUpdated::class, function (CollaborationPresenceUpdated $event): bool {
+            return $event->roomKey === 'review-1'
+                && $event->participant['status'] === 'reviewing'
+                && $event->participant['resourceId'] === 'media-123'
+                && in_array('private-collaboration.room.review-1', array_map(
+                    fn ($channel) => $channel->name,
+                    $event->broadcastOn()
+                ), true);
+        });
     }
 
     public function test_heartbeat_creates_and_lists_current_participant(): void

@@ -128,6 +128,46 @@ services:
     networks:
       - archive
 
+  laravel-reverb:
+    build:
+      context: ../archive-laravel
+      dockerfile: Dockerfile.worker
+    container_name: archive-ln-laravel-reverb
+    restart: unless-stopped
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: ${POSTGRES_DB:-archive}
+      DB_USERNAME: ${POSTGRES_USER:-archive}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      REDIS_PORT: "6379"
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:?Set REVERB_APP_ID in .env}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:?Set REVERB_APP_KEY in .env}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:?Set REVERB_APP_SECRET in .env}
+      REVERB_HOST: ${REVERB_HOST:-localhost}
+      REVERB_PORT: ${REVERB_PORT:-8080}
+      REVERB_SCHEME: ${REVERB_SCHEME:-http}
+      REVERB_SERVER_HOST: 0.0.0.0
+      REVERB_SERVER_PORT: "8080"
+    ports:
+      - "${REVERB_SERVER_PUBLISHED_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - archive
+
   next:
     build:
       context: ..
@@ -139,11 +179,17 @@ services:
       PORT: "3000"
       HOSTNAME: 0.0.0.0
       ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1
+      NEXT_PUBLIC_REVERB_APP_KEY: ${REVERB_APP_KEY:?Set REVERB_APP_KEY in .env}
+      NEXT_PUBLIC_REVERB_HOST: ${REVERB_HOST:-localhost}
+      NEXT_PUBLIC_REVERB_PORT: ${REVERB_PORT:-8080}
+      NEXT_PUBLIC_REVERB_SCHEME: ${REVERB_SCHEME:-http}
     ports:
       - "${NEXT_PUBLIC_PORT:-3000}:3000"
     depends_on:
       laravel:
         condition: service_healthy
+      laravel-reverb:
+        condition: service_started
     networks:
       - archive
 

@@ -14,6 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Channel auth reuses the bearer/cookie session middleware (not the "web"
+    // session guard) so the Next.js Echo client can authorize private
+    // channels with its existing Authorization header.
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['prefix' => 'api/v1', 'middleware' => ['archive.auth']],
+    )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: [
             'va_refresh',
