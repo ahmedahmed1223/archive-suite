@@ -29,11 +29,66 @@ class WhisperTranscriberTest extends TestCase
 
     public function test_transcribe_builds_correct_command(): void
     {
-        $artifact = $this->transcriber->transcribe('archive/audio.mp3', 'record-1');
+        $artifacts = $this->transcriber->transcribe('archive/audio.mp3', 'record-1');
 
-        $this->assertSame('transcript', $artifact['kind']);
-        $this->assertStringContainsString('record-1/transcript.vtt', $artifact['key']);
-        $this->assertNull($artifact['url']);
+        $kinds = array_column($artifacts, 'kind');
+        $this->assertContains('transcript_srt', $kinds);
+        $this->assertContains('transcript_vtt', $kinds);
+        $this->assertContains('transcript_ttml', $kinds);
+        foreach ($artifacts as $artifact) {
+            $this->assertNull($artifact['url']);
+        }
+    }
+
+    public function test_transcribe_requests_srt_and_vtt_output_formats(): void
+    {
+        $this->transcriber->transcribe('archive/audio.mp3', 'record-1');
+
+        $command = $this->runner->lastCommand();
+        $formatIndex = array_search('--output_format', $command, true);
+
+        $this->assertNotFalse($formatIndex);
+        $this->assertSame('srt,vtt', $command[$formatIndex + 1]);
+    }
+
+    public function test_transcribe_returns_srt_and_vtt_keys_and_derives_ttml(): void
+    {
+        $artifacts = $this->transcriber->transcribe('archive/audio.mp3', 'record-1');
+        $byKind = [];
+        foreach ($artifacts as $artifact) {
+            $byKind[$artifact['kind']] = $artifact;
+        }
+
+        $this->assertStringContainsString('record-1/transcript.srt', $byKind['transcript_srt']['key']);
+        $this->assertStringContainsString('record-1/transcript.vtt', $byKind['transcript_vtt']['key']);
+        $this->assertStringContainsString('record-1/transcript.ttml', $byKind['transcript_ttml']['key']);
+    }
+
+    public function test_transcribe_does_not_pass_diarize_flag_by_default(): void
+    {
+        $this->transcriber->transcribe('archive/audio.mp3', 'record-1');
+
+        $command = $this->runner->lastCommand();
+        $this->assertNotContains('--diarize', $command);
+    }
+
+    public function test_transcribe_passes_diarize_flag_when_enabled(): void
+    {
+        $transcriber = new WhisperTranscriber(
+            $this->runner,
+            'faster-whisper',
+            'large-v3',
+            'ar',
+            'vtt',
+            '',
+            '',
+            true
+        );
+
+        $transcriber->transcribe('archive/audio.mp3', 'record-diarize');
+
+        $command = $this->runner->lastCommand();
+        $this->assertContains('--diarize', $command);
     }
 
     public function test_transcribe_includes_model_parameter(): void
@@ -46,9 +101,9 @@ class WhisperTranscriberTest extends TestCase
             'vtt'
         );
 
-        $artifact = $transcriber->transcribe('archive/audio.mp3', 'record-2');
+        $artifacts = $transcriber->transcribe('archive/audio.mp3', 'record-2');
 
-        $this->assertSame('transcript', $artifact['kind']);
+        $this->assertContains('transcript_vtt', array_column($artifacts, 'kind'));
     }
 
     public function test_transcribe_includes_language_parameter(): void
@@ -61,12 +116,12 @@ class WhisperTranscriberTest extends TestCase
             'vtt'
         );
 
-        $artifact = $transcriber->transcribe('archive/audio.mp3', 'record-3');
+        $artifacts = $transcriber->transcribe('archive/audio.mp3', 'record-3');
 
-        $this->assertSame('transcript', $artifact['kind']);
+        $this->assertContains('transcript_vtt', array_column($artifacts, 'kind'));
     }
 
-    public function test_transcribe_includes_output_format_parameter(): void
+    public function test_transcribe_always_produces_srt_vtt_and_ttml_regardless_of_configured_format(): void
     {
         $transcriber = new WhisperTranscriber(
             $this->runner,
@@ -76,9 +131,12 @@ class WhisperTranscriberTest extends TestCase
             'srt'
         );
 
-        $artifact = $transcriber->transcribe('archive/audio.mp3', 'record-4');
+        $artifacts = $transcriber->transcribe('archive/audio.mp3', 'record-4');
+        $kinds = array_column($artifacts, 'kind');
 
-        $this->assertStringContainsString('record-4/transcript.srt', $artifact['key']);
+        $this->assertContains('transcript_srt', $kinds);
+        $this->assertContains('transcript_vtt', $kinds);
+        $this->assertContains('transcript_ttml', $kinds);
     }
 
     public function test_transcribe_includes_gpu_device_and_compute_type(): void
@@ -120,8 +178,10 @@ class WhisperTranscriberTest extends TestCase
 
         $artifacts = $processor->process($job);
 
-        $this->assertCount(1, $artifacts);
-        $this->assertSame('transcript', $artifacts[0]['kind']);
-        $this->assertStringContainsString('record-whisper/transcript.vtt', $artifacts[0]['key']);
+        $this->assertCount(3, $artifacts);
+        $kinds = array_column($artifacts, 'kind');
+        $this->assertContains('transcript_srt', $kinds);
+        $this->assertContains('transcript_vtt', $kinds);
+        $this->assertContains('transcript_ttml', $kinds);
     }
 }

@@ -13,4 +13,8 @@ return [
     'whisper_output_format' => env('WHISPER_OUTPUT_FORMAT', 'vtt'),
     'whisper_device' => env('WHISPER_DEVICE', 'cuda'),
     'whisper_compute_type' => env('WHISPER_COMPUTE_TYPE', 'float16'),
+    // Speaker diarization via pyannote (whisper-ctranslate2 --diarize). Requires
+    // a HuggingFace auth token (HF_TOKEN env var) with access to pyannote's
+    // gated models; off by default since it needs that extra setup.
+    'whisper_diarize' => env('WHISPER_DIARIZE', false),
 ];

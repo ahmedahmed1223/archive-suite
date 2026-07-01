@@ -89,8 +89,6 @@ class RealMediaProcessor implements MediaProcessor
 
     private function processTranscription(MediaJob $job): array
     {
-        $artifact = $this->transcriber->transcribe($job->source_path, $job->record_id);
-
-        return [$artifact];
+        return $this->transcriber->transcribe($job->source_path, $job->record_id);
     }
 }
