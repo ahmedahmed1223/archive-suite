@@ -177,8 +177,9 @@
   - القبول: SQL Server backend يعمل عبر المسار العام ومسارات Prisma المباشرة الأساسية؛ يبقى ODBC كبند مستقل أدناه.
   - المصدر: طلب المستخدم 2026-06-21.
 
-- [ ] `[P2]` ⏱️XL **دعم ODBC (عام لقواعد بيانات Windows القديمة)** — جسر عبر `node-odbc` لتشغيل الاستعلامات بدون Prisma (الجزء غير المنطقي من الـ schema). يتطلب طبقة Repository بديلة في `archive-server/src/db/odbcAdapter.js` تكشف نفس واجهة Prisma لمجموعة محدودة من الجداول الأساسية (items, users, settings, audit) — وذلك للمستخدمين الذين يربطون قاعدة بيانات قائمة (DSN موجود في ODBC Data Source Administrator على Windows).
-  - الملفات: `archive-server/src/db/odbcAdapter.js` (جديد)، `archive-server/package.json` (تبعية اختيارية `odbc`)، `archive-app/src/bootstrap/backendChoice.js` (BACKEND_CHOICES.odbc)، توثيق DSN في `docs/`.
+- [~] `[P2]` ⏱️XL **دعم ODBC (عام لقواعد بيانات Windows القديمة)** — بعد اعتماد Laravel + Next.js كمسار قانوني، ينتقل الجسر من خطة `node-odbc`/Prisma القديمة إلى طبقة Laravel آمنة لفحص DSN ثم Repository محدود للجداول الأساسية (items, users, settings, audit) — وذلك للمستخدمين الذين يربطون قاعدة بيانات قائمة (DSN موجود في ODBC Data Source Administrator على Windows).
+  - ✅ شريحة Laravel readiness/probe (2026-07-01): بعد اعتماد Laravel + Next.js كمسار قانوني، أُضيفت طبقة ODBC أولية في Laravel (`OdbcConnectionProbe`, `NativeOdbcConnectionFactory`) ونقطة مصادقة `GET /api/v1/system/odbc` تعيد حالات `disabled/missing-dsn/driver-unavailable/connected/failed` مع إخفاء `PWD`/`Password`، وتعرض أسماء الجداول عند نجاح الاتصال. لا تضيف هذه الشريحة read/write repository بعد. التحقق: RED ثم GREEN لـ `OdbcConnectionProbeTest` و`OdbcStatusApiTest`، ثم فلتر API/ODBC: 57 اختبار / 305 assertion.
+  - الملفات: `archive-laravel/app/Services/Odbc/*`, `archive-laravel/app/Http/Controllers/Api/V1/SystemController.php`, `archive-laravel/config/odbc.php`, `archive-laravel/routes/api.php`, `archive-laravel/.env.example`, `docs/odbc-laravel-bridge.md`. الملفات القديمة المقترحة (`archive-server/src/db/odbcAdapter.js`, `archive-app/src/bootstrap/backendChoice.js`) صارت legacy بعد قرار التحويل.
   - القبول: إدخال DSN في معالج الإعداد المتقدم يكشف الاتصال، يجلب جداول المستخدمين، ويسمح بعمليات قراءة/كتابة أساسية.
   - ملاحظة: حدود المخطّط (لا migrations Prisma) يجب توثيقها بوضوح للمستخدم.
   - المصدر: طلب المستخدم 2026-06-21.
