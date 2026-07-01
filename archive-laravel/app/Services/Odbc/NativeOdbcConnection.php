@@ -40,4 +40,28 @@ class NativeOdbcConnection implements OdbcConnection
 
         return $tables;
     }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function readRows(string $table, int $offset, int $limit): array
+    {
+        if (! function_exists('odbc_exec') || ! function_exists('odbc_fetch_array')) {
+            return [];
+        }
+
+        // ponytail: parametrized table name via fixed allowlist in caller; no string concat here.
+        $query = "SELECT * FROM [{$table}] OFFSET {$offset} ROWS FETCH NEXT {$limit} ROWS ONLY";
+        $result = @odbc_exec($this->connection, $query);
+        if ($result === false) {
+            return [];
+        }
+
+        $rows = [];
+        while (($row = odbc_fetch_array($result)) !== false) {
+            $rows[] = $row;
+        }
+
+        return $rows;
+    }
 }

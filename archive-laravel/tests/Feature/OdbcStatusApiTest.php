@@ -63,4 +63,12 @@ class FeatureFakeOdbcConnection implements OdbcConnection
     {
         return array_slice(['archive_items', 'users'], 0, $limit);
     }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function readRows(string $table, int $offset, int $limit): array
+    {
+        return [];
+    }
 }

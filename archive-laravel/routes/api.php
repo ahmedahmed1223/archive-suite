@@ -67,5 +67,6 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/ingest/smb/pull', [IngestController::class, 'smbPull']);
 
         Route::get('/system/odbc', [SystemController::class, 'odbc']);
+        Route::get('/system/odbc/tables/{table}', [SystemController::class, 'odbcReadTable']);
     });
 });

@@ -53,6 +53,7 @@ assert.ok(!laravelPkg.devDependencies?.vite, "Laravel npm package should not dep
 
 for (const script of [
   "security:baseline",
+  "security:audit",
   "verify:cutover",
   "verify:laravel",
   "verify:laravel-next",
