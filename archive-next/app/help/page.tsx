@@ -1,3 +1,5 @@
+import AppHeader from "@/components/AppHeader";
+
 const helpPanels = [
   {
     title: "عقود API",
@@ -25,31 +27,10 @@ const helpPanels = [
   }
 ] as const;
 
-const navLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/archive", label: "السجلات" },
-  { href: "/files", label: "الملفات" },
-  { href: "/reports", label: "التقارير" },
-  { href: "/media/jobs", label: "Media jobs" },
-  { href: "/login", label: "تسجيل الدخول" }
-] as const;
-
 export default function HelpPage() {
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>Next.js help migration</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="مركز المساعدة" />
 
       <section className="content" aria-label="مركز مساعدة Next.js">
         <div className="hero">

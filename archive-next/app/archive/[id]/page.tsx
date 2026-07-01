@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import AppHeader from "@/components/AppHeader";
 import { createArchiveApiClient, type ArchiveRecord, type RightsRecord } from "@/lib/archive-api";
 
 type DetailState =
@@ -15,14 +16,6 @@ export default function ArchiveDetailPage() {
 
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<DetailState>({ status: "loading" });
-  const navLinks = [
-    { href: "/", label: "الرئيسية" },
-    { href: "/archive", label: "السجلات" },
-    { href: "/files", label: "الملفات" },
-    { href: "/reports", label: "التقارير" },
-    { href: "/help", label: "المساعدة" },
-    { href: "/media/jobs", label: "Media jobs" }
-  ] as const;
 
   useEffect(() => {
     let active = true;
@@ -63,19 +56,7 @@ export default function ArchiveDetailPage() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>تفاصيل السجل</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="تفاصيل السجل" />
 
       <section className="content" aria-label="تفاصيل السجل">
         {state.status === "loading" && (

@@ -242,6 +242,17 @@ button.badge:hover {
   background: color-mix(in srgb, var(--color-accent-primary) 14%, var(--color-bg-secondary));
 }
 
+.app-nav-link[aria-current="page"] {
+  color: var(--color-text-inverse);
+  border-color: var(--color-accent-primary);
+  background: var(--color-accent-primary);
+}
+
+.app-nav-link[aria-current="page"]:hover {
+  color: var(--color-text-inverse);
+  background: var(--color-accent-primary-hover);
+}
+
 .button {
   display: inline-flex;
   align-items: center;

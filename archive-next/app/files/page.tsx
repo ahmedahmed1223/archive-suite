@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AppHeader from "@/components/AppHeader";
 import { createArchiveApiClient, type ArchiveFile } from "@/lib/archive-api";
 
 type FileState =
@@ -14,16 +15,6 @@ type ShareState =
   | { status: "creating" }
   | { status: "success"; token: string; url?: string }
   | { status: "error"; message: string };
-
-const navLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/archive", label: "السجلات" },
-  { href: "/reports", label: "التقارير" },
-  { href: "/help", label: "المساعدة" },
-  { href: "/media/play", label: "المشغل" },
-  { href: "/media/jobs", label: "Media jobs" },
-  { href: "/login", label: "تسجيل الدخول" }
-] as const;
 
 const PLAYABLE_EXTENSIONS = new Set([
   "mp3",
@@ -128,19 +119,7 @@ export default function FilesPage() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>استعراض الملفات</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="استعراض الملفات" />
 
       <section className="content" aria-label="استعراض الملفات والمشاركة">
         <div className="hero">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AppHeader from "@/components/AppHeader";
 import {
   clearClientErrors,
   listClientErrors,
@@ -8,14 +9,6 @@ import {
   type ClientErrorLogEntry,
   type ClientErrorSeverity
 } from "@/lib/client-error-log";
-
-const navLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/types", label: "إدارة الأنواع" },
-  { href: "/settings", label: "الإعدادات" },
-  { href: "/reports", label: "التقارير" },
-  { href: "/help", label: "المساعدة" }
-] as const;
 
 const severityLabels: Record<ClientErrorSeverity, string> = {
   error: "خطأ",
@@ -66,19 +59,7 @@ export default function ErrorsPage() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>سجل الأخطاء</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="سجل الأخطاء" />
 
       <section className="content stack" aria-label="سجل أخطاء الواجهة">
         <div className="hero">

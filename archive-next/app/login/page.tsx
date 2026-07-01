@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import AppHeader from "@/components/AppHeader";
 import { createArchiveApiClient, type ArchiveUser } from "@/lib/archive-api";
 
 type LoginState =
@@ -9,15 +10,6 @@ type LoginState =
   | { status: "loading" }
   | { status: "success"; user: ArchiveUser; expiresAt: string }
   | { status: "error"; message: string };
-
-const navLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/archive", label: "السجلات" },
-  { href: "/files", label: "الملفات" },
-  { href: "/reports", label: "التقارير" },
-  { href: "/help", label: "المساعدة" },
-  { href: "/media/jobs", label: "Media jobs" }
-] as const;
 
 export default function LoginPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -42,19 +34,7 @@ export default function LoginPage() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>Next.js auth migration</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="تسجيل الدخول" />
 
       <section className="content auth-layout" aria-label="تسجيل الدخول">
         <div className="hero auth-copy">

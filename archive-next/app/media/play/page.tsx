@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AppHeader from "@/components/AppHeader";
 import MediaPlayer from "@/components/MediaPlayer";
 
 export default function MediaPlayPage() {
@@ -27,17 +28,7 @@ export default function MediaPlayPage() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>Legal media player</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          <a className="badge" href="/files">الملفات</a>
-          <a className="badge" href="/media/review">المراجعة</a>
-          <a className="badge" href="/">الرئيسية</a>
-        </nav>
-      </header>
+      <AppHeader subtitle="مشغل الوسائط" />
 
       <section className="content stack" aria-label="تشغيل الوسائط">
         <div className="hero">

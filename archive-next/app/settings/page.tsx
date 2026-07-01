@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AppHeader from "@/components/AppHeader";
 import {
   createArchiveApiClient,
   type OdbcProbe,
@@ -58,10 +59,6 @@ const odbcTableLabels: Record<OdbcCoreTable, string> = {
 function StatusBadge({ children }: Readonly<{ children: string }>) {
   return <span className="badge">{children}</span>;
 }
-
-const navLinks = [
-  { href: "/", label: "الرئيسية" }
-] as const;
 
 function odbcStatusLabel(status: OdbcProbe["status"]) {
   const labels: Record<OdbcProbe["status"], string> = {
@@ -186,19 +183,7 @@ export default function SettingsPage() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>Settings hub</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="مركز الإعدادات" />
 
       <section className="content" aria-label="إعدادات Archive Suite">
         <div className="hero">
@@ -240,7 +225,7 @@ export default function SettingsPage() {
             {isLoading ? (
               <p className="helper-text">جاري تحميل إعدادات الأمان...</p>
             ) : error ? (
-              <p className="helper-text" style={{ color: "var(--va-color-error)" }}>خطأ: {error}</p>
+              <p className="helper-text" style={{ color: "var(--color-status-error)" }}>خطأ: {error}</p>
             ) : (
               <>
                 <div className="kv-grid" aria-label="Current security controls">
