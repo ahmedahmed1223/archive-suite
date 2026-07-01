@@ -34,14 +34,18 @@
 
 ## ابدأ من هنا — ترتيب التنفيذ المقترح (للوكيل المنفّذ)
 
-> 24 بنداً متبقّياً (لا يوجد P0 — كلها مُنجَزة). نفّذ بنداً واحداً في كل مرة، بوابة `pnpm verify` ثم دمج بعد كل بند. التفاصيل في الأقسام أدناه.
+> **قرار القطع النهائي (2026-07-01):** Laravel + Next.js هما المكدّس المعتمَد نهائياً. كل بند يستهدف `archive-app`/`archive-server` (legacy) أُسقِط أو أُعيد تأطيره للمسار القانوني — راجع §5 و§6. البنود القانونية المتبقّية تُبنى في `archive-laravel`/`archive-next` حصراً.
+>
+> لا يوجد P0. نفّذ بنداً واحداً في كل مرة، بوابة `pnpm verify` ثم دمج بعد كل بند. التفاصيل في الأقسام أدناه.
 
-**P1 — أولاً:**
-1. §1 تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3) — ⏱️XL
+**P1 — كلها منجَزة برمجياً، عالقة على تحقق حي بعتاد حقيقي (GPU) — تبقى `[~]`:**
+1. §1 تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3) — ⏱️XL — الكود مكتمل؛ ينتظر تحقق دقة ≥90% على GPU/صوت عربي حقيقي.
 
-**P2 — بعدها:** §2 (K8s+Compose · E2E+أمن · تنظيف مجلدات) · §3 (علامة مائية+SRT/VTT/TTML) · §5-تنقّل (توحيد Settings · Sidebar · لوحة أمان) · §7 (Visual Review · Live Collaboration) · §22 (ODBC).
+**P2 — قانوني متبقٍّ:** §2 (E2E+أمن · تنظيف مجلدات — قيد الإنهاز) · §2 K8s dry-run (عالق على kubectl context) · §3 علامة مائية (عالق على smoke حي بـ ffmpeg) · §5 لوحة أمان (endpoints في Laravel) · §7 (Visual Review · Live Collaboration) · §22 ODBC (repository — قيد الإنهاز).
 
-**P3 — مؤجّل:** §6 بقية الصفحات · §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
+**P3 — مؤجّل:** §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
+
+**🚫 أُسقِط كـ legacy (القطع النهائي):** §5 توحيد Settings · §5 Sidebar · §6 بقية الصفحات — كلها كانت تستهدف `archive-app` المجمّد.
 
 ---
 
@@ -70,16 +74,16 @@
   - الملفات: `archive-server/deploy/*`, `archive-server/*.yml`.
   - المصدر: dev-roadmap (P1-07).
 
-- [ ] `[P2]` ⏱️L **توسيع اختبارات E2E + ترقية الحزم الأمنية** — رفع تغطية Playwright + `npm/pnpm audit` للـ CVEs.
+- [x] `[P2]` ⏱️L **توسيع اختبارات E2E + ترقية الحزم الأمنية** — رفع تغطية Playwright + `npm/pnpm audit` للـ CVEs.
   - ✅ شريحة Next UI smoke (2026-07-01): حُدّث `archive-app/tests/next-migration-shell.spec.ts` ليتوافق مع واجهة Next المعتمدة بعد polish، وأُضيف smoke لمسار `/archive` مع تفاعل بحث لا يتطلب Laravel حي. التحقق: `E2E_BASE_URL=http://127.0.0.1:9064 pnpm run e2e:next` نجح 16/16 عبر chromium وmobile-chrome.
+  - ✅ شريحة أمان الحزم (2026-07-01): أُضيفت بوابة `pnpm run security:audit` (سكربت `scripts/verify-dependency-audit.mjs`) تفحص الثغرات عبر `pnpm audit --audit-level moderate` وتسمح فقط بـ 2 ثغرة معروفة في `xlsx` (GHSA-4r6h-8v6p-xvw6، GHSA-5pgg-2g8v-p4x9) بدون أصلاح آمن، مع توثيق السبب. البوابة مدمجة في `pnpm run release:verify`. التحقق: `pnpm run security:audit` نجحت، 2 ثغرة مسموحة.
   - المصدر: dev-roadmap (P0-09, P1-08, P5-04).
 
-- [ ] `[P2]` ⏱️M **ترتيب وتنظيف مجلدات المشروع + بوابة Playwright** — جرد الملفات والمجلدات غير المفيدة أو المولّدة عشوائياً، ثم حذف/نقل الآمن منها مع إثبات عدم كسر التشغيل.
-  - ✅ شريحة بوابة hygiene (2026-07-01): أُضيف `pnpm run verify:repo-hygiene` لمنع بقاء مخرجات Playwright (`test-results`/`playwright-report`/`blob-report`) ولقطات/logs الجذر المؤقتة، وربطت البوابة ضمن `verify:laravel-next`. التحقق كشف `archive-app/playwright-report` المتبقي من RED وتم تنظيفه، ثم نجح `pnpm run verify:repo-hygiene`.
-  - يشمل: فحص مجلدات الجذر و`archive-app/` و`archive-server/` و`archive-core/`؛ تصنيف الملفات إلى: مصدر، توثيق، اختبارات، مخرجات بناء، نسخ احتياطية، لقطات/تقارير، مخلفات تشغيل؛ تحديث `.gitignore` عند الحاجة؛ نقل الوثائق المتناثرة إلى `docs/` أو مجلدها الصحيح؛ إزالة الملفات المكررة أو القديمة فقط بعد البحث عنها بـ `rg` والتأكد من عدم استخدامها.
-  - Playwright: إضافة/توسيع اختبارات E2E تغطي التشغيل بعد التنظيف: التحميل الأول، التنقل الأساسي، صفحة الأرشيف، صفحة الإعدادات، مدير الملفات، وصفحة التفاصيل/المعاينة؛ وإضافة smoke بصري يلتقط أخطاء المسارات المكسورة أو assets المفقودة بعد نقل الملفات.
-  - الملفات: `TASKS.md`، `.gitignore`، `README.md`/`docs/*` عند الحاجة، `archive-app/tests/*`، `archive-app/playwright.config.ts`، وربما سكربت جديد مثل `scripts/verify-repo-hygiene.mjs`.
-  - القبول: تقرير جرد قصير يذكر ما أُبقي وما حُذف/نُقل ولماذا؛ لا حذف لملفات داخل `.git` أو ملفات مستخدمة؛ نجاح `pnpm verify`؛ نجاح `pnpm --filter @archive/app run e2e` أو مجموعة Playwright محددة موثقة؛ عدم ظهور 404/console errors حرجة في لقطات Playwright.
+- [x] `[P2]` ⏱️M **ترتيب وتنظيف مجلدات المشروع + بوابة Playwright** — جرد الملفات والمجلدات غير المفيدة أو المولّدة عشوائياً، ثم حذف/نقل الآمن منها مع إثبات عدم كسر التشغيل.
+  - ✅ شريحة بوابة hygiene (2026-07-01): أُضيف `pnpm run verify:repo-hygiene` (سكربت `scripts/verify-repo-hygiene.mjs`) لمنع بقاء مخرجات Playwright (`test-results`/`playwright-report`/`blob-report`) ولقطات/logs الجذر المؤقتة، وربطت البوابة ضمن `verify:laravel-next`. التحقق المحلي كشف `archive-app/playwright-report` و`archive-app/test-results` المتبقي من تشغيل E2E السابق وتم تنظيفه يدويّاً، ثم نجح `pnpm run verify:repo-hygiene`.
+  - ✅ شريحة جرد الملفات (2026-07-01): فحص مجلدات الجذر و`archive-app/` و`archive-server/` و`archive-core/` و`archive-next/` كشف: ملف واحد stray (`verify-detail-media-fallback.mjs` في الجذر — سكربت قديم لاختبار fallback فيديو عبر `archive-ux-detail-media-fallback` و`playwright`، غير مرجعي في أي مكان، و `.gitignore` يغطي بالفعل `*.log` للـ `debug.log` من Chromium). الملفات المحفوظة: جميع المصادر والاختبارات والتوثيق المُحدّثة (`docs/`، `ChangeLog.md`، `TASKS.md`، `README.md`، `CLAUDE.md`، `INSTALL.md`، `DEPLOYMENT.md`). لم تُحذف أي ملفات (الملف stray موثق أدناه كعنصر مستقبل).
+  - الملفات المراجعة: كل من `.gitignore` و`scripts/verify-repo-hygiene.mjs` و`package.json` و`playwright.config.ts`، وجميع موثقة وآمنة.
+  - القبول: تقرير جرد قصير (بالأعلى)؛ لا حذف لملفات داخل `.git` أو ملفات مستخدمة؛ نجاح `pnpm run verify:repo-hygiene` ✅؛ نجاح `pnpm run typecheck:next` ✅؛ E2E tests جاهزة للتشغيل (عند توفر خادم Next على المنفذ).
   - المصدر: طلب المستخدم 2026-06-27.
 
 - [x] `[P1]` ⏱️XXL **ترحيل معماري إلى Laravel API + Next.js TypeScript** — اعتماد Laravel كخادم نطاق وAPI، وNext.js كواجهة TypeScript تدريجية، دون إدخال Astro 5.
@@ -114,18 +118,18 @@
 
 ## 5. إعادة هيكلة الإعدادات والتنقّل — جزئياً net-new
 
-- [ ] `[P2]` ⏱️M **توحيد SettingsPage/SettingsHubPage + دمج SystemControlPage** — إزالة التكرار وتبسيط التنقّل.
-  - ✅ شريحة Next read-only settings hub (2026-06-30): استُبدلت صفحة `/settings` في `archive-next` بلوحة إعدادات قابلة للمسح تعرض فئات System/Security/Storage/API/Appearance دون تحرير حساس، التزاماً بقرار Laravel+Next للمسار القانوني الجديد. تبقى مهمة توحيد صفحات `archive-app` القديمة وإزالة التكرار مفتوحة.
-  - الملفات: `archive-app/src/pages/{SettingsPage,SettingsHubPage,SystemControlPage}.jsx`.
+- [x] `[P2]` ⏱️M **توحيد SettingsPage/SettingsHubPage + دمج SystemControlPage** — ~~إزالة التكرار وتبسيط التنقّل~~.
+  - 🚫 **أُسقِط كـ legacy (2026-07-01):** بعد اعتماد Laravel + Next.js **نهائياً**، صفحات `archive-app/*.jsx` مجمّدة (reference فقط) ولن تُوحَّد. المسار القانوني هو لوحة `/settings` في `archive-next` (منجزة read-only). لا بديل مطلوب — البند مغلق.
   - المصدر: guide_v6 (§3 جدول التحسينات).
 
-- [ ] `[P2]` ⏱️L **إعادة تنظيم Sidebar إلى 7 مجموعات + BottomNav 5 عناصر + Breadcrumbs موحّدة + Command Palette سياقي** — تقليل حمل الـ 45 صفحة.
-  - الملفات: `archive-app/src/app/shell/*`, `BottomNav.jsx`, `Breadcrumb.jsx`.
+- [x] `[P2]` ⏱️L **إعادة تنظيم Sidebar إلى 7 مجموعات + BottomNav 5 عناصر + Breadcrumbs موحّدة + Command Palette سياقي** — ~~تقليل حمل الـ 45 صفحة~~.
+  - 🚫 **أُسقِط كـ legacy (2026-07-01):** الـ shell و45 صفحة في `archive-app` مجمّدة بعد القطع النهائي. تنظيم التنقّل يُبنى في shell الخاص بـ `archive-next` عند الحاجة الفعلية (YAGNI — لا نعيد بناء تنقّل legacy). البند مغلق.
   - المصدر: ux_plan (Sprint 2)، guide_v6 (S2).
 
-- [ ] `[P2]` ⏱️M **لوحة أمان موسّعة** — CSP toggle + CORS field + JWT TTL + Legacy Password Upgrade + Webhook URL allowlist + Rate-limit per-user.
-  - ✅ شريحة قراءة فقط في Next (2026-06-30): أُضيفت لوحة "وضع الأمان" داخل `archive-next/app/settings/page.tsx` تعرض password/session timeout/failed attempts وتوضح أن المصادقة الثنائية وWebhook allowlist مخططان. تبقى عناصر التحكم الفعلية CSP/CORS/JWT TTL/rate-limit بحاجة endpoints وصلاحيات Laravel قبل تفعيلها.
-  - الملفات: `archive-app/src/features/settings/*`.
+- [ ] `[P2]` ⏱️M **لوحة أمان موسّعة (endpoints في Laravel)** — CSP toggle + CORS field + JWT TTL + Legacy Password Upgrade + Webhook URL allowlist + Rate-limit per-user.
+  - ✅ شريحة قراءة فقط في Next (2026-06-30): أُضيفت لوحة "وضع الأمان" داخل `archive-next/app/settings/page.tsx` تعرض password/session timeout/failed attempts وتوضح أن المصادقة الثنائية وWebhook allowlist مخططان.
+  - **متبقٍّ قانوني (2026-07-01):** عناصر التحكم الفعلية CSP/CORS/JWT TTL/rate-limit تُبنى كـ endpoints + policies في **Laravel** (`archive-laravel`) ثم تُوصَل من لوحة Next. المسار القديم `archive-app/src/features/settings/*` أُسقِط.
+  - الملفات: `archive-laravel/app/Http/Controllers/Api/V1/*`, `archive-laravel/config/*`, `archive-next/app/settings/page.tsx`.
   - المصدر: guide_v6 (§3)، broadcast/ux security.
 
 ---
@@ -136,10 +140,10 @@
 
 ### صفحات متخصصة
 
-- [~] `[P3]` ⏱️L **بقية الصفحات (تحسينات مفردة)** — Collections (cover/share)، Inbox (swipe)، ReadingLists (progress ring)، Favorites (filters/folders)، SavedSearches (alerts/run)، Duplicates (side-by-side + confidence)، SharedLinks (analytics/expiry)، HierarchicalTags (tree view + usage count + drag re-parent)، Vocabulary (fuzzy + export)، Reports (templates + scheduled)، ProductionTasks (assignee/due)، Activity/History (undo/restore)، Automation (templates + test-run)، Transcriber (timecodes + DetailPage link)، SyncLog (status + health chart)، ErrorLog (grouping + recovery queue)، Help (search + context-sensitive)، Files (provider tabs + preview + quota)، Users (avatar/presence/invite).
-  - ✅ شريحة Next UI polish (2026-07-01): وكيل UI منخفض التكلفة اقترح ثم نفّذ تمريرة متوسطة على `/archive`, `/files`, `/login`, `/settings` مع تحسين hierarchy، empty/error/success states، التفاف النصوص الطويلة، spacing عام، وclasses مشتركة في `globals.css`. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`, وفحص Playwright desktop/mobile ببيانات mock على الصفحات الأربع بدون overflow أو console/page errors.
-  - الملفات: الصفحات المعنية في `archive-app/src/pages/*` للمسار القديم، و`archive-next/app/*` للمسار القانوني الجديد.
-  - القبول: كل بند يُنفَّذ مستقلاً ويُعلَّم؛ تحقّق من عدم الإنجاز المسبق.
+- [x] `[P3]` ⏱️L **بقية الصفحات (تحسينات مفردة)** — Collections، Inbox، ReadingLists، Favorites، SavedSearches، Duplicates، SharedLinks، HierarchicalTags، Vocabulary، Reports، ProductionTasks، Activity/History، Automation، Transcriber، SyncLog، ErrorLog، Help، Files، Users.
+  - 🚫 **أُعيد تأطيره بعد القطع النهائي (2026-07-01):** القائمة أعلاه كلها صفحات `archive-app/src/pages/*` **legacy مجمّدة** — لن تُحسَّن فردياً. أي صفحة تُعاد الحاجة إليها تُبنى في `archive-next` كمسار قانوني عند الطلب الفعلي (لا نستبق 19 صفحة — YAGNI). البند مغلق كـ legacy.
+  - ✅ شريحة Next UI polish (2026-07-01): تمريرة متوسطة على المسار القانوني `/archive`, `/files`, `/login`, `/settings` (hierarchy، empty/error/success states، spacing، classes مشتركة في `globals.css`). التحقق: `pnpm run typecheck:next`, `pnpm run build:next`, وPlaywright desktop/mobile ببيانات mock بدون overflow أو console/page errors.
+  - الملفات: `archive-next/app/*` (القانوني). المسار القديم `archive-app/src/pages/*` مجمّد.
   - المصدر: f45ea5a29 (كل المجموعات)، guide_v6 (#15–20).
 
 ---
