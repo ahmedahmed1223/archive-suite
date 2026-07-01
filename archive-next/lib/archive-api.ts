@@ -90,12 +90,20 @@ export interface SecuritySettings {
   corsOrigins: string[];
 }
 
+export interface ReviewRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface ReviewComment {
   id: string;
   mediaUid: string;
   timecodeSeconds: number;
   author: string;
   body: string;
+  annotation?: ReviewRect[] | null;
   resolved: boolean;
   createdAt: string;
   updatedAt: string;
@@ -122,7 +130,7 @@ export interface ArchiveApiClient {
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
   reviewComments(mediaUid: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: ReviewComment[] }>>;
-  createReviewComment(mediaUid: string, payload: { body: string; timecodeSeconds: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
+  createReviewComment(mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
   updateReviewComment(id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
 }
 
@@ -236,7 +244,7 @@ export function createArchiveApiClient({
       get<{ settings: SecuritySettings }>("/system/security-settings", options),
     reviewComments: (mediaUid: string, options?: AuthRequestOptions) =>
       get<{ comments: ReviewComment[] }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, options),
-    createReviewComment: (mediaUid: string, payload: { body: string; timecodeSeconds: number }, options?: AuthRequestOptions) =>
+    createReviewComment: (mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions) =>
       post<{ comment: ReviewComment }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, payload, options),
     updateReviewComment: (id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions) =>
       patch<{ comment: ReviewComment }>(`/review-comments/${encodeURIComponent(id)}`, payload, options)

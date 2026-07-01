@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import MediaPlayer from "@/components/MediaPlayer";
-import type { ReviewComment } from "@/lib/archive-api";
+import AnnotationCanvas from "@/components/AnnotationCanvas";
+import type { ReviewComment, ReviewRect } from "@/lib/archive-api";
 import { createArchiveApiClient } from "@/lib/archive-api";
 
 export default function ReviewPage() {
@@ -14,6 +15,9 @@ export default function ReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [useCurrentTime, setUseCurrentTime] = useState(true);
+  const [drawMode, setDrawMode] = useState(false);
+  const [draftRects, setDraftRects] = useState<ReviewRect[]>([]);
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
 
   const playerRef = useRef<HTMLMediaElement | null>(null);
   const api = createArchiveApiClient();
@@ -56,12 +60,18 @@ export default function ReviewPage() {
     try {
       const result = await api.createReviewComment(
         mediaUid,
-        { body: body.trim(), timecodeSeconds: commentTimecode }
+        {
+          body: body.trim(),
+          timecodeSeconds: commentTimecode,
+          annotation: draftRects.length > 0 ? draftRects : undefined,
+        }
       );
       if (result.ok) {
         setComments((prev) => [...prev, result.comment].sort((a, b) => a.timecodeSeconds - b.timecodeSeconds));
         setBody("");
         setTimecode(0);
+        setDraftRects([]);
+        setDrawMode(false);
       } else {
         setError(result.error);
       }
@@ -131,15 +141,48 @@ export default function ReviewPage() {
             <p className="text-xs text-gray-500 mt-1">Also used as the review session UID</p>
           </div>
 
-          {/* Media player */}
+          {/* Media player with annotation overlay */}
           {mediaUid && (
-            <MediaPlayer
-              path={mediaUid}
-              title="Media under review"
-              onReady={(el) => {
-                playerRef.current = el;
-              }}
-            />
+            <div className="space-y-2">
+              <div style={{ position: "relative" }}>
+                <MediaPlayer
+                  path={mediaUid}
+                  onReady={(el) => {
+                    playerRef.current = el;
+                  }}
+                />
+                <AnnotationCanvas
+                  rectangles={
+                    drawMode
+                      ? draftRects
+                      : comments.find((c) => c.id === activeCommentId)?.annotation ?? []
+                  }
+                  editable={drawMode}
+                  onChange={setDraftRects}
+                />
+              </div>
+              <div className="flex gap-2 items-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDrawMode((v) => !v);
+                    setActiveCommentId(null);
+                  }}
+                  className={`px-3 py-1 text-xs rounded ${drawMode ? "bg-red-600 text-white" : "bg-gray-200 text-gray-700"}`}
+                >
+                  {drawMode ? "إيقاف الرسم" : "رسم تعليق توضيحي على الإطار"}
+                </button>
+                {drawMode && draftRects.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDraftRects([])}
+                    className="px-3 py-1 text-xs rounded bg-gray-100 text-gray-600"
+                  >
+                    مسح ({draftRects.length})
+                  </button>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Add comment form */}
@@ -214,7 +257,11 @@ export default function ReviewPage() {
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <button
                       type="button"
-                      onClick={() => handleSeekToComment(comment.timecodeSeconds)}
+                      onClick={() => {
+                        handleSeekToComment(comment.timecodeSeconds);
+                        setDrawMode(false);
+                        setActiveCommentId(comment.id);
+                      }}
                       className="font-mono text-blue-600 hover:underline text-xs font-semibold"
                     >
                       {formatTimecode(comment.timecodeSeconds)}

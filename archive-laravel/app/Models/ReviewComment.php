@@ -16,6 +16,7 @@ class ReviewComment extends Model
         'timecode_seconds',
         'author',
         'body',
+        'annotation',
         'resolved',
     ];
 
@@ -23,6 +24,7 @@ class ReviewComment extends Model
     {
         return [
             'timecode_seconds' => 'decimal:3',
+            'annotation' => 'array',
             'resolved' => 'boolean',
         ];
     }
