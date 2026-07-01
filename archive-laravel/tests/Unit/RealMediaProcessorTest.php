@@ -61,6 +61,80 @@ class RealMediaProcessorTest extends TestCase
         $this->assertStringContainsString('record-2/transcoded.mp4', $artifacts[0]['key']);
     }
 
+    public function test_transcode_can_apply_watermark_overlay_from_job_options(): void
+    {
+        $job = new MediaJob();
+        $job->id = 'job-watermark';
+        $job->record_id = 'record-watermark';
+        $job->operation = 'transcode';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [
+            'watermark' => [
+                'path' => 'branding/archive-logo.png',
+                'position' => 'top-right',
+                'opacity' => 0.6,
+                'margin' => 18,
+            ],
+        ];
+
+        $artifacts = $this->processor->process($job);
+        $command = $this->runner->lastCommand();
+        $filterIndex = array_search('-filter_complex', $command, true);
+
+        $this->assertCount(1, $artifacts);
+        $this->assertSame('video', $artifacts[0]['kind']);
+        $this->assertContains('branding/archive-logo.png', $command);
+        $this->assertNotFalse($filterIndex);
+        $this->assertSame(
+            '[1:v]format=rgba,colorchannelmixer=aa=0.6[wm];[0:v][wm]overlay=x=W-w-18:y=18[v]',
+            $command[$filterIndex + 1]
+        );
+        $this->assertContains('[v]', $command);
+        $this->assertContains('0:a?', $command);
+    }
+
+    public function test_transcode_uses_default_watermark_when_enabled_in_processor_config(): void
+    {
+        $transcriber = new WhisperTranscriber(
+            $this->runner,
+            'faster-whisper',
+            'large-v3',
+            'ar',
+            'vtt'
+        );
+        $processor = new RealMediaProcessor(
+            $this->runner,
+            $transcriber,
+            'ffmpeg',
+            'ffprobe',
+            [
+                'enabled' => true,
+                'path' => 'branding/default-watermark.png',
+                'position' => 'bottom-left',
+                'opacity' => 0.75,
+                'margin' => 12,
+            ],
+        );
+
+        $job = new MediaJob();
+        $job->id = 'job-watermark-default';
+        $job->record_id = 'record-watermark-default';
+        $job->operation = 'transcode';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [];
+
+        $processor->process($job);
+        $command = $this->runner->lastCommand();
+        $filterIndex = array_search('-filter_complex', $command, true);
+
+        $this->assertContains('branding/default-watermark.png', $command);
+        $this->assertNotFalse($filterIndex);
+        $this->assertSame(
+            '[1:v]format=rgba,colorchannelmixer=aa=0.75[wm];[0:v][wm]overlay=x=12:y=H-h-12[v]',
+            $command[$filterIndex + 1]
+        );
+    }
+
     public function test_transcription_builds_correct_command(): void
     {
         $job = new MediaJob();

@@ -53,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
                     $app->make(WhisperTranscriber::class),
                     config('media.ffmpeg_path'),
                     config('media.ffprobe_path'),
+                    config('media.watermark', []),
                 )
             );
         } else {
