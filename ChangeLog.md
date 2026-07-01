@@ -2904,3 +2904,7 @@
 ### 7. Live Collaboration — Editing locks (شريحة، 2026-07-01)
 
 - [~] `[P2]` ⏱️XL **تعاون حي (Live Collaboration)** — أضيفت طبقة أقفال تحرير فوق presence: جدول/model `collaboration_locks`، وواجهات محمية `GET/POST /api/v1/collaboration/rooms/{roomKey}/locks` و`POST /locks/release`. يدعم القفل TTL، refresh لنفس المستخدم، تحرير المالك، و409 `lock_conflict` عند محاولة مستخدم آخر حجز المورد نفسه. صفحة Next `/collaboration` تعرض الأقفال وتتيح حجز/تحرير المورد الحالي، والعميل typed والعقد OpenAPI حُدّثا. التحقق: RED ثم GREEN لـ `CollaborationLocksApiTest`، وفلتر `Collaboration` مرّ 8/8 (55 assertion)، ومرّت `pnpm run verify:api-contracts`, `pnpm run typecheck:next`, و`pnpm run build:next`. المتبقي: WebSocket/Reverb وإشعارات فورية بدل polling.
+
+### 7. Live Collaboration — UI polish (شريحة، 2026-07-01)
+
+- [~] `[P2]` ⏱️XL **تعاون حي (Live Collaboration)** — نُفّذت تمريرة UI منخفضة التكلفة على `/collaboration` ثم روجعت محلياً لتبقى متوافقة مع CSS الحالي لا Tailwind: حالات loading للأزرار والheartbeat، banners أوضح للخطأ/الاتصال، بطاقات أكثر إحكاماً للحضور والأقفال، وحماية من بقاء حالة التحميل عند فشل fetch. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`, و`pnpm run typecheck`.
