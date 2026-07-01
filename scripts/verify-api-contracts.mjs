@@ -29,6 +29,7 @@ for (const pathName of [
   "/folders",
   "/media/{mediaUid}/review-links",
   "/review-links/{token}",
+  "/collaboration/rooms/{roomKey}/presence",
   "/rights",
   "/rights/expiring",
   "/rights/{itemId}/enforcement",
@@ -50,6 +51,8 @@ for (const schemaName of [
   "ReviewComment",
   "CreateReviewLinkResponse",
   "ReviewLinkPayloadResponse",
+  "CollaborationParticipant",
+  "CollaborationPresenceResponse",
   "SharePayloadResponse"
 ]) {
   assert.ok(contract.components?.schemas?.[schemaName], `API contract should define ${schemaName}`);

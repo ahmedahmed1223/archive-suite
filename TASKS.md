@@ -41,8 +41,8 @@
 **P1 — كلها منجَزة برمجياً، عالقة على تحقق حي بعتاد حقيقي (GPU) — تبقى `[~]`:**
 1. §1 تفريغ عربي إنتاجي (GPU + faster-whisper-large-v3) — ⏱️XL — الكود مكتمل؛ ينتظر تحقق دقة ≥90% على GPU/صوت عربي حقيقي.
 
-**P2 — قانوني متبقٍّ:** §7 (Visual Review · Live Collaboration) — ميزتان XL جديدتان، لم تبدآ.
-  - ✅ أُنجِز هذه الجلسة (2026-07-01): §2 (تنظيف مجلدات · E2E+audit) · §22 ODBC read-repository · §5 لوحة أمان (endpoints + حفظ دائم) · §7 Visual Review شريحة 1 (تعليقات موقّتة) · **مشغّل وسائط قانوني + بثّ HTTP Range** (§3/§7 enabler — حلّ منع التشغيل المحلي).
+**P2 — قانوني متبقٍّ:** §7 Live Collaboration — بدأ كأساس presence heartbeat؛ يبقى WebSocket/Reverb الحقيقي والتحرير المتزامن.
+  - ✅ أُنجِز هذه الجلسة (2026-07-01): §2 (تنظيف مجلدات · E2E+audit) · §22 ODBC read-repository · §5 لوحة أمان (endpoints + حفظ دائم) · §7 Visual Review (تعليقات/annotation/مقارنة/روابط خارجية) · §7 Live Collaboration شريحة presence · **مشغّل وسائط قانوني + بثّ HTTP Range** (§3/§7 enabler — حلّ منع التشغيل المحلي).
   - ⏳ عالق على عتاد حقيقي (كود مكتمل): §1 GPU · §2 K8s dry-run (kubectl context) · §3 علامة مائية (ffmpeg smoke).
 
 **P3 — مؤجّل:** §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
@@ -175,7 +175,9 @@
   - ملاحظة مستقبلية غير حاجبة: تشغيل الوسيط نفسه داخل الرابط العام يحتاج stream token منفصل أو public signed media endpoint؛ الرابط الحالي يعرض بيانات المراجعة والتعليقات العامة بأمان.
   - المصدر: dev-roadmap (new-feature #1).
 
-- [ ] `[P2]` ⏱️XL **تعاون حي (Live Collaboration)** — حضور فوري + تحرير متزامن + إشعارات WebSocket حقيقية (`PresenceIndicator` موجود).
+- [~] `[P2]` ⏱️XL **تعاون حي (Live Collaboration)** — حضور فوري + تحرير متزامن + إشعارات WebSocket حقيقية (`PresenceIndicator` موجود).
+  - ✅ شريحة 1 (2026-07-01): **presence heartbeat قانوني في Laravel + Next**. أضيف جدول/model `collaboration_presence` و`CollaborationController` مع endpoints محمية بدون audit spam: `GET/POST /api/v1/collaboration/rooms/{roomKey}/presence`. الـ heartbeat يحدث حضور المستخدم في الغرفة مع `status/resourceId/cursor`، ويعرض المشاركين النشطين ضمن نافذة 45 ثانية، مع فلترة stale participants. أضيفت صفحة Next `/collaboration` وعميل typed في `archive-next/lib/archive-api.ts`، وتوثيق OpenAPI + تحقق `verify:api-contracts`. التحقق: RED ثم GREEN لـ `CollaborationPresenceApiTest` (4 اختبارات / 25 assertion)، و`pnpm run typecheck:next`, `pnpm run build:next`, `pnpm run verify:api-contracts`.
+  - المتبقي لإغلاق البند: WebSocket/Reverb حقيقي بدلاً من polling/heartbeat، طبقة تحرير متزامن/locks conflict-aware، وإشعارات فورية مربوطة بالصفحات التشغيلية.
   - المصدر: dev-roadmap (new-feature #2)، sessions_new (F16, F17).
 
 - [ ] `[P3]` ⏱️XL **محرّك قواعد مرئي (Visual Rules Engine)** — سحب/إفلات trigger+conditions+actions فوق `automationSlice`.

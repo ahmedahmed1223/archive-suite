@@ -2892,3 +2892,7 @@
 ### 7. Visual Review — روابط مراجعة خارجية (شريحة، 2026-07-01)
 
 - [x] `[P2]` ⏱️XL **مراجعة بصرية واعتماد (Visual Review)** — أُغلقت شريحة الرابط الخارجي: جدول/model `review_links`، و`ReviewLinksController` مع `POST /api/v1/media/{mediaUid}/review-links` تحت auth لإنشاء token عشوائي طويل وصلاحية `view/comment` وانتهاء اختياري، و`GET /api/v1/review-links/{token}` عام يعيد media UID وmetadata وتعليقات المراجعة المرتبة ويفرض expiry. أضيفت صفحة Next عامة `/review/[token]` وعميل typed في `archive-next/lib/archive-api.ts`. التحقق: `node scripts/laravel-docker.mjs test --filter=ReviewLinksApiTest` مرّ 5/5 (30 assertion)، ثم `node scripts/laravel-docker.mjs test --filter=Review` مرّ 17/17 (62 assertion)، ومرّا `pnpm run typecheck:next` و`pnpm run build:next`.
+
+### 7. Live Collaboration — Presence heartbeat (شريحة، 2026-07-01)
+
+- [~] `[P2]` ⏱️XL **تعاون حي (Live Collaboration)** — أضيف أساس حضور قانوني في Laravel/Next: جدول/model `collaboration_presence`، و`CollaborationController` مع endpoints محمية `GET/POST /api/v1/collaboration/rooms/{roomKey}/presence` لتسجيل heartbeat وعرض المشاركين النشطين ضمن نافذة 45 ثانية بدون audit spam. أضيف عميل typed وصفحة Next `/collaboration` تعرض الغرفة، المورد، الحالة، وقائمة المشاركين. وُثّق المسار في OpenAPI وربط بـ `verify:api-contracts`. التحقق: RED ثم GREEN لـ `CollaborationPresenceApiTest` (4/4، 25 assertion)، ومرّت `pnpm run verify:api-contracts`, `pnpm run typecheck:next`, و`pnpm run build:next`. يبقى WebSocket/Reverb الحقيقي والتحرير المتزامن/locks لإغلاق البند كاملاً.
