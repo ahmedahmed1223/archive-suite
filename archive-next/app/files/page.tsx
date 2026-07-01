@@ -177,9 +177,9 @@ export default function FilesPage() {
                             aria-label={`تحديد ${file.name || file.key}`}
                           />
                           <span style={{ display: "grid", gap: "0.25rem", minInlineSize: 0 }}>
-                            <strong style={{ overflowWrap: "anywhere" }}>{file.name || file.key}</strong>
+                            <strong className="wrap-anywhere">{file.name || file.key}</strong>
                             {file.key !== file.name && file.key ? (
-                              <span className="field-note" style={{ overflowWrap: "anywhere" }}>
+                              <span className="field-note wrap-anywhere">
                                 {file.key}
                               </span>
                             ) : null}
@@ -208,7 +208,11 @@ export default function FilesPage() {
                   ))}
                 </div>
 
-                <div className="helper-row">
+                <div className="state-banner">
+                  <div className="helper-row">
+                    <strong>إجراءات الملفات المحددة</strong>
+                    {selectedKeys.size > 0 && <span className="badge">{selectedKeys.size} ملف محدد</span>}
+                  </div>
                   <button
                     onClick={handleCreateShare}
                     disabled={selectedKeys.size === 0 || shareState.status === "creating"}
@@ -216,7 +220,6 @@ export default function FilesPage() {
                   >
                     {shareState.status === "creating" ? "جار الإنشاء..." : "إنشاء رابط مشاركة"}
                   </button>
-                  {selectedKeys.size > 0 && <span className="badge">{selectedKeys.size} ملف محدد</span>}
                 </div>
 
                 {shareState.status === "success" && (

@@ -199,7 +199,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="grid" aria-label="فئات الإعدادات" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+        <div className="dense-grid" aria-label="فئات الإعدادات">
           {categoryCards.map((card) => (
             <article className="panel panel-compact" key={card.title}>
               <h2>{card.title}</h2>
@@ -238,7 +238,7 @@ export default function SettingsPage() {
                 </div>
 
                 {settings && settings.cspPolicy && (
-                  <div style={{ borderBlockStart: "1px solid var(--va-border-soft)", paddingBlockStart: "0.9rem" }}>
+                  <div className="section-divider">
                     <strong>CSP Policy (Deploy-time)</strong>
                     <p className="helper-text" style={{ marginTop: "0.55rem", fontSize: "0.85em", fontFamily: "monospace" }}>
                       {settings.cspPolicy}
@@ -247,7 +247,7 @@ export default function SettingsPage() {
                 )}
 
                 {settings && settings.corsOrigins && settings.corsOrigins.length > 0 && (
-                  <div style={{ borderBlockStart: "1px solid var(--va-border-soft)", paddingBlockStart: "0.9rem" }}>
+                  <div className="section-divider">
                     <strong>CORS Origins (Deploy-time)</strong>
                     <ul style={{ marginTop: "0.55rem", paddingInlineStart: "1.5rem", fontSize: "0.9em" }}>
                       {settings.corsOrigins.map((origin) => (
@@ -261,7 +261,7 @@ export default function SettingsPage() {
 
             <div className="stack">
               {roadmapItems.map((item) => (
-                <div key={item.title} style={{ borderBlockStart: "1px solid var(--va-border-soft)", paddingBlockStart: "0.9rem" }}>
+                <div key={item.title} className="section-divider">
                   <div className="helper-row">
                     <strong>{item.title}</strong>
                     <StatusBadge>{item.status}</StatusBadge>
@@ -288,7 +288,7 @@ export default function SettingsPage() {
             {isOdbcLoading ? (
               <p className="helper-text">جاري فحص ODBC...</p>
             ) : odbcError ? (
-              <p className="helper-text" style={{ color: "var(--va-danger)" }}>خطأ: {odbcError}</p>
+              <p className="helper-text" style={{ color: "var(--color-status-error)" }}>خطأ: {odbcError}</p>
             ) : odbc ? (
               <>
                 <div className="kv-grid" aria-label="ODBC connection posture">
@@ -345,11 +345,11 @@ export default function SettingsPage() {
                 )}
 
                 {previewError && (
-                  <p className="helper-text" style={{ color: "var(--va-danger)" }}>خطأ: {previewError}</p>
+                  <p className="helper-text" style={{ color: "var(--color-status-error)" }}>خطأ: {previewError}</p>
                 )}
 
                 {odbcPreview && (
-                  <div className="stack" style={{ borderBlockStart: "1px solid var(--va-border-soft)", paddingBlockStart: "0.9rem" }}>
+                  <div className="stack section-divider">
                     <div className="helper-row">
                       <strong>{odbcTableLabels[odbcPreview.table as OdbcCoreTable] || odbcPreview.table}</strong>
                       <StatusBadge>{`${odbcPreview.count} صف`}</StatusBadge>
@@ -358,22 +358,12 @@ export default function SettingsPage() {
                     {odbcPreview.rows.length === 0 ? (
                       <div className="empty-state">لا توجد صفوف ضمن حد المعاينة الحالي.</div>
                     ) : (
-                      <div style={{ overflowX: "auto" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "620px" }}>
+                      <div className="scroll-x">
+                        <table className="data-table">
                           <thead>
                             <tr>
                               {previewColumns.map((column) => (
-                                <th
-                                  key={column}
-                                  scope="col"
-                                  style={{
-                                    borderBlockEnd: "1px solid var(--va-border-soft)",
-                                    color: "var(--va-text-muted)",
-                                    fontSize: "0.82rem",
-                                    padding: "0.55rem",
-                                    textAlign: "start"
-                                  }}
-                                >
+                                <th key={column} scope="col">
                                   {column}
                                 </th>
                               ))}
@@ -383,17 +373,7 @@ export default function SettingsPage() {
                             {odbcPreview.rows.map((row, rowIndex) => (
                               <tr key={`${odbcPreview.table}-${rowIndex}`}>
                                 {previewColumns.map((column) => (
-                                  <td
-                                    key={column}
-                                    style={{
-                                      borderBlockEnd: "1px solid var(--va-border-soft)",
-                                      color: "var(--va-text-2)",
-                                      fontSize: "0.88rem",
-                                      maxWidth: "18rem",
-                                      overflowWrap: "anywhere",
-                                      padding: "0.55rem"
-                                    }}
-                                  >
+                                  <td key={column}>
                                     {formatPreviewValue(row[column])}
                                   </td>
                                 ))}

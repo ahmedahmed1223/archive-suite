@@ -163,6 +163,7 @@
   - ✅ شريحة استعادة الصفحات المعطّلة (2026-07-01): بعد فحص المسارات تبيّن أن `إدارة الأنواع` و`سجل الأخطاء` كانتا موجودتين فقط في `archive-app` legacy ولا توجد لهما routes في `archive-next`. أُضيفت `/types` لإدارة أنواع المحتوى والفروع والحقول عبر مخزن Laravel `content_types`، وأُضيفت `/errors` كسجل أخطاء واجهة Next مع التقاط `window.error` و`unhandledrejection`. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
   - ✅ شريحة UI foundation (2026-07-01): أُضيف `archive-next/app/theme.css` كطبقة tokens مفصلة للألوان، المسافات، الخط، الحالات، الظلال، الحركة، dark mode، وreduced-motion، وأُعيد بناء `globals.css` فوق tokens موحدة مع الحفاظ على توافق classes الحالية. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
   - ✅ شريحة AppHeader/navigation (2026-07-01): أُضيف `archive-next/components/AppHeader.tsx` كخريطة تنقل موحدة مع حالة `aria-current`، واستُبدلت الرؤوس المتكررة في صفحات Next القانونية المستقرة حتى تتوقف قوائم الروابط عن الانحراف بين الصفحات. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+  - ✅ شريحة operational UI polish (2026-07-01): أضيفت utilities مشتركة (`split-layout`, `dense-grid`, `scroll-x`, `data-table`, `button-danger`, `wrap-anywhere`, `section-divider`) واستُخدمت في `/settings`, `/types`, `/errors`, `/files`, و`/archive/[id]` لتقليل inline styles، تحسين القراءة على RTL، وضبط الأفعال الخطرة. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
   - الملفات: `archive-next/app/*` (القانوني). المسار القديم `archive-app/src/pages/*` مجمّد.
   - المصدر: f45ea5a29 (كل المجموعات)، guide_v6 (#15–20).
 

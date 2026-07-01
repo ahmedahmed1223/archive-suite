@@ -74,6 +74,7 @@ export default function ArchiveDetailPage() {
               <h1>{state.record.title}</h1>
               {state.record.description && <p>{state.record.description}</p>}
               <div className="record-meta">
+                <a href="/archive" className="badge">العودة إلى السجلات</a>
                 {state.record.store && <span className="badge">{state.record.store}</span>}
                 {state.record.type && <span className="badge">{state.record.type}</span>}
                 {state.record.updatedAt && (
@@ -180,10 +181,6 @@ export default function ArchiveDetailPage() {
                   <p className="empty-state">لا توجد بيانات حقوق</p>
                 )}
               </article>
-            </div>
-
-            <div style={{ marginTop: "1rem" }}>
-              <a href="/archive" className="button button-secondary">العودة إلى القائمة</a>
             </div>
           </>
         )}

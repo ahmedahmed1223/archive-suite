@@ -301,12 +301,12 @@ export default function TypesPage() {
           </div>
         )}
 
-        <div className="auth-layout" aria-label="محرر الأنواع">
+        <div className="split-layout" aria-label="محرر الأنواع">
           <section className="stack" aria-label="قائمة الأنواع">
             <div className="toolbar-row">
               <div>
                 <h2>الأنواع الحالية</h2>
-              <p className="field-note">اختر نوعاً للتعديل أو أضف القوالب الأساسية عند أول تشغيل.</p>
+                <p className="field-note">اختر نوعاً للتعديل أو أضف القوالب الأساسية عند أول تشغيل.</p>
               </div>
               <button className="button button-secondary" type="button" onClick={() => void seedDefaults()}>
                 إضافة القوالب

@@ -54,6 +54,10 @@ export default function ErrorsPage() {
   };
 
   const clearAll = () => {
+    if (errors.length > 0 && !window.confirm("مسح سجل الأخطاء الحالي؟")) {
+      return;
+    }
+
     clearClientErrors();
   };
 
@@ -94,7 +98,7 @@ export default function ErrorsPage() {
             <button className="button button-secondary" type="button" onClick={createManualError}>
               اختبار التسجيل
             </button>
-            <button className="button button-primary" type="button" onClick={clearAll} disabled={errors.length === 0}>
+            <button className="button button-danger" type="button" onClick={clearAll} disabled={errors.length === 0}>
               مسح السجل
             </button>
           </div>
@@ -119,7 +123,7 @@ export default function ErrorsPage() {
                 <div className="kv-grid">
                   <div className="kv-item">
                     <strong>الصفحة</strong>
-                    <span style={{ overflowWrap: "anywhere" }}>{entry.page}</span>
+                    <span className="wrap-anywhere">{entry.page}</span>
                   </div>
                   <div className="kv-item">
                     <strong>المصدر</strong>
