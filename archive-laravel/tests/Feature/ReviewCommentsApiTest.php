@@ -235,4 +235,39 @@ class ReviewCommentsApiTest extends TestCase
             'resolved' => true,
         ]);
     }
+
+    public function test_create_persists_and_returns_annotation_rectangles(): void
+    {
+        $accessToken = $this->login();
+
+        $annotation = [
+            ['x' => 0.1, 'y' => 0.2, 'w' => 0.3, 'h' => 0.25],
+            ['x' => 0.5, 'y' => 0.5, 'w' => 0.2, 'h' => 0.2],
+        ];
+
+        $this->postJson("/api/v1/media/{$this->mediaUid}/review-comments", [
+            'body' => 'Comment with annotation',
+            'timecodeSeconds' => 3.0,
+            'annotation' => $annotation,
+        ], [
+            'Authorization' => 'Bearer '.$accessToken,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('comment.annotation.0.x', 0.1)
+            ->assertJsonPath('comment.annotation.1.w', 0.2);
+    }
+
+    public function test_create_rejects_out_of_range_annotation(): void
+    {
+        $accessToken = $this->login();
+
+        $this->postJson("/api/v1/media/{$this->mediaUid}/review-comments", [
+            'body' => 'Bad annotation',
+            'timecodeSeconds' => 1.0,
+            'annotation' => [['x' => 1.5, 'y' => 0.2, 'w' => 0.3, 'h' => 0.3]],
+        ], [
+            'Authorization' => 'Bearer '.$accessToken,
+        ])
+            ->assertUnprocessable();
+    }
 }

@@ -35,6 +35,7 @@ class ReviewCommentsController extends Controller
             'timecode_seconds' => (float) $validated['timecodeSeconds'],
             'author' => auth()->user()?->email ?? 'anonymous',
             'body' => $validated['body'],
+            'annotation' => $validated['annotation'] ?? null,
             'resolved' => false,
         ]);
 
@@ -75,6 +76,7 @@ class ReviewCommentsController extends Controller
             'timecodeSeconds' => $timecodeSeconds,
             'author' => $comment->author,
             'body' => $comment->body,
+            'annotation' => $comment->annotation,
             'resolved' => $comment->resolved,
             'createdAt' => $comment->created_at?->toISOString(),
             'updatedAt' => $comment->updated_at?->toISOString(),
