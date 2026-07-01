@@ -30,6 +30,8 @@
 
 - [x] **تحسين صفحات التشغيل الأساسية** — أضيفت utilities تصميم مشتركة في `globals.css` للانقسام responsive، الجداول القابلة للتمرير، الأزرار الخطرة، النصوص الطويلة، والفواصل؛ واستُخدمت في `/settings`, `/types`, `/errors`, `/files`, و`/archive/[id]` لتقليل التداخل وinline styles، تحسين RTL، ونقل إجراء مسح سجل الأخطاء إلى زر خطر مع تأكيد. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **تحسين صفحات الوسائط والمراجعة** — أُعيدت صياغة `/media/review` و`/media/compare` باستخدام classes التصميم الحقيقية بدلاً من Tailwind utility classes غير المفعّلة، وأضيفت layouts responsive للمقارنة والمراجعة، وإطار ثابت للمشغل/الـ annotation. حُدث `MediaPlayer` ليقبل أحداث time/play عبر props React بدلاً من listeners يدوية، وخُففت تفاصيل `/media/jobs` بتحويل JSON الخيارات إلى `details`. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import type { SyntheticEvent } from "react";
 
 // ponytail: the browser cannot play file:// media in local mode, so we always
 // stream over the authenticated Laravel endpoint (Range-capable). Same-origin
@@ -40,9 +41,11 @@ export interface MediaPlayerProps {
   title?: string;
   /** Receives the media element so callers can seek (e.g. from review comments). */
   onReady?: (el: HTMLMediaElement) => void;
+  onTimeUpdate?: (el: HTMLMediaElement) => void;
+  onPlayPause?: (el: HTMLMediaElement) => void;
 }
 
-export default function MediaPlayer({ path, disk, title, onReady }: MediaPlayerProps) {
+export default function MediaPlayer({ path, disk, title, onReady, onTimeUpdate, onPlayPause }: MediaPlayerProps) {
   const [error, setError] = useState<string | null>(null);
   const src = useMemo(() => streamSrc(path, disk), [disk, path]);
   const audio = useMemo(() => isAudioPath(path), [path]);
@@ -58,18 +61,26 @@ export default function MediaPlayer({ path, disk, title, onReady }: MediaPlayerP
     setError("تعذّر تشغيل هذه المادة — تحقّق من المسار أو أن الصيغة مدعومة في المتصفح.");
   }, []);
 
+  const handleTimeUpdate = useCallback((event: SyntheticEvent<HTMLMediaElement>) => {
+    onTimeUpdate?.(event.currentTarget);
+  }, [onTimeUpdate]);
+
+  const handlePlayPause = useCallback((event: SyntheticEvent<HTMLMediaElement>) => {
+    onPlayPause?.(event.currentTarget);
+  }, [onPlayPause]);
+
   if (!path) {
     return <p className="media-player__empty">لا توجد مادة محدّدة للتشغيل.</p>;
   }
 
   return (
-    <figure className="media-player" style={{ margin: 0 }}>
+    <figure className="media-player">
       {title ? (
-        <figcaption style={{ marginBlockEnd: 8, fontWeight: 600 }}>{title}</figcaption>
+        <figcaption className="media-player__caption">{title}</figcaption>
       ) : null}
 
       {error ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
+        <p className="form-status status-error" role="alert">
           {error}
         </p>
       ) : audio ? (
@@ -79,7 +90,9 @@ export default function MediaPlayer({ path, disk, title, onReady }: MediaPlayerP
           controls
           preload="metadata"
           onError={handleError}
-          style={{ width: "100%" }}
+          onPause={handlePlayPause}
+          onPlay={handlePlayPause}
+          onTimeUpdate={handleTimeUpdate}
         />
       ) : (
         <video
@@ -89,7 +102,9 @@ export default function MediaPlayer({ path, disk, title, onReady }: MediaPlayerP
           playsInline
           preload="metadata"
           onError={handleError}
-          style={{ width: "100%", borderRadius: 12, background: "#000", maxBlockSize: "70vh" }}
+          onPause={handlePlayPause}
+          onPlay={handlePlayPause}
+          onTimeUpdate={handleTimeUpdate}
         />
       )}
     </figure>

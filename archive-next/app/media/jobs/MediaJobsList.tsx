@@ -199,19 +199,11 @@ export function MediaJobsList() {
           {selectedOperation === "transcode" && (
             <div className="state-banner">
               <div className="helper-row">
-                <strong>Watermark overlay</strong>
-                <label
-                  style={{
-                    alignItems: "center",
-                    color: "var(--va-text-2)",
-                    display: "inline-flex",
-                    gap: "0.45rem"
-                  }}
-                >
+                <strong>إضافة علامة مائية</strong>
+                <label className="checkbox-row">
                   <input
                     name="watermarkEnabled"
                     type="checkbox"
-                    style={{ inlineSize: "auto", minBlockSize: "auto" }}
                   />
                   تفعيل
                 </label>
@@ -262,7 +254,7 @@ export function MediaJobsList() {
       <article className="panel">
         <div className="toolbar-row">
           <div>
-            <h2>Ingest Scan</h2>
+            <h2>مسح الإدخال</h2>
             <p className="field-note">فحص إدخال الملفات وتوليد jobs جديدة عند الحاجة.</p>
           </div>
         </div>
@@ -282,10 +274,10 @@ export function MediaJobsList() {
       <section className="stack" aria-label="قائمة Media Jobs">
         <div className="toolbar-row">
           <div>
-            <h2>قائمة Media Jobs</h2>
+            <h2>قائمة مهام الوسائط</h2>
             <p className="field-note">فلترة مباشرة حسب الحالة مع إبقاء التفاصيل قابلة للمسح بسرعة.</p>
           </div>
-          <label className="field-row" style={{ margin: 0 }}>
+          <label className="field-row field-row-reset">
             <span className="field-note">الحالة</span>
             <select
               value={statusFilter}
@@ -313,7 +305,7 @@ export function MediaJobsList() {
             {listState.jobs.map((job) => (
               <article className="panel" key={job.id}>
                 <div className="toolbar-row">
-                  <h3 style={{ margin: 0 }}>{job.operation}</h3>
+                  <h3>{job.operation}</h3>
                   <span className="badge">{job.status}</span>
                 </div>
                 <div className="kv-grid">
@@ -323,12 +315,12 @@ export function MediaJobsList() {
                   </div>
                   <div className="kv-item">
                     <strong>المعرّف</strong>
-                    <span style={{ overflowWrap: "anywhere" }}>{job.id}</span>
+                    <span className="wrap-anywhere">{job.id}</span>
                   </div>
                   {job.sourcePath && (
                     <div className="kv-item">
                       <strong>المصدر</strong>
-                      <span style={{ overflowWrap: "anywhere" }}>{job.sourcePath}</span>
+                      <span className="wrap-anywhere">{job.sourcePath}</span>
                     </div>
                   )}
                   {job.queuedAt && (
@@ -339,7 +331,10 @@ export function MediaJobsList() {
                   )}
                 </div>
                 {job.options && Object.keys(job.options).length > 0 && (
-                  <pre className="token-preview">{JSON.stringify(job.options, null, 2)}</pre>
+                  <details className="section-divider">
+                    <summary className="field-note">خيارات المهمة</summary>
+                    <pre className="token-preview">{JSON.stringify(job.options, null, 2)}</pre>
+                  </details>
                 )}
               </article>
             ))}
