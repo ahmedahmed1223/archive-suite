@@ -2860,3 +2860,7 @@
 ### 5. Settings + Security posture في Next.js (شريحة، 2026-06-30)
 
 - [~] `[P2]` ⏱️M **توحيد SettingsPage/SettingsHubPage + لوحة أمان موسّعة** — استُبدلت صفحة `/settings` في `archive-next` بواجهة read-only تجمع System/Security/Storage/API/Appearance، وأُضيفت لوحة "وضع الأمان" تعرض كلمة المرور، مهلة الجلسة، ومحاولات الفشل مع عناصر مخططة للمصادقة الثنائية وWebhook allowlist. التحقق: `pnpm run build:next` و`pnpm run typecheck:next`، مع فحص بصري Playwright على desktop/mobile. المتبقي: نقل/توحيد صفحات settings القديمة في `archive-app` وربط عناصر CSP/CORS/JWT TTL/rate-limit بصلاحيات وendpoints Laravel فعلية.
+
+### 2. E2E — Next UI smoke موسّع (شريحة، 2026-07-01)
+
+- [~] `[P2]` ⏱️L **توسيع اختبارات E2E + ترقية الحزم الأمنية** — حُدّث `archive-app/tests/next-migration-shell.spec.ts` بعد اعتماد polish في واجهة Next، وأضيف smoke لمسار `/archive` يتحقق من العنوان وحقل البحث وتفاعل `بحث` دون اشتراط Laravel حي. تم إثبات RED أولاً بتوقعات العناوين القديمة، ثم مرّت البوابة: `E2E_BASE_URL=http://127.0.0.1:9064 pnpm run e2e:next` بنتيجة 16/16 على chromium وmobile-chrome. المتبقي لإغلاق البند: توسيع Playwright للمسارات الأثقل وربط فحص CVEs/audit ضمن بوابة CI.

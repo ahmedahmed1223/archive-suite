@@ -69,6 +69,7 @@
   - المصدر: dev-roadmap (P1-07).
 
 - [ ] `[P2]` ⏱️L **توسيع اختبارات E2E + ترقية الحزم الأمنية** — رفع تغطية Playwright + `npm/pnpm audit` للـ CVEs.
+  - ✅ شريحة Next UI smoke (2026-07-01): حُدّث `archive-app/tests/next-migration-shell.spec.ts` ليتوافق مع واجهة Next المعتمدة بعد polish، وأُضيف smoke لمسار `/archive` مع تفاعل بحث لا يتطلب Laravel حي. التحقق: `E2E_BASE_URL=http://127.0.0.1:9064 pnpm run e2e:next` نجح 16/16 عبر chromium وmobile-chrome.
   - المصدر: dev-roadmap (P0-09, P1-08, P5-04).
 
 - [ ] `[P2]` ⏱️M **ترتيب وتنظيف مجلدات المشروع + بوابة Playwright** — جرد الملفات والمجلدات غير المفيدة أو المولّدة عشوائياً، ثم حذف/نقل الآمن منها مع إثبات عدم كسر التشغيل.
