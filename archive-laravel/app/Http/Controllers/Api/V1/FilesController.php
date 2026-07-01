@@ -141,13 +141,20 @@ class FilesController extends Controller
             return response()->json(['ok' => false, 'error' => 'Media not found.'], 404);
         }
 
-        // Get MIME type
+        $localPath = $this->localDiskPath($diskName, $path);
+        if ($localPath !== null) {
+            $mime = mime_content_type($localPath) ?: 'application/octet-stream';
+
+            return response()->file($localPath, [
+                'Content-Type' => $mime,
+                'Cache-Control' => 'private, max-age=0, no-cache',
+            ]);
+        }
+
         $mime = $disk->mimeType($path) ?: 'application/octet-stream';
 
         // ponytail: Remote disks stream sequentially via response() with no byte-range support yet.
-        // Local disks could use response()->file() for Range support; this path keeps them simple.
-        // Upgrade path: detect if disk is local, fall back to file-based Range, or wrap
-        // remote streams with resumable chunks when throughput matters.
+        // Upgrade path: wrap remote streams with resumable chunks when throughput matters.
         return response()->stream(
             function () use ($disk, $path): void {
                 $stream = $disk->readStream($path);
@@ -166,6 +173,29 @@ class FilesController extends Controller
                 'Accept-Ranges' => 'none', // Remote disks don't support byte ranges yet
             ]
         );
+    }
+
+    private function localDiskPath(string $diskName, string $path): ?string
+    {
+        $config = (array) config("filesystems.disks.{$diskName}", []);
+
+        if (($config['driver'] ?? null) !== 'local' || ! is_string($config['root'] ?? null)) {
+            return null;
+        }
+
+        $root = realpath($config['root']);
+        if ($root === false) {
+            return null;
+        }
+
+        $candidate = realpath($root.DIRECTORY_SEPARATOR.ltrim($path, '/\\'));
+        if ($candidate === false) {
+            return null;
+        }
+
+        $rootPrefix = rtrim($root, DIRECTORY_SEPARATOR.'/\\').DIRECTORY_SEPARATOR;
+
+        return str_starts_with($candidate, $rootPrefix) ? $candidate : null;
     }
 
     private function rootPath(): string
