@@ -72,9 +72,11 @@ class RealMediaProcessorTest extends TestCase
 
         $artifacts = $this->processor->process($job);
 
-        $this->assertCount(1, $artifacts);
-        $this->assertSame('transcript', $artifacts[0]['kind']);
-        $this->assertStringContainsString('record-3/transcript.vtt', $artifacts[0]['key']);
+        $this->assertCount(3, $artifacts);
+        $kinds = array_column($artifacts, 'kind');
+        $this->assertContains('transcript_srt', $kinds);
+        $this->assertContains('transcript_vtt', $kinds);
+        $this->assertContains('transcript_ttml', $kinds);
     }
 
     public function test_throws_on_non_zero_exit_code(): void
