@@ -27,6 +27,7 @@
     { "name": "Share" },
     { "name": "Review" },
     { "name": "Collaboration" },
+    { "name": "System" },
     { "name": "Ingest" }
   ],
   "paths": {
@@ -801,6 +802,61 @@
         }
       }
     },
+    "/system/odbc": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Return ODBC bridge readiness",
+        "operationId": "getOdbcStatus",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "ODBC readiness summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OdbcStatusResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/system/odbc/tables/{table}": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Preview an allowlisted ODBC core table",
+        "operationId": "getOdbcTablePreview",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["items", "users", "settings", "audit"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 250, "default": 25 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ODBC table preview",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OdbcTablePreviewResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/share": {
       "post": {
         "tags": ["Share"],
@@ -1543,6 +1599,58 @@
             "required": ["released"],
             "properties": {
               "released": { "type": "boolean" }
+            }
+          }
+        ]
+      },
+      "OdbcProbeStatus": {
+        "type": "string",
+        "enum": ["disabled", "missing-dsn", "driver-unavailable", "connected", "failed"]
+      },
+      "OdbcProbe": {
+        "type": "object",
+        "required": ["enabled", "driverLoaded", "dsn", "status", "tables"],
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "driverLoaded": { "type": "boolean" },
+          "dsn": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/OdbcProbeStatus" },
+          "message": { "type": "string" },
+          "error": { "type": "string" },
+          "tables": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "OdbcStatusResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["odbc"],
+            "properties": {
+              "odbc": { "$ref": "#/components/schemas/OdbcProbe" }
+            }
+          }
+        ]
+      },
+      "OdbcTablePreviewResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["table", "count", "rows"],
+            "properties": {
+              "table": { "type": "string" },
+              "count": { "type": "integer", "minimum": 0 },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
             }
           }
         ]

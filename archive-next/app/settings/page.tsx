@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createArchiveApiClient, type SecuritySettings } from "@/lib/archive-api";
+import {
+  createArchiveApiClient,
+  type OdbcProbe,
+  type OdbcTablePreview,
+  type SecuritySettings
+} from "@/lib/archive-api";
 
 const categoryCards = [
   {
@@ -39,6 +44,17 @@ const roadmapItems = [
   }
 ];
 
+const odbcCoreTables = ["items", "users", "settings", "audit"] as const;
+
+type OdbcCoreTable = (typeof odbcCoreTables)[number];
+
+const odbcTableLabels: Record<OdbcCoreTable, string> = {
+  items: "Items",
+  users: "Users",
+  settings: "Settings",
+  audit: "Audit"
+};
+
 function StatusBadge({ children }: Readonly<{ children: string }>) {
   return <span className="badge">{children}</span>;
 }
@@ -47,10 +63,41 @@ const navLinks = [
   { href: "/", label: "الرئيسية" }
 ] as const;
 
+function odbcStatusLabel(status: OdbcProbe["status"]) {
+  const labels: Record<OdbcProbe["status"], string> = {
+    connected: "متصل",
+    disabled: "معطل",
+    "missing-dsn": "DSN مفقود",
+    "driver-unavailable": "Driver غير متاح",
+    failed: "فشل الاتصال"
+  };
+
+  return labels[status];
+}
+
+function formatPreviewValue(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return "غير متاح";
+  }
+
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SecuritySettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [odbc, setOdbc] = useState<OdbcProbe | null>(null);
+  const [isOdbcLoading, setIsOdbcLoading] = useState(true);
+  const [odbcError, setOdbcError] = useState<string | null>(null);
+  const [selectedOdbcTable, setSelectedOdbcTable] = useState<OdbcCoreTable>("items");
+  const [odbcPreview, setOdbcPreview] = useState<OdbcTablePreview | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSecuritySettings = async () => {
@@ -73,6 +120,49 @@ export default function SettingsPage() {
     fetchSecuritySettings();
   }, []);
 
+  useEffect(() => {
+    const fetchOdbcStatus = async () => {
+      try {
+        const client = createArchiveApiClient();
+        const response = await client.odbcStatus();
+
+        if (response.ok) {
+          setOdbc(response.odbc);
+        } else {
+          setOdbcError(response.error || "Failed to load ODBC status");
+        }
+      } catch (err) {
+        setOdbcError(err instanceof Error ? err.message : "Failed to fetch ODBC status");
+      } finally {
+        setIsOdbcLoading(false);
+      }
+    };
+
+    fetchOdbcStatus();
+  }, []);
+
+  const loadOdbcPreview = async (table: OdbcCoreTable = selectedOdbcTable) => {
+    setIsPreviewLoading(true);
+    setPreviewError(null);
+
+    try {
+      const client = createArchiveApiClient();
+      const response = await client.odbcTable(table, { limit: 10 });
+
+      if (response.ok) {
+        setOdbcPreview(response);
+      } else {
+        setOdbcPreview(null);
+        setPreviewError(response.error || "Failed to load ODBC table preview");
+      }
+    } catch (err) {
+      setOdbcPreview(null);
+      setPreviewError(err instanceof Error ? err.message : "Failed to fetch ODBC table preview");
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
   const postureRows = settings
     ? [
         { label: "Access Token TTL", value: `${settings.accessTokenTtlMinutes} minutes` },
@@ -81,6 +171,18 @@ export default function SettingsPage() {
         { label: "Webhook Allowlist", value: settings.webhookUrlAllowlist.length > 0 ? `${settings.webhookUrlAllowlist.length} URLs` : "Empty" },
       ]
     : [];
+  const odbcRows = odbc
+    ? [
+        { label: "الحالة", value: odbcStatusLabel(odbc.status) },
+        { label: "ODBC Driver", value: odbc.driverLoaded ? "متاح" : "غير متاح" },
+        { label: "DSN", value: odbc.dsn || "غير مضبوط" },
+        { label: "الجداول المرئية", value: `${odbc.tables.length}` }
+      ]
+    : [];
+  const previewColumns = odbcPreview
+    ? Array.from(new Set(odbcPreview.rows.flatMap((row) => Object.keys(row)))).slice(0, 8)
+    : [];
+  const canPreviewOdbc = odbc?.status === "connected";
 
   return (
     <main className="shell">
@@ -185,6 +287,141 @@ export default function SettingsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </article>
+
+        <article className="panel" aria-label="ODBC bridge">
+          <div className="panel-title-row">
+            <div>
+              <h2>ODBC للأنظمة القديمة</h2>
+              <p>فحص الاتصال ومعاينة قراءة محدودة للجداول الأساسية المسموحة فقط.</p>
+            </div>
+            {odbc && <StatusBadge>{odbcStatusLabel(odbc.status)}</StatusBadge>}
+          </div>
+
+          <div className="stack">
+            {isOdbcLoading ? (
+              <p className="helper-text">جاري فحص ODBC...</p>
+            ) : odbcError ? (
+              <p className="helper-text" style={{ color: "var(--va-danger)" }}>خطأ: {odbcError}</p>
+            ) : odbc ? (
+              <>
+                <div className="kv-grid" aria-label="ODBC connection posture">
+                  {odbcRows.map((row) => (
+                    <div className="kv-item" key={row.label}>
+                      <strong>{row.label}</strong>
+                      <span>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {(odbc.message || odbc.error) && (
+                  <div className={`state-banner ${odbc.status === "connected" ? "state-banner-success" : "state-banner-error"}`}>
+                    <strong>{odbc.status === "connected" ? "الاتصال جاهز" : "يتطلب إعدادا"}</strong>
+                    <p className="helper-text">{odbc.error || odbc.message}</p>
+                  </div>
+                )}
+
+                <div className="field-row" aria-label="ODBC table preview controls">
+                  <label>
+                    <span className="field-note">الجدول الأساسي</span>
+                    <select
+                      className="search-input"
+                      value={selectedOdbcTable}
+                      onChange={(event) => {
+                        const table = event.target.value as OdbcCoreTable;
+                        setSelectedOdbcTable(table);
+                        if (canPreviewOdbc) {
+                          void loadOdbcPreview(table);
+                        }
+                      }}
+                    >
+                      {odbcCoreTables.map((table) => (
+                        <option key={table} value={table}>
+                          {odbcTableLabels[table]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    className="button button-primary"
+                    type="button"
+                    disabled={!canPreviewOdbc || isPreviewLoading}
+                    onClick={() => void loadOdbcPreview()}
+                  >
+                    {isPreviewLoading ? "جاري القراءة" : "معاينة"}
+                  </button>
+                </div>
+
+                {!canPreviewOdbc && (
+                  <p className="helper-text">
+                    المعاينة تعمل بعد تفعيل ODBC وضبط DSN وتحميل driver في بيئة Laravel.
+                  </p>
+                )}
+
+                {previewError && (
+                  <p className="helper-text" style={{ color: "var(--va-danger)" }}>خطأ: {previewError}</p>
+                )}
+
+                {odbcPreview && (
+                  <div className="stack" style={{ borderBlockStart: "1px solid var(--va-border-soft)", paddingBlockStart: "0.9rem" }}>
+                    <div className="helper-row">
+                      <strong>{odbcTableLabels[odbcPreview.table as OdbcCoreTable] || odbcPreview.table}</strong>
+                      <StatusBadge>{`${odbcPreview.count} صف`}</StatusBadge>
+                    </div>
+
+                    {odbcPreview.rows.length === 0 ? (
+                      <div className="empty-state">لا توجد صفوف ضمن حد المعاينة الحالي.</div>
+                    ) : (
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "620px" }}>
+                          <thead>
+                            <tr>
+                              {previewColumns.map((column) => (
+                                <th
+                                  key={column}
+                                  scope="col"
+                                  style={{
+                                    borderBlockEnd: "1px solid var(--va-border-soft)",
+                                    color: "var(--va-text-muted)",
+                                    fontSize: "0.82rem",
+                                    padding: "0.55rem",
+                                    textAlign: "start"
+                                  }}
+                                >
+                                  {column}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {odbcPreview.rows.map((row, rowIndex) => (
+                              <tr key={`${odbcPreview.table}-${rowIndex}`}>
+                                {previewColumns.map((column) => (
+                                  <td
+                                    key={column}
+                                    style={{
+                                      borderBlockEnd: "1px solid var(--va-border-soft)",
+                                      color: "var(--va-text-2)",
+                                      fontSize: "0.88rem",
+                                      maxWidth: "18rem",
+                                      overflowWrap: "anywhere",
+                                      padding: "0.55rem"
+                                    }}
+                                  >
+                                    {formatPreviewValue(row[column])}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : null}
           </div>
         </article>
       </section>

@@ -90,6 +90,24 @@ export interface SecuritySettings {
   corsOrigins: string[];
 }
 
+export type OdbcProbeStatus = "disabled" | "missing-dsn" | "driver-unavailable" | "connected" | "failed";
+
+export interface OdbcProbe {
+  enabled: boolean;
+  driverLoaded: boolean;
+  dsn: string;
+  status: OdbcProbeStatus;
+  message?: string;
+  error?: string;
+  tables: string[];
+}
+
+export interface OdbcTablePreview {
+  table: string;
+  count: number;
+  rows: Record<string, unknown>[];
+}
+
 export interface ReviewRect {
   x: number;
   y: number;
@@ -178,6 +196,8 @@ export interface ArchiveApiClient {
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
+  odbcStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ odbc: OdbcProbe }>>;
+  odbcTable(table: string, params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<OdbcTablePreview>>;
   reviewComments(mediaUid: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: ReviewComment[] }>>;
   createReviewComment(mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
   updateReviewComment(id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
@@ -298,6 +318,14 @@ export function createArchiveApiClient({
       post<{ token: string; url?: string }>("/share", { scope: { itemIds: payload.itemIds }, permission: payload.permission, expiresAt: payload.expiresAt }, options),
     getSecuritySettings: (options?: AuthRequestOptions) =>
       get<{ settings: SecuritySettings }>("/system/security-settings", options),
+    odbcStatus: (options?: AuthRequestOptions) =>
+      get<{ odbc: OdbcProbe }>("/system/odbc", options),
+    odbcTable: (table: string, params?: { limit?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      const query = queryParams.toString();
+      return get<OdbcTablePreview>(`/system/odbc/tables/${encodeURIComponent(table)}${query ? `?${query}` : ""}`, options);
+    },
     reviewComments: (mediaUid: string, options?: AuthRequestOptions) =>
       get<{ comments: ReviewComment[] }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, options),
     createReviewComment: (mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions) =>
