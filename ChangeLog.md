@@ -20,6 +20,10 @@
 
 ---
 
+## موجة Laravel + Next.js — 2026-07-01
+
+- [x] **استعادة صفحات إدارة الأنواع وسجل الأخطاء في Next** — أُضيف مسارا `/types` و`/errors` إلى `archive-next` بعد أن كانا متاحين فقط داخل `archive-app` legacy. صفحة الأنواع تحفظ في مخزن Laravel `content_types` عبر `/api/v1/records` و`/api/v1/records/bulk`، وصفحة سجل الأخطاء تسجل أعطال المتصفح محلياً مع التقاط مركزي من layout. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.

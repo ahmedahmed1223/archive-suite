@@ -41,6 +41,11 @@ export interface ArchiveRecord {
   [key: string]: unknown;
 }
 
+export interface RecordListPayload {
+  records: ArchiveRecord[];
+  nextCursor?: string | null;
+}
+
 export interface ArchiveFile {
   key: string;
   name?: string;
@@ -86,6 +91,35 @@ export interface CreateMediaJobPayload {
   operation: MediaOperation;
   sourcePath?: string;
   options?: Record<string, unknown>;
+}
+
+export interface ContentField {
+  id: string;
+  key: string;
+  label: string;
+  type: "text" | "textarea" | "number" | "date" | "select" | "relation" | "checkbox";
+  required?: boolean;
+  options?: string[];
+}
+
+export interface ContentSubtype {
+  id: string;
+  name: string;
+  fields?: ContentField[];
+}
+
+export interface ContentTypeRecord {
+  uid: string;
+  id: string;
+  name: string;
+  slug: string;
+  icon?: string;
+  color?: string;
+  description?: string;
+  active?: boolean;
+  subtypes: ContentSubtype[];
+  fields: ContentField[];
+  updatedAt?: string;
 }
 
 export interface SecuritySettings {
@@ -194,6 +228,8 @@ export interface ArchiveApiClient {
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[] }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
+  records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
+  bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[] }>>;
@@ -300,6 +336,13 @@ export function createArchiveApiClient({
       return get(`/search?${params.toString()}`, options);
     },
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
+    records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
+      const params = new URLSearchParams({ store, limit: String(limit) });
+      if (cursor) params.set("cursor", cursor);
+      return get<RecordListPayload>(`/records?${params.toString()}`, options);
+    },
+    bulkRecords: (payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions) =>
+      post<{ count: number }>("/records/bulk", payload, options),
     rights: (itemId: string, options?: AuthRequestOptions) => get<{ record: RightsRecord }>(`/rights?itemId=${encodeURIComponent(itemId)}`, options),
     mediaJob: (id: string, options?: AuthRequestOptions) => get<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}`, options),
     mediaJobs: (params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions) => {

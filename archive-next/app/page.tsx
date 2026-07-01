@@ -5,6 +5,8 @@ const navLinks = [
   { href: "/help", label: "المساعدة" },
   { href: "/archive", label: "السجلات" },
   { href: "/files", label: "الملفات" },
+  { href: "/types", label: "إدارة الأنواع" },
+  { href: "/errors", label: "سجل الأخطاء" },
   { href: "/reports", label: "التقارير" },
   { href: "/media/jobs", label: "Media jobs" },
   { href: "/login", label: "تسجيل الدخول" }
@@ -61,6 +63,7 @@ export default function HomePage() {
               <li>Vite/Node مصنّفان legacy/reference ولا تُبنى عليهما ميزات جديدة.</li>
               <li>التطوير الجديد يبدأ من العقود المشتركة ثم Laravel ثم Next.</li>
               <li>واجهة media jobs تعرض حالة Laravel queue دون نقل منطق backend إلى Next.js.</li>
+              <li>إدارة الأنواع وسجل الأخطاء عادا كمسارات Next قانونية.</li>
             </ul>
           </article>
 

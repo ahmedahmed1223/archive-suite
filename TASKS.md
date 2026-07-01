@@ -160,6 +160,7 @@
 - [x] `[P3]` ⏱️L **بقية الصفحات (تحسينات مفردة)** — Collections، Inbox، ReadingLists، Favorites، SavedSearches، Duplicates، SharedLinks، HierarchicalTags، Vocabulary، Reports، ProductionTasks، Activity/History، Automation، Transcriber، SyncLog، ErrorLog، Help، Files، Users.
   - 🚫 **أُعيد تأطيره بعد القطع النهائي (2026-07-01):** القائمة أعلاه كلها صفحات `archive-app/src/pages/*` **legacy مجمّدة** — لن تُحسَّن فردياً. أي صفحة تُعاد الحاجة إليها تُبنى في `archive-next` كمسار قانوني عند الطلب الفعلي (لا نستبق 19 صفحة — YAGNI). البند مغلق كـ legacy.
   - ✅ شريحة Next UI polish (2026-07-01): تمريرة متوسطة على المسار القانوني `/archive`, `/files`, `/login`, `/settings` (hierarchy، empty/error/success states، spacing، classes مشتركة في `globals.css`). التحقق: `pnpm run typecheck:next`, `pnpm run build:next`, وPlaywright desktop/mobile ببيانات mock بدون overflow أو console/page errors.
+  - ✅ شريحة استعادة الصفحات المعطّلة (2026-07-01): بعد فحص المسارات تبيّن أن `إدارة الأنواع` و`سجل الأخطاء` كانتا موجودتين فقط في `archive-app` legacy ولا توجد لهما routes في `archive-next`. أُضيفت `/types` لإدارة أنواع المحتوى والفروع والحقول عبر مخزن Laravel `content_types`، وأُضيفت `/errors` كسجل أخطاء واجهة Next مع التقاط `window.error` و`unhandledrejection`. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
   - الملفات: `archive-next/app/*` (القانوني). المسار القديم `archive-app/src/pages/*` مجمّد.
   - المصدر: f45ea5a29 (كل المجموعات)، guide_v6 (#15–20).
 
