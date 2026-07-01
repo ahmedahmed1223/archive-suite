@@ -127,6 +127,7 @@ class FilesApiTest extends TestCase
             'report' => false,
         ]]);
 
+        File::deleteDirectory(storage_path('framework/testing/archive-disk-local'));
         File::makeDirectory(storage_path('framework/testing/archive-disk-local'), 0755, true);
         File::put(storage_path('framework/testing/archive-disk-local/fixture.txt'), 'disk file content');
 
@@ -151,6 +152,7 @@ class FilesApiTest extends TestCase
             'report' => false,
         ]]);
 
+        File::deleteDirectory(storage_path('framework/testing/archive-disk-local'));
         File::makeDirectory(storage_path('framework/testing/archive-disk-local'), 0755, true);
         File::put(storage_path('framework/testing/archive-disk-local/fixture.txt'), 'disk file content');
 
@@ -184,6 +186,7 @@ class FilesApiTest extends TestCase
             'report' => false,
         ]]);
 
+        File::deleteDirectory(storage_path('framework/testing/archive-disk-local'));
         File::makeDirectory(storage_path('framework/testing/archive-disk-local'), 0755, true);
 
         // Try to traverse up with .. segment
