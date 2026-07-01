@@ -105,12 +105,17 @@ export default function FilesPage() {
 
       <section className="content" aria-label="استعراض الملفات والمشاركة">
         <div className="hero">
-          <span className="badge">مستعرض ملفات Next.js</span>
           <h1>استعرض الملفات المحفوظة.</h1>
           <p>
             اختر ملفات من مساحة التخزين ثم أنشئ رابط مشاركة عام للوصول إلى
             العناصر المحددة مباشرة.
           </p>
+          <div className="hero-actions">
+            <span className="badge">مستعرض ملفات Next.js</span>
+            <span className="badge">
+              {selectedKeys.size > 0 ? `${selectedKeys.size} محدد` : "اختيار متعدد"}
+            </span>
+          </div>
         </div>
 
         <form className="search-form" onSubmit={handleSearch}>
@@ -124,38 +129,49 @@ export default function FilesPage() {
           <button type="submit" className="button button-primary">بحث</button>
         </form>
 
-        {state.status === "loading" && (
-          <p className="form-status">جار تحميل الملفات...</p>
-        )}
+        {state.status === "loading" && <p className="form-status" aria-live="polite">جار تحميل الملفات...</p>}
 
         {state.status === "error" && (
-          <p className="form-status" role="alert">{state.message}</p>
+          <div className="state-banner state-banner-error" role="alert">
+            <strong>تعذر تحميل الملفات</strong>
+            <span className="helper-text">{state.message}</span>
+          </div>
         )}
 
         {state.status === "ready" && (
           <>
             {state.files.length === 0 ? (
-              <p className="empty-state">لم يتم العثور على ملفات.</p>
+              <div className="empty-state">
+                <strong>لم يتم العثور على ملفات.</strong>
+                <p className="helper-text">جرّب توسيع البحث أو إعادة تعيين الاستعلام.</p>
+              </div>
             ) : (
               <>
                 <div className="grid" aria-label="قائمة الملفات">
                   {state.files.map((file) => (
-                    <article className="panel" key={file.key}>
-                      <div className="toolbar-row" style={{ alignItems: "start" }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedKeys.has(file.key)}
-                          onChange={() => handleToggleFile(file.key)}
-                          aria-label={`تحديد ${file.name || file.key}`}
-                        />
-                        <div style={{ flex: 1, minInlineSize: 0 }}>
-                          <h2>{file.name || file.key}</h2>
-                          {file.key !== file.name && file.key ? (
-                            <p className="field-note" style={{ overflowWrap: "anywhere" }}>
-                              {file.key}
-                            </p>
-                          ) : null}
-                        </div>
+                    <article className="panel panel-compact" key={file.key}>
+                      <div className="panel-title-row">
+                        <label className="helper-row" style={{ alignItems: "flex-start" }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedKeys.has(file.key)}
+                            onChange={() => handleToggleFile(file.key)}
+                            aria-label={`تحديد ${file.name || file.key}`}
+                          />
+                          <span style={{ display: "grid", gap: "0.25rem", minInlineSize: 0 }}>
+                            <strong style={{ overflowWrap: "anywhere" }}>{file.name || file.key}</strong>
+                            {file.key !== file.name && file.key ? (
+                              <span className="field-note" style={{ overflowWrap: "anywhere" }}>
+                                {file.key}
+                              </span>
+                            ) : null}
+                          </span>
+                        </label>
+                        {file.modifiedAt ? (
+                          <time className="created-at">
+                            {new Date(file.modifiedAt).toLocaleDateString("ar-SA")}
+                          </time>
+                        ) : null}
                       </div>
                       <div className="record-meta">
                         {file.size !== undefined ? (
@@ -165,16 +181,11 @@ export default function FilesPage() {
                           <span className="badge">{file.store}</span>
                         ) : null}
                       </div>
-                      {file.modifiedAt ? (
-                        <time className="created-at">
-                          {new Date(file.modifiedAt).toLocaleDateString("ar-SA")}
-                        </time>
-                      ) : null}
                     </article>
                   ))}
                 </div>
 
-                <div style={{ marginTop: "2rem", display: "flex", gap: "1rem", alignItems: "center" }}>
+                <div className="helper-row">
                   <button
                     onClick={handleCreateShare}
                     disabled={selectedKeys.size === 0 || shareState.status === "creating"}
@@ -182,33 +193,24 @@ export default function FilesPage() {
                   >
                     {shareState.status === "creating" ? "جار الإنشاء..." : "إنشاء رابط مشاركة"}
                   </button>
-                  {selectedKeys.size > 0 && (
-                    <span className="badge">
-                      {selectedKeys.size} ملف محدد
-                    </span>
-                  )}
+                  {selectedKeys.size > 0 && <span className="badge">{selectedKeys.size} ملف محدد</span>}
                 </div>
 
                 {shareState.status === "success" && (
-                  <div className="panel" style={{ marginTop: "0.25rem", borderColor: "color-mix(in oklch, var(--va-success) 26%, var(--va-border-soft))" }}>
-                    <p>
-                      تم إنشاء رابط المشاركة بنجاح!{" "}
-                      <a href={`/share/${encodeURIComponent(shareState.token)}`}>
-                        اذهب إلى المشاركة
-                      </a>
-                    </p>
-                    {shareState.url && (
-                      <p style={{ marginTop: "0.5rem", fontSize: "0.875rem" }}>
-                        الرابط: {shareState.url}
-                      </p>
-                    )}
+                  <div className="state-banner state-banner-success">
+                    <strong>تم إنشاء رابط المشاركة بنجاح.</strong>
+                    <span className="helper-text">
+                      <a href={`/share/${encodeURIComponent(shareState.token)}`}>اذهب إلى المشاركة</a>
+                      {shareState.url ? ` · ${shareState.url}` : ""}
+                    </span>
                   </div>
                 )}
 
                 {shareState.status === "error" && (
-                  <p className="form-status status-error" role="alert" style={{ marginTop: "1rem" }}>
-                    خطأ: {shareState.message}
-                  </p>
+                  <div className="state-banner state-banner-error" role="alert">
+                    <strong>خطأ في إنشاء الرابط</strong>
+                    <span className="helper-text">{shareState.message}</span>
+                  </div>
                 )}
               </>
             )}

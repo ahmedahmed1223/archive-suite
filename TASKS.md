@@ -135,8 +135,9 @@
 
 ### صفحات متخصصة
 
-- [ ] `[P3]` ⏱️L **بقية الصفحات (تحسينات مفردة)** — Collections (cover/share)، Inbox (swipe)، ReadingLists (progress ring)، Favorites (filters/folders)، SavedSearches (alerts/run)، Duplicates (side-by-side + confidence)، SharedLinks (analytics/expiry)، HierarchicalTags (tree view + usage count + drag re-parent)، Vocabulary (fuzzy + export)، Reports (templates + scheduled)، ProductionTasks (assignee/due)، Activity/History (undo/restore)، Automation (templates + test-run)، Transcriber (timecodes + DetailPage link)، SyncLog (status + health chart)، ErrorLog (grouping + recovery queue)، Help (search + context-sensitive)، Files (provider tabs + preview + quota)، Users (avatar/presence/invite).
-  - الملفات: الصفحات المعنية في `archive-app/src/pages/*`.
+- [~] `[P3]` ⏱️L **بقية الصفحات (تحسينات مفردة)** — Collections (cover/share)، Inbox (swipe)، ReadingLists (progress ring)، Favorites (filters/folders)، SavedSearches (alerts/run)، Duplicates (side-by-side + confidence)، SharedLinks (analytics/expiry)، HierarchicalTags (tree view + usage count + drag re-parent)، Vocabulary (fuzzy + export)، Reports (templates + scheduled)، ProductionTasks (assignee/due)، Activity/History (undo/restore)، Automation (templates + test-run)، Transcriber (timecodes + DetailPage link)، SyncLog (status + health chart)، ErrorLog (grouping + recovery queue)، Help (search + context-sensitive)، Files (provider tabs + preview + quota)، Users (avatar/presence/invite).
+  - ✅ شريحة Next UI polish (2026-07-01): وكيل UI منخفض التكلفة اقترح ثم نفّذ تمريرة متوسطة على `/archive`, `/files`, `/login`, `/settings` مع تحسين hierarchy، empty/error/success states، التفاف النصوص الطويلة، spacing عام، وclasses مشتركة في `globals.css`. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`, وفحص Playwright desktop/mobile ببيانات mock على الصفحات الأربع بدون overflow أو console/page errors.
+  - الملفات: الصفحات المعنية في `archive-app/src/pages/*` للمسار القديم، و`archive-next/app/*` للمسار القانوني الجديد.
   - القبول: كل بند يُنفَّذ مستقلاً ويُعلَّم؛ تحقّق من عدم الإنجاز المسبق.
   - المصدر: f45ea5a29 (كل المجموعات)، guide_v6 (#15–20).
 

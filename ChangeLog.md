@@ -2880,3 +2880,7 @@
 ### 22. ODBC readiness في Laravel (شريحة، 2026-07-01)
 
 - [~] `[P2]` ⏱️XL **دعم ODBC (عام لقواعد بيانات Windows القديمة)** — نُقلت بداية الجسر إلى المسار القانوني Laravel + Next.js بدلاً من بناء مسار Node موازٍ: أُضيفت `OdbcConnectionProbe` و`NativeOdbcConnectionFactory` فوق PHP ODBC extension، و`config/odbc.php` + مفاتيح `ODBC_*` في `.env.example`، ونقطة مصادقة `GET /api/v1/system/odbc` تعيد readiness status مع إخفاء `PWD`/`Password` وتعرض أسماء الجداول عند نجاح الاتصال. أُضيف `docs/odbc-laravel-bridge.md` لتوثيق DSN والحدود الحالية. التحقق: RED ثم GREEN لـ `node scripts/laravel-docker.mjs test --filter=Odbc`، ثم `node scripts/laravel-docker.mjs test --filter='Api|Odbc'` بنتيجة 57 اختبار / 305 assertion. المتبقي: Repository read/write محدود وربطه في إعدادات Next.js/معالج الإعداد.
+
+### 6. Next UI polish pass (شريحة، 2026-07-01)
+
+- [~] `[P3]` ⏱️L **بقية الصفحات (تحسينات مفردة)** — نُفّذت تمريرة UI متوسطة عبر وكيل منخفض التكلفة ثم روجعت محلياً: `/archive` و`/files` حصلا على badges سياقية وحالات loading/error/empty أوضح وبطاقات أكثر إحكاماً؛ `/login` يعرض حالة auth داخل banner موحد؛ `/settings` تقللت inline styles وتوحّد panel rhythm؛ وأضيفت classes مشتركة في `archive-next/app/globals.css` (`hero-actions`, `panel-title-row`, `state-banner`, `helper-row`). التحقق: `pnpm run typecheck:next`, `pnpm run build:next`, وفحص Playwright desktop/mobile ببيانات mock على `/archive`, `/files`, `/login`, `/settings` بدون horizontal overflow أو console/page errors.
