@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AppHeader from "@/components/AppHeader";
 import {
   createArchiveApiClient,
   type CollaborationLock,
@@ -212,16 +213,7 @@ export default function CollaborationPage() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>Live collaboration</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          <a className="badge" href="/media/review">مراجعة مرئية</a>
-          <a className="badge" href="/">الرئيسية</a>
-        </nav>
-      </header>
+      <AppHeader subtitle="التعاون الحي" />
 
       <section className="content" aria-label="التعاون الحي">
         <div className="hero">

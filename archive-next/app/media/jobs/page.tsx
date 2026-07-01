@@ -1,3 +1,4 @@
+import AppHeader from "@/components/AppHeader";
 import { MediaJobLookup } from "./MediaJobLookup";
 import { MediaJobsList } from "./MediaJobsList";
 
@@ -16,31 +17,10 @@ const backendNotes = [
   }
 ];
 
-const navLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/archive", label: "السجلات" },
-  { href: "/files", label: "الملفات" },
-  { href: "/reports", label: "التقارير" },
-  { href: "/help", label: "المساعدة" },
-  { href: "/login", label: "تسجيل الدخول" }
-] as const;
-
 export default function MediaJobsPage() {
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>Next.js media workflow frontend</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="مسار الوسائط" />
 
       <section className="content stack" aria-label="Media jobs Laravel">
         <div className="hero">

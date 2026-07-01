@@ -26,6 +26,8 @@
 
 - [x] **تأسيس نظام تصميم Next موحد** — أُضيف `archive-next/app/theme.css` كملف tokens تفصيلي للألوان، typography، spacing، حالات النظام، الظلال، الحركة، dark mode، وreduced-motion، وأُعيدت صياغة `globals.css` لتستخدم هذه tokens مع توافق خلفي لأسماء classes الحالية (`panel`, `badge`, `button`, `hero`, `auth-layout`). التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **توحيد رأس التطبيق والتنقل** — أُضيف `archive-next/components/AppHeader.tsx` كخريطة تنقل مركزية مع تمييز المسار الحالي عبر `aria-current`، واستُبدلت الرؤوس المتكررة في صفحات Next القانونية المستقرة (`/`, `/archive`, `/files`, `/types`, `/errors`, `/settings`, `/reports`, `/help`, `/media/jobs`, `/media/play`, `/collaboration`, `/share/[token]`, `/review/[token]`). التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.

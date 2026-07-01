@@ -1,14 +1,7 @@
 import { getContractSummary } from "@/lib/archive-api";
+import AppHeader from "@/components/AppHeader";
 
 const contract = getContractSummary();
-const navLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/archive", label: "السجلات" },
-  { href: "/files", label: "الملفات" },
-  { href: "/help", label: "المساعدة" },
-  { href: "/media/jobs", label: "Media jobs" },
-  { href: "/login", label: "تسجيل الدخول" }
-] as const;
 
 const reportChecks = [
   {
@@ -28,19 +21,7 @@ const reportChecks = [
 export default function ReportsPage() {
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>Next.js reports migration</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="التقارير" />
 
       <section className="content" aria-label="تقارير Next.js">
         <div className="hero">

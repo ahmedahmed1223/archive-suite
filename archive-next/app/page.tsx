@@ -1,34 +1,12 @@
 import { getContractSummary } from "@/lib/archive-api";
+import AppHeader from "@/components/AppHeader";
 
 const apiContract = getContractSummary();
-const navLinks = [
-  { href: "/help", label: "المساعدة" },
-  { href: "/archive", label: "السجلات" },
-  { href: "/files", label: "الملفات" },
-  { href: "/types", label: "إدارة الأنواع" },
-  { href: "/errors", label: "سجل الأخطاء" },
-  { href: "/reports", label: "التقارير" },
-  { href: "/media/jobs", label: "Media jobs" },
-  { href: "/login", label: "تسجيل الدخول" }
-] as const;
 
 export default function HomePage() {
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>Next.js canonical app</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات Next.js">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <a className="badge" href="/settings">الإعدادات</a>
-        </nav>
-      </header>
+      <AppHeader subtitle="Next.js canonical app" navLabel="مسارات Next.js" />
 
       <section className="content">
         <div className="hero">

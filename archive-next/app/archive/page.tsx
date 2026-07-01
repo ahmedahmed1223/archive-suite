@@ -2,21 +2,13 @@
 
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AppHeader from "@/components/AppHeader";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 
 type ArchiveState =
   | { status: "loading" }
   | { status: "ready"; records: ArchiveRecord[] }
   | { status: "error"; message: string };
-
-const navLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/files", label: "الملفات" },
-  { href: "/reports", label: "التقارير" },
-  { href: "/help", label: "المساعدة" },
-  { href: "/media/jobs", label: "Media jobs" },
-  { href: "/login", label: "تسجيل الدخول" }
-] as const;
 
 export default function ArchivePage() {
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -49,19 +41,7 @@ export default function ArchivePage() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>قائمة السجلات</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="قائمة السجلات" />
 
       <section className="content" aria-label="بحث السجلات">
         <div className="hero">

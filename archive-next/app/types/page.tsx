@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import AppHeader from "@/components/AppHeader";
 import {
   createArchiveApiClient,
   type ArchiveRecord,
@@ -20,14 +21,6 @@ type SaveState =
   | { status: "saving" }
   | { status: "success"; message: string }
   | { status: "error"; message: string };
-
-const navLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/archive", label: "السجلات" },
-  { href: "/files", label: "الملفات" },
-  { href: "/errors", label: "سجل الأخطاء" },
-  { href: "/settings", label: "الإعدادات" }
-] as const;
 
 const fieldTypes: ContentField["type"][] = ["text", "textarea", "number", "date", "select", "relation", "checkbox"];
 
@@ -284,19 +277,7 @@ export default function TypesPage() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Archive Suite</strong>
-          <span>إدارة الأنواع</span>
-        </div>
-        <nav className="route-links" aria-label="مسارات سريعة">
-          {navLinks.map((link) => (
-            <a key={link.href} className="badge" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <AppHeader subtitle="إدارة الأنواع" />
 
       <section className="content stack" aria-label="إدارة الأنواع والحقول">
         <div className="hero">
