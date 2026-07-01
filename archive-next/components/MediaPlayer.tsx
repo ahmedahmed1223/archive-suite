@@ -17,8 +17,14 @@ const AUDIO_EXTENSIONS = new Set([
   "weba",
 ]);
 
-function streamSrc(path: string): string {
-  return `/api/v1/files/stream?path=${encodeURIComponent(path)}`;
+function streamSrc(path: string, disk?: string): string {
+  const params = new URLSearchParams({ path });
+
+  if (disk) {
+    params.set("disk", disk);
+  }
+
+  return `/api/v1/files/stream?${params.toString()}`;
 }
 
 function isAudioPath(path: string): boolean {
@@ -29,14 +35,16 @@ function isAudioPath(path: string): boolean {
 export interface MediaPlayerProps {
   /** Archive-relative file path, as returned by the files browser. */
   path: string;
+  /** Optional Laravel filesystem disk when the path belongs to a configured disk. */
+  disk?: string;
   title?: string;
   /** Receives the media element so callers can seek (e.g. from review comments). */
   onReady?: (el: HTMLMediaElement) => void;
 }
 
-export default function MediaPlayer({ path, title, onReady }: MediaPlayerProps) {
+export default function MediaPlayer({ path, disk, title, onReady }: MediaPlayerProps) {
   const [error, setError] = useState<string | null>(null);
-  const src = useMemo(() => streamSrc(path), [path]);
+  const src = useMemo(() => streamSrc(path, disk), [disk, path]);
   const audio = useMemo(() => isAudioPath(path), [path]);
 
   const setRef = useCallback(

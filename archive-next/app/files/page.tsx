@@ -20,9 +20,48 @@ const navLinks = [
   { href: "/archive", label: "السجلات" },
   { href: "/reports", label: "التقارير" },
   { href: "/help", label: "المساعدة" },
+  { href: "/media/play", label: "المشغل" },
   { href: "/media/jobs", label: "Media jobs" },
   { href: "/login", label: "تسجيل الدخول" }
 ] as const;
+
+const PLAYABLE_EXTENSIONS = new Set([
+  "mp3",
+  "wav",
+  "m4a",
+  "aac",
+  "ogg",
+  "oga",
+  "flac",
+  "opus",
+  "weba",
+  "mp4",
+  "m4v",
+  "mov",
+  "webm",
+  "ogv"
+]);
+
+function isPlayableFile(file: ArchiveFile): boolean {
+  const mimeType = typeof file.mimeType === "string" ? file.mimeType : "";
+  if (mimeType.startsWith("audio/") || mimeType.startsWith("video/")) {
+    return true;
+  }
+
+  const ext = file.key.split(".").pop()?.toLowerCase() ?? "";
+
+  return PLAYABLE_EXTENSIONS.has(ext);
+}
+
+function mediaPlayHref(file: ArchiveFile): string {
+  const params = new URLSearchParams({ path: file.key });
+
+  if (file.store) {
+    params.set("disk", file.store);
+  }
+
+  return `/media/play?${params.toString()}`;
+}
 
 export default function FilesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -107,8 +146,8 @@ export default function FilesPage() {
         <div className="hero">
           <h1>استعرض الملفات المحفوظة.</h1>
           <p>
-            اختر ملفات من مساحة التخزين ثم أنشئ رابط مشاركة عام للوصول إلى
-            العناصر المحددة مباشرة.
+            اختر ملفات من مساحة التخزين، شغّل الوسائط القابلة للعرض، أو أنشئ
+            رابط مشاركة عام للوصول إلى العناصر المحددة مباشرة.
           </p>
           <div className="hero-actions">
             <span className="badge">مستعرض ملفات Next.js</span>
@@ -179,6 +218,11 @@ export default function FilesPage() {
                         ) : null}
                         {file.store ? (
                           <span className="badge">{file.store}</span>
+                        ) : null}
+                        {isPlayableFile(file) ? (
+                          <a className="badge" href={mediaPlayHref(file)}>
+                            تشغيل
+                          </a>
                         ) : null}
                       </div>
                     </article>

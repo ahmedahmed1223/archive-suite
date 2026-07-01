@@ -2881,6 +2881,10 @@
 
 - [~] `[P2]` ⏱️M **علامة مائية + تصدير SRT/VTT/TTML للفيديو** — أضيفت حقول `sourcePath` وwatermark preset إلى نموذج `/media/jobs` عند اختيار `transcode`: مسار صورة العلامة، الموضع، الشفافية، والهامش تُرسل كـ `options.watermark` إلى Laravel، مع دعم `atSec` للـ thumbnail وعرض خيارات job المخزّنة في القائمة. المتبقي لإغلاق البند نهائياً: smoke حي بـ ffmpeg على ملف فيديو حقيقي وasset علامة مائية فعلي.
 
+### 3. Legal media player — Files integration (شريحة، 2026-07-01)
+
+- [~] `[P2]` ⏱️L **مشغّل وسائط قانوني في Next + بثّ HTTP Range** — رُبط المشغّل القانوني بمتصفح الملفات: `MediaPlayer` يقبل `disk` اختياري، صفحة `/media/play` تقرأ `path/disk` من query params، و`/files` تعرض زر "تشغيل" للملفات الصوتية/المرئية بناءً على MIME/extension وتفتحها مباشرة عبر Laravel streaming. المتبقي: byte-range حقيقي للـ remote disks وsmoke حي لسيناريوهات storage متعددة.
+
 ### 22. ODBC readiness في Laravel (شريحة، 2026-07-01)
 
 - [~] `[P2]` ⏱️XL **دعم ODBC (عام لقواعد بيانات Windows القديمة)** — نُقلت بداية الجسر إلى المسار القانوني Laravel + Next.js بدلاً من بناء مسار Node موازٍ: أُضيفت `OdbcConnectionProbe` و`NativeOdbcConnectionFactory` فوق PHP ODBC extension، و`config/odbc.php` + مفاتيح `ODBC_*` في `.env.example`، ونقطة مصادقة `GET /api/v1/system/odbc` تعيد readiness status مع إخفاء `PWD`/`Password` وتعرض أسماء الجداول عند نجاح الاتصال. أُضيف `docs/odbc-laravel-bridge.md` لتوثيق DSN والحدود الحالية. التحقق: RED ثم GREEN لـ `node scripts/laravel-docker.mjs test --filter=Odbc`، ثم `node scripts/laravel-docker.mjs test --filter='Api|Odbc'` بنتيجة 57 اختبار / 305 assertion. المتبقي: Repository read/write محدود وربطه في إعدادات Next.js/معالج الإعداد.
