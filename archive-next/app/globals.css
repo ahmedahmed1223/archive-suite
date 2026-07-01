@@ -563,8 +563,14 @@ textarea.search-input {
 }
 
 .media-player {
+  margin: 0;
   display: grid;
   gap: var(--space-3);
+}
+
+.media-player__caption {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .media-player video,
@@ -572,6 +578,92 @@ textarea.search-input {
   inline-size: 100%;
   border-radius: var(--radius-lg);
   background: #020617;
+}
+
+.media-player video {
+  aspect-ratio: 16 / 9;
+  max-block-size: 70vh;
+  object-fit: contain;
+}
+
+.media-compare-grid,
+.media-review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.media-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: #020617;
+}
+
+.media-frame .media-player video {
+  border-radius: var(--radius-lg);
+}
+
+.checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.checkbox-row input {
+  inline-size: auto;
+  min-block-size: auto;
+}
+
+.input-narrow {
+  flex: 0 1 12rem;
+}
+
+.field-row-reset {
+  margin: 0;
+}
+
+.review-comments-rail {
+  max-block-size: 36rem;
+  overflow: auto;
+  display: grid;
+  gap: var(--space-2);
+  padding-inline-end: var(--space-1);
+}
+
+.review-comment {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background: var(--color-bg-secondary);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.review-comment-active {
+  border-color: var(--color-accent-primary);
+  background: var(--color-surface-selected);
+}
+
+.review-comment-resolved {
+  opacity: 0.72;
+}
+
+.review-comment-resolved p {
+  text-decoration: line-through;
+}
+
+@media (min-width: 900px) {
+  .media-compare-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .media-review-layout {
+    grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 0.75fr);
+  }
 }
 
 @media (min-width: 760px) {

@@ -60,8 +60,7 @@ export default function MediaPlayPage() {
             onChange={(event) => setDiskInput(event.target.value)}
             placeholder="disk اختياري"
             aria-label="قرص التخزين"
-            className="search-input"
-            style={{ flex: "0 1 12rem" }}
+            className="search-input input-narrow"
           />
           <button type="submit" className="button button-primary">تشغيل</button>
         </form>
