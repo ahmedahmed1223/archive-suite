@@ -2868,3 +2868,7 @@
 ### 2. K8s — Redis + Whisper worker (شريحة، 2026-07-01)
 
 - [~] `[P2]` ⏱️L **إكمال K8s + توحيد Docker Compose** — أُضيفت موارد `redis-deployment.yaml`/`redis-service.yaml`، و`whisper-worker-deployment.yaml` كعامل Laravel queue لمعالجة ffmpeg/faster-whisper فوق PVC ملفات الأرشيف، مع `REDIS_URL`, `MEDIA_PROCESSOR=real`, إعدادات `WHISPER_*`, وطلب GPU `nvidia.com/gpu: 1`. وُسّعت NetworkPolicy للسماح المحدد بين server/worker/redis/postgres، ووُسّع `verify:infra` للتحقق من الموارد الجديدة. التحقق: `node --check scripts/verify-infra-config.mjs` و`pnpm run verify:infra`؛ dry-run الحي بقي متوقفاً على Kubernetes context.
+
+### 2. Repo hygiene gate (شريحة، 2026-07-01)
+
+- [~] `[P2]` ⏱️M **ترتيب وتنظيف مجلدات المشروع + بوابة Playwright** — أُضيف `scripts/verify-repo-hygiene.mjs` و`pnpm run verify:repo-hygiene`، ورُبط ضمن `verify:laravel-next` لمنع بقاء مخرجات Playwright (`test-results`/`playwright-report`/`blob-report`) وملفات logs/screenshots المؤقتة في الجذر. البوابة كشفت `archive-app/playwright-report` المتبقي من جولة RED ونُظف، ثم مرّت. المتبقي: جرد أوسع للوثائق/النسخ/الملفات القديمة ونقل أو حذف الآمن منها مع Playwright شامل.
