@@ -2888,3 +2888,7 @@
 ### 2. Compose Laravel/Next القانوني (شريحة، 2026-07-01)
 
 - [~] `[P2]` ⏱️L **إكمال K8s + توحيد Docker Compose** — أُضيف ملف Compose قانوني جديد `archive-server/docker-compose.laravel-next.yml` يشغّل Postgres + Redis + Laravel API + Laravel queue worker + Next standalone بدل الاعتماد على Stack Node/SPA القديم. أُضيف `archive-next/Dockerfile` لبناء `output: standalone` من workspace الجذر، وقُوّي `archive-laravel/Dockerfile.worker` بدعم PHP Redis extension حتى يعمل `QUEUE_CONNECTION=redis`. أضيف `docker:config:laravel-next` وربطت البوابة ضمن `scripts/verify-infra-config.mjs`. التحقق: `pnpm run docker:config:laravel-next` و`pnpm run verify:infra`؛ dry-run الحي لـ Kubernetes ما زال متوقفاً على context.
+
+### 7. Visual Review — روابط مراجعة خارجية (شريحة، 2026-07-01)
+
+- [x] `[P2]` ⏱️XL **مراجعة بصرية واعتماد (Visual Review)** — أُغلقت شريحة الرابط الخارجي: جدول/model `review_links`، و`ReviewLinksController` مع `POST /api/v1/media/{mediaUid}/review-links` تحت auth لإنشاء token عشوائي طويل وصلاحية `view/comment` وانتهاء اختياري، و`GET /api/v1/review-links/{token}` عام يعيد media UID وmetadata وتعليقات المراجعة المرتبة ويفرض expiry. أضيفت صفحة Next عامة `/review/[token]` وعميل typed في `archive-next/lib/archive-api.ts`. التحقق: `node scripts/laravel-docker.mjs test --filter=ReviewLinksApiTest` مرّ 5/5 (30 assertion)، ثم `node scripts/laravel-docker.mjs test --filter=Review` مرّ 17/17 (62 assertion)، ومرّا `pnpm run typecheck:next` و`pnpm run build:next`.
