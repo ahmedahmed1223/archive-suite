@@ -2884,3 +2884,7 @@
 ### 6. Next UI polish pass (شريحة، 2026-07-01)
 
 - [~] `[P3]` ⏱️L **بقية الصفحات (تحسينات مفردة)** — نُفّذت تمريرة UI متوسطة عبر وكيل منخفض التكلفة ثم روجعت محلياً: `/archive` و`/files` حصلا على badges سياقية وحالات loading/error/empty أوضح وبطاقات أكثر إحكاماً؛ `/login` يعرض حالة auth داخل banner موحد؛ `/settings` تقللت inline styles وتوحّد panel rhythm؛ وأضيفت classes مشتركة في `archive-next/app/globals.css` (`hero-actions`, `panel-title-row`, `state-banner`, `helper-row`). التحقق: `pnpm run typecheck:next`, `pnpm run build:next`, وفحص Playwright desktop/mobile ببيانات mock على `/archive`, `/files`, `/login`, `/settings` بدون horizontal overflow أو console/page errors.
+
+### 2. Compose Laravel/Next القانوني (شريحة، 2026-07-01)
+
+- [~] `[P2]` ⏱️L **إكمال K8s + توحيد Docker Compose** — أُضيف ملف Compose قانوني جديد `archive-server/docker-compose.laravel-next.yml` يشغّل Postgres + Redis + Laravel API + Laravel queue worker + Next standalone بدل الاعتماد على Stack Node/SPA القديم. أُضيف `archive-next/Dockerfile` لبناء `output: standalone` من workspace الجذر، وقُوّي `archive-laravel/Dockerfile.worker` بدعم PHP Redis extension حتى يعمل `QUEUE_CONNECTION=redis`. أضيف `docker:config:laravel-next` وربطت البوابة ضمن `scripts/verify-infra-config.mjs`. التحقق: `pnpm run docker:config:laravel-next` و`pnpm run verify:infra`؛ dry-run الحي لـ Kubernetes ما زال متوقفاً على context.

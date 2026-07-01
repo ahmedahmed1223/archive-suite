@@ -11,6 +11,7 @@ const K8S_DIR = path.join(SERVER_DIR, "k8s");
 const composeVariants = [
   ["docker-compose.yml"],
   ["docker-compose.yml", "docker-compose.dev.yml"],
+  ["docker-compose.laravel-next.yml"],
   ["docker-compose.postgres.yml"],
   ["docker-compose.postgres.yml", "docker-compose.postgres.local.yml"],
   ["docker-compose.postgres.yml", "docker-compose.intranet.yml"],
@@ -76,6 +77,20 @@ for (const variant of composeVariants) {
     assert.ok(existsSync(rel("archive-server", file)), `missing compose file: archive-server/${file}`);
   }
 }
+
+for (const file of [
+  "archive-next/Dockerfile",
+  "archive-laravel/Dockerfile.worker",
+]) {
+  assert.ok(existsSync(rel(file)), `missing deployment Dockerfile: ${file}`);
+}
+
+assertIncludes("archive-server/docker-compose.laravel-next.yml", "archive-ln-laravel");
+assertIncludes("archive-server/docker-compose.laravel-next.yml", "archive-ln-laravel-worker");
+assertIncludes("archive-server/docker-compose.laravel-next.yml", "ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1");
+assertIncludes("archive-server/docker-compose.laravel-next.yml", "QUEUE_CONNECTION: redis");
+assertIncludes("archive-next/next.config.mjs", 'output: "standalone"');
+assertIncludes("archive-laravel/Dockerfile.worker", "docker-php-ext-enable redis");
 
 assertIncludes("archive-server/k8s/network-policy.yaml", "app: server");
 assertIncludes("archive-server/k8s/network-policy.yaml", "app: frontend");

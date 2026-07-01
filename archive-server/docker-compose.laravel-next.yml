@@ -1,0 +1,156 @@
+# Canonical Laravel + Next.js stack.
+# This is the target deployment shape after the Laravel/Next cutover. The older
+# Node/SPA/PocketBase compose files stay available as legacy variants only.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: archive-ln-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-archive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-archive}
+    volumes:
+      - laravel_next_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-archive} -d ${POSTGRES_DB:-archive}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - archive
+
+  redis:
+    image: redis:7-alpine
+    container_name: archive-ln-redis
+    restart: unless-stopped
+    command: ["sh", "-c", "exec redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save \"\" --requirepass \"$${REDIS_PASSWORD}\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - archive
+
+  laravel:
+    build:
+      context: ../archive-laravel
+      dockerfile: Dockerfile.worker
+    container_name: archive-ln-laravel
+    restart: unless-stopped
+    command: ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
+      APP_URL: ${LARAVEL_APP_URL:-http://localhost:8000}
+      ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: ${POSTGRES_DB:-archive}
+      DB_USERNAME: ${POSTGRES_USER:-archive}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: database
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      REDIS_PORT: "6379"
+      MEDIA_PROCESSOR: real
+      WHISPER_BINARY: ${WHISPER_BINARY:-faster-whisper}
+      WHISPER_MODEL: ${WHISPER_MODEL:-large-v3}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-ar}
+      WHISPER_OUTPUT_FORMAT: ${WHISPER_OUTPUT_FORMAT:-vtt}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cuda}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-float16}
+      WHISPER_DIARIZE: ${WHISPER_DIARIZE:-false}
+    volumes:
+      - laravel_next_storage:/app/storage/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan about --only=environment >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - archive
+
+  laravel-worker:
+    build:
+      context: ../archive-laravel
+      dockerfile: Dockerfile.worker
+    container_name: archive-ln-laravel-worker
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "--queue=default", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: ${POSTGRES_DB:-archive}
+      DB_USERNAME: ${POSTGRES_USER:-archive}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: database
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      REDIS_PORT: "6379"
+      MEDIA_PROCESSOR: real
+      WHISPER_BINARY: ${WHISPER_BINARY:-faster-whisper}
+      WHISPER_MODEL: ${WHISPER_MODEL:-large-v3}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-ar}
+      WHISPER_OUTPUT_FORMAT: ${WHISPER_OUTPUT_FORMAT:-vtt}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cuda}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-float16}
+      WHISPER_DIARIZE: ${WHISPER_DIARIZE:-false}
+    volumes:
+      - laravel_next_storage:/app/storage/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - archive
+
+  next:
+    build:
+      context: ..
+      dockerfile: archive-next/Dockerfile
+    container_name: archive-ln-next
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1
+    ports:
+      - "${NEXT_PUBLIC_PORT:-3000}:3000"
+    depends_on:
+      laravel:
+        condition: service_healthy
+    networks:
+      - archive
+
+volumes:
+  laravel_next_postgres_data:
+  laravel_next_storage:
+
+networks:
+  archive:
+    driver: bridge
