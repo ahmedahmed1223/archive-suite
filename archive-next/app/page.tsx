@@ -11,49 +11,76 @@ export default function HomePage() {
 
       <section className="content">
         <div className="hero">
-          <span className="badge">Laravel API</span>
+          <span className="badge">Laravel API · Next.js Frontend</span>
           <h1>لوحة تشغيل {BRAND.arabicName}.</h1>
           <p>
-            مساحة موحدة لإدارة الأرشيف والملفات والبحث والوسائط فوق واجهة
-            Laravel API المعتمدة، مع مؤشرات سريعة لحالة العقد والمسارات
-            الأساسية.
+            واجهة موحدة لإدارة الأرشيف والملفات والبحث والوسائط فوق Laravel API
+            المعتمد، مع مؤشرات حية لحالة النظام والمسارات الأساسية.
           </p>
-          <div className="record-meta" aria-label="ملخص النظام">
-            <span className="badge">عقد {BRAND.latinName} API</span>
+          <div className="hero-actions">
+            <span className="badge">عقد {BRAND.latinName}</span>
             <span className="badge">v{apiContract.version}</span>
             <span className="badge">{apiContract.routeCount} مسار API</span>
           </div>
         </div>
 
-        <div className="grid" aria-label="حالة النظام">
+        <div className="dense-grid" aria-label="ملخص النظام">
           <article className="panel">
-            <h2>عقد API</h2>
+            <div className="panel-section-header">
+              <h2>عقد API</h2>
+            </div>
             <p>
-              العقد الحالي يعرّف {apiContract.routeCount} مسارات أساسية وتبقى
-              نقطة المرجع قبل نقل أي شاشة جديدة.
+              العقد الحالي يعرّف {apiContract.routeCount} مسارات أساسية متطابقة على
+              كلا الجانبين (Node.js و Laravel). النموذج هو الحقيقة المرجعية.
             </p>
+            <div className="record-meta">
+              <span className="badge">schema-driven</span>
+              <span className="badge">v{apiContract.version}</span>
+            </div>
           </article>
 
           <article className="panel">
-            <h2>المسار الحالي</h2>
-            <ul>
-              <li>هذه الواجهة هي سطح العمل المعتمد لإدارة النظام.</li>
-              <li>Laravel هو API المعتمد لمسارات `/api/v1/*`.</li>
-              <li>التطوير الجديد يبدأ من العقود المشتركة ثم Laravel ثم الواجهة.</li>
-              <li>مهام الوسائط تعرض حالة طوابير Laravel دون تكرار منطق الخادم.</li>
-              <li>إدارة الأنواع وسجل الأخطاء جزءان من المسارات التشغيلية الأساسية.</li>
+            <div className="panel-section-header">
+              <h2>مسار النقل</h2>
+            </div>
+            <ul className="compact-list">
+              <li>هذه الواجهة: Next.js 16 App Router و TypeScript.</li>
+              <li>API المعتمد: Laravel 13 بمسارات `/api/v1/*`.</li>
+              <li>التطوير: عقد مشترك → Laravel → واجهة Next.js.</li>
+              <li>القديم: Node.js و React SPA للمرجعية فقط.</li>
             </ul>
           </article>
 
           <article className="panel">
-            <h2>بوابات القبول</h2>
-            <ul>
-              <li>typecheck لكل workspace قبل الدمج.</li>
-              <li>بناء مستقل لواجهة الويب.</li>
-              <li>اختبارات E2E لكل مسار منقول.</li>
-              <li>عميل Auth يدعم Bearer + HttpOnly refresh cookie.</li>
+            <div className="panel-section-header">
+              <h2>معايير الجودة</h2>
+            </div>
+            <ul className="compact-list">
+              <li>TypeScript في كل workspace قبل الدمج.</li>
+              <li>بناء Next.js مستقل بدون أخطاء.</li>
+              <li>اختبارات Playwright E2E لكل مسار.</li>
+              <li>Auth: Bearer tokens + HttpOnly refresh cookie.</li>
             </ul>
           </article>
+
+          <article className="panel">
+            <div className="panel-section-header">
+              <h2>الميزات الحية</h2>
+            </div>
+            <ul className="compact-list">
+              <li>بحث السجلات والملفات مع نتائج فورية.</li>
+              <li>إدارة الحقوق والمشاركة على السجلات.</li>
+              <li>واجهة RTL كاملة بالعربية والإنجليزية.</li>
+              <li>تشغيل الوسائط والنصوص مع الترجمات.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div className="state-banner state-banner-success" role="status">
+          <strong>النظام جاهز</strong>
+          <span className="helper-text">
+            قاعدة البيانات متصلة، الخدمات متاحة، واجهة الويب تعمل بكفاءة.
+          </span>
         </div>
       </section>
     </main>

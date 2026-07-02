@@ -1,0 +1,32 @@
+.jobsContent {
+  --local-gap: var(--space-5);
+}
+
+.operationsConsole {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--local-gap);
+  align-items: start;
+}
+
+.creationPanel {
+  order: 1;
+}
+
+.jobsTablePanel {
+  order: 2;
+}
+
+@media (min-width: 900px) {
+  .operationsConsole {
+    grid-template-columns: minmax(18rem, 0.35fr) minmax(0, 1fr);
+  }
+
+  .creationPanel {
+    order: 1;
+  }
+
+  .jobsTablePanel {
+    order: 2;
+  }
+}

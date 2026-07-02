@@ -297,11 +297,9 @@ export default function SettingsPage() {
         </div>
 
         <article className="panel" aria-label="وضع الأمان">
-          <div className="panel-title-row">
-            <div>
-              <h2>وضع الأمان</h2>
-              <p>ملخص للقراءة فقط يوضح سياسة الوصول الحالية والعمل الأمني المؤجل لإصدارات لاحقة.</p>
-            </div>
+          <div className="panel-section-header">
+            <h2>وضع الأمان</h2>
+            <p>ملخص للقراءة فقط يوضح سياسة الوصول الحالية والعمل الأمني المؤجل لإصدارات لاحقة.</p>
           </div>
 
           <div className="stack">
@@ -359,7 +357,7 @@ export default function SettingsPage() {
         </article>
 
         <article className="panel" aria-label="ODBC bridge">
-          <div className="panel-title-row">
+          <div className="panel-section-header">
             <div>
               <h2>ODBC للأنظمة القديمة</h2>
               <p>فحص الاتصال، معاينة قراءة محدودة، وكتابة صفوف مقيدة للجداول الأساسية المسموحة فقط.</p>

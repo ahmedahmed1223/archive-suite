@@ -125,29 +125,34 @@ export default function FilesPage() {
         <div className="hero">
           <h1>استعرض الملفات المحفوظة.</h1>
           <p>
-            اختر ملفات من مساحة التخزين، شغّل الوسائط القابلة للعرض، أو أنشئ
-            رابط مشاركة عام للوصول إلى العناصر المحددة مباشرة.
+            شغّل الوسائط القابلة للعرض مباشرة، اختر ملفات متعددة، أو أنشئ روابط
+            مشاركة عامة للوصول الفوري إلى العناصر المحددة.
           </p>
           <div className="hero-actions">
             <span className="badge">مستعرض الملفات</span>
-            <span className="badge">
-              {selectedKeys.size > 0 ? `${selectedKeys.size} محدد` : "اختيار متعدد"}
-            </span>
+            {selectedKeys.size > 0 && (
+              <span className="badge">{selectedKeys.size} محدد</span>
+            )}
           </div>
         </div>
 
         <form className="search-form" onSubmit={handleSearch}>
           <input
             type="text"
-            placeholder="ابحث عن الملفات..."
+            placeholder="ابحث عن اسم الملف أو المسار..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="search-input"
+            autoFocus
           />
           <button type="submit" className="button button-primary">بحث</button>
         </form>
 
-        {state.status === "loading" && <p className="form-status" aria-live="polite">جار تحميل الملفات...</p>}
+        {state.status === "loading" && (
+          <div className="panel panel-compact" role="status" aria-live="polite">
+            <p className="form-status">جار تحميل قائمة الملفات...</p>
+          </div>
+        )}
 
         {state.status === "error" && (
           <div className="state-banner state-banner-error" role="alert">
@@ -161,80 +166,126 @@ export default function FilesPage() {
             {state.files.length === 0 ? (
               <div className="empty-state">
                 <strong>لم يتم العثور على ملفات.</strong>
-                <p className="helper-text">جرّب توسيع البحث أو إعادة تعيين الاستعلام.</p>
+                <p className="helper-text">جرّب بحثاً أوسع أو غيّر المعايير.</p>
               </div>
             ) : (
               <>
-                <div className="grid" aria-label="قائمة الملفات">
-                  {state.files.map((file) => (
-                    <article className="panel panel-compact" key={file.key}>
-                      <div className="panel-title-row">
-                        <label className="file-select-row">
-                          <input
-                            type="checkbox"
-                            checked={selectedKeys.has(file.key)}
-                            onChange={() => handleToggleFile(file.key)}
-                            aria-label={`تحديد ${file.name || file.key}`}
-                          />
-                          <span className="file-name-stack">
-                            <strong className="wrap-anywhere">{file.name || file.key}</strong>
-                            {file.key !== file.name && file.key ? (
-                              <span className="field-note wrap-anywhere">
-                                {file.key}
-                              </span>
-                            ) : null}
-                          </span>
-                        </label>
-                        {file.modifiedAt ? (
-                          <time className="created-at">
-                            {new Date(file.modifiedAt).toLocaleDateString("ar-SA")}
-                          </time>
-                        ) : null}
-                      </div>
-                      <div className="record-meta">
-                        {file.size !== undefined ? (
-                          <span className="badge">{formatBytes(file.size)}</span>
-                        ) : null}
-                        {file.store ? (
-                          <span className="badge">{file.store}</span>
-                        ) : null}
-                        {isPlayableFile(file) ? (
-                          <a className="badge" href={mediaPlayHref(file)}>
-                            تشغيل
-                          </a>
-                        ) : null}
-                      </div>
-                    </article>
-                  ))}
+                <div className="toolbar-row">
+                  <span className="helper-text">
+                    {state.files.length} ملف
+                    {selectedKeys.size > 0 && ` · ${selectedKeys.size} محدد`}
+                  </span>
+                  {selectedKeys.size > 0 && (
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      onClick={() => setSelectedKeys(new Set())}
+                    >
+                      مسح التحديد
+                    </button>
+                  )}
                 </div>
 
-                <div className="state-banner">
-                  <div className="helper-row">
-                    <strong>إجراءات الملفات المحددة</strong>
-                    {selectedKeys.size > 0 && <span className="badge">{selectedKeys.size} ملف محدد</span>}
-                  </div>
-                  <button
-                    onClick={handleCreateShare}
-                    disabled={selectedKeys.size === 0 || shareState.status === "creating"}
-                    className="button button-primary"
-                  >
-                    {shareState.status === "creating" ? "جار الإنشاء..." : "إنشاء رابط مشاركة"}
-                  </button>
+                <div className="data-table scroll-x">
+                  <table role="grid" aria-label="قائمة الملفات">
+                    <thead>
+                      <tr>
+                        <th style={{ width: "3rem" }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedKeys.size === state.files.length && state.files.length > 0}
+                            onChange={() => {
+                              if (selectedKeys.size === state.files.length) {
+                                setSelectedKeys(new Set());
+                              } else {
+                                setSelectedKeys(new Set(state.files.map((f) => f.key)));
+                              }
+                            }}
+                            aria-label="تحديد الكل"
+                          />
+                        </th>
+                        <th>الاسم</th>
+                        <th style={{ width: "8rem" }}>الحجم</th>
+                        <th style={{ width: "10rem" }}>المخزن</th>
+                        <th style={{ width: "8rem" }}>التاريخ</th>
+                        <th style={{ width: "6rem" }}>الإجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {state.files.map((file) => (
+                        <tr key={file.key}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selectedKeys.has(file.key)}
+                              onChange={() => handleToggleFile(file.key)}
+                              aria-label={`تحديد ${file.name || file.key}`}
+                            />
+                          </td>
+                          <td className="wrap-anywhere">
+                            <strong>{file.name || file.key}</strong>
+                            {file.key !== file.name && file.key ? (
+                              <div className="field-note text-xs">{file.key}</div>
+                            ) : null}
+                          </td>
+                          <td className="mono-text text-sm">
+                            {file.size !== undefined ? formatBytes(file.size) : "—"}
+                          </td>
+                          <td className="text-sm">{file.store || "—"}</td>
+                          <td className="mono-text text-sm">
+                            {file.modifiedAt
+                              ? new Date(file.modifiedAt).toLocaleDateString("ar-SA")
+                              : "—"}
+                          </td>
+                          <td>
+                            {isPlayableFile(file) ? (
+                              <a
+                                href={mediaPlayHref(file)}
+                                className="button button-secondary"
+                                style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
+                              >
+                                تشغيل
+                              </a>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+
+                {selectedKeys.size > 0 && (
+                  <div className="state-banner state-banner-success">
+                    <div className="toolbar-row">
+                      <strong>{selectedKeys.size} ملف محدد</strong>
+                      <button
+                        onClick={handleCreateShare}
+                        disabled={shareState.status === "creating"}
+                        className="button button-primary"
+                      >
+                        {shareState.status === "creating"
+                          ? "جار الإنشاء..."
+                          : "إنشاء رابط مشاركة"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {shareState.status === "success" && (
                   <div className="state-banner state-banner-success">
-                    <strong>تم إنشاء رابط المشاركة بنجاح.</strong>
+                    <strong>تم إنشاء الرابط بنجاح</strong>
                     <span className="helper-text">
-                      <a href={`/share/${encodeURIComponent(shareState.token)}`}>اذهب إلى المشاركة</a>
-                      {shareState.url ? ` · ${shareState.url}` : ""}
+                      <a href={`/share/${encodeURIComponent(shareState.token)}`}>
+                        فتح المشاركة →
+                      </a>
+                      {shareState.url ? ` | ${shareState.url}` : ""}
                     </span>
                   </div>
                 )}
 
                 {shareState.status === "error" && (
                   <div className="state-banner state-banner-error" role="alert">
-                    <strong>خطأ في إنشاء الرابط</strong>
+                    <strong>خطأ في المشاركة</strong>
                     <span className="helper-text">{shareState.message}</span>
                   </div>
                 )}

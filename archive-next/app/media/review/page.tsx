@@ -7,6 +7,7 @@ import AppHeader from "@/components/AppHeader";
 import MediaPlayer from "@/components/MediaPlayer";
 import { createArchiveApiClient, type ReviewComment, type ReviewRect } from "@/lib/archive-api";
 import { getEchoClient } from "@/lib/echo";
+import styles from "./review.module.css";
 
 function formatTimecode(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
@@ -163,7 +164,7 @@ export default function ReviewPage() {
     <main className="shell">
       <AppHeader subtitle="المراجعة المرئية" />
 
-      <section className="content stack" aria-label="المراجعة المرئية">
+      <section className={`content stack ${styles.reviewContent}`} aria-label="المراجعة المرئية">
         <div className="hero">
           <span className="badge">Frame review</span>
           <h1>مراجعة مرئية بتعليقات زمنية</h1>
@@ -171,9 +172,9 @@ export default function ReviewPage() {
             شغّل المادة، اقفز إلى timecode محدد، وارسم مستطيلاً فوق الإطار عند
             الحاجة لتوثيق الملاحظة بدقة.
           </p>
-          <div className="hero-actions">
+          <div className="record-meta" aria-label="حالة المراجعة">
             <span className="badge">{comments.length} تعليق</span>
-            <span className="badge">{drawMode ? "وضع الرسم" : "عرض التعليقات"}</span>
+            <span className={`badge ${styles.statusIndicator}`} data-status={drawMode ? "editing" : "reviewing"}>{drawMode ? "وضع الرسم" : "عرض التعليقات"}</span>
           </div>
         </div>
 
@@ -184,8 +185,8 @@ export default function ReviewPage() {
           </div>
         )}
 
-        <div className="media-review-layout">
-          <section className="stack" aria-label="المشغل ونموذج التعليق">
+        <div className={`media-review-layout ${styles.mediaReviewLayout}`}>
+          <section className={`stack ${styles.playerSection}`} aria-label="المشغل ونموذج التعليق">
             <article className="panel auth-form">
               <label>
                 مسار المادة أو معرف جلسة المراجعة
@@ -194,13 +195,14 @@ export default function ReviewPage() {
                   value={mediaUid}
                   onChange={(event) => setMediaUid(event.target.value)}
                   placeholder="media/file.mp4"
+                  aria-label="مسار المادة أو معرف جلسة المراجعة"
                 />
+                <p className="helper-text">يستخدم نفس الحقل لتشغيل المادة وربط تعليقات المراجعة.</p>
               </label>
-              <p className="field-note">يستخدم نفس الحقل لتشغيل المادة وربط تعليقات المراجعة.</p>
             </article>
 
             {currentMediaUid ? (
-              <article className="panel">
+              <article className={`panel ${styles.mediaFramePanel}`}>
                 <div className="media-frame">
                   <MediaPlayer
                     path={currentMediaUid}
@@ -219,7 +221,7 @@ export default function ReviewPage() {
                   />
                 </div>
 
-                <div className="toolbar-row">
+                <div className={`toolbar-row ${styles.toolbarRow}`}>
                   <button
                     type="button"
                     className={drawMode ? "button button-danger" : "button button-secondary"}
@@ -241,8 +243,8 @@ export default function ReviewPage() {
               <div className="empty-state">أدخل مسار مادة لبدء المراجعة.</div>
             )}
 
-            <form className="panel auth-form" onSubmit={handleAddComment}>
-              <div className="panel-title-row">
+            <form className={`panel auth-form ${styles.commentForm}`} onSubmit={handleAddComment}>
+              <div className={styles.commentFormHeader}>
                 <h2>إضافة تعليق</h2>
                 {useCurrentTime ? <span className="badge">من وقت التشغيل</span> : <span className="badge">وقت يدوي</span>}
               </div>
@@ -257,7 +259,7 @@ export default function ReviewPage() {
               </label>
 
               {!useCurrentTime && (
-                <label>
+                <label className={styles.timecodeInput}>
                   Timecode بالثواني
                   <input
                     type="number"
@@ -285,28 +287,28 @@ export default function ReviewPage() {
             </form>
           </section>
 
-          <aside className="panel" aria-label="تعليقات المراجعة">
-            <div className="panel-title-row">
-              <div>
+          <aside className={`panel ${styles.commentsAside}`} aria-label="تعليقات المراجعة">
+            <div className={styles.commentsHeader}>
+              <div className={styles.commentsHeaderInfo}>
                 <h2>التعليقات</h2>
                 <p>{comments.length ? "مرتبة حسب الزمن داخل المادة." : "لا توجد تعليقات بعد."}</p>
               </div>
               <span className="badge">{comments.length}</span>
             </div>
 
-            <div className="review-comments-rail">
+            <div className={`review-comments-rail ${styles.commentsList}`}>
               {comments.length === 0 ? (
                 <div className="empty-state">ابدأ بإضافة أول تعليق من النموذج.</div>
               ) : (
                 comments.map((comment) => (
                   <article
                     key={comment.id}
-                    className={`review-comment ${comment.id === activeCommentId ? "review-comment-active" : ""} ${
-                      comment.resolved ? "review-comment-resolved" : ""
+                    className={`${styles.commentItem} ${comment.id === activeCommentId ? styles.commentItemActive : ""} ${
+                      comment.resolved ? styles.commentItemResolved : ""
                     }`}
                   >
-                    <div className="helper-row">
-                      <button className="badge" type="button" onClick={() => handleSeekToComment(comment)}>
+                    <div className={styles.commentActions}>
+                      <button className={styles.commentTimecode} type="button" onClick={() => handleSeekToComment(comment)}>
                         {formatTimecode(comment.timecodeSeconds)}
                       </button>
                       <button
@@ -317,8 +319,8 @@ export default function ReviewPage() {
                         {comment.resolved ? "إعادة فتح" : "حل"}
                       </button>
                     </div>
-                    <p>{comment.body}</p>
-                    <span className="field-note">{comment.author}</span>
+                    <p className={styles.commentBody}>{comment.body}</p>
+                    <span className={styles.commentAuthor}>{comment.author}</span>
                   </article>
                 ))
               )}

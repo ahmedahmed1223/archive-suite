@@ -38,57 +38,80 @@ export default function LoginPage() {
 
       <section className="content auth-layout" aria-label="تسجيل الدخول">
         <div className="hero auth-copy">
-          <h1>تسجيل الدخول عبر جلسات Laravel.</h1>
+          <h1>تسجيل الدخول.</h1>
           <p>
-            يستخدم هذا المسار رمز وصول قصير العمر في الذاكرة، مع refresh
-            cookie آمن باسم `va_refresh` يظل HttpOnly.
+            استخدم بيانات حسابك للدخول إلى لوحة التحكم. يتم إرسال بيانات الدخول
+            عبر HTTPS وحفظ الجلسات بشكل آمن عبر HttpOnly cookies.
           </p>
           <div className="hero-actions">
-            <span className="badge">مصادقة الجلسات</span>
-            <span className="badge">/api/v1/auth/login</span>
+            <span className="badge">مصادقة آمنة</span>
+            <span className="badge">Laravel API</span>
           </div>
         </div>
 
-        <form className="panel auth-form" onSubmit={handleSubmit}>
-          <label>
-            البريد الإلكتروني
-            <input name="email" type="email" autoComplete="email" required />
-          </label>
+        <form className="panel auth-form" onSubmit={handleSubmit} method="post">
+          <div>
+            <label htmlFor="email">
+              البريد الإلكتروني
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="your@email.com"
+              autoComplete="email"
+              required
+              disabled={state.status === "loading"}
+              aria-describedby={state.status === "error" ? "auth-error" : undefined}
+            />
+          </div>
 
-          <label>
-            كلمة المرور
-            <input name="password" type="password" autoComplete="current-password" required />
-          </label>
+          <div>
+            <label htmlFor="password">
+              كلمة المرور
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              required
+              disabled={state.status === "loading"}
+              aria-describedby={state.status === "error" ? "auth-error" : undefined}
+            />
+          </div>
 
-          <button type="submit" className="button button-primary" disabled={state.status === "loading"}>
+          <button
+            type="submit"
+            className="button button-primary"
+            disabled={state.status === "loading"}
+          >
             {state.status === "loading" ? "جار التحقق..." : "تسجيل الدخول"}
           </button>
 
-          <div
-            className={`state-banner ${
-              state.status === "error"
-                ? "state-banner-error"
-                : state.status === "success"
-                  ? "state-banner-success"
-                  : ""
-            }`}
-            role="status"
-          >
-            <strong>
-              {state.status === "success"
-                ? "تم تسجيل الدخول"
-                : state.status === "error"
-                  ? "تعذر تسجيل الدخول"
-                  : "جاهز"}
-            </strong>
-            <span className="helper-text">
-              {state.status === "success"
-                ? `تم تسجيل الدخول كـ ${state.user.email ?? state.user.name ?? state.user.id} · ينتهي ${state.expiresAt}`
-                : state.status === "error"
-                  ? state.message
-                  : "جاهز للاتصال بـ /api/v1/auth/login."}
-            </span>
-          </div>
+          {(state.status === "error" || state.status === "success") && (
+            <div
+              id="auth-error"
+              className={`state-banner ${
+                state.status === "error"
+                  ? "state-banner-error"
+                  : "state-banner-success"
+              }`}
+              role={state.status === "error" ? "alert" : "status"}
+            >
+              <strong>
+                {state.status === "success"
+                  ? "تم تسجيل الدخول بنجاح"
+                  : "فشل تسجيل الدخول"}
+              </strong>
+              <span className="helper-text">
+                {state.status === "success"
+                  ? `مرحباً ${state.user.email ?? state.user.name ?? state.user.id}`
+                  : state.message}
+              </span>
+            </div>
+          )}
         </form>
       </section>
     </main>

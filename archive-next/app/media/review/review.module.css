@@ -1,0 +1,215 @@
+.reviewContent {
+  gap: var(--space-5);
+}
+
+.statusIndicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.62rem;
+}
+
+.mediaReviewLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.playerSection {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.mediaFramePanel {
+  padding: 0;
+  border: 1px solid var(--color-border-secondary);
+  background: transparent;
+  box-shadow: var(--shadow-md);
+}
+
+.toolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.commentForm {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.commentFormHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.timecodeInput {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.timecodeInput label {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.timecodeInput input {
+  inline-size: 100%;
+  min-block-size: var(--control-height);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: 0.68rem 0.82rem;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  outline: none;
+  font-family: inherit;
+}
+
+.timecodeInput input:focus-visible {
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.commentsAside {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.commentsHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: center;
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--color-border-secondary);
+}
+
+.commentsHeaderInfo {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.commentsHeaderInfo h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.commentsHeaderInfo p {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.commentsList {
+  display: grid;
+  gap: var(--space-2);
+  max-block-size: 36rem;
+  overflow: auto;
+  padding-inline-end: var(--space-1);
+}
+
+.commentItem {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background: var(--color-bg-secondary);
+  display: grid;
+  gap: var(--space-2);
+  transition:
+    border-color var(--duration-fast) var(--easing-default),
+    background-color var(--duration-fast) var(--easing-default);
+}
+
+.commentItemActive {
+  border-color: var(--color-accent-primary);
+  background: var(--color-surface-selected);
+}
+
+.commentItemResolved {
+  opacity: 0.72;
+}
+
+.commentItemResolved p {
+  text-decoration: line-through;
+}
+
+.commentActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.commentTimecode {
+  display: inline-flex;
+  align-items: center;
+  inline-size: fit-content;
+  min-block-size: 2rem;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  padding: 0.32rem 0.62rem;
+  color: var(--color-accent-primary);
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-mono);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing-default),
+    border-color var(--duration-fast) var(--easing-default);
+}
+
+.commentTimecode:hover {
+  background: color-mix(in srgb, var(--color-accent-primary) 9%, var(--color-bg-secondary));
+  border-color: color-mix(in srgb, var(--color-accent-primary) 38%, var(--color-border-secondary));
+}
+
+.commentTimecode:focus-visible {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.commentBody {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.commentAuthor {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+}
+
+@media (min-width: 900px) {
+  .mediaReviewLayout {
+    grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 0.75fr);
+  }
+
+  .playerSection {
+    grid-column: 1;
+  }
+
+  .commentsAside {
+    grid-column: 2;
+    grid-row: 1 / 99;
+  }
+}

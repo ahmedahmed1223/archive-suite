@@ -16,10 +16,17 @@ export default async function ReviewLinkPage({ params }: { params: Promise<{ tok
             يعرض بيانات المراجعة والتعليقات المسموحة لهذا الرابط فقط، مع
             إبقاء الرمز والصلاحيات محكومة من Laravel.
           </p>
+          <div className="hero-actions">
+            <span className="badge">آمن ومشفر</span>
+            <span className="badge">تعليقات محمية</span>
+          </div>
         </div>
 
         <aside className="panel auth-form">
-          <h2>محتوى المراجعة</h2>
+          <div className="panel-section-header">
+            <h2>محتوى المراجعة</h2>
+            <p>اعرض التعليقات والملاحظات على هذا السجل في سياق آمن.</p>
+          </div>
           <ReviewLinkViewer token={token} />
         </aside>
       </section>

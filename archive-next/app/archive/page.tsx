@@ -45,15 +45,15 @@ export default function ArchivePage() {
 
       <section className="content" aria-label="بحث السجلات">
         <div className="hero">
-          <h1>بحث السجلات المحفوظة.</h1>
+          <h1>السجلات المحفوظة.</h1>
           <p>
-            استعرض قائمة السجلات وابدأ بحثاً مباشراً عبر الكلمات المفتاحية، أو
-            اترك الحقل فارغاً لعرض أحدث السجلات المتاحة.
+            استعرض كل السجلات أو ابحث بالكلمات المفتاحية. اتركه فارغاً لعرض أحدث
+            السجلات، أو اضغط على أي نتيجة لفتح التفاصيل كاملة والحقوق.
           </p>
           <div className="hero-actions">
-            <span className="badge">بحث مباشر</span>
+            <span className="badge">بحث فوري</span>
             <span className="badge">
-              {state.status === "ready" ? `${state.records.length} نتيجة` : "عرض مباشر"}
+              {state.status === "ready" ? `${state.records.length} نتيجة` : ""}
             </span>
           </div>
         </div>
@@ -61,15 +61,20 @@ export default function ArchivePage() {
         <form className="search-form" onSubmit={handleSearch}>
           <input
             type="text"
-            placeholder="ابحث عن السجلات..."
+            placeholder="ابحث عن العنوان أو الوسم أو الوصف..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="search-input"
+            autoFocus
           />
           <button type="submit" className="button button-primary">بحث</button>
         </form>
 
-        {state.status === "loading" && <p className="form-status" aria-live="polite">جار تحميل السجلات...</p>}
+        {state.status === "loading" && (
+          <div className="panel panel-compact" aria-live="polite" role="status">
+            <p className="form-status">جار تحميل السجلات...</p>
+          </div>
+        )}
 
         {state.status === "error" && (
           <div className="state-banner state-banner-error" role="alert">
@@ -83,42 +88,66 @@ export default function ArchivePage() {
             {state.records.length === 0 ? (
               <div className="empty-state">
                 <strong>لم يتم العثور على سجلات.</strong>
-                <p className="helper-text">جرّب كلمة أقصر أو أزل الفلتر الحالي.</p>
+                <p className="helper-text">جرّب بحثاً أقصر أو اترك الحقل فارغاً لعرض الكل.</p>
               </div>
             ) : (
-              <div className="grid" aria-label="السجلات المحفوظة">
-                {state.records.map((record) => (
-                  <article className="panel panel-compact" key={record.id}>
-                    <div className="panel-title-row">
-                      <h2>
-                        <a href={`/archive/${encodeURIComponent(record.id)}`}>{record.title}</a>
-                      </h2>
-                      {record.createdAt ? (
-                        <time className="created-at">
-                          {new Date(record.createdAt).toLocaleDateString("ar-SA")}
-                        </time>
-                      ) : null}
+              <div aria-label={`${state.records.length} نتيجة`}>
+                <div className="split-layout">
+                  <div>
+                    <div className="grid" role="list">
+                      {state.records.map((record) => (
+                        <article className="panel panel-compact" key={record.id} role="listitem">
+                          <div className="panel-title-row">
+                            <h2>
+                              <a
+                                href={`/archive/${encodeURIComponent(record.id)}`}
+                                className="text-accent"
+                                title={record.description || record.title}
+                              >
+                                {record.title || "بدون عنوان"}
+                              </a>
+                            </h2>
+                          </div>
+                          {record.description ? (
+                            <p className="text-sm">{record.description.substring(0, 120)}{record.description.length > 120 ? "…" : ""}</p>
+                          ) : null}
+                          <div className="record-meta">
+                            {record.store ? (
+                              <span className="badge">{record.store}</span>
+                            ) : null}
+                            {record.type ? (
+                              <span className="badge">{record.type}</span>
+                            ) : null}
+                            {record.createdAt ? (
+                              <time className="created-at text-xs">
+                                {new Date(record.createdAt).toLocaleDateString("ar-SA")}
+                              </time>
+                            ) : null}
+                          </div>
+                          {record.tags && record.tags.length > 0 ? (
+                            <div className="tags">
+                              {record.tags.slice(0, 3).map((tag) => (
+                                <span key={tag} className="tag">
+                                  {tag}
+                                </span>
+                              ))}
+                              {record.tags.length > 3 ? (
+                                <span className="tag muted">+{record.tags.length - 3}</span>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          <a
+                            href={`/archive/${encodeURIComponent(record.id)}`}
+                            className="button button-secondary button-sm inline-flex"
+                            style={{ marginTop: "0.5rem" }}
+                          >
+                            فتح التفاصيل →
+                          </a>
+                        </article>
+                      ))}
                     </div>
-                    {record.description ? <p>{record.description}</p> : null}
-                    <div className="record-meta">
-                      {record.store ? (
-                        <span className="badge">{record.store}</span>
-                      ) : null}
-                      {record.type ? (
-                        <span className="badge">{record.type}</span>
-                      ) : null}
-                    </div>
-                    {record.tags && record.tags.length > 0 ? (
-                      <div className="tags">
-                        {record.tags.map((tag) => (
-                          <span key={tag} className="tag">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                  </article>
-                ))}
+                  </div>
+                </div>
               </div>
             )}
           </>
