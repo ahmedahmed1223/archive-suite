@@ -46,6 +46,8 @@
 
 - [x] **إضافة مسودة مورد مشتركة للتعاون الحي** — أضيفت `collaboration_documents` في Laravel مع `GET/POST /api/v1/collaboration/rooms/{roomKey}/documents/{resourceId}`، حفظ بإصدار متفائل، تعارض 409 عند النسخ القديمة أو قفل مستخدم آخر، وحدث Reverb `document.updated`. صفحة `/collaboration` تعرض المسودة وتدمج التحديثات الحية. التحقق: `node scripts/laravel-docker.mjs test --filter=Collaboration`, `node scripts/verify-api-contracts.mjs`, `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **بث حي لتعليقات المراجعة المرئية** — أضيف حدث Laravel `ReviewCommentBroadcasted` على قناة `review.media.{mediaUid}` باسم `.review-comment.updated` عند إنشاء/تحديث التعليقات، وأصبحت صفحة `/media/review` تشترك عبر Reverb وتدمج التعليقات الواردة دون تكرار مع بقاء التحميل اليدوي fallback. التحقق: `node scripts/laravel-docker.mjs test --filter=ReviewComments`, `pnpm run typecheck:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.

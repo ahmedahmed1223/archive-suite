@@ -6,11 +6,43 @@ import AnnotationCanvas from "@/components/AnnotationCanvas";
 import AppHeader from "@/components/AppHeader";
 import MediaPlayer from "@/components/MediaPlayer";
 import { createArchiveApiClient, type ReviewComment, type ReviewRect } from "@/lib/archive-api";
+import { getEchoClient } from "@/lib/echo";
 
 function formatTimecode(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
+
+type ReviewCommentUpdatedEvent = {
+  mediaUid: string;
+  comment: ReviewComment;
+};
+
+function mergeReviewComments(current: ReviewComment[], incoming: ReviewComment): ReviewComment[] {
+  const next = new Map<string, ReviewComment>();
+
+  for (const comment of current) {
+    next.set(comment.id, comment);
+  }
+
+  next.set(incoming.id, incoming);
+
+  return Array.from(next.values()).sort(
+    (a, b) =>
+      a.timecodeSeconds - b.timecodeSeconds ||
+      toTimestamp(a.createdAt) - toTimestamp(b.createdAt) ||
+      a.id.localeCompare(b.id)
+  );
+}
+
+function toTimestamp(value: string): number {
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function normalizeReviewComments(comments: ReviewComment[]): ReviewComment[] {
+  return comments.reduce<ReviewComment[]>((accumulator, comment) => mergeReviewComments(accumulator, comment), []);
 }
 
 export default function ReviewPage() {
@@ -27,16 +59,17 @@ export default function ReviewPage() {
   const [drawMode, setDrawMode] = useState(false);
   const [draftRects, setDraftRects] = useState<ReviewRect[]>([]);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const currentMediaUid = useMemo(() => mediaUid.trim(), [mediaUid]);
 
   const fetchComments = useCallback(async () => {
-    if (!mediaUid) return;
+    if (!currentMediaUid) return;
 
     setLoading(true);
     setError(null);
     try {
-      const result = await api.reviewComments(mediaUid);
+      const result = await api.reviewComments(currentMediaUid);
       if (result.ok) {
-        setComments(result.comments);
+        setComments(normalizeReviewComments(result.comments));
       } else {
         setError(result.error);
       }
@@ -45,29 +78,52 @@ export default function ReviewPage() {
     } finally {
       setLoading(false);
     }
-  }, [api, mediaUid]);
+  }, [api, currentMediaUid]);
 
   useEffect(() => {
     void fetchComments();
   }, [fetchComments]);
 
+  // Live review updates are additive to the existing fetch path: if the socket
+  // is available, merge new comment payloads immediately and keep the fetch as
+  // the reconciliation/fallback path.
+  useEffect(() => {
+    if (!currentMediaUid) return;
+
+    const echo = getEchoClient();
+    if (!echo) return;
+
+    const channelName = `review.media.${currentMediaUid}`;
+    const channel = echo.private(channelName);
+
+    channel.listen(".review-comment.updated", (event: ReviewCommentUpdatedEvent) => {
+      if (event.mediaUid !== currentMediaUid) return;
+
+      setComments((current) => mergeReviewComments(current, event.comment));
+    });
+
+    return () => {
+      echo.leave(channelName);
+    };
+  }, [currentMediaUid]);
+
   const handleAddComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!body.trim()) return;
+    if (!body.trim() || !currentMediaUid) return;
 
     const commentTimecode = useCurrentTime && playerRef.current
       ? Math.round(playerRef.current.currentTime * 100) / 100
       : timecode;
 
     try {
-      const result = await api.createReviewComment(mediaUid, {
+      const result = await api.createReviewComment(currentMediaUid, {
         body: body.trim(),
         timecodeSeconds: commentTimecode,
         annotation: draftRects.length > 0 ? draftRects : undefined
       });
 
       if (result.ok) {
-        setComments((prev) => [...prev, result.comment].sort((a, b) => a.timecodeSeconds - b.timecodeSeconds));
+        setComments((prev) => mergeReviewComments(prev, result.comment));
         setBody("");
         setTimecode(0);
         setDraftRects([]);
@@ -85,7 +141,7 @@ export default function ReviewPage() {
     try {
       const result = await api.updateReviewComment(commentId, { resolved: !currentResolved });
       if (result.ok) {
-        setComments((prev) => prev.map((comment) => (comment.id === commentId ? result.comment : comment)));
+        setComments((prev) => mergeReviewComments(prev.filter((comment) => comment.id !== commentId), result.comment));
       } else {
         setError(result.error);
       }
@@ -143,11 +199,11 @@ export default function ReviewPage() {
               <p className="field-note">يستخدم نفس الحقل لتشغيل المادة وربط تعليقات المراجعة.</p>
             </article>
 
-            {mediaUid ? (
+            {currentMediaUid ? (
               <article className="panel">
                 <div className="media-frame">
                   <MediaPlayer
-                    path={mediaUid}
+                    path={currentMediaUid}
                     onReady={(el) => {
                       playerRef.current = el;
                     }}
@@ -223,7 +279,7 @@ export default function ReviewPage() {
                 />
               </label>
 
-              <button type="submit" className="button button-primary" disabled={!body.trim() || loading}>
+              <button type="submit" className="button button-primary" disabled={!body.trim() || !currentMediaUid || loading}>
                 {loading ? "جار الإضافة" : "إضافة التعليق"}
               </button>
             </form>
