@@ -57,6 +57,7 @@
     "verify:cloud-deploy": "node scripts/verify-cloud-deploy.mjs",
     "verify:infra": "node scripts/verify-infra-config.mjs",
     "verify:repo-hygiene": "node scripts/verify-repo-hygiene.mjs",
+    "smoke:watermark": "node scripts/smoke-watermark-ffmpeg.mjs",
     "docker:config": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml config",
     "docker:config:laravel-next": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.laravel-next.yml config",
     "docker:config:postgres": "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.postgres.yml config",

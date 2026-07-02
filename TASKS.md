@@ -43,7 +43,7 @@
 
 **P2 — قانوني متبقٍّ:** §7 Live Collaboration — بدأ كأساس presence heartbeat؛ يبقى WebSocket/Reverb الحقيقي والتحرير المتزامن.
   - ✅ أُنجِز هذه الجلسة (2026-07-01): §2 (تنظيف مجلدات · E2E+audit) · §22 ODBC read-repository وCRUD مقيد · §5 لوحة أمان (endpoints + حفظ دائم) · §7 Visual Review (تعليقات/annotation/مقارنة/روابط خارجية) · §7 Live Collaboration شريحة presence · **مشغّل وسائط قانوني + بثّ HTTP Range** (§3/§7 enabler — حلّ منع التشغيل المحلي).
-  - ⏳ عالق على عتاد حقيقي (كود مكتمل): §1 GPU · §2 K8s dry-run (kubectl context) · §3 علامة مائية (ffmpeg smoke).
+  - ⏳ عالق على عتاد/بيئة خارجية (كود مكتمل): §1 GPU · §2 K8s dry-run (kubectl context).
 
 **P3 — مؤجّل:** §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
 
@@ -110,11 +110,11 @@
   - الملفات: `archive-app/src/components/media/VideoPlayer.tsx` + `archive-app/src/pages/DetailPage.tsx` + `archive-app/src/components/media/VideoPlayer.test.tsx`.
   - المصدر: new_tail (F19, F20).
 
-- [~] `[P2]` ⏱️M **علامة مائية + تصدير SRT/VTT/TTML للفيديو** — ffmpeg overlay + ملفات ترجمة مع الفيديو.
+- [x] `[P2]` ⏱️M **علامة مائية + تصدير SRT/VTT/TTML للفيديو** — ffmpeg overlay + ملفات ترجمة مع الفيديو.
   - ✅ شريحة Laravel watermark overlay (2026-07-01): `RealMediaProcessor` صار يدعم watermark اختياري في transcode عبر `options.watermark` أو إعدادات `MEDIA_WATERMARK_*`، ويولّد أمر ffmpeg بمدخل ثانٍ و`filter_complex` مع مواضع `top-left/top-right/bottom-left/bottom-right/center` وopacity/margin مضبوطين. التحقق: RED ثم GREEN لـ `RealMediaProcessorTest`، وفلتر `Media` داخل Docker مرّ: 22 اختبار / 85 assertion.
   - ✅ شريحة Next media job preset (2026-07-01): نموذج `/media/jobs` صار يرسل `sourcePath` وخيارات `options.watermark` عند اختيار عملية `transcode`، مع حقول path/position/opacity/margin، ويدعم `atSec` للـ thumbnail ويعرض خيارات job المخزّنة في القائمة للمراجعة.
-  - الملفات: `archive-laravel/app/Services/Media/RealMediaProcessor.php`, `archive-laravel/config/media.php`, `archive-laravel/.env.example`, `archive-laravel/app/Providers/AppServiceProvider.php`, `archive-laravel/tests/Unit/RealMediaProcessorTest.php`، والمسار القديم `archive-server/src/media/*` بقي للميراث/Node.
-  - المتبقي لإغلاقها نهائياً: smoke حي بـ ffmpeg على ملف فيديو حقيقي مع asset علامة مائية فعلي.
+  - ✅ smoke حي (2026-07-02): أضيف `scripts/smoke-watermark-ffmpeg.mjs` وأمر `pnpm run smoke:watermark`؛ يولّد فيديو MP4 قصير وPNG علامة مائية فعليين عبر ffmpeg، يركّب overlay بنفس صيغة `filter_complex`، يفحص الناتج عبر ffprobe، ويقارن crop منطقة العلامة للتأكد من أثر overlay. التحقق المحلي: `outputSize=43182`, `cropDifference=95.83`.
+  - الملفات: `archive-laravel/app/Services/Media/RealMediaProcessor.php`, `archive-laravel/config/media.php`, `archive-laravel/.env.example`, `archive-laravel/app/Providers/AppServiceProvider.php`, `archive-laravel/tests/Unit/RealMediaProcessorTest.php`, `scripts/smoke-watermark-ffmpeg.mjs`, `package.json`، والمسار القديم `archive-server/src/media/*` بقي للميراث/Node.
   - المصدر: dev-roadmap (P2-05, P2-06).
 
 - [~] `[P2]` ⏱️L **مشغّل وسائط قانوني في Next + بثّ HTTP Range (حلّ التشغيل المحلي + كل أماكن التخزين)** — يستبدل مشغّل archive-app المجمّد ويحلّ منع المتصفح لتشغيل `file://`.
