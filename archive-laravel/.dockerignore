@@ -1,0 +1,20 @@
+# Never bake local env/secrets into the image — compose provides runtime env.
+# (php artisan serve strips non-whitelisted env vars from the web process, so a
+# baked .env silently wins over compose env — this caused the sqlite-vs-pgsql bug.)
+.env
+.env.*
+!.env.example
+
+# Rebuilt inside the image by composer install
+vendor
+
+# Local-only state
+node_modules
+.git
+storage/logs
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+database/database.sqlite
+tests
+.phpunit.result.cache

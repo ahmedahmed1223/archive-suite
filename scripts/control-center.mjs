@@ -369,6 +369,8 @@ function deployCanonical() {
   if (isPlaceholder(env.REVERB_APP_SECRET)) updates.REVERB_APP_SECRET = genSecret(32);
   // Laravel expects APP_KEY as base64:<32 random bytes> (same as `php artisan key:generate`).
   if (isPlaceholder(env.LARAVEL_APP_KEY)) updates.LARAVEL_APP_KEY = `base64:${randomBytes(32).toString("base64")}`;
+  const generatedAdminPassword = isPlaceholder(env.ADMIN_PASSWORD) ? genPassword() : null;
+  if (generatedAdminPassword) updates.ADMIN_PASSWORD = generatedAdminPassword;
   // Keep the legacy DATABASE_URL in sync so legacy Prisma commands still connect.
   if (updates.POSTGRES_PASSWORD && (env.DATABASE_URL || "").includes("CHANGE_ME_POSTGRES_PASSWORD")) {
     updates.DATABASE_URL = env.DATABASE_URL.replaceAll("CHANGE_ME_POSTGRES_PASSWORD", updates.POSTGRES_PASSWORD);
@@ -388,6 +390,12 @@ function deployCanonical() {
   log(`  API health:         http://localhost:${e.NEXT_PUBLIC_PORT || "3000"}/api/v1/health (proxied to Laravel)`);
   log(`  Realtime (Reverb):  ws://localhost:${e.REVERB_SERVER_PUBLISHED_PORT || "8080"}`);
   log(`  Caddy (80/443):     http://${e.DOMAIN || "localhost"}`);
+  if (generatedAdminPassword) {
+    log("");
+    ok(`Login: ${e.ADMIN_EMAIL || "admin@example.com"} / ${C.b}${generatedAdminPassword}${C.x}  ${C.d}(store it now — shown once)${C.x}`);
+  } else {
+    log(`  Login:              ${e.ADMIN_EMAIL || "admin@example.com"} (existing password unchanged)`);
+  }
   return 0;
 }
 

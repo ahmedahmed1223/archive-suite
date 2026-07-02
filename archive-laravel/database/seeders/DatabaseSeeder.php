@@ -15,11 +15,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // firstOrCreate: safe to run on every deploy/restart, never duplicates.
+        User::query()->firstOrCreate(
+            ['email' => env('ADMIN_EMAIL', 'test@example.com')],
+            [
+                'name' => env('ADMIN_NAME', 'Archive Admin'),
+                'password' => env('ADMIN_PASSWORD', 'password'),
+            ],
+        );
     }
 }
