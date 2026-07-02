@@ -2,12 +2,13 @@
 
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import AppShell from "@/components/AppShell";
+import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ApiEnvelope } from "@/lib/archive-api";
 
-// Simple SVG icons as components
 function IconServer() {
   return (
-    <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <svg className="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
       <rect x="2" y="2" width="20" height="8" rx="1" strokeWidth="2" />
       <rect x="2" y="14" width="20" height="8" rx="1" strokeWidth="2" />
       <line x1="6" y1="6" x2="6" y2="6.01" strokeWidth="2" />
@@ -16,9 +17,9 @@ function IconServer() {
   );
 }
 
-function IconWifi() {
+function IconSignal() {
   return (
-    <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <svg className="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
       <path d="M5 12.55a11 11 0 0 1 14.08 0" strokeWidth="2" />
       <path d="M1.42 9a16 16 0 0 1 21.16 0" strokeWidth="2" />
       <line x1="12" y1="20" x2="12" y2="20.01" strokeWidth="2" />
@@ -26,9 +27,9 @@ function IconWifi() {
   );
 }
 
-function IconWifiOff() {
+function IconSignalOff() {
   return (
-    <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <svg className="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
       <line x1="1" y1="1" x2="23" y2="23" strokeWidth="2" />
       <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" strokeWidth="2" />
       <path d="M5 12.55a10.94 10.94 0 0 1 5.64-2.64" strokeWidth="2" />
@@ -40,7 +41,7 @@ function IconWifiOff() {
 
 function IconRefresh() {
   return (
-    <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <svg className="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
       <polyline points="23 4 23 10 17 10" strokeWidth="2" />
       <path d="M20.49 15a9 9 0 1 1-2-8.83" strokeWidth="2" />
     </svg>
@@ -49,7 +50,7 @@ function IconRefresh() {
 
 function IconAlertCircle() {
   return (
-    <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <svg className="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
       <circle cx="12" cy="12" r="10" strokeWidth="2" />
       <line x1="12" y1="8" x2="12" y2="12" strokeWidth="2" />
       <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2" />
@@ -71,7 +72,7 @@ interface StatusState {
 }
 
 function formatUptime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "—";
+  if (!Number.isFinite(seconds) || seconds < 0) return "-";
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -80,52 +81,37 @@ function formatUptime(seconds: number): string {
   return `${m}د`;
 }
 
-function formatDateTime(iso: string): string {
-  if (!iso) return "—";
+function formatDateTime(date: Date | null): string {
+  if (!date) return "-";
   try {
     return new Intl.DateTimeFormat("ar-SA", {
       dateStyle: "short",
-      timeStyle: "medium",
-    }).format(new Date(iso));
+      timeStyle: "medium"
+    }).format(date);
   } catch {
-    return iso;
+    return date.toISOString();
   }
 }
 
-interface MetricCardProps {
+function HealthMetric({
+  icon,
+  label,
+  value,
+  tone = "neutral"
+}: Readonly<{
   icon: ReactNode;
   label: string;
-  value: string;
-  isOnline?: boolean;
-}
-
-function MetricCard({ icon, label, value, isOnline }: MetricCardProps) {
-  const colorVar =
-    isOnline === true
-      ? "var(--color-status-success)"
-      : isOnline === false
-        ? "var(--color-status-error)"
-        : "var(--color-text-tertiary)";
-
+  value: ReactNode;
+  tone?: "neutral" | "success" | "danger" | "accent";
+}>) {
   return (
-    <div className="panel p-4 flex items-center gap-3 min-h-24">
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border-2"
-        style={{ borderColor: colorVar, color: colorVar }}
-      >
-        {icon}
+    <article className="health-metric" data-tone={tone}>
+      <div className="health-metric__icon">{icon}</div>
+      <div className="health-metric__body">
+        <span>{label}</span>
+        <strong dir="auto">{value}</strong>
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-gray-600 dark:text-gray-400">{label}</p>
-        <p
-          className="mt-1 text-sm font-semibold break-all font-mono"
-          dir="ltr"
-          style={{ textAlign: "start" }}
-        >
-          {value}
-        </p>
-      </div>
-    </div>
+    </article>
   );
 }
 
@@ -134,10 +120,10 @@ export default function StatusPage() {
     status: "loading",
     health: null,
     lastChecked: null,
-    error: null,
+    error: null
   });
   const apiRef = useRef(createArchiveApiClient());
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const checkHealth = useCallback(async () => {
     setState((prev) => ({ ...prev, status: "loading" }));
@@ -149,16 +135,16 @@ export default function StatusPage() {
           status: "error",
           health: null,
           lastChecked: new Date(),
-          error: response.error || "فشل الاتصال بالخادم",
+          error: response.error || "فشل الاتصال بالخادم"
         });
         return;
       }
 
       setState({
         status: "success",
-        health: response as unknown as HealthResponse,
+        health: response,
         lastChecked: new Date(),
-        error: null,
+        error: null
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "خطأ غير معروف";
@@ -166,12 +152,11 @@ export default function StatusPage() {
         status: "error",
         health: null,
         lastChecked: new Date(),
-        error: `خطأ في الاتصال: ${message}`,
+        error: `خطأ في الاتصال: ${message}`
       });
     }
   }, []);
 
-  // Initial fetch and auto-refresh every 30 seconds
   useEffect(() => {
     void checkHealth();
 
@@ -187,133 +172,98 @@ export default function StatusPage() {
   }, [checkHealth]);
 
   const isOnline = state.status === "success";
+  const statusTone = isOnline ? "success" : state.status === "loading" ? "accent" : "danger";
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
-      {/* Hero section */}
-      <section className="space-y-3">
-        <div className="flex items-start gap-3">
-          <div className="h-8 w-8 mt-1 shrink-0" style={{ color: "var(--color-brand-primary)" }}>
-            <IconServer />
+    <AppShell subtitle="حالة النظام" navLabel="حالة النظام" contentClassName="observability-content">
+      <PageToolbar
+        eyebrow={<span className="badge">مراقبة تشغيلية</span>}
+        title="حالة النظام"
+        description="سطح سريع لمراقبة اتصال Laravel، محرك البيانات، ومدة التشغيل مع تحديث تلقائي كل 30 ثانية."
+        meta={
+          <>
+            <span className={`badge ${isOnline ? "status-success" : "status-error"}`}>
+              {isOnline ? "متصل" : state.status === "loading" ? "جار الفحص" : "غير متصل"}
+            </span>
+            <span className="badge">آخر فحص: {formatDateTime(state.lastChecked)}</span>
+          </>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => void checkHealth()}
+            disabled={state.status === "loading"}
+            className="button button-secondary"
+            aria-label="فحص الحالة الآن"
+          >
+            <span className={state.status === "loading" ? "status-refresh-icon is-spinning" : "status-refresh-icon"}>
+              <IconRefresh />
+            </span>
+            {state.status === "loading" ? "جاري الفحص" : "فحص الآن"}
+          </button>
+        }
+      />
+
+      <section className="system-health-strip" data-tone={statusTone} aria-live="polite">
+        <div className="system-health-strip__icon">{isOnline ? <IconSignal /> : <IconSignalOff />}</div>
+        <div>
+          <strong>{isOnline ? "الاتصال بالخادم مستقر" : state.status === "loading" ? "يتم فحص الاتصال" : "الاتصال بالخادم متوقف"}</strong>
+          <p>{state.error || "يعرض هذا السطح صحة الواجهة الخلفية الحالية ونبض الاتصال المباشر."}</p>
+        </div>
+      </section>
+
+      <div className="health-metric-grid">
+        <HealthMetric icon={<IconServer />} label="الخادم الخلفي" value={state.health?.backend || "محلي"} tone={isOnline ? "success" : "neutral"} />
+        <HealthMetric icon={<IconServer />} label="محرك البيانات" value={state.health?.engine || "-"} tone="accent" />
+        <HealthMetric
+          icon={<IconRefresh />}
+          label="مدة التشغيل"
+          value={state.health?.uptimeSec != null ? formatUptime(state.health.uptimeSec) : "-"}
+        />
+      </div>
+
+      {state.error ? (
+        <section className="state-banner state-banner-error" role="alert">
+          <strong>تعذر إكمال فحص الصحة</strong>
+          <p>{state.error}</p>
+        </section>
+      ) : null}
+
+      <section className="panel status-console" aria-label="تفاصيل الفحص">
+        <div className="panel-title-row">
+          <div>
+            <h2>تفاصيل الفحص</h2>
+            <p>تعتمد هذه البيانات على نقطة `/api/v1/health` بدون تغيير في عقد الواجهة الخلفية.</p>
           </div>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              حالة النظام
-            </h1>
-            <p className="mt-1 text-gray-600 dark:text-gray-400">
-              مراقبة الاتصال بالخادم الخلفي وصحة قاعدة البيانات.
-            </p>
+          <span className="badge">تحديث تلقائي</span>
+        </div>
+        <div className="kv-grid">
+          <div className="kv-item">
+            <strong>حالة الطلب</strong>
+            <span>{state.status === "loading" ? "قيد التنفيذ" : isOnline ? "ناجح" : "فشل"}</span>
+          </div>
+          <div className="kv-item">
+            <strong>إيقاع الفحص</strong>
+            <span>30 ثانية</span>
+          </div>
+          <div className="kv-item">
+            <strong>آخر تحديث</strong>
+            <span>{formatDateTime(state.lastChecked)}</span>
           </div>
         </div>
       </section>
 
-      {/* Connection status banner */}
-      <div className="panel p-4 flex items-center gap-3">
-        <div
-          className="h-5 w-5"
-          style={{
-            color: isOnline
-              ? "var(--color-status-success)"
-              : "var(--color-status-error)",
-          }}
-        >
-          {isOnline ? <IconWifi /> : <IconWifiOff />}
-        </div>
-        <div className="flex-1">
-          <p
-            className="text-sm font-semibold"
-            style={{
-              color: isOnline
-                ? "var(--color-status-success)"
-                : "var(--color-status-error)",
-            }}
-          >
-            {isOnline ? "متصل بالخادم" : "غير متصل"}
-          </p>
-          {state.lastChecked && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              آخر فحص: {formatDateTime(state.lastChecked.toISOString())}
-            </p>
-          )}
-        </div>
-        <button
-          onClick={() => void checkHealth()}
-          disabled={state.status === "loading"}
-          className="button button-secondary shrink-0 gap-2"
-          aria-label="فحص الحالة الآن"
-        >
-          <div
-            className={`h-4 w-4 ${state.status === "loading" ? "animate-spin" : ""}`}
-          >
-            <IconRefresh />
+      <section className="panel">
+        <div className="panel-title-row">
+          <div>
+            <h2>إشارات المتابعة</h2>
+            <p>استخدم سجل الأخطاء والتحليلات عند ظهور انقطاع أو تباطؤ للتأكد من أثره على تجربة المستخدم.</p>
           </div>
-          <span className="hidden sm:inline">
-            {state.status === "loading" ? "جاري الفحص…" : "فحص الآن"}
-          </span>
-        </button>
-      </div>
-
-      {/* Error state banner */}
-      {state.error && (
-        <div
-          className="panel p-4 flex gap-3 text-sm"
-          style={{
-            borderLeftColor: "var(--color-status-error)",
-            backgroundColor: "color-mix(in oklab, var(--color-status-error) 10%, transparent)",
-            color: "var(--color-status-error)",
-          }}
-          role="alert"
-        >
-          <div className="h-5 w-5 shrink-0 mt-0.5">
-            <IconAlertCircle />
-          </div>
-          <p>{state.error}</p>
+          <a className="button button-secondary" href="/errors">
+            سجل الأخطاء
+          </a>
         </div>
-      )}
-
-      {/* Metrics grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <MetricCard
-          icon={
-            <div className="h-5 w-5">
-              <IconServer />
-            </div>
-          }
-          label="نوع المحرك"
-          value={state.health?.engine || "—"}
-        />
-        <MetricCard
-          icon={
-            <div className="h-5 w-5">
-              <IconServer />
-            </div>
-          }
-          label="الخادم الخلفي"
-          value={state.health?.backend || "محلي"}
-          isOnline={isOnline}
-        />
-        <MetricCard
-          icon={
-            <div className="h-5 w-5">
-              <IconRefresh />
-            </div>
-          }
-          label="مدة التشغيل"
-          value={
-            state.health?.uptimeSec != null
-              ? formatUptime(state.health.uptimeSec)
-              : "—"
-          }
-        />
-      </div>
-
-      {/* Status indicator */}
-      <div className="text-center py-4 text-xs text-gray-500 dark:text-gray-400">
-        <p>التحديث التلقائي كل 30 ثانية</p>
-        {state.lastChecked && (
-          <p>آخر فحص: {formatDateTime(state.lastChecked.toISOString())}</p>
-        )}
-      </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }
