@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Events\ReviewCommentBroadcasted;
 use App\Models\ReviewComment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -86,6 +88,8 @@ class ReviewCommentsApiTest extends TestCase
 
     public function test_create_persists_comment_with_valid_input(): void
     {
+        Event::fake([ReviewCommentBroadcasted::class]);
+
         $accessToken = $this->login();
 
         $response = $this->postJson("/api/v1/media/{$this->mediaUid}/review-comments", [
@@ -108,6 +112,18 @@ class ReviewCommentsApiTest extends TestCase
             'body' => 'Test comment at 5 seconds',
             'resolved' => false,
         ]);
+
+        Event::assertDispatched(ReviewCommentBroadcasted::class, function (ReviewCommentBroadcasted $event) use ($response): bool {
+            return $event->mediaUid === $this->mediaUid
+                && $event->broadcastAs() === 'review-comment.updated'
+                && $event->comment['id'] === $response->json('comment.id')
+                && $event->comment['mediaUid'] === $this->mediaUid
+                && $event->comment['body'] === 'Test comment at 5 seconds'
+                && in_array('private-review.media.'.$this->mediaUid, array_map(
+                    fn ($channel) => $channel->name,
+                    $event->broadcastOn()
+                ), true);
+        });
     }
 
     public function test_create_rejects_empty_body(): void
@@ -155,6 +171,8 @@ class ReviewCommentsApiTest extends TestCase
 
     public function test_update_toggles_resolved(): void
     {
+        Event::fake([ReviewCommentBroadcasted::class]);
+
         $accessToken = $this->login();
 
         $comment = ReviewComment::query()->create([
@@ -179,6 +197,17 @@ class ReviewCommentsApiTest extends TestCase
             'id' => $comment->id,
             'resolved' => true,
         ]);
+
+        Event::assertDispatched(ReviewCommentBroadcasted::class, function (ReviewCommentBroadcasted $event) use ($comment): bool {
+            return $event->mediaUid === $this->mediaUid
+                && $event->broadcastAs() === 'review-comment.updated'
+                && $event->comment['id'] === $comment->id
+                && $event->comment['resolved'] === true
+                && in_array('private-review.media.'.$this->mediaUid, array_map(
+                    fn ($channel) => $channel->name,
+                    $event->broadcastOn()
+                ), true);
+        });
     }
 
     public function test_update_edits_body(): void

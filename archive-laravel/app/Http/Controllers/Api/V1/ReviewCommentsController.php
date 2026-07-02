@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\ReviewCommentBroadcasted;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreReviewCommentRequest;
 use App\Http\Requests\UpdateReviewCommentRequest;
 use App\Models\ReviewComment;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 class ReviewCommentsController extends Controller
@@ -39,7 +41,11 @@ class ReviewCommentsController extends Controller
             'resolved' => false,
         ]);
 
-        return response()->json(['ok' => true, 'comment' => $this->formatComment($comment)], 201);
+        $formattedComment = $this->formatComment($comment);
+
+        Event::dispatch(new ReviewCommentBroadcasted($mediaUid, $formattedComment));
+
+        return response()->json(['ok' => true, 'comment' => $formattedComment], 201);
     }
 
     public function update(string $id, UpdateReviewCommentRequest $request): JsonResponse
@@ -57,7 +63,11 @@ class ReviewCommentsController extends Controller
 
         $comment->save();
 
-        return response()->json(['ok' => true, 'comment' => $this->formatComment($comment)]);
+        $formattedComment = $this->formatComment($comment);
+
+        Event::dispatch(new ReviewCommentBroadcasted($comment->media_uid, $formattedComment));
+
+        return response()->json(['ok' => true, 'comment' => $formattedComment]);
     }
 
     /**

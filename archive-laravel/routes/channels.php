@@ -20,3 +20,16 @@ Broadcast::channel('collaboration.room.{roomKey}', function ($request, string $r
         'name' => $user->name ?: $user->email,
     ];
 });
+
+Broadcast::channel('review.media.{mediaUid}', function ($request, string $mediaUid) {
+    $user = $request->attributes->get('archive_user');
+
+    if (! $user instanceof User) {
+        return false;
+    }
+
+    return [
+        'id' => (string) $user->id,
+        'name' => $user->name ?: $user->email,
+    ];
+});
