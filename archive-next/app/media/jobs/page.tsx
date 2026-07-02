@@ -1,37 +1,32 @@
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import PageToolbar from "@/components/PageToolbar";
 import { MediaJobLookup } from "./MediaJobLookup";
 import { MediaJobsList } from "./MediaJobsList";
 import styles from "./jobs.module.css";
 
 export default function MediaJobsPage() {
   return (
-    <main className="shell">
-      <AppHeader subtitle="مسار الوسائط" />
+    <AppShell subtitle="مسار الوسائط" contentClassName={`stack ${styles.jobsContent}`}>
+      <PageToolbar
+        title="مهام الوسائط"
+        description="فحص job منفرد، إنشاء مهام جديدة، ومتابعة قائمة المعالجة من خلال Laravel queue."
+        meta={
+          <>
+            <span className="badge">فحص مباشر</span>
+            <span className="badge">إنشاء jobs</span>
+            <span className="badge">مراقبة queue</span>
+          </>
+        }
+      />
 
-      <section className={`content stack ${styles.jobsContent}`} aria-label="مهام الوسائط في Laravel">
-        <div className="hero">
-          <span className="badge">معالجة وسائط</span>
-          <h1>مهام الوسائط عبر Laravel.</h1>
-          <p>
-            تابع عمليات التحويل، اللقطات، والتفريغ من مكان واحد مع عرض واضح
-            لحالة الطوابير والخيارات المرسلة لكل مهمة.
-          </p>
-          <div className="record-meta" aria-label="ملخص التنفيذ">
-            <span className="badge">واجهة متابعة</span>
-            <span className="badge">Laravel queue</span>
-            <span className="badge">عميل API موحد</span>
-          </div>
+      <div className={`split-layout ${styles.operationsConsole}`} aria-label="أدوات media jobs">
+        <div className={styles.creationPanel}>
+          <MediaJobLookup />
         </div>
-
-        <div className={styles.operationsConsole} aria-label="أدوات media jobs">
-          <div className={styles.creationPanel}>
-            <MediaJobLookup />
-          </div>
-          <div className={styles.jobsTablePanel}>
-            <MediaJobsList />
-          </div>
+        <div className={styles.jobsTablePanel}>
+          <MediaJobsList />
         </div>
-      </section>
-    </main>
+      </div>
+    </AppShell>
   );
 }
