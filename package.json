@@ -8,6 +8,7 @@
   "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b",
   "pnpm": {
     "ignoredBuiltDependencies": [
+      "@sentry/cli",
       "@firebase/util",
       "protobufjs"
     ]
@@ -51,6 +52,8 @@
     "audit:ui:headed": "pnpm --filter @archive/app run audit:ui:headed",
     "audit:ui:server": "pnpm --filter @archive/app run audit:ui:server",
     "audit:all": "pnpm run verify && pnpm run audit:ui",
+    "ci": "pnpm run release:verify",
+    "ci:docker": "pnpm run docker:config && docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml build next",
     "security:baseline": "node scripts/verify-security-baseline.mjs",
     "security:audit": "node scripts/verify-dependency-audit.mjs",
     "verify:api-contracts": "node scripts/verify-api-contracts.mjs",

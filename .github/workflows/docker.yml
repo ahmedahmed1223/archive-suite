@@ -1,0 +1,101 @@
+name: Docker
+
+on:
+  pull_request:
+    paths:
+      - ".dockerignore"
+      - ".github/workflows/docker.yml"
+      - "archive-next/**"
+      - "archive-laravel/**"
+      - "archive-server/docker-compose.yml"
+      - "archive-server/docker-compose.laravel-next.yml"
+      - "archive-server/deploy/Caddyfile"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
+  push:
+    branches:
+      - master
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  NEXT_IMAGE: ghcr.io/${{ github.repository }}/masar-next
+  LARAVEL_IMAGE: ghcr.io/${{ github.repository }}/masar-laravel
+
+jobs:
+  build:
+    name: Build default Docker stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Render default Compose config
+        run: docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml config
+
+      - name: Build Next image from default Compose
+        run: docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml build next
+
+  publish:
+    name: Publish images to GHCR
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: build
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tags
+        id: meta
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
+            version="manual-${GITHUB_SHA::12}"
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push Next image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: archive-next/Dockerfile
+          push: true
+          tags: |
+            ${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}
+            ${{ env.NEXT_IMAGE }}:latest
+          build-args: |
+            ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1
+            SENTRY_ENVIRONMENT=production
+            SENTRY_RELEASE=${{ steps.meta.outputs.version }}
+
+      - name: Build and push Laravel image
+        uses: docker/build-push-action@v6
+        with:
+          context: archive-laravel
+          file: archive-laravel/Dockerfile.worker
+          push: true
+          tags: |
+            ${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}
+            ${{ env.LARAVEL_IMAGE }}:latest

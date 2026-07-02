@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  laravel-next:
+    name: Laravel + Next verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_RELEASE: ${{ github.sha }}
+      SENTRY_ENVIRONMENT: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify cutover defaults
+        run: pnpm run verify:cutover
+
+      - name: Verify API contracts
+        run: pnpm run verify:api-contracts
+
+      - name: Typecheck Next.js
+        run: pnpm run typecheck:next
+
+      - name: Build Next.js
+        run: pnpm run build:next
+
+      - name: Verify repository hygiene
+        run: pnpm run verify:repo-hygiene
+
+      - name: Verify infrastructure config
+        run: pnpm run verify:infra
+
+      - name: Run Laravel tests
+        run: pnpm run verify:laravel
+
+      - name: Run security baseline
+        run: pnpm run security:baseline
+
+      - name: Run dependency audit
+        run: pnpm run security:audit
+
+      - name: Verify release wiring
+        run: node scripts/verify-release-readiness.mjs

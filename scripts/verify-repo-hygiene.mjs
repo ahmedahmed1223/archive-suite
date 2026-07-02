@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const GIT_SAFE_ROOT = ROOT.replace(/\\/g, "/");
 
 const ignoredDirectoryNames = new Set([
   ".git",
@@ -88,7 +89,7 @@ const forbiddenTrackedPrefixes = [
   ".agents/",
 ];
 
-const trackedFiles = execSync("git ls-files", { cwd: ROOT, encoding: "utf8" })
+const trackedFiles = execFileSync("git", ["-c", `safe.directory=${GIT_SAFE_ROOT}`, "ls-files"], { cwd: ROOT, encoding: "utf8" })
   .split("\n")
   .filter(Boolean);
 

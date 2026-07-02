@@ -54,6 +54,8 @@
 
 - [x] **تصحيح مسار Docker الافتراضي لعرض مسار / Masar** — حُوّل `archive-server/docker-compose.yml` من PocketBase + Vite SPA إلى Laravel + Next.js كمسار افتراضي، وضُبط Caddy على `next:3000`، وأصبحت صورة `archive-next/Dockerfile` تمرر `ARCHIVE_API_BASE_URL` أثناء build وتنسخ `public/` حتى تظهر أصول Masar داخل الحاوية. أضيفت متغيرات Reverb الناقصة إلى `.env.example` وفحوص ثابتة تمنع رجوع Docker الافتراضي إلى `archive-app` legacy.
 
+- [x] **إضافة CI/CD وSentry للمسار القانوني** — أضيفت GitHub Actions كبوابة CI/CD افتراضية (`ci.yml`, `docker.yml`) مع أوامر root `pnpm run ci` و`pnpm run ci:docker`. أضيف تكامل Sentry اختياري لـ Next.js (`@sentry/nextjs`, instrumentation, global error) وLaravel (`sentry/sentry-laravel`, config, exception integration)، مع تمرير متغيرات Docker وترك الإرسال معطلاً بدون DSN.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.

@@ -107,6 +107,31 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 تظل وصفات PocketBase/Node/Vite القديمة متاحة فقط كمسارات legacy صريحة للمقارنة أو fallback.
 
+## CI/CD والمراقبة
+
+اعتمد المشروع **GitHub Actions** كمسار CI/CD الافتراضي:
+
+- `.github/workflows/ci.yml` — تحقق Laravel + Next، عقود API، build، hygiene، واختبارات Laravel.
+- `.github/workflows/docker.yml` — تحقق Compose الافتراضي، بناء صورة Next، ونشر اختياري إلى GHCR عند tags أو تشغيل يدوي.
+
+تكامل Sentry اختياري ولا يرسل أي أحداث بدون DSN. لإرسال أخطاء الواجهة والخادم اضبط:
+
+```bash
+SENTRY_DSN=
+SENTRY_LARAVEL_DSN=
+NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_ENVIRONMENT=production
+SENTRY_RELEASE=<git-sha-or-version>
+```
+
+ولرفع source maps من GitHub Actions أضف أسرار المستودع:
+
+```text
+SENTRY_ORG
+SENTRY_PROJECT
+SENTRY_AUTH_TOKEN
+```
+
 ## النشر الموجّه (legacy)
 
 `Setup-Archive.bat` / `setup.sh` ينشران الآن الحزمة القانونية Laravel + Next افتراضياً. معالج النشر legacy القديم (Node/SPA) متاح كأمر صريح فقط:

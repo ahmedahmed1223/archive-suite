@@ -50,6 +50,9 @@ assert.ok(laravelComposer.scripts?.setup, "Laravel composer setup should exist")
 assert.ok(!laravelComposer.scripts.setup.some((step) => step.includes("npm run build")), "Laravel setup should not build a Laravel Vite frontend");
 assert.ok(!laravelComposer.scripts.dev.some((step) => step.includes("npm run dev") || step.includes("vite")), "Laravel composer dev should not start a Vite frontend");
 assert.ok(!laravelPkg.devDependencies?.vite, "Laravel npm package should not depend on Vite after cutover");
+assert.ok(rootPkg.pnpm?.ignoredBuiltDependencies?.includes("@sentry/cli"), "pnpm should make the Sentry CLI build-script policy explicit");
+assert.ok(nextPkg.dependencies?.["@sentry/nextjs"], "Next.js app should depend on @sentry/nextjs");
+assert.ok(laravelComposer.require?.["sentry/sentry-laravel"], "Laravel app should depend on sentry/sentry-laravel");
 
 for (const script of [
   "security:baseline",
@@ -57,6 +60,8 @@ for (const script of [
   "verify:cutover",
   "verify:laravel",
   "verify:laravel-next",
+  "ci",
+  "ci:docker",
   "release:verify"
 ]) {
   assert.ok(rootPkg.scripts?.[script], `root package.json should expose ${script}`);
@@ -77,12 +82,22 @@ assertExcludes("archive-server/Dockerfile.server", "package-lock.json");
 assertExcludes("archive-server/Dockerfile.server", "npm ci");
 
 assertIncludes("archive-next/next.config.mjs", "ARCHIVE_API_BASE_URL");
+assertIncludes("archive-next/next.config.mjs", "withSentryConfig");
+assertIncludes("archive-next/instrumentation.ts", "captureRequestError");
+assertIncludes("archive-next/instrumentation-client.ts", "NEXT_PUBLIC_SENTRY_DSN");
+assertIncludes("archive-next/app/global-error.tsx", "Sentry.captureException");
+assertIncludes("archive-laravel/bootstrap/app.php", "Integration::handles");
+assertIncludes("archive-laravel/config/sentry.php", "SENTRY_LARAVEL_DSN");
+assertIncludes("archive-laravel/Dockerfile.worker", "libcurl4-openssl-dev");
+assertIncludes("archive-laravel/Dockerfile.worker", "docker-php-ext-install curl mbstring zip pdo pdo_pgsql");
 assertIncludes("archive-next/Dockerfile", "COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./");
 assertIncludes("archive-next/Dockerfile", "ARG ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1");
+assertIncludes("archive-next/Dockerfile", "ARG NEXT_PUBLIC_SENTRY_DSN=");
 assertIncludes("archive-next/Dockerfile", "COPY --from=builder /app/archive-next/public ./archive-next/public");
 assertIncludes("archive-server/docker-compose.yml", "dockerfile: archive-next/Dockerfile");
 assertIncludes("archive-server/docker-compose.yml", "archive-ln-laravel");
 assertIncludes("archive-server/docker-compose.yml", "CADDY_UPSTREAM: next:3000");
+assertIncludes("archive-server/docker-compose.yml", "NEXT_PUBLIC_SENTRY_DSN");
 assertIncludes("archive-server/deploy/Caddyfile", 'reverse_proxy {$CADDY_UPSTREAM:frontend:80}');
 assertIncludes("archive-laravel/routes/api.php", "Route::prefix('v1')");
 assertIncludes("archive-laravel/routes/api.php", "archive.auth");
@@ -96,6 +111,11 @@ assertIncludes("CLAUDE.md", "`archive-laravel`");
 assertIncludes("archive-server/src/index.js", "./index.ts");
 assertIncludes("archive-server/src/index.ts", "assertProductionSecrets");
 assertIncludes("archive-server/scripts/verify-deployment.mjs", "assertProductionSecrets");
+
+assertIncludes(".github/workflows/ci.yml", "pnpm run verify:laravel");
+assertIncludes(".github/workflows/ci.yml", "node scripts/verify-release-readiness.mjs");
+assertIncludes(".github/workflows/docker.yml", "docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml build next");
+assertIncludes(".github/workflows/docker.yml", "ghcr.io/${{ github.repository }}/masar-next");
 
 const audit = read("archive-app/scripts/comprehensive-ui-audit.mjs");
 assertIncludes("archive-app/scripts/run-interactive-audit.mjs", "comprehensive-ui-audit.mjs");
