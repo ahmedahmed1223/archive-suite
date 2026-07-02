@@ -1,4 +1,4 @@
-# Archive Suite
+# مسار / Masar
 
 منصة أرشيف ميديا ذكية مبنية لتشغيل تجربة فيديو متكاملة في بيئة محلية وسحابة.
 
@@ -104,7 +104,7 @@ bash setup.sh        # أو: pnpm deploy
 
 ## النشر السحابي السريع
 
-يمكن تشغيل نسخة إنتاجية من Archive Suite عبر Docker images الموجودة في `archive-server/` وقوالب المنصات الجاهزة:
+يمكن تشغيل نسخة إنتاجية من مسار / Masar عبر Docker images الموجودة في `archive-server/` وقوالب المنصات الجاهزة:
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/your-org/archive-suite)
 
@@ -172,4 +172,4 @@ bash setup.sh        # أو: pnpm deploy
 
 ---
 
-Archive Suite هي نقطة انطلاق لتطوير منصة أرشيف ميديا متكاملة، وتوفر أساسًا نظيفًا للعمل بين واجهة مستخدم متقدمة وخادم إنتاج مرن.
+مسار / Masar هي نقطة انطلاق لتطوير منصة أرشيف ميديا متكاملة، وتوفر أساسًا نظيفًا للعمل بين واجهة مستخدم متقدمة وخادم إنتاج مرن.

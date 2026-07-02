@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/lib/brand";
 import { usePathname } from "next/navigation";
 
 const primaryNav = [
@@ -38,10 +39,14 @@ export default function AppHeader({
 
   return (
     <header className="topbar">
-      <div className="brand">
-        <strong>Archive Suite</strong>
-        <span>{subtitle}</span>
-      </div>
+      <a className="brand" href="/" aria-label={`${BRAND.arabicName} - الرئيسية`}>
+        <img className="brand-mark" src={BRAND.markPath} alt="" width={44} height={44} />
+        <span className="brand-name">
+          <strong>{BRAND.arabicName}</strong>
+          <span className="brand-latin">{BRAND.latinName}</span>
+        </span>
+        <span className="brand-subtitle">{subtitle}</span>
+      </a>
       <nav className="route-links" aria-label={navLabel}>
         {primaryNav.map((link) => {
           const isActive = isActivePath(pathname, link.href);
