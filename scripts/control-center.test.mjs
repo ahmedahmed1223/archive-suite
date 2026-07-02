@@ -19,8 +19,8 @@ test("help renders the grouped menu and every command group", () => {
   const clean = r.stdout.replace(/\x1b\[[0-9;]*m/g, "");
   for (const s of [
     "Archive Suite",
-    "— Server —", "— Configure —", "— Security —", "— Database —", "— Backups —", "— Maintain —",
-    "1) Deploy", "20) Update & rebuild", "0) Exit",
+    "— Server —", "— Configure —", "— Security —", "— Database —", "— Backups —", "— Maintain —", "— Legacy (Node/Vite stack) —",
+    "1) Deploy", "18) Update & rebuild", "19) Legacy deploy wizard", "0) Exit",
   ]) {
     assert.ok(clean.includes(s), `help output should include "${s}"`);
   }

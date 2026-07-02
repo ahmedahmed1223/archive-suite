@@ -1,8 +1,9 @@
 # Archive Control Center
 
 A single English-first console to **install, operate, configure, and maintain** the
-Archive Suite stack. It replaces the old one-shot setup launcher — the deployment
-wizard is now just the **Deploy** action inside it.
+canonical Archive Suite stack (**Laravel API + Next.js**, `archive-server/docker-compose.yml`).
+The **Deploy** action provisions `.env` secrets and runs `docker compose up -d --build`;
+the old Node/Vite deployment wizard remains available as the explicit `deploy-legacy` command.
 
 ## Launch
 
@@ -19,22 +20,23 @@ non-interactively (good for automation / scheduled tasks).
 
 | Group | Menu options | Non-interactive command |
 |-------|--------------|-------------------------|
-| **Deploy** | Deploy / Re-provision | `deploy` |
+| **Deploy** | Deploy / Re-provision (Laravel + Next.js) | `deploy` |
 | **Server** | Status · Start · Stop · Restart · Logs · Health | `status` `start` `stop` `restart` `logs` `health` |
 | **Configure** | View configuration · Edit a setting · Set public URL | `config` `set-url` |
-| **Security** | Set admin credentials · Rotate secrets | `set-admin` `rotate-secrets` |
-| **Database** | Migration status · Apply migrations · Switch DB provider | `migrate-status` `migrate` `db-provider` |
+| **Security** | Rotate Reverb secrets | `rotate-secrets` |
+| **Database** | Migration status (artisan) · Apply migrations (artisan) | `migrate-status` `migrate` |
 | **Backups** | Backup now · List backups · Restore backup | `backup` `backups` `restore` |
-| **Maintain** | Diagnostics (verify) · Update & rebuild | `diagnostics` `update` |
+| **Maintain** | Diagnostics (`pnpm verify`) · Update & rebuild | `diagnostics` `update` |
+| **Legacy** | Legacy deploy wizard · admin · Prisma · DB provider | `deploy-legacy` `legacy:set-admin` `legacy:migrate-status` `legacy:migrate` `legacy:db-provider` |
 | — | Help | `help` |
 
 ### Examples
 
 ```bash
 node scripts/control-center.mjs status      # show running services
-node scripts/control-center.mjs health      # probe /api/health
+node scripts/control-center.mjs health      # probe /api/v1/health (Laravel, proxied through Next :3000)
 node scripts/control-center.mjs backup      # pg_dump to archive-server/backups/
-node scripts/control-center.mjs update      # pull -> install -> build:cloud -> migrate -> restart
+node scripts/control-center.mjs update      # pull -> install -> build -> docker compose up -d --build
 ```
 
 ## Safety
@@ -44,14 +46,17 @@ node scripts/control-center.mjs update      # pull -> install -> build:cloud -> 
   `TOKEN`, `KEY`, `DSN`, `URL`).
 - **Restore is destructive** — it overwrites the current database and requires an
   explicit `y` confirmation.
-- **Rotate secrets** invalidates existing sessions / share links / OAuth state — users
-  must sign in again, and the stack must be restarted.
+- **Rotate secrets** regenerates `REVERB_APP_KEY`/`REVERB_APP_SECRET` — realtime clients
+  drop and the Next.js image must be rebuilt (`deploy` or `update`). `LARAVEL_APP_KEY` is
+  never rotated automatically because that invalidates encrypted data.
 - Most config/security changes take effect after **Server: restart**.
 
 ## Requirements
 
 - Node 22+ and Docker (with Compose v2 `docker compose`, or legacy `docker-compose`).
-- Reads `archive-server/.env`; controls `archive-server/docker-compose.postgres.yml`.
+- Reads `archive-server/.env`; controls `archive-server/docker-compose.yml` (canonical
+  Laravel + Next.js stack). For the HTTP-only dev variant run
+  `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` from `archive-server/`.
 - Backups live in `archive-server/backups/archive-<timestamp>.sql`.
 
 ## Notes
