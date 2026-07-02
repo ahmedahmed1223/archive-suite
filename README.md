@@ -109,12 +109,13 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 ## النشر الموجّه (legacy)
 
-للنشر legacy القديم عبر معالج واحد على Windows أو Linux:
+`Setup-Archive.bat` / `setup.sh` ينشران الآن الحزمة القانونية Laravel + Next افتراضياً. معالج النشر legacy القديم (Node/SPA) متاح كأمر صريح فقط:
 
 ```bash
-# Windows: انقر نقراً مزدوجاً على Setup-Archive.bat
+# Windows:
+.\Setup-Archive.bat deploy-legacy
 # Linux/macOS:
-bash setup.sh        # أو: pnpm deploy
+bash setup.sh deploy-legacy        # أو: pnpm deploy
 ```
 
 يفحص البيئة، يولّد الأسرار، ويرفع الحزمة المُحصّنة. التفاصيل في [`DEPLOYMENT.md`](DEPLOYMENT.md).

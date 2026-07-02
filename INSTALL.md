@@ -43,9 +43,9 @@ pnpm verify:laravel-next:live
 ARCHIVE_E2E_USE_EXISTING_LARAVEL=1 LARAVEL_PORT=8950 pnpm verify:laravel-next:live
 ```
 
-### 3. معالج النشر legacy
+### 3. النشر عبر Control Center
 
-معالج النشر الحالي ما زال يطلق حزمة Docker القديمة المبنية حول Node/SPA. استخدمه فقط عند الحاجة للـ legacy deployment إلى أن تُستبدل وصفات الإنتاج بـ Laravel/Next.
+`Setup-Archive.bat` / `setup.sh` ينشران الآن الحزمة القانونية **Laravel + Next.js** (`archive-server/docker-compose.yml`).
 
 **Windows:** انقر نقراً مزدوجاً على `Setup-Archive.bat` — أو من الطرفية:
 
@@ -56,16 +56,18 @@ ARCHIVE_E2E_USE_EXISTING_LARAVEL=1 LARAVEL_PORT=8950 pnpm verify:laravel-next:li
 **Linux / macOS:**
 
 ```bash
-bash setup.sh        # أو: pnpm deploy
+bash setup.sh
 ```
 
-المعالج يقودك خطوة بخطوة (PostgreSQL إنتاجي):
-- فحص البيئة (Node.js / Docker / Compose)
-- اختيار وضع الوصول: **داخلي (intranet)** أو **عام (نطاق + HTTPS)**
-- ضبط حساب المشرف
-- توليد كل الأسرار تلقائياً (PostgreSQL / Redis / JWT / pgAdmin / Grafana / تشفير النسخ الاحتياطي)
-- كتابة `archive-server/.env` (مع نسخة احتياطية لأي ملف سابق)
-- رفع الحزمة المُحصّنة عبر Docker وانتظار صحة النظام
+خيار **Deploy** (أو الأمر `deploy`) يقوم بـ:
+- إنشاء `archive-server/.env` من `.env.example` إن لم يوجد
+- توليد الأسرار الناقصة تلقائياً (PostgreSQL / Redis / Reverb / `LARAVEL_APP_KEY`)
+- `docker compose up -d --build` وطباعة العناوين (Next على :3000، Reverb على :8080، Caddy على 80/443)
+
+الترحيلات تعمل تلقائياً داخل حاوية Laravel عند الإقلاع.
+
+> معالج النشر القديم (Node/SPA) ما زال متاحاً كأمر صريح فقط:
+> `Setup-Archive.bat deploy-legacy` أو `bash setup.sh deploy-legacy`.
 
 > دليل النشر الكامل (الوضع الداخلي/العام، الإدارة، التشغيل عند الإقلاع، الترقية):
 > [`DEPLOYMENT.md`](./DEPLOYMENT.md).
@@ -74,11 +76,10 @@ bash setup.sh        # أو: pnpm deploy
 
 ```
 http://127.0.0.1:8951      # Next.js + Laravel للتطوير
-http://localhost:8080      # legacy Docker stack عند استخدام Setup-Archive
+http://localhost:3000      # الحزمة القانونية عبر Setup-Archive (Next.js)
+http://localhost:8080      # legacy Docker stack عند استخدام deploy-legacy
 https://<your-domain>      # وضع عام
 ```
-
-بيانات دخول المشرف تظهر في ملخّص المعالج عند انتهائه (مرة واحدة — احفظها).
 
 ---
 

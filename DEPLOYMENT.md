@@ -1,6 +1,6 @@
 # دليل النشر — Archive Suite (إنتاج)
 
-> **حالة cutover:** التطوير والتحقق الافتراضيان انتقلا إلى **Next.js + Laravel** (`pnpm dev`, `pnpm verify`). وصفة Docker أدناه ما زالت **legacy deployment** مبنية حول Node/SPA إلى أن تُستبدل حزمة الإنتاج بـ Laravel/Next. لا تستخدمها كأساس لميزات جديدة.
+> **حالة cutover:** التطوير والتحقق الافتراضيان انتقلا إلى **Next.js + Laravel** (`pnpm dev`, `pnpm verify`)، و`Setup-Archive.bat` / `setup.sh` ينشران الآن الحزمة القانونية Laravel + Next (`archive-server/docker-compose.yml`) افتراضياً. المعالج الموجّه أدناه صار **legacy deployment** مبنياً حول Node/SPA ويُستدعى صراحةً فقط عبر `deploy-legacy`. لا تستخدمه كأساس لميزات جديدة.
 > عند بناء واجهة Next.js الإنتاجية للمسار الجديد، يجب ضبط `ARCHIVE_API_BASE_URL` وقت البناء (مثال: `https://api.example.com/api/v1`) حتى تُولد rewrites إلى Laravel داخل build.
 
 نشر النظام legacy الكامل على **PostgreSQL** عبر **معالج موجّه واحد** يعمل على **Linux** و**Windows**.
@@ -21,15 +21,16 @@
 
 ## التشغيل بالمعالج
 
+> ملاحظة: `Setup-Archive.bat` / `setup.sh` بدون أوامر يفتحان Control Center الذي ينشر الحزمة القانونية Laravel + Next. للمعالج legacy أدناه استخدم الأمر الصريح `deploy-legacy`.
+
 ### Windows
-انقر نقراً مزدوجاً على **`Setup-Archive.bat`** (أو من الطرفية):
 ```powershell
-.\Setup-Archive.bat
+.\Setup-Archive.bat deploy-legacy
 ```
 
 ### Linux / macOS
 ```bash
-bash setup.sh        # أو: pnpm deploy
+bash setup.sh deploy-legacy        # أو: pnpm deploy
 ```
 
 المعالج يقودك عبر:
