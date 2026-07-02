@@ -16,11 +16,18 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             اعرض السجلات التي سُمح بمشاركتها عبر رابط عام دون كشف بيانات
             إضافية خارج صلاحية الرابط.
           </p>
+          <div className="hero-actions">
+            <span className="badge">آمن ومشفر</span>
+            <span className="badge">محمي برمز</span>
+          </div>
         </div>
 
         <aside className="panel auth-form">
-          <h2>رمز المشاركة</h2>
-          <p className="token-preview">{token}</p>
+          <div className="panel-section-header">
+            <h2>رمز المشاركة</h2>
+            <p>هذا الرابط والرمز أدناه محميان من الاستخدام غير المصرح.</p>
+          </div>
+          <p className="token-preview" dir="ltr">{token}</p>
           <ShareViewer token={token} />
         </aside>
       </section>

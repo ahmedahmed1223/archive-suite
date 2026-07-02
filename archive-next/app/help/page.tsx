@@ -32,7 +32,7 @@ export default function HelpPage() {
     <main className="shell">
       <AppHeader subtitle="مركز المساعدة" />
 
-      <section className="content" aria-label="مركز المساعدة">
+      <section className="content stack" aria-label="مركز المساعدة">
         <div className="hero">
           <span className="badge">مساعدة التشغيل</span>
           <h1>مركز المساعدة</h1>
@@ -45,7 +45,9 @@ export default function HelpPage() {
         <div className="grid" aria-label="إرشادات التشغيل">
           {helpPanels.map((panel) => (
             <article className="panel" key={panel.title}>
-              <h2>{panel.title}</h2>
+              <div className="panel-section-header">
+                <h2>{panel.title}</h2>
+              </div>
               <ul>
                 {panel.items.map((item) => (
                   <li key={item}>{item}</li>

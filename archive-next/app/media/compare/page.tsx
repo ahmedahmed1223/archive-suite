@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import MediaPlayer from "@/components/MediaPlayer";
+import styles from "./compare.module.css";
 
 type SyncMode = "off" | "on";
 
@@ -44,7 +45,7 @@ export default function ComparePage() {
     <main className="shell">
       <AppHeader subtitle="مقارنة الوسائط" />
 
-      <section className="content stack" aria-label="مقارنة الوسائط">
+      <section className={`content stack ${styles.compareContent}`} aria-label="مقارنة الوسائط">
         <div className="hero">
           <span className="badge">Side-by-side</span>
           <h1>مقارنة الوسائط</h1>
@@ -52,14 +53,14 @@ export default function ComparePage() {
             ضع نسختين من المادة جنباً إلى جنب، ثم فعّل المزامنة لمطابقة التشغيل
             والإيقاف والانتقال الزمني أثناء المراجعة.
           </p>
-          <div className="hero-actions">
-            <span className="badge">{syncMode === "on" ? "المزامنة مفعلة" : "المزامنة متوقفة"}</span>
+          <div className="record-meta" aria-label="حالة المزامنة">
+            <span className={`badge ${styles.statusIndicator}`} data-status={syncMode === "on" ? "viewing" : "idle"}>{syncMode === "on" ? "المزامنة مفعلة" : "المزامنة متوقفة"}</span>
             <span className="badge">{isValidPaths ? "جاهز للتشغيل" : "بانتظار مسارين"}</span>
           </div>
         </div>
 
-        <form className="panel auth-form" aria-label="مسارات المقارنة">
-          <div className="media-compare-grid">
+        <form className={`panel auth-form ${styles.pathInputForm}`} aria-label="مسارات المقارنة">
+          <div className={`media-compare-grid ${styles.pathInputGrid}`}>
             <label>
               مسار الملف أ
               <input
@@ -67,6 +68,7 @@ export default function ComparePage() {
                 value={pathA}
                 onChange={(event) => setPathA(event.target.value)}
                 placeholder="media/file-a.mp4"
+                aria-label="مسار الملف أ"
               />
             </label>
             <label>
@@ -76,6 +78,7 @@ export default function ComparePage() {
                 value={pathB}
                 onChange={(event) => setPathB(event.target.value)}
                 placeholder="media/file-b.mp4"
+                aria-label="مسار الملف ب"
               />
             </label>
           </div>
@@ -91,11 +94,11 @@ export default function ComparePage() {
         </form>
 
         {isValidPaths ? (
-          <div className="media-compare-grid" aria-label="مشغلات المقارنة">
-            <article className="panel">
-              <div className="panel-title-row">
+          <div className={`media-compare-grid ${styles.playersGrid}`} aria-label="مشغلات المقارنة">
+            <article className={`panel ${styles.playerPanel}`}>
+              <div className={`panel-title-row ${styles.playerHeader}`}>
                 <h2>الملف أ</h2>
-                <span className="badge">A</span>
+                <span className={`badge ${styles.sideBadge}`}>A</span>
               </div>
               <MediaPlayer
                 path={pathA}
@@ -107,10 +110,10 @@ export default function ComparePage() {
               />
             </article>
 
-            <article className="panel">
-              <div className="panel-title-row">
+            <article className={`panel ${styles.playerPanel}`}>
+              <div className={`panel-title-row ${styles.playerHeader}`}>
                 <h2>الملف ب</h2>
-                <span className="badge">B</span>
+                <span className={`badge ${styles.sideBadge}`}>B</span>
               </div>
               <MediaPlayer
                 path={pathB}

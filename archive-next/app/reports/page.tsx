@@ -32,12 +32,18 @@ export default function ReportsPage() {
             نقطة دخول هادئة لمراجعة حالة العقود، جاهزية التقارير، وبوابات
             القبول قبل فتح التقارير التفصيلية.
           </p>
+          <div className="hero-actions">
+            <span className="badge">API v{contract.version}</span>
+            <span className="badge">قيد التطوير</span>
+          </div>
         </div>
 
         <div className="grid">
           {reportChecks.map((item) => (
             <article className="panel" key={item.title}>
-              <h2>{item.title}</h2>
+              <div className="panel-section-header">
+                <h2>{item.title}</h2>
+              </div>
               <p>{item.body}</p>
             </article>
           ))}

@@ -303,7 +303,7 @@ export default function TypesPage() {
 
         <div className="split-layout" aria-label="محرر الأنواع">
           <section className="stack" aria-label="قائمة الأنواع">
-            <div className="toolbar-row">
+            <div className="panel-section-header">
               <div>
                 <h2>الأنواع الحالية</h2>
                 <p className="field-note">اختر نوعاً للتعديل أو أضف القوالب الأساسية عند أول تشغيل.</p>
@@ -340,7 +340,7 @@ export default function TypesPage() {
           </section>
 
           <form className="panel auth-form" onSubmit={handleSubmit} aria-label="نموذج النوع">
-            <div className="panel-title-row">
+            <div className="panel-section-header">
               <div>
                 <h2>{draft.uid ? "تعديل نوع" : "نوع جديد"}</h2>
                 <p>اكتب الحقول كسطر لكل حقل: الاسم|المفتاح|النوع|خيارات مفصولة بفواصل.</p>

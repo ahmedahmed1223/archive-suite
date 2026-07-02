@@ -1,0 +1,105 @@
+.compareContent {
+  gap: var(--space-5);
+}
+
+.statusIndicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.62rem;
+}
+
+.pathInputForm {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.pathInputForm label {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.pathInputForm input {
+  inline-size: 100%;
+  min-block-size: var(--control-height);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: 0.68rem 0.82rem;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  outline: none;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.pathInputForm input:focus-visible {
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.pathInputGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-4);
+}
+
+.playersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.playerPanel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-bg-secondary) 96%, var(--color-brand-warm));
+  box-shadow: var(--shadow-sm);
+}
+
+.playerHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: center;
+  padding-block-end: var(--space-2);
+  border-block-end: 1px solid var(--color-border-secondary);
+}
+
+.playerHeader h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.sideBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: fit-content;
+  min-inline-size: 2rem;
+  min-block-size: 2rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent-primary) 38%, var(--color-border-secondary));
+  border-radius: var(--radius-md);
+  padding: 0.32rem 0.62rem;
+  color: var(--color-accent-primary);
+  background: color-mix(in srgb, var(--color-accent-primary) 9%, var(--color-bg-secondary));
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+@media (min-width: 900px) {
+  .playersGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

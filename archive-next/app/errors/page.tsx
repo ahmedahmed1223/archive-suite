@@ -79,27 +79,35 @@ export default function ErrorsPage() {
           </div>
         </div>
 
-        <div className="toolbar-row">
-          <label className="field-row field-row-reset">
-            <span className="field-note">الدرجة</span>
-            <select
-              className="search-input input-narrow"
-              value={severityFilter}
-              onChange={(event) => setSeverityFilter(event.target.value as ClientErrorSeverity | "")}
-            >
-              <option value="">الكل</option>
-              <option value="error">أخطاء</option>
-              <option value="warning">تحذيرات</option>
-              <option value="info">معلومات</option>
-            </select>
-          </label>
-          <div className="route-links">
-            <button className="button button-secondary" type="button" onClick={createManualError}>
-              اختبار التسجيل
-            </button>
-            <button className="button button-danger" type="button" onClick={clearAll} disabled={errors.length === 0}>
-              مسح السجل
-            </button>
+        <div className="panel">
+          <div className="toolbar-row">
+            <div>
+              <h2>تصفية السجل</h2>
+              <p className="field-note">اختر درجة الخطورة أو استعرض جميع الأخطاء.</p>
+            </div>
+          </div>
+          <div className="toolbar-row">
+            <label className="field-row field-row-reset">
+              <span className="field-note">الدرجة</span>
+              <select
+                className="search-input input-narrow"
+                value={severityFilter}
+                onChange={(event) => setSeverityFilter(event.target.value as ClientErrorSeverity | "")}
+              >
+                <option value="">الكل</option>
+                <option value="error">أخطاء</option>
+                <option value="warning">تحذيرات</option>
+                <option value="info">معلومات</option>
+              </select>
+            </label>
+            <div className="route-links">
+              <button className="button button-secondary" type="button" onClick={createManualError}>
+                اختبار التسجيل
+              </button>
+              <button className="button button-danger" type="button" onClick={clearAll} disabled={errors.length === 0}>
+                مسح السجل
+              </button>
+            </div>
           </div>
         </div>
 

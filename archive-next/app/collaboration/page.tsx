@@ -398,12 +398,13 @@ export default function CollaborationPage() {
             />
 
             <div className="stack">
-              {error ? (
+              {error && (
                 <div className="state-banner state-banner-error" role="alert">
                   <strong>تعذر تحديث الحضور</strong>
                   <p className="helper-text">{error}</p>
                 </div>
-              ) : (
+              )}
+              {!error && (
                 <div className="state-banner state-banner-success">
                   <strong>الاتصال نشط</strong>
                   <p className="helper-text">{message}</p>
