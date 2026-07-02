@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
+import PageToolbar from "@/components/PageToolbar";
 import styles from "./play.module.css";
 
 export default function MediaPlayPage() {
@@ -29,21 +31,15 @@ export default function MediaPlayPage() {
   }, []);
 
   return (
-    <main className="shell">
-      <AppHeader subtitle="مشغل الوسائط" />
-
-      <section className={`content stack ${styles.playContent}`} aria-label="تشغيل الوسائط">
-        <div className="hero">
-          <span className="badge">HTTP Range</span>
-          <h1>تشغيل المادة.</h1>
-          <p>
-            يُبث الملف عبر Laravel بدلاً من فتحه محلياً، فيعمل السحب داخل
-            الفيديو والصوت عبر المتصفح مع مصادقة النظام.
-          </p>
-        </div>
-
+    <AppShell subtitle="مشغل الوسائط" contentClassName={styles.playContent}>
+      <PageToolbar
+        eyebrow={<span className="badge">HTTP Range</span>}
+        title="تشغيل المادة"
+        description="يُبث الملف عبر Laravel بدلاً من فتحه محلياً، فيعمل السحب داخل الفيديو والصوت عبر المتصفح مع مصادقة النظام."
+        meta={<span className="badge">{path ? "قيد التشغيل" : "بانتظار مسار"}</span>}
+      >
         <form
-          className={`panel auth-form ${styles.pathInputForm}`}
+          className={`auth-form ${styles.pathInputForm}`}
           onSubmit={(event) => {
             event.preventDefault();
             setPath(pathInput.trim());
@@ -72,41 +68,44 @@ export default function MediaPlayPage() {
           </label>
           <button type="submit" className="button button-primary">تشغيل</button>
         </form>
+      </PageToolbar>
 
-        {path ? (
-          <div className={styles.theaterLayout}>
-            <article className={`panel media-frame ${styles.playerPanel}`}>
-              <MediaPlayer
-                path={path}
-                disk={disk || undefined}
-                title={disk ? `${disk}:${path}` : path}
-                showTimeline
-                transcriptText={transcriptText}
-              />
-            </article>
+      {path ? (
+        <div className={styles.theaterLayout}>
+          <article className={`panel media-frame ${styles.playerPanel}`}>
+            <MediaPlayer
+              path={path}
+              disk={disk || undefined}
+              title={disk ? `${disk}:${path}` : path}
+              showTimeline
+              transcriptText={transcriptText}
+            />
+          </article>
 
-            <section className={`panel stack ${styles.transcriptPanel}`} aria-label="تفريغ متزامن">
-              <div className="panel-title-row">
-                <div>
-                  <h2>تفريغ زمني</h2>
-                  <p>VTT أو SRT</p>
-                </div>
-                <span className="badge">{transcriptText.trim() ? "مفعّل" : "اختياري"}</span>
+          <section className={`panel stack ${styles.transcriptPanel}`} aria-label="تفريغ متزامن">
+            <div className="panel-title-row">
+              <div>
+                <h2>تفريغ زمني</h2>
+                <p>VTT أو SRT</p>
               </div>
-              <textarea
-                value={transcriptText}
-                onChange={(event) => setTranscriptText(event.target.value)}
-                rows={7}
-                dir="ltr"
-                placeholder={"WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nالمقطع الأول"}
-                className={styles.transcriptInput}
-              />
-            </section>
-          </div>
-        ) : (
-          <div className="empty-state">أدخل مساراً لبدء التشغيل.</div>
-        )}
-      </section>
-    </main>
+              <span className="badge">{transcriptText.trim() ? "مفعّل" : "اختياري"}</span>
+            </div>
+            <textarea
+              value={transcriptText}
+              onChange={(event) => setTranscriptText(event.target.value)}
+              rows={7}
+              dir="ltr"
+              placeholder={"WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nالمقطع الأول"}
+              className={styles.transcriptInput}
+            />
+          </section>
+        </div>
+      ) : (
+        <EmptyState
+          title="أدخل مساراً لبدء التشغيل."
+          description="استخدم مسار الملف النسبي داخل التخزين، مع تحديد القرص إن لم يكن الافتراضي."
+        />
+      )}
+    </AppShell>
   );
 }

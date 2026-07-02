@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import PageToolbar from "@/components/PageToolbar";
 import {
   createArchiveApiClient,
   type CollaborationDocument,
@@ -327,26 +328,24 @@ export default function CollaborationPage() {
   };
 
   return (
-    <main className="shell">
-      <AppHeader subtitle="التعاون الحي" />
-
-      <section className="content" aria-label="التعاون الحي">
-        <div className="hero">
-          <span className="badge">{isSyncing ? "جارِ المزامنة" : "مزامنة نشطة"}</span>
-          <h1>التعاون الحي.</h1>
-          <p>
-            غرفة واحدة لإظهار الحضور النشط وحجز موارد التحرير عبر Laravel API،
-            بواجهة أخف للمتابعة السريعة.
-          </p>
+    <AppShell subtitle="التعاون الحي" contentClassName="collaboration-content">
+      <PageToolbar
+        eyebrow={<span className="badge">{isSyncing ? "جارِ المزامنة" : "مزامنة نشطة"}</span>}
+        title="التعاون الحي"
+        description="غرفة واحدة لإظهار الحضور النشط وحجز موارد التحرير عبر Laravel API، بواجهة أخف للمتابعة السريعة."
+        meta={(
           <div className="hero-actions">
             <span className="badge">نافذة النشاط {activeWindowSeconds} ثانية</span>
-            <span className="badge">أقفال التحرير</span>
+            <span className="badge">{participants.length} مشارك نشط</span>
+            <span className="badge">{locks.length} قفل تحرير</span>
           </div>
-        </div>
+        )}
+      />
 
+      <div aria-label="التعاون الحي">
         <div className="split-layout">
           <article className="panel auth-form">
-            <div className="panel-title-row">
+            <div className="panel-title-row panel-section-header">
               <div>
                 <h2>إعداد الغرفة</h2>
                 <p>اضبط الغرفة والمورد والحالة، ثم اترك الصفحة ترسل heartbeat تلقائياً.</p>
@@ -485,7 +484,7 @@ export default function CollaborationPage() {
             </div>
           </article>
         </div>
-      </section>
-    </main>
+      </div>
+    </AppShell>
   );
 }

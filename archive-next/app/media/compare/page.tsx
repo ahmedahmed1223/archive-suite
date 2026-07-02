@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
+import PageToolbar from "@/components/PageToolbar";
 import styles from "./compare.module.css";
 
 type SyncMode = "off" | "on";
@@ -42,24 +44,21 @@ export default function ComparePage() {
   const isValidPaths = pathA.trim() && pathB.trim();
 
   return (
-    <main className="shell">
-      <AppHeader subtitle="مقارنة الوسائط" />
-
-      <section className={`content stack ${styles.compareContent}`} aria-label="مقارنة الوسائط">
-        <div className="hero">
-          <span className="badge">Side-by-side</span>
-          <h1>مقارنة الوسائط</h1>
-          <p>
-            ضع نسختين من المادة جنباً إلى جنب، ثم فعّل المزامنة لمطابقة التشغيل
-            والإيقاف والانتقال الزمني أثناء المراجعة.
-          </p>
-          <div className="record-meta" aria-label="حالة المزامنة">
-            <span className={`badge ${styles.statusIndicator}`} data-status={syncMode === "on" ? "viewing" : "idle"}>{syncMode === "on" ? "المزامنة مفعلة" : "المزامنة متوقفة"}</span>
+    <AppShell subtitle="مقارنة الوسائط" contentClassName={styles.compareContent}>
+      <PageToolbar
+        eyebrow={<span className="badge">Side-by-side</span>}
+        title="مقارنة الوسائط"
+        description="ضع نسختين من المادة جنباً إلى جنب، ثم فعّل المزامنة لمطابقة التشغيل والإيقاف والانتقال الزمني أثناء المراجعة."
+        meta={(
+          <>
+            <span className={`badge ${styles.statusIndicator}`} data-status={syncMode === "on" ? "viewing" : "idle"}>
+              {syncMode === "on" ? "المزامنة مفعلة" : "المزامنة متوقفة"}
+            </span>
             <span className="badge">{isValidPaths ? "جاهز للتشغيل" : "بانتظار مسارين"}</span>
-          </div>
-        </div>
-
-        <form className={`panel auth-form ${styles.pathInputForm}`} aria-label="مسارات المقارنة">
+          </>
+        )}
+      >
+        <form className={`auth-form ${styles.pathInputForm}`} aria-label="مسارات المقارنة">
           <div className={`media-compare-grid ${styles.pathInputGrid}`}>
             <label>
               مسار الملف أ
@@ -92,43 +91,46 @@ export default function ComparePage() {
             مزامنة التشغيل بين الملفين
           </label>
         </form>
+      </PageToolbar>
 
-        {isValidPaths ? (
-          <div className={`media-compare-grid ${styles.playersGrid}`} aria-label="مشغلات المقارنة">
-            <article className={`panel ${styles.playerPanel}`}>
-              <div className={`panel-title-row ${styles.playerHeader}`}>
-                <h2>الملف أ</h2>
-                <span className={`badge ${styles.sideBadge}`}>A</span>
-              </div>
-              <MediaPlayer
-                path={pathA}
-                onReady={(el) => {
-                  playerARef.current = el;
-                }}
-                onPlayPause={(el) => syncPlayback(el, playerBRef.current)}
-                onTimeUpdate={(el) => syncTime(el, playerBRef.current)}
-              />
-            </article>
+      {isValidPaths ? (
+        <div className={`media-compare-grid ${styles.playersGrid}`} aria-label="مشغلات المقارنة">
+          <article className={`panel ${styles.playerPanel}`}>
+            <div className={`panel-title-row ${styles.playerHeader}`}>
+              <h2>الملف أ</h2>
+              <span className={`badge ${styles.sideBadge}`}>A</span>
+            </div>
+            <MediaPlayer
+              path={pathA}
+              onReady={(el) => {
+                playerARef.current = el;
+              }}
+              onPlayPause={(el) => syncPlayback(el, playerBRef.current)}
+              onTimeUpdate={(el) => syncTime(el, playerBRef.current)}
+            />
+          </article>
 
-            <article className={`panel ${styles.playerPanel}`}>
-              <div className={`panel-title-row ${styles.playerHeader}`}>
-                <h2>الملف ب</h2>
-                <span className={`badge ${styles.sideBadge}`}>B</span>
-              </div>
-              <MediaPlayer
-                path={pathB}
-                onReady={(el) => {
-                  playerBRef.current = el;
-                }}
-                onPlayPause={(el) => syncPlayback(el, playerARef.current)}
-                onTimeUpdate={(el) => syncTime(el, playerARef.current)}
-              />
-            </article>
-          </div>
-        ) : (
-          <div className="empty-state">أدخل مساري الملفات لبدء المقارنة.</div>
-        )}
-      </section>
-    </main>
+          <article className={`panel ${styles.playerPanel}`}>
+            <div className={`panel-title-row ${styles.playerHeader}`}>
+              <h2>الملف ب</h2>
+              <span className={`badge ${styles.sideBadge}`}>B</span>
+            </div>
+            <MediaPlayer
+              path={pathB}
+              onReady={(el) => {
+                playerBRef.current = el;
+              }}
+              onPlayPause={(el) => syncPlayback(el, playerARef.current)}
+              onTimeUpdate={(el) => syncTime(el, playerARef.current)}
+            />
+          </article>
+        </div>
+      ) : (
+        <EmptyState
+          title="أدخل مساري الملفات لبدء المقارنة."
+          description="حدّد مسار كل ملف نسبي داخل الأرشيف، ثم فعّل المزامنة إن أردت تشغيلاً متطابقاً."
+        />
+      )}
+    </AppShell>
   );
 }
