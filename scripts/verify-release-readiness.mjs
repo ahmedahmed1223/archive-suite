@@ -77,6 +77,13 @@ assertExcludes("archive-server/Dockerfile.server", "package-lock.json");
 assertExcludes("archive-server/Dockerfile.server", "npm ci");
 
 assertIncludes("archive-next/next.config.mjs", "ARCHIVE_API_BASE_URL");
+assertIncludes("archive-next/Dockerfile", "COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./");
+assertIncludes("archive-next/Dockerfile", "ARG ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1");
+assertIncludes("archive-next/Dockerfile", "COPY --from=builder /app/archive-next/public ./archive-next/public");
+assertIncludes("archive-server/docker-compose.yml", "dockerfile: archive-next/Dockerfile");
+assertIncludes("archive-server/docker-compose.yml", "archive-ln-laravel");
+assertIncludes("archive-server/docker-compose.yml", "CADDY_UPSTREAM: next:3000");
+assertIncludes("archive-server/deploy/Caddyfile", 'reverse_proxy {$CADDY_UPSTREAM:frontend:80}');
 assertIncludes("archive-laravel/routes/api.php", "Route::prefix('v1')");
 assertIncludes("archive-laravel/routes/api.php", "archive.auth");
 assertIncludes("archive-laravel/ARCHIVE_MIGRATION.md", "canonical API target");

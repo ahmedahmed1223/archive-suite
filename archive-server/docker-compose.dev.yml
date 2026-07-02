@@ -1,15 +1,11 @@
-# Dev override: HTTP-only, no Caddy, frontend exposed on :8080,
-# PocketBase exposed on :8090 for the admin UI. Use with:
+# Dev override: HTTP-only, no Caddy. The canonical Next service is already
+# exposed by docker-compose.yml on NEXT_PUBLIC_PORT (default :3000). Use with:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 services:
+  laravel:
+    ports:
+      - "${LARAVEL_PUBLIC_PORT:-8000}:8000"
+
   caddy:
-    profiles: ["disabled"]  # not started in dev
-
-  pocketbase:
-    ports:
-      - "8090:8090"  # admin UI at http://localhost:8090/_/
-
-  frontend:
-    ports:
-      - "8080:80"  # SPA at http://localhost:8080
+    profiles: ["disabled"]

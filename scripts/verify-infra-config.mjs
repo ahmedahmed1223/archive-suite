@@ -89,8 +89,19 @@ assertIncludes("archive-server/docker-compose.laravel-next.yml", "archive-ln-lar
 assertIncludes("archive-server/docker-compose.laravel-next.yml", "archive-ln-laravel-worker");
 assertIncludes("archive-server/docker-compose.laravel-next.yml", "ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1");
 assertIncludes("archive-server/docker-compose.laravel-next.yml", "QUEUE_CONNECTION: redis");
+assertIncludes("archive-server/docker-compose.yml", "archive-ln-laravel");
+assertIncludes("archive-server/docker-compose.yml", "archive-ln-next");
+assertIncludes("archive-server/docker-compose.yml", "dockerfile: archive-next/Dockerfile");
+assertIncludes("archive-server/docker-compose.yml", "ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1");
+assertIncludes("archive-server/docker-compose.yml", "CADDY_UPSTREAM: next:3000");
+assertExcludes("archive-server/docker-compose.yml", "Dockerfile.frontend");
+assertExcludes("archive-server/docker-compose.yml", "archive-app");
 assertIncludes("archive-next/next.config.mjs", 'output: "standalone"');
+assertIncludes("archive-next/Dockerfile", "COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./");
+assertIncludes("archive-next/Dockerfile", "ARG ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1");
+assertIncludes("archive-next/Dockerfile", "COPY --from=builder /app/archive-next/public ./archive-next/public");
 assertIncludes("archive-laravel/Dockerfile.worker", "docker-php-ext-enable redis");
+assertIncludes("archive-server/deploy/Caddyfile", 'reverse_proxy {$CADDY_UPSTREAM:frontend:80}');
 
 assertIncludes("archive-server/k8s/network-policy.yaml", "app: server");
 assertIncludes("archive-server/k8s/network-policy.yaml", "app: frontend");

@@ -52,7 +52,10 @@ node_modules
 
 # Reports and docs
 output
-docs/
+docs/*
+!docs/api/
+docs/api/*
+!docs/api/archive-contract.openapi.json
 
 # Python (OCR service has its own Docker build)
 archive-server/ocr-service/

@@ -48,6 +48,8 @@
 
 - [x] **بث حي لتعليقات المراجعة المرئية** — أضيف حدث Laravel `ReviewCommentBroadcasted` على قناة `review.media.{mediaUid}` باسم `.review-comment.updated` عند إنشاء/تحديث التعليقات، وأصبحت صفحة `/media/review` تشترك عبر Reverb وتدمج التعليقات الواردة دون تكرار مع بقاء التحميل اليدوي fallback. التحقق: `node scripts/laravel-docker.mjs test --filter=ReviewComments`, `pnpm run typecheck:next`.
 
+- [x] **تصحيح مسار Docker الافتراضي لعرض مسار / Masar** — حُوّل `archive-server/docker-compose.yml` من PocketBase + Vite SPA إلى Laravel + Next.js كمسار افتراضي، وضُبط Caddy على `next:3000`، وأصبحت صورة `archive-next/Dockerfile` تمرر `ARCHIVE_API_BASE_URL` أثناء build وتنسخ `public/` حتى تظهر أصول Masar داخل الحاوية. أضيفت متغيرات Reverb الناقصة إلى `.env.example` وفحوص ثابتة تمنع رجوع Docker الافتراضي إلى `archive-app` legacy.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.
