@@ -50,13 +50,22 @@ services:
       dockerfile: Dockerfile.worker
     container_name: archive-ln-laravel
     restart: unless-stopped
-    command: ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
+    # db:seed is idempotent (firstOrCreate) — safe to re-run on every restart,
+    # guarantees a login exists even on a fresh volume.
+    # Serve via php -S directly (NOT `artisan serve`): ServeCommand whitelists
+    # which env vars reach the real web process, silently dropping DB_*/ADMIN_*
+    # from compose. Direct php -S inherits the full container environment.
+    # (the framework router resolves the public path from getcwd, hence cd public)
+    command: ["sh", "-c", "php artisan migrate --force && php artisan db:seed --force && cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
       APP_URL: ${LARAVEL_APP_URL:-http://localhost:8000}
       ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_NAME: ${ADMIN_NAME:-Archive Admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: "5432"
@@ -256,7 +265,11 @@ services:
       - "443:443"
     environment:
       DOMAIN: ${DOMAIN:-localhost}
-      ACME_EMAIL: ${ACME_EMAIL:-}
+      # Must never resolve empty: compose interpolation runs on the host, so an
+      # unset ACME_EMAIL becomes an empty string here (not "unset" inside the
+      # container) — Caddyfile's own `{$ACME_EMAIL:default}` fallback only
+      # triggers on a truly-unset var, so an empty value still crashes Caddy.
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
       CADDY_UPSTREAM: next:3000
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro

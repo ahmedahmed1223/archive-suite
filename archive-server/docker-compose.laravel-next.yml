@@ -42,7 +42,10 @@ services:
       dockerfile: Dockerfile.worker
     container_name: archive-ln-laravel
     restart: unless-stopped
-    command: ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
+    # php -S directly (not `artisan serve`) — ServeCommand strips compose env vars
+    # from the web process; see docker-compose.yml for the full note.
+    # (the framework router resolves the public path from getcwd, hence cd public)
+    command: ["sh", "-c", "php artisan migrate --force && php artisan db:seed --force && cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
