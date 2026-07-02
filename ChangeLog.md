@@ -40,6 +40,8 @@
 
 - [x] **إكمال CRUD ODBC المقيد في Laravel + Next** — توسع جسر ODBC من فحص/قراءة فقط إلى عمليات إنشاء/تحديث/حذف محمية على الجداول الأساسية المسموحة (`items`, `users`, `settings`, `audit`) عبر Laravel، مع حصر مفاتيح التحديث/الحذف ومنع كتابة أعمدة الأسرار وقبول قيم scalar/null فقط. حُدّثت بطاقة ODBC في `/settings` لتنفيذ العمليات وإعادة تحميل المعاينة، ووُثق المسار الجديد في OpenAPI. التحقق: `node scripts/laravel-docker.mjs test --filter=Odbc`, `node scripts/verify-api-contracts.mjs`, `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **إغلاق smoke العلامة المائية الحي** — أضيف `scripts/smoke-watermark-ffmpeg.mjs` وأمر `pnpm run smoke:watermark` لتوليد فيديو وPNG مؤقتين، تركيب watermark overlay عبر ffmpeg، فحص الناتج بـ ffprobe، ومقارنة crop منطقة العلامة للتأكد من أن overlay أثّر فعلياً. التحقق: `pnpm run smoke:watermark` نجح (`outputSize=43182`, `cropDifference=95.83`).
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.
