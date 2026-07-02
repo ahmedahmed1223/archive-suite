@@ -7,6 +7,7 @@ import {
   createArchiveApiClient,
   type OdbcProbe,
   type OdbcTablePreview,
+  type OdbcWriteOperation,
   type SecuritySettings
 } from "@/lib/archive-api";
 
@@ -50,12 +51,20 @@ const odbcCoreTables = ["items", "users", "settings", "audit"] as const;
 
 type OdbcCoreTable = (typeof odbcCoreTables)[number];
 
+type OdbcWriteState =
+  | { status: "idle" }
+  | { status: "saving" }
+  | { status: "success"; message: string }
+  | { status: "error"; message: string };
+
 const odbcTableLabels: Record<OdbcCoreTable, string> = {
   items: "Items",
   users: "Users",
   settings: "Settings",
   audit: "Audit"
 };
+
+const getDefaultOdbcKeyColumn = (table: OdbcCoreTable) => (table === "settings" ? "key" : "id");
 
 function StatusBadge({ children }: Readonly<{ children: string }>) {
   return <span className="badge">{children}</span>;
@@ -96,6 +105,11 @@ export default function SettingsPage() {
   const [odbcPreview, setOdbcPreview] = useState<OdbcTablePreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [odbcWriteOperation, setOdbcWriteOperation] = useState<OdbcWriteOperation>("insert");
+  const [odbcKeyColumn, setOdbcKeyColumn] = useState("id");
+  const [odbcKeyValue, setOdbcKeyValue] = useState("");
+  const [odbcValuesText, setOdbcValuesText] = useState('{\n  "name": "New item"\n}');
+  const [odbcWriteState, setOdbcWriteState] = useState<OdbcWriteState>({ status: "idle" });
 
   useEffect(() => {
     const fetchSecuritySettings = async () => {
@@ -161,6 +175,56 @@ export default function SettingsPage() {
     }
   };
 
+  const handleOdbcWrite = async () => {
+    if (!canPreviewOdbc) return;
+
+    setOdbcWriteState({ status: "saving" });
+
+    try {
+      const client = createArchiveApiClient();
+      const keyValue = odbcKeyValue.trim();
+      let response;
+
+      if (odbcWriteOperation === "delete") {
+        response = await client.odbcDeleteRow(selectedOdbcTable, {
+          keyColumn: odbcKeyColumn.trim(),
+          keyValue
+        });
+      } else {
+        const parsedValues = JSON.parse(odbcValuesText) as unknown;
+        if (!parsedValues || typeof parsedValues !== "object" || Array.isArray(parsedValues)) {
+          setOdbcWriteState({ status: "error", message: "اكتب القيم كـ JSON object صالح." });
+          return;
+        }
+
+        const values = parsedValues as Record<string, unknown>;
+        response = odbcWriteOperation === "insert"
+          ? await client.odbcCreateRow(selectedOdbcTable, { values })
+          : await client.odbcUpdateRow(selectedOdbcTable, {
+              keyColumn: odbcKeyColumn.trim(),
+              keyValue,
+              values
+            });
+      }
+
+      if (!response.ok) {
+        setOdbcWriteState({ status: "error", message: response.error });
+        return;
+      }
+
+      setOdbcWriteState({
+        status: "success",
+        message: `تم تنفيذ ${response.operation} على ${response.affected} صف.`
+      });
+      await loadOdbcPreview(selectedOdbcTable);
+    } catch (err) {
+      setOdbcWriteState({
+        status: "error",
+        message: err instanceof Error ? err.message : "تعذر تنفيذ عملية ODBC."
+      });
+    }
+  };
+
   const postureRows = settings
     ? [
         { label: "مدة رمز الوصول", value: `${settings.accessTokenTtlMinutes} دقيقة` },
@@ -188,7 +252,7 @@ export default function SettingsPage() {
 
       <section className="content" aria-label={`إعدادات ${BRAND.arabicName}`}>
         <div className="hero">
-          <h1>إعدادات {BRAND.arabicName} للقراءة فقط.</h1>
+          <h1>إعدادات {BRAND.arabicName}.</h1>
           <p>
             هذه اللوحة تجمع مجالات النظام والأمان والتخزين وAPI والمظهر في
             صفحة واحدة سريعة المسح، مع إبراز ما هو مطبق فعلاً وما ينتظر
@@ -196,7 +260,7 @@ export default function SettingsPage() {
           </p>
           <div className="hero-actions">
             <span className="badge">لوحة مرجعية</span>
-            <span className="badge">قراءة فقط</span>
+            <span className="badge">قراءة وكتابة مقيدة</span>
           </div>
         </div>
 
@@ -298,7 +362,7 @@ export default function SettingsPage() {
           <div className="panel-title-row">
             <div>
               <h2>ODBC للأنظمة القديمة</h2>
-              <p>فحص الاتصال ومعاينة قراءة محدودة للجداول الأساسية المسموحة فقط.</p>
+              <p>فحص الاتصال، معاينة قراءة محدودة، وكتابة صفوف مقيدة للجداول الأساسية المسموحة فقط.</p>
             </div>
             {odbc && <StatusBadge>{odbcStatusLabel(odbc.status)}</StatusBadge>}
           </div>
@@ -335,6 +399,8 @@ export default function SettingsPage() {
                       onChange={(event) => {
                         const table = event.target.value as OdbcCoreTable;
                         setSelectedOdbcTable(table);
+                        setOdbcKeyColumn(getDefaultOdbcKeyColumn(table));
+                        setOdbcWriteState({ status: "idle" });
                         if (canPreviewOdbc) {
                           void loadOdbcPreview(table);
                         }
@@ -361,6 +427,88 @@ export default function SettingsPage() {
                   <p className="helper-text">
                     المعاينة تعمل بعد تفعيل ODBC وضبط DSN وتحميل driver في بيئة Laravel.
                   </p>
+                )}
+
+                {canPreviewOdbc && (
+                  <div className="stack section-divider" aria-label="ODBC row write controls">
+                    <div>
+                      <strong>كتابة صف مقيدة</strong>
+                      <p className="helper-text">
+                        تقبل العمليات JSON object فقط، وتمنع أعمدة الأسرار وكلمات المرور وtokens.
+                      </p>
+                    </div>
+
+                    <div className="field-row">
+                      <label>
+                        <span className="field-note">العملية</span>
+                        <select
+                          className="search-input"
+                          value={odbcWriteOperation}
+                          onChange={(event) => setOdbcWriteOperation(event.target.value as OdbcWriteOperation)}
+                        >
+                          <option value="insert">إضافة صف</option>
+                          <option value="update">تحديث صف</option>
+                          <option value="delete">حذف صف</option>
+                        </select>
+                      </label>
+
+                      {odbcWriteOperation !== "insert" && (
+                        <>
+                          <label>
+                            <span className="field-note">عمود المفتاح</span>
+                            <input
+                              className="search-input"
+                              value={odbcKeyColumn}
+                              onChange={(event) => setOdbcKeyColumn(event.target.value)}
+                              placeholder={selectedOdbcTable === "settings" ? "key" : "id"}
+                            />
+                          </label>
+                          <label>
+                            <span className="field-note">قيمة المفتاح</span>
+                            <input
+                              className="search-input"
+                              value={odbcKeyValue}
+                              onChange={(event) => setOdbcKeyValue(event.target.value)}
+                              placeholder="row id أو key"
+                            />
+                          </label>
+                        </>
+                      )}
+                    </div>
+
+                    {odbcWriteOperation !== "delete" && (
+                      <label>
+                        <span className="field-note">القيم JSON</span>
+                        <textarea
+                          className="search-input"
+                          value={odbcValuesText}
+                          onChange={(event) => setOdbcValuesText(event.target.value)}
+                          rows={5}
+                          dir="ltr"
+                        />
+                      </label>
+                    )}
+
+                    <div className="helper-row">
+                      <button
+                        className={odbcWriteOperation === "delete" ? "button button-danger" : "button button-primary"}
+                        type="button"
+                        disabled={odbcWriteState.status === "saving"}
+                        onClick={() => void handleOdbcWrite()}
+                      >
+                        {odbcWriteState.status === "saving" ? "جار التنفيذ..." : "تنفيذ العملية"}
+                      </button>
+                      <span className={`form-status ${
+                        odbcWriteState.status === "error"
+                          ? "status-error"
+                          : odbcWriteState.status === "success"
+                            ? "status-success"
+                            : ""
+                      }`}>
+                        {odbcWriteState.status === "idle" || odbcWriteState.status === "saving" ? "" : odbcWriteState.message}
+                      </span>
+                    </div>
+                  </div>
                 )}
 
                 {previewError && (

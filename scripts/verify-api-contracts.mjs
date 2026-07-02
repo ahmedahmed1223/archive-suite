@@ -34,6 +34,7 @@ for (const pathName of [
   "/collaboration/rooms/{roomKey}/locks/release",
   "/system/odbc",
   "/system/odbc/tables/{table}",
+  "/system/odbc/tables/{table}/rows",
   "/rights",
   "/rights/expiring",
   "/rights/{itemId}/enforcement",
@@ -62,6 +63,9 @@ for (const schemaName of [
   "OdbcProbe",
   "OdbcStatusResponse",
   "OdbcTablePreviewResponse",
+  "OdbcRowWriteRequest",
+  "OdbcRowKeyRequest",
+  "OdbcWriteResponse",
   "SharePayloadResponse"
 ]) {
   assert.ok(contract.components?.schemas?.[schemaName], `API contract should define ${schemaName}`);

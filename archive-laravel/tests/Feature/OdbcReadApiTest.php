@@ -105,6 +105,65 @@ class OdbcReadApiTest extends TestCase
         $response->assertOk();
         $this->assertLessThanOrEqual(250, count($response->json('rows')));
     }
+
+    public function test_odbc_create_row_returns_write_result(): void
+    {
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+
+        $this->postJson(
+            '/api/v1/system/odbc/tables/items/rows',
+            ['values' => ['id' => 101, 'name' => 'New item']],
+            $this->authHeaders()
+        )
+            ->assertCreated()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('table', 'items')
+            ->assertJsonPath('operation', 'insert')
+            ->assertJsonPath('affected', 1);
+    }
+
+    public function test_odbc_update_row_requires_allowed_key(): void
+    {
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+
+        $this->patchJson(
+            '/api/v1/system/odbc/tables/users/rows',
+            ['keyColumn' => 'email', 'keyValue' => 'alice@example.test', 'values' => ['display_name' => 'Alice']],
+            $this->authHeaders()
+        )
+            ->assertUnprocessable()
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_odbc_update_row_returns_write_result(): void
+    {
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+
+        $this->patchJson(
+            '/api/v1/system/odbc/tables/settings/rows',
+            ['keyColumn' => 'key', 'keyValue' => 'app_name', 'values' => ['value' => 'Masar']],
+            $this->authHeaders()
+        )
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('operation', 'update')
+            ->assertJsonPath('affected', 1);
+    }
+
+    public function test_odbc_delete_row_returns_write_result(): void
+    {
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+
+        $this->deleteJson(
+            '/api/v1/system/odbc/tables/items/rows',
+            ['keyColumn' => 'id', 'keyValue' => 10],
+            $this->authHeaders()
+        )
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('operation', 'delete')
+            ->assertJsonPath('affected', 1);
+    }
 }
 
 class OdbcReadFeatureFakeFactory implements OdbcConnectionFactory
@@ -175,5 +234,20 @@ class OdbcReadFeatureFakeConnection implements OdbcConnection
         }
 
         return [];
+    }
+
+    public function insertRow(string $table, array $values): int
+    {
+        return 1;
+    }
+
+    public function updateRow(string $table, string $keyColumn, mixed $keyValue, array $values): int
+    {
+        return 1;
+    }
+
+    public function deleteRow(string $table, string $keyColumn, mixed $keyValue): int
+    {
+        return 1;
     }
 }

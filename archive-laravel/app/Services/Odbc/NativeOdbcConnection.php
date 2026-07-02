@@ -50,7 +50,7 @@ class NativeOdbcConnection implements OdbcConnection
             return [];
         }
 
-        // ponytail: parametrized table name via fixed allowlist in caller; no string concat here.
+        // Table name is validated against a fixed allowlist before this method is called.
         $query = "SELECT * FROM [{$table}] OFFSET {$offset} ROWS FETCH NEXT {$limit} ROWS ONLY";
         $result = @odbc_exec($this->connection, $query);
         if ($result === false) {
@@ -63,5 +63,81 @@ class NativeOdbcConnection implements OdbcConnection
         }
 
         return $rows;
+    }
+
+    public function insertRow(string $table, array $values): int
+    {
+        $columns = array_keys($values);
+        $columnSql = implode(', ', array_map($this->quoteIdentifier(...), $columns));
+        $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+
+        return $this->executePrepared(
+            sprintf('INSERT INTO %s (%s) VALUES (%s)', $this->quoteIdentifier($table), $columnSql, $placeholders),
+            array_values($values),
+        );
+    }
+
+    public function updateRow(string $table, string $keyColumn, mixed $keyValue, array $values): int
+    {
+        $assignments = implode(', ', array_map(
+            fn (string $column): string => sprintf('%s = ?', $this->quoteIdentifier($column)),
+            array_keys($values),
+        ));
+
+        return $this->executePrepared(
+            sprintf(
+                'UPDATE %s SET %s WHERE %s = ?',
+                $this->quoteIdentifier($table),
+                $assignments,
+                $this->quoteIdentifier($keyColumn),
+            ),
+            [...array_values($values), $keyValue],
+        );
+    }
+
+    public function deleteRow(string $table, string $keyColumn, mixed $keyValue): int
+    {
+        return $this->executePrepared(
+            sprintf(
+                'DELETE FROM %s WHERE %s = ?',
+                $this->quoteIdentifier($table),
+                $this->quoteIdentifier($keyColumn),
+            ),
+            [$keyValue],
+        );
+    }
+
+    private function quoteIdentifier(string $identifier): string
+    {
+        return '['.str_replace(']', ']]', $identifier).']';
+    }
+
+    /**
+     * @param  array<int, mixed>  $params
+     */
+    private function executePrepared(string $query, array $params): int
+    {
+        if (! function_exists('odbc_prepare') || ! function_exists('odbc_execute')) {
+            return 0;
+        }
+
+        $statement = @odbc_prepare($this->connection, $query);
+        if ($statement === false) {
+            return 0;
+        }
+
+        $success = @odbc_execute($statement, $params);
+        if ($success === false) {
+            return 0;
+        }
+
+        if (function_exists('odbc_num_rows')) {
+            $affected = @odbc_num_rows($statement);
+            if (is_int($affected) && $affected >= 0) {
+                return $affected;
+            }
+        }
+
+        return 1;
     }
 }

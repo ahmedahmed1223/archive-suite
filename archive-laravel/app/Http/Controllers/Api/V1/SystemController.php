@@ -56,6 +56,70 @@ class SystemController extends Controller
         ]);
     }
 
+    public function odbcCreateRow(
+        Request $request,
+        string $table,
+        OdbcConnectionFactory $factory,
+    ): JsonResponse {
+        $validated = $request->validate([
+            'values' => ['required', 'array', 'min:1'],
+        ]);
+
+        return $this->odbcWriteResponse(
+            $table,
+            'insert',
+            fn (OdbcReadRepository $repository): array => $repository->insertRow($table, $validated['values']),
+            $factory,
+            201,
+        );
+    }
+
+    public function odbcUpdateRow(
+        Request $request,
+        string $table,
+        OdbcConnectionFactory $factory,
+    ): JsonResponse {
+        $validated = $request->validate([
+            'keyColumn' => ['required', 'string'],
+            'keyValue' => ['required'],
+            'values' => ['required', 'array', 'min:1'],
+        ]);
+
+        return $this->odbcWriteResponse(
+            $table,
+            'update',
+            fn (OdbcReadRepository $repository): array => $repository->updateRow(
+                $table,
+                $validated['keyColumn'],
+                $validated['keyValue'],
+                $validated['values'],
+            ),
+            $factory,
+        );
+    }
+
+    public function odbcDeleteRow(
+        Request $request,
+        string $table,
+        OdbcConnectionFactory $factory,
+    ): JsonResponse {
+        $validated = $request->validate([
+            'keyColumn' => ['required', 'string'],
+            'keyValue' => ['required'],
+        ]);
+
+        return $this->odbcWriteResponse(
+            $table,
+            'delete',
+            fn (OdbcReadRepository $repository): array => $repository->deleteRow(
+                $table,
+                $validated['keyColumn'],
+                $validated['keyValue'],
+            ),
+            $factory,
+        );
+    }
+
     public function getSecuritySettings(SecuritySettingsService $service): JsonResponse
     {
         return response()->json([
@@ -91,6 +155,49 @@ class SystemController extends Controller
                 'ok' => true,
                 'settings' => $service->getSettings(),
             ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * @param  callable(OdbcReadRepository): array{affected: int}  $operation
+     */
+    private function odbcWriteResponse(
+        string $table,
+        string $operationName,
+        callable $operation,
+        OdbcConnectionFactory $factory,
+        int $status = 200,
+    ): JsonResponse {
+        $repository = new OdbcReadRepository(
+            $factory->connect(
+                config('odbc.dsn', ''),
+                config('odbc.username'),
+                config('odbc.password'),
+            ),
+            config('odbc', []),
+        );
+
+        if (! in_array($table, $repository->getAllowedCoreTables(), true)) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Table access denied.',
+            ], 403);
+        }
+
+        try {
+            $result = $operation($repository);
+
+            return response()->json([
+                'ok' => true,
+                'table' => $table,
+                'operation' => $operationName,
+                'affected' => $result['affected'],
+            ], $status);
         } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'ok' => false,
