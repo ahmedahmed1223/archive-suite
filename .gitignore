@@ -42,3 +42,8 @@ archive-server/prisma/schema.active.prisma
 .claude/
 # transient brainstorm artifacts
 .superpowers/
+
+# Local agent/tool state and test output.
+output/
+.fallow/
+.agents/
