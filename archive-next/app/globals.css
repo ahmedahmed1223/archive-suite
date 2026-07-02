@@ -238,6 +238,22 @@ a:hover {
   gap: var(--space-4);
 }
 
+.section-heading {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.metric-value {
+  color: var(--color-text-primary);
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
 .hero {
   display: grid;
   gap: var(--space-3);
