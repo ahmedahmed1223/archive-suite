@@ -16,7 +16,8 @@ html {
 
 body {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 42%, transparent), transparent 18rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-brand-warm) 42%, transparent), transparent 19rem),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-brand-primary) 5%, transparent), transparent 28rem),
     var(--color-bg-primary);
   color: var(--color-text-primary);
   font-family: var(--font-family-body);
@@ -50,7 +51,7 @@ a:hover {
 }
 
 ::selection {
-  background: rgb(13 118 109 / 0.22);
+  background: color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
 }
 
 .shell {
@@ -69,28 +70,62 @@ a:hover {
   gap: var(--space-4);
   padding: var(--space-3) clamp(var(--space-4), 4vw, var(--space-6));
   border-block-end: 1px solid var(--color-border-secondary);
-  background: color-mix(in srgb, var(--color-bg-secondary) 88%, transparent);
-  backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--color-bg-secondary) 90%, transparent);
+  backdrop-filter: blur(18px);
 }
 
 .brand {
   display: grid;
-  gap: var(--space-1);
-  min-inline-size: max-content;
+  grid-template-columns: 2.75rem minmax(0, auto);
+  grid-template-areas:
+    "mark name"
+    "mark subtitle";
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  min-inline-size: 12rem;
 }
 
-.brand strong {
+.brand-mark {
+  grid-area: mark;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.brand-name {
+  grid-area: name;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.brand-name strong {
   color: var(--color-text-primary);
   font-family: var(--font-family-display);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
 }
 
-.brand span {
+.brand-latin {
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  line-height: var(--line-height-tight);
+  text-transform: uppercase;
+}
+
+.brand-subtitle {
+  grid-area: subtitle;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
 }
 
 .route-links {
@@ -172,7 +207,7 @@ a:hover {
 .panel {
   border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-lg);
-  background: var(--color-bg-secondary);
+  background: color-mix(in srgb, var(--color-bg-secondary) 96%, var(--color-brand-warm));
   padding: var(--space-4);
   box-shadow: var(--shadow-sm);
   display: grid;
@@ -252,7 +287,7 @@ a:hover {
   border-radius: var(--radius-md);
   padding: 0.32rem 0.62rem;
   color: var(--color-text-secondary);
-  background: var(--color-bg-secondary);
+  background: color-mix(in srgb, var(--color-bg-secondary) 88%, var(--color-brand-warm));
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   line-height: 1.1;
@@ -275,8 +310,8 @@ button.badge:hover {
 
 .app-nav-link[aria-current="page"] {
   color: var(--color-text-inverse);
-  border-color: var(--color-accent-primary);
-  background: var(--color-accent-primary);
+  border-color: var(--color-brand-primary);
+  background: var(--color-brand-primary);
 }
 
 .app-nav-link[aria-current="page"]:hover {
@@ -312,8 +347,8 @@ button.badge:hover {
 }
 
 .button-primary {
-  border-color: var(--color-accent-primary);
-  background: var(--color-accent-primary);
+  border-color: var(--color-brand-primary);
+  background: var(--color-brand-primary);
   color: var(--color-text-inverse);
 }
 
@@ -511,6 +546,39 @@ textarea.search-input {
   padding: var(--space-4);
   color: var(--color-text-tertiary);
   background: var(--color-surface-subtle);
+}
+
+.identity-panel {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.identity-lockup {
+  display: grid;
+  gap: var(--space-3);
+  align-content: center;
+  justify-items: start;
+}
+
+.identity-lockup img {
+  inline-size: min(100%, 20rem);
+  block-size: auto;
+}
+
+.identity-mark-preview {
+  display: grid;
+  place-items: center;
+  inline-size: 5rem;
+  block-size: 5rem;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--color-brand-sand);
+  box-shadow: var(--shadow-sm);
+}
+
+.identity-mark-preview img {
+  inline-size: 3.75rem;
+  block-size: 3.75rem;
 }
 
 .status-success {
@@ -761,6 +829,10 @@ textarea.search-input {
   .split-layout {
     grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.9fr);
   }
+
+  .identity-panel {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 
 @media (max-width: 760px) {
@@ -772,6 +844,12 @@ textarea.search-input {
 
   .brand {
     min-inline-size: 0;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+  }
+
+  .brand-mark {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
   }
 
   .route-links {

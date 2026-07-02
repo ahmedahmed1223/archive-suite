@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
+import { BRAND } from "@/lib/brand";
 import {
   createArchiveApiClient,
   type OdbcProbe,
@@ -28,7 +29,7 @@ const categoryCards = [
   {
     title: "المظهر",
     summary: "هوية العرض والنسق المرئي الحاليان موثقان هنا للرجوع السريع.",
-    items: ["النسق: فاتح", "الكثافة: مدمجة", "الهوية: Archive Suite"]
+    items: ["النسق: فاتح", "الكثافة: مدمجة", `الهوية: ${BRAND.lockupName}`]
   }
 ];
 
@@ -185,9 +186,9 @@ export default function SettingsPage() {
     <main className="shell">
       <AppHeader subtitle="مركز الإعدادات" />
 
-      <section className="content" aria-label="إعدادات Archive Suite">
+      <section className="content" aria-label={`إعدادات ${BRAND.arabicName}`}>
         <div className="hero">
-          <h1>إعدادات Archive Suite للقراءة فقط.</h1>
+          <h1>إعدادات {BRAND.arabicName} للقراءة فقط.</h1>
           <p>
             هذه اللوحة تجمع مجالات النظام والأمان والتخزين وAPI والمظهر في
             صفحة واحدة سريعة المسح، مع إبراز ما هو مطبق فعلاً وما ينتظر
@@ -198,6 +199,24 @@ export default function SettingsPage() {
             <span className="badge">قراءة فقط</span>
           </div>
         </div>
+
+        <article className="panel identity-panel" aria-label="هوية النظام">
+          <div className="identity-lockup">
+            <img src={BRAND.lockupPath} alt={BRAND.lockupName} width={360} height={96} />
+            <div>
+              <h2>هوية النظام</h2>
+              <p>{BRAND.descriptor} باسم عربي أساسي واسم لاتيني داعم للاستخدامات التقنية.</p>
+            </div>
+            <div className="record-meta">
+              <span className="badge">{BRAND.arabicName}</span>
+              <span className="badge">{BRAND.latinName}</span>
+              <span className="badge">v{BRAND.version}</span>
+            </div>
+          </div>
+          <div className="identity-mark-preview" aria-hidden="true">
+            <img src={BRAND.markPath} alt="" width={60} height={60} />
+          </div>
+        </article>
 
         <div className="dense-grid" aria-label="فئات الإعدادات">
           {categoryCards.map((card) => (

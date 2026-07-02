@@ -1,5 +1,6 @@
 import { getContractSummary } from "@/lib/archive-api";
 import AppHeader from "@/components/AppHeader";
+import { BRAND } from "@/lib/brand";
 
 const apiContract = getContractSummary();
 
@@ -11,14 +12,14 @@ export default function HomePage() {
       <section className="content">
         <div className="hero">
           <span className="badge">Laravel API</span>
-          <h1>لوحة تشغيل Archive Suite.</h1>
+          <h1>لوحة تشغيل {BRAND.arabicName}.</h1>
           <p>
             مساحة موحدة لإدارة الأرشيف والملفات والبحث والوسائط فوق واجهة
             Laravel API المعتمدة، مع مؤشرات سريعة لحالة العقد والمسارات
             الأساسية.
           </p>
           <div className="record-meta" aria-label="ملخص النظام">
-            <span className="badge">{apiContract.title}</span>
+            <span className="badge">عقد {BRAND.latinName} API</span>
             <span className="badge">v{apiContract.version}</span>
             <span className="badge">{apiContract.routeCount} مسار API</span>
           </div>

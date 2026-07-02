@@ -36,6 +36,8 @@
 
 - [x] **تنظيف لغة المنتج وتفاصيل الأنماط** — أُزيلت بقايا عبارات التحويل والتقنيات الداخلية من الصفحات الظاهرة (`/`, `/archive`, `/files`, `/login`, `/settings`, `/media/jobs`, `/help`) واستُبدلت بلغة تشغيل مستقرة. اكتملت تعريبة إعدادات النظام، ونُقلت أنماط متفرقة إلى classes مشتركة للملفات، سجل الأخطاء، ODBC، والـ annotation overlay. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **اعتماد هوية مسار / Masar في واجهة Next** — أضيفت أصول SVG للعلامة، wordmark، lockup، وfavicon داخل `archive-next/public/brand/`، وأضيفت ثوابت هوية مركزية في `archive-next/lib/brand.ts`. حُدثت metadata والهيدر والصفحات الظاهرة لاستخدام اسم مسار، وتوسعت tokens في `theme.css` إلى palette مؤسسية دافئة مع dark mode، وأضيف قسم “هوية النظام” إلى `/settings`. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.

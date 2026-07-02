@@ -1,12 +1,13 @@
 import { getContractSummary } from "@/lib/archive-api";
 import AppHeader from "@/components/AppHeader";
+import { BRAND } from "@/lib/brand";
 
 const contract = getContractSummary();
 
 const reportChecks = [
   {
     title: "عقد التقارير",
-    body: `يعتمد المسار على ${contract.title} v${contract.version} قبل نقل أي تقرير تشغيلي حقيقي.`
+    body: `يعتمد المسار على عقد ${BRAND.latinName} API v${contract.version} قبل نقل أي تقرير تشغيلي حقيقي.`
   },
   {
     title: "جاهزية العرض",
