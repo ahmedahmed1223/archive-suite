@@ -1,4 +1,5 @@
-import AppHeader from "@/components/AppHeader";
+import PublicFooter from "@/components/PublicFooter";
+import PublicHeader from "@/components/PublicHeader";
 import { ReviewLinkViewer } from "./ReviewLinkViewer";
 
 export default async function ReviewLinkPage({ params }: { params: Promise<{ token: string }> }) {
@@ -6,7 +7,7 @@ export default async function ReviewLinkPage({ params }: { params: Promise<{ tok
 
   return (
     <main className="shell">
-      <AppHeader subtitle="رابط مراجعة عام" />
+      <PublicHeader subtitle="رابط مراجعة عام" />
 
       <section className="content auth-layout" aria-label="رابط المراجعة العامة">
         <div className="hero auth-copy">
@@ -30,6 +31,8 @@ export default async function ReviewLinkPage({ params }: { params: Promise<{ tok
           <ReviewLinkViewer token={token} />
         </aside>
       </section>
+
+      <PublicFooter />
     </main>
   );
 }

@@ -3,8 +3,10 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AnnotationCanvas from "@/components/AnnotationCanvas";
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
+import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ReviewComment, type ReviewRect } from "@/lib/archive-api";
 import { getEchoClient } from "@/lib/echo";
 import styles from "./review.module.css";
@@ -161,31 +163,29 @@ export default function ReviewPage() {
   };
 
   return (
-    <main className="shell">
-      <AppHeader subtitle="المراجعة المرئية" />
-
-      <section className={`content stack ${styles.reviewContent}`} aria-label="المراجعة المرئية">
-        <div className="hero">
-          <span className="badge">Frame review</span>
-          <h1>مراجعة مرئية بتعليقات زمنية</h1>
-          <p>
-            شغّل المادة، اقفز إلى timecode محدد، وارسم مستطيلاً فوق الإطار عند
-            الحاجة لتوثيق الملاحظة بدقة.
-          </p>
-          <div className="record-meta" aria-label="حالة المراجعة">
+    <AppShell subtitle="المراجعة المرئية" contentClassName={styles.reviewContent}>
+      <PageToolbar
+        eyebrow={<span className="badge">Frame review</span>}
+        title="مراجعة مرئية بتعليقات زمنية"
+        description="شغّل المادة، اقفز إلى timecode محدد، وارسم مستطيلاً فوق الإطار عند الحاجة لتوثيق الملاحظة بدقة."
+        meta={(
+          <>
             <span className="badge">{comments.length} تعليق</span>
-            <span className={`badge ${styles.statusIndicator}`} data-status={drawMode ? "editing" : "reviewing"}>{drawMode ? "وضع الرسم" : "عرض التعليقات"}</span>
-          </div>
-        </div>
-
-        {error && (
-          <div className="state-banner state-banner-error" role="alert">
-            <strong>تعذر إكمال العملية</strong>
-            <p className="helper-text">{error}</p>
-          </div>
+            <span className={`badge ${styles.statusIndicator}`} data-status={drawMode ? "editing" : "reviewing"}>
+              {drawMode ? "وضع الرسم" : "عرض التعليقات"}
+            </span>
+          </>
         )}
+      />
 
-        <div className={`media-review-layout ${styles.mediaReviewLayout}`}>
+      {error && (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر إكمال العملية</strong>
+          <p className="helper-text">{error}</p>
+        </div>
+      )}
+
+      <div className={`media-review-layout ${styles.mediaReviewLayout}`}>
           <section className={`stack ${styles.playerSection}`} aria-label="المشغل ونموذج التعليق">
             <article className="panel auth-form">
               <label>
@@ -240,7 +240,10 @@ export default function ReviewPage() {
                 </div>
               </article>
             ) : (
-              <div className="empty-state">أدخل مسار مادة لبدء المراجعة.</div>
+              <EmptyState
+                title="أدخل مسار مادة لبدء المراجعة."
+                description="استخدم نفس الحقل أعلاه لتشغيل المادة وربط تعليقات المراجعة الخاصة بها."
+              />
             )}
 
             <form className={`panel auth-form ${styles.commentForm}`} onSubmit={handleAddComment}>
@@ -291,14 +294,23 @@ export default function ReviewPage() {
             <div className={styles.commentsHeader}>
               <div className={styles.commentsHeaderInfo}>
                 <h2>التعليقات</h2>
-                <p>{comments.length ? "مرتبة حسب الزمن داخل المادة." : "لا توجد تعليقات بعد."}</p>
+                <p>
+                  {loading
+                    ? "جار تحميل التعليقات..."
+                    : comments.length
+                      ? "مرتبة حسب الزمن داخل المادة."
+                      : "لا توجد تعليقات بعد."}
+                </p>
               </div>
               <span className="badge">{comments.length}</span>
             </div>
 
             <div className={`review-comments-rail ${styles.commentsList}`}>
               {comments.length === 0 ? (
-                <div className="empty-state">ابدأ بإضافة أول تعليق من النموذج.</div>
+                <EmptyState
+                  title="لا توجد تعليقات بعد."
+                  description="ابدأ بإضافة أول تعليق من النموذج المجاور للمشغل."
+                />
               ) : (
                 comments.map((comment) => (
                   <article
@@ -327,7 +339,6 @@ export default function ReviewPage() {
             </div>
           </aside>
         </div>
-      </section>
-    </main>
+    </AppShell>
   );
 }

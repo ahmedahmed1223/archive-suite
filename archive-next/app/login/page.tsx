@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import AppHeader from "@/components/AppHeader";
+import { BRAND } from "@/lib/brand";
 import { createArchiveApiClient, type ArchiveUser } from "@/lib/archive-api";
 
 type LoginState =
@@ -37,19 +38,27 @@ export default function LoginPage() {
       <AppHeader subtitle="تسجيل الدخول" />
 
       <section className="content auth-layout" aria-label="تسجيل الدخول">
-        <div className="hero auth-copy">
-          <h1>تسجيل الدخول.</h1>
-          <p>
-            استخدم بيانات حسابك للدخول إلى لوحة التحكم. يتم إرسال بيانات الدخول
-            عبر HTTPS وحفظ الجلسات بشكل آمن عبر HttpOnly cookies.
-          </p>
+        <div className="panel auth-brand-panel">
+          <img className="auth-brand-mark" src={BRAND.markPath} alt="" width={56} height={56} />
+          <div className="auth-copy">
+            <span className="badge">{BRAND.descriptor}</span>
+            <h1>تسجيل الدخول إلى {BRAND.arabicName}</h1>
+            <p>
+              استخدم بيانات حسابك للدخول إلى لوحة التحكم. يتم إرسال بيانات الدخول
+              عبر HTTPS وحفظ الجلسات بشكل آمن عبر HttpOnly cookies.
+            </p>
+          </div>
           <div className="hero-actions">
             <span className="badge">مصادقة آمنة</span>
             <span className="badge">Laravel API</span>
           </div>
         </div>
 
-        <form className="panel auth-form" onSubmit={handleSubmit} method="post">
+        <form className="panel auth-form" onSubmit={handleSubmit} method="post" aria-label="نموذج تسجيل الدخول">
+          <div className="panel-section-header">
+            <h2>بيانات الدخول</h2>
+          </div>
+
           <div>
             <label htmlFor="email">
               البريد الإلكتروني

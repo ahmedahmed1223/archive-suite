@@ -1,4 +1,5 @@
-import AppHeader from "@/components/AppHeader";
+import PublicFooter from "@/components/PublicFooter";
+import PublicHeader from "@/components/PublicHeader";
 import { ShareViewer } from "./ShareViewer";
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
@@ -6,7 +7,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
 
   return (
     <main className="shell">
-      <AppHeader subtitle="عارض المشاركة العامة" />
+      <PublicHeader subtitle="عارض المشاركة العامة" />
 
       <section className="content auth-layout" aria-label="عارض المشاركة">
         <div className="hero auth-copy">
@@ -31,6 +32,8 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
           <ShareViewer token={token} />
         </aside>
       </section>
+
+      <PublicFooter />
     </main>
   );
 }
