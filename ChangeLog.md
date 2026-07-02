@@ -42,6 +42,8 @@
 
 - [x] **إغلاق smoke العلامة المائية الحي** — أضيف `scripts/smoke-watermark-ffmpeg.mjs` وأمر `pnpm run smoke:watermark` لتوليد فيديو وPNG مؤقتين، تركيب watermark overlay عبر ffmpeg، فحص الناتج بـ ffprobe، ومقارنة crop منطقة العلامة للتأكد من أن overlay أثّر فعلياً. التحقق: `pnpm run smoke:watermark` نجح (`outputSize=43182`, `cropDifference=95.83`).
 
+- [x] **إضافة waveform والتفريغ المتزامن في مشغل Next** — نُقل منطق تحليل VTT/SRT وpeaks من legacy إلى helpers قانونية داخل `archive-next/lib/media/`، وتوسع `MediaPlayer` ليعرض timeline قابل للنقر، cue نشط، وقائمة تفريغ تقفز إلى مواضع التشغيل. صفحة `/media/play` صارت تقبل نص VTT/SRT اختياريًا بجانب path/disk. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.
