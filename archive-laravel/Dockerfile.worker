@@ -1,13 +1,17 @@
-FROM php:8.3-cli
+# PHP 8.4+ required: composer.lock resolves Symfony 8.x (php >=8.4.1) —
+# the test harness (scripts/laravel-docker.mjs) runs composer:latest which is 8.4.
+FROM php:8.4-cli
 
 # Install system dependencies including ffmpeg
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    libcurl4-openssl-dev \
+    libonig-dev \
     libpq-dev \
     libzip-dev \
     && pecl install redis \
     && docker-php-ext-enable redis \
-    && docker-php-ext-install zip pdo pdo_pgsql \
+    && docker-php-ext-install curl mbstring zip pdo pdo_pgsql \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -15,12 +19,16 @@ WORKDIR /app
 # Copy composer files
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies
+# Install PHP dependencies (scripts skipped: artisan is not copied yet)
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && composer install --no-interaction --no-dev
+    && composer install --no-interaction --no-dev --no-scripts
 
 # Copy application code
 COPY . .
+
+# Regenerate autoloader + package manifest now that artisan exists
+RUN composer dump-autoload --optimize --no-interaction \
+    && php artisan package:discover --ansi
 
 # Run queue worker
 CMD ["php", "artisan", "queue:work", "--max-jobs=1000", "--max-time=3600"]
