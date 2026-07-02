@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -78,6 +79,38 @@ assert.deepEqual(
   findings,
   [],
   `Generated QA/build artifacts must not be left in the repo:\n${findings.join("\n")}`
+);
+
+const forbiddenTrackedPrefixes = [
+  ".superpowers/",
+  "output/",
+  ".fallow/",
+  ".agents/",
+];
+
+const trackedFiles = execSync("git ls-files", { cwd: ROOT, encoding: "utf8" })
+  .split("\n")
+  .filter(Boolean);
+
+const forbiddenTracked = trackedFiles.filter((file) =>
+  forbiddenTrackedPrefixes.some((prefix) => file.startsWith(prefix))
+);
+assert.deepEqual(
+  forbiddenTracked,
+  [],
+  `Local tool/agent state must not be git-tracked:\n${forbiddenTracked.join("\n")}`
+);
+
+const packageJsonScripts = JSON.stringify(
+  JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")).scripts ?? {}
+);
+const strayRootVerifyScripts = trackedFiles.filter(
+  (file) => /^verify-[^/]+\.mjs$/.test(file) && !packageJsonScripts.includes(file)
+);
+assert.deepEqual(
+  strayRootVerifyScripts,
+  [],
+  `Stray root verify-*.mjs scripts not referenced from package.json:\n${strayRootVerifyScripts.join("\n")}`
 );
 
 for (const file of [
