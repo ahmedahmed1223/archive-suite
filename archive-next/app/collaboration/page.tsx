@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import {
   createArchiveApiClient,
+  type CollaborationDocument,
   type CollaborationLock,
   type CollaborationParticipant,
   type CollaborationStatus
@@ -64,9 +65,15 @@ export default function CollaborationPage() {
   const [message, setMessage] = useState("جاهز");
   const [error, setError] = useState<string | null>(null);
   const [lockMessage, setLockMessage] = useState("لا توجد أقفال محملة بعد");
+  const [documentContent, setDocumentContent] = useState("");
+  const [documentVersion, setDocumentVersion] = useState(0);
+  const [documentMeta, setDocumentMeta] = useState<Pick<CollaborationDocument, "updatedByDisplayName" | "updatedAt">>({});
+  const [documentMessage, setDocumentMessage] = useState("لم يتم تحميل مسودة بعد");
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLocking, setIsLocking] = useState<"acquire" | "release" | null>(null);
+  const [isDocumentLoading, setIsDocumentLoading] = useState(false);
+  const [isDocumentSaving, setIsDocumentSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -120,6 +127,47 @@ export default function CollaborationPage() {
     };
   }, [api, resourceId, roomKey, status]);
 
+  useEffect(() => {
+    let active = true;
+    const currentRoomKey = roomKey.trim();
+    const currentResourceId = resourceId.trim();
+    if (!currentRoomKey || !currentResourceId) return;
+
+    const loadDocument = async () => {
+      setIsDocumentLoading(true);
+      try {
+        const response = await api.collaborationDocument(currentRoomKey, currentResourceId);
+        if (!active) return;
+
+        if (response.ok) {
+          setDocumentContent(response.document.content);
+          setDocumentVersion(response.document.version);
+          setDocumentMeta({
+            updatedAt: response.document.updatedAt,
+            updatedByDisplayName: response.document.updatedByDisplayName
+          });
+          setDocumentMessage(response.document.version > 0 ? "تم تحميل آخر نسخة" : "مسودة جديدة");
+        } else {
+          setDocumentMessage(response.error);
+        }
+      } catch (err) {
+        if (active) {
+          setDocumentMessage(err instanceof Error ? err.message : "تعذر تحميل المسودة.");
+        }
+      } finally {
+        if (active) {
+          setIsDocumentLoading(false);
+        }
+      }
+    };
+
+    void loadDocument();
+
+    return () => {
+      active = false;
+    };
+  }, [api, resourceId, roomKey]);
+
   // Reverb push is additive to the heartbeat polling above: it merges live
   // deltas immediately, while polling stays as the fallback/reconciliation
   // path if the socket drops.
@@ -138,11 +186,22 @@ export default function CollaborationPage() {
         return next.sort((a, b) => a.displayName.localeCompare(b.displayName));
       });
     });
+    channel.listen(".document.updated", (event: { document: CollaborationDocument }) => {
+      if (event.document.resourceId !== resourceId.trim()) return;
+
+      setDocumentContent(event.document.content);
+      setDocumentVersion(event.document.version);
+      setDocumentMeta({
+        updatedAt: event.document.updatedAt,
+        updatedByDisplayName: event.document.updatedByDisplayName
+      });
+      setDocumentMessage(`تحديث حي من ${event.document.updatedByDisplayName ?? "مشارك آخر"}`);
+    });
 
     return () => {
       echo.leave(`collaboration.room.${currentRoomKey}`);
     };
-  }, [roomKey]);
+  }, [resourceId, roomKey]);
 
   const refreshPresence = async () => {
     const currentRoomKey = roomKey.trim();
@@ -221,6 +280,49 @@ export default function CollaborationPage() {
       setLockMessage(err instanceof Error ? err.message : "تعذر تحرير القفل.");
     } finally {
       setIsLocking(null);
+    }
+  };
+
+  const saveDocument = async () => {
+    const currentRoomKey = roomKey.trim();
+    const currentResourceId = resourceId.trim();
+    if (!currentRoomKey || !currentResourceId) {
+      setDocumentMessage("اختر غرفة ومورداً قبل حفظ المسودة.");
+      return;
+    }
+
+    setIsDocumentSaving(true);
+    try {
+      const response = await api.updateCollaborationDocument(currentRoomKey, currentResourceId, {
+        content: documentContent,
+        version: documentVersion
+      });
+
+      if (response.ok) {
+        setDocumentContent(response.document.content);
+        setDocumentVersion(response.document.version);
+        setDocumentMeta({
+          updatedAt: response.document.updatedAt,
+          updatedByDisplayName: response.document.updatedByDisplayName
+        });
+        setDocumentMessage(`تم حفظ النسخة ${response.document.version}`);
+        return;
+      }
+
+      const conflict = response as typeof response & { document?: CollaborationDocument; code?: string };
+      if (conflict.document) {
+        setDocumentContent(conflict.document.content);
+        setDocumentVersion(conflict.document.version);
+        setDocumentMeta({
+          updatedAt: conflict.document.updatedAt,
+          updatedByDisplayName: conflict.document.updatedByDisplayName
+        });
+      }
+      setDocumentMessage(response.error);
+    } catch (err) {
+      setDocumentMessage(err instanceof Error ? err.message : "تعذر حفظ المسودة.");
+    } finally {
+      setIsDocumentSaving(false);
     }
   };
 
@@ -323,6 +425,38 @@ export default function CollaborationPage() {
                   </div>
                 ))
               )}
+            </div>
+          </article>
+
+          <article className="panel full-span">
+            <SectionHeader
+              title="مسودة المورد"
+              description="نص مشترك بإصدار متفائل مرتبط بالمورد الحالي."
+            />
+
+            <div className="stack">
+              <textarea
+                value={documentContent}
+                onChange={(event) => setDocumentContent(event.target.value)}
+                rows={8}
+                className="search-input"
+                disabled={isDocumentLoading}
+              />
+              <div className="toolbar-row toolbar-start">
+                <button
+                  className="button button-primary"
+                  type="button"
+                  onClick={saveDocument}
+                  disabled={isDocumentSaving || isDocumentLoading}
+                >
+                  {isDocumentSaving ? "جاري الحفظ" : "حفظ المسودة"}
+                </button>
+                <span className="badge">v{documentVersion}</span>
+                {documentMeta.updatedByDisplayName ? (
+                  <span className="badge">{documentMeta.updatedByDisplayName}</span>
+                ) : null}
+              </div>
+              <p className="helper-text">{documentMessage}</p>
             </div>
           </article>
 

@@ -802,6 +802,80 @@
         }
       }
     },
+    "/collaboration/rooms/{roomKey}/documents/{resourceId}": {
+      "get": {
+        "tags": ["Collaboration"],
+        "summary": "Get the shared document draft for a room resource",
+        "operationId": "getCollaborationDocument",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "roomKey",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shared document draft",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollaborationDocumentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Update the shared document draft with optimistic versioning",
+        "operationId": "updateCollaborationDocument",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "roomKey",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CollaborationDocumentUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shared document draft updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollaborationDocumentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/system/odbc": {
       "get": {
         "tags": ["System"],
@@ -1720,6 +1794,39 @@
             "required": ["released"],
             "properties": {
               "released": { "type": "boolean" }
+            }
+          }
+        ]
+      },
+      "CollaborationDocument": {
+        "type": "object",
+        "required": ["roomKey", "resourceId", "content", "version"],
+        "properties": {
+          "roomKey": { "type": "string" },
+          "resourceId": { "type": "string" },
+          "content": { "type": "string" },
+          "version": { "type": "integer", "minimum": 0 },
+          "updatedByDisplayName": { "type": ["string", "null"] },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CollaborationDocumentUpdateRequest": {
+        "type": "object",
+        "required": ["content", "version"],
+        "properties": {
+          "content": { "type": "string", "maxLength": 20000 },
+          "version": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "CollaborationDocumentResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["roomKey", "document"],
+            "properties": {
+              "roomKey": { "type": "string" },
+              "document": { "$ref": "#/components/schemas/CollaborationDocument" }
             }
           }
         ]

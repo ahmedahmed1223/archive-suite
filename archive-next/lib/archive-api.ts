@@ -225,6 +225,15 @@ export interface CollaborationLocksPayload {
   locks: CollaborationLock[];
 }
 
+export interface CollaborationDocument {
+  roomKey: string;
+  resourceId: string;
+  content: string;
+  version: number;
+  updatedByDisplayName?: string | null;
+  updatedAt?: string | null;
+}
+
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
   login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
@@ -262,6 +271,8 @@ export interface ArchiveApiClient {
   collaborationLocks(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationLocksPayload>>;
   acquireCollaborationLock(roomKey: string, payload: { resourceId: string; ttlSeconds?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationLocksPayload & { lock: CollaborationLock }>>;
   releaseCollaborationLock(roomKey: string, payload: { resourceId: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationLocksPayload & { released: boolean }>>;
+  collaborationDocument(roomKey: string, resourceId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ roomKey: string; document: CollaborationDocument }>>;
+  updateCollaborationDocument(roomKey: string, resourceId: string, payload: { content: string; version: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ roomKey: string; document: CollaborationDocument }>>;
 }
 
 export interface AuthRequestOptions {
@@ -433,6 +444,22 @@ export function createArchiveApiClient({
     releaseCollaborationLock: (roomKey: string, payload: { resourceId: string }, options?: AuthRequestOptions) =>
       post<CollaborationLocksPayload & { released: boolean }>(
         `/collaboration/rooms/${encodeURIComponent(roomKey)}/locks/release`,
+        payload,
+        options
+      ),
+    collaborationDocument: (roomKey: string, resourceId: string, options?: AuthRequestOptions) =>
+      get<{ roomKey: string; document: CollaborationDocument }>(
+        `/collaboration/rooms/${encodeURIComponent(roomKey)}/documents/${encodeURIComponent(resourceId)}`,
+        options
+      ),
+    updateCollaborationDocument: (
+      roomKey: string,
+      resourceId: string,
+      payload: { content: string; version: number },
+      options?: AuthRequestOptions
+    ) =>
+      post<{ roomKey: string; document: CollaborationDocument }>(
+        `/collaboration/rooms/${encodeURIComponent(roomKey)}/documents/${encodeURIComponent(resourceId)}`,
         payload,
         options
       )
