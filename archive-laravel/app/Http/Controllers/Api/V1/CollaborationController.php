@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\CollaborationDocumentUpdated;
 use App\Events\CollaborationPresenceUpdated;
 use App\Http\Controllers\Controller;
+use App\Models\CollaborationDocument;
 use App\Models\CollaborationLock;
 use App\Models\CollaborationPresence;
 use App\Models\User;
@@ -163,6 +165,84 @@ class CollaborationController extends Controller
         ]);
     }
 
+    public function document(string $roomKey, string $resourceId): JsonResponse
+    {
+        return response()->json([
+            'ok' => true,
+            'roomKey' => $roomKey,
+            'document' => $this->documentPayload($roomKey, $resourceId),
+        ]);
+    }
+
+    public function updateDocument(Request $request, string $roomKey, string $resourceId): JsonResponse
+    {
+        $validated = $request->validate([
+            'content' => ['present', 'nullable', 'string', 'max:20000'],
+            'version' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $user = $request->attributes->get('archive_user');
+        if (! $user instanceof User) {
+            return response()->json(['ok' => false, 'error' => 'Unauthorized.'], 401);
+        }
+
+        $this->deleteExpiredLocks($roomKey);
+        $lock = CollaborationLock::query()
+            ->where('room_key', $roomKey)
+            ->where('resource_id', $resourceId)
+            ->where('user_id', '!=', $user->id)
+            ->first();
+
+        if ($lock) {
+            return response()->json([
+                'ok' => false,
+                'code' => 'lock_conflict',
+                'error' => 'Resource is locked by another collaborator.',
+                'lock' => $this->formatLock($lock),
+            ], 409);
+        }
+
+        $document = CollaborationDocument::query()
+            ->where('room_key', $roomKey)
+            ->where('resource_id', $resourceId)
+            ->first();
+        $currentVersion = $document?->version ?? 0;
+
+        if ((int) $validated['version'] !== $currentVersion) {
+            return response()->json([
+                'ok' => false,
+                'code' => 'document_version_conflict',
+                'error' => 'Document changed since it was loaded.',
+                'document' => $this->formatDocumentOrEmpty($roomKey, $resourceId, $document),
+            ], 409);
+        }
+
+        if (! $document) {
+            $document = new CollaborationDocument([
+                'id' => (string) Str::uuid(),
+                'room_key' => $roomKey,
+                'resource_id' => $resourceId,
+            ]);
+        }
+
+        $document->fill([
+            'content' => $validated['content'] ?? '',
+            'version' => $currentVersion + 1,
+            'updated_by_user_id' => $user->id,
+            'updated_by_display_name' => $user->name ?: $user->email,
+        ]);
+        $document->save();
+
+        $formatted = $this->formatDocument($document);
+        Event::dispatch(new CollaborationDocumentUpdated($roomKey, $formatted));
+
+        return response()->json([
+            'ok' => true,
+            'roomKey' => $roomKey,
+            'document' => $formatted,
+        ]);
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -216,6 +296,54 @@ class CollaborationController extends Controller
             ->map(fn (CollaborationLock $lock): array => $this->formatLock($lock))
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function documentPayload(string $roomKey, string $resourceId): array
+    {
+        $document = CollaborationDocument::query()
+            ->where('room_key', $roomKey)
+            ->where('resource_id', $resourceId)
+            ->first();
+
+        return $this->formatDocumentOrEmpty($roomKey, $resourceId, $document);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatDocumentOrEmpty(
+        string $roomKey,
+        string $resourceId,
+        ?CollaborationDocument $document,
+    ): array {
+        return $document
+            ? $this->formatDocument($document)
+            : [
+                'roomKey' => $roomKey,
+                'resourceId' => $resourceId,
+                'content' => '',
+                'version' => 0,
+                'updatedByDisplayName' => null,
+                'updatedAt' => null,
+            ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatDocument(CollaborationDocument $document): array
+    {
+        return [
+            'roomKey' => $document->room_key,
+            'resourceId' => $document->resource_id,
+            'content' => $document->content,
+            'version' => $document->version,
+            'updatedByDisplayName' => $document->updated_by_display_name,
+            'updatedAt' => $document->updated_at?->toISOString(),
+        ];
     }
 
     /**

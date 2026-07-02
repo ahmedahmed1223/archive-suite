@@ -54,6 +54,8 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware('archive.auth')->get('/collaboration/rooms/{roomKey}/locks', [CollaborationController::class, 'locks']);
     Route::middleware('archive.auth')->post('/collaboration/rooms/{roomKey}/locks', [CollaborationController::class, 'acquireLock']);
     Route::middleware('archive.auth')->post('/collaboration/rooms/{roomKey}/locks/release', [CollaborationController::class, 'releaseLock']);
+    Route::middleware('archive.auth')->get('/collaboration/rooms/{roomKey}/documents/{resourceId}', [CollaborationController::class, 'document']);
+    Route::middleware('archive.auth')->post('/collaboration/rooms/{roomKey}/documents/{resourceId}', [CollaborationController::class, 'updateDocument']);
 
     Route::middleware(['archive.auth', 'archive.audit'])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);

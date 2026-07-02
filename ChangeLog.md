@@ -44,6 +44,8 @@
 
 - [x] **إضافة waveform والتفريغ المتزامن في مشغل Next** — نُقل منطق تحليل VTT/SRT وpeaks من legacy إلى helpers قانونية داخل `archive-next/lib/media/`، وتوسع `MediaPlayer` ليعرض timeline قابل للنقر، cue نشط، وقائمة تفريغ تقفز إلى مواضع التشغيل. صفحة `/media/play` صارت تقبل نص VTT/SRT اختياريًا بجانب path/disk. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **إضافة مسودة مورد مشتركة للتعاون الحي** — أضيفت `collaboration_documents` في Laravel مع `GET/POST /api/v1/collaboration/rooms/{roomKey}/documents/{resourceId}`، حفظ بإصدار متفائل، تعارض 409 عند النسخ القديمة أو قفل مستخدم آخر، وحدث Reverb `document.updated`. صفحة `/collaboration` تعرض المسودة وتدمج التحديثات الحية. التحقق: `node scripts/laravel-docker.mjs test --filter=Collaboration`, `node scripts/verify-api-contracts.mjs`, `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.
