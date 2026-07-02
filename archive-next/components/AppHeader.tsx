@@ -6,11 +6,17 @@ import { usePathname } from "next/navigation";
 const primaryNav = [
   { href: "/", label: "الرئيسية" },
   { href: "/archive", label: "السجلات" },
+  { href: "/search", label: "البحث" },
+  { href: "/timeline", label: "الخط الزمني" },
   { href: "/files", label: "الملفات" },
+  { href: "/favorites", label: "المفضلة" },
+  { href: "/shares", label: "المشاركات" },
   { href: "/types", label: "الأنواع" },
   { href: "/media/jobs", label: "الوسائط" },
   { href: "/collaboration", label: "التعاون" },
+  { href: "/analytics", label: "التحليلات" },
   { href: "/reports", label: "التقارير" },
+  { href: "/status", label: "الحالة" },
   { href: "/settings", label: "الإعدادات" },
   { href: "/errors", label: "الأخطاء" },
   { href: "/help", label: "المساعدة" }

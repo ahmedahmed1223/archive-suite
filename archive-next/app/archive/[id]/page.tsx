@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import AppHeader from "@/components/AppHeader";
 import { createArchiveApiClient, type ArchiveRecord, type RightsRecord } from "@/lib/archive-api";
+import { isFavorited, toggleFavorite } from "@/lib/favorites";
 
 type DetailState =
   | { status: "loading" }
@@ -16,6 +17,7 @@ export default function ArchiveDetailPage() {
 
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<DetailState>({ status: "loading" });
+  const [isFav, setIsFav] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -46,6 +48,7 @@ export default function ArchiveDetailPage() {
         record: recordResponse.record,
         rights
       });
+      setIsFav(isFavorited(id));
     };
 
     loadDetail();
@@ -82,6 +85,18 @@ export default function ArchiveDetailPage() {
               )}
               <div className="hero-actions">
                 <a href="/archive" className="badge">← العودة</a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newFav = toggleFavorite(id, state.record.title);
+                    setIsFav(newFav);
+                  }}
+                  className="badge"
+                  aria-pressed={isFav}
+                  title={isFav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                >
+                  {isFav ? "★ مفضل" : "☆ إضافة"}
+                </button>
                 {state.record.store && (
                   <span className="badge">{state.record.store}</span>
                 )}
