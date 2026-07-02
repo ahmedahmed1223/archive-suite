@@ -2,7 +2,10 @@
 
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
+import EmptyState from "@/components/EmptyState";
+import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveFile } from "@/lib/archive-api";
 import { addMintedLink } from "@/lib/minted-shares";
 
@@ -16,6 +19,20 @@ type ShareState =
   | { status: "creating" }
   | { status: "success"; token: string; url?: string }
   | { status: "error"; message: string };
+
+type ScanState =
+  | { status: "idle" }
+  | { status: "running" }
+  | { status: "success"; ingested: number; skipped: number }
+  | { status: "error"; message: string };
+
+type FileViewMode = "table" | "cards";
+type FileKind = "all" | "media" | "image" | "document" | "other";
+
+const fileViewOptions: DataViewOption<FileViewMode>[] = [
+  { value: "table", label: "جدول" },
+  { value: "cards", label: "بطاقات" }
+];
 
 const PLAYABLE_EXTENSIONS = new Set([
   "mp3",
@@ -34,15 +51,39 @@ const PLAYABLE_EXTENSIONS = new Set([
   "ogv"
 ]);
 
+function getFileExtension(file: ArchiveFile) {
+  return file.key.split(".").pop()?.toLowerCase() ?? "";
+}
+
 function isPlayableFile(file: ArchiveFile): boolean {
   const mimeType = typeof file.mimeType === "string" ? file.mimeType : "";
   if (mimeType.startsWith("audio/") || mimeType.startsWith("video/")) {
     return true;
   }
 
-  const ext = file.key.split(".").pop()?.toLowerCase() ?? "";
+  return PLAYABLE_EXTENSIONS.has(getFileExtension(file));
+}
 
-  return PLAYABLE_EXTENSIONS.has(ext);
+function getFileKind(file: ArchiveFile): Exclude<FileKind, "all"> {
+  const mimeType = typeof file.mimeType === "string" ? file.mimeType : "";
+  const ext = getFileExtension(file);
+
+  if (mimeType.startsWith("audio/") || mimeType.startsWith("video/") || PLAYABLE_EXTENSIONS.has(ext)) return "media";
+  if (mimeType.startsWith("image/") || ["jpg", "jpeg", "png", "webp", "gif", "tiff", "svg"].includes(ext)) return "image";
+  if (["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "md"].includes(ext)) return "document";
+  return "other";
+}
+
+function kindLabel(kind: FileKind) {
+  const labels: Record<FileKind, string> = {
+    all: "كل الملفات",
+    media: "وسائط",
+    image: "صور",
+    document: "مستندات",
+    other: "أخرى"
+  };
+
+  return labels[kind];
 }
 
 function mediaPlayHref(file: ArchiveFile): string {
@@ -55,12 +96,43 @@ function mediaPlayHref(file: ArchiveFile): string {
   return `/media/play?${params.toString()}`;
 }
 
+function formatBytes(bytes?: number): string {
+  if (bytes === undefined) return "-";
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
+  return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
+}
+
+function formatDate(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("ar-SA");
+}
+
+function getUniqueStores(files: ArchiveFile[]) {
+  return Array.from(new Set(files.map((file) => file.store).filter((store): store is string => Boolean(store)))).sort((a, b) =>
+    a.localeCompare(b, "ar")
+  );
+}
+
+function getFileName(file: ArchiveFile) {
+  return file.name || file.key.split(/[\\/]/).pop() || file.key;
+}
+
 export default function FilesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<FileState>({ status: "loading" });
   const [query, setQuery] = useState("");
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [storeFilter, setStoreFilter] = useState("all");
+  const [kindFilter, setKindFilter] = useState<FileKind>("all");
+  const [viewMode, setViewMode] = useState<FileViewMode>("table");
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [previewKey, setPreviewKey] = useState<string | null>(null);
   const [shareState, setShareState] = useState<ShareState>({ status: "idle" });
+  const [scanState, setScanState] = useState<ScanState>({ status: "idle" });
 
   const loadFiles = useCallback(async (q: string) => {
     setState({ status: "loading" });
@@ -81,29 +153,49 @@ export default function FilesPage() {
     void loadFiles("");
   }, [loadFiles]);
 
+  const files = state.status === "ready" ? state.files : [];
+  const stores = useMemo(() => getUniqueStores(files), [files]);
+  const visibleFiles = useMemo(() => {
+    return files.filter((file) => {
+      if (storeFilter !== "all" && file.store !== storeFilter) return false;
+      if (kindFilter !== "all" && getFileKind(file) !== kindFilter) return false;
+      return true;
+    });
+  }, [files, kindFilter, storeFilter]);
+  const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
+  const previewFile = useMemo(() => {
+    if (previewKey) return visibleFiles.find((file) => file.key === previewKey) || visibleFiles[0] || null;
+    return visibleFiles.find((file) => selectedKeySet.has(file.key)) || visibleFiles[0] || null;
+  }, [previewKey, selectedKeySet, visibleFiles]);
+  const mediaCount = files.filter((file) => getFileKind(file) === "media").length;
+  const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
+
   const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     await loadFiles(query);
   };
 
   const handleToggleFile = (fileKey: string) => {
-    setSelectedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(fileKey)) {
-        next.delete(fileKey);
-      } else {
-        next.add(fileKey);
-      }
-      return next;
+    setSelectedKeys((current) =>
+      current.includes(fileKey)
+        ? current.filter((key) => key !== fileKey)
+        : [...current, fileKey]
+    );
+  };
+
+  const toggleSelectAllVisible = () => {
+    setSelectedKeys((current) => {
+      const allVisibleSelected = visibleFiles.length > 0 && visibleFiles.every((file) => current.includes(file.key));
+      return allVisibleSelected ? [] : visibleFiles.map((file) => file.key);
     });
   };
 
   const handleCreateShare = async () => {
-    if (selectedKeys.size === 0) return;
+    if (selectedKeys.length === 0) return;
 
     setShareState({ status: "creating" });
     const response = await api.createShare({
-      itemIds: Array.from(selectedKeys)
+      itemIds: selectedKeys
     });
 
     if (!response.ok) {
@@ -111,11 +203,10 @@ export default function FilesPage() {
       return;
     }
 
-    // ponytail: record minted link to localStorage
     addMintedLink({
       token: response.token,
       url: response.url || "",
-      itemLabel: `${selectedKeys.size} عنصر`,
+      itemLabel: `${selectedKeys.length} عنصر`,
       createdAt: new Date().toISOString()
     });
 
@@ -126,191 +217,296 @@ export default function FilesPage() {
     });
   };
 
-  return (
-    <main className="shell">
-      <AppHeader subtitle="استعراض الملفات" />
+  const handleScan = async () => {
+    setScanState({ status: "running" });
+    const response = await api.ingestScan();
 
-      <section className="content" aria-label="استعراض الملفات والمشاركة">
-        <div className="hero">
-          <h1>استعرض الملفات المحفوظة.</h1>
-          <p>
-            شغّل الوسائط القابلة للعرض مباشرة، اختر ملفات متعددة، أو أنشئ روابط
-            مشاركة عامة للوصول الفوري إلى العناصر المحددة.
-          </p>
-          <div className="hero-actions">
-            <span className="badge">مستعرض الملفات</span>
-            {selectedKeys.size > 0 && (
-              <span className="badge">{selectedKeys.size} محدد</span>
-            )}
+    if (!response.ok) {
+      setScanState({ status: "error", message: response.error });
+      return;
+    }
+
+    setScanState({
+      status: "success",
+      ingested: response.ingested.length,
+      skipped: response.skipped
+    });
+    await loadFiles(query);
+  };
+
+  const renderFileActions = (file: ArchiveFile) => (
+    <div className="button-row">
+      {isPlayableFile(file) ? (
+        <a href={mediaPlayHref(file)} className="button button-secondary button-sm">
+          تشغيل
+        </a>
+      ) : null}
+      <button type="button" className="button button-secondary button-sm" onClick={() => setPreviewKey(file.key)}>
+        معاينة
+      </button>
+    </div>
+  );
+
+  return (
+    <AppShell subtitle="مستعرض الملفات" contentClassName="files-content">
+      <PageToolbar
+        eyebrow={<span className="badge">File Operations</span>}
+        title="الملفات"
+        description="استعرض ملفات التخزين، شغّل الوسائط، اختر عناصر للمشاركة، أو أطلق فحص ingest من واجهة واحدة."
+        meta={(
+          <>
+            <span className="badge">{files.length} ملف</span>
+            <span className="badge">{mediaCount} وسائط</span>
+            <span className="badge">{formatBytes(totalSize)}</span>
+            <span className="badge">{selectedKeys.length} محدد</span>
+          </>
+        )}
+        actions={(
+          <>
+            <button type="button" className="button button-primary" onClick={() => void handleScan()} disabled={scanState.status === "running"}>
+              {scanState.status === "running" ? "جار الفحص" : "فحص التخزين"}
+            </button>
+            <a className="button button-secondary" href="/media/jobs">مهام الوسائط</a>
+          </>
+        )}
+      >
+        <form className="archive-toolbar-grid" onSubmit={handleSearch}>
+          <label>
+            <span>بحث</span>
+            <input
+              type="search"
+              placeholder="اسم الملف أو المسار..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="search-input"
+            />
+          </label>
+          <label>
+            <span>المخزن</span>
+            <select value={storeFilter} onChange={(event) => setStoreFilter(event.target.value)}>
+              <option value="all">كل المخازن</option>
+              {stores.map((store) => <option key={store} value={store}>{store}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>النوع</span>
+            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as FileKind)}>
+              {(["all", "media", "image", "document", "other"] as FileKind[]).map((kind) => (
+                <option key={kind} value={kind}>{kindLabel(kind)}</option>
+              ))}
+            </select>
+          </label>
+          <div className="archive-toolbar-actions">
+            <button type="submit" className="button button-primary">تحديث</button>
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => {
+                setQuery("");
+                setStoreFilter("all");
+                setKindFilter("all");
+                void loadFiles("");
+              }}
+            >
+              تصفير
+            </button>
+          </div>
+        </form>
+        <div className="archive-toolbar-row">
+          <DataViewSwitcher value={viewMode} options={fileViewOptions} onChange={setViewMode} label="طريقة عرض الملفات" />
+        </div>
+      </PageToolbar>
+
+      {scanState.status === "success" ? (
+        <div className="state-banner state-banner-success">
+          <strong>انتهى فحص التخزين</strong>
+          <span className="helper-text">تم إدخال {scanState.ingested} وتجاوز {scanState.skipped}.</span>
+        </div>
+      ) : null}
+
+      {scanState.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر فحص التخزين</strong>
+          <span className="helper-text">{scanState.message}</span>
+        </div>
+      ) : null}
+
+      {selectedKeys.length > 0 ? (
+        <div className="bulk-action-bar" role="status">
+          <strong>{selectedKeys.length} ملف محدد</strong>
+          <div className="button-row">
+            <button
+              onClick={handleCreateShare}
+              disabled={shareState.status === "creating"}
+              className="button button-primary"
+            >
+              {shareState.status === "creating" ? "جار الإنشاء..." : "إنشاء رابط مشاركة"}
+            </button>
+            <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>تحديد الظاهر</button>
+            <button type="button" className="button button-secondary" onClick={() => setSelectedKeys([])}>مسح التحديد</button>
           </div>
         </div>
+      ) : null}
 
-        <form className="search-form" onSubmit={handleSearch}>
-          <input
-            type="text"
-            placeholder="ابحث عن اسم الملف أو المسار..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="search-input"
-            autoFocus
+      {shareState.status === "success" ? (
+        <div className="state-banner state-banner-success">
+          <strong>تم إنشاء الرابط بنجاح</strong>
+          <span className="helper-text">
+            <a className="text-accent" href={`/share/${encodeURIComponent(shareState.token)}`}>
+              فتح المشاركة
+            </a>
+            {shareState.url ? ` | ${shareState.url}` : ""}
+          </span>
+        </div>
+      ) : null}
+
+      {shareState.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>خطأ في المشاركة</strong>
+          <span className="helper-text">{shareState.message}</span>
+        </div>
+      ) : null}
+
+      {state.status === "loading" ? (
+        <div className="panel panel-compact" role="status" aria-live="polite">
+          <p className="form-status">جار تحميل قائمة الملفات...</p>
+        </div>
+      ) : null}
+
+      {state.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل الملفات</strong>
+          <span className="helper-text">{state.message}</span>
+        </div>
+      ) : null}
+
+      {state.status === "ready" ? (
+        visibleFiles.length === 0 ? (
+          <EmptyState
+            title="لم يتم العثور على ملفات."
+            description="جرّب بحثاً أوسع أو غيّر الفلاتر، ثم أعد فحص التخزين عند الحاجة."
+            actions={<button type="button" className="button button-secondary" onClick={() => void handleScan()}>فحص التخزين</button>}
           />
-          <button type="submit" className="button button-primary">بحث</button>
-        </form>
-
-        {state.status === "loading" && (
-          <div className="panel panel-compact" role="status" aria-live="polite">
-            <p className="form-status">جار تحميل قائمة الملفات...</p>
-          </div>
-        )}
-
-        {state.status === "error" && (
-          <div className="state-banner state-banner-error" role="alert">
-            <strong>تعذر تحميل الملفات</strong>
-            <span className="helper-text">{state.message}</span>
-          </div>
-        )}
-
-        {state.status === "ready" && (
-          <>
-            {state.files.length === 0 ? (
-              <div className="empty-state">
-                <strong>لم يتم العثور على ملفات.</strong>
-                <p className="helper-text">جرّب بحثاً أوسع أو غيّر المعايير.</p>
-              </div>
-            ) : (
-              <>
-                <div className="toolbar-row">
-                  <span className="helper-text">
-                    {state.files.length} ملف
-                    {selectedKeys.size > 0 && ` · ${selectedKeys.size} محدد`}
-                  </span>
-                  {selectedKeys.size > 0 && (
-                    <button
-                      type="button"
-                      className="button button-secondary"
-                      onClick={() => setSelectedKeys(new Set())}
-                    >
-                      مسح التحديد
-                    </button>
-                  )}
-                </div>
-
-                <div className="data-table scroll-x">
-                  <table role="grid" aria-label="قائمة الملفات">
+        ) : (
+          <section className="files-workspace" aria-label="واجهة الملفات">
+            <div className="files-surface" data-view={viewMode}>
+              {viewMode === "table" ? (
+                <div className="scroll-x">
+                  <table className="data-table" role="grid" aria-label="قائمة الملفات">
                     <thead>
                       <tr>
-                        <th style={{ width: "3rem" }}>
+                        <th>
                           <input
                             type="checkbox"
-                            checked={selectedKeys.size === state.files.length && state.files.length > 0}
-                            onChange={() => {
-                              if (selectedKeys.size === state.files.length) {
-                                setSelectedKeys(new Set());
-                              } else {
-                                setSelectedKeys(new Set(state.files.map((f) => f.key)));
-                              }
-                            }}
+                            checked={visibleFiles.length > 0 && visibleFiles.every((file) => selectedKeySet.has(file.key))}
+                            onChange={toggleSelectAllVisible}
                             aria-label="تحديد الكل"
                           />
                         </th>
                         <th>الاسم</th>
-                        <th style={{ width: "8rem" }}>الحجم</th>
-                        <th style={{ width: "10rem" }}>المخزن</th>
-                        <th style={{ width: "8rem" }}>التاريخ</th>
-                        <th style={{ width: "6rem" }}>الإجراءات</th>
+                        <th>النوع</th>
+                        <th>الحجم</th>
+                        <th>المخزن</th>
+                        <th>التاريخ</th>
+                        <th>الإجراءات</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {state.files.map((file) => (
-                        <tr key={file.key}>
+                      {visibleFiles.map((file) => (
+                        <tr key={file.key} onMouseEnter={() => setPreviewKey(file.key)}>
                           <td>
                             <input
                               type="checkbox"
-                              checked={selectedKeys.has(file.key)}
+                              checked={selectedKeySet.has(file.key)}
                               onChange={() => handleToggleFile(file.key)}
-                              aria-label={`تحديد ${file.name || file.key}`}
+                              aria-label={`تحديد ${getFileName(file)}`}
                             />
                           </td>
                           <td className="wrap-anywhere">
-                            <strong>{file.name || file.key}</strong>
+                            <strong>{getFileName(file)}</strong>
                             {file.key !== file.name && file.key ? (
                               <div className="field-note text-xs">{file.key}</div>
                             ) : null}
                           </td>
-                          <td className="mono-text text-sm">
-                            {file.size !== undefined ? formatBytes(file.size) : "—"}
-                          </td>
-                          <td className="text-sm">{file.store || "—"}</td>
-                          <td className="mono-text text-sm">
-                            {file.modifiedAt
-                              ? new Date(file.modifiedAt).toLocaleDateString("ar-SA")
-                              : "—"}
-                          </td>
-                          <td>
-                            {isPlayableFile(file) ? (
-                              <a
-                                href={mediaPlayHref(file)}
-                                className="button button-secondary"
-                                style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
-                              >
-                                تشغيل
-                              </a>
-                            ) : null}
-                          </td>
+                          <td>{kindLabel(getFileKind(file))}</td>
+                          <td className="mono-text text-sm">{formatBytes(file.size)}</td>
+                          <td className="text-sm">{file.store || "-"}</td>
+                          <td className="mono-text text-sm">{formatDate(file.modifiedAt)}</td>
+                          <td>{renderFileActions(file)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+              ) : (
+                visibleFiles.map((file) => (
+                  <article className="file-card" key={file.key} data-selected={selectedKeySet.has(file.key) ? "true" : "false"}>
+                    <input
+                      type="checkbox"
+                      checked={selectedKeySet.has(file.key)}
+                      onChange={() => handleToggleFile(file.key)}
+                      aria-label={`تحديد ${getFileName(file)}`}
+                    />
+                    <div className="file-card__body">
+                      <div className="panel-title-row">
+                        <h2>{getFileName(file)}</h2>
+                        <span className="badge">{kindLabel(getFileKind(file))}</span>
+                      </div>
+                      <p className="helper-text wrap-anywhere">{file.key}</p>
+                      <div className="record-meta">
+                        <span className="badge">{formatBytes(file.size)}</span>
+                        <span className="badge">{file.store || "default"}</span>
+                        <span className="badge">{formatDate(file.modifiedAt)}</span>
+                      </div>
+                      {renderFileActions(file)}
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
 
-                {selectedKeys.size > 0 && (
-                  <div className="state-banner state-banner-success">
-                    <div className="toolbar-row">
-                      <strong>{selectedKeys.size} ملف محدد</strong>
-                      <button
-                        onClick={handleCreateShare}
-                        disabled={shareState.status === "creating"}
-                        className="button button-primary"
-                      >
-                        {shareState.status === "creating"
-                          ? "جار الإنشاء..."
-                          : "إنشاء رابط مشاركة"}
-                      </button>
+            <aside className="record-preview-rail" aria-label="معاينة الملف">
+              {previewFile ? (
+                <>
+                  <div className="panel-section-header">
+                    <span className="badge">معاينة</span>
+                    <h2>{getFileName(previewFile)}</h2>
+                  </div>
+                  <p className="wrap-anywhere">{previewFile.key}</p>
+                  <div className="kv-grid">
+                    <div className="kv-item">
+                      <strong>النوع</strong>
+                      <span>{kindLabel(getFileKind(previewFile))}</span>
+                    </div>
+                    <div className="kv-item">
+                      <strong>الحجم</strong>
+                      <span>{formatBytes(previewFile.size)}</span>
+                    </div>
+                    <div className="kv-item">
+                      <strong>المخزن</strong>
+                      <span>{previewFile.store || "-"}</span>
+                    </div>
+                    <div className="kv-item">
+                      <strong>التاريخ</strong>
+                      <span>{formatDate(previewFile.modifiedAt)}</span>
                     </div>
                   </div>
-                )}
-
-                {shareState.status === "success" && (
-                  <div className="state-banner state-banner-success">
-                    <strong>تم إنشاء الرابط بنجاح</strong>
-                    <span className="helper-text">
-                      <a href={`/share/${encodeURIComponent(shareState.token)}`}>
-                        فتح المشاركة →
-                      </a>
-                      {shareState.url ? ` | ${shareState.url}` : ""}
-                    </span>
+                  <div className="button-row">
+                    {isPlayableFile(previewFile) ? (
+                      <a className="button button-primary" href={mediaPlayHref(previewFile)}>تشغيل الملف</a>
+                    ) : null}
+                    <button type="button" className="button button-secondary" onClick={() => handleToggleFile(previewFile.key)}>
+                      {selectedKeySet.has(previewFile.key) ? "إزالة من التحديد" : "تحديد الملف"}
+                    </button>
                   </div>
-                )}
-
-                {shareState.status === "error" && (
-                  <div className="state-banner state-banner-error" role="alert">
-                    <strong>خطأ في المشاركة</strong>
-                    <span className="helper-text">{shareState.message}</span>
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
-      </section>
-    </main>
+                </>
+              ) : (
+                <EmptyState title="لا توجد معاينة." description="مرر فوق ملف أو حدده لعرض تفاصيله هنا." />
+              )}
+            </aside>
+          </section>
+        )
+      ) : null}
+    </AppShell>
   );
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
 }
