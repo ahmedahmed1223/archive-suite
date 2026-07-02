@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import AppHeader from "@/components/AppHeader";
+import type { CSSProperties, FormEvent } from "react";
+import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
+import PageToolbar from "@/components/PageToolbar";
 import {
   createArchiveApiClient,
   type ArchiveRecord,
@@ -31,7 +33,7 @@ const starterTypes: ContentTypeRecord[] = [
     slug: "video",
     name: "فيديو",
     icon: "VID",
-    color: "#14b8a6",
+    color: "#176f5d",
     description: "مواد فيديو رئيسية مع توصيف إنتاجي.",
     active: true,
     subtypes: [
@@ -51,7 +53,7 @@ const starterTypes: ContentTypeRecord[] = [
     slug: "document",
     name: "مستند",
     icon: "DOC",
-    color: "#64748b",
+    color: "#2f4d73",
     description: "ملفات PDF وWord والمرفقات الداعمة.",
     active: true,
     subtypes: [
@@ -70,7 +72,7 @@ const starterTypes: ContentTypeRecord[] = [
     slug: "photo",
     name: "صورة",
     icon: "IMG",
-    color: "#8b5cf6",
+    color: "#b77a25",
     description: "صور، أغلفة، ومواد بصرية ثابتة.",
     active: true,
     subtypes: [
@@ -90,7 +92,7 @@ const emptyDraft: ContentTypeRecord = {
   slug: "",
   name: "",
   icon: "TYPE",
-  color: "#0f766e",
+  color: "#176f5d",
   description: "",
   active: true,
   subtypes: [],
@@ -119,7 +121,7 @@ function normalizeType(record: ArchiveRecord): ContentTypeRecord {
     slug,
     name: String(record.name || "نوع بلا اسم"),
     icon: typeof record.icon === "string" ? record.icon : "TYPE",
-    color: typeof record.color === "string" ? record.color : "#0f766e",
+    color: typeof record.color === "string" ? record.color : "#176f5d",
     description: typeof record.description === "string" ? record.description : "",
     active: record.active !== false,
     subtypes: Array.isArray(record.subtypes) ? (record.subtypes as ContentSubtype[]) : [],
@@ -178,6 +180,10 @@ function fieldsToText(fields: ContentField[]) {
     .join("\n");
 }
 
+function typeAccentStyle(color?: string) {
+  return { "--type-color": color || "var(--color-brand-primary)" } as CSSProperties;
+}
+
 export default function TypesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<TypesState>({ status: "loading" });
@@ -208,6 +214,8 @@ export default function TypesPage() {
   }, [loadTypes]);
 
   const typeList = state.status === "ready" ? state.types : [];
+  const draftSubtypes = useMemo(() => parseSubtypes(subtypesText), [subtypesText]);
+  const draftFields = useMemo(() => parseFieldLines(fieldsText), [fieldsText]);
   const activeCount = typeList.filter((type) => type.active !== false).length;
   const fieldCount = typeList.reduce((sum, type) => sum + type.fields.length, 0);
   const subtypeCount = typeList.reduce((sum, type) => sum + type.subtypes.length, 0);
@@ -256,8 +264,8 @@ export default function TypesPage() {
       id: draft.id || slug,
       slug,
       name,
-      subtypes: parseSubtypes(subtypesText),
-      fields: parseFieldLines(fieldsText)
+      subtypes: draftSubtypes,
+      fields: draftFields
     };
 
     const nextTypes = [
@@ -275,140 +283,188 @@ export default function TypesPage() {
     await saveTypes([...missing, ...typeList], missing.length ? "تمت إضافة القوالب الأساسية." : "القوالب الأساسية موجودة بالفعل.");
   }
 
-  return (
-    <main className="shell">
-      <AppHeader subtitle="إدارة الأنواع" />
+  const resetDraft = () => {
+    setDraft(emptyDraft);
+    setSubtypesText("");
+    setFieldsText("");
+    setSaveState({ status: "idle" });
+  };
 
-      <section className="content stack" aria-label="إدارة الأنواع والحقول">
-        <div className="hero">
-          <span className="badge">Laravel content_types</span>
-          <h1>إدارة الأنواع والحقول</h1>
-          <p>
-            نظّم أنواع المواد، فروعها، والحقول الخاصة بكل نوع من مكان واحد
-            حتى تبقى طريقة الإدخال والبحث متسقة عبر النظام.
-          </p>
-          <div className="hero-actions">
+  return (
+    <AppShell subtitle="استديو الأنواع" contentClassName="types-content">
+      <PageToolbar
+        eyebrow={<span className="badge">Schema Studio</span>}
+        title="إدارة الأنواع والحقول"
+        description="استديو عملي لضبط أنواع المحتوى وفروعها وحقول metadata، مع معاينة فورية قبل الحفظ في Laravel."
+        meta={(
+          <>
             <span className="badge">{activeCount} نوع نشط</span>
             <span className="badge">{subtypeCount} فرع</span>
             <span className="badge">{fieldCount} حقل</span>
-          </div>
-        </div>
-
-        {state.status === "error" && (
-          <div className="state-banner state-banner-error" role="alert">
-            <strong>تعذر فتح إدارة الأنواع</strong>
-            <p className="helper-text">{state.message}</p>
-          </div>
+          </>
         )}
+        actions={(
+          <>
+            <button className="button button-primary" type="button" onClick={() => void seedDefaults()}>
+              إضافة القوالب
+            </button>
+            <button className="button button-secondary" type="button" onClick={resetDraft}>
+              نوع جديد
+            </button>
+          </>
+        )}
+      >
+        <div className="record-meta">
+          <span className="badge">content_types</span>
+          <span className="badge">metadata schema</span>
+          <span className="badge">RTL</span>
+        </div>
+      </PageToolbar>
 
-        <div className="split-layout" aria-label="محرر الأنواع">
-          <section className="stack" aria-label="قائمة الأنواع">
-            <div className="panel-section-header">
-              <div>
-                <h2>الأنواع الحالية</h2>
-                <p className="field-note">اختر نوعاً للتعديل أو أضف القوالب الأساسية عند أول تشغيل.</p>
-              </div>
-              <button className="button button-secondary" type="button" onClick={() => void seedDefaults()}>
-                إضافة القوالب
-              </button>
-            </div>
+      {state.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر فتح إدارة الأنواع</strong>
+          <p className="helper-text">{state.message}</p>
+        </div>
+      ) : null}
 
-            {state.status === "loading" && <p className="form-status">جار تحميل الأنواع...</p>}
-            {state.status === "ready" && typeList.length === 0 && (
-              <div className="empty-state">لا توجد أنواع محفوظة بعد.</div>
-            )}
-            {state.status === "ready" && typeList.map((type) => (
-              <article className="panel panel-compact" key={type.uid}>
-                <div className="panel-title-row">
-                  <div>
-                    <h3>{type.icon || "TYPE"} {type.name}</h3>
-                    <p>{type.description || type.slug}</p>
-                  </div>
-                  <span className="badge" style={{ borderColor: type.color, color: type.color }}>
-                    {type.active === false ? "غير نشط" : "نشط"}
-                  </span>
-                </div>
+      <section className="schema-studio" aria-label="محرر الأنواع">
+        <aside className="schema-sidebar" aria-label="قائمة الأنواع">
+          <div className="panel-section-header">
+            <h2>الأنواع الحالية</h2>
+            <p className="field-note">اختر نوعاً للتعديل أو ابدأ بقالب جديد.</p>
+          </div>
+
+          {state.status === "loading" ? <p className="form-status">جار تحميل الأنواع...</p> : null}
+          {state.status === "ready" && typeList.length === 0 ? (
+            <EmptyState
+              title="لا توجد أنواع محفوظة."
+              description="أضف القوالب الأساسية أو أنشئ نوعاً جديداً من المحرر."
+              actions={<button className="button button-secondary" type="button" onClick={() => void seedDefaults()}>إضافة القوالب</button>}
+            />
+          ) : null}
+          {state.status === "ready" ? typeList.map((type) => (
+            <article className="type-list-item" key={type.uid} style={typeAccentStyle(type.color)}>
+              <div className="type-list-item__mark">{type.icon || "TYPE"}</div>
+              <div className="type-list-item__body">
+                <h3>{type.name}</h3>
+                <p>{type.description || type.slug}</p>
                 <div className="record-meta">
                   <span className="badge">{type.subtypes.length} فروع</span>
                   <span className="badge">{type.fields.length} حقول</span>
-                  <button className="button button-secondary" type="button" onClick={() => editType(type)}>
-                    تعديل
-                  </button>
+                  <span className="badge">{type.active === false ? "غير نشط" : "نشط"}</span>
                 </div>
-              </article>
-            ))}
-          </section>
-
-          <form className="panel auth-form" onSubmit={handleSubmit} aria-label="نموذج النوع">
-            <div className="panel-section-header">
-              <div>
-                <h2>{draft.uid ? "تعديل نوع" : "نوع جديد"}</h2>
-                <p>اكتب الحقول كسطر لكل حقل: الاسم|المفتاح|النوع|خيارات مفصولة بفواصل.</p>
               </div>
-              <button
-                className="button button-secondary"
-                type="button"
-                onClick={() => {
-                  setDraft(emptyDraft);
-                  setSubtypesText("");
-                  setFieldsText("");
-                  setSaveState({ status: "idle" });
-                }}
-              >
-                جديد
+              <button className="button button-secondary button-sm" type="button" onClick={() => editType(type)}>
+                تعديل
               </button>
-            </div>
+            </article>
+          )) : null}
+        </aside>
 
+        <form className="panel auth-form schema-editor" onSubmit={handleSubmit} aria-label="نموذج النوع">
+          <div className="panel-section-header">
+            <div>
+              <h2>{draft.uid ? "تعديل نوع" : "نوع جديد"}</h2>
+              <p>صيغة الحقول: الاسم|المفتاح|النوع|خيارات مفصولة بفواصل.</p>
+            </div>
+          </div>
+
+          <div className="field-row">
             <label>
               الاسم
               <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
             </label>
-            <div className="field-row">
-              <label>
-                المفتاح
-                <input value={draft.slug} onChange={(event) => setDraft({ ...draft, slug: event.target.value })} />
-              </label>
-              <label>
-                الأيقونة
-                <input value={draft.icon || ""} onChange={(event) => setDraft({ ...draft, icon: event.target.value })} />
-              </label>
-              <label>
-                اللون
-                <input type="color" value={draft.color || "#0f766e"} onChange={(event) => setDraft({ ...draft, color: event.target.value })} />
-              </label>
-            </div>
             <label>
-              الوصف
-              <input value={draft.description || ""} onChange={(event) => setDraft({ ...draft, description: event.target.value })} />
+              المفتاح
+              <input value={draft.slug} onChange={(event) => setDraft({ ...draft, slug: event.target.value })} />
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              الأيقونة
+              <input value={draft.icon || ""} onChange={(event) => setDraft({ ...draft, icon: event.target.value })} />
             </label>
             <label>
-              الفروع
-              <textarea className="search-input" value={subtypesText} onChange={(event) => setSubtypesText(event.target.value)} rows={4} />
+              اللون
+              <input type="color" value={draft.color || "#176f5d"} onChange={(event) => setDraft({ ...draft, color: event.target.value })} />
             </label>
-            <label>
-              الحقول
-              <textarea className="search-input" value={fieldsText} onChange={(event) => setFieldsText(event.target.value)} rows={7} />
-            </label>
+          </div>
+          <label>
+            الوصف
+            <input value={draft.description || ""} onChange={(event) => setDraft({ ...draft, description: event.target.value })} />
+          </label>
+          <label>
+            الفروع
+            <textarea className="search-input" value={subtypesText} onChange={(event) => setSubtypesText(event.target.value)} rows={4} />
+          </label>
+          <label>
+            الحقول
+            <textarea className="search-input" value={fieldsText} onChange={(event) => setFieldsText(event.target.value)} rows={8} />
+          </label>
 
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={draft.active !== false}
-                onChange={(event) => setDraft({ ...draft, active: event.target.checked })}
-              />
-              نشط
-            </label>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={draft.active !== false}
+              onChange={(event) => setDraft({ ...draft, active: event.target.checked })}
+            />
+            نشط
+          </label>
 
+          <div className="button-row">
             <button className="button button-primary" type="submit" disabled={saveState.status === "saving"}>
               {saveState.status === "saving" ? "جار الحفظ" : "حفظ النوع"}
             </button>
+            <button className="button button-secondary" type="button" onClick={resetDraft}>
+              تفريغ
+            </button>
+          </div>
 
-            <p className={`form-status ${saveState.status === "error" ? "status-error" : saveState.status === "success" ? "status-success" : ""}`}>
-              {saveState.status === "error" || saveState.status === "success" ? saveState.message : ""}
-            </p>
-          </form>
-        </div>
+          <p className={`form-status ${saveState.status === "error" ? "status-error" : saveState.status === "success" ? "status-success" : ""}`}>
+            {saveState.status === "error" || saveState.status === "success" ? saveState.message : ""}
+          </p>
+        </form>
+
+        <aside className="schema-preview" aria-label="معاينة النوع">
+          <div className="panel-section-header">
+            <span className="badge">معاينة</span>
+            <h2>{draft.name || "نوع بلا اسم"}</h2>
+            <p>{draft.description || "الوصف يظهر هنا عند إدخاله."}</p>
+          </div>
+          <div className="record-meta">
+            <span className="badge">{draft.slug || "slug"}</span>
+            <span className="badge">{draft.active === false ? "غير نشط" : "نشط"}</span>
+            <span className="badge">{draftFields.length} حقول</span>
+          </div>
+          <div className="section-divider">
+            <strong>الفروع</strong>
+            {draftSubtypes.length > 0 ? (
+              <div className="tags mt-tight">
+                {draftSubtypes.map((subtype) => <span key={subtype.id} className="tag">{subtype.name}</span>)}
+              </div>
+            ) : (
+              <p className="helper-text mt-tight">لا توجد فروع بعد.</p>
+            )}
+          </div>
+          <div className="section-divider">
+            <strong>الحقول</strong>
+            {draftFields.length > 0 ? (
+              <div className="schema-field-list mt-tight">
+                {draftFields.map((field) => (
+                  <div className="schema-field-row" key={field.id}>
+                    <span>{field.label}</span>
+                    <code>{field.key}</code>
+                    <span className="badge">{field.type}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="helper-text mt-tight">لا توجد حقول بعد.</p>
+            )}
+          </div>
+        </aside>
       </section>
-    </main>
+    </AppShell>
   );
 }
