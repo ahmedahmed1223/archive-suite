@@ -94,6 +94,76 @@ class OdbcReadRepositoryTest extends TestCase
 
         $this->assertCount(250, $rows);
     }
+
+    public function test_insert_row_writes_allowed_scalar_columns(): void
+    {
+        $connection = new FakeOdbcReadConnection();
+        $repository = new OdbcReadRepository($connection);
+
+        $result = $repository->insertRow('items', [
+            'id' => 101,
+            'name' => 'New item',
+            'created_at' => '2026-07-02 10:00:00',
+        ]);
+
+        $this->assertSame(['affected' => 1], $result);
+        $this->assertSame('items', $connection->lastInsert['table']);
+        $this->assertSame('New item', $connection->lastInsert['values']['name']);
+    }
+
+    public function test_insert_row_rejects_sensitive_columns(): void
+    {
+        $repository = new OdbcReadRepository(new FakeOdbcReadConnection());
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Column password_hash is not writable.');
+
+        $repository->insertRow('users', [
+            'username' => 'alice',
+            'password_hash' => 'secret',
+        ]);
+    }
+
+    public function test_update_row_uses_allowed_key_column(): void
+    {
+        $connection = new FakeOdbcReadConnection();
+        $repository = new OdbcReadRepository($connection);
+
+        $result = $repository->updateRow('settings', 'key', 'app_name', [
+            'value' => 'Masar',
+        ]);
+
+        $this->assertSame(['affected' => 1], $result);
+        $this->assertSame('settings', $connection->lastUpdate['table']);
+        $this->assertSame('key', $connection->lastUpdate['keyColumn']);
+        $this->assertSame('app_name', $connection->lastUpdate['keyValue']);
+        $this->assertSame('Masar', $connection->lastUpdate['values']['value']);
+    }
+
+    public function test_update_row_rejects_disallowed_key_column(): void
+    {
+        $repository = new OdbcReadRepository(new FakeOdbcReadConnection());
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Column email is not a permitted key for users.');
+
+        $repository->updateRow('users', 'email', 'alice@example.test', [
+            'display_name' => 'Alice',
+        ]);
+    }
+
+    public function test_delete_row_uses_allowed_key_column(): void
+    {
+        $connection = new FakeOdbcReadConnection();
+        $repository = new OdbcReadRepository($connection);
+
+        $result = $repository->deleteRow('items', 'id', 5);
+
+        $this->assertSame(['affected' => 1], $result);
+        $this->assertSame('items', $connection->lastDelete['table']);
+        $this->assertSame('id', $connection->lastDelete['keyColumn']);
+        $this->assertSame(5, $connection->lastDelete['keyValue']);
+    }
 }
 
 class FakeOdbcReadConnection implements OdbcConnection
@@ -104,6 +174,21 @@ class FakeOdbcReadConnection implements OdbcConnection
     private array $tableData = [];
 
     private int $rowCount = 100;
+
+    /**
+     * @var array{table?: string, values?: array<string, mixed>}
+     */
+    public array $lastInsert = [];
+
+    /**
+     * @var array{table?: string, keyColumn?: string, keyValue?: mixed, values?: array<string, mixed>}
+     */
+    public array $lastUpdate = [];
+
+    /**
+     * @var array{table?: string, keyColumn?: string, keyValue?: mixed}
+     */
+    public array $lastDelete = [];
 
     public function __construct()
     {
@@ -168,5 +253,26 @@ class FakeOdbcReadConnection implements OdbcConnection
         }
 
         return array_slice($this->tableData[$table], $offset, $limit);
+    }
+
+    public function insertRow(string $table, array $values): int
+    {
+        $this->lastInsert = compact('table', 'values');
+
+        return 1;
+    }
+
+    public function updateRow(string $table, string $keyColumn, mixed $keyValue, array $values): int
+    {
+        $this->lastUpdate = compact('table', 'keyColumn', 'keyValue', 'values');
+
+        return 1;
+    }
+
+    public function deleteRow(string $table, string $keyColumn, mixed $keyValue): int
+    {
+        $this->lastDelete = compact('table', 'keyColumn', 'keyValue');
+
+        return 1;
     }
 }

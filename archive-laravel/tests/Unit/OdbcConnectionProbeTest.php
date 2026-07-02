@@ -144,4 +144,19 @@ class FakeOdbcConnection implements OdbcConnection
     {
         return [];
     }
+
+    public function insertRow(string $table, array $values): int
+    {
+        return 0;
+    }
+
+    public function updateRow(string $table, string $keyColumn, mixed $keyValue, array $values): int
+    {
+        return 0;
+    }
+
+    public function deleteRow(string $table, string $keyColumn, mixed $keyValue): int
+    {
+        return 0;
+    }
 }

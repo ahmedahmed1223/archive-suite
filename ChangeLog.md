@@ -38,6 +38,8 @@
 
 - [x] **اعتماد هوية مسار / Masar في واجهة Next** — أضيفت أصول SVG للعلامة، wordmark، lockup، وfavicon داخل `archive-next/public/brand/`، وأضيفت ثوابت هوية مركزية في `archive-next/lib/brand.ts`. حُدثت metadata والهيدر والصفحات الظاهرة لاستخدام اسم مسار، وتوسعت tokens في `theme.css` إلى palette مؤسسية دافئة مع dark mode، وأضيف قسم “هوية النظام” إلى `/settings`. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.
 
+- [x] **إكمال CRUD ODBC المقيد في Laravel + Next** — توسع جسر ODBC من فحص/قراءة فقط إلى عمليات إنشاء/تحديث/حذف محمية على الجداول الأساسية المسموحة (`items`, `users`, `settings`, `audit`) عبر Laravel، مع حصر مفاتيح التحديث/الحذف ومنع كتابة أعمدة الأسرار وقبول قيم scalar/null فقط. حُدّثت بطاقة ODBC في `/settings` لتنفيذ العمليات وإعادة تحميل المعاينة، ووُثق المسار الجديد في OpenAPI. التحقق: `node scripts/laravel-docker.mjs test --filter=Odbc`, `node scripts/verify-api-contracts.mjs`, `pnpm run typecheck:next`, `pnpm run build:next`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.

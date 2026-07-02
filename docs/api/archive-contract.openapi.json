@@ -857,6 +857,127 @@
         }
       }
     },
+    "/system/odbc/tables/{table}/rows": {
+      "post": {
+        "tags": ["System"],
+        "summary": "Insert one row into an allowlisted ODBC core table",
+        "operationId": "createOdbcTableRow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["items", "users", "settings", "audit"]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OdbcRowWriteRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "ODBC row inserted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OdbcWriteResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["System"],
+        "summary": "Update a row in an allowlisted ODBC core table",
+        "operationId": "updateOdbcTableRow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["items", "users", "settings", "audit"]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  { "$ref": "#/components/schemas/OdbcRowKeyRequest" },
+                  { "$ref": "#/components/schemas/OdbcRowWriteRequest" }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ODBC row updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OdbcWriteResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["System"],
+        "summary": "Delete a row from an allowlisted ODBC core table",
+        "operationId": "deleteOdbcTableRow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["items", "users", "settings", "audit"]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OdbcRowKeyRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ODBC row deleted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OdbcWriteResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/share": {
       "post": {
         "tags": ["Share"],
@@ -1651,6 +1772,42 @@
                   "additionalProperties": true
                 }
               }
+            }
+          }
+        ]
+      },
+      "OdbcRowWriteRequest": {
+        "type": "object",
+        "required": ["values"],
+        "properties": {
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": ["string", "number", "integer", "boolean", "null"]
+            }
+          }
+        }
+      },
+      "OdbcRowKeyRequest": {
+        "type": "object",
+        "required": ["keyColumn", "keyValue"],
+        "properties": {
+          "keyColumn": { "type": "string" },
+          "keyValue": {
+            "type": ["string", "number", "integer", "boolean"]
+          }
+        }
+      },
+      "OdbcWriteResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["table", "operation", "affected"],
+            "properties": {
+              "table": { "type": "string" },
+              "operation": { "type": "string", "enum": ["insert", "update", "delete"] },
+              "affected": { "type": "integer", "minimum": 0 }
             }
           }
         ]

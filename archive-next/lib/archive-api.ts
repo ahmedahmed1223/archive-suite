@@ -149,6 +149,14 @@ export interface OdbcTablePreview {
   rows: Record<string, unknown>[];
 }
 
+export type OdbcWriteOperation = "insert" | "update" | "delete";
+
+export interface OdbcWriteResult {
+  table: string;
+  operation: OdbcWriteOperation;
+  affected: number;
+}
+
 export interface ReviewRect {
   x: number;
   y: number;
@@ -241,6 +249,9 @@ export interface ArchiveApiClient {
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
   odbcStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ odbc: OdbcProbe }>>;
   odbcTable(table: string, params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<OdbcTablePreview>>;
+  odbcCreateRow(table: string, payload: { values: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<OdbcWriteResult>>;
+  odbcUpdateRow(table: string, payload: { keyColumn: string; keyValue: unknown; values: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<OdbcWriteResult>>;
+  odbcDeleteRow(table: string, payload: { keyColumn: string; keyValue: unknown }, options?: AuthRequestOptions): Promise<ApiEnvelope<OdbcWriteResult>>;
   reviewComments(mediaUid: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: ReviewComment[] }>>;
   createReviewComment(mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
   updateReviewComment(id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
@@ -279,7 +290,7 @@ export function createArchiveApiClient({
       body,
       accessToken
     }: {
-      method?: "GET" | "POST" | "PATCH";
+      method?: "GET" | "POST" | "PATCH" | "DELETE";
       body?: unknown;
       accessToken?: string;
     } = {}
@@ -321,6 +332,9 @@ export function createArchiveApiClient({
 
   const patch = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
     request<T>(path, { method: "PATCH", body, accessToken: options?.accessToken });
+
+  const del = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
+    request<T>(path, { method: "DELETE", body, accessToken: options?.accessToken });
 
   return {
     health: () => get("/health"),
@@ -376,6 +390,12 @@ export function createArchiveApiClient({
       const query = queryParams.toString();
       return get<OdbcTablePreview>(`/system/odbc/tables/${encodeURIComponent(table)}${query ? `?${query}` : ""}`, options);
     },
+    odbcCreateRow: (table: string, payload: { values: Record<string, unknown> }, options?: AuthRequestOptions) =>
+      post<OdbcWriteResult>(`/system/odbc/tables/${encodeURIComponent(table)}/rows`, payload, options),
+    odbcUpdateRow: (table: string, payload: { keyColumn: string; keyValue: unknown; values: Record<string, unknown> }, options?: AuthRequestOptions) =>
+      patch<OdbcWriteResult>(`/system/odbc/tables/${encodeURIComponent(table)}/rows`, payload, options),
+    odbcDeleteRow: (table: string, payload: { keyColumn: string; keyValue: unknown }, options?: AuthRequestOptions) =>
+      del<OdbcWriteResult>(`/system/odbc/tables/${encodeURIComponent(table)}/rows`, payload, options),
     reviewComments: (mediaUid: string, options?: AuthRequestOptions) =>
       get<{ comments: ReviewComment[] }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, options),
     createReviewComment: (mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions) =>
