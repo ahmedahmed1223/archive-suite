@@ -172,6 +172,12 @@ services:
     build:
       context: ..
       dockerfile: archive-next/Dockerfile
+      args:
+        ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1
+        NEXT_PUBLIC_REVERB_APP_KEY: ${REVERB_APP_KEY:?Set REVERB_APP_KEY in .env}
+        NEXT_PUBLIC_REVERB_HOST: ${REVERB_HOST:-localhost}
+        NEXT_PUBLIC_REVERB_PORT: ${REVERB_PORT:-8080}
+        NEXT_PUBLIC_REVERB_SCHEME: ${REVERB_SCHEME:-http}
     container_name: archive-ln-next
     restart: unless-stopped
     environment:

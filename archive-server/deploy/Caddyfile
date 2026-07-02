@@ -1,5 +1,5 @@
 # Caddyfile — automatic HTTPS via Let's Encrypt + reverse proxy to the
-# frontend nginx. DOMAIN and ACME_EMAIL come from the .env file via docker
+# Next.js app. DOMAIN and ACME_EMAIL come from the .env file via docker
 # compose env interpolation.
 #
 # For local-only (no public DNS), set DOMAIN=localhost in .env and Caddy
@@ -30,17 +30,16 @@
 		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "interest-cohort=()"
-		# CSP in Report-Only mode first. The SPA uses vite-plugin-singlefile so
-		# inline scripts/styles are required. Tighten script-src once nonce/hash
-		# support is added to the build. To enforce, rename to Content-Security-Policy.
-		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' wss: https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+		# CSP in Report-Only mode first. Next.js still needs inline runtime style
+		# support; tighten this once nonce/hash coverage is added end to end.
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' ws: wss: http: https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
 		# Caddy already sets Server: header; remove it to reduce fingerprinting.
 		-Server
 	}
 
-	# Everything is fronted by the SPA nginx, which itself proxies /pb/* to
-	# pocketbase. So Caddy only needs to hand off to one upstream.
-	reverse_proxy frontend:80 {
+	# The default Laravel/Next stack sets CADDY_UPSTREAM=next:3000. Legacy
+	# stacks omit it and keep the historical frontend nginx upstream.
+	reverse_proxy {$CADDY_UPSTREAM:frontend:80} {
 		header_up Host {host}
 		header_up X-Real-IP {remote}
 		header_up X-Forwarded-For {remote}

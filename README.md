@@ -88,11 +88,28 @@ $env:ARCHIVE_API_BASE_URL="https://api.example.com/api/v1"
 pnpm run build:next
 ```
 
-## النشر الموجّه (الأسرع)
+## النشر عبر Docker
 
-تنبيه: معالج النشر Docker القديم ما زال يطلق stack legacy Node/SPA. التطوير اليومي والبوابة الرسمية انتقلا إلى Laravel/Next؛ استخدم أوامر `pnpm dev` و`pnpm verify` للمسار الجديد حتى تُستبدل وصفات Docker الإنتاجية نهائياً.
+المسار الافتراضي في `archive-server/docker-compose.yml` يشغّل الآن Laravel + Next.js، لذلك تظهر واجهة مسار والصفحات الجديدة عند تشغيل Docker العادي:
 
-للنشر legacy على PostgreSQL عبر معالج واحد على Windows أو Linux:
+```bash
+cd archive-server
+cp .env.example .env
+# عدّل أسرار CHANGE_ME قبل الإنتاج
+docker compose up -d --build
+```
+
+للتشغيل المحلي بدون Caddy:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+تظل وصفات PocketBase/Node/Vite القديمة متاحة فقط كمسارات legacy صريحة للمقارنة أو fallback.
+
+## النشر الموجّه (legacy)
+
+للنشر legacy القديم عبر معالج واحد على Windows أو Linux:
 
 ```bash
 # Windows: انقر نقراً مزدوجاً على Setup-Archive.bat
