@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import PageToolbar from "@/components/PageToolbar";
 import { BRAND } from "@/lib/brand";
 import {
   createArchiveApiClient,
@@ -247,22 +248,26 @@ export default function SettingsPage() {
   const canPreviewOdbc = odbc?.status === "connected";
 
   return (
-    <main className="shell">
-      <AppHeader subtitle="مركز الإعدادات" />
-
-      <section className="content" aria-label={`إعدادات ${BRAND.arabicName}`}>
-        <div className="hero">
-          <h1>إعدادات {BRAND.arabicName}.</h1>
-          <p>
-            هذه اللوحة تجمع مجالات النظام والأمان والتخزين وAPI والمظهر في
-            صفحة واحدة سريعة المسح، مع إبراز ما هو مطبق فعلاً وما ينتظر
-            صلاحيات تحرير أو ربطاً إضافياً.
-          </p>
-          <div className="hero-actions">
-            <span className="badge">لوحة مرجعية</span>
-            <span className="badge">قراءة وكتابة مقيدة</span>
-          </div>
-        </div>
+    <AppShell subtitle="مركز الإعدادات" contentClassName="settings-content">
+      <PageToolbar
+        eyebrow={<span className="badge">Settings Hub</span>}
+        title={`إعدادات ${BRAND.arabicName}`}
+        description="مركز واحد للهوية، الأمان، التخزين، ODBC، API، والمظهر، مع تمييز ما هو مطبق فعلاً وما ينتظر صلاحيات تحرير أو backend إضافي."
+        meta={(
+          <>
+            <span className="badge">هوية النظام</span>
+            <span className="badge">أمان</span>
+            <span className="badge">ODBC</span>
+            <span className="badge">مراقبة</span>
+          </>
+        )}
+        actions={(
+          <>
+            <a className="button button-secondary" href="/status">حالة النظام</a>
+            <a className="button button-secondary" href="/errors">سجل الأخطاء</a>
+          </>
+        )}
+      />
 
         <article className="panel identity-panel" aria-label="هوية النظام">
           <div className="identity-lockup">
@@ -554,7 +559,6 @@ export default function SettingsPage() {
             ) : null}
           </div>
         </article>
-      </section>
-    </main>
+    </AppShell>
   );
 }
