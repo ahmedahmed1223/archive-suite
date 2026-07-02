@@ -47,6 +47,13 @@
 
 **P3 — مؤجّل:** §7 (Visual Rules Engine · وسم AI/بحث دلالي · كتالوج عام · وسم جغرافي).
 
+**P2 — تكافؤ الصفحات مع النظام القديم (تدقيق 2026-07-02، 41 صفحة legacy):**
+- ✅ موجة 1 (2026-07-02): 6 صفحات نُقلت على API الموجود — `/search` بحث متقدم · `/timeline` خط زمني · `/analytics` تحليلات CSS · `/status` حالة الخادم · `/shares` إدارة الروابط الممنوحة (تخزين محلي كالقديم) · `/favorites` مفضلة + زر نجمة في التفاصيل. أُدرجت كلها في تنقل AppHeader.
+- [ ] `[P2]` ⏱️L **موجة 2 — يحتاج backend جديد في Laravel أولاً:** المستخدمون والأدوار (CRUD+دعوات) · رفع الملفات (Uploader/AddVideo — endpoint upload) · سجل النشاط/التاريخ (activity + undo/diffs فوق audit log الموجود) · المجموعات Collections (يدوي + smart rules).
+- [ ] `[P2]` ⏱️L **موجة 3 — مخازن مساندة:** بحوث محفوظة · Vocabulary · وسوم هرمية · Inbox/التقاط · مكررات (كشف hash) · Kanban · أتمتة (rules engine).
+- 🚫 **لن يُنقل (قرار cutover):** Dashboard widgets وDiscover (استُبدلا بالرئيسية الجديدة) · SyncLog وSystemControl (بديلهما مركز التحكم) · FirstRun (بديله seeding التلقائي) · Projects/مونتاج (P3 عند طلب فعلي).
+- ملاحظة ترقية جزئية: `/archive` يحتاج bulk actions (API `records/bulk` موجود) و`/archive/[id]` يحتاج تعليقات/علاقات — ضمن موجة 2.
+
 **🚫 أُسقِط كـ legacy (القطع النهائي):** §5 توحيد Settings · §5 Sidebar · §6 بقية الصفحات — كلها كانت تستهدف `archive-app` المجمّد.
 
 ---

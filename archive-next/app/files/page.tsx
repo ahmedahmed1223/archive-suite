@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import { createArchiveApiClient, type ArchiveFile } from "@/lib/archive-api";
+import { addMintedLink } from "@/lib/minted-shares";
 
 type FileState =
   | { status: "loading" }
@@ -109,6 +110,14 @@ export default function FilesPage() {
       setShareState({ status: "error", message: response.error });
       return;
     }
+
+    // ponytail: record minted link to localStorage
+    addMintedLink({
+      token: response.token,
+      url: response.url || "",
+      itemLabel: `${selectedKeys.size} عنصر`,
+      createdAt: new Date().toISOString()
+    });
 
     setShareState({
       status: "success",

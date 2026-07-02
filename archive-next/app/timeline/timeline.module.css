@@ -1,0 +1,101 @@
+.timelineContainer {
+  position: relative;
+  padding-left: 0;
+}
+
+.timelineGroup {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0;
+  margin-bottom: 2rem;
+}
+
+.timelineNode {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 2rem;
+  padding-top: 0.25rem;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 3px solid var(--color-bg-primary);
+  box-shadow: 0 0 0 2px var(--color-brand-primary);
+  z-index: 2;
+}
+
+.line {
+  flex-grow: 1;
+  width: 2px;
+  background-color: var(--color-border-secondary);
+  margin-top: 0.5rem;
+  min-height: 3rem;
+}
+
+/* RTL support: timeline on right side */
+[dir="rtl"] .timelineGroup {
+  direction: rtl;
+}
+
+[dir="rtl"] .timelineNode {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+@media (max-width: 640px) {
+  .timelineNode {
+    width: 1.5rem;
+  }
+
+  .dot {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-width: 2px;
+  }
+}
+
+/* Animation for loading state */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.timelineGroup {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.timelineGroup:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.timelineGroup:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.timelineGroup:nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.timelineGroup:nth-child(4) {
+  animation-delay: 150ms;
+}
+
+.timelineGroup:nth-child(5) {
+  animation-delay: 200ms;
+}
+
+.timelineGroup:nth-child(n + 6) {
+  animation-delay: 250ms;
+}
