@@ -16,6 +16,54 @@
 
 ## خريطة القدرات القديمة التي يجب استعادتها
 
+### مصفوفة الصفحات القديمة
+
+هذه المصفوفة هي مرجع التكافؤ: لا تعتبر أي صفحة legacy منسية. كل صفحة إما لها مسار Next قائم، أو هدف نقل واضح، أو دمج مقصود داخل صفحة تشغيلية أكبر.
+
+| صفحة legacy | هدف Masar/Next | الحالة المخططة |
+|---|---|---|
+| `DashboardPage` | `/` | تحويلها إلى لوحة تشغيل حية بدل ملخص تقني. |
+| `ArchivePage` | `/archive` | استعادة أوضاع العرض، الفلاتر، bulk، saved views، details rail. |
+| `DetailPage` | `/archive/[id]` | تبويبات السجل: overview، media، metadata، rights، relations، activity، files. |
+| `AddVideoPage` | `/archive/new` و`/files/upload` | يحتاج upload/record-create UX فوق Laravel. |
+| `UploaderPage` | `/files/upload` | دمجه مع File Manager وingest flows. |
+| `FileManagerPage` | `/files` | موجود جزئياً؛ يحتاج tree/breadcrumbs/preview/attach/import. |
+| `SearchPage` | `/search` | موجود؛ يحتاج facets، saved searches، preview، history، voice search. |
+| `SavedSearchesPage` | `/search/saved` أو tab داخل `/search` | نقل saved searches كجزء من البحث. |
+| `TimelinePage` | `/timeline` | موجود؛ يحتاج filters وتفاصيل مختصرة وتفاعل مع السجلات. |
+| `FavoritesPage` | `/favorites` | موجود؛ يحتاج أن يصبح قائمة عمل مرتبطة بالسجلات لا local فقط. |
+| `CollectionsPage` | `/collections` | يحتاج backend collections ثم UI يدوي وsmart rules. |
+| `ReadingListsPage` | `/reading-lists` | قائمة تنظيمية فوق السجلات، يمكن دمجها مع collections لاحقاً. |
+| `InboxPage` | `/inbox` | مدخل التقاط وفرز سريع قبل الأرشفة. |
+| `DuplicatesPage` | `/duplicates` | كشف hash/metadata/visual duplicates مع إجراءات merge/ignore. |
+| `TypesPage` | `/types` | موجود؛ يتحول إلى schema studio كامل. |
+| `VocabularyPage` | `/vocabulary` أو tab تنظيم | مفردات مضبوطة للحقول والبحث. |
+| `HierarchicalTagsPage` | `/tags` أو tab تنظيم | وسوم هرمية مع drag/reparent وcounts. |
+| `GraphViewPage` | `/graph` أو tab داخل التفاصيل | رسم علاقات السجلات والمجموعات. |
+| `KanbanPage` | `/kanban` | عرض workflow للسجلات حسب الحالة. |
+| `ProjectsPage` | `/projects` | مشاريع إنتاج/مونتاج عند طلب فعلي، مرتبطة بالوسائط. |
+| `ProductionTasksPage` | `/production` | مهام إنتاج مرتبطة بالمشاريع والوسائط. |
+| `TranscriberPage` | `/media/transcription` | واجهة تفريغ ومراجعة مخرجات whisper/jobs. |
+| `AnalyticsPage` | `/analytics` | موجود؛ يحتاج metrics حية وتصفية حسب النوع والفترة. |
+| `ReportsPage` | `/reports` | موجود؛ يحتاج export وcompliance reports. |
+| `ActivityPage` | `/activity` | يعتمد audit log؛ يظهر النشاط وundo عند توفره. |
+| `HistoryPage` | `/activity/history` أو tab داخل التفاصيل | تاريخ التغييرات لكل سجل. |
+| `ErrorLogPage` | `/errors` | موجود؛ يندمج مع Sentry/client errors/server logs. |
+| `ServerStatusPage` | `/status` | موجود؛ صحة API/DB/queues/Reverb/Sentry. |
+| `SyncLogPage` | `/status/sync` | سجل مزامنة ضمن Observability. |
+| `SystemControlPage` | `/settings/system` وControl Center خارجي | أوامر تشغيل/إيقاف/تحقق آمنة، لا داخل UI العام إلا read-only. |
+| `DataCenterPage` | `/settings/data` و`/status` | مصادر البيانات، ODBC، التخزين، وحالة الاتصال. |
+| `SettingsHubPage` | `/settings` | موجود؛ يصبح hub متعدد الأقسام. |
+| `SettingsPage` | `/settings` | دمج كامل داخل hub. |
+| `AppearanceSettingsPage` | `/settings/appearance` أو قسم داخل `/settings` | themes، density، language، layout preferences. |
+| `UsersPage` | `/users` أو `/settings/users` | إدارة مستخدمين وأدوار ودعوات بعد backend. |
+| `SharedLinksPage` | `/shares` | موجود؛ يحتاج backend دائم وروابط منتهية/نشطة. |
+| `SharedWithMePage` | `/shares/with-me` | مشاركات واردة للمستخدم. |
+| `HelpPage` | `/help` | موجود؛ يحتاج onboarding وfeature tour. |
+| `FirstRunPage` | `/help/getting-started` وsetup checklist | لا تعود كمعالج طويل؛ تتحول إلى checklist قابلة للتجاهل. |
+| `AutomationPage` | `/automation` | Visual Rules Engine عند تفعيل rules backend. |
+| `DiscoverPage` | `/discover` أو قسم توصيات في `/search` | توصيات واكتشاف فجوات وتحسينات. |
+
 ### الأرشيف
 
 - أوضاع عرض متعددة: grid، gallery، compact، list، details/table.
