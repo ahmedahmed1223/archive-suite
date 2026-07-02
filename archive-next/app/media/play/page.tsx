@@ -9,6 +9,7 @@ export default function MediaPlayPage() {
   const [diskInput, setDiskInput] = useState("");
   const [path, setPath] = useState("");
   const [disk, setDisk] = useState("");
+  const [transcriptText, setTranscriptText] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -67,11 +68,35 @@ export default function MediaPlayPage() {
 
         <article className="panel">
           {path ? (
-            <MediaPlayer path={path} disk={disk || undefined} title={disk ? `${disk}:${path}` : path} />
+            <MediaPlayer
+              path={path}
+              disk={disk || undefined}
+              title={disk ? `${disk}:${path}` : path}
+              showTimeline
+              transcriptText={transcriptText}
+            />
           ) : (
             <div className="empty-state">أدخل مساراً أو اختر ملفاً قابلاً للتشغيل من صفحة الملفات.</div>
           )}
         </article>
+
+        <section className="panel stack" aria-label="تفريغ متزامن">
+          <div className="panel-title-row">
+            <div>
+              <h2>تفريغ زمني</h2>
+              <p>VTT أو SRT</p>
+            </div>
+            <span className="badge">{transcriptText.trim() ? "مفعّل" : "اختياري"}</span>
+          </div>
+          <textarea
+            className="search-input"
+            value={transcriptText}
+            onChange={(event) => setTranscriptText(event.target.value)}
+            rows={7}
+            dir="ltr"
+            placeholder={"WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nالمقطع الأول"}
+          />
+        </section>
       </section>
     </main>
   );
