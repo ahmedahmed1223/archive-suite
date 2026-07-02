@@ -49,6 +49,7 @@
 
 **P2 — تكافؤ الصفحات مع النظام القديم (تدقيق 2026-07-02، 41 صفحة legacy):**
 - ✅ موجة 1 (2026-07-02): 6 صفحات نُقلت على API الموجود — `/search` بحث متقدم · `/timeline` خط زمني · `/analytics` تحليلات CSS · `/status` حالة الخادم · `/shares` إدارة الروابط الممنوحة (تخزين محلي كالقديم) · `/favorites` مفضلة + زر نجمة في التفاصيل. أُدرجت كلها في تنقل AppHeader.
+- [ ] `[P1]` ⏱️L **إعادة تصميم Masar لاستعادة قدرات الواجهة القديمة داخل Next** — اعتماد التصور في `docs/design/masar-ui-redesign-vision.md`: AppShell موحد، toolbar كثيف، أوضاع عرض الأرشيف، saved views، bulk actions، details rail، Settings Hub، ومراقبة موحدة.
 - [ ] `[P2]` ⏱️L **موجة 2 — يحتاج backend جديد في Laravel أولاً:** المستخدمون والأدوار (CRUD+دعوات) · رفع الملفات (Uploader/AddVideo — endpoint upload) · سجل النشاط/التاريخ (activity + undo/diffs فوق audit log الموجود) · المجموعات Collections (يدوي + smart rules).
 - [ ] `[P2]` ⏱️L **موجة 3 — مخازن مساندة:** بحوث محفوظة · Vocabulary · وسوم هرمية · Inbox/التقاط · مكررات (كشف hash) · Kanban · أتمتة (rules engine).
 - 🚫 **لن يُنقل (قرار cutover):** Dashboard widgets وDiscover (استُبدلا بالرئيسية الجديدة) · SyncLog وSystemControl (بديلهما مركز التحكم) · FirstRun (بديله seeding التلقائي) · Projects/مونتاج (P3 عند طلب فعلي).
