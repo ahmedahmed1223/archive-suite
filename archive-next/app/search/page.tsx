@@ -3,8 +3,11 @@
 import type { FormEvent } from "react";
 import { Suspense, useMemo, useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import AppShell from "@/components/AppShell";
+import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
+import EmptyState from "@/components/EmptyState";
+import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
-import AppHeader from "@/components/AppHeader";
 
 type SearchState =
   | { status: "idle" }
@@ -12,10 +15,60 @@ type SearchState =
   | { status: "ready"; records: ArchiveRecord[]; total: number; cursor: string | null }
   | { status: "error"; message: string };
 
-// useSearchParams requires a Suspense boundary for static prerendering.
+type SearchViewMode = "cards" | "list";
+
+interface SavedSearch {
+  id: string;
+  name: string;
+  query: string;
+  store: string;
+  type: string;
+  createdAt: string;
+}
+
+const SAVED_SEARCHES_KEY = "masar:search:saved";
+const searchViewOptions: DataViewOption<SearchViewMode>[] = [
+  { value: "cards", label: "بطاقات" },
+  { value: "list", label: "قائمة" }
+];
+
+function readSavedSearches(): SavedSearch[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(SAVED_SEARCHES_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSavedSearches(searches: SavedSearch[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(SAVED_SEARCHES_KEY, JSON.stringify(searches));
+}
+
+function formatDate(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("ar-SA");
+}
+
+function uniqueTypes(records: ArchiveRecord[]) {
+  return Array.from(new Set(records.map((record) => record.type).filter((type): type is string => Boolean(type)))).sort((a, b) =>
+    a.localeCompare(b, "ar")
+  );
+}
+
 export default function SearchPage() {
   return (
-    <Suspense fallback={<main className="content"><p className="helper-text">جارٍ تحميل البحث...</p></main>}>
+    <Suspense fallback={(
+      <AppShell subtitle="بحث متقدم">
+        <div className="panel panel-compact" role="status">
+          <p className="helper-text">جار تحميل البحث...</p>
+        </div>
+      </AppShell>
+    )}>
       <SearchPageContent />
     </Suspense>
   );
@@ -30,24 +83,30 @@ function SearchPageContent() {
   const initialStore = searchParams.get("store") || "";
   const initialPage = parseInt(searchParams.get("page") || "1", 10);
   const initialPageSize = parseInt(searchParams.get("limit") || "20", 10);
+  const initialType = searchParams.get("type") || "all";
 
   const [query, setQuery] = useState(initialQuery);
   const [store, setStore] = useState(initialStore);
+  const [typeFilter, setTypeFilter] = useState(initialType);
+  const [viewMode, setViewMode] = useState<SearchViewMode>("cards");
   const [state, setState] = useState<SearchState>({ status: "idle" });
   const [pageSize] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [allRecords, setAllRecords] = useState<ArchiveRecord[]>([]);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
 
   const updateParams = useCallback(
-    (q: string, s: string, page: number) => {
+    (q: string, s: string, page: number, type: string) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       if (s) params.set("store", s);
+      if (type !== "all") params.set("type", type);
       if (page > 1) params.set("page", String(page));
       if (pageSize !== 20) params.set("limit", String(pageSize));
 
       const queryString = params.toString();
-      router.replace(queryString ? `/search?${queryString}` : "/search");
+      router.replace(queryString ? `/search?${queryString}` : "/search", { scroll: false });
     },
     [router, pageSize]
   );
@@ -79,163 +138,296 @@ function SearchPageContent() {
     [api]
   );
 
+  useEffect(() => {
+    setSavedSearches(readSavedSearches());
+    if (initialQuery) {
+      void search(initialQuery, initialStore, initialPage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const typeOptions = useMemo(() => uniqueTypes(allRecords), [allRecords]);
+  const filteredRecords = useMemo(() => {
+    if (state.status !== "ready") return [];
+    return typeFilter === "all"
+      ? allRecords
+      : allRecords.filter((record) => record.type === typeFilter);
+  }, [allRecords, state.status, typeFilter]);
+
+  const visibleRecords = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRecords.slice(start, start + pageSize);
+  }, [filteredRecords, currentPage, pageSize]);
+
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredRecords.length / pageSize)), [filteredRecords.length, pageSize]);
+  const previewRecord = useMemo(() => {
+    if (previewId) return filteredRecords.find((record) => record.id === previewId) || filteredRecords[0] || null;
+    return filteredRecords[0] || null;
+  }, [filteredRecords, previewId]);
+
   const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCurrentPage(1);
     await search(query, store, 1);
-    updateParams(query, store, 1);
+    updateParams(query, store, 1, typeFilter);
   };
-
-  useEffect(() => {
-    if (initialQuery) {
-      search(initialQuery, initialStore, initialPage);
-    }
-  }, []);
-
-  const visibleRecords = useMemo(() => {
-    if (state.status !== "ready") return [];
-    const start = (currentPage - 1) * pageSize;
-    return allRecords.slice(start, start + pageSize);
-  }, [state, allRecords, currentPage, pageSize]);
-
-  const totalPages = useMemo(() => {
-    if (state.status !== "ready") return 1;
-    return Math.ceil(state.total / pageSize);
-  }, [state, pageSize]);
 
   const handlePageChange = (newPage: number) => {
     const clamped = Math.max(1, Math.min(newPage, totalPages));
     setCurrentPage(clamped);
-    updateParams(query, store, clamped);
+    updateParams(query, store, clamped, typeFilter);
   };
 
-  return (
-    <main className="shell">
-      <AppHeader subtitle="بحث متقدم" />
+  const saveCurrentSearch = () => {
+    if (!query.trim()) return;
+    const name = window.prompt("اسم البحث المحفوظ", query.trim());
+    if (!name?.trim()) return;
 
-      <section className="content" aria-label="بحث السجلات">
-        <div className="hero">
-          <h1>البحث المتقدم</h1>
-          <p>
-            ابحث عن السجلات حسب الكلمات المفتاحية. يمكنك تصفية حسب المتجر أو الاستعراض
-            المباشر للعناصر.
-          </p>
+    const next: SavedSearch = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      query,
+      store,
+      type: typeFilter,
+      createdAt: new Date().toISOString()
+    };
+    const nextSearches = [next, ...savedSearches].slice(0, 12);
+    writeSavedSearches(nextSearches);
+    setSavedSearches(nextSearches);
+  };
+
+  const applySavedSearch = async (saved: SavedSearch) => {
+    setQuery(saved.query);
+    setStore(saved.store);
+    setTypeFilter(saved.type || "all");
+    setCurrentPage(1);
+    await search(saved.query, saved.store, 1);
+    updateParams(saved.query, saved.store, 1, saved.type || "all");
+  };
+
+  const removeSavedSearch = (id: string) => {
+    const nextSearches = savedSearches.filter((saved) => saved.id !== id);
+    writeSavedSearches(nextSearches);
+    setSavedSearches(nextSearches);
+  };
+
+  const resetSearch = () => {
+    setQuery("");
+    setStore("");
+    setTypeFilter("all");
+    setCurrentPage(1);
+    setPreviewId(null);
+    setState({ status: "idle" });
+    setAllRecords([]);
+    updateParams("", "", 1, "all");
+  };
+
+  const renderRecord = (record: ArchiveRecord) => (
+    <article className="search-result-card" key={record.id} data-view={viewMode} onMouseEnter={() => setPreviewId(record.id)}>
+      <div className="search-result-card__body">
+        <div className="panel-title-row">
+          <h2>{record.title || "بدون عنوان"}</h2>
+          {record.type ? <span className="badge">{record.type}</span> : null}
         </div>
+        {record.description ? <p className="helper-text">{record.description}</p> : null}
+        <div className="record-meta">
+          {record.store ? <span className="badge">{record.store}</span> : null}
+          <span className="badge">{formatDate(record.updatedAt || record.createdAt)}</span>
+          {record.tags?.slice(0, 4).map((tag) => <span key={tag} className="tag">{tag}</span>)}
+        </div>
+      </div>
+      <div className="button-row">
+        <a href={`/archive/${encodeURIComponent(record.id)}`} className="button button-primary button-sm">
+          فتح التفاصيل
+        </a>
+        <button type="button" className="button button-secondary button-sm" onClick={() => setPreviewId(record.id)}>
+          معاينة
+        </button>
+      </div>
+    </article>
+  );
 
-        <form className="search-form" onSubmit={handleSearch}>
-          <input
-            type="text"
-            placeholder="ابحث عن العنوان أو الوسم أو الوصف..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="search-input"
-            autoFocus
-          />
-          {store && (
-            <select
+  return (
+    <AppShell subtitle="بحث متقدم" contentClassName="search-content">
+      <PageToolbar
+        eyebrow={<span className="badge">Search Workbench</span>}
+        title="البحث المتقدم"
+        description="بحث موحد في السجلات مع facets، حفظ بحث، ومعاينة سريعة للنتائج دون مغادرة الصفحة."
+        meta={(
+          <>
+            <span className="badge">{filteredRecords.length} نتيجة</span>
+            <span className="badge">{typeOptions.length} نوع</span>
+            <span className="badge">{savedSearches.length} بحث محفوظ</span>
+          </>
+        )}
+        actions={(
+          <>
+            <button type="button" className="button button-primary" onClick={saveCurrentSearch} disabled={!query.trim()}>
+              حفظ البحث
+            </button>
+            <button type="button" className="button button-secondary" onClick={resetSearch}>
+              تصفير
+            </button>
+          </>
+        )}
+      >
+        <form className="archive-toolbar-grid" onSubmit={handleSearch}>
+          <label>
+            <span>الكلمات المفتاحية</span>
+            <input
+              type="search"
+              placeholder="العنوان، الوسوم، الوصف..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="search-input"
+            />
+          </label>
+          <label>
+            <span>المخزن</span>
+            <input
+              type="text"
+              placeholder="اتركه فارغاً لكل المخازن"
               value={store}
               onChange={(e) => setStore(e.target.value)}
               className="search-input"
+            />
+          </label>
+          <label>
+            <span>النوع</span>
+            <select
+              value={typeFilter}
+              onChange={(event) => {
+                const nextType = event.target.value;
+                setTypeFilter(nextType);
+                setCurrentPage(1);
+                updateParams(query, store, 1, nextType);
+              }}
             >
-              <option value="">كل المتاجر</option>
-              <option value={store}>{store}</option>
+              <option value="all">كل الأنواع</option>
+              {typeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
             </select>
-          )}
-          <button type="submit" className="button button-primary">بحث</button>
+          </label>
+          <div className="archive-toolbar-actions">
+            <button type="submit" className="button button-primary">بحث</button>
+          </div>
         </form>
-
-        {state.status === "idle" && (
-          <div className="empty-state">
-            <strong>ابدأ بكتابة كلمة بحث</strong>
-            <p className="helper-text">اكتب في حقل البحث أعلاه للبدء في البحث عن السجلات.</p>
-          </div>
-        )}
-
-        {state.status === "loading" && (
-          <div className="panel panel-compact" aria-live="polite" role="status">
-            <p className="form-status">جار البحث...</p>
-          </div>
-        )}
-
-        {state.status === "error" && (
-          <div className="state-banner state-banner-error" role="alert">
-            <strong>تعذر تنفيذ البحث</strong>
-            <span className="helper-text">{state.message}</span>
-          </div>
-        )}
-
-        {state.status === "ready" && visibleRecords.length === 0 && (
-          <div className="empty-state">
-            <strong>لم يتم العثور على سجلات</strong>
-            <p className="helper-text">جرّب بحثاً مختلفاً أو أزل بعض معايير التصفية.</p>
-          </div>
-        )}
-
-        {state.status === "ready" && visibleRecords.length > 0 && (
-          <>
-            <div className="split-layout">
-              <div>
-                <div className="panel panel-compact">
-                  <p className="form-status">
-                    عرض {visibleRecords.length} من {state.total} نتيجة
-                    {query && ` • البحث عن: "${query}"`}
-                  </p>
-                </div>
-
-                <div className="grid" role="list">
-                  {visibleRecords.map((record) => (
-                    <article className="panel panel-compact" key={record.id} role="listitem">
-                      <div className="panel-title-row">
-                        <h3>{record.title || "بدون عنوان"}</h3>
-                      </div>
-                      {record.description && (
-                        <p className="helper-text">{record.description}</p>
-                      )}
-                      {record.type && (
-                        <div className="badge">{record.type}</div>
-                      )}
-                      {record.tags && record.tags.length > 0 && (
-                        <div className="tags">
-                          {record.tags.slice(0, 5).map((tag) => (
-                            <span key={tag} className="tag">{tag}</span>
-                          ))}
-                        </div>
-                      )}
-                      <a href={`/archive/${record.id}`} className="button button-secondary">
-                        فتح التفاصيل
-                      </a>
-                    </article>
-                  ))}
-                </div>
-
-                {totalPages > 1 && (
-                  <div className="pagination">
-                    <button
-                      type="button"
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage <= 1}
-                      className="button button-secondary"
-                    >
-                      السابق
-                    </button>
-                    <span className="form-status">
-                      الصفحة {currentPage} من {totalPages}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage >= totalPages}
-                      className="button button-secondary"
-                    >
-                      التالي
-                    </button>
-                  </div>
-                )}
-              </div>
+        <div className="archive-toolbar-row">
+          <DataViewSwitcher value={viewMode} options={searchViewOptions} onChange={setViewMode} label="طريقة عرض البحث" />
+          {savedSearches.length > 0 ? (
+            <div className="saved-views-strip" aria-label="بحوث محفوظة">
+              {savedSearches.map((saved) => (
+                <span key={saved.id} className="saved-view-chip">
+                  <button type="button" onClick={() => void applySavedSearch(saved)}>{saved.name}</button>
+                  <button type="button" aria-label={`حذف ${saved.name}`} onClick={() => removeSavedSearch(saved.id)}>×</button>
+                </span>
+              ))}
             </div>
-          </>
-        )}
-      </section>
-    </main>
+          ) : null}
+        </div>
+      </PageToolbar>
+
+      {state.status === "idle" ? (
+        <EmptyState
+          title="ابدأ بكتابة كلمة بحث."
+          description="استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث إذا كان يتكرر في عملك اليومي."
+        />
+      ) : null}
+
+      {state.status === "loading" ? (
+        <div className="panel panel-compact" aria-live="polite" role="status">
+          <p className="form-status">جار البحث...</p>
+        </div>
+      ) : null}
+
+      {state.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تنفيذ البحث</strong>
+          <span className="helper-text">{state.message}</span>
+        </div>
+      ) : null}
+
+      {state.status === "ready" && visibleRecords.length === 0 ? (
+        <EmptyState
+          title="لم يتم العثور على سجلات."
+          description="جرّب بحثاً مختلفاً، أو أزل فلتر النوع، أو راجع المخزن المحدد."
+          actions={<button type="button" className="button button-secondary" onClick={resetSearch}>تصفير البحث</button>}
+        />
+      ) : null}
+
+      {state.status === "ready" && visibleRecords.length > 0 ? (
+        <section className="search-workspace" aria-label="نتائج البحث">
+          <div className="search-results-surface" data-view={viewMode}>
+            <div className="panel panel-compact">
+              <p className="form-status">
+                عرض {visibleRecords.length} من {filteredRecords.length} نتيجة
+                {query ? ` · البحث عن: "${query}"` : ""}
+              </p>
+            </div>
+
+            {visibleRecords.map(renderRecord)}
+
+            {totalPages > 1 ? (
+              <div className="pagination">
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  className="button button-secondary"
+                >
+                  السابق
+                </button>
+                <span className="form-status">
+                  الصفحة {currentPage} من {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className="button button-secondary"
+                >
+                  التالي
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <aside className="record-preview-rail" aria-label="معاينة نتيجة البحث">
+            {previewRecord ? (
+              <>
+                <div className="panel-section-header">
+                  <span className="badge">معاينة</span>
+                  <h2>{previewRecord.title || "بدون عنوان"}</h2>
+                </div>
+                <p>{previewRecord.description || "لا يوجد وصف محفوظ لهذا السجل."}</p>
+                <div className="kv-grid">
+                  <div className="kv-item">
+                    <strong>المخزن</strong>
+                    <span>{previewRecord.store || "-"}</span>
+                  </div>
+                  <div className="kv-item">
+                    <strong>النوع</strong>
+                    <span>{previewRecord.type || "-"}</span>
+                  </div>
+                  <div className="kv-item">
+                    <strong>التحديث</strong>
+                    <span>{formatDate(previewRecord.updatedAt || previewRecord.createdAt)}</span>
+                  </div>
+                </div>
+                {previewRecord.tags && previewRecord.tags.length > 0 ? (
+                  <div className="tags">
+                    {previewRecord.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
+                  </div>
+                ) : null}
+                <a className="button button-primary" href={`/archive/${encodeURIComponent(previewRecord.id)}`}>
+                  فتح التفاصيل
+                </a>
+              </>
+            ) : (
+              <EmptyState title="لا توجد معاينة." description="اختر نتيجة من القائمة لعرض ملخصها." />
+            )}
+          </aside>
+        </section>
+      ) : null}
+    </AppShell>
   );
 }
