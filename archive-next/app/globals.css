@@ -308,6 +308,27 @@ button.badge:hover {
   background: color-mix(in srgb, var(--color-accent-primary) 14%, var(--color-bg-secondary));
 }
 
+.badge-danger {
+  color: var(--color-status-error);
+  border-color: color-mix(in srgb, var(--color-status-error) 42%, var(--color-border-primary));
+  background: color-mix(in srgb, var(--color-status-error) 8%, var(--color-bg-secondary));
+}
+
+.muted {
+  color: var(--color-text-tertiary);
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.global-error-content {
+  min-block-size: 100vh;
+  align-content: center;
+}
+
 .app-nav-link[aria-current="page"] {
   color: var(--color-text-inverse);
   border-color: var(--color-brand-primary);
