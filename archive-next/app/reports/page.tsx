@@ -1,5 +1,6 @@
+import AppShell from "@/components/AppShell";
+import PageToolbar from "@/components/PageToolbar";
 import { getContractSummary } from "@/lib/archive-api";
-import AppHeader from "@/components/AppHeader";
 import { BRAND } from "@/lib/brand";
 
 const contract = getContractSummary();
@@ -7,48 +8,78 @@ const contract = getContractSummary();
 const reportChecks = [
   {
     title: "عقد التقارير",
+    status: "جاهز",
     body: `يعتمد المسار على عقد ${BRAND.latinName} API v${contract.version} قبل نقل أي تقرير تشغيلي حقيقي.`
   },
   {
-    title: "جاهزية العرض",
-    body: "يعرض هذا السطح مؤشرات التقارير الأساسية ويترك البيانات الثقيلة لعقود Laravel حتى لا يتضاعف منطق الحساب داخل الواجهة."
+    title: "مصدر الحقيقة",
+    status: "Laravel",
+    body: "تبقى الحسابات الثقيلة والتجميعات طويلة المدى في Laravel، وتعرض Next النتائج فقط لتجنب ازدواجية المنطق."
   },
   {
     title: "بوابة القبول",
+    status: "إلزامية",
     body: "كل تقرير ينتقل لاحقا يحتاج typecheck، build مستقل، وفحص Playwright يغطي سطح العرض الأساسي."
   }
 ];
 
+const plannedReports = [
+  "حجم الأرشيف حسب المخزن والنوع",
+  "سجل المعالجة الإعلامية والفشل",
+  "ملخص الحقوق وانتهاء التراخيص",
+  "نشاط المستخدمين والتعديلات"
+];
+
 export default function ReportsPage() {
   return (
-    <main className="shell">
-      <AppHeader subtitle="التقارير" />
-
-      <section className="content" aria-label="التقارير">
-        <div className="hero">
-          <span className="badge">تقارير تشغيلية</span>
-          <h1>لوحة التقارير</h1>
-          <p>
-            نقطة دخول هادئة لمراجعة حالة العقود، جاهزية التقارير، وبوابات
-            القبول قبل فتح التقارير التفصيلية.
-          </p>
-          <div className="hero-actions">
+    <AppShell subtitle="التقارير" navLabel="التقارير" contentClassName="observability-content">
+      <PageToolbar
+        eyebrow={<span className="badge">تقارير تشغيلية</span>}
+        title="لوحة التقارير"
+        description="نقطة دخول لمراجعة جاهزية التقارير والعقود قبل فتح تقارير تشغيلية مفصلة على بيانات Laravel."
+        meta={
+          <>
             <span className="badge">API v{contract.version}</span>
+            <span className="badge">{contract.routeCount} مسار موثق</span>
             <span className="badge">قيد التطوير</span>
-          </div>
-        </div>
+          </>
+        }
+        actions={
+          <a className="button button-secondary" href="/analytics">
+            التحليلات الحالية
+          </a>
+        }
+      />
 
-        <div className="grid">
-          {reportChecks.map((item) => (
-            <article className="panel" key={item.title}>
-              <div className="panel-section-header">
-                <h2>{item.title}</h2>
-              </div>
-              <p>{item.body}</p>
-            </article>
+      <div className="report-readiness-grid">
+        {reportChecks.map((item) => (
+          <article className="panel report-check-card" key={item.title}>
+            <div className="panel-title-row">
+              <h2>{item.title}</h2>
+              <span className="badge">{item.status}</span>
+            </div>
+            <p>{item.body}</p>
+          </article>
+        ))}
+      </div>
+
+      <section className="panel">
+        <div className="panel-title-row">
+          <div>
+            <h2>التقارير المخططة</h2>
+            <p>هذه القائمة تحفظ تكافؤ المزايا المطلوبة قبل تحويل كل تقرير إلى صفحة بيانات كاملة.</p>
+          </div>
+          <span className="badge">{plannedReports.length} مسارات</span>
+        </div>
+        <div className="report-roadmap">
+          {plannedReports.map((report, index) => (
+            <div className="report-roadmap__item" key={report}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{report}</strong>
+            </div>
           ))}
         </div>
       </section>
-    </main>
+    </AppShell>
   );
 }

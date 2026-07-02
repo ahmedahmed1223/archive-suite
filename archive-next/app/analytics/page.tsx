@@ -1,8 +1,13 @@
 "use client";
 
 import { useMemo, useState, useCallback, useEffect } from "react";
+import AppShell from "@/components/AppShell";
+import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
+import EmptyState from "@/components/EmptyState";
+import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
-import AppHeader from "@/components/AppHeader";
+
+type TimeRange = "30d" | "90d" | "1y" | "all";
 
 interface AnalyticsData {
   totalCount: number;
@@ -14,12 +19,19 @@ interface AnalyticsData {
   taggedPct: number;
 }
 
+const rangeOptions: Array<DataViewOption<TimeRange>> = [
+  { value: "30d", label: "30 يوم" },
+  { value: "90d", label: "90 يوم" },
+  { value: "1y", label: "سنة" },
+  { value: "all", label: "الكل" }
+];
+
 function calculateAnalytics(records: ArchiveRecord[], daysAgo?: number): AnalyticsData {
   const now = Date.now();
   const cutoff = daysAgo ? now - daysAgo * 86400000 : 0;
 
-  const filtered = records.filter((r) => {
-    const ts = r.createdAt || r.updatedAt || "";
+  const filtered = records.filter((record) => {
+    const ts = record.createdAt || record.updatedAt || "";
     return !ts || new Date(ts).getTime() >= cutoff;
   });
 
@@ -72,18 +84,27 @@ function calculateAnalytics(records: ArchiveRecord[], daysAgo?: number): Analyti
   };
 }
 
+function rangeLabel(range: TimeRange) {
+  return rangeOptions.find((option) => option.value === range)?.label || "الكل";
+}
+
 export default function AnalyticsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<"30d" | "90d" | "1y" | "all">("all");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<TimeRange>("all");
 
   const daysAgo = useMemo(() => {
     switch (timeRange) {
-      case "30d": return 30;
-      case "90d": return 90;
-      case "1y": return 365;
-      default: return undefined;
+      case "30d":
+        return 30;
+      case "90d":
+        return 90;
+      case "1y":
+        return 365;
+      default:
+        return undefined;
     }
   }, [timeRange]);
 
@@ -91,33 +112,41 @@ export default function AnalyticsPage() {
 
   const loadRecords = useCallback(async () => {
     setIsLoading(true);
-    const response = await api.search({ q: "", limit: 500 });
-    if (response.ok) {
-      setRecords(response.records);
+    setLoadError(null);
+    try {
+      const response = await api.search({ q: "", limit: 500 });
+      if (response.ok) {
+        setRecords(response.records);
+      } else {
+        setLoadError(response.error || "تعذر تحميل بيانات التحليلات.");
+      }
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "تعذر تحميل بيانات التحليلات.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [api]);
 
   useEffect(() => {
-    loadRecords();
+    void loadRecords();
   }, [loadRecords]);
 
   const maxMonthCount = useMemo(
-    () => Math.max(1, ...analytics.monthlyGrowth.map((m) => m.count)),
+    () => Math.max(1, ...analytics.monthlyGrowth.map((month) => month.count)),
     [analytics.monthlyGrowth]
   );
 
   const exportCsv = () => {
     const rows = [
       ["id", "title", "type", "createdAt", "updatedAt", "tags"].join(","),
-      ...records.map((r) =>
+      ...records.map((record) =>
         [
-          r.id,
-          `"${(r.title || "").replace(/"/g, '""')}"`,
-          r.type || "",
-          r.createdAt || "",
-          r.updatedAt || "",
-          `"${(r.tags || []).join("|")}"`
+          record.id,
+          `"${(record.title || "").replace(/"/g, '""')}"`,
+          record.type || "",
+          record.createdAt || "",
+          record.updatedAt || "",
+          `"${(record.tags || []).join("|")}"`
         ].join(",")
       )
     ].join("\n");
@@ -126,7 +155,7 @@ export default function AnalyticsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `archive-analytics-${timeRange}.csv`;
+    link.download = `masar-analytics-${timeRange}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -134,217 +163,162 @@ export default function AnalyticsPage() {
   const isEmpty = analytics.totalCount === 0;
 
   return (
-    <main className="shell">
-      <AppHeader subtitle="تحليلات الأرشيف" />
-
-      <section className="content" aria-label="تحليلات">
-        <div className="hero">
-          <h1>تحليلات الأرشيف</h1>
-          <p>
-            رؤية شاملة عن نمو الأرشيف وصحته: العناصر الموسومة، النمو الشهري، والوسوم الشائعة.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: "0.5rem", borderRadius: "0.75rem", border: "1px solid var(--va-border-soft)", backgroundColor: "var(--va-surface-2)", padding: "0.25rem" }}>
-            {(["30d", "90d", "1y", "all"] as const).map((range) => (
-              <button
-                key={range}
-                type="button"
-                onClick={() => setTimeRange(range)}
-                style={{
-                  padding: "0.375rem 0.75rem",
-                  borderRadius: "0.5rem",
-                  fontSize: "0.75rem",
-                  fontWeight: "500",
-                  border: "none",
-                  backgroundColor: timeRange === range ? "var(--va-accent)" : "transparent",
-                  color: timeRange === range ? "white" : "var(--va-text-muted)",
-                  cursor: "pointer",
-                  transition: "all 200ms"
-                }}
-              >
-                {range === "30d" ? "30 يوم" : range === "90d" ? "90 يوم" : range === "1y" ? "سنة" : "الكل"}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={exportCsv}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.375rem",
-              borderRadius: "0.75rem",
-              border: "1px solid var(--va-border-soft)",
-              backgroundColor: "var(--va-surface)",
-              padding: "0.375rem 0.75rem",
-              fontSize: "0.75rem",
-              color: "var(--va-text-2)",
-              cursor: "pointer",
-              transition: "all 200ms"
-            }}
-          >
-            ⬇️ تصدير CSV
-          </button>
-        </div>
-
-        {isLoading && (
-          <div className="panel panel-compact" role="status" aria-live="polite">
-            <p className="form-status">جار تحميل البيانات...</p>
-          </div>
-        )}
-
-        {isEmpty ? (
-          <div className="empty-state">
-            <strong>لا بيانات للتحليل</strong>
-            <p className="helper-text">أضف عناصر إلى الأرشيف لتظهر هنا إحصائيات الأداء.</p>
-          </div>
-        ) : (
+    <AppShell subtitle="تحليلات الأرشيف" navLabel="التحليلات" contentClassName="observability-content">
+      <PageToolbar
+        eyebrow={<span className="badge">تحليل تشغيلي</span>}
+        title="تحليلات الأرشيف"
+        description="مؤشرات نمو الأرشيف، جودة الوسوم، وتوزيع الأنواع والحالات من بيانات البحث الحالية."
+        meta={
           <>
-            {/* Metrics Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-              <div className="panel panel-compact" style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "0.75rem", color: "var(--va-text-muted)", marginBottom: "0.5rem" }}>
-                  إجمالي العناصر
-                </p>
-                <p style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--va-text)", fontFamily: "var(--va-font-mono)" }}>
-                  {analytics.totalCount}
-                </p>
-              </div>
-              <div className="panel panel-compact" style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "0.75rem", color: "var(--va-text-muted)", marginBottom: "0.5rem" }}>
-                  موسومة
-                </p>
-                <p style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--va-text)", fontFamily: "var(--va-font-mono)" }}>
-                  {analytics.taggedPct}%
-                </p>
-                <p style={{ fontSize: "0.625rem", color: "var(--va-text-muted)" }}>
-                  {analytics.taggedCount} عنصر
-                </p>
-              </div>
-              <div className="panel panel-compact" style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "0.75rem", color: "var(--va-text-muted)", marginBottom: "0.5rem" }}>
-                  أنواع
-                </p>
-                <p style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--va-text)", fontFamily: "var(--va-font-mono)" }}>
-                  {Object.keys(analytics.countByType).length}
-                </p>
-              </div>
-            </div>
+            <span className="badge">{rangeLabel(timeRange)}</span>
+            <span className="badge">{records.length} عنصر محمل</span>
+            <span className="badge">{analytics.taggedPct}% موسومة</span>
+          </>
+        }
+        actions={
+          <>
+            <button className="button button-secondary" type="button" onClick={() => void loadRecords()} disabled={isLoading}>
+              تحديث
+            </button>
+            <button className="button button-primary" type="button" onClick={exportCsv} disabled={records.length === 0}>
+              تصدير CSV
+            </button>
+          </>
+        }
+      >
+        <DataViewSwitcher value={timeRange} options={rangeOptions} onChange={setTimeRange} label="نطاق التحليل" />
+      </PageToolbar>
 
-            {/* Monthly Growth Chart */}
-            {analytics.monthlyGrowth.length > 0 && (
-              <div className="panel panel-compact" style={{ marginBottom: "2rem" }}>
-                <h2 style={{ fontSize: "1rem", fontWeight: "bold", marginBottom: "1rem", color: "var(--va-text)" }}>
-                  النمو الشهري ({analytics.totalCount})
-                </h2>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-end",
-                    gap: "0.375rem",
-                    minHeight: "10rem",
-                    overflow: "auto",
-                    paddingBottom: "0.5rem"
-                  }}
-                  role="img"
-                  aria-label="رسم بياني للنمو الشهري"
-                >
-                  {analytics.monthlyGrowth.map((bucket) => {
-                    const heightPct = maxMonthCount ? Math.max(4, Math.round((bucket.count / maxMonthCount) * 100)) : 0;
-                    return (
-                      <div
-                        key={bucket.month}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "0.25rem",
-                          minWidth: "2.25rem",
-                          flexShrink: 0
-                        }}
-                        title={`${bucket.month} — ${bucket.count}`}
-                      >
-                        <p style={{ fontSize: "0.625rem", fontWeight: "500", color: "var(--va-text-2)", fontFamily: "var(--va-font-mono)" }}>
-                          {bucket.count}
-                        </p>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column-reverse",
-                            width: "1.75rem",
-                            overflow: "hidden",
-                            borderRadius: "var(--va-radius-sm)",
-                            minHeight: "0.5rem",
-                            backgroundColor: "var(--va-surface-2)"
-                          }}
-                        >
-                          <div
-                            style={{
-                              height: `${heightPct}%`,
-                              backgroundColor: "#10b981",
-                              flexGrow: 1
-                            }}
-                          />
-                        </div>
-                        <p style={{ fontSize: "0.5625rem", color: "var(--va-text-muted)", fontFamily: "var(--va-font-mono)" }}>
-                          {bucket.month}
-                        </p>
+      {isLoading ? (
+        <section className="state-banner" role="status" aria-live="polite">
+          <strong>جار تحميل بيانات التحليل</strong>
+          <p>يتم جلب آخر 500 سجل من عقد البحث الحالي.</p>
+        </section>
+      ) : null}
+
+      {loadError ? (
+        <section className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل التحليلات</strong>
+          <p>{loadError}</p>
+        </section>
+      ) : null}
+
+      {isEmpty && !isLoading ? (
+        <EmptyState
+          title="لا بيانات للتحليل"
+          description="أضف عناصر إلى الأرشيف أو وسع نطاق التحليل لتظهر مؤشرات الأداء هنا."
+        />
+      ) : (
+        <>
+          <div className="analytics-metric-grid">
+            <article className="health-metric" data-tone="accent">
+              <div className="health-metric__body">
+                <span>إجمالي العناصر</span>
+                <strong>{analytics.totalCount}</strong>
+              </div>
+            </article>
+            <article className="health-metric" data-tone="success">
+              <div className="health-metric__body">
+                <span>العناصر الموسومة</span>
+                <strong>{analytics.taggedPct}%</strong>
+                <small>{analytics.taggedCount} عنصر</small>
+              </div>
+            </article>
+            <article className="health-metric">
+              <div className="health-metric__body">
+                <span>عدد الأنواع</span>
+                <strong>{Object.keys(analytics.countByType).length}</strong>
+              </div>
+            </article>
+            <article className="health-metric">
+              <div className="health-metric__body">
+                <span>عدد الحالات</span>
+                <strong>{Object.keys(analytics.countByStatus).length}</strong>
+              </div>
+            </article>
+          </div>
+
+          {analytics.monthlyGrowth.length > 0 ? (
+            <section className="panel analytics-chart" aria-label="النمو الشهري">
+              <div className="panel-title-row">
+                <div>
+                  <h2>النمو الشهري</h2>
+                  <p>آخر 12 شهرًا لديها تاريخ إنشاء أو تحديث واضح.</p>
+                </div>
+                <span className="badge">{analytics.monthlyGrowth.length} أشهر</span>
+              </div>
+              <div className="analytics-bar-list" role="img" aria-label="رسم بياني للنمو الشهري">
+                {analytics.monthlyGrowth.map((bucket) => {
+                  const heightPct = Math.max(4, Math.round((bucket.count / maxMonthCount) * 100));
+                  return (
+                    <div className="analytics-bar-item" key={bucket.month} title={`${bucket.month} - ${bucket.count}`}>
+                      <span className="analytics-bar-value">{bucket.count}</span>
+                      <div className="analytics-bar-track">
+                        <span className="analytics-bar-fill" style={{ blockSize: `${heightPct}%` }} />
                       </div>
-                    );
-                  })}
+                      <span className="analytics-bar-label">{bucket.month}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          <div className="analytics-columns">
+            <section className="panel">
+              <div className="panel-title-row">
+                <div>
+                  <h2>توزيع الأنواع</h2>
+                  <p>عدد العناصر حسب نوع المحتوى.</p>
                 </div>
               </div>
-            )}
-
-            {/* Types */}
-            {Object.keys(analytics.countByType).length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "2rem" }}>
+              <div className="analytics-chip-list">
                 {Object.entries(analytics.countByType).map(([type, count]) => (
-                  <span key={type} className="badge" style={{ fontSize: "0.75rem" }}>
+                  <span key={type} className="badge">
                     {type} ({count})
                   </span>
                 ))}
               </div>
-            )}
+            </section>
 
-            {/* Top Tags */}
-            {analytics.topTags.length > 0 && (
-              <div className="panel panel-compact">
-                <h2 style={{ fontSize: "1rem", fontWeight: "bold", marginBottom: "1rem", color: "var(--va-text)" }}>
-                  أكثر الوسوم ({analytics.topTags.length})
-                </h2>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {analytics.topTags.map(({ tag, count }) => (
-                    <div
-                      key={tag}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "1rem",
-                        borderRadius: "var(--va-radius-md)",
-                        border: "1px solid var(--va-border-soft)",
-                        backgroundColor: "var(--va-surface-2)",
-                        padding: "0.75rem",
-                        fontSize: "0.875rem"
-                      }}
-                    >
-                      <span style={{ color: "var(--va-text-2)", textAlign: "right", flex: 1 }} dir="auto">
-                        {tag}
-                      </span>
-                      <span style={{ color: "var(--va-text-muted)", fontFamily: "var(--va-font-mono)", fontSize: "0.75rem", fontWeight: "500" }}>
-                        {count}
-                      </span>
-                    </div>
-                  ))}
+            <section className="panel">
+              <div className="panel-title-row">
+                <div>
+                  <h2>الحالات</h2>
+                  <p>قراءة أولية من `metadata.status` لكل سجل.</p>
                 </div>
               </div>
-            )}
-          </>
-        )}
-      </section>
-    </main>
+              <div className="analytics-chip-list">
+                {Object.entries(analytics.countByStatus).map(([status, count]) => (
+                  <span key={status} className="badge">
+                    {status} ({count})
+                  </span>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {analytics.topTags.length > 0 ? (
+            <section className="panel">
+              <div className="panel-title-row">
+                <div>
+                  <h2>أكثر الوسوم</h2>
+                  <p>أعلى الوسوم تكرارًا داخل نطاق التحليل الحالي.</p>
+                </div>
+                <span className="badge">{analytics.topTags.length} وسوم</span>
+              </div>
+              <div className="analytics-tag-list">
+                {analytics.topTags.map(({ tag, count }) => (
+                  <div className="analytics-tag-row" key={tag}>
+                    <span dir="auto">{tag}</span>
+                    <strong>{count}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </>
+      )}
+    </AppShell>
   );
 }
