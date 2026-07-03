@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\FilesController;
 use App\Http\Controllers\Api\V1\IngestController;
@@ -47,7 +48,8 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/review-links/{token}', [ReviewLinksController::class, 'show']);
     Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept']);
 
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    // Brute-force guard: contract documents the 429 response on login.
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 
     // Media streaming: auth only (no per-range audit spam). Range-capable so the
@@ -68,6 +70,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/records', [RecordsController::class, 'index']);
         Route::get('/records/{id}', [RecordsController::class, 'show']);
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
+        Route::post('/records/bulk-delete', [RecordsController::class, 'bulkDelete']);
         Route::get('/search', [SearchController::class, 'index']);
         Route::get('/files', [FilesController::class, 'index']);
         Route::get('/files/browser', [FilesController::class, 'browser']);
@@ -104,5 +107,10 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcDeleteRow']);
         Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
+
+        Route::get('/system/backups', [BackupsController::class, 'index']);
+        Route::post('/system/backups/run', [BackupsController::class, 'run']);
+        Route::post('/system/backups/preview', [BackupsController::class, 'preview']);
+        Route::post('/system/backups/restore', [BackupsController::class, 'restore']);
     });
 });

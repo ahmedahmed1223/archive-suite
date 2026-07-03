@@ -20,6 +20,20 @@
 
 ---
 
+## موجة توحيد النظام واستعادة الميزات — 2026-07-03
+
+- [x] **نسخ احتياطي واستعادة في Laravel + صفحة Data Center** — أُضيفت نقاط `/api/v1/system/backups` (list/run/preview/restore) عبر `BackupService` مع حماية من path traversal وقصرها على الأدمن، وصفحة `/backup` في Next بجدول النسخ ومعاينة لكل مخزن وتأكيد استعادة بكتابة اسم النسخة. التحقق: `pnpm verify` (222 اختبار Laravel).
+- [x] **استعادة Projects/Montage** — صفحة `/projects` في Next منقولة من الواجهة القديمة: مشاريع محفوظة محلياً، خط زمني للمقاطع بنقاط دخول/خروج وإعادة ترتيب، وتصدير JSON وEDL (CMX3600) عبر وحدة `lib/montage.ts` النقية. تصدير MP4 معطّل حتى تتوفر عملية تصدير في العقد.
+- [x] **Dashboard حقيقي** — أعيدت كتابة `/` كلوحة حية: إحصاءات حسب النوع والحالة، أحدث السجلات، مهام الوسائط الأخيرة، وروابط سريعة، بجلب متوازٍ وحالات خطأ لكل ودجت.
+- [x] **صفحة الحقوق `/rights`** — قائمة الحقوق عبر `/rights/expiring` بنوافذ 30/90/365 يوماً مع تمييز المنتهي، وفحص إنفاذ لكل عنصر، ونموذج upsert مطابق للعقد.
+- [x] **شجرة مجلدات في `/files`** — وضع عرض "مجلدات" جديد موصول بـ `/files/browser` مع breadcrumb وتنقل بالنقر.
+- [x] **صفحة الاستيراد `/ingest`** — واجهات Scan وFTP وSMB وفق مخططات العقد، دون تخزين كلمات المرور محلياً.
+- [x] **حذف جماعي للسجلات** — endpoint جديد `POST /records/bulk-delete` بنتائج لكل عنصر، موصول بزر الحذف الجماعي في `/archive` مع تأكيد وعدّ الفشل بالاسم.
+- [x] **تحصينات أمنية** — `throttle:10,1` على تسجيل الدخول (يطابق 429 في العقد)، قصر `/system/security-settings` على الأدمن مع اختبارات، وتوحيد `requireAdmin` في `Controller` الأساس. التحقق من entropy رموز الدعوات (Str::random(80) + SHA-256) وحد الرفع 600MB — سليمة دون تغيير.
+- [x] **توحيد العقد OpenAPI** — أُضيفت المسارات الجديدة (backups، bulk-delete) والمسارات المنفّذة غير الموثقة (`/users`، `/invitations/{token}/accept`، `/system/security-settings`) مع 16 مخططاً جديداً، وتوسيع `scripts/verify-api-contracts.mjs` للتحقق منها. التحقق: `pnpm verify` كاملة خضراء (عقد + typecheck + بناء Next + اختبارات Laravel).
+
+---
+
 ## موجة Laravel + Next.js — 2026-07-01
 
 - [x] **استعادة صفحات إدارة الأنواع وسجل الأخطاء في Next** — أُضيف مسارا `/types` و`/errors` إلى `archive-next` بعد أن كانا متاحين فقط داخل `archive-app` legacy. صفحة الأنواع تحفظ في مخزن Laravel `content_types` عبر `/api/v1/records` و`/api/v1/records/bulk`، وصفحة سجل الأخطاء تسجل أعطال المتصفح محلياً مع التقاط مركزي من layout. التحقق: `pnpm run typecheck:next`, `pnpm run build:next`.

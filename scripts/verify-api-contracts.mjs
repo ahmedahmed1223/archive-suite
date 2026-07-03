@@ -40,7 +40,16 @@ for (const pathName of [
   "/rights/expiring",
   "/rights/{itemId}/enforcement",
   "/share",
-  "/share/{token}"
+  "/share/{token}",
+  "/records/bulk-delete",
+  "/users",
+  "/users/{id}",
+  "/invitations/{token}/accept",
+  "/system/security-settings",
+  "/system/backups",
+  "/system/backups/run",
+  "/system/backups/preview",
+  "/system/backups/restore"
 ]) {
   assert.ok(contract.paths?.[pathName], `API contract should include ${pathName}`);
 }
@@ -70,7 +79,18 @@ for (const schemaName of [
   "OdbcRowWriteRequest",
   "OdbcRowKeyRequest",
   "OdbcWriteResponse",
-  "SharePayloadResponse"
+  "SharePayloadResponse",
+  "BulkDeleteRecordsRequest",
+  "BulkDeleteRecordsResponse",
+  "UserAccount",
+  "UserInvitation",
+  "InviteUserRequest",
+  "AcceptInvitationRequest",
+  "SecuritySettings",
+  "BackupInfo",
+  "BackupListResponse",
+  "BackupPreviewResponse",
+  "BackupRestoreResponse"
 ]) {
   assert.ok(contract.components?.schemas?.[schemaName], `API contract should define ${schemaName}`);
 }

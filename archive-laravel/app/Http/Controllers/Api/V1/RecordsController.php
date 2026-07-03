@@ -133,4 +133,38 @@ class RecordsController extends Controller
         return response()->json(['ok' => true, 'count' => $count]);
     }
 
+    /**
+     * @throws ValidationException
+     */
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'store' => ['required', 'string'],
+            'ids' => ['required', 'array', 'min:1', 'max:10000'],
+            'ids.*' => ['required', 'string'],
+        ]);
+
+        $results = [];
+        $count = 0;
+
+        // ponytail: one delete per id keeps per-item results simple; batch it if 10k-id payloads show up for real.
+        foreach (array_values(array_unique($validated['ids'])) as $id) {
+            $deleted = DB::table('storage_rows')
+                ->where('store', $validated['store'])
+                ->where(function ($query) use ($id): void {
+                    $query->where('uid', $id)
+                        ->orWhere('data->>\'id\'', $id);
+                })
+                ->delete();
+
+            $results[] = ['uid' => $id, 'deleted' => $deleted > 0];
+
+            if ($deleted > 0) {
+                $count++;
+            }
+        }
+
+        return response()->json(['ok' => true, 'count' => $count, 'results' => $results]);
+    }
+
 }

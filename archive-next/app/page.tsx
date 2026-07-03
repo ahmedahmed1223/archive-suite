@@ -1,204 +1,308 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { BRAND } from "@/lib/brand";
-import { getContractSummary } from "@/lib/archive-api";
+import {
+  createArchiveApiClient,
+  getContractSummary,
+  type ArchiveRecord,
+  type MediaJob,
+  type MediaJobStatus
+} from "@/lib/archive-api";
+
+type RecordsState =
+  | { status: "loading" }
+  | { status: "ready"; records: ArchiveRecord[] }
+  | { status: "error"; message: string };
+
+type JobsState =
+  | { status: "loading" }
+  | { status: "ready"; jobs: MediaJob[] }
+  | { status: "error"; message: string };
 
 const apiContract = getContractSummary();
-const displayContractTitle = `${BRAND.latinName} API Contract`;
 
-const kpis = [
-  {
-    label: "اسم العقد",
-    value: displayContractTitle,
-    note: "المرجع المعلن للـ API والواجهة."
-  },
-  {
-    label: "إصدار العقد",
-    value: `v${apiContract.version}`,
-    note: "يجب أن يبقى متوافقاً مع المستهلكين."
-  },
-  {
-    label: "مسارات API",
-    value: String(apiContract.routeCount),
-    note: "عدد المسارات المعروفة في OpenAPI."
-  },
-  {
-    label: "وضع الصفحة",
-    value: "Static RTL",
-    note: "لا تعتمد على backend إضافي."
-  }
-] as const;
-
-const attentionItems = [
-  {
-    title: "العقد هو الحقيقة المرجعية",
-    body: "أي تغيير في المسارات أو الأشكال يعود أولاً إلى `archive-core` ثم إلى المستهلكين."
-  },
-  {
-    title: "أغلق باب الانحراف",
-    body: "لا تضف مؤشرات تشغيلية وهمية؛ اعرض فقط ما يخرج من `getContractSummary()` وما هو ثابت في الواجهة."
-  },
-  {
-    title: "بوابة الإطلاق",
-    body: "قبل الدمج، شغّل `pnpm run typecheck:next` ثم `pnpm run build:next` وتأكد من بقاء RTL والكثافة كما هي."
-  }
-] as const;
-
-const shortcuts = [
+const quickLinks = [
   { label: "الأرشيف", href: "/archive" },
   { label: "إضافة للأرشيف", href: "/uploads" },
-  { label: "الوارد", href: "/inbox" },
   { label: "البحث", href: "/search" },
   { label: "الملفات", href: "/files" },
-  { label: "المجموعات", href: "/collections" },
-  { label: "كانبان", href: "/kanban" },
-  { label: "الوسائط", href: "/media/review" },
-  { label: "النشاط", href: "/activity" },
-  { label: "الحالة", href: "/status" },
+  { label: "الاستيراد", href: "/ingest" },
+  { label: "الوسائط", href: "/media/jobs" },
+  { label: "الحقوق", href: "/rights" },
+  { label: "التحليلات", href: "/analytics" },
+  { label: "النسخ الاحتياطي", href: "/backup" },
   { label: "الإعدادات", href: "/settings" }
 ] as const;
 
-const qualityChecks = [
-  "Next.js App Router مع TypeScript على المسار الكانوني.",
-  "Laravel API خلف `api/v1` كمصدر بيانات مرجعي.",
-  "واجهة RTL عربية مع تباين واضح وكثافة تشغيلية.",
-  "اختبارات التحقق تعتمد على typecheck وbuild قبل أي نشر."
-] as const;
+const jobStatusLabels: Record<MediaJobStatus, string> = {
+  queued: "في الانتظار",
+  processing: "قيد المعالجة",
+  completed: "مكتملة",
+  failed: "فاشلة"
+};
 
-function StatCard({
-  label,
-  value,
-  note
-}: Readonly<{
-  label: string;
-  value: string;
-  note: string;
-}>) {
-  return (
-    <article className="panel">
-      <div className="panel-section-header">
-        <h3>{label}</h3>
-      </div>
-      <strong className="metric-value">
-        {value}
-      </strong>
-      <p>{note}</p>
-    </article>
-  );
+function formatDate(value?: string | null) {
+  if (!value) return "غير محدد";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("ar-SA");
+}
+
+function getRecordTime(record: ArchiveRecord) {
+  const value = record.updatedAt || record.createdAt || "";
+  const time = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(time) ? time : 0;
 }
 
 export default function HomePage() {
+  const api = useMemo(() => createArchiveApiClient(), []);
+  const [recordsState, setRecordsState] = useState<RecordsState>({ status: "loading" });
+  const [jobsState, setJobsState] = useState<JobsState>({ status: "loading" });
+
+  const loadDashboard = useCallback(async () => {
+    setRecordsState({ status: "loading" });
+    setJobsState({ status: "loading" });
+
+    // Parallel independent fetches; each widget fails on its own.
+    void (async () => {
+      try {
+        const response = await api.search({ q: "", limit: 300 });
+        if (response.ok) {
+          setRecordsState({ status: "ready", records: response.records });
+        } else {
+          setRecordsState({ status: "error", message: response.error || "تعذر تحميل السجلات." });
+        }
+      } catch (error) {
+        setRecordsState({ status: "error", message: error instanceof Error ? error.message : "تعذر تحميل السجلات." });
+      }
+    })();
+
+    void (async () => {
+      try {
+        const response = await api.mediaJobs({ limit: 8 });
+        if (response.ok) {
+          setJobsState({ status: "ready", jobs: response.jobs });
+        } else {
+          setJobsState({ status: "error", message: response.error || "تعذر تحميل مهام الوسائط." });
+        }
+      } catch (error) {
+        setJobsState({ status: "error", message: error instanceof Error ? error.message : "تعذر تحميل مهام الوسائط." });
+      }
+    })();
+  }, [api]);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
+
+  const records = recordsState.status === "ready" ? recordsState.records : [];
+
+  const stats = useMemo(() => {
+    const countByType: Record<string, number> = {};
+    const countByStatus: Record<string, number> = {};
+
+    records.forEach((record) => {
+      const type = record.type || "unknown";
+      countByType[type] = (countByType[type] || 0) + 1;
+
+      const status = (record.metadata?.status as string) || "active";
+      countByStatus[status] = (countByStatus[status] || 0) + 1;
+    });
+
+    return { countByType, countByStatus };
+  }, [records]);
+
+  const recentRecords = useMemo(
+    () => [...records].sort((a, b) => getRecordTime(b) - getRecordTime(a)).slice(0, 8),
+    [records]
+  );
+
+  const jobs = jobsState.status === "ready" ? jobsState.jobs : [];
+
   return (
     <AppShell subtitle="لوحة التشغيل" navLabel="مسارات Masar">
       <PageToolbar
         eyebrow={<span className="badge">Masar Operations</span>}
         title={`لوحة ${BRAND.arabicName} التشغيلية`}
-        description="ملخص ثابت لحالة المنصة، مع مؤشرات العقد المرجعي، اختصارات العمل، ونقاط الانتباه التشغيلية."
+        description="نظرة حية على الأرشيف: مؤشرات السجلات، آخر الإضافات، مهام الوسائط الجارية، واختصارات العمل اليومية."
         meta={(
           <>
-            <span className="badge">{displayContractTitle}</span>
             <span className="badge">v{apiContract.version}</span>
             <span className="badge">{apiContract.routeCount} مسار API</span>
+            <span className="badge">{records.length} سجل محمل</span>
           </>
         )}
         actions={(
           <>
-            <a className="button button-primary" href="/uploads">
-              إضافة للأرشيف
-            </a>
-            <a className="button button-primary" href="/archive">
-              فتح الأرشيف
-            </a>
-            <a className="button button-secondary" href="/status">
-              مراجعة الحالة
-            </a>
+            <a className="button button-primary" href="/uploads">إضافة للأرشيف</a>
+            <a className="button button-primary" href="/archive">فتح الأرشيف</a>
+            <button type="button" className="button button-secondary" onClick={() => void loadDashboard()}>
+              تحديث
+            </button>
           </>
         )}
-      >
-        <div className="record-meta" aria-label="ملخص الإطلاق">
-          <span className="badge">{BRAND.descriptor}</span>
-          <span className="badge">RTL</span>
-          <span className="badge">Next.js + Laravel</span>
-        </div>
-      </PageToolbar>
+      />
 
-      <section className="page-section" aria-labelledby="kpis-heading">
+      <section className="page-section" aria-labelledby="stats-heading">
         <div className="toolbar-row toolbar-start">
-          <h2 id="kpis-heading" className="section-heading">
-            مؤشرات التشغيل
-          </h2>
-          <span className="badge">مرتبطة بالعقد الحالي</span>
+          <h2 id="stats-heading" className="section-heading">مؤشرات الأرشيف</h2>
+          <span className="badge">من بيانات البحث الحية</span>
         </div>
-        <div className="dense-grid">
-          {kpis.map((item) => (
-            <StatCard key={item.label} {...item} />
-          ))}
-        </div>
+
+        {recordsState.status === "loading" ? (
+          <div className="panel panel-compact" role="status" aria-live="polite">
+            <p className="form-status">جار تحميل مؤشرات الأرشيف...</p>
+          </div>
+        ) : null}
+
+        {recordsState.status === "error" ? (
+          <div className="state-banner state-banner-error" role="alert">
+            <strong>تعذر تحميل مؤشرات الأرشيف</strong>
+            <span className="helper-text">{recordsState.message}</span>
+          </div>
+        ) : null}
+
+        {recordsState.status === "ready" ? (
+          <>
+            <div className="analytics-metric-grid">
+              <article className="health-metric" data-tone="accent">
+                <div className="health-metric__body">
+                  <span>إجمالي السجلات المحملة</span>
+                  <strong>{records.length}</strong>
+                </div>
+              </article>
+              <article className="health-metric">
+                <div className="health-metric__body">
+                  <span>عدد الأنواع</span>
+                  <strong>{Object.keys(stats.countByType).length}</strong>
+                </div>
+              </article>
+              <article className="health-metric">
+                <div className="health-metric__body">
+                  <span>عدد الحالات</span>
+                  <strong>{Object.keys(stats.countByStatus).length}</strong>
+                </div>
+              </article>
+            </div>
+            <div className="analytics-columns">
+              <section className="panel">
+                <div className="panel-title-row">
+                  <div>
+                    <h2>حسب النوع</h2>
+                    <p>عدد السجلات لكل نوع محتوى.</p>
+                  </div>
+                </div>
+                <div className="analytics-chip-list">
+                  {Object.entries(stats.countByType).map(([type, count]) => (
+                    <span key={type} className="badge">{type} ({count})</span>
+                  ))}
+                </div>
+              </section>
+              <section className="panel">
+                <div className="panel-title-row">
+                  <div>
+                    <h2>حسب الحالة</h2>
+                    <p>قراءة أولية من `metadata.status` لكل سجل.</p>
+                  </div>
+                </div>
+                <div className="analytics-chip-list">
+                  {Object.entries(stats.countByStatus).map(([status, count]) => (
+                    <span key={status} className="badge">{status} ({count})</span>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </>
+        ) : null}
       </section>
 
-      <section className="page-section" aria-labelledby="attention-heading">
+      <section className="page-section" aria-labelledby="recent-heading">
         <div className="toolbar-row toolbar-start">
-          <h2 id="attention-heading" className="section-heading">
-            يحتاج انتباه
-          </h2>
-          <span className="badge badge-danger">مراجعة تشغيلية</span>
+          <h2 id="recent-heading" className="section-heading">أحدث السجلات</h2>
+          <a className="badge" href="/archive">عرض الكل</a>
         </div>
-        <article className="panel">
-          <div className="panel-section-header">
-            <h3>نقاط مراقبة</h3>
+        {recordsState.status === "ready" ? (
+          recentRecords.length === 0 ? (
+            <EmptyState title="لا سجلات بعد." description="ابدأ بإضافة عناصر للأرشيف لتظهر هنا." />
+          ) : (
+            <article className="panel">
+              <ul className="compact-list">
+                {recentRecords.map((record) => (
+                  <li key={record.id}>
+                    <a className="text-accent" href={`/archive/${encodeURIComponent(record.id)}`}>
+                      {record.title || "بدون عنوان"}
+                    </a>
+                    {" — "}
+                    <span className="helper-text">
+                      {record.type || "غير محدد"} · {formatDate(record.updatedAt || record.createdAt)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          )
+        ) : null}
+      </section>
+
+      <section className="page-section" aria-labelledby="jobs-heading">
+        <div className="toolbar-row toolbar-start">
+          <h2 id="jobs-heading" className="section-heading">آخر مهام الوسائط</h2>
+          <a className="badge" href="/media/jobs">إدارة المهام</a>
+        </div>
+
+        {jobsState.status === "loading" ? (
+          <div className="panel panel-compact" role="status" aria-live="polite">
+            <p className="form-status">جار تحميل مهام الوسائط...</p>
           </div>
-          <ul className="compact-list">
-            {attentionItems.map((item) => (
-              <li key={item.title}>
-                <strong>{item.title}:</strong> {item.body}
-              </li>
-            ))}
-          </ul>
-        </article>
+        ) : null}
+
+        {jobsState.status === "error" ? (
+          <div className="state-banner state-banner-error" role="alert">
+            <strong>تعذر تحميل مهام الوسائط</strong>
+            <span className="helper-text">{jobsState.message}</span>
+          </div>
+        ) : null}
+
+        {jobsState.status === "ready" ? (
+          jobs.length === 0 ? (
+            <EmptyState title="لا مهام وسائط حديثة." description="أطلق مهمة معالجة من صفحة الوسائط لتظهر هنا." />
+          ) : (
+            <article className="panel">
+              <ul className="compact-list">
+                {jobs.map((job) => (
+                  <li key={job.id}>
+                    <strong>{job.operation}</strong>
+                    {" — "}
+                    <span className="badge" data-tone={job.status === "failed" ? "danger" : undefined}>
+                      {jobStatusLabels[job.status]}
+                    </span>{" "}
+                    <span className="helper-text">
+                      سجل {job.recordId} · {formatDate(job.completedAt || job.startedAt || job.queuedAt)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          )
+        ) : null}
       </section>
 
       <section className="page-section" aria-labelledby="shortcuts-heading">
         <div className="toolbar-row toolbar-start">
-          <h2 id="shortcuts-heading" className="section-heading">
-            اختصارات تشغيل
-          </h2>
+          <h2 id="shortcuts-heading" className="section-heading">اختصارات تشغيل</h2>
           <span className="badge">وصول مباشر</span>
         </div>
         <article className="panel">
-          <div className="panel-section-header">
-            <h3>مسارات العمل</h3>
-          </div>
           <div className="button-row">
-            {shortcuts.map((item) => (
+            {quickLinks.map((item) => (
               <a key={item.href} className="button button-secondary" href={item.href}>
                 {item.label}
               </a>
             ))}
-          </div>
-          <p>الروابط أعلاه تغطي المسارات اليومية التي يحتاجها فريق التشغيل بدون طبقات إضافية.</p>
-        </article>
-      </section>
-
-      <section className="page-section" aria-labelledby="quality-heading">
-        <div className="toolbar-row toolbar-start">
-          <h2 id="quality-heading" className="section-heading">
-            جودة النظام
-          </h2>
-          <span className="badge">بوابات مستقرة</span>
-        </div>
-        <article className="panel">
-          <div className="panel-section-header">
-            <h3>ضوابط التحقق</h3>
-          </div>
-          <ul className="compact-list">
-            {qualityChecks.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-          <div className="record-meta">
-            <span className="badge">typecheck:next</span>
-            <span className="badge">build:next</span>
-            <span className="badge">verify</span>
           </div>
         </article>
       </section>

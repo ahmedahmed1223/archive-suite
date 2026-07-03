@@ -19,6 +19,14 @@ class SecuritySettingsApiTest extends TestCase
             'name' => 'Admin User',
             'email' => 'admin@example.test',
             'password' => Hash::make('password'),
+            'role' => 'admin',
+        ]);
+
+        User::query()->create([
+            'name' => 'Viewer User',
+            'email' => 'viewer@example.test',
+            'password' => Hash::make('password'),
+            'role' => 'viewer',
         ]);
     }
 
@@ -26,6 +34,30 @@ class SecuritySettingsApiTest extends TestCase
     {
         $this->getJson('/api/v1/system/security-settings')
             ->assertUnauthorized();
+    }
+
+    public function test_get_security_settings_requires_admin_role(): void
+    {
+        $token = $this->loginAs('viewer@example.test', 'password');
+
+        $this->getJson('/api/v1/system/security-settings', [
+            'Authorization' => 'Bearer '.$token,
+        ])
+            ->assertForbidden()
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_patch_security_settings_requires_admin_role(): void
+    {
+        $token = $this->loginAs('viewer@example.test', 'password');
+
+        $this->patchJson('/api/v1/system/security-settings', [
+            'accessTokenTtlMinutes' => 30,
+        ], [
+            'Authorization' => 'Bearer '.$token,
+        ])
+            ->assertForbidden()
+            ->assertJsonPath('ok', false);
     }
 
     public function test_get_security_settings_returns_current_values(): void

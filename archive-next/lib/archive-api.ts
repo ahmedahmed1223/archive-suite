@@ -69,6 +69,75 @@ export interface RightsRecord {
   updatedAt: string;
 }
 
+export interface RightsEnforcementStatus {
+  allowed: boolean;
+  blocked?: boolean;
+  reason?: string;
+  warnings?: string[];
+  record?: RightsRecord;
+}
+
+export interface BackupInfo {
+  name: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+export interface BackupRunResult {
+  name: string;
+  sizeBytes: number;
+  stores: Record<string, number>;
+  completedAt: string;
+}
+
+export interface BackupPreview {
+  name: string;
+  stores: Record<string, number>;
+  totalRecords: number;
+}
+
+export interface BackupRestoreResult {
+  name: string;
+  counts: Record<string, number>;
+  restoredAt: string;
+}
+
+export interface BulkDeleteResultItem {
+  uid: string;
+  deleted: boolean;
+}
+
+export interface FileBrowserEntry {
+  key: string;
+  name: string;
+  kind: "file" | "folder";
+  path?: string;
+  mimeType?: string;
+  size?: number;
+  modifiedAt?: string;
+  url?: string;
+  [key: string]: unknown;
+}
+
+export interface FtpPullPayload {
+  host: string;
+  port?: number;
+  user: string;
+  password: string;
+  remotePath?: string;
+  localPath?: string;
+  secure?: boolean;
+}
+
+export interface SmbPullPayload {
+  share: string;
+  path?: string;
+  user: string;
+  password: string;
+  domain?: string;
+  localPath?: string;
+}
+
 export type MediaOperation = "thumbnail" | "transcode" | "transcription" | "ocr";
 export type MediaJobStatus = "queued" | "processing" | "completed" | "failed";
 
@@ -277,7 +346,18 @@ export interface ArchiveApiClient {
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
   bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
+  bulkDeleteRecords(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: BulkDeleteResultItem[] }>>;
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
+  upsertRights(payload: Omit<RightsRecord, "id" | "createdAt" | "updatedAt">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
+  expiringRights(params?: { days?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ records: RightsRecord[] }>>;
+  rightsEnforcement(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RightsEnforcementStatus>>;
+  listBackups(options?: AuthRequestOptions): Promise<ApiEnvelope<{ backups: BackupInfo[] }>>;
+  runBackup(options?: AuthRequestOptions): Promise<ApiEnvelope<{ backup: BackupRunResult }>>;
+  previewBackup(payload: { name: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: BackupPreview }>>;
+  restoreBackup(payload: { name: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: BackupRestoreResult }>>;
+  browseFiles(params?: { path?: string; query?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ path: string; entries: FileBrowserEntry[] }>>;
+  ingestFtpPull(payload: FtpPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
+  ingestSmbPull(payload: SmbPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[] }>>;
   createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
@@ -404,7 +484,36 @@ export function createArchiveApiClient({
     },
     bulkRecords: (payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions) =>
       post<{ count: number }>("/records/bulk", payload, options),
+    bulkDeleteRecords: (payload: { store: string; ids: string[] }, options?: AuthRequestOptions) =>
+      post<{ count: number; results: BulkDeleteResultItem[] }>("/records/bulk-delete", payload, options),
     rights: (itemId: string, options?: AuthRequestOptions) => get<{ record: RightsRecord }>(`/rights?itemId=${encodeURIComponent(itemId)}`, options),
+    upsertRights: (payload: Omit<RightsRecord, "id" | "createdAt" | "updatedAt">, options?: AuthRequestOptions) =>
+      post<{ record: RightsRecord }>("/rights", payload, options),
+    expiringRights: (params?: { days?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.days) queryParams.set("days", String(params.days));
+      const query = queryParams.toString();
+      return get<{ records: RightsRecord[] }>(`/rights/expiring${query ? `?${query}` : ""}`, options);
+    },
+    rightsEnforcement: (itemId: string, options?: AuthRequestOptions) =>
+      get<RightsEnforcementStatus>(`/rights/${encodeURIComponent(itemId)}/enforcement`, options),
+    listBackups: (options?: AuthRequestOptions) => get<{ backups: BackupInfo[] }>("/system/backups", options),
+    runBackup: (options?: AuthRequestOptions) => post<{ backup: BackupRunResult }>("/system/backups/run", undefined, options),
+    previewBackup: (payload: { name: string }, options?: AuthRequestOptions) =>
+      post<{ preview: BackupPreview }>("/system/backups/preview", payload, options),
+    restoreBackup: (payload: { name: string }, options?: AuthRequestOptions) =>
+      post<{ result: BackupRestoreResult }>("/system/backups/restore", payload, options),
+    browseFiles: (params?: { path?: string; query?: string }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.path) queryParams.set("path", params.path);
+      if (params?.query) queryParams.set("query", params.query);
+      const query = queryParams.toString();
+      return get<{ path: string; entries: FileBrowserEntry[] }>(`/files/browser${query ? `?${query}` : ""}`, options);
+    },
+    ingestFtpPull: (payload: FtpPullPayload, options?: AuthRequestOptions) =>
+      post<{ ingested: unknown[]; skipped: number }>("/ingest/ftp/pull", payload, options),
+    ingestSmbPull: (payload: SmbPullPayload, options?: AuthRequestOptions) =>
+      post<{ ingested: unknown[]; skipped: number }>("/ingest/smb/pull", payload, options),
     mediaJob: (id: string, options?: AuthRequestOptions) => get<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}`, options),
     mediaJobs: (params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();

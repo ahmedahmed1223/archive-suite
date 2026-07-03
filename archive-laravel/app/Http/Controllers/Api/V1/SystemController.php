@@ -120,8 +120,12 @@ class SystemController extends Controller
         );
     }
 
-    public function getSecuritySettings(SecuritySettingsService $service): JsonResponse
+    public function getSecuritySettings(Request $request, SecuritySettingsService $service): JsonResponse
     {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
         return response()->json([
             'ok' => true,
             'settings' => $service->getSettings(),
@@ -132,6 +136,10 @@ class SystemController extends Controller
         UpdateSecuritySettingsRequest $request,
         SecuritySettingsService $service,
     ): JsonResponse {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
         try {
             $validated = $request->validated();
 

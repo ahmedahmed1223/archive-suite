@@ -109,4 +109,54 @@ class RecordsApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_it_bulk_deletes_records_and_reports_per_item_results(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [
+                ['uid' => 'del-001', 'title' => 'First'],
+                ['uid' => 'del-002', 'title' => 'Second'],
+                ['uid' => 'del-003', 'title' => 'Third'],
+            ],
+        ], $this->authHeaders())->assertOk();
+
+        $this->postJson('/api/v1/records/bulk-delete', [
+            'store' => 'archive-items',
+            'ids' => ['del-001', 'del-003', 'missing-id'],
+        ], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('count', 2)
+            ->assertJsonPath('results.0.uid', 'del-001')
+            ->assertJsonPath('results.0.deleted', true)
+            ->assertJsonPath('results.1.deleted', true)
+            ->assertJsonPath('results.2.uid', 'missing-id')
+            ->assertJsonPath('results.2.deleted', false);
+
+        $this->getJson('/api/v1/records?store=archive-items', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(1, 'records')
+            ->assertJsonPath('records.0.uid', 'del-002');
+    }
+
+    public function test_bulk_delete_requires_at_least_one_id(): void
+    {
+        $this->postJson('/api/v1/records/bulk-delete', [
+            'store' => 'archive-items',
+            'ids' => [],
+        ], $this->authHeaders())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('ids');
+    }
+
+    public function test_it_rejects_unauthenticated_bulk_delete_requests(): void
+    {
+        $this->postJson('/api/v1/records/bulk-delete', [
+            'store' => 'archive-items',
+            'ids' => ['del-001'],
+        ])
+            ->assertUnauthorized()
+            ->assertJsonPath('ok', false);
+    }
+
 }

@@ -343,7 +343,6 @@ function ArchivePageContent() {
 
   // Bulk edits mutate the selected records client-side, then upsert via
   // POST /records/bulk (updateOrInsert keyed on uid/id — see RecordsController::bulk).
-  // There is no bulk-delete endpoint, so deletion is intentionally not offered here.
   const applyBulkPatch = async (patch: (record: ArchiveRecord) => ArchiveRecord, successMessage: string) => {
     if (selectedIds.length === 0 || bulkBusy) return;
     const selectedRecords = records.filter((record) => selectedIdSet.has(record.id));
@@ -402,6 +401,60 @@ function ArchivePageContent() {
       (record) => ({ ...record, type: trimmedType }),
       `تم تعيين النوع "${trimmedType}" لـ ${selectedIds.length} سجل`
     );
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.length === 0 || bulkBusy) return;
+    const selectedRecords = records.filter((record) => selectedIdSet.has(record.id));
+    if (selectedRecords.length === 0) return;
+
+    const confirmed = window.confirm(
+      `تحذير: سيتم حذف ${selectedRecords.length} سجل نهائيًا من الأرشيف ولا يمكن التراجع عن هذا الإجراء.\n\nهل أنت متأكد من المتابعة؟`
+    );
+    if (!confirmed) return;
+
+    const idsByStore = new Map<string, string[]>();
+    for (const record of selectedRecords) {
+      const storeKey = record.store || "default";
+      idsByStore.set(storeKey, [...(idsByStore.get(storeKey) || []), record.id]);
+    }
+
+    setBulkBusy(true);
+    setBulkFeedback(null);
+
+    try {
+      let deletedCount = 0;
+      const failedUids: string[] = [];
+
+      for (const [storeKey, storeIds] of idsByStore) {
+        const response = await api.bulkDeleteRecords({ store: storeKey, ids: storeIds });
+        if (!response.ok) {
+          setBulkFeedback({ kind: "error", message: response.error || "تعذر تنفيذ الحذف الجماعي" });
+          await loadRecords(query);
+          return;
+        }
+
+        deletedCount += response.count;
+        failedUids.push(...response.results.filter((result) => !result.deleted).map((result) => result.uid));
+      }
+
+      if (failedUids.length > 0) {
+        setBulkFeedback({
+          kind: "error",
+          message: `تم حذف ${deletedCount} سجل، وتعذر حذف ${failedUids.length}: ${failedUids.join("، ")}`
+        });
+      } else {
+        setBulkFeedback({ kind: "success", message: `تم حذف ${deletedCount} سجل نهائيًا` });
+      }
+
+      setSelectedIds([]);
+      await loadRecords(query);
+    } catch (error) {
+      setBulkFeedback({ kind: "error", message: error instanceof Error ? error.message : "تعذر تنفيذ الحذف الجماعي" });
+      await loadRecords(query);
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   const bulkSetStatus = async (nextStatus: WorkflowStatus) => {
@@ -598,8 +651,10 @@ function ArchivePageContent() {
             </label>
             <a className="button button-secondary" href={`/archive/${encodeURIComponent(selectedIds[0])}`}>فتح الأول</a>
             <button type="button" className="button button-secondary" onClick={() => setSelectedIds([])}>إلغاء التحديد</button>
+            <button type="button" className="button button-danger" onClick={() => void bulkDelete()} disabled={bulkBusy}>
+              حذف المحدد ({selectedIds.length})
+            </button>
           </div>
-          <span className="helper-text">الحذف الجماعي يتطلب endpoint قادم من الخادم — غير متاح حالياً.</span>
         </div>
       ) : null}
 
