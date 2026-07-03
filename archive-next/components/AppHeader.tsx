@@ -46,6 +46,7 @@ export default function AppHeader({
         <button
           type="button"
           className="icon-action command-trigger"
+          data-command-trigger
           onClick={openCommandPalette}
           aria-label="فتح لوحة الأوامر"
           title="بحث سريع"

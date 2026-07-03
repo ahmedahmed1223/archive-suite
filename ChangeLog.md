@@ -76,6 +76,8 @@
 
 - [x] **إضافة CI/CD وSentry للمسار القانوني** — أضيفت GitHub Actions كبوابة CI/CD افتراضية (`ci.yml`, `docker.yml`) مع أوامر root `pnpm run ci` و`pnpm run ci:docker`. أضيف تكامل Sentry اختياري لـ Next.js (`@sentry/nextjs`, instrumentation, global error) وLaravel (`sentry/sentry-laravel`, config, exception integration)، مع تمرير متغيرات Docker وترك الإرسال معطلاً بدون DSN.
 
+- [x] **إغلاق خطة تجربة UI الغنية في Masar** — اكتملت طبقة مزودات Next (`next-themes`, React Query, Tooltip/Toast)، ومكتبة `components/ui` فوق Radix، وجداول TanStack في الأرشيف/الملفات/الأخطاء/المستخدمين، ونماذج React Hook Form/Zod في الأنواع/المستخدمين/مهام الوسائط، وKanban بالسحب عبر dnd-kit+motion، وتحليلات Recharts، ولوحة أوامر cmdk. وُثق الإغلاق والمتبقي غير الحاجب في `docs/design/masar-rich-ui-completion-audit.md`.
+
 ## 1. الأمان (Security)
 
 - [x] `[P0]` ⏱️M **إضافة رأس CSP صارم** (`Content-Security-Policy`) — موجود HSTS و`X-Frame-Options` فقط، لا CSP.
