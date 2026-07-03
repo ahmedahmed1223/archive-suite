@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation } from "@/lib/archive-api";
 
 type ListState =
@@ -31,6 +33,30 @@ const WATERMARK_POSITIONS = [
   { value: "center", label: "الوسط" }
 ] as const;
 
+const mediaJobFormSchema = z
+  .object({
+    recordId: z.string().trim().min(1, "أدخل معرّف السجل."),
+    operation: z.string().trim().min(1, "اختر نوع العملية."),
+    sourcePath: z.string().trim().optional().transform((value) => value || undefined),
+    atSec: z.coerce.number().min(0, "الثانية لا يمكن أن تكون سالبة.").max(86400, "الحد الأقصى 86400 ثانية.").default(0),
+    watermarkEnabled: z.boolean().optional().default(false),
+    watermarkPath: z.string().trim().optional().transform((value) => value || undefined),
+    watermarkPosition: z.string().default("bottom-right"),
+    watermarkOpacity: z.coerce.number().min(0, "الشفافية بين 0 و 1.").max(1, "الشفافية بين 0 و 1.").default(0.85),
+    watermarkMargin: z.coerce.number().min(0, "الهامش لا يمكن أن يكون سالبًا.").max(512, "الهامش الأقصى 512.").default(24)
+  })
+  .superRefine((value, ctx) => {
+    if (!(OPERATIONS as readonly string[]).includes(value.operation)) {
+      ctx.addIssue({ code: "custom", path: ["operation"], message: "اختر عملية مدعومة." });
+    }
+
+    if (value.operation === "transcode" && value.watermarkEnabled && !value.watermarkPath) {
+      ctx.addIssue({ code: "custom", path: ["watermarkPath"], message: "أدخل مسار صورة العلامة المائية." });
+    }
+  });
+
+type MediaJobFormValues = z.input<typeof mediaJobFormSchema>;
+
 function clampNumber(value: number, min: number, max: number, fallback: number) {
   if (!Number.isFinite(value)) {
     return fallback;
@@ -45,7 +71,22 @@ export function MediaJobsList() {
   const [createState, setCreateState] = useState<CreateState>({ status: "idle" });
   const [ingestState, setIngestState] = useState<IngestState>({ status: "idle" });
   const [statusFilter, setStatusFilter] = useState<MediaJobStatus | "">("");
-  const [selectedOperation, setSelectedOperation] = useState<MediaOperation | "">("");
+  const createForm = useForm<MediaJobFormValues>({
+    defaultValues: {
+      recordId: "",
+      operation: "",
+      sourcePath: "",
+      atSec: 0,
+      watermarkEnabled: false,
+      watermarkPath: "",
+      watermarkPosition: "bottom-right",
+      watermarkOpacity: 0.85,
+      watermarkMargin: 24
+    },
+    shouldUnregister: false
+  });
+  const selectedOperation = createForm.watch("operation") as MediaOperation | "";
+  const formErrors = createForm.formState.errors;
 
   const loadJobs = useCallback(async () => {
     setListState({ status: "loading" });
@@ -71,49 +112,44 @@ export function MediaJobsList() {
     void loadJobs();
   }, [loadJobs]);
 
-  async function handleCreate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(event.currentTarget);
-    const recordId = String(data.get("recordId") ?? "").trim();
-    const operation = String(data.get("operation") ?? "").trim() as MediaOperation;
-    const sourcePath = String(data.get("sourcePath") ?? "").trim();
+  const handleCreate = createForm.handleSubmit(async (values) => {
+    createForm.clearErrors();
+    const parsed = mediaJobFormSchema.safeParse(values);
 
-    if (!recordId || !operation) {
-      setCreateState({ status: "error", message: "أدخل معرّف السجل والعملية" });
+    if (!parsed.success) {
+      parsed.error.issues.forEach((issue) => {
+        const field = issue.path[0];
+        if (field && typeof field === "string") {
+          createForm.setError(field as keyof MediaJobFormValues, { type: "zod", message: issue.message });
+        }
+      });
+      setCreateState({ status: "error", message: parsed.error.issues[0]?.message || "راجع حقول المهمة." });
       return;
     }
 
+    const data = parsed.data;
+    const operation = data.operation as MediaOperation;
     const options: Record<string, unknown> = {};
 
     if (operation === "thumbnail") {
-      const atSec = Number(data.get("atSec") ?? 0);
-      options.atSec = clampNumber(atSec, 0, 86400, 0);
+      options.atSec = clampNumber(data.atSec, 0, 86400, 0);
     }
 
-    if (operation === "transcode" && data.get("watermarkEnabled") === "on") {
-      const watermarkPath = String(data.get("watermarkPath") ?? "").trim();
-      const watermarkPosition = String(data.get("watermarkPosition") ?? "bottom-right");
-
-      if (!watermarkPath) {
-        setCreateState({ status: "error", message: "أدخل مسار صورة العلامة المائية قبل إنشاء transcode job." });
-        return;
-      }
-
+    if (operation === "transcode" && data.watermarkEnabled) {
       options.watermark = {
         enabled: true,
-        path: watermarkPath,
-        position: watermarkPosition,
-        opacity: clampNumber(Number(data.get("watermarkOpacity") ?? 0.85), 0, 1, 0.85),
-        margin: Math.round(clampNumber(Number(data.get("watermarkMargin") ?? 24), 0, 512, 24))
+        path: data.watermarkPath,
+        position: data.watermarkPosition,
+        opacity: clampNumber(data.watermarkOpacity, 0, 1, 0.85),
+        margin: Math.round(clampNumber(data.watermarkMargin, 0, 512, 24))
       };
     }
 
     setCreateState({ status: "creating" });
     const response = await api.createMediaJob({
-      recordId,
+      recordId: data.recordId,
       operation,
-      ...(sourcePath ? { sourcePath } : {}),
+      ...(data.sourcePath ? { sourcePath: data.sourcePath } : {}),
       ...(Object.keys(options).length > 0 ? { options } : {})
     });
 
@@ -124,12 +160,11 @@ export function MediaJobsList() {
 
     setCreateState({ status: "success", job: response.job });
     setTimeout(() => {
-      form.reset();
-      setSelectedOperation("");
+      createForm.reset();
       setCreateState({ status: "idle" });
       void loadJobs();
     }, 1500);
-  }
+  });
 
   async function handleIngestScan() {
     setIngestState({ status: "scanning" });
@@ -164,16 +199,14 @@ export function MediaJobsList() {
         <form className="auth-form" onSubmit={handleCreate}>
           <label>
             معرّف السجل
-            <input name="recordId" type="text" placeholder="record-id" required />
+            <input type="text" placeholder="record-id" {...createForm.register("recordId")} />
+            <FieldError>{formErrors.recordId?.message}</FieldError>
           </label>
 
           <label>
             نوع العملية
             <select
-              name="operation"
-              required
-              value={selectedOperation}
-              onChange={(event) => setSelectedOperation(event.target.value as MediaOperation | "")}
+              {...createForm.register("operation")}
             >
               <option value="">اختر عملية...</option>
               {OPERATIONS.map((op) => (
@@ -182,17 +215,19 @@ export function MediaJobsList() {
                 </option>
               ))}
             </select>
+            <FieldError>{formErrors.operation?.message}</FieldError>
           </label>
 
           <label>
             مسار الملف المصدر
-            <input name="sourcePath" type="text" placeholder="media/source.mp4" />
+            <input type="text" placeholder="media/source.mp4" {...createForm.register("sourcePath")} />
           </label>
 
           {selectedOperation === "thumbnail" && (
             <label>
               لقطة عند الثانية
-              <input name="atSec" type="number" min="0" max="86400" defaultValue="0" />
+              <input type="number" min="0" max="86400" {...createForm.register("atSec", { valueAsNumber: true })} />
+              <FieldError>{formErrors.atSec?.message}</FieldError>
             </label>
           )}
 
@@ -202,8 +237,8 @@ export function MediaJobsList() {
                 <strong>إضافة علامة مائية</strong>
                 <label className="checkbox-row">
                   <input
-                    name="watermarkEnabled"
                     type="checkbox"
+                    {...createForm.register("watermarkEnabled")}
                   />
                   تفعيل
                 </label>
@@ -211,13 +246,14 @@ export function MediaJobsList() {
 
               <label>
                 مسار صورة العلامة
-                <input name="watermarkPath" type="text" placeholder="branding/watermark.png" />
+                <input type="text" placeholder="branding/watermark.png" {...createForm.register("watermarkPath")} />
+                <FieldError>{formErrors.watermarkPath?.message}</FieldError>
               </label>
 
               <div className="field-row">
                 <label>
                   الموضع
-                  <select name="watermarkPosition" defaultValue="bottom-right">
+                  <select {...createForm.register("watermarkPosition")}>
                     {WATERMARK_POSITIONS.map((position) => (
                       <option key={position.value} value={position.value}>
                         {position.label}
@@ -227,11 +263,13 @@ export function MediaJobsList() {
                 </label>
                 <label>
                   الشفافية
-                  <input name="watermarkOpacity" type="number" min="0" max="1" step="0.05" defaultValue="0.85" />
+                  <input type="number" min="0" max="1" step="0.05" {...createForm.register("watermarkOpacity", { valueAsNumber: true })} />
+                  <FieldError>{formErrors.watermarkOpacity?.message}</FieldError>
                 </label>
                 <label>
                   الهامش
-                  <input name="watermarkMargin" type="number" min="0" max="512" defaultValue="24" />
+                  <input type="number" min="0" max="512" {...createForm.register("watermarkMargin", { valueAsNumber: true })} />
+                  <FieldError>{formErrors.watermarkMargin?.message}</FieldError>
                 </label>
               </div>
             </div>

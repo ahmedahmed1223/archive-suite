@@ -1,53 +1,12 @@
 "use client";
 
+import { Menu, Search, X } from "lucide-react";
 import { BRAND } from "@/lib/brand";
+import { isActivePath, primaryNav } from "@/lib/navigation";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-
-const primaryNav = [
-  { href: "/", label: "الرئيسية", section: "core" },
-  { href: "/archive", label: "السجلات", section: "core" },
-  { href: "/uploads", label: "إضافة", section: "core" },
-  { href: "/search", label: "البحث", section: "core" },
-  { href: "/files", label: "الملفات", section: "core" },
-  { href: "/timeline", label: "الخط الزمني", section: "core" },
-  { href: "/inbox", label: "الوارد", section: "core" },
-  { href: "/favorites", label: "المفضلة", section: "core" },
-  { href: "/shares", label: "المشاركات", section: "core" },
-  { href: "/types", label: "الأنواع", section: "manage" },
-  { href: "/collections", label: "المجموعات", section: "manage" },
-  { href: "/vocabulary", label: "المفردات", section: "manage" },
-  { href: "/tags", label: "الوسوم", section: "manage" },
-  { href: "/duplicates", label: "المكررات", section: "manage" },
-  { href: "/kanban", label: "كانبان", section: "manage" },
-  { href: "/projects", label: "المشاريع", section: "manage" },
-  { href: "/media/jobs", label: "الوسائط", section: "manage" },
-  { href: "/transcriber", label: "التفريغ", section: "manage" },
-  { href: "/collaboration", label: "التعاون", section: "manage" },
-  { href: "/automation", label: "الأتمتة", section: "manage" },
-  { href: "/activity", label: "النشاط", section: "observe" },
-  { href: "/analytics", label: "التحليلات", section: "observe" },
-  { href: "/reports", label: "التقارير", section: "observe" },
-  { href: "/status", label: "الحالة", section: "observe" },
-  { href: "/errors", label: "الأخطاء", section: "observe" },
-  { href: "/ingest", label: "الاستيراد", section: "admin" },
-  { href: "/backup", label: "النسخ الاحتياطي", section: "admin" },
-  { href: "/rights", label: "الحقوق", section: "admin" },
-  { href: "/settings", label: "الإعدادات", section: "admin" },
-  { href: "/help", label: "المساعدة", section: "admin" }
-] as const;
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/") {
-    return pathname === "/";
-  }
-
-  if (href === "/media/jobs") {
-    return pathname.startsWith("/media");
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+import { openCommandPalette } from "@/components/CommandPalette";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function AppHeader({
   subtitle,
@@ -80,13 +39,22 @@ export default function AppHeader({
         aria-expanded={isMenuOpen}
         onClick={() => setIsMenuOpen((current) => !current)}
       >
-        <span className="nav-toggle__icon" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </span>
+        {isMenuOpen ? <X aria-hidden="true" size={18} /> : <Menu aria-hidden="true" size={18} />}
         <span>المسارات</span>
       </button>
+      <div className="topbar-actions" aria-label="أدوات الواجهة">
+        <button
+          type="button"
+          className="icon-action command-trigger"
+          onClick={openCommandPalette}
+          aria-label="فتح لوحة الأوامر"
+          title="بحث سريع"
+        >
+          <Search aria-hidden="true" size={18} strokeWidth={2} />
+          <kbd>Ctrl K</kbd>
+        </button>
+        <ThemeToggle />
+      </div>
       <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>
         {primaryNav.map((link) => {
           const isActive = isActivePath(pathname, link.href);

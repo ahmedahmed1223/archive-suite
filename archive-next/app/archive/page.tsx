@@ -1,9 +1,11 @@
 "use client";
 
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FormEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
@@ -289,6 +291,70 @@ function ArchivePageContent() {
       return allVisibleSelected ? [] : visibleRecords.map((record) => record.id);
     });
   };
+  const archiveColumns = useMemo<Array<ColumnDef<ArchiveRecord, unknown>>>(
+    () => [
+      {
+        id: "select",
+        header: () => (
+          <input
+            type="checkbox"
+            aria-label="تحديد كل النتائج الظاهرة"
+            checked={visibleRecords.length > 0 && visibleRecords.every((record) => selectedIdSet.has(record.id))}
+            onChange={toggleSelectAllVisible}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            aria-label={`تحديد ${row.original.title || "السجل"}`}
+            checked={selectedIdSet.has(row.original.id)}
+            onChange={() => toggleSelection(row.original.id)}
+          />
+        ),
+        enableSorting: false
+      },
+      {
+        accessorKey: "title",
+        header: "العنوان",
+        cell: ({ row }) => (
+          <a
+            className="text-accent"
+            href={`/archive/${encodeURIComponent(row.original.id)}`}
+            onMouseEnter={() => setPreviewId(row.original.id)}
+          >
+            {row.original.title || "بدون عنوان"}
+          </a>
+        )
+      },
+      {
+        accessorKey: "store",
+        header: "المخزن",
+        cell: ({ row }) => row.original.store || "غير محدد"
+      },
+      {
+        accessorKey: "type",
+        header: "النوع",
+        cell: ({ row }) => row.original.type || "غير محدد"
+      },
+      {
+        id: "updated",
+        header: "آخر تحديث",
+        accessorFn: (record) => record.updatedAt || record.createdAt || "",
+        cell: ({ row }) => formatDate(row.original.updatedAt || row.original.createdAt)
+      },
+      {
+        id: "actions",
+        header: "إجراء",
+        cell: ({ row }) => (
+          <button type="button" className="badge" onClick={() => setPreviewId(row.original.id)}>
+            معاينة
+          </button>
+        ),
+        enableSorting: false
+      }
+    ],
+    [selectedIdSet, visibleRecords]
+  );
 
   const resetFilters = () => {
     setQuery("");
@@ -689,52 +755,15 @@ function ArchivePageContent() {
           <section className="archive-workspace" data-view={viewMode} aria-label="نتائج الأرشيف">
             <div className="records-surface" data-view={viewMode} data-size={itemSize} role={viewMode === "details" ? undefined : "list"}>
               {viewMode === "details" ? (
-                <div className="scroll-x">
-                  <table className="data-table archive-table">
-                    <thead>
-                      <tr>
-                        <th>
-                          <input
-                            type="checkbox"
-                            aria-label="تحديد كل النتائج الظاهرة"
-                            checked={visibleRecords.length > 0 && visibleRecords.every((record) => selectedIdSet.has(record.id))}
-                            onChange={toggleSelectAllVisible}
-                          />
-                        </th>
-                        <th>العنوان</th>
-                        <th>المخزن</th>
-                        <th>النوع</th>
-                        <th>آخر تحديث</th>
-                        <th>إجراء</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleRecords.map((record) => (
-                        <tr key={record.id} onMouseEnter={() => setPreviewId(record.id)}>
-                          <td>
-                            <input
-                              type="checkbox"
-                              aria-label={`تحديد ${record.title || "السجل"}`}
-                              checked={selectedIdSet.has(record.id)}
-                              onChange={() => toggleSelection(record.id)}
-                            />
-                          </td>
-                          <td>
-                            <a className="text-accent" href={`/archive/${encodeURIComponent(record.id)}`}>
-                              {record.title || "بدون عنوان"}
-                            </a>
-                          </td>
-                          <td>{record.store || "غير محدد"}</td>
-                          <td>{record.type || "غير محدد"}</td>
-                          <td>{formatDate(record.updatedAt || record.createdAt)}</td>
-                          <td>
-                            <button type="button" className="badge" onClick={() => setPreviewId(record.id)}>معاينة</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  ariaLabel="جدول نتائج الأرشيف"
+                  columns={archiveColumns}
+                  data={visibleRecords}
+                  emptyMessage="لا توجد سجلات مطابقة."
+                  getRowId={(record) => record.id}
+                  tableClassName="archive-table"
+                  virtualized={visibleRecords.length > 60}
+                />
               ) : (
                 visibleRecords.map(renderRecordCard)
               )}

@@ -1,6 +1,20 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis
+} from "recharts";
 import AppShell from "@/components/AppShell";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
@@ -24,6 +38,15 @@ const rangeOptions: Array<DataViewOption<TimeRange>> = [
   { value: "90d", label: "90 يوم" },
   { value: "1y", label: "سنة" },
   { value: "all", label: "الكل" }
+];
+
+const chartColors = [
+  "var(--color-brand-primary)",
+  "var(--color-brand-indigo)",
+  "var(--color-brand-gold)",
+  "var(--color-accent-rose)",
+  "var(--color-status-success)",
+  "var(--color-status-warning)"
 ];
 
 function calculateAnalytics(records: ArchiveRecord[], daysAgo?: number): AnalyticsData {
@@ -90,10 +113,21 @@ function rangeLabel(range: TimeRange) {
 
 export default function AnalyticsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
-  const [records, setRecords] = useState<ArchiveRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
+  const recordsQuery = useQuery({
+    queryKey: ["analytics-records"],
+    queryFn: async (): Promise<ArchiveRecord[]> => {
+      const response = await api.search({ q: "", limit: 500 });
+      if (!response.ok) {
+        throw new Error(response.error || "تعذر تحميل بيانات التحليلات.");
+      }
+
+      return response.records;
+    }
+  });
+  const records = recordsQuery.data || [];
+  const isLoading = recordsQuery.isLoading;
+  const loadError = recordsQuery.error instanceof Error ? recordsQuery.error.message : null;
 
   const daysAgo = useMemo(() => {
     switch (timeRange) {
@@ -110,30 +144,9 @@ export default function AnalyticsPage() {
 
   const analytics = useMemo(() => calculateAnalytics(records, daysAgo), [records, daysAgo]);
 
-  const loadRecords = useCallback(async () => {
-    setIsLoading(true);
-    setLoadError(null);
-    try {
-      const response = await api.search({ q: "", limit: 500 });
-      if (response.ok) {
-        setRecords(response.records);
-      } else {
-        setLoadError(response.error || "تعذر تحميل بيانات التحليلات.");
-      }
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "تعذر تحميل بيانات التحليلات.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    void loadRecords();
-  }, [loadRecords]);
-
-  const maxMonthCount = useMemo(
-    () => Math.max(1, ...analytics.monthlyGrowth.map((month) => month.count)),
-    [analytics.monthlyGrowth]
+  const typeChartData = useMemo(
+    () => Object.entries(analytics.countByType).map(([name, value]) => ({ name, value })),
+    [analytics.countByType]
   );
 
   const exportCsv = () => {
@@ -177,7 +190,7 @@ export default function AnalyticsPage() {
         }
         actions={
           <>
-            <button className="button button-secondary" type="button" onClick={() => void loadRecords()} disabled={isLoading}>
+            <button className="button button-secondary" type="button" onClick={() => void recordsQuery.refetch()} disabled={recordsQuery.isFetching}>
               تحديث
             </button>
             <button className="button button-primary" type="button" onClick={exportCsv} disabled={records.length === 0}>
@@ -239,7 +252,7 @@ export default function AnalyticsPage() {
           </div>
 
           {analytics.monthlyGrowth.length > 0 ? (
-            <section className="panel analytics-chart" aria-label="النمو الشهري">
+            <section className="panel analytics-chart analytics-recharts-panel" aria-label="النمو الشهري">
               <div className="panel-title-row">
                 <div>
                   <h2>النمو الشهري</h2>
@@ -247,19 +260,24 @@ export default function AnalyticsPage() {
                 </div>
                 <span className="badge">{analytics.monthlyGrowth.length} أشهر</span>
               </div>
-              <div className="analytics-bar-list" role="img" aria-label="رسم بياني للنمو الشهري">
-                {analytics.monthlyGrowth.map((bucket) => {
-                  const heightPct = Math.max(4, Math.round((bucket.count / maxMonthCount) * 100));
-                  return (
-                    <div className="analytics-bar-item" key={bucket.month} title={`${bucket.month} - ${bucket.count}`}>
-                      <span className="analytics-bar-value">{bucket.count}</span>
-                      <div className="analytics-bar-track">
-                        <span className="analytics-bar-fill" style={{ blockSize: `${heightPct}%` }} />
-                      </div>
-                      <span className="analytics-bar-label">{bucket.month}</span>
-                    </div>
-                  );
-                })}
+              <div className="analytics-recharts" role="img" aria-label="رسم بياني للنمو الشهري">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics.monthlyGrowth} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="var(--color-border-secondary)" vertical={false} />
+                    <XAxis dataKey="month" stroke="var(--color-text-tertiary)" tickLine={false} axisLine={false} />
+                    <YAxis stroke="var(--color-text-tertiary)" tickLine={false} axisLine={false} width={34} />
+                    <RechartsTooltip
+                      cursor={{ fill: "color-mix(in srgb, var(--color-brand-primary) 10%, transparent)" }}
+                      contentStyle={{
+                        background: "var(--color-bg-secondary)",
+                        border: "1px solid var(--color-border-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        color: "var(--color-text-primary)"
+                      }}
+                    />
+                    <Bar dataKey="count" name="العناصر" fill="var(--color-brand-primary)" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </section>
           ) : null}
@@ -297,6 +315,45 @@ export default function AnalyticsPage() {
               </div>
             </section>
           </div>
+
+          {typeChartData.length > 0 ? (
+            <section className="panel analytics-chart analytics-recharts-panel" aria-label="توزيع الأنواع البياني">
+              <div className="panel-title-row">
+                <div>
+                  <h2>خريطة الأنواع</h2>
+                  <p>قراءة سريعة لحجم كل نوع داخل نطاق التحليل.</p>
+                </div>
+                <span className="badge">{typeChartData.length} أنواع</span>
+              </div>
+              <div className="analytics-recharts" role="img" aria-label="رسم دائري لتوزيع الأنواع">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={typeChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius="48%"
+                      outerRadius="74%"
+                      paddingAngle={3}
+                    >
+                      {typeChartData.map((entry, index) => (
+                        <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                    <RechartsTooltip
+                      contentStyle={{
+                        background: "var(--color-bg-secondary)",
+                        border: "1px solid var(--color-border-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        color: "var(--color-text-primary)"
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+          ) : null}
 
           {analytics.topTags.length > 0 ? (
             <section className="panel">
