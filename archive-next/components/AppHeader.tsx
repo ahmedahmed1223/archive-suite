@@ -2,11 +2,13 @@
 
 import { Menu, Search, X } from "lucide-react";
 import { BRAND } from "@/lib/brand";
-import { isActivePath, primaryNav } from "@/lib/navigation";
+import { isActivePath, navSectionLabels, primaryNav, type NavSection } from "@/lib/navigation";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import ThemeToggle from "@/components/ThemeToggle";
+
+const navSections = Object.keys(navSectionLabels) as NavSection[];
 
 export default function AppHeader({
   subtitle,
@@ -57,21 +59,26 @@ export default function AppHeader({
         <ThemeToggle />
       </div>
       <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>
-        {primaryNav.map((link) => {
-          const isActive = isActivePath(pathname, link.href);
+        {navSections.map((section) => (
+          <div className="nav-section" data-section={section} key={section}>
+            <span className="nav-section-label">{navSectionLabels[section]}</span>
+            {primaryNav.filter((link) => link.section === section).map((link) => {
+              const isActive = isActivePath(pathname, link.href);
 
-          return (
-            <a
-              key={link.href}
-              className="badge app-nav-link"
-              data-section={link.section}
-              href={link.href}
-              aria-current={isActive ? "page" : undefined}
-            >
-              {link.label}
-            </a>
-          );
-        })}
+              return (
+                <a
+                  key={link.href}
+                  className="badge app-nav-link"
+                  data-section={link.section}
+                  href={link.href}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
+          </div>
+        ))}
       </nav>
     </header>
   );
