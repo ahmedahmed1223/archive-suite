@@ -51,6 +51,9 @@ class AuditArchiveApiRequest
 
         [$event, $resourceType] = match ([$method, $route]) {
             ['POST', 'api/v1/records/bulk'] => ['records.bulk_upsert', 'record'],
+            ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
+            ['PATCH', 'api/v1/record-notes/{id}'] => ['record_notes.update', 'record_note'],
+            ['DELETE', 'api/v1/record-notes/{id}'] => ['record_notes.delete', 'record_note'],
             ['POST', 'api/v1/rights'] => ['rights.upsert', 'rights_record'],
             ['POST', 'api/v1/relations'] => ['relations.create', 'record_relation'],
             ['DELETE', 'api/v1/relations/{id}'] => ['relations.delete', 'record_relation'],
@@ -69,6 +72,10 @@ class AuditArchiveApiRequest
         }
 
         if ($route === 'api/v1/relations/{id}') {
+            $resourceId = $request->route('id');
+        }
+
+        if (in_array($route, ['api/v1/records/{id}/notes', 'api/v1/record-notes/{id}'], true)) {
             $resourceId = $request->route('id');
         }
 

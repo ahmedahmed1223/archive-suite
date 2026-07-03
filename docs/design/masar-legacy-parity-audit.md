@@ -15,11 +15,11 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/activityLog` | `archive-next/app/activity/page.tsx`, future Laravel audit API | Partial | Replace synthetic activity with audit-backed history and undo/diffs. |
 | `archive-app/src/features/ai` | Future `archive-next/app/copilot/page.tsx` | Missing | Add AI assist surface with disabled/config-required state when no provider is configured. |
 | `archive-app/src/features/analytics` | `archive-next/app/analytics/page.tsx` | Migrated | Keep in smoke coverage. |
-| `archive-app/src/features/archive` | `archive-next/app/archive/page.tsx`, `archive-next/app/archive/[id]/page.tsx` | Partial | Add richer add/archive wizard, item notes, and detailed history; relation preview is now wired. |
+| `archive-app/src/features/archive` | `archive-next/app/archive/page.tsx`, `archive-next/app/archive/[id]/page.tsx` | Partial | Add richer add/archive wizard and detailed history; relation preview and private item notes are now wired. |
 | `archive-app/src/features/automation` | `archive-next/app/automation/page.tsx` | Partial | Persist rules in Laravel and add execution log. |
 | `archive-app/src/features/autosave` | Draft handling in Next forms | Partial | Add shared draft/session recovery helpers for intake forms. |
 | `archive-app/src/features/collections` | `archive-next/app/collections/page.tsx` | Partial | Move local collections and smart rules to Laravel storage. |
-| `archive-app/src/features/comments` | `archive-next/app/media/review/page.tsx`, `archive-next/app/archive/[id]/page.tsx` | Partial | Add record-level comments outside media review. |
+| `archive-app/src/features/comments` | `archive-next/app/media/review/page.tsx`, future audit-backed record comments in `archive-next/app/archive/[id]/page.tsx` | Partial | Add team record comments outside media review with soft-delete audit semantics. |
 | `archive-app/src/features/copilot` | Future `archive-next/app/copilot/page.tsx` | Missing | Restore copilot command/summary affordances with safe provider gating. |
 | `archive-app/src/features/dashboard` | `archive-next/app/page.tsx` | Partial | Restore configurable widgets only after persistent preferences exist. |
 | `archive-app/src/features/data-center` | Future `archive-next/app/data-center/page.tsx` | Missing | Add operational hub tying uploads, ingest, backup, status, and settings together. |
@@ -36,7 +36,7 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/hierarchical-tags` | `archive-next/app/tags/page.tsx`, future `/tags/hierarchy` | Partial | Restore tree ordering, colors, merge, and hierarchy operations. |
 | `archive-app/src/features/history` | `archive-next/app/activity/page.tsx`, future record history API | Partial | Add per-record diffs and restore/undo decisions. |
 | `archive-app/src/features/import` | `archive-next/app/ingest/page.tsx`, `archive-next/app/uploads/page.tsx` | Partial | Add import-from-url preview and validation. |
-| `archive-app/src/features/itemNotes` | `archive-next/app/archive/[id]/page.tsx` | Missing | Add record notes panel and Laravel persistence. |
+| `archive-app/src/features/itemNotes` | `archive-next/app/archive/[id]/page.tsx`, Laravel `/records/{id}/notes` | Migrated | Keep private note CRUD in smoke/API coverage. |
 | `archive-app/src/features/layout` | `archive-next/components/AppShell.tsx`, `archive-next/components/AppHeader.tsx` | Migrated | Shared shell only. |
 | `archive-app/src/features/media` | `archive-next/app/media/*`, `archive-next/components/MediaPlayer.tsx` | Partial | Wire play/compare to real media source picker and restore SRT helpers. |
 | `archive-app/src/features/montage` | `archive-next/app/projects/page.tsx`, future Laravel export job | Partial | Restore multi-track, markers/comments, transitions, and MP4 export. |
@@ -82,7 +82,7 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/pages/CollectionsPage.tsx` | `/collections` | Partial | Persist collections. |
 | `archive-app/src/pages/DashboardPage.tsx` | `/` | Partial | Restore configurable widgets if required. |
 | `archive-app/src/pages/DataCenterPage.tsx` | Future `/data-center` | Missing | Add data-center hub. |
-| `archive-app/src/pages/DetailPage.tsx` | `/archive/[id]` | Partial | Add notes, item history, comments, and inline relation editing; relation preview is now wired. |
+| `archive-app/src/pages/DetailPage.tsx` | `/archive/[id]` | Partial | Add item history, team comments, and inline relation editing; relation preview and private notes are now wired. |
 | `archive-app/src/pages/DiscoverPage.tsx` | `/discover` | Migrated | Keep smoke coverage. |
 | `archive-app/src/pages/DuplicatesPage.tsx` | `/duplicates` | Partial | Add merge/undo and visual duplicate checks. |
 | `archive-app/src/pages/ErrorLogPage.tsx` | `/errors` | Migrated | Keep smoke coverage. |

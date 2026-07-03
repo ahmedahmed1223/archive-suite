@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { useParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
@@ -8,6 +9,7 @@ import PageToolbar from "@/components/PageToolbar";
 import {
   createArchiveApiClient,
   type ArchiveRecord,
+  type RecordNote,
   type RelationGraphEdge,
   type RelationGraphPayload,
   type RightsRecord
@@ -16,7 +18,15 @@ import { isFavorited, toggleFavorite } from "@/lib/favorites";
 
 type DetailState =
   | { status: "loading" }
-  | { status: "ready"; record: ArchiveRecord; rights: RightsRecord | null; relationGraph: RelationGraphPayload | null }
+  | {
+      status: "ready";
+      record: ArchiveRecord;
+      rights: RightsRecord | null;
+      relationGraph: RelationGraphPayload | null;
+      notes: RecordNote[];
+      notesLoading: boolean;
+      notesError: string | null;
+    }
   | { status: "error"; message: string };
 
 type OcrState =
@@ -114,6 +124,168 @@ function RelationPreviewPanel({
   );
 }
 
+function formatNoteTime(seconds: unknown) {
+  const total = Number(seconds);
+  if (!Number.isFinite(total) || total < 0) return "0:00";
+  const whole = Math.floor(total);
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor((whole % 3600) / 60);
+  const secs = whole % 60;
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return hours > 0 ? `${hours}:${pad(minutes)}:${pad(secs)}` : `${minutes}:${pad(secs)}`;
+}
+
+function noteAnchor(note: RecordNote) {
+  if (note.timestampSeconds !== null && note.timestampSeconds !== undefined) {
+    return `عند ${formatNoteTime(note.timestampSeconds)}`;
+  }
+
+  if (note.region) {
+    return "منطقة محددة";
+  }
+
+  return "ملاحظة عامة";
+}
+
+function sortRecordNotes(notes: RecordNote[]) {
+  return [...notes].sort((left, right) => {
+    const leftTime = left.timestampSeconds;
+    const rightTime = right.timestampSeconds;
+    if (leftTime !== null && leftTime !== undefined && rightTime !== null && rightTime !== undefined && leftTime !== rightTime) {
+      return leftTime - rightTime;
+    }
+    if (leftTime !== null && leftTime !== undefined) return -1;
+    if (rightTime !== null && rightTime !== undefined) return 1;
+    return new Date(left.createdAt || 0).getTime() - new Date(right.createdAt || 0).getTime();
+  });
+}
+
+function RecordNotesPanel({
+  notes,
+  loading,
+  error,
+  onCreate,
+  onDelete
+}: Readonly<{
+  notes: RecordNote[];
+  loading: boolean;
+  error: string | null;
+  onCreate: (payload: { body: string; timestampSeconds?: number | null }) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}>) {
+  const [body, setBody] = useState("");
+  const [timestampText, setTimestampText] = useState("");
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = body.trim();
+    if (!trimmed || busy) return;
+
+    const parsedTimestamp = timestampText.trim() === "" ? null : Number(timestampText);
+    if (parsedTimestamp !== null && (!Number.isFinite(parsedTimestamp) || parsedTimestamp < 0)) {
+      setStatus("أدخل وقتاً صحيحاً بالثواني أو اتركه فارغاً.");
+      return;
+    }
+
+    setBusy(true);
+    setStatus("");
+    try {
+      await onCreate({ body: trimmed, timestampSeconds: parsedTimestamp });
+      setBody("");
+      setTimestampText("");
+      setStatus("تم حفظ الملاحظة.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "تعذر حفظ الملاحظة.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <article className="panel record-notes-panel">
+      <div className="panel-section-header panel-title-row">
+        <div>
+          <h2>ملاحظاتي</h2>
+          <p className="helper-text">ملاحظات خاصة بالسجل، عامة أو مرتبطة بزمن داخل المادة.</p>
+        </div>
+        <span className="badge">{notes.length} ملاحظات</span>
+      </div>
+
+      {loading ? (
+        <p className="form-status" role="status" aria-live="polite">جار تحميل الملاحظات...</p>
+      ) : null}
+
+      {error ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل الملاحظات</strong>
+          <span className="helper-text">{error}</span>
+        </div>
+      ) : null}
+
+      <form className="auth-form record-note-form" onSubmit={handleSubmit}>
+        <label>
+          ملاحظة جديدة
+          <textarea
+            value={body}
+            onChange={(event) => setBody(event.target.value)}
+            placeholder="اكتب ملاحظة شخصية عن هذا السجل..."
+            rows={4}
+          />
+        </label>
+        <div className="field-row">
+          <label>
+            توقيت اختياري بالثواني
+            <input
+              inputMode="decimal"
+              value={timestampText}
+              onChange={(event) => setTimestampText(event.target.value)}
+              placeholder="مثال: 83"
+            />
+          </label>
+          <button type="submit" className="button button-primary" disabled={busy || !body.trim()}>
+            {busy ? "جار الحفظ..." : "إضافة ملاحظة"}
+          </button>
+        </div>
+        {status ? <p className="form-status">{status}</p> : null}
+      </form>
+
+      {!loading && notes.length ? (
+        <ul className="record-note-list">
+          {notes.map((note) => (
+            <li key={note.id}>
+              <div>
+                <div className="helper-row">
+                  <span className="badge">{noteAnchor(note)}</span>
+                  <span className="helper-text">{note.authorName || "مجهول"}</span>
+                </div>
+                <p>{note.body}</p>
+                {note.createdAt ? (
+                  <small className="helper-text">{new Date(note.createdAt).toLocaleString("ar-SA")}</small>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="button button-danger button-sm"
+                onClick={() => void onDelete(note.id)}
+                aria-label="حذف الملاحظة"
+              >
+                حذف
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : !loading ? (
+        <EmptyState
+          title="لا توجد ملاحظات بعد"
+          description="أضف ملاحظة عامة أو اربطها بزمن داخل المادة لاستخدامها لاحقاً في المراجعة."
+        />
+      ) : null}
+    </article>
+  );
+}
+
 export default function ArchiveDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
@@ -144,6 +316,29 @@ export default function ArchiveDetailPage() {
     setOcrState({ status: "success", jobId: response.job.id });
   }
 
+  async function handleCreateNote(payload: { body: string; timestampSeconds?: number | null }) {
+    if (state.status !== "ready") return;
+    const response = await api.createRecordNote(id, payload);
+    if (!response.ok) {
+      throw new Error(response.error || "تعذر حفظ الملاحظة.");
+    }
+    setState((current) => current.status === "ready"
+      ? { ...current, notes: sortRecordNotes([...current.notes, response.note]) }
+      : current);
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    if (state.status !== "ready") return;
+    const response = await api.deleteRecordNote(noteId);
+    if (!response.ok) {
+      setState((current) => current.status === "ready" ? { ...current } : current);
+      return;
+    }
+    setState((current) => current.status === "ready"
+      ? { ...current, notes: current.notes.filter((note) => note.id !== noteId) }
+      : current);
+  }
+
   const detailDescription =
     state.status === "ready"
       ? state.record.description || "تفاصيل السجل وحقوقه في عرض تشغيلي مركز."
@@ -170,25 +365,55 @@ export default function ArchiveDetailPage() {
         return;
       }
 
-      // Fetch related panels; neither should block the base record.
-      const [rightsResult, relationResult] = await Promise.allSettled([
-        api.rights(id),
-        api.relationGraph({ recordId: id, limit: 32 })
-      ]);
-      const rightsResponse = rightsResult.status === "fulfilled" ? rightsResult.value : null;
-      const relationResponse = relationResult.status === "fulfilled" ? relationResult.value : null;
-      const rights = rightsResponse?.ok ? rightsResponse.record : null;
-      const relationGraph = relationResponse?.ok ? relationResponse : null;
-
       if (!active) return;
 
       setState({
         status: "ready",
         record: recordResponse.record,
-        rights,
-        relationGraph
+        rights: null,
+        relationGraph: null,
+        notes: [],
+        notesLoading: true,
+        notesError: null
       });
       setIsFav(isFavorited(id));
+
+      void api.rights(id)
+        .then((response) => {
+          if (!active || !response.ok) return;
+          setState((current) => current.status === "ready" ? { ...current, rights: response.record } : current);
+        })
+        .catch(() => {});
+
+      void api.relationGraph({ recordId: id, limit: 32 })
+        .then((response) => {
+          if (!active || !response.ok) return;
+          setState((current) => current.status === "ready" ? { ...current, relationGraph: response } : current);
+        })
+        .catch(() => {});
+
+      void api.recordNotes(id)
+        .then((response) => {
+          if (!active) return;
+          setState((current) => current.status === "ready"
+            ? {
+                ...current,
+                notes: response.ok ? response.notes : [],
+                notesLoading: false,
+                notesError: response.ok ? null : response.error || "تعذر تحميل الملاحظات."
+              }
+            : current);
+        })
+        .catch((error) => {
+          if (!active) return;
+          setState((current) => current.status === "ready"
+            ? {
+                ...current,
+                notesLoading: false,
+                notesError: error instanceof Error ? error.message : "تعذر تحميل الملاحظات."
+              }
+            : current);
+        });
     };
 
     loadDetail();
@@ -356,6 +581,13 @@ export default function ArchiveDetailPage() {
                 </div>
               ) : null}
             </article>
+            <RecordNotesPanel
+              notes={state.notes}
+              loading={state.notesLoading}
+              error={state.notesError}
+              onCreate={handleCreateNote}
+              onDelete={handleDeleteNote}
+            />
           </div>
 
           <div className="page-section">

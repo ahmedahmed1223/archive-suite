@@ -28,7 +28,7 @@
 
 - [ ] **Task 3: History, notes, and sync**
   - Add audit-backed record history and diffs.
-  - Add record notes/comments outside media review.
+  - Add record notes/comments outside media review. Private notes are implemented; team comments remain audit-backed follow-up.
   - Add `/sync` for sync log/conflict states.
 
 - [ ] **Task 4: Intake and saved workflows**
