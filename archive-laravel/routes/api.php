@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\SystemController;
+use App\Http\Controllers\Api\V1\UploadsController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Route;
 
@@ -76,6 +77,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/rights/{itemId}/enforcement', [RightsController::class, 'enforcement']);
         Route::get('/rights', [RightsController::class, 'show']);
         Route::post('/rights', [RightsController::class, 'store']);
+
+        Route::post('/uploads', [UploadsController::class, 'store']);
 
         Route::post('/ingest/scan', [IngestController::class, 'scan']);
         Route::post('/ingest/ftp/pull', [IngestController::class, 'ftpPull']);

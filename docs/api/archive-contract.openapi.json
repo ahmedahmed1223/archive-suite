@@ -28,7 +28,8 @@
     { "name": "Review" },
     { "name": "Collaboration" },
     { "name": "System" },
-    { "name": "Ingest" }
+    { "name": "Ingest" },
+    { "name": "Uploads" }
   ],
   "paths": {
     "/health": {
@@ -570,6 +571,34 @@
           },
           "401": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/uploads": {
+      "post": {
+        "tags": ["Uploads"],
+        "summary": "Upload a file and create an archive record",
+        "operationId": "uploadFile",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": { "$ref": "#/components/schemas/UploadRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File uploaded and archive record created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -1605,6 +1634,41 @@
             "required": ["job"],
             "properties": {
               "job": { "$ref": "#/components/schemas/MediaJob" }
+            }
+          }
+        ]
+      },
+      "UploadRequest": {
+        "type": "object",
+        "required": ["file"],
+        "properties": {
+          "file": { "type": "string", "format": "binary" },
+          "folder": { "type": "string" }
+        }
+      },
+      "UploadedRecord": {
+        "type": "object",
+        "required": ["id", "title", "fileName", "filePath", "checksum", "source"],
+        "properties": {
+          "id": { "type": "string" },
+          "uid": { "type": "string" },
+          "title": { "type": "string" },
+          "fileName": { "type": "string" },
+          "filePath": { "type": "string" },
+          "checksum": { "type": "string" },
+          "source": { "type": "string", "enum": ["upload"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UploadResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["record"],
+            "properties": {
+              "record": { "$ref": "#/components/schemas/UploadedRecord" }
             }
           }
         ]
