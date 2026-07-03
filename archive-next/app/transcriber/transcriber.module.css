@@ -1,0 +1,53 @@
+.transcriberContent {
+  --local-gap: var(--space-5);
+}
+
+.console {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--local-gap);
+  align-items: start;
+}
+
+.formPanel {
+  order: 1;
+}
+
+.resultPanel {
+  order: 2;
+}
+
+.cueList {
+  display: grid;
+  gap: var(--space-2);
+  max-block-size: 26rem;
+  overflow-y: auto;
+}
+
+.cueRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.cueTime {
+  color: var(--color-accent-primary);
+  white-space: nowrap;
+}
+
+.rawText {
+  min-block-size: 12rem;
+  resize: vertical;
+  direction: ltr;
+  text-align: start;
+}
+
+@media (min-width: 900px) {
+  .console {
+    grid-template-columns: minmax(18rem, 0.4fr) minmax(0, 1fr);
+  }
+}

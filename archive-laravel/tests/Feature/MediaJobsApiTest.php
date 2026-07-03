@@ -240,4 +240,42 @@ class MediaJobsApiTest extends TestCase
         ], $this->authHeaders())
             ->assertUnprocessable();
     }
+
+    public function test_store_accepts_ocr_operation(): void
+    {
+        Queue::fake();
+
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-ocr',
+            'operation' => 'ocr',
+            'sourcePath' => 'archive/media-record-ocr.jpg',
+        ], $this->authHeaders())->assertAccepted();
+
+        $this->assertDatabaseHas('media_jobs', [
+            'record_id' => 'media-record-ocr',
+            'operation' => 'ocr',
+            'status' => 'queued',
+        ]);
+    }
+
+    public function test_workflow_job_produces_ocr_artifacts(): void
+    {
+        $mediaJob = MediaJob::query()->create([
+            'id' => 'media-job-ocr-artifact',
+            'record_id' => 'media-record-ocr-artifact',
+            'operation' => 'ocr',
+            'status' => 'queued',
+            'queued_at' => now(),
+        ]);
+
+        $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
+            $this->app->make(\App\Services\Media\MediaProcessor::class)
+        );
+
+        $refreshed = $mediaJob->refresh();
+        $this->assertSame('completed', $refreshed->status);
+        $this->assertIsArray($refreshed->result['artifacts']);
+        $this->assertNotEmpty($refreshed->result['artifacts']);
+        $this->assertSame('ocr_text', $refreshed->result['artifacts'][0]['kind']);
+    }
 }

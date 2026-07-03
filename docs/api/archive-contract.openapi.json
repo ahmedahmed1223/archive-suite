@@ -1597,7 +1597,7 @@
       },
       "MediaOperation": {
         "type": "string",
-        "enum": ["thumbnail", "transcode", "transcription"]
+        "enum": ["thumbnail", "transcode", "transcription", "ocr"]
       },
       "MediaJobRequest": {
         "type": "object",

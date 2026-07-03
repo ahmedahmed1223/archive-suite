@@ -13,6 +13,21 @@ type DetailState =
   | { status: "ready"; record: ArchiveRecord; rights: RightsRecord | null }
   | { status: "error"; message: string };
 
+type OcrState =
+  | { status: "idle" }
+  | { status: "creating" }
+  | { status: "success"; jobId: string }
+  | { status: "error"; message: string };
+
+/** Records don't carry a guaranteed file path — only ingested/uploaded metadata does. */
+function deriveSourcePath(record: ArchiveRecord): { sourcePath: string; disk?: string } | null {
+  const metadata = record.metadata && typeof record.metadata === "object" ? record.metadata : {};
+  const sourcePath = metadata["filePath"] ?? metadata["path"];
+  if (typeof sourcePath !== "string" || !sourcePath.trim()) return null;
+  const disk = metadata["disk"];
+  return { sourcePath, ...(typeof disk === "string" && disk.trim() ? { disk } : {}) };
+}
+
 export default function ArchiveDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
@@ -20,6 +35,28 @@ export default function ArchiveDetailPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [isFav, setIsFav] = useState(false);
+  const [ocrState, setOcrState] = useState<OcrState>({ status: "idle" });
+
+  async function handleOcr() {
+    if (state.status !== "ready") return;
+    const source = deriveSourcePath(state.record);
+    if (!source) return;
+
+    setOcrState({ status: "creating" });
+    const response = await api.createMediaJob({
+      recordId: id,
+      operation: "ocr",
+      sourcePath: source.sourcePath,
+      ...(source.disk ? { options: { disk: source.disk } } : {})
+    });
+
+    if (!response.ok) {
+      setOcrState({ status: "error", message: response.error });
+      return;
+    }
+
+    setOcrState({ status: "success", jobId: response.job.id });
+  }
 
   const detailDescription =
     state.status === "ready"
@@ -106,9 +143,37 @@ export default function ArchiveDetailPage() {
                 {isFav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
               </button>
             ) : null}
+            {state.status === "ready" ? (
+              <button
+                type="button"
+                onClick={handleOcr}
+                disabled={!deriveSourcePath(state.record) || ocrState.status === "creating"}
+                className="button button-secondary"
+                title={!deriveSourcePath(state.record) ? "لا يوجد مسار ملف صالح لهذا السجل" : undefined}
+              >
+                {ocrState.status === "creating" ? "جار الإنشاء..." : "استخراج النص (OCR)"}
+              </button>
+            ) : null}
           </>
         }
       />
+
+      {state.status === "ready" && !deriveSourcePath(state.record) && (
+        <p className="helper-text">تعذّر تفعيل استخراج النص: لا يحتوي هذا السجل على مسار ملف قابل للاستخدام في metadata.</p>
+      )}
+
+      {ocrState.status === "success" && (
+        <div className="state-banner state-banner-success">
+          <strong>تم إنشاء مهمة OCR بنجاح.</strong>
+          <a href="/media/jobs" className="button button-secondary">عرض في مهام الوسائط</a>
+        </div>
+      )}
+
+      {ocrState.status === "error" && (
+        <div className="state-banner state-banner-error">
+          <strong>تعذّر إنشاء مهمة OCR: {ocrState.message}</strong>
+        </div>
+      )}
 
       {state.status === "loading" && (
         <div className="panel panel-compact" role="status" aria-live="polite">

@@ -66,13 +66,15 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
       REDIS_PORT: "6379"
       MEDIA_PROCESSOR: real
-      WHISPER_BINARY: ${WHISPER_BINARY:-faster-whisper}
+      WHISPER_BINARY: ${WHISPER_BINARY:-whisper-ctranslate2}
       WHISPER_MODEL: ${WHISPER_MODEL:-large-v3}
       WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-ar}
       WHISPER_OUTPUT_FORMAT: ${WHISPER_OUTPUT_FORMAT:-vtt}
-      WHISPER_DEVICE: ${WHISPER_DEVICE:-cuda}
-      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-float16}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
       WHISPER_DIARIZE: ${WHISPER_DIARIZE:-false}
+      HF_TOKEN: ${HF_TOKEN:-}
+      OCR_SERVICE_URL: http://ocr:8788
       SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
@@ -122,13 +124,15 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
       REDIS_PORT: "6379"
       MEDIA_PROCESSOR: real
-      WHISPER_BINARY: ${WHISPER_BINARY:-faster-whisper}
+      WHISPER_BINARY: ${WHISPER_BINARY:-whisper-ctranslate2}
       WHISPER_MODEL: ${WHISPER_MODEL:-large-v3}
       WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-ar}
       WHISPER_OUTPUT_FORMAT: ${WHISPER_OUTPUT_FORMAT:-vtt}
-      WHISPER_DEVICE: ${WHISPER_DEVICE:-cuda}
-      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-float16}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
       WHISPER_DIARIZE: ${WHISPER_DIARIZE:-false}
+      HF_TOKEN: ${HF_TOKEN:-}
+      OCR_SERVICE_URL: http://ocr:8788
       SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
@@ -144,6 +148,25 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - archive
+
+  ocr:
+    build:
+      context: ./ocr-service
+    container_name: archive-ln-ocr
+    restart: unless-stopped
+    environment:
+      OCR_LANG: ${OCR_LANG:-ar}
+      OCR_USE_GPU: ${OCR_USE_GPU:-false}
+      MAX_FILE_SIZE_MB: ${OCR_MAX_FILE_SIZE_MB:-20}
+      PORT: "8788"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8788/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     networks:
       - archive
 

@@ -11,6 +11,7 @@ use App\Services\Ingest\SmbIngestTransport;
 use App\Services\Media\FakeMediaProcessor;
 use App\Services\Media\FakeProcessRunner;
 use App\Services\Media\MediaProcessor;
+use App\Services\Media\OcrClient;
 use App\Services\Media\ProcessRunner;
 use App\Services\Media\RealMediaProcessor;
 use App\Services\Media\SymfonyProcessRunner;
@@ -51,7 +52,13 @@ class AppServiceProvider extends ServiceProvider
                 config('media.whisper_device'),
                 config('media.whisper_compute_type'),
                 config('media.whisper_diarize'),
+                config('media.whisper_hf_token'),
             )
+        );
+
+        $this->app->bind(
+            OcrClient::class,
+            fn () => new OcrClient(config('media.ocr_service_url'))
         );
 
         // Media processor: fake by default (existing tests unaffected)
@@ -66,6 +73,7 @@ class AppServiceProvider extends ServiceProvider
                     config('media.ffmpeg_path'),
                     config('media.ffprobe_path'),
                     config('media.watermark', []),
+                    $app->make(OcrClient::class),
                 )
             );
         } else {

@@ -1,0 +1,10 @@
+.filterChip[data-active="true"] {
+  color: var(--color-bg-primary);
+  background: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+}
+
+.bulkBarBusy {
+  opacity: 0.7;
+  pointer-events: none;
+}

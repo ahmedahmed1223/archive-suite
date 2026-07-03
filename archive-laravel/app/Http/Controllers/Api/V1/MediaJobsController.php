@@ -16,7 +16,7 @@ class MediaJobsController extends Controller
     {
         $validated = $request->validate([
             'recordId' => ['required', 'string'],
-            'operation' => ['required', 'string', Rule::in(['thumbnail', 'transcode', 'transcription'])],
+            'operation' => ['required', 'string', Rule::in(['thumbnail', 'transcode', 'transcription', 'ocr'])],
             'sourcePath' => ['nullable', 'string'],
             'options' => ['nullable', 'array'],
         ]);

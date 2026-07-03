@@ -69,7 +69,7 @@ export interface RightsRecord {
   updatedAt: string;
 }
 
-export type MediaOperation = "thumbnail" | "transcode" | "transcription";
+export type MediaOperation = "thumbnail" | "transcode" | "transcription" | "ocr";
 export type MediaJobStatus = "queued" | "processing" | "completed" | "failed";
 
 export interface MediaJob {

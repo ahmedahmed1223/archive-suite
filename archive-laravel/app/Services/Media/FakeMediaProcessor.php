@@ -35,6 +35,13 @@ class FakeMediaProcessor implements MediaProcessor
                     'url' => null,
                 ],
             ],
+            'ocr' => [
+                [
+                    'kind' => 'ocr_text',
+                    'key' => "{$job->record_id}/ocr.txt",
+                    'url' => null,
+                ],
+            ],
             default => [],
         };
     }
