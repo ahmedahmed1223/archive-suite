@@ -48,6 +48,16 @@ export interface RecordListPayload {
   nextCursor?: string | null;
 }
 
+export type DiscoverSectionKey = "explore" | "trending" | "random" | "active" | "forgotten" | "needsMetadata";
+
+export interface DiscoverSection {
+  key: DiscoverSectionKey;
+  label: string;
+  description: string;
+  count: number;
+  records: ArchiveRecord[];
+}
+
 export interface ArchiveFile {
   key: string;
   name?: string;
@@ -345,6 +355,7 @@ export interface ArchiveApiClient {
     params: { q?: string; store?: string; limit?: number },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[] }>>;
+  discover(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sections: DiscoverSection[] }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
   bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
@@ -525,6 +536,12 @@ export function createArchiveApiClient({
       if (store) params.set("store", store);
       params.set("limit", String(limit));
       return get(`/search?${params.toString()}`, options);
+    },
+    discover: (params?: { limit?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      const query = queryParams.toString();
+      return get<{ sections: DiscoverSection[] }>(`/discover${query ? `?${query}` : ""}`, options);
     },
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
     records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {

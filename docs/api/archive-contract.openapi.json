@@ -20,6 +20,7 @@
     { "name": "Auth" },
     { "name": "Records" },
     { "name": "Search" },
+    { "name": "Discover" },
     { "name": "Files" },
     { "name": "Folders" },
     { "name": "Media" },
@@ -278,6 +279,32 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SearchResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/discover": {
+      "get": {
+        "tags": ["Discover"],
+        "summary": "Return discovery rails for archive exploration",
+        "operationId": "discoverRecords",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 24, "default": 8 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Discovery sections",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DiscoverResponse" }
               }
             }
           },
@@ -1734,6 +1761,38 @@
               },
               "facets": { "type": "object", "additionalProperties": true },
               "nextCursor": { "type": ["string", "null"] }
+            }
+          }
+        ]
+      },
+      "DiscoverSection": {
+        "type": "object",
+        "required": ["key", "label", "description", "count", "records"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": ["explore", "trending", "random", "active", "forgotten", "needsMetadata"]
+          },
+          "label": { "type": "string" },
+          "description": { "type": "string" },
+          "count": { "type": "integer" },
+          "records": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ArchiveRecord" }
+          }
+        }
+      },
+      "DiscoverResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["sections"],
+            "properties": {
+              "sections": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/DiscoverSection" }
+              }
             }
           }
         ]
