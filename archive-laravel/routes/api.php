@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
+use App\Http\Controllers\Api\V1\DiscoverController;
 use App\Http\Controllers\Api\V1\FilesController;
 use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\InvitationsController;
@@ -72,6 +73,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::post('/records/bulk-delete', [RecordsController::class, 'bulkDelete']);
         Route::get('/search', [SearchController::class, 'index']);
+        Route::get('/discover', [DiscoverController::class, 'index']);
         Route::get('/files', [FilesController::class, 'index']);
         Route::get('/files/browser', [FilesController::class, 'browser']);
         Route::get('/media/jobs', [MediaJobsController::class, 'index']);
