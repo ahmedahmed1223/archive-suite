@@ -108,17 +108,6 @@ class UsersController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    private function requireAdmin(Request $request): ?JsonResponse
-    {
-        $user = $request->attributes->get('archive_user');
-
-        if (! $user instanceof User || $user->role !== 'admin') {
-            return response()->json(['ok' => false, 'error' => 'Forbidden.'], 403);
-        }
-
-        return null;
-    }
-
     /**
      * @return array<string, mixed>
      */

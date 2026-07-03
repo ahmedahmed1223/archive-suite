@@ -29,7 +29,8 @@
     { "name": "Collaboration" },
     { "name": "System" },
     { "name": "Ingest" },
-    { "name": "Uploads" }
+    { "name": "Uploads" },
+    { "name": "Users" }
   ],
   "paths": {
     "/health": {
@@ -223,6 +224,34 @@
           "200": { "$ref": "#/components/responses/Ok" },
           "400": { "$ref": "#/components/responses/Error" },
           "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/bulk-delete": {
+      "post": {
+        "tags": ["Records"],
+        "summary": "Bulk delete records by id with per-item results",
+        "operationId": "bulkDeleteRecords",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BulkDeleteRecordsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-item delete results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BulkDeleteRecordsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -1210,6 +1239,297 @@
           "422": { "$ref": "#/components/responses/Error" }
         }
       }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List users and pending invitations (admin only)",
+        "operationId": "listUsers",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Users and pending invitations",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsersListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Invite a new user (admin only)",
+        "operationId": "inviteUser",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/InviteUserRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitation created; the one-time token is only returned here",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InviteUserResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{id}": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update a user's role (admin only)",
+        "operationId": "updateUserRole",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateUserRoleRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserAccountResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete a user (admin only; self-deletion is rejected)",
+        "operationId": "deleteUser",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/invitations/{token}/accept": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Accept an invitation token and create the invited user account",
+        "operationId": "acceptInvitation",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AcceptInvitationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created user account",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserAccountResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/system/security-settings": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Read runtime security settings (admin only)",
+        "operationId": "getSecuritySettings",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Current security settings",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SecuritySettingsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["System"],
+        "summary": "Update the runtime-mutable subset of security settings (admin only)",
+        "operationId": "updateSecuritySettings",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateSecuritySettingsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated security settings",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SecuritySettingsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/system/backups": {
+      "get": {
+        "tags": ["System"],
+        "summary": "List backup files (admin only)",
+        "operationId": "listBackups",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Available backups, newest first",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BackupListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/system/backups/run": {
+      "post": {
+        "tags": ["System"],
+        "summary": "Create a backup of all record stores now (admin only)",
+        "operationId": "runBackup",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "201": {
+            "description": "Backup created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BackupRunResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/system/backups/preview": {
+      "post": {
+        "tags": ["System"],
+        "summary": "Preview per-store record counts of a backup without restoring (admin only)",
+        "operationId": "previewBackup",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BackupNameRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Backup summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BackupPreviewResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/system/backups/restore": {
+      "post": {
+        "tags": ["System"],
+        "summary": "Restore record stores from a named backup (admin only)",
+        "operationId": "restoreBackup",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BackupNameRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restore result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BackupRestoreResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
     }
   },
   "components": {
@@ -2085,6 +2405,288 @@
           "domain": { "type": "string" },
           "localPath": { "type": "string" }
         }
+      },
+      "BulkDeleteRecordsRequest": {
+        "type": "object",
+        "required": ["store", "ids"],
+        "properties": {
+          "store": { "type": "string" },
+          "ids": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1,
+            "maxItems": 10000
+          }
+        }
+      },
+      "BulkDeleteRecordsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["count", "results"],
+            "properties": {
+              "count": { "type": "integer", "minimum": 0 },
+              "results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["uid", "deleted"],
+                  "properties": {
+                    "uid": { "type": "string" },
+                    "deleted": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "UserAccount": {
+        "type": "object",
+        "required": ["id", "name", "email", "role"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "enum": ["admin", "editor", "viewer"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "UserAccountResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["user"],
+            "properties": {
+              "user": { "$ref": "#/components/schemas/UserAccount" }
+            }
+          }
+        ]
+      },
+      "UserInvitation": {
+        "type": "object",
+        "required": ["id", "email", "role", "expiresAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "enum": ["admin", "editor", "viewer"] },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "UsersListResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["users", "invitations"],
+            "properties": {
+              "users": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/UserAccount" }
+              },
+              "invitations": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/UserInvitation" }
+              }
+            }
+          }
+        ]
+      },
+      "InviteUserRequest": {
+        "type": "object",
+        "required": ["email", "role"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "enum": ["admin", "editor", "viewer"] }
+        }
+      },
+      "InviteUserResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["invitation", "token"],
+            "properties": {
+              "invitation": { "$ref": "#/components/schemas/UserInvitation" },
+              "token": {
+                "type": "string",
+                "description": "One-time invitation token; only returned at creation time"
+              }
+            }
+          }
+        ]
+      },
+      "UpdateUserRoleRequest": {
+        "type": "object",
+        "required": ["role"],
+        "properties": {
+          "role": { "type": "string", "enum": ["admin", "editor", "viewer"] }
+        }
+      },
+      "AcceptInvitationRequest": {
+        "type": "object",
+        "required": ["name", "password"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "password": { "type": "string", "minLength": 8 }
+        }
+      },
+      "SecuritySettings": {
+        "type": "object",
+        "required": [
+          "accessTokenTtlMinutes",
+          "perUserRateLimit",
+          "webhookUrlAllowlist",
+          "legacyPasswordUpgrade",
+          "cspPolicy",
+          "corsOrigins"
+        ],
+        "properties": {
+          "accessTokenTtlMinutes": { "type": "integer", "minimum": 1 },
+          "perUserRateLimit": { "type": "integer", "minimum": 1 },
+          "webhookUrlAllowlist": {
+            "type": "array",
+            "items": { "type": "string", "format": "uri" }
+          },
+          "legacyPasswordUpgrade": { "type": "boolean" },
+          "cspPolicy": {
+            "type": "string",
+            "description": "Deploy-time only; read-only in the API"
+          },
+          "corsOrigins": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Deploy-time only; read-only in the API"
+          }
+        }
+      },
+      "SecuritySettingsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["settings"],
+            "properties": {
+              "settings": { "$ref": "#/components/schemas/SecuritySettings" }
+            }
+          }
+        ]
+      },
+      "UpdateSecuritySettingsRequest": {
+        "type": "object",
+        "properties": {
+          "accessTokenTtlMinutes": { "type": "integer", "minimum": 1 },
+          "perUserRateLimit": { "type": "integer", "minimum": 1 },
+          "webhookUrlAllowlist": {
+            "type": "array",
+            "items": { "type": "string", "format": "uri" }
+          },
+          "legacyPasswordUpgrade": { "type": "boolean" }
+        }
+      },
+      "BackupInfo": {
+        "type": "object",
+        "required": ["name", "sizeBytes", "createdAt"],
+        "properties": {
+          "name": { "type": "string" },
+          "sizeBytes": { "type": "integer", "minimum": 0 },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BackupListResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["backups"],
+            "properties": {
+              "backups": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/BackupInfo" }
+              }
+            }
+          }
+        ]
+      },
+      "BackupRunResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["backup"],
+            "properties": {
+              "backup": {
+                "type": "object",
+                "required": ["name", "sizeBytes", "stores", "completedAt"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "sizeBytes": { "type": "integer", "minimum": 0 },
+                  "stores": {
+                    "type": "object",
+                    "additionalProperties": { "type": "integer", "minimum": 0 }
+                  },
+                  "completedAt": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BackupNameRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 255 }
+        }
+      },
+      "BackupPreviewResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["preview"],
+            "properties": {
+              "preview": {
+                "type": "object",
+                "required": ["name", "stores", "totalRecords"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "stores": {
+                    "type": "object",
+                    "additionalProperties": { "type": "integer", "minimum": 0 }
+                  },
+                  "totalRecords": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BackupRestoreResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["result"],
+            "properties": {
+              "result": {
+                "type": "object",
+                "required": ["name", "counts", "restoredAt"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "counts": {
+                    "type": "object",
+                    "additionalProperties": { "type": "integer", "minimum": 0 }
+                  },
+                  "restoredAt": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        ]
       }
     }
   }

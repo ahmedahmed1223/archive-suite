@@ -2,6 +2,7 @@
 
 return [
     'file_root' => env('ARCHIVE_FILE_ROOT', storage_path('app/archive-files')),
+    'backup_path' => env('ARCHIVE_BACKUP_PATH', storage_path('app/backups')),
     'auth' => [
         'access_ttl_minutes' => (int) env('ARCHIVE_ACCESS_TTL_MINUTES', 15),
         'refresh_ttl_days' => (int) env('ARCHIVE_REFRESH_TTL_DAYS', 14),

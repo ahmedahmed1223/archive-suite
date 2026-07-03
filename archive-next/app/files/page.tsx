@@ -6,12 +6,17 @@ import AppShell from "@/components/AppShell";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveFile } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveFile, type FileBrowserEntry } from "@/lib/archive-api";
 import { addMintedLink } from "@/lib/minted-shares";
 
 type FileState =
   | { status: "loading" }
   | { status: "ready"; files: ArchiveFile[] }
+  | { status: "error"; message: string };
+
+type BrowserState =
+  | { status: "loading" }
+  | { status: "ready"; path: string; entries: FileBrowserEntry[] }
   | { status: "error"; message: string };
 
 type ShareState =
@@ -26,12 +31,13 @@ type ScanState =
   | { status: "success"; ingested: number; skipped: number }
   | { status: "error"; message: string };
 
-type FileViewMode = "table" | "cards";
+type FileViewMode = "table" | "cards" | "browser";
 type FileKind = "all" | "media" | "image" | "document" | "other";
 
 const fileViewOptions: DataViewOption<FileViewMode>[] = [
   { value: "table", label: "جدول" },
-  { value: "cards", label: "بطاقات" }
+  { value: "cards", label: "بطاقات" },
+  { value: "browser", label: "مجلدات" }
 ];
 
 const PLAYABLE_EXTENSIONS = new Set([
@@ -141,6 +147,8 @@ export default function FilesPage() {
   const [previewKey, setPreviewKey] = useState<string | null>(null);
   const [shareState, setShareState] = useState<ShareState>({ status: "idle" });
   const [scanState, setScanState] = useState<ScanState>({ status: "idle" });
+  const [browserPath, setBrowserPath] = useState("");
+  const [browserState, setBrowserState] = useState<BrowserState>({ status: "loading" });
 
   const loadFiles = useCallback(async (q: string) => {
     setState({ status: "loading" });
@@ -160,6 +168,26 @@ export default function FilesPage() {
   useEffect(() => {
     void loadFiles("");
   }, [loadFiles]);
+
+  const loadBrowser = useCallback(async (path: string) => {
+    setBrowserState({ status: "loading" });
+    try {
+      const response = await api.browseFiles(path ? { path } : undefined);
+      if (response.ok) {
+        setBrowserState({ status: "ready", path: response.path, entries: response.entries });
+      } else {
+        setBrowserState({ status: "error", message: response.error || "تعذر تصفح المجلد." });
+      }
+    } catch (error) {
+      setBrowserState({ status: "error", message: error instanceof Error ? error.message : "تعذر تصفح المجلد." });
+    }
+  }, [api]);
+
+  useEffect(() => {
+    if (viewMode === "browser") {
+      void loadBrowser(browserPath);
+    }
+  }, [viewMode, browserPath, loadBrowser]);
 
   const files = state.status === "ready" ? state.files : [];
   const stores = useMemo(() => getUniqueStores(files), [files]);
@@ -376,20 +404,118 @@ export default function FilesPage() {
         </div>
       ) : null}
 
-      {state.status === "loading" ? (
+      {viewMode === "browser" ? (
+        <section className="panel" aria-label="متصفح المجلدات">
+          <div className="panel-title-row">
+            <div>
+              <h2>متصفح المجلدات</h2>
+              <p>تنقل داخل شجرة مخزن الملفات عبر المجلدات ومسار التنقل.</p>
+            </div>
+            <button type="button" className="button button-secondary button-sm" onClick={() => void loadBrowser(browserPath)}>
+              تحديث المجلد
+            </button>
+          </div>
+
+          <nav className="record-meta" aria-label="مسار المجلد الحالي">
+            <button type="button" className="badge" onClick={() => setBrowserPath("")} disabled={!browserPath}>
+              الجذر
+            </button>
+            {browserPath.split("/").filter(Boolean).map((segment, index, segments) => {
+              const segmentPath = segments.slice(0, index + 1).join("/");
+              return (
+                <button
+                  key={segmentPath}
+                  type="button"
+                  className="badge"
+                  onClick={() => setBrowserPath(segmentPath)}
+                  aria-current={index === segments.length - 1 ? "location" : undefined}
+                  dir="ltr"
+                >
+                  {segment}
+                </button>
+              );
+            })}
+          </nav>
+
+          {browserState.status === "loading" ? (
+            <p className="form-status" role="status" aria-live="polite">جار تحميل محتوى المجلد...</p>
+          ) : null}
+
+          {browserState.status === "error" ? (
+            <div className="state-banner state-banner-error" role="alert">
+              <strong>تعذر تصفح المجلد</strong>
+              <span className="helper-text">{browserState.message}</span>
+            </div>
+          ) : null}
+
+          {browserState.status === "ready" ? (
+            browserState.entries.length === 0 ? (
+              <EmptyState title="مجلد فارغ." description="لا توجد ملفات أو مجلدات فرعية في هذا المسار." />
+            ) : (
+              <div className="scroll-x">
+                <table className="data-table" aria-label="محتوى المجلد">
+                  <thead>
+                    <tr>
+                      <th>الاسم</th>
+                      <th>النوع</th>
+                      <th>الحجم</th>
+                      <th>التاريخ</th>
+                      <th>الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...browserState.entries]
+                      .sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name, "ar") : a.kind === "folder" ? -1 : 1))
+                      .map((entry) => {
+                        const entryPath = entry.path || (browserPath ? `${browserPath}/${entry.name}` : entry.name);
+                        return (
+                          <tr key={entry.key}>
+                            <td className="wrap-anywhere">
+                              {entry.kind === "folder" ? (
+                                <button type="button" className="text-accent" onClick={() => setBrowserPath(entryPath)}>
+                                  📁 {entry.name}
+                                </button>
+                              ) : (
+                                <strong>{entry.name}</strong>
+                              )}
+                            </td>
+                            <td>{entry.kind === "folder" ? "مجلد" : kindLabel(getFileKind(entry))}</td>
+                            <td className="mono-text text-sm">{entry.kind === "folder" ? "-" : formatBytes(entry.size)}</td>
+                            <td className="mono-text text-sm">{formatDate(entry.modifiedAt)}</td>
+                            <td>
+                              {entry.kind === "folder" ? (
+                                <button type="button" className="button button-secondary button-sm" onClick={() => setBrowserPath(entryPath)}>
+                                  فتح
+                                </button>
+                              ) : isPlayableFile(entry) ? (
+                                <a href={mediaPlayHref(entry)} className="button button-secondary button-sm">تشغيل</a>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : null}
+        </section>
+      ) : null}
+
+      {viewMode !== "browser" && state.status === "loading" ? (
         <div className="panel panel-compact" role="status" aria-live="polite">
           <p className="form-status">جار تحميل قائمة الملفات...</p>
         </div>
       ) : null}
 
-      {state.status === "error" ? (
+      {viewMode !== "browser" && state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل الملفات</strong>
           <span className="helper-text">{state.message}</span>
         </div>
       ) : null}
 
-      {state.status === "ready" ? (
+      {viewMode !== "browser" && state.status === "ready" ? (
         visibleFiles.length === 0 ? (
           <EmptyState
             title="لم يتم العثور على ملفات."

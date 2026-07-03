@@ -20,6 +20,7 @@ const primaryNav = [
   { href: "/tags", label: "الوسوم", section: "manage" },
   { href: "/duplicates", label: "المكررات", section: "manage" },
   { href: "/kanban", label: "كانبان", section: "manage" },
+  { href: "/projects", label: "المشاريع", section: "manage" },
   { href: "/media/jobs", label: "الوسائط", section: "manage" },
   { href: "/transcriber", label: "التفريغ", section: "manage" },
   { href: "/collaboration", label: "التعاون", section: "manage" },
@@ -29,6 +30,9 @@ const primaryNav = [
   { href: "/reports", label: "التقارير", section: "observe" },
   { href: "/status", label: "الحالة", section: "observe" },
   { href: "/errors", label: "الأخطاء", section: "observe" },
+  { href: "/ingest", label: "الاستيراد", section: "admin" },
+  { href: "/backup", label: "النسخ الاحتياطي", section: "admin" },
+  { href: "/rights", label: "الحقوق", section: "admin" },
   { href: "/settings", label: "الإعدادات", section: "admin" },
   { href: "/help", label: "المساعدة", section: "admin" }
 ] as const;
