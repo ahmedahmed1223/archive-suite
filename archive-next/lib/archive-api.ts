@@ -105,6 +105,24 @@ export interface UploadedRecord {
   updatedAt?: string;
 }
 
+export type ManagedUserRole = "admin" | "editor" | "viewer";
+
+export interface ManagedUser {
+  id: string;
+  name: string;
+  email: string;
+  role: ManagedUserRole;
+  createdAt?: string;
+}
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: ManagedUserRole;
+  expiresAt: string;
+  createdAt?: string;
+}
+
 export interface ContentField {
   id: string;
   key: string;
@@ -286,6 +304,11 @@ export interface ArchiveApiClient {
   releaseCollaborationLock(roomKey: string, payload: { resourceId: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationLocksPayload & { released: boolean }>>;
   collaborationDocument(roomKey: string, resourceId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ roomKey: string; document: CollaborationDocument }>>;
   updateCollaborationDocument(roomKey: string, resourceId: string, payload: { content: string; version: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ roomKey: string; document: CollaborationDocument }>>;
+  listUsers(options?: AuthRequestOptions): Promise<ApiEnvelope<{ users: ManagedUser[]; invitations: PendingInvitation[] }>>;
+  inviteUser(payload: { email: string; role: ManagedUserRole }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ invitation: PendingInvitation; token: string }>>;
+  updateUserRole(id: string, payload: { role: ManagedUserRole }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ user: ManagedUser }>>;
+  deleteUser(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope>;
+  acceptInvitation(token: string, payload: { name: string; password: string }): Promise<ApiEnvelope<{ user: ManagedUser }>>;
 }
 
 export interface AuthRequestOptions {
@@ -462,6 +485,15 @@ export function createArchiveApiClient({
         { permission: payload.permission, expiresAt: payload.expiresAt },
         options
       ),
+    listUsers: (options?: AuthRequestOptions) =>
+      get<{ users: ManagedUser[]; invitations: PendingInvitation[] }>("/users", options),
+    inviteUser: (payload: { email: string; role: ManagedUserRole }, options?: AuthRequestOptions) =>
+      post<{ invitation: PendingInvitation; token: string }>("/users", payload, options),
+    updateUserRole: (id: string, payload: { role: ManagedUserRole }, options?: AuthRequestOptions) =>
+      patch<{ user: ManagedUser }>(`/users/${encodeURIComponent(id)}`, payload, options),
+    deleteUser: (id: string, options?: AuthRequestOptions) => del(`/users/${encodeURIComponent(id)}`, undefined, options),
+    acceptInvitation: (token: string, payload: { name: string; password: string }) =>
+      post<{ user: ManagedUser }>(`/invitations/${encodeURIComponent(token)}/accept`, payload),
     collaborationPresence: (roomKey: string, options?: AuthRequestOptions) =>
       get<CollaborationPresencePayload>(`/collaboration/rooms/${encodeURIComponent(roomKey)}/presence`, options),
     sendCollaborationHeartbeat: (

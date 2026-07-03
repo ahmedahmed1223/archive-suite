@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\FilesController;
 use App\Http\Controllers\Api\V1\IngestController;
+use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\SystemController;
 use App\Http\Controllers\Api\V1\UploadsController;
+use App\Http\Controllers\Api\V1\UsersController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +45,7 @@ Route::prefix('v1')->group(function (): void {
 
     Route::get('/share/{token}', [ShareController::class, 'show']);
     Route::get('/review-links/{token}', [ReviewLinksController::class, 'show']);
+    Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept']);
 
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/refresh', [AuthController::class, 'refresh']);
@@ -79,6 +82,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/rights', [RightsController::class, 'store']);
 
         Route::post('/uploads', [UploadsController::class, 'store']);
+
+        Route::get('/users', [UsersController::class, 'index']);
+        Route::post('/users', [UsersController::class, 'store']);
+        Route::patch('/users/{id}', [UsersController::class, 'update']);
+        Route::delete('/users/{id}', [UsersController::class, 'destroy']);
 
         Route::post('/ingest/scan', [IngestController::class, 'scan']);
         Route::post('/ingest/ftp/pull', [IngestController::class, 'ftpPull']);
