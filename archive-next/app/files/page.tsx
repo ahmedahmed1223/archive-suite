@@ -271,6 +271,7 @@ export default function FilesPage() {
         )}
         actions={(
           <>
+            <a className="button button-primary" href="/uploads">رفع ملف</a>
             <button type="button" className="button button-primary" onClick={() => void handleScan()} disabled={scanState.status === "running"}>
               {scanState.status === "running" ? "جار الفحص" : "فحص التخزين"}
             </button>

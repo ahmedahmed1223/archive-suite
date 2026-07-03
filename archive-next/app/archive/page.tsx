@@ -367,7 +367,8 @@ function ArchivePageContent() {
         )}
         actions={(
           <>
-            <a className="button button-primary" href="/files">استيراد ملفات</a>
+            <a className="button button-primary" href="/uploads">إضافة للأرشيف</a>
+            <a className="button button-secondary" href="/files">استيراد ملفات</a>
             <button type="button" className="button button-secondary" onClick={saveCurrentView}>حفظ العرض</button>
           </>
         )}

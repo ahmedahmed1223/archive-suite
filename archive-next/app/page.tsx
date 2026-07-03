@@ -46,6 +46,7 @@ const attentionItems = [
 
 const shortcuts = [
   { label: "الأرشيف", href: "/archive" },
+  { label: "إضافة للأرشيف", href: "/uploads" },
   { label: "البحث", href: "/search" },
   { label: "الملفات", href: "/files" },
   { label: "الوسائط", href: "/media/review" },
@@ -98,6 +99,9 @@ export default function HomePage() {
         )}
         actions={(
           <>
+            <a className="button button-primary" href="/uploads">
+              إضافة للأرشيف
+            </a>
             <a className="button button-primary" href="/archive">
               فتح الأرشيف
             </a>

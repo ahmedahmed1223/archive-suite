@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 const primaryNav = [
   { href: "/", label: "الرئيسية", section: "core" },
   { href: "/archive", label: "السجلات", section: "core" },
+  { href: "/uploads", label: "إضافة", section: "core" },
   { href: "/search", label: "البحث", section: "core" },
   { href: "/files", label: "الملفات", section: "core" },
   { href: "/timeline", label: "الخط الزمني", section: "core" },

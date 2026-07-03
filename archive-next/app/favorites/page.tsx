@@ -6,6 +6,11 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { listFavorites, removeFavorite, type Favorite } from "@/lib/favorites";
 
+function formatLocalDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("ar-SA");
+}
+
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
 
@@ -53,7 +58,46 @@ export default function FavoritesPage() {
             <span className="badge">{favorites.length} عنصر</span>
           </div>
 
-          <div className="scroll-x">
+          <div className="mobile-card-list" role="list" aria-label="بطاقات العناصر المفضلة">
+            {favorites.map((favorite) => (
+              <article className="local-list-card" key={favorite.id} role="listitem">
+                <div className="local-list-card__main">
+                  <div>
+                    <span className="badge">مفضلة</span>
+                    <h3>{favorite.title || favorite.id}</h3>
+                  </div>
+                  <span className="badge">{favorite.type || "غير محدد"}</span>
+                </div>
+                <dl className="mobile-field-list">
+                  <div>
+                    <dt>تاريخ الإضافة</dt>
+                    <dd>{formatLocalDate(favorite.addedAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>المعرّف</dt>
+                    <dd dir="ltr">{favorite.id}</dd>
+                  </div>
+                </dl>
+                <div className="button-row">
+                  <a
+                    className="button button-secondary button-sm"
+                    href={`/archive/${encodeURIComponent(favorite.id)}`}
+                  >
+                    فتح
+                  </a>
+                  <button
+                    type="button"
+                    className="button button-danger button-sm"
+                    onClick={() => handleRemove(favorite.id)}
+                  >
+                    حذف
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="scroll-x desktop-table-wrap">
             <table className="data-table" role="grid" aria-label="قائمة العناصر المفضلة">
               <thead>
                 <tr>
@@ -71,7 +115,7 @@ export default function FavoritesPage() {
                     </td>
                     <td>{favorite.type || "-"}</td>
                     <td className="mono-text">
-                      {new Date(favorite.addedAt).toLocaleDateString("ar-SA")}
+                      {formatLocalDate(favorite.addedAt)}
                     </td>
                     <td>
                       <div className="button-row">

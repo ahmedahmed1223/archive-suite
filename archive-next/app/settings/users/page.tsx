@@ -12,6 +12,12 @@ const roleLabels: Record<ManagedUserRole, string> = {
   viewer: "مشاهد"
 };
 
+function formatLocalDate(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("ar-SA");
+}
+
 type LoadState =
   | { status: "loading" }
   | { status: "ready"; users: ManagedUser[]; invitations: PendingInvitation[] }
@@ -127,47 +133,109 @@ export default function UsersSettingsPage() {
         {state.status === "error" && <p className="helper-text status-error">خطأ: {state.message}</p>}
 
         {state.status === "ready" && (
-          <div className="scroll-x">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">الاسم</th>
-                  <th scope="col">البريد الإلكتروني</th>
-                  <th scope="col">الدور</th>
-                  <th scope="col">إجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.users.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.name}</td>
-                    <td dir="ltr">{user.email}</td>
-                    <td>
-                      <select value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
-                        {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
-                          <option key={role} value={role}>
-                            {roleLabels[role]}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <button type="button" className="button button-secondary" onClick={() => void handleDelete(user)}>
-                        إزالة
-                      </button>
-                    </td>
+          <>
+            <div className="mobile-card-list" role="list" aria-label="بطاقات أعضاء الفريق">
+              {state.users.map((user) => (
+                <article className="local-list-card" key={user.id} role="listitem">
+                  <div className="local-list-card__main">
+                    <div>
+                      <span className="badge">{roleLabels[user.role]}</span>
+                      <h3>{user.name}</h3>
+                    </div>
+                    <span className="badge">{formatLocalDate(user.createdAt)}</span>
+                  </div>
+                  <dl className="mobile-field-list">
+                    <div>
+                      <dt>البريد الإلكتروني</dt>
+                      <dd dir="ltr">{user.email}</dd>
+                    </div>
+                    <div>
+                      <dt>المعرّف</dt>
+                      <dd dir="ltr">{user.id}</dd>
+                    </div>
+                  </dl>
+                  <label className="toolbar-field">
+                    الدور
+                    <select value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
+                      {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
+                        <option key={role} value={role}>
+                          {roleLabels[role]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button type="button" className="button button-danger button-sm" onClick={() => void handleDelete(user)}>
+                    إزالة
+                  </button>
+                </article>
+              ))}
+            </div>
+
+            <div className="scroll-x desktop-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">الاسم</th>
+                    <th scope="col">البريد الإلكتروني</th>
+                    <th scope="col">الدور</th>
+                    <th scope="col">إجراءات</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {state.users.map((user) => (
+                    <tr key={user.id}>
+                      <td>{user.name}</td>
+                      <td dir="ltr">{user.email}</td>
+                      <td>
+                        <select value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
+                          {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
+                            <option key={role} value={role}>
+                              {roleLabels[role]}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <button type="button" className="button button-secondary" onClick={() => void handleDelete(user)}>
+                          إزالة
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </article>
 
       {state.status === "ready" && state.invitations.length > 0 && (
         <article className="panel">
           <h2>الدعوات المعلّقة</h2>
-          <div className="scroll-x">
+          <div className="mobile-card-list" role="list" aria-label="بطاقات الدعوات المعلقة">
+            {state.invitations.map((invitation) => (
+              <article className="local-list-card" key={invitation.id} role="listitem">
+                <div className="local-list-card__main">
+                  <div>
+                    <span className="badge">دعوة معلّقة</span>
+                    <h3 dir="ltr">{invitation.email}</h3>
+                  </div>
+                  <span className="badge">{roleLabels[invitation.role]}</span>
+                </div>
+                <dl className="mobile-field-list">
+                  <div>
+                    <dt>تنتهي في</dt>
+                    <dd>{formatLocalDate(invitation.expiresAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>تاريخ الإنشاء</dt>
+                    <dd>{formatLocalDate(invitation.createdAt)}</dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+          <div className="scroll-x desktop-table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
@@ -181,7 +249,7 @@ export default function UsersSettingsPage() {
                   <tr key={invitation.id}>
                     <td dir="ltr">{invitation.email}</td>
                     <td>{roleLabels[invitation.role]}</td>
-                    <td>{new Date(invitation.expiresAt).toLocaleDateString("ar")}</td>
+                    <td>{formatLocalDate(invitation.expiresAt)}</td>
                   </tr>
                 ))}
               </tbody>
