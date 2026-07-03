@@ -1264,6 +1264,19 @@ textarea.search-input {
   gap: var(--space-4);
 }
 
+.help-content,
+.login-content,
+.local-list-content,
+.timeline-content,
+.collaboration-content,
+.public-content {
+  gap: var(--space-4);
+}
+
+.public-content {
+  inline-size: min(var(--max-width-page), calc(100% - 1.5rem));
+}
+
 .toolbar-field {
   display: grid;
   gap: var(--space-1);

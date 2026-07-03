@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import PageToolbar from "@/components/PageToolbar";
 import { BRAND } from "@/lib/brand";
 import { createArchiveApiClient, type ArchiveUser } from "@/lib/archive-api";
 
@@ -34,23 +35,31 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="shell">
-      <AppHeader subtitle="تسجيل الدخول" />
+    <AppShell subtitle="تسجيل الدخول" navLabel="الدخول" contentClassName="login-content">
+      <PageToolbar
+        eyebrow={<span className="badge">{BRAND.descriptor}</span>}
+        title={`تسجيل الدخول إلى ${BRAND.arabicName}`}
+        description="استخدم بيانات حسابك للدخول إلى لوحة التحكم. يتم إرسال بيانات الدخول عبر Laravel API وحفظ الجلسات عبر HttpOnly cookies."
+        meta={
+          <>
+            <span className="badge">مصادقة آمنة</span>
+            <span className="badge">Laravel API</span>
+          </>
+        }
+      />
 
-      <section className="content auth-layout" aria-label="تسجيل الدخول">
+      <section className="auth-layout" aria-label="تسجيل الدخول">
         <div className="panel auth-brand-panel">
           <img className="auth-brand-mark" src={BRAND.markPath} alt="" width={56} height={56} />
           <div className="auth-copy">
-            <span className="badge">{BRAND.descriptor}</span>
-            <h1>تسجيل الدخول إلى {BRAND.arabicName}</h1>
+            <h2>{BRAND.lockupName}</h2>
             <p>
-              استخدم بيانات حسابك للدخول إلى لوحة التحكم. يتم إرسال بيانات الدخول
-              عبر HTTPS وحفظ الجلسات بشكل آمن عبر HttpOnly cookies.
+              دخول موحد لإدارة السجلات، الملفات، الوسائط، المشاركة، والمراقبة التشغيلية من واجهة واحدة.
             </p>
           </div>
-          <div className="hero-actions">
-            <span className="badge">مصادقة آمنة</span>
-            <span className="badge">Laravel API</span>
+          <div className="button-row">
+            <span className="badge">جلسات محمية</span>
+            <span className="badge">Next + Laravel</span>
           </div>
         </div>
 
@@ -60,9 +69,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="email">
-              البريد الإلكتروني
-            </label>
+            <label htmlFor="email">البريد الإلكتروني</label>
             <input
               id="email"
               name="email"
@@ -76,9 +83,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password">
-              كلمة المرور
-            </label>
+            <label htmlFor="password">كلمة المرور</label>
             <input
               id="password"
               name="password"
@@ -91,38 +96,26 @@ export default function LoginPage() {
             />
           </div>
 
-          <button
-            type="submit"
-            className="button button-primary"
-            disabled={state.status === "loading"}
-          >
+          <button type="submit" className="button button-primary" disabled={state.status === "loading"}>
             {state.status === "loading" ? "جار التحقق..." : "تسجيل الدخول"}
           </button>
 
           {(state.status === "error" || state.status === "success") && (
             <div
               id="auth-error"
-              className={`state-banner ${
-                state.status === "error"
-                  ? "state-banner-error"
-                  : "state-banner-success"
-              }`}
+              className={`state-banner ${state.status === "error" ? "state-banner-error" : "state-banner-success"}`}
               role={state.status === "error" ? "alert" : "status"}
             >
-              <strong>
-                {state.status === "success"
-                  ? "تم تسجيل الدخول بنجاح"
-                  : "فشل تسجيل الدخول"}
-              </strong>
+              <strong>{state.status === "success" ? "تم تسجيل الدخول بنجاح" : "فشل تسجيل الدخول"}</strong>
               <span className="helper-text">
                 {state.status === "success"
-                  ? `مرحباً ${state.user.email ?? state.user.name ?? state.user.id}`
+                  ? `مرحبا ${state.user.email ?? state.user.name ?? state.user.id}`
                   : state.message}
               </span>
             </div>
           )}
         </form>
       </section>
-    </main>
+    </AppShell>
   );
 }
