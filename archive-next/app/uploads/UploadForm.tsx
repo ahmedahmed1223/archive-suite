@@ -50,6 +50,13 @@ export function UploadForm() {
     formRef.current?.reset();
   }
 
+  function resetUpload() {
+    setState({ status: "idle" });
+    setFile(null);
+    setFolder("");
+    formRef.current?.reset();
+  }
+
   return (
     <article className="panel">
       <div className="toolbar-row">
@@ -88,12 +95,27 @@ export function UploadForm() {
         </button>
 
         <p className="form-status" role={state.status === "error" ? "alert" : "status"}>
-          {state.status === "success"
-            ? `تم الرفع بنجاح: ${state.record.fileName} (سجل ${state.record.id})`
-            : state.status === "error"
+          {state.status === "error"
               ? state.message
               : ""}
         </p>
+
+        {state.status === "success" ? (
+          <div className="state-banner state-banner-success">
+            <strong>تم الرفع بنجاح</strong>
+            <p className="helper-text">
+              {state.record.fileName} - سجل {state.record.id}
+            </p>
+            <div className="button-row">
+              <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(state.record.id)}`}>
+                فتح السجل
+              </a>
+              <button type="button" className="button button-secondary button-sm" onClick={resetUpload}>
+                رفع ملف آخر
+              </button>
+            </div>
+          </div>
+        ) : null}
       </form>
     </article>
   );

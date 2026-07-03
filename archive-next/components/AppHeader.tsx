@@ -2,24 +2,25 @@
 
 import { BRAND } from "@/lib/brand";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const primaryNav = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/archive", label: "السجلات" },
-  { href: "/search", label: "البحث" },
-  { href: "/timeline", label: "الخط الزمني" },
-  { href: "/files", label: "الملفات" },
-  { href: "/favorites", label: "المفضلة" },
-  { href: "/shares", label: "المشاركات" },
-  { href: "/types", label: "الأنواع" },
-  { href: "/media/jobs", label: "الوسائط" },
-  { href: "/collaboration", label: "التعاون" },
-  { href: "/analytics", label: "التحليلات" },
-  { href: "/reports", label: "التقارير" },
-  { href: "/status", label: "الحالة" },
-  { href: "/settings", label: "الإعدادات" },
-  { href: "/errors", label: "الأخطاء" },
-  { href: "/help", label: "المساعدة" }
+  { href: "/", label: "الرئيسية", section: "core" },
+  { href: "/archive", label: "السجلات", section: "core" },
+  { href: "/search", label: "البحث", section: "core" },
+  { href: "/files", label: "الملفات", section: "core" },
+  { href: "/timeline", label: "الخط الزمني", section: "core" },
+  { href: "/favorites", label: "المفضلة", section: "core" },
+  { href: "/shares", label: "المشاركات", section: "core" },
+  { href: "/types", label: "الأنواع", section: "manage" },
+  { href: "/media/jobs", label: "الوسائط", section: "manage" },
+  { href: "/collaboration", label: "التعاون", section: "manage" },
+  { href: "/analytics", label: "التحليلات", section: "observe" },
+  { href: "/reports", label: "التقارير", section: "observe" },
+  { href: "/status", label: "الحالة", section: "observe" },
+  { href: "/errors", label: "الأخطاء", section: "observe" },
+  { href: "/settings", label: "الإعدادات", section: "admin" },
+  { href: "/help", label: "المساعدة", section: "admin" }
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
@@ -42,9 +43,14 @@ export default function AppHeader({
   navLabel?: string;
 }>) {
   const pathname = usePathname() || "/";
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
 
   return (
-    <header className="topbar">
+    <header className="topbar" data-nav-open={isMenuOpen ? "true" : "false"}>
       <a className="brand" href="/" aria-label={`${BRAND.arabicName} - الرئيسية`}>
         <img className="brand-mark" src={BRAND.markPath} alt="" width={44} height={44} />
         <span className="brand-name">
@@ -53,7 +59,21 @@ export default function AppHeader({
         </span>
         <span className="brand-subtitle">{subtitle}</span>
       </a>
-      <nav className="route-links" aria-label={navLabel}>
+      <button
+        type="button"
+        className="nav-toggle"
+        aria-controls="app-primary-nav"
+        aria-expanded={isMenuOpen}
+        onClick={() => setIsMenuOpen((current) => !current)}
+      >
+        <span className="nav-toggle__icon" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
+        <span>المسارات</span>
+      </button>
+      <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>
         {primaryNav.map((link) => {
           const isActive = isActivePath(pathname, link.href);
 
@@ -61,6 +81,7 @@ export default function AppHeader({
             <a
               key={link.href}
               className="badge app-nav-link"
+              data-section={link.section}
               href={link.href}
               aria-current={isActive ? "page" : undefined}
             >
