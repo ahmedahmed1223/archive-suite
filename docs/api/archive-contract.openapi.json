@@ -207,6 +207,125 @@
         }
       }
     },
+    "/records/{id}/notes": {
+      "get": {
+        "tags": ["Record Notes"],
+        "summary": "List private notes for an archive record",
+        "operationId": "listRecordNotes",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record notes",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordNotesResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Record Notes"],
+        "summary": "Create a private note for an archive record",
+        "operationId": "createRecordNote",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RecordNoteCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created note",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordNoteResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/record-notes/{id}": {
+      "patch": {
+        "tags": ["Record Notes"],
+        "summary": "Update a private archive record note",
+        "operationId": "updateRecordNote",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RecordNoteUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated note",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordNoteResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Record Notes"],
+        "summary": "Delete a private archive record note",
+        "operationId": "deleteRecordNote",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/bulk": {
       "post": {
         "tags": ["Records"],
@@ -1832,6 +1951,100 @@
             "maxItems": 10000
           }
         }
+      },
+      "RecordNoteRegion": {
+        "type": "object",
+        "required": ["x", "y", "w", "h"],
+        "properties": {
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "w": { "type": "number", "exclusiveMinimum": 0 },
+          "h": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      },
+      "RecordNote": {
+        "type": "object",
+        "required": [
+          "id",
+          "itemId",
+          "body",
+          "timestampSeconds",
+          "region",
+          "authorId",
+          "authorName",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "itemId": { "type": "string" },
+          "body": { "type": "string" },
+          "timestampSeconds": { "type": ["number", "null"] },
+          "region": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/RecordNoteRegion" },
+              { "type": "null" }
+            ]
+          },
+          "authorId": { "type": ["string", "null"] },
+          "authorName": { "type": "string" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "RecordNoteCreateRequest": {
+        "type": "object",
+        "required": ["body"],
+        "properties": {
+          "body": { "type": "string", "minLength": 1, "maxLength": 8000 },
+          "timestampSeconds": { "type": ["number", "null"], "minimum": 0 },
+          "region": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/RecordNoteRegion" },
+              { "type": "null" }
+            ]
+          }
+        }
+      },
+      "RecordNoteUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "body": { "type": "string", "minLength": 1, "maxLength": 8000 },
+          "timestampSeconds": { "type": ["number", "null"], "minimum": 0 },
+          "region": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/RecordNoteRegion" },
+              { "type": "null" }
+            ]
+          }
+        }
+      },
+      "RecordNotesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["notes"],
+            "properties": {
+              "notes": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RecordNote" }
+              }
+            }
+          }
+        ]
+      },
+      "RecordNoteResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["note"],
+            "properties": {
+              "note": { "$ref": "#/components/schemas/RecordNote" }
+            }
+          }
+        ]
       },
       "SearchResponse": {
         "allOf": [

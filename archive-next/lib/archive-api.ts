@@ -136,6 +136,33 @@ export interface CreateRelationPayload {
   note?: string;
 }
 
+export interface RecordNoteRegion {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface RecordNote {
+  id: string;
+  itemId: string;
+  body: string;
+  timestampSeconds: number | null;
+  region: RecordNoteRegion | null;
+  authorId: string | null;
+  authorName: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateRecordNotePayload {
+  body: string;
+  timestampSeconds?: number | null;
+  region?: RecordNoteRegion | null;
+}
+
+export type UpdateRecordNotePayload = Partial<CreateRecordNotePayload>;
+
 export interface ArchiveFile {
   key: string;
   name?: string;
@@ -437,6 +464,10 @@ export interface ArchiveApiClient {
   relationGraph(params?: { recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RelationGraphPayload>>;
   createRelation(payload: CreateRelationPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relation: RecordRelation }>>;
   deleteRelation(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  recordNotes(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ notes: RecordNote[] }>>;
+  createRecordNote(recordId: string, payload: CreateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
+  updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
+  deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
   bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
@@ -635,6 +666,14 @@ export function createArchiveApiClient({
       post<{ relation: RecordRelation }>("/relations", payload, options),
     deleteRelation: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/relations/${encodeURIComponent(id)}`, undefined, options),
+    recordNotes: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ notes: RecordNote[] }>(`/records/${encodeURIComponent(recordId)}/notes`, options),
+    createRecordNote: (recordId: string, payload: CreateRecordNotePayload, options?: AuthRequestOptions) =>
+      post<{ note: RecordNote }>(`/records/${encodeURIComponent(recordId)}/notes`, payload, options),
+    updateRecordNote: (id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions) =>
+      patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
+    deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
     records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams({ store, limit: String(limit) });

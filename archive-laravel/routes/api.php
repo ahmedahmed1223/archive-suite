@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\RecordsController;
+use App\Http\Controllers\Api\V1\RecordNotesController;
 use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
@@ -71,8 +72,12 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/records', [RecordsController::class, 'index']);
         Route::get('/records/{id}', [RecordsController::class, 'show']);
+        Route::get('/records/{id}/notes', [RecordNotesController::class, 'index']);
+        Route::post('/records/{id}/notes', [RecordNotesController::class, 'store']);
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::post('/records/bulk-delete', [RecordsController::class, 'bulkDelete']);
+        Route::patch('/record-notes/{id}', [RecordNotesController::class, 'update']);
+        Route::delete('/record-notes/{id}', [RecordNotesController::class, 'destroy']);
         Route::get('/search', [SearchController::class, 'index']);
         Route::get('/discover', [DiscoverController::class, 'index']);
         Route::get('/relations/graph', [RelationsController::class, 'graph']);
