@@ -93,6 +93,18 @@ export interface CreateMediaJobPayload {
   options?: Record<string, unknown>;
 }
 
+export interface UploadedRecord {
+  id: string;
+  uid?: string;
+  title: string;
+  fileName: string;
+  filePath: string;
+  checksum: string;
+  source: "upload";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface ContentField {
   id: string;
   key: string;
@@ -252,6 +264,7 @@ export interface ArchiveApiClient {
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[] }>>;
   createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
+  uploadFile(file: File, params?: { folder?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: UploadedRecord }>>;
   share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
@@ -382,6 +395,34 @@ export function createArchiveApiClient({
       post<{ job: MediaJob }>("/media/jobs", payload, options),
     ingestScan: (payload?: { subdir?: string }, options?: AuthRequestOptions) =>
       post<{ ingested: unknown[]; skipped: number }>("/ingest/scan", payload, options),
+    uploadFile: async (file: File, params?: { folder?: string }, options?: AuthRequestOptions) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (params?.folder) formData.set("folder", params.folder);
+
+      const headers = new Headers({ Accept: "application/json" });
+      if (options?.accessToken) {
+        headers.set("Authorization", `Bearer ${options.accessToken}`);
+      }
+
+      const response = await fetchImpl(`${baseUrl}/uploads`, {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: formData
+      });
+
+      const payload = (await response.json().catch(() => ({
+        ok: false,
+        error: "Invalid JSON response from /uploads"
+      }))) as ApiEnvelope<{ record: UploadedRecord }>;
+
+      if (!response.ok && payload.ok !== false) {
+        return { ok: false, error: `Request failed with status ${response.status}` } as ApiEnvelope<{ record: UploadedRecord }>;
+      }
+
+      return payload;
+    },
     share: (token: string) => get(`/share/${encodeURIComponent(token)}`),
     files: (params?: { q?: string }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
