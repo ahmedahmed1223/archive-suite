@@ -14,7 +14,12 @@ export default function UploadsPage() {
             <span className="badge">حتى 600MB</span>
           </>
         }
-        actions={<a className="button button-secondary" href="/media/jobs">مهام الوسائط</a>}
+        actions={
+          <>
+            <a className="button button-secondary" href="/archive">فتح الأرشيف</a>
+            <a className="button button-secondary" href="/media/jobs">مهام الوسائط</a>
+          </>
+        }
       />
 
       <UploadForm />

@@ -6,6 +6,12 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { clearAllMintedLinks, listMintedLinks, removeMintedLink, type MintedLink } from "@/lib/minted-shares";
 
+function formatLocalDate(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("ar-SA");
+}
+
 export default function SharesPage() {
   const [links, setLinks] = useState<MintedLink[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
@@ -77,7 +83,54 @@ export default function SharesPage() {
             <span className="badge">{links.length} رابط</span>
           </div>
 
-          <div className="scroll-x">
+          <div className="mobile-card-list" role="list" aria-label="بطاقات روابط المشاركة">
+            {links.map((link) => (
+              <article className="local-list-card" key={link.token} role="listitem">
+                <div className="local-list-card__main">
+                  <div>
+                    <span className="badge">مشاركة</span>
+                    <h3>{link.itemLabel || "رابط مشاركة"}</h3>
+                  </div>
+                  <span className="badge">{formatLocalDate(link.expiresAt)}</span>
+                </div>
+                <p className="mono-text wrap-anywhere" dir="ltr">{link.url}</p>
+                <dl className="mobile-field-list">
+                  <div>
+                    <dt>الإنشاء</dt>
+                    <dd>{formatLocalDate(link.createdAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>الانتهاء</dt>
+                    <dd>{formatLocalDate(link.expiresAt)}</dd>
+                  </div>
+                </dl>
+                <div className="button-row">
+                  <button
+                    type="button"
+                    className="button button-secondary button-sm"
+                    onClick={() => void handleCopyLink(link.url)}
+                  >
+                    {copied === link.url ? "تم النسخ" : "نسخ"}
+                  </button>
+                  <a
+                    href={`/share/${encodeURIComponent(link.token)}`}
+                    className="button button-secondary button-sm"
+                  >
+                    فتح
+                  </a>
+                  <button
+                    type="button"
+                    className="button button-danger button-sm"
+                    onClick={() => handleRemove(link.token)}
+                  >
+                    حذف
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="scroll-x desktop-table-wrap">
             <table className="data-table" role="grid" aria-label="قائمة روابط المشاركة">
               <thead>
                 <tr>
@@ -98,10 +151,10 @@ export default function SharesPage() {
                       {link.url}
                     </td>
                     <td className="mono-text">
-                      {new Date(link.createdAt).toLocaleDateString("ar-SA")}
+                      {formatLocalDate(link.createdAt)}
                     </td>
                     <td className="mono-text">
-                      {link.expiresAt ? new Date(link.expiresAt).toLocaleDateString("ar-SA") : "-"}
+                      {formatLocalDate(link.expiresAt)}
                     </td>
                     <td>
                       <div className="button-row">
