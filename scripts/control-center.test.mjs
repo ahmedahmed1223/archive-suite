@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -81,4 +81,35 @@ test("doctor uses the Windows-safe pnpm invocation and reports the environment",
   const out = r.stderr + r.stdout;
   assert.match(out, /Doctor/);
   assert.doesNotMatch(out, /pnpm not found/);
+});
+
+test("deploy replaces every duplicate ADMIN_PASSWORD placeholder with the generated password", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-"));
+  const envFile = join(dir, ".env");
+  writeFileSync(
+    envFile,
+    [
+      "POSTGRES_PASSWORD=CHANGE_ME_POSTGRES_PASSWORD",
+      "REDIS_PASSWORD=CHANGE_ME_REDIS_PASSWORD",
+      "REVERB_APP_ID=archive-collab",
+      "REVERB_APP_KEY=archive-collab-key",
+      "REVERB_APP_SECRET=CHANGE_ME_REVERB_SECRET_48_CHARS_MINIMUM",
+      "LARAVEL_APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "ADMIN_EMAIL=admin@example.com",
+      "ADMIN_PASSWORD=CHANGE_ME_ADMIN_PASSWORD",
+      "DATABASE_URL=postgresql://archive:CHANGE_ME_POSTGRES_PASSWORD@postgres:5432/archive",
+      "ADMIN_USERNAME=admin",
+      "ADMIN_PASSWORD=CHANGE_ME_STRONG_PASSWORD",
+      "",
+    ].join("\n")
+  );
+
+  const r = run(["deploy"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1" });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+
+  const content = readFileSync(envFile, "utf8");
+  const matches = [...content.matchAll(/^ADMIN_PASSWORD=(.+)$/gm)].map((m) => m[1]);
+  assert.equal(matches.length, 2);
+  assert.equal(new Set(matches).size, 1, "duplicate ADMIN_PASSWORD entries must stay in sync");
+  assert.doesNotMatch(content, /CHANGE_ME_(ADMIN|STRONG)_PASSWORD/);
 });

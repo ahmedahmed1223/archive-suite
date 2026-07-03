@@ -82,9 +82,14 @@ function parseEnvValue(value) {
   if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) return raw.slice(1, -1);
   return raw.replace(/\s+#.*$/, "").trim();
 }
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 function setVar(content, key, value) {
-  const re = new RegExp(`^(${key}=).*`, "m");
-  return re.test(content) ? content.replace(re, `$1${value}`) : `${content.replace(/\n?$/, "\n")}${key}=${value}`;
+  const re = new RegExp(`^(${escapeRegExp(key)}=).*`, "gm");
+  return re.test(content)
+    ? content.replace(re, (_line, prefix) => `${prefix}${value}`)
+    : `${content.replace(/\n?$/, "\n")}${key}=${value}`;
 }
 /** Apply key→value updates to .env, backing up first. Returns true on success. */
 function writeEnv(updates) {
@@ -381,20 +386,27 @@ function deployCanonical() {
   } else {
     ok("All required secrets already set — leaving .env unchanged.");
   }
-  log("Building and starting the stack (docker compose up -d --build) — the first run takes a while...");
-  const status = compose(["up", "-d", "--build"]).status ?? 1;
-  if (status !== 0) { err(`docker compose up failed (exit ${status}).`); return status; }
+  const dockerSkipped = process.env.ARCHIVE_CONTROL_CENTER_SKIP_DOCKER === "1";
+  if (dockerSkipped) {
+    warn("Skipping docker compose because ARCHIVE_CONTROL_CENTER_SKIP_DOCKER=1.");
+  } else {
+    log("Building and starting the stack (docker compose up -d --build) — the first run takes a while...");
+    const status = compose(["up", "-d", "--build"]).status ?? 1;
+    if (status !== 0) { err(`docker compose up failed (exit ${status}).`); return status; }
+  }
   const e = readEnv();
-  ok("Stack is up. URLs:");
+  ok(dockerSkipped ? "Provisioning complete. URLs after starting the stack:" : "Stack is up. URLs:");
   log(`  App (Next.js):      http://localhost:${e.NEXT_PUBLIC_PORT || "3000"}`);
   log(`  API health:         http://localhost:${e.NEXT_PUBLIC_PORT || "3000"}/api/v1/health (proxied to Laravel)`);
   log(`  Realtime (Reverb):  ws://localhost:${e.REVERB_SERVER_PUBLISHED_PORT || "8080"}`);
   log(`  Caddy (80/443):     http://${e.DOMAIN || "localhost"}`);
   if (generatedAdminPassword) {
     log("");
-    ok(`Login: ${e.ADMIN_EMAIL || "admin@example.com"} / ${C.b}${generatedAdminPassword}${C.x}  ${C.d}(store it now — shown once)${C.x}`);
+    ok(`Login email: ${e.ADMIN_EMAIL || "admin@example.com"} / ${C.b}${generatedAdminPassword}${C.x}  ${C.d}(store it now — shown once)${C.x}`);
+    if (e.ADMIN_USERNAME) log(`  Legacy username:    ${e.ADMIN_USERNAME}`);
   } else {
-    log(`  Login:              ${e.ADMIN_EMAIL || "admin@example.com"} (existing password unchanged)`);
+    log(`  Login email:        ${e.ADMIN_EMAIL || "admin@example.com"} (existing password unchanged)`);
+    if (e.ADMIN_USERNAME) log(`  Legacy username:    ${e.ADMIN_USERNAME}`);
   }
   return 0;
 }
