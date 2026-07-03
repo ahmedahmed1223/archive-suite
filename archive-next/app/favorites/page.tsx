@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
+import PageToolbar from "@/components/PageToolbar";
 import { listFavorites, removeFavorite, type Favorite } from "@/lib/favorites";
 
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
 
-  // Load from localStorage on mount
   useEffect(() => {
     setFavorites(listFavorites());
   }, []);
@@ -17,91 +18,85 @@ export default function FavoritesPage() {
     setFavorites(listFavorites());
   };
 
-  const handleNavigate = (id: string) => {
-    window.location.href = `/archive/${encodeURIComponent(id)}`;
-  };
-
   return (
-    <main className="shell">
-      <AppHeader subtitle="المفضلة" />
-
-      <section className="content" aria-label="السجلات المفضلة">
-        <div className="hero">
-          <h1>المفضلة</h1>
-          <p>
-            جميع السجلات التي أضفتها إلى المفضلة على هذا الجهاز.
-          </p>
-          <div className="hero-actions">
-            <span className="badge">المفضلات المحلية</span>
-            {favorites.length > 0 && (
-              <span className="badge">{favorites.length} عنصر</span>
-            )}
-          </div>
-        </div>
-
-        {favorites.length === 0 ? (
-          <div className="empty-state">
-            <strong>لا توجد عناصر مفضلة بعد</strong>
-            <p className="helper-text">
-              انقر على أيقونة النجمة في أي سجل لإضافته إلى المفضلة.
-            </p>
-          </div>
-        ) : (
+    <AppShell subtitle="المفضلة" navLabel="المفضلة" contentClassName="local-list-content">
+      <PageToolbar
+        eyebrow={<span className="badge">محلي على الجهاز</span>}
+        title="المفضلة"
+        description="السجلات التي اختارها المستخدم للرجوع السريع من هذا المتصفح دون مزامنة خارجية."
+        meta={
           <>
-            <div className="toolbar-row">
-              <span className="helper-text">{favorites.length} عنصر</span>
-            </div>
-
-            <div className="data-table scroll-x">
-              <table role="grid" aria-label="قائمة العناصر المفضلة">
-                <thead>
-                  <tr>
-                    <th>العنوان</th>
-                    <th style={{ width: "8rem" }}>النوع</th>
-                    <th style={{ width: "10rem" }}>تاريخ الإضافة</th>
-                    <th style={{ width: "8rem" }}>الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {favorites.map((fav) => (
-                    <tr key={fav.id}>
-                      <td className="wrap-anywhere">
-                        <strong>{fav.title || fav.id}</strong>
-                      </td>
-                      <td className="text-sm">
-                        {fav.type || "—"}
-                      </td>
-                      <td className="mono-text text-sm">
-                        {new Date(fav.addedAt).toLocaleDateString("ar-SA")}
-                      </td>
-                      <td>
-                        <div className="flex gap-2" style={{ display: "flex", gap: "0.5rem" }}>
-                          <button
-                            type="button"
-                            className="button button-secondary"
-                            onClick={() => handleNavigate(fav.id)}
-                            style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
-                          >
-                            فتح
-                          </button>
-                          <button
-                            type="button"
-                            className="button button-secondary"
-                            onClick={() => handleRemove(fav.id)}
-                            style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
-                          >
-                            حذف
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <span className="badge">المفضلات المحلية</span>
+            <span className="badge">{favorites.length} عنصر</span>
           </>
-        )}
-      </section>
-    </main>
+        }
+        actions={
+          <a className="button button-secondary" href="/archive">
+            فتح الأرشيف
+          </a>
+        }
+      />
+
+      {favorites.length === 0 ? (
+        <EmptyState
+          title="لا توجد عناصر مفضلة بعد"
+          description="افتح أي سجل من الأرشيف وأضفه إلى المفضلة ليظهر هنا."
+          actions={<a className="button button-secondary" href="/archive">استعراض الأرشيف</a>}
+        />
+      ) : (
+        <section className="panel" aria-label="السجلات المفضلة">
+          <div className="panel-title-row">
+            <div>
+              <h2>قائمة المفضلة</h2>
+              <p>إدارة الاختصارات المحلية للسجلات الأكثر استخداما.</p>
+            </div>
+            <span className="badge">{favorites.length} عنصر</span>
+          </div>
+
+          <div className="scroll-x">
+            <table className="data-table" role="grid" aria-label="قائمة العناصر المفضلة">
+              <thead>
+                <tr>
+                  <th>العنوان</th>
+                  <th>النوع</th>
+                  <th>تاريخ الإضافة</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {favorites.map((favorite) => (
+                  <tr key={favorite.id}>
+                    <td className="wrap-anywhere">
+                      <strong>{favorite.title || favorite.id}</strong>
+                    </td>
+                    <td>{favorite.type || "-"}</td>
+                    <td className="mono-text">
+                      {new Date(favorite.addedAt).toLocaleDateString("ar-SA")}
+                    </td>
+                    <td>
+                      <div className="button-row">
+                        <a
+                          className="button button-secondary button-sm"
+                          href={`/archive/${encodeURIComponent(favorite.id)}`}
+                        >
+                          فتح
+                        </a>
+                        <button
+                          type="button"
+                          className="button button-danger button-sm"
+                          onClick={() => handleRemove(favorite.id)}
+                        >
+                          حذف
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+    </AppShell>
   );
 }
