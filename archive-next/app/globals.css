@@ -486,6 +486,12 @@ button.badge:hover {
   background: color-mix(in srgb, var(--color-accent-primary) 14%, var(--color-bg-secondary));
 }
 
+.badge[data-active="true"] {
+  color: var(--color-text-inverse);
+  border-color: var(--color-brand-primary);
+  background: var(--color-brand-primary);
+}
+
 .badge-danger {
   color: var(--color-status-error);
   border-color: color-mix(in srgb, var(--color-status-error) 42%, var(--color-border-primary));
@@ -500,6 +506,15 @@ button.badge:hover {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.button-row select {
+  min-block-size: 2.35rem;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  padding: 0.42rem 0.68rem;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
 }
 
 .global-error-content {
@@ -1357,6 +1372,10 @@ textarea.search-input {
   color: var(--color-text-primary);
 }
 
+.local-list-card[data-enabled="true"] {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 30%, var(--color-border-secondary));
+}
+
 .mobile-field-list {
   display: grid;
   gap: var(--space-2);
@@ -1381,6 +1400,39 @@ textarea.search-input {
 .mobile-field-list dd {
   margin: 0;
   color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.workflow-board,
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.workflow-column {
+  display: grid;
+  gap: var(--space-3);
+  min-block-size: 12rem;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--color-bg-secondary) 94%, var(--color-brand-warm));
+  box-shadow: var(--shadow-sm);
+}
+
+.kanban-card {
+  display: grid;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--color-bg-secondary);
+}
+
+.kanban-card strong {
+  color: var(--color-text-primary);
   overflow-wrap: anywhere;
 }
 
