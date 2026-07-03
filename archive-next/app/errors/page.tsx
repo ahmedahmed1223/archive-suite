@@ -1,7 +1,9 @@
 "use client";
 
+import type { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import DataTable from "@/components/ui/DataTable";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import {
@@ -48,6 +50,48 @@ export default function ErrorsPage() {
   const filteredErrors = useMemo(
     () => errors.filter((entry) => !severityFilter || entry.severity === severityFilter),
     [errors, severityFilter]
+  );
+  const errorColumns = useMemo<Array<ColumnDef<ClientErrorLogEntry, unknown>>>(
+    () => [
+      {
+        accessorKey: "severity",
+        header: "الخطورة",
+        cell: ({ row }) => (
+          <span className={`badge ${severityClass(row.original.severity)}`}>
+            {severityLabels[row.original.severity]}
+          </span>
+        )
+      },
+      {
+        accessorKey: "name",
+        header: "الحدث",
+        cell: ({ row }) => (
+          <div className="stack stack-tight">
+            <strong>{row.original.name}</strong>
+            <span className="helper-text">{row.original.message}</span>
+          </div>
+        )
+      },
+      {
+        accessorKey: "page",
+        header: "الصفحة",
+        cell: ({ row }) => <span className="wrap-anywhere">{row.original.page}</span>
+      },
+      {
+        accessorKey: "source",
+        header: "المصدر"
+      },
+      {
+        accessorKey: "count",
+        header: "التكرار"
+      },
+      {
+        accessorKey: "lastSeenAt",
+        header: "آخر ظهور",
+        cell: ({ row }) => <time>{new Date(row.original.lastSeenAt).toLocaleString("ar-SA")}</time>
+      }
+    ],
+    []
   );
 
   const counts = useMemo(
@@ -149,41 +193,27 @@ export default function ErrorsPage() {
           description="غيّر درجة الخطورة أو استخدم اختبار التسجيل للتأكد من أن السجل يعمل."
         />
       ) : (
-        <section className="error-log-list" aria-label="نتائج سجل الأخطاء">
-          {filteredErrors.map((entry) => (
-            <article className="error-log-card" key={entry.id} data-severity={entry.severity}>
-              <div className="panel-title-row">
-                <div>
-                  <h2>{entry.name}</h2>
-                  <p>{entry.message}</p>
-                </div>
-                <span className={`badge ${severityClass(entry.severity)}`}>
-                  {severityLabels[entry.severity]}
-                </span>
+        <section className="panel error-log-table" aria-label="نتائج سجل الأخطاء">
+          <DataTable
+            columns={errorColumns}
+            data={filteredErrors}
+            emptyMessage="لا توجد أخطاء مطابقة."
+            getRowId={(entry) => entry.id}
+            virtualized={filteredErrors.length > 40}
+          />
+          {filteredErrors.some((entry) => entry.stack) ? (
+            <details className="section-divider">
+              <summary className="field-note">تفاصيل المكدس للأخطاء التي تحتوي stack trace</summary>
+              <div className="stack mt-tight">
+                {filteredErrors.filter((entry) => entry.stack).map((entry) => (
+                  <article className="error-log-card" key={entry.id} data-severity={entry.severity}>
+                    <strong>{entry.name}</strong>
+                    <pre className="token-preview">{entry.stack}</pre>
+                  </article>
+                ))}
               </div>
-
-              <div className="kv-grid">
-                <div className="kv-item">
-                  <strong>الصفحة</strong>
-                  <span className="wrap-anywhere">{entry.page}</span>
-                </div>
-                <div className="kv-item">
-                  <strong>المصدر</strong>
-                  <span>{entry.source}</span>
-                </div>
-                <div className="kv-item">
-                  <strong>التكرار</strong>
-                  <span>{entry.count}</span>
-                </div>
-                <div className="kv-item">
-                  <strong>آخر ظهور</strong>
-                  <time>{new Date(entry.lastSeenAt).toLocaleString("ar-SA")}</time>
-                </div>
-              </div>
-
-              {entry.stack ? <pre className="token-preview">{entry.stack}</pre> : null}
-            </article>
-          ))}
+            </details>
+          ) : null}
         </section>
       )}
     </AppShell>

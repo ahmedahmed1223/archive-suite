@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AppProviders from "@/components/AppProviders";
 import ClientErrorReporter from "@/components/ClientErrorReporter";
 import { BRAND } from "@/lib/brand";
 import "./globals.css";
@@ -14,10 +15,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body>
-        <ClientErrorReporter />
-        {children}
+        <AppProviders>
+          <ClientErrorReporter />
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { CSSProperties, FormEvent } from "react";
+import type { CSSProperties } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import { FieldError } from "@/components/ui/Form";
 import {
   createArchiveApiClient,
   type ArchiveRecord,
@@ -99,6 +102,19 @@ const emptyDraft: ContentTypeRecord = {
   fields: []
 };
 
+const typeFormSchema = z.object({
+  name: z.string().trim().min(1, "اكتب اسم النوع قبل الحفظ."),
+  slug: z.string().trim().optional(),
+  icon: z.string().trim().optional(),
+  color: z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, "اختر لونًا صحيحًا."),
+  description: z.string().trim().optional(),
+  subtypesText: z.string().optional(),
+  fieldsText: z.string().optional(),
+  active: z.boolean().default(true)
+});
+
+type TypeFormValues = z.input<typeof typeFormSchema>;
+
 function slugify(value: string) {
   const slug = value
     .trim()
@@ -191,6 +207,19 @@ export default function TypesPage() {
   const [subtypesText, setSubtypesText] = useState("");
   const [fieldsText, setFieldsText] = useState("");
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
+  const typeForm = useForm<TypeFormValues>({
+    defaultValues: {
+      name: "",
+      slug: "",
+      icon: "TYPE",
+      color: "#176f5d",
+      description: "",
+      subtypesText: "",
+      fieldsText: "",
+      active: true
+    }
+  });
+  const typeErrors = typeForm.formState.errors;
 
   const loadTypes = useCallback(async () => {
     setState({ status: "loading" });
@@ -224,6 +253,16 @@ export default function TypesPage() {
     setDraft(type);
     setSubtypesText(type.subtypes.map((subtype) => subtype.name).join("\n"));
     setFieldsText(fieldsToText(type.fields));
+    typeForm.reset({
+      name: type.name,
+      slug: type.slug,
+      icon: type.icon || "TYPE",
+      color: type.color || "#176f5d",
+      description: type.description || "",
+      subtypesText: type.subtypes.map((subtype) => subtype.name).join("\n"),
+      fieldsText: fieldsToText(type.fields),
+      active: type.active !== false
+    });
     setSaveState({ status: "idle" });
   }
 
@@ -248,24 +287,37 @@ export default function TypesPage() {
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const name = draft.name.trim();
-    const slug = slugify(draft.slug || name);
+  const handleSubmit = typeForm.handleSubmit(async (values) => {
+    typeForm.clearErrors();
+    const parsed = typeFormSchema.safeParse(values);
 
-    if (!name) {
-      setSaveState({ status: "error", message: "اكتب اسم النوع قبل الحفظ." });
+    if (!parsed.success) {
+      parsed.error.issues.forEach((issue) => {
+        const field = issue.path[0];
+        if (field && typeof field === "string") {
+          typeForm.setError(field as keyof TypeFormValues, { type: "zod", message: issue.message });
+        }
+      });
+      setSaveState({ status: "error", message: parsed.error.issues[0]?.message || "راجع بيانات النوع." });
       return;
     }
 
+    const name = parsed.data.name.trim();
+    const slug = slugify(parsed.data.slug || name);
+    const parsedSubtypes = parseSubtypes(parsed.data.subtypesText || "");
+    const parsedFields = parseFieldLines(parsed.data.fieldsText || "");
     const normalized: ContentTypeRecord = {
       ...draft,
       uid: draft.uid || slug,
       id: draft.id || slug,
       slug,
       name,
-      subtypes: draftSubtypes,
-      fields: draftFields
+      icon: parsed.data.icon || "TYPE",
+      color: parsed.data.color,
+      description: parsed.data.description || "",
+      active: parsed.data.active,
+      subtypes: parsedSubtypes,
+      fields: parsedFields
     };
 
     const nextTypes = [
@@ -274,7 +326,7 @@ export default function TypesPage() {
     ];
 
     await saveTypes(nextTypes, "تم حفظ النوع.");
-  }
+  });
 
   async function seedDefaults() {
     const existing = new Set(typeList.map((type) => type.uid));
@@ -287,6 +339,16 @@ export default function TypesPage() {
     setDraft(emptyDraft);
     setSubtypesText("");
     setFieldsText("");
+    typeForm.reset({
+      name: "",
+      slug: "",
+      icon: "TYPE",
+      color: "#176f5d",
+      description: "",
+      subtypesText: "",
+      fieldsText: "",
+      active: true
+    });
     setSaveState({ status: "idle" });
   };
 
@@ -373,41 +435,114 @@ export default function TypesPage() {
           <div className="field-row">
             <label>
               الاسم
-              <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+              <input
+                value={draft.name}
+                {...typeForm.register("name")}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  typeForm.setValue("name", value, { shouldDirty: true });
+                  setDraft({ ...draft, name: value });
+                }}
+              />
+              <FieldError>{typeErrors.name?.message}</FieldError>
             </label>
             <label>
               المفتاح
-              <input value={draft.slug} onChange={(event) => setDraft({ ...draft, slug: event.target.value })} />
+              <input
+                value={draft.slug}
+                {...typeForm.register("slug")}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  typeForm.setValue("slug", value, { shouldDirty: true });
+                  setDraft({ ...draft, slug: value });
+                }}
+              />
+              <FieldError>{typeErrors.slug?.message}</FieldError>
             </label>
           </div>
           <div className="field-row">
             <label>
               الأيقونة
-              <input value={draft.icon || ""} onChange={(event) => setDraft({ ...draft, icon: event.target.value })} />
+              <input
+                value={draft.icon || ""}
+                {...typeForm.register("icon")}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  typeForm.setValue("icon", value, { shouldDirty: true });
+                  setDraft({ ...draft, icon: value });
+                }}
+              />
+              <FieldError>{typeErrors.icon?.message}</FieldError>
             </label>
             <label>
               اللون
-              <input type="color" value={draft.color || "#176f5d"} onChange={(event) => setDraft({ ...draft, color: event.target.value })} />
+              <input
+                type="color"
+                value={draft.color || "#176f5d"}
+                {...typeForm.register("color")}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  typeForm.setValue("color", value, { shouldDirty: true });
+                  setDraft({ ...draft, color: value });
+                }}
+              />
+              <FieldError>{typeErrors.color?.message}</FieldError>
             </label>
           </div>
           <label>
             الوصف
-            <input value={draft.description || ""} onChange={(event) => setDraft({ ...draft, description: event.target.value })} />
+            <input
+              value={draft.description || ""}
+              {...typeForm.register("description")}
+              onChange={(event) => {
+                const value = event.target.value;
+                typeForm.setValue("description", value, { shouldDirty: true });
+                setDraft({ ...draft, description: value });
+              }}
+            />
+            <FieldError>{typeErrors.description?.message}</FieldError>
           </label>
           <label>
             الفروع
-            <textarea className="search-input" value={subtypesText} onChange={(event) => setSubtypesText(event.target.value)} rows={4} />
+            <textarea
+              className="search-input"
+              value={subtypesText}
+              {...typeForm.register("subtypesText")}
+              onChange={(event) => {
+                const value = event.target.value;
+                typeForm.setValue("subtypesText", value, { shouldDirty: true });
+                setSubtypesText(value);
+              }}
+              rows={4}
+            />
+            <FieldError>{typeErrors.subtypesText?.message}</FieldError>
           </label>
           <label>
             الحقول
-            <textarea className="search-input" value={fieldsText} onChange={(event) => setFieldsText(event.target.value)} rows={8} />
+            <textarea
+              className="search-input"
+              value={fieldsText}
+              {...typeForm.register("fieldsText")}
+              onChange={(event) => {
+                const value = event.target.value;
+                typeForm.setValue("fieldsText", value, { shouldDirty: true });
+                setFieldsText(value);
+              }}
+              rows={8}
+            />
+            <FieldError>{typeErrors.fieldsText?.message}</FieldError>
           </label>
 
           <label className="checkbox-row">
             <input
               type="checkbox"
               checked={draft.active !== false}
-              onChange={(event) => setDraft({ ...draft, active: event.target.checked })}
+              {...typeForm.register("active")}
+              onChange={(event) => {
+                const value = event.target.checked;
+                typeForm.setValue("active", value, { shouldDirty: true });
+                setDraft({ ...draft, active: value });
+              }}
             />
             نشط
           </label>

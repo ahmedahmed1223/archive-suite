@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob } from "@/lib/archive-api";
 
 type LookupState =
@@ -10,24 +12,41 @@ type LookupState =
   | { status: "ready"; job: MediaJob }
   | { status: "error"; message: string };
 
+const lookupSchema = z.object({
+  jobId: z.string().trim().min(1, "أدخل معرّف job قبل الفحص."),
+  accessToken: z.string().trim().optional().transform((value) => value || undefined)
+});
+
+type LookupFormValues = z.input<typeof lookupSchema>;
+
 export function MediaJobLookup() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LookupState>({ status: "idle" });
+  const form = useForm<LookupFormValues>({
+    defaultValues: {
+      jobId: "",
+      accessToken: ""
+    }
+  });
+  const errors = form.formState.errors;
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const handleSubmit = form.handleSubmit(async (values) => {
+    form.clearErrors();
+    const parsed = lookupSchema.safeParse(values);
 
-    const data = new FormData(event.currentTarget);
-    const jobId = String(data.get("jobId") ?? "").trim();
-    const accessToken = String(data.get("accessToken") ?? "").trim();
-
-    if (!jobId) {
-      setState({ status: "error", message: "أدخل معرّف job قبل الفحص." });
+    if (!parsed.success) {
+      parsed.error.issues.forEach((issue) => {
+        const field = issue.path[0];
+        if (field && typeof field === "string") {
+          form.setError(field as keyof LookupFormValues, { type: "zod", message: issue.message });
+        }
+      });
+      setState({ status: "error", message: parsed.error.issues[0]?.message || "راجع بيانات الفحص." });
       return;
     }
 
     setState({ status: "loading" });
-    const response = await api.mediaJob(jobId, accessToken ? { accessToken } : undefined);
+    const response = await api.mediaJob(parsed.data.jobId, parsed.data.accessToken ? { accessToken: parsed.data.accessToken } : undefined);
 
     if (!response.ok) {
       setState({ status: "error", message: response.error });
@@ -35,18 +54,20 @@ export function MediaJobLookup() {
     }
 
     setState({ status: "ready", job: response.job });
-  }
+  });
 
   return (
     <form className="panel auth-form" onSubmit={handleSubmit} aria-label="فحص media jobs">
       <label>
         معرّف job
-        <input name="jobId" type="text" placeholder="media-job-id" autoComplete="off" />
+        <input type="text" placeholder="media-job-id" autoComplete="off" {...form.register("jobId")} />
+        <FieldError>{errors.jobId?.message}</FieldError>
       </label>
 
       <label>
         Access token
-        <input name="accessToken" type="password" placeholder="Bearer token اختياري للفحص المحلي" autoComplete="off" />
+        <input type="password" placeholder="Bearer token اختياري للفحص المحلي" autoComplete="off" {...form.register("accessToken")} />
+        <FieldError>{errors.accessToken?.message}</FieldError>
       </label>
 
       <button type="submit" className="button button-primary" disabled={state.status === "loading"}>

@@ -1,9 +1,13 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
+import DataTable from "@/components/ui/DataTable";
+import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type ManagedUser, type ManagedUserRole, type PendingInvitation } from "@/lib/archive-api";
 
 const roleLabels: Record<ManagedUserRole, string> = {
@@ -25,12 +29,24 @@ type LoadState =
 
 type ActionState = { status: "idle" } | { status: "error"; message: string } | { status: "success"; message: string };
 
+const inviteSchema = z.object({
+  email: z.string().trim().min(1, "أدخل البريد الإلكتروني.").email("اكتب بريدًا إلكترونيًا صحيحًا."),
+  role: z.enum(["admin", "editor", "viewer"])
+});
+
+type InviteFormValues = z.input<typeof inviteSchema>;
+
 export default function UsersSettingsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<ManagedUserRole>("editor");
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
+  const inviteForm = useForm<InviteFormValues>({
+    defaultValues: {
+      email: "",
+      role: "editor"
+    }
+  });
+  const inviteErrors = inviteForm.formState.errors;
 
   const load = useCallback(async () => {
     setState({ status: "loading" });
@@ -46,18 +62,31 @@ export default function UsersSettingsPage() {
     void load();
   }, [load]);
 
-  async function handleInvite(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const handleInvite = inviteForm.handleSubmit(async (values) => {
     setActionState({ status: "idle" });
-    const response = await api.inviteUser({ email: inviteEmail, role: inviteRole });
+    inviteForm.clearErrors();
+    const parsed = inviteSchema.safeParse(values);
+
+    if (!parsed.success) {
+      parsed.error.issues.forEach((issue) => {
+        const field = issue.path[0];
+        if (field && typeof field === "string") {
+          inviteForm.setError(field as keyof InviteFormValues, { type: "zod", message: issue.message });
+        }
+      });
+      setActionState({ status: "error", message: parsed.error.issues[0]?.message || "راجع بيانات الدعوة." });
+      return;
+    }
+
+    const response = await api.inviteUser({ email: parsed.data.email, role: parsed.data.role });
     if (!response.ok) {
       setActionState({ status: "error", message: response.error });
       return;
     }
     setActionState({ status: "success", message: `تم إرسال الدعوة إلى ${response.invitation.email}` });
-    setInviteEmail("");
+    inviteForm.reset({ email: "", role: "editor" });
     void load();
-  }
+  });
 
   async function handleRoleChange(user: ManagedUser, role: ManagedUserRole) {
     const response = await api.updateUserRole(user.id, { role });
@@ -76,6 +105,63 @@ export default function UsersSettingsPage() {
     }
     void load();
   }
+  const userColumns = useMemo<Array<ColumnDef<ManagedUser, unknown>>>(
+    () => [
+      {
+        accessorKey: "name",
+        header: "الاسم"
+      },
+      {
+        accessorKey: "email",
+        header: "البريد الإلكتروني",
+        cell: ({ row }) => <span dir="ltr">{row.original.email}</span>
+      },
+      {
+        accessorKey: "role",
+        header: "الدور",
+        cell: ({ row }) => (
+          <select value={row.original.role} onChange={(event) => void handleRoleChange(row.original, event.target.value as ManagedUserRole)}>
+            {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
+              <option key={role} value={role}>
+                {roleLabels[role]}
+              </option>
+            ))}
+          </select>
+        )
+      },
+      {
+        id: "actions",
+        header: "إجراءات",
+        cell: ({ row }) => (
+          <button type="button" className="button button-secondary" onClick={() => void handleDelete(row.original)}>
+            إزالة
+          </button>
+        ),
+        enableSorting: false
+      }
+    ],
+    []
+  );
+  const invitationColumns = useMemo<Array<ColumnDef<PendingInvitation, unknown>>>(
+    () => [
+      {
+        accessorKey: "email",
+        header: "البريد الإلكتروني",
+        cell: ({ row }) => <span dir="ltr">{row.original.email}</span>
+      },
+      {
+        accessorKey: "role",
+        header: "الدور",
+        cell: ({ row }) => roleLabels[row.original.role]
+      },
+      {
+        accessorKey: "expiresAt",
+        header: "تنتهي في",
+        cell: ({ row }) => formatLocalDate(row.original.expiresAt)
+      }
+    ],
+    []
+  );
 
   return (
     <AppShell subtitle="المستخدمون والأدوار" contentClassName="stack">
@@ -99,21 +185,21 @@ export default function UsersSettingsPage() {
             <input
               type="email"
               dir="ltr"
-              required
-              value={inviteEmail}
-              onChange={(event) => setInviteEmail(event.target.value)}
+              {...inviteForm.register("email")}
             />
+            <FieldError>{inviteErrors.email?.message}</FieldError>
           </label>
 
           <label>
             الدور
-            <select value={inviteRole} onChange={(event) => setInviteRole(event.target.value as ManagedUserRole)}>
+            <select {...inviteForm.register("role")}>
               {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
                 <option key={role} value={role}>
                   {roleLabels[role]}
                 </option>
               ))}
             </select>
+            <FieldError>{inviteErrors.role?.message}</FieldError>
           </label>
 
           <button type="submit" className="button button-primary">
@@ -171,39 +257,14 @@ export default function UsersSettingsPage() {
               ))}
             </div>
 
-            <div className="scroll-x desktop-table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th scope="col">الاسم</th>
-                    <th scope="col">البريد الإلكتروني</th>
-                    <th scope="col">الدور</th>
-                    <th scope="col">إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.users.map((user) => (
-                    <tr key={user.id}>
-                      <td>{user.name}</td>
-                      <td dir="ltr">{user.email}</td>
-                      <td>
-                        <select value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
-                          {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
-                            <option key={role} value={role}>
-                              {roleLabels[role]}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <button type="button" className="button button-secondary" onClick={() => void handleDelete(user)}>
-                          إزالة
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="desktop-table-wrap">
+              <DataTable
+                ariaLabel="أعضاء الفريق"
+                columns={userColumns}
+                data={state.users}
+                emptyMessage="لا يوجد أعضاء."
+                getRowId={(user) => user.id}
+              />
             </div>
           </>
         )}
@@ -235,25 +296,14 @@ export default function UsersSettingsPage() {
               </article>
             ))}
           </div>
-          <div className="scroll-x desktop-table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">البريد الإلكتروني</th>
-                  <th scope="col">الدور</th>
-                  <th scope="col">تنتهي في</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.invitations.map((invitation) => (
-                  <tr key={invitation.id}>
-                    <td dir="ltr">{invitation.email}</td>
-                    <td>{roleLabels[invitation.role]}</td>
-                    <td>{formatLocalDate(invitation.expiresAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="desktop-table-wrap">
+            <DataTable
+              ariaLabel="الدعوات المعلقة"
+              columns={invitationColumns}
+              data={state.invitations}
+              emptyMessage="لا توجد دعوات معلقة."
+              getRowId={(invitation) => invitation.id}
+            />
           </div>
         </article>
       )}

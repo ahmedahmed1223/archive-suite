@@ -1,8 +1,10 @@
 "use client";
 
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
@@ -191,6 +193,13 @@ export default function FilesPage() {
 
   const files = state.status === "ready" ? state.files : [];
   const stores = useMemo(() => getUniqueStores(files), [files]);
+  const browserEntries = useMemo(
+    () =>
+      browserState.status === "ready"
+        ? [...browserState.entries].sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name, "ar") : a.kind === "folder" ? -1 : 1))
+        : [],
+    [browserState]
+  );
   const visibleFiles = useMemo(() => {
     return files.filter((file) => {
       if (storeFilter !== "all" && file.store !== storeFilter) return false;
@@ -281,6 +290,131 @@ export default function FilesPage() {
         معاينة
       </button>
     </div>
+  );
+  const browserColumns = useMemo<Array<ColumnDef<FileBrowserEntry, unknown>>>(
+    () => [
+      {
+        accessorKey: "name",
+        header: "الاسم",
+        cell: ({ row }) => {
+          const entry = row.original;
+          const entryPath = entry.path || (browserPath ? `${browserPath}/${entry.name}` : entry.name);
+
+          return (
+            <span className="wrap-anywhere">
+              {entry.kind === "folder" ? (
+                <button type="button" className="text-accent" onClick={() => setBrowserPath(entryPath)}>
+                  {entry.name}
+                </button>
+              ) : (
+                <strong>{entry.name}</strong>
+              )}
+            </span>
+          );
+        }
+      },
+      {
+        accessorKey: "kind",
+        header: "النوع",
+        cell: ({ row }) => row.original.kind === "folder" ? "مجلد" : kindLabel(getFileKind(row.original as unknown as ArchiveFile))
+      },
+      {
+        accessorKey: "size",
+        header: "الحجم",
+        cell: ({ row }) => <span className="mono-text text-sm">{row.original.kind === "folder" ? "-" : formatBytes(row.original.size)}</span>
+      },
+      {
+        accessorKey: "modifiedAt",
+        header: "التاريخ",
+        cell: ({ row }) => <span className="mono-text text-sm">{formatDate(row.original.modifiedAt)}</span>
+      },
+      {
+        id: "actions",
+        header: "الإجراءات",
+        cell: ({ row }) => {
+          const entry = row.original;
+          const entryPath = entry.path || (browserPath ? `${browserPath}/${entry.name}` : entry.name);
+
+          if (entry.kind === "folder") {
+            return (
+              <button type="button" className="button button-secondary button-sm" onClick={() => setBrowserPath(entryPath)}>
+                فتح
+              </button>
+            );
+          }
+
+          return isPlayableFile(entry as unknown as ArchiveFile) ? (
+            <a href={mediaPlayHref(entry as unknown as ArchiveFile)} className="button button-secondary button-sm">تشغيل</a>
+          ) : null;
+        },
+        enableSorting: false
+      }
+    ],
+    [browserPath]
+  );
+  const fileColumns = useMemo<Array<ColumnDef<ArchiveFile, unknown>>>(
+    () => [
+      {
+        id: "select",
+        header: () => (
+          <input
+            type="checkbox"
+            checked={visibleFiles.length > 0 && visibleFiles.every((file) => selectedKeySet.has(file.key))}
+            onChange={toggleSelectAllVisible}
+            aria-label="تحديد الكل"
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={selectedKeySet.has(row.original.key)}
+            onChange={() => handleToggleFile(row.original.key)}
+            aria-label={`تحديد ${getFileName(row.original)}`}
+          />
+        ),
+        enableSorting: false
+      },
+      {
+        accessorKey: "name",
+        header: "الاسم",
+        cell: ({ row }) => (
+          <span className="wrap-anywhere" onMouseEnter={() => setPreviewKey(row.original.key)}>
+            <strong>{getFileName(row.original)}</strong>
+            {row.original.key !== row.original.name && row.original.key ? (
+              <span className="field-note text-xs">{row.original.key}</span>
+            ) : null}
+          </span>
+        )
+      },
+      {
+        id: "kind",
+        header: "النوع",
+        accessorFn: (file) => getFileKind(file),
+        cell: ({ row }) => kindLabel(getFileKind(row.original))
+      },
+      {
+        accessorKey: "size",
+        header: "الحجم",
+        cell: ({ row }) => <span className="mono-text text-sm">{formatBytes(row.original.size)}</span>
+      },
+      {
+        accessorKey: "store",
+        header: "المخزن",
+        cell: ({ row }) => <span className="text-sm">{row.original.store || "-"}</span>
+      },
+      {
+        accessorKey: "modifiedAt",
+        header: "التاريخ",
+        cell: ({ row }) => <span className="mono-text text-sm">{formatDate(row.original.modifiedAt)}</span>
+      },
+      {
+        id: "actions",
+        header: "الإجراءات",
+        cell: ({ row }) => renderFileActions(row.original),
+        enableSorting: false
+      }
+    ],
+    [selectedKeySet, visibleFiles]
   );
 
   return (
@@ -452,51 +586,14 @@ export default function FilesPage() {
             browserState.entries.length === 0 ? (
               <EmptyState title="مجلد فارغ." description="لا توجد ملفات أو مجلدات فرعية في هذا المسار." />
             ) : (
-              <div className="scroll-x">
-                <table className="data-table" aria-label="محتوى المجلد">
-                  <thead>
-                    <tr>
-                      <th>الاسم</th>
-                      <th>النوع</th>
-                      <th>الحجم</th>
-                      <th>التاريخ</th>
-                      <th>الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...browserState.entries]
-                      .sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name, "ar") : a.kind === "folder" ? -1 : 1))
-                      .map((entry) => {
-                        const entryPath = entry.path || (browserPath ? `${browserPath}/${entry.name}` : entry.name);
-                        return (
-                          <tr key={entry.key}>
-                            <td className="wrap-anywhere">
-                              {entry.kind === "folder" ? (
-                                <button type="button" className="text-accent" onClick={() => setBrowserPath(entryPath)}>
-                                  📁 {entry.name}
-                                </button>
-                              ) : (
-                                <strong>{entry.name}</strong>
-                              )}
-                            </td>
-                            <td>{entry.kind === "folder" ? "مجلد" : kindLabel(getFileKind(entry))}</td>
-                            <td className="mono-text text-sm">{entry.kind === "folder" ? "-" : formatBytes(entry.size)}</td>
-                            <td className="mono-text text-sm">{formatDate(entry.modifiedAt)}</td>
-                            <td>
-                              {entry.kind === "folder" ? (
-                                <button type="button" className="button button-secondary button-sm" onClick={() => setBrowserPath(entryPath)}>
-                                  فتح
-                                </button>
-                              ) : isPlayableFile(entry) ? (
-                                <a href={mediaPlayHref(entry)} className="button button-secondary button-sm">تشغيل</a>
-                              ) : null}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                ariaLabel="محتوى المجلد"
+                columns={browserColumns}
+                data={browserEntries}
+                emptyMessage="لا توجد ملفات أو مجلدات فرعية."
+                getRowId={(entry) => entry.key}
+                virtualized={browserEntries.length > 80}
+              />
             )
           ) : null}
         </section>
@@ -526,53 +623,14 @@ export default function FilesPage() {
           <section className="files-workspace" aria-label="واجهة الملفات">
             <div className="files-surface" data-view={viewMode}>
               {viewMode === "table" ? (
-                <div className="scroll-x">
-                  <table className="data-table" role="grid" aria-label="قائمة الملفات">
-                    <thead>
-                      <tr>
-                        <th>
-                          <input
-                            type="checkbox"
-                            checked={visibleFiles.length > 0 && visibleFiles.every((file) => selectedKeySet.has(file.key))}
-                            onChange={toggleSelectAllVisible}
-                            aria-label="تحديد الكل"
-                          />
-                        </th>
-                        <th>الاسم</th>
-                        <th>النوع</th>
-                        <th>الحجم</th>
-                        <th>المخزن</th>
-                        <th>التاريخ</th>
-                        <th>الإجراءات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleFiles.map((file) => (
-                        <tr key={file.key} onMouseEnter={() => setPreviewKey(file.key)}>
-                          <td>
-                            <input
-                              type="checkbox"
-                              checked={selectedKeySet.has(file.key)}
-                              onChange={() => handleToggleFile(file.key)}
-                              aria-label={`تحديد ${getFileName(file)}`}
-                            />
-                          </td>
-                          <td className="wrap-anywhere">
-                            <strong>{getFileName(file)}</strong>
-                            {file.key !== file.name && file.key ? (
-                              <div className="field-note text-xs">{file.key}</div>
-                            ) : null}
-                          </td>
-                          <td>{kindLabel(getFileKind(file))}</td>
-                          <td className="mono-text text-sm">{formatBytes(file.size)}</td>
-                          <td className="text-sm">{file.store || "-"}</td>
-                          <td className="mono-text text-sm">{formatDate(file.modifiedAt)}</td>
-                          <td>{renderFileActions(file)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  ariaLabel="قائمة الملفات"
+                  columns={fileColumns}
+                  data={visibleFiles}
+                  emptyMessage="لا توجد ملفات مطابقة."
+                  getRowId={(file) => file.key}
+                  virtualized={visibleFiles.length > 80}
+                />
               ) : (
                 visibleFiles.map((file) => (
                   <article className="file-card" key={file.key} data-selected={selectedKeySet.has(file.key) ? "true" : "false"}>
