@@ -1,0 +1,149 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\UserInvitation;
+use App\Support\ApiToken;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+
+class UsersController extends Controller
+{
+    private const ROLES = ['admin', 'editor', 'viewer'];
+
+    public function index(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        $users = User::query()->orderBy('name')->get()->map(fn (User $user) => $this->formatUser($user));
+
+        $invitations = UserInvitation::query()
+            ->whereNull('accepted_at')
+            ->where('expires_at', '>', now())
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (UserInvitation $invitation) => $this->formatInvitation($invitation));
+
+        return response()->json(['ok' => true, 'users' => $users->values(), 'invitations' => $invitations->values()]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'role' => ['required', Rule::in(self::ROLES)],
+        ]);
+
+        if (User::query()->where('email', $validated['email'])->exists()) {
+            return response()->json(['ok' => false, 'error' => 'A user with this email already exists.'], 422);
+        }
+
+        $token = ApiToken::create();
+        $invitation = UserInvitation::query()->create([
+            'id' => (string) Str::uuid(),
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+            'token_hash' => ApiToken::hash($token),
+            'invited_by' => $request->attributes->get('archive_user')->id,
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'invitation' => $this->formatInvitation($invitation),
+            'token' => $token,
+        ], 201);
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        $validated = $request->validate([
+            'role' => ['required', Rule::in(self::ROLES)],
+        ]);
+
+        $user = User::query()->find($id);
+
+        if (! $user) {
+            return response()->json(['ok' => false, 'error' => 'User not found.'], 404);
+        }
+
+        $user->update(['role' => $validated['role']]);
+
+        return response()->json(['ok' => true, 'user' => $this->formatUser($user)]);
+    }
+
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        $actingUser = $request->attributes->get('archive_user');
+        $user = User::query()->find($id);
+
+        if (! $user) {
+            return response()->json(['ok' => false, 'error' => 'User not found.'], 404);
+        }
+
+        if ($actingUser instanceof User && $actingUser->id === $user->id) {
+            return response()->json(['ok' => false, 'error' => 'You cannot remove your own account.'], 422);
+        }
+
+        $user->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    private function requireAdmin(Request $request): ?JsonResponse
+    {
+        $user = $request->attributes->get('archive_user');
+
+        if (! $user instanceof User || $user->role !== 'admin') {
+            return response()->json(['ok' => false, 'error' => 'Forbidden.'], 403);
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatUser(User $user): array
+    {
+        return [
+            'id' => (string) $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'createdAt' => $user->created_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatInvitation(UserInvitation $invitation): array
+    {
+        return [
+            'id' => $invitation->id,
+            'email' => $invitation->email,
+            'role' => $invitation->role,
+            'expiresAt' => $invitation->expires_at->toIso8601String(),
+            'createdAt' => $invitation->created_at?->toIso8601String(),
+        ];
+    }
+}

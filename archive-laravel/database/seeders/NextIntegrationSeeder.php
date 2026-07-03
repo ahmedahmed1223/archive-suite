@@ -23,6 +23,7 @@ class NextIntegrationSeeder extends Seeder
             [
                 'name' => 'Integration User',
                 'password' => Hash::make(env('ARCHIVE_E2E_PASSWORD', 'password123')),
+                'role' => 'admin',
             ]
         );
 
