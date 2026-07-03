@@ -39,6 +39,8 @@ const requiredGitignoreEntries = [
   "**/.next/",
 ];
 
+const parityAuditRelativePath = "docs/design/masar-legacy-parity-audit.md";
+
 function rel(absolutePath) {
   return path.relative(ROOT, absolutePath).replaceAll(path.sep, "/");
 }
@@ -118,9 +120,33 @@ for (const file of [
   "TASKS.md",
   "ChangeLog.md",
   "package.json",
+  parityAuditRelativePath,
 ]) {
   assert.ok(existsSync(path.join(ROOT, file)), `missing expected root file: ${file}`);
   assert.ok(statSync(path.join(ROOT, file)).isFile(), `expected file: ${file}`);
 }
+
+const parityAudit = readFileSync(path.join(ROOT, parityAuditRelativePath), "utf8");
+const legacyFeaturePaths = readdirSync(path.join(ROOT, "archive-app", "src", "features"), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => `archive-app/src/features/${entry.name}`)
+  .sort();
+const undocumentedFeaturePaths = legacyFeaturePaths.filter((featurePath) => !parityAudit.includes(`\`${featurePath}\``));
+assert.deepEqual(
+  undocumentedFeaturePaths,
+  [],
+  `Legacy feature directories must be listed in ${parityAuditRelativePath}:\n${undocumentedFeaturePaths.join("\n")}`
+);
+
+const legacyPagePaths = readdirSync(path.join(ROOT, "archive-app", "src", "pages"), { withFileTypes: true })
+  .filter((entry) => entry.isFile() && entry.name.endsWith("Page.tsx"))
+  .map((entry) => `archive-app/src/pages/${entry.name}`)
+  .sort();
+const undocumentedPagePaths = legacyPagePaths.filter((pagePath) => !parityAudit.includes(`\`${pagePath}\``));
+assert.deepEqual(
+  undocumentedPagePaths,
+  [],
+  `Legacy pages must be listed in ${parityAuditRelativePath}:\n${undocumentedPagePaths.join("\n")}`
+);
 
 console.log("Repo hygiene verification complete.");
