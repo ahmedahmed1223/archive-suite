@@ -192,6 +192,14 @@ a:hover {
   flex: 0 0 auto;
 }
 
+.nav-section {
+  display: contents;
+}
+
+.nav-section-label {
+  display: none;
+}
+
 .public-topbar {
   justify-content: space-between;
 }
@@ -2301,6 +2309,124 @@ textarea.search-input {
   color: var(--color-text-tertiary);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
+}
+
+@media (min-width: 1120px) {
+  .app-shell {
+    grid-template-columns: minmax(17rem, 18.5rem) minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--color-brand-primary) 10%, transparent), transparent 20rem),
+      var(--color-bg-primary);
+  }
+
+  .app-shell > .topbar {
+    position: sticky;
+    inset-block-start: 0;
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    block-size: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+    overflow: hidden;
+    padding: var(--space-5) var(--space-4);
+    border-inline-end: 1px solid color-mix(in srgb, var(--color-brand-primary) 18%, var(--color-border-secondary));
+    border-block-end: 0;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 96%, var(--color-brand-warm)), var(--color-bg-secondary) 72%),
+      var(--color-bg-secondary);
+    box-shadow: 18px 0 40px color-mix(in srgb, var(--color-shadow) 9%, transparent);
+  }
+
+  .app-shell > .topbar .brand {
+    min-inline-size: 0;
+    padding-block-end: var(--space-4);
+    border-block-end: 1px solid var(--color-border-secondary);
+  }
+
+  .app-shell > .topbar .brand-mark {
+    box-shadow: 0 12px 26px color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+  }
+
+  .app-shell > .topbar .topbar-actions {
+    order: 2;
+    justify-self: stretch;
+    inline-size: 100%;
+    padding-block: var(--space-3);
+    border-block: 1px solid var(--color-border-secondary);
+  }
+
+  .app-shell > .topbar .icon-action {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    background: var(--color-surface-subtle);
+  }
+
+  .app-shell > .topbar .route-links {
+    order: 3;
+    display: grid;
+    grid-auto-rows: max-content;
+    gap: var(--space-4);
+    justify-content: stretch;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 var(--space-1) var(--space-4);
+    scrollbar-width: thin;
+  }
+
+  .app-shell > .topbar .nav-section {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .app-shell > .topbar .nav-section-label {
+    display: block;
+    padding-inline: var(--space-2);
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0;
+  }
+
+  .app-shell > .topbar .app-nav-link {
+    inline-size: 100%;
+    justify-content: flex-start;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 0.68rem 0.78rem;
+    color: var(--color-text-secondary);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app-shell > .topbar .app-nav-link:hover {
+    color: var(--color-text-primary);
+    border-color: var(--color-border-secondary);
+    background: var(--color-surface-subtle);
+  }
+
+  .app-shell > .topbar .app-nav-link[aria-current="page"] {
+    color: var(--color-text-inverse);
+    border-color: var(--color-brand-primary);
+    background:
+      linear-gradient(135deg, var(--color-brand-primary), color-mix(in srgb, var(--color-brand-primary) 72%, var(--color-brand-indigo)));
+    box-shadow: 0 12px 24px color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
+  }
+
+  .app-shell > .topbar .app-nav-link[aria-current="page"]:hover {
+    color: var(--color-text-inverse);
+  }
+
+  .app-shell > .app-content {
+    grid-column: 2;
+    grid-row: 1;
+    inline-size: min(var(--max-width-page), calc(100% - 2.5rem));
+    margin-inline: auto;
+    padding-block: clamp(var(--space-6), 5vw, var(--space-9));
+  }
 }
 
 .ui-button {
