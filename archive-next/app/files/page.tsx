@@ -122,13 +122,21 @@ function getFileName(file: ArchiveFile) {
   return file.name || file.key.split(/[\\/]/).pop() || file.key;
 }
 
+function getInitialFileViewMode(): FileViewMode {
+  if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+    return "cards";
+  }
+
+  return "table";
+}
+
 export default function FilesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<FileState>({ status: "loading" });
   const [query, setQuery] = useState("");
   const [storeFilter, setStoreFilter] = useState("all");
   const [kindFilter, setKindFilter] = useState<FileKind>("all");
-  const [viewMode, setViewMode] = useState<FileViewMode>("table");
+  const [viewMode, setViewMode] = useState<FileViewMode>(() => getInitialFileViewMode());
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
   const [shareState, setShareState] = useState<ShareState>({ status: "idle" });

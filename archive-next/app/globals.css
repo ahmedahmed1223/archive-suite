@@ -148,6 +148,46 @@ a:hover {
   background: color-mix(in srgb, var(--color-brand-primary) 36%, transparent);
 }
 
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: var(--control-height);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: 0.55rem 0.75rem;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.nav-toggle:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-subtle);
+}
+
+.nav-toggle:focus-visible {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.nav-toggle__icon {
+  display: grid;
+  gap: 4px;
+  inline-size: 1.1rem;
+}
+
+.nav-toggle__icon span {
+  display: block;
+  inline-size: 100%;
+  block-size: 2px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+
 .app-nav-link {
   flex: 0 0 auto;
 }
@@ -1897,9 +1937,9 @@ textarea.search-input {
 
 @media (max-width: 760px) {
   .topbar {
-    position: static;
-    grid-template-columns: 1fr;
-    gap: var(--space-2);
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    align-items: start;
   }
 
   .brand {
@@ -1912,13 +1952,86 @@ textarea.search-input {
     block-size: 2.5rem;
   }
 
+  .nav-toggle {
+    display: inline-flex;
+    justify-self: end;
+  }
+
   .route-links {
+    display: none;
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
     justify-content: flex-start;
     inline-size: 100%;
+    max-block-size: min(68vh, 30rem);
+    overflow: auto;
+    border: 1px solid var(--color-border-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    background: color-mix(in srgb, var(--color-bg-secondary) 96%, var(--color-brand-warm));
+    box-shadow: var(--shadow-md);
+  }
+
+  .topbar[data-nav-open="true"] .route-links {
+    display: flex;
+  }
+
+  .topbar[data-nav-open="true"] .nav-toggle {
+    color: var(--color-text-inverse);
+    border-color: var(--color-brand-primary);
+    background: var(--color-brand-primary);
+  }
+
+  .app-nav-link[data-section="manage"],
+  .app-nav-link[data-section="observe"],
+  .app-nav-link[data-section="admin"] {
+    margin-inline-start: var(--space-2);
+  }
+
+  .app-nav-link[data-section="manage"] {
+    border-color: color-mix(in srgb, var(--color-accent-secondary) 32%, var(--color-border-secondary));
+  }
+
+  .app-nav-link[data-section="observe"] {
+    border-color: color-mix(in srgb, var(--color-accent-tertiary) 34%, var(--color-border-secondary));
+  }
+
+  .app-nav-link[data-section="admin"] {
+    border-color: color-mix(in srgb, var(--color-status-info) 32%, var(--color-border-secondary));
+  }
+
+  .app-nav-link[aria-current="page"] {
+    order: -1;
+    inline-size: 100%;
+    justify-content: center;
+  }
+
+  .app-nav-link:not([aria-current="page"]) {
+    flex: 1 1 calc(50% - var(--space-2));
+    justify-content: center;
   }
 
   .toolbar-row {
     align-items: stretch;
+  }
+
+  .page-toolbar__actions,
+  .page-toolbar__controls,
+  .archive-toolbar-row {
+    inline-size: 100%;
+  }
+
+  .page-toolbar__actions .button,
+  .page-toolbar__actions a.button,
+  .page-toolbar__controls .button,
+  .archive-toolbar-actions,
+  .archive-toolbar-actions .button,
+  .view-switcher {
+    inline-size: 100%;
+  }
+
+  .page-toolbar__controls .view-switcher__button {
+    flex: 1 1 auto;
   }
 
   .hero-actions,

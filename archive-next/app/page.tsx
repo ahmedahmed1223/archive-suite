@@ -4,11 +4,12 @@ import { BRAND } from "@/lib/brand";
 import { getContractSummary } from "@/lib/archive-api";
 
 const apiContract = getContractSummary();
+const displayContractTitle = `${BRAND.latinName} API Contract`;
 
 const kpis = [
   {
     label: "اسم العقد",
-    value: apiContract.title,
+    value: displayContractTitle,
     note: "المرجع المعلن للـ API والواجهة."
   },
   {
@@ -90,7 +91,7 @@ export default function HomePage() {
         description="ملخص ثابت لحالة المنصة، مع مؤشرات العقد المرجعي، اختصارات العمل، ونقاط الانتباه التشغيلية."
         meta={(
           <>
-            <span className="badge">{apiContract.title}</span>
+            <span className="badge">{displayContractTitle}</span>
             <span className="badge">v{apiContract.version}</span>
             <span className="badge">{apiContract.routeCount} مسار API</span>
           </>
@@ -116,7 +117,7 @@ export default function HomePage() {
       <section className="page-section" aria-labelledby="kpis-heading">
         <div className="toolbar-row toolbar-start">
           <h2 id="kpis-heading" className="section-heading">
-            KPIs
+            مؤشرات التشغيل
           </h2>
           <span className="badge">مرتبطة بالعقد الحالي</span>
         </div>

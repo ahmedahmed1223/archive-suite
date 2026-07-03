@@ -101,7 +101,15 @@ function getUniqueValues(records: ArchiveRecord[], key: "store" | "type") {
 
 function getInitialViewMode(params: URLSearchParams): ArchiveViewMode {
   const value = params.get("view");
-  return viewOptions.some((option) => option.value === value) ? (value as ArchiveViewMode) : "grid";
+  if (viewOptions.some((option) => option.value === value)) {
+    return value as ArchiveViewMode;
+  }
+
+  if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+    return "list";
+  }
+
+  return "grid";
 }
 
 function getInitialItemSize(params: URLSearchParams): ArchiveItemSize {
