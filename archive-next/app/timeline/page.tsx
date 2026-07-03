@@ -2,17 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  createArchiveApiClient,
-  type ArchiveRecord,
-  type RecordListPayload,
-} from "@/lib/archive-api";
+import AppShell from "@/components/AppShell";
+import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
+import EmptyState from "@/components/EmptyState";
+import PageToolbar from "@/components/PageToolbar";
+import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import styles from "./timeline.module.css";
 
-// Simple SVG icons as components
 function IconCalendar() {
   return (
-    <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="2" />
       <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
       <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
@@ -21,18 +20,9 @@ function IconCalendar() {
   );
 }
 
-function IconClock() {
-  return (
-    <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <circle cx="12" cy="12" r="10" strokeWidth="2" />
-      <polyline points="12 6 12 12 16 14" strokeWidth="2" />
-    </svg>
-  );
-}
-
 function IconCheck() {
   return (
-    <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
       <circle cx="12" cy="12" r="10" strokeWidth="2" />
       <polyline points="16 12 12 9 9 12" strokeWidth="2" />
     </svg>
@@ -40,12 +30,24 @@ function IconCheck() {
 }
 
 type Granularity = "day" | "month" | "year";
-type GroupBy = "type" | "status";
 
 interface TimelineGroup {
   period: string;
+  key: string;
   records: ArchiveRecord[];
 }
+
+interface LoadState {
+  status: "loading" | "success" | "error";
+  records: ArchiveRecord[];
+  error: string | null;
+}
+
+const granularityOptions: Array<DataViewOption<Granularity>> = [
+  { value: "day", label: "يوم" },
+  { value: "month", label: "شهر" },
+  { value: "year", label: "سنة" }
+];
 
 function parseDate(dateStr: string | undefined): Date {
   return dateStr ? new Date(dateStr) : new Date();
@@ -64,7 +66,7 @@ function getMonthName(month: number): string {
     "سبتمبر",
     "أكتوبر",
     "نوفمبر",
-    "ديسمبر",
+    "ديسمبر"
   ];
   return months[month] || "";
 }
@@ -74,16 +76,9 @@ function formatPeriodLabel(date: Date, granularity: Granularity): string {
   const month = date.getMonth();
   const day = date.getDate();
 
-  switch (granularity) {
-    case "day":
-      return `${day} ${getMonthName(month)} ${year}`;
-    case "month":
-      return `${getMonthName(month)} ${year}`;
-    case "year":
-      return `${year}`;
-    default:
-      return "";
-  }
+  if (granularity === "day") return `${day} ${getMonthName(month)} ${year}`;
+  if (granularity === "month") return `${getMonthName(month)} ${year}`;
+  return `${year}`;
 }
 
 function getPeriodKey(date: Date, granularity: Granularity): string {
@@ -91,53 +86,54 @@ function getPeriodKey(date: Date, granularity: Granularity): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
 
-  switch (granularity) {
-    case "day":
-      return `${year}-${month}-${day}`;
-    case "month":
-      return `${year}-${month}`;
-    case "year":
-      return `${year}`;
-    default:
-      return "";
-  }
+  if (granularity === "day") return `${year}-${month}-${day}`;
+  if (granularity === "month") return `${year}-${month}`;
+  return `${year}`;
 }
 
-function groupRecordsByPeriod(
-  records: ArchiveRecord[],
-  granularity: Granularity
-): Map<string, ArchiveRecord[]> {
+function groupRecordsByPeriod(records: ArchiveRecord[], granularity: Granularity): TimelineGroup[] {
   const groups = new Map<string, ArchiveRecord[]>();
 
   records.forEach((record) => {
-    const date = parseDate(record.createdAt);
+    const date = parseDate(record.createdAt || record.updatedAt);
     const key = getPeriodKey(date, granularity);
-
-    if (!groups.has(key)) {
-      groups.set(key, []);
-    }
-    groups.get(key)!.push(record);
+    const current = groups.get(key) || [];
+    current.push(record);
+    groups.set(key, current);
   });
 
-  // Sort by key descending (newest first)
-  const sorted = new Map([...groups].sort((a, b) => b[0].localeCompare(a[0])));
-  return sorted;
+  return [...groups.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([key, groupRecords]) => {
+      const parts = key.split("-").map((part) => Number.parseInt(part, 10));
+      const date =
+        granularity === "day"
+          ? new Date(parts[0], parts[1] - 1, parts[2])
+          : granularity === "month"
+            ? new Date(parts[0], parts[1] - 1)
+            : new Date(parts[0], 0);
+
+      return {
+        key,
+        period: formatPeriodLabel(date, granularity),
+        records: groupRecords.sort(
+          (a, b) => parseDate(b.createdAt || b.updatedAt).getTime() - parseDate(a.createdAt || a.updatedAt).getTime()
+        )
+      };
+    });
 }
 
-interface LoadState {
-  status: "loading" | "success" | "error";
-  records: ArchiveRecord[];
-  error: string | null;
+function granularityLabel(granularity: Granularity): string {
+  return granularityOptions.find((option) => option.value === granularity)?.label || "شهر";
 }
 
 export default function TimelinePage() {
   const [state, setState] = useState<LoadState>({
     status: "loading",
     records: [],
-    error: null,
+    error: null
   });
   const [granularity, setGranularity] = useState<Granularity>("month");
-  const [groupBy] = useState<GroupBy>("type");
 
   const api = useMemo(() => createArchiveApiClient(), []);
 
@@ -156,10 +152,9 @@ export default function TimelinePage() {
           return;
         }
 
-        const payload = response as unknown as RecordListPayload;
-        allRecords = allRecords.concat(payload.records || []);
-        cursor = payload.nextCursor || undefined;
-        hasMore = !!cursor;
+        allRecords = allRecords.concat(response.records || []);
+        cursor = response.nextCursor || undefined;
+        hasMore = Boolean(cursor);
       }
 
       setState({ status: "success", records: allRecords, error: null });
@@ -168,7 +163,7 @@ export default function TimelinePage() {
       setState({
         status: "error",
         records: [],
-        error: `فشل تحميل السجلات: ${message}`,
+        error: `فشل تحميل السجلات: ${message}`
       });
     }
   }, [api]);
@@ -177,206 +172,127 @@ export default function TimelinePage() {
     void loadRecords();
   }, [loadRecords]);
 
-  const groupedRecords = useMemo(() => {
-    const groups = groupRecordsByPeriod(state.records, granularity);
-    const result: TimelineGroup[] = [];
-
-    groups.forEach((records, key) => {
-      const parts = key.split("-");
-      const date =
-        granularity === "day"
-          ? new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
-          : granularity === "month"
-            ? new Date(parseInt(parts[0]), parseInt(parts[1]) - 1)
-            : new Date(parseInt(parts[0]), 0);
-
-      result.push({
-        period: formatPeriodLabel(date, granularity),
-        records: records.sort(
-          (a, b) =>
-            parseDate(b.createdAt).getTime() -
-            parseDate(a.createdAt).getTime()
-        ),
-      });
-    });
-
-    return result;
-  }, [state.records, granularity]);
+  const groupedRecords = useMemo(
+    () => groupRecordsByPeriod(state.records, granularity),
+    [state.records, granularity]
+  );
 
   const recordCount = state.records.length;
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
-      {/* Hero section */}
-      <section className="space-y-3">
-        <div className="flex items-start gap-3">
-          <div className="h-8 w-8 mt-1 shrink-0" style={{ color: "var(--color-brand-primary)" }}>
-            <IconCalendar />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              الخط الزمني
-            </h1>
-            <p className="mt-1 text-gray-600 dark:text-gray-400">
-              اعرض السجلات مرتبة حسب الوقت. غيّر دقة التجميع من يوم إلى شهر أو سنة.
-            </p>
-          </div>
-        </div>
-      </section>
+    <AppShell subtitle="الخط الزمني" navLabel="الخط الزمني" contentClassName="timeline-content">
+      <PageToolbar
+        eyebrow={<span className="badge">ترتيب زمني</span>}
+        title="الخط الزمني"
+        description="عرض السجلات حسب تاريخ الإنشاء أو التحديث، مع تغيير دقة التجميع بين اليوم والشهر والسنة."
+        meta={
+          <>
+            <span className="badge">{recordCount} سجل</span>
+            <span className="badge">{groupedRecords.length} فترة</span>
+            <span className="badge">النطاق: {granularityLabel(granularity)}</span>
+          </>
+        }
+        actions={
+          <button className="button button-secondary" type="button" onClick={() => void loadRecords()} disabled={state.status === "loading"}>
+            تحديث
+          </button>
+        }
+      >
+        <DataViewSwitcher value={granularity} options={granularityOptions} onChange={setGranularity} label="دقة التجميع" />
+      </PageToolbar>
 
-      {/* Granularity selector */}
-      <div className="panel p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="h-4 w-4">
-            <IconClock />
-          </div>
-          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-            دقة التجميع
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {(["day", "month", "year"] as const).map((g) => (
-            <button
-              key={g}
-              onClick={() => setGranularity(g)}
-              className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                granularity === g
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
-              aria-pressed={granularity === g}
-            >
-              {g === "day" ? "يوم" : g === "month" ? "شهر" : "سنة"}
-            </button>
-          ))}
-        </div>
-      </div>
+      {state.status === "loading" ? (
+        <section className="state-banner" role="status" aria-live="polite">
+          <strong>جار تحميل السجلات</strong>
+          <p>يتم جلب السجلات من Laravel وتجهيزها للعرض الزمني.</p>
+        </section>
+      ) : null}
 
-      {/* Status messages */}
-      {state.status === "loading" && (
-        <div className="panel p-4 text-center text-gray-600 dark:text-gray-400">
-          <p>جاري تحميل السجلات…</p>
-        </div>
-      )}
+      {state.error ? (
+        <section className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل الخط الزمني</strong>
+          <p>{state.error}</p>
+        </section>
+      ) : null}
 
-      {state.error && (
-        <div
-          className="panel p-4 text-sm"
-          style={{
-            borderLeftColor: "var(--color-status-error)",
-            backgroundColor: "color-mix(in oklab, var(--color-status-error) 10%, transparent)",
-            color: "var(--color-status-error)",
-          }}
-          role="alert"
-        >
-          {state.error}
-        </div>
-      )}
+      {state.status === "success" && recordCount === 0 ? (
+        <EmptyState
+          title="لا توجد سجلات حتى الآن"
+          description="أضف سجلات إلى الأرشيف لعرضها هنا مرتبة على الخط الزمني."
+          actions={<a className="button button-secondary" href="/archive">فتح الأرشيف</a>}
+        />
+      ) : null}
 
-      {/* Empty state */}
-      {state.status === "success" && recordCount === 0 && (
-        <div className="panel p-8 text-center">
-          <div className="h-12 w-12 mx-auto mb-3 text-gray-400">
-            <IconCalendar />
-          </div>
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-            لا توجد سجلات حتى الآن
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            أضف سجلات إلى الأرشيف لعرضها هنا مرتبة على الخط الزمني.
-          </p>
-        </div>
-      )}
-
-      {/* Timeline groups */}
-      {state.status === "success" && recordCount > 0 && (
-        <section className="space-y-8">
-          {/* Summary stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="panel p-3 text-center">
-              <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي السجلات</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {recordCount}
-              </p>
-            </div>
-            <div className="panel p-3 text-center">
-              <p className="text-xs text-gray-500 dark:text-gray-400">الفترات</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {groupedRecords.length}
-              </p>
-            </div>
-            <div className="panel p-3 text-center sm:col-start-auto">
-              <p className="text-xs text-gray-500 dark:text-gray-400">النطاق</p>
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-1">
-                {granularity === "day" ? "يوم" : granularity === "month" ? "شهر" : "سنة"}
-              </p>
-            </div>
+      {state.status === "success" && recordCount > 0 ? (
+        <>
+          <div className="health-metric-grid">
+            <article className="health-metric" data-tone="accent">
+              <div className="health-metric__icon">
+                <IconCalendar />
+              </div>
+              <div className="health-metric__body">
+                <span>إجمالي السجلات</span>
+                <strong>{recordCount}</strong>
+              </div>
+            </article>
+            <article className="health-metric">
+              <div className="health-metric__body">
+                <span>الفترات</span>
+                <strong>{groupedRecords.length}</strong>
+              </div>
+            </article>
+            <article className="health-metric">
+              <div className="health-metric__body">
+                <span>دقة العرض</span>
+                <strong>{granularityLabel(granularity)}</strong>
+              </div>
+            </article>
           </div>
 
-          {/* Timeline sections */}
-          <div className={styles.timelineContainer}>
-            {groupedRecords.map((group, groupIndex) => (
-              <section key={group.period} className={styles.timelineGroup}>
-                {/* Timeline node */}
-                <div className={styles.timelineNode}>
-                  <div
-                    className={styles.dot}
-                    style={{
-                      backgroundColor: "var(--color-brand-primary)",
-                    }}
-                  />
-                  <div className={styles.line} />
+          <section className={styles.timelineContainer} aria-label="مجموعات الخط الزمني">
+            {groupedRecords.map((group) => (
+              <div key={group.key} className={styles.timelineGroup}>
+                <div className={styles.timelineNode} aria-hidden="true">
+                  <span className={styles.dot} />
+                  <span className={styles.line} />
                 </div>
 
-                {/* Group content */}
-                <article className="ml-4 sm:ml-6 pb-4">
-                  <header className="mb-4">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      {group.period}
-                    </h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {group.records.length}{" "}
-                      {group.records.length === 1 ? "سجل" : "سجلات"}
-                    </p>
+                <article className={styles.groupContent}>
+                  <header className={styles.groupHeader}>
+                    <div>
+                      <h2>{group.period}</h2>
+                      <p>{group.records.length} {group.records.length === 1 ? "سجل" : "سجلات"}</p>
+                    </div>
+                    <span className="badge">{group.key}</span>
                   </header>
 
-                  {/* Record cards */}
-                  <div className="space-y-2">
+                  <div className={styles.recordList}>
                     {group.records.map((record) => (
                       <Link
                         key={record.id}
                         href={`/archive/${encodeURIComponent(record.id)}`}
-                        className="block p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                        className={styles.recordCard}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className="h-4 w-4 mt-1 shrink-0 text-gray-400">
-                            <IconCheck />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {record.title}
-                            </p>
-                            {record.description && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                                {record.description}
-                              </p>
-                            )}
-                            {record.type && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                {record.type}
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                        <span className={styles.recordIcon}>
+                          <IconCheck />
+                        </span>
+                        <span className={styles.recordBody}>
+                          <strong>{record.title || record.id}</strong>
+                          {record.description ? <span>{record.description}</span> : null}
+                          <span className={styles.recordMeta}>
+                            {record.type || "بدون نوع"}
+                            {record.createdAt ? ` · ${new Date(record.createdAt).toLocaleDateString("ar-SA")}` : ""}
+                          </span>
+                        </span>
                       </Link>
                     ))}
                   </div>
                 </article>
-              </section>
+              </div>
             ))}
-          </div>
-        </section>
-      )}
-    </main>
+          </section>
+        </>
+      ) : null}
+    </AppShell>
   );
 }

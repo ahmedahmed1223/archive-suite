@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import {
   createArchiveApiClient,
@@ -328,22 +329,22 @@ export default function CollaborationPage() {
   };
 
   return (
-    <AppShell subtitle="التعاون الحي" contentClassName="collaboration-content">
+    <AppShell subtitle="التعاون الحي" navLabel="التعاون الحي" contentClassName="collaboration-content">
       <PageToolbar
-        eyebrow={<span className="badge">{isSyncing ? "جارِ المزامنة" : "مزامنة نشطة"}</span>}
+        eyebrow={<span className="badge">{isSyncing ? "جار المزامنة" : "مزامنة نشطة"}</span>}
         title="التعاون الحي"
-        description="غرفة واحدة لإظهار الحضور النشط وحجز موارد التحرير عبر Laravel API، بواجهة أخف للمتابعة السريعة."
-        meta={(
-          <div className="hero-actions">
+        description="غرفة تشغيلية لإظهار الحضور النشط، حجز موارد التحرير، وحفظ مسودة مشتركة عبر Laravel API."
+        meta={
+          <>
             <span className="badge">نافذة النشاط {activeWindowSeconds} ثانية</span>
             <span className="badge">{participants.length} مشارك نشط</span>
             <span className="badge">{locks.length} قفل تحرير</span>
-          </div>
-        )}
+            <StatusPill status={status} />
+          </>
+        }
       />
 
-      <div aria-label="التعاون الحي">
-        <div className="split-layout">
+      <div className="split-layout" aria-label="التعاون الحي">
           <article className="panel auth-form">
             <div className="panel-title-row panel-section-header">
               <div>
@@ -411,7 +412,10 @@ export default function CollaborationPage() {
               )}
 
               {participants.length === 0 ? (
-                <div className="empty-state">لا يوجد مشاركون نشطون حالياً.</div>
+                <EmptyState
+                  title="لا يوجد مشاركون نشطون حاليا."
+                  description="ستظهر هنا آخر نبضات الحضور عند دخول مشاركين إلى الغرفة."
+                />
               ) : (
                 participants.map((participant) => (
                   <div className="state-banner" key={participant.id}>
@@ -469,7 +473,10 @@ export default function CollaborationPage() {
 
             <div className="stack">
               {locks.length === 0 ? (
-                <div className="empty-state">لا توجد أقفال نشطة في هذه الغرفة.</div>
+                <EmptyState
+                  title="لا توجد أقفال نشطة في هذه الغرفة."
+                  description="استخدم حجز المورد لمنع تعارض التحرير عند العمل على نفس العنصر."
+                />
               ) : (
                 locks.map((lock) => (
                   <div className="state-banner" key={lock.id}>
@@ -483,7 +490,6 @@ export default function CollaborationPage() {
               )}
             </div>
           </article>
-        </div>
       </div>
     </AppShell>
   );
