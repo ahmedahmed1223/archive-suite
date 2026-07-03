@@ -7,6 +7,7 @@ import { useState } from "react";
 import CommandPalette from "@/components/CommandPalette";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { ToastProvider, ToastViewport } from "@/components/ui/Toast";
+import { AuthGate, AuthProvider } from "@/lib/auth-session";
 
 export default function AppProviders({ children }: Readonly<{ children: ReactNode }>) {
   const [queryClient] = useState(
@@ -25,13 +26,15 @@ export default function AppProviders({ children }: Readonly<{ children: ReactNod
   return (
     <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider delayDuration={180}>
-          <ToastProvider swipeDirection="right">
-            {children}
-            <CommandPalette />
-            <ToastViewport />
-          </ToastProvider>
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider delayDuration={180}>
+            <ToastProvider swipeDirection="right">
+              <AuthGate>{children}</AuthGate>
+              <CommandPalette />
+              <ToastViewport />
+            </ToastProvider>
+          </TooltipProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );
