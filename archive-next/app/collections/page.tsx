@@ -1,0 +1,217 @@
+"use client";
+
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
+import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
+import PageToolbar from "@/components/PageToolbar";
+import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
+
+interface CollectionRule {
+  id: string;
+  name: string;
+  query: string;
+  type: string;
+  tag: string;
+  createdAt: string;
+}
+
+type LoadState =
+  | { status: "loading" }
+  | { status: "ready"; records: ArchiveRecord[] }
+  | { status: "error"; message: string };
+
+const STORAGE_KEY = "masar:collections:v1";
+
+function readCollections(): CollectionRule[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCollections(collections: CollectionRule[]) {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
+}
+
+export default function CollectionsPage() {
+  const api = useMemo(() => createArchiveApiClient(), []);
+  const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [collections, setCollections] = useState<CollectionRule[]>([]);
+  const [name, setName] = useState("");
+  const [query, setQuery] = useState("");
+  const [type, setType] = useState("all");
+  const [tag, setTag] = useState("all");
+
+  useEffect(() => {
+    setCollections(readCollections());
+    void (async () => {
+      const response = await api.search({ limit: 1000 });
+      setState(response.ok ? { status: "ready", records: response.records } : { status: "error", message: response.error });
+    })();
+  }, [api]);
+
+  const records = state.status === "ready" ? state.records : [];
+  const types = useMemo(() => uniqueSorted(records.map((record) => record.type)), [records]);
+  const tags = useMemo(() => uniqueSorted(records.flatMap((record) => record.tags || [])), [records]);
+  const smartSuggestions = useMemo(() => {
+    const topTypes = countBy(records.map((record) => record.type || "").filter(Boolean)).slice(0, 4);
+    const topTags = countBy(records.flatMap((record) => record.tags || [])).slice(0, 4);
+    return [
+      ...topTypes.map(([value, count]) => ({ label: `نوع: ${value}`, type: value, tag: "all", count })),
+      ...topTags.map(([value, count]) => ({ label: `وسم: ${value}`, type: "all", tag: value, count }))
+    ].slice(0, 6);
+  }, [records]);
+
+  function addCollection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!name.trim()) return;
+    const next: CollectionRule = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      query: query.trim(),
+      type,
+      tag,
+      createdAt: new Date().toISOString()
+    };
+    const nextCollections = [next, ...collections].slice(0, 24);
+    writeCollections(nextCollections);
+    setCollections(nextCollections);
+    setName("");
+    setQuery("");
+    setType("all");
+    setTag("all");
+  }
+
+  function removeCollection(id: string) {
+    const nextCollections = collections.filter((collection) => collection.id !== id);
+    writeCollections(nextCollections);
+    setCollections(nextCollections);
+  }
+
+  function saveSuggestion(suggestion: { label: string; type: string; tag: string }) {
+    const next: CollectionRule = {
+      id: crypto.randomUUID(),
+      name: suggestion.label,
+      query: "",
+      type: suggestion.type,
+      tag: suggestion.tag,
+      createdAt: new Date().toISOString()
+    };
+    const nextCollections = [next, ...collections].slice(0, 24);
+    writeCollections(nextCollections);
+    setCollections(nextCollections);
+  }
+
+  return (
+    <AppShell subtitle="المجموعات" contentClassName="local-list-content">
+      <PageToolbar
+        eyebrow={<span className="badge">Organize</span>}
+        title="المجموعات"
+        description="تجميعات يدوية وذكية خفيفة فوق السجلات الحالية. التخزين المحلي هنا يمهد لعقد Collections دائم في Laravel."
+        meta={(
+          <>
+            <span className="badge">{collections.length} مجموعة</span>
+            <span className="badge">{records.length} سجل قابل للتجميع</span>
+          </>
+        )}
+        actions={<a className="button button-secondary" href="/archive">فتح الأرشيف</a>}
+      >
+        <form className="archive-toolbar-grid" onSubmit={addCollection}>
+          <label>
+            <span>اسم المجموعة</span>
+            <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="مثال: مواد تحتاج مراجعة" />
+          </label>
+          <label>
+            <span>بحث داخلي</span>
+            <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="كلمة أو وصف" />
+          </label>
+          <label>
+            <span>النوع</span>
+            <select value={type} onChange={(event) => setType(event.target.value)}>
+              <option value="all">كل الأنواع</option>
+              {types.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>وسم</span>
+            <select value={tag} onChange={(event) => setTag(event.target.value)}>
+              <option value="all">كل الوسوم</option>
+              {tags.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </label>
+          <div className="archive-toolbar-actions">
+            <button className="button button-primary" type="submit" disabled={!name.trim()}>حفظ المجموعة</button>
+          </div>
+        </form>
+      </PageToolbar>
+
+      {state.status === "loading" ? <div className="panel panel-compact"><p className="form-status">جار تحميل السجلات...</p></div> : null}
+      {state.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل السجلات</strong>
+          <span className="helper-text">{state.message}</span>
+        </div>
+      ) : null}
+
+      {collections.length === 0 ? (
+        <EmptyState
+          title="لا توجد مجموعات محفوظة بعد."
+          description="أنشئ مجموعة حسب بحث أو نوع أو وسم، أو استخدم أحد الاقتراحات الذكية أدناه."
+        />
+      ) : (
+        <section className="dense-grid" aria-label="المجموعات المحفوظة">
+          {collections.map((collection) => {
+            const matches = records.filter((record) => recordMatches(record, collection));
+            const searchTerm = collection.query || (collection.tag !== "all" ? collection.tag : collection.name);
+            const searchHref = `/search?q=${encodeURIComponent(searchTerm)}${collection.type !== "all" ? `&type=${encodeURIComponent(collection.type)}` : ""}`;
+            return (
+              <article className="local-list-card" key={collection.id}>
+                <div className="local-list-card__main">
+                  <div>
+                    <span className="badge">مجموعة</span>
+                    <h3>{collection.name}</h3>
+                  </div>
+                  <strong className="metric-value">{matches.length}</strong>
+                </div>
+                <dl className="mobile-field-list">
+                  <div><dt>النوع</dt><dd>{collection.type === "all" ? "كل الأنواع" : collection.type}</dd></div>
+                  <div><dt>الوسم</dt><dd>{collection.tag === "all" ? "كل الوسوم" : collection.tag}</dd></div>
+                  <div><dt>الإنشاء</dt><dd>{formatDate(collection.createdAt)}</dd></div>
+                </dl>
+                <div className="button-row">
+                  <a className="button button-primary button-sm" href={searchHref}>عرض النتائج</a>
+                  <button className="button button-danger button-sm" type="button" onClick={() => removeCollection(collection.id)}>حذف</button>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
+
+      {smartSuggestions.length > 0 ? (
+        <section className="page-section" aria-labelledby="smart-collections-heading">
+          <div className="toolbar-row toolbar-start">
+            <h2 id="smart-collections-heading" className="section-heading">اقتراحات ذكية</h2>
+            <span className="badge">من بيانات الأرشيف</span>
+          </div>
+          <div className="analytics-tag-list">
+            {smartSuggestions.map((suggestion) => (
+              <div className="analytics-tag-row" key={`${suggestion.type}-${suggestion.tag}`}>
+                <span>{suggestion.label}</span>
+                <div className="button-row">
+                  <strong>{suggestion.count}</strong>
+                  <button type="button" className="button button-secondary button-sm" onClick={() => saveSuggestion(suggestion)}>حفظ</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </AppShell>
+  );
+}

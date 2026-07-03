@@ -47,9 +47,13 @@ const attentionItems = [
 const shortcuts = [
   { label: "الأرشيف", href: "/archive" },
   { label: "إضافة للأرشيف", href: "/uploads" },
+  { label: "الوارد", href: "/inbox" },
   { label: "البحث", href: "/search" },
   { label: "الملفات", href: "/files" },
+  { label: "المجموعات", href: "/collections" },
+  { label: "كانبان", href: "/kanban" },
   { label: "الوسائط", href: "/media/review" },
+  { label: "النشاط", href: "/activity" },
   { label: "الحالة", href: "/status" },
   { label: "الإعدادات", href: "/settings" }
 ] as const;
