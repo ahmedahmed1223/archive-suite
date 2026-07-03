@@ -15,7 +15,7 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/activityLog` | `archive-next/app/activity/page.tsx`, future Laravel audit API | Partial | Replace synthetic activity with audit-backed history and undo/diffs. |
 | `archive-app/src/features/ai` | Future `archive-next/app/copilot/page.tsx` | Missing | Add AI assist surface with disabled/config-required state when no provider is configured. |
 | `archive-app/src/features/analytics` | `archive-next/app/analytics/page.tsx` | Migrated | Keep in smoke coverage. |
-| `archive-app/src/features/archive` | `archive-next/app/archive/page.tsx`, `archive-next/app/archive/[id]/page.tsx` | Partial | Add richer add/archive wizard, item notes, relations, and detailed history. |
+| `archive-app/src/features/archive` | `archive-next/app/archive/page.tsx`, `archive-next/app/archive/[id]/page.tsx` | Partial | Add richer add/archive wizard, item notes, and detailed history; relation preview is now wired. |
 | `archive-app/src/features/automation` | `archive-next/app/automation/page.tsx` | Partial | Persist rules in Laravel and add execution log. |
 | `archive-app/src/features/autosave` | Draft handling in Next forms | Partial | Add shared draft/session recovery helpers for intake forms. |
 | `archive-app/src/features/collections` | `archive-next/app/collections/page.tsx` | Partial | Move local collections and smart rules to Laravel storage. |
@@ -23,14 +23,14 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/copilot` | Future `archive-next/app/copilot/page.tsx` | Missing | Restore copilot command/summary affordances with safe provider gating. |
 | `archive-app/src/features/dashboard` | `archive-next/app/page.tsx` | Partial | Restore configurable widgets only after persistent preferences exist. |
 | `archive-app/src/features/data-center` | Future `archive-next/app/data-center/page.tsx` | Missing | Add operational hub tying uploads, ingest, backup, status, and settings together. |
-| `archive-app/src/features/discover` | Future `archive-next/app/discover/page.tsx` | Missing | Add trending/random/neglected/needs-metadata discovery. |
+| `archive-app/src/features/discover` | `archive-next/app/discover/page.tsx` | Migrated | Keep recommendation feedback and smoke coverage. |
 | `archive-app/src/features/dnd` | `archive-next/app/kanban/page.tsx` and UI primitives | Migrated | Keep as shared interaction plumbing. |
 | `archive-app/src/features/errors` | `archive-next/app/errors/page.tsx` | Migrated | Keep in smoke coverage. |
 | `archive-app/src/features/field-acl` | `archive-next/app/types/page.tsx`, Laravel type contracts | Partial | Add field-level visibility/editing rules. |
 | `archive-app/src/features/file-manager` | `archive-next/app/files/page.tsx` | Partial | Add handoff/intake queue actions from legacy file manager. |
 | `archive-app/src/features/focus` | Masar shell and command palette | Partial | Add focus mode only if operators still need distraction-free workflows. |
 | `archive-app/src/features/folders` | `archive-next/app/files/page.tsx` | Partial | Add durable folder metadata and saved folder views. |
-| `archive-app/src/features/graph` | Future `archive-next/app/graph/page.tsx` | Missing | Add relations graph from tags/types/stored relations. |
+| `archive-app/src/features/graph` | `archive-next/app/graph/page.tsx`, Laravel `/relations/graph` | Migrated | Keep graph filters, creation flow, and smoke coverage. |
 | `archive-app/src/features/guide` | `archive-next/app/help/page.tsx` | Partial | Add contextual tour/tips launcher. |
 | `archive-app/src/features/help` | `archive-next/app/help/page.tsx` | Migrated | Keep updated as new routes land. |
 | `archive-app/src/features/hierarchical-tags` | `archive-next/app/tags/page.tsx`, future `/tags/hierarchy` | Partial | Restore tree ordering, colors, merge, and hierarchy operations. |
@@ -45,8 +45,8 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/offline` | Future offline/sync support in `archive-next/components/AppProviders.tsx` | Missing | Add connectivity probe, offline queue, and degraded-mode banners. |
 | `archive-app/src/features/onboarding` | Future `archive-next/app/first-run/page.tsx` or `/onboarding` | Missing | Add first-run setup gate and preset setup. |
 | `archive-app/src/features/projects` | `archive-next/app/projects/page.tsx` | Partial | Persist projects and production tasks in Laravel. |
-| `archive-app/src/features/recommendations` | Future `archive-next/app/discover/page.tsx` | Missing | Add recommendation feedback and improvement suggestions. |
-| `archive-app/src/features/relations` | Future relation panel in `archive-next/app/archive/[id]/page.tsx` and `/graph` | Missing | Add stored record relations plus inferred graph edges. |
+| `archive-app/src/features/recommendations` | `archive-next/app/discover/page.tsx` | Partial | Discovery feedback exists; add detail-page improvement suggestions later. |
+| `archive-app/src/features/relations` | `archive-next/app/archive/[id]/page.tsx`, `archive-next/app/graph/page.tsx`, Laravel `/relations*` | Partial | Stored relations and graph exist; add inline detail add-dialog/toasts for full legacy parity. |
 | `archive-app/src/features/rights` | `archive-next/app/rights/page.tsx`, Laravel rights API | Migrated | Keep in contract tests. |
 | `archive-app/src/features/search` | `archive-next/app/search/page.tsx`, future `/search/saved` | Partial | Add backend facets and saved-search manager. |
 | `archive-app/src/features/server-status` | `archive-next/app/status/page.tsx` | Partial | Add live metrics beyond health polling. |
@@ -82,14 +82,14 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/pages/CollectionsPage.tsx` | `/collections` | Partial | Persist collections. |
 | `archive-app/src/pages/DashboardPage.tsx` | `/` | Partial | Restore configurable widgets if required. |
 | `archive-app/src/pages/DataCenterPage.tsx` | Future `/data-center` | Missing | Add data-center hub. |
-| `archive-app/src/pages/DetailPage.tsx` | `/archive/[id]` | Partial | Add notes, relations, item history, and comments. |
-| `archive-app/src/pages/DiscoverPage.tsx` | Future `/discover` | Missing | Add discover route. |
+| `archive-app/src/pages/DetailPage.tsx` | `/archive/[id]` | Partial | Add notes, item history, comments, and inline relation editing; relation preview is now wired. |
+| `archive-app/src/pages/DiscoverPage.tsx` | `/discover` | Migrated | Keep smoke coverage. |
 | `archive-app/src/pages/DuplicatesPage.tsx` | `/duplicates` | Partial | Add merge/undo and visual duplicate checks. |
 | `archive-app/src/pages/ErrorLogPage.tsx` | `/errors` | Migrated | Keep smoke coverage. |
 | `archive-app/src/pages/FavoritesPage.tsx` | `/favorites` | Migrated | Keep smoke coverage. |
 | `archive-app/src/pages/FileManagerPage.tsx` | `/files` | Partial | Restore handoff and ingest queue actions. |
 | `archive-app/src/pages/FirstRunPage.tsx` | Future `/first-run` or `/onboarding` | Missing | Add first-run gate. |
-| `archive-app/src/pages/GraphViewPage.tsx` | Future `/graph` | Missing | Add relations graph page. |
+| `archive-app/src/pages/GraphViewPage.tsx` | `/graph` | Migrated | Keep smoke coverage and continue refining graph controls. |
 | `archive-app/src/pages/HelpPage.tsx` | `/help` | Migrated | Add contextual guide hooks. |
 | `archive-app/src/pages/HierarchicalTagsPage.tsx` | `/tags`, future `/tags/hierarchy` | Partial | Restore advanced hierarchy editor. |
 | `archive-app/src/pages/HistoryPage.tsx` | `/activity`, future record history tab | Partial | Add diff and restore decisions. |

@@ -21,7 +21,7 @@
   - Keep every legacy `archive-app/src/features/*` directory and every `archive-app/src/pages/*Page.tsx` listed.
   - Run `pnpm run verify:repo-hygiene` after edits.
 
-- [ ] **Task 2: Discovery and relations**
+- [x] **Task 2: Discovery and relations**
   - Add Laravel discover and relation graph endpoints.
   - Add `/discover`, `/graph`, and record-detail relation panel in Next.
   - Update navigation once the routes are usable.

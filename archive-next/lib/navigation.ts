@@ -4,6 +4,7 @@ export const primaryNav = [
   { href: "/uploads", label: "إضافة", section: "core" },
   { href: "/search", label: "البحث", section: "core" },
   { href: "/discover", label: "الاكتشاف", section: "core" },
+  { href: "/graph", label: "العلاقات", section: "core" },
   { href: "/files", label: "الملفات", section: "core" },
   { href: "/timeline", label: "الخط الزمني", section: "core" },
   { href: "/inbox", label: "الوارد", section: "core" },
