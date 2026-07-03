@@ -312,6 +312,91 @@
         }
       }
     },
+    "/relations/graph": {
+      "get": {
+        "tags": ["Relations"],
+        "summary": "Return manual and inferred archive relation graph",
+        "operationId": "relationGraph",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "recordId", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 120 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Relation graph",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RelationGraphResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/relations": {
+      "post": {
+        "tags": ["Relations"],
+        "summary": "Create a manual relation between archive records",
+        "operationId": "createRecordRelation",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateRecordRelationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created relation",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordRelationResponse" }
+              }
+            }
+          },
+          "200": {
+            "description": "Existing relation",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordRelationResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/relations/{id}": {
+      "delete": {
+        "tags": ["Relations"],
+        "summary": "Delete a manual archive record relation",
+        "operationId": "deleteRecordRelation",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/files": {
       "get": {
         "tags": ["Files"],
@@ -1793,6 +1878,132 @@
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/DiscoverSection" }
               }
+            }
+          }
+        ]
+      },
+      "RelationType": {
+        "type": "string",
+        "enum": [
+          "is_part_of",
+          "contains",
+          "references",
+          "depends_on",
+          "related_to",
+          "alternative_of",
+          "copy_of",
+          "precedes",
+          "follows"
+        ]
+      },
+      "RelationTypeOption": {
+        "type": "object",
+        "required": ["key", "label", "inverse", "bidirectional"],
+        "properties": {
+          "key": { "$ref": "#/components/schemas/RelationType" },
+          "label": { "type": "string" },
+          "inverse": { "type": "string" },
+          "bidirectional": { "type": "boolean" }
+        }
+      },
+      "RecordRelation": {
+        "type": "object",
+        "required": ["id", "sourceId", "targetId", "type", "label"],
+        "properties": {
+          "id": { "type": "string" },
+          "sourceId": { "type": "string" },
+          "targetId": { "type": "string" },
+          "type": { "$ref": "#/components/schemas/RelationType" },
+          "label": { "type": "string" },
+          "note": { "type": ["string", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "RelationGraphNode": {
+        "type": "object",
+        "required": ["id", "label", "kind", "type", "tags", "degree"],
+        "properties": {
+          "id": { "type": "string" },
+          "uid": { "type": "string" },
+          "label": { "type": "string" },
+          "kind": { "type": "string", "enum": ["item"] },
+          "type": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "degree": { "type": "integer" },
+          "record": { "$ref": "#/components/schemas/ArchiveRecord" }
+        }
+      },
+      "RelationGraphEdge": {
+        "type": "object",
+        "required": ["id", "source", "target", "kind", "type", "label", "weight"],
+        "properties": {
+          "id": { "type": "string" },
+          "relationId": { "type": "string" },
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "kind": { "type": "string", "enum": ["manual", "shared-tag", "same-type"] },
+          "type": { "type": "string" },
+          "label": { "type": "string" },
+          "weight": { "type": "integer" },
+          "note": { "type": ["string", "null"] },
+          "sharedTags": { "type": "array", "items": { "type": "string" } },
+          "sharedType": { "type": "string" }
+        }
+      },
+      "RelationGraphStats": {
+        "type": "object",
+        "required": ["nodeCount", "edgeCount", "manualEdgeCount", "inferredEdgeCount"],
+        "properties": {
+          "nodeCount": { "type": "integer" },
+          "edgeCount": { "type": "integer" },
+          "manualEdgeCount": { "type": "integer" },
+          "inferredEdgeCount": { "type": "integer" },
+          "focusId": { "type": ["string", "null"] }
+        }
+      },
+      "RelationGraphResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["nodes", "edges", "stats", "relationTypes"],
+            "properties": {
+              "nodes": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RelationGraphNode" }
+              },
+              "edges": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RelationGraphEdge" }
+              },
+              "stats": { "$ref": "#/components/schemas/RelationGraphStats" },
+              "relationTypes": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RelationTypeOption" }
+              }
+            }
+          }
+        ]
+      },
+      "CreateRecordRelationRequest": {
+        "type": "object",
+        "required": ["sourceId", "targetId", "type"],
+        "properties": {
+          "sourceId": { "type": "string" },
+          "targetId": { "type": "string" },
+          "type": { "$ref": "#/components/schemas/RelationType" },
+          "note": { "type": "string", "maxLength": 2000 }
+        }
+      },
+      "RecordRelationResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["relation"],
+            "properties": {
+              "relation": { "$ref": "#/components/schemas/RecordRelation" }
             }
           }
         ]

@@ -52,6 +52,8 @@ class AuditArchiveApiRequest
         [$event, $resourceType] = match ([$method, $route]) {
             ['POST', 'api/v1/records/bulk'] => ['records.bulk_upsert', 'record'],
             ['POST', 'api/v1/rights'] => ['rights.upsert', 'rights_record'],
+            ['POST', 'api/v1/relations'] => ['relations.create', 'record_relation'],
+            ['DELETE', 'api/v1/relations/{id}'] => ['relations.delete', 'record_relation'],
             ['POST', 'api/v1/share'] => ['share.create', 'share_link'],
             ['POST', 'api/v1/media/jobs'] => ['media.workflow.queue', 'media_job'],
             ['POST', 'api/v1/auth/logout'] => ['auth.logout', 'api_session'],
@@ -60,6 +62,14 @@ class AuditArchiveApiRequest
 
         if ($route === 'api/v1/rights' || $route === 'api/v1/media/jobs') {
             $resourceId = $request->string($route === 'api/v1/rights' ? 'itemId' : 'recordId')->toString() ?: null;
+        }
+
+        if ($route === 'api/v1/relations') {
+            $resourceId = $request->string('sourceId')->toString() ?: null;
+        }
+
+        if ($route === 'api/v1/relations/{id}') {
+            $resourceId = $request->route('id');
         }
 
         if ($route === 'api/v1/auth/logout') {

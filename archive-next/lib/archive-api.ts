@@ -58,6 +58,84 @@ export interface DiscoverSection {
   records: ArchiveRecord[];
 }
 
+export type RelationTypeKey =
+  | "is_part_of"
+  | "contains"
+  | "references"
+  | "depends_on"
+  | "related_to"
+  | "alternative_of"
+  | "copy_of"
+  | "precedes"
+  | "follows";
+
+export interface RelationTypeOption {
+  key: RelationTypeKey;
+  label: string;
+  inverse: string;
+  bidirectional: boolean;
+}
+
+export interface RecordRelation {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  type: RelationTypeKey;
+  label: string;
+  note?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface RelationGraphNode {
+  id: string;
+  uid?: string;
+  label: string;
+  kind: "item";
+  type: string;
+  tags: string[];
+  degree: number;
+  record?: ArchiveRecord;
+}
+
+export type RelationGraphEdgeKind = "manual" | "shared-tag" | "same-type";
+
+export interface RelationGraphEdge {
+  id: string;
+  relationId?: string;
+  source: string;
+  target: string;
+  kind: RelationGraphEdgeKind;
+  type: string;
+  label: string;
+  weight: number;
+  note?: string | null;
+  sharedTags?: string[];
+  sharedType?: string;
+}
+
+export interface RelationGraphStats {
+  nodeCount: number;
+  edgeCount: number;
+  manualEdgeCount: number;
+  inferredEdgeCount: number;
+  focusId?: string | null;
+}
+
+export interface RelationGraphPayload {
+  nodes: RelationGraphNode[];
+  edges: RelationGraphEdge[];
+  stats: RelationGraphStats;
+  relationTypes: RelationTypeOption[];
+}
+
+export interface CreateRelationPayload {
+  sourceId: string;
+  targetId: string;
+  type: RelationTypeKey;
+  note?: string;
+}
+
 export interface ArchiveFile {
   key: string;
   name?: string;
@@ -356,6 +434,9 @@ export interface ArchiveApiClient {
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[] }>>;
   discover(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sections: DiscoverSection[] }>>;
+  relationGraph(params?: { recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RelationGraphPayload>>;
+  createRelation(payload: CreateRelationPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relation: RecordRelation }>>;
+  deleteRelation(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
   bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
@@ -543,6 +624,17 @@ export function createArchiveApiClient({
       const query = queryParams.toString();
       return get<{ sections: DiscoverSection[] }>(`/discover${query ? `?${query}` : ""}`, options);
     },
+    relationGraph: (params?: { recordId?: string; limit?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.recordId) queryParams.set("recordId", params.recordId);
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      const query = queryParams.toString();
+      return get<RelationGraphPayload>(`/relations/graph${query ? `?${query}` : ""}`, options);
+    },
+    createRelation: (payload: CreateRelationPayload, options?: AuthRequestOptions) =>
+      post<{ relation: RecordRelation }>("/relations", payload, options),
+    deleteRelation: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/relations/${encodeURIComponent(id)}`, undefined, options),
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
     records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams({ store, limit: String(limit) });

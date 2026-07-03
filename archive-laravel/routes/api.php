@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\RecordsController;
+use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
 use App\Http\Controllers\Api\V1\RightsController;
@@ -74,6 +75,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/bulk-delete', [RecordsController::class, 'bulkDelete']);
         Route::get('/search', [SearchController::class, 'index']);
         Route::get('/discover', [DiscoverController::class, 'index']);
+        Route::get('/relations/graph', [RelationsController::class, 'graph']);
+        Route::post('/relations', [RelationsController::class, 'store']);
+        Route::delete('/relations/{id}', [RelationsController::class, 'destroy']);
         Route::get('/files', [FilesController::class, 'index']);
         Route::get('/files/browser', [FilesController::class, 'browser']);
         Route::get('/media/jobs', [MediaJobsController::class, 'index']);

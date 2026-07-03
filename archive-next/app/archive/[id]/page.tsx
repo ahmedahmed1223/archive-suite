@@ -5,12 +5,18 @@ import { useParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord, type RightsRecord } from "@/lib/archive-api";
+import {
+  createArchiveApiClient,
+  type ArchiveRecord,
+  type RelationGraphEdge,
+  type RelationGraphPayload,
+  type RightsRecord
+} from "@/lib/archive-api";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
 
 type DetailState =
   | { status: "loading" }
-  | { status: "ready"; record: ArchiveRecord; rights: RightsRecord | null }
+  | { status: "ready"; record: ArchiveRecord; rights: RightsRecord | null; relationGraph: RelationGraphPayload | null }
   | { status: "error"; message: string };
 
 type OcrState =
@@ -26,6 +32,86 @@ function deriveSourcePath(record: ArchiveRecord): { sourcePath: string; disk?: s
   if (typeof sourcePath !== "string" || !sourcePath.trim()) return null;
   const disk = metadata["disk"];
   return { sourcePath, ...(typeof disk === "string" && disk.trim() ? { disk } : {}) };
+}
+
+function relationEdgeSummary(edge: RelationGraphEdge) {
+  if (edge.kind === "manual") {
+    return edge.note || edge.label;
+  }
+
+  if (edge.kind === "shared-tag" && edge.sharedTags?.length) {
+    return edge.sharedTags.join("، ");
+  }
+
+  if (edge.kind === "same-type" && edge.sharedType) {
+    return edge.sharedType;
+  }
+
+  return edge.label;
+}
+
+function RelationPreviewPanel({
+  graph,
+  recordId
+}: Readonly<{
+  graph: RelationGraphPayload | null;
+  recordId: string;
+}>) {
+  const nodesById = new Map((graph?.nodes ?? []).map((node) => [node.id, node]));
+  const edges = (graph?.edges ?? []).filter((edge) => edge.source === recordId || edge.target === recordId);
+  const manualCount = edges.filter((edge) => edge.kind === "manual").length;
+
+  return (
+    <article className="panel">
+      <div className="panel-section-header panel-title-row">
+        <div>
+          <h2>العلاقات</h2>
+          <p className="helper-text">روابط يدوية ومستنتجة حول هذا السجل.</p>
+        </div>
+        <span className="badge">{edges.length} صلات</span>
+      </div>
+
+      {edges.length ? (
+        <>
+          <div className="kv-grid">
+            <div className="kv-item">
+              <strong>يدوية</strong>
+              <span>{manualCount}</span>
+            </div>
+            <div className="kv-item">
+              <strong>مستنتجة</strong>
+              <span>{edges.length - manualCount}</span>
+            </div>
+          </div>
+          <ul className="graph-relation-list">
+            {edges.slice(0, 6).map((edge) => {
+              const otherId = edge.source === recordId ? edge.target : edge.source;
+              const otherNode = nodesById.get(otherId);
+
+              return (
+                <li key={edge.id}>
+                  <span>
+                    <b>{edge.label}</b>
+                    <small>{otherNode?.label || otherId} · {relationEdgeSummary(edge)}</small>
+                  </span>
+                  <a className="badge" href={`/archive/${encodeURIComponent(otherId)}`}>فتح</a>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : (
+        <EmptyState
+          title="لا توجد علاقات ظاهرة لهذا السجل"
+          description="افتح خريطة العلاقات لإنشاء علاقة يدوية أو تحسين الوسوم حتى تظهر الروابط المستنتجة."
+        />
+      )}
+
+      <a className="button button-primary" href={`/graph?recordId=${encodeURIComponent(recordId)}`}>
+        فتح خريطة العلاقات
+      </a>
+    </article>
+  );
 }
 
 export default function ArchiveDetailPage() {
@@ -84,16 +170,23 @@ export default function ArchiveDetailPage() {
         return;
       }
 
-      // Fetch rights (not required to error if missing)
-      const rightsResponse = await api.rights(id);
-      const rights = rightsResponse.ok ? rightsResponse.record : null;
+      // Fetch related panels; neither should block the base record.
+      const [rightsResult, relationResult] = await Promise.allSettled([
+        api.rights(id),
+        api.relationGraph({ recordId: id, limit: 32 })
+      ]);
+      const rightsResponse = rightsResult.status === "fulfilled" ? rightsResult.value : null;
+      const relationResponse = relationResult.status === "fulfilled" ? relationResult.value : null;
+      const rights = rightsResponse?.ok ? rightsResponse.record : null;
+      const relationGraph = relationResponse?.ok ? relationResponse : null;
 
       if (!active) return;
 
       setState({
         status: "ready",
         record: recordResponse.record,
-        rights
+        rights,
+        relationGraph
       });
       setIsFav(isFavorited(id));
     };
@@ -339,6 +432,7 @@ export default function ArchiveDetailPage() {
                 />
               )}
             </article>
+            <RelationPreviewPanel graph={state.relationGraph} recordId={id} />
           </div>
         </div>
       )}
