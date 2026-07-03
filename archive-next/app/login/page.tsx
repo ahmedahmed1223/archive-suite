@@ -1,21 +1,42 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { BRAND } from "@/lib/brand";
-import { createArchiveApiClient, type ArchiveUser } from "@/lib/archive-api";
+import { safeNextPath, useAuthSession } from "@/lib/auth-session";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type LoginState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "success"; user: ArchiveUser; expiresAt: string }
+  | { status: "success" }
   | { status: "error"; message: string };
 
-export default function LoginPage() {
-  const api = useMemo(() => createArchiveApiClient(), []);
+function LoginFallback() {
+  return (
+    <AppShell subtitle="تسجيل الدخول" navLabel="الدخول" contentClassName="login-content">
+      <section className="session-loading" aria-busy="true">
+        <span className="status-refresh-icon is-spinning" aria-hidden="true" />
+        <span>جار تجهيز بوابة الدخول...</span>
+      </section>
+    </AppShell>
+  );
+}
+
+function LoginPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const auth = useAuthSession();
   const [state, setState] = useState<LoginState>({ status: "idle" });
+  const nextPath = safeNextPath(searchParams.get("next"));
+
+  useEffect(() => {
+    if (auth.status === "authenticated") {
+      router.replace(nextPath);
+    }
+  }, [auth.status, nextPath, router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -24,14 +45,15 @@ export default function LoginPage() {
     const data = new FormData(event.currentTarget);
     const email = String(data.get("email") ?? "");
     const password = String(data.get("password") ?? "");
-    const response = await api.login({ email, password });
+    const response = await auth.login({ email, password });
 
     if (!response.ok) {
       setState({ status: "error", message: response.error });
       return;
     }
 
-    setState({ status: "success", user: response.user, expiresAt: response.expiresAt });
+    setState({ status: "success" });
+    router.replace(nextPath);
   }
 
   return (
@@ -109,7 +131,7 @@ export default function LoginPage() {
               <strong>{state.status === "success" ? "تم تسجيل الدخول بنجاح" : "فشل تسجيل الدخول"}</strong>
               <span className="helper-text">
                 {state.status === "success"
-                  ? `مرحبا ${state.user.email ?? state.user.name ?? state.user.id}`
+                  ? "سيتم تحويلك الآن إلى مساحة العمل."
                   : state.message}
               </span>
             </div>
@@ -117,5 +139,13 @@ export default function LoginPage() {
         </form>
       </section>
     </AppShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

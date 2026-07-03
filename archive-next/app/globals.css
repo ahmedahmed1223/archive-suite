@@ -2266,6 +2266,66 @@ textarea.search-input {
   justify-self: start;
 }
 
+.session-chip {
+  display: inline-flex;
+  min-width: 0;
+  max-width: min(17rem, 34vw);
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-bg-secondary) 92%, var(--color-brand-warm));
+  color: var(--color-text-primary);
+  padding: 0.28rem 0.35rem 0.28rem var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  box-shadow: var(--shadow-xs);
+}
+
+.session-chip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-chip button {
+  display: inline-flex;
+  inline-size: 2rem;
+  block-size: 2rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.session-chip button:hover {
+  border-color: color-mix(in srgb, var(--color-danger) 28%, transparent);
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  color: var(--color-danger);
+}
+
+.session-login-link {
+  text-decoration: none;
+}
+
+.session-loading {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  gap: var(--space-3);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-brand-warm) 28%, transparent), transparent 18rem),
+    var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
 .icon-action {
   display: inline-flex;
   align-items: center;

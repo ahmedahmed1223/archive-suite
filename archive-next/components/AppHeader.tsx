@@ -1,12 +1,13 @@
 "use client";
 
-import { Menu, Search, X } from "lucide-react";
+import { LogIn, LogOut, Menu, Search, UserCircle, X } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { isActivePath, navSectionLabels, primaryNav, type NavSection } from "@/lib/navigation";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuthSession } from "@/lib/auth-session";
 
 const navSections = Object.keys(navSectionLabels) as NavSection[];
 
@@ -18,11 +19,20 @@ export default function AppHeader({
   navLabel?: string;
 }>) {
   const pathname = usePathname() || "/";
+  const router = useRouter();
+  const auth = useAuthSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  async function handleLogout() {
+    await auth.logout();
+    router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+  }
+
+  const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id;
 
   return (
     <header className="topbar" data-nav-open={isMenuOpen ? "true" : "false"}>
@@ -45,6 +55,20 @@ export default function AppHeader({
         <span>المسارات</span>
       </button>
       <div className="topbar-actions" aria-label="أدوات الواجهة">
+        {auth.status === "authenticated" ? (
+          <div className="session-chip" title={userLabel}>
+            <UserCircle aria-hidden="true" size={18} strokeWidth={2} />
+            <span>{userLabel}</span>
+            <button type="button" onClick={handleLogout} aria-label="تسجيل الخروج">
+              <LogOut aria-hidden="true" size={16} strokeWidth={2} />
+            </button>
+          </div>
+        ) : (
+          <a className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
+            <LogIn aria-hidden="true" size={18} strokeWidth={2} />
+            <span>الدخول</span>
+          </a>
+        )}
         <button
           type="button"
           className="icon-action command-trigger"

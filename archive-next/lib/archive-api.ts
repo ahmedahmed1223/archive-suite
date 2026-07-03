@@ -1,5 +1,7 @@
 import contract from "../../docs/api/archive-contract.openapi.json";
 
+export const ARCHIVE_UNAUTHORIZED_EVENT = "archive-next:unauthorized";
+
 export type ApiEnvelope<T extends object = Record<string, unknown>> =
   | ({ ok: true } & T)
   | { ok: false; error: string; code?: string; details?: unknown };
@@ -405,21 +407,49 @@ export function getContractSummary() {
 
 export function createArchiveApiClient({
   baseUrl = "/api/v1",
-  fetchImpl = fetch
+  fetchImpl = fetch,
+  onUnauthorized
 }: {
   baseUrl?: string;
   fetchImpl?: typeof fetch;
+  onUnauthorized?: () => void;
 } = {}): ArchiveApiClient {
+  function handleUnauthorized() {
+    onUnauthorized?.();
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(ARCHIVE_UNAUTHORIZED_EVENT));
+    }
+  }
+
+  async function refreshAccessToken(): Promise<string | null> {
+    const response = await fetchImpl(`${baseUrl}/auth/refresh`, {
+      method: "POST",
+      headers: new Headers({ Accept: "application/json" }),
+      credentials: "include"
+    });
+
+    const payload = (await response.json().catch(() => null)) as ApiEnvelope<AuthSession> | null;
+
+    if (!response.ok || !payload?.ok) {
+      return null;
+    }
+
+    return payload.accessToken;
+  }
+
   async function request<T extends object>(
     path: string,
     {
       method = "GET",
       body,
-      accessToken
+      accessToken,
+      skipRefresh = false
     }: {
       method?: "GET" | "POST" | "PATCH" | "DELETE";
       body?: unknown;
       accessToken?: string;
+      skipRefresh?: boolean;
     } = {}
   ): Promise<ApiEnvelope<T>> {
     const headers = new Headers({ Accept: "application/json" });
@@ -443,6 +473,26 @@ export function createArchiveApiClient({
       ok: false,
       error: `Invalid JSON response from ${path}`
     }))) as ApiEnvelope<T>;
+
+    if (
+      response.status === 401 &&
+      !skipRefresh &&
+      path !== "/auth/login" &&
+      path !== "/auth/refresh"
+    ) {
+      const refreshedAccessToken = await refreshAccessToken();
+
+      if (refreshedAccessToken) {
+        return request<T>(path, {
+          method,
+          body,
+          accessToken: refreshedAccessToken,
+          skipRefresh: true
+        });
+      }
+
+      handleUnauthorized();
+    }
 
     if (!response.ok && payload.ok !== false) {
       return { ok: false, error: `Request failed with status ${response.status}` };
