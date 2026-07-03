@@ -8,6 +8,32 @@ import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwit
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import styles from "./archive.module.css";
+
+// Workflow states mirrored from archive-app/src/features/archive/itemStatus.ts —
+// the server-authoritative state machine. The Laravel search/records endpoints
+// do not expose a status column or query param (verified against
+// SearchController/RecordsController), so this is a client-side facet only:
+// it reads `record.workflowStatus` when present, defaulting to "draft".
+type WorkflowStatus = "draft" | "editing" | "review" | "approved" | "published" | "archived";
+
+const WORKFLOW_STATES: WorkflowStatus[] = ["draft", "editing", "review", "approved", "published", "archived"];
+
+const workflowStatusLabels: Record<WorkflowStatus, string> = {
+  draft: "مسودة",
+  editing: "تحرير",
+  review: "قيد المراجعة",
+  approved: "معتمد",
+  published: "منشور",
+  archived: "مؤرشف"
+};
+
+function getRecordWorkflowStatus(record: ArchiveRecord): WorkflowStatus {
+  const value = record.workflowStatus;
+  return typeof value === "string" && (WORKFLOW_STATES as string[]).includes(value)
+    ? (value as WorkflowStatus)
+    : "draft";
+}
 
 type ArchiveState =
   | { status: "loading" }
@@ -25,6 +51,7 @@ interface SavedArchiveView {
   query: string;
   store: string;
   type: string;
+  status: WorkflowStatus | "all";
   viewMode: ArchiveViewMode;
   itemSize: ArchiveItemSize;
   sortField: ArchiveSortField;
@@ -122,6 +149,11 @@ function getInitialSortField(params: URLSearchParams): ArchiveSortField {
   return value === "createdAt" || value === "title" ? value : "updatedAt";
 }
 
+function getInitialStatus(params: URLSearchParams): WorkflowStatus | "all" {
+  const value = params.get("status");
+  return value && (WORKFLOW_STATES as string[]).includes(value) ? (value as WorkflowStatus) : "all";
+}
+
 function readSavedViews(): SavedArchiveView[] {
   if (typeof window === "undefined") return [];
 
@@ -142,6 +174,7 @@ function ArchivePageContent() {
   const [query, setQuery] = useState(() => searchParams.get("q") || "");
   const [store, setStore] = useState(() => searchParams.get("store") || "all");
   const [type, setType] = useState(() => searchParams.get("type") || "all");
+  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | "all">(() => getInitialStatus(searchParams));
   const [viewMode, setViewMode] = useState<ArchiveViewMode>(() => getInitialViewMode(searchParams));
   const [itemSize, setItemSize] = useState<ArchiveItemSize>(() => getInitialItemSize(searchParams));
   const [sortField, setSortField] = useState<ArchiveSortField>(() => getInitialSortField(searchParams));
@@ -149,6 +182,8 @@ function ArchivePageContent() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [savedViews, setSavedViews] = useState<SavedArchiveView[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkFeedback, setBulkFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   const loadRecords = useCallback(async (q: string) => {
     setState({ status: "loading" });
@@ -175,6 +210,7 @@ function ArchivePageContent() {
     if (query.trim()) params.set("q", query.trim());
     if (store !== "all") params.set("store", store);
     if (type !== "all") params.set("type", type);
+    if (workflowStatus !== "all") params.set("status", workflowStatus);
     if (viewMode !== "grid") params.set("view", viewMode);
     if (itemSize !== "compact") params.set("size", itemSize);
     if (sortField !== "updatedAt") params.set("sort", sortField);
@@ -182,17 +218,26 @@ function ArchivePageContent() {
 
     const next = params.toString();
     router.replace(next ? `/archive?${next}` : "/archive", { scroll: false });
-  }, [itemSize, query, router, sortDirection, sortField, store, type, viewMode]);
+  }, [itemSize, query, router, sortDirection, sortField, store, type, viewMode, workflowStatus]);
 
   const records = state.status === "ready" ? state.records : [];
   const storeOptions = useMemo(() => getUniqueValues(records, "store"), [records]);
   const typeOptions = useMemo(() => getUniqueValues(records, "type"), [records]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<WorkflowStatus, number> = { draft: 0, editing: 0, review: 0, approved: 0, published: 0, archived: 0 };
+    records.forEach((record) => {
+      counts[getRecordWorkflowStatus(record)] += 1;
+    });
+    return counts;
+  }, [records]);
 
   const visibleRecords = useMemo(() => {
     const normalizedQuery = normalizeText(query);
     const filtered = records.filter((record) => {
       if (store !== "all" && record.store !== store) return false;
       if (type !== "all" && record.type !== type) return false;
+      if (workflowStatus !== "all" && getRecordWorkflowStatus(record) !== workflowStatus) return false;
       if (!normalizedQuery) return true;
       return getRecordSearchText(record).includes(normalizedQuery);
     });
@@ -205,7 +250,7 @@ function ArchivePageContent() {
 
       return (getRecordTime(a, sortField) - getRecordTime(b, sortField)) * multiplier;
     });
-  }, [query, records, sortDirection, sortField, store, type]);
+  }, [query, records, sortDirection, sortField, store, type, workflowStatus]);
 
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const previewRecord = useMemo(() => {
@@ -220,6 +265,7 @@ function ArchivePageContent() {
     query.trim(),
     store !== "all",
     type !== "all",
+    workflowStatus !== "all",
     sortField !== "updatedAt",
     sortDirection !== "desc"
   ].filter(Boolean).length;
@@ -248,6 +294,7 @@ function ArchivePageContent() {
     setQuery("");
     setStore("all");
     setType("all");
+    setWorkflowStatus("all");
     setSortField("updatedAt");
     setSortDirection("desc");
     setSelectedIds([]);
@@ -264,6 +311,7 @@ function ArchivePageContent() {
       query,
       store,
       type,
+      status: workflowStatus,
       viewMode,
       itemSize,
       sortField,
@@ -278,6 +326,7 @@ function ArchivePageContent() {
     setQuery(view.query);
     setStore(view.store);
     setType(view.type);
+    setWorkflowStatus(view.status ?? "all");
     setViewMode(view.viewMode);
     setItemSize(view.itemSize);
     setSortField(view.sortField);
@@ -290,6 +339,76 @@ function ArchivePageContent() {
     const nextViews = savedViews.filter((view) => view.id !== viewId);
     window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(nextViews));
     setSavedViews(nextViews);
+  };
+
+  // Bulk edits mutate the selected records client-side, then upsert via
+  // POST /records/bulk (updateOrInsert keyed on uid/id — see RecordsController::bulk).
+  // There is no bulk-delete endpoint, so deletion is intentionally not offered here.
+  const applyBulkPatch = async (patch: (record: ArchiveRecord) => ArchiveRecord, successMessage: string) => {
+    if (selectedIds.length === 0 || bulkBusy) return;
+    const selectedRecords = records.filter((record) => selectedIdSet.has(record.id));
+    if (selectedRecords.length === 0) return;
+
+    const byStore = new Map<string, ArchiveRecord[]>();
+    for (const record of selectedRecords) {
+      const storeKey = record.store || "default";
+      const patched = patch(record);
+      byStore.set(storeKey, [...(byStore.get(storeKey) || []), patched]);
+    }
+
+    setBulkBusy(true);
+    setBulkFeedback(null);
+
+    // Optimistic UI: reflect the patch immediately in local state.
+    const patchedById = new Map(selectedRecords.map((record) => [record.id, patch(record)]));
+    setState((current) => current.status === "ready"
+      ? { status: "ready", records: current.records.map((record) => patchedById.get(record.id) || record) }
+      : current);
+
+    try {
+      for (const [storeKey, storeRecords] of byStore) {
+        const response = await api.bulkRecords({ store: storeKey, records: storeRecords });
+        if (!response.ok) {
+          setBulkFeedback({ kind: "error", message: response.error });
+          await loadRecords(query);
+          return;
+        }
+      }
+      setBulkFeedback({ kind: "success", message: successMessage });
+      await loadRecords(query);
+    } catch (error) {
+      setBulkFeedback({ kind: "error", message: error instanceof Error ? error.message : "تعذر تنفيذ الإجراء الجماعي" });
+      await loadRecords(query);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkAddTag = async () => {
+    const tag = window.prompt("أضف وسمًا للسجلات المحددة");
+    if (!tag?.trim()) return;
+    const trimmedTag = tag.trim();
+    await applyBulkPatch(
+      (record) => ({ ...record, tags: Array.from(new Set([...(record.tags || []), trimmedTag])) }),
+      `تمت إضافة الوسم "${trimmedTag}" إلى ${selectedIds.length} سجل`
+    );
+  };
+
+  const bulkSetType = async () => {
+    const nextType = window.prompt("النوع الجديد للسجلات المحددة");
+    if (!nextType?.trim()) return;
+    const trimmedType = nextType.trim();
+    await applyBulkPatch(
+      (record) => ({ ...record, type: trimmedType }),
+      `تم تعيين النوع "${trimmedType}" لـ ${selectedIds.length} سجل`
+    );
+  };
+
+  const bulkSetStatus = async (nextStatus: WorkflowStatus) => {
+    await applyBulkPatch(
+      (record) => ({ ...record, workflowStatus: nextStatus }),
+      `تم تعيين الحالة "${workflowStatusLabels[nextStatus]}" لـ ${selectedIds.length} سجل`
+    );
   };
 
   const renderRecordCard = (record: ArchiveRecord) => {
@@ -416,6 +535,27 @@ function ArchivePageContent() {
             <button type="button" className="button button-secondary" onClick={resetFilters}>تصفير</button>
           </div>
         </form>
+        <div className="archive-toolbar-row" role="group" aria-label="تصفية حسب حالة سير العمل">
+          <button
+            type="button"
+            className={`badge ${styles.filterChip}`}
+            data-active={workflowStatus === "all" ? "true" : "false"}
+            onClick={() => setWorkflowStatus("all")}
+          >
+            الكل · {records.length}
+          </button>
+          {WORKFLOW_STATES.filter((s) => statusCounts[s] > 0).map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={`badge ${styles.filterChip}`}
+              data-active={workflowStatus === s ? "true" : "false"}
+              onClick={() => setWorkflowStatus(workflowStatus === s ? "all" : s)}
+            >
+              {workflowStatusLabels[s]} · {statusCounts[s]}
+            </button>
+          ))}
+        </div>
         <div className="archive-toolbar-row">
           <DataViewSwitcher value={viewMode} options={viewOptions} onChange={setViewMode} />
           <DataViewSwitcher value={itemSize} options={itemSizeOptions} onChange={setItemSize} label="كثافة العناصر" />
@@ -433,13 +573,40 @@ function ArchivePageContent() {
       </PageToolbar>
 
       {selectedIds.length > 0 ? (
-        <div className="bulk-action-bar" role="status">
+        <div className={`bulk-action-bar ${bulkBusy ? styles.bulkBarBusy : ""}`} role="status">
           <strong>{selectedIds.length} سجل محدد</strong>
           <div className="button-row">
             <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>تحديد الظاهر</button>
+            <button type="button" className="button button-secondary" onClick={bulkAddTag} disabled={bulkBusy}>إضافة وسم</button>
+            <button type="button" className="button button-secondary" onClick={bulkSetType} disabled={bulkBusy}>تعيين النوع</button>
+            <label className="archive-toolbar-actions" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+              <span className="helper-text">تعيين الحالة</span>
+              <select
+                disabled={bulkBusy}
+                defaultValue=""
+                onChange={(e) => {
+                  const nextStatus = e.target.value as WorkflowStatus;
+                  e.target.value = "";
+                  if (nextStatus) void bulkSetStatus(nextStatus);
+                }}
+              >
+                <option value="" disabled>اختر حالة...</option>
+                {WORKFLOW_STATES.map((s) => (
+                  <option key={s} value={s}>{workflowStatusLabels[s]}</option>
+                ))}
+              </select>
+            </label>
             <a className="button button-secondary" href={`/archive/${encodeURIComponent(selectedIds[0])}`}>فتح الأول</a>
             <button type="button" className="button button-secondary" onClick={() => setSelectedIds([])}>إلغاء التحديد</button>
           </div>
+          <span className="helper-text">الحذف الجماعي يتطلب endpoint قادم من الخادم — غير متاح حالياً.</span>
+        </div>
+      ) : null}
+
+      {bulkFeedback ? (
+        <div className={`state-banner ${bulkFeedback.kind === "success" ? "state-banner-success" : "state-banner-error"}`} role="status">
+          <strong>{bulkFeedback.kind === "success" ? "تم تنفيذ الإجراء الجماعي" : "تعذر تنفيذ الإجراء الجماعي"}</strong>
+          <span className="helper-text">{bulkFeedback.message}</span>
         </div>
       ) : null}
 

@@ -12,6 +12,7 @@ class RealMediaProcessor implements MediaProcessor
         private readonly string $ffmpegPath = 'ffmpeg',
         private readonly string $ffprobePath = 'ffprobe',
         private readonly array $watermark = [],
+        private readonly ?OcrClient $ocrClient = null,
     ) {}
 
     /**
@@ -25,6 +26,7 @@ class RealMediaProcessor implements MediaProcessor
             'thumbnail' => $this->processThumbnail($job),
             'transcode' => $this->processTranscode($job),
             'transcription' => $this->processTranscription($job),
+            'ocr' => $this->processOcr($job),
             default => [],
         };
     }
@@ -106,6 +108,23 @@ class RealMediaProcessor implements MediaProcessor
     private function processTranscription(MediaJob $job): array
     {
         return $this->transcriber->transcribe($job->source_path, $job->record_id);
+    }
+
+    private function processOcr(MediaJob $job): array
+    {
+        $client = $this->ocrClient ?? new OcrClient();
+        $text = $client->extractText($job->source_path);
+
+        $outputKey = "{$job->record_id}/ocr.txt";
+        file_put_contents($outputKey, $text);
+
+        return [
+            [
+                'kind' => 'ocr_text',
+                'key' => $outputKey,
+                'url' => null,
+            ],
+        ];
     }
 
     /**

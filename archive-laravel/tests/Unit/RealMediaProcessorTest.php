@@ -21,7 +21,7 @@ class RealMediaProcessorTest extends TestCase
         $this->runner = new FakeProcessRunner();
         $transcriber = new WhisperTranscriber(
             $this->runner,
-            'faster-whisper',
+            'whisper-ctranslate2',
             'large-v3',
             'ar',
             'vtt'
@@ -97,7 +97,7 @@ class RealMediaProcessorTest extends TestCase
     {
         $transcriber = new WhisperTranscriber(
             $this->runner,
-            'faster-whisper',
+            'whisper-ctranslate2',
             'large-v3',
             'ar',
             'vtt'
