@@ -1,4 +1,5 @@
-import AppHeader from "@/components/AppHeader";
+import AppShell from "@/components/AppShell";
+import PageToolbar from "@/components/PageToolbar";
 
 const gettingStartedChecklist = [
   "سجّل الدخول عبر /login وتحقق من ظهور بياناتك في أعلى الشريط العلوي.",
@@ -55,66 +56,66 @@ const supportLinks = [
 
 export default function HelpPage() {
   return (
-    <main className="shell">
-      <AppHeader subtitle="مركز المساعدة" />
+    <AppShell subtitle="مركز المساعدة" navLabel="المساعدة" contentClassName="help-content">
+      <PageToolbar
+        eyebrow={<span className="badge">مرجع تشغيلي</span>}
+        title="مركز المساعدة"
+        description="نقطة انطلاق سريعة لأول استخدام، ومرجع دائم لمسارات النظام وروابط التوثيق دون حشو تسويقي."
+        meta={
+          <>
+            <span className="badge">{gettingStartedChecklist.length} خطوات بدء</span>
+            <span className="badge">{featureHighlights.length} مسارات رئيسية</span>
+          </>
+        }
+      />
 
-      <section className="content stack" aria-label="مركز المساعدة">
+      <article className="panel" aria-label="قائمة البدء السريع">
         <div className="panel-section-header">
-          <h1>مركز المساعدة</h1>
-          <p className="helper-text">
-            نقطة انطلاق سريعة لأول استخدام، ومرجع دائم لمسارات النظام وروابط التوثيق دون
-            حشو تسويقي.
-          </p>
+          <h2>قائمة البدء السريع</h2>
+          <p>خطوات مقترحة للتحقق من جاهزية حسابك، يمكن تجاهلها لاحقا.</p>
         </div>
-
-        <article className="panel" aria-label="قائمة البدء السريع">
-          <div className="panel-section-header">
-            <h2>قائمة البدء السريع</h2>
-            <p>خطوات مقترحة للتحقق من جاهزية حسابك، يمكن تجاهلها لاحقاً.</p>
-          </div>
-          <ul className="checklist">
-            {gettingStartedChecklist.map((item) => (
-              <li className="checklist-item" key={item}>
-                <input type="checkbox" aria-label={item} />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </article>
-
-        <div className="dense-grid" aria-label="أبرز الميزات">
-          {featureHighlights.map((feature) => (
-            <article className="panel" key={feature.title}>
-              <div className="panel-section-header">
-                <h2>{feature.title}</h2>
-              </div>
-              <p>{feature.description}</p>
-              <div className="button-row">
-                <a className="button button-secondary" href={feature.href}>
-                  {feature.linkLabel}
-                </a>
-              </div>
-            </article>
+        <ul className="checklist">
+          {gettingStartedChecklist.map((item) => (
+            <li className="checklist-item" key={item}>
+              <input type="checkbox" aria-label={item} />
+              <span>{item}</span>
+            </li>
           ))}
-        </div>
+        </ul>
+      </article>
 
-        <article className="panel" aria-label="التوثيق والدعم">
-          <div className="panel-section-header">
-            <h2>التوثيق والدعم</h2>
-            <p>مراجع أساسية عند الحاجة لتفاصيل أعمق أو استكشاف أعطال.</p>
-          </div>
-          <ul>
-            {supportLinks.map((link) => (
-              <li key={link.title}>
-                <a className="text-accent" href={link.href}>
-                  {link.title}
-                </a>
-                <span className="helper-text"> — {link.description}</span>
-              </li>
-            ))}
-          </ul>
-        </article>
-      </section>
-    </main>
+      <div className="dense-grid" aria-label="أبرز الميزات">
+        {featureHighlights.map((feature) => (
+          <article className="panel" key={feature.title}>
+            <div className="panel-section-header">
+              <h2>{feature.title}</h2>
+            </div>
+            <p>{feature.description}</p>
+            <div className="button-row">
+              <a className="button button-secondary" href={feature.href}>
+                {feature.linkLabel}
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <article className="panel" aria-label="التوثيق والدعم">
+        <div className="panel-section-header">
+          <h2>التوثيق والدعم</h2>
+          <p>مراجع أساسية عند الحاجة لتفاصيل أعمق أو استكشاف أعطال.</p>
+        </div>
+        <ul>
+          {supportLinks.map((link) => (
+            <li key={link.title}>
+              <a className="text-accent" href={link.href}>
+                {link.title}
+              </a>
+              <span className="helper-text"> - {link.description}</span>
+            </li>
+          ))}
+        </ul>
+      </article>
+    </AppShell>
   );
 }
