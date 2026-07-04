@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AccountExportController;
+use App\Http\Controllers\Api\V1\ActivityController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
@@ -98,6 +99,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/record-notes/{id}', [RecordNotesController::class, 'destroy']);
         Route::delete('/record-comments/{id}', [RecordCommentsController::class, 'destroy']);
         Route::get('/sync', [SyncController::class, 'index']);
+        Route::get('/activity', [ActivityController::class, 'index']);
         Route::get('/search', [SearchController::class, 'index']);
         Route::get('/discover', [DiscoverController::class, 'index']);
         Route::get('/relations/graph', [RelationsController::class, 'graph']);

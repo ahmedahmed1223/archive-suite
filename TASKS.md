@@ -23,6 +23,7 @@
 
 - [ ] **Activity/history دائم مع undo/diffs** — تحويل `/activity` من سطح مركب/محلي إلى API دائم فوق audit log، وإضافة diff/restore decisions في `/archive/[id]`.
   - القبول: سجل نشاط مصادق، قابل للتصفية، يعرض تغييرات السجلات وتعليقات الفريق ويتيح قرار استعادة آمن حيث ينطبق.
+  - الحالة: نُفذ endpoint `/api/v1/activity` العام، ووُصلت صفحة `/activity` به، وأضيفت diff/restore metadata في `/archive/[id]`. المتبقي قبل الإغلاق: تشغيل بوابة Laravel داخل Docker عند توفر صلاحية/رصيد Docker في البيئة.
 
 - [ ] **تخزين Laravel دائم للكيانات المحلية** — نقل Collections، Inbox، Vocabulary، Tags hierarchy، Saved views، Workflow presets، Dashboard widgets، وAutomation drafts من التخزين المحلي إلى Laravel.
   - القبول: لا تضيع هذه الكيانات بعد تبديل المتصفح/الجهاز، وتظهر في API بعقود واختبارات.

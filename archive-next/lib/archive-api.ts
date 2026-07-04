@@ -257,6 +257,14 @@ export interface RecordHistoryEntry {
   createdAt: string | null;
 }
 
+export interface ActivityFilters {
+  event?: string;
+  resourceType?: string;
+  resourceId?: string;
+  outcome?: "success" | "rejected" | "failed" | "";
+  limit?: number;
+}
+
 export interface SyncLogEntry {
   uid: string;
   store: string;
@@ -629,6 +637,7 @@ export interface ArchiveApiClient {
   recordComments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: RecordComment[] }>>;
   createRecordComment(recordId: string, payload: CreateRecordCommentPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: RecordComment }>>;
   deleteRecordComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  activity(params?: ActivityFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; filters: ActivityFilters }>>;
   recordHistory(recordId: string, params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[] }>>;
   sync(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
@@ -863,6 +872,16 @@ export function createArchiveApiClient({
       post<{ comment: RecordComment }>(`/records/${encodeURIComponent(recordId)}/comments`, payload, options),
     deleteRecordComment: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-comments/${encodeURIComponent(id)}`, undefined, options),
+    activity: (params?: ActivityFilters, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.event) queryParams.set("event", params.event);
+      if (params?.resourceType) queryParams.set("resourceType", params.resourceType);
+      if (params?.resourceId) queryParams.set("resourceId", params.resourceId);
+      if (params?.outcome) queryParams.set("outcome", params.outcome);
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      const query = queryParams.toString();
+      return get<{ entries: RecordHistoryEntry[]; filters: ActivityFilters }>(`/activity${query ? `?${query}` : ""}`, options);
+    },
     recordHistory: (recordId: string, params?: { limit?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.limit) queryParams.set("limit", String(params.limit));
