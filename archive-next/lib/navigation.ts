@@ -3,6 +3,7 @@ export const primaryNav = [
   { href: "/archive", label: "السجلات", section: "core" },
   { href: "/uploads", label: "إضافة", section: "core" },
   { href: "/search", label: "البحث", section: "core" },
+  { href: "/search/saved", label: "بحوث محفوظة", section: "core" },
   { href: "/discover", label: "الاكتشاف", section: "core" },
   { href: "/graph", label: "العلاقات", section: "core" },
   { href: "/files", label: "الملفات", section: "core" },

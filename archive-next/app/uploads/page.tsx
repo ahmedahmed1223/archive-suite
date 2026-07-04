@@ -1,6 +1,9 @@
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
+import { ImportFromUrlForm } from "./ImportFromUrlForm";
+import { IntakeTemplatesPanel } from "./IntakeTemplatesPanel";
 import { UploadForm } from "./UploadForm";
+import { UploadLinksPanel } from "./UploadLinksPanel";
 
 export default function UploadsPage() {
   return (
@@ -23,6 +26,9 @@ export default function UploadsPage() {
       />
 
       <UploadForm />
+      <ImportFromUrlForm />
+      <IntakeTemplatesPanel />
+      <UploadLinksPanel />
     </AppShell>
   );
 }
