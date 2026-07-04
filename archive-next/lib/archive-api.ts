@@ -386,7 +386,7 @@ export interface SmbPullPayload {
   localPath?: string;
 }
 
-export type MediaOperation = "thumbnail" | "transcode" | "transcription" | "ocr";
+export type MediaOperation = "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
 export type MediaJobStatus = "queued" | "processing" | "completed" | "failed";
 
 export interface MediaJob {
@@ -408,6 +408,24 @@ export interface CreateMediaJobPayload {
   operation: MediaOperation;
   sourcePath?: string;
   options?: Record<string, unknown>;
+}
+
+export interface BroadcastMetadata {
+  itemId: string;
+  mosObjectId?: string | null;
+  mosProgramId?: string | null;
+  mxfUmid?: string | null;
+  mxfFormat?: string | null;
+  raw?: Record<string, unknown> | null;
+  updatedAt?: string | null;
+}
+
+export interface BroadcastMetadataPayload {
+  mosObjectId?: string | null;
+  mosProgramId?: string | null;
+  mxfUmid?: string | null;
+  mxfFormat?: string | null;
+  raw?: Record<string, unknown>;
 }
 
 export interface UploadedRecord {
@@ -626,6 +644,8 @@ export interface ArchiveApiClient {
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[] }>>;
   createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
+  broadcastMetadata(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
+  updateBroadcastMetadata(recordId: string, payload: BroadcastMetadataPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   uploadFile(file: File, params?: { folder?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: UploadedRecord }>>;
   share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
@@ -720,7 +740,7 @@ export function createArchiveApiClient({
       accessToken,
       skipRefresh = false
     }: {
-      method?: "GET" | "POST" | "PATCH" | "DELETE";
+      method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
       body?: unknown;
       accessToken?: string;
       skipRefresh?: boolean;
@@ -783,6 +803,9 @@ export function createArchiveApiClient({
 
   const patch = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
     request<T>(path, { method: "PATCH", body, accessToken: options?.accessToken });
+
+  const put = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
+    request<T>(path, { method: "PUT", body, accessToken: options?.accessToken });
 
   const del = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
     request<T>(path, { method: "DELETE", body, accessToken: options?.accessToken });
@@ -897,6 +920,17 @@ export function createArchiveApiClient({
     },
     createMediaJob: (payload: CreateMediaJobPayload, options?: AuthRequestOptions) =>
       post<{ job: MediaJob }>("/media/jobs", payload, options),
+    broadcastMetadata: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>(
+        `/records/${encodeURIComponent(recordId)}/broadcast-metadata`,
+        options,
+      ),
+    updateBroadcastMetadata: (recordId: string, payload: BroadcastMetadataPayload, options?: AuthRequestOptions) =>
+      put<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>(
+        `/records/${encodeURIComponent(recordId)}/broadcast-metadata`,
+        payload,
+        options,
+      ),
     ingestScan: (payload?: { subdir?: string }, options?: AuthRequestOptions) =>
       post<{ ingested: unknown[]; skipped: number }>("/ingest/scan", payload, options),
     uploadFile: async (file: File, params?: { folder?: string }, options?: AuthRequestOptions) => {

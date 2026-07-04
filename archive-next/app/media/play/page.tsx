@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
+import MediaSourcePicker from "@/components/MediaSourcePicker";
 import PageToolbar from "@/components/PageToolbar";
 import styles from "./play.module.css";
 
@@ -67,6 +68,13 @@ export default function MediaPlayPage() {
             <p className="helper-text">ترك فارغ للقرص الافتراضي</p>
           </label>
           <button type="submit" className="button button-primary">تشغيل</button>
+          <MediaSourcePicker
+            label="تصفح المصادر"
+            onSelect={(selectedPath) => {
+              setPathInput(selectedPath);
+              setPath(selectedPath);
+            }}
+          />
         </form>
       </PageToolbar>
 
