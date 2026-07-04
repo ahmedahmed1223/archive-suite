@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Archive Suite — Linux/macOS Control Center launcher.
 # Operates the canonical Laravel + Next.js stack (archive-server/docker-compose.yml).
-# Usage: bash setup.sh                  # open the management console (Deploy is option 1)
+# Usage: bash setup.sh                  # open the management console (Quick start is option 1)
 #        bash setup.sh status|start|stop|restart|logs|health|deploy|diagnostics|config|backup
+#        bash setup.sh generate-password
+#        bash setup.sh change-admin-password --generate
 #        bash setup.sh deploy-legacy    # old Node/Vite deployment wizard
 set -euo pipefail
 

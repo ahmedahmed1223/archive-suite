@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Archive Suite — Control Center
+ * Masar — Control Center
  *
  * One English-first console to install, operate, configure, and maintain the
  * CANONICAL stack (Laravel API + Next.js, archive-server/docker-compose.yml)
@@ -64,6 +64,19 @@ const confirm = async (q, def = "n") => {
   return a.toLowerCase().startsWith("y");
 };
 
+// ─── CLI flags ───────────────────────────────────────────────────────────────
+const ARGS = process.argv.slice(2);
+const hasFlag = (name) => ARGS.includes(`--${name}`);
+function flagValue(name) {
+  const exact = `--${name}`;
+  const prefix = `${exact}=`;
+  const inline = ARGS.find((arg) => arg.startsWith(prefix));
+  if (inline) return inline.slice(prefix.length);
+  const idx = ARGS.indexOf(exact);
+  if (idx >= 0 && ARGS[idx + 1] && !ARGS[idx + 1].startsWith("-")) return ARGS[idx + 1];
+  return null;
+}
+
 // ─── .env helpers ───────────────────────────────────────────────────────────
 function readEnvRaw() {
   return existsSync(ENV_PATH) ? readFileSync(ENV_PATH, "utf8") : "";
@@ -106,7 +119,14 @@ function writeEnv(updates) {
 const SECRET_KEYS = /(SECRET|PASSWORD|TOKEN|KEY|DSN|URL)$/;
 const maskValue = (k, v) => (SECRET_KEYS.test(k) && v ? v.slice(0, 3) + "...(hidden)" : v);
 const genSecret = (bytes = 32) => randomBytes(bytes).toString("hex");
-const genPassword = () => randomBytes(18).toString("base64").replace(/[+/=]/g, "").slice(0, 20);
+const genPassword = (length = 24) => randomBytes(length).toString("base64url").slice(0, length);
+const MIN_ADMIN_PASSWORD_LENGTH = 12;
+function validateAdminPassword(password) {
+  if (String(password || "").length < MIN_ADMIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_ADMIN_PASSWORD_LENGTH} characters.`;
+  }
+  return null;
+}
 
 // ─── Process helpers ──────────────────────────────────────────────────────────
 const PNPM = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
@@ -239,6 +259,71 @@ async function rotateSecrets() {
   // ponytail: LARAVEL_APP_KEY deliberately excluded — rotating it invalidates
   // all data Laravel encrypted with it. Rotate manually only with a recovery plan.
   log(`${C.d}LARAVEL_APP_KEY was NOT rotated (doing so invalidates encrypted data).${C.x}`);
+}
+function printGeneratedPassword() {
+  titleLine("Generate a strong password");
+  const password = genPassword();
+  log(`${C.b}Generated password:${C.x} ${password}  ${C.d}(store it now — shown once)${C.x}`);
+  return 0;
+}
+function applyLaravelAdminPassword(email, password) {
+  if (!dockerComposeCmd()) return { applied: false, reason: "Docker Compose was not found." };
+  const ps = compose(["ps", "--services", "--status", "running"], { inherit: false });
+  if (ps.status !== 0) return { applied: false, reason: "the stack is not running or Docker is unavailable." };
+  const services = String(ps.stdout || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  if (!services.includes("laravel")) return { applied: false, reason: "the laravel service is not running." };
+  const result = compose(
+    ["exec", "-T", "laravel", "php", "artisan", "archive:admin-password", `--email=${email}`],
+    { inherit: false, input: `${password}\n` }
+  );
+  if (result.status === 0) return { applied: true };
+  const detail = String(result.stderr || result.stdout || "").trim().split(/\r?\n/)[0] || `artisan exited ${result.status}`;
+  return { applied: false, reason: detail };
+}
+async function changeAdminPassword() {
+  titleLine("Change admin password");
+  if (!existsSync(ENV_PATH)) {
+    err(`No .env at ${ENV_PATH} — run Deploy first.`);
+    return 1;
+  }
+  const env = readEnv();
+  const emailArg = flagValue("email");
+  const email = emailArg || (!process.stdin.isTTY ? env.ADMIN_EMAIL || "admin@example.com" : await ask("Admin email", env.ADMIN_EMAIL || "admin@example.com"));
+  let password = flagValue("password");
+  let generated = false;
+
+  if (hasFlag("generate") || (!password && !process.stdin.isTTY)) {
+    password = genPassword();
+    generated = true;
+  } else if (!password) {
+    const typed = await ask("New admin password (blank to generate)", "");
+    password = typed || genPassword();
+    generated = !typed;
+  }
+
+  const validation = validateAdminPassword(password);
+  if (validation) {
+    err(validation);
+    return 1;
+  }
+
+  if (!writeEnv({ ADMIN_EMAIL: email, ADMIN_PASSWORD: password })) return 1;
+  if (generated) log(`${C.b}Generated admin password:${C.x} ${password}  ${C.d}(store it now — shown once)${C.x}`);
+
+  if (hasFlag("env-only")) {
+    warn("Skipped live Laravel update because --env-only was used.");
+    warn("Restart the stack, or run this command again without --env-only while Laravel is running.");
+    return 0;
+  }
+
+  const live = applyLaravelAdminPassword(email, password);
+  if (live.applied) {
+    ok(`Updated the existing Laravel user password for ${email}.`);
+  } else {
+    warn(`Skipped live Laravel update: ${live.reason}`);
+    warn("If the user already exists, restart alone will not change its password; rerun this command while the stack is running.");
+  }
+  return 0;
 }
 async function setAdmin() {
   titleLine("Set admin credentials (legacy Node stack)");
@@ -436,6 +521,7 @@ function firstRunGuide() {
   log(`${C.b}Quick preset${C.x}`);
   log(`  ${C.c}setup doctor${C.x}   ${C.d}Check Node.js, pnpm, Docker, and .env.${C.x}`);
   log(`  ${C.c}setup quick${C.x}    ${C.d}Deploy, start Docker, and run the health check.${C.x}`);
+  log(`  ${C.c}setup change-admin-password --generate${C.x}  ${C.d}Generate and apply a new first-login password.${C.x}`);
   log("");
   log(`${C.b}Advanced preset${C.x}`);
   log(`  ${C.c}setup doctor${C.x}          ${C.d}Pre-flight report.${C.x}`);
@@ -518,47 +604,50 @@ async function runDoctor() {
 // ─── Menu ───────────────────────────────────────────────────────────────────
 const MENU = [
   ["sec", "— Quick Actions —"],
-  ["q", "Quick start (deploy+health)", quickStart],
-  ["f", "First-run guide", firstRunGuide],
-  ["d", "Doctor (pre-flight check)", runDoctor],
+  ["1", "Quick start (deploy + health)", quickStart],
+  ["2", "First-run guide", firstRunGuide],
+  ["3", "Doctor (pre-flight check)", runDoctor],
   ["sec", "— Deploy (Laravel + Next.js) —"],
-  ["1", "Deploy / Re-provision", deployCanonical],
+  ["4", "Deploy / Re-provision", deployCanonical],
   ["sec", "— Server —"],
-  ["2", "Status", serverStatus],
-  ["3", "Start", serverStart],
-  ["4", "Stop", serverStop],
-  ["5", "Restart", serverRestart],
-  ["6", "Logs", () => serverLogs({ follow: true })],
-  ["7", "Health check", healthCheck],
+  ["5", "Status", serverStatus],
+  ["6", "Start", serverStart],
+  ["7", "Stop", serverStop],
+  ["8", "Restart", serverRestart],
+  ["9", "Logs", () => serverLogs({ follow: true })],
+  ["10", "Health check", healthCheck],
   ["sec", "— Configure —"],
-  ["8", "View configuration", showConfig],
-  ["9", "Edit a setting", editSetting],
-  ["10", "Set public URL", setPublicUrl],
+  ["11", "View configuration", showConfig],
+  ["12", "Edit a setting", editSetting],
+  ["13", "Set public URL", setPublicUrl],
   ["sec", "— Security —"],
-  ["11", "Rotate Reverb secrets", rotateSecrets],
+  ["14", "Generate a strong password", printGeneratedPassword],
+  ["15", "Change admin password", changeAdminPassword],
+  ["16", "Rotate Reverb secrets", rotateSecrets],
   ["sec", "— Database —"],
-  ["12", "Migration status (artisan)", migrateStatus],
-  ["13", "Apply migrations (artisan)", migrateDeploy],
+  ["17", "Migration status (artisan)", migrateStatus],
+  ["18", "Apply migrations (artisan)", migrateDeploy],
   ["sec", "— Backups —"],
-  ["14", "Backup now", backupNow],
-  ["15", "List backups", listBackups],
-  ["16", "Restore backup", restoreBackup],
+  ["19", "Backup now", backupNow],
+  ["20", "List backups", listBackups],
+  ["21", "Restore backup", restoreBackup],
   ["sec", "— Maintain —"],
-  ["17", "Diagnostics (pnpm verify)", runDiagnostics],
-  ["18", "Update & rebuild", updateAndRebuild],
+  ["22", "Diagnostics (pnpm verify)", runDiagnostics],
+  ["23", "Update & rebuild", updateAndRebuild],
   ["sec", "— Legacy (Node/Vite stack) —"],
-  ["19", "Legacy deploy wizard", runLegacyDeploy],
-  ["20", "Legacy: set admin credentials", setAdmin],
-  ["21", "Legacy: Prisma migration status", legacyMigrateStatus],
-  ["22", "Legacy: apply Prisma migrations", legacyMigrateDeploy],
-  ["23", "Legacy: switch DB provider", dbProvider],
+  ["24", "Legacy deploy wizard", runLegacyDeploy],
+  ["25", "Legacy: set admin credentials", setAdmin],
+  ["26", "Legacy: Prisma migration status", legacyMigrateStatus],
+  ["27", "Legacy: apply Prisma migrations", legacyMigrateDeploy],
+  ["28", "Legacy: switch DB provider", dbProvider],
   ["sec", ""],
   ["0", "Exit", null],
+  ["q", "Exit", null],
 ];
 
 function printBanner() {
-  console.log(`\n${C.b}${C.c}  Archive Suite — Control Center${C.x}`);
-  console.log(`${C.d}  Install · Operate · Configure · Maintain${C.x}`);
+  console.log(`\n${C.b}${C.c}  Masar — Control Center${C.x}`);
+  console.log(`${C.d}  Install · Operate · Configure · Maintain Laravel + Next.js${C.x}`);
   hr();
 }
 function printMenu() {
@@ -582,13 +671,13 @@ function preflightSummary() {
   if (nodeMajor < 22) issues.push(`Node ${process.version} (need ≥22)`);
   if (!pnpmOk) issues.push("pnpm missing — run: npm i -g pnpm");
   if (!dockerOk) issues.push("Docker missing — required for the canonical Laravel + Next stack");
-  if (!envOk) issues.push(`.env not found — run option 1 (Deploy) first`);
+  if (!envOk) issues.push(`.env not found — run option 4 (Deploy) first`);
   if (issues.length === 0) {
     ok(`Preflight: Node ${process.version} · pnpm OK · Docker OK · .env present`);
   } else {
     warn("Preflight found issues:");
     for (const issue of issues) log(`   ${C.y}-${C.x} ${issue}`);
-    log(`   ${C.d}Run option 'd' (Doctor) for the full report.${C.x}`);
+    log(`   ${C.d}Run option 3 (Doctor) for the full report.${C.x}`);
   }
 }
 
@@ -600,7 +689,7 @@ async function interactive() {
     const choice = await ask("Choose an option");
     const item = MENU.find((m) => m[0] === choice && m[0] !== "sec");
     if (!item) { warn("Unknown option."); continue; }
-    if (item[0] === "0") break;
+    if (item[0] === "0" || item[0] === "q") break;
     try { await item[2](); } catch (e) { err(e.message); }
     log("");
   }
@@ -618,6 +707,8 @@ const COMMANDS = {
   // Config
   config: showConfig, "set-url": setPublicUrl,
   // Security
+  "generate-password": printGeneratedPassword, password: printGeneratedPassword,
+  "change-admin-password": changeAdminPassword, "set-admin-password": changeAdminPassword, "admin-password": changeAdminPassword,
   "rotate-secrets": rotateSecrets,
   // Database
   "migrate-status": migrateStatus, migrate: migrateDeploy,
@@ -640,6 +731,9 @@ const COMMANDS = {
     console.log(`  ${C.c}setup doctor${C.x}`);
     console.log(`  ${C.d}# Run the interactive menu (default when no command is given):${C.x}`);
     console.log(`  ${C.c}setup${C.x}`);
+    console.log(`  ${C.d}# Generate or change the first-login admin password:${C.x}`);
+    console.log(`  ${C.c}setup generate-password${C.x}`);
+    console.log(`  ${C.c}setup change-admin-password --generate${C.x}`);
     console.log("");
     console.log(`${C.b}  Commands (canonical Laravel + Next.js stack):${C.x}`);
     console.log(`  ${C.c}quick${C.x}            Deploy + health check in one step`);
@@ -650,6 +744,8 @@ const COMMANDS = {
     console.log(`  ${C.c}status | health | logs${C.x}  Monitor the running stack (health: /api/v1/health via Next)`);
     console.log(`  ${C.c}config${C.x}           View .env (secrets masked)`);
     console.log(`  ${C.c}set-url${C.x}          Set APP_BASE_URL + PUBLIC_DOMAIN + DOMAIN`);
+    console.log(`  ${C.c}generate-password${C.x}  Print a strong password without changing .env`);
+    console.log(`  ${C.c}change-admin-password${C.x}  Update ADMIN_EMAIL/PASSWORD and apply to Laravel when running`);
     console.log(`  ${C.c}rotate-secrets${C.x}   Regenerate REVERB_APP_KEY/SECRET (then re-deploy)`);
     console.log(`  ${C.c}migrate-status${C.x}   php artisan migrate:status (in the laravel container)`);
     console.log(`  ${C.c}migrate${C.x}          php artisan migrate --force (in the laravel container)`);
@@ -662,6 +758,7 @@ const COMMANDS = {
     console.log(`  ${C.c}deploy-legacy${C.x}    Run the old Node/Vite deployment wizard`);
     console.log(`  ${C.c}legacy:set-admin | legacy:migrate-status | legacy:migrate | legacy:db-provider${C.x}`);
     console.log(`\n${C.b}  Tips:${C.x}`);
+    console.log(`  ${C.d}- In the interactive menu, option 1 is the single quick-start path; q and 0 both exit.${C.x}`);
     console.log(`  ${C.d}- HTTP-only dev variant: docker compose -f docker-compose.yml -f docker-compose.dev.yml up (from archive-server/).${C.x}`);
     console.log(`  ${C.d}- "Stack not running" → run 'setup start' or 'setup doctor' to diagnose.${C.x}`);
     console.log(`  ${C.d}- "No .env found"     → run 'setup deploy' to provision a fresh configuration.${C.x}`);
@@ -671,7 +768,10 @@ const COMMANDS = {
   },
 };
 
-const cmd = process.argv.slice(2).find((a) => !a.startsWith("-"));
+COMMANDS["0"] = () => 0;
+COMMANDS.q = () => 0;
+
+const cmd = ARGS.find((a) => !a.startsWith("-"));
 if (cmd) {
   const fn = COMMANDS[cmd];
   if (!fn) { err(`Unknown command "${cmd}". Try: ${Object.keys(COMMANDS).join(", ")}`); process.exit(1); }

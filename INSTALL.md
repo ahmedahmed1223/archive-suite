@@ -64,6 +64,18 @@ bash setup.sh
 - توليد الأسرار الناقصة تلقائياً (PostgreSQL / Redis / Reverb / `LARAVEL_APP_KEY`)
 - `docker compose up -d --build` وطباعة العناوين (Next على :3000، Reverb على :8080، Caddy على 80/443)
 
+داخل القائمة التفاعلية أصبح الخيار `1` هو **Quick start** فقط، و`q`/`0` للخروج.
+لإدارة كلمات المرور من نفس الأداة:
+
+```powershell
+.\Setup-Archive.bat generate-password
+.\Setup-Archive.bat change-admin-password --generate
+.\Setup-Archive.bat change-admin-password --email=admin@example.com --password=New-Strong-Password-123
+```
+
+الأمر `change-admin-password` يحدّث `.env` بنسخة احتياطية، ويحاول تطبيق كلمة المرور
+على مستخدم Laravel الموجود إذا كانت الحاوية شغالة.
+
 الترحيلات تعمل تلقائياً داخل حاوية Laravel عند الإقلاع.
 
 > معالج النشر القديم (Node/SPA) ما زال متاحاً كأمر صريح فقط:
