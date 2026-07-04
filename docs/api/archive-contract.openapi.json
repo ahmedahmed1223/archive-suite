@@ -326,6 +326,151 @@
         }
       }
     },
+    "/records/{id}/comments": {
+      "get": {
+        "tags": ["Record Comments"],
+        "summary": "List team comments for an archive record",
+        "operationId": "listRecordComments",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record comments",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordCommentsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Record Comments"],
+        "summary": "Create a team comment for an archive record",
+        "operationId": "createRecordComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RecordCommentCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created comment",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/record-comments/{id}": {
+      "delete": {
+        "tags": ["Record Comments"],
+        "summary": "Soft-delete a team record comment",
+        "operationId": "deleteRecordComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/history": {
+      "get": {
+        "tags": ["Record History"],
+        "summary": "List audit-backed change history for an archive record",
+        "operationId": "listRecordHistory",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 200 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record history entries",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordHistoryResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/sync": {
+      "get": {
+        "tags": ["Sync"],
+        "summary": "List sync log entries and conflict states",
+        "operationId": "listSyncLog",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 500 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sync log entries",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SyncLogResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/bulk": {
       "post": {
         "tags": ["Records"],
@@ -2042,6 +2187,132 @@
             "required": ["note"],
             "properties": {
               "note": { "$ref": "#/components/schemas/RecordNote" }
+            }
+          }
+        ]
+      },
+      "RecordComment": {
+        "type": "object",
+        "required": ["id", "itemId", "body", "authorId", "authorName", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "itemId": { "type": "string" },
+          "body": { "type": "string" },
+          "authorId": { "type": ["string", "null"] },
+          "authorName": { "type": "string" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "RecordCommentCreateRequest": {
+        "type": "object",
+        "required": ["body"],
+        "properties": {
+          "body": { "type": "string", "minLength": 1, "maxLength": 8000 }
+        }
+      },
+      "RecordCommentsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["comments"],
+            "properties": {
+              "comments": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RecordComment" }
+              }
+            }
+          }
+        ]
+      },
+      "RecordCommentResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["comment"],
+            "properties": {
+              "comment": { "$ref": "#/components/schemas/RecordComment" }
+            }
+          }
+        ]
+      },
+      "RecordHistoryEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "event",
+          "action",
+          "resourceType",
+          "resourceId",
+          "actorId",
+          "outcome",
+          "statusCode",
+          "metadata",
+          "createdAt"
+        ],
+        "properties": {
+          "id": { "type": ["integer", "string"] },
+          "event": { "type": "string" },
+          "action": { "type": "string" },
+          "resourceType": { "type": ["string", "null"] },
+          "resourceId": { "type": ["string", "null"] },
+          "actorId": { "type": ["string", "null"] },
+          "outcome": { "type": "string" },
+          "statusCode": { "type": "integer" },
+          "metadata": { "type": ["object", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "RecordHistoryResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["entries"],
+            "properties": {
+              "entries": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RecordHistoryEntry" }
+              }
+            }
+          }
+        ]
+      },
+      "SyncLogEntry": {
+        "type": "object",
+        "required": ["uid", "store", "status", "syncVersion", "lastModifiedBy", "updatedAt"],
+        "properties": {
+          "uid": { "type": "string" },
+          "store": { "type": "string" },
+          "status": { "type": "string", "enum": ["synced", "conflict"] },
+          "syncVersion": { "type": ["integer", "null"] },
+          "lastModifiedBy": { "type": ["object", "null"] },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "SyncSummary": {
+        "type": "object",
+        "required": ["total", "synced", "conflicts"],
+        "properties": {
+          "total": { "type": "integer" },
+          "synced": { "type": "integer" },
+          "conflicts": { "type": "integer" }
+        }
+      },
+      "SyncLogResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["entries", "summary"],
+            "properties": {
+              "entries": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/SyncLogEntry" }
+              },
+              "summary": { "$ref": "#/components/schemas/SyncSummary" }
             }
           }
         ]
