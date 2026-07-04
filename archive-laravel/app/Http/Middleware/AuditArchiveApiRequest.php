@@ -54,6 +54,8 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
             ['PATCH', 'api/v1/record-notes/{id}'] => ['record_notes.update', 'record_note'],
             ['DELETE', 'api/v1/record-notes/{id}'] => ['record_notes.delete', 'record_note'],
+            ['POST', 'api/v1/records/{id}/comments'] => ['record_comments.create', 'record_comment'],
+            ['DELETE', 'api/v1/record-comments/{id}'] => ['record_comments.delete', 'record_comment'],
             ['POST', 'api/v1/rights'] => ['rights.upsert', 'rights_record'],
             ['POST', 'api/v1/relations'] => ['relations.create', 'record_relation'],
             ['DELETE', 'api/v1/relations/{id}'] => ['relations.delete', 'record_relation'],
@@ -75,7 +77,12 @@ class AuditArchiveApiRequest
             $resourceId = $request->route('id');
         }
 
-        if (in_array($route, ['api/v1/records/{id}/notes', 'api/v1/record-notes/{id}'], true)) {
+        if (in_array($route, [
+            'api/v1/records/{id}/notes',
+            'api/v1/record-notes/{id}',
+            'api/v1/records/{id}/comments',
+            'api/v1/record-comments/{id}',
+        ], true)) {
             $resourceId = $request->route('id');
         }
 
