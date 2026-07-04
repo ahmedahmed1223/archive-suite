@@ -3,10 +3,12 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Eye, FileArchive, FileQuestion, Files, FolderOpen, HardDrive, Play, RefreshCw, ScanSearch, Share2, UploadCloud } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
+import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveFile, type FileBrowserEntry } from "@/lib/archive-api";
 import { addMintedLink } from "@/lib/minted-shares";
@@ -213,6 +215,8 @@ export default function FilesPage() {
     return visibleFiles.find((file) => selectedKeySet.has(file.key)) || visibleFiles[0] || null;
   }, [previewKey, selectedKeySet, visibleFiles]);
   const mediaCount = files.filter((file) => getFileKind(file) === "media").length;
+  const imageCount = files.filter((file) => getFileKind(file) === "image").length;
+  const documentCount = files.filter((file) => getFileKind(file) === "document").length;
   const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
 
   const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
@@ -283,10 +287,12 @@ export default function FilesPage() {
     <div className="button-row">
       {isPlayableFile(file) ? (
         <a href={mediaPlayHref(file)} className="button button-secondary button-sm">
+          <Play size={16} aria-hidden="true" />
           تشغيل
         </a>
       ) : null}
       <button type="button" className="button button-secondary button-sm" onClick={() => setPreviewKey(file.key)}>
+        <Eye size={16} aria-hidden="true" />
         معاينة
       </button>
     </div>
@@ -420,6 +426,7 @@ export default function FilesPage() {
   return (
     <AppShell subtitle="مستعرض الملفات" contentClassName="files-content">
       <PageToolbar
+        icon={<Files size={24} />}
         eyebrow={<span className="badge">File Operations</span>}
         title="الملفات"
         description="استعرض ملفات التخزين، شغّل الوسائط، اختر عناصر للمشاركة، أو أطلق فحص ingest من واجهة واحدة."
@@ -433,11 +440,18 @@ export default function FilesPage() {
         )}
         actions={(
           <>
-            <a className="button button-primary" href="/uploads">رفع ملف</a>
+            <a className="button button-primary" href="/uploads">
+              <UploadCloud size={16} aria-hidden="true" />
+              رفع ملف
+            </a>
             <button type="button" className="button button-primary" onClick={() => void handleScan()} disabled={scanState.status === "running"}>
+              <ScanSearch size={16} aria-hidden="true" />
               {scanState.status === "running" ? "جار الفحص" : "فحص التخزين"}
             </button>
-            <a className="button button-secondary" href="/media/jobs">مهام الوسائط</a>
+            <a className="button button-secondary" href="/media/jobs">
+              <Play size={16} aria-hidden="true" />
+              مهام الوسائط
+            </a>
           </>
         )}
       >
@@ -468,7 +482,10 @@ export default function FilesPage() {
             </select>
           </label>
           <div className="archive-toolbar-actions">
-            <button type="submit" className="button button-primary">تحديث</button>
+            <button type="submit" className="button button-primary">
+              <RefreshCw size={16} aria-hidden="true" />
+              تحديث
+            </button>
             <button
               type="button"
               className="button button-secondary"
@@ -487,6 +504,40 @@ export default function FilesPage() {
           <DataViewSwitcher value={viewMode} options={fileViewOptions} onChange={setViewMode} label="طريقة عرض الملفات" />
         </div>
       </PageToolbar>
+
+      <MetricStrip
+        ariaLabel="ملخص الملفات"
+        items={[
+          {
+            label: "إجمالي الملفات",
+            value: files.length,
+            description: `${stores.length || 1} مخزن متاح`,
+            icon: <HardDrive size={20} />,
+            tone: "accent"
+          },
+          {
+            label: "وسائط قابلة للتشغيل",
+            value: mediaCount,
+            description: "صوت وفيديو",
+            icon: <Play size={20} />,
+            tone: "info"
+          },
+          {
+            label: "صور ومستندات",
+            value: imageCount + documentCount,
+            description: `${imageCount} صور، ${documentCount} مستندات`,
+            icon: <FileArchive size={20} />,
+            tone: "success"
+          },
+          {
+            label: "الحجم الكلي",
+            value: formatBytes(totalSize),
+            description: `${selectedKeys.length} عنصر محدد`,
+            icon: <Share2 size={20} />,
+            tone: selectedKeys.length > 0 ? "warning" : "default"
+          }
+        ]}
+      />
 
       {scanState.status === "success" ? (
         <div className="state-banner state-banner-success">
@@ -511,6 +562,7 @@ export default function FilesPage() {
               disabled={shareState.status === "creating"}
               className="button button-primary"
             >
+              <Share2 size={16} aria-hidden="true" />
               {shareState.status === "creating" ? "جار الإنشاء..." : "إنشاء رابط مشاركة"}
             </button>
             <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>تحديد الظاهر</button>
@@ -539,13 +591,14 @@ export default function FilesPage() {
       ) : null}
 
       {viewMode === "browser" ? (
-        <section className="panel" aria-label="متصفح المجلدات">
-          <div className="panel-title-row">
+        <section className="workspace-panel" aria-label="متصفح المجلدات">
+          <div className="workspace-panel__header">
             <div>
               <h2>متصفح المجلدات</h2>
               <p>تنقل داخل شجرة مخزن الملفات عبر المجلدات ومسار التنقل.</p>
             </div>
             <button type="button" className="button button-secondary button-sm" onClick={() => void loadBrowser(browserPath)}>
+              <RefreshCw size={16} aria-hidden="true" />
               تحديث المجلد
             </button>
           </div>
@@ -584,7 +637,7 @@ export default function FilesPage() {
 
           {browserState.status === "ready" ? (
             browserState.entries.length === 0 ? (
-              <EmptyState title="مجلد فارغ." description="لا توجد ملفات أو مجلدات فرعية في هذا المسار." />
+              <EmptyState icon={<FolderOpen size={22} />} title="مجلد فارغ." description="لا توجد ملفات أو مجلدات فرعية في هذا المسار." />
             ) : (
               <DataTable
                 ariaLabel="محتوى المجلد"
@@ -615,9 +668,15 @@ export default function FilesPage() {
       {viewMode !== "browser" && state.status === "ready" ? (
         visibleFiles.length === 0 ? (
           <EmptyState
+            icon={<FileQuestion size={22} />}
             title="لم يتم العثور على ملفات."
             description="جرّب بحثاً أوسع أو غيّر الفلاتر، ثم أعد فحص التخزين عند الحاجة."
-            actions={<button type="button" className="button button-secondary" onClick={() => void handleScan()}>فحص التخزين</button>}
+            actions={(
+              <button type="button" className="button button-secondary" onClick={() => void handleScan()}>
+                <ScanSearch size={16} aria-hidden="true" />
+                فحص التخزين
+              </button>
+            )}
           />
         ) : (
           <section className="files-workspace" aria-label="واجهة الملفات">
@@ -686,15 +745,19 @@ export default function FilesPage() {
                   </div>
                   <div className="button-row">
                     {isPlayableFile(previewFile) ? (
-                      <a className="button button-primary" href={mediaPlayHref(previewFile)}>تشغيل الملف</a>
+                      <a className="button button-primary" href={mediaPlayHref(previewFile)}>
+                        <Play size={16} aria-hidden="true" />
+                        تشغيل الملف
+                      </a>
                     ) : null}
                     <button type="button" className="button button-secondary" onClick={() => handleToggleFile(previewFile.key)}>
+                      <Share2 size={16} aria-hidden="true" />
                       {selectedKeySet.has(previewFile.key) ? "إزالة من التحديد" : "تحديد الملف"}
                     </button>
                   </div>
                 </>
               ) : (
-                <EmptyState title="لا توجد معاينة." description="مرر فوق ملف أو حدده لعرض تفاصيله هنا." />
+                <EmptyState icon={<Eye size={22} />} title="لا توجد معاينة." description="مرر فوق ملف أو حدده لعرض تفاصيله هنا." />
               )}
             </aside>
           </section>
