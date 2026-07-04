@@ -268,6 +268,9 @@ function SearchPageContent() {
             <button type="button" className="button button-secondary" onClick={resetSearch}>
               تصفير
             </button>
+            <a className="button button-secondary" href="/search/saved">
+              إدارة البحوث المحفوظة
+            </a>
           </>
         )}
       >

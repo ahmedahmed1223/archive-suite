@@ -177,6 +177,64 @@ export interface CreateRecordCommentPayload {
   body: string;
 }
 
+export interface IntakeTemplate {
+  id: string;
+  name: string;
+  type: string | null;
+  fields: Record<string, unknown>;
+  createdBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateIntakeTemplatePayload {
+  name: string;
+  type?: string;
+  fields: Record<string, unknown>;
+}
+
+export type ImportSuggestedType = "video" | "image" | "audio" | "document" | "file";
+
+export interface ImportPreview {
+  url: string;
+  contentType: string;
+  contentLength: number | null;
+  suggestedType: ImportSuggestedType;
+  suggestedTitle: string;
+}
+
+export interface UploadLink {
+  id: string;
+  token?: string;
+  label: string | null;
+  folder: string | null;
+  expiresAt: string;
+  revoked: boolean;
+  uploadCount: number;
+  createdAt: string | null;
+}
+
+export interface CreateUploadLinkPayload {
+  label?: string;
+  folder?: string;
+  expiresInHours: number;
+}
+
+export interface SavedSearch {
+  id: string;
+  name: string;
+  query: string | null;
+  filters: Record<string, unknown> | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateSavedSearchPayload {
+  name: string;
+  query?: string;
+  filters?: Record<string, unknown>;
+}
+
 export interface RecordHistoryEntry {
   id: number | string;
   event: string;
@@ -561,6 +619,17 @@ export interface ArchiveApiClient {
   updateUserRole(id: string, payload: { role: ManagedUserRole }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ user: ManagedUser }>>;
   deleteUser(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope>;
   acceptInvitation(token: string, payload: { name: string; password: string }): Promise<ApiEnvelope<{ user: ManagedUser }>>;
+  intakeTemplates(options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: IntakeTemplate[] }>>;
+  createIntakeTemplate(payload: CreateIntakeTemplatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: IntakeTemplate }>>;
+  deleteIntakeTemplate(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  previewImportUrl(url: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: ImportPreview }>>;
+  uploadLinks(options?: AuthRequestOptions): Promise<ApiEnvelope<{ links: UploadLink[] }>>;
+  createUploadLink(payload: CreateUploadLinkPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ link: UploadLink }>>;
+  revokeUploadLink(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ link: UploadLink }>>;
+  getUploadLink(token: string): Promise<ApiEnvelope<{ link: UploadLink }>>;
+  savedSearches(options?: AuthRequestOptions): Promise<ApiEnvelope<{ searches: SavedSearch[] }>>;
+  createSavedSearch(payload: CreateSavedSearchPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
+  deleteSavedSearch(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
 }
 
 export interface AuthRequestOptions {
@@ -907,6 +976,25 @@ export function createArchiveApiClient({
         `/collaboration/rooms/${encodeURIComponent(roomKey)}/documents/${encodeURIComponent(resourceId)}`,
         payload,
         options
-      )
+      ),
+    intakeTemplates: (options?: AuthRequestOptions) =>
+      get<{ templates: IntakeTemplate[] }>("/intake-templates", options),
+    createIntakeTemplate: (payload: CreateIntakeTemplatePayload, options?: AuthRequestOptions) =>
+      post<{ template: IntakeTemplate }>("/intake-templates", payload, options),
+    deleteIntakeTemplate: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/intake-templates/${encodeURIComponent(id)}`, undefined, options),
+    previewImportUrl: (url: string, options?: AuthRequestOptions) =>
+      post<{ preview: ImportPreview }>("/import/preview", { url }, options),
+    uploadLinks: (options?: AuthRequestOptions) => get<{ links: UploadLink[] }>("/upload-links", options),
+    createUploadLink: (payload: CreateUploadLinkPayload, options?: AuthRequestOptions) =>
+      post<{ link: UploadLink }>("/upload-links", payload, options),
+    revokeUploadLink: (id: string, options?: AuthRequestOptions) =>
+      post<{ link: UploadLink }>(`/upload-links/${encodeURIComponent(id)}/revoke`, undefined, options),
+    getUploadLink: (token: string) => get<{ link: UploadLink }>(`/upload-links/${encodeURIComponent(token)}`),
+    savedSearches: (options?: AuthRequestOptions) => get<{ searches: SavedSearch[] }>("/saved-searches", options),
+    createSavedSearch: (payload: CreateSavedSearchPayload, options?: AuthRequestOptions) =>
+      post<{ search: SavedSearch }>("/saved-searches", payload, options),
+    deleteSavedSearch: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/saved-searches/${encodeURIComponent(id)}`, undefined, options)
   };
 }

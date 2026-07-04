@@ -1,8 +1,8 @@
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
-import { useMemo, useRef, useState } from "react";
-import { createArchiveApiClient, type UploadedRecord } from "@/lib/archive-api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createArchiveApiClient, type IntakeTemplate, type UploadedRecord } from "@/lib/archive-api";
 
 type UploadState =
   | { status: "idle" }
@@ -23,7 +23,28 @@ export function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const [folder, setFolder] = useState("");
   const [state, setState] = useState<UploadState>({ status: "idle" });
+  const [templates, setTemplates] = useState<IntakeTemplate[]>([]);
+  const [templateId, setTemplateId] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void api.intakeTemplates().then((response) => {
+      if (!cancelled && response.ok) setTemplates(response.templates);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
+
+  function applyTemplate(id: string) {
+    setTemplateId(id);
+    const template = templates.find((item) => item.id === id);
+    const templateFolder = template?.fields?.folder;
+    if (typeof templateFolder === "string") {
+      setFolder(templateFolder);
+    }
+  }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     setFile(event.target.files?.[0] ?? null);
@@ -67,6 +88,20 @@ export function UploadForm() {
       </div>
 
       <form ref={formRef} className="auth-form" onSubmit={handleSubmit}>
+        {templates.length > 0 ? (
+          <label>
+            قالب الإدخال (اختياري)
+            <select value={templateId} onChange={(event) => applyTemplate(event.target.value)} disabled={state.status === "uploading"}>
+              <option value="">بدون قالب</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
         <label>
           الملف
           <input type="file" onChange={handleFileChange} required disabled={state.status === "uploading"} />
