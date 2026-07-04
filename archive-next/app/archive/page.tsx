@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { FormEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Archive, Filter, FolderSearch, PanelRightOpen, Search, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import DataTable from "@/components/ui/DataTable";
@@ -641,9 +642,10 @@ function ArchivePageContent() {
   return (
     <AppShell subtitle="مركز السجلات" contentClassName="archive-content">
       <PageToolbar
-        eyebrow={<span className="badge">Archive Operations</span>}
+        icon={<Archive size={24} strokeWidth={2} />}
+        eyebrow={<span className="badge">Archive Workspace</span>}
         title="الأرشيف"
-        description="بحث، فرز، معاينة، وتحديد جماعي للسجلات داخل واجهة تشغيل واحدة."
+        description="سطح عمل موحد للبحث والتصفية والمعاينة والإجراءات الجماعية على السجلات."
         meta={(
           <>
             <span className="badge">{visibleRecords.length} نتيجة</span>
@@ -659,9 +661,9 @@ function ArchivePageContent() {
           </>
         )}
       >
-        <form className="archive-toolbar-grid" onSubmit={handleSearch}>
+        <form className="archive-toolbar-grid command-filter-grid" onSubmit={handleSearch}>
           <label>
-            <span>بحث</span>
+            <span><Search aria-hidden="true" size={14} /> بحث</span>
             <input
               type="search"
               placeholder="العنوان، الوسوم، الوصف، metadata..."
@@ -671,21 +673,21 @@ function ArchivePageContent() {
             />
           </label>
           <label>
-            <span>المخزن</span>
+            <span><FolderSearch aria-hidden="true" size={14} /> المخزن</span>
             <select value={store} onChange={(e) => setStore(e.target.value)}>
               <option value="all">كل المخازن</option>
               {storeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
           <label>
-            <span>النوع</span>
+            <span><Filter aria-hidden="true" size={14} /> النوع</span>
             <select value={type} onChange={(e) => setType(e.target.value)}>
               <option value="all">كل الأنواع</option>
               {typeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
           <label>
-            <span>الفرز</span>
+            <span><SlidersHorizontal aria-hidden="true" size={14} /> الفرز</span>
             <select value={sortField} onChange={(e) => setSortField(e.target.value as ArchiveSortField)}>
               {Object.entries(sortLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
@@ -793,9 +795,10 @@ function ArchivePageContent() {
         </div>
       ) : null}
 
-      {state.status === "ready" ? (
+        {state.status === "ready" ? (
         visibleRecords.length === 0 ? (
           <EmptyState
+            icon={<PanelRightOpen size={22} />}
             title="لا توجد سجلات مطابقة."
             description="خفف الفلاتر أو اترك البحث فارغاً لعرض أحدث السجلات من Laravel API."
             actions={<button type="button" className="button button-secondary" onClick={resetFilters}>تصفير الفلاتر</button>}
@@ -822,7 +825,7 @@ function ArchivePageContent() {
               {previewRecord ? (
                 <>
                   <div className="panel-section-header">
-                    <span className="badge">معاينة</span>
+                    <span className="badge"><PanelRightOpen aria-hidden="true" size={14} /> معاينة</span>
                     <h2>{previewRecord.title || "بدون عنوان"}</h2>
                   </div>
                   <p>{previewRecord.description || "لا يوجد وصف محفوظ لهذا السجل بعد."}</p>

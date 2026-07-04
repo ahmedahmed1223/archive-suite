@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, AlertTriangle, Archive, BarChart3, Clock3, Film, Gauge, PlusCircle, Search, Sparkles } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
+import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { BRAND } from "@/lib/brand";
 import {
@@ -122,13 +124,42 @@ export default function HomePage() {
   );
 
   const jobs = jobsState.status === "ready" ? jobsState.jobs : [];
+  const failedJobs = jobs.filter((job) => job.status === "failed").length;
+  const activeJobs = jobs.filter((job) => job.status === "queued" || job.status === "processing").length;
+  const attentionItems = useMemo(
+    () => [
+      {
+        icon: <PlusCircle size={18} />,
+        title: "إضافة مادة جديدة",
+        description: "ابدأ من معالج الإضافة لإرفاق ملفات وmetadata ومراجعة قبل الإنشاء.",
+        href: "/uploads",
+        label: "إضافة"
+      },
+      {
+        icon: <Search size={18} />,
+        title: "مراجعة نتائج البحث",
+        description: `${records.length} سجل متاح للتصفية والفرز والمعاينة داخل الأرشيف.`,
+        href: "/archive",
+        label: "فتح"
+      },
+      {
+        icon: failedJobs > 0 ? <AlertTriangle size={18} /> : <Film size={18} />,
+        title: failedJobs > 0 ? "مهام وسائط فاشلة" : "مهام الوسائط",
+        description: failedJobs > 0 ? `${failedJobs} مهمة تحتاج فحصًا.` : `${activeJobs} مهمة قيد الانتظار أو المعالجة.`,
+        href: "/media/jobs",
+        label: "مراجعة"
+      }
+    ],
+    [activeJobs, failedJobs, records.length]
+  );
 
   return (
     <AppShell subtitle="لوحة التشغيل" navLabel="مسارات Masar">
       <PageToolbar
-        eyebrow={<span className="badge">Masar Operations</span>}
-        title={`لوحة ${BRAND.arabicName} التشغيلية`}
-        description="نظرة حية على الأرشيف: مؤشرات السجلات، آخر الإضافات، مهام الوسائط الجارية، واختصارات العمل اليومية."
+        icon={<Gauge size={24} strokeWidth={2} />}
+        eyebrow={<span className="badge">Command Workspace</span>}
+        title={`لوحة ${BRAND.arabicName}`}
+        description="مركز تشغيل يومي يجمع مؤشرات الأرشيف، المهام التي تحتاج انتباه، آخر السجلات، وحالة الوسائط."
         meta={(
           <>
             <span className="badge">v{apiContract.version}</span>
@@ -168,26 +199,15 @@ export default function HomePage() {
 
         {recordsState.status === "ready" ? (
           <>
-            <div className="analytics-metric-grid">
-              <article className="health-metric" data-tone="accent">
-                <div className="health-metric__body">
-                  <span>إجمالي السجلات المحملة</span>
-                  <strong>{records.length}</strong>
-                </div>
-              </article>
-              <article className="health-metric">
-                <div className="health-metric__body">
-                  <span>عدد الأنواع</span>
-                  <strong>{Object.keys(stats.countByType).length}</strong>
-                </div>
-              </article>
-              <article className="health-metric">
-                <div className="health-metric__body">
-                  <span>عدد الحالات</span>
-                  <strong>{Object.keys(stats.countByStatus).length}</strong>
-                </div>
-              </article>
-            </div>
+            <MetricStrip
+              ariaLabel="مؤشرات لوحة التشغيل"
+              items={[
+                { label: "السجلات", value: records.length, description: "محملة من البحث", icon: <Archive size={20} />, tone: "accent" },
+                { label: "الأنواع", value: Object.keys(stats.countByType).length, description: "تصنيفات نشطة", icon: <BarChart3 size={20} />, tone: "info" },
+                { label: "الحالات", value: Object.keys(stats.countByStatus).length, description: "من metadata", icon: <Activity size={20} />, tone: "success" },
+                { label: "مهام الوسائط", value: jobs.length, description: `${activeJobs} نشطة`, icon: <Film size={20} />, tone: failedJobs > 0 ? "warning" : "default" }
+              ]}
+            />
             <div className="analytics-columns">
               <section className="panel">
                 <div className="panel-title-row">
@@ -220,6 +240,28 @@ export default function HomePage() {
         ) : null}
       </section>
 
+      <section className="page-section" aria-labelledby="attention-heading">
+        <div className="toolbar-row toolbar-start">
+          <h2 id="attention-heading" className="section-heading">مهام تحتاج انتباه</h2>
+          <span className="badge">قائمة تشغيل</span>
+        </div>
+        <article className="workspace-panel">
+          <ul className="attention-list">
+            {attentionItems.map((item) => (
+              <li key={item.href}>
+                <span className="attention-list__icon">{item.icon}</span>
+                <span>
+                  <strong>{item.title}</strong>
+                  <br />
+                  <span className="helper-text">{item.description}</span>
+                </span>
+                <a className="badge" href={item.href}>{item.label}</a>
+              </li>
+            ))}
+          </ul>
+        </article>
+      </section>
+
       <section className="page-section" aria-labelledby="recent-heading">
         <div className="toolbar-row toolbar-start">
           <h2 id="recent-heading" className="section-heading">أحدث السجلات</h2>
@@ -227,9 +269,9 @@ export default function HomePage() {
         </div>
         {recordsState.status === "ready" ? (
           recentRecords.length === 0 ? (
-            <EmptyState title="لا سجلات بعد." description="ابدأ بإضافة عناصر للأرشيف لتظهر هنا." />
+            <EmptyState icon={<Sparkles size={22} />} title="لا سجلات بعد." description="ابدأ بإضافة عناصر للأرشيف لتظهر هنا." />
           ) : (
-            <article className="panel">
+            <article className="workspace-panel">
               <ul className="compact-list">
                 {recentRecords.map((record) => (
                   <li key={record.id}>
@@ -269,9 +311,9 @@ export default function HomePage() {
 
         {jobsState.status === "ready" ? (
           jobs.length === 0 ? (
-            <EmptyState title="لا مهام وسائط حديثة." description="أطلق مهمة معالجة من صفحة الوسائط لتظهر هنا." />
+            <EmptyState icon={<Clock3 size={22} />} title="لا مهام وسائط حديثة." description="أطلق مهمة معالجة من صفحة الوسائط لتظهر هنا." />
           ) : (
-            <article className="panel">
+            <article className="workspace-panel">
               <ul className="compact-list">
                 {jobs.map((job) => (
                   <li key={job.id}>
@@ -296,7 +338,7 @@ export default function HomePage() {
           <h2 id="shortcuts-heading" className="section-heading">اختصارات تشغيل</h2>
           <span className="badge">وصول مباشر</span>
         </div>
-        <article className="panel">
+        <article className="workspace-panel">
           <div className="button-row">
             {quickLinks.map((item) => (
               <a key={item.href} className="button button-secondary" href={item.href}>

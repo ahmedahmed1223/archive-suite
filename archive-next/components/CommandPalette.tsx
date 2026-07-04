@@ -2,12 +2,15 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { Command } from "cmdk";
-import { Search } from "lucide-react";
+import * as Icons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { navSectionLabels, primaryNav } from "@/lib/navigation";
 
 const commandEventName = "masar:open-command-palette";
+const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
+const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
 
 export function openCommandPalette() {
   window.dispatchEvent(new Event(commandEventName));
@@ -59,7 +62,7 @@ export default function CommandPalette() {
         <Dialog.Content className="command-dialog" aria-label="لوحة أوامر مسار">
           <Command className="command-palette" loop dir="rtl">
             <div className="command-input-row">
-              <Search aria-hidden="true" size={18} />
+              <Icons.Search aria-hidden="true" size={18} />
               <Command.Input placeholder="ابحث عن صفحة أو إجراء..." autoFocus />
             </div>
             <Command.List className="command-list">
@@ -68,7 +71,13 @@ export default function CommandPalette() {
                 <Command.Group key={section} heading={navSectionLabels[section]}>
                   {grouped[section].map((item) => (
                     <Command.Item key={item.href} value={`${item.label} ${item.href}`} onSelect={() => navigate(item.href)}>
-                      <span>{item.label}</span>
+                      <span className="command-item-label">
+                        {(() => {
+                          const Icon = navIcon(item.icon);
+                          return <Icon aria-hidden="true" size={17} strokeWidth={2} />;
+                        })()}
+                        <span>{item.label}</span>
+                      </span>
                       <small>{item.href}</small>
                     </Command.Item>
                   ))}
