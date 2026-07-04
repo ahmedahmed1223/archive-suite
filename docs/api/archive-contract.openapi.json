@@ -31,7 +31,11 @@
     { "name": "System" },
     { "name": "Ingest" },
     { "name": "Uploads" },
-    { "name": "Users" }
+    { "name": "Users" },
+    { "name": "Intake Templates" },
+    { "name": "Import" },
+    { "name": "Upload Links" },
+    { "name": "Saved Searches" }
   ],
   "paths": {
     "/health": {
@@ -1004,6 +1008,265 @@
           },
           "401": { "$ref": "#/components/responses/Error" },
           "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/intake-templates": {
+      "get": {
+        "tags": ["Intake Templates"],
+        "summary": "List reusable archive-entry intake templates",
+        "operationId": "listIntakeTemplates",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Intake templates",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/IntakeTemplatesResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Intake Templates"],
+        "summary": "Create a reusable archive-entry intake template",
+        "operationId": "createIntakeTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IntakeTemplateCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created template",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/IntakeTemplateResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/intake-templates/{id}": {
+      "delete": {
+        "tags": ["Intake Templates"],
+        "summary": "Delete an intake template",
+        "operationId": "deleteIntakeTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/import/preview": {
+      "post": {
+        "tags": ["Import"],
+        "summary": "Fetch and validate metadata preview for an import-from-url intake",
+        "operationId": "previewImportUrl",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ImportPreviewRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import preview metadata",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ImportPreviewResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/upload-links": {
+      "get": {
+        "tags": ["Upload Links"],
+        "summary": "List shareable upload links",
+        "operationId": "listUploadLinks",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Upload links",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadLinksResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Upload Links"],
+        "summary": "Issue a token-based shareable upload link",
+        "operationId": "createUploadLink",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UploadLinkCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created upload link",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadLinkResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/upload-links/{token}": {
+      "get": {
+        "tags": ["Upload Links"],
+        "summary": "Validate an upload link token (public, no archive session required)",
+        "operationId": "getUploadLink",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload link is active",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadLinkResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/upload-links/{id}/revoke": {
+      "post": {
+        "tags": ["Upload Links"],
+        "summary": "Revoke a shareable upload link",
+        "operationId": "revokeUploadLink",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked upload link",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadLinkResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/saved-searches": {
+      "get": {
+        "tags": ["Saved Searches"],
+        "summary": "List saved searches for the current user",
+        "operationId": "listSavedSearches",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Saved searches",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SavedSearchesResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Saved Searches"],
+        "summary": "Create a saved search for the current user",
+        "operationId": "createSavedSearch",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SavedSearchCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created saved search",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SavedSearchResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/saved-searches/{id}": {
+      "delete": {
+        "tags": ["Saved Searches"],
+        "summary": "Delete a saved search",
+        "operationId": "deleteSavedSearch",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -2743,6 +3006,183 @@
             "required": ["record"],
             "properties": {
               "record": { "$ref": "#/components/schemas/UploadedRecord" }
+            }
+          }
+        ]
+      },
+      "IntakeTemplate": {
+        "type": "object",
+        "required": ["id", "name", "type", "fields", "createdBy", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "type": { "type": ["string", "null"] },
+          "fields": { "type": "object" },
+          "createdBy": { "type": ["string", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "IntakeTemplateCreateRequest": {
+        "type": "object",
+        "required": ["name", "fields"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "type": { "type": "string", "maxLength": 100 },
+          "fields": { "type": "object", "minProperties": 1 }
+        }
+      },
+      "IntakeTemplatesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["templates"],
+            "properties": {
+              "templates": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/IntakeTemplate" }
+              }
+            }
+          }
+        ]
+      },
+      "IntakeTemplateResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["template"],
+            "properties": {
+              "template": { "$ref": "#/components/schemas/IntakeTemplate" }
+            }
+          }
+        ]
+      },
+      "ImportPreviewRequest": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string", "format": "uri", "maxLength": 2048 }
+        }
+      },
+      "ImportPreview": {
+        "type": "object",
+        "required": ["url", "contentType", "contentLength", "suggestedType", "suggestedTitle"],
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "contentType": { "type": "string" },
+          "contentLength": { "type": ["integer", "null"] },
+          "suggestedType": { "type": "string", "enum": ["video", "image", "audio", "document", "file"] },
+          "suggestedTitle": { "type": "string" }
+        }
+      },
+      "ImportPreviewResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["preview"],
+            "properties": {
+              "preview": { "$ref": "#/components/schemas/ImportPreview" }
+            }
+          }
+        ]
+      },
+      "UploadLink": {
+        "type": "object",
+        "required": ["id", "label", "folder", "expiresAt", "revoked", "uploadCount", "createdAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "token": { "type": "string" },
+          "label": { "type": ["string", "null"] },
+          "folder": { "type": ["string", "null"] },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "revoked": { "type": "boolean" },
+          "uploadCount": { "type": "integer" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "UploadLinkCreateRequest": {
+        "type": "object",
+        "required": ["expiresInHours"],
+        "properties": {
+          "label": { "type": "string", "maxLength": 200 },
+          "folder": { "type": "string", "maxLength": 255 },
+          "expiresInHours": { "type": "integer", "minimum": 1, "maximum": 720 }
+        }
+      },
+      "UploadLinksResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["links"],
+            "properties": {
+              "links": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/UploadLink" }
+              }
+            }
+          }
+        ]
+      },
+      "UploadLinkResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["link"],
+            "properties": {
+              "link": { "$ref": "#/components/schemas/UploadLink" }
+            }
+          }
+        ]
+      },
+      "SavedSearch": {
+        "type": "object",
+        "required": ["id", "name", "query", "filters", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "query": { "type": ["string", "null"] },
+          "filters": { "type": ["object", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "SavedSearchCreateRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "query": { "type": "string", "maxLength": 500 },
+          "filters": { "type": "object" }
+        }
+      },
+      "SavedSearchesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["searches"],
+            "properties": {
+              "searches": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/SavedSearch" }
+              }
+            }
+          }
+        ]
+      },
+      "SavedSearchResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["search"],
+            "properties": {
+              "search": { "$ref": "#/components/schemas/SavedSearch" }
             }
           }
         ]
