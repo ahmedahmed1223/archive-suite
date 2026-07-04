@@ -12,6 +12,7 @@ body {
 
 html {
   background: var(--color-bg-primary);
+  direction: rtl;
 }
 
 body {
@@ -24,6 +25,8 @@ body {
   font-size: var(--font-size-base);
   letter-spacing: var(--letter-spacing-normal);
   line-height: var(--line-height-normal);
+  direction: rtl;
+  text-align: start;
 }
 
 body,
@@ -262,6 +265,10 @@ a:hover {
   display: grid;
   gap: var(--space-3);
   align-items: start;
+}
+
+.page-toolbar__actions {
+  grid-column: 1 / -1;
 }
 
 .page-toolbar h1 {
@@ -3638,6 +3645,12 @@ textarea.search-input {
   gap: var(--space-4);
 }
 
+.dashboard-workspace {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
 .workspace-grid--split {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -3782,44 +3795,110 @@ textarea.search-input {
 }
 
 @media (min-width: 900px) {
+  .page-toolbar__title-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .page-toolbar__actions {
+    grid-column: auto;
+    justify-content: flex-end;
+    justify-self: end;
+  }
+
   .workspace-grid--split,
   .add-workspace {
     grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 0.65fr);
+  }
+
+  .dashboard-workspace {
+    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.7fr);
+  }
+
+  .dashboard-stats,
+  .dashboard-shortcuts {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-recent,
+  .dashboard-jobs {
+    grid-column: 1;
+  }
+
+  .dashboard-attention {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+    position: sticky;
+    inset-block-start: var(--space-5);
   }
 }
 
 @media (min-width: 1120px) {
   .app-shell {
-    grid-template-columns: minmax(0, 1fr) minmax(17rem, 18.75rem);
+    grid-template-columns: minmax(17rem, 18.75rem) minmax(0, 1fr);
   }
 
   .app-shell > .topbar {
-    grid-column: 2;
-    border-inline-start: 1px solid color-mix(in srgb, var(--color-brand-primary) 18%, var(--color-border-secondary));
-    border-inline-end: 0;
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-content: start;
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+    min-block-size: 100vh;
+    padding: var(--space-4);
+    border-inline-start: 0;
+    border-inline-end: 1px solid color-mix(in srgb, var(--color-brand-primary) 18%, var(--color-border-secondary));
+    border-block-end: 0;
     background:
       linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 97%, var(--color-brand-warm)), var(--color-bg-secondary) 72%),
       var(--color-bg-secondary);
   }
 
   .app-shell > .app-content {
-    grid-column: 1;
-    inline-size: min(1480px, calc(100% - 2.5rem));
+    grid-column: 2;
+    inline-size: min(1560px, calc(100% - 2.5rem));
+    margin-inline: auto;
   }
 
   .app-shell > .topbar .brand {
     grid-template-columns: 3rem minmax(0, 1fr);
+    min-inline-size: 0;
+  }
+
+  .app-shell > .topbar .topbar-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-self: stretch;
+    gap: var(--space-2);
+  }
+
+  .app-shell > .topbar .topbar-actions > * {
+    justify-content: flex-start;
+    inline-size: 100%;
   }
 
   .app-shell > .topbar .route-links {
+    display: grid;
     gap: var(--space-3);
+    overflow: visible;
+    padding-block: var(--space-2);
+  }
+
+  .app-shell > .topbar .nav-section {
+    display: grid;
+    gap: var(--space-2);
   }
 
   .app-shell > .topbar .nav-section-label {
+    display: block;
     color: var(--color-brand-primary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
   }
 
   .app-shell > .topbar .app-nav-link {
+    display: flex;
+    justify-content: flex-start;
     min-block-size: 2.6rem;
   }
 

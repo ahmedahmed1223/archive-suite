@@ -789,6 +789,14 @@ export function getContractSummary() {
   };
 }
 
+function clampApiLimit(value: number | undefined, fallback: number, max: number) {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(1, Math.floor(value as number)));
+}
+
 export function createArchiveApiClient({
   baseUrl = "/api/v1",
   fetchImpl = fetch,
@@ -915,7 +923,7 @@ export function createArchiveApiClient({
       if (tag) params.set("tag", tag);
       if (status) params.set("status", status);
       if (cursor) params.set("cursor", cursor);
-      params.set("limit", String(limit));
+      params.set("limit", String(clampApiLimit(limit, 20, 100)));
       return get(`/search?${params.toString()}`, options);
     },
     discover: (params?: { limit?: number }, options?: AuthRequestOptions) => {
@@ -975,7 +983,7 @@ export function createArchiveApiClient({
     },
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
     records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
-      const params = new URLSearchParams({ store, limit: String(limit) });
+      const params = new URLSearchParams({ store, limit: String(clampApiLimit(limit, 50, 200)) });
       if (cursor) params.set("cursor", cursor);
       return get<RecordListPayload>(`/records?${params.toString()}`, options);
     },
