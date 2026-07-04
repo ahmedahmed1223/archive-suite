@@ -1443,6 +1443,29 @@ textarea.search-input {
   min-inline-size: 0;
 }
 
+.media-job-card {
+  display: grid;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border-secondary);
+  border-inline-start: 4px solid var(--color-brand-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--color-bg-secondary) 96%, var(--color-brand-warm));
+  box-shadow: var(--shadow-sm);
+}
+
+.media-job-card[data-status="processing"] {
+  border-inline-start-color: var(--color-status-warning);
+}
+
+.media-job-card[data-status="completed"] {
+  border-inline-start-color: var(--color-status-success);
+}
+
+.media-job-card[data-status="failed"] {
+  border-inline-start-color: var(--color-status-error);
+}
+
 .search-content {
   gap: var(--space-4);
 }

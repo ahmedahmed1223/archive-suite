@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { AlertTriangle, CheckCircle2, Clock3, FileScan, Loader2, PlusCircle, RefreshCw, ScanSearch } from "lucide-react";
 import { z } from "zod";
+import EmptyState from "@/components/EmptyState";
+import MetricStrip from "@/components/MetricStrip";
 import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation } from "@/lib/archive-api";
 
@@ -65,6 +68,29 @@ function clampNumber(value: number, min: number, max: number, fallback: number) 
   return Math.min(max, Math.max(min, value));
 }
 
+function operationLabel(operation: MediaOperation) {
+  const labels: Record<MediaOperation, string> = {
+    thumbnail: "صورة مصغرة",
+    transcode: "تحويل صيغة",
+    transcription: "تفريغ نصي",
+    ocr: "استخراج نص OCR",
+    montage_export: "تصدير مونتاج"
+  };
+
+  return labels[operation] || operation;
+}
+
+function statusLabel(status: MediaJobStatus) {
+  const labels: Record<MediaJobStatus, string> = {
+    queued: "قيد الانتظار",
+    processing: "قيد المعالجة",
+    completed: "مكتمل",
+    failed: "فشل"
+  };
+
+  return labels[status] || status;
+}
+
 export function MediaJobsList() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [listState, setListState] = useState<ListState>({ status: "loading" });
@@ -87,6 +113,11 @@ export function MediaJobsList() {
   });
   const selectedOperation = createForm.watch("operation") as MediaOperation | "";
   const formErrors = createForm.formState.errors;
+  const jobs = listState.status === "loaded" ? listState.jobs : [];
+  const queuedCount = jobs.filter((job) => job.status === "queued").length;
+  const processingCount = jobs.filter((job) => job.status === "processing").length;
+  const completedCount = jobs.filter((job) => job.status === "completed").length;
+  const failedCount = jobs.filter((job) => job.status === "failed").length;
 
   const loadJobs = useCallback(async () => {
     setListState({ status: "loading" });
@@ -188,12 +219,47 @@ export function MediaJobsList() {
 
   return (
     <div className="stack" aria-label="Media jobs management">
-      <article className="panel">
-        <div className="toolbar-row">
+      <MetricStrip
+        ariaLabel="ملخص queue الوسائط"
+        items={[
+          {
+            label: "المهام المعروضة",
+            value: listState.status === "loading" ? "..." : jobs.length,
+            description: statusFilter ? statusLabel(statusFilter) : "آخر 20 مهمة",
+            icon: <Clock3 size={20} />,
+            tone: "accent"
+          },
+          {
+            label: "قيد المعالجة",
+            value: processingCount,
+            description: `${queuedCount} في الانتظار`,
+            icon: <Loader2 size={20} />,
+            tone: processingCount > 0 ? "warning" : "default"
+          },
+          {
+            label: "مكتملة",
+            value: completedCount,
+            description: "جاهزة للمراجعة",
+            icon: <CheckCircle2 size={20} />,
+            tone: "success"
+          },
+          {
+            label: "فاشلة",
+            value: failedCount,
+            description: "تحتاج مراجعة",
+            icon: <AlertTriangle size={20} />,
+            tone: failedCount > 0 ? "danger" : "default"
+          }
+        ]}
+      />
+
+      <article className="workspace-panel">
+        <div className="workspace-panel__header">
           <div>
             <h2>إنشاء media job جديد</h2>
             <p className="field-note">أنشئ job من record id ثم اختر نوع العملية المناسبة.</p>
           </div>
+          <span className="badge">create</span>
         </div>
 
         <form className="auth-form" onSubmit={handleCreate}>
@@ -276,6 +342,7 @@ export function MediaJobsList() {
           )}
 
           <button type="submit" className="button button-primary" disabled={createState.status === "creating"}>
+            <PlusCircle size={16} aria-hidden="true" />
             {createState.status === "creating" ? "جار الإنشاء..." : "إنشاء job"}
           </button>
 
@@ -289,15 +356,17 @@ export function MediaJobsList() {
         </form>
       </article>
 
-      <article className="panel">
-        <div className="toolbar-row">
+      <article className="workspace-panel">
+        <div className="workspace-panel__header">
           <div>
             <h2>مسح الإدخال</h2>
             <p className="field-note">فحص إدخال الملفات وتوليد jobs جديدة عند الحاجة.</p>
           </div>
+          <span className="badge">ingest</span>
         </div>
 
         <button className="button button-primary" onClick={handleIngestScan} disabled={ingestState.status === "scanning"}>
+          <ScanSearch size={16} aria-hidden="true" />
           {ingestState.status === "scanning" ? "جار المسح..." : "بدء مسح الدخول"}
         </button>
         <p className="form-status" role={ingestState.status === "error" ? "alert" : "status"}>
@@ -309,29 +378,41 @@ export function MediaJobsList() {
         </p>
       </article>
 
-      <section className="stack" aria-label="قائمة Media Jobs">
-        <div className="toolbar-row">
+      <section className="workspace-panel" aria-label="قائمة Media Jobs">
+        <div className="workspace-panel__header">
           <div>
             <h2>قائمة مهام الوسائط</h2>
             <p className="field-note">فلترة مباشرة حسب الحالة مع إبقاء التفاصيل قابلة للمسح بسرعة.</p>
           </div>
-          <label className="field-row field-row-reset">
-            <span className="field-note">الحالة</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as MediaJobStatus | "")}
-            >
-              <option value="">الكل</option>
-              <option value="queued">قيد الانتظار</option>
-              <option value="processing">قيد المعالجة</option>
-              <option value="completed">مكتمل</option>
-              <option value="failed">فشل</option>
-            </select>
-          </label>
+          <div className="button-row">
+            <label className="field-row field-row-reset">
+              <span className="field-note">الحالة</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as MediaJobStatus | "")}
+              >
+                <option value="">الكل</option>
+                <option value="queued">قيد الانتظار</option>
+                <option value="processing">قيد المعالجة</option>
+                <option value="completed">مكتمل</option>
+                <option value="failed">فشل</option>
+              </select>
+            </label>
+            <button className="button button-secondary button-sm" type="button" onClick={() => void loadJobs()}>
+              <RefreshCw size={16} aria-hidden="true" />
+              تحديث
+            </button>
+          </div>
         </div>
 
         {listState.status === "loading" && <p className="form-status">جار التحميل...</p>}
-        {listState.status === "empty" && <p className="empty-state">لا توجد media jobs.</p>}
+        {listState.status === "empty" && (
+          <EmptyState
+            icon={<FileScan size={22} />}
+            title="لا توجد media jobs."
+            description="ابدأ بإنشاء مهمة أو نفّذ مسح الدخول لتوليد مهام من الملفات الجديدة."
+          />
+        )}
         {listState.status === "error" && (
           <p role="alert" className="form-status status-error">
             خطأ: {listState.message}
@@ -341,10 +422,10 @@ export function MediaJobsList() {
         {listState.status === "loaded" && (
           <div className="stack">
             {listState.jobs.map((job) => (
-              <article className="panel" key={job.id}>
+              <article className="media-job-card" data-status={job.status} key={job.id}>
                 <div className="toolbar-row">
-                  <h3>{job.operation}</h3>
-                  <span className="badge">{job.status}</span>
+                  <h3>{operationLabel(job.operation)}</h3>
+                  <span className="badge">{statusLabel(job.status)}</span>
                 </div>
                 <div className="kv-grid">
                   <div className="kv-item">
