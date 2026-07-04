@@ -163,6 +163,48 @@ export interface CreateRecordNotePayload {
 
 export type UpdateRecordNotePayload = Partial<CreateRecordNotePayload>;
 
+export interface RecordComment {
+  id: string;
+  itemId: string;
+  body: string;
+  authorId: string | null;
+  authorName: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateRecordCommentPayload {
+  body: string;
+}
+
+export interface RecordHistoryEntry {
+  id: number | string;
+  event: string;
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  actorId: string | null;
+  outcome: string;
+  statusCode: number;
+  metadata: Record<string, unknown> | null;
+  createdAt: string | null;
+}
+
+export interface SyncLogEntry {
+  uid: string;
+  store: string;
+  status: "synced" | "conflict";
+  syncVersion: number | null;
+  lastModifiedBy: Record<string, unknown> | null;
+  updatedAt: string | null;
+}
+
+export interface SyncSummary {
+  total: number;
+  synced: number;
+  conflicts: number;
+}
+
 export interface ArchiveFile {
   key: string;
   name?: string;
@@ -468,6 +510,11 @@ export interface ArchiveApiClient {
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  recordComments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: RecordComment[] }>>;
+  createRecordComment(recordId: string, payload: CreateRecordCommentPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: RecordComment }>>;
+  deleteRecordComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  recordHistory(recordId: string, params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[] }>>;
+  sync(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
   bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
@@ -674,6 +721,24 @@ export function createArchiveApiClient({
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
+    recordComments: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ comments: RecordComment[] }>(`/records/${encodeURIComponent(recordId)}/comments`, options),
+    createRecordComment: (recordId: string, payload: CreateRecordCommentPayload, options?: AuthRequestOptions) =>
+      post<{ comment: RecordComment }>(`/records/${encodeURIComponent(recordId)}/comments`, payload, options),
+    deleteRecordComment: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/record-comments/${encodeURIComponent(id)}`, undefined, options),
+    recordHistory: (recordId: string, params?: { limit?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      const query = queryParams.toString();
+      return get<{ entries: RecordHistoryEntry[] }>(`/records/${encodeURIComponent(recordId)}/history${query ? `?${query}` : ""}`, options);
+    },
+    sync: (params?: { limit?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      const query = queryParams.toString();
+      return get<{ entries: SyncLogEntry[]; summary: SyncSummary }>(`/sync${query ? `?${query}` : ""}`, options);
+    },
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
     records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams({ store, limit: String(limit) });

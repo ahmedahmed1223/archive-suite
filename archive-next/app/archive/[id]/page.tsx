@@ -9,6 +9,8 @@ import PageToolbar from "@/components/PageToolbar";
 import {
   createArchiveApiClient,
   type ArchiveRecord,
+  type RecordComment,
+  type RecordHistoryEntry,
   type RecordNote,
   type RelationGraphEdge,
   type RelationGraphPayload,
@@ -26,6 +28,12 @@ type DetailState =
       notes: RecordNote[];
       notesLoading: boolean;
       notesError: string | null;
+      comments: RecordComment[];
+      commentsLoading: boolean;
+      commentsError: string | null;
+      history: RecordHistoryEntry[];
+      historyLoading: boolean;
+      historyError: string | null;
     }
   | { status: "error"; message: string };
 
@@ -286,6 +294,185 @@ function RecordNotesPanel({
   );
 }
 
+function RecordCommentsPanel({
+  comments,
+  loading,
+  error,
+  onCreate,
+  onDelete
+}: Readonly<{
+  comments: RecordComment[];
+  loading: boolean;
+  error: string | null;
+  onCreate: (payload: { body: string }) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}>) {
+  const [body, setBody] = useState("");
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = body.trim();
+    if (!trimmed || busy) return;
+
+    setBusy(true);
+    setStatus("");
+    try {
+      await onCreate({ body: trimmed });
+      setBody("");
+      setStatus("تم نشر التعليق.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "تعذر نشر التعليق.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <article className="panel record-comments-panel">
+      <div className="panel-section-header panel-title-row">
+        <div>
+          <h2>تعليقات الفريق</h2>
+          <p className="helper-text">تعليقات مرئية للفريق حول هذا السجل، موثقة في سجل التدقيق.</p>
+        </div>
+        <span className="badge">{comments.length} تعليقات</span>
+      </div>
+
+      {loading ? (
+        <p className="form-status" role="status" aria-live="polite">جار تحميل التعليقات...</p>
+      ) : null}
+
+      {error ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل التعليقات</strong>
+          <span className="helper-text">{error}</span>
+        </div>
+      ) : null}
+
+      <form className="auth-form record-note-form" onSubmit={handleSubmit}>
+        <label>
+          تعليق جديد
+          <textarea
+            value={body}
+            onChange={(event) => setBody(event.target.value)}
+            placeholder="اكتب تعليقاً يراه بقية أعضاء الفريق..."
+            rows={3}
+          />
+        </label>
+        <button type="submit" className="button button-primary" disabled={busy || !body.trim()}>
+          {busy ? "جار النشر..." : "نشر التعليق"}
+        </button>
+        {status ? <p className="form-status">{status}</p> : null}
+      </form>
+
+      {!loading && comments.length ? (
+        <ul className="record-note-list">
+          {comments.map((comment) => (
+            <li key={comment.id}>
+              <div>
+                <div className="helper-row">
+                  <span className="helper-text">{comment.authorName || "مجهول"}</span>
+                </div>
+                <p>{comment.body}</p>
+                {comment.createdAt ? (
+                  <small className="helper-text">{new Date(comment.createdAt).toLocaleString("ar-SA")}</small>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="button button-danger button-sm"
+                onClick={() => void onDelete(comment.id)}
+                aria-label="حذف التعليق"
+              >
+                حذف
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : !loading ? (
+        <EmptyState
+          title="لا توجد تعليقات بعد"
+          description="أضف أول تعليق فريق حول هذا السجل."
+        />
+      ) : null}
+    </article>
+  );
+}
+
+function historyEventLabel(entry: RecordHistoryEntry) {
+  const labels: Record<string, string> = {
+    "record_notes.create": "إضافة ملاحظة خاصة",
+    "record_notes.update": "تحديث ملاحظة خاصة",
+    "record_notes.delete": "حذف ملاحظة خاصة",
+    "record_comments.create": "إضافة تعليق فريق",
+    "record_comments.delete": "حذف تعليق فريق",
+    "relations.create": "إضافة علاقة",
+    "relations.delete": "حذف علاقة",
+    "rights.upsert": "تحديث الحقوق"
+  };
+
+  return labels[entry.event] || entry.event;
+}
+
+function RecordHistoryPanel({
+  entries,
+  loading,
+  error
+}: Readonly<{
+  entries: RecordHistoryEntry[];
+  loading: boolean;
+  error: string | null;
+}>) {
+  return (
+    <article className="panel record-history-panel">
+      <div className="panel-section-header panel-title-row">
+        <div>
+          <h2>سجل التغييرات</h2>
+          <p className="helper-text">تاريخ التغييرات المدعوم بسجل التدقيق لهذا السجل.</p>
+        </div>
+        <span className="badge">{entries.length} أحداث</span>
+      </div>
+
+      {loading ? (
+        <p className="form-status" role="status" aria-live="polite">جار تحميل السجل...</p>
+      ) : null}
+
+      {error ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل سجل التغييرات</strong>
+          <span className="helper-text">{error}</span>
+        </div>
+      ) : null}
+
+      {!loading && entries.length ? (
+        <ul className="record-history-list">
+          {entries.map((entry) => (
+            <li key={entry.id}>
+              <div>
+                <div className="helper-row">
+                  <span className="badge">{historyEventLabel(entry)}</span>
+                  <span className={`badge ${entry.outcome === "success" ? "badge-success" : "badge-error"}`}>
+                    {entry.outcome}
+                  </span>
+                </div>
+                {entry.createdAt ? (
+                  <small className="helper-text">{new Date(entry.createdAt).toLocaleString("ar-SA")}</small>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : !loading ? (
+        <EmptyState
+          title="لا يوجد سجل تغييرات بعد"
+          description="ستظهر هنا الأحداث الموثقة عند تعديل هذا السجل أو ملاحظاته أو تعليقاته."
+        />
+      ) : null}
+    </article>
+  );
+}
+
 export default function ArchiveDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
@@ -339,6 +526,29 @@ export default function ArchiveDetailPage() {
       : current);
   }
 
+  async function handleCreateComment(payload: { body: string }) {
+    if (state.status !== "ready") return;
+    const response = await api.createRecordComment(id, payload);
+    if (!response.ok) {
+      throw new Error(response.error || "تعذر نشر التعليق.");
+    }
+    setState((current) => current.status === "ready"
+      ? { ...current, comments: [...current.comments, response.comment] }
+      : current);
+  }
+
+  async function handleDeleteComment(commentId: string) {
+    if (state.status !== "ready") return;
+    const response = await api.deleteRecordComment(commentId);
+    if (!response.ok) {
+      setState((current) => current.status === "ready" ? { ...current } : current);
+      return;
+    }
+    setState((current) => current.status === "ready"
+      ? { ...current, comments: current.comments.filter((comment) => comment.id !== commentId) }
+      : current);
+  }
+
   const detailDescription =
     state.status === "ready"
       ? state.record.description || "تفاصيل السجل وحقوقه في عرض تشغيلي مركز."
@@ -374,7 +584,13 @@ export default function ArchiveDetailPage() {
         relationGraph: null,
         notes: [],
         notesLoading: true,
-        notesError: null
+        notesError: null,
+        comments: [],
+        commentsLoading: true,
+        commentsError: null,
+        history: [],
+        historyLoading: true,
+        historyError: null
       });
       setIsFav(isFavorited(id));
 
@@ -411,6 +627,52 @@ export default function ArchiveDetailPage() {
                 ...current,
                 notesLoading: false,
                 notesError: error instanceof Error ? error.message : "تعذر تحميل الملاحظات."
+              }
+            : current);
+        });
+
+      void api.recordComments(id)
+        .then((response) => {
+          if (!active) return;
+          setState((current) => current.status === "ready"
+            ? {
+                ...current,
+                comments: response.ok ? response.comments : [],
+                commentsLoading: false,
+                commentsError: response.ok ? null : response.error || "تعذر تحميل التعليقات."
+              }
+            : current);
+        })
+        .catch((error) => {
+          if (!active) return;
+          setState((current) => current.status === "ready"
+            ? {
+                ...current,
+                commentsLoading: false,
+                commentsError: error instanceof Error ? error.message : "تعذر تحميل التعليقات."
+              }
+            : current);
+        });
+
+      void api.recordHistory(id, { limit: 50 })
+        .then((response) => {
+          if (!active) return;
+          setState((current) => current.status === "ready"
+            ? {
+                ...current,
+                history: response.ok ? response.entries : [],
+                historyLoading: false,
+                historyError: response.ok ? null : response.error || "تعذر تحميل سجل التغييرات."
+              }
+            : current);
+        })
+        .catch((error) => {
+          if (!active) return;
+          setState((current) => current.status === "ready"
+            ? {
+                ...current,
+                historyLoading: false,
+                historyError: error instanceof Error ? error.message : "تعذر تحميل سجل التغييرات."
               }
             : current);
         });
@@ -588,6 +850,13 @@ export default function ArchiveDetailPage() {
               onCreate={handleCreateNote}
               onDelete={handleDeleteNote}
             />
+            <RecordCommentsPanel
+              comments={state.comments}
+              loading={state.commentsLoading}
+              error={state.commentsError}
+              onCreate={handleCreateComment}
+              onDelete={handleDeleteComment}
+            />
           </div>
 
           <div className="page-section">
@@ -665,6 +934,11 @@ export default function ArchiveDetailPage() {
               )}
             </article>
             <RelationPreviewPanel graph={state.relationGraph} recordId={id} />
+            <RecordHistoryPanel
+              entries={state.history}
+              loading={state.historyLoading}
+              error={state.historyError}
+            />
           </div>
         </div>
       )}
