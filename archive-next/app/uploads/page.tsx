@@ -7,13 +7,15 @@ import { UploadLinksPanel } from "./UploadLinksPanel";
 
 export default function UploadsPage() {
   return (
-    <AppShell subtitle="رفع الملفات" contentClassName="stack">
+    <AppShell subtitle="إضافة أرشيف" contentClassName="stack">
       <PageToolbar
-        title="رفع الملفات"
-        description="ارفع ملفًا واحدًا إلى مخزن الأرشفة لإنشاء سجل جديد تلقائيًا. تُجهَّز ملفات الوسائط (صور/فيديو) لمهمة صورة مصغّرة بعد الرفع."
+        title="إضافة أرشيف"
+        description="مسار إضافة غني يجمع رفع ملفات متعددة، metadata، حقول فيديو، قوالب إدخال، معاينة رابط، وروابط رفع خارجية في سطح واحد."
         meta={
           <>
-            <span className="badge">رفع مباشر</span>
+            <span className="badge">Wizard</span>
+            <span className="badge">Multi-file</span>
+            <span className="badge">Metadata</span>
             <span className="badge">حتى 600MB</span>
           </>
         }

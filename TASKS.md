@@ -28,9 +28,6 @@
 - [ ] **تخزين Laravel دائم للكيانات المحلية** — نقل Collections، Inbox، Vocabulary، Tags hierarchy، Saved views، Workflow presets، Dashboard widgets، وAutomation drafts من التخزين المحلي إلى Laravel.
   - القبول: لا تضيع هذه الكيانات بعد تبديل المتصفح/الجهاز، وتظهر في API بعقود واختبارات.
 
-- [ ] **Add archive / AddVideo wizard كامل** — بناء مسار إضافة أرشيف غني، إما داخل `/uploads` أو `/archive/new`، يشمل metadata متعدد الخطوات، video-specific fields، multi-file manager، quick add، templates، import preview، upload links.
-  - القبول: يغطي تدفق AddVideo القديم دون صفحة مؤقتة، مع حالات حفظ/تحميل/خطأ واضحة.
-
 - [ ] **Search/archive power features** — إضافة backend facets، saved views persistence، details rail أعمق، وinline relation add/edit داخل صفحة التفاصيل.
   - القبول: فلاتر search/archive محفوظة ومسنودة من Laravel، والعلاقات يمكن إنشاؤها/تعديلها من التفاصيل بدون مغادرة السياق.
 
