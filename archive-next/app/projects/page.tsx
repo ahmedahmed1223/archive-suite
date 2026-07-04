@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type MediaJob } from "@/lib/archive-api";
 import {
   addClip,
   buildEdl,
@@ -52,6 +52,8 @@ export default function ProjectsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [exportJob, setExportJob] = useState<MediaJob | null>(null);
+  const [exportError, setExportError] = useState("");
 
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -121,6 +123,45 @@ export default function ProjectsPage() {
       outSec: end
     }));
     setFeedback(`تمت إضافة "${record.title || record.id}" إلى الخط الزمني`);
+  }
+
+  useEffect(() => {
+    if (!exportJob || exportJob.status === "completed" || exportJob.status === "failed") return;
+
+    const timer = setInterval(() => {
+      void (async () => {
+        const response = await api.mediaJob(exportJob.id);
+        if (response.ok) setExportJob(response.job);
+      })();
+    }, 2000);
+
+    return () => clearInterval(timer);
+  }, [api, exportJob]);
+
+  async function handleExportMp4() {
+    if (!selected) return;
+    const validClips = orderedClips(selected).filter(isValidClip);
+    if (validClips.length === 0) return;
+
+    setExportError("");
+    const response = await api.createMediaJob({
+      recordId: selected.id,
+      operation: "montage_export",
+      options: {
+        clips: validClips.map((clip) => ({
+          path: clip.itemId,
+          inSec: clip.inSec,
+          outSec: clip.outSec,
+        })),
+      },
+    });
+
+    if (response.ok) {
+      setExportJob(response.job);
+      setFeedback("تم إرسال مهمة تصدير MP4، جارٍ المعالجة في الخلفية.");
+    } else {
+      setExportError(response.error);
+    }
   }
 
   function handleExport(kind: "json" | "edl") {
@@ -313,14 +354,38 @@ export default function ProjectsPage() {
               <button type="button" className="button" onClick={() => handleExport("edl")} disabled={validCount === 0}>
                 تصدير EDL
               </button>
-              <button type="button" className="button button-secondary" disabled title="غير متاح">
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => void handleExportMp4()}
+                disabled={validCount === 0 || (exportJob !== null && exportJob.status !== "completed" && exportJob.status !== "failed")}
+              >
                 تصدير MP4
               </button>
             </div>
             <p className="helper-text">
-              تصدير MP4 غير متاح: لا توجد عملية مطابقة في عقد الواجهة الحالي (media jobs تدعم thumbnail/transcode/transcription/ocr فقط).
-              استخدم ملف EDL داخل DaVinci Resolve أو Premiere لإنتاج الفيديو.
+              تصدير MP4 يعمل كمهمة Laravel غير متزامنة (montage_export) تجمع القصاصات عبر ffmpeg في الخلفية دون حجب الطلب.
             </p>
+            {exportError ? <p className="form-status status-error" role="alert">{exportError}</p> : null}
+            {exportJob ? (
+              <div className="state-banner" role="status">
+                <strong>حالة تصدير MP4: {exportJob.status}</strong>
+                {exportJob.status === "completed" && exportJob.result?.artifacts ? (
+                  <a
+                    className="button button-secondary button-sm"
+                    href={`/api/v1/files/stream?path=${encodeURIComponent(
+                      (exportJob.result.artifacts as Array<{ key: string }>)[0]?.key || ""
+                    )}`}
+                  >
+                    تنزيل ملف MP4
+                  </a>
+                ) : exportJob.status === "failed" ? (
+                  <span className="helper-text">فشل التصدير: {exportJob.error}</span>
+                ) : (
+                  <span className="helper-text">جارٍ التنفيذ في الخلفية...</span>
+                )}
+              </div>
+            ) : null}
           </section>
         </>
       )}
