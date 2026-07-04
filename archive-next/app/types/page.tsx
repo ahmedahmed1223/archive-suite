@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { useForm } from "react-hook-form";
+import { Braces, Database, Edit3, Eye, Layers3, ListTree, Plus, RotateCcw, Save, Shapes, Sparkles } from "lucide-react";
 import { z } from "zod";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
+import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { FieldError } from "@/components/ui/Form";
 import {
@@ -355,6 +357,7 @@ export default function TypesPage() {
   return (
     <AppShell subtitle="استديو الأنواع" contentClassName="types-content">
       <PageToolbar
+        icon={<Shapes size={24} />}
         eyebrow={<span className="badge">Schema Studio</span>}
         title="إدارة الأنواع والحقول"
         description="استديو عملي لضبط أنواع المحتوى وفروعها وحقول metadata، مع معاينة فورية قبل الحفظ في Laravel."
@@ -368,9 +371,11 @@ export default function TypesPage() {
         actions={(
           <>
             <button className="button button-primary" type="button" onClick={() => void seedDefaults()}>
+              <Sparkles size={16} aria-hidden="true" />
               إضافة القوالب
             </button>
             <button className="button button-secondary" type="button" onClick={resetDraft}>
+              <Plus size={16} aria-hidden="true" />
               نوع جديد
             </button>
           </>
@@ -383,6 +388,40 @@ export default function TypesPage() {
         </div>
       </PageToolbar>
 
+      <MetricStrip
+        ariaLabel="ملخص الأنواع"
+        items={[
+          {
+            label: "الأنواع",
+            value: typeList.length,
+            description: `${activeCount} نشط`,
+            icon: <Database size={20} />,
+            tone: "accent"
+          },
+          {
+            label: "الفروع",
+            value: subtypeCount,
+            description: "تصنيفات داخلية",
+            icon: <Layers3 size={20} />,
+            tone: "info"
+          },
+          {
+            label: "حقول metadata",
+            value: fieldCount,
+            description: "حقول قابلة للتخصيص",
+            icon: <Braces size={20} />,
+            tone: "success"
+          },
+          {
+            label: "المعاينة",
+            value: draft.name || "جاهزة",
+            description: draft.slug || "اختر أو أنشئ نوعًا",
+            icon: <Eye size={20} />,
+            tone: draft.uid ? "warning" : "default"
+          }
+        ]}
+      />
+
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر فتح إدارة الأنواع</strong>
@@ -392,17 +431,26 @@ export default function TypesPage() {
 
       <section className="schema-studio" aria-label="محرر الأنواع">
         <aside className="schema-sidebar" aria-label="قائمة الأنواع">
-          <div className="panel-section-header">
-            <h2>الأنواع الحالية</h2>
-            <p className="field-note">اختر نوعاً للتعديل أو ابدأ بقالب جديد.</p>
+          <div className="workspace-panel__header">
+            <div>
+              <h2>الأنواع الحالية</h2>
+              <p className="field-note">اختر نوعاً للتعديل أو ابدأ بقالب جديد.</p>
+            </div>
+            <span className="badge">{typeList.length} نوع</span>
           </div>
 
           {state.status === "loading" ? <p className="form-status">جار تحميل الأنواع...</p> : null}
           {state.status === "ready" && typeList.length === 0 ? (
             <EmptyState
+              icon={<ListTree size={22} />}
               title="لا توجد أنواع محفوظة."
               description="أضف القوالب الأساسية أو أنشئ نوعاً جديداً من المحرر."
-              actions={<button className="button button-secondary" type="button" onClick={() => void seedDefaults()}>إضافة القوالب</button>}
+              actions={(
+                <button className="button button-secondary" type="button" onClick={() => void seedDefaults()}>
+                  <Sparkles size={16} aria-hidden="true" />
+                  إضافة القوالب
+                </button>
+              )}
             />
           ) : null}
           {state.status === "ready" ? typeList.map((type) => (
@@ -418,14 +466,15 @@ export default function TypesPage() {
                 </div>
               </div>
               <button className="button button-secondary button-sm" type="button" onClick={() => editType(type)}>
+                <Edit3 size={16} aria-hidden="true" />
                 تعديل
               </button>
             </article>
           )) : null}
         </aside>
 
-        <form className="panel auth-form schema-editor" onSubmit={handleSubmit} aria-label="نموذج النوع">
-          <div className="panel-section-header">
+        <form className="workspace-panel auth-form schema-editor" onSubmit={handleSubmit} aria-label="نموذج النوع">
+          <div className="workspace-panel__header">
             <div>
               <h2>{draft.uid ? "تعديل نوع" : "نوع جديد"}</h2>
               <p>صيغة الحقول: الاسم|المفتاح|النوع|خيارات مفصولة بفواصل.</p>
@@ -549,9 +598,11 @@ export default function TypesPage() {
 
           <div className="button-row">
             <button className="button button-primary" type="submit" disabled={saveState.status === "saving"}>
+              <Save size={16} aria-hidden="true" />
               {saveState.status === "saving" ? "جار الحفظ" : "حفظ النوع"}
             </button>
             <button className="button button-secondary" type="button" onClick={resetDraft}>
+              <RotateCcw size={16} aria-hidden="true" />
               تفريغ
             </button>
           </div>
@@ -562,10 +613,13 @@ export default function TypesPage() {
         </form>
 
         <aside className="schema-preview" aria-label="معاينة النوع">
-          <div className="panel-section-header">
-            <span className="badge">معاينة</span>
-            <h2>{draft.name || "نوع بلا اسم"}</h2>
-            <p>{draft.description || "الوصف يظهر هنا عند إدخاله."}</p>
+          <div className="workspace-panel__header">
+            <div>
+              <span className="badge">معاينة</span>
+              <h2>{draft.name || "نوع بلا اسم"}</h2>
+              <p>{draft.description || "الوصف يظهر هنا عند إدخاله."}</p>
+            </div>
+            <div className="type-list-item__mark" style={typeAccentStyle(draft.color)}>{draft.icon || "TYPE"}</div>
           </div>
           <div className="record-meta">
             <span className="badge">{draft.slug || "slug"}</span>

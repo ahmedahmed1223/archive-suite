@@ -1328,7 +1328,7 @@ textarea.search-input {
 
 .type-list-item {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: var(--space-3);
   align-items: start;
   border: 1px solid color-mix(in srgb, var(--type-color, var(--color-brand-primary)) 28%, var(--color-border-secondary));
