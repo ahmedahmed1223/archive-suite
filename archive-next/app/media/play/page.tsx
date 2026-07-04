@@ -1,11 +1,13 @@
 "use client";
 
+import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
 import MediaSourcePicker from "@/components/MediaSourcePicker";
 import PageToolbar from "@/components/PageToolbar";
+import { parseSubtitles } from "@/lib/media/subtitles";
 import styles from "./play.module.css";
 
 export default function MediaPlayPage() {
@@ -14,6 +16,9 @@ export default function MediaPlayPage() {
   const [path, setPath] = useState("");
   const [disk, setDisk] = useState("");
   const [transcriptText, setTranscriptText] = useState("");
+  const [transcriptFileName, setTranscriptFileName] = useState("");
+  const [transcriptStatus, setTranscriptStatus] = useState("");
+  const transcriptCueCount = parseSubtitles(transcriptText).length;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -30,6 +35,40 @@ export default function MediaPlayPage() {
       setDisk(diskParam);
     }
   }, []);
+
+  async function handleTranscriptFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const extension = file.name.split(".").pop()?.toLowerCase() || "";
+    if (!["srt", "vtt"].includes(extension)) {
+      setTranscriptStatus("اختر ملف SRT أو VTT.");
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const cues = parseSubtitles(text);
+      if (cues.length === 0) {
+        setTranscriptStatus("لم يتم العثور على مقاطع زمنية صالحة داخل الملف.");
+        return;
+      }
+
+      setTranscriptText(text);
+      setTranscriptFileName(file.name);
+      setTranscriptStatus(`تم استيراد ${cues.length} مقطع زمني.`);
+    } catch (error) {
+      setTranscriptStatus(error instanceof Error ? error.message : "تعذر قراءة ملف التفريغ.");
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  function clearTranscript() {
+    setTranscriptText("");
+    setTranscriptFileName("");
+    setTranscriptStatus("");
+  }
 
   return (
     <AppShell subtitle="مشغل الوسائط" contentClassName={styles.playContent}>
@@ -96,8 +135,24 @@ export default function MediaPlayPage() {
                 <h2>تفريغ زمني</h2>
                 <p>VTT أو SRT</p>
               </div>
-              <span className="badge">{transcriptText.trim() ? "مفعّل" : "اختياري"}</span>
+              <span className="badge">{transcriptCueCount > 0 ? `${transcriptCueCount} مقطع` : "اختياري"}</span>
             </div>
+            <div className={styles.transcriptActions}>
+              <label className="button button-secondary button-sm">
+                استيراد SRT/VTT
+                <input
+                  type="file"
+                  accept=".srt,.vtt,text/vtt"
+                  onChange={handleTranscriptFile}
+                  className={styles.transcriptFileInput}
+                />
+              </label>
+              <button type="button" className="button button-secondary button-sm" onClick={clearTranscript} disabled={!transcriptText.trim()}>
+                مسح التفريغ
+              </button>
+              {transcriptFileName ? <span className="badge">{transcriptFileName}</span> : null}
+            </div>
+            {transcriptStatus ? <p className="form-status">{transcriptStatus}</p> : null}
             <textarea
               value={transcriptText}
               onChange={(event) => setTranscriptText(event.target.value)}

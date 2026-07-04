@@ -22,6 +22,7 @@
 
 ## موجة توحيد المهام والخطط — 2026-07-04
 
+- [x] **Media transcript helper** — أضيف في `/media/play` استيراد مباشر لملفات SRT/VTT داخل مشغل Next، مع قراءة الملف من المتصفح، تحقق من وجود cues زمنية، عدّ المقاطع، عرض اسم الملف، ورسالة حالة، مع بقاء اللصق اليدوي متاحاً ومسح التفريغ بزر مستقل.
 - [x] **Add archive / AddVideo wizard** — حُوّلت `/uploads` إلى مسار إضافة أرشيف كامل: اختيار متعدد الملفات، وضع سريع/موجه، تطبيق قوالب الإدخال، metadata أساسية، وسوم، مجلد وجهة، حقول فيديو مخصصة، ومراجعة قبل الإنشاء. يحافظ السطح نفسه على import preview وروابط الرفع الخارجية، ويرفع الملفات عبر API ثم يثبت metadata عبر `bulkRecords` بدل ترك صفحة مؤقتة.
 - [x] **First-run / onboarding في Masar** — أُضيفت صفحة `/first-run` العامة لمسار أول تشغيل مع preset سريع/متقدم، حفظ تقدّم محلي، فحص صحة Laravel API، وأوامر نسخ آمنة لـ `setup.bat`/Control Center دون تشغيل أوامر من المتصفح. أُضيف تذكير onboarding داخل AppShell حتى إكمال الجولة، وروابط إعادة فتح من `/help` و`/settings` و`/login` والتنقل/لوحة الأوامر. أُضيف أمر `setup first-run` كدليل غير تخريبي في Control Center مع اختبار CLI.
 - [x] **توحيد مصدر المهام** — أُعيد تنظيم `TASKS.md` ليصبح المصدر الوحيد للمهام المفتوحة في Masar، بعد دمج خلاصات خطط TypeScript، Laravel/Next cutover، CI/CD+Sentry، UI redesign/rich UI، وlegacy parity.
