@@ -1,0 +1,28 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('upload_links', function (Blueprint $table): void {
+            $table->string('id')->primary();
+            $table->string('token')->unique();
+            $table->string('label')->nullable();
+            $table->string('folder')->nullable();
+            $table->string('created_by')->nullable()->index();
+            $table->timestamp('expires_at')->index();
+            $table->timestamp('revoked_at')->nullable();
+            $table->unsignedInteger('upload_count')->default(0);
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('upload_links');
+    }
+};
