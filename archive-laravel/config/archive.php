@@ -8,6 +8,14 @@ return [
     // ...) are a no-op unless this is explicitly true. Checked server-side in
     // SystemControlService, not just hidden in the UI.
     'system_control_enabled' => (bool) env('SYSTEM_CONTROL_ENABLED', false),
+
+    // Broadcast metadata (MOS/MXF) requires an external integration endpoint.
+    // Absent config means the surface reports "configuration required" instead
+    // of a broken or empty state.
+    'broadcast' => [
+        'mos_endpoint' => env('MOS_ENDPOINT'),
+        'mxf_endpoint' => env('MXF_ENDPOINT'),
+    ],
     'auth' => [
         'access_ttl_minutes' => (int) env('ARCHIVE_ACCESS_TTL_MINUTES', 15),
         'refresh_ttl_days' => (int) env('ARCHIVE_REFRESH_TTL_DAYS', 14),

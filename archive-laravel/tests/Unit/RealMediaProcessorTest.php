@@ -248,4 +248,36 @@ class FfmpegProgressParserTest extends TestCase
         $this->assertLessThanOrEqual(1.0, $progress);
         $this->assertGreaterThanOrEqual(0.0, $progress);
     }
+
+    public function test_montage_export_concatenates_clips(): void
+    {
+        $job = new MediaJob();
+        $job->id = 'job-montage-1';
+        $job->record_id = 'record-montage-1';
+        $job->operation = 'montage_export';
+        $job->options = [
+            'clips' => [
+                ['path' => 'archive/clip-a.mp4', 'inSec' => 0, 'outSec' => 5],
+                ['path' => 'archive/clip-b.mp4', 'inSec' => 2, 'outSec' => 9],
+            ],
+        ];
+
+        $artifacts = $this->processor->process($job);
+
+        $this->assertCount(1, $artifacts);
+        $this->assertSame('montage_mp4', $artifacts[0]['kind']);
+        $this->assertStringContainsString('record-montage-1/montage.mp4', $artifacts[0]['key']);
+    }
+
+    public function test_montage_export_requires_clips(): void
+    {
+        $job = new MediaJob();
+        $job->id = 'job-montage-2';
+        $job->record_id = 'record-montage-2';
+        $job->operation = 'montage_export';
+        $job->options = ['clips' => []];
+
+        $this->expectException(\RuntimeException::class);
+        $this->processor->process($job);
+    }
 }
