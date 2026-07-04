@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { SearchCheck } from "lucide-react";
 import { z } from "zod";
 import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob } from "@/lib/archive-api";
@@ -57,7 +58,15 @@ export function MediaJobLookup() {
   });
 
   return (
-    <form className="panel auth-form" onSubmit={handleSubmit} aria-label="فحص media jobs">
+    <form className="workspace-panel auth-form" onSubmit={handleSubmit} aria-label="فحص media jobs">
+      <div className="workspace-panel__header">
+        <div>
+          <h2>فحص job منفرد</h2>
+          <p>تحقق سريع من حالة مهمة محددة عبر Laravel API.</p>
+        </div>
+        <span className="badge">lookup</span>
+      </div>
+
       <label>
         معرّف job
         <input type="text" placeholder="media-job-id" autoComplete="off" {...form.register("jobId")} />
@@ -71,6 +80,7 @@ export function MediaJobLookup() {
       </label>
 
       <button type="submit" className="button button-primary" disabled={state.status === "loading"}>
+        <SearchCheck size={16} aria-hidden="true" />
         {state.status === "loading" ? "جار الفحص..." : "فحص حالة job"}
       </button>
 
