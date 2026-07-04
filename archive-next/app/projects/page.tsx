@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord, type MediaJob } from "@/lib/archive-api";
+import { createArchiveApiClient, deriveRecordSourcePath, type ArchiveRecord, type MediaJob } from "@/lib/archive-api";
 import {
   addClip,
   buildEdl,
@@ -18,6 +18,7 @@ import {
   projectDuration,
   removeClip,
   reorderClip,
+  resolveMontageClipPaths,
   safeFileName,
   saveProject,
   secondsToTimecode,
@@ -144,16 +145,31 @@ export default function ProjectsPage() {
     if (validClips.length === 0) return;
 
     setExportError("");
+
+    // Resolve each clip's record ID to its real stored file path before
+    // submitting the job — ffmpeg needs a filesystem path, not a record ID.
+    const uniqueItemIds = Array.from(new Set(validClips.map((clip) => clip.itemId)));
+    const sourceByItemId = new Map<string, { sourcePath: string; disk?: string } | null>();
+    for (const itemId of uniqueItemIds) {
+      const response = await api.record(itemId);
+      sourceByItemId.set(itemId, response.ok ? deriveRecordSourcePath(response.record) : null);
+    }
+
+    const { clips, failures } = resolveMontageClipPaths(
+      validClips,
+      (itemId) => sourceByItemId.get(itemId) ?? null
+    );
+
+    if (failures.length > 0) {
+      const titles = failures.map((failure) => failure.clip.title || failure.clip.itemId).join("، ");
+      setExportError(`تعذّر تحديد مسار الملف لبعض القصاصات: ${titles}. لا يمكن المتابعة حتى تحتوي كل قصاصة على مسار ملف صالح.`);
+      return;
+    }
+
     const response = await api.createMediaJob({
       recordId: selected.id,
       operation: "montage_export",
-      options: {
-        clips: validClips.map((clip) => ({
-          path: clip.itemId,
-          inSec: clip.inSec,
-          outSec: clip.outSec,
-        })),
-      },
+      options: { clips },
     });
 
     if (response.ok) {

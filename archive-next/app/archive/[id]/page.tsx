@@ -9,6 +9,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import {
   createArchiveApiClient,
+  deriveRecordSourcePath,
   type ArchiveRecord,
   type RecordComment,
   type RecordHistoryEntry,
@@ -43,15 +44,6 @@ type OcrState =
   | { status: "creating" }
   | { status: "success"; jobId: string }
   | { status: "error"; message: string };
-
-/** Records don't carry a guaranteed file path — only ingested/uploaded metadata does. */
-function deriveSourcePath(record: ArchiveRecord): { sourcePath: string; disk?: string } | null {
-  const metadata = record.metadata && typeof record.metadata === "object" ? record.metadata : {};
-  const sourcePath = metadata["filePath"] ?? metadata["path"];
-  if (typeof sourcePath !== "string" || !sourcePath.trim()) return null;
-  const disk = metadata["disk"];
-  return { sourcePath, ...(typeof disk === "string" && disk.trim() ? { disk } : {}) };
-}
 
 function relationEdgeSummary(edge: RelationGraphEdge) {
   if (edge.kind === "manual") {
@@ -485,7 +477,7 @@ export default function ArchiveDetailPage() {
 
   async function handleOcr() {
     if (state.status !== "ready") return;
-    const source = deriveSourcePath(state.record);
+    const source = deriveRecordSourcePath(state.record);
     if (!source) return;
 
     setOcrState({ status: "creating" });
@@ -728,9 +720,9 @@ export default function ArchiveDetailPage() {
               <button
                 type="button"
                 onClick={handleOcr}
-                disabled={!deriveSourcePath(state.record) || ocrState.status === "creating"}
+                disabled={!deriveRecordSourcePath(state.record) || ocrState.status === "creating"}
                 className="button button-secondary"
-                title={!deriveSourcePath(state.record) ? "لا يوجد مسار ملف صالح لهذا السجل" : undefined}
+                title={!deriveRecordSourcePath(state.record) ? "لا يوجد مسار ملف صالح لهذا السجل" : undefined}
               >
                 {ocrState.status === "creating" ? "جار الإنشاء..." : "استخراج النص (OCR)"}
               </button>
@@ -739,7 +731,7 @@ export default function ArchiveDetailPage() {
         }
       />
 
-      {state.status === "ready" && !deriveSourcePath(state.record) && (
+      {state.status === "ready" && !deriveRecordSourcePath(state.record) && (
         <p className="helper-text">تعذّر تفعيل استخراج النص: لا يحتوي هذا السجل على مسار ملف قابل للاستخدام في metadata.</p>
       )}
 
