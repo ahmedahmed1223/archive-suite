@@ -1,6 +1,7 @@
 "use client";
 
-import { LogIn, LogOut, Menu, Search, UserCircle, X } from "lucide-react";
+import * as Icons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { isActivePath, navSectionLabels, primaryNav, type NavSection } from "@/lib/navigation";
 import { usePathname, useRouter } from "next/navigation";
@@ -10,6 +11,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useAuthSession } from "@/lib/auth-session";
 
 const navSections = Object.keys(navSectionLabels) as NavSection[];
+const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
+const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
 
 export default function AppHeader({
   subtitle,
@@ -51,21 +54,25 @@ export default function AppHeader({
         aria-expanded={isMenuOpen}
         onClick={() => setIsMenuOpen((current) => !current)}
       >
-        {isMenuOpen ? <X aria-hidden="true" size={18} /> : <Menu aria-hidden="true" size={18} />}
+        {isMenuOpen ? <Icons.X aria-hidden="true" size={18} /> : <Icons.Menu aria-hidden="true" size={18} />}
         <span>المسارات</span>
       </button>
       <div className="topbar-actions" aria-label="أدوات الواجهة">
+        <a className="icon-action primary-action-link" href="/uploads" title="إضافة مادة">
+          <Icons.UploadCloud aria-hidden="true" size={18} strokeWidth={2} />
+          <span>إضافة مادة</span>
+        </a>
         {auth.status === "authenticated" ? (
           <div className="session-chip" title={userLabel}>
-            <UserCircle aria-hidden="true" size={18} strokeWidth={2} />
+            <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
             <span>{userLabel}</span>
             <button type="button" onClick={handleLogout} aria-label="تسجيل الخروج">
-              <LogOut aria-hidden="true" size={16} strokeWidth={2} />
+              <Icons.LogOut aria-hidden="true" size={16} strokeWidth={2} />
             </button>
           </div>
         ) : (
           <a className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
-            <LogIn aria-hidden="true" size={18} strokeWidth={2} />
+            <Icons.LogIn aria-hidden="true" size={18} strokeWidth={2} />
             <span>الدخول</span>
           </a>
         )}
@@ -77,7 +84,7 @@ export default function AppHeader({
           aria-label="فتح لوحة الأوامر"
           title="بحث سريع"
         >
-          <Search aria-hidden="true" size={18} strokeWidth={2} />
+          <Icons.Search aria-hidden="true" size={18} strokeWidth={2} />
           <kbd>Ctrl K</kbd>
         </button>
         <ThemeToggle />
@@ -88,6 +95,7 @@ export default function AppHeader({
             <span className="nav-section-label">{navSectionLabels[section]}</span>
             {primaryNav.filter((link) => link.section === section).map((link) => {
               const isActive = isActivePath(pathname, link.href);
+              const Icon = navIcon(link.icon);
 
               return (
                 <a
@@ -97,7 +105,8 @@ export default function AppHeader({
                   href={link.href}
                   aria-current={isActive ? "page" : undefined}
                 >
-                  {link.label}
+                  <Icon aria-hidden="true" className="app-nav-link__icon" size={16} strokeWidth={2} />
+                  <span>{link.label}</span>
                 </a>
               );
             })}
