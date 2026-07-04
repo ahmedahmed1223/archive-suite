@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Activity, AlertTriangle, DatabaseZap, Eye, Fingerprint, KeyRound, LifeBuoy, RefreshCw, Settings, ShieldCheck, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { BRAND } from "@/lib/brand";
 import {
@@ -250,6 +252,7 @@ export default function SettingsPage() {
   return (
     <AppShell subtitle="مركز الإعدادات" contentClassName="settings-content">
       <PageToolbar
+        icon={<Settings size={24} />}
         eyebrow={<span className="badge">Settings Hub</span>}
         title={`إعدادات ${BRAND.arabicName}`}
         description="مركز واحد للهوية، الأمان، التخزين، ODBC، API، والمظهر، مع تمييز ما هو مطبق فعلاً وما ينتظر صلاحيات تحرير أو backend إضافي."
@@ -263,15 +266,61 @@ export default function SettingsPage() {
         )}
         actions={(
           <>
-            <a className="button button-secondary" href="/settings/users">المستخدمون والأدوار</a>
-            <a className="button button-secondary" href="/first-run">إعادة فتح الجولة</a>
-            <a className="button button-secondary" href="/status">حالة النظام</a>
-            <a className="button button-secondary" href="/errors">سجل الأخطاء</a>
+            <a className="button button-secondary" href="/settings/users">
+              <Users size={16} aria-hidden="true" />
+              المستخدمون والأدوار
+            </a>
+            <a className="button button-secondary" href="/first-run">
+              <LifeBuoy size={16} aria-hidden="true" />
+              إعادة فتح الجولة
+            </a>
+            <a className="button button-secondary" href="/status">
+              <Activity size={16} aria-hidden="true" />
+              حالة النظام
+            </a>
+            <a className="button button-secondary" href="/errors">
+              <AlertTriangle size={16} aria-hidden="true" />
+              سجل الأخطاء
+            </a>
           </>
         )}
       />
 
-        <article className="panel identity-panel" aria-label="هوية النظام">
+      <MetricStrip
+        ariaLabel="ملخص الإعدادات"
+        items={[
+          {
+            label: "الهوية",
+            value: BRAND.arabicName,
+            description: `${BRAND.latinName} v${BRAND.version}`,
+            icon: <Fingerprint size={20} />,
+            tone: "accent"
+          },
+          {
+            label: "الأمان",
+            value: isLoading ? "جار الفحص" : error ? "يتطلب مراجعة" : "محمّل",
+            description: settings ? `${settings.perUserRateLimit} طلب/دقيقة` : "إعدادات القراءة",
+            icon: <ShieldCheck size={20} />,
+            tone: error ? "danger" : "success"
+          },
+          {
+            label: "ODBC",
+            value: isOdbcLoading ? "جار الفحص" : odbc ? odbcStatusLabel(odbc.status) : "غير متاح",
+            description: odbc ? `${odbc.tables.length} جدول مرئي` : "ربط الأنظمة القديمة",
+            icon: <DatabaseZap size={20} />,
+            tone: odbc?.status === "connected" ? "success" : "warning"
+          },
+          {
+            label: "الكتابة",
+            value: canPreviewOdbc ? "مقيدة" : "مغلقة",
+            description: selectedOdbcTable,
+            icon: <KeyRound size={20} />,
+            tone: canPreviewOdbc ? "info" : "default"
+          }
+        ]}
+      />
+
+        <article className="workspace-panel identity-panel" aria-label="هوية النظام">
           <div className="identity-lockup">
             <img src={BRAND.lockupPath} alt={BRAND.lockupName} width={360} height={96} />
             <div>
@@ -291,7 +340,7 @@ export default function SettingsPage() {
 
         <div className="dense-grid" aria-label="فئات الإعدادات">
           {categoryCards.map((card) => (
-            <article className="panel panel-compact" key={card.title}>
+            <article className="workspace-panel panel-compact" key={card.title}>
               <h2>{card.title}</h2>
               <p>{card.summary}</p>
               <ul>
@@ -303,10 +352,13 @@ export default function SettingsPage() {
           ))}
         </div>
 
-        <article className="panel" aria-label="وضع الأمان">
-          <div className="panel-section-header">
-            <h2>وضع الأمان</h2>
-            <p>ملخص للقراءة فقط يوضح سياسة الوصول الحالية والعمل الأمني المؤجل لإصدارات لاحقة.</p>
+        <article className="workspace-panel" aria-label="وضع الأمان">
+          <div className="workspace-panel__header">
+            <div>
+              <h2>وضع الأمان</h2>
+              <p>ملخص للقراءة فقط يوضح سياسة الوصول الحالية والعمل الأمني المؤجل لإصدارات لاحقة.</p>
+            </div>
+            <StatusBadge>{error ? "يتطلب مراجعة" : "قراءة فقط"}</StatusBadge>
           </div>
 
           <div className="stack">
@@ -363,8 +415,8 @@ export default function SettingsPage() {
           </div>
         </article>
 
-        <article className="panel" aria-label="ODBC bridge">
-          <div className="panel-section-header">
+        <article className="workspace-panel" aria-label="ODBC bridge">
+          <div className="workspace-panel__header">
             <div>
               <h2>ODBC للأنظمة القديمة</h2>
               <p>فحص الاتصال، معاينة قراءة محدودة، وكتابة صفوف مقيدة للجداول الأساسية المسموحة فقط.</p>
@@ -424,6 +476,7 @@ export default function SettingsPage() {
                     disabled={!canPreviewOdbc || isPreviewLoading}
                     onClick={() => void loadOdbcPreview()}
                   >
+                    {isPreviewLoading ? <RefreshCw size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                     {isPreviewLoading ? "جاري القراءة" : "معاينة"}
                   </button>
                 </div>

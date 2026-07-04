@@ -972,6 +972,10 @@ textarea.search-input {
   background: var(--color-surface-subtle);
 }
 
+.settings-content {
+  gap: var(--space-4);
+}
+
 .identity-panel {
   align-items: center;
   grid-template-columns: minmax(0, 1fr);
