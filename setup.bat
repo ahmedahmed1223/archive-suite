@@ -7,6 +7,8 @@ REM Usage:
 REM   setup.bat                  (interactive menu)
 REM   setup.bat deploy           (provision .env + docker compose up -d --build)
 REM   setup.bat status | start | stop | health | logs
+REM   setup.bat generate-password
+REM   setup.bat change-admin-password --generate
 REM   setup.bat deploy-legacy    (old Node/Vite deployment wizard)
 REM
 REM The documented Setup-Archive.bat file calls this launcher.

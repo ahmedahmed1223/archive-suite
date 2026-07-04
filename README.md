@@ -138,8 +138,11 @@ SENTRY_AUTH_TOKEN
 
 ```bash
 # Windows:
+.\Setup-Archive.bat                    # القائمة: 1 = Quick start، q/0 = خروج
+.\Setup-Archive.bat change-admin-password --generate
 .\Setup-Archive.bat deploy-legacy
 # Linux/macOS:
+bash setup.sh change-admin-password --generate
 bash setup.sh deploy-legacy        # أو: pnpm deploy
 ```
 
@@ -162,7 +165,7 @@ bash setup.sh deploy-legacy        # أو: pnpm deploy
 ### إعداد Cloud وFileStore
 
 - يقرأ معالج البداية القيم الافتراضية من `archive-server/.env` عبر `/api/setup/preset-config` ويملأ نوع الخادم وعنوانه وحساب المدير ومزوّد الملفات تلقائيًا.
-- كلمة مرور `ADMIN_PASSWORD` تظهر في معالج البداية لأول دخول فقط؛ يجب تغييرها فور اكتمال الإعداد.
+- كلمة مرور `ADMIN_PASSWORD` تظهر في معالج البداية لأول دخول فقط؛ يمكن توليدها أو تغييرها لاحقًا عبر `Setup-Archive.bat change-admin-password --generate`.
 - `PGADMIN_PASSWORD` مخصّصة لتسجيل الدخول إلى واجهة pgAdmin، بينما `POSTGRES_PASSWORD` مخصّصة لاتصال قاعدة البيانات المحفوظ داخلها. مهمة `pgadmin-init` تزامنهما على volumes الجديدة والقديمة.
 - يدعم FileStore: القرص، Dropbox، S3، Azure Blob، Google Drive، FTP/FTPS، SMB/CIFS، SFTP/SSH، وWebDAV.
 - صفحة **مدير الملفات** مستقلة عن الأرشيف: رفع، بحث، مجلدات، تنزيل، نسخ، نقل، وحذف. الرفع يضاف افتراضيًا إلى صندوق التجهيز، لكنه لا ينشئ مادة أرشيف تلقائيًا؛ تبدأ الأرشفة فقط بأمر المستخدم.

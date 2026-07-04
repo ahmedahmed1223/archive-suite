@@ -18,12 +18,14 @@ test("help renders the grouped menu and every command group", () => {
   assert.equal(r.status, 0);
   const clean = r.stdout.replace(/\x1b\[[0-9;]*m/g, "");
   for (const s of [
-    "Archive Suite",
+    "Masar",
     "— Server —", "— Configure —", "— Security —", "— Database —", "— Backups —", "— Maintain —", "— Legacy (Node/Vite stack) —",
-    "1) Deploy", "18) Update & rebuild", "19) Legacy deploy wizard", "0) Exit",
+    "1) Quick start", "4) Deploy / Re-provision", "14) Generate a strong password", "15) Change admin password",
+    "23) Update & rebuild", "24) Legacy deploy wizard", "0) Exit", "q) Exit",
   ]) {
     assert.ok(clean.includes(s), `help output should include "${s}"`);
   }
+  assert.ok(!clean.includes("q) Quick start"), "q should be reserved for exit, not start/deploy");
 });
 
 test("unknown command exits non-zero and lists the valid commands", () => {
@@ -32,6 +34,13 @@ test("unknown command exits non-zero and lists the valid commands", () => {
   const out = r.stderr + r.stdout;
   assert.match(out, /Unknown command/);
   assert.match(out, /status, start, stop/);
+});
+
+test("q command exits successfully instead of starting deployment", () => {
+  const r = run(["q"]);
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), "");
+  assert.equal(r.stderr.trim(), "");
 });
 
 test("first-run guide renders quick and advanced setup paths without deploying", () => {
@@ -124,4 +133,56 @@ test("deploy replaces every duplicate ADMIN_PASSWORD placeholder with the genera
   assert.equal(matches.length, 2);
   assert.equal(new Set(matches).size, 1, "duplicate ADMIN_PASSWORD entries must stay in sync");
   assert.doesNotMatch(content, /CHANGE_ME_(ADMIN|STRONG)_PASSWORD/);
+});
+
+test("generate-password prints a strong password without requiring .env", () => {
+  const r = run(["generate-password"]);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const clean = r.stdout.replace(/\x1b\[[0-9;]*m/g, "");
+  const match = clean.match(/Generated password:\s+(\S+)/);
+  assert.ok(match, "generated password should be visible once");
+  assert.ok(match[1].length >= 20, "generated password should be long enough for first-login use");
+});
+
+test("change-admin-password updates duplicate ADMIN_PASSWORD values and admin email", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-"));
+  const envFile = join(dir, ".env");
+  writeFileSync(
+    envFile,
+    [
+      "ADMIN_EMAIL=old@example.test",
+      "ADMIN_PASSWORD=old-password-one",
+      "POSTGRES_PASSWORD=postgres-secret",
+      "ADMIN_PASSWORD=old-password-two",
+      "",
+    ].join("\n")
+  );
+
+  const r = run(
+    ["change-admin-password", "--email=owner@example.test", "--password=New-Strong-Password-123", "--env-only"],
+    { ARCHIVE_ENV_PATH: envFile }
+  );
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+
+  const content = readFileSync(envFile, "utf8");
+  assert.match(content, /^ADMIN_EMAIL=owner@example\.test$/m);
+  const matches = [...content.matchAll(/^ADMIN_PASSWORD=(.+)$/gm)].map((m) => m[1]);
+  assert.deepEqual(matches, ["New-Strong-Password-123", "New-Strong-Password-123"]);
+  assert.match(r.stdout, /Updated ADMIN_EMAIL, ADMIN_PASSWORD/);
+  assert.match(r.stdout, /Skipped live Laravel update/);
+});
+
+test("change-admin-password can generate and store a replacement password", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-"));
+  const envFile = join(dir, ".env");
+  writeFileSync(envFile, "ADMIN_EMAIL=admin@example.test\nADMIN_PASSWORD=CHANGE_ME_STRONG_PASSWORD\n");
+
+  const r = run(["change-admin-password", "--generate", "--env-only"], { ARCHIVE_ENV_PATH: envFile });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+
+  const content = readFileSync(envFile, "utf8");
+  const password = content.match(/^ADMIN_PASSWORD=(.+)$/m)?.[1] || "";
+  assert.ok(password.length >= 20);
+  assert.notEqual(password, "CHANGE_ME_STRONG_PASSWORD");
+  assert.match(r.stdout, /Generated admin password:/);
 });
