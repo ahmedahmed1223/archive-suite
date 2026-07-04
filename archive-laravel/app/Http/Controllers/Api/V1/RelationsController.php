@@ -116,6 +116,57 @@ class RelationsController extends Controller
         ], 201);
     }
 
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'type' => ['sometimes', 'string', Rule::in(array_keys(self::RELATION_TYPES))],
+            'note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $relation = DB::table('record_relations')->where('id', $id)->first();
+
+        if (! $relation instanceof stdClass) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Relation not found.',
+                'code' => 'not_found',
+            ], 404);
+        }
+
+        $nextType = (string) ($validated['type'] ?? $relation->type);
+        if ($nextType !== (string) $relation->type) {
+            $duplicate = DB::table('record_relations')
+                ->where('source_record_id', $relation->source_record_id)
+                ->where('target_record_id', $relation->target_record_id)
+                ->where('type', $nextType)
+                ->where('id', '!=', $id)
+                ->exists();
+
+            if ($duplicate) {
+                return response()->json([
+                    'ok' => false,
+                    'error' => 'Another relation with this source, target, and type already exists.',
+                    'code' => 'relation_conflict',
+                ], 409);
+            }
+        }
+
+        DB::table('record_relations')
+            ->where('id', $id)
+            ->update([
+                'type' => $nextType,
+                'note' => array_key_exists('note', $validated) ? ($validated['note'] ?? null) : $relation->note,
+                'updated_at' => now(),
+            ]);
+
+        $updated = DB::table('record_relations')->where('id', $id)->first();
+
+        return response()->json([
+            'ok' => true,
+            'relation' => $this->formatRelation($updated),
+        ]);
+    }
+
     public function destroy(string $id): JsonResponse
     {
         $deleted = DB::table('record_relations')->where('id', $id)->delete();

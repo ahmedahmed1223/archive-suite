@@ -649,6 +649,11 @@
         "parameters": [
           { "name": "q", "in": "query", "schema": { "type": "string" } },
           { "name": "store", "in": "query", "schema": { "type": "string" } },
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "subtype", "in": "query", "schema": { "type": "string" } },
+          { "name": "tag", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "workflowStatus", "in": "query", "schema": { "type": "string" } },
           { "name": "cursor", "in": "query", "schema": { "type": "string" } },
           {
             "name": "limit",
@@ -761,6 +766,42 @@
       }
     },
     "/relations/{id}": {
+      "patch": {
+        "tags": ["Relations"],
+        "summary": "Update a manual archive record relation",
+        "operationId": "updateRecordRelation",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateRecordRelationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated relation",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordRelationResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
       "delete": {
         "tags": ["Relations"],
         "summary": "Delete a manual archive record relation",
@@ -2811,18 +2852,42 @@
           }
         ]
       },
+      "SearchFacetBucket": {
+        "type": "object",
+        "required": ["value", "label", "count"],
+        "properties": {
+          "value": { "type": "string" },
+          "label": { "type": "string" },
+          "count": { "type": "integer" }
+        }
+      },
+      "SearchFacets": {
+        "type": "object",
+        "required": ["mode", "total", "stores", "types", "subtypes", "tags", "statuses"],
+        "properties": {
+          "mode": { "type": "string", "enum": ["keyword", "keyword-fallback"] },
+          "store": { "type": ["string", "null"] },
+          "total": { "type": "integer" },
+          "stores": { "type": "array", "items": { "$ref": "#/components/schemas/SearchFacetBucket" } },
+          "types": { "type": "array", "items": { "$ref": "#/components/schemas/SearchFacetBucket" } },
+          "subtypes": { "type": "array", "items": { "$ref": "#/components/schemas/SearchFacetBucket" } },
+          "tags": { "type": "array", "items": { "$ref": "#/components/schemas/SearchFacetBucket" } },
+          "statuses": { "type": "array", "items": { "$ref": "#/components/schemas/SearchFacetBucket" } }
+        },
+        "additionalProperties": true
+      },
       "SearchResponse": {
         "allOf": [
           { "$ref": "#/components/schemas/OkEnvelope" },
           {
             "type": "object",
-            "required": ["records"],
+            "required": ["records", "facets"],
             "properties": {
               "records": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/ArchiveRecord" }
               },
-              "facets": { "type": "object", "additionalProperties": true },
+              "facets": { "$ref": "#/components/schemas/SearchFacets" },
               "nextCursor": { "type": ["string", "null"] }
             }
           }
@@ -2973,6 +3038,14 @@
           "type": { "$ref": "#/components/schemas/RelationType" },
           "note": { "type": "string", "maxLength": 2000 }
         }
+      },
+      "UpdateRecordRelationRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "$ref": "#/components/schemas/RelationType" },
+          "note": { "type": ["string", "null"], "maxLength": 2000 }
+        },
+        "minProperties": 1
       },
       "RecordRelationResponse": {
         "allOf": [

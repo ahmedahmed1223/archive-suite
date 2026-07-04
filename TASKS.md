@@ -30,6 +30,7 @@
 
 - [ ] **Search/archive power features** — إضافة backend facets، saved views persistence، details rail أعمق، وinline relation add/edit داخل صفحة التفاصيل.
   - القبول: فلاتر search/archive محفوظة ومسنودة من Laravel، والعلاقات يمكن إنشاؤها/تعديلها من التفاصيل بدون مغادرة السياق.
+  - الحالة: نُفذت فلاتر `/search` وfacets، وربطت بحوث `/search` وعروض `/archive` المحفوظة بـ `/saved-searches`، وأضيف `PATCH /relations/{id}` ومحرر علاقات داخل `/archive/[id]`. المتبقي قبل الإغلاق: تشغيل بوابة Laravel داخل Docker عند توفر صلاحية/رصيد Docker في البيئة.
 
 - [ ] **Automation backend** — تنفيذ rules engine فعلي، execution log، permissions، وجدولة/تشغيل آمن بدلاً من dry-run المحلي فقط.
   - القبول: القواعد تُحفظ في Laravel، تُنفذ بإذن واضح، وتملك سجل تشغيل قابل للمراجعة.

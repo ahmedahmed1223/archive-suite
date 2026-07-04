@@ -9,7 +9,7 @@ import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacets } from "@/lib/archive-api";
 import styles from "./archive.module.css";
 
 // Workflow states mirrored from archive-app/src/features/archive/itemStatus.ts —
@@ -39,7 +39,7 @@ function getRecordWorkflowStatus(record: ArchiveRecord): WorkflowStatus {
 
 type ArchiveState =
   | { status: "loading" }
-  | { status: "ready"; records: ArchiveRecord[] }
+  | { status: "ready"; records: ArchiveRecord[]; facets?: SearchFacets }
   | { status: "error"; message: string };
 
 type ArchiveViewMode = "grid" | "gallery" | "compact" | "list" | "details";
@@ -59,8 +59,6 @@ interface SavedArchiveView {
   sortField: ArchiveSortField;
   sortDirection: ArchiveSortDirection;
 }
-
-const SAVED_VIEWS_KEY = "masar:archive:savedViews";
 
 const viewOptions: DataViewOption<ArchiveViewMode>[] = [
   { value: "grid", label: "شبكة", shortLabel: "شبكة" },
@@ -156,15 +154,28 @@ function getInitialStatus(params: URLSearchParams): WorkflowStatus | "all" {
   return value && (WORKFLOW_STATES as string[]).includes(value) ? (value as WorkflowStatus) : "all";
 }
 
-function readSavedViews(): SavedArchiveView[] {
-  if (typeof window === "undefined") return [];
+function savedFilter(search: SavedSearch, key: string) {
+  const value = search.filters?.[key];
+  return typeof value === "string" ? value : "";
+}
 
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(SAVED_VIEWS_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+function isSavedArchiveView(search: SavedSearch) {
+  return savedFilter(search, "viewKind") === "archive-view";
+}
+
+function savedArchiveViewFromSearch(search: SavedSearch): SavedArchiveView {
+  return {
+    id: search.id,
+    name: search.name,
+    query: search.query || "",
+    store: savedFilter(search, "store") || "all",
+    type: savedFilter(search, "type") || "all",
+    status: (savedFilter(search, "status") as WorkflowStatus | "all") || "all",
+    viewMode: (savedFilter(search, "viewMode") as ArchiveViewMode) || "grid",
+    itemSize: (savedFilter(search, "itemSize") as ArchiveItemSize) || "compact",
+    sortField: (savedFilter(search, "sortField") as ArchiveSortField) || "updatedAt",
+    sortDirection: (savedFilter(search, "sortDirection") as ArchiveSortDirection) || "desc"
+  };
 }
 
 function ArchivePageContent() {
@@ -184,12 +195,35 @@ function ArchivePageContent() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [savedViews, setSavedViews] = useState<SavedArchiveView[]>([]);
+  const [savedViewStatus, setSavedViewStatus] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkFeedback, setBulkFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
-  const loadRecords = useCallback(async (q: string) => {
+  const refreshSavedViews = useCallback(async () => {
+    const response = await api.savedSearches();
+    if (!response.ok) {
+      setSavedViewStatus(response.error || "تعذر تحميل العروض المحفوظة.");
+      return;
+    }
+
+    setSavedViews(response.searches.filter(isSavedArchiveView).map(savedArchiveViewFromSearch));
+    setSavedViewStatus("");
+  }, [api]);
+
+  const loadRecords = useCallback(async (
+    q: string,
+    activeStore: string = store,
+    activeType: string = type,
+    activeStatus: WorkflowStatus | "all" = workflowStatus
+  ) => {
     setState({ status: "loading" });
-    const response = await api.search({ q, limit: 80 });
+    const response = await api.search({
+      q,
+      store: activeStore !== "all" ? activeStore : undefined,
+      type: activeType !== "all" ? activeType : undefined,
+      status: activeStatus !== "all" ? activeStatus : undefined,
+      limit: 100
+    });
 
     if (!response.ok) {
       setState({ status: "error", message: response.error });
@@ -198,14 +232,15 @@ function ArchivePageContent() {
 
     setState({
       status: "ready",
-      records: response.records
+      records: response.records,
+      facets: response.facets
     });
-  }, [api]);
+  }, [api, store, type, workflowStatus]);
 
   useEffect(() => {
-    setSavedViews(readSavedViews());
-    void loadRecords(searchParams.get("q") || "");
-  }, [loadRecords, searchParams]);
+    void refreshSavedViews();
+    void loadRecords(searchParams.get("q") || "", store, type, workflowStatus);
+  }, [loadRecords, refreshSavedViews, searchParams, store, type, workflowStatus]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -223,8 +258,9 @@ function ArchivePageContent() {
   }, [itemSize, query, router, sortDirection, sortField, store, type, viewMode, workflowStatus]);
 
   const records = state.status === "ready" ? state.records : [];
-  const storeOptions = useMemo(() => getUniqueValues(records, "store"), [records]);
-  const typeOptions = useMemo(() => getUniqueValues(records, "type"), [records]);
+  const facets = state.status === "ready" ? state.facets : undefined;
+  const storeOptions = useMemo(() => facets?.stores?.map((item) => item.value) ?? getUniqueValues(records, "store"), [facets?.stores, records]);
+  const typeOptions = useMemo(() => facets?.types?.map((item) => item.value) ?? getUniqueValues(records, "type"), [facets?.types, records]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<WorkflowStatus, number> = { draft: 0, editing: 0, review: 0, approved: 0, published: 0, archived: 0 };
@@ -274,7 +310,7 @@ function ArchivePageContent() {
 
   const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await loadRecords(query);
+    await loadRecords(query, store, type, workflowStatus);
   };
 
   const toggleSelection = (recordId: string) => {
@@ -367,25 +403,33 @@ function ArchivePageContent() {
     setPreviewId(null);
   };
 
-  const saveCurrentView = () => {
+  const saveCurrentView = async () => {
     const name = window.prompt("اسم العرض المحفوظ");
     if (!name?.trim()) return;
 
-    const nextView: SavedArchiveView = {
-      id: crypto.randomUUID(),
+    setSavedViewStatus("جار حفظ العرض...");
+    const response = await api.createSavedSearch({
       name: name.trim(),
-      query,
-      store,
-      type,
-      status: workflowStatus,
-      viewMode,
-      itemSize,
-      sortField,
-      sortDirection
-    };
-    const nextViews = [nextView, ...savedViews].slice(0, 12);
-    window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(nextViews));
-    setSavedViews(nextViews);
+      query: query || undefined,
+      filters: {
+        viewKind: "archive-view",
+        store,
+        type,
+        status: workflowStatus,
+        viewMode,
+        itemSize,
+        sortField,
+        sortDirection
+      }
+    });
+
+    if (!response.ok) {
+      setSavedViewStatus(response.error || "تعذر حفظ العرض.");
+      return;
+    }
+
+    await refreshSavedViews();
+    setSavedViewStatus("تم حفظ العرض في Laravel.");
   };
 
   const applySavedView = (view: SavedArchiveView) => {
@@ -398,13 +442,17 @@ function ArchivePageContent() {
     setSortField(view.sortField);
     setSortDirection(view.sortDirection);
     setSelectedIds([]);
-    void loadRecords(view.query);
+    void loadRecords(view.query, view.store, view.type, view.status);
   };
 
-  const removeSavedView = (viewId: string) => {
-    const nextViews = savedViews.filter((view) => view.id !== viewId);
-    window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(nextViews));
-    setSavedViews(nextViews);
+  const removeSavedView = async (viewId: string) => {
+    const response = await api.deleteSavedSearch(viewId);
+    if (!response.ok) {
+      setSavedViewStatus(response.error || "تعذر حذف العرض.");
+      return;
+    }
+
+    await refreshSavedViews();
   };
 
   // Bulk edits mutate the selected records client-side, then upsert via
@@ -607,7 +655,7 @@ function ArchivePageContent() {
           <>
             <a className="button button-primary" href="/uploads">إضافة للأرشيف</a>
             <a className="button button-secondary" href="/files">استيراد ملفات</a>
-            <button type="button" className="button button-secondary" onClick={saveCurrentView}>حفظ العرض</button>
+            <button type="button" className="button button-secondary" onClick={() => void saveCurrentView()}>حفظ العرض</button>
           </>
         )}
       >
@@ -683,12 +731,13 @@ function ArchivePageContent() {
               {savedViews.map((view) => (
                 <span key={view.id} className="saved-view-chip">
                   <button type="button" onClick={() => applySavedView(view)}>{view.name}</button>
-                  <button type="button" aria-label={`حذف ${view.name}`} onClick={() => removeSavedView(view.id)}>×</button>
+                  <button type="button" aria-label={`حذف ${view.name}`} onClick={() => void removeSavedView(view.id)}>×</button>
                 </span>
               ))}
             </div>
           ) : null}
         </div>
+        {savedViewStatus ? <p className="form-status">{savedViewStatus}</p> : null}
       </PageToolbar>
 
       {selectedIds.length > 0 ? (
