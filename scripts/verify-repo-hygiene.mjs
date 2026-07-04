@@ -39,7 +39,22 @@ const requiredGitignoreEntries = [
   "**/.next/",
 ];
 
-const parityAuditRelativePath = "docs/design/masar-legacy-parity-audit.md";
+const taskLedgerRelativePath = "TASKS.md";
+const forbiddenPlanDocPaths = [
+  "docs/design/masar-legacy-parity-audit.md",
+  "docs/design/masar-rich-ui-completion-audit.md",
+  "docs/design/masar-ui-redesign-vision.md",
+  "docs/laravel-nextjs-migration-plan.md",
+];
+const requiredTaskLedgerMarkers = [
+  "First-run / onboarding",
+  "Activity/history دائم",
+  "تخزين Laravel دائم",
+  "Add archive / AddVideo wizard",
+  "Automation backend",
+  "تفريغ عربي إنتاجي على GPU",
+  "AI/Copilot",
+];
 
 function rel(absolutePath) {
   return path.relative(ROOT, absolutePath).replaceAll(path.sep, "/");
@@ -117,36 +132,35 @@ assert.deepEqual(
 );
 
 for (const file of [
-  "TASKS.md",
+  taskLedgerRelativePath,
   "ChangeLog.md",
   "package.json",
-  parityAuditRelativePath,
 ]) {
   assert.ok(existsSync(path.join(ROOT, file)), `missing expected root file: ${file}`);
   assert.ok(statSync(path.join(ROOT, file)).isFile(), `expected file: ${file}`);
 }
 
-const parityAudit = readFileSync(path.join(ROOT, parityAuditRelativePath), "utf8");
-const legacyFeaturePaths = readdirSync(path.join(ROOT, "archive-app", "src", "features"), { withFileTypes: true })
-  .filter((entry) => entry.isDirectory())
-  .map((entry) => `archive-app/src/features/${entry.name}`)
-  .sort();
-const undocumentedFeaturePaths = legacyFeaturePaths.filter((featurePath) => !parityAudit.includes(`\`${featurePath}\``));
+const taskLedger = readFileSync(path.join(ROOT, taskLedgerRelativePath), "utf8");
+for (const marker of requiredTaskLedgerMarkers) {
+  assert.ok(taskLedger.includes(marker), `${taskLedgerRelativePath} should include task marker: ${marker}`);
+}
+
+const trackedForbiddenPlanDocs = trackedFiles.filter((file) =>
+  forbiddenPlanDocPaths.includes(file) && existsSync(path.join(ROOT, file))
+);
 assert.deepEqual(
-  undocumentedFeaturePaths,
+  trackedForbiddenPlanDocs,
   [],
-  `Legacy feature directories must be listed in ${parityAuditRelativePath}:\n${undocumentedFeaturePaths.join("\n")}`
+  `Merged plan/audit documents must not remain tracked; consolidate into ${taskLedgerRelativePath}:\n${trackedForbiddenPlanDocs.join("\n")}`
 );
 
-const legacyPagePaths = readdirSync(path.join(ROOT, "archive-app", "src", "pages"), { withFileTypes: true })
-  .filter((entry) => entry.isFile() && entry.name.endsWith("Page.tsx"))
-  .map((entry) => `archive-app/src/pages/${entry.name}`)
-  .sort();
-const undocumentedPagePaths = legacyPagePaths.filter((pagePath) => !parityAudit.includes(`\`${pagePath}\``));
+const trackedSuperpowersPlans = trackedFiles.filter((file) =>
+  file.startsWith("docs/superpowers/plans/") && existsSync(path.join(ROOT, file))
+);
 assert.deepEqual(
-  undocumentedPagePaths,
+  trackedSuperpowersPlans,
   [],
-  `Legacy pages must be listed in ${parityAuditRelativePath}:\n${undocumentedPagePaths.join("\n")}`
+  `Subtask plan documents must not remain tracked; consolidate into ${taskLedgerRelativePath}:\n${trackedSuperpowersPlans.join("\n")}`
 );
 
 console.log("Repo hygiene verification complete.");

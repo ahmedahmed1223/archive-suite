@@ -20,6 +20,15 @@
 
 ---
 
+## موجة توحيد المهام والخطط — 2026-07-04
+
+- [x] **توحيد مصدر المهام** — أُعيد تنظيم `TASKS.md` ليصبح المصدر الوحيد للمهام المفتوحة في Masar، بعد دمج خلاصات خطط TypeScript، Laravel/Next cutover، CI/CD+Sentry، UI redesign/rich UI، وlegacy parity.
+- [x] **نقل المنجز من الخطط الفرعية إلى سجل التغييرات** — وُثق أن المكدس القانوني Laravel + Next.js أصبح معتمداً، وأن واجهة Masar الموحدة وهوية النظام ومكتبات UI الغنية اكتملت، وأن شرائح parity الكبيرة دُمجت: history/comments/sync، intake templates/import preview/upload links/saved searches، data-center/status/system-control/DR/user export، media source picker/montage export/broadcast metadata.
+- [x] **تنظيف ملفات الخطط الفرعية** — حُذفت ملفات `docs/superpowers/plans/*.md` ووثائق تدقيق/رؤية Masar القديمة بعد نقل المهام المفتوحة إلى `TASKS.md` والمنجز إلى هذا السجل.
+- [x] **إبقاء المتبقي فقط في TASKS** — صارت المهام المفتوحة مصنفة إلى P1/P2/P3، وتشمل: first-run، activity undo/diffs، التخزين الدائم للكيانات المحلية، Add archive wizard، search/archive facets، automation backend، GPU transcription validation، وميزات AI/offline/settings/montage المتقدمة.
+
+---
+
 ## موجة توحيد النظام واستعادة الميزات — 2026-07-03
 
 - [x] **نسخ احتياطي واستعادة في Laravel + صفحة Data Center** — أُضيفت نقاط `/api/v1/system/backups` (list/run/preview/restore) عبر `BackupService` مع حماية من path traversal وقصرها على الأدمن، وصفحة `/backup` في Next بجدول النسخ ومعاينة لكل مخزن وتأكيد استعادة بكتابة اسم النسخة. التحقق: `pnpm verify` (222 اختبار Laravel).
