@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import BroadcastMetadataPanel from "@/components/BroadcastMetadataPanel";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import {
@@ -939,6 +940,7 @@ export default function ArchiveDetailPage() {
               loading={state.historyLoading}
               error={state.historyError}
             />
+            <BroadcastMetadataPanel recordId={id} />
           </div>
         </div>
       )}
