@@ -38,8 +38,8 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/import` | `archive-next/app/ingest/page.tsx`, `archive-next/app/uploads/page.tsx` (Laravel `/import/preview`) | Migrated | Import-from-url metadata preview with SSRF-safe validation is now wired; keep in smoke coverage. |
 | `archive-app/src/features/itemNotes` | `archive-next/app/archive/[id]/page.tsx`, Laravel `/records/{id}/notes` | Migrated | Keep private note CRUD in smoke/API coverage. |
 | `archive-app/src/features/layout` | `archive-next/components/AppShell.tsx`, `archive-next/components/AppHeader.tsx` | Migrated | Shared shell only. |
-| `archive-app/src/features/media` | `archive-next/app/media/*`, `archive-next/components/MediaPlayer.tsx` | Partial | Wire play/compare to real media source picker and restore SRT helpers. |
-| `archive-app/src/features/montage` | `archive-next/app/projects/page.tsx`, future Laravel export job | Partial | Restore multi-track, markers/comments, transitions, and MP4 export. |
+| `archive-app/src/features/media` | `archive-next/app/media/*`, `archive-next/components/MediaPlayer.tsx`, `archive-next/components/MediaSourcePicker.tsx` | Partial | Play/compare now browse stored files via `/files/browser` instead of raw path entry; SRT/VTT transcript helper remains manual-paste only. |
+| `archive-app/src/features/montage` | `archive-next/app/projects/page.tsx`, Laravel `montage_export` media job | Partial | MP4 export now runs as an async Laravel media job (ffmpeg concat, queued, polled); multi-track, markers/comments, and transitions are still legacy-only. |
 | `archive-app/src/features/navigation` | `archive-next/lib/navigation.ts`, `archive-next/components/CommandPalette.tsx` | Migrated | Update after every new route. |
 | `archive-app/src/features/notifications` | `archive-next/components/ui/Toast.tsx`, future notifications center | Partial | Add persistent operation notifications and push bridge if needed. |
 | `archive-app/src/features/offline` | Future offline/sync support in `archive-next/components/AppProviders.tsx` | Missing | Add connectivity probe, offline queue, and degraded-mode banners. |
@@ -96,7 +96,7 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/pages/InboxPage.tsx` | `/inbox` | Partial | Persist inbox queue. |
 | `archive-app/src/pages/KanbanPage.tsx` | `/kanban` | Migrated | Persist view presets later. |
 | `archive-app/src/pages/ProductionTasksPage.tsx` | `/projects` or future `/production/tasks` | Partial | Add production task persistence if still required. |
-| `archive-app/src/pages/ProjectsPage.tsx` | `/projects` | Partial | Restore advanced montage and persistent projects. |
+| `archive-app/src/pages/ProjectsPage.tsx` | `/projects` | Partial | Async MP4 export (Laravel `montage_export` media job, status polling) is now wired; multi-track editing and persistent (non-local) projects remain. |
 | `archive-app/src/pages/ReadingListsPage.tsx` | Future `/reading-lists` | Missing | Add route or merge into collections with explicit parity note. |
 | `archive-app/src/pages/ReportsPage.tsx` | `/reports` | Migrated | Keep smoke coverage. |
 | `archive-app/src/pages/SavedSearchesPage.tsx` | `/search/saved` | Partial | Saved-search manager (list/create/delete/run) is now wired; still add alerts. |
@@ -123,8 +123,8 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 4. History and sync: audit-backed `/activity`, record history, `/sync`, conflict log, and undo/diff decisions.
 5. Operations: `/data-center`, `/status` live metrics, `/system/control`, backup/admin extras — done (this slice also added the DR probe and self-service user data export at `/account/export`).
 6. Power-user UX: saved search manager, reading lists, appearance editor, shortcuts, contextual guide.
-7. Media/project parity: media source picker, play/compare wiring, advanced montage, MP4 export.
-8. Enterprise integrations: MOS/MXF metadata, backup checksum/encryption/retention. (User data export and DR probes shipped in slice 5.)
+7. Media/project parity: media source picker and play/compare wiring are done; async MP4 export ships as a Laravel `montage_export` media job — advanced multi-track montage (markers/comments/transitions) remains legacy-only.
+8. Enterprise integrations: MOS/MXF metadata surface (Laravel `/records/{id}/broadcast-metadata`, `archive-next/components/BroadcastMetadataPanel.tsx`) is now wired with explicit "configuration required" gating when `MOS_ENDPOINT`/`MXF_ENDPOINT` are unset; backup checksum/encryption/retention remain open. (User data export and DR probes shipped in slice 5.)
 
 ## Verification Rule
 
