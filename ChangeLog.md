@@ -22,6 +22,7 @@
 
 ## موجة توحيد المهام والخطط — 2026-07-04
 
+- [x] **First-run / onboarding في Masar** — أُضيفت صفحة `/first-run` العامة لمسار أول تشغيل مع preset سريع/متقدم، حفظ تقدّم محلي، فحص صحة Laravel API، وأوامر نسخ آمنة لـ `setup.bat`/Control Center دون تشغيل أوامر من المتصفح. أُضيف تذكير onboarding داخل AppShell حتى إكمال الجولة، وروابط إعادة فتح من `/help` و`/settings` و`/login` والتنقل/لوحة الأوامر. أُضيف أمر `setup first-run` كدليل غير تخريبي في Control Center مع اختبار CLI.
 - [x] **توحيد مصدر المهام** — أُعيد تنظيم `TASKS.md` ليصبح المصدر الوحيد للمهام المفتوحة في Masar، بعد دمج خلاصات خطط TypeScript، Laravel/Next cutover، CI/CD+Sentry، UI redesign/rich UI، وlegacy parity.
 - [x] **نقل المنجز من الخطط الفرعية إلى سجل التغييرات** — وُثق أن المكدس القانوني Laravel + Next.js أصبح معتمداً، وأن واجهة Masar الموحدة وهوية النظام ومكتبات UI الغنية اكتملت، وأن شرائح parity الكبيرة دُمجت: history/comments/sync، intake templates/import preview/upload links/saved searches، data-center/status/system-control/DR/user export، media source picker/montage export/broadcast metadata.
 - [x] **تنظيف ملفات الخطط الفرعية** — حُذفت ملفات `docs/superpowers/plans/*.md` ووثائق تدقيق/رؤية Masar القديمة بعد نقل المهام المفتوحة إلى `TASKS.md` والمنجز إلى هذا السجل.

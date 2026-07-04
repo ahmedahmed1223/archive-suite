@@ -2,6 +2,8 @@ import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 
 const gettingStartedChecklist = [
+  "افتح /first-run واختر مسار التهيئة السريع أو المتقدم حسب بيئتك.",
+  "نفذ setup doctor ثم setup quick أو setup deploy من Control Center قبل الدخول الأول.",
   "سجّل الدخول عبر /login وتحقق من ظهور بياناتك في أعلى الشريط العلوي.",
   "ابحث عن سجل حقيقي من /search للتأكد من اتصال عقد البحث بـ Laravel.",
   "افتح /files وجرّب معاينة ملف أو تشغيل وسائط للتأكد من صحة الروابط.",
@@ -38,14 +40,19 @@ const featureHighlights = [
 
 const supportLinks = [
   {
-    title: "خطة الانتقال إلى Laravel وNext.js",
-    description: "خارطة الطريق الكاملة لعقد API الموحّد وتوزيع الصفحات.",
-    href: "/docs/laravel-nextjs-migration-plan.md"
+    title: "جولة أول تشغيل",
+    description: "مسار سريع أو متقدم لتجهيز النظام وفحص الصحة قبل العمل.",
+    href: "/first-run"
   },
   {
-    title: "رؤية إعادة تصميم Masar",
-    description: "مبادئ المنتج وخريطة تحويل الصفحات القديمة إلى الشكل الجديد.",
-    href: "/docs/design/masar-ui-redesign-vision.md"
+    title: "Control Center",
+    description: "واجهة النظام للإجراءات الحساسة بعد تفعيلها من الخادم.",
+    href: "/system/control"
+  },
+  {
+    title: "حالة API",
+    description: "فحص صحة Laravel ومحرك البيانات قبل استكشاف الأعطال.",
+    href: "/status"
   },
   {
     title: "سجل الأخطاء",
@@ -67,6 +74,9 @@ export default function HelpPage() {
             <span className="badge">{featureHighlights.length} مسارات رئيسية</span>
           </>
         }
+        actions={(
+          <a className="button button-primary" href="/first-run">فتح جولة أول تشغيل</a>
+        )}
       />
 
       <article className="panel" aria-label="قائمة البدء السريع">

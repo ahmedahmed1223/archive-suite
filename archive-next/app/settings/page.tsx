@@ -264,6 +264,7 @@ export default function SettingsPage() {
         actions={(
           <>
             <a className="button button-secondary" href="/settings/users">المستخدمون والأدوار</a>
+            <a className="button button-secondary" href="/first-run">إعادة فتح الجولة</a>
             <a className="button button-secondary" href="/status">حالة النظام</a>
             <a className="button button-secondary" href="/errors">سجل الأخطاء</a>
           </>

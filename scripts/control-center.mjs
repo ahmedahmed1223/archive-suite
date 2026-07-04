@@ -429,6 +429,26 @@ async function quickStart() {
   return healthStatus;
 }
 
+function firstRunGuide() {
+  titleLine("First run — Masar onboarding guide");
+  log("Use this guide when preparing the canonical Laravel + Next.js stack for the first time.");
+  log("");
+  log(`${C.b}Quick preset${C.x}`);
+  log(`  ${C.c}setup doctor${C.x}   ${C.d}Check Node.js, pnpm, Docker, and .env.${C.x}`);
+  log(`  ${C.c}setup quick${C.x}    ${C.d}Deploy, start Docker, and run the health check.${C.x}`);
+  log("");
+  log(`${C.b}Advanced preset${C.x}`);
+  log(`  ${C.c}setup doctor${C.x}          ${C.d}Pre-flight report.${C.x}`);
+  log(`  ${C.c}setup deploy${C.x}          ${C.d}Provision .env secrets and build the stack.${C.x}`);
+  log(`  ${C.c}setup config${C.x}          ${C.d}Review public URL, ports, and storage/provider settings.${C.x}`);
+  log(`  ${C.c}setup migrate-status${C.x}  ${C.d}Inspect Laravel migrations.${C.x}`);
+  log(`  ${C.c}setup health${C.x}          ${C.d}Probe /api/v1/health through Next.js.${C.x}`);
+  log("");
+  warn("Store the generated admin password immediately; it is shown once during deploy.");
+  log(`Open ${C.c}/first-run${C.x} in the Next.js app to track these steps from the UI.`);
+  return 0;
+}
+
 // ─── Doctor — environment pre-flight check ───────────────────────────────────
 async function runDoctor() {
   titleLine("Doctor — environment pre-flight check");
@@ -499,6 +519,7 @@ async function runDoctor() {
 const MENU = [
   ["sec", "— Quick Actions —"],
   ["q", "Quick start (deploy+health)", quickStart],
+  ["f", "First-run guide", firstRunGuide],
   ["d", "Doctor (pre-flight check)", runDoctor],
   ["sec", "— Deploy (Laravel + Next.js) —"],
   ["1", "Deploy / Re-provision", deployCanonical],
@@ -590,7 +611,7 @@ async function interactive() {
 // ─── Non-interactive subcommands ──────────────────────────────────────────────
 const COMMANDS = {
   // Quick entry points
-  quick: quickStart, doctor: runDoctor,
+  quick: quickStart, "first-run": firstRunGuide, doctor: runDoctor,
   // Server
   status: serverStatus, start: serverStart, stop: serverStop, restart: serverRestart,
   logs: () => serverLogs({ follow: false }), health: healthCheck,
@@ -611,6 +632,8 @@ const COMMANDS = {
   help: () => {
     printBanner();
     console.log(`${C.b}  Quick-start examples:${C.x}`);
+    console.log(`  ${C.d}# Review the first-run paths without changing anything:${C.x}`);
+    console.log(`  ${C.c}setup first-run${C.x}`);
     console.log(`  ${C.d}# First-time setup on this machine (deploy the Laravel+Next stack, then health):${C.x}`);
     console.log(`  ${C.c}setup quick${C.x}`);
     console.log(`  ${C.d}# Verify the environment before deploying (Node/pnpm/Docker/.env):${C.x}`);
@@ -620,6 +643,7 @@ const COMMANDS = {
     console.log("");
     console.log(`${C.b}  Commands (canonical Laravel + Next.js stack):${C.x}`);
     console.log(`  ${C.c}quick${C.x}            Deploy + health check in one step`);
+    console.log(`  ${C.c}first-run${C.x}        Show the quick/advanced first-run guide`);
     console.log(`  ${C.c}doctor${C.x}           Check Node/pnpm/Docker/.env before deploying`);
     console.log(`  ${C.c}deploy${C.x}           Provision .env secrets + docker compose up -d --build`);
     console.log(`  ${C.c}start | stop | restart${C.x}  Manage the Docker stack (archive-server/docker-compose.yml)`);
