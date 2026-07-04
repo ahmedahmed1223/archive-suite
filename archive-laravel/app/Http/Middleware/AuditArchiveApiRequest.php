@@ -62,6 +62,10 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/share'] => ['share.create', 'share_link'],
             ['POST', 'api/v1/media/jobs'] => ['media.workflow.queue', 'media_job'],
             ['POST', 'api/v1/auth/logout'] => ['auth.logout', 'api_session'],
+            ['POST', 'api/v1/system/control/{action}'] => [
+                $response->getStatusCode() === 503 ? 'system_control.blocked' : ($response->isSuccessful() ? 'system_control.allowed' : 'system_control.rejected'),
+                'system_control_action',
+            ],
             default => [strtolower($method).'.'.str_replace('/', '.', trim($route, '/')), null],
         };
 
@@ -90,11 +94,19 @@ class AuditArchiveApiRequest
             $resourceId = $request->attributes->get('archive_session')?->getKey();
         }
 
+        if ($route === 'api/v1/system/control/{action}') {
+            $resourceId = $request->route('action');
+        }
+
+        $outcome = $route === 'api/v1/system/control/{action}' && $response->getStatusCode() === 503
+            ? 'rejected'
+            : $this->outcome($response);
+
         return [
             'event' => $event,
             'resource_type' => $resourceType,
             'resource_id' => $resourceId,
-            'outcome' => $this->outcome($response),
+            'outcome' => $outcome,
         ];
     }
 
