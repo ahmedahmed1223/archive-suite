@@ -48,6 +48,15 @@ export interface RecordListPayload {
   nextCursor?: string | null;
 }
 
+/** Records don't carry a guaranteed file path — only ingested/uploaded metadata does. */
+export function deriveRecordSourcePath(record: ArchiveRecord): { sourcePath: string; disk?: string } | null {
+  const metadata = record.metadata && typeof record.metadata === "object" ? record.metadata : {};
+  const sourcePath = metadata["filePath"] ?? metadata["path"];
+  if (typeof sourcePath !== "string" || !sourcePath.trim()) return null;
+  const disk = metadata["disk"];
+  return { sourcePath, ...(typeof disk === "string" && disk.trim() ? { disk } : {}) };
+}
+
 export type DiscoverSectionKey = "explore" | "trending" | "random" | "active" | "forgotten" | "needsMetadata";
 
 export interface DiscoverSection {

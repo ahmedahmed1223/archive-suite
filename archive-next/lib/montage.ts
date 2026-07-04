@@ -203,6 +203,54 @@ export function safeFileName(name: string, fallback = "export"): string {
   return clean || fallback;
 }
 
+export interface MontageExportClip {
+  path: string;
+  disk?: string;
+  inSec: number;
+  outSec: number;
+}
+
+export interface MontageClipResolutionFailure {
+  clip: MontageClip;
+  reason: string;
+}
+
+export interface MontageClipResolutionResult {
+  clips: MontageExportClip[];
+  failures: MontageClipResolutionFailure[];
+}
+
+/**
+ * Resolves each montage clip's `itemId` (an archive record ID) to the record's
+ * real stored file path via `resolveSourcePath`, instead of submitting the
+ * record ID itself as an ffmpeg input path. Clips whose record has no
+ * resolvable file path are reported as failures rather than silently dropped
+ * or silently submitted with a broken path.
+ */
+export function resolveMontageClipPaths(
+  clips: MontageClip[],
+  resolveSourcePath: (itemId: string) => { sourcePath: string; disk?: string } | null
+): MontageClipResolutionResult {
+  const resolved: MontageExportClip[] = [];
+  const failures: MontageClipResolutionFailure[] = [];
+
+  for (const clip of clips) {
+    const source = resolveSourcePath(clip.itemId);
+    if (!source) {
+      failures.push({ clip, reason: "no-source-path" });
+      continue;
+    }
+    resolved.push({
+      path: source.sourcePath,
+      ...(source.disk ? { disk: source.disk } : {}),
+      inSec: clip.inSec,
+      outSec: clip.outSec
+    });
+  }
+
+  return { clips: resolved, failures };
+}
+
 // ── localStorage persistence (same pattern as lib/favorites.ts) ─────────────
 
 const STORAGE_KEY = "masar.montage-projects";
