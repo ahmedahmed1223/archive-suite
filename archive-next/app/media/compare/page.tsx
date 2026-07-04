@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
+import MediaSourcePicker from "@/components/MediaSourcePicker";
 import PageToolbar from "@/components/PageToolbar";
 import styles from "./compare.module.css";
 
@@ -70,6 +71,7 @@ export default function ComparePage() {
                 aria-label="مسار الملف أ"
               />
             </label>
+            <MediaSourcePicker label="تصفح الملف أ" onSelect={setPathA} />
             <label>
               مسار الملف ب
               <input
@@ -80,6 +82,7 @@ export default function ComparePage() {
                 aria-label="مسار الملف ب"
               />
             </label>
+            <MediaSourcePicker label="تصفح الملف ب" onSelect={setPathB} />
           </div>
 
           <label className="checkbox-row">
