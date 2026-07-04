@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -99,6 +101,63 @@ class RecordCommentsApiTest extends TestCase
         ]);
     }
 
+    public function test_author_can_delete_their_own_comment(): void
+    {
+        $this->seedArchiveRecord();
+
+        $created = $this->postJson('/api/v1/records/item-1/comments', [
+            'body' => 'Author owned comment',
+        ], $this->authHeaders())->assertCreated();
+
+        $commentId = $created->json('comment.id');
+
+        $this->deleteJson('/api/v1/record-comments/'.$commentId, [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('deleted', true);
+
+        $this->assertNotNull(DB::table('record_comments')->where('id', $commentId)->value('deleted_at'));
+    }
+
+    public function test_non_author_non_admin_cannot_delete_another_users_comment(): void
+    {
+        $this->seedArchiveRecord();
+
+        $created = $this->postJson('/api/v1/records/item-1/comments', [
+            'body' => 'Original author comment',
+        ], $this->authHeaders())->assertCreated();
+
+        $commentId = $created->json('comment.id');
+
+        $this->deleteJson('/api/v1/record-comments/'.$commentId, [], $this->otherViewerHeaders())
+            ->assertForbidden()
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'forbidden');
+
+        $this->assertNull(DB::table('record_comments')->where('id', $commentId)->value('deleted_at'));
+
+        $log = DB::table('audit_logs')->latest('id')->first();
+        $this->assertSame('record_comments.delete', $log?->event);
+        $this->assertSame('rejected', $log?->outcome);
+        $this->assertSame(403, $log?->status_code);
+    }
+
+    public function test_admin_can_delete_another_users_comment(): void
+    {
+        $this->seedArchiveRecord();
+
+        $created = $this->postJson('/api/v1/records/item-1/comments', [
+            'body' => 'Comment deleted by admin override',
+        ], $this->authHeaders())->assertCreated();
+
+        $commentId = $created->json('comment.id');
+
+        $this->deleteJson('/api/v1/record-comments/'.$commentId, [], $this->adminOverrideHeaders())
+            ->assertOk()
+            ->assertJsonPath('deleted', true);
+
+        $this->assertNotNull(DB::table('record_comments')->where('id', $commentId)->value('deleted_at'));
+    }
+
     private function seedArchiveRecord(): void
     {
         $now = now();
@@ -116,5 +175,45 @@ class RecordCommentsApiTest extends TestCase
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function otherViewerHeaders(): array
+    {
+        $viewer = User::query()->create([
+            'name' => 'Other Viewer',
+            'email' => 'other-viewer@example.test',
+            'password' => Hash::make('secret-password'),
+            'role' => 'viewer',
+        ]);
+
+        return ['Authorization' => 'Bearer '.$this->tokenFor($viewer)];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function adminOverrideHeaders(): array
+    {
+        $admin = User::query()->create([
+            'name' => 'Comment Admin',
+            'email' => 'comment-admin@example.test',
+            'password' => Hash::make('secret-password'),
+            'role' => 'admin',
+        ]);
+
+        return ['Authorization' => 'Bearer '.$this->tokenFor($admin)];
+    }
+
+    private function tokenFor(User $user): string
+    {
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        return $login->json('accessToken');
     }
 }

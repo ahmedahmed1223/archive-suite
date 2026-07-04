@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -70,7 +71,7 @@ class RecordCommentsController extends Controller
         ], 201);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $comment = DB::table('record_comments')->where('id', $id)->whereNull('deleted_at')->first();
 
@@ -80,6 +81,18 @@ class RecordCommentsController extends Controller
                 'error' => 'Comment not found.',
                 'code' => 'not_found',
             ], 404);
+        }
+
+        $user = $request->attributes->get('archive_user');
+        $isAuthor = $user instanceof User && (string) $user->getKey() === (string) $comment->author_id;
+        $isAdmin = $user instanceof User && $user->role === 'admin';
+
+        if (! $isAuthor && ! $isAdmin) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Only the comment author or an admin can delete this comment.',
+                'code' => 'forbidden',
+            ], 403);
         }
 
         DB::table('record_comments')->where('id', $id)->update(['deleted_at' => now(), 'updated_at' => now()]);
