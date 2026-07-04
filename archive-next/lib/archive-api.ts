@@ -267,6 +267,49 @@ export interface CreateSavedSearchPayload {
   filters?: Record<string, unknown>;
 }
 
+export type AutomationRuleTrigger = "record.created" | "record.updated" | "media.failed" | "schedule.daily";
+export type AutomationRuleAction = "add-tag" | "set-review" | "notify-admin" | "create-inbox-item";
+
+export interface AutomationRule {
+  id: string;
+  name: string;
+  trigger: AutomationRuleTrigger;
+  query: string;
+  type: string;
+  tag: string;
+  status: string;
+  action: AutomationRuleAction;
+  enabled: boolean;
+  lastRunAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface AutomationRuleRun {
+  id: string;
+  ruleId: string;
+  status: "completed" | "failed" | string;
+  dryRun: boolean;
+  matchedCount: number;
+  executedCount: number;
+  message?: string | null;
+  sampleRecords?: Array<{ id: string; title: string }>;
+  createdAt?: string | null;
+}
+
+export interface CreateAutomationRulePayload {
+  name: string;
+  trigger: AutomationRuleTrigger;
+  query?: string;
+  type?: string;
+  tag?: string;
+  status?: string;
+  action: AutomationRuleAction;
+  enabled?: boolean;
+}
+
+export type UpdateAutomationRulePayload = Partial<CreateAutomationRulePayload>;
+
 export interface RecordHistoryEntry {
   id: number | string;
   event: string;
@@ -727,6 +770,11 @@ export interface ArchiveApiClient {
   savedSearches(options?: AuthRequestOptions): Promise<ApiEnvelope<{ searches: SavedSearch[] }>>;
   createSavedSearch(payload: CreateSavedSearchPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
   deleteSavedSearch(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  automationRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>>;
+  createAutomationRule(payload: CreateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
+  updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
+  deleteAutomationRule(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  runAutomationRule(id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: AutomationRuleRun }>>;
 }
 
 export interface AuthRequestOptions {
@@ -1128,6 +1176,16 @@ export function createArchiveApiClient({
     createSavedSearch: (payload: CreateSavedSearchPayload, options?: AuthRequestOptions) =>
       post<{ search: SavedSearch }>("/saved-searches", payload, options),
     deleteSavedSearch: (id: string, options?: AuthRequestOptions) =>
-      del<{ deleted: boolean }>(`/saved-searches/${encodeURIComponent(id)}`, undefined, options)
+      del<{ deleted: boolean }>(`/saved-searches/${encodeURIComponent(id)}`, undefined, options),
+    automationRules: (options?: AuthRequestOptions) =>
+      get<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>("/automation/rules", options),
+    createAutomationRule: (payload: CreateAutomationRulePayload, options?: AuthRequestOptions) =>
+      post<{ rule: AutomationRule }>("/automation/rules", payload, options),
+    updateAutomationRule: (id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions) =>
+      patch<{ rule: AutomationRule }>(`/automation/rules/${encodeURIComponent(id)}`, payload, options),
+    deleteAutomationRule: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/automation/rules/${encodeURIComponent(id)}`, undefined, options),
+    runAutomationRule: (id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions) =>
+      post<{ run: AutomationRuleRun }>(`/automation/rules/${encodeURIComponent(id)}/run`, payload, options)
   };
 }
