@@ -10,6 +10,7 @@ export const primaryNav = [
   { href: "/timeline", label: "الخط الزمني", section: "core" },
   { href: "/inbox", label: "الوارد", section: "core" },
   { href: "/favorites", label: "المفضلة", section: "core" },
+  { href: "/reading-lists", label: "قوائم القراءة", section: "core" },
   { href: "/shares", label: "المشاركات", section: "core" },
   { href: "/shares/with-me", label: "وارد المشاركة", section: "core" },
   { href: "/types", label: "الأنواع", section: "manage" },
