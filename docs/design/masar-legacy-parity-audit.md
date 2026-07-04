@@ -22,7 +22,7 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/comments` | `archive-next/app/media/review/page.tsx`, `archive-next/app/archive/[id]/page.tsx` (Laravel `/records/{id}/comments`) | Migrated | Team record comments with soft-delete and audit logging are wired; keep in smoke coverage. |
 | `archive-app/src/features/copilot` | Future `archive-next/app/copilot/page.tsx` | Missing | Restore copilot command/summary affordances with safe provider gating. |
 | `archive-app/src/features/dashboard` | `archive-next/app/page.tsx` | Partial | Restore configurable widgets only after persistent preferences exist. |
-| `archive-app/src/features/data-center` | Future `archive-next/app/data-center/page.tsx` | Missing | Add operational hub tying uploads, ingest, backup, status, and settings together. |
+| `archive-app/src/features/data-center` | `archive-next/app/data-center/page.tsx` | Migrated | Operational hub tying uploads, ingest, backup, status, and settings together is now wired; keep in smoke coverage. |
 | `archive-app/src/features/discover` | `archive-next/app/discover/page.tsx` | Migrated | Keep recommendation feedback and smoke coverage. |
 | `archive-app/src/features/dnd` | `archive-next/app/kanban/page.tsx` and UI primitives | Migrated | Keep as shared interaction plumbing. |
 | `archive-app/src/features/errors` | `archive-next/app/errors/page.tsx` | Migrated | Keep in smoke coverage. |
@@ -49,14 +49,14 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/relations` | `archive-next/app/archive/[id]/page.tsx`, `archive-next/app/graph/page.tsx`, Laravel `/relations*` | Partial | Stored relations and graph exist; add inline detail add-dialog/toasts for full legacy parity. |
 | `archive-app/src/features/rights` | `archive-next/app/rights/page.tsx`, Laravel rights API | Migrated | Keep in contract tests. |
 | `archive-app/src/features/search` | `archive-next/app/search/page.tsx`, `archive-next/app/search/saved/page.tsx` (Laravel `/saved-searches`) | Partial | Saved-search manager is now wired; still add backend facets. |
-| `archive-app/src/features/server-status` | `archive-next/app/status/page.tsx` | Partial | Add live metrics beyond health polling. |
+| `archive-app/src/features/server-status` | `archive-next/app/status/page.tsx` (Laravel `/system/status`) | Migrated | Live CPU/memory/disk/queue metrics and DR readiness are now wired; keep in smoke coverage. |
 | `archive-app/src/features/settings` | `archive-next/app/settings/page.tsx` | Partial | Restore appearance, file-store tests, Dropbox OAuth, presets, DB tests. |
 | `archive-app/src/features/share` | `archive-next/app/shares/page.tsx`, `archive-next/app/share/[token]` | Partial | Add shared-with-me inbox/history. |
 | `archive-app/src/features/shortcuts` | `archive-next/components/CommandPalette.tsx`, future settings shortcut editor | Partial | Add shortcut learning/customization state. |
 | `archive-app/src/features/storage` | Laravel storage services | Migrated | Shared plumbing only. |
 | `archive-app/src/features/suggestions` | Future discover/search suggestions | Missing | Add suggestion engine and feedback hooks. |
 | `archive-app/src/features/sync` | `archive-next/app/sync/page.tsx`, Laravel `/sync` | Partial | Sync log and conflict-state listing are now wired; still add selective sync policy. |
-| `archive-app/src/features/systemControl` | Future `archive-next/app/system/control/page.tsx` | Missing | Add safe admin control actions and disabled dangerous operations by default. |
+| `archive-app/src/features/systemControl` | `archive-next/app/system/control/page.tsx` (Laravel `/system/control/{action}`) | Migrated | Admin-only, env-gated (`SYSTEM_CONTROL_ENABLED`) host actions with audit logging for allowed/blocked attempts are now wired; keep in smoke coverage. |
 | `archive-app/src/features/templates` | `archive-next/app/types/page.tsx`, `archive-next/app/uploads/page.tsx` (Laravel `/intake-templates`) | Migrated | Reusable archive-entry intake templates are now wired into the upload wizard; keep in smoke coverage. |
 | `archive-app/src/features/theme` | `archive-next/components/ThemeToggle.tsx`, `archive-next/app/theme.css` | Partial | Add presets, custom theme export/import, and schedule if still required. |
 | `archive-app/src/features/timeline` | `archive-next/app/timeline/page.tsx` | Migrated | Add SVG export only if needed. |
@@ -81,7 +81,7 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/pages/AutomationPage.tsx` | `/automation` | Partial | Persist and execute rules. |
 | `archive-app/src/pages/CollectionsPage.tsx` | `/collections` | Partial | Persist collections. |
 | `archive-app/src/pages/DashboardPage.tsx` | `/` | Partial | Restore configurable widgets if required. |
-| `archive-app/src/pages/DataCenterPage.tsx` | Future `/data-center` | Missing | Add data-center hub. |
+| `archive-app/src/pages/DataCenterPage.tsx` | `/data-center` | Migrated | Data-center hub is now wired. |
 | `archive-app/src/pages/DetailPage.tsx` | `/archive/[id]` | Partial | Add inline relation editing; relation preview, private notes, team comments, and audit-backed history are now wired. |
 | `archive-app/src/pages/DiscoverPage.tsx` | `/discover` | Migrated | Keep smoke coverage. |
 | `archive-app/src/pages/DuplicatesPage.tsx` | `/duplicates` | Partial | Add merge/undo and visual duplicate checks. |
@@ -101,13 +101,13 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/pages/ReportsPage.tsx` | `/reports` | Migrated | Keep smoke coverage. |
 | `archive-app/src/pages/SavedSearchesPage.tsx` | `/search/saved` | Partial | Saved-search manager (list/create/delete/run) is now wired; still add alerts. |
 | `archive-app/src/pages/SearchPage.tsx` | `/search` | Partial | Add backend facets. |
-| `archive-app/src/pages/ServerStatusPage.tsx` | `/status` | Partial | Add live resource metrics. |
+| `archive-app/src/pages/ServerStatusPage.tsx` | `/status` | Migrated | Live resource metrics and DR readiness are now wired. |
 | `archive-app/src/pages/SettingsHubPage.tsx` | `/settings` | Partial | Add hub sections for appearance/system/data center. |
 | `archive-app/src/pages/SettingsPage.tsx` | `/settings` | Partial | Restore admin extras. |
 | `archive-app/src/pages/SharedLinksPage.tsx` | `/shares` | Migrated | Add backend link history if needed. |
 | `archive-app/src/pages/SharedWithMePage.tsx` | Future `/shares/with-me` | Missing | Add inbound share inbox/history. |
 | `archive-app/src/pages/SyncLogPage.tsx` | `/sync` | Partial | Sync log page with conflict states is now wired; still add selective sync policy controls. |
-| `archive-app/src/pages/SystemControlPage.tsx` | Future `/system/control` | Missing | Add safe admin control page. |
+| `archive-app/src/pages/SystemControlPage.tsx` | `/system/control` | Migrated | Safe admin control page (env-gated, admin-only, audit-logged) is now wired. |
 | `archive-app/src/pages/TimelinePage.tsx` | `/timeline` | Migrated | Add SVG export if needed. |
 | `archive-app/src/pages/TranscriberPage.tsx` | `/transcriber` | Migrated | Keep media job coverage. |
 | `archive-app/src/pages/TypesPage.tsx` | `/types` | Partial | Add field ACL. |
@@ -121,10 +121,10 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 2. Discovery and relations: `/discover`, `/graph`, relation storage, and record detail relation panel.
 3. Archive intake depth: `/archive/new` or richer `/uploads` wizard, templates, item notes, import-from-url, upload links.
 4. History and sync: audit-backed `/activity`, record history, `/sync`, conflict log, and undo/diff decisions.
-5. Operations: `/data-center`, `/status` live metrics, `/system/control`, backup/admin extras.
+5. Operations: `/data-center`, `/status` live metrics, `/system/control`, backup/admin extras — done (this slice also added the DR probe and self-service user data export at `/account/export`).
 6. Power-user UX: saved search manager, reading lists, appearance editor, shortcuts, contextual guide.
 7. Media/project parity: media source picker, play/compare wiring, advanced montage, MP4 export.
-8. Enterprise integrations: MOS/MXF metadata, user data export, DR probes, backup checksum/encryption/retention.
+8. Enterprise integrations: MOS/MXF metadata, backup checksum/encryption/retention. (User data export and DR probes shipped in slice 5.)
 
 ## Verification Rule
 
