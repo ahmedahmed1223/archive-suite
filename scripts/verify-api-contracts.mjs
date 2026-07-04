@@ -59,7 +59,15 @@ for (const pathName of [
   "/system/backups",
   "/system/backups/run",
   "/system/backups/preview",
-  "/system/backups/restore"
+  "/system/backups/restore",
+  "/intake-templates",
+  "/intake-templates/{id}",
+  "/import/preview",
+  "/upload-links",
+  "/upload-links/{token}",
+  "/upload-links/{id}/revoke",
+  "/saved-searches",
+  "/saved-searches/{id}"
 ]) {
   assert.ok(contract.paths?.[pathName], `API contract should include ${pathName}`);
 }
@@ -126,7 +134,22 @@ for (const schemaName of [
   "BackupInfo",
   "BackupListResponse",
   "BackupPreviewResponse",
-  "BackupRestoreResponse"
+  "BackupRestoreResponse",
+  "IntakeTemplate",
+  "IntakeTemplateCreateRequest",
+  "IntakeTemplatesResponse",
+  "IntakeTemplateResponse",
+  "ImportPreviewRequest",
+  "ImportPreview",
+  "ImportPreviewResponse",
+  "UploadLink",
+  "UploadLinkCreateRequest",
+  "UploadLinksResponse",
+  "UploadLinkResponse",
+  "SavedSearch",
+  "SavedSearchCreateRequest",
+  "SavedSearchesResponse",
+  "SavedSearchResponse"
 ]) {
   assert.ok(contract.components?.schemas?.[schemaName], `API contract should define ${schemaName}`);
 }
