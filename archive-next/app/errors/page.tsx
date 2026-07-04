@@ -2,9 +2,11 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Bug, Clock3, Filter, Info, Repeat2, Sparkles, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import DataTable from "@/components/ui/DataTable";
 import EmptyState from "@/components/EmptyState";
+import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import {
   clearClientErrors,
@@ -106,6 +108,13 @@ export default function ErrorsPage() {
       ),
     [errors]
   );
+  const latestError = useMemo(
+    () => filteredErrors.reduce<ClientErrorLogEntry | null>((latest, entry) => {
+      if (!latest) return entry;
+      return new Date(entry.lastSeenAt).getTime() > new Date(latest.lastSeenAt).getTime() ? entry : latest;
+    }, null),
+    [filteredErrors]
+  );
 
   const createManualError = () => {
     recordClientError({
@@ -128,6 +137,7 @@ export default function ErrorsPage() {
   return (
     <AppShell subtitle="سجل الأخطاء" navLabel="سجل الأخطاء" contentClassName="observability-content">
       <PageToolbar
+        icon={<Bug size={24} />}
         eyebrow={<span className="badge">Runtime log</span>}
         title="سجل الأخطاء والاسترداد"
         description="مركز موحد لأعطال الواجهة، تكراراتها، ومكان ظهورها حتى يسهل ربط المشكلة بالصفحة أو سير العمل."
@@ -141,9 +151,11 @@ export default function ErrorsPage() {
         actions={
           <>
             <button className="button button-secondary" type="button" onClick={createManualError}>
+              <Sparkles size={16} aria-hidden="true" />
               اختبار التسجيل
             </button>
             <button className="button button-danger" type="button" onClick={clearAll} disabled={errors.length === 0}>
+              <Trash2 size={16} aria-hidden="true" />
               مسح السجل
             </button>
           </>
@@ -166,34 +178,48 @@ export default function ErrorsPage() {
         </div>
       </PageToolbar>
 
-      <div className="health-metric-grid">
-        <article className="health-metric" data-tone="danger">
-          <div className="health-metric__body">
-            <span>أخطاء حرجة</span>
-            <strong>{counts.error}</strong>
-          </div>
-        </article>
-        <article className="health-metric" data-tone="warning">
-          <div className="health-metric__body">
-            <span>تحذيرات</span>
-            <strong>{counts.warning}</strong>
-          </div>
-        </article>
-        <article className="health-metric" data-tone="accent">
-          <div className="health-metric__body">
-            <span>معلومات</span>
-            <strong>{counts.info}</strong>
-          </div>
-        </article>
-      </div>
+      <MetricStrip
+        ariaLabel="مقاييس سجل الأخطاء"
+        items={[
+          {
+            label: "أخطاء حرجة",
+            value: counts.error,
+            description: "تحتاج معالجة مباشرة",
+            icon: <AlertTriangle size={20} />,
+            tone: counts.error > 0 ? "danger" : "default"
+          },
+          {
+            label: "تحذيرات",
+            value: counts.warning,
+            description: "مؤشرات سلوك غير مكتمل",
+            icon: <Filter size={20} />,
+            tone: counts.warning > 0 ? "warning" : "default"
+          },
+          {
+            label: "معلومات",
+            value: counts.info,
+            description: "أحداث تشخيصية",
+            icon: <Info size={20} />,
+            tone: "info"
+          },
+          {
+            label: "التكرارات",
+            value: counts.repeated,
+            description: latestError ? `آخر ظهور: ${new Date(latestError.lastSeenAt).toLocaleString("ar-SA")}` : "لا توجد أحداث",
+            icon: <Repeat2 size={20} />,
+            tone: counts.repeated > 0 ? "warning" : "success"
+          }
+        ]}
+      />
 
       {filteredErrors.length === 0 ? (
         <EmptyState
+          icon={<Clock3 size={22} />}
           title="لا توجد أخطاء مطابقة حاليا."
           description="غيّر درجة الخطورة أو استخدم اختبار التسجيل للتأكد من أن السجل يعمل."
         />
       ) : (
-        <section className="panel error-log-table" aria-label="نتائج سجل الأخطاء">
+        <section className="workspace-panel error-log-table" aria-label="نتائج سجل الأخطاء">
           <DataTable
             columns={errorColumns}
             data={filteredErrors}
