@@ -46,8 +46,6 @@
 
 - [ ] **Appearance/theme management** — presets، custom theme export/import، وجدولة theme إذا بقيت مطلوبة.
 
-- [ ] **Shared-with-me** — إضافة `/shares/with-me` أو دمج inbound shares رسمياً في `/shares` مع history/inbox.
-
 - [ ] **Reading lists** — إضافة route مستقلة أو دمجها في Collections مع قرار parity موثق داخل هذا الملف.
 
 - [ ] **Advanced tags and vocabulary** — ترتيب شجرة الوسوم، ألوان، merge، عمليات hierarchy، ومخزن Laravel للقاموس والمرادفات.

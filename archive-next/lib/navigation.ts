@@ -11,6 +11,7 @@ export const primaryNav = [
   { href: "/inbox", label: "الوارد", section: "core" },
   { href: "/favorites", label: "المفضلة", section: "core" },
   { href: "/shares", label: "المشاركات", section: "core" },
+  { href: "/shares/with-me", label: "وارد المشاركة", section: "core" },
   { href: "/types", label: "الأنواع", section: "manage" },
   { href: "/collections", label: "المجموعات", section: "manage" },
   { href: "/vocabulary", label: "المفردات", section: "manage" },
