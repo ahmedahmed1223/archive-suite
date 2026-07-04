@@ -25,6 +25,7 @@ export const primaryNav = [
   { href: "/analytics", label: "التحليلات", section: "observe" },
   { href: "/reports", label: "التقارير", section: "observe" },
   { href: "/status", label: "الحالة", section: "observe" },
+  { href: "/sync", label: "المزامنة", section: "observe" },
   { href: "/errors", label: "الأخطاء", section: "observe" },
   { href: "/ingest", label: "الاستيراد", section: "admin" },
   { href: "/backup", label: "النسخ الاحتياطي", section: "admin" },
