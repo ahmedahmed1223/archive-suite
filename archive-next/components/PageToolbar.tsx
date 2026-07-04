@@ -22,7 +22,15 @@ export default function PageToolbar({
   density?: "normal" | "compact";
 }>) {
   return (
-    <header className="page-toolbar" data-tone={tone} data-density={density}>
+    <header
+      className="page-toolbar"
+      data-tone={tone}
+      data-density={density}
+      data-has-actions={actions ? "true" : "false"}
+      data-has-controls={children ? "true" : "false"}
+      data-has-meta={meta ? "true" : "false"}
+      data-has-icon={icon ? "true" : "false"}
+    >
       <div className="page-toolbar__main">
         {eyebrow ? <div className="page-toolbar__eyebrow">{eyebrow}</div> : null}
         <div className="page-toolbar__title-row">
