@@ -104,6 +104,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/discover', [DiscoverController::class, 'index']);
         Route::get('/relations/graph', [RelationsController::class, 'graph']);
         Route::post('/relations', [RelationsController::class, 'store']);
+        Route::patch('/relations/{id}', [RelationsController::class, 'update']);
         Route::delete('/relations/{id}', [RelationsController::class, 'destroy']);
         Route::get('/files', [FilesController::class, 'index']);
         Route::get('/files/browser', [FilesController::class, 'browser']);

@@ -11,11 +11,14 @@ import {
   createArchiveApiClient,
   deriveRecordSourcePath,
   type ArchiveRecord,
+  type CreateRelationPayload,
   type RecordComment,
   type RecordHistoryEntry,
   type RecordNote,
   type RelationGraphEdge,
   type RelationGraphPayload,
+  type RelationTypeKey,
+  type UpdateRelationPayload,
   type RightsRecord
 } from "@/lib/archive-api";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
@@ -63,14 +66,93 @@ function relationEdgeSummary(edge: RelationGraphEdge) {
 
 function RelationPreviewPanel({
   graph,
-  recordId
+  recordId,
+  onCreate,
+  onUpdate,
+  onDelete
 }: Readonly<{
   graph: RelationGraphPayload | null;
   recordId: string;
+  onCreate: (payload: CreateRelationPayload) => Promise<void>;
+  onUpdate: (id: string, payload: UpdateRelationPayload) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }>) {
+  const relationTypes = graph?.relationTypes?.length
+    ? graph.relationTypes
+    : [{ key: "related_to" as RelationTypeKey, label: "مرتبط بـ", inverse: "related_to", bidirectional: true }];
   const nodesById = new Map((graph?.nodes ?? []).map((node) => [node.id, node]));
   const edges = (graph?.edges ?? []).filter((edge) => edge.source === recordId || edge.target === recordId);
-  const manualCount = edges.filter((edge) => edge.kind === "manual").length;
+  const manualEdges = edges.filter((edge) => edge.kind === "manual" && edge.relationId);
+  const manualCount = manualEdges.length;
+  const [targetId, setTargetId] = useState("");
+  const [type, setType] = useState<RelationTypeKey>("related_to");
+  const [note, setNote] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, { type: RelationTypeKey; note: string }>>({});
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function relationTypeFromEdge(edge: RelationGraphEdge): RelationTypeKey {
+    return relationTypes.some((option) => option.key === edge.type) ? (edge.type as RelationTypeKey) : "related_to";
+  }
+
+  async function handleCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!targetId.trim() || busy) return;
+
+    setBusy(true);
+    setStatus("");
+    try {
+      await onCreate({
+        sourceId: recordId,
+        targetId: targetId.trim(),
+        type,
+        ...(note.trim() ? { note: note.trim() } : {})
+      });
+      setTargetId("");
+      setNote("");
+      setStatus("تم إنشاء العلاقة.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "تعذر إنشاء العلاقة.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUpdate(edge: RelationGraphEdge) {
+    if (!edge.relationId || busy) return;
+    const draft = drafts[edge.relationId] ?? { type: relationTypeFromEdge(edge), note: edge.note || "" };
+
+    setBusy(true);
+    setStatus("");
+    try {
+      await onUpdate(edge.relationId, {
+        type: draft.type,
+        note: draft.note.trim() || null
+      });
+      setStatus("تم تحديث العلاقة.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "تعذر تحديث العلاقة.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete(edge: RelationGraphEdge) {
+    if (!edge.relationId || busy) return;
+    const confirmed = window.confirm("حذف هذه العلاقة اليدوية؟");
+    if (!confirmed) return;
+
+    setBusy(true);
+    setStatus("");
+    try {
+      await onDelete(edge.relationId);
+      setStatus("تم حذف العلاقة.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "تعذر حذف العلاقة.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <article className="panel">
@@ -121,6 +203,83 @@ function RelationPreviewPanel({
       <a className="button button-primary" href={`/graph?recordId=${encodeURIComponent(recordId)}`}>
         فتح خريطة العلاقات
       </a>
+
+      <form className="auth-form relation-inline-form" onSubmit={handleCreate}>
+        <div className="panel-section-header">
+          <h3>إضافة علاقة من هنا</h3>
+        </div>
+        <div className="field-row">
+          <label>
+            السجل الهدف
+            <input value={targetId} onChange={(event) => setTargetId(event.target.value)} placeholder="UID أو ID" dir="ltr" />
+          </label>
+          <label>
+            نوع العلاقة
+            <select value={type} onChange={(event) => setType(event.target.value as RelationTypeKey)}>
+              {relationTypes.map((option) => (
+                <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <label>
+          ملاحظة
+          <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="سبب الربط أو سياقه" />
+        </label>
+        <button type="submit" className="button button-secondary" disabled={busy || !targetId.trim()}>
+          إضافة علاقة
+        </button>
+      </form>
+
+      {manualEdges.length ? (
+        <div className="relation-editor-list">
+          <div className="panel-section-header">
+            <h3>تعديل العلاقات اليدوية</h3>
+          </div>
+          {manualEdges.map((edge) => {
+            const relationId = edge.relationId || edge.id;
+            const draft = edge.relationId && drafts[edge.relationId]
+              ? drafts[edge.relationId]
+              : { type: relationTypeFromEdge(edge), note: edge.note || "" };
+            const otherId = edge.source === recordId ? edge.target : edge.source;
+            const otherNode = nodesById.get(otherId);
+
+            return (
+              <div key={edge.id} className="relation-editor-row">
+                <strong>{otherNode?.label || otherId}</strong>
+                <select
+                  value={draft.type}
+                  onChange={(event) => edge.relationId && setDrafts((current) => ({
+                    ...current,
+                    [edge.relationId!]: { ...draft, type: event.target.value as RelationTypeKey }
+                  }))}
+                >
+                  {relationTypes.map((option) => (
+                    <option key={option.key} value={option.key}>{option.label}</option>
+                  ))}
+                </select>
+                <input
+                  value={draft.note}
+                  onChange={(event) => edge.relationId && setDrafts((current) => ({
+                    ...current,
+                    [edge.relationId!]: { ...draft, note: event.target.value }
+                  }))}
+                  placeholder="ملاحظة العلاقة"
+                />
+                <button type="button" className="button button-secondary button-sm" onClick={() => void handleUpdate(edge)} disabled={busy || !edge.relationId}>
+                  حفظ
+                </button>
+                <button type="button" className="button button-danger button-sm" onClick={() => void handleDelete(edge)} disabled={busy || !edge.relationId}>
+                  حذف
+                </button>
+                <span className="helper-text mono-text">{relationId}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {status ? <p className="form-status">{status}</p> : null}
     </article>
   );
 }
@@ -561,6 +720,42 @@ export default function ArchiveDetailPage() {
     setOcrState({ status: "success", jobId: response.job.id });
   }
 
+  async function refreshRelationGraph() {
+    const response = await api.relationGraph({ recordId: id, limit: 32 });
+    if (!response.ok) {
+      throw new Error(response.error || "تعذر تحديث العلاقات.");
+    }
+
+    setState((current) => current.status === "ready" ? { ...current, relationGraph: response } : current);
+  }
+
+  async function handleCreateRelation(payload: CreateRelationPayload) {
+    const response = await api.createRelation(payload);
+    if (!response.ok) {
+      throw new Error(response.error || "تعذر إنشاء العلاقة.");
+    }
+
+    await refreshRelationGraph();
+  }
+
+  async function handleUpdateRelation(relationId: string, payload: UpdateRelationPayload) {
+    const response = await api.updateRelation(relationId, payload);
+    if (!response.ok) {
+      throw new Error(response.error || "تعذر تحديث العلاقة.");
+    }
+
+    await refreshRelationGraph();
+  }
+
+  async function handleDeleteRelation(relationId: string) {
+    const response = await api.deleteRelation(relationId);
+    if (!response.ok) {
+      throw new Error(response.error || "تعذر حذف العلاقة.");
+    }
+
+    await refreshRelationGraph();
+  }
+
   async function handleCreateNote(payload: { body: string; timestampSeconds?: number | null }) {
     if (state.status !== "ready") return;
     const response = await api.createRecordNote(id, payload);
@@ -991,7 +1186,13 @@ export default function ArchiveDetailPage() {
                 />
               )}
             </article>
-            <RelationPreviewPanel graph={state.relationGraph} recordId={id} />
+            <RelationPreviewPanel
+              graph={state.relationGraph}
+              recordId={id}
+              onCreate={handleCreateRelation}
+              onUpdate={handleUpdateRelation}
+              onDelete={handleDeleteRelation}
+            />
             <RecordHistoryPanel
               entries={state.history}
               loading={state.historyLoading}

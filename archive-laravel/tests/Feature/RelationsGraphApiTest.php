@@ -77,6 +77,33 @@ class RelationsGraphApiTest extends TestCase
             ->assertJsonPath('stats.manualEdgeCount', 0);
     }
 
+    public function test_it_updates_manual_relations(): void
+    {
+        $this->seedArchiveRecords();
+
+        $relationId = $this->postJson('/api/v1/relations', [
+            'sourceId' => 'item-source',
+            'targetId' => 'item-related',
+            'type' => 'related_to',
+            'note' => 'old note',
+        ], $this->authHeaders())
+            ->assertCreated()
+            ->json('relation.id');
+
+        $this->patchJson('/api/v1/relations/'.$relationId, [
+            'type' => 'references',
+            'note' => 'updated from detail page',
+        ], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('relation.type', 'references')
+            ->assertJsonPath('relation.note', 'updated from detail page');
+
+        $this->getJson('/api/v1/relations/graph?recordId=item-source&limit=20', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('edges.0.type', 'references')
+            ->assertJsonPath('edges.0.note', 'updated from detail page');
+    }
+
     public function test_it_builds_the_graph_from_the_full_archive_before_applying_the_display_limit(): void
     {
         $this->seedArchiveRecords();

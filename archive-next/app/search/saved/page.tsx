@@ -51,20 +51,26 @@ export default function SavedSearchesPage() {
   function runUrl(search: SavedSearch): string {
     const params = new URLSearchParams();
     if (search.query) params.set("q", search.query);
+    const viewKind = search.filters?.viewKind;
     const store = search.filters?.store;
     const type = search.filters?.type;
+    const status = search.filters?.status;
+    const viewMode = search.filters?.viewMode;
     if (typeof store === "string" && store) params.set("store", store);
     if (typeof type === "string" && type && type !== "all") params.set("type", type);
+    if (typeof status === "string" && status && status !== "all") params.set("status", status);
+    if (typeof viewMode === "string" && viewMode && viewMode !== "grid") params.set("view", viewMode);
     const queryString = params.toString();
-    return queryString ? `/search?${queryString}` : "/search";
+    const basePath = viewKind === "archive-view" ? "/archive" : "/search";
+    return queryString ? `${basePath}?${queryString}` : basePath;
   }
 
   return (
     <AppShell subtitle="البحوث المحفوظة" contentClassName="stack">
       <PageToolbar
-        title="مدير البحوث المحفوظة"
-        description="احفظ عمليات بحث متكررة وشغّلها لاحقًا دون إعادة كتابة الاستعلام والفلاتر."
-        meta={<span className="badge">{searches.length} بحث محفوظ</span>}
+        title="مدير البحوث والعروض المحفوظة"
+        description="احفظ عمليات بحث أو عروض أرشيف متكررة وشغّلها لاحقًا دون إعادة كتابة الاستعلام والفلاتر."
+        meta={<span className="badge">{searches.length} عنصر محفوظ</span>}
         actions={<a className="button button-secondary" href="/search">فتح البحث المتقدم</a>}
       />
 
@@ -103,6 +109,7 @@ export default function SavedSearchesPage() {
             <li key={search.id} className="panel panel-compact">
               <div className="panel-title-row">
                 <h2>{search.name}</h2>
+                <span className="badge">{search.filters?.viewKind === "archive-view" ? "عرض أرشيف" : "بحث"}</span>
               </div>
               {search.query ? <p className="helper-text">الاستعلام: {search.query}</p> : null}
               <div className="button-row">

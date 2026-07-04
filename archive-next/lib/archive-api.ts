@@ -48,6 +48,24 @@ export interface RecordListPayload {
   nextCursor?: string | null;
 }
 
+export interface SearchFacetBucket {
+  value: string;
+  label: string;
+  count: number;
+}
+
+export interface SearchFacets {
+  mode: "keyword" | "keyword-fallback" | string;
+  store?: string | null;
+  total?: number;
+  stores?: SearchFacetBucket[];
+  types?: SearchFacetBucket[];
+  subtypes?: SearchFacetBucket[];
+  tags?: SearchFacetBucket[];
+  statuses?: SearchFacetBucket[];
+  [key: string]: unknown;
+}
+
 /** Records don't carry a guaranteed file path — only ingested/uploaded metadata does. */
 export function deriveRecordSourcePath(record: ArchiveRecord): { sourcePath: string; disk?: string } | null {
   const metadata = record.metadata && typeof record.metadata === "object" ? record.metadata : {};
@@ -143,6 +161,11 @@ export interface CreateRelationPayload {
   targetId: string;
   type: RelationTypeKey;
   note?: string;
+}
+
+export interface UpdateRelationPayload {
+  type?: RelationTypeKey;
+  note?: string | null;
 }
 
 export interface RecordNoteRegion {
@@ -623,12 +646,13 @@ export interface ArchiveApiClient {
   refresh(): Promise<ApiEnvelope<AuthSession>>;
   logout(options?: AuthRequestOptions): Promise<ApiEnvelope>;
   search(
-    params: { q?: string; store?: string; limit?: number },
+    params: { q?: string; store?: string; type?: string; subtype?: string; tag?: string; status?: string; cursor?: string; limit?: number },
     options?: AuthRequestOptions
-  ): Promise<ApiEnvelope<{ records: ArchiveRecord[] }>>;
+  ): Promise<ApiEnvelope<{ records: ArchiveRecord[]; facets?: SearchFacets; nextCursor?: string | null }>>;
   discover(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sections: DiscoverSection[] }>>;
   relationGraph(params?: { recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RelationGraphPayload>>;
   createRelation(payload: CreateRelationPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relation: RecordRelation }>>;
+  updateRelation(id: string, payload: UpdateRelationPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relation: RecordRelation }>>;
   deleteRelation(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   recordNotes(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ notes: RecordNote[] }>>;
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
@@ -834,10 +858,15 @@ export function createArchiveApiClient({
     me: (options?: AuthRequestOptions) => get("/auth/me", options),
     refresh: () => post<AuthSession>("/auth/refresh"),
     logout: (options?: AuthRequestOptions) => post("/auth/logout", undefined, options),
-    search: ({ q = "", store = "", limit = 20 }, options?: AuthRequestOptions) => {
+    search: ({ q = "", store = "", type = "", subtype = "", tag = "", status = "", cursor = "", limit = 20 }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       if (store) params.set("store", store);
+      if (type) params.set("type", type);
+      if (subtype) params.set("subtype", subtype);
+      if (tag) params.set("tag", tag);
+      if (status) params.set("status", status);
+      if (cursor) params.set("cursor", cursor);
       params.set("limit", String(limit));
       return get(`/search?${params.toString()}`, options);
     },
@@ -856,6 +885,8 @@ export function createArchiveApiClient({
     },
     createRelation: (payload: CreateRelationPayload, options?: AuthRequestOptions) =>
       post<{ relation: RecordRelation }>("/relations", payload, options),
+    updateRelation: (id: string, payload: UpdateRelationPayload, options?: AuthRequestOptions) =>
+      patch<{ relation: RecordRelation }>(`/relations/${encodeURIComponent(id)}`, payload, options),
     deleteRelation: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/relations/${encodeURIComponent(id)}`, undefined, options),
     recordNotes: (recordId: string, options?: AuthRequestOptions) =>

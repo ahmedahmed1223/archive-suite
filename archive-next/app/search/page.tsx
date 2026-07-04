@@ -1,51 +1,26 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { Suspense, useMemo, useState, useCallback, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacetBucket, type SearchFacets } from "@/lib/archive-api";
 
 type SearchState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "ready"; records: ArchiveRecord[]; total: number; cursor: string | null }
+  | { status: "ready"; records: ArchiveRecord[]; total: number; cursor: string | null; facets?: SearchFacets }
   | { status: "error"; message: string };
 
 type SearchViewMode = "cards" | "list";
 
-interface SavedSearch {
-  id: string;
-  name: string;
-  query: string;
-  store: string;
-  type: string;
-  createdAt: string;
-}
-
-const SAVED_SEARCHES_KEY = "masar:search:saved";
 const searchViewOptions: DataViewOption<SearchViewMode>[] = [
   { value: "cards", label: "بطاقات" },
   { value: "list", label: "قائمة" }
 ];
-
-function readSavedSearches(): SavedSearch[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(SAVED_SEARCHES_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeSavedSearches(searches: SavedSearch[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(SAVED_SEARCHES_KEY, JSON.stringify(searches));
-}
 
 function formatDate(value?: string) {
   if (!value) return "-";
@@ -58,6 +33,24 @@ function uniqueTypes(records: ArchiveRecord[]) {
   return Array.from(new Set(records.map((record) => record.type).filter((type): type is string => Boolean(type)))).sort((a, b) =>
     a.localeCompare(b, "ar")
   );
+}
+
+function hasTag(record: ArchiveRecord, tag: string) {
+  if (!tag) return true;
+  return (record.tags || []).some((value) => value.trim().toLowerCase() === tag.trim().toLowerCase());
+}
+
+function savedFilter(search: SavedSearch, key: string) {
+  const value = search.filters?.[key];
+  return typeof value === "string" ? value : "";
+}
+
+function isSearchWorkbenchItem(search: SavedSearch) {
+  return savedFilter(search, "viewKind") !== "archive-view";
+}
+
+function facetLabel(items: SearchFacetBucket[] | undefined, value: string) {
+  return items?.find((item) => item.value === value || item.label === value)?.label || value;
 }
 
 export default function SearchPage() {
@@ -84,10 +77,12 @@ function SearchPageContent() {
   const initialPage = parseInt(searchParams.get("page") || "1", 10);
   const initialPageSize = parseInt(searchParams.get("limit") || "20", 10);
   const initialType = searchParams.get("type") || "all";
+  const initialTag = searchParams.get("tag") || "";
 
   const [query, setQuery] = useState(initialQuery);
   const [store, setStore] = useState(initialStore);
   const [typeFilter, setTypeFilter] = useState(initialType);
+  const [tagFilter, setTagFilter] = useState(initialTag);
   const [viewMode, setViewMode] = useState<SearchViewMode>("cards");
   const [state, setState] = useState<SearchState>({ status: "idle" });
   const [pageSize] = useState(initialPageSize);
@@ -95,13 +90,15 @@ function SearchPageContent() {
   const [allRecords, setAllRecords] = useState<ArchiveRecord[]>([]);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [savedStatus, setSavedStatus] = useState("");
 
   const updateParams = useCallback(
-    (q: string, s: string, page: number, type: string) => {
+    (q: string, s: string, page: number, type: string, tag: string) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       if (s) params.set("store", s);
       if (type !== "all") params.set("type", type);
+      if (tag) params.set("tag", tag);
       if (page > 1) params.set("page", String(page));
       if (pageSize !== 20) params.set("limit", String(pageSize));
 
@@ -111,16 +108,33 @@ function SearchPageContent() {
     [router, pageSize]
   );
 
+  const refreshSavedSearches = useCallback(async () => {
+    const response = await api.savedSearches();
+    if (!response.ok) {
+      setSavedStatus(response.error || "تعذر تحميل البحوث المحفوظة.");
+      return;
+    }
+
+    setSavedSearches(response.searches.filter(isSearchWorkbenchItem));
+    setSavedStatus("");
+  }, [api]);
+
   const search = useCallback(
-    async (q: string, s: string, page: number = 1) => {
-      if (!q.trim() && page === 1) {
+    async (q: string, s: string, page: number = 1, type: string = typeFilter, tag: string = tagFilter) => {
+      if (!q.trim() && !s && type === "all" && !tag && page === 1) {
         setState({ status: "idle" });
         setAllRecords([]);
         return;
       }
 
       setState({ status: "loading" });
-      const response = await api.search({ q, store: s, limit: 1000 });
+      const response = await api.search({
+        q,
+        store: s,
+        type: type !== "all" ? type : undefined,
+        tag,
+        limit: 100
+      });
 
       if (!response.ok) {
         setState({ status: "error", message: response.error });
@@ -131,28 +145,38 @@ function SearchPageContent() {
       setState({
         status: "ready",
         records: response.records,
-        total: response.records.length,
-        cursor: null
+        total: response.facets?.total ?? response.records.length,
+        cursor: response.nextCursor ?? null,
+        facets: response.facets
       });
+      updateParams(q, s, page, type, tag);
     },
-    [api]
+    [api, tagFilter, typeFilter, updateParams]
   );
 
   useEffect(() => {
-    setSavedSearches(readSavedSearches());
-    if (initialQuery) {
-      void search(initialQuery, initialStore, initialPage);
+    void refreshSavedSearches();
+    if (initialQuery || initialStore || initialType !== "all" || initialTag) {
+      void search(initialQuery, initialStore, initialPage, initialType, initialTag);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const typeOptions = useMemo(() => uniqueTypes(allRecords), [allRecords]);
+  const facets = state.status === "ready" ? state.facets : undefined;
+  const typeOptions = useMemo(
+    () => facets?.types?.map((item) => item.value) ?? uniqueTypes(allRecords),
+    [allRecords, facets?.types]
+  );
+  const tagOptions = facets?.tags ?? [];
+
   const filteredRecords = useMemo(() => {
     if (state.status !== "ready") return [];
-    return typeFilter === "all"
-      ? allRecords
-      : allRecords.filter((record) => record.type === typeFilter);
-  }, [allRecords, state.status, typeFilter]);
+    return allRecords.filter((record) => {
+      if (typeFilter !== "all" && record.type !== typeFilter) return false;
+      if (!hasTag(record, tagFilter)) return false;
+      return true;
+    });
+  }, [allRecords, state.status, tagFilter, typeFilter]);
 
   const visibleRecords = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -165,61 +189,76 @@ function SearchPageContent() {
     return filteredRecords[0] || null;
   }, [filteredRecords, previewId]);
 
-  const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setCurrentPage(1);
-    await search(query, store, 1);
-    updateParams(query, store, 1, typeFilter);
+    await search(query, store, 1, typeFilter, tagFilter);
   };
 
   const handlePageChange = (newPage: number) => {
     const clamped = Math.max(1, Math.min(newPage, totalPages));
     setCurrentPage(clamped);
-    updateParams(query, store, clamped, typeFilter);
+    updateParams(query, store, clamped, typeFilter, tagFilter);
   };
 
-  const saveCurrentSearch = () => {
-    if (!query.trim()) return;
-    const name = window.prompt("اسم البحث المحفوظ", query.trim());
+  const saveCurrentSearch = async () => {
+    if (!query.trim() && !store && typeFilter === "all" && !tagFilter) return;
+    const name = window.prompt("اسم البحث المحفوظ", query.trim() || "بحث مخصص");
     if (!name?.trim()) return;
 
-    const next: SavedSearch = {
-      id: crypto.randomUUID(),
+    setSavedStatus("جار حفظ البحث...");
+    const response = await api.createSavedSearch({
       name: name.trim(),
-      query,
-      store,
-      type: typeFilter,
-      createdAt: new Date().toISOString()
-    };
-    const nextSearches = [next, ...savedSearches].slice(0, 12);
-    writeSavedSearches(nextSearches);
-    setSavedSearches(nextSearches);
+      query: query || undefined,
+      filters: {
+        viewKind: "search",
+        store,
+        type: typeFilter,
+        tag: tagFilter
+      }
+    });
+
+    if (!response.ok) {
+      setSavedStatus(response.error || "تعذر حفظ البحث.");
+      return;
+    }
+
+    await refreshSavedSearches();
+    setSavedStatus("تم حفظ البحث.");
   };
 
   const applySavedSearch = async (saved: SavedSearch) => {
-    setQuery(saved.query);
-    setStore(saved.store);
-    setTypeFilter(saved.type || "all");
+    const nextQuery = saved.query || "";
+    const nextStore = savedFilter(saved, "store");
+    const nextType = savedFilter(saved, "type") || "all";
+    const nextTag = savedFilter(saved, "tag");
+    setQuery(nextQuery);
+    setStore(nextStore);
+    setTypeFilter(nextType);
+    setTagFilter(nextTag);
     setCurrentPage(1);
-    await search(saved.query, saved.store, 1);
-    updateParams(saved.query, saved.store, 1, saved.type || "all");
+    await search(nextQuery, nextStore, 1, nextType, nextTag);
   };
 
-  const removeSavedSearch = (id: string) => {
-    const nextSearches = savedSearches.filter((saved) => saved.id !== id);
-    writeSavedSearches(nextSearches);
-    setSavedSearches(nextSearches);
+  const removeSavedSearch = async (id: string) => {
+    const response = await api.deleteSavedSearch(id);
+    if (!response.ok) {
+      setSavedStatus(response.error || "تعذر حذف البحث.");
+      return;
+    }
+    await refreshSavedSearches();
   };
 
   const resetSearch = () => {
     setQuery("");
     setStore("");
     setTypeFilter("all");
+    setTagFilter("");
     setCurrentPage(1);
     setPreviewId(null);
     setState({ status: "idle" });
     setAllRecords([]);
-    updateParams("", "", 1, "all");
+    updateParams("", "", 1, "all", "");
   };
 
   const renderRecord = (record: ArchiveRecord) => (
@@ -252,7 +291,7 @@ function SearchPageContent() {
       <PageToolbar
         eyebrow={<span className="badge">Search Workbench</span>}
         title="البحث المتقدم"
-        description="بحث موحد في السجلات مع facets، حفظ بحث، ومعاينة سريعة للنتائج دون مغادرة الصفحة."
+        description="بحث موحد في السجلات مع facets من Laravel، حفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة."
         meta={(
           <>
             <span className="badge">{filteredRecords.length} نتيجة</span>
@@ -262,7 +301,7 @@ function SearchPageContent() {
         )}
         actions={(
           <>
-            <button type="button" className="button button-primary" onClick={saveCurrentSearch} disabled={!query.trim()}>
+            <button type="button" className="button button-primary" onClick={() => void saveCurrentSearch()} disabled={!query.trim() && !store && typeFilter === "all" && !tagFilter}>
               حفظ البحث
             </button>
             <button type="button" className="button button-secondary" onClick={resetSearch}>
@@ -281,7 +320,7 @@ function SearchPageContent() {
               type="search"
               placeholder="العنوان، الوسوم، الوصف..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
               className="search-input"
             />
           </label>
@@ -291,23 +330,22 @@ function SearchPageContent() {
               type="text"
               placeholder="اتركه فارغاً لكل المخازن"
               value={store}
-              onChange={(e) => setStore(e.target.value)}
+              onChange={(event) => setStore(event.target.value)}
               className="search-input"
             />
           </label>
           <label>
             <span>النوع</span>
-            <select
-              value={typeFilter}
-              onChange={(event) => {
-                const nextType = event.target.value;
-                setTypeFilter(nextType);
-                setCurrentPage(1);
-                updateParams(query, store, 1, nextType);
-              }}
-            >
+            <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
               <option value="all">كل الأنواع</option>
               {typeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>الوسم</span>
+            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
+              <option value="">كل الوسوم</option>
+              {tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label} ({tag.count})</option>)}
             </select>
           </label>
           <div className="archive-toolbar-actions">
@@ -321,18 +359,33 @@ function SearchPageContent() {
               {savedSearches.map((saved) => (
                 <span key={saved.id} className="saved-view-chip">
                   <button type="button" onClick={() => void applySavedSearch(saved)}>{saved.name}</button>
-                  <button type="button" aria-label={`حذف ${saved.name}`} onClick={() => removeSavedSearch(saved.id)}>×</button>
+                  <button type="button" aria-label={`حذف ${saved.name}`} onClick={() => void removeSavedSearch(saved.id)}>×</button>
                 </span>
               ))}
             </div>
           ) : null}
         </div>
+        {facets ? (
+          <div className="facet-strip" aria-label="ملخص facets">
+            {facets.types?.slice(0, 5).map((item) => (
+              <button key={item.value} type="button" className="facet-chip" onClick={() => setTypeFilter(item.value)}>
+                {item.label} · {item.count}
+              </button>
+            ))}
+            {facets.tags?.slice(0, 6).map((item) => (
+              <button key={item.value} type="button" className="facet-chip" onClick={() => setTagFilter(item.value)}>
+                #{item.label} · {item.count}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {savedStatus ? <p className="form-status">{savedStatus}</p> : null}
       </PageToolbar>
 
       {state.status === "idle" ? (
         <EmptyState
           title="ابدأ بكتابة كلمة بحث."
-          description="استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث إذا كان يتكرر في عملك اليومي."
+          description="استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث في Laravel إذا كان يتكرر في عملك اليومي."
         />
       ) : null}
 
@@ -352,7 +405,7 @@ function SearchPageContent() {
       {state.status === "ready" && visibleRecords.length === 0 ? (
         <EmptyState
           title="لم يتم العثور على سجلات."
-          description="جرّب بحثاً مختلفاً، أو أزل فلتر النوع، أو راجع المخزن المحدد."
+          description="جرّب بحثاً مختلفاً، أو أزل فلتر النوع/الوسم، أو راجع المخزن المحدد."
           actions={<button type="button" className="button button-secondary" onClick={resetSearch}>تصفير البحث</button>}
         />
       ) : null}
@@ -363,6 +416,7 @@ function SearchPageContent() {
             <div className="panel panel-compact">
               <p className="form-status">
                 عرض {visibleRecords.length} من {filteredRecords.length} نتيجة
+                {typeof state.total === "number" ? ` · الإجمالي في Laravel: ${state.total}` : ""}
                 {query ? ` · البحث عن: "${query}"` : ""}
               </p>
             </div>
@@ -410,6 +464,10 @@ function SearchPageContent() {
                   <div className="kv-item">
                     <strong>النوع</strong>
                     <span>{previewRecord.type || "-"}</span>
+                  </div>
+                  <div className="kv-item">
+                    <strong>الوسم المحدد</strong>
+                    <span>{tagFilter ? facetLabel(tagOptions, tagFilter) : "-"}</span>
                   </div>
                   <div className="kv-item">
                     <strong>التحديث</strong>
