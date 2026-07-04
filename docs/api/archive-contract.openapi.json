@@ -2169,6 +2169,95 @@
           "422": { "$ref": "#/components/responses/Error" }
         }
       }
+    },
+    "/system/status": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Read live host metrics and DR readiness (admin only)",
+        "operationId": "systemStatus",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Host metrics and DR readiness",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SystemStatusResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/system/dr-probe": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Read disaster-recovery readiness (last backup, last restore test) (admin only)",
+        "operationId": "systemDrProbe",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "DR readiness probe",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DrProbeResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/system/control/{action}": {
+      "post": {
+        "tags": ["System"],
+        "summary": "Run a host control action (admin only, disabled unless SYSTEM_CONTROL_ENABLED=true server-side)",
+        "operationId": "runSystemControlAction",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["clear-cache", "run-backup"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Action result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SystemControlResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/account/export": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "Export the authenticated user's own account data",
+        "operationId": "exportAccountData",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Account data export, scoped to the requesting user",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AccountExportResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
     }
   },
   "components": {
@@ -3878,6 +3967,112 @@
                   "restoredAt": { "type": "string", "format": "date-time" }
                 }
               }
+            }
+          }
+        ]
+      },
+      "DrProbe": {
+        "type": "object",
+        "required": ["lastBackupAt", "lastBackupName", "lastRestoreTestAt", "lastRestoreTestOk"],
+        "properties": {
+          "lastBackupAt": { "type": "string", "format": "date-time", "nullable": true },
+          "lastBackupName": { "type": "string", "nullable": true },
+          "lastRestoreTestAt": { "type": "string", "format": "date-time", "nullable": true },
+          "lastRestoreTestOk": { "type": "boolean", "nullable": true }
+        }
+      },
+      "DrProbeResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["dr"],
+            "properties": {
+              "dr": { "$ref": "#/components/schemas/DrProbe" }
+            }
+          }
+        ]
+      },
+      "SystemMetrics": {
+        "type": "object",
+        "required": ["cpuLoad", "memory", "disk", "queueDepth"],
+        "properties": {
+          "cpuLoad": {
+            "type": "array",
+            "items": { "type": "number" }
+          },
+          "memory": {
+            "type": "object",
+            "required": ["usedBytes", "totalBytes"],
+            "properties": {
+              "usedBytes": { "type": "integer", "minimum": 0 },
+              "totalBytes": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "disk": {
+            "type": "object",
+            "required": ["usedBytes", "totalBytes"],
+            "properties": {
+              "usedBytes": { "type": "integer", "minimum": 0 },
+              "totalBytes": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "queueDepth": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "SystemStatusResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["metrics", "dr"],
+            "properties": {
+              "metrics": { "$ref": "#/components/schemas/SystemMetrics" },
+              "dr": { "$ref": "#/components/schemas/DrProbe" }
+            }
+          }
+        ]
+      },
+      "SystemControlResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["result"],
+            "properties": {
+              "result": {
+                "type": "object",
+                "required": ["action", "detail"],
+                "properties": {
+                  "action": { "type": "string" },
+                  "detail": { "type": "object", "additionalProperties": true }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AccountExport": {
+        "type": "object",
+        "required": ["user", "savedSearches", "recordNotes", "recordComments", "uploadLinks", "intakeTemplates", "exportedAt"],
+        "properties": {
+          "user": { "type": "object", "additionalProperties": true },
+          "savedSearches": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "recordNotes": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "recordComments": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "uploadLinks": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "intakeTemplates": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "exportedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AccountExportResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["export"],
+            "properties": {
+              "export": { "$ref": "#/components/schemas/AccountExport" }
             }
           }
         ]

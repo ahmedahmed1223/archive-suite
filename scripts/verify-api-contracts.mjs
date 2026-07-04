@@ -67,7 +67,11 @@ for (const pathName of [
   "/upload-links/{token}",
   "/upload-links/{id}/revoke",
   "/saved-searches",
-  "/saved-searches/{id}"
+  "/saved-searches/{id}",
+  "/system/status",
+  "/system/dr-probe",
+  "/system/control/{action}",
+  "/account/export"
 ]) {
   assert.ok(contract.paths?.[pathName], `API contract should include ${pathName}`);
 }
@@ -149,7 +153,14 @@ for (const schemaName of [
   "SavedSearch",
   "SavedSearchCreateRequest",
   "SavedSearchesResponse",
-  "SavedSearchResponse"
+  "SavedSearchResponse",
+  "DrProbe",
+  "DrProbeResponse",
+  "SystemMetrics",
+  "SystemStatusResponse",
+  "SystemControlResponse",
+  "AccountExport",
+  "AccountExportResponse"
 ]) {
   assert.ok(contract.components?.schemas?.[schemaName], `API contract should define ${schemaName}`);
 }
