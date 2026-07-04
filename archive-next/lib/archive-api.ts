@@ -319,6 +319,37 @@ export interface BackupRestoreResult {
   restoredAt: string;
 }
 
+export interface DrProbe {
+  lastBackupAt: string | null;
+  lastBackupName: string | null;
+  lastRestoreTestAt: string | null;
+  lastRestoreTestOk: boolean | null;
+}
+
+export interface SystemMetrics {
+  cpuLoad: number[];
+  memory: { usedBytes: number; totalBytes: number };
+  disk: { usedBytes: number; totalBytes: number };
+  queueDepth: number;
+}
+
+export type SystemControlAction = "clear-cache" | "run-backup";
+
+export interface SystemControlResult {
+  action: string;
+  detail: Record<string, unknown>;
+}
+
+export interface AccountExport {
+  user: Record<string, unknown>;
+  savedSearches: Record<string, unknown>[];
+  recordNotes: Record<string, unknown>[];
+  recordComments: Record<string, unknown>[];
+  uploadLinks: Record<string, unknown>[];
+  intakeTemplates: Record<string, unknown>[];
+  exportedAt: string;
+}
+
 export interface BulkDeleteResultItem {
   uid: string;
   deleted: boolean;
@@ -585,6 +616,10 @@ export interface ArchiveApiClient {
   runBackup(options?: AuthRequestOptions): Promise<ApiEnvelope<{ backup: BackupRunResult }>>;
   previewBackup(payload: { name: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: BackupPreview }>>;
   restoreBackup(payload: { name: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: BackupRestoreResult }>>;
+  systemStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ metrics: SystemMetrics; dr: DrProbe }>>;
+  drProbe(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dr: DrProbe }>>;
+  runSystemControlAction(action: SystemControlAction, options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: SystemControlResult }>>;
+  exportAccountData(options?: AuthRequestOptions): Promise<ApiEnvelope<{ export: AccountExport }>>;
   browseFiles(params?: { path?: string; query?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ path: string; entries: FileBrowserEntry[] }>>;
   ingestFtpPull(payload: FtpPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   ingestSmbPull(payload: SmbPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
@@ -835,6 +870,11 @@ export function createArchiveApiClient({
       post<{ preview: BackupPreview }>("/system/backups/preview", payload, options),
     restoreBackup: (payload: { name: string }, options?: AuthRequestOptions) =>
       post<{ result: BackupRestoreResult }>("/system/backups/restore", payload, options),
+    systemStatus: (options?: AuthRequestOptions) => get<{ metrics: SystemMetrics; dr: DrProbe }>("/system/status", options),
+    drProbe: (options?: AuthRequestOptions) => get<{ dr: DrProbe }>("/system/dr-probe", options),
+    runSystemControlAction: (action: SystemControlAction, options?: AuthRequestOptions) =>
+      post<{ result: SystemControlResult }>(`/system/control/${encodeURIComponent(action)}`, undefined, options),
+    exportAccountData: (options?: AuthRequestOptions) => get<{ export: AccountExport }>("/account/export", options),
     browseFiles: (params?: { path?: string; query?: string }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.path) queryParams.set("path", params.path);
