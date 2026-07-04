@@ -62,8 +62,6 @@
 
 - [ ] **Focus/contextual guide** — focus mode فقط إذا بقيت حاجة تشغيلية، وجولة/نصائح سياقية من help.
 
-- [ ] **Media transcript helper** — تحسين استيراد SRT/VTT داخل مشغل Next بدلاً من الاعتماد على manual paste.
-
 - [ ] **Montage advanced editor** — multi-track، markers/comments، transitions، persistent projects، وتوسيع async MP4 export الحالي.
 
 - [ ] **Backup hardening** — checksum، encryption، retention policies، وDR drill دوري قابل للتدقيق.
