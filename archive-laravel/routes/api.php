@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AccountExportController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
@@ -22,7 +23,9 @@ use App\Http\Controllers\Api\V1\SavedSearchesController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\SyncController;
+use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
+use App\Http\Controllers\Api\V1\SystemStatusController;
 use App\Http\Controllers\Api\V1\UploadLinksController;
 use App\Http\Controllers\Api\V1\UploadsController;
 use App\Http\Controllers\Api\V1\UsersController;
@@ -151,5 +154,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/system/backups/run', [BackupsController::class, 'run']);
         Route::post('/system/backups/preview', [BackupsController::class, 'preview']);
         Route::post('/system/backups/restore', [BackupsController::class, 'restore']);
+
+        Route::get('/system/status', [SystemStatusController::class, 'status']);
+        Route::get('/system/dr-probe', [SystemStatusController::class, 'drProbe']);
+        Route::post('/system/control/{action}', [SystemControlController::class, 'run']);
+
+        Route::get('/account/export', [AccountExportController::class, 'export']);
     });
 });

@@ -3,6 +3,11 @@
 return [
     'file_root' => env('ARCHIVE_FILE_ROOT', storage_path('app/archive-files')),
     'backup_path' => env('ARCHIVE_BACKUP_PATH', storage_path('app/backups')),
+
+    // Highest-risk surface: host control actions (clear cache, trigger backup,
+    // ...) are a no-op unless this is explicitly true. Checked server-side in
+    // SystemControlService, not just hidden in the UI.
+    'system_control_enabled' => (bool) env('SYSTEM_CONTROL_ENABLED', false),
     'auth' => [
         'access_ttl_minutes' => (int) env('ARCHIVE_ACCESS_TTL_MINUTES', 15),
         'refresh_ttl_days' => (int) env('ARCHIVE_REFRESH_TTL_DAYS', 14),
