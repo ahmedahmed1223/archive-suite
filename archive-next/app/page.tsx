@@ -72,7 +72,7 @@ export default function HomePage() {
     // Parallel independent fetches; each widget fails on its own.
     void (async () => {
       try {
-        const response = await api.search({ q: "", limit: 300 });
+        const response = await api.search({ limit: 100 });
         if (response.ok) {
           setRecordsState({ status: "ready", records: response.records });
         } else {
@@ -178,11 +178,12 @@ export default function HomePage() {
         )}
       />
 
-      <section className="page-section" aria-labelledby="stats-heading">
-        <div className="toolbar-row toolbar-start">
-          <h2 id="stats-heading" className="section-heading">مؤشرات الأرشيف</h2>
-          <span className="badge">من بيانات البحث الحية</span>
-        </div>
+      <div className="dashboard-workspace">
+        <section className="page-section dashboard-stats" aria-labelledby="stats-heading">
+          <div className="toolbar-row toolbar-start">
+            <h2 id="stats-heading" className="section-heading">مؤشرات الأرشيف</h2>
+            <span className="badge">من بيانات البحث الحية</span>
+          </div>
 
         {recordsState.status === "loading" ? (
           <div className="panel panel-compact" role="status" aria-live="polite">
@@ -238,9 +239,9 @@ export default function HomePage() {
             </div>
           </>
         ) : null}
-      </section>
+        </section>
 
-      <section className="page-section" aria-labelledby="attention-heading">
+      <section className="page-section dashboard-attention" aria-labelledby="attention-heading">
         <div className="toolbar-row toolbar-start">
           <h2 id="attention-heading" className="section-heading">مهام تحتاج انتباه</h2>
           <span className="badge">قائمة تشغيل</span>
@@ -262,7 +263,7 @@ export default function HomePage() {
         </article>
       </section>
 
-      <section className="page-section" aria-labelledby="recent-heading">
+      <section className="page-section dashboard-recent" aria-labelledby="recent-heading">
         <div className="toolbar-row toolbar-start">
           <h2 id="recent-heading" className="section-heading">أحدث السجلات</h2>
           <a className="badge" href="/archive">عرض الكل</a>
@@ -290,7 +291,7 @@ export default function HomePage() {
         ) : null}
       </section>
 
-      <section className="page-section" aria-labelledby="jobs-heading">
+      <section className="page-section dashboard-jobs" aria-labelledby="jobs-heading">
         <div className="toolbar-row toolbar-start">
           <h2 id="jobs-heading" className="section-heading">آخر مهام الوسائط</h2>
           <a className="badge" href="/media/jobs">إدارة المهام</a>
@@ -333,7 +334,7 @@ export default function HomePage() {
         ) : null}
       </section>
 
-      <section className="page-section" aria-labelledby="shortcuts-heading">
+      <section className="page-section dashboard-shortcuts" aria-labelledby="shortcuts-heading">
         <div className="toolbar-row toolbar-start">
           <h2 id="shortcuts-heading" className="section-heading">اختصارات تشغيل</h2>
           <span className="badge">وصول مباشر</span>
@@ -348,6 +349,7 @@ export default function HomePage() {
           </div>
         </article>
       </section>
+      </div>
     </AppShell>
   );
 }
