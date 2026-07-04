@@ -42,6 +42,13 @@ class FakeMediaProcessor implements MediaProcessor
                     'url' => null,
                 ],
             ],
+            'montage_export' => [
+                [
+                    'kind' => 'montage_mp4',
+                    'key' => "{$job->record_id}/montage.mp4",
+                    'url' => null,
+                ],
+            ],
             default => [],
         };
     }

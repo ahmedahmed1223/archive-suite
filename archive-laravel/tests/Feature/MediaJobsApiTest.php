@@ -258,6 +258,53 @@ class MediaJobsApiTest extends TestCase
         ]);
     }
 
+    public function test_store_accepts_montage_export_operation(): void
+    {
+        Queue::fake();
+
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-montage',
+            'operation' => 'montage_export',
+            'options' => [
+                'clips' => [
+                    ['path' => 'archive/clip-a.mp4', 'inSec' => 0, 'outSec' => 5],
+                ],
+            ],
+        ], $this->authHeaders())->assertAccepted();
+
+        $this->assertDatabaseHas('media_jobs', [
+            'record_id' => 'media-record-montage',
+            'operation' => 'montage_export',
+            'status' => 'queued',
+        ]);
+    }
+
+    public function test_workflow_job_produces_montage_export_artifacts(): void
+    {
+        $mediaJob = MediaJob::query()->create([
+            'id' => 'media-job-montage-artifact',
+            'record_id' => 'media-record-montage-artifact',
+            'operation' => 'montage_export',
+            'status' => 'queued',
+            'options' => [
+                'clips' => [
+                    ['path' => 'archive/clip-a.mp4', 'inSec' => 0, 'outSec' => 5],
+                ],
+            ],
+            'queued_at' => now(),
+        ]);
+
+        $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
+            $this->app->make(\App\Services\Media\MediaProcessor::class)
+        );
+
+        $refreshed = $mediaJob->refresh();
+        $this->assertSame('completed', $refreshed->status);
+        $this->assertIsArray($refreshed->result['artifacts']);
+        $this->assertNotEmpty($refreshed->result['artifacts']);
+        $this->assertSame('montage_mp4', $refreshed->result['artifacts'][0]['kind']);
+    }
+
     public function test_workflow_job_produces_ocr_artifacts(): void
     {
         $mediaJob = MediaJob::query()->create([

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
 use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordsController;
+use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
 use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
@@ -89,6 +90,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/records/{id}/comments', [RecordCommentsController::class, 'index']);
         Route::post('/records/{id}/comments', [RecordCommentsController::class, 'store']);
         Route::get('/records/{id}/history', [RecordHistoryController::class, 'index']);
+        Route::get('/records/{id}/broadcast-metadata', [RecordBroadcastMetadataController::class, 'show']);
+        Route::put('/records/{id}/broadcast-metadata', [RecordBroadcastMetadataController::class, 'update']);
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::post('/records/bulk-delete', [RecordsController::class, 'bulkDelete']);
         Route::patch('/record-notes/{id}', [RecordNotesController::class, 'update']);

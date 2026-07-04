@@ -448,6 +448,69 @@
         }
       }
     },
+    "/records/{id}/broadcast-metadata": {
+      "get": {
+        "tags": ["Broadcast Metadata"],
+        "summary": "Read MOS/MXF broadcast metadata for an archive record",
+        "operationId": "getRecordBroadcastMetadata",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Broadcast metadata, or configuration-required state when no MOS/MXF integration is configured",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordBroadcastMetadataResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "put": {
+        "tags": ["Broadcast Metadata"],
+        "summary": "Create or update MOS/MXF broadcast metadata for an archive record",
+        "operationId": "putRecordBroadcastMetadata",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RecordBroadcastMetadataRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated broadcast metadata",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordBroadcastMetadataResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/sync": {
       "get": {
         "tags": ["Sync"],
@@ -3023,7 +3086,7 @@
       },
       "MediaOperation": {
         "type": "string",
-        "enum": ["thumbnail", "transcode", "transcription", "ocr"]
+        "enum": ["thumbnail", "transcode", "transcription", "ocr", "montage_export"]
       },
       "MediaJobRequest": {
         "type": "object",
@@ -3060,6 +3123,55 @@
             "required": ["job"],
             "properties": {
               "job": { "$ref": "#/components/schemas/MediaJob" }
+            }
+          }
+        ]
+      },
+      "RecordBroadcastMetadataRequest": {
+        "type": "object",
+        "properties": {
+          "mosObjectId": { "type": ["string", "null"] },
+          "mosProgramId": { "type": ["string", "null"] },
+          "mxfUmid": { "type": ["string", "null"] },
+          "mxfFormat": { "type": ["string", "null"] },
+          "raw": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "RecordBroadcastMetadata": {
+        "type": "object",
+        "required": ["itemId"],
+        "properties": {
+          "itemId": { "type": "string" },
+          "mosObjectId": { "type": ["string", "null"] },
+          "mosProgramId": { "type": ["string", "null"] },
+          "mxfUmid": { "type": ["string", "null"] },
+          "mxfFormat": { "type": ["string", "null"] },
+          "raw": { "type": ["object", "null"], "additionalProperties": true },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "RecordBroadcastMetadataResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["configured", "integrations", "metadata"],
+            "properties": {
+              "configured": { "type": "boolean" },
+              "integrations": {
+                "type": "object",
+                "required": ["mos", "mxf"],
+                "properties": {
+                  "mos": { "type": "boolean" },
+                  "mxf": { "type": "boolean" }
+                }
+              },
+              "metadata": {
+                "oneOf": [
+                  { "$ref": "#/components/schemas/RecordBroadcastMetadata" },
+                  { "type": "null" }
+                ]
+              }
             }
           }
         ]

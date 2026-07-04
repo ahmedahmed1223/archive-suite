@@ -27,6 +27,7 @@ class RealMediaProcessor implements MediaProcessor
             'transcode' => $this->processTranscode($job),
             'transcription' => $this->processTranscription($job),
             'ocr' => $this->processOcr($job),
+            'montage_export' => $this->processMontageExport($job),
             default => [],
         };
     }
@@ -108,6 +109,86 @@ class RealMediaProcessor implements MediaProcessor
     private function processTranscription(MediaJob $job): array
     {
         return $this->transcriber->transcribe($job->source_path, $job->record_id);
+    }
+
+    /**
+     * Concatenate ordered montage clips into a single MP4 via ffmpeg's concat
+     * demuxer. Expects `options.clips` as an ordered list of
+     * {path, inSec, outSec}. Runs only inside the queued job — never
+     * synchronously in the request cycle.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function processMontageExport(MediaJob $job): array
+    {
+        $clips = $job->options['clips'] ?? [];
+        if (! is_array($clips) || $clips === []) {
+            throw new \RuntimeException('Montage export requires at least one clip.');
+        }
+
+        $outputKey = "{$job->record_id}/montage.mp4";
+        $segments = [];
+
+        foreach ($clips as $index => $clip) {
+            $path = is_array($clip) ? ($clip['path'] ?? null) : null;
+            if (! is_string($path) || trim($path) === '') {
+                throw new \RuntimeException('Montage export clip is missing a source path.');
+            }
+
+            $inSec = (float) ($clip['inSec'] ?? 0);
+            $outSec = (float) ($clip['outSec'] ?? 0);
+            $segmentKey = "{$job->record_id}/montage-segment-{$index}.mp4";
+
+            $trimCommand = [
+                $this->ffmpegPath,
+                '-i', $path,
+                '-ss', (string) $inSec,
+            ];
+
+            if ($outSec > $inSec) {
+                $trimCommand[] = '-t';
+                $trimCommand[] = (string) ($outSec - $inSec);
+            }
+
+            array_push($trimCommand, '-c', 'copy', $segmentKey);
+
+            $trimResult = $this->runner->run($trimCommand);
+            if ($trimResult['exitCode'] !== 0) {
+                throw new \RuntimeException("ffmpeg montage segment failed: {$trimResult['stderr']}");
+            }
+
+            $segments[] = $segmentKey;
+        }
+
+        $listFile = tempnam(sys_get_temp_dir(), 'montage-concat-');
+        file_put_contents($listFile, implode("\n", array_map(
+            fn (string $segment): string => "file '{$segment}'",
+            $segments,
+        )));
+
+        $concatCommand = [
+            $this->ffmpegPath,
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', $listFile,
+            '-c', 'copy',
+            $outputKey,
+        ];
+
+        $concatResult = $this->runner->run($concatCommand);
+        @unlink($listFile);
+
+        if ($concatResult['exitCode'] !== 0) {
+            throw new \RuntimeException("ffmpeg montage concat failed: {$concatResult['stderr']}");
+        }
+
+        return [
+            [
+                'kind' => 'montage_mp4',
+                'key' => $outputKey,
+                'url' => null,
+            ],
+        ];
     }
 
     private function processOcr(MediaJob $job): array
