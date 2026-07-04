@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import AppHeader from "@/components/AppHeader";
 import OnboardingPrompt from "@/components/OnboardingPrompt";
+import WorkspaceCommandBar from "@/components/WorkspaceCommandBar";
 
 export default function AppShell({
   subtitle,
@@ -17,6 +18,7 @@ export default function AppShell({
     <main className="shell app-shell">
       <AppHeader subtitle={subtitle} navLabel={navLabel} />
       <section className={`content app-content ${contentClassName}`.trim()}>
+        <WorkspaceCommandBar />
         <OnboardingPrompt />
         {children}
       </section>

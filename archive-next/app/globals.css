@@ -231,6 +231,100 @@ a:hover {
   inline-size: min(var(--max-width-page), calc(100% - 1.5rem));
 }
 
+.workspace-commandbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--color-bg-secondary) 92%, transparent);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(18px);
+}
+
+.workspace-commandbar__user,
+.workspace-commandbar__tools,
+.workspace-commandbar__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.workspace-commandbar__user {
+  min-inline-size: 0;
+}
+
+.workspace-commandbar__user svg {
+  flex: 0 0 auto;
+  color: var(--color-brand-primary);
+}
+
+.workspace-commandbar__user span {
+  display: grid;
+  min-inline-size: 0;
+  line-height: var(--line-height-tight);
+}
+
+.workspace-commandbar__user strong,
+.workspace-commandbar__user small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-commandbar__user small {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.workspace-commandbar__search {
+  justify-content: space-between;
+  min-block-size: var(--control-height);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding-inline: var(--space-3);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+}
+
+.workspace-commandbar__search span {
+  flex: 1;
+  text-align: start;
+}
+
+.workspace-commandbar__search kbd {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+  color: var(--color-text-tertiary);
+  background: var(--color-surface-subtle);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+}
+
+.workspace-commandbar__tools {
+  justify-content: flex-end;
+}
+
+.workspace-commandbar__tools .icon-action {
+  position: relative;
+  min-inline-size: var(--control-height);
+}
+
+.workspace-commandbar__dot {
+  position: absolute;
+  inset-block-start: 0.55rem;
+  inset-inline-start: 0.6rem;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border: 2px solid var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  background: var(--color-status-error);
+}
+
 .page-toolbar {
   display: grid;
   gap: var(--space-4);
@@ -3795,6 +3889,14 @@ textarea.search-input {
 }
 
 @media (min-width: 900px) {
+  .workspace-commandbar {
+    position: sticky;
+    inset-block-start: var(--space-3);
+    z-index: 8;
+    grid-template-columns: minmax(12rem, 18rem) minmax(18rem, 1fr) auto;
+    padding: var(--space-3) var(--space-4);
+  }
+
   .page-toolbar__title-row {
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
@@ -3866,15 +3968,7 @@ textarea.search-input {
   }
 
   .app-shell > .topbar .topbar-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    justify-self: stretch;
-    gap: var(--space-2);
-  }
-
-  .app-shell > .topbar .topbar-actions > * {
-    justify-content: flex-start;
-    inline-size: 100%;
+    display: none;
   }
 
   .app-shell > .topbar .route-links {
