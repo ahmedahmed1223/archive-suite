@@ -49,12 +49,12 @@ const forbiddenPlanDocPaths = [
 const requiredTaskLedgerMarkers = [
   "Activity/history دائم",
   "تخزين Laravel دائم",
-  "Add archive / AddVideo wizard",
   "Automation backend",
   "تفريغ عربي إنتاجي على GPU",
   "AI/Copilot",
 ];
 const requiredCompletedMarkers = [
+  "Add archive / AddVideo wizard",
   "First-run / onboarding في Masar",
 ];
 
