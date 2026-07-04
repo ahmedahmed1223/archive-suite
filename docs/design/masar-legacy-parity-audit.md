@@ -35,7 +35,7 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/help` | `archive-next/app/help/page.tsx` | Migrated | Keep updated as new routes land. |
 | `archive-app/src/features/hierarchical-tags` | `archive-next/app/tags/page.tsx`, future `/tags/hierarchy` | Partial | Restore tree ordering, colors, merge, and hierarchy operations. |
 | `archive-app/src/features/history` | `archive-next/app/activity/page.tsx`, `archive-next/app/archive/[id]/page.tsx` (Laravel `/records/{id}/history`) | Partial | Audit-backed per-record history is now wired; still add restore/undo decisions. |
-| `archive-app/src/features/import` | `archive-next/app/ingest/page.tsx`, `archive-next/app/uploads/page.tsx` | Partial | Add import-from-url preview and validation. |
+| `archive-app/src/features/import` | `archive-next/app/ingest/page.tsx`, `archive-next/app/uploads/page.tsx` (Laravel `/import/preview`) | Migrated | Import-from-url metadata preview with SSRF-safe validation is now wired; keep in smoke coverage. |
 | `archive-app/src/features/itemNotes` | `archive-next/app/archive/[id]/page.tsx`, Laravel `/records/{id}/notes` | Migrated | Keep private note CRUD in smoke/API coverage. |
 | `archive-app/src/features/layout` | `archive-next/components/AppShell.tsx`, `archive-next/components/AppHeader.tsx` | Migrated | Shared shell only. |
 | `archive-app/src/features/media` | `archive-next/app/media/*`, `archive-next/components/MediaPlayer.tsx` | Partial | Wire play/compare to real media source picker and restore SRT helpers. |
@@ -48,7 +48,7 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/recommendations` | `archive-next/app/discover/page.tsx` | Partial | Discovery feedback exists; add detail-page improvement suggestions later. |
 | `archive-app/src/features/relations` | `archive-next/app/archive/[id]/page.tsx`, `archive-next/app/graph/page.tsx`, Laravel `/relations*` | Partial | Stored relations and graph exist; add inline detail add-dialog/toasts for full legacy parity. |
 | `archive-app/src/features/rights` | `archive-next/app/rights/page.tsx`, Laravel rights API | Migrated | Keep in contract tests. |
-| `archive-app/src/features/search` | `archive-next/app/search/page.tsx`, future `/search/saved` | Partial | Add backend facets and saved-search manager. |
+| `archive-app/src/features/search` | `archive-next/app/search/page.tsx`, `archive-next/app/search/saved/page.tsx` (Laravel `/saved-searches`) | Partial | Saved-search manager is now wired; still add backend facets. |
 | `archive-app/src/features/server-status` | `archive-next/app/status/page.tsx` | Partial | Add live metrics beyond health polling. |
 | `archive-app/src/features/settings` | `archive-next/app/settings/page.tsx` | Partial | Restore appearance, file-store tests, Dropbox OAuth, presets, DB tests. |
 | `archive-app/src/features/share` | `archive-next/app/shares/page.tsx`, `archive-next/app/share/[token]` | Partial | Add shared-with-me inbox/history. |
@@ -57,12 +57,12 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/features/suggestions` | Future discover/search suggestions | Missing | Add suggestion engine and feedback hooks. |
 | `archive-app/src/features/sync` | `archive-next/app/sync/page.tsx`, Laravel `/sync` | Partial | Sync log and conflict-state listing are now wired; still add selective sync policy. |
 | `archive-app/src/features/systemControl` | Future `archive-next/app/system/control/page.tsx` | Missing | Add safe admin control actions and disabled dangerous operations by default. |
-| `archive-app/src/features/templates` | `archive-next/app/types/page.tsx`, future intake templates | Partial | Add reusable archive entry templates. |
+| `archive-app/src/features/templates` | `archive-next/app/types/page.tsx`, `archive-next/app/uploads/page.tsx` (Laravel `/intake-templates`) | Migrated | Reusable archive-entry intake templates are now wired into the upload wizard; keep in smoke coverage. |
 | `archive-app/src/features/theme` | `archive-next/components/ThemeToggle.tsx`, `archive-next/app/theme.css` | Partial | Add presets, custom theme export/import, and schedule if still required. |
 | `archive-app/src/features/timeline` | `archive-next/app/timeline/page.tsx` | Migrated | Add SVG export only if needed. |
 | `archive-app/src/features/types` | `archive-next/app/types/page.tsx` | Partial | Add field ACL/templates integration. |
 | `archive-app/src/features/ui` | `archive-next/components/ui/*`, `archive-next/app/globals.css` | Migrated | Shared primitives only. |
-| `archive-app/src/features/upload` | `archive-next/app/uploads/page.tsx` | Partial | Add upload links and AddVideo wizard parity. |
+| `archive-app/src/features/upload` | `archive-next/app/uploads/page.tsx` (Laravel `/upload-links`) | Partial | Shareable upload links are now wired; still add full AddVideo wizard metadata parity. |
 | `archive-app/src/features/users` | `archive-next/app/settings/users/page.tsx`, Laravel users API | Migrated | Keep admin-only coverage. |
 | `archive-app/src/features/videos` | `archive-next/app/uploads/page.tsx`, `archive-next/app/archive/[id]/page.tsx` | Partial | Restore quick add and video-specific metadata workflow. |
 | `archive-app/src/features/views` | `archive-next/app/kanban/page.tsx`, saved views in archive/search | Partial | Persist saved views and board views. |
@@ -74,7 +74,7 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | Legacy page | Canonical Masar route | Status | Required action |
 |---|---|---|---|
 | `archive-app/src/pages/ActivityPage.tsx` | `/activity` | Partial | Back with Laravel audit history. |
-| `archive-app/src/pages/AddVideoPage.tsx` | `/uploads`, future `/archive/new` | Partial | Restore wizard metadata flow. |
+| `archive-app/src/pages/AddVideoPage.tsx` | `/uploads`, future `/archive/new` | Partial | Intake templates and import-from-url preview are now wired; still restore full multi-step wizard metadata flow. |
 | `archive-app/src/pages/AnalyticsPage.tsx` | `/analytics` | Migrated | Keep smoke coverage. |
 | `archive-app/src/pages/AppearanceSettingsPage.tsx` | Future `/appearance` or `/settings/appearance` | Missing | Add appearance editor/presets. |
 | `archive-app/src/pages/ArchivePage.tsx` | `/archive` | Partial | Add richer filters, details rail parity, and saved views persistence. |
@@ -99,8 +99,8 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/pages/ProjectsPage.tsx` | `/projects` | Partial | Restore advanced montage and persistent projects. |
 | `archive-app/src/pages/ReadingListsPage.tsx` | Future `/reading-lists` | Missing | Add route or merge into collections with explicit parity note. |
 | `archive-app/src/pages/ReportsPage.tsx` | `/reports` | Migrated | Keep smoke coverage. |
-| `archive-app/src/pages/SavedSearchesPage.tsx` | Future `/search/saved` | Partial | Add full saved-search manager and alerts. |
-| `archive-app/src/pages/SearchPage.tsx` | `/search` | Partial | Add backend facets and manager route. |
+| `archive-app/src/pages/SavedSearchesPage.tsx` | `/search/saved` | Partial | Saved-search manager (list/create/delete/run) is now wired; still add alerts. |
+| `archive-app/src/pages/SearchPage.tsx` | `/search` | Partial | Add backend facets. |
 | `archive-app/src/pages/ServerStatusPage.tsx` | `/status` | Partial | Add live resource metrics. |
 | `archive-app/src/pages/SettingsHubPage.tsx` | `/settings` | Partial | Add hub sections for appearance/system/data center. |
 | `archive-app/src/pages/SettingsPage.tsx` | `/settings` | Partial | Restore admin extras. |
@@ -110,8 +110,8 @@ The earlier cutover note that skipped Discover, System Control, Sync Log, First 
 | `archive-app/src/pages/SystemControlPage.tsx` | Future `/system/control` | Missing | Add safe admin control page. |
 | `archive-app/src/pages/TimelinePage.tsx` | `/timeline` | Migrated | Add SVG export if needed. |
 | `archive-app/src/pages/TranscriberPage.tsx` | `/transcriber` | Migrated | Keep media job coverage. |
-| `archive-app/src/pages/TypesPage.tsx` | `/types` | Partial | Add templates and field ACL. |
-| `archive-app/src/pages/UploaderPage.tsx` | `/uploads` | Partial | Add multi-file manager and upload links. |
+| `archive-app/src/pages/TypesPage.tsx` | `/types` | Partial | Add field ACL. |
+| `archive-app/src/pages/UploaderPage.tsx` | `/uploads` | Partial | Upload links are now wired; still add multi-file manager. |
 | `archive-app/src/pages/UsersPage.tsx` | `/settings/users` | Migrated | Keep admin-only coverage. |
 | `archive-app/src/pages/VocabularyPage.tsx` | `/vocabulary` | Partial | Persist and merge vocabulary. |
 
