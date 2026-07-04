@@ -5,7 +5,9 @@ use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\DiscoverController;
 use App\Http\Controllers\Api\V1\FilesController;
+use App\Http\Controllers\Api\V1\ImportPreviewController;
 use App\Http\Controllers\Api\V1\IngestController;
+use App\Http\Controllers\Api\V1\IntakeTemplatesController;
 use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
@@ -16,10 +18,12 @@ use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
 use App\Http\Controllers\Api\V1\RightsController;
+use App\Http\Controllers\Api\V1\SavedSearchesController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\SystemController;
+use App\Http\Controllers\Api\V1\UploadLinksController;
 use App\Http\Controllers\Api\V1\UploadsController;
 use App\Http\Controllers\Api\V1\UsersController;
 use Illuminate\Http\JsonResponse;
@@ -53,6 +57,8 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/share/{token}', [ShareController::class, 'show']);
     Route::get('/review-links/{token}', [ReviewLinksController::class, 'show']);
     Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept']);
+    // Public validation for external upload-link recipients (no archive session).
+    Route::get('/upload-links/{token}', [UploadLinksController::class, 'show']);
 
     // Brute-force guard: contract documents the 429 response on login.
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
@@ -104,6 +110,20 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/rights', [RightsController::class, 'store']);
 
         Route::post('/uploads', [UploadsController::class, 'store']);
+
+        Route::get('/intake-templates', [IntakeTemplatesController::class, 'index']);
+        Route::post('/intake-templates', [IntakeTemplatesController::class, 'store']);
+        Route::delete('/intake-templates/{id}', [IntakeTemplatesController::class, 'destroy']);
+
+        Route::post('/import/preview', [ImportPreviewController::class, 'preview']);
+
+        Route::get('/upload-links', [UploadLinksController::class, 'index']);
+        Route::post('/upload-links', [UploadLinksController::class, 'store']);
+        Route::post('/upload-links/{id}/revoke', [UploadLinksController::class, 'revoke']);
+
+        Route::get('/saved-searches', [SavedSearchesController::class, 'index']);
+        Route::post('/saved-searches', [SavedSearchesController::class, 'store']);
+        Route::delete('/saved-searches/{id}', [SavedSearchesController::class, 'destroy']);
 
         Route::get('/users', [UsersController::class, 'index']);
         Route::post('/users', [UsersController::class, 'store']);
