@@ -73,19 +73,22 @@ class RecordBroadcastMetadataController extends Controller
         ]);
 
         $now = now();
+        $exists = DB::table('record_broadcast_metadata')->where('item_id', $recordId)->exists();
 
-        DB::table('record_broadcast_metadata')->updateOrInsert(
-            ['item_id' => $recordId],
-            [
-                'mos_object_id' => $validated['mosObjectId'] ?? null,
-                'mos_program_id' => $validated['mosProgramId'] ?? null,
-                'mxf_umid' => $validated['mxfUmid'] ?? null,
-                'mxf_format' => $validated['mxfFormat'] ?? null,
-                'raw' => isset($validated['raw']) ? json_encode($validated['raw'], JSON_THROW_ON_ERROR) : null,
-                'updated_at' => $now,
-                'created_at' => $now,
-            ],
-        );
+        $values = [
+            'mos_object_id' => $validated['mosObjectId'] ?? null,
+            'mos_program_id' => $validated['mosProgramId'] ?? null,
+            'mxf_umid' => $validated['mxfUmid'] ?? null,
+            'mxf_format' => $validated['mxfFormat'] ?? null,
+            'raw' => isset($validated['raw']) ? json_encode($validated['raw'], JSON_THROW_ON_ERROR) : null,
+            'updated_at' => $now,
+        ];
+
+        if (! $exists) {
+            $values['created_at'] = $now;
+        }
+
+        DB::table('record_broadcast_metadata')->updateOrInsert(['item_id' => $recordId], $values);
 
         $row = DB::table('record_broadcast_metadata')->where('item_id', $recordId)->first();
 

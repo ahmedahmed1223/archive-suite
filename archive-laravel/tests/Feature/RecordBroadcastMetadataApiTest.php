@@ -57,6 +57,33 @@ class RecordBroadcastMetadataApiTest extends TestCase
             ->assertJsonPath('metadata.mosProgramId', 'MOS-PROG-1');
     }
 
+    public function test_created_at_is_stable_across_updates_while_updated_at_changes(): void
+    {
+        config(['archive.broadcast.mos_endpoint' => 'https://mos.example.test']);
+        $this->seedArchiveRecord();
+
+        $this->putJson('/api/v1/records/item-1/broadcast-metadata', [
+            'mosObjectId' => 'MOS-OBJ-1',
+        ], $this->authHeaders())->assertOk();
+
+        $row = DB::table('record_broadcast_metadata')->where('item_id', 'item-1')->first();
+        $originalCreatedAt = $row->created_at;
+        $originalUpdatedAt = $row->updated_at;
+
+        $this->travel(5)->seconds();
+
+        $this->putJson('/api/v1/records/item-1/broadcast-metadata', [
+            'mosObjectId' => 'MOS-OBJ-2',
+        ], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('metadata.mosObjectId', 'MOS-OBJ-2');
+
+        $updatedRow = DB::table('record_broadcast_metadata')->where('item_id', 'item-1')->first();
+
+        $this->assertSame($originalCreatedAt, $updatedRow->created_at);
+        $this->assertNotSame($originalUpdatedAt, $updatedRow->updated_at);
+    }
+
     public function test_it_404s_for_unknown_record(): void
     {
         $this->getJson('/api/v1/records/missing-record/broadcast-metadata', $this->authHeaders())
