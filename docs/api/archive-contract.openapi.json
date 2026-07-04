@@ -1427,6 +1427,135 @@
         }
       }
     },
+    "/automation/rules": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "List automation rules and recent execution runs",
+        "operationId": "listAutomationRules",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Automation rules and runs",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AutomationRulesResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Automation"],
+        "summary": "Create an automation rule",
+        "operationId": "createAutomationRule",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateAutomationRuleRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created automation rule",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AutomationRuleResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/automation/rules/{id}": {
+      "patch": {
+        "tags": ["Automation"],
+        "summary": "Update an automation rule",
+        "operationId": "updateAutomationRule",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateAutomationRuleRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated automation rule",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AutomationRuleResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Automation"],
+        "summary": "Delete an automation rule",
+        "operationId": "deleteAutomationRule",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/automation/rules/{id}/run": {
+      "post": {
+        "tags": ["Automation"],
+        "summary": "Run or dry-run an automation rule",
+        "operationId": "runAutomationRule",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dryRun": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Automation rule run created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AutomationRuleRunResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/media/{mediaUid}/review-links": {
       "post": {
         "tags": ["Review"],
@@ -3536,6 +3665,115 @@
             "required": ["search"],
             "properties": {
               "search": { "$ref": "#/components/schemas/SavedSearch" }
+            }
+          }
+        ]
+      },
+      "AutomationRuleTrigger": {
+        "type": "string",
+        "enum": ["record.created", "record.updated", "media.failed", "schedule.daily"]
+      },
+      "AutomationRuleAction": {
+        "type": "string",
+        "enum": ["add-tag", "set-review", "notify-admin", "create-inbox-item"]
+      },
+      "AutomationRule": {
+        "type": "object",
+        "required": ["id", "name", "trigger", "query", "type", "tag", "status", "action", "enabled"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string" },
+          "type": { "type": "string" },
+          "tag": { "type": "string" },
+          "status": { "type": "string" },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" },
+          "enabled": { "type": "boolean" },
+          "lastRunAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "AutomationRuleRun": {
+        "type": "object",
+        "required": ["id", "ruleId", "status", "dryRun", "matchedCount", "executedCount"],
+        "properties": {
+          "id": { "type": "string" },
+          "ruleId": { "type": "string" },
+          "status": { "type": "string" },
+          "dryRun": { "type": "boolean" },
+          "matchedCount": { "type": "integer" },
+          "executedCount": { "type": "integer" },
+          "message": { "type": ["string", "null"] },
+          "sampleRecords": {
+            "type": "array",
+            "items": { "type": "object", "additionalProperties": true }
+          },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CreateAutomationRuleRequest": {
+        "type": "object",
+        "required": ["name", "trigger", "action"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string", "maxLength": 500 },
+          "type": { "type": "string", "maxLength": 100 },
+          "tag": { "type": "string", "maxLength": 100 },
+          "status": { "type": "string", "maxLength": 100 },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" },
+          "enabled": { "type": "boolean", "default": true }
+        }
+      },
+      "UpdateAutomationRuleRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string", "maxLength": 500 },
+          "type": { "type": "string", "maxLength": 100 },
+          "tag": { "type": "string", "maxLength": 100 },
+          "status": { "type": "string", "maxLength": 100 },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" },
+          "enabled": { "type": "boolean" }
+        },
+        "minProperties": 1
+      },
+      "AutomationRulesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["rules", "runs"],
+            "properties": {
+              "rules": { "type": "array", "items": { "$ref": "#/components/schemas/AutomationRule" } },
+              "runs": { "type": "array", "items": { "$ref": "#/components/schemas/AutomationRuleRun" } }
+            }
+          }
+        ]
+      },
+      "AutomationRuleResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["rule"],
+            "properties": {
+              "rule": { "$ref": "#/components/schemas/AutomationRule" }
+            }
+          }
+        ]
+      },
+      "AutomationRuleRunResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["run"],
+            "properties": {
+              "run": { "$ref": "#/components/schemas/AutomationRuleRun" }
             }
           }
         ]

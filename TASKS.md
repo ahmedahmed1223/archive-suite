@@ -34,6 +34,7 @@
 
 - [ ] **Automation backend** — تنفيذ rules engine فعلي، execution log، permissions، وجدولة/تشغيل آمن بدلاً من dry-run المحلي فقط.
   - القبول: القواعد تُحفظ في Laravel، تُنفذ بإذن واضح، وتملك سجل تشغيل قابل للمراجعة.
+  - الحالة: نُفذت جداول `automation_rules` و`automation_rule_runs`، ومسارات CRUD + dry-run/run، وربطت صفحة `/automation` بـ Laravel مع سجل تشغيل. المتبقي قبل الإغلاق: تشغيل بوابة Laravel داخل Docker عند توفر صلاحية/رصيد Docker في البيئة.
 
 - [ ] **تفريغ عربي إنتاجي على GPU** — التحقق الحي من `faster-whisper-large-v3` على GPU وصوت عربي حقيقي للوصول إلى دقة لا تقل عن 90%.
   - المنجز برمجياً: إعدادات GPU، large-v3، SRT/VTT/TTML، وdiarization flag.

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AccountExportController;
 use App\Http\Controllers\Api\V1\ActivityController;
+use App\Http\Controllers\Api\V1\AutomationRulesController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
@@ -133,6 +134,12 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/saved-searches', [SavedSearchesController::class, 'index']);
         Route::post('/saved-searches', [SavedSearchesController::class, 'store']);
         Route::delete('/saved-searches/{id}', [SavedSearchesController::class, 'destroy']);
+
+        Route::get('/automation/rules', [AutomationRulesController::class, 'index']);
+        Route::post('/automation/rules', [AutomationRulesController::class, 'store']);
+        Route::patch('/automation/rules/{id}', [AutomationRulesController::class, 'update']);
+        Route::delete('/automation/rules/{id}', [AutomationRulesController::class, 'destroy']);
+        Route::post('/automation/rules/{id}/run', [AutomationRulesController::class, 'run']);
 
         Route::get('/users', [UsersController::class, 'index']);
         Route::post('/users', [UsersController::class, 'store']);
