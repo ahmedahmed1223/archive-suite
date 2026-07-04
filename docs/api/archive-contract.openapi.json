@@ -449,6 +449,58 @@
         }
       }
     },
+    "/activity": {
+      "get": {
+        "tags": ["Activity"],
+        "summary": "List filterable audit-backed activity entries",
+        "operationId": "listActivity",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 200 }
+          },
+          {
+            "name": "event",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "maxLength": 120 }
+          },
+          {
+            "name": "resourceType",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "maxLength": 120 }
+          },
+          {
+            "name": "resourceId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "maxLength": 255 }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["success", "rejected", "failed"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit-backed activity entries",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ActivityResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/broadcast-metadata": {
       "get": {
         "tags": ["Broadcast Metadata"],
@@ -2691,6 +2743,32 @@
               "entries": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/RecordHistoryEntry" }
+              }
+            }
+          }
+        ]
+      },
+      "ActivityResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["entries", "filters"],
+            "properties": {
+              "entries": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RecordHistoryEntry" }
+              },
+              "filters": {
+                "type": "object",
+                "required": ["limit"],
+                "properties": {
+                  "event": { "type": ["string", "null"] },
+                  "resourceType": { "type": ["string", "null"] },
+                  "resourceId": { "type": ["string", "null"] },
+                  "outcome": { "type": ["string", "null"], "enum": ["success", "rejected", "failed", null] },
+                  "limit": { "type": "integer", "minimum": 1, "maximum": 200 }
+                }
               }
             }
           }

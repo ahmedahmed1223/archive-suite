@@ -27,11 +27,7 @@ class AuditArchiveApiRequest
                 'actor_id' => $request->attributes->get('archive_user')?->getKey(),
                 'outcome' => $taxonomy['outcome'],
                 'status_code' => $response->getStatusCode(),
-                'metadata' => [
-                    'route' => $request->route()?->uri(),
-                    'query' => $request->query(),
-                    'sessionId' => $request->attributes->get('archive_session')?->getKey(),
-                ],
+                'metadata' => $this->metadata($request, $taxonomy),
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
@@ -71,6 +67,13 @@ class AuditArchiveApiRequest
 
         if ($route === 'api/v1/rights' || $route === 'api/v1/media/jobs') {
             $resourceId = $request->string($route === 'api/v1/rights' ? 'itemId' : 'recordId')->toString() ?: null;
+        }
+
+        if ($route === 'api/v1/records/bulk') {
+            $records = $request->input('records');
+            if (is_array($records) && count($records) === 1 && is_array($records[0] ?? null)) {
+                $resourceId = $records[0]['uid'] ?? $records[0]['id'] ?? null;
+            }
         }
 
         if ($route === 'api/v1/relations') {
@@ -121,5 +124,133 @@ class AuditArchiveApiRequest
         }
 
         return 'failed';
+    }
+
+    /**
+     * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
+     * @return array<string, mixed>
+     */
+    private function metadata(Request $request, array $taxonomy): array
+    {
+        $payload = $this->redact($request->except(['password', 'password_confirmation']));
+        $metadata = [
+            'route' => $request->route()?->uri(),
+            'query' => $this->redact($request->query()),
+            'sessionId' => $request->attributes->get('archive_session')?->getKey(),
+            'restoreDecision' => $this->restoreDecision($request, $taxonomy),
+        ];
+
+        if ($payload !== []) {
+            $metadata['request'] = $payload;
+            $metadata['diff'] = [
+                'kind' => $request->isMethod('delete') ? 'delete-request' : 'requested-change',
+                'fields' => $this->fieldPaths($payload),
+                'after' => $payload,
+            ];
+        }
+
+        return $metadata;
+    }
+
+    /**
+     * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
+     * @return array<string, mixed>
+     */
+    private function restoreDecision(Request $request, array $taxonomy): array
+    {
+        if ($request->isMethod('delete')) {
+            return [
+                'available' => false,
+                'label' => 'استعادة يدوية فقط',
+                'reason' => 'حدث حذف أو إلغاء يتطلب مراجعة السجل الأصلي أو نسخة احتياطية قبل الاستعادة.',
+            ];
+        }
+
+        if ($taxonomy['event'] === 'records.bulk_upsert') {
+            return [
+                'available' => true,
+                'label' => 'قابل للمراجعة من payload',
+                'reason' => 'يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.',
+            ];
+        }
+
+        if (str_contains($taxonomy['event'], '.update') || str_contains($taxonomy['event'], '.upsert')) {
+            return [
+                'available' => true,
+                'label' => 'راجع diff قبل الاستعادة',
+                'reason' => 'التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.',
+            ];
+        }
+
+        return [
+            'available' => false,
+            'label' => 'لا يوجد إجراء استعادة آلي',
+            'reason' => 'هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $value
+     * @return array<string, mixed>
+     */
+    private function redact(array $value): array
+    {
+        $redacted = [];
+
+        foreach ($value as $key => $item) {
+            $normalizedKey = strtolower((string) $key);
+            if (preg_match('/password|token|secret|key|dsn|credential|authorization/', $normalizedKey)) {
+                $redacted[$key] = '[redacted]';
+                continue;
+            }
+
+            if (is_array($item)) {
+                $redacted[$key] = $this->redact(array_slice($item, 0, 50, true));
+                continue;
+            }
+
+            if ($item instanceof \Illuminate\Http\UploadedFile) {
+                $redacted[$key] = [
+                    'name' => $item->getClientOriginalName(),
+                    'size' => $item->getSize(),
+                    'mimeType' => $item->getClientMimeType(),
+                ];
+                continue;
+            }
+
+            if (is_object($item)) {
+                $redacted[$key] = '[object '.class_basename($item).']';
+                continue;
+            }
+
+            if (is_string($item) && strlen($item) > 500) {
+                $redacted[$key] = substr($item, 0, 500).'...';
+                continue;
+            }
+
+            $redacted[$key] = $item;
+        }
+
+        return $redacted;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<int, string>
+     */
+    private function fieldPaths(array $payload, string $prefix = ''): array
+    {
+        $paths = [];
+
+        foreach ($payload as $key => $value) {
+            $path = $prefix === '' ? (string) $key : $prefix.'.'.$key;
+            if (is_array($value)) {
+                array_push($paths, ...$this->fieldPaths($value, $path));
+            } else {
+                $paths[] = $path;
+            }
+        }
+
+        return array_slice(array_values(array_unique($paths)), 0, 50);
     }
 }

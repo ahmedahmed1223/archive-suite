@@ -408,6 +408,39 @@ function historyEventLabel(entry: RecordHistoryEntry) {
   return labels[entry.event] || entry.event;
 }
 
+function metadataObject(entry: RecordHistoryEntry) {
+  return entry.metadata && typeof entry.metadata === "object" && !Array.isArray(entry.metadata)
+    ? entry.metadata
+    : null;
+}
+
+function auditDiffFields(entry: RecordHistoryEntry) {
+  const metadata = metadataObject(entry);
+  const diff = metadata?.["diff"];
+  if (!diff || typeof diff !== "object" || Array.isArray(diff)) return [];
+  const fields = (diff as Record<string, unknown>)["fields"];
+  return Array.isArray(fields) ? fields.filter((field): field is string => typeof field === "string") : [];
+}
+
+function auditRequestPayload(entry: RecordHistoryEntry) {
+  const metadata = metadataObject(entry);
+  const request = metadata?.["request"];
+  return request && typeof request === "object" ? request : null;
+}
+
+function auditRestoreDecision(entry: RecordHistoryEntry) {
+  const metadata = metadataObject(entry);
+  const decision = metadata?.["restoreDecision"];
+  if (!decision || typeof decision !== "object" || Array.isArray(decision)) return null;
+
+  const value = decision as Record<string, unknown>;
+  return {
+    available: value["available"] === true,
+    label: typeof value["label"] === "string" ? value["label"] : "قرار استعادة",
+    reason: typeof value["reason"] === "string" ? value["reason"] : ""
+  };
+}
+
 function RecordHistoryPanel({
   entries,
   loading,
@@ -440,21 +473,53 @@ function RecordHistoryPanel({
 
       {!loading && entries.length ? (
         <ul className="record-history-list">
-          {entries.map((entry) => (
-            <li key={entry.id}>
-              <div>
-                <div className="helper-row">
-                  <span className="badge">{historyEventLabel(entry)}</span>
-                  <span className={`badge ${entry.outcome === "success" ? "badge-success" : "badge-error"}`}>
-                    {entry.outcome}
-                  </span>
+          {entries.map((entry) => {
+            const fields = auditDiffFields(entry);
+            const payload = auditRequestPayload(entry);
+            const decision = auditRestoreDecision(entry);
+
+            return (
+              <li key={entry.id}>
+                <div>
+                  <div className="helper-row">
+                    <span className="badge">{historyEventLabel(entry)}</span>
+                    <span className={`badge ${entry.outcome === "success" ? "badge-success" : "badge-error"}`}>
+                      {entry.outcome}
+                    </span>
+                  </div>
+                  {entry.createdAt ? (
+                    <small className="helper-text">{new Date(entry.createdAt).toLocaleString("ar-SA")}</small>
+                  ) : null}
                 </div>
-                {entry.createdAt ? (
-                  <small className="helper-text">{new Date(entry.createdAt).toLocaleString("ar-SA")}</small>
+
+                {decision ? (
+                  <div className="audit-decision" data-available={decision.available ? "true" : "false"}>
+                    <strong>{decision.label}</strong>
+                    {decision.reason ? <p>{decision.reason}</p> : null}
+                  </div>
                 ) : null}
-              </div>
-            </li>
-          ))}
+
+                {fields.length ? (
+                  <div className="audit-diff">
+                    <strong>حقول التغيير</strong>
+                    <div className="tags">
+                      {fields.slice(0, 12).map((field) => (
+                        <span key={field} className="tag">{field}</span>
+                      ))}
+                      {fields.length > 12 ? <span className="tag">+{fields.length - 12}</span> : null}
+                    </div>
+                  </div>
+                ) : null}
+
+                {payload ? (
+                  <details className="audit-payload">
+                    <summary>عرض payload منقح للمراجعة</summary>
+                    <pre dir="ltr">{JSON.stringify(payload, null, 2)}</pre>
+                  </details>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       ) : !loading ? (
         <EmptyState
