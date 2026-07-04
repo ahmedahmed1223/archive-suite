@@ -47,13 +47,15 @@ const forbiddenPlanDocPaths = [
   "docs/laravel-nextjs-migration-plan.md",
 ];
 const requiredTaskLedgerMarkers = [
-  "First-run / onboarding",
   "Activity/history دائم",
   "تخزين Laravel دائم",
   "Add archive / AddVideo wizard",
   "Automation backend",
   "تفريغ عربي إنتاجي على GPU",
   "AI/Copilot",
+];
+const requiredCompletedMarkers = [
+  "First-run / onboarding في Masar",
 ];
 
 function rel(absolutePath) {
@@ -143,6 +145,11 @@ for (const file of [
 const taskLedger = readFileSync(path.join(ROOT, taskLedgerRelativePath), "utf8");
 for (const marker of requiredTaskLedgerMarkers) {
   assert.ok(taskLedger.includes(marker), `${taskLedgerRelativePath} should include task marker: ${marker}`);
+}
+
+const changeLog = readFileSync(path.join(ROOT, "ChangeLog.md"), "utf8");
+for (const marker of requiredCompletedMarkers) {
+  assert.ok(changeLog.includes(marker), `ChangeLog.md should include completed marker: ${marker}`);
 }
 
 const trackedForbiddenPlanDocs = trackedFiles.filter((file) =>

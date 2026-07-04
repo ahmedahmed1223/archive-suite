@@ -23,7 +23,7 @@ interface AuthSessionContextValue extends AuthSessionState {
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 
-const publicPathPrefixes = ["/login", "/share/", "/review/"];
+const publicPathPrefixes = ["/login", "/first-run", "/share/", "/review/"];
 
 function isPublicPath(pathname: string) {
   return publicPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));

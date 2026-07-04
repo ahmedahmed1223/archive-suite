@@ -34,6 +34,18 @@ test("unknown command exits non-zero and lists the valid commands", () => {
   assert.match(out, /status, start, stop/);
 });
 
+test("first-run guide renders quick and advanced setup paths without deploying", () => {
+  const r = run(["first-run"], { ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1" });
+  assert.equal(r.status, 0);
+  const clean = r.stdout.replace(/\x1b\[[0-9;]*m/g, "");
+  assert.match(clean, /First run/);
+  assert.match(clean, /Quick preset/);
+  assert.match(clean, /setup quick/);
+  assert.match(clean, /Advanced preset/);
+  assert.match(clean, /setup deploy/);
+  assert.doesNotMatch(clean, /docker compose up/);
+});
+
 test("config prints known keys and masks secrets", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-"));
   const envFile = join(dir, ".env");

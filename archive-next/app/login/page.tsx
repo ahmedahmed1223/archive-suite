@@ -82,6 +82,7 @@ function LoginPageContent() {
           <div className="button-row">
             <span className="badge">جلسات محمية</span>
             <span className="badge">Next + Laravel</span>
+            <a className="badge" href="/first-run">أول تشغيل</a>
           </div>
         </div>
 

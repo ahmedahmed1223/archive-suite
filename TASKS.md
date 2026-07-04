@@ -21,9 +21,6 @@
 
 ## P1 — فجوات إنتاجية عالية
 
-- [ ] **First-run / onboarding** — إضافة `/first-run` أو `/onboarding` مع فحص أول تشغيل، إعداد preset سريع/متقدم، وربط آمن مع `setup.bat`/Control Center.
-  - القبول: مستخدم جديد يرى مسار تهيئة واضحاً قبل استخدام النظام، ويمكن إعادة فتح الجولة من help/settings.
-
 - [ ] **Activity/history دائم مع undo/diffs** — تحويل `/activity` من سطح مركب/محلي إلى API دائم فوق audit log، وإضافة diff/restore decisions في `/archive/[id]`.
   - القبول: سجل نشاط مصادق، قابل للتصفية، يعرض تغييرات السجلات وتعليقات الفريق ويتيح قرار استعادة آمن حيث ينطبق.
 
