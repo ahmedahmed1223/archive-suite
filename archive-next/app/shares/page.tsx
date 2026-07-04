@@ -56,14 +56,17 @@ export default function SharesPage() {
           </>
         }
         actions={
-          <button
-            type="button"
-            className="button button-danger"
-            onClick={handleClearAll}
-            disabled={links.length === 0}
-          >
-            {cleared ? "تم المسح" : "مسح الكل"}
-          </button>
+          <div className="button-row">
+            <a className="button button-secondary" href="/shares/with-me">المشاركات الواردة</a>
+            <button
+              type="button"
+              className="button button-danger"
+              onClick={handleClearAll}
+              disabled={links.length === 0}
+            >
+              {cleared ? "تم المسح" : "مسح الكل"}
+            </button>
+          </div>
         }
       />
 
