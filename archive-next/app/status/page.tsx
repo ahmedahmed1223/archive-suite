@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ApiEnvelope } from "@/lib/archive-api";
+import { createArchiveApiClient, type ApiEnvelope, type DrProbe, type SystemMetrics } from "@/lib/archive-api";
 
 function IconServer() {
   return (
@@ -71,6 +71,19 @@ interface StatusState {
   error: string | null;
 }
 
+type MetricsState =
+  | { status: "loading" | "forbidden" }
+  | { status: "ready"; metrics: SystemMetrics; dr: DrProbe }
+  | { status: "error"; message: string };
+
+function formatBytes(bytes: number): string {
+  if (bytes <= 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
+  return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
+}
+
 function formatUptime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "-";
   const d = Math.floor(seconds / 86400);
@@ -122,8 +135,26 @@ export default function StatusPage() {
     lastChecked: null,
     error: null
   });
+  const [metricsState, setMetricsState] = useState<MetricsState>({ status: "loading" });
   const apiRef = useRef(createArchiveApiClient());
   const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const checkMetrics = useCallback(async () => {
+    try {
+      const response = await apiRef.current.systemStatus();
+      if (!response.ok) {
+        if ("error" in response && response.error === "Forbidden.") {
+          setMetricsState({ status: "forbidden" });
+          return;
+        }
+        setMetricsState({ status: "error", message: response.error || "تعذر تحميل مقاييس النظام." });
+        return;
+      }
+      setMetricsState({ status: "ready", metrics: response.metrics, dr: response.dr });
+    } catch (err) {
+      setMetricsState({ status: "error", message: err instanceof Error ? err.message : "خطأ غير معروف" });
+    }
+  }, []);
 
   const checkHealth = useCallback(async () => {
     setState((prev) => ({ ...prev, status: "loading" }));
@@ -156,6 +187,10 @@ export default function StatusPage() {
       });
     }
   }, []);
+
+  useEffect(() => {
+    void checkMetrics();
+  }, [checkMetrics]);
 
   useEffect(() => {
     void checkHealth();
@@ -252,6 +287,74 @@ export default function StatusPage() {
           </div>
         </div>
       </section>
+
+      {metricsState.status === "ready" ? (
+        <section className="panel" aria-label="مقاييس الخادم الحية">
+          <div className="panel-title-row">
+            <div>
+              <h2>مقاييس الخادم الحية</h2>
+              <p>معالج، ذاكرة، قرص، وعمق قائمة المهام — من `/api/v1/system/status` (للمشرفين فقط).</p>
+            </div>
+          </div>
+          <div className="kv-grid">
+            <div className="kv-item">
+              <strong>حمل المعالج</strong>
+              <span>{metricsState.metrics.cpuLoad.length > 0 ? metricsState.metrics.cpuLoad.map((v) => v.toFixed(2)).join(" / ") : "غير متاح"}</span>
+            </div>
+            <div className="kv-item">
+              <strong>الذاكرة</strong>
+              <span>
+                {formatBytes(metricsState.metrics.memory.usedBytes)} / {formatBytes(metricsState.metrics.memory.totalBytes)}
+              </span>
+            </div>
+            <div className="kv-item">
+              <strong>القرص</strong>
+              <span>
+                {formatBytes(metricsState.metrics.disk.usedBytes)} / {formatBytes(metricsState.metrics.disk.totalBytes)}
+              </span>
+            </div>
+            <div className="kv-item">
+              <strong>عمق قائمة المهام</strong>
+              <span>{metricsState.metrics.queueDepth}</span>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {metricsState.status === "ready" ? (
+        <section className="panel" aria-label="جاهزية التعافي من الكوارث">
+          <div className="panel-title-row">
+            <div>
+              <h2>جاهزية التعافي من الكوارث</h2>
+              <p>آخر نسخة احتياطية وآخر اختبار استعادة، من `/api/v1/system/dr-probe`.</p>
+            </div>
+            <a className="button button-secondary" href="/backup">
+              إدارة النسخ الاحتياطي
+            </a>
+          </div>
+          <div className="kv-grid">
+            <div className="kv-item">
+              <strong>آخر نسخة احتياطية</strong>
+              <span>{metricsState.dr.lastBackupName ? `${metricsState.dr.lastBackupName} — ${formatDateTime(metricsState.dr.lastBackupAt ? new Date(metricsState.dr.lastBackupAt) : null)}` : "لا توجد نسخة بعد"}</span>
+            </div>
+            <div className="kv-item">
+              <strong>آخر اختبار استعادة</strong>
+              <span>
+                {metricsState.dr.lastRestoreTestAt
+                  ? `${metricsState.dr.lastRestoreTestOk ? "نجح" : "فشل"} — ${formatDateTime(new Date(metricsState.dr.lastRestoreTestAt))}`
+                  : "لم يُجرَ بعد"}
+              </span>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {metricsState.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل مقاييس النظام</strong>
+          <p>{metricsState.message}</p>
+        </div>
+      ) : null}
 
       <section className="panel">
         <div className="panel-title-row">

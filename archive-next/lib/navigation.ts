@@ -30,6 +30,8 @@ export const primaryNav = [
   { href: "/errors", label: "الأخطاء", section: "observe" },
   { href: "/ingest", label: "الاستيراد", section: "admin" },
   { href: "/backup", label: "النسخ الاحتياطي", section: "admin" },
+  { href: "/data-center", label: "مركز البيانات", section: "admin" },
+  { href: "/system/control", label: "التحكم بالنظام", section: "admin" },
   { href: "/rights", label: "الحقوق", section: "admin" },
   { href: "/settings", label: "الإعدادات", section: "admin" },
   { href: "/help", label: "المساعدة", section: "admin" }
