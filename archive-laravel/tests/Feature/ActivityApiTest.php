@@ -22,7 +22,7 @@ class ActivityApiTest extends TestCase
         $this->postJson('/api/v1/media/jobs', [
             'recordId' => 'activity-record-1',
             'operation' => 'thumbnail',
-        ], $this->authHeaders())->assertCreated();
+        ], $this->authHeaders())->assertAccepted();
 
         $this->getJson('/api/v1/activity?event=rights.upsert&resourceId=activity-record-1&limit=10', $this->authHeaders())
             ->assertOk()

@@ -66,7 +66,10 @@ assert.match(readme, /archive-laravel\/\s+# canonical backend/i);
 assert.match(readme, /legacy/i);
 
 const tasks = read("TASKS.md");
-assert.match(tasks, /\[x\].*Laravel API \+ Next\.js TypeScript/s);
+assert.match(tasks, /Laravel \+ Next\.js هما المنتج القانوني/);
 assert.doesNotMatch(tasks, /5e\.2-cutover.*\[ \]/s);
+
+const changelog = read("ChangeLog.md");
+assert.match(changelog, /\[x\]\s*5e\.2-cutover/);
 
 console.log("ok - Laravel/Next cutover defaults");
