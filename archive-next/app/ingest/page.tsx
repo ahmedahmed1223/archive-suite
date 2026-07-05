@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
+import { FolderSearch, KeyRound, Network, RadioTower, Server, ShieldCheck } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient } from "@/lib/archive-api";
@@ -13,6 +14,28 @@ type OperationState =
   | { status: "running" }
   | { status: "success"; result: PullResult }
   | { status: "error"; message: string };
+
+type IngestSource = "scan" | "ftp" | "smb";
+
+const sourceLabels: Record<IngestSource, string> = {
+  scan: "مجلد الخادم",
+  ftp: "FTP/FTPS",
+  smb: "SMB"
+};
+
+function operationStatusLabel(state: OperationState) {
+  if (state.status === "running") return "جار التنفيذ";
+  if (state.status === "success") return `${state.result.ingested} مدخل`;
+  if (state.status === "error") return "يتطلب مراجعة";
+  return "جاهز";
+}
+
+function operationTone(state: OperationState) {
+  if (state.status === "success") return "success";
+  if (state.status === "error") return "danger";
+  if (state.status === "running") return "warning";
+  return "info";
+}
 
 function ResultBanner({ label, state }: Readonly<{ label: string; state: OperationState }>) {
   if (state.status === "success") {
@@ -40,6 +63,7 @@ export default function IngestPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
 
   const [scanState, setScanState] = useState<OperationState>({ status: "idle" });
+  const [activeSource, setActiveSource] = useState<IngestSource>("scan");
 
   // Connection params live in component state only — never persisted to localStorage.
   const [ftpState, setFtpState] = useState<OperationState>({ status: "idle" });
@@ -104,10 +128,16 @@ export default function IngestPage() {
   };
 
   const isAnyRunning = scanState.status === "running" || ftpState.status === "running" || smbState.status === "running";
+  const sourceStates: Record<IngestSource, OperationState> = {
+    scan: scanState,
+    ftp: ftpState,
+    smb: smbState
+  };
 
   return (
     <AppShell subtitle="استيراد المحتوى" navLabel="الاستيراد" contentClassName="observability-content">
       <PageToolbar
+        icon={<RadioTower size={24} />}
         eyebrow={<span className="badge">Ingest Operations</span>}
         title="استيراد المحتوى للأرشيف"
         description="فحص مجلد الاستيراد المحلي، أو سحب ملفات من مصادر FTP وSMB مباشرة إلى مخازن الأرشيف."
@@ -119,9 +149,51 @@ export default function IngestPage() {
         actions={(
           <a className="button button-secondary" href="/files">مستعرض الملفات</a>
         )}
-      />
+      >
+        <div className="ingest-source-tabs" role="group" aria-label="مصادر الاستيراد">
+          {(Object.keys(sourceLabels) as IngestSource[]).map((source) => (
+            <button
+              key={source}
+              type="button"
+              className="badge"
+              data-active={activeSource === source ? "true" : "false"}
+              onClick={() => setActiveSource(source)}
+            >
+              {sourceLabels[source]}
+              <span>{operationStatusLabel(sourceStates[source])}</span>
+            </button>
+          ))}
+        </div>
+      </PageToolbar>
 
-      <section className="panel" aria-label="فحص مجلد الاستيراد">
+      <section className="ingest-overview-grid" aria-label="ملخص مصادر الاستيراد">
+        <article className="health-metric" data-tone={operationTone(scanState)}>
+          <span className="health-metric__icon" aria-hidden="true"><FolderSearch size={20} /></span>
+          <div className="health-metric__body">
+            <span>مجلد الخادم</span>
+            <strong>{operationStatusLabel(scanState)}</strong>
+            <small>فحص مباشر للملفات الجديدة</small>
+          </div>
+        </article>
+        <article className="health-metric" data-tone={operationTone(ftpState)}>
+          <span className="health-metric__icon" aria-hidden="true"><Network size={20} /></span>
+          <div className="health-metric__body">
+            <span>FTP/FTPS</span>
+            <strong>{operationStatusLabel(ftpState)}</strong>
+            <small>بيانات الاتصال غير محفوظة</small>
+          </div>
+        </article>
+        <article className="health-metric" data-tone={operationTone(smbState)}>
+          <span className="health-metric__icon" aria-hidden="true"><Server size={20} /></span>
+          <div className="health-metric__body">
+            <span>SMB</span>
+            <strong>{operationStatusLabel(smbState)}</strong>
+            <small>سحب من مشاركة داخلية</small>
+          </div>
+        </article>
+      </section>
+
+      <section className="panel ingest-operation-panel" data-active={activeSource === "scan" ? "true" : "false"} aria-label="فحص مجلد الاستيراد">
         <div className="panel-title-row">
           <div>
             <h2>فحص مجلد الاستيراد</h2>
@@ -135,12 +207,13 @@ export default function IngestPage() {
       </section>
 
       <div className="analytics-columns">
-        <section className="panel" aria-label="سحب من FTP">
+        <section className="panel ingest-operation-panel" data-active={activeSource === "ftp" ? "true" : "false"} aria-label="سحب من FTP">
           <div className="panel-title-row">
             <div>
               <h2>سحب من FTP</h2>
               <p>بيانات الاتصال تُستخدم لهذه العملية فقط ولا تُحفظ في المتصفح.</p>
             </div>
+            <span className="badge"><ShieldCheck size={14} aria-hidden="true" /> مؤقت</span>
           </div>
           <form onSubmit={handleFtpPull}>
             <div className="archive-toolbar-grid">
@@ -178,12 +251,13 @@ export default function IngestPage() {
           <ResultBanner label="السحب من FTP" state={ftpState} />
         </section>
 
-        <section className="panel" aria-label="سحب من SMB">
+        <section className="panel ingest-operation-panel" data-active={activeSource === "smb" ? "true" : "false"} aria-label="سحب من SMB">
           <div className="panel-title-row">
             <div>
               <h2>سحب من SMB</h2>
               <p>بيانات الاتصال تُستخدم لهذه العملية فقط ولا تُحفظ في المتصفح.</p>
             </div>
+            <span className="badge"><KeyRound size={14} aria-hidden="true" /> وصول مقيد</span>
           </div>
           <form onSubmit={handleSmbPull}>
             <div className="archive-toolbar-grid">
