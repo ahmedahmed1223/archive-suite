@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Archive, Database, Gauge, HardDriveDownload, ServerCog, Settings, ShieldCheck, UploadCloud, Workflow } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type DrProbe, type SystemMetrics } from "@/lib/archive-api";
 
@@ -26,13 +28,18 @@ function formatDate(value: string | null): string {
   return date.toLocaleString("ar-SA");
 }
 
+function percent(used: number, total: number) {
+  if (total <= 0) return 0;
+  return Math.min(100, Math.round((used / total) * 100));
+}
+
 const HUB_LINKS = [
-  { href: "/uploads", title: "الرفع والاستيراد اليدوي", description: "رفع ملفات جديدة، قوالب الإدخال، روابط الرفع الخارجية." },
-  { href: "/ingest", title: "الاستيراد الآلي", description: "مسح المجلدات، السحب عبر FTP/SMB، متابعة الدفعات الواردة." },
-  { href: "/backup", title: "النسخ الاحتياطي والاستعادة", description: "إنشاء نسخة فورية، معاينة المحتوى، أو الاستعادة الكاملة." },
-  { href: "/status", title: "حالة النظام", description: "صحة الاتصال، مقاييس الخادم الحية، وجاهزية التعافي من الكوارث." },
-  { href: "/settings", title: "الإعدادات", description: "إعدادات الأمان، المستخدمون، وسياسات الوصول." },
-  { href: "/system/control", title: "التحكم بالنظام", description: "إجراءات مضيف حساسة (معطّلة افتراضيًا، للمشرفين فقط)." }
+  { href: "/uploads", title: "الرفع والاستيراد اليدوي", description: "رفع ملفات جديدة، قوالب الإدخال، روابط الرفع الخارجية.", meta: "Intake", icon: UploadCloud },
+  { href: "/ingest", title: "الاستيراد الآلي", description: "مسح المجلدات، السحب عبر FTP/SMB، متابعة الدفعات الواردة.", meta: "Pipelines", icon: Workflow },
+  { href: "/backup", title: "النسخ الاحتياطي والاستعادة", description: "إنشاء نسخة فورية، معاينة المحتوى، أو الاستعادة الكاملة.", meta: "DR", icon: HardDriveDownload },
+  { href: "/status", title: "حالة النظام", description: "صحة الاتصال، مقاييس الخادم الحية، وجاهزية التعافي من الكوارث.", meta: "Health", icon: Gauge },
+  { href: "/settings", title: "الإعدادات", description: "إعدادات الأمان، المستخدمون، وسياسات الوصول.", meta: "Policy", icon: Settings },
+  { href: "/system/control", title: "التحكم بالنظام", description: "إجراءات مضيف حساسة (معطّلة افتراضيًا، للمشرفين فقط).", meta: "Admin", icon: ServerCog }
 ] as const;
 
 export default function DataCenterPage() {
@@ -61,12 +68,21 @@ export default function DataCenterPage() {
     void loadSummary();
   }, [loadSummary]);
 
+  const memoryPercent = summary.status === "ready" ? percent(summary.metrics.memory.usedBytes, summary.metrics.memory.totalBytes) : 0;
+  const diskPercent = summary.status === "ready" ? percent(summary.metrics.disk.usedBytes, summary.metrics.disk.totalBytes) : 0;
+
   return (
     <AppShell subtitle="مركز البيانات" navLabel="مركز البيانات" contentClassName="observability-content">
       <PageToolbar
+        icon={<Database size={24} />}
         eyebrow={<span className="badge">Data Center</span>}
         title="مركز البيانات"
         description="نقطة تجميع لعمليات الرفع، الاستيراد، النسخ الاحتياطي، الحالة، والإعدادات — كل الروابط والملخصات المهمة في مكان واحد."
+        meta={
+          <span className={summary.status === "ready" ? "badge badge-success" : "badge"}>
+            {summary.status === "ready" ? "المقاييس متصلة" : summary.status === "loading" ? "جار الفحص" : "يتطلب مراجعة"}
+          </span>
+        }
         actions={
           <button type="button" className="button button-secondary" onClick={() => void loadSummary()} disabled={summary.status === "loading"}>
             تحديث الملخص
@@ -89,48 +105,56 @@ export default function DataCenterPage() {
       ) : null}
 
       {summary.status === "ready" ? (
-        <section className="panel" aria-label="ملخص سريع">
-          <div className="panel-title-row">
-            <div>
-              <h2>ملخص سريع</h2>
-              <p>مصدره `/api/v1/system/status`، مطابق لما يظهر في صفحة الحالة.</p>
-            </div>
-          </div>
-          <div className="kv-grid">
-            <div className="kv-item">
-              <strong>الذاكرة المستخدمة</strong>
-              <span>
-                {formatBytes(summary.metrics.memory.usedBytes)} / {formatBytes(summary.metrics.memory.totalBytes)}
-              </span>
-            </div>
-            <div className="kv-item">
-              <strong>القرص المستخدم</strong>
-              <span>
-                {formatBytes(summary.metrics.disk.usedBytes)} / {formatBytes(summary.metrics.disk.totalBytes)}
-              </span>
-            </div>
-            <div className="kv-item">
-              <strong>عمق قائمة المهام</strong>
-              <span>{summary.metrics.queueDepth}</span>
-            </div>
-            <div className="kv-item">
-              <strong>آخر نسخة احتياطية</strong>
-              <span>{summary.dr.lastBackupName ? formatDate(summary.dr.lastBackupAt) : "لا توجد نسخة بعد"}</span>
-            </div>
-          </div>
-        </section>
+        <MetricStrip
+          ariaLabel="ملخص مركز البيانات"
+          items={[
+            {
+              label: "الذاكرة",
+              value: `${memoryPercent}%`,
+              description: `${formatBytes(summary.metrics.memory.usedBytes)} / ${formatBytes(summary.metrics.memory.totalBytes)}`,
+              icon: <Gauge size={20} />,
+              tone: memoryPercent > 85 ? "warning" : "success"
+            },
+            {
+              label: "القرص",
+              value: `${diskPercent}%`,
+              description: `${formatBytes(summary.metrics.disk.usedBytes)} / ${formatBytes(summary.metrics.disk.totalBytes)}`,
+              icon: <Archive size={20} />,
+              tone: diskPercent > 85 ? "warning" : "info"
+            },
+            {
+              label: "قائمة المهام",
+              value: summary.metrics.queueDepth,
+              description: "عمق المعالجة الحالي",
+              icon: <Workflow size={20} />,
+              tone: summary.metrics.queueDepth > 20 ? "warning" : "success"
+            },
+            {
+              label: "آخر نسخة",
+              value: summary.dr.lastBackupName ? "موجودة" : "لا توجد",
+              description: summary.dr.lastBackupName ? formatDate(summary.dr.lastBackupAt) : "ابدأ من مركز النسخ",
+              icon: <ShieldCheck size={20} />,
+              tone: summary.dr.lastBackupName ? "success" : "warning"
+            }
+          ]}
+        />
       ) : null}
 
-      <section className="panel" aria-label="أقسام مركز البيانات">
+      <section className="workspace-panel data-center-hub" aria-label="أقسام مركز البيانات">
         <div className="panel-title-row">
           <div>
-            <h2>الأقسام</h2>
-            <p>انتقل مباشرة إلى أي عملية تشغيلية.</p>
+            <h2>مسارات التشغيل</h2>
+            <p>كل بطاقة تفتح مساحة عمل مرتبطة بعملية بيانات محددة.</p>
           </div>
+          <span className="badge">{HUB_LINKS.length} مسارات</span>
         </div>
-        <div className="health-metric-grid">
+        <div className="data-center-link-grid">
           {HUB_LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="panel panel-compact">
+            <a key={link.href} href={link.href} className="data-center-link-card">
+              <span className="data-center-link-card__icon" aria-hidden="true">
+                <link.icon size={20} />
+              </span>
+              <span className="badge">{link.meta}</span>
               <strong>{link.title}</strong>
               <p className="helper-text">{link.description}</p>
             </a>

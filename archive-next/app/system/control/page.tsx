@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, ArchiveRestore, LockKeyhole, RefreshCw, ServerCog, ShieldCheck, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SystemControlAction, type SystemControlResult } from "@/lib/archive-api";
@@ -18,10 +19,34 @@ type ActionState =
   | { status: "success"; action: SystemControlAction; result: SystemControlResult }
   | { status: "error"; action: SystemControlAction; message: string };
 
-const ACTIONS: { id: SystemControlAction; label: string; description: string }[] = [
-  { id: "clear-cache", label: "تفريغ ذاكرة التخزين المؤقت", description: "يفرّغ ذاكرة التخزين المؤقت وإعدادات Laravel المخبأة." },
-  { id: "run-backup", label: "تشغيل نسخة احتياطية فورية", description: "يُنشئ نسخة احتياطية جديدة فورًا (مطابق لزر النسخ الاحتياطي)." }
+const ACTIONS: { id: SystemControlAction; label: string; description: string; audit: string; icon: typeof Trash2 }[] = [
+  {
+    id: "clear-cache",
+    label: "تفريغ ذاكرة التخزين المؤقت",
+    description: "يفرّغ ذاكرة التخزين المؤقت وإعدادات Laravel المخبأة.",
+    audit: "يسجل محاولة system_control.allowed أو blocked",
+    icon: Trash2
+  },
+  {
+    id: "run-backup",
+    label: "تشغيل نسخة احتياطية فورية",
+    description: "يُنشئ نسخة احتياطية جديدة فورًا (مطابق لزر النسخ الاحتياطي).",
+    audit: "يرتبط بسجل النسخ الاحتياطي والتدقيق",
+    icon: ArchiveRestore
+  }
 ];
+
+function gateLabel(status: GateState["status"]) {
+  const labels: Record<GateState["status"], string> = {
+    loading: "جار التحقق",
+    enabled: "مفعلة للمشرف",
+    disabled: "معطلة من الخادم",
+    forbidden: "صلاحية مرفوضة",
+    error: "تعذر الفحص"
+  };
+
+  return labels[status];
+}
 
 export default function SystemControlPage() {
   const [gate, setGate] = useState<GateState>({ status: "loading" });
@@ -78,15 +103,44 @@ export default function SystemControlPage() {
   return (
     <AppShell subtitle="التحكم بالنظام" navLabel="التحكم بالنظام" contentClassName="observability-content">
       <PageToolbar
+        icon={<ServerCog size={24} />}
         eyebrow={<span className="badge badge-danger">إجراء عالي الخطورة</span>}
         title="التحكم بالنظام"
         description="إجراءات تؤثر مباشرة على المضيف. معطّلة تمامًا افتراضيًا؛ يجب تفعيلها صراحة من متغير بيئة على الخادم (SYSTEM_CONTROL_ENABLED)، وهي متاحة للمشرفين فقط، وكل محاولة (ناجحة أو مرفوضة) تُسجَّل في سجل التدقيق."
+        meta={
+          <>
+            <span className={gate.status === "enabled" ? "badge badge-success" : "badge badge-warning"}>{gateLabel(gate.status)}</span>
+            <span className="badge">Audit enforced</span>
+          </>
+        }
         actions={
           <button type="button" className="button button-secondary" onClick={() => void loadGate()} disabled={gate.status === "loading"}>
+            <RefreshCw size={16} aria-hidden="true" />
             تحديث الحالة
           </button>
         }
       />
+
+      <section className="control-gate-grid" aria-label="حالة التحكم بالنظام">
+        <article className="system-health-strip" data-tone={gate.status === "enabled" ? "success" : "danger"}>
+          <span className="system-health-strip__icon" aria-hidden="true">
+            {gate.status === "enabled" ? <ShieldCheck size={20} /> : <LockKeyhole size={20} />}
+          </span>
+          <div>
+            <strong>{gateLabel(gate.status)}</strong>
+            <p>{gate.status === "enabled" ? "الصلاحية متاحة، لكن كل إجراء لا يزال يتحقق من الخادم." : "الأزرار تبقى مقيدة حتى يسمح الخادم بذلك."}</p>
+          </div>
+        </article>
+        <article className="system-health-strip" data-tone="danger">
+          <span className="system-health-strip__icon" aria-hidden="true">
+            <AlertTriangle size={20} />
+          </span>
+          <div>
+            <strong>نطاق حساس</strong>
+            <p>لا توجد محاكاة في الواجهة؛ التنفيذ الحقيقي يمر عبر Laravel فقط.</p>
+          </div>
+        </article>
+      </section>
 
       {gate.status === "forbidden" ? (
         <div className="state-banner state-banner-error" role="alert">
@@ -130,15 +184,20 @@ export default function SystemControlPage() {
             <p>كل إجراء يتحقق من التفعيل والصلاحية على الخادم قبل التنفيذ، بصرف النظر عن حالة هذه الواجهة.</p>
           </div>
         </div>
-        <div className="button-row">
+        <div className="system-action-grid">
           {ACTIONS.map((action) => {
             const isRunning = actionState.status === "running" && actionState.action === action.id;
             const disallowed = gate.status !== "enabled" || actionState.status === "running";
+            const Icon = action.icon;
 
             return (
-              <div key={action.id} className="panel panel-compact">
-                <strong>{action.label}</strong>
+              <article key={action.id} className="system-action-card" data-disabled={disallowed ? "true" : "false"}>
+                <div className="system-action-card__header">
+                  <span aria-hidden="true"><Icon size={20} /></span>
+                  <strong>{action.label}</strong>
+                </div>
                 <p className="helper-text">{action.description}</p>
+                <span className="badge">{action.audit}</span>
                 <button
                   type="button"
                   className="button button-primary"
@@ -148,7 +207,7 @@ export default function SystemControlPage() {
                 >
                   {isRunning ? "جاري التنفيذ..." : "تنفيذ"}
                 </button>
-              </div>
+              </article>
             );
           })}
         </div>
