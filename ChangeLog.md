@@ -20,6 +20,15 @@
 
 ---
 
+## إصلاح بوابات pnpm verify — 2026-07-05
+
+- [x] **إصلاح `verify:cutover` بعد إعادة هيكلة TASKS.md** — كان `scripts/verify-cutover-defaults.mjs` يتحقق من وجود نص إنجليزي حرفي قديم ("Laravel API + Next.js TypeScript") داخل `TASKS.md`، وهو نص أُزيل عند إعادة تنظيم الملف (موجة 2026-07-04، بند "توحيد مصدر المهام") ونُقل خلاصته إلى `ChangeLog.md` (بند 5e.2-cutover). عُدّل السكربت ليتحقق من العبارة الفعلية الحالية في `TASKS.md` ("Laravel + Next.js هما المنتج القانوني") ومن وجود بند `[x] 5e.2-cutover` منجز في `ChangeLog.md`، بما يطابق اتفاقية المشروع بنقل البنود المنجزة من TASKS إلى ChangeLog.
+- [x] **إصلاح اختبار `ActivityApiTest` (توقع كود حالة خاطئ)** — الاختبار كان يتوقع `201 Created` من `POST /api/v1/media/jobs`، بينما الـ controller (`MediaJobsController::store`) يُرجع عمداً `202 Accepted` لأن إنشاء مهمة الوسائط غير متزامن (يُدفع إلى queue عبر `ProcessMediaWorkflow::dispatch`) — وهو السلوك المُتحقق منه فعلاً في `MediaJobsApiTest` عبر `assertAccepted()` في عدة اختبارات. صُحّح `ActivityApiTest` ليستخدم `assertAccepted()` مطابقاً للسلوك الفعلي والمقصود.
+- [x] **تنظيف ملف تفريغ عطل مُتتبَّع بالخطأ** — حُذف `bash.exe.stackdump` (ناتج تعطّل bash.exe محلي كان مُلتزماً في Git سابقاً).
+- التحقق: `pnpm run verify` بالكامل خضراء (verify:cutover + verify:api-contracts + typecheck + build:next + verify:repo-hygiene + verify:laravel عبر Docker، 290 اختبار Laravel ناجح).
+
+---
+
 ## موجة توحيد المهام والخطط — 2026-07-04
 
 - [x] **تأسيس Masar Command Workspace** — اعتُمد تصور UI/UX حديث للنظام وحُفظ كوثيقة تصميم وخطة تنفيذ، مع صورة مرجعية داخل `docs/superpowers/specs/`. بدأت أول دفعة تنفيذ على Next: أيقونات التنقل، Sidebar يمين بملمس تشغيل حديث، tokens مفقودة، PageToolbar/EmptyState مطوّرة، MetricStrip جديد، وتحديث صفحات `/`, `/archive`, `/uploads` كنماذج مرجعية.
