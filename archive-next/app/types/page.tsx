@@ -17,6 +17,7 @@ import {
   type ContentSubtype,
   type ContentTypeRecord
 } from "@/lib/archive-api";
+import "./types.css";
 
 type TypesState =
   | { status: "loading" }
