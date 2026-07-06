@@ -959,236 +959,6 @@ textarea.search-input {
   justify-self: start;
 }
 
-.login-shell {
-  min-block-size: 100vh;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 7%, transparent), transparent 34rem),
-    linear-gradient(180deg, color-mix(in srgb, var(--color-brand-warm) 28%, transparent), transparent 24rem),
-    var(--color-bg-primary);
-}
-
-.login-content {
-  inline-size: min(1180px, calc(100% - 2rem));
-  min-block-size: min(46rem, calc(100vh - 9rem));
-  align-content: center;
-}
-
-.login-portal {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-5);
-  align-items: stretch;
-}
-
-.login-hero {
-  display: grid;
-  align-content: center;
-  gap: var(--space-4);
-  min-block-size: 100%;
-}
-
-.login-hero__mark {
-  display: inline-grid;
-  place-items: center;
-  inline-size: 4.5rem;
-  block-size: 4.5rem;
-  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 24%, var(--color-border-secondary));
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--color-bg-secondary) 84%, transparent);
-  box-shadow: var(--shadow-sm);
-}
-
-.login-hero__mark img {
-  inline-size: 3.5rem;
-  block-size: 3.5rem;
-}
-
-.login-hero__copy {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.login-hero h1 {
-  max-inline-size: 15ch;
-  margin: 0;
-  color: var(--color-text-primary);
-  font-family: var(--font-family-display);
-  font-size: clamp(var(--font-size-2xl), 5vw, var(--font-size-4xl));
-  line-height: var(--line-height-tight);
-}
-
-.login-hero p {
-  max-inline-size: 60ch;
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-md);
-  line-height: var(--line-height-relaxed);
-}
-
-.login-trust-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
-  gap: var(--space-2);
-  max-inline-size: 38rem;
-}
-
-.login-trust-grid span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-block-size: 2.7rem;
-  border: 1px solid var(--color-border-secondary);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  color: var(--color-text-secondary);
-  background: color-mix(in srgb, var(--color-bg-secondary) 78%, transparent);
-}
-
-.login-trust-grid svg {
-  color: var(--color-brand-primary);
-}
-
-.login-card {
-  display: grid;
-  gap: var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 20%, var(--color-border-secondary));
-  border-radius: var(--radius-lg);
-  padding: clamp(var(--space-4), 3vw, var(--space-6));
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 96%, var(--color-brand-warm)), var(--color-bg-secondary)),
-    var(--color-bg-secondary);
-  box-shadow: var(--shadow-md);
-}
-
-.login-card__form {
-  gap: var(--space-3);
-}
-
-.login-card__header {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-3);
-  align-items: center;
-  padding-block-end: var(--space-3);
-  border-block-end: 1px solid var(--color-border-secondary);
-}
-
-.login-card__icon {
-  display: inline-grid;
-  place-items: center;
-  inline-size: 2.8rem;
-  block-size: 2.8rem;
-  border-radius: var(--radius-md);
-  color: var(--color-brand-primary);
-  background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-bg-secondary));
-}
-
-.login-card h2,
-.login-card p {
-  margin: 0;
-}
-
-.login-card h2 {
-  color: var(--color-text-primary);
-  font-size: var(--font-size-lg);
-}
-
-.login-card p {
-  color: var(--color-text-tertiary);
-  line-height: var(--line-height-normal);
-}
-
-.login-field {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-2);
-  min-block-size: var(--control-height);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-lg);
-  padding-inline: var(--space-3);
-  background: var(--color-bg-secondary);
-  transition:
-    border-color var(--duration-fast) var(--easing-default),
-    box-shadow var(--duration-fast) var(--easing-default),
-    background var(--duration-fast) var(--easing-default);
-}
-
-.login-field:focus-within {
-  border-color: var(--color-border-focus);
-  box-shadow: var(--shadow-focus);
-  background: var(--color-surface-elevated);
-}
-
-.login-field svg {
-  color: var(--color-text-tertiary);
-}
-
-.login-field input {
-  min-block-size: calc(var(--control-height) - 2px);
-  border: 0;
-  border-radius: 0;
-  padding-inline: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.login-field input:focus-visible {
-  box-shadow: none;
-}
-
-.login-field__toggle {
-  display: inline-grid;
-  place-items: center;
-  inline-size: 2rem;
-  block-size: 2rem;
-  border: 0;
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  background: transparent;
-  cursor: pointer;
-}
-
-.login-field__toggle:hover {
-  color: var(--color-brand-primary);
-  background: var(--color-surface-subtle);
-}
-
-.login-field__toggle:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus);
-}
-
-.login-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-  justify-content: space-between;
-  margin-block-start: var(--space-2);
-}
-
-.login-card__actions .button {
-  min-inline-size: 10rem;
-}
-
-.login-card__note {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  border: 1px solid var(--color-border-secondary);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  color: var(--color-text-secondary);
-  background: color-mix(in srgb, var(--color-brand-primary) 6%, var(--color-bg-secondary));
-  line-height: var(--line-height-normal);
-}
-
-.login-card__note svg {
-  flex: 0 0 auto;
-  color: var(--color-brand-primary);
-}
-
 .form-status {
   min-block-size: 2.25rem;
   margin: 0;
@@ -1864,7 +1634,6 @@ textarea.search-input {
 }
 
 .help-content,
-.login-content,
 .local-list-content,
 .timeline-content,
 .collaboration-content,
@@ -2178,10 +1947,6 @@ textarea.search-input {
   color: var(--color-status-info);
   border-color: color-mix(in srgb, var(--color-status-info) 42%, var(--color-border-primary));
   background: color-mix(in srgb, var(--color-status-info) 8%, var(--color-bg-secondary));
-}
-
-.analytics-chart {
-  overflow: hidden;
 }
 
 .analytics-bar-list {
@@ -2524,151 +2289,6 @@ textarea.search-input {
 .state-banner-error {
   border-color: color-mix(in srgb, var(--color-status-error) 34%, var(--color-border-secondary));
   background: color-mix(in srgb, var(--color-status-error) 7%, var(--color-bg-secondary));
-}
-
-.graph-toolbar {
-  inline-size: 100%;
-  box-shadow: none;
-}
-
-.graph-toolbar label,
-.graph-toolbar-field {
-  display: inline-flex;
-  flex: 1 1 13rem;
-  align-items: center;
-  gap: var(--space-2);
-  min-inline-size: min(100%, 13rem);
-  color: var(--color-text-tertiary);
-}
-
-.graph-toolbar select {
-  inline-size: 100%;
-  min-block-size: var(--control-height);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-lg);
-  padding: 0.62rem 0.78rem;
-  color: var(--color-text-primary);
-  background: var(--color-bg-secondary);
-}
-
-.graph-workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
-  align-items: start;
-}
-
-.graph-main-panel {
-  display: grid;
-  gap: var(--space-3);
-  min-inline-size: 0;
-  border: 1px solid var(--color-border-secondary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 7%, transparent), transparent 42%),
-    color-mix(in srgb, var(--color-bg-secondary) 95%, var(--color-brand-warm));
-  box-shadow: var(--shadow-sm);
-}
-
-.graph-canvas-shell {
-  overflow: hidden;
-  border: 1px solid var(--color-border-secondary);
-  border-radius: var(--radius-lg);
-  background:
-    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--color-brand-primary) 10%, transparent), transparent 26rem),
-    var(--color-bg-primary);
-}
-
-.graph-canvas {
-  display: block;
-  inline-size: 100%;
-  min-block-size: min(64vh, 38rem);
-}
-
-.graph-edge {
-  color: color-mix(in srgb, var(--color-text-tertiary) 72%, transparent);
-  stroke: currentColor;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  opacity: 0.46;
-}
-
-.graph-edge[data-kind="manual"] {
-  color: var(--color-brand-primary);
-  stroke-width: 2.6;
-  opacity: 0.9;
-}
-
-.graph-edge[data-kind="shared-tag"] {
-  stroke-dasharray: 5 7;
-}
-
-.graph-edge[data-selected="true"] {
-  color: var(--color-accent-primary);
-  stroke-width: 3;
-  opacity: 1;
-}
-
-.graph-edge[data-dimmed="true"] {
-  opacity: 0.12;
-}
-
-.graph-edge-label {
-  fill: var(--color-text-secondary);
-  paint-order: stroke;
-  stroke: var(--color-bg-primary);
-  stroke-width: 4px;
-  font-size: 0.74rem;
-  font-weight: var(--font-weight-semibold);
-}
-
-.graph-node circle {
-  fill: color-mix(in srgb, var(--color-bg-secondary) 82%, var(--color-brand-primary));
-  stroke: color-mix(in srgb, var(--color-brand-primary) 42%, var(--color-border-strong));
-  stroke-width: 2;
-  cursor: pointer;
-  filter: drop-shadow(0 8px 14px color-mix(in srgb, var(--color-shadow) 18%, transparent));
-}
-
-.graph-node text {
-  pointer-events: none;
-  fill: var(--color-text-primary);
-  paint-order: stroke;
-  stroke: var(--color-bg-primary);
-  stroke-width: 5px;
-  font-size: 0.76rem;
-  font-weight: var(--font-weight-bold);
-}
-
-.graph-node[data-selected="true"] circle {
-  fill: var(--color-brand-primary);
-  stroke: var(--color-accent-primary-hover);
-  stroke-width: 4;
-}
-
-.graph-node[data-selected="true"] text {
-  fill: var(--color-text-primary);
-}
-
-.graph-node[data-dimmed="true"] {
-  opacity: 0.24;
-}
-
-.graph-node circle:focus-visible {
-  outline: none;
-  stroke: var(--color-border-focus);
-  filter: drop-shadow(0 0 0.75rem color-mix(in srgb, var(--color-border-focus) 42%, transparent));
-}
-
-.graph-sidebar {
-  display: grid;
-  gap: var(--space-4);
-  min-inline-size: 0;
-}
-
-.graph-side-panel {
-  align-content: start;
 }
 
 .graph-relation-list {
@@ -3940,15 +3560,6 @@ textarea.search-input {
   text-align: center;
 }
 
-.analytics-recharts-panel {
-  min-block-size: 22rem;
-}
-
-.analytics-recharts {
-  inline-size: 100%;
-  block-size: 18rem;
-}
-
 .kanban-card[data-dragging="true"] {
   opacity: 0.82;
   box-shadow: var(--shadow-lg);
@@ -4297,12 +3908,6 @@ textarea.search-input {
   color: var(--color-status-error);
   border-color: color-mix(in srgb, var(--color-status-error) 42%, var(--color-border-primary));
   background: color-mix(in srgb, var(--color-status-error) 8%, var(--color-bg-secondary));
-}
-
-@media (min-width: 860px) {
-  .login-portal {
-    grid-template-columns: minmax(0, 1.05fr) minmax(22rem, 0.7fr);
-  }
 }
 
 .empty-state__icon {
@@ -4861,35 +4466,6 @@ textarea.search-input {
   .primary-action-link span,
   .session-chip > span {
     display: none;
-  }
-
-  .login-content {
-    inline-size: min(100% - 1rem, 42rem);
-    min-block-size: auto;
-    padding-block: var(--space-4);
-  }
-
-  .login-hero {
-    gap: var(--space-3);
-  }
-
-  .login-hero h1 {
-    max-inline-size: 100%;
-  }
-
-  .login-card__header,
-  .login-card__actions {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .login-card__actions {
-    align-items: stretch;
-  }
-
-  .login-card__actions .button,
-  .login-card__actions .badge {
-    inline-size: 100%;
-    justify-content: center;
   }
 
   .page-toolbar__title-row {

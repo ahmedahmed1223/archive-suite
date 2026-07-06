@@ -8,6 +8,7 @@ import PublicHeader from "@/components/PublicHeader";
 import { BRAND } from "@/lib/brand";
 import { safeNextPath, useAuthSession } from "@/lib/auth-session";
 import { useRouter, useSearchParams } from "next/navigation";
+import "./login.css";
 
 type LoginState =
   | { status: "idle" }
