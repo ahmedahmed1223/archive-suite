@@ -17,9 +17,9 @@ type LoginState =
   | { status: "error"; message: string };
 
 const loginHighlights = [
-  "جلسات HttpOnly",
-  "Laravel API",
-  "Next + React"
+  "جلسات آمنة",
+  "اتصال مشفَّر",
+  "حماية موثوقة"
 ] as const;
 
 function LoginFallback() {
