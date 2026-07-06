@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import MetricStrip, { type MetricStripItem } from "@/components/MetricStrip";
+import "./home.css";
 
 /* ── Sidebar nav items matching the comp exactly ── */
 const sidebarNav: Array<{ id: string; label: string; active?: boolean; href?: string }> = [
