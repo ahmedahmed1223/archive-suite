@@ -14,6 +14,7 @@ import {
   type RelationTypeKey,
   type RelationTypeOption
 } from "@/lib/archive-api";
+import "./graph.css";
 
 type GraphState =
   | { status: "loading" }

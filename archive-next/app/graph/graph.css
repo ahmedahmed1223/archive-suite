@@ -1,0 +1,160 @@
+/* ═══════════════════════════════════════════════════════════════
+   Relationship graph (app/graph/page.tsx) — feature-scoped styles.
+   Imported by the page itself, not the root layout.
+   ═══════════════════════════════════════════════════════════════ */
+
+.graph-toolbar {
+  inline-size: 100%;
+  box-shadow: none;
+}
+
+.graph-toolbar label,
+.graph-toolbar-field {
+  display: inline-flex;
+  flex: 1 1 13rem;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: min(100%, 13rem);
+  color: var(--color-text-tertiary);
+}
+
+.graph-toolbar select {
+  inline-size: 100%;
+  min-block-size: var(--control-height);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: 0.62rem 0.78rem;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+}
+
+.graph-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.graph-main-panel {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 7%, transparent), transparent 42%),
+    color-mix(in srgb, var(--color-bg-secondary) 95%, var(--color-brand-warm));
+  box-shadow: var(--shadow-sm);
+}
+
+.graph-canvas-shell {
+  overflow: hidden;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--color-brand-primary) 10%, transparent), transparent 26rem),
+    var(--color-bg-primary);
+}
+
+.graph-canvas {
+  display: block;
+  inline-size: 100%;
+  min-block-size: min(64vh, 38rem);
+}
+
+.graph-edge {
+  color: color-mix(in srgb, var(--color-text-tertiary) 72%, transparent);
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.46;
+}
+
+.graph-edge[data-kind="manual"] {
+  color: var(--color-brand-primary);
+  stroke-width: 2.6;
+  opacity: 0.9;
+}
+
+.graph-edge[data-kind="shared-tag"] {
+  stroke-dasharray: 5 7;
+}
+
+.graph-edge[data-selected="true"] {
+  color: var(--color-accent-primary);
+  stroke-width: 3;
+  opacity: 1;
+}
+
+.graph-edge[data-dimmed="true"] {
+  opacity: 0.12;
+}
+
+.graph-edge-label {
+  fill: var(--color-text-secondary);
+  paint-order: stroke;
+  stroke: var(--color-bg-primary);
+  stroke-width: 4px;
+  font-size: 0.74rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.graph-node circle {
+  fill: color-mix(in srgb, var(--color-bg-secondary) 82%, var(--color-brand-primary));
+  stroke: color-mix(in srgb, var(--color-brand-primary) 42%, var(--color-border-strong));
+  stroke-width: 2;
+  cursor: pointer;
+  filter: drop-shadow(0 8px 14px color-mix(in srgb, var(--color-shadow) 18%, transparent));
+}
+
+.graph-node text {
+  pointer-events: none;
+  fill: var(--color-text-primary);
+  paint-order: stroke;
+  stroke: var(--color-bg-primary);
+  stroke-width: 5px;
+  font-size: 0.76rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.graph-node[data-selected="true"] circle {
+  fill: var(--color-brand-primary);
+  stroke: var(--color-accent-primary-hover);
+  stroke-width: 4;
+}
+
+.graph-node[data-selected="true"] text {
+  fill: var(--color-text-primary);
+}
+
+.graph-node[data-dimmed="true"] {
+  opacity: 0.24;
+}
+
+.graph-node circle:focus-visible {
+  outline: none;
+  stroke: var(--color-border-focus);
+  filter: drop-shadow(0 0 0.75rem color-mix(in srgb, var(--color-border-focus) 42%, transparent));
+}
+
+.graph-sidebar {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.graph-side-panel {
+  align-content: start;
+}
+
+.graph-relation-form {
+  position: sticky;
+  inset-block-start: var(--space-4);
+}
+
+@media (min-width: 1040px) {
+  .graph-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  }
+}

@@ -20,6 +20,7 @@ import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwit
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import "./analytics.css";
 
 type TimeRange = "30d" | "90d" | "1y" | "all";
 

@@ -1,0 +1,17 @@
+/* ═══════════════════════════════════════════════════════════════
+   Analytics dashboard (app/analytics/page.tsx) — feature-scoped styles.
+   Imported by the page itself, not the root layout.
+   ═══════════════════════════════════════════════════════════════ */
+
+.analytics-chart {
+  overflow: hidden;
+}
+
+.analytics-recharts-panel {
+  min-block-size: 22rem;
+}
+
+.analytics-recharts {
+  inline-size: 100%;
+  block-size: 18rem;
+}
