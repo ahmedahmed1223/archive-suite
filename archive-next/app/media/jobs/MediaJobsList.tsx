@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation } from "@/lib/archive-api";
+import "../media.css";
 
 type ListState =
   | { status: "loading" }

@@ -7,6 +7,7 @@ import MediaPlayer from "@/components/MediaPlayer";
 import MediaSourcePicker from "@/components/MediaSourcePicker";
 import PageToolbar from "@/components/PageToolbar";
 import styles from "./compare.module.css";
+import "../media.css";
 
 type SyncMode = "off" | "on";
 

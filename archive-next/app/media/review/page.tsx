@@ -10,6 +10,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ReviewComment, type ReviewRect } from "@/lib/archive-api";
 import { getEchoClient } from "@/lib/echo";
 import styles from "./review.module.css";
+import "../media.css";
 
 function formatTimecode(seconds: number): string {
   const minutes = Math.floor(seconds / 60);

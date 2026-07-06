@@ -1,0 +1,61 @@
+/* ═══════════════════════════════════════════════════════════════
+   Sync workspace (app/sync/page.tsx) — feature-scoped styles.
+   Imported by the page itself, not the root layout.
+   ═══════════════════════════════════════════════════════════════ */
+
+.sync-workspace {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.sync-table-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.sync-table-panel .data-table {
+  min-inline-size: 46rem;
+}
+
+.sync-table-panel tbody tr[data-selected="true"] {
+  background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-bg-secondary));
+}
+
+.sync-row-button {
+  border: 0;
+  padding: 0;
+  color: var(--color-text-link);
+  background: transparent;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-align: start;
+  cursor: pointer;
+}
+
+.sync-row-button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.sync-preview-panel {
+  align-content: start;
+}
+
+.sync-preview-panel h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 980px) {
+  .sync-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem);
+  }
+
+  .sync-preview-panel {
+    position: sticky;
+    inset-block-start: 6rem;
+  }
+}
