@@ -7,6 +7,7 @@ import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { getContractSummary } from "@/lib/archive-api";
 import { BRAND } from "@/lib/brand";
+import "./reports.css";
 
 const contract = getContractSummary();
 
