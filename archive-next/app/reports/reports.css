@@ -1,0 +1,230 @@
+/* ═══════════════════════════════════════════════════════════════
+   Reports catalog (app/reports/page.tsx) — feature-scoped styles.
+   Imported by the page itself, not the root layout.
+   ═══════════════════════════════════════════════════════════════ */
+
+.report-check-card {
+  align-content: start;
+}
+
+.report-control-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.report-check-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.report-check-card[data-tone="success"] {
+  border-color: color-mix(in srgb, var(--color-status-success) 34%, var(--color-border-secondary));
+}
+
+.report-check-card[data-tone="info"] {
+  border-color: color-mix(in srgb, var(--color-status-info) 30%, var(--color-border-secondary));
+}
+
+.report-check-card[data-tone="warning"] {
+  border-color: color-mix(in srgb, var(--color-status-warning) 34%, var(--color-border-secondary));
+}
+
+.report-check-card__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.report-check-card__icon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.35rem;
+  block-size: 2.35rem;
+  border-radius: var(--radius-md);
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-bg-secondary));
+}
+
+.report-readiness-meter {
+  inline-size: 100%;
+  block-size: 0.55rem;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-border-secondary) 70%, transparent);
+}
+
+.report-readiness-meter span {
+  display: block;
+  inline-size: var(--report-progress, 0%);
+  block-size: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-indigo));
+}
+
+.report-readiness-meter--large {
+  block-size: 0.7rem;
+}
+
+.report-workspace {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.report-catalog {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.report-catalog-card {
+  display: grid;
+  gap: var(--space-3);
+  inline-size: 100%;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  text-align: start;
+  cursor: pointer;
+}
+
+.report-catalog-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-brand-primary) 40%, var(--color-border-secondary));
+  box-shadow: var(--shadow-md);
+}
+
+.report-catalog-card:focus-visible {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.report-catalog-card[data-active="true"] {
+  border-color: var(--color-brand-primary);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 12%, transparent), transparent 64%),
+    var(--color-bg-secondary);
+}
+
+.report-catalog-card__meta,
+.report-catalog-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.report-catalog-card__meta strong {
+  color: var(--color-brand-primary);
+  font-family: var(--font-family-mono);
+}
+
+.report-catalog-card__title {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.report-preview-panel {
+  align-content: start;
+}
+
+.report-preview-panel h2 {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+}
+
+.report-signal-grid {
+  display: grid;
+  border-block: 1px solid var(--color-border-secondary);
+}
+
+.report-signal-grid > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  min-block-size: 3.1rem;
+  border-block-end: 1px solid var(--color-border-secondary);
+  color: var(--color-text-secondary);
+}
+
+.report-signal-grid > div:last-child {
+  border-block-end: 0;
+}
+
+.report-signal-grid svg {
+  color: var(--color-brand-primary);
+}
+
+.report-signal-grid span {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.report-signal-grid strong {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.report-preview-panel__section,
+.report-check-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.report-check-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-check-list li {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.report-check-list svg {
+  flex: 0 0 auto;
+  margin-block-start: 0.25rem;
+  color: var(--color-brand-primary);
+}
+
+.report-roadmap-panel {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-bg-secondary) 92%, var(--color-brand-warm)), var(--color-bg-secondary) 70%),
+    var(--color-bg-secondary);
+}
+
+.report-roadmap__item {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.report-roadmap__item small {
+  justify-self: end;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+@media (min-width: 900px) {
+  .report-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(21rem, 0.78fr);
+  }
+
+  .report-preview-panel {
+    position: sticky;
+    inset-block-start: var(--space-5);
+  }
+}
