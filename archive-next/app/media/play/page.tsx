@@ -9,6 +9,7 @@ import MediaSourcePicker from "@/components/MediaSourcePicker";
 import PageToolbar from "@/components/PageToolbar";
 import { parseSubtitles } from "@/lib/media/subtitles";
 import styles from "./play.module.css";
+import "../media.css";
 
 export default function MediaPlayPage() {
   const [pathInput, setPathInput] = useState("");

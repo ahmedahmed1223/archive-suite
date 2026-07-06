@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SyncLogEntry, type SyncSummary } from "@/lib/archive-api";
+import "./sync.css";
 
 type SyncState =
   | { status: "loading" }
