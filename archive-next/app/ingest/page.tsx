@@ -6,6 +6,7 @@ import { FolderSearch, KeyRound, Network, RadioTower, Server, ShieldCheck } from
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient } from "@/lib/archive-api";
+import "./ingest.css";
 
 type PullResult = { ingested: number; skipped: number };
 

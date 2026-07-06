@@ -1,0 +1,25 @@
+/* ═══════════════════════════════════════════════════════════════
+   Ingest operations (app/ingest/page.tsx) — feature-scoped styles.
+   Imported by the page itself, not the root layout.
+   ═══════════════════════════════════════════════════════════════ */
+
+.ingest-operation-panel {
+  position: relative;
+}
+
+.ingest-operation-panel[data-active="true"] {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 42%, var(--color-border-secondary));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 7%, transparent), transparent 60%),
+    var(--color-bg-secondary);
+}
+
+.ingest-operation-panel[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  inset-block: var(--space-3);
+  inset-inline-start: 0;
+  inline-size: 0.22rem;
+  border-radius: var(--radius-full);
+  background: var(--color-brand-primary);
+}
