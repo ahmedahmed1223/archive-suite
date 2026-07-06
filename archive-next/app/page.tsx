@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import MetricStrip, { type MetricStripItem } from "@/components/MetricStrip";
 
 /* ── Sidebar nav items matching the comp exactly ── */
 const sidebarNav: Array<{ id: string; label: string; active?: boolean; href?: string }> = [
@@ -124,79 +125,6 @@ function IconHelp() {
   );
 }
 
-function IconPlay() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-}
-
-function IconPrev() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-    </svg>
-  );
-}
-
-function IconNext() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M16 6h2v12h-2zm-10 0l8.5 6L6 18z" />
-    </svg>
-  );
-}
-
-function IconRewind() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 19l-7-7 7-7" />
-      <text x="14" y="16" fill="currentColor" fontSize="8" fontWeight="bold" stroke="none">10</text>
-    </svg>
-  );
-}
-
-function IconForward() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 19l7-7-7-7" />
-      <text x="3" y="16" fill="currentColor" fontSize="8" fontWeight="bold" stroke="none">10</text>
-    </svg>
-  );
-}
-
-function IconVolume() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-    </svg>
-  );
-}
-
-function IconSubtitles() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="4" width="22" height="16" rx="2" />
-      <line x1="6" y1="12" x2="18" y2="12" />
-      <line x1="6" y1="16" x2="14" y2="16" />
-    </svg>
-  );
-}
-
-function IconFullscreen() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-      <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-      <path d="M3 16v3a2 2 0 0 0 2 2h3" />
-      <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-    </svg>
-  );
-}
-
 function IconStar() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -305,25 +233,6 @@ function IconWarning() {
   );
 }
 
-function IconGear() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  );
-}
-
-function IconCamera() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="6" width="20" height="14" rx="2" />
-      <path d="M12 10v4" />
-      <path d="M10 12h4" />
-    </svg>
-  );
-}
-
 const sidebarIcons: Record<string, () => React.JSX.Element> = {
   archive: IconArchive,
   search: IconSearch,
@@ -335,6 +244,166 @@ const sidebarIcons: Record<string, () => React.JSX.Element> = {
   settings: IconSettings,
   help: IconHelp,
 };
+
+/* ── Statistics data ── */
+const homeMetrics: MetricStripItem[] = [
+  { label: "إجمالي العناصر", value: "12,486", description: "+324 هذا الشهر", icon: <IconArchive />, tone: "accent" },
+  { label: "المساحة المستخدمة", value: "48.2 TB", description: "من أصل 64 TB", icon: <IconCollections />, tone: "info" },
+  { label: "رفعات هذا الأسبوع", value: "186", description: "+12% عن الأسبوع الماضي", icon: <IconReports />, tone: "success" },
+  { label: "قيد المعالجة", value: "23", description: "3 بانتظار المراجعة", icon: <IconTasks />, tone: "warning" },
+  { label: "مشاركات نشطة", value: "58", description: "9 روابط تنتهي هذا الأسبوع", icon: <IconShare />, tone: "default" },
+  { label: "الوسوم", value: "342", description: "27 وسماً جديداً هذا الشهر", icon: <IconTag />, tone: "default" },
+];
+
+const monthlyActivity = [
+  { month: "يوليو", value: 42 },
+  { month: "أغسطس", value: 58 },
+  { month: "سبتمبر", value: 51 },
+  { month: "أكتوبر", value: 74 },
+  { month: "نوفمبر", value: 68 },
+  { month: "ديسمبر", value: 92 },
+  { month: "يناير", value: 85 },
+  { month: "فبراير", value: 110 },
+  { month: "مارس", value: 96 },
+  { month: "أبريل", value: 128 },
+  { month: "مايو", value: 118 },
+  { month: "يونيو", value: 142 },
+];
+
+const typeDistribution = [
+  { label: "فيديو", value: 6240, color: "var(--color-amber)" },
+  { label: "صوت", value: 3120, color: "var(--color-brand-indigo)" },
+  { label: "صورة", value: 2350, color: "var(--color-status-success)" },
+  { label: "مستند", value: 776, color: "var(--color-silver-muted)" },
+];
+
+const storageSegments = [
+  { label: "وسائط", value: 34.6, color: "var(--color-amber)" },
+  { label: "نسخ احتياطية", value: 9.8, color: "var(--color-brand-indigo)" },
+  { label: "أخرى", value: 3.8, color: "var(--color-silver-muted)" },
+];
+const storageCapacityTb = 64;
+
+/* ── Chart components (pure SVG, no deps) ── */
+function ActivityAreaChart() {
+  const w = 560;
+  const h = 190;
+  const padX = 10;
+  const padTop = 14;
+  const padBottom = 26;
+  const max = Math.max(...monthlyActivity.map((d) => d.value));
+  const points = monthlyActivity.map((d, i) => ({
+    x: padX + (i * (w - padX * 2)) / (monthlyActivity.length - 1),
+    y: padTop + (1 - d.value / max) * (h - padTop - padBottom),
+    label: d.month,
+  }));
+  const line = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+  const area = `${line} L${points[points.length - 1].x},${h - padBottom} L${points[0].x},${h - padBottom} Z`;
+  const last = points[points.length - 1];
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="cd-chart__svg" role="img" aria-label="نشاط الأرشفة الشهري">
+      <defs>
+        <linearGradient id="cdAreaFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(212, 148, 58, 0.35)" />
+          <stop offset="100%" stopColor="rgba(212, 148, 58, 0)" />
+        </linearGradient>
+      </defs>
+      {[0.25, 0.5, 0.75].map((t) => (
+        <line
+          key={t}
+          x1={padX}
+          x2={w - padX}
+          y1={padTop + t * (h - padTop - padBottom)}
+          y2={padTop + t * (h - padTop - padBottom)}
+          stroke="var(--color-border-primary)"
+          strokeDasharray="3 5"
+        />
+      ))}
+      <path d={area} fill="url(#cdAreaFill)" />
+      <path d={line} fill="none" stroke="var(--color-amber)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last.x} cy={last.y} r="4.5" fill="var(--color-amber)" stroke="var(--color-anthracite-light)" strokeWidth="2" />
+      {points.filter((_, i) => i % 2 === 0).map((p) => (
+        <text key={p.label} x={p.x} y={h - 6} textAnchor="middle" fill="var(--color-silver-dim)" fontSize="12.5">
+          {p.label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+function TypeBarChart() {
+  const max = Math.max(...typeDistribution.map((d) => d.value));
+  return (
+    <div className="cd-bars" role="img" aria-label="توزيع أنواع الوسائط">
+      {typeDistribution.map((item, i) => (
+        <div className="cd-bars__row" key={item.label}>
+          <span className="cd-bars__label">{item.label}</span>
+          <div className="cd-bars__track">
+            <motion.div
+              className="cd-bars__fill"
+              style={{ background: item.color }}
+              initial={{ width: 0 }}
+              animate={{ width: `${(item.value / max) * 100}%` }}
+              transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
+            />
+          </div>
+          <span className="cd-bars__value">{item.value.toLocaleString("en-US")}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StorageDonut() {
+  const r = 54;
+  const circumference = 2 * Math.PI * r;
+  const used = storageSegments.reduce((sum, s) => sum + s.value, 0);
+  const usedPct = Math.round((used / storageCapacityTb) * 100);
+  let offset = 0;
+
+  return (
+    <div className="cd-donut">
+      <svg viewBox="0 0 140 140" className="cd-donut__svg" role="img" aria-label={`استخدام التخزين ${usedPct}%`}>
+        <circle cx="70" cy="70" r={r} fill="none" stroke="var(--color-anthracite-surface)" strokeWidth="14" />
+        {storageSegments.map((seg) => {
+          const len = (seg.value / storageCapacityTb) * circumference;
+          const el = (
+            <circle
+              key={seg.label}
+              cx="70"
+              cy="70"
+              r={r}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth="14"
+              strokeDasharray={`${len} ${circumference - len}`}
+              strokeDashoffset={-offset}
+              transform="rotate(-90 70 70)"
+            />
+          );
+          offset += len;
+          return el;
+        })}
+        <text x="70" y="67" textAnchor="middle" fill="var(--color-silver)" fontSize="27" fontWeight="700">
+          {usedPct}%
+        </text>
+        <text x="70" y="86" textAnchor="middle" fill="var(--color-silver-dim)" fontSize="11.5">
+          {used.toFixed(1)} / {storageCapacityTb} TB
+        </text>
+      </svg>
+      <ul className="cd-donut__legend">
+        {storageSegments.map((seg) => (
+          <li key={seg.label}>
+            <span className="cd-donut__swatch" style={{ background: seg.color }} />
+            <span>{seg.label}</span>
+            <span className="cd-donut__amount">{seg.value} TB</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function StatusIcon({ type }: { type: string }) {
   if (type === "success") return <span className="cd-status-dot cd-status-dot--success"><IconCheck /></span>;
@@ -350,8 +419,6 @@ function TypeIcon({ type }: { type: string }) {
 
 export default function CinematicDashboard() {
   const [selectedRow, setSelectedRow] = useState<string>("1");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollMedia = (direction: "left" | "right") => {
@@ -438,72 +505,28 @@ export default function CinematicDashboard() {
           </div>
         </motion.header>
 
-        {/* ── Video Preview Area ── */}
+        {/* ── Statistics Overview ── */}
         <motion.section
-          className="cd-player"
-          aria-label="معاينة الفيديو"
+          className="cd-stats"
+          aria-label="إحصائيات الأرشيف"
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <div className="cd-player__viewport">
-            <img
-              src="/images/hero-filmset.png"
-              alt="مشهد تصوير سينمائي"
-              className="cd-player__image"
-              width={1536}
-              height={768}
-              fetchPriority="high"
-            />
-            <div className="cd-player__overlay">
-              <div className="cd-player__badges">
-                <span className="cd-player__badge">4K</span>
-                <span className="cd-player__badge">UHD</span>
-              </div>
-              <div className="cd-player__title-row">
-                <span className="cd-player__filename">مشهد_ليلي_01.mp4</span>
-                <div className="cd-player__title-actions">
-                  <button type="button" aria-label="مفضلة"><IconStar /></button>
-                  <button type="button" aria-label="المزيد"><IconMore /></button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MetricStrip items={homeMetrics} ariaLabel="مؤشرات الأرشيف" />
 
-          <div className="cd-player__controls">
-            <div className="cd-player__controls-right">
-              <button
-                className={`cd-player__play ${isPlaying ? "cd-player__play--active" : ""}`}
-                type="button"
-                onClick={() => setIsPlaying(!isPlaying)}
-                aria-label={isPlaying ? "إيقاف" : "تشغيل"}
-              >
-                <IconPlay />
-              </button>
-              <button type="button" className="cd-player__ctrl" aria-label="السابق"><IconPrev /></button>
-              <button type="button" className="cd-player__ctrl" aria-label="التالي"><IconNext /></button>
-              <button type="button" className="cd-player__ctrl" aria-label="تراجع 10 ثوان"><IconRewind /></button>
-              <button type="button" className="cd-player__ctrl" aria-label="تقديم 10 ثوان"><IconForward /></button>
-              <button type="button" className="cd-player__ctrl" aria-label="الصوت"><IconVolume /></button>
+          <div className="cd-stats__charts">
+            <div className="cd-chart cd-chart--area">
+              <h3><IconReports /> نشاط الأرشفة الشهري</h3>
+              <ActivityAreaChart />
             </div>
-
-            <div className="cd-player__timeline">
-              <span className="cd-player__time cd-player__time--current">00:01:24:08</span>
-              <span className="cd-player__time-sep">/</span>
-              <span className="cd-player__time">00:03:18:12</span>
-              <div className="cd-player__progress">
-                <div className="cd-player__progress-track">
-                  <div className="cd-player__progress-fill" style={{ width: "42%" }} />
-                  <div className="cd-player__progress-handle" style={{ left: "42%" }} />
-                </div>
-              </div>
+            <div className="cd-chart cd-chart--bars">
+              <h3><IconCollections /> توزيع أنواع الوسائط</h3>
+              <TypeBarChart />
             </div>
-
-            <div className="cd-player__controls-left">
-              <button type="button" className="cd-player__ctrl" aria-label="الكاميرا"><IconCamera /></button>
-              <button type="button" className="cd-player__ctrl" aria-label="الترجمة"><IconSubtitles /></button>
-              <button type="button" className="cd-player__ctrl" aria-label="الإعدادات"><IconGear /></button>
-              <button type="button" className="cd-player__ctrl" aria-label="ملء الشاشة"><IconFullscreen /></button>
+            <div className="cd-chart cd-chart--donut">
+              <h3><IconArchive /> استخدام التخزين</h3>
+              <StorageDonut />
             </div>
           </div>
         </motion.section>
