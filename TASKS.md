@@ -27,7 +27,7 @@
 
 - [ ] **تخزين Laravel دائم للكيانات المحلية** — نقل Collections، Inbox، Vocabulary، Tags hierarchy، Saved views، Workflow presets، Dashboard widgets، وAutomation drafts من التخزين المحلي إلى Laravel.
   - القبول: لا تضيع هذه الكيانات بعد تبديل المتصفح/الجهاز، وتظهر في API بعقود واختبارات.
-  - الحالة: **Collections** و**Inbox** منجزتان وموثّقتان في `ChangeLog.md` (قسم 2026-07-07). المتبقي بنفس النمط: Vocabulary, Tags hierarchy, Saved views, Workflow presets, Dashboard widgets, Automation drafts؛ وتشغيل بوابة Laravel داخل Docker.
+  - الحالة: **Collections**، **Inbox**، **Vocabulary**، و**Tags hierarchy** منجزة وموثّقة في `ChangeLog.md` (قسم 2026-07-07، شرائح 1–4). أما بقية الكيانات المذكورة فلا تحتاج نقلاً: **Saved views** مخزّنة سلفاً عبر `/saved-searches`، و**Automation drafts** عبر `/automation/rules`، بينما **Workflow presets** و**Dashboard widgets** غير موجودة كسطح localStorage. البند يبقى مفتوحاً فقط حتى تُشغَّل بوابة Laravel/PHPUnit داخل Docker.
 
 - [ ] **Search/archive power features** — إضافة backend facets، saved views persistence، details rail أعمق، وinline relation add/edit داخل صفحة التفاصيل.
   - القبول: فلاتر search/archive محفوظة ومسنودة من Laravel، والعلاقات يمكن إنشاؤها/تعديلها من التفاصيل بدون مغادرة السياق.
