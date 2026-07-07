@@ -13,7 +13,7 @@
  *   maintain: diagnostics | update
  *   config:   config | set-url
  *   security: rotate-secrets
- *   database: migrate-status | migrate
+ *   database: migrate-status | migrate | seed-demo
  *   backups:  backup | backups | restore
  *   deploy:   deploy   ·   help
  *   legacy:   deploy-legacy | legacy:set-admin | legacy:migrate-status |
@@ -349,6 +349,16 @@ async function migrateDeploy() {
   if (r.status === 0) ok("Migrations applied.");
   return r.status ?? 1;
 }
+async function seedDemoData() {
+  titleLine("Seed demo archive data (php artisan db:seed --class=DemoArchiveSeeder)");
+  log("Adds sample archive records with content types, sections, and classifications.");
+  log(`${C.d}Idempotent — safe to re-run; never duplicates existing demo rows.${C.x}`);
+  if (!(await confirm("Insert demo archive content into the configured database?"))) { log("Cancelled."); return 0; }
+  const r = compose(["exec", "-T", "laravel", "php", "artisan", "db:seed", "--class=DemoArchiveSeeder", "--force"]);
+  if (r.status === 0) ok("Demo archive data seeded — open /archive to see it.");
+  else err(`Seeding failed (exit ${r.status}). Is the stack running? Try Server: start.`);
+  return r.status ?? 1;
+}
 // Legacy Prisma actions — operate on the retired Node stack's schema/database.
 function legacyMigrateStatus() {
   titleLine("Legacy: Prisma migration status");
@@ -627,34 +637,49 @@ const MENU = [
   ["sec", "— Database —"],
   ["17", "Migration status (artisan)", migrateStatus],
   ["18", "Apply migrations (artisan)", migrateDeploy],
+  ["19", "Seed demo data (types · sections · records)", seedDemoData],
   ["sec", "— Backups —"],
-  ["19", "Backup now", backupNow],
-  ["20", "List backups", listBackups],
-  ["21", "Restore backup", restoreBackup],
+  ["20", "Backup now", backupNow],
+  ["21", "List backups", listBackups],
+  ["22", "Restore backup", restoreBackup],
   ["sec", "— Maintain —"],
-  ["22", "Diagnostics (pnpm verify)", runDiagnostics],
-  ["23", "Update & rebuild", updateAndRebuild],
+  ["23", "Diagnostics (pnpm verify)", runDiagnostics],
+  ["24", "Update & rebuild", updateAndRebuild],
   ["sec", "— Legacy (Node/Vite stack) —"],
-  ["24", "Legacy deploy wizard", runLegacyDeploy],
-  ["25", "Legacy: set admin credentials", setAdmin],
-  ["26", "Legacy: Prisma migration status", legacyMigrateStatus],
-  ["27", "Legacy: apply Prisma migrations", legacyMigrateDeploy],
-  ["28", "Legacy: switch DB provider", dbProvider],
+  ["25", "Legacy deploy wizard", runLegacyDeploy],
+  ["26", "Legacy: set admin credentials", setAdmin],
+  ["27", "Legacy: Prisma migration status", legacyMigrateStatus],
+  ["28", "Legacy: apply Prisma migrations", legacyMigrateDeploy],
+  ["29", "Legacy: switch DB provider", dbProvider],
   ["sec", ""],
   ["0", "Exit", null],
   ["q", "Exit", null],
 ];
 
 function printBanner() {
-  console.log(`\n${C.b}${C.c}  Masar — Control Center${C.x}`);
-  console.log(`${C.d}  Install · Operate · Configure · Maintain Laravel + Next.js${C.x}`);
-  hr();
+  const width = 48;
+  const edge = (l, r) => `  ${C.c}${l}${"─".repeat(width)}${r}${C.x}`;
+  const row = (text, style) => {
+    const pad = Math.max(0, width - 1 - text.length);
+    return `  ${C.c}│${C.x} ${style}${text}${C.x}${" ".repeat(pad)}${C.c}│${C.x}`;
+  };
+  console.log("");
+  console.log(edge("╭", "╮"));
+  console.log(row("Masar — Control Center", C.b));
+  console.log(row("Install · Operate · Configure · Maintain", C.d));
+  console.log(row("Laravel API + Next.js", C.d));
+  console.log(edge("╰", "╯"));
+  console.log("");
 }
 function printMenu() {
   for (const row of MENU) {
-    if (row[0] === "sec") { console.log(`  ${C.d}${row[1]}${C.x}`); continue; }
-    log(`${C.b}${row[0].padStart(2)}${C.x}) ${row[1]}`);
+    if (row[0] === "sec") {
+      if (row[1]) console.log(`\n  ${C.b}${C.c}${row[1]}${C.x}`);
+      continue;
+    }
+    log(`${C.c}${C.b}${row[0].padStart(2)}${C.x}) ${row[1]}`);
   }
+  console.log("");
   hr();
 }
 
@@ -712,6 +737,7 @@ const COMMANDS = {
   "rotate-secrets": rotateSecrets,
   // Database
   "migrate-status": migrateStatus, migrate: migrateDeploy,
+  "seed-demo": seedDemoData, "demo-data": seedDemoData,
   // Backups
   backup: backupNow, backups: listBackups, restore: restoreBackup,
   // Maintenance
@@ -749,6 +775,7 @@ const COMMANDS = {
     console.log(`  ${C.c}rotate-secrets${C.x}   Regenerate REVERB_APP_KEY/SECRET (then re-deploy)`);
     console.log(`  ${C.c}migrate-status${C.x}   php artisan migrate:status (in the laravel container)`);
     console.log(`  ${C.c}migrate${C.x}          php artisan migrate --force (in the laravel container)`);
+    console.log(`  ${C.c}seed-demo${C.x}        Seed demo archive data (types, sections, classifications)`);
     console.log(`  ${C.c}backup${C.x}           pg_dump the running database`);
     console.log(`  ${C.c}backups${C.x}          List available backups`);
     console.log(`  ${C.c}restore${C.x}          Restore a backup`);

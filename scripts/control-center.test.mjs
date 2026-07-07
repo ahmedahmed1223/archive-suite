@@ -21,7 +21,7 @@ test("help renders the grouped menu and every command group", () => {
     "Masar",
     "— Server —", "— Configure —", "— Security —", "— Database —", "— Backups —", "— Maintain —", "— Legacy (Node/Vite stack) —",
     "1) Quick start", "4) Deploy / Re-provision", "14) Generate a strong password", "15) Change admin password",
-    "23) Update & rebuild", "24) Legacy deploy wizard", "0) Exit", "q) Exit",
+    "19) Seed demo data", "24) Update & rebuild", "25) Legacy deploy wizard", "0) Exit", "q) Exit",
   ]) {
     assert.ok(clean.includes(s), `help output should include "${s}"`);
   }
