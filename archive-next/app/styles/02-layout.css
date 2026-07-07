@@ -1,0 +1,285 @@
+/* ═══════════════════════════════════════════════════════════════
+   02-layout.css — Workspace command bar, page toolbar, archive & record surfaces
+   Slice of the former globals.css. ORDER MATTERS: keep the numeric
+   import order in layout.tsx — these share one cascade.
+   ═══════════════════════════════════════════════════════════════ */
+
+.workspace-commandbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--color-bg-secondary) 92%, transparent);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(18px);
+}
+
+.workspace-commandbar__user,
+.workspace-commandbar__tools,
+.workspace-commandbar__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.workspace-commandbar__user {
+  min-inline-size: 0;
+}
+
+.workspace-commandbar__user svg {
+  flex: 0 0 auto;
+  color: var(--color-brand-primary);
+}
+
+.workspace-commandbar__user span {
+  display: grid;
+  min-inline-size: 0;
+  line-height: var(--line-height-tight);
+}
+
+.workspace-commandbar__user strong,
+.workspace-commandbar__user small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-commandbar__user small {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.workspace-commandbar__search {
+  justify-content: space-between;
+  min-block-size: var(--control-height);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding-inline: var(--space-3);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+}
+
+.workspace-commandbar__search span {
+  flex: 1;
+  text-align: start;
+}
+
+.workspace-commandbar__search kbd {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+  color: var(--color-text-tertiary);
+  background: var(--color-surface-subtle);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+}
+
+.workspace-commandbar__tools {
+  justify-content: flex-end;
+}
+
+.workspace-commandbar__tools .icon-action {
+  position: relative;
+  min-inline-size: var(--control-height);
+}
+
+.workspace-commandbar__dot {
+  position: absolute;
+  inset-block-start: 0.55rem;
+  inset-inline-start: 0.6rem;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border: 2px solid var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  background: var(--color-status-error);
+}
+
+.page-toolbar {
+  display: grid;
+  gap: var(--space-4);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: clamp(var(--space-3), 2.2vw, var(--space-5));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-brand-primary) 9%, transparent), transparent 46%),
+    color-mix(in srgb, var(--color-bg-secondary) 96%, var(--color-brand-warm));
+  box-shadow: var(--shadow-sm);
+}
+
+.page-toolbar__main,
+.page-toolbar__title-stack {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.page-toolbar__eyebrow,
+.page-toolbar__meta,
+.page-toolbar__actions,
+.page-toolbar__controls,
+.archive-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.page-toolbar__title-row {
+  display: grid;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.page-toolbar__actions {
+  grid-column: 1 / -1;
+}
+
+.page-toolbar h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-display);
+  font-size: clamp(var(--font-size-xl), 3vw, var(--font-size-3xl));
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0;
+  line-height: var(--line-height-tight);
+}
+
+.page-toolbar p {
+  max-inline-size: 76ch;
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.view-switcher {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+}
+
+.view-switcher__button {
+  min-block-size: 2.3rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.72rem;
+  color: var(--color-text-secondary);
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.view-switcher__button[aria-pressed="true"] {
+  color: var(--color-text-inverse);
+  background: var(--color-brand-primary);
+}
+
+.view-switcher__button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.page-section,
+.stack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.onboarding-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 36%, var(--color-border-secondary));
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-bg-secondary));
+  box-shadow: var(--shadow-sm);
+}
+
+.onboarding-prompt strong {
+  color: var(--color-text-primary);
+}
+
+.onboarding-prompt p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.section-heading {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.metric-value {
+  color: var(--color-text-primary);
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.hero {
+  display: grid;
+  gap: var(--space-3);
+  max-inline-size: var(--max-width-content);
+}
+
+.hero h1 {
+  margin: 0;
+  max-inline-size: 22ch;
+  font-family: var(--font-family-display);
+  font-size: clamp(var(--font-size-xl), 3.2vw, var(--font-size-3xl));
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0;
+  line-height: var(--line-height-tight);
+}
+
+.hero p {
+  margin: 0;
+  max-inline-size: 72ch;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.record-meta,
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-4);
+  margin-block-start: 0;
+}
+
+.split-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.dense-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--space-4);
+}
