@@ -55,7 +55,7 @@ export default function InboxPage() {
       setStatusMessage(response.error || "تعذر إضافة العنصر.");
       return;
     }
-    setStatusMessage("تمت الإضافة إلى Laravel.");
+    setStatusMessage("تمت الإضافة إلى الخادم.");
     setTitle("");
     setSource("");
     setNote("");
@@ -79,7 +79,7 @@ export default function InboxPage() {
       <PageToolbar
         eyebrow={<span className="badge">Capture</span>}
         title="صندوق الوارد"
-        description="التقاط سريع للمواد أو الأفكار قبل الأرشفة، محفوظ في Laravel لكل مستخدم."
+        description="التقاط سريع للمواد أو الأفكار قبل الأرشفة، محفوظ في الخادم لكل مستخدم."
         meta={(
           <>
             <span className="badge">{items.length} عنصر</span>

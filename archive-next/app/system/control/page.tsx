@@ -23,7 +23,7 @@ const ACTIONS: { id: SystemControlAction; label: string; description: string; au
   {
     id: "clear-cache",
     label: "تفريغ ذاكرة التخزين المؤقت",
-    description: "يفرّغ ذاكرة التخزين المؤقت وإعدادات Laravel المخبأة.",
+    description: "يفرّغ ذاكرة التخزين المؤقت وإعدادات الخادم المخبأة.",
     audit: "يسجل محاولة system_control.allowed أو blocked",
     icon: Trash2
   },
@@ -137,7 +137,7 @@ export default function SystemControlPage() {
           </span>
           <div>
             <strong>نطاق حساس</strong>
-            <p>لا توجد محاكاة في الواجهة؛ التنفيذ الحقيقي يمر عبر Laravel فقط.</p>
+            <p>لا توجد محاكاة في الواجهة؛ التنفيذ الحقيقي يمر عبر الخادم فقط.</p>
           </div>
         </article>
       </section>

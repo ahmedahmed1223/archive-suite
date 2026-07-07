@@ -72,7 +72,7 @@ export default function TagsPage() {
       <PageToolbar
         eyebrow={<span className="badge">Tags</span>}
         title="الوسوم الهرمية"
-        description="إدارة يومية للوسوم: counts، آباء هرمية، ومؤشرات تكرار عربية. آباء الوسوم محفوظة في Laravel لكل مستخدم."
+        description="إدارة يومية للوسوم: counts، آباء هرمية، ومؤشرات تكرار عربية. آباء الوسوم محفوظة في الخادم لكل مستخدم."
         meta={(
           <>
             <span className="badge">{tagRows.length} وسم</span>

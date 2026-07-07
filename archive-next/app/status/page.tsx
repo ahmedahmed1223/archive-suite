@@ -214,7 +214,7 @@ export default function StatusPage() {
       <PageToolbar
         eyebrow={<span className="badge">مراقبة تشغيلية</span>}
         title="حالة النظام"
-        description="سطح سريع لمراقبة اتصال Laravel، محرك البيانات، ومدة التشغيل مع تحديث تلقائي كل 30 ثانية."
+        description="سطح سريع لمراقبة اتصال الخادم، محرك البيانات، ومدة التشغيل مع تحديث تلقائي كل 30 ثانية."
         meta={
           <>
             <span className={`badge ${isOnline ? "status-success" : "status-error"}`}>

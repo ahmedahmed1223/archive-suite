@@ -361,7 +361,7 @@ export default function TypesPage() {
         icon={<Shapes size={24} />}
         eyebrow={<span className="badge">Schema Studio</span>}
         title="إدارة الأنواع والحقول"
-        description="استديو عملي لضبط أنواع المحتوى وفروعها وحقول metadata، مع معاينة فورية قبل الحفظ في Laravel."
+        description="استديو عملي لضبط أنواع المحتوى وفروعها وحقول metadata، مع معاينة فورية قبل الحفظ في الخادم."
         meta={(
           <>
             <span className="badge">{activeCount} نوع نشط</span>

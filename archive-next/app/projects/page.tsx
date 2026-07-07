@@ -380,7 +380,7 @@ export default function ProjectsPage() {
               </button>
             </div>
             <p className="helper-text">
-              تصدير MP4 يعمل كمهمة Laravel غير متزامنة (montage_export) تجمع القصاصات عبر ffmpeg في الخلفية دون حجب الطلب.
+              تصدير MP4 يعمل كمهمة خادم غير متزامنة (montage_export) تجمع القصاصات عبر ffmpeg في الخلفية دون حجب الطلب.
             </p>
             {exportError ? <p className="form-status status-error" role="alert">{exportError}</p> : null}
             {exportJob ? (

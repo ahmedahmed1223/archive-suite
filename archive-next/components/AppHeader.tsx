@@ -4,10 +4,10 @@ import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { isActivePath, navSectionLabels, primaryNav, type NavSection } from "@/lib/navigation";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
-import ThemeToggle from "@/components/ThemeToggle";
 import { useAuthSession } from "@/lib/auth-session";
 
 const navSections = Object.keys(navSectionLabels) as NavSection[];
@@ -39,14 +39,14 @@ export default function AppHeader({
 
   return (
     <header className="topbar" data-nav-open={isMenuOpen ? "true" : "false"}>
-      <a className="brand" href="/" aria-label={`${BRAND.arabicName} - الرئيسية`}>
+      <Link className="brand" href="/" aria-label={`${BRAND.arabicName} - الرئيسية`}>
         <img className="brand-mark" src={BRAND.markPath} alt="" width={44} height={44} />
         <span className="brand-name">
           <strong>{BRAND.arabicName}</strong>
           <span className="brand-latin">{BRAND.latinName}</span>
         </span>
         <span className="brand-subtitle">{subtitle}</span>
-      </a>
+      </Link>
       <button
         type="button"
         className="nav-toggle"
@@ -58,10 +58,10 @@ export default function AppHeader({
         <span>المسارات</span>
       </button>
       <div className="topbar-actions" aria-label="أدوات الواجهة">
-        <a className="icon-action primary-action-link" href="/uploads" title="إضافة مادة">
+        <Link className="icon-action primary-action-link" href="/uploads" title="إضافة مادة">
           <Icons.UploadCloud aria-hidden="true" size={18} strokeWidth={2} />
           <span>إضافة مادة</span>
-        </a>
+        </Link>
         {auth.status === "authenticated" ? (
           <div className="session-chip" title={userLabel}>
             <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
@@ -71,10 +71,10 @@ export default function AppHeader({
             </button>
           </div>
         ) : (
-          <a className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
+          <Link className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
             <Icons.LogIn aria-hidden="true" size={18} strokeWidth={2} />
             <span>الدخول</span>
-          </a>
+          </Link>
         )}
         <button
           type="button"
@@ -87,7 +87,6 @@ export default function AppHeader({
           <Icons.Search aria-hidden="true" size={18} strokeWidth={2} />
           <kbd>Ctrl K</kbd>
         </button>
-        <ThemeToggle />
       </div>
       <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>
         {navSections.map((section) => (
@@ -98,7 +97,7 @@ export default function AppHeader({
               const Icon = navIcon(link.icon);
 
               return (
-                <a
+                <Link
                   key={link.href}
                   className="badge app-nav-link"
                   data-section={link.section}
@@ -107,7 +106,7 @@ export default function AppHeader({
                 >
                   <Icon aria-hidden="true" className="app-nav-link__icon" size={16} strokeWidth={2} />
                   <span>{link.label}</span>
-                </a>
+                </Link>
               );
             })}
           </div>

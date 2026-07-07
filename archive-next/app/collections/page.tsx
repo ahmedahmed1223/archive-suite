@@ -57,7 +57,7 @@ export default function CollectionsPage() {
       setStatusMessage(response.error || "تعذر حفظ المجموعة.");
       return;
     }
-    setStatusMessage("تم حفظ المجموعة في Laravel.");
+    setStatusMessage("تم حفظ المجموعة في الخادم.");
     await refreshCollections();
   }
 
@@ -87,7 +87,7 @@ export default function CollectionsPage() {
       <PageToolbar
         eyebrow={<span className="badge">Organize</span>}
         title="المجموعات"
-        description="تجميعات يدوية وذكية خفيفة فوق السجلات الحالية، محفوظة في Laravel لكل مستخدم."
+        description="تجميعات يدوية وذكية خفيفة فوق السجلات الحالية، محفوظة في الخادم لكل مستخدم."
         meta={(
           <>
             <span className="badge">{collections.length} مجموعة</span>

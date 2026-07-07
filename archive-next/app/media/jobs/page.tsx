@@ -11,7 +11,7 @@ export default function MediaJobsPage() {
       <PageToolbar
         icon={<FileVideo size={24} />}
         title="مهام الوسائط"
-        description="فحص job منفرد، إنشاء مهام جديدة، ومتابعة قائمة المعالجة من خلال Laravel queue."
+        description="فحص job منفرد، إنشاء مهام جديدة، ومتابعة قائمة المعالجة من خلال ÙØ§Ø¦ÙØ© ÙØ¹Ø§ÙØ¬Ø© Ø§ÙØ®Ø§Ø¯Ù."
         tone="accent"
         meta={
           <>
