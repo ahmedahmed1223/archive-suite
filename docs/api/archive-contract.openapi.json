@@ -1660,6 +1660,107 @@
         }
       }
     },
+    "/tag-nodes": {
+      "get": {
+        "tags": ["Tags"],
+        "summary": "List tag hierarchy nodes for the current user",
+        "operationId": "listTagNodes",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Tag nodes",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TagNodesResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Tags"],
+        "summary": "Create a tag hierarchy node for the current user",
+        "operationId": "createTagNode",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TagNodeCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created tag node",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TagNodeResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/tag-nodes/{id}": {
+      "patch": {
+        "tags": ["Tags"],
+        "summary": "Update a tag hierarchy node",
+        "operationId": "updateTagNode",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TagNodeUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated tag node",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TagNodeResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Tags"],
+        "summary": "Delete a tag hierarchy node",
+        "operationId": "deleteTagNode",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/automation/rules": {
       "get": {
         "tags": ["Automation"],
@@ -4061,6 +4162,59 @@
             "required": ["term"],
             "properties": {
               "term": { "$ref": "#/components/schemas/VocabularyTerm" }
+            }
+          }
+        ]
+      },
+      "TagNode": {
+        "type": "object",
+        "required": ["id", "tag", "parent", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "tag": { "type": "string" },
+          "parent": { "type": "string" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "TagNodeCreateRequest": {
+        "type": "object",
+        "required": ["tag", "parent"],
+        "properties": {
+          "tag": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "parent": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      },
+      "TagNodeUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "tag": { "type": "string", "maxLength": 200 },
+          "parent": { "type": "string", "maxLength": 200 }
+        }
+      },
+      "TagNodesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["nodes"],
+            "properties": {
+              "nodes": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/TagNode" }
+              }
+            }
+          }
+        ]
+      },
+      "TagNodeResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["node"],
+            "properties": {
+              "node": { "$ref": "#/components/schemas/TagNode" }
             }
           }
         ]

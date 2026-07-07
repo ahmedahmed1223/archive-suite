@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\SavedSearchesController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\SyncController;
+use App\Http\Controllers\Api\V1\TagNodesController;
 use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
@@ -150,6 +151,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/vocabulary', [VocabularyController::class, 'index']);
         Route::post('/vocabulary', [VocabularyController::class, 'store']);
         Route::delete('/vocabulary/{id}', [VocabularyController::class, 'destroy']);
+
+        Route::get('/tag-nodes', [TagNodesController::class, 'index']);
+        Route::post('/tag-nodes', [TagNodesController::class, 'store']);
+        Route::patch('/tag-nodes/{id}', [TagNodesController::class, 'update']);
+        Route::delete('/tag-nodes/{id}', [TagNodesController::class, 'destroy']);
 
         Route::get('/automation/rules', [AutomationRulesController::class, 'index']);
         Route::post('/automation/rules', [AutomationRulesController::class, 'store']);

@@ -329,6 +329,24 @@ export interface CreateVocabularyTermPayload {
   note?: string;
 }
 
+export interface TagNode {
+  id: string;
+  tag: string;
+  parent: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateTagNodePayload {
+  tag: string;
+  parent: string;
+}
+
+export interface UpdateTagNodePayload {
+  tag?: string;
+  parent?: string;
+}
+
 export type AutomationRuleTrigger = "record.created" | "record.updated" | "media.failed" | "schedule.daily";
 export type AutomationRuleAction = "add-tag" | "set-review" | "notify-admin" | "create-inbox-item";
 
@@ -842,6 +860,10 @@ export interface ArchiveApiClient {
   vocabularyTerms(options?: AuthRequestOptions): Promise<ApiEnvelope<{ terms: VocabularyTerm[] }>>;
   createVocabularyTerm(payload: CreateVocabularyTermPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ term: VocabularyTerm }>>;
   deleteVocabularyTerm(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  tagNodes(options?: AuthRequestOptions): Promise<ApiEnvelope<{ nodes: TagNode[] }>>;
+  createTagNode(payload: CreateTagNodePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ node: TagNode }>>;
+  updateTagNode(id: string, payload: UpdateTagNodePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ node: TagNode }>>;
+  deleteTagNode(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   automationRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>>;
   createAutomationRule(payload: CreateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
@@ -1274,6 +1296,13 @@ export function createArchiveApiClient({
       post<{ term: VocabularyTerm }>("/vocabulary", payload, options),
     deleteVocabularyTerm: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/vocabulary/${encodeURIComponent(id)}`, undefined, options),
+    tagNodes: (options?: AuthRequestOptions) => get<{ nodes: TagNode[] }>("/tag-nodes", options),
+    createTagNode: (payload: CreateTagNodePayload, options?: AuthRequestOptions) =>
+      post<{ node: TagNode }>("/tag-nodes", payload, options),
+    updateTagNode: (id: string, payload: UpdateTagNodePayload, options?: AuthRequestOptions) =>
+      patch<{ node: TagNode }>(`/tag-nodes/${encodeURIComponent(id)}`, payload, options),
+    deleteTagNode: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/tag-nodes/${encodeURIComponent(id)}`, undefined, options),
     automationRules: (options?: AuthRequestOptions) =>
       get<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>("/automation/rules", options),
     createAutomationRule: (payload: CreateAutomationRulePayload, options?: AuthRequestOptions) =>
