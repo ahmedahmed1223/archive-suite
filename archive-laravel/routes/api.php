@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\V1\SystemStatusController;
 use App\Http\Controllers\Api\V1\UploadLinksController;
 use App\Http\Controllers\Api\V1\UploadsController;
 use App\Http\Controllers\Api\V1\UsersController;
+use App\Http\Controllers\Api\V1\VocabularyController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Route;
 
@@ -145,6 +146,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/inbox', [InboxController::class, 'store']);
         Route::patch('/inbox/{id}', [InboxController::class, 'update']);
         Route::delete('/inbox/{id}', [InboxController::class, 'destroy']);
+
+        Route::get('/vocabulary', [VocabularyController::class, 'index']);
+        Route::post('/vocabulary', [VocabularyController::class, 'store']);
+        Route::delete('/vocabulary/{id}', [VocabularyController::class, 'destroy']);
 
         Route::get('/automation/rules', [AutomationRulesController::class, 'index']);
         Route::post('/automation/rules', [AutomationRulesController::class, 'store']);
