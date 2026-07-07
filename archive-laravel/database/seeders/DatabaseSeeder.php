@@ -23,5 +23,12 @@ class DatabaseSeeder extends Seeder
                 'password' => env('ADMIN_PASSWORD', 'password'),
             ],
         );
+
+        // Opt-in demo archive content (types/sections/classifications + records).
+        // Off by default to keep production clean; enable with SEED_DEMO_DATA=true
+        // or run directly: `php artisan db:seed --class=DemoArchiveSeeder`.
+        if (filter_var(env('SEED_DEMO_DATA', false), FILTER_VALIDATE_BOOL)) {
+            $this->call(DemoArchiveSeeder::class);
+        }
     }
 }
