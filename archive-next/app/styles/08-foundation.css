@@ -485,7 +485,12 @@
     align-content: start;
     align-items: stretch;
     grid-template-columns: minmax(0, 1fr);
-    min-block-size: 100vh;
+    position: sticky;
+    inset-block-start: 0;
+    block-size: 100dvh;
+    max-block-size: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: var(--space-4);
     border-inline-start: 0;
     border-inline-end: 1px solid color-mix(in srgb, var(--color-brand-primary) 18%, var(--color-border-secondary));
