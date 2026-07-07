@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import BroadcastMetadataPanel from "@/components/BroadcastMetadataPanel";
 import EmptyState from "@/components/EmptyState";
@@ -926,8 +927,8 @@ export default function ArchiveDetailPage() {
     state.status === "ready"
       ? state.record.description || "تفاصيل السجل وحقوقه في عرض تشغيلي مركز."
       : state.status === "error"
-        ? "تعذر تحميل بيانات السجل من خدمة Laravel."
-        : "جار تحميل بيانات السجل من خدمة Laravel.";
+        ? "تعذر تحميل بيانات السجل من الخادم."
+        : "جار تحميل بيانات السجل من الخادم.";
 
   useEffect(() => {
     let active = true;
@@ -1079,9 +1080,9 @@ export default function ArchiveDetailPage() {
         }
         actions={
           <>
-            <a href="/archive" className="button button-secondary">
+            <Link href="/archive" className="button button-secondary">
               العودة إلى الأرشيف
-            </a>
+            </Link>
             {state.status === "ready" ? (
               <button
                 type="button"
@@ -1118,7 +1119,7 @@ export default function ArchiveDetailPage() {
       {ocrState.status === "success" && (
         <div className="state-banner state-banner-success">
           <strong>تم إنشاء مهمة OCR بنجاح.</strong>
-          <a href="/media/jobs" className="button button-secondary">عرض في مهام الوسائط</a>
+          <Link href="/media/jobs" className="button button-secondary">عرض في مهام الوسائط</Link>
         </div>
       )}
 
@@ -1138,7 +1139,7 @@ export default function ArchiveDetailPage() {
         <EmptyState
           title="خطأ في تحميل السجل"
           description={state.message}
-          actions={<a href="/archive" className="button button-secondary">العودة إلى الأرشيف</a>}
+          actions={<Link href="/archive" className="button button-secondary">العودة إلى الأرشيف</Link>}
         />
       )}
 

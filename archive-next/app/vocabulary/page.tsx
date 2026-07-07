@@ -83,7 +83,7 @@ export default function VocabularyPage() {
       <PageToolbar
         eyebrow={<span className="badge">Taxonomy</span>}
         title="المفردات"
-        description="قاموس تشغيل يربط الأنواع والوسوم والمرادفات. يستخدم بيانات الأرشيف الحالية ويحفظ المصطلحات في Laravel لكل مستخدم."
+        description="قاموس تشغيل يربط الأنواع والوسوم والمرادفات. يستخدم بيانات الأرشيف الحالية ويحفظ المصطلحات في الخادم لكل مستخدم."
         meta={(
           <>
             <span className="badge">{savedTerms.length} مصطلح محفوظ</span>

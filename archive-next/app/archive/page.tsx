@@ -430,7 +430,7 @@ function ArchivePageContent() {
     }
 
     await refreshSavedViews();
-    setSavedViewStatus("تم حفظ العرض في Laravel.");
+    setSavedViewStatus("تم حفظ العرض في الخادم.");
   };
 
   const applySavedView = (view: SavedArchiveView) => {
@@ -800,7 +800,7 @@ function ArchivePageContent() {
           <EmptyState
             icon={<PanelRightOpen size={22} />}
             title="لا توجد سجلات مطابقة."
-            description="خفف الفلاتر أو اترك البحث فارغاً لعرض أحدث السجلات من Laravel API."
+            description="خفف الفلاتر أو اترك البحث فارغاً لعرض أحدث السجلات من Ø§ÙØ®Ø§Ø¯Ù."
             actions={<button type="button" className="button button-secondary" onClick={resetFilters}>تصفير الفلاتر</button>}
           />
         ) : (

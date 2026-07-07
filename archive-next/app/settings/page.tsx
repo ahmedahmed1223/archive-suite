@@ -483,7 +483,7 @@ export default function SettingsPage() {
 
                 {!canPreviewOdbc && (
                   <p className="helper-text">
-                    المعاينة تعمل بعد تفعيل ODBC وضبط DSN وتحميل driver في بيئة Laravel.
+                    المعاينة تعمل بعد تفعيل ODBC وضبط DSN وتحميل driver في بيئة الخادم.
                   </p>
                 )}
 

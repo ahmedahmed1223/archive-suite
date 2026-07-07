@@ -107,7 +107,7 @@ export default function AutomationPage() {
     setTag("all");
     setStatus("all");
     setAction("notify-admin");
-    setStatusMessage("تم حفظ القاعدة في Laravel.");
+    setStatusMessage("تم حفظ القاعدة في الخادم.");
     await refreshAutomation();
   }
 
@@ -153,7 +153,7 @@ export default function AutomationPage() {
       <PageToolbar
         eyebrow={<span className="badge">Rules Engine</span>}
         title="محرّك القواعد"
-        description="قواعد محفوظة في Laravel مع dry-run، تشغيل فعلي محدود، وسجل تنفيذ قابل للمراجعة."
+        description="قواعد محفوظة في الخادم مع dry-run، تشغيل فعلي محدود، وسجل تنفيذ قابل للمراجعة."
         meta={(
           <>
             <span className="badge">{rules.length} قاعدة</span>
@@ -226,7 +226,7 @@ export default function AutomationPage() {
       ) : null}
 
       {!loading && rules.length === 0 ? (
-        <EmptyState title="لا توجد قواعد بعد." description="أنشئ قاعدة محفوظة في Laravel، ثم اختبرها بـ dry-run قبل التشغيل الفعلي." />
+        <EmptyState title="لا توجد قواعد بعد." description="أنشئ قاعدة محفوظة في الخادم، ثم اختبرها بـ dry-run قبل التشغيل الفعلي." />
       ) : (
         <section className="rules-grid" aria-label="قواعد الأتمتة">
           {rules.map((rule) => (

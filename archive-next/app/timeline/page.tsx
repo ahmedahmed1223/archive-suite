@@ -204,7 +204,7 @@ export default function TimelinePage() {
       {state.status === "loading" ? (
         <section className="state-banner" role="status" aria-live="polite">
           <strong>جار تحميل السجلات</strong>
-          <p>يتم جلب السجلات من Laravel وتجهيزها للعرض الزمني.</p>
+          <p>يتم جلب السجلات من الخادم وتجهيزها للعرض الزمني.</p>
         </section>
       ) : null}
 

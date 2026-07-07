@@ -909,11 +909,17 @@ export function createArchiveApiClient({
   }
 
   async function refreshAccessToken(): Promise<string | null> {
-    const response = await fetchImpl(`${baseUrl}/auth/refresh`, {
-      method: "POST",
-      headers: new Headers({ Accept: "application/json" }),
-      credentials: "include"
-    });
+    let response: Response;
+
+    try {
+      response = await fetchImpl(`${baseUrl}/auth/refresh`, {
+        method: "POST",
+        headers: new Headers({ Accept: "application/json" }),
+        credentials: "include"
+      });
+    } catch {
+      return null;
+    }
 
     const payload = (await response.json().catch(() => null)) as ApiEnvelope<AuthSession> | null;
 
@@ -948,12 +954,18 @@ export function createArchiveApiClient({
       headers.set("Authorization", `Bearer ${accessToken}`);
     }
 
-    const response = await fetchImpl(`${baseUrl}${path}`, {
-      method,
-      headers,
-      credentials: "include",
-      body: body === undefined ? undefined : JSON.stringify(body)
-    });
+    let response: Response;
+
+    try {
+      response = await fetchImpl(`${baseUrl}${path}`, {
+        method,
+        headers,
+        credentials: "include",
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+    } catch {
+      return { ok: false, error: "تعذر الاتصال بالخادم. تحقق من الاتصال ثم أعد المحاولة." };
+    }
 
     const payload = (await response.json().catch(() => ({
       ok: false,
@@ -981,7 +993,7 @@ export function createArchiveApiClient({
     }
 
     if (!response.ok && payload.ok !== false) {
-      return { ok: false, error: `Request failed with status ${response.status}` };
+      return { ok: false, error: `فشل الطلب (رمز ${response.status}). أعد المحاولة أو تواصل مع مسؤول النظام.` };
     }
 
     return payload;
@@ -1152,20 +1164,26 @@ export function createArchiveApiClient({
         headers.set("Authorization", `Bearer ${options.accessToken}`);
       }
 
-      const response = await fetchImpl(`${baseUrl}/uploads`, {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: formData
-      });
+      let response: Response;
+
+      try {
+        response = await fetchImpl(`${baseUrl}/uploads`, {
+          method: "POST",
+          headers,
+          credentials: "include",
+          body: formData
+        });
+      } catch {
+        return { ok: false, error: "تعذر الاتصال بالخادم أثناء الرفع. تحقق من الاتصال ثم أعد المحاولة." } as ApiEnvelope<{ record: UploadedRecord }>;
+      }
 
       const payload = (await response.json().catch(() => ({
         ok: false,
-        error: "Invalid JSON response from /uploads"
+        error: "استجابة غير صالحة من الخادم أثناء الرفع."
       }))) as ApiEnvelope<{ record: UploadedRecord }>;
 
       if (!response.ok && payload.ok !== false) {
-        return { ok: false, error: `Request failed with status ${response.status}` } as ApiEnvelope<{ record: UploadedRecord }>;
+        return { ok: false, error: `فشل الرفع (رمز ${response.status}). أعد المحاولة.` } as ApiEnvelope<{ record: UploadedRecord }>;
       }
 
       return payload;

@@ -14,7 +14,7 @@ export default async function ReviewLinkPage({ params }: { params: Promise<{ tok
         <PageToolbar
           eyebrow={<span className="badge">مراجعة عامة</span>}
           title="رابط مراجعة عام"
-          description="يعرض بيانات المراجعة والتعليقات المسموحة لهذا الرابط فقط، مع إبقاء الرمز والصلاحيات محكومة من Laravel."
+          description="يعرض بيانات المراجعة والتعليقات المسموحة لهذا الرابط فقط، مع إبقاء الرمز والصلاحيات محكومة من الخادم."
           meta={
             <>
               <span className="badge">تعليقات محمية</span>

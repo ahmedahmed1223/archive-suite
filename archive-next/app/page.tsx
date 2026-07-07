@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import Link from "next/link";
 import MetricStrip, { type MetricStripItem } from "@/components/MetricStrip";
 import "./home.css";
 
@@ -471,7 +472,7 @@ export default function CinematicDashboard() {
           </div>
 
           <nav className="cd-topbar__breadcrumb" aria-label="مسار التنقل">
-            <a href="/">الرئيسية</a>
+            <Link href="/">الرئيسية</Link>
             <span className="cd-topbar__sep">&gt;</span>
             <span className="cd-topbar__current">الأرشيف</span>
             <button className="cd-topbar__back" aria-label="رجوع">
@@ -545,10 +546,10 @@ export default function CinematicDashboard() {
               <IconClock />
               <h2>العناصر الحديثة</h2>
             </div>
-            <a href="/archive" className="cd-recent__viewall">
+            <Link href="/archive" className="cd-recent__viewall">
               <IconChevronRight />
               <span>عرض الكل</span>
-            </a>
+            </Link>
           </div>
 
           <div className="cd-recent__scroll-wrap">
@@ -577,7 +578,7 @@ export default function CinematicDashboard() {
                           <span
                             key={j}
                             className="cd-media-card__wave-bar"
-                            style={{ height: `${20 + Math.random() * 60}%` }}
+                            style={{ height: `${20 + ((j * 37 + 13) % 61)}%` }}
                           />
                         ))}
                       </div>

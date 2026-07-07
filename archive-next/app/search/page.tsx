@@ -291,7 +291,7 @@ function SearchPageContent() {
       <PageToolbar
         eyebrow={<span className="badge">Search Workbench</span>}
         title="البحث المتقدم"
-        description="بحث موحد في السجلات مع facets من Laravel، حفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة."
+        description="بحث موحد في السجلات مع facets من الخادم، حفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة."
         meta={(
           <>
             <span className="badge">{filteredRecords.length} نتيجة</span>
@@ -385,7 +385,7 @@ function SearchPageContent() {
       {state.status === "idle" ? (
         <EmptyState
           title="ابدأ بكتابة كلمة بحث."
-          description="استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث في Laravel إذا كان يتكرر في عملك اليومي."
+          description="استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث في الخادم إذا كان يتكرر في عملك اليومي."
         />
       ) : null}
 
@@ -416,7 +416,7 @@ function SearchPageContent() {
             <div className="panel panel-compact">
               <p className="form-status">
                 عرض {visibleRecords.length} من {filteredRecords.length} نتيجة
-                {typeof state.total === "number" ? ` · الإجمالي في Laravel: ${state.total}` : ""}
+                {typeof state.total === "number" ? ` · الإجمالي في الخادم: ${state.total}` : ""}
                 {query ? ` · البحث عن: "${query}"` : ""}
               </p>
             </div>

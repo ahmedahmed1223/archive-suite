@@ -76,7 +76,7 @@ export default function MediaPlayPage() {
       <PageToolbar
         eyebrow={<span className="badge">HTTP Range</span>}
         title="تشغيل المادة"
-        description="يُبث الملف عبر Laravel بدلاً من فتحه محلياً، فيعمل السحب داخل الفيديو والصوت عبر المتصفح مع مصادقة النظام."
+        description="يُبث الملف عبر الخادم بدلاً من فتحه محلياً، فيعمل السحب داخل الفيديو والصوت عبر المتصفح مع مصادقة النظام."
         meta={<span className="badge">{path ? "قيد التشغيل" : "بانتظار مسار"}</span>}
       >
         <form

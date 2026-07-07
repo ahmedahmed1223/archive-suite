@@ -1,8 +1,8 @@
 :root {
   color-scheme: dark;
 
-  --font-family-display: "Aptos Display", "Segoe UI", Tahoma, sans-serif;
-  --font-family-body: "Aptos", "Segoe UI", Tahoma, sans-serif;
+  --font-family-display: var(--font-arabic, "Segoe UI"), "Segoe UI", Tahoma, sans-serif;
+  --font-family-body: var(--font-arabic, "Segoe UI"), "Segoe UI", Tahoma, sans-serif;
   --font-family-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   --font-mono: var(--font-family-mono);
 

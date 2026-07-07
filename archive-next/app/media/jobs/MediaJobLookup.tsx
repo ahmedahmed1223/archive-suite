@@ -62,7 +62,7 @@ export function MediaJobLookup() {
       <div className="workspace-panel__header">
         <div>
           <h2>فحص job منفرد</h2>
-          <p>تحقق سريع من حالة مهمة محددة عبر Laravel API.</p>
+          <p>تحقق سريع من حالة مهمة محددة عبر Ø§ÙØ®Ø§Ø¯Ù.</p>
         </div>
         <span className="badge">lookup</span>
       </div>
@@ -89,7 +89,7 @@ export function MediaJobLookup() {
           ? `الحالة: ${state.job.status} / العملية: ${state.job.operation}`
           : state.status === "error"
             ? state.message
-            : "يفحص هذا النموذج حالة المهمة من واجهة Laravel API."}
+            : "يفحص هذا النموذج حالة المهمة من واجهة Ø§ÙØ®Ø§Ø¯Ù."}
       </p>
     </form>
   );

@@ -1,9 +1,9 @@
 "use client";
 
 import { Activity, Bell, ChevronLeft, Gauge, Search, UploadCloud, UserCircle } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { openCommandPalette } from "@/components/CommandPalette";
-import ThemeToggle from "@/components/ThemeToggle";
 import { useAuthSession } from "@/lib/auth-session";
 import { isActivePath, navSectionLabels, primaryNav } from "@/lib/navigation";
 
@@ -46,10 +46,10 @@ export default function WorkspaceCommandBar() {
           const Icon = action.icon;
 
           return (
-            <a key={action.href} className="workspace-commandbar__quick-link" href={action.href}>
+            <Link key={action.href} className="workspace-commandbar__quick-link" href={action.href}>
               <Icon size={16} aria-hidden="true" />
               <span>{action.label}</span>
-            </a>
+            </Link>
           );
         })}
       </nav>
@@ -58,7 +58,6 @@ export default function WorkspaceCommandBar() {
           <Bell size={18} aria-hidden="true" />
           <span className="workspace-commandbar__dot" aria-hidden="true" />
         </button>
-        <ThemeToggle />
       </div>
     </div>
   );

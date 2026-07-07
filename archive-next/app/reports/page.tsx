@@ -32,8 +32,8 @@ const reportChecks = [
   },
   {
     title: "مصدر الحقيقة",
-    status: "Laravel",
-    body: "تبقى الحسابات الثقيلة والتجميعات طويلة المدى في Laravel، وتعرض Next النتائج فقط لتجنب ازدواجية المنطق.",
+    status: "Ø§ÙØ®Ø§Ø¯Ù",
+    body: "تبقى الحسابات الثقيلة والتجميعات طويلة المدى في الخادم، وتعرض Next النتائج فقط لتجنب ازدواجية المنطق.",
     score: 84,
     tone: "info",
     icon: Database
@@ -60,7 +60,7 @@ const plannedReports = [
     href: "/analytics",
     summary: "يعرض نمو السجلات، توزيع المخازن، والأنواع التي تحتاج تنظيف metadata.",
     metrics: ["عدد السجلات", "النمو الشهري", "توزيع المخازن"],
-    blockers: ["اعتماد تكلفة التخزين من Laravel", "ربط حصص المخازن"]
+    blockers: ["اعتماد تكلفة التخزين من الخادم", "ربط حصص المخازن"]
   },
   {
     id: "media-processing",
@@ -132,7 +132,7 @@ export default function ReportsPage() {
         icon={<FileBarChart size={24} />}
         eyebrow={<span className="badge">تقارير تشغيلية</span>}
         title="لوحة التقارير"
-        description="مساحة اختيار وتقييم لتقارير Laravel القادمة: ما الجاهز، ما يحتاج عقد بيانات، وما يمكن فتحه من صفحات المراقبة الحالية."
+        description="مساحة اختيار وتقييم لتقارير الخادم القادمة: ما الجاهز، ما يحتاج عقد بيانات، وما يمكن فتحه من صفحات المراقبة الحالية."
         meta={
           <>
             <span className="badge">API v{contract.version}</span>
