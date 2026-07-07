@@ -310,6 +310,25 @@ export interface UpdateInboxItemPayload {
   status?: InboxStatus;
 }
 
+export type VocabularyKind = "type" | "tag" | "custom";
+
+export interface VocabularyTerm {
+  id: string;
+  term: string;
+  kind: VocabularyKind;
+  aliases: string | null;
+  note: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateVocabularyTermPayload {
+  term: string;
+  kind?: VocabularyKind;
+  aliases?: string;
+  note?: string;
+}
+
 export type AutomationRuleTrigger = "record.created" | "record.updated" | "media.failed" | "schedule.daily";
 export type AutomationRuleAction = "add-tag" | "set-review" | "notify-admin" | "create-inbox-item";
 
@@ -820,6 +839,9 @@ export interface ArchiveApiClient {
   createInboxItem(payload: CreateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
   updateInboxItem(id: string, payload: UpdateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
   deleteInboxItem(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  vocabularyTerms(options?: AuthRequestOptions): Promise<ApiEnvelope<{ terms: VocabularyTerm[] }>>;
+  createVocabularyTerm(payload: CreateVocabularyTermPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ term: VocabularyTerm }>>;
+  deleteVocabularyTerm(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   automationRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>>;
   createAutomationRule(payload: CreateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
@@ -1247,6 +1269,11 @@ export function createArchiveApiClient({
       patch<{ item: InboxItem }>(`/inbox/${encodeURIComponent(id)}`, payload, options),
     deleteInboxItem: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/inbox/${encodeURIComponent(id)}`, undefined, options),
+    vocabularyTerms: (options?: AuthRequestOptions) => get<{ terms: VocabularyTerm[] }>("/vocabulary", options),
+    createVocabularyTerm: (payload: CreateVocabularyTermPayload, options?: AuthRequestOptions) =>
+      post<{ term: VocabularyTerm }>("/vocabulary", payload, options),
+    deleteVocabularyTerm: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/vocabulary/${encodeURIComponent(id)}`, undefined, options),
     automationRules: (options?: AuthRequestOptions) =>
       get<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>("/automation/rules", options),
     createAutomationRule: (payload: CreateAutomationRulePayload, options?: AuthRequestOptions) =>

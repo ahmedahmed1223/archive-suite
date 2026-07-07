@@ -5,33 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type VocabularyTerm } from "@/lib/archive-api";
 import { countBy, normalizeText } from "@/lib/record-utils";
 
-interface VocabularyTerm {
-  id: string;
-  term: string;
-  kind: "type" | "tag" | "custom";
-  aliases: string;
-  note: string;
-  createdAt: string;
-}
-
-const STORAGE_KEY = "masar:vocabulary:v1";
-
-function readTerms(): VocabularyTerm[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeTerms(terms: VocabularyTerm[]) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(terms));
-}
+type Kind = VocabularyTerm["kind"];
 
 export default function VocabularyPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -39,18 +16,25 @@ export default function VocabularyPage() {
   const [error, setError] = useState("");
   const [terms, setTerms] = useState<VocabularyTerm[]>([]);
   const [term, setTerm] = useState("");
-  const [kind, setKind] = useState<VocabularyTerm["kind"]>("custom");
+  const [kind, setKind] = useState<Kind>("custom");
   const [aliases, setAliases] = useState("");
   const [note, setNote] = useState("");
   const [filter, setFilter] = useState("");
 
+  async function refreshTerms() {
+    const response = await api.vocabularyTerms();
+    if (response.ok) setTerms(response.terms);
+    else setError(response.error || "تعذر تحميل المفردات.");
+  }
+
   useEffect(() => {
-    setTerms(readTerms());
+    void refreshTerms();
     void (async () => {
       const response = await api.search({ limit: 1000 });
       if (response.ok) setRecords(response.records);
       else setError(response.error);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api]);
 
   const discovered = useMemo(() => {
@@ -64,35 +48,34 @@ export default function VocabularyPage() {
     return terms.filter((item) => !normalized || normalizeText([item.term, item.aliases, item.note].join(" ")).includes(normalized));
   }, [filter, terms]);
 
-  function addTerm(event: FormEvent<HTMLFormElement>) {
+  async function addTerm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!term.trim()) return;
-    const next: VocabularyTerm = {
-      id: crypto.randomUUID(),
-      term: term.trim(),
-      kind,
-      aliases: aliases.trim(),
-      note: note.trim(),
-      createdAt: new Date().toISOString()
-    };
-    const nextTerms = [next, ...terms.filter((item) => normalizeText(item.term) !== normalizeText(next.term))].slice(0, 120);
-    writeTerms(nextTerms);
-    setTerms(nextTerms);
+    const trimmed = term.trim();
+    if (!trimmed) return;
+    // De-dupe by term client-side: drop any existing entry with the same normalized term.
+    const duplicate = terms.find((item) => normalizeText(item.term) === normalizeText(trimmed));
+    if (duplicate) await api.deleteVocabularyTerm(duplicate.id);
+    const response = await api.createVocabularyTerm({ term: trimmed, kind, aliases: aliases.trim(), note: note.trim() });
+    if (!response.ok) {
+      setError(response.error || "تعذر حفظ المصطلح.");
+      return;
+    }
+    await refreshTerms();
     setTerm("");
     setAliases("");
     setNote("");
     setKind("custom");
   }
 
-  function adoptDiscovered(item: { term: string; kind: VocabularyTerm["kind"] }) {
+  function adoptDiscovered(item: { term: string; kind: Kind }) {
     setTerm(item.term);
     setKind(item.kind);
   }
 
-  function removeTerm(id: string) {
-    const nextTerms = terms.filter((item) => item.id !== id);
-    writeTerms(nextTerms);
-    setTerms(nextTerms);
+  async function removeTerm(id: string) {
+    const response = await api.deleteVocabularyTerm(id);
+    if (!response.ok) setError(response.error || "تعذر حذف المصطلح.");
+    await refreshTerms();
   }
 
   return (
@@ -100,7 +83,7 @@ export default function VocabularyPage() {
       <PageToolbar
         eyebrow={<span className="badge">Taxonomy</span>}
         title="المفردات"
-        description="قاموس تشغيل يربط الأنواع والوسوم والمرادفات. يستخدم بيانات الأرشيف الحالية ويحتفظ بالملاحظات محلياً حتى يتوفر مخزن Vocabulary دائم."
+        description="قاموس تشغيل يربط الأنواع والوسوم والمرادفات. يستخدم بيانات الأرشيف الحالية ويحفظ المصطلحات في Laravel لكل مستخدم."
         meta={(
           <>
             <span className="badge">{savedTerms.length} مصطلح محفوظ</span>
@@ -116,7 +99,7 @@ export default function VocabularyPage() {
           </label>
           <label>
             <span>النوع</span>
-            <select value={kind} onChange={(event) => setKind(event.target.value as VocabularyTerm["kind"])}>
+            <select value={kind} onChange={(event) => setKind(event.target.value as Kind)}>
               <option value="custom">مخصص</option>
               <option value="type">نوع محتوى</option>
               <option value="tag">وسم</option>
@@ -169,7 +152,7 @@ export default function VocabularyPage() {
                   </span>
                   <div className="button-row">
                     <span className="badge">{item.kind}</span>
-                    <button type="button" className="button button-danger button-sm" onClick={() => removeTerm(item.id)}>حذف</button>
+                    <button type="button" className="button button-danger button-sm" onClick={() => void removeTerm(item.id)}>حذف</button>
                   </div>
                 </div>
               ))}

@@ -1594,6 +1594,72 @@
         }
       }
     },
+    "/vocabulary": {
+      "get": {
+        "tags": ["Vocabulary"],
+        "summary": "List vocabulary terms for the current user",
+        "operationId": "listVocabularyTerms",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Vocabulary terms",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VocabularyTermsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Vocabulary"],
+        "summary": "Create a vocabulary term for the current user",
+        "operationId": "createVocabularyTerm",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VocabularyTermCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created vocabulary term",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VocabularyTermResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/vocabulary/{id}": {
+      "delete": {
+        "tags": ["Vocabulary"],
+        "summary": "Delete a vocabulary term",
+        "operationId": "deleteVocabularyTerm",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/automation/rules": {
       "get": {
         "tags": ["Automation"],
@@ -3945,6 +4011,56 @@
             "required": ["item"],
             "properties": {
               "item": { "$ref": "#/components/schemas/InboxItem" }
+            }
+          }
+        ]
+      },
+      "VocabularyTerm": {
+        "type": "object",
+        "required": ["id", "term", "kind", "aliases", "note", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "term": { "type": "string" },
+          "kind": { "type": "string", "enum": ["type", "tag", "custom"] },
+          "aliases": { "type": ["string", "null"] },
+          "note": { "type": ["string", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "VocabularyTermCreateRequest": {
+        "type": "object",
+        "required": ["term"],
+        "properties": {
+          "term": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "kind": { "type": "string", "enum": ["type", "tag", "custom"] },
+          "aliases": { "type": "string", "maxLength": 500 },
+          "note": { "type": "string", "maxLength": 2000 }
+        }
+      },
+      "VocabularyTermsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["terms"],
+            "properties": {
+              "terms": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/VocabularyTerm" }
+              }
+            }
+          }
+        ]
+      },
+      "VocabularyTermResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["term"],
+            "properties": {
+              "term": { "$ref": "#/components/schemas/VocabularyTerm" }
             }
           }
         ]
