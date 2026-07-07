@@ -1427,6 +1427,173 @@
         }
       }
     },
+    "/collections": {
+      "get": {
+        "tags": ["Collections"],
+        "summary": "List collections for the current user",
+        "operationId": "listCollections",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Collections",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollectionsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Collections"],
+        "summary": "Create a collection for the current user",
+        "operationId": "createCollection",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CollectionCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created collection",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CollectionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/collections/{id}": {
+      "delete": {
+        "tags": ["Collections"],
+        "summary": "Delete a collection",
+        "operationId": "deleteCollection",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/inbox": {
+      "get": {
+        "tags": ["Inbox"],
+        "summary": "List inbox items for the current user",
+        "operationId": "listInboxItems",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Inbox items",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InboxItemsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Inbox"],
+        "summary": "Create an inbox item for the current user",
+        "operationId": "createInboxItem",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/InboxItemCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created inbox item",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InboxItemResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/inbox/{id}": {
+      "patch": {
+        "tags": ["Inbox"],
+        "summary": "Update an inbox item",
+        "operationId": "updateInboxItem",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/InboxItemUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated inbox item",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InboxItemResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Inbox"],
+        "summary": "Delete an inbox item",
+        "operationId": "deleteInboxItem",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/automation/rules": {
       "get": {
         "tags": ["Automation"],
@@ -3665,6 +3832,119 @@
             "required": ["search"],
             "properties": {
               "search": { "$ref": "#/components/schemas/SavedSearch" }
+            }
+          }
+        ]
+      },
+      "Collection": {
+        "type": "object",
+        "required": ["id", "name", "query", "type", "tag", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "query": { "type": ["string", "null"] },
+          "type": { "type": "string" },
+          "tag": { "type": "string" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CollectionCreateRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "query": { "type": "string", "maxLength": 500 },
+          "type": { "type": "string", "maxLength": 200 },
+          "tag": { "type": "string", "maxLength": 200 }
+        }
+      },
+      "CollectionsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["collections"],
+            "properties": {
+              "collections": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Collection" }
+              }
+            }
+          }
+        ]
+      },
+      "CollectionResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["collection"],
+            "properties": {
+              "collection": { "$ref": "#/components/schemas/Collection" }
+            }
+          }
+        ]
+      },
+      "InboxStatus": {
+        "type": "string",
+        "enum": ["new", "triage", "ready", "done"]
+      },
+      "InboxItem": {
+        "type": "object",
+        "required": ["id", "title", "source", "note", "status", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "source": { "type": ["string", "null"] },
+          "note": { "type": ["string", "null"] },
+          "status": { "$ref": "#/components/schemas/InboxStatus" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "InboxItemCreateRequest": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "source": { "type": "string", "maxLength": 500 },
+          "note": { "type": "string", "maxLength": 2000 },
+          "status": { "$ref": "#/components/schemas/InboxStatus" }
+        }
+      },
+      "InboxItemUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "maxLength": 300 },
+          "source": { "type": ["string", "null"], "maxLength": 500 },
+          "note": { "type": ["string", "null"], "maxLength": 2000 },
+          "status": { "$ref": "#/components/schemas/InboxStatus" }
+        }
+      },
+      "InboxItemsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["items"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/InboxItem" }
+              }
+            }
+          }
+        ]
+      },
+      "InboxItemResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["item"],
+            "properties": {
+              "item": { "$ref": "#/components/schemas/InboxItem" }
             }
           }
         ]

@@ -20,6 +20,16 @@
 
 ---
 
+## تخزين Laravel دائم للكيانات المحلية (شرائح 1–2) — 2026-07-07
+
+> شرائح من بند P1 المفتوح "تخزين Laravel دائم للكيانات المحلية" في [`TASKS.md`](TASKS.md). البند الأب يبقى مفتوحاً حتى تُنقل بقية الكيانات (Vocabulary, Tags hierarchy, Saved views, Workflow presets, Dashboard widgets, Automation drafts).
+
+- [x] **Collections على Laravel بدل localStorage** — أُضيف جدول `collections` (migration `2026_07_07_000001`)، و`CollectionsController` (index/store/destroy) مُسيَّج لكل مستخدم عبر `archive_user`، ومسارات `/api/v1/collections` + `/{id}` داخل مجموعة auth. وُثّق العقد في `docs/api/archive-contract.openapi.json` (مسارات + مخططات `Collection`/`CollectionCreateRequest`/`CollectionsResponse`/`CollectionResponse`) وأُضيف إلى allowlist المدقق `scripts/verify-api-contracts.mjs`. أُضيف `CollectionsApiTest` (6 حالات: CRUD، عزل المستخدم، رفض payload غير صالح، رفض حذف مفقود، رفض غير مصادق). حُوّلت صفحة `/collections` في Next لاستهلاك API بدل التخزين المحلي، مع توسيع `recordMatches` لقبول `query: string | null`.
+- [x] **Inbox على Laravel بدل localStorage** — أُضيف جدول `inbox_items` (migration `2026_07_07_000002`)، و`InboxController` (index/store/**patch**/destroy) مع تحقق حالة مقيّد بـ `new|triage|ready|done`، ومسارات `/api/v1/inbox` + `/{id}`. وُثّق العقد (مسارات + مخططات `InboxStatus`/`InboxItem`/`InboxItemCreateRequest`/`InboxItemUpdateRequest`/`InboxItemsResponse`/`InboxItemResponse`) وأُضيف إلى المدقق. أُضيف `InboxItemsApiTest` (6 حالات تشمل تحديث الحالة وعزل المستخدم). حُوّلت صفحة `/inbox` لاستهلاك API بدل localStorage.
+- التحقق: `node scripts/verify-api-contracts.mjs` → `ok`، و`pnpm run typecheck` خضراء. **معلّق:** بوابة Laravel/PHPUnit عبر Docker (نفس بوابة بقية بنود P1) لم تُشغَّل في هذه البيئة.
+
+---
+
 ## إصلاح بوابات pnpm verify — 2026-07-05
 
 - [x] **إصلاح `verify:cutover` بعد إعادة هيكلة TASKS.md** — كان `scripts/verify-cutover-defaults.mjs` يتحقق من وجود نص إنجليزي حرفي قديم ("Laravel API + Next.js TypeScript") داخل `TASKS.md`، وهو نص أُزيل عند إعادة تنظيم الملف (موجة 2026-07-04، بند "توحيد مصدر المهام") ونُقل خلاصته إلى `ChangeLog.md` (بند 5e.2-cutover). عُدّل السكربت ليتحقق من العبارة الفعلية الحالية في `TASKS.md` ("Laravel + Next.js هما المنتج القانوني") ومن وجود بند `[x] 5e.2-cutover` منجز في `ChangeLog.md`، بما يطابق اتفاقية المشروع بنقل البنود المنجزة من TASKS إلى ChangeLog.

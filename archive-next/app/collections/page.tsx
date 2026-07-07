@@ -5,54 +5,37 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type Collection } from "@/lib/archive-api";
 import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
-
-interface CollectionRule {
-  id: string;
-  name: string;
-  query: string;
-  type: string;
-  tag: string;
-  createdAt: string;
-}
 
 type LoadState =
   | { status: "loading" }
   | { status: "ready"; records: ArchiveRecord[] }
   | { status: "error"; message: string };
 
-const STORAGE_KEY = "masar:collections:v1";
-
-function readCollections(): CollectionRule[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeCollections(collections: CollectionRule[]) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
-}
-
 export default function CollectionsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [collections, setCollections] = useState<CollectionRule[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [statusMessage, setStatusMessage] = useState("");
   const [name, setName] = useState("");
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
   const [tag, setTag] = useState("all");
 
+  async function refreshCollections() {
+    const response = await api.collections();
+    if (response.ok) setCollections(response.collections);
+    else setStatusMessage(response.error || "تعذر تحميل المجموعات.");
+  }
+
   useEffect(() => {
-    setCollections(readCollections());
+    void refreshCollections();
     void (async () => {
       const response = await api.search({ limit: 1000 });
       setState(response.ok ? { status: "ready", records: response.records } : { status: "error", message: response.error });
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api]);
 
   const records = state.status === "ready" ? state.records : [];
@@ -67,44 +50,36 @@ export default function CollectionsPage() {
     ].slice(0, 6);
   }, [records]);
 
-  function addCollection(event: FormEvent<HTMLFormElement>) {
+  async function createCollection(payload: { name: string; query?: string; type?: string; tag?: string }) {
+    setStatusMessage("جار حفظ المجموعة...");
+    const response = await api.createCollection(payload);
+    if (!response.ok) {
+      setStatusMessage(response.error || "تعذر حفظ المجموعة.");
+      return;
+    }
+    setStatusMessage("تم حفظ المجموعة في Laravel.");
+    await refreshCollections();
+  }
+
+  async function addCollection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!name.trim()) return;
-    const next: CollectionRule = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      query: query.trim(),
-      type,
-      tag,
-      createdAt: new Date().toISOString()
-    };
-    const nextCollections = [next, ...collections].slice(0, 24);
-    writeCollections(nextCollections);
-    setCollections(nextCollections);
+    await createCollection({ name: name.trim(), query: query.trim(), type, tag });
     setName("");
     setQuery("");
     setType("all");
     setTag("all");
   }
 
-  function removeCollection(id: string) {
-    const nextCollections = collections.filter((collection) => collection.id !== id);
-    writeCollections(nextCollections);
-    setCollections(nextCollections);
+  async function removeCollection(id: string) {
+    const response = await api.deleteCollection(id);
+    if (!response.ok) setStatusMessage(response.error || "تعذر حذف المجموعة.");
+    else setStatusMessage("تم حذف المجموعة.");
+    await refreshCollections();
   }
 
-  function saveSuggestion(suggestion: { label: string; type: string; tag: string }) {
-    const next: CollectionRule = {
-      id: crypto.randomUUID(),
-      name: suggestion.label,
-      query: "",
-      type: suggestion.type,
-      tag: suggestion.tag,
-      createdAt: new Date().toISOString()
-    };
-    const nextCollections = [next, ...collections].slice(0, 24);
-    writeCollections(nextCollections);
-    setCollections(nextCollections);
+  async function saveSuggestion(suggestion: { label: string; type: string; tag: string }) {
+    await createCollection({ name: suggestion.label, type: suggestion.type, tag: suggestion.tag });
   }
 
   return (
@@ -112,7 +87,7 @@ export default function CollectionsPage() {
       <PageToolbar
         eyebrow={<span className="badge">Organize</span>}
         title="المجموعات"
-        description="تجميعات يدوية وذكية خفيفة فوق السجلات الحالية. التخزين المحلي هنا يمهد لعقد Collections دائم في Laravel."
+        description="تجميعات يدوية وذكية خفيفة فوق السجلات الحالية، محفوظة في Laravel لكل مستخدم."
         meta={(
           <>
             <span className="badge">{collections.length} مجموعة</span>
@@ -148,6 +123,7 @@ export default function CollectionsPage() {
             <button className="button button-primary" type="submit" disabled={!name.trim()}>حفظ المجموعة</button>
           </div>
         </form>
+        {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
 
       {state.status === "loading" ? <div className="panel panel-compact"><p className="form-status">جار تحميل السجلات...</p></div> : null}
@@ -181,11 +157,11 @@ export default function CollectionsPage() {
                 <dl className="mobile-field-list">
                   <div><dt>النوع</dt><dd>{collection.type === "all" ? "كل الأنواع" : collection.type}</dd></div>
                   <div><dt>الوسم</dt><dd>{collection.tag === "all" ? "كل الوسوم" : collection.tag}</dd></div>
-                  <div><dt>الإنشاء</dt><dd>{formatDate(collection.createdAt)}</dd></div>
+                  <div><dt>الإنشاء</dt><dd>{collection.createdAt ? formatDate(collection.createdAt) : "-"}</dd></div>
                 </dl>
                 <div className="button-row">
                   <a className="button button-primary button-sm" href={searchHref}>عرض النتائج</a>
-                  <button className="button button-danger button-sm" type="button" onClick={() => removeCollection(collection.id)}>حذف</button>
+                  <button className="button button-danger button-sm" type="button" onClick={() => void removeCollection(collection.id)}>حذف</button>
                 </div>
               </article>
             );
@@ -205,7 +181,7 @@ export default function CollectionsPage() {
                 <span>{suggestion.label}</span>
                 <div className="button-row">
                   <strong>{suggestion.count}</strong>
-                  <button type="button" className="button button-secondary button-sm" onClick={() => saveSuggestion(suggestion)}>حفظ</button>
+                  <button type="button" className="button button-secondary button-sm" onClick={() => void saveSuggestion(suggestion)}>حفظ</button>
                 </div>
               </div>
             ))}
