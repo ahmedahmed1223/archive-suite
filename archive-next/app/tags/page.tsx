@@ -4,50 +4,43 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type TagNode } from "@/lib/archive-api";
 import { countBy, normalizeText } from "@/lib/record-utils";
-
-const STORAGE_KEY = "masar:tags:parents:v1";
-
-function readParents(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}");
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeParents(parents: Record<string, string>) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parents));
-}
 
 export default function TagsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
   const [error, setError] = useState("");
-  const [parents, setParents] = useState<Record<string, string>>({});
+  const [nodes, setNodes] = useState<TagNode[]>([]);
   const [filter, setFilter] = useState("");
 
+  async function refreshNodes() {
+    const response = await api.tagNodes();
+    if (response.ok) setNodes(response.nodes);
+    else setError(response.error || "تعذر تحميل الوسوم.");
+  }
+
   useEffect(() => {
-    setParents(readParents());
+    void refreshNodes();
     void (async () => {
       const response = await api.search({ limit: 1000 });
       if (response.ok) setRecords(response.records);
       else setError(response.error);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api]);
+
+  const nodeByTag = useMemo(() => new Map(nodes.map((node) => [node.tag, node])), [nodes]);
 
   const tagRows = useMemo(() => {
     const rows = countBy(records.flatMap((record) => record.tags || [])).map(([tag, count]) => ({
       tag,
       count,
-      parent: parents[tag] || ""
+      parent: nodeByTag.get(tag)?.parent || ""
     }));
     const normalized = normalizeText(filter);
     return rows.filter((row) => !normalized || normalizeText(`${row.tag} ${row.parent}`).includes(normalized));
-  }, [filter, parents, records]);
+  }, [filter, nodeByTag, records]);
 
   const duplicateGroups = useMemo(() => {
     const groups = new Map<string, string[]>();
@@ -58,12 +51,20 @@ export default function TagsPage() {
     return Array.from(groups.values()).filter((items) => items.length > 1);
   }, [tagRows]);
 
-  function updateParent(tag: string, parent: string) {
-    const next = { ...parents };
-    if (parent) next[tag] = parent;
-    else delete next[tag];
-    writeParents(next);
-    setParents(next);
+  async function updateParent(tag: string, parent: string) {
+    const existing = nodeByTag.get(tag);
+    let response;
+    if (parent) {
+      response = existing
+        ? await api.updateTagNode(existing.id, { parent })
+        : await api.createTagNode({ tag, parent });
+    } else if (existing) {
+      response = await api.deleteTagNode(existing.id);
+    } else {
+      return;
+    }
+    if (!response.ok) setError(response.error || "تعذر حفظ الوسم.");
+    await refreshNodes();
   }
 
   return (
@@ -71,7 +72,7 @@ export default function TagsPage() {
       <PageToolbar
         eyebrow={<span className="badge">Tags</span>}
         title="الوسوم الهرمية"
-        description="إدارة يومية للوسوم: counts، آباء هرمية، ومؤشرات تكرار عربية. التعديلات المحلية تمهد لمخزن tags دائم."
+        description="إدارة يومية للوسوم: counts، آباء هرمية، ومؤشرات تكرار عربية. آباء الوسوم محفوظة في Laravel لكل مستخدم."
         meta={(
           <>
             <span className="badge">{tagRows.length} وسم</span>
@@ -108,7 +109,7 @@ export default function TagsPage() {
                 </span>
                 <div className="button-row">
                   <strong>{row.count}</strong>
-                  <select value={row.parent} onChange={(event) => updateParent(row.tag, event.target.value)} aria-label={`أب الوسم ${row.tag}`}>
+                  <select value={row.parent} onChange={(event) => void updateParent(row.tag, event.target.value)} aria-label={`أب الوسم ${row.tag}`}>
                     <option value="">بلا أب</option>
                     {tagRows.filter((item) => item.tag !== row.tag).map((item) => (
                       <option key={item.tag} value={item.tag}>{item.tag}</option>
