@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
    Login (app/login/page.tsx) — feature-scoped styles.
    Imported by the page itself, not the root layout.
-   Design tokens live in theme.css; shared UI stays in globals.css.
+   Design tokens live in theme.css; shared UI lives in styles/*.css.
    ═══════════════════════════════════════════════════════════════ */
 
 .login-shell {
