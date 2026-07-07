@@ -690,6 +690,105 @@ function RecordHistoryPanel({
   );
 }
 
+type RecordDescribePatch = {
+  title: string;
+  description: string;
+  type: string;
+  subtype: string | null;
+  tags: string[];
+};
+
+function RecordDescribeForm({
+  record,
+  onSave
+}: Readonly<{
+  record: ArchiveRecord;
+  onSave: (patch: RecordDescribePatch) => Promise<void>;
+}>) {
+  const [title, setTitle] = useState(record.title || "");
+  const [description, setDescription] = useState(record.description || "");
+  const [type, setType] = useState(record.type || "");
+  const [subtype, setSubtype] = useState(record.subtype || "");
+  const [tags, setTags] = useState((record.tags ?? []).join("، "));
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || !title.trim()) return;
+
+    setBusy(true);
+    setStatus("");
+    try {
+      await onSave({
+        title: title.trim(),
+        description: description.trim(),
+        type: type.trim(),
+        subtype: subtype.trim() ? subtype.trim() : null,
+        tags: tags.split(/[،,]/).map((tag) => tag.trim()).filter(Boolean)
+      });
+      setStatus("تم حفظ التوصيف.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "تعذر حفظ التوصيف.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <article className="panel">
+      <div className="panel-section-header panel-title-row">
+        <div>
+          <h2>تحرير التوصيف</h2>
+          <p className="helper-text">عدّل العنوان والوصف والنوع والوسوم واحفظها في الأرشيف مباشرة.</p>
+        </div>
+      </div>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <label>
+          العنوان
+          <input value={title} onChange={(event) => setTitle(event.target.value)} />
+        </label>
+        <label>
+          الوصف
+          <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} placeholder="وصف موجز للمادة يظهر في التفاصيل والبحث." />
+        </label>
+        <div className="field-row">
+          <label>
+            النوع
+            <input value={type} onChange={(event) => setType(event.target.value)} dir="ltr" placeholder="video" list="record-type-options" />
+          </label>
+          <label>
+            الفرع
+            <input value={subtype} onChange={(event) => setSubtype(event.target.value)} dir="ltr" placeholder="interview / raw" list="record-subtype-options" />
+          </label>
+        </div>
+        <label>
+          الوسوم
+          <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="أرشيف، مقابلات، 2026" />
+        </label>
+        <datalist id="record-type-options">
+          <option value="video" />
+          <option value="audio" />
+          <option value="image" />
+          <option value="document" />
+          <option value="map" />
+        </datalist>
+        <datalist id="record-subtype-options">
+          <option value="interview" />
+          <option value="raw" />
+          <option value="report" />
+          <option value="broadcast" />
+          <option value="highlights" />
+        </datalist>
+        <button type="submit" className="button button-primary" disabled={busy || !title.trim()}>
+          {busy ? "جار الحفظ..." : "حفظ التوصيف"}
+        </button>
+        {status ? <p className="form-status">{status}</p> : null}
+      </form>
+    </article>
+  );
+}
+
 export default function ArchiveDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
@@ -754,6 +853,27 @@ export default function ArchiveDetailPage() {
     }
 
     await refreshRelationGraph();
+  }
+
+  async function handleSaveRecord(patch: RecordDescribePatch) {
+    if (state.status !== "ready") return;
+    const store = state.record.store || "archive-items";
+    const updated: ArchiveRecord = {
+      ...state.record,
+      title: patch.title,
+      description: patch.description,
+      type: patch.type,
+      subtype: patch.subtype,
+      tags: patch.tags,
+      updatedAt: new Date().toISOString()
+    };
+
+    const response = await api.bulkRecords({ store, records: [updated] });
+    if (!response.ok) {
+      throw new Error(response.error || "تعذر حفظ التوصيف.");
+    }
+
+    setState((current) => (current.status === "ready" ? { ...current, record: updated } : current));
   }
 
   async function handleCreateNote(payload: { body: string; timestampSeconds?: number | null }) {
@@ -1096,6 +1216,7 @@ export default function ArchiveDetailPage() {
                 </div>
               ) : null}
             </article>
+            <RecordDescribeForm record={state.record} onSave={handleSaveRecord} />
             <RecordNotesPanel
               notes={state.notes}
               loading={state.notesLoading}
