@@ -69,7 +69,7 @@ export function countBy(values: string[]) {
   return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ar"));
 }
 
-export function recordMatches(record: ArchiveRecord, filters: { query?: string; type?: string; tag?: string; status?: string }) {
+export function recordMatches(record: ArchiveRecord, filters: { query?: string | null; type?: string; tag?: string; status?: string }) {
   if (filters.type && filters.type !== "all" && record.type !== filters.type) return false;
   if (filters.tag && filters.tag !== "all" && !(record.tags || []).includes(filters.tag)) return false;
   if (filters.status && filters.status !== "all" && getRecordWorkflowStatus(record) !== filters.status) return false;

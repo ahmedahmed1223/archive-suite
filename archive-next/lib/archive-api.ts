@@ -267,6 +267,49 @@ export interface CreateSavedSearchPayload {
   filters?: Record<string, unknown>;
 }
 
+export interface Collection {
+  id: string;
+  name: string;
+  query: string | null;
+  type: string;
+  tag: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateCollectionPayload {
+  name: string;
+  query?: string;
+  type?: string;
+  tag?: string;
+}
+
+export type InboxStatus = "new" | "triage" | "ready" | "done";
+
+export interface InboxItem {
+  id: string;
+  title: string;
+  source: string | null;
+  note: string | null;
+  status: InboxStatus;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateInboxItemPayload {
+  title: string;
+  source?: string;
+  note?: string;
+  status?: InboxStatus;
+}
+
+export interface UpdateInboxItemPayload {
+  title?: string;
+  source?: string | null;
+  note?: string | null;
+  status?: InboxStatus;
+}
+
 export type AutomationRuleTrigger = "record.created" | "record.updated" | "media.failed" | "schedule.daily";
 export type AutomationRuleAction = "add-tag" | "set-review" | "notify-admin" | "create-inbox-item";
 
@@ -770,6 +813,13 @@ export interface ArchiveApiClient {
   savedSearches(options?: AuthRequestOptions): Promise<ApiEnvelope<{ searches: SavedSearch[] }>>;
   createSavedSearch(payload: CreateSavedSearchPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
   deleteSavedSearch(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  collections(options?: AuthRequestOptions): Promise<ApiEnvelope<{ collections: Collection[] }>>;
+  createCollection(payload: CreateCollectionPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ collection: Collection }>>;
+  deleteCollection(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  inboxItems(options?: AuthRequestOptions): Promise<ApiEnvelope<{ items: InboxItem[] }>>;
+  createInboxItem(payload: CreateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
+  updateInboxItem(id: string, payload: UpdateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
+  deleteInboxItem(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   automationRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>>;
   createAutomationRule(payload: CreateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
@@ -1185,6 +1235,18 @@ export function createArchiveApiClient({
       post<{ search: SavedSearch }>("/saved-searches", payload, options),
     deleteSavedSearch: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/saved-searches/${encodeURIComponent(id)}`, undefined, options),
+    collections: (options?: AuthRequestOptions) => get<{ collections: Collection[] }>("/collections", options),
+    createCollection: (payload: CreateCollectionPayload, options?: AuthRequestOptions) =>
+      post<{ collection: Collection }>("/collections", payload, options),
+    deleteCollection: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/collections/${encodeURIComponent(id)}`, undefined, options),
+    inboxItems: (options?: AuthRequestOptions) => get<{ items: InboxItem[] }>("/inbox", options),
+    createInboxItem: (payload: CreateInboxItemPayload, options?: AuthRequestOptions) =>
+      post<{ item: InboxItem }>("/inbox", payload, options),
+    updateInboxItem: (id: string, payload: UpdateInboxItemPayload, options?: AuthRequestOptions) =>
+      patch<{ item: InboxItem }>(`/inbox/${encodeURIComponent(id)}`, payload, options),
+    deleteInboxItem: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/inbox/${encodeURIComponent(id)}`, undefined, options),
     automationRules: (options?: AuthRequestOptions) =>
       get<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>("/automation/rules", options),
     createAutomationRule: (payload: CreateAutomationRulePayload, options?: AuthRequestOptions) =>

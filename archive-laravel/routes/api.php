@@ -6,9 +6,11 @@ use App\Http\Controllers\Api\V1\AutomationRulesController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
+use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\DiscoverController;
 use App\Http\Controllers\Api\V1\FilesController;
 use App\Http\Controllers\Api\V1\ImportPreviewController;
+use App\Http\Controllers\Api\V1\InboxController;
 use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\IntakeTemplatesController;
 use App\Http\Controllers\Api\V1\InvitationsController;
@@ -134,6 +136,15 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/saved-searches', [SavedSearchesController::class, 'index']);
         Route::post('/saved-searches', [SavedSearchesController::class, 'store']);
         Route::delete('/saved-searches/{id}', [SavedSearchesController::class, 'destroy']);
+
+        Route::get('/collections', [CollectionsController::class, 'index']);
+        Route::post('/collections', [CollectionsController::class, 'store']);
+        Route::delete('/collections/{id}', [CollectionsController::class, 'destroy']);
+
+        Route::get('/inbox', [InboxController::class, 'index']);
+        Route::post('/inbox', [InboxController::class, 'store']);
+        Route::patch('/inbox/{id}', [InboxController::class, 'update']);
+        Route::delete('/inbox/{id}', [InboxController::class, 'destroy']);
 
         Route::get('/automation/rules', [AutomationRulesController::class, 'index']);
         Route::post('/automation/rules', [AutomationRulesController::class, 'store']);
