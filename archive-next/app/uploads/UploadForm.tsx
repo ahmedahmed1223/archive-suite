@@ -1,7 +1,8 @@
 "use client";
 
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, DragEvent, FormEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { UploadCloud } from "lucide-react";
 import { createArchiveApiClient, type ArchiveRecord, type IntakeTemplate, type UploadedRecord } from "@/lib/archive-api";
 
 type WizardStep = "files" | "metadata" | "review";
@@ -49,6 +50,27 @@ function parseTags(value: string) {
     .filter(Boolean);
 }
 
+// Reads duration + resolution straight from the file so operators don't have to
+// type them by hand. Resolves empty on any decode error — auto-fill is best-effort.
+function probeVideoMetadata(file: File): Promise<{ durationSeconds?: number; resolution?: string }> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    const done = (result: { durationSeconds?: number; resolution?: string }) => {
+      URL.revokeObjectURL(url);
+      resolve(result);
+    };
+    video.onloadedmetadata = () =>
+      done({
+        durationSeconds: Number.isFinite(video.duration) ? Math.round(video.duration) : undefined,
+        resolution: video.videoWidth && video.videoHeight ? `${video.videoWidth}x${video.videoHeight}` : undefined
+      });
+    video.onerror = () => done({});
+    video.src = url;
+  });
+}
+
 export function UploadForm() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [files, setFiles] = useState<File[]>([]);
@@ -67,6 +89,7 @@ export function UploadForm() {
   const [templates, setTemplates] = useState<IntakeTemplate[]>([]);
   const [templateId, setTemplateId] = useState("");
   const [state, setState] = useState<UploadState>({ status: "idle" });
+  const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -99,9 +122,41 @@ export function UploadForm() {
     if (template.type) setType(template.type);
   }
 
-  function handleFilesChange(event: ChangeEvent<HTMLInputElement>) {
-    setFiles(Array.from(event.target.files ?? []));
+  function ingestFiles(list: FileList | File[]) {
+    const next = Array.from(list ?? []);
+    setFiles(next);
     setState({ status: "idle" });
+
+    // Auto-fill video fields from the first video so they aren't typed manually.
+    const firstVideo = next.find((file) => suggestedType(file) === "video");
+    if (firstVideo) {
+      void probeVideoMetadata(firstVideo).then(({ durationSeconds, resolution }) => {
+        if (durationSeconds) setVideoDuration((prev) => prev || String(durationSeconds));
+        if (resolution) setVideoResolution((prev) => prev || resolution);
+      });
+    }
+  }
+
+  function handleFilesChange(event: ChangeEvent<HTMLInputElement>) {
+    ingestFiles(event.target.files ?? []);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragActive(false);
+    if (state.status === "uploading") return;
+    if (event.dataTransfer.files?.length) ingestFiles(event.dataTransfer.files);
+  }
+
+  function openFileDialog() {
+    if (state.status !== "uploading") inputRef.current?.click();
+  }
+
+  function handleDropzoneKey(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openFileDialog();
+    }
   }
 
   function removeFile(fileName: string) {
@@ -247,10 +302,33 @@ export function UploadForm() {
       <form className="auth-form" onSubmit={handleSubmit}>
         {step === "files" ? (
           <section className="wizard-pane" aria-label="اختيار الملفات">
-            <label>
-              الملفات
-              <input ref={inputRef} type="file" multiple onChange={handleFilesChange} disabled={state.status === "uploading"} />
-            </label>
+            <div
+              className="upload-dropzone"
+              data-drag={dragActive ? "true" : undefined}
+              role="button"
+              tabIndex={0}
+              aria-label="اسحب الملفات هنا أو انقر للاختيار"
+              onClick={openFileDialog}
+              onKeyDown={handleDropzoneKey}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragActive(true);
+              }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={handleDrop}
+            >
+              <UploadCloud aria-hidden="true" size={28} />
+              <strong>اسحب الملفات هنا أو انقر للاختيار</strong>
+              <span className="helper-text">فيديو، صوت، صور أو مستندات · حتى 600MB للملف · مدة الفيديو ودقته تُقرأ تلقائياً</span>
+              <input
+                ref={inputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={handleFilesChange}
+                disabled={state.status === "uploading"}
+              />
+            </div>
 
             {files.length ? (
               <ul className="file-queue">
@@ -323,7 +401,7 @@ export function UploadForm() {
                 <div className="panel-title-row">
                   <div>
                     <h3>حقول الفيديو</h3>
-                    <p className="field-note">تُحفظ داخل metadata.video ويمكن استخدامها لاحقاً في التفريغ والمراجعة.</p>
+                    <p className="field-note">المدة والدقة تُملأ تلقائياً من الملف — عدّلها عند الحاجة. تُحفظ داخل metadata.video لاستخدامها في التفريغ والمراجعة.</p>
                   </div>
                 </div>
                 <div className="field-row">

@@ -209,6 +209,35 @@
   background: var(--color-surface-subtle);
 }
 
+.upload-dropzone {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  border: 1.5px dashed var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-4);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone:focus-visible {
+  border-color: var(--color-brand-primary);
+  outline: none;
+}
+
+.upload-dropzone[data-drag="true"] {
+  border-color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-surface-subtle) 82%, var(--color-brand-primary));
+}
+
+.upload-dropzone strong {
+  color: var(--color-text-primary);
+}
+
 .badge,
 .tag {
   display: inline-flex;
