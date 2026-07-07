@@ -373,13 +373,27 @@ export function UploadForm() {
               </label>
               <label>
                 النوع
-                <input value={type} onChange={(event) => setType(event.target.value)} placeholder={inferredType || "video"} dir="ltr" />
+                <input value={type} onChange={(event) => setType(event.target.value)} placeholder={inferredType || "video"} dir="ltr" list="intake-type-options" />
               </label>
               <label>
                 النوع الفرعي
-                <input value={subtype} onChange={(event) => setSubtype(event.target.value)} placeholder="interview / raw / report" dir="ltr" />
+                <input value={subtype} onChange={(event) => setSubtype(event.target.value)} placeholder="interview / raw / report" dir="ltr" list="intake-subtype-options" />
               </label>
             </div>
+            <datalist id="intake-type-options">
+              <option value="video" />
+              <option value="audio" />
+              <option value="image" />
+              <option value="document" />
+              <option value="map" />
+            </datalist>
+            <datalist id="intake-subtype-options">
+              <option value="interview" />
+              <option value="raw" />
+              <option value="report" />
+              <option value="broadcast" />
+              <option value="highlights" />
+            </datalist>
 
             <label>
               وسوم
