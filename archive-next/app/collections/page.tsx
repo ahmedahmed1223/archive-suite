@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord, type Collection } from "@/lib/archive-api";
 import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 type LoadState =
   | { status: "loading" }
@@ -54,10 +55,13 @@ export default function CollectionsPage() {
     setStatusMessage("جار حفظ المجموعة...");
     const response = await api.createCollection(payload);
     if (!response.ok) {
-      setStatusMessage(response.error || "تعذر حفظ المجموعة.");
+      const message = response.error || "تعذر حفظ المجموعة.";
+      setStatusMessage(message);
+      toastError(message);
       return;
     }
-    setStatusMessage("تم حفظ المجموعة في الخادم.");
+    setStatusMessage("تم حفظ المجموعة.");
+    toastSuccess("تم حفظ المجموعة.");
     await refreshCollections();
   }
 

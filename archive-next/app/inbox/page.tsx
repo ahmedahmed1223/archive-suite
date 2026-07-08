@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type InboxItem, type InboxStatus } from "@/lib/archive-api";
 import { formatDate, normalizeText } from "@/lib/record-utils";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 const statusLabels: Record<InboxStatus, string> = {
   new: "وارد جديد",
@@ -52,10 +53,13 @@ export default function InboxPage() {
     setStatusMessage("جار الحفظ...");
     const response = await api.createInboxItem({ title: title.trim(), source: source.trim(), note: note.trim() });
     if (!response.ok) {
-      setStatusMessage(response.error || "تعذر إضافة العنصر.");
+      const message = response.error || "تعذر إضافة العنصر.";
+      setStatusMessage(message);
+      toastError(message);
       return;
     }
-    setStatusMessage("تمت الإضافة إلى الخادم.");
+    setStatusMessage("تمت الإضافة إلى الوارد.");
+    toastSuccess("تمت إضافة العنصر إلى الوارد.");
     setTitle("");
     setSource("");
     setNote("");
@@ -64,13 +68,23 @@ export default function InboxPage() {
 
   async function updateStatus(id: string, status: InboxStatus) {
     const response = await api.updateInboxItem(id, { status });
-    if (!response.ok) setStatusMessage(response.error || "تعذر تحديث الحالة.");
+    if (!response.ok) {
+      const message = response.error || "تعذر تحديث الحالة.";
+      setStatusMessage(message);
+      toastError(message);
+    }
     await refreshInbox();
   }
 
   async function removeItem(id: string) {
     const response = await api.deleteInboxItem(id);
-    if (!response.ok) setStatusMessage(response.error || "تعذر حذف العنصر.");
+    if (!response.ok) {
+      const message = response.error || "تعذر حذف العنصر.";
+      setStatusMessage(message);
+      toastError(message);
+    } else {
+      toastSuccess("تم حذف العنصر.");
+    }
     await refreshInbox();
   }
 
