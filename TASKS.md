@@ -21,22 +21,6 @@
 
 ## P1 — فجوات إنتاجية عالية
 
-- [ ] **Activity/history دائم مع undo/diffs** — تحويل `/activity` من سطح مركب/محلي إلى API دائم فوق audit log، وإضافة diff/restore decisions في `/archive/[id]`.
-  - القبول: سجل نشاط مصادق، قابل للتصفية، يعرض تغييرات السجلات وتعليقات الفريق ويتيح قرار استعادة آمن حيث ينطبق.
-  - الحالة: نُفذ endpoint `/api/v1/activity` العام، ووُصلت صفحة `/activity` به، وأضيفت diff/restore metadata في `/archive/[id]`. المتبقي قبل الإغلاق: تشغيل بوابة Laravel داخل Docker عند توفر صلاحية/رصيد Docker في البيئة.
-
-- [ ] **تخزين Laravel دائم للكيانات المحلية** — نقل Collections، Inbox، Vocabulary، Tags hierarchy، Saved views، Workflow presets، Dashboard widgets، وAutomation drafts من التخزين المحلي إلى Laravel.
-  - القبول: لا تضيع هذه الكيانات بعد تبديل المتصفح/الجهاز، وتظهر في API بعقود واختبارات.
-  - الحالة: **Collections**، **Inbox**، **Vocabulary**، و**Tags hierarchy** منجزة وموثّقة في `ChangeLog.md` (قسم 2026-07-07، شرائح 1–4). أما بقية الكيانات المذكورة فلا تحتاج نقلاً: **Saved views** مخزّنة سلفاً عبر `/saved-searches`، و**Automation drafts** عبر `/automation/rules`، بينما **Workflow presets** و**Dashboard widgets** غير موجودة كسطح localStorage. البند يبقى مفتوحاً فقط حتى تُشغَّل بوابة Laravel/PHPUnit داخل Docker.
-
-- [ ] **Search/archive power features** — إضافة backend facets، saved views persistence، details rail أعمق، وinline relation add/edit داخل صفحة التفاصيل.
-  - القبول: فلاتر search/archive محفوظة ومسنودة من Laravel، والعلاقات يمكن إنشاؤها/تعديلها من التفاصيل بدون مغادرة السياق.
-  - الحالة: نُفذت فلاتر `/search` وfacets، وربطت بحوث `/search` وعروض `/archive` المحفوظة بـ `/saved-searches`، وأضيف `PATCH /relations/{id}` ومحرر علاقات داخل `/archive/[id]`. المتبقي قبل الإغلاق: تشغيل بوابة Laravel داخل Docker عند توفر صلاحية/رصيد Docker في البيئة.
-
-- [ ] **Automation backend** — تنفيذ rules engine فعلي، execution log، permissions، وجدولة/تشغيل آمن بدلاً من dry-run المحلي فقط.
-  - القبول: القواعد تُحفظ في Laravel، تُنفذ بإذن واضح، وتملك سجل تشغيل قابل للمراجعة.
-  - الحالة: نُفذت جداول `automation_rules` و`automation_rule_runs`، ومسارات CRUD + dry-run/run، وربطت صفحة `/automation` بـ Laravel مع سجل تشغيل. المتبقي قبل الإغلاق: تشغيل بوابة Laravel داخل Docker عند توفر صلاحية/رصيد Docker في البيئة.
-
 - [ ] **تفريغ عربي إنتاجي على GPU** — التحقق الحي من `faster-whisper-large-v3` على GPU وصوت عربي حقيقي للوصول إلى دقة لا تقل عن 90%.
   - المنجز برمجياً: إعدادات GPU، large-v3، SRT/VTT/TTML، وdiarization flag.
   - القبول: تقرير smoke حي يتضمن عينة عربية، الجهاز المستخدم، المقاييس، ومخرجات SRT/VTT/TTML.

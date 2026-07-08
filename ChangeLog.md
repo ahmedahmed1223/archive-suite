@@ -20,6 +20,18 @@
 
 ---
 
+## إغلاق بنود P1 المعلّقة على بوابة Docker — 2026-07-08
+
+> شُغّلت بوابة `pnpm run verify:laravel` (Docker) في هذه البيئة بعد أن كانت البنود التالية منجزة برمجياً ومنتظرة فقط لهذا التحقق. النتيجة: 315 اختبار Laravel ناجح (1536 تأكيد)، و`pnpm run verify` الكامل أخضر (typecheck + build:next + verify:api-contracts + verify:repo-hygiene + verify:laravel).
+
+- [x] **Activity/history دائم مع undo/diffs** — `/api/v1/activity` متصل بصفحة `/activity`، مع diff/restore metadata في `/archive/[id]`. أُغلق بعد نجاح بوابة Laravel.
+- [x] **تخزين Laravel دائم للكيانات المحلية** — Collections، Inbox، Vocabulary، وTags hierarchy منقولة بالكامل (انظر قسم 2026-07-07 أدناه). Saved views وAutomation drafts مخزّنة سلفاً عبر `/saved-searches` و`/automation/rules`؛ Workflow presets وDashboard widgets لم تكن موجودة كسطح localStorage أصلاً. أُغلق البند الأب بعد نجاح بوابة Laravel.
+- [x] **Search/archive power features** — فلاتر `/search` وfacets، وربط بحوث `/search`/عروض `/archive` المحفوظة بـ `/saved-searches`، و`PATCH /relations/{id}` مع محرر علاقات داخل `/archive/[id]`. أُغلق بعد نجاح بوابة Laravel.
+- [x] **Automation backend** — جداول `automation_rules`/`automation_rule_runs`، مسارات CRUD + dry-run/run، وربط صفحة `/automation` بـ Laravel مع سجل تشغيل. أُغلق بعد نجاح بوابة Laravel.
+- التحقق: `pnpm run verify:laravel` (315 اختبار ناجح)، ثم `pnpm run verify` الكامل أخضر.
+
+---
+
 ## تخزين Laravel دائم للكيانات المحلية (شرائح 1–4) — 2026-07-07
 
 > شرائح من بند P1 المفتوح "تخزين Laravel دائم للكيانات المحلية" في [`TASKS.md`](TASKS.md). أُنجزت الكيانات المحلية الحقيقية (Collections, Inbox, Vocabulary, Tags hierarchy). أما بقية الكيانات المذكورة فقد تبيّن أنها إمّا مخزّنة سلفاً (Saved views عبر `/saved-searches`، Automation drafts عبر `/automation/rules`) أو غير موجودة كسطح localStorage (Workflow presets, Dashboard widgets). البند الأب يبقى مفتوحاً فقط حتى تُشغَّل بوابة Laravel/PHPUnit عبر Docker.
