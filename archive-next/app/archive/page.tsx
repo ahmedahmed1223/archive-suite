@@ -11,6 +11,7 @@ import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwit
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacets } from "@/lib/archive-api";
+import { toastError, toastSuccess } from "@/lib/toast";
 import styles from "./archive.module.css";
 
 // Workflow states mirrored from archive-app/src/features/archive/itemStatus.ts —
@@ -425,12 +426,15 @@ function ArchivePageContent() {
     });
 
     if (!response.ok) {
-      setSavedViewStatus(response.error || "تعذر حفظ العرض.");
+      const message = response.error || "تعذر حفظ العرض.";
+      setSavedViewStatus(message);
+      toastError(message);
       return;
     }
 
     await refreshSavedViews();
-    setSavedViewStatus("تم حفظ العرض في الخادم.");
+    setSavedViewStatus("تم حفظ العرض.");
+    toastSuccess("تم حفظ العرض.");
   };
 
   const applySavedView = (view: SavedArchiveView) => {
@@ -554,12 +558,12 @@ function ArchivePageContent() {
       }
 
       if (failedUids.length > 0) {
-        setBulkFeedback({
-          kind: "error",
-          message: `تم حذف ${deletedCount} سجل، وتعذر حذف ${failedUids.length}: ${failedUids.join("، ")}`
-        });
+        const message = `تم حذف ${deletedCount} سجل، وتعذر حذف ${failedUids.length}: ${failedUids.join("، ")}`;
+        setBulkFeedback({ kind: "error", message });
+        toastError(message);
       } else {
         setBulkFeedback({ kind: "success", message: `تم حذف ${deletedCount} سجل نهائيًا` });
+        toastSuccess(`تم حذف ${deletedCount} سجل نهائيًا.`);
       }
 
       setSelectedIds([]);

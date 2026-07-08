@@ -969,7 +969,7 @@ export function createArchiveApiClient({
 
     const payload = (await response.json().catch(() => ({
       ok: false,
-      error: `Invalid JSON response from ${path}`
+      error: "استجابة غير صالحة من الخادم. حاول لاحقاً أو تواصل مع مسؤول النظام."
     }))) as ApiEnvelope<T>;
 
     if (

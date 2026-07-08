@@ -6,6 +6,7 @@ import { useState } from "react";
 import CommandPalette from "@/components/CommandPalette";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { ToastProvider, ToastViewport } from "@/components/ui/Toast";
+import ToastHub from "@/components/ui/ToastHub";
 import { AuthGate, AuthProvider } from "@/lib/auth-session";
 
 export default function AppProviders({ children }: Readonly<{ children: ReactNode }>) {
@@ -29,6 +30,7 @@ export default function AppProviders({ children }: Readonly<{ children: ReactNod
           <ToastProvider swipeDirection="right">
             <AuthGate>{children}</AuthGate>
             <CommandPalette />
+            <ToastHub />
             <ToastViewport />
           </ToastProvider>
         </TooltipProvider>
