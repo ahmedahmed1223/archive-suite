@@ -67,6 +67,24 @@ export default function TagsPage() {
     await refreshNodes();
   }
 
+  async function updateColor(tagId: string, color: string | null) {
+    const response = await api.updateTagNode(tagId, { color: color || undefined });
+    if (!response.ok) setError(response.error || "تعذر تحديث اللون.");
+    else await refreshNodes();
+  }
+
+  async function mergeTags(sourceId: string, targetId: string) {
+    const response = await api.mergeTagNodes(sourceId, targetId);
+    if (!response.ok) setError(response.error || "تعذر دمج الوسوم.");
+    else await refreshNodes();
+  }
+
+  async function moveTag(tagId: string, newParent: string, deleteChildren: boolean = false) {
+    const response = await api.moveTagNode(tagId, newParent, deleteChildren);
+    if (!response.ok) setError(response.error || "تعذر نقل الوسم.");
+    else await refreshNodes();
+  }
+
   return (
     <AppShell subtitle="الوسوم" contentClassName="local-list-content">
       <PageToolbar
@@ -101,24 +119,36 @@ export default function TagsPage() {
       ) : (
         <section className="panel" aria-label="قائمة الوسوم">
           <div className="analytics-tag-list">
-            {tagRows.map((row) => (
-              <div className="analytics-tag-row" key={row.tag}>
-                <span>
-                  <strong>{row.tag}</strong>
-                  {row.parent ? <small className="helper-text"> · ضمن {row.parent}</small> : null}
-                </span>
-                <div className="button-row">
-                  <strong>{row.count}</strong>
-                  <select value={row.parent} onChange={(event) => void updateParent(row.tag, event.target.value)} aria-label={`أب الوسم ${row.tag}`}>
-                    <option value="">بلا أب</option>
-                    {tagRows.filter((item) => item.tag !== row.tag).map((item) => (
-                      <option key={item.tag} value={item.tag}>{item.tag}</option>
-                    ))}
-                  </select>
-                  <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(row.tag)}`}>بحث</a>
+            {tagRows.map((row) => {
+              const node = nodeByTag.get(row.tag);
+              return (
+                <div className="analytics-tag-row" key={row.tag} style={node?.color ? { borderLeft: `4px solid ${node.color}` } : {}}>
+                  <span>
+                    <strong>{row.tag}</strong>
+                    {row.parent ? <small className="helper-text"> · ضمن {row.parent}</small> : null}
+                  </span>
+                  <div className="button-row">
+                    <strong>{row.count}</strong>
+                    {node && (
+                      <input
+                        type="color"
+                        value={node.color || "#808080"}
+                        onChange={(event) => void updateColor(node.id, event.target.value)}
+                        aria-label={`لون الوسم ${row.tag}`}
+                        style={{ width: "2.5rem", height: "2.5rem", cursor: "pointer" }}
+                      />
+                    )}
+                    <select value={row.parent} onChange={(event) => void updateParent(row.tag, event.target.value)} aria-label={`أب الوسم ${row.tag}`}>
+                      <option value="">بلا أب</option>
+                      {tagRows.filter((item) => item.tag !== row.tag).map((item) => (
+                        <option key={item.tag} value={item.tag}>{item.tag}</option>
+                      ))}
+                    </select>
+                    <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(row.tag)}`}>بحث</a>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
