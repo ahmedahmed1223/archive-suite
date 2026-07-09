@@ -1,0 +1,128 @@
+/* Keyboard shortcuts customization UI */
+
+.shortcuts-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.shortcut-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.shortcut-info strong {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.shortcut-info small {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.shortcut-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 150ms ease-out;
+}
+
+.shortcut-badge:hover {
+  background: color-mix(in srgb, var(--color-bg-secondary) 90%, var(--color-brand-warm));
+  border-color: var(--color-border-accent);
+}
+
+.shortcut-badge:focus {
+  outline: 2px solid var(--color-border-accent);
+  outline-offset: 2px;
+}
+
+.shortcut-recorder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 2px solid var(--color-border-accent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface-subtle) 90%, var(--color-brand-warm));
+  min-width: 280px;
+  outline: none;
+}
+
+.shortcut-recorder:focus {
+  border-color: var(--color-border-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-accent) 25%, transparent);
+}
+
+.recorder-prompt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) 0;
+}
+
+.recorder-prompt svg {
+  color: var(--color-text-tertiary);
+}
+
+.recorder-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.recorder-preview .badge {
+  font-family: var(--font-family-mono);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+}
+
+.recorder-actions {
+  display: flex;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.recorder-actions .button {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  padding: 0.5rem;
+}
+
+.helper-text {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+.helper-text.status-error {
+  color: var(--color-status-error);
+}
+
+.helper-text.status-success {
+  color: var(--color-status-success);
+}
