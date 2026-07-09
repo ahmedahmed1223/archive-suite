@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/Tooltip";
 import { ToastProvider, ToastViewport } from "@/components/ui/Toast";
 import ToastHub from "@/components/ui/ToastHub";
 import OfflineStatusBanner from "@/components/OfflineStatusBanner";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthGate, AuthProvider } from "@/lib/auth-session";
 import { initializeOfflineManager, shutdownOfflineManager } from "@/lib/offline-manager";
 
@@ -36,17 +37,19 @@ export default function AppProviders({ children }: Readonly<{ children: ReactNod
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider delayDuration={180}>
-          <ToastProvider swipeDirection="right">
-            <OfflineStatusBanner />
-            <AuthGate>{children}</AuthGate>
-            <CommandPalette />
-            <ToastHub />
-            <ToastViewport />
-          </ToastProvider>
-        </TooltipProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider delayDuration={180}>
+            <ToastProvider swipeDirection="right">
+              <OfflineStatusBanner />
+              <AuthGate>{children}</AuthGate>
+              <CommandPalette />
+              <ToastHub />
+              <ToastViewport />
+            </ToastProvider>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
