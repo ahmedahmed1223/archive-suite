@@ -7,6 +7,7 @@ import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { navSectionLabels, primaryNav } from "@/lib/navigation";
+import { getShortcut, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
 
 const commandEventName = "masar:open-command-palette";
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
@@ -21,20 +22,27 @@ export default function CommandPalette() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    const shortcutBinding = getShortcut("commandPalette");
+
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      if (matchesKeyEvent(event, shortcutBinding)) {
         event.preventDefault();
         setOpen((current) => !current);
       }
     };
     const onOpen = () => setOpen(true);
+    const onShortcutsChanged = () => {
+      // Rebind listener on shortcut changes
+    };
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener(commandEventName, onOpen);
+    window.addEventListener("archive:shortcuts-changed", onShortcutsChanged);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener(commandEventName, onOpen);
+      window.removeEventListener("archive:shortcuts-changed", onShortcutsChanged);
     };
   }, []);
 

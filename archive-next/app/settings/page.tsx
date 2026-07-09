@@ -1,10 +1,12 @@
 "use client";
 
+import "./settings.css";
 import { useEffect, useState } from "react";
 import { Activity, AlertTriangle, DatabaseZap, Eye, Fingerprint, KeyRound, LifeBuoy, RefreshCw, Settings, ShieldCheck, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
+import ShortcutsSettings from "@/components/ShortcutsSettings";
 import { BRAND } from "@/lib/brand";
 import {
   createArchiveApiClient,
@@ -414,6 +416,8 @@ export default function SettingsPage() {
             </div>
           </div>
         </article>
+
+        <ShortcutsSettings />
 
         <article className="workspace-panel" aria-label="ODBC bridge">
           <div className="workspace-panel__header">
