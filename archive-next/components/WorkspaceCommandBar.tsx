@@ -3,9 +3,11 @@
 import { Activity, Bell, ChevronLeft, Gauge, Search, UploadCloud, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import { useAuthSession } from "@/lib/auth-session";
 import { isActivePath, navSectionLabels, primaryNav } from "@/lib/navigation";
+import { getShortcut, formatShortcutDisplay } from "@/lib/keyboard-shortcuts";
 
 const quickActions = [
   { href: "/uploads", label: "إضافة", icon: UploadCloud },
@@ -19,6 +21,20 @@ export default function WorkspaceCommandBar() {
   const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id ?? "مستخدم";
   const activeLink = primaryNav.find((link) => isActivePath(pathname, link.href)) ?? primaryNav[0];
   const activeSection = navSectionLabels[activeLink.section];
+  const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl K");
+
+  useEffect(() => {
+    const binding = getShortcut("commandPalette");
+    setShortcutDisplay(formatShortcutDisplay(binding));
+
+    const handleUpdate = () => {
+      const newBinding = getShortcut("commandPalette");
+      setShortcutDisplay(formatShortcutDisplay(newBinding));
+    };
+
+    window.addEventListener("archive:shortcuts-changed", handleUpdate);
+    return () => window.removeEventListener("archive:shortcuts-changed", handleUpdate);
+  }, []);
 
   return (
     <div className="workspace-commandbar" aria-label="شريط أوامر مساحة العمل">
@@ -39,7 +55,7 @@ export default function WorkspaceCommandBar() {
       <button type="button" className="workspace-commandbar__search" onClick={openCommandPalette}>
         <Search size={18} aria-hidden="true" />
         <span>بحث، فتح صفحة، أو تنفيذ أمر...</span>
-        <kbd>Ctrl K</kbd>
+        <kbd>{shortcutDisplay}</kbd>
       </button>
       <nav className="workspace-commandbar__quick" aria-label="أوامر سريعة">
         {quickActions.map((action) => {
