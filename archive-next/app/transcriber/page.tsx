@@ -81,6 +81,17 @@ export default function TranscriberPage() {
     const sourcePath = String(data.get("sourcePath") ?? "").trim();
     const disk = String(data.get("disk") ?? "").trim();
     const language = String(data.get("language") ?? "ar").trim() || "ar";
+    const device = String(data.get("device") ?? "cpu").trim() || "cpu";
+
+    // Collect selected output formats
+    const outputFormats: string[] = [];
+    if (data.get("format-srt")) outputFormats.push("srt");
+    if (data.get("format-vtt")) outputFormats.push("vtt");
+    if (data.get("format-ttml")) outputFormats.push("ttml");
+    if (outputFormats.length === 0) {
+      setSubmitState({ status: "error", message: "اختر صيغة إخراج واحدة على الأقل." });
+      return;
+    }
 
     if (!recordId || !sourcePath) {
       setSubmitState({ status: "error", message: "أدخل معرّف السجل ومسار الملف قبل بدء التفريغ." });
@@ -95,7 +106,7 @@ export default function TranscriberPage() {
       recordId,
       operation: "transcription",
       sourcePath,
-      options: { language, ...(disk ? { disk } : {}) }
+      options: { language, device, outputFormats, ...(disk ? { disk } : {}) }
     });
 
     if (!response.ok) {
@@ -103,6 +114,15 @@ export default function TranscriberPage() {
       return;
     }
 
+    setSubmitState({ status: "tracking", job: response.job });
+  }
+
+  async function handleCancel(jobId: string) {
+    const response = await api.cancelMediaJob(jobId);
+    if (!response.ok) {
+      alert(`فشل الإلغاء: ${response.error}`);
+      return;
+    }
     setSubmitState({ status: "tracking", job: response.job });
   }
 
@@ -159,6 +179,31 @@ export default function TranscriberPage() {
               <input name="language" type="text" defaultValue="ar" />
             </label>
 
+            <label>
+              نوع المعالج
+              <select name="device" defaultValue="cpu">
+                <option value="cpu">CPU (أسرع تحميل)</option>
+                <option value="gpu">GPU (أسرع معالجة)</option>
+                <option value="auto">تلقائي</option>
+              </select>
+            </label>
+
+            <fieldset className="stack" style={{ gap: '0.5rem' }}>
+              <legend>صيغ الإخراج</legend>
+              <label className="checkbox-row">
+                <input name="format-srt" type="checkbox" defaultChecked />
+                SRT (نص مع الطوابع)
+              </label>
+              <label className="checkbox-row">
+                <input name="format-vtt" type="checkbox" defaultChecked />
+                VTT (فيديو ويب)
+              </label>
+              <label className="checkbox-row">
+                <input name="format-ttml" type="checkbox" defaultChecked />
+                TTML (تنسيق توقيت نص)
+              </label>
+            </fieldset>
+
             <button
               type="submit"
               className="button button-primary"
@@ -180,6 +225,26 @@ export default function TranscriberPage() {
                 <h2>حالة المهمة</h2>
                 <span className="badge">{trackedJob.status}</span>
               </div>
+
+              {(trackedJob.status === "queued" || trackedJob.status === "processing") && (
+                <div className="state-banner">
+                  <div className="helper-row">
+                    <strong>{trackedJob.progressStage || "جاري التفريغ"}</strong>
+                    <span className="field-note">{(trackedJob.progressPercent ?? 0)}%</span>
+                  </div>
+                  <div style={{ width: "100%", height: "8px", backgroundColor: "rgba(0,0,0,0.1)", borderRadius: "4px", overflow: "hidden" }}>
+                    <div style={{ width: `${(trackedJob.progressPercent ?? 0)}%`, height: "100%", backgroundColor: "currentColor", transition: "width 0.2s" }} />
+                  </div>
+                  <button
+                    type="button"
+                    className="button button-secondary button-sm"
+                    onClick={() => handleCancel(trackedJob.id)}
+                    disabled={submitState.status === "submitting"}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              )}
 
               <div className="kv-grid">
                 <div className="kv-item">

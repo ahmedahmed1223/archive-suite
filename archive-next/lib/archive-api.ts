@@ -581,7 +581,7 @@ export interface SmbPullPayload {
 }
 
 export type MediaOperation = "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
-export type MediaJobStatus = "queued" | "processing" | "completed" | "failed";
+export type MediaJobStatus = "queued" | "processing" | "completed" | "failed" | "canceled";
 
 export interface MediaJob {
   id: string;
@@ -592,6 +592,8 @@ export interface MediaJob {
   options?: Record<string, unknown>;
   result?: Record<string, unknown> | null;
   error?: string | null;
+  progressStage?: string | null;
+  progressPercent?: number | null;
   queuedAt?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
@@ -860,6 +862,7 @@ export interface ArchiveApiClient {
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[] }>>;
   createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
+  cancelMediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   broadcastMetadata(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   updateBroadcastMetadata(recordId: string, payload: BroadcastMetadataPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
@@ -1209,6 +1212,8 @@ export function createArchiveApiClient({
     },
     createMediaJob: (payload: CreateMediaJobPayload, options?: AuthRequestOptions) =>
       post<{ job: MediaJob }>("/media/jobs", payload, options),
+    cancelMediaJob: (id: string, options?: AuthRequestOptions) =>
+      post<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}/cancel`, {}, options),
     broadcastMetadata: (recordId: string, options?: AuthRequestOptions) =>
       get<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>(
         `/records/${encodeURIComponent(recordId)}/broadcast-metadata`,

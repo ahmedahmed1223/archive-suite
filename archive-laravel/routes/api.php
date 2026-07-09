@@ -119,6 +119,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/media/jobs', [MediaJobsController::class, 'index']);
         Route::post('/media/jobs', [MediaJobsController::class, 'store']);
         Route::get('/media/jobs/{id}', [MediaJobsController::class, 'show']);
+        Route::post('/media/jobs/{id}/cancel', [MediaJobsController::class, 'cancel']);
 
         Route::get('/montage-projects', [MontageProjectsController::class, 'index']);
         Route::post('/montage-projects', [MontageProjectsController::class, 'store']);
