@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\IntakeTemplatesController;
 use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
+use App\Http\Controllers\Api\V1\MontageProjectsController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
 use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordsController;
@@ -116,6 +117,13 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/media/jobs', [MediaJobsController::class, 'index']);
         Route::post('/media/jobs', [MediaJobsController::class, 'store']);
         Route::get('/media/jobs/{id}', [MediaJobsController::class, 'show']);
+
+        Route::get('/montage-projects', [MontageProjectsController::class, 'index']);
+        Route::post('/montage-projects', [MontageProjectsController::class, 'store']);
+        Route::get('/montage-projects/{id}', [MontageProjectsController::class, 'show']);
+        Route::put('/montage-projects/{id}', [MontageProjectsController::class, 'update']);
+        Route::delete('/montage-projects/{id}', [MontageProjectsController::class, 'destroy']);
+
         Route::post('/share', [ShareController::class, 'store']);
 
         Route::get('/rights/expiring', [RightsController::class, 'expiring']);

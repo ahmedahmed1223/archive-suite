@@ -1,18 +1,46 @@
-// Projects / Montage — pure logic + localStorage persistence.
-// Ported from legacy archive-app/src/features/projects/viewModel.ts (buildEdl,
-// secondsToTimecode, rough-cut ops) and exportClient.ts (safeFileName).
-// Pure functions only (no DOM) except the storage helpers, so the EDL/JSON
-// export formatting stays unit-testable.
-// ponytail: single-track port; legacy multi-track/filters/transitions dropped —
-// re-port from archive-app/src/features/montage if timeline effects return.
+// Projects / Montage — pure logic + persistent storage via Laravel API.
+// Extended from single-track to multi-track with markers, comments, and transitions.
+// ponytail: timeline persists in Laravel; client JSON serialization for export/import.
+
+export interface MontageTrack {
+  id: string;
+  type: 'video' | 'audio' | 'overlay' | 'title';
+  name: string;
+  order: number;
+  locked?: boolean;
+  magnetic?: boolean;
+}
 
 export interface MontageClip {
   id: string;
   itemId: string;
   title: string;
+  trackId: string;
+  timelineStartSec: number;
   inSec: number;
   outSec: number;
-  order: number;
+}
+
+export interface MontageMarker {
+  id: string;
+  timeSec: number;
+  label: string;
+  color?: string;
+}
+
+export interface MontageComment {
+  id: string;
+  clipId: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface MontageTransition {
+  id: string;
+  fromClipId: string;
+  toClipId: string;
+  type: 'cut' | 'fade';
+  durationSec: number;
 }
 
 export interface MontageProject {
@@ -20,7 +48,11 @@ export interface MontageProject {
   name: string;
   description: string;
   fps: number;
+  tracks: MontageTrack[];
   clips: MontageClip[];
+  markers: MontageMarker[];
+  comments: MontageComment[];
+  transitions: MontageTransition[];
   createdAt: string;
   updatedAt: string;
 }
@@ -43,69 +75,134 @@ export function createProject(name: string, description = ""): MontageProject {
     name: name.trim(),
     description: description.trim(),
     fps: DEFAULT_FPS,
+    tracks: [
+      { id: uid("track"), type: "video", name: "Video", order: 0, magnetic: true },
+      { id: uid("track"), type: "audio", name: "Audio", order: 1 }
+    ],
     clips: [],
+    markers: [],
+    comments: [],
+    transitions: [],
     createdAt: now,
     updatedAt: now
   };
 }
 
 export function isValidClip(clip: MontageClip): boolean {
-  return Boolean(clip.itemId) && toNum(clip.inSec) < toNum(clip.outSec);
+  return Boolean(clip.itemId && clip.trackId) && toNum(clip.inSec) < toNum(clip.outSec);
 }
 
 export function clipDuration(clip: MontageClip): number {
   return Math.max(0, toNum(clip.outSec) - toNum(clip.inSec));
 }
 
-export function orderedClips(project: MontageProject): MontageClip[] {
-  return [...project.clips].sort((a, b) => a.order - b.order);
+export function clipsByTrack(project: MontageProject, trackId: string): MontageClip[] {
+  return project.clips
+    .filter((c) => c.trackId === trackId)
+    .sort((a, b) => a.timelineStartSec - b.timelineStartSec);
+}
+
+export function allClipsOrdered(project: MontageProject): MontageClip[] {
+  return [...project.clips].sort((a, b) => a.timelineStartSec - b.timelineStartSec);
 }
 
 export function projectDuration(project: MontageProject): number {
-  return orderedClips(project).filter(isValidClip).reduce((sum, clip) => sum + clipDuration(clip), 0);
+  let maxEnd = 0;
+  for (const clip of project.clips) {
+    if (isValidClip(clip)) {
+      maxEnd = Math.max(maxEnd, clip.timelineStartSec + clipDuration(clip));
+    }
+  }
+  return maxEnd;
 }
 
 export function addClip(
   project: MontageProject,
-  partial: { itemId: string; title: string; inSec: number; outSec: number }
+  partial: { itemId: string; title: string; trackId: string; inSec: number; outSec: number; timelineStartSec?: number }
 ): MontageProject {
+  const duration = toNum(partial.outSec) - toNum(partial.inSec);
+  const timelineStart = partial.timelineStartSec ?? projectDuration(project);
   const clip: MontageClip = {
     id: uid("cut"),
     itemId: partial.itemId,
     title: partial.title.trim(),
+    trackId: partial.trackId,
+    timelineStartSec: timelineStart,
     inSec: toNum(partial.inSec),
-    outSec: toNum(partial.outSec),
-    order: project.clips.length
+    outSec: toNum(partial.outSec)
   };
   return { ...project, clips: [...project.clips, clip], updatedAt: new Date().toISOString() };
 }
 
 export function removeClip(project: MontageProject, clipId: string): MontageProject {
-  const clips = project.clips.filter((clip) => clip.id !== clipId).map((clip, order) => ({ ...clip, order }));
-  return { ...project, clips, updatedAt: new Date().toISOString() };
+  const clips = project.clips.filter((clip) => clip.id !== clipId);
+  const comments = project.comments.filter((c) => c.clipId !== clipId);
+  const transitions = project.transitions.filter((t) => t.fromClipId !== clipId && t.toClipId !== clipId);
+  return {
+    ...project,
+    clips,
+    comments,
+    transitions,
+    updatedAt: new Date().toISOString()
+  };
 }
 
 export function updateClip(
   project: MontageProject,
   clipId: string,
-  patch: Partial<Pick<MontageClip, "title" | "inSec" | "outSec">>
+  patch: Partial<Pick<MontageClip, "title" | "inSec" | "outSec" | "timelineStartSec">>
 ): MontageProject {
   const clips = project.clips.map((clip) => (clip.id === clipId ? { ...clip, ...patch } : clip));
   return { ...project, clips, updatedAt: new Date().toISOString() };
 }
 
-/** Move a clip to a new index in the timeline order. */
-export function reorderClip(project: MontageProject, clipId: string, toIndex: number): MontageProject {
-  const clips = orderedClips(project);
-  const from = clips.findIndex((clip) => clip.id === clipId);
-  if (from < 0) return project;
-  const clamped = Math.max(0, Math.min(toIndex, clips.length - 1));
-  const next = [...clips];
-  const [moved] = next.splice(from, 1);
-  next.splice(clamped, 0, moved);
+export function addMarker(project: MontageProject, timeSec: number, label: string, color?: string): MontageProject {
+  const marker: MontageMarker = { id: uid("marker"), timeSec: toNum(timeSec), label: label.trim(), color };
+  return { ...project, markers: [...project.markers, marker], updatedAt: new Date().toISOString() };
+}
+
+export function removeMarker(project: MontageProject, markerId: string): MontageProject {
   return {
     ...project,
-    clips: next.map((clip, order) => ({ ...clip, order })),
+    markers: project.markers.filter((m) => m.id !== markerId),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export function addComment(project: MontageProject, clipId: string, text: string): MontageProject {
+  const comment: MontageComment = { id: uid("comment"), clipId, text: text.trim(), createdAt: new Date().toISOString() };
+  return { ...project, comments: [...project.comments, comment], updatedAt: new Date().toISOString() };
+}
+
+export function removeComment(project: MontageProject, commentId: string): MontageProject {
+  return {
+    ...project,
+    comments: project.comments.filter((c) => c.id !== commentId),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export function addTransition(
+  project: MontageProject,
+  fromClipId: string,
+  toClipId: string,
+  type: 'cut' | 'fade',
+  durationSec = 0.5
+): MontageProject {
+  const transition: MontageTransition = {
+    id: uid("transition"),
+    fromClipId,
+    toClipId,
+    type,
+    durationSec: Math.max(0, toNum(durationSec))
+  };
+  return { ...project, transitions: [...project.transitions, transition], updatedAt: new Date().toISOString() };
+}
+
+export function removeTransition(project: MontageProject, transitionId: string): MontageProject {
+  return {
+    ...project,
+    transitions: project.transitions.filter((t) => t.id !== transitionId),
     updatedAt: new Date().toISOString()
   };
 }
@@ -134,66 +231,81 @@ export interface TimelineExport {
   project: { id: string; name: string };
   fps: number;
   totalDuration: number;
+  tracks: Array<{ id: string; type: string; name: string; order: number }>;
   clips: Array<{
     id: string;
     itemId: string;
     title: string;
+    trackId: string;
     sourceIn: number;
     sourceOut: number;
     timelineStart: number;
     duration: number;
   }>;
+  transitions: Array<{
+    id: string;
+    fromClipId: string;
+    toClipId: string;
+    type: string;
+    durationSec: number;
+  }>;
   version: string;
 }
 
-/** Structured timeline (NLE interchange JSON) for the valid clips, in order. */
+/** Structured timeline (NLE interchange JSON) for all valid clips with transitions. */
 export function buildTimelineJson(project: MontageProject): TimelineExport {
-  let start = 0;
-  const clips = orderedClips(project)
+  const clips = allClipsOrdered(project)
     .filter(isValidClip)
-    .map((clip) => {
-      const duration = clipDuration(clip);
-      const entry = {
-        id: clip.id,
-        itemId: clip.itemId,
-        title: clip.title || clip.itemId,
-        sourceIn: clip.inSec,
-        sourceOut: clip.outSec,
-        timelineStart: start,
-        duration
-      };
-      start += duration;
-      return entry;
-    });
+    .map((clip) => ({
+      id: clip.id,
+      itemId: clip.itemId,
+      title: clip.title || clip.itemId,
+      trackId: clip.trackId,
+      sourceIn: clip.inSec,
+      sourceOut: clip.outSec,
+      timelineStart: clip.timelineStartSec,
+      duration: clipDuration(clip)
+    }));
+
   return {
     project: { id: project.id, name: project.name },
     fps: project.fps || DEFAULT_FPS,
-    totalDuration: start,
+    totalDuration: projectDuration(project),
+    tracks: project.tracks,
     clips,
-    version: "1.0"
+    transitions: project.transitions,
+    version: "2.0"
   };
 }
 
 /**
  * CMX3600 EDL string (importable into DaVinci Resolve / Premiere).
- * Sequential record timecodes; source in/out from each clip.
+ * Sequential record timecodes per video track; includes transition markers.
  */
 export function buildEdl(project: MontageProject): string {
   const fps = project.fps || DEFAULT_FPS;
-  const timeline = buildTimelineJson(project);
+  const videoTrack = project.tracks.find((t) => t.type === "video");
+  const videoClips = videoTrack ? clipsByTrack(project, videoTrack.id).filter(isValidClip) : [];
+
   const lines = [`TITLE: ${project.name || "Untitled"}`, "FCM: NON-DROP FRAME"];
   let record = 0;
-  timeline.clips.forEach((clip, i) => {
+
+  videoClips.forEach((clip, i) => {
     const num = String(i + 1).padStart(3, "0");
-    const srcIn = secondsToTimecode(clip.sourceIn, fps);
-    const srcOut = secondsToTimecode(clip.sourceOut, fps);
+    const srcIn = secondsToTimecode(clip.inSec, fps);
+    const srcOut = secondsToTimecode(clip.outSec, fps);
     const recIn = secondsToTimecode(record, fps);
-    record += clip.duration;
+    const duration = clipDuration(clip);
+    record += duration;
     const recOut = secondsToTimecode(record, fps);
     const reel = (clip.itemId || `CLIP${i + 1}`).replace(/[^A-Za-z0-9]/g, "").slice(0, 8).toUpperCase() || `CLIP${i + 1}`;
-    lines.push(`${num}  ${reel} V     C        ${srcIn} ${srcOut} ${recIn} ${recOut}`);
+
+    const transition = project.transitions.find((t) => t.fromClipId === clip.id);
+    const editMode = transition?.type === "fade" ? "F" : "C";
+    lines.push(`${num}  ${reel} V     ${editMode}        ${srcIn} ${srcOut} ${recIn} ${recOut}`);
     if (clip.title) lines.push(`* FROM CLIP NAME: ${clip.title}`);
   });
+
   return lines.join("\n");
 }
 
@@ -251,11 +363,20 @@ export function resolveMontageClipPaths(
   return { clips: resolved, failures };
 }
 
-// ── localStorage persistence (same pattern as lib/favorites.ts) ─────────────
+// ── API persistence (with localStorage fallback) ──────────────────────────
 
 const STORAGE_KEY = "masar.montage-projects";
 
-export function listProjects(): MontageProject[] {
+export async function listProjects(): Promise<MontageProject[]> {
+  try {
+    const response = await fetch("/api/v1/montage-projects", { method: "GET" });
+    if (response.ok) {
+      const data = await response.json();
+      return data.projects || [];
+    }
+  } catch {
+    // API unavailable, fall back to localStorage
+  }
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -265,27 +386,72 @@ export function listProjects(): MontageProject[] {
   }
 }
 
-function setStorage(projects: MontageProject[]): void {
-  if (typeof window === "undefined") return;
+export async function getProject(id: string): Promise<MontageProject | null> {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    const response = await fetch(`/api/v1/montage-projects/${id}`, { method: "GET" });
+    if (response.ok) {
+      const data = await response.json();
+      return data.project || null;
+    }
   } catch {
-    // Silent fail on storage quota exceeded or other errors
+    // Fall back to localStorage
+  }
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const projects = stored ? (JSON.parse(stored) as MontageProject[]) : [];
+    return projects.find((p) => p.id === id) || null;
+  } catch {
+    return null;
   }
 }
 
-export function saveProject(project: MontageProject): MontageProject[] {
-  const projects = listProjects();
-  const index = projects.findIndex((p) => p.id === project.id);
-  const next = index >= 0
-    ? projects.map((p) => (p.id === project.id ? project : p))
-    : [project, ...projects];
-  setStorage(next);
-  return next;
+export async function saveProject(project: MontageProject): Promise<MontageProject> {
+  try {
+    const isNew = !project.id || project.id.startsWith("project_");
+    const response = await fetch(
+      isNew ? "/api/v1/montage-projects" : `/api/v1/montage-projects/${project.id}`,
+      {
+        method: isNew ? "POST" : "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(project)
+      }
+    );
+    if (response.ok) {
+      const data = await response.json();
+      return data.project || project;
+    }
+  } catch {
+    // Fall back to localStorage
+  }
+  if (typeof window !== "undefined") {
+    try {
+      const projects = (await listProjects()) as MontageProject[];
+      const index = projects.findIndex((p) => p.id === project.id);
+      const next = index >= 0
+        ? projects.map((p) => (p.id === project.id ? project : p))
+        : [project, ...projects];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Ignore storage errors
+    }
+  }
+  return project;
 }
 
-export function deleteProject(id: string): MontageProject[] {
-  const next = listProjects().filter((p) => p.id !== id);
-  setStorage(next);
-  return next;
+export async function deleteProject(id: string): Promise<void> {
+  try {
+    await fetch(`/api/v1/montage-projects/${id}`, { method: "DELETE" });
+  } catch {
+    // Fall back to localStorage
+  }
+  if (typeof window !== "undefined") {
+    try {
+      const projects = (await listProjects()) as MontageProject[];
+      const next = projects.filter((p) => p.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Ignore storage errors
+    }
+  }
 }
