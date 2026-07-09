@@ -28,13 +28,7 @@ class FakeMediaProcessor implements MediaProcessor
                     'url' => null,
                 ],
             ],
-            'transcription' => [
-                [
-                    'kind' => 'transcript',
-                    'key' => "{$job->record_id}/transcript.vtt",
-                    'url' => null,
-                ],
-            ],
+            'transcription' => $this->fakeTranscription($job),
             'ocr' => [
                 [
                     'kind' => 'ocr_text',
@@ -51,5 +45,26 @@ class FakeMediaProcessor implements MediaProcessor
             ],
             default => [],
         };
+    }
+
+    /**
+     * Return fake transcription artifacts for all requested formats.
+     *
+     * @return array<int, array{kind: string, key: string, url: null}>
+     */
+    private function fakeTranscription(MediaJob $job): array
+    {
+        $outputFormats = $job->options['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
+        $artifacts = [];
+
+        foreach ($outputFormats as $format) {
+            $artifacts[] = [
+                'kind' => "transcript_{$format}",
+                'key' => "{$job->record_id}/transcript.{$format}",
+                'url' => null,
+            ];
+        }
+
+        return $artifacts;
     }
 }

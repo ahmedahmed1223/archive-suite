@@ -43,6 +43,10 @@ const mediaJobFormSchema = z
     operation: z.string().trim().min(1, "اختر نوع العملية."),
     sourcePath: z.string().trim().optional().transform((value) => value || undefined),
     atSec: z.coerce.number().min(0, "الثانية لا يمكن أن تكون سالبة.").max(86400, "الحد الأقصى 86400 ثانية.").default(0),
+    device: z.string().default("cpu"),
+    formatSrt: z.boolean().optional().default(true),
+    formatVtt: z.boolean().optional().default(true),
+    formatTtml: z.boolean().optional().default(true),
     watermarkEnabled: z.boolean().optional().default(false),
     watermarkPath: z.string().trim().optional().transform((value) => value || undefined),
     watermarkPosition: z.string().default("bottom-right"),
@@ -104,6 +108,10 @@ export function MediaJobsList() {
       operation: "",
       sourcePath: "",
       atSec: 0,
+      device: "cpu",
+      formatSrt: true,
+      formatVtt: true,
+      formatTtml: true,
       watermarkEnabled: false,
       watermarkPath: "",
       watermarkPosition: "bottom-right",
@@ -165,6 +173,17 @@ export function MediaJobsList() {
 
     if (operation === "thumbnail") {
       options.atSec = clampNumber(data.atSec, 0, 86400, 0);
+    }
+
+    if (operation === "transcription") {
+      options.device = String(data.device ?? "cpu");
+      const formats: string[] = [];
+      if (data.formatSrt) formats.push("srt");
+      if (data.formatVtt) formats.push("vtt");
+      if (data.formatTtml) formats.push("ttml");
+      if (formats.length > 0) {
+        options.outputFormats = formats;
+      }
     }
 
     if (operation === "transcode" && data.watermarkEnabled) {
@@ -289,6 +308,35 @@ export function MediaJobsList() {
             مسار الملف المصدر
             <input type="text" placeholder="media/source.mp4" {...createForm.register("sourcePath")} />
           </label>
+
+          {selectedOperation === "transcription" && (
+            <div className="state-banner">
+              <label>
+                نوع المعالج
+                <select {...createForm.register("device")}>
+                  <option value="cpu">CPU (أسرع تحميل)</option>
+                  <option value="gpu">GPU (أسرع معالجة)</option>
+                  <option value="auto">تلقائي</option>
+                </select>
+              </label>
+
+              <div className="helper-row">
+                <strong>صيغ الإخراج</strong>
+              </div>
+              <label className="checkbox-row">
+                <input type="checkbox" {...createForm.register("formatSrt")} />
+                SRT (نص مع الطوابع)
+              </label>
+              <label className="checkbox-row">
+                <input type="checkbox" {...createForm.register("formatVtt")} />
+                VTT (فيديو ويب)
+              </label>
+              <label className="checkbox-row">
+                <input type="checkbox" {...createForm.register("formatTtml")} />
+                TTML (تنسيق توقيت نص)
+              </label>
+            </div>
+          )}
 
           {selectedOperation === "thumbnail" && (
             <label>
@@ -428,6 +476,17 @@ export function MediaJobsList() {
                   <h3>{operationLabel(job.operation)}</h3>
                   <span className="badge">{statusLabel(job.status)}</span>
                 </div>
+                {(job.status === "queued" || job.status === "processing") && job.progressPercent !== null && (
+                  <div className="state-banner">
+                    <div className="helper-row">
+                      <span className="field-note">{job.progressStage || "جاري المعالجة"}</span>
+                      <span className="field-note">{job.progressPercent}%</span>
+                    </div>
+                    <div style={{ width: "100%", height: "4px", backgroundColor: "rgba(0,0,0,0.1)", borderRadius: "2px", overflow: "hidden" }}>
+                      <div style={{ width: `${job.progressPercent}%`, height: "100%", backgroundColor: "currentColor", transition: "width 0.2s" }} />
+                    </div>
+                  </div>
+                )}
                 <div className="kv-grid">
                   <div className="kv-item">
                     <strong>معرّف السجل</strong>

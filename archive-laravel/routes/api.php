@@ -116,6 +116,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/media/jobs', [MediaJobsController::class, 'index']);
         Route::post('/media/jobs', [MediaJobsController::class, 'store']);
         Route::get('/media/jobs/{id}', [MediaJobsController::class, 'show']);
+        Route::post('/media/jobs/{id}/cancel', [MediaJobsController::class, 'cancel']);
         Route::post('/share', [ShareController::class, 'store']);
 
         Route::get('/rights/expiring', [RightsController::class, 'expiring']);

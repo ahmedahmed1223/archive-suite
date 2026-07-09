@@ -13,6 +13,7 @@ class RealMediaProcessor implements MediaProcessor
         private readonly string $ffprobePath = 'ffprobe',
         private readonly array $watermark = [],
         private readonly ?OcrClient $ocrClient = null,
+        private readonly ?AudioPreprocessor $audioPreprocessor = null,
     ) {}
 
     /**
@@ -108,7 +109,150 @@ class RealMediaProcessor implements MediaProcessor
 
     private function processTranscription(MediaJob $job): array
     {
-        return $this->transcriber->transcribe($job->source_path, $job->record_id);
+        $preprocessor = $this->audioPreprocessor ?? new AudioPreprocessor($this->runner, $this->ffmpegPath);
+        $device = $job->options['device'] ?? 'cpu';
+        $outputFormats = $job->options['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
+
+        // Resolve 'auto' device to 'cpu' (GPU detection deferred)
+        if ($device === 'auto') {
+            $device = 'cpu';
+        }
+
+        $computeType = match ($device) {
+            'gpu' => 'float16',
+            default => 'int8',
+        };
+
+        $job->update([
+            'progress_stage' => 'preprocessing',
+            'progress_percent' => 5,
+        ]);
+
+        // Extract audio to normalized 16kHz mono WAV
+        $audioPath = $preprocessor->extractAudio($job->source_path, $job->record_id);
+
+        // Plan segments (chunking for long audio)
+        $segments = $preprocessor->planSegments($audioPath);
+        $totalSegments = count($segments);
+
+        $job->update([
+            'progress_stage' => 'preprocessing_complete',
+            'progress_percent' => 10,
+            'options' => array_merge($job->options, [
+                'segments' => $segments,
+                'totalSegments' => $totalSegments,
+            ]),
+        ]);
+
+        if ($totalSegments === 1) {
+            // Single segment: transcribe audio directly
+            $job->update([
+                'progress_stage' => 'transcribing',
+                'progress_percent' => 15,
+            ]);
+
+            return $this->transcriber->transcribe($audioPath, $job->record_id, [
+                'device' => $device,
+                'computeType' => $computeType,
+                'outputFormats' => $outputFormats,
+            ]);
+        }
+
+        // Multiple segments: transcribe each, merge results
+        $allArtifacts = [];
+
+        foreach ($segments as $index => $segment) {
+            $segmentPercent = 15 + (int) (($index / $totalSegments) * 70);
+            $job->update([
+                'progress_stage' => "transcribing_segment_{$index}_{$totalSegments}",
+                'progress_percent' => $segmentPercent,
+            ]);
+
+            // Extract segment
+            $segmentPath = $preprocessor->extractSegment(
+                $audioPath,
+                $job->record_id,
+                $index,
+                $segment['startSec'],
+                $segment['endSec']
+            );
+
+            // Transcribe segment
+            $segmentArtifacts = $this->transcriber->transcribe($segmentPath, $job->record_id, [
+                'device' => $device,
+                'computeType' => $computeType,
+                'outputFormats' => $outputFormats,
+            ]);
+
+            // Store segment artifacts keyed by index for merging
+            if (!isset($allArtifacts['by_format'])) {
+                $allArtifacts['by_format'] = [];
+                foreach ($outputFormats as $fmt) {
+                    $allArtifacts['by_format'][$fmt] = [];
+                }
+            }
+
+            foreach ($segmentArtifacts as $artifact) {
+                preg_match('/transcript_(\w+)/', $artifact['kind'], $m);
+                if ($m) {
+                    $format = $m[1];
+                    $allArtifacts['by_format'][$format][] = $artifact;
+                }
+            }
+        }
+
+        $job->update([
+            'progress_stage' => 'merging',
+            'progress_percent' => 90,
+        ]);
+
+        // Merge segment artifacts into final outputs
+        $mergedArtifacts = $this->mergeSegmentArtifacts(
+            $allArtifacts['by_format'] ?? [],
+            $job->record_id,
+            $outputFormats
+        );
+
+        return $mergedArtifacts;
+    }
+
+    /**
+     * Merge per-segment transcript artifacts into unified documents with corrected timestamps.
+     * ponytail: simple concatenation for now; timestamp adjustment deferred per format.
+     *
+     * @param  array<string, array<int, array{kind: string, key: string, url: null}>>  $byFormat
+     * @param  array<int, string>  $outputFormats
+     * @return array<int, array{kind: string, key: string, url: null}>
+     */
+    private function mergeSegmentArtifacts(array $byFormat, string $recordId, array $outputFormats): array
+    {
+        $merged = [];
+
+        foreach ($outputFormats as $format) {
+            if (!isset($byFormat[$format]) || empty($byFormat[$format])) {
+                continue;
+            }
+
+            $key = "{$recordId}/transcript.{$format}";
+            $content = '';
+
+            foreach ($byFormat[$format] as $artifact) {
+                if (is_file($artifact['key'])) {
+                    $content .= file_get_contents($artifact['key']) . "\n\n";
+                }
+            }
+
+            if ($content !== '') {
+                file_put_contents($key, trim($content));
+                $merged[] = [
+                    'kind' => "transcript_{$format}",
+                    'key' => $key,
+                    'url' => null,
+                ];
+            }
+        }
+
+        return $merged;
     }
 
     /**
