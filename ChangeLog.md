@@ -20,6 +20,22 @@
 
 ---
 
+## موجة P2 + ترقية التفريغ — 2026-07-09
+
+> نُفّذت عبر 11 عميلاً متوازياً ودُمجت إلى `master`. Email/Push/Slack/Teams للإشعارات وDropbox OAuth الحي والتحقق الحي على GPU خارج النطاق (انظر TASKS.md).
+
+- [x] **ترقية خط التفريغ** — device لكل مهمة (gpu/cpu/auto مع float16/int8)، استخراج صوت 16kHz + تقسيم على الصمت (~5 دقائق)، تقدم مرحلي لكل مقطع، endpoint إلغاء، واختيار صيغ المخرجات (SRT/VTT/TTML/TXT/JSON).
+- [x] **Montage advanced editor** — multi-track، markers/comments، transitions، ومشاريع دائمة في Laravel (`/montage-projects`).
+- [x] **Advanced tags + vocabulary** — ألوان، ترتيب، merge، move مع حارس الدوران، ومسارات `/tag-nodes/*`.
+- [x] **Field ACL في الأنواع** — قواعد view/edit لكل حقل مع `FieldAclService` وإنفاذ خادمي + hooks للواجهة.
+- [x] **Notifications center** — جدول إشعارات + CRUD + جرس بشارة غير المقروء + صفحة كاملة، وربط ingest/backup.
+- [x] **Offline/degraded mode** — probe على `/health`، طابور إعادة تشغيل بـ last-write-wins، وبانر حالة RTL.
+- [x] **Shortcuts customization** — إعادة ربط المفاتيح من الإعدادات مع حفظ محلي وربط لوحة الأوامر.
+- [x] **Focus/contextual guide** — focus mode (F11/Ctrl+Shift+F) ونصائح سياقية لكل صفحة رئيسية.
+- [x] **Backup hardening** — SHA-256 sidecar + verify، تشفير اختياري، retention مع سجل تدقيق، وأمرا `backup:cleanup`/`backup:dr-drill`.
+- [x] **Appearance/theme management** — 4 presets، تصدير/استيراد JSON بتحقق صارم، وجدولة زمنية.
+- [x] **Settings/Admin extras (الجزء البرمجي)** — test-connection للتخزين وDB، setup checklist، وربط hub.
+
 ## إغلاق بنود P1 المعلّقة على بوابة Docker — 2026-07-08
 
 > شُغّلت بوابة `pnpm run verify:laravel` (Docker) في هذه البيئة بعد أن كانت البنود التالية منجزة برمجياً ومنتظرة فقط لهذا التحقق. النتيجة: 315 اختبار Laravel ناجح (1536 تأكيد)، و`pnpm run verify` الكامل أخضر (typecheck + build:next + verify:api-contracts + verify:repo-hygiene + verify:laravel).

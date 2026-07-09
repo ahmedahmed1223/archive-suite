@@ -21,31 +21,13 @@
 
 ## P1 — فجوات إنتاجية عالية
 
-- [ ] **تفريغ عربي إنتاجي على GPU** — التحقق الحي من `faster-whisper-large-v3` على GPU وصوت عربي حقيقي للوصول إلى دقة لا تقل عن 90%.
-  - المنجز برمجياً: إعدادات GPU، large-v3، SRT/VTT/TTML، وdiarization flag.
-  - القبول: تقرير smoke حي يتضمن عينة عربية، الجهاز المستخدم، المقاييس، ومخرجات SRT/VTT/TTML.
+- [ ] **تفريغ عربي — تحقق حي فقط** — التحقق الحي من `faster-whisper-large-v3` على GPU وصوت عربي حقيقي للوصول إلى دقة لا تقل عن 90%.
+  - المنجز برمجياً (2026-07-09): اختيار device لكل مهمة (gpu/cpu/auto)، استخراج صوت + تقسيم على الصمت، تقدم لحظي لكل مقطع، إلغاء، واختيار صيغ المخرجات — انظر ChangeLog.
+  - المتبقي: تقرير smoke حي يتضمن عينة عربية، الجهاز المستخدم، المقاييس، ومخرجات SRT/VTT/TTML.
 
 ## P2 — تكافؤ متقدم وتجربة تشغيل
 
-- [ ] **Settings/Admin extras** — استكمال appearance editor/presets، file-store tests، Dropbox OAuth، preset setup، DB tests، وربط data-center/settings hub بعمق.
-
-- [ ] **Appearance/theme management** — presets، custom theme export/import، وجدولة theme إذا بقيت مطلوبة.
-
-- [ ] **Advanced tags and vocabulary** — ترتيب شجرة الوسوم، ألوان، merge، عمليات hierarchy، ومخزن Laravel للقاموس والمرادفات.
-
-- [ ] **Field ACL في الأنواع** — قواعد رؤية/تحرير لكل حقل داخل `/types` وعقود Laravel المقابلة.
-
-- [ ] **Notifications center** — إشعارات تشغيل دائمة، وربط اختياري مع Email/Push/Slack/Teams لاحقاً.
-
-- [ ] **Offline/degraded mode** — connectivity probe، offline queue، banners للحالة المتدهورة، وخطة reconciliation.
-
-- [ ] **Shortcuts customization** — تعلم/تخصيص اختصارات لوحة الأوامر وحفظ التفضيلات.
-
-- [ ] **Focus/contextual guide** — focus mode فقط إذا بقيت حاجة تشغيلية، وجولة/نصائح سياقية من help.
-
-- [ ] **Montage advanced editor** — multi-track، markers/comments، transitions، persistent projects، وتوسيع async MP4 export الحالي.
-
-- [ ] **Backup hardening** — checksum، encryption، retention policies، وDR drill دوري قابل للتدقيق.
+- [ ] **Settings/Admin extras — بقايا حية فقط** — Dropbox OAuth الحي واختبار S3/DB على بيئات فعلية. (المنجز 2026-07-09: test-connection endpoints للتخزين وقاعدة البيانات، setup checklist، وربط hub — انظر ChangeLog.)
 
 - [ ] **Kubernetes live validation** — تشغيل dry-run/تطبيق حي عند توفر Kubernetes context، خصوصاً Redis/Whisper worker وGPU.
 
