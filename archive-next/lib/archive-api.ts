@@ -333,6 +333,8 @@ export interface TagNode {
   id: string;
   tag: string;
   parent: string;
+  color?: string | null;
+  order?: number;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -340,11 +342,15 @@ export interface TagNode {
 export interface CreateTagNodePayload {
   tag: string;
   parent: string;
+  color?: string;
+  order_index?: number;
 }
 
 export interface UpdateTagNodePayload {
   tag?: string;
   parent?: string;
+  color?: string | null;
+  order_index?: number;
 }
 
 export type AutomationRuleTrigger = "record.created" | "record.updated" | "media.failed" | "schedule.daily";
@@ -864,6 +870,9 @@ export interface ArchiveApiClient {
   createTagNode(payload: CreateTagNodePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ node: TagNode }>>;
   updateTagNode(id: string, payload: UpdateTagNodePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ node: TagNode }>>;
   deleteTagNode(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  reorderTagNodes(order: Array<{ id: string; order_index: number }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ updated: number }>>;
+  mergeTagNodes(id: string, mergeInto: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ merged: boolean; targetNode: TagNode }>>;
+  moveTagNode(id: string, parent: string, deleteChildren?: boolean, options?: AuthRequestOptions): Promise<ApiEnvelope<{ moved: boolean; node: TagNode }>>;
   automationRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>>;
   createAutomationRule(payload: CreateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
@@ -1321,6 +1330,12 @@ export function createArchiveApiClient({
       patch<{ node: TagNode }>(`/tag-nodes/${encodeURIComponent(id)}`, payload, options),
     deleteTagNode: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/tag-nodes/${encodeURIComponent(id)}`, undefined, options),
+    reorderTagNodes: (order: Array<{ id: string; order_index: number }>, options?: AuthRequestOptions) =>
+      post<{ updated: number }>("/tag-nodes/reorder", { order }, options),
+    mergeTagNodes: (id: string, mergeInto: string, options?: AuthRequestOptions) =>
+      post<{ merged: boolean; targetNode: TagNode }>(`/tag-nodes/${encodeURIComponent(id)}/merge`, { mergeInto }, options),
+    moveTagNode: (id: string, parent: string, deleteChildren?: boolean, options?: AuthRequestOptions) =>
+      post<{ moved: boolean; node: TagNode }>(`/tag-nodes/${encodeURIComponent(id)}/move`, { parent, deleteChildren }, options),
     automationRules: (options?: AuthRequestOptions) =>
       get<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>("/automation/rules", options),
     createAutomationRule: (payload: CreateAutomationRulePayload, options?: AuthRequestOptions) =>
