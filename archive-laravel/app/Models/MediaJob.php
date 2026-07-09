@@ -22,6 +22,8 @@ class MediaJob extends Model
         'options',
         'result',
         'error',
+        'progress_stage',
+        'progress_percent',
         'queued_at',
         'started_at',
         'completed_at',

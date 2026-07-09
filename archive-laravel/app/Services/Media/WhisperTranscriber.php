@@ -18,19 +18,23 @@ class WhisperTranscriber
 
     /**
      * Build and run a whisper-ctranslate2 transcription command.
-     * Requests all output formats in one run (its --output_format flag takes a
-     * single choice, not a comma list), renames the CLI's
-     * {input-basename}.{ext} outputs to the canonical transcript.{ext} keys,
-     * then derives a TTML sidecar from the VTT output. Throws on non-zero exit.
+     * Per-job device and output format selection override global config.
+     * Throws on non-zero exit.
      *
+     * @param  array{device?: string, computeType?: string, outputFormats?: string[]}  $jobOptions
      * @return array<int, array{kind: string, key: string, url: null}>
      */
-    public function transcribe(string $inputPath, string $recordId): array
+    public function transcribe(string $inputPath, string $recordId, array $jobOptions = []): array
     {
-        // ponytail: GPU/model auto-download deferred; live whisper smoke-test deferred.
-        $srtKey = "{$recordId}/transcript.srt";
-        $vttKey = "{$recordId}/transcript.vtt";
-        $ttmlKey = "{$recordId}/transcript.ttml";
+        // ponytail: live whisper smoke-test deferred.
+        $device = $jobOptions['device'] ?? $this->whisperDevice;
+        $computeType = $jobOptions['computeType'] ?? $this->whisperComputeType;
+        $outputFormats = $jobOptions['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
+
+        // Normalize formats: always include 'vtt' for TTML derivation
+        if (!in_array('vtt', $outputFormats, true)) {
+            $outputFormats[] = 'vtt';
+        }
 
         $command = [
             $this->whisperBinary,
@@ -41,20 +45,17 @@ class WhisperTranscriber
             '--output_dir', $recordId,
         ];
 
-        if ($this->whisperDevice !== '') {
+        if ($device !== '') {
             $command[] = '--device';
-            $command[] = $this->whisperDevice;
+            $command[] = $device;
         }
 
-        if ($this->whisperComputeType !== '') {
+        if ($computeType !== '') {
             $command[] = '--compute_type';
-            $command[] = $this->whisperComputeType;
+            $command[] = $computeType;
         }
 
         if ($this->whisperDiarize && $this->hfToken !== '') {
-            // whisper-ctranslate2 has no --diarize switch: passing a non-empty
-            // --hf_token is what turns diarization on (needs pyannote gated
-            // model access via that HuggingFace token).
             $command[] = '--hf_token';
             $command[] = $this->hfToken;
         }
@@ -64,15 +65,47 @@ class WhisperTranscriber
             throw new \RuntimeException("Whisper transcription failed: {$result['stderr']}");
         }
 
-        $this->renameCliOutput($inputPath, $recordId, 'srt', $srtKey);
-        $this->renameCliOutput($inputPath, $recordId, 'vtt', $vttKey);
-        $this->deriveTtml($vttKey, $ttmlKey);
+        $artifacts = [];
+        foreach ($outputFormats as $format) {
+            $key = "{$recordId}/transcript.{$format}";
+            $this->renameCliOutput($inputPath, $recordId, $format, $key);
+            if (is_file($key)) {
+                $artifacts[] = [
+                    'kind' => "transcript_{$format}",
+                    'key' => $key,
+                    'url' => null,
+                ];
+            }
+        }
 
-        return [
-            ['kind' => 'transcript_srt', 'key' => $srtKey, 'url' => null],
-            ['kind' => 'transcript_vtt', 'key' => $vttKey, 'url' => null],
-            ['kind' => 'transcript_ttml', 'key' => $ttmlKey, 'url' => null],
-        ];
+        // Derive TTML from VTT if both are requested
+        if (in_array('ttml', $outputFormats, true) && in_array('vtt', $outputFormats, true)) {
+            $vttKey = "{$recordId}/transcript.vtt";
+            $ttmlKey = "{$recordId}/transcript.ttml";
+            $this->deriveTtml($vttKey, $ttmlKey);
+            if (is_file($ttmlKey) && !$this->hasArtifact($artifacts, 'transcript_ttml')) {
+                $artifacts[] = [
+                    'kind' => 'transcript_ttml',
+                    'key' => $ttmlKey,
+                    'url' => null,
+                ];
+            }
+        }
+
+        return $artifacts;
+    }
+
+    /**
+     * Check if an artifact with the given kind already exists in the list.
+     */
+    private function hasArtifact(array $artifacts, string $kind): bool
+    {
+        foreach ($artifacts as $artifact) {
+            if ($artifact['kind'] === $kind) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

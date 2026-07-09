@@ -81,6 +81,29 @@ class MediaJobsController extends Controller
         ]);
     }
 
+    public function cancel(string $id): JsonResponse
+    {
+        $mediaJob = MediaJob::query()->find($id);
+
+        if (! $mediaJob) {
+            return response()->json(['ok' => false, 'error' => 'Media job not found.'], 404);
+        }
+
+        if ($mediaJob->status === 'completed' || $mediaJob->status === 'failed' || $mediaJob->status === 'canceled') {
+            return response()->json(['ok' => false, 'error' => "Cannot cancel job with status: {$mediaJob->status}"], 400);
+        }
+
+        $mediaJob->update([
+            'status' => 'canceled',
+            'completed_at' => now(),
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'job' => $this->payload($mediaJob),
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -95,6 +118,8 @@ class MediaJobsController extends Controller
             'options' => $mediaJob->options ?? [],
             'result' => $mediaJob->result,
             'error' => $mediaJob->error,
+            'progressStage' => $mediaJob->progress_stage,
+            'progressPercent' => $mediaJob->progress_percent,
             'queuedAt' => $mediaJob->queued_at?->toISOString(),
             'startedAt' => $mediaJob->started_at?->toISOString(),
             'completedAt' => $mediaJob->completed_at?->toISOString(),
