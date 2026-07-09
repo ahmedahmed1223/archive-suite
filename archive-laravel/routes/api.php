@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V1\TagNodesController;
 use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
+use App\Http\Controllers\Api\V1\TypesController;
 use App\Http\Controllers\Api\V1\UploadLinksController;
 use App\Http\Controllers\Api\V1\UploadsController;
 use App\Http\Controllers\Api\V1\UsersController;
@@ -165,6 +166,12 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/tag-nodes/{id}', [TagNodesController::class, 'update']);
         Route::delete('/tag-nodes/{id}', [TagNodesController::class, 'destroy']);
 
+        Route::get('/types', [TypesController::class, 'index']);
+        Route::post('/types', [TypesController::class, 'store']);
+        Route::get('/types/{id}', [TypesController::class, 'show']);
+        Route::delete('/types/{id}', [TypesController::class, 'destroy']);
+        Route::post('/types/{id}/check-field-acl', [TypesController::class, 'checkFieldAcl']);
+
         Route::get('/automation/rules', [AutomationRulesController::class, 'index']);
         Route::post('/automation/rules', [AutomationRulesController::class, 'store']);
         Route::patch('/automation/rules/{id}', [AutomationRulesController::class, 'update']);
@@ -192,11 +199,16 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcDeleteRow']);
         Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
+        Route::post('/system/test-storage', [SystemController::class, 'testStorageConnection']);
+        Route::post('/system/test-database', [SystemController::class, 'testDatabaseConnection']);
 
         Route::get('/system/backups', [BackupsController::class, 'index']);
         Route::post('/system/backups/run', [BackupsController::class, 'run']);
         Route::post('/system/backups/preview', [BackupsController::class, 'preview']);
         Route::post('/system/backups/restore', [BackupsController::class, 'restore']);
+        Route::post('/system/backups/verify', [BackupsController::class, 'verify']);
+        Route::post('/system/backups/dr-drill', [BackupsController::class, 'drDrill']);
+        Route::get('/system/backups/dr-status', [BackupsController::class, 'drStatus']);
 
         Route::get('/system/status', [SystemStatusController::class, 'status']);
         Route::get('/system/dr-probe', [SystemStatusController::class, 'drProbe']);

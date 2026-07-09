@@ -252,7 +252,7 @@ export default function SettingsPage() {
   const canPreviewOdbc = odbc?.status === "connected";
 
   return (
-    <AppShell subtitle="مركز الإعدادات" contentClassName="settings-content">
+    <AppShell subtitle="مركز الإعدادات" contentClassName="settings-content" tipsPage="settings">
       <PageToolbar
         icon={<Settings size={24} />}
         eyebrow={<span className="badge">Settings Hub</span>}

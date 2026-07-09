@@ -1,0 +1,211 @@
+/* ═══════════════════════════════════════════════════════════════
+   09-focus-contextual.css — Focus mode and contextual tips
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Focus Mode: Hide topbar and sidebar */
+.app-shell[data-focus-mode="true"] > .topbar {
+  display: none;
+}
+
+/* Contextual Tips */
+.contextual-tips {
+  position: relative;
+}
+
+.contextual-tips__trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.contextual-tips__trigger:hover {
+  opacity: 1;
+}
+
+.contextual-tips__trigger[aria-pressed="true"] {
+  opacity: 1;
+}
+
+.contextual-tips__trigger[data-dismissed="false"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--color-brand-primary);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.contextual-tips__badge {
+  position: absolute;
+  inset: -4px -4px auto auto;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-brand-primary);
+  color: var(--color-bg-primary);
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.contextual-tips__popover {
+  position: fixed;
+  inset-inline-end: var(--space-4);
+  inset-block-start: 80px;
+  z-index: 1000;
+  min-width: 320px;
+  max-width: 380px;
+  max-height: 60vh;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  animation: slide-up 0.2s ease-out;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.contextual-tips__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.contextual-tips__header h3 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.contextual-tips__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.contextual-tips__close:hover {
+  opacity: 1;
+}
+
+.contextual-tips__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.contextual-tips__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-brand-primary) 4%, transparent);
+  line-height: 1.4;
+}
+
+.contextual-tips__item-icon {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  color: var(--color-brand-primary);
+  margin-top: 2px;
+}
+
+.contextual-tips__item-content {
+  min-width: 0;
+}
+
+.contextual-tips__item-content h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.contextual-tips__item-content p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.contextual-tips__footer {
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+.contextual-tips__dismiss {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.contextual-tips__dismiss:hover {
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .contextual-tips__popover {
+    inset-inline-end: var(--space-2);
+    inset-block-start: 60px;
+    max-width: calc(100vw - var(--space-4));
+  }
+}
+
+/* RTL support already handled by flexbox/grid */

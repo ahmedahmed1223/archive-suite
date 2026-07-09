@@ -644,7 +644,7 @@ function ArchivePageContent() {
   };
 
   return (
-    <AppShell subtitle="مركز السجلات" contentClassName="archive-content">
+    <AppShell subtitle="مركز السجلات" contentClassName="archive-content" tipsPage="archive">
       <PageToolbar
         icon={<Archive size={24} strokeWidth={2} />}
         eyebrow={<span className="badge">Archive Workspace</span>}

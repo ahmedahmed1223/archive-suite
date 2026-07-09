@@ -72,6 +72,47 @@ class BackupsController extends Controller
         }
     }
 
+    public function verify(Request $request, BackupService $service): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        try {
+            return response()->json(['ok' => true, 'verification' => $service->verify($validated['name'])]);
+        } catch (BackupException $e) {
+            return $this->backupError($e);
+        }
+    }
+
+    public function drDrill(Request $request, BackupService $service, DrReadinessService $dr): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        try {
+            $result = $dr->runDrDrill($service);
+
+            return response()->json(['ok' => true, 'result' => $result]);
+        } catch (BackupException $e) {
+            return $this->backupError($e);
+        }
+    }
+
+    public function drStatus(Request $request, DrReadinessService $dr): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        return response()->json(['ok' => true, 'status' => $dr->drillStatus()]);
+    }
+
     private function backupError(BackupException $e): JsonResponse
     {
         return response()->json(['ok' => false, 'error' => $e->getMessage()], $e->status);

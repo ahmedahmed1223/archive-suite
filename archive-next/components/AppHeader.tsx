@@ -9,6 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import { useAuthSession } from "@/lib/auth-session";
+import FocusModeToggle from "@/components/FocusModeToggle";
 
 const navSections = Object.keys(navSectionLabels) as NavSection[];
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
@@ -76,6 +77,7 @@ export default function AppHeader({
             <span>الدخول</span>
           </Link>
         )}
+        <FocusModeToggle />
         <button
           type="button"
           className="icon-action command-trigger"

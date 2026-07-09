@@ -123,6 +123,76 @@ class BackupsApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_backup_includes_checksum(): void
+    {
+        $headers = $this->adminHeaders();
+        $this->seedRecords(['a-001' => 'First']);
+
+        $run = $this->postJson('/api/v1/system/backups/run', [], $headers)
+            ->assertCreated()
+            ->assertJsonPath('ok', true);
+
+        $backup = $run->json('backup');
+        $this->assertNotEmpty($backup['checksum']);
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $backup['checksum']);
+
+        // Verify checksum file exists
+        $checksumFile = $this->backupDir.DIRECTORY_SEPARATOR.$backup['name'].'.sha256';
+        $this->assertFileExists($checksumFile);
+        $this->assertSame($backup['checksum'], trim((string) file_get_contents($checksumFile)));
+    }
+
+    public function test_admin_can_verify_backup_checksum(): void
+    {
+        $headers = $this->adminHeaders();
+        $this->seedRecords(['a-001' => 'First']);
+
+        $name = $this->postJson('/api/v1/system/backups/run', [], $headers)->json('backup.name');
+
+        $verify = $this->postJson('/api/v1/system/backups/verify', ['name' => $name], $headers)
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $verification = $verify->json('verification');
+        $this->assertSame($name, $verification['name']);
+        $this->assertTrue($verification['verified']);
+        $this->assertNotEmpty($verification['checksum']);
+    }
+
+    public function test_verify_detects_corrupted_backup(): void
+    {
+        $headers = $this->adminHeaders();
+        $this->seedRecords(['a-001' => 'First']);
+
+        $name = $this->postJson('/api/v1/system/backups/run', [], $headers)->json('backup.name');
+
+        // Corrupt the backup file
+        $path = $this->backupDir.DIRECTORY_SEPARATOR.$name;
+        file_put_contents($path, 'corrupted data');
+
+        $verify = $this->postJson('/api/v1/system/backups/verify', ['name' => $name], $headers)
+            ->assertOk();
+
+        $verification = $verify->json('verification');
+        $this->assertFalse($verification['verified']);
+    }
+
+    public function test_backup_list_includes_checksums(): void
+    {
+        $headers = $this->adminHeaders();
+        $this->seedRecords(['a-001' => 'First']);
+
+        $this->postJson('/api/v1/system/backups/run', [], $headers)->assertCreated();
+
+        $list = $this->getJson('/api/v1/system/backups', $headers)
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $backups = $list->json('backups');
+        $this->assertCount(1, $backups);
+        $this->assertNotEmpty($backups[0]['checksum']);
+    }
+
     public function test_non_admins_cannot_access_backups(): void
     {
         $headers = $this->viewerHeaders();
@@ -131,6 +201,8 @@ class BackupsApiTest extends TestCase
         $this->postJson('/api/v1/system/backups/run', [], $headers)->assertForbidden();
         $this->postJson('/api/v1/system/backups/preview', ['name' => 'x'], $headers)->assertForbidden();
         $this->postJson('/api/v1/system/backups/restore', ['name' => 'x'], $headers)->assertForbidden();
+        $this->postJson('/api/v1/system/backups/verify', ['name' => 'x'], $headers)->assertForbidden();
+        $this->postJson('/api/v1/system/backups/dr-drill', [], $headers)->assertForbidden();
     }
 
     public function test_unauthenticated_backup_requests_are_rejected(): void

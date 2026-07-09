@@ -87,7 +87,7 @@ export default function CollectionsPage() {
   }
 
   return (
-    <AppShell subtitle="المجموعات" contentClassName="local-list-content">
+    <AppShell subtitle="المجموعات" contentClassName="local-list-content" tipsPage="collections">
       <PageToolbar
         eyebrow={<span className="badge">Organize</span>}
         title="المجموعات"
