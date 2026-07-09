@@ -1258,6 +1258,10 @@ export function createArchiveApiClient({
       post<{ token: string; url?: string }>("/share", { scope: { itemIds: payload.itemIds }, permission: payload.permission, expiresAt: payload.expiresAt }, options),
     getSecuritySettings: (options?: AuthRequestOptions) =>
       get<{ settings: SecuritySettings }>("/system/security-settings", options),
+    testStorageConnection: (payload: { driver: "local" | "s3"; name: string; config: Record<string, unknown> }, options?: AuthRequestOptions) =>
+      post<{ connection: StorageConnectionResult }>("/system/test-storage", payload, options),
+    testDatabaseConnection: (payload: { driver: "mysql" | "pgsql" | "sqlite"; host?: string; port?: number; database: string; username?: string; password?: string }, options?: AuthRequestOptions) =>
+      post<{ connection: DatabaseConnectionResult }>("/system/test-database", payload, options),
     odbcStatus: (options?: AuthRequestOptions) =>
       get<{ odbc: OdbcProbe }>("/system/odbc", options),
     odbcTable: (table: string, params?: { limit?: number }, options?: AuthRequestOptions) => {
