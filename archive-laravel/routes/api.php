@@ -166,6 +166,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/tag-nodes', [TagNodesController::class, 'store']);
         Route::patch('/tag-nodes/{id}', [TagNodesController::class, 'update']);
         Route::delete('/tag-nodes/{id}', [TagNodesController::class, 'destroy']);
+        Route::post('/tag-nodes/reorder', [TagNodesController::class, 'reorder']);
+        Route::post('/tag-nodes/{id}/merge', [TagNodesController::class, 'merge']);
+        Route::post('/tag-nodes/{id}/move', [TagNodesController::class, 'move']);
 
         Route::get('/types', [TypesController::class, 'index']);
         Route::post('/types', [TypesController::class, 'store']);
