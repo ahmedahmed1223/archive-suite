@@ -287,7 +287,7 @@ function SearchPageContent() {
   );
 
   return (
-    <AppShell subtitle="بحث متقدم" contentClassName="search-content">
+    <AppShell subtitle="بحث متقدم" contentClassName="search-content" tipsPage="search">
       <PageToolbar
         eyebrow={<span className="badge">Search Workbench</span>}
         title="البحث المتقدم"

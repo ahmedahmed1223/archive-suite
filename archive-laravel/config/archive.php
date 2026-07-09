@@ -23,6 +23,13 @@ return [
         'secure_cookies' => (bool) env('ARCHIVE_SECURE_COOKIES', false),
     ],
 
+    // Backup hardening: checksums, encryption, retention, DR drills
+    'backups' => [
+        'encryption_enabled' => (bool) env('BACKUP_ENCRYPTION_ENABLED', false),
+        'max_count' => (int) env('BACKUP_MAX_COUNT', 30),
+        'max_age_days' => (int) env('BACKUP_MAX_AGE_DAYS', 90),
+    ],
+
     // Defaults for the security settings panel. The safe subset (rate limit,
     // legacy password upgrade) can be overridden at runtime and persisted; CSP
     // and CORS are deploy-time only (read-only in the API).

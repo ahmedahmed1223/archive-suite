@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Backup;
 
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use JsonException;
 use stdClass;
@@ -22,17 +23,28 @@ class BackupService
     private const INSERT_CHUNK_SIZE = 500;
 
     /**
-     * @return list<array{name: string, sizeBytes: int, createdAt: string}>
+     * @return list<array{name: string, sizeBytes: int, createdAt: string, checksum: string|null}>
      */
     public function list(): array
     {
         $files = glob($this->directory().DIRECTORY_SEPARATOR.'backup-*.json.gz') ?: [];
 
-        $backups = array_map(static fn (string $path): array => [
-            'name' => basename($path),
-            'sizeBytes' => (int) filesize($path),
-            'createdAt' => date(DATE_ATOM, (int) filemtime($path)),
-        ], $files);
+        $backups = array_map(function (string $path): array {
+            $name = basename($path);
+            $checksumPath = $path.'.sha256';
+            $checksum = null;
+
+            if (is_file($checksumPath)) {
+                $checksum = (string) file_get_contents($checksumPath);
+            }
+
+            return [
+                'name' => $name,
+                'sizeBytes' => (int) filesize($path),
+                'createdAt' => date(DATE_ATOM, (int) filemtime($path)),
+                'checksum' => $checksum,
+            ];
+        }, $files);
 
         // Names embed a sortable timestamp, so name order is creation order.
         usort($backups, static fn (array $a, array $b): int => strcmp($b['name'], $a['name']));
@@ -41,7 +53,7 @@ class BackupService
     }
 
     /**
-     * @return array{name: string, sizeBytes: int, stores: array<string, int>, completedAt: string}
+     * @return array{name: string, sizeBytes: int, stores: array<string, int>, completedAt: string, checksum: string}
      */
     public function run(): array
     {
@@ -68,15 +80,29 @@ class BackupService
             throw new BackupException('Failed to serialize backup snapshot: '.$e->getMessage(), 500);
         }
 
-        if ($encoded === false || file_put_contents($path, $encoded) === false) {
+        if ($encoded === false) {
+            throw new BackupException('Failed to compress backup.', 500);
+        }
+
+        // Optional encryption: wrap gzipped content
+        if ((bool) config('archive.backups.encryption_enabled')) {
+            $encoded = $this->encrypt($encoded);
+        }
+
+        if (file_put_contents($path, $encoded) === false) {
             throw new BackupException('Failed to write backup file.', 500);
         }
+
+        // Compute and store checksum
+        $checksum = hash('sha256', $encoded);
+        file_put_contents($path.'.sha256', $checksum);
 
         return [
             'name' => $name,
             'sizeBytes' => (int) filesize($path),
             'stores' => array_map('count', $snapshot),
             'completedAt' => now()->toIso8601String(),
+            'checksum' => $checksum,
         ];
     }
 
@@ -144,13 +170,55 @@ class BackupService
     }
 
     /**
+     * Verify the integrity of a backup file via its SHA-256 checksum.
+     *
+     * @return array{name: string, checksum: string, verified: bool, message: string}
+     */
+    public function verify(string $name): array
+    {
+        $path = $this->resolvePath($name);
+        $checksumPath = $path.'.sha256';
+
+        // Read stored checksum
+        if (! is_file($checksumPath)) {
+            return [
+                'name' => $name,
+                'checksum' => '',
+                'verified' => false,
+                'message' => 'No checksum file found for this backup.',
+            ];
+        }
+
+        $storedChecksum = trim((string) file_get_contents($checksumPath));
+
+        // Compute current checksum
+        $content = (string) file_get_contents($path);
+        $computedChecksum = hash('sha256', $content);
+
+        $verified = hash_equals($storedChecksum, $computedChecksum);
+
+        return [
+            'name' => $name,
+            'checksum' => $storedChecksum,
+            'verified' => $verified,
+            'message' => $verified ? 'Checksum verified.' : 'Checksum mismatch — file may be corrupt.',
+        ];
+    }
+
+    /**
      * @return array<string, list<array<string, mixed>>>
      */
     private function readSnapshot(string $name): array
     {
         $path = $this->resolvePath($name);
+        $content = (string) file_get_contents($path);
 
-        $decoded = @gzdecode((string) file_get_contents($path));
+        // Optional decryption: reverse encryption applied during backup
+        if ((bool) config('archive.backups.encryption_enabled')) {
+            $content = $this->decrypt($content);
+        }
+
+        $decoded = @gzdecode($content);
 
         if ($decoded === false) {
             throw new BackupException('Backup file is corrupt or unreadable.', 422);
@@ -177,6 +245,26 @@ class BackupService
         }
 
         return $stores;
+    }
+
+    /**
+     * Encrypt backup content using Laravel's encryption.
+     */
+    private function encrypt(string $content): string
+    {
+        return Crypt::encrypt($content, serialize: false);
+    }
+
+    /**
+     * Decrypt backup content using Laravel's encryption.
+     */
+    private function decrypt(string $encrypted): string
+    {
+        try {
+            return Crypt::decrypt($encrypted, serialize: false);
+        } catch (\Exception $e) {
+            throw new BackupException('Failed to decrypt backup: '.$e->getMessage(), 422);
+        }
     }
 
     private function resolvePath(string $name): string

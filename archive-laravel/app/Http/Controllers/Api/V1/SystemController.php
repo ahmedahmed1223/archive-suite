@@ -174,6 +174,203 @@ class SystemController extends Controller
     /**
      * @param  callable(OdbcReadRepository): array{affected: int}  $operation
      */
+    public function testStorageConnection(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        $validated = $request->validate([
+            'driver' => ['required', 'string', 'in:local,s3'],
+            'name' => ['required', 'string', 'max:255'],
+            'config' => ['required', 'array'],
+        ]);
+
+        try {
+            $result = $this->probeStorageConnection(
+                $validated['driver'],
+                $validated['name'],
+                $validated['config']
+            );
+
+            return response()->json([
+                'ok' => true,
+                'connection' => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Connection test failed.',
+                'details' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function testDatabaseConnection(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        $validated = $request->validate([
+            'driver' => ['required', 'string', 'in:mysql,pgsql,sqlite'],
+            'host' => ['nullable', 'string'],
+            'port' => ['nullable', 'integer'],
+            'database' => ['required', 'string'],
+            'username' => ['nullable', 'string'],
+            'password' => ['nullable', 'string'],
+        ]);
+
+        try {
+            $result = $this->probeDatabaseConnection($validated);
+
+            return response()->json([
+                'ok' => true,
+                'connection' => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Database connection test failed.',
+                'details' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    private function probeStorageConnection(string $driver, string $name, array $config): array
+    {
+        $testKey = 'archive-test-' . uniqid() . '.txt';
+        $testContent = 'Archive connection test at ' . now()->toIso8601String();
+
+        if ($driver === 'local') {
+            $path = $config['root'] ?? storage_path('app');
+            if (!is_dir($path)) {
+                throw new \RuntimeException('Local storage path does not exist: ' . $path);
+            }
+
+            $testFile = $path . '/' . $testKey;
+            file_put_contents($testFile, $testContent);
+            $read = file_get_contents($testFile);
+            @unlink($testFile);
+
+            if ($read !== $testContent) {
+                throw new \RuntimeException('Write/read mismatch for local storage');
+            }
+
+            return [
+                'status' => 'connected',
+                'driver' => 'local',
+                'message' => 'Local storage is accessible and writable.',
+                'testedAt' => now()->toIso8601String(),
+            ];
+        }
+
+        if ($driver === 's3') {
+            try {
+                $s3Client = \Aws\S3\S3Client::factory([
+                    'key' => $config['key'] ?? '',
+                    'secret' => $config['secret'] ?? '',
+                    'region' => $config['region'] ?? 'us-east-1',
+                    'endpoint' => $config['endpoint'] ?? null,
+                    'use_path_style_endpoint' => $config['use_path_style_endpoint'] ?? false,
+                ]);
+
+                $bucket = $config['bucket'] ?? '';
+                if (!$bucket) {
+                    throw new \RuntimeException('S3 bucket name not configured');
+                }
+
+                $s3Client->putObject([
+                    'Bucket' => $bucket,
+                    'Key' => $testKey,
+                    'Body' => $testContent,
+                ]);
+
+                $object = $s3Client->getObject([
+                    'Bucket' => $bucket,
+                    'Key' => $testKey,
+                ]);
+
+                $read = (string) $object['Body'];
+
+                $s3Client->deleteObject([
+                    'Bucket' => $bucket,
+                    'Key' => $testKey,
+                ]);
+
+                if ($read !== $testContent) {
+                    throw new \RuntimeException('Write/read mismatch for S3 storage');
+                }
+
+                return [
+                    'status' => 'connected',
+                    'driver' => 's3',
+                    'message' => 'S3 bucket is accessible and writable.',
+                    'bucket' => $bucket,
+                    'region' => $config['region'] ?? 'us-east-1',
+                    'testedAt' => now()->toIso8601String(),
+                ];
+            } catch (\Throwable $e) {
+                throw new \RuntimeException('S3 connection failed: ' . $e->getMessage());
+            }
+        }
+
+        throw new \RuntimeException('Unsupported storage driver: ' . $driver);
+    }
+
+    private function probeDatabaseConnection(array $params): array
+    {
+        $driver = $params['driver'];
+        $host = $params['host'] ?? 'localhost';
+        $port = $params['port'];
+        $database = $params['database'];
+        $username = $params['username'] ?? '';
+        $password = $params['password'] ?? '';
+
+        try {
+            if ($driver === 'mysql') {
+                if (!$port) {
+                    $port = 3306;
+                }
+                $pdo = new \PDO(
+                    "mysql:host={$host};port={$port};dbname={$database}",
+                    $username,
+                    $password,
+                    [\PDO::ATTR_TIMEOUT => 5]
+                );
+            } elseif ($driver === 'pgsql') {
+                if (!$port) {
+                    $port = 5432;
+                }
+                $pdo = new \PDO(
+                    "pgsql:host={$host};port={$port};dbname={$database}",
+                    $username,
+                    $password,
+                    [\PDO::ATTR_TIMEOUT => 5]
+                );
+            } elseif ($driver === 'sqlite') {
+                $pdo = new \PDO("sqlite:{$database}");
+            } else {
+                throw new \RuntimeException('Unsupported database driver: ' . $driver);
+            }
+
+            $result = $pdo->query('SELECT 1');
+            if (!$result) {
+                throw new \RuntimeException('Query execution failed');
+            }
+
+            return [
+                'status' => 'connected',
+                'driver' => $driver,
+                'database' => $database,
+                'message' => 'Database connection is successful.',
+                'testedAt' => now()->toIso8601String(),
+            ];
+        } catch (\PDOException $e) {
+            throw new \RuntimeException('Database connection error: ' . $e->getMessage());
+        }
+    }
+
     private function odbcWriteResponse(
         string $table,
         string $operationName,

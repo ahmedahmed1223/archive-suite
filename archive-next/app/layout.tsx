@@ -11,6 +11,7 @@ import "./styles/05-status.css";
 import "./styles/06-widgets.css";
 import "./styles/07-ui-kit.css";
 import "./styles/08-foundation.css";
+import "./styles/09-focus-contextual.css";
 
 const plexArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic", "latin"],

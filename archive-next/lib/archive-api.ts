@@ -461,6 +461,7 @@ export interface BackupInfo {
   name: string;
   sizeBytes: number;
   createdAt: string;
+  checksum: string | null;
 }
 
 export interface BackupRunResult {
@@ -468,6 +469,7 @@ export interface BackupRunResult {
   sizeBytes: number;
   stores: Record<string, number>;
   completedAt: string;
+  checksum: string;
 }
 
 export interface BackupPreview {
@@ -480,6 +482,29 @@ export interface BackupRestoreResult {
   name: string;
   counts: Record<string, number>;
   restoredAt: string;
+}
+
+export interface BackupVerification {
+  name: string;
+  checksum: string;
+  verified: boolean;
+  message: string;
+}
+
+export interface DrDrillResult {
+  status: string;
+  message: string;
+  latestBackupName: string | null;
+  drillAt: string;
+  passed: boolean;
+}
+
+export interface DrDrillStatus {
+  status: string;
+  message: string;
+  latestBackupName: string | null;
+  drillAt: string | null;
+  passed: boolean | null;
 }
 
 export interface DrProbe {
@@ -677,6 +702,23 @@ export interface OdbcTablePreview {
   rows: Record<string, unknown>[];
 }
 
+export interface StorageConnectionResult {
+  status: "connected" | "disconnected";
+  driver: "local" | "s3";
+  message: string;
+  bucket?: string;
+  region?: string;
+  testedAt: string;
+}
+
+export interface DatabaseConnectionResult {
+  status: "connected" | "disconnected";
+  driver: "mysql" | "pgsql" | "sqlite";
+  database: string;
+  message: string;
+  testedAt: string;
+}
+
 export type OdbcWriteOperation = "insert" | "update" | "delete";
 
 export interface OdbcWriteResult {
@@ -799,6 +841,9 @@ export interface ArchiveApiClient {
   runBackup(options?: AuthRequestOptions): Promise<ApiEnvelope<{ backup: BackupRunResult }>>;
   previewBackup(payload: { name: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: BackupPreview }>>;
   restoreBackup(payload: { name: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: BackupRestoreResult }>>;
+  verifyBackup(payload: { name: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ verification: BackupVerification }>>;
+  runDrDrill(options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: DrDrillResult }>>;
+  getDrDrillStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ status: DrDrillStatus }>>;
   systemStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ metrics: SystemMetrics; dr: DrProbe }>>;
   drProbe(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dr: DrProbe }>>;
   runSystemControlAction(action: SystemControlAction, options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: SystemControlResult }>>;
@@ -817,6 +862,14 @@ export interface ArchiveApiClient {
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
+  testStorageConnection(
+    payload: { driver: "local" | "s3"; name: string; config: Record<string, unknown> },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ connection: StorageConnectionResult }>>;
+  testDatabaseConnection(
+    payload: { driver: "mysql" | "pgsql" | "sqlite"; host?: string; port?: number; database: string; username?: string; password?: string },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ connection: DatabaseConnectionResult }>>;
   odbcStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ odbc: OdbcProbe }>>;
   odbcTable(table: string, params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<OdbcTablePreview>>;
   odbcCreateRow(table: string, payload: { values: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<OdbcWriteResult>>;
@@ -1114,6 +1167,12 @@ export function createArchiveApiClient({
       post<{ preview: BackupPreview }>("/system/backups/preview", payload, options),
     restoreBackup: (payload: { name: string }, options?: AuthRequestOptions) =>
       post<{ result: BackupRestoreResult }>("/system/backups/restore", payload, options),
+    verifyBackup: (payload: { name: string }, options?: AuthRequestOptions) =>
+      post<{ verification: BackupVerification }>("/system/backups/verify", payload, options),
+    runDrDrill: (options?: AuthRequestOptions) =>
+      post<{ result: DrDrillResult }>("/system/backups/dr-drill", undefined, options),
+    getDrDrillStatus: (options?: AuthRequestOptions) =>
+      get<{ status: DrDrillStatus }>("/system/backups/dr-status", options),
     systemStatus: (options?: AuthRequestOptions) => get<{ metrics: SystemMetrics; dr: DrProbe }>("/system/status", options),
     drProbe: (options?: AuthRequestOptions) => get<{ dr: DrProbe }>("/system/dr-probe", options),
     runSystemControlAction: (action: SystemControlAction, options?: AuthRequestOptions) =>
