@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import { useAuthSession } from "@/lib/auth-session";
 import FocusModeToggle from "@/components/FocusModeToggle";
+import { NotificationsPanel } from "@/components/NotificationsPanel";
 
 const navSections = Object.keys(navSectionLabels) as NavSection[];
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
@@ -63,6 +64,9 @@ export default function AppHeader({
           <Icons.UploadCloud aria-hidden="true" size={18} strokeWidth={2} />
           <span>إضافة مادة</span>
         </Link>
+        {auth.status === "authenticated" && (
+          <NotificationsPanel />
+        )}
         {auth.status === "authenticated" ? (
           <div className="session-chip" title={userLabel}>
             <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
