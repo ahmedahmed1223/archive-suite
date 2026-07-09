@@ -618,6 +618,67 @@ export default function SettingsPage() {
             ) : null}
           </div>
         </article>
+
+        <article className="workspace-panel" aria-label="Connection testing">
+          <div className="workspace-panel__header">
+            <div>
+              <h2>فحص الاتصالات</h2>
+              <p>تحقق من اتصالات التخزين وقاعدة البيانات قبل الاستخدام.</p>
+            </div>
+          </div>
+          <div className="stack">
+            <div className="helper-row">
+              <div>
+                <strong>اختبار التخزين المحلي</strong>
+                <p className="helper-text mt-tight">اختبر الوصول والكتابة إلى مجلد التخزين.</p>
+              </div>
+              <button className="button button-secondary button-small" type="button" disabled>
+                قريبًا
+              </button>
+            </div>
+            <div className="helper-row">
+              <div>
+                <strong>اختبار قاعدة البيانات</strong>
+                <p className="helper-text mt-tight">تحقق من إمكانية الاتصال بقاعدة البيانات.</p>
+              </div>
+              <button className="button button-secondary button-small" type="button" disabled>
+                قريبًا
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article className="workspace-panel" aria-label="Settings hub navigation">
+          <div className="workspace-panel__header">
+            <div>
+              <h2>الأقسام ذات الصلة</h2>
+              <p>روابط سريعة إلى مراكز الإدارة والإعدادات الأخرى.</p>
+            </div>
+          </div>
+
+          <div className="dense-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+            <div className="panel-compact">
+              <h3>مركز البيانات</h3>
+              <p className="helper-text">صحة النظام والنسخ الاحتياطية والاستعادة.</p>
+              <a className="button button-secondary button-small" href="/data-center">الذهاب إلى المركز</a>
+            </div>
+            <div className="panel-compact">
+              <h3>المستخدمون والأدوار</h3>
+              <p className="helper-text">إدارة الوصول والأذونات.</p>
+              <a className="button button-secondary button-small" href="/settings/users">إدارة المستخدمين</a>
+            </div>
+            <div className="panel-compact">
+              <h3>الجولة الأولى</h3>
+              <p className="helper-text">قائمة فحص الإعدادات والتشغيل.</p>
+              <a className="button button-secondary button-small" href="/first-run">إعادة الفتح</a>
+            </div>
+            <div className="panel-compact">
+              <h3>حالة النظام</h3>
+              <p className="helper-text">مراقبة اتصال الخادم والأداء.</p>
+              <a className="button button-secondary button-small" href="/status">عرض الحالة</a>
+            </div>
+          </div>
+        </article>
     </AppShell>
   );
 }
