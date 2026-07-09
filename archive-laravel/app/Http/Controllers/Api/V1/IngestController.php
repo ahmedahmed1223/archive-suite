@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Services\Ingest\IngestScanner;
 use App\Services\Ingest\IngestTransport;
+use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -12,7 +13,8 @@ class IngestController extends Controller
 {
     public function __construct(
         private readonly IngestScanner $scanner,
-        private readonly IngestTransport $transport
+        private readonly IngestTransport $transport,
+        private readonly NotificationService $notificationService
     ) {
     }
 
@@ -46,6 +48,15 @@ class IngestController extends Controller
         $localPath = $validated['localPath'] ?? null;
         $result = $this->scanner->scan($localPath ? basename($localPath) : null);
 
+        // Create notification for ingest completion
+        if ($request->user() && ($result['ingested'] > 0 || $result['skipped'] > 0)) {
+            $this->notificationService->createIngestNotification(
+                $request->user(),
+                $result['ingested'],
+                $result['skipped']
+            );
+        }
+
         return response()->json([
             'ok' => true,
             'ingested' => $result['ingested'],
@@ -70,6 +81,15 @@ class IngestController extends Controller
         // Scan the pulled files
         $localPath = $validated['localPath'] ?? null;
         $result = $this->scanner->scan($localPath ? basename($localPath) : null);
+
+        // Create notification for ingest completion
+        if ($request->user() && ($result['ingested'] > 0 || $result['skipped'] > 0)) {
+            $this->notificationService->createIngestNotification(
+                $request->user(),
+                $result['ingested'],
+                $result['skipped']
+            );
+        }
 
         return response()->json([
             'ok' => true,

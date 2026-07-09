@@ -8,11 +8,17 @@ use App\Http\Controllers\Controller;
 use App\Services\Backup\BackupException;
 use App\Services\Backup\BackupService;
 use App\Services\Backup\DrReadinessService;
+use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class BackupsController extends Controller
 {
+    public function __construct(
+        private readonly NotificationService $notificationService
+    ) {
+    }
+
     public function index(Request $request, BackupService $service): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) {
@@ -29,8 +35,26 @@ class BackupsController extends Controller
         }
 
         try {
-            return response()->json(['ok' => true, 'backup' => $service->run()], 201);
+            $backup = $service->run();
+            // Create success notification
+            if ($request->user()) {
+                $this->notificationService->createBackupNotification(
+                    $request->user(),
+                    true,
+                    $backup['name'] ?? null
+                );
+            }
+            return response()->json(['ok' => true, 'backup' => $backup], 201);
         } catch (BackupException $e) {
+            // Create failure notification
+            if ($request->user()) {
+                $this->notificationService->createBackupNotification(
+                    $request->user(),
+                    false,
+                    null,
+                    $e->getMessage()
+                );
+            }
             return $this->backupError($e);
         }
     }
@@ -66,8 +90,26 @@ class BackupsController extends Controller
             $result = $service->restore($validated['name']);
             $dr->recordRestoreTest(true);
 
+            // Create success notification
+            if ($request->user()) {
+                $this->notificationService->createRestoreNotification(
+                    $request->user(),
+                    true,
+                    $validated['name']
+                );
+            }
+
             return response()->json(['ok' => true, 'result' => $result]);
         } catch (BackupException $e) {
+            // Create failure notification
+            if ($request->user()) {
+                $this->notificationService->createRestoreNotification(
+                    $request->user(),
+                    false,
+                    $validated['name'],
+                    $e->getMessage()
+                );
+            }
             return $this->backupError($e);
         }
     }

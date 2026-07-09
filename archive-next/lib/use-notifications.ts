@@ -1,0 +1,133 @@
+import { useEffect, useState, useCallback } from "react";
+
+export interface Notification {
+  id: number;
+  user_id: string;
+  type: "ingest_complete" | "backup_result" | "share_event" | "restore_result";
+  title: string;
+  message: string;
+  metadata?: Record<string, unknown>;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationsResponse {
+  ok: boolean;
+  notifications: Notification[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  };
+}
+
+export function useNotifications() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchNotifications = useCallback(async (page = 1, limit = 20) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch(`/api/v1/notifications?page=${page}&limit=${limit}`);
+      const data: NotificationsResponse = await response.json();
+
+      if (!data.ok) {
+        throw new Error("Failed to fetch notifications");
+      }
+
+      setNotifications(data.notifications);
+      setUnreadCount(data.notifications.filter((n) => !n.is_read).length);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const markAsRead = useCallback(async (id: number) => {
+    try {
+      const response = await fetch(`/api/v1/notifications/${id}/read`, {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (!data.ok) {
+        throw new Error("Failed to mark notification as read");
+      }
+
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    }
+  }, []);
+
+  const markAllAsRead = useCallback(async () => {
+    try {
+      const response = await fetch("/api/v1/notifications/mark-all-read", {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (!data.ok) {
+        throw new Error("Failed to mark all as read");
+      }
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    }
+  }, []);
+
+  const deleteNotification = useCallback(async (id: number) => {
+    try {
+      const response = await fetch(`/api/v1/notifications/${id}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+
+      if (!data.ok) {
+        throw new Error("Failed to delete notification");
+      }
+
+      setNotifications((prev) => {
+        const wasUnread = prev.find((n) => n.id === id)?.is_read === false;
+        if (wasUnread) {
+          setUnreadCount((c) => Math.max(0, c - 1));
+        }
+        return prev.filter((n) => n.id !== id);
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  return {
+    notifications,
+    unreadCount,
+    isLoading,
+    error,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  };
+}
