@@ -15,11 +15,8 @@ use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\IntakeTemplatesController;
 use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
-<<<<<<< HEAD
 use App\Http\Controllers\Api\V1\MontageProjectsController;
-=======
 use App\Http\Controllers\Api\V1\NotificationsController;
->>>>>>> worktree-agent-a880d1e29997eed4d
 use App\Http\Controllers\Api\V1\RecordCommentsController;
 use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordsController;
