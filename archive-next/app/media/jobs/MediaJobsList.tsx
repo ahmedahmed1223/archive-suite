@@ -97,6 +97,10 @@ function statusLabel(status: MediaJobStatus) {
   return labels[status] || status;
 }
 
+function progressValue(value: number | null | undefined) {
+  return Math.min(100, Math.max(0, value ?? 0));
+}
+
 export function MediaJobsList() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [listState, setListState] = useState<ListState>({ status: "loading" });
@@ -239,14 +243,14 @@ export function MediaJobsList() {
   }
 
   return (
-    <div className="stack" aria-label="Media jobs management">
+    <div className="stack" aria-label="إدارة مهام الوسائط">
       <MetricStrip
-        ariaLabel="ملخص queue الوسائط"
+        ariaLabel="ملخص قائمة انتظار الوسائط"
         items={[
           {
             label: "المهام المعروضة",
             value: listState.status === "loading" ? "..." : jobs.length,
-            description: statusFilter ? statusLabel(statusFilter) : "آخر 20 مهمة",
+            description: statusFilter ? `مفلترة: ${statusLabel(statusFilter)}` : "أحدث 20 مهمة",
             icon: <Clock3 size={20} />,
             tone: "accent"
           },
@@ -277,10 +281,10 @@ export function MediaJobsList() {
       <article className="workspace-panel">
         <div className="workspace-panel__header">
           <div>
-            <h2>إنشاء media job جديد</h2>
-            <p className="field-note">أنشئ job من record id ثم اختر نوع العملية المناسبة.</p>
+            <h2>إنشاء مهمة وسائط</h2>
+            <p className="field-note">أدخل معرّف السجل ثم اختر عملية المعالجة المناسبة.</p>
           </div>
-          <span className="badge">create</span>
+          <span className="badge">إنشاء</span>
         </div>
 
         <form className="auth-form" onSubmit={handleCreate}>
@@ -298,7 +302,7 @@ export function MediaJobsList() {
               <option value="">اختر عملية...</option>
               {OPERATIONS.map((op) => (
                 <option key={op} value={op}>
-                  {op}
+                    {operationLabel(op)}
                 </option>
               ))}
             </select>
@@ -393,12 +397,12 @@ export function MediaJobsList() {
 
           <button type="submit" className="button button-primary" disabled={createState.status === "creating"}>
             <PlusCircle size={16} aria-hidden="true" />
-            {createState.status === "creating" ? "جار الإنشاء..." : "إنشاء job"}
+            {createState.status === "creating" ? "جار الإنشاء..." : "إنشاء المهمة"}
           </button>
 
           <p className="form-status" role={createState.status === "error" ? "alert" : "status"}>
             {createState.status === "success"
-              ? `تم الإنشاء: ${createState.job.id} (${createState.job.status})`
+              ? `تم إنشاء المهمة بنجاح. الحالة الحالية: ${statusLabel(createState.job.status)}.`
               : createState.status === "error"
                 ? createState.message
                 : ""}
@@ -410,9 +414,9 @@ export function MediaJobsList() {
         <div className="workspace-panel__header">
           <div>
             <h2>مسح الإدخال</h2>
-            <p className="field-note">فحص إدخال الملفات وتوليد jobs جديدة عند الحاجة.</p>
+            <p className="field-note">افحص مجلد الإدخال وأنشئ مهامًا للملفات الجديدة عند الحاجة.</p>
           </div>
-          <span className="badge">ingest</span>
+          <span className="badge">استيعاب الملفات</span>
         </div>
 
         <button className="button button-primary" onClick={handleIngestScan} disabled={ingestState.status === "scanning"}>
@@ -421,14 +425,14 @@ export function MediaJobsList() {
         </button>
         <p className="form-status" role={ingestState.status === "error" ? "alert" : "status"}>
           {ingestState.status === "done"
-            ? `تم: ${ingestState.ingested} مدخول، تم تخطي ${ingestState.skipped}`
+            ? `اكتمل المسح: تمت إضافة ${ingestState.ingested} ملفًا وتخطي ${ingestState.skipped}.`
             : ingestState.status === "error"
               ? ingestState.message
               : ""}
         </p>
       </article>
 
-      <section className="workspace-panel" aria-label="قائمة Media Jobs">
+      <section className="workspace-panel" aria-label="قائمة مهام الوسائط">
         <div className="workspace-panel__header">
           <div>
             <h2>قائمة مهام الوسائط</h2>
@@ -455,18 +459,31 @@ export function MediaJobsList() {
           </div>
         </div>
 
-        {listState.status === "loading" && <p className="form-status">جار التحميل...</p>}
+        {listState.status === "loading" && (
+          <p className="form-status" role="status" aria-live="polite" aria-busy="true">
+            <Loader2 className="status-refresh-icon is-spinning" size={16} aria-hidden="true" />
+            جار تحميل مهام الوسائط...
+          </p>
+        )}
         {listState.status === "empty" && (
           <EmptyState
             icon={<FileScan size={22} />}
-            title="لا توجد media jobs."
-            description="ابدأ بإنشاء مهمة أو نفّذ مسح الدخول لتوليد مهام من الملفات الجديدة."
+            title={statusFilter ? `لا توجد مهام بحالة «${statusLabel(statusFilter)}».` : "لا توجد مهام وسائط بعد."}
+            description={statusFilter ? "غيّر عامل التصفية أو حدّث القائمة للتحقق من المهام الأخرى." : "ابدأ بإنشاء مهمة أو افحص مجلد الإدخال لتوليد مهام من الملفات الجديدة."}
+            actions={statusFilter ? (
+              <button className="button button-secondary button-sm" type="button" onClick={() => setStatusFilter("")}>
+                عرض جميع الحالات
+              </button>
+            ) : undefined}
           />
         )}
         {listState.status === "error" && (
-          <p role="alert" className="form-status status-error">
-            خطأ: {listState.message}
-          </p>
+          <div role="alert" className="form-status status-error">
+            <span>تعذر تحميل المهام: {listState.message}</span>
+            <button className="button button-secondary button-sm" type="button" onClick={() => void loadJobs()}>
+              إعادة المحاولة
+            </button>
+          </div>
         )}
 
         {listState.status === "loaded" && (
@@ -481,10 +498,17 @@ export function MediaJobsList() {
                   <div className="state-banner">
                     <div className="helper-row">
                       <span className="field-note">{job.progressStage || "جاري المعالجة"}</span>
-                      <span className="field-note">{job.progressPercent}%</span>
+                      <span className="field-note">{progressValue(job.progressPercent)}%</span>
                     </div>
-                    <div style={{ width: "100%", height: "4px", backgroundColor: "rgba(0,0,0,0.1)", borderRadius: "2px", overflow: "hidden" }}>
-                      <div style={{ width: `${job.progressPercent}%`, height: "100%", backgroundColor: "currentColor", transition: "width 0.2s" }} />
+                    <div
+                      role="progressbar"
+                      aria-label="تقدم المهمة"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={progressValue(job.progressPercent)}
+                      style={{ width: "100%", height: "4px", backgroundColor: "rgba(0,0,0,0.1)", borderRadius: "2px", overflow: "hidden" }}
+                    >
+                      <div style={{ width: `${progressValue(job.progressPercent)}%`, height: "100%", backgroundColor: "currentColor", transition: "width 0.2s" }} />
                     </div>
                   </div>
                 )}

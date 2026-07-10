@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { SearchCheck } from "lucide-react";
+import { KeyRound, SearchCheck } from "lucide-react";
 import { z } from "zod";
 import { FieldError } from "@/components/ui/Form";
-import { createArchiveApiClient, type MediaJob } from "@/lib/archive-api";
+import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation } from "@/lib/archive-api";
 
 type LookupState =
   | { status: "idle" }
@@ -14,11 +14,35 @@ type LookupState =
   | { status: "error"; message: string };
 
 const lookupSchema = z.object({
-  jobId: z.string().trim().min(1, "أدخل معرّف job قبل الفحص."),
+  jobId: z.string().trim().min(1, "أدخل معرّف المهمة قبل الفحص."),
   accessToken: z.string().trim().optional().transform((value) => value || undefined)
 });
 
 type LookupFormValues = z.input<typeof lookupSchema>;
+
+function operationLabel(operation: MediaOperation) {
+  const labels: Record<MediaOperation, string> = {
+    thumbnail: "صورة مصغرة",
+    transcode: "تحويل صيغة",
+    transcription: "تفريغ نصي",
+    ocr: "استخراج نص OCR",
+    montage_export: "تصدير مونتاج"
+  };
+
+  return labels[operation] || operation;
+}
+
+function statusLabel(status: MediaJobStatus) {
+  const labels: Record<MediaJobStatus, string> = {
+    queued: "قيد الانتظار",
+    processing: "قيد المعالجة",
+    completed: "مكتمل",
+    failed: "فشل",
+    canceled: "ملغى"
+  };
+
+  return labels[status] || status;
+}
 
 export function MediaJobLookup() {
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -58,38 +82,45 @@ export function MediaJobLookup() {
   });
 
   return (
-    <form className="workspace-panel auth-form" onSubmit={handleSubmit} aria-label="فحص media jobs">
+    <form className="workspace-panel auth-form" onSubmit={handleSubmit} aria-label="فحص مهمة وسائط">
       <div className="workspace-panel__header">
         <div>
-          <h2>فحص job منفرد</h2>
-          <p>تحقق سريع من حالة مهمة محددة عبر Ø§ÙØ®Ø§Ø¯Ù.</p>
+          <h2>فحص مهمة محددة</h2>
+          <p>تحقق بسرعة من حالة مهمة الوسائط ونتيجتها من الخادم.</p>
         </div>
-        <span className="badge">lookup</span>
+        <span className="badge">فحص مباشر</span>
       </div>
 
       <label>
-        معرّف job
-        <input type="text" placeholder="media-job-id" autoComplete="off" {...form.register("jobId")} />
+        معرّف المهمة
+        <input type="text" placeholder="معرّف مهمة الوسائط" autoComplete="off" {...form.register("jobId")} />
         <FieldError>{errors.jobId?.message}</FieldError>
       </label>
 
-      <label>
-        Access token
-        <input type="password" placeholder="Bearer token اختياري للفحص المحلي" autoComplete="off" {...form.register("accessToken")} />
-        <FieldError>{errors.accessToken?.message}</FieldError>
-      </label>
+      <details className="section-divider">
+        <summary className="field-note">
+          <KeyRound size={15} aria-hidden="true" />
+          خيارات متقدمة للمسؤول
+        </summary>
+        <p className="field-note">استخدم رمز وصول بديلًا فقط عند فحص مهمة ضمن جلسة أو بيئة مختلفة.</p>
+        <label>
+          رمز الوصول
+          <input type="password" placeholder="رمز Bearer اختياري" autoComplete="off" {...form.register("accessToken")} />
+          <FieldError>{errors.accessToken?.message}</FieldError>
+        </label>
+      </details>
 
       <button type="submit" className="button button-primary" disabled={state.status === "loading"}>
         <SearchCheck size={16} aria-hidden="true" />
-        {state.status === "loading" ? "جار الفحص..." : "فحص حالة job"}
+        {state.status === "loading" ? "جار الفحص..." : "فحص حالة المهمة"}
       </button>
 
       <p className="form-status" role={state.status === "error" ? "alert" : "status"}>
         {state.status === "ready"
-          ? `الحالة: ${state.job.status} / العملية: ${state.job.operation}`
+          ? `تم العثور على المهمة. الحالة الحالية: ${statusLabel(state.job.status)}، ونوع العملية: ${operationLabel(state.job.operation)}.`
           : state.status === "error"
             ? state.message
-            : "يفحص هذا النموذج حالة المهمة من واجهة Ø§ÙØ®Ø§Ø¯Ù."}
+            : "أدخل معرّف المهمة لعرض حالتها من الخادم."}
       </p>
     </form>
   );
