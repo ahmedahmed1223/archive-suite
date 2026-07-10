@@ -22,27 +22,20 @@ export default function CommandPalette() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const shortcutBinding = getShortcut("commandPalette");
-
     const onKeyDown = (event: KeyboardEvent) => {
-      if (matchesKeyEvent(event, shortcutBinding)) {
+      if (!event.isComposing && matchesKeyEvent(event, getShortcut("commandPalette"))) {
         event.preventDefault();
         setOpen((current) => !current);
       }
     };
     const onOpen = () => setOpen(true);
-    const onShortcutsChanged = () => {
-      // Rebind listener on shortcut changes
-    };
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener(commandEventName, onOpen);
-    window.addEventListener("archive:shortcuts-changed", onShortcutsChanged);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener(commandEventName, onOpen);
-      window.removeEventListener("archive:shortcuts-changed", onShortcutsChanged);
     };
   }, []);
 

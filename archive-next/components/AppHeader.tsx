@@ -11,6 +11,7 @@ import { openCommandPalette } from "@/components/CommandPalette";
 import { useAuthSession } from "@/lib/auth-session";
 import FocusModeToggle from "@/components/FocusModeToggle";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
+import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
 
 const navSections = Object.keys(navSectionLabels) as NavSection[];
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
@@ -27,10 +28,19 @@ export default function AppHeader({
   const router = useRouter();
   const auth = useAuthSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl / Cmd + K");
 
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const updateShortcutDisplay = () => setShortcutDisplay(formatShortcutDisplay(getShortcut("commandPalette")));
+
+    updateShortcutDisplay();
+    window.addEventListener("archive:shortcuts-changed", updateShortcutDisplay);
+    return () => window.removeEventListener("archive:shortcuts-changed", updateShortcutDisplay);
+  }, []);
 
   async function handleLogout() {
     await auth.logout();
@@ -88,10 +98,11 @@ export default function AppHeader({
           data-command-trigger
           onClick={openCommandPalette}
           aria-label="فتح لوحة الأوامر"
+          aria-keyshortcuts="Control+K Meta+K"
           title="بحث سريع"
         >
           <Icons.Search aria-hidden="true" size={18} strokeWidth={2} />
-          <kbd>Ctrl K</kbd>
+          <kbd>{shortcutDisplay}</kbd>
         </button>
       </div>
       <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>

@@ -21,7 +21,7 @@ export default function WorkspaceCommandBar() {
   const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id ?? "مستخدم";
   const activeLink = primaryNav.find((link) => isActivePath(pathname, link.href)) ?? primaryNav[0];
   const activeSection = navSectionLabels[activeLink.section];
-  const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl K");
+  const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl / Cmd + K");
 
   useEffect(() => {
     const binding = getShortcut("commandPalette");
@@ -52,7 +52,12 @@ export default function WorkspaceCommandBar() {
           <strong>{activeLink.label}</strong>
         </div>
       </div>
-      <button type="button" className="workspace-commandbar__search" onClick={openCommandPalette}>
+      <button
+        type="button"
+        className="workspace-commandbar__search"
+        onClick={openCommandPalette}
+        aria-keyshortcuts="Control+K Meta+K"
+      >
         <Search size={18} aria-hidden="true" />
         <span>بحث، فتح صفحة، أو تنفيذ أمر...</span>
         <kbd>{shortcutDisplay}</kbd>
