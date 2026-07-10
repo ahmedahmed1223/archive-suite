@@ -254,6 +254,11 @@
   gap: var(--space-4);
 }
 
+.suggestions-panel-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
 .add-workspace__primary,
 .add-workspace__support {
   display: grid;

@@ -218,6 +218,29 @@
   font-size: var(--font-size-sm);
 }
 
+.report-filter-form {
+  display: grid;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.report-filter-form label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.report-summary-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.report-table-panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
 @media (min-width: 900px) {
   .report-workspace {
     grid-template-columns: minmax(0, 1fr) minmax(21rem, 0.78fr);
@@ -226,5 +249,13 @@
   .report-preview-panel {
     position: sticky;
     inset-block-start: var(--space-5);
+  }
+
+  .report-filter-form {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  }
+
+  .report-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

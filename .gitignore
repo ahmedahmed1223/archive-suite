@@ -47,3 +47,6 @@ archive-server/prisma/schema.active.prisma
 output/
 .fallow/
 .agents/
+
+# Git Bash crash dumps (Windows)
+*.stackdump

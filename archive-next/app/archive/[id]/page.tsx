@@ -8,11 +8,13 @@ import AppShell from "@/components/AppShell";
 import BroadcastMetadataPanel from "@/components/BroadcastMetadataPanel";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import SuggestionsPanel from "@/components/SuggestionsPanel";
 import MediaDerivativesTree from "./MediaDerivativesTree";
 import {
   createArchiveApiClient,
   deriveRecordSourcePath,
   type ArchiveRecord,
+  type ArchiveSuggestion,
   type CreateRelationPayload,
   type RecordComment,
   type RecordHistoryEntry,
@@ -21,7 +23,8 @@ import {
   type RelationGraphPayload,
   type RelationTypeKey,
   type UpdateRelationPayload,
-  type RightsRecord
+  type RightsRecord,
+  type SuggestionFeedbackValue
 } from "@/lib/archive-api";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
 
@@ -799,6 +802,7 @@ export default function ArchiveDetailPage() {
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [isFav, setIsFav] = useState(false);
   const [ocrState, setOcrState] = useState<OcrState>({ status: "idle" });
+  const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
 
   async function handleOcr() {
     if (state.status !== "ready") return;
@@ -876,6 +880,14 @@ export default function ArchiveDetailPage() {
     }
 
     setState((current) => (current.status === "ready" ? { ...current, record: updated } : current));
+    const suggestionsResponse = await api.suggestions({ context: "detail", recordId: id });
+    setSuggestions(suggestionsResponse.ok ? suggestionsResponse.suggestions : []);
+  }
+
+  async function handleSuggestionFeedback(suggestion: ArchiveSuggestion, value: SuggestionFeedbackValue) {
+    const response = await api.submitSuggestionFeedback(suggestion.key, { value, context: "detail" });
+    if (!response.ok) throw new Error(response.error || "تعذر حفظ تقييم الاقتراح.");
+    if (value === "dismissed") setSuggestions((current) => current.filter((item) => item.key !== suggestion.key));
   }
 
   async function handleCreateNote(payload: { body: string; timestampSeconds?: number | null }) {
@@ -968,6 +980,13 @@ export default function ArchiveDetailPage() {
         historyError: null
       });
       setIsFav(isFavorited(id));
+
+      void api.suggestions({ context: "detail", recordId: id })
+        .then((response) => {
+          if (!active) return;
+          setSuggestions(response.ok ? response.suggestions : []);
+        })
+        .catch(() => {});
 
       void api.rights(id)
         .then((response) => {
@@ -1218,6 +1237,7 @@ export default function ArchiveDetailPage() {
                 </div>
               ) : null}
             </article>
+            <SuggestionsPanel suggestions={suggestions} title="تحسينات مقترحة لهذا السجل" onFeedback={handleSuggestionFeedback} />
             <RecordDescribeForm record={state.record} onSave={handleSaveRecord} />
             <RecordNotesPanel
               notes={state.notes}
