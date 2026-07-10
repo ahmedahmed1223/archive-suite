@@ -351,6 +351,23 @@
   box-shadow: var(--shadow-sm);
 }
 
+.ui-data-table-wrap:focus-visible {
+  outline: 3px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.ui-visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .ui-data-table {
   border-collapse: separate;
   border-spacing: 0;
@@ -404,6 +421,10 @@
 
 .ui-data-table-sort:disabled {
   cursor: default;
+}
+
+.ui-data-table-sort span {
+  min-inline-size: 1em;
 }
 
 .ui-data-table-empty {
