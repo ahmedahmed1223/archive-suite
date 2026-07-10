@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 use Tests\Support\AuthenticatesArchiveRequests;
 
@@ -166,6 +167,49 @@ class FilesApiTest extends TestCase
         $this->assertSame('disk', $response->streamedContent());
 
         File::deleteDirectory(storage_path('framework/testing/archive-disk-local'));
+    }
+
+    public function test_it_serves_a_partial_range_request_from_a_remote_disk(): void
+    {
+        config(['filesystems.disks.remote-media' => [
+            'driver' => 's3',
+            'key' => 'test-key',
+            'secret' => 'test-secret',
+            'region' => 'us-east-1',
+            'bucket' => 'archive-test',
+        ]]);
+        Storage::fake('remote-media');
+        Storage::disk('remote-media')->put('fixture.txt', 'remote file content');
+
+        $response = $this->get('/api/v1/files/stream?path=fixture.txt&disk=remote-media', array_merge(
+            $this->authHeaders(),
+            ['Range' => 'bytes=0-5'],
+        ));
+
+        $response->assertStatus(206);
+        $this->assertSame('bytes 0-5/19', $response->headers->get('Content-Range'));
+        $this->assertSame('remote', $response->streamedContent());
+    }
+
+    public function test_it_rejects_an_unsatisfiable_range_request_from_a_remote_disk(): void
+    {
+        config(['filesystems.disks.remote-media' => [
+            'driver' => 's3',
+            'key' => 'test-key',
+            'secret' => 'test-secret',
+            'region' => 'us-east-1',
+            'bucket' => 'archive-test',
+        ]]);
+        Storage::fake('remote-media');
+        Storage::disk('remote-media')->put('fixture.txt', 'remote file content');
+
+        $response = $this->get('/api/v1/files/stream?path=fixture.txt&disk=remote-media', array_merge(
+            $this->authHeaders(),
+            ['Range' => 'bytes=20-30'],
+        ));
+
+        $response->assertStatus(416);
+        $this->assertSame('bytes */19', $response->headers->get('Content-Range'));
     }
 
     public function test_it_rejects_unknown_disk(): void

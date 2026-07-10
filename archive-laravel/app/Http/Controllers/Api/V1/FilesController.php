@@ -93,7 +93,7 @@ class FilesController extends Controller
 
         // If disk is specified, stream from the configured filesystem disk
         if ($disk !== '') {
-            return $this->streamFromDisk($disk, (string) $validated['path']);
+            return $this->streamFromDisk($request, $disk, (string) $validated['path']);
         }
 
         // Fallback: stream from ARCHIVE_FILE_ROOT (original behavior, Range-capable)
@@ -110,17 +110,15 @@ class FilesController extends Controller
 
         $mime = mime_content_type($path) ?: 'application/octet-stream';
 
-        // ponytail: Symfony BinaryFileResponse handles HTTP Range (206 partial /
-        // 416 unsatisfiable), Accept-Ranges, and chunked sending natively for local files.
-        // Remote disks (s3/ftp/sftp) stream sequentially (no byte-range seek) — true remote
-        // Range is a later optimization; local keeps native Range.
+        // Symfony BinaryFileResponse handles HTTP Range (206 partial / 416
+        // unsatisfiable), Accept-Ranges, and chunked sending natively for local files.
         return response()->file($path, [
             'Content-Type' => $mime,
             'Cache-Control' => 'private, max-age=0, no-cache',
         ]);
     }
 
-    private function streamFromDisk(string $diskName, string $path): \Symfony\Component\HttpFoundation\Response
+    private function streamFromDisk(Request $request, string $diskName, string $path): \Symfony\Component\HttpFoundation\Response
     {
         // Security: only allow disks in the configured filesystem disks array
         $allowedDisks = array_keys((array) config('filesystems.disks', []));
@@ -153,26 +151,116 @@ class FilesController extends Controller
 
         $mime = $disk->mimeType($path) ?: 'application/octet-stream';
 
-        // ponytail: Remote disks stream sequentially via response() with no byte-range support yet.
-        // Upgrade path: wrap remote streams with resumable chunks when throughput matters.
+        $size = (int) $disk->size($path);
+        $range = $this->parseByteRange($request->header('Range'), $size);
+
+        if ($range === false) {
+            return response('', 416, [
+                'Content-Range' => "bytes */{$size}",
+                'Accept-Ranges' => 'bytes',
+                'Cache-Control' => 'private, max-age=0, no-cache',
+            ]);
+        }
+
+        [$start, $end] = $range ?? [0, max(0, $size - 1)];
+        $length = $range === null ? $size : $end - $start + 1;
+
         return response()->stream(
-            function () use ($disk, $path): void {
+            function () use ($disk, $path, $start, $length): void {
                 $stream = $disk->readStream($path);
-                if (is_resource($stream)) {
-                    while (! feof($stream)) {
-                        echo fread($stream, 8192);
+
+                if (! is_resource($stream)) {
+                    return;
+                }
+
+                try {
+                    if ($start > 0) {
+                        $metadata = stream_get_meta_data($stream);
+
+                        if (($metadata['seekable'] ?? false) !== true || fseek($stream, $start, SEEK_SET) !== 0) {
+                            $this->discardStreamBytes($stream, $start);
+                        }
                     }
+
+                    $remaining = $length;
+
+                    while ($remaining > 0 && ! feof($stream)) {
+                        $chunk = fread($stream, min(8192, $remaining));
+
+                        if ($chunk === false || $chunk === '') {
+                            break;
+                        }
+
+                        $remaining -= strlen($chunk);
+                        echo $chunk;
+                    }
+                } finally {
                     fclose($stream);
                 }
             },
-            200,
+            $range === null ? 200 : 206,
             [
                 'Content-Type' => $mime,
-                'Content-Length' => $disk->size($path),
+                'Content-Length' => $length,
                 'Cache-Control' => 'private, max-age=0, no-cache',
-                'Accept-Ranges' => 'none', // Remote disks don't support byte ranges yet
+                'Accept-Ranges' => 'bytes',
+                ...($range === null ? [] : ['Content-Range' => "bytes {$start}-{$end}/{$size}"]),
             ]
         );
+    }
+
+    /**
+     * @return array{int, int}|false|null null when no Range header was sent
+     */
+    private function parseByteRange(?string $header, int $size): array|false|null
+    {
+        if ($header === null || trim($header) === '') {
+            return null;
+        }
+
+        if ($size < 1 || ! str_starts_with($header, 'bytes=') || str_contains($header, ',')) {
+            return false;
+        }
+
+        $range = trim(substr($header, strlen('bytes=')));
+
+        if (! preg_match('/^(\d*)-(\d*)$/', $range, $matches) || ($matches[1] === '' && $matches[2] === '')) {
+            return false;
+        }
+
+        if ($matches[1] === '') {
+            $suffixLength = (int) $matches[2];
+
+            if ($suffixLength < 1) {
+                return false;
+            }
+
+            return [max(0, $size - $suffixLength), $size - 1];
+        }
+
+        $start = (int) $matches[1];
+
+        if ($start >= $size) {
+            return false;
+        }
+
+        $end = $matches[2] === '' ? $size - 1 : min((int) $matches[2], $size - 1);
+
+        return $end < $start ? false : [$start, $end];
+    }
+
+    /** @param resource $stream */
+    private function discardStreamBytes($stream, int $bytes): void
+    {
+        while ($bytes > 0 && ! feof($stream)) {
+            $chunk = fread($stream, min(8192, $bytes));
+
+            if ($chunk === false || $chunk === '') {
+                return;
+            }
+
+            $bytes -= strlen($chunk);
+        }
     }
 
     private function localDiskPath(string $diskName, string $path): ?string
