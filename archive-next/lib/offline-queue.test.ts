@@ -1,113 +1,119 @@
-/**
- * Tests for offline queue system
- *
- * To run: Set up vitest in archive-next and run `pnpm test`
- * Or manually verify by opening DevTools and checking localStorage[archive-offline-queue]
- */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  queueMutation,
-  removeMutationFromQueue,
-  updateMutationRetry,
   clearOfflineQueue,
   getOfflineQueue,
   loadOfflineQueue,
+  queueMutation,
+  removeMutationFromQueue,
+  updateMutationRetry,
   type QueuedMutation
 } from "./offline-queue";
 
-// Test: Queue a mutation
-function testQueueMutation() {
-  clearOfflineQueue();
-  const id = queueMutation("/records/123", "PATCH", { title: "Updated" });
+const STORAGE_KEY = "archive-offline-queue";
 
-  const queue = getOfflineQueue();
-  console.assert(queue.length === 1, "Queue should have 1 item");
-  console.assert(queue[0].id === id, "Mutation ID should match");
-  console.assert(queue[0].endpoint === "/records/123", "Endpoint should match");
-  console.assert(queue[0].method === "PATCH", "Method should match");
-  console.assert(queue[0].retryCount === 0, "Retry count should start at 0");
-  console.log("✓ testQueueMutation passed");
+function createStorage() {
+  const entries = new Map<string, string>();
+
+  return {
+    clear: vi.fn(() => entries.clear()),
+    getItem: vi.fn((key: string) => entries.get(key) ?? null),
+    removeItem: vi.fn((key: string) => entries.delete(key)),
+    setItem: vi.fn((key: string, value: string) => entries.set(key, value))
+  };
 }
 
-// Test: Remove mutation from queue
-function testRemoveMutation() {
-  clearOfflineQueue();
-  const id1 = queueMutation("/records/1", "POST", {});
-  const id2 = queueMutation("/records/2", "POST", {});
+describe("offline queue", () => {
+  let storage: ReturnType<typeof createStorage>;
 
-  removeMutationFromQueue(id1);
-  const queue = getOfflineQueue();
+  beforeEach(() => {
+    storage = createStorage();
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("localStorage", storage);
+    clearOfflineQueue();
+  });
 
-  console.assert(queue.length === 1, "Queue should have 1 item after removal");
-  console.assert(queue[0].id === id2, "Remaining item should be id2");
-  console.log("✓ testRemoveMutation passed");
-}
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
-// Test: Update retry count
-function testUpdateRetry() {
-  clearOfflineQueue();
-  const id = queueMutation("/records/1", "POST", {});
+  it("adds a mutation and persists its initial state", () => {
+    const id = queueMutation("/records/123", "PATCH", { title: "Updated" });
+    const queue = getOfflineQueue();
 
-  updateMutationRetry(id, "Connection timeout");
-  const queue = getOfflineQueue();
+    expect(queue).toHaveLength(1);
+    expect(queue[0]).toMatchObject({
+      id,
+      endpoint: "/records/123",
+      method: "PATCH",
+      body: { title: "Updated" },
+      retryCount: 0
+    });
+    expect(storage.setItem).toHaveBeenLastCalledWith(
+      STORAGE_KEY,
+      expect.stringContaining(id)
+    );
+  });
 
-  console.assert(queue[0].retryCount === 1, "Retry count should increment");
-  console.assert(
-    queue[0].lastError === "Connection timeout",
-    "Error message should be set"
-  );
-  console.log("✓ testUpdateRetry passed");
-}
+  it("removes only the requested mutation", () => {
+    const firstId = queueMutation("/records/1", "POST", {});
+    const secondId = queueMutation("/records/2", "POST", {});
 
-// Test: Clear queue
-function testClearQueue() {
-  clearOfflineQueue();
-  queueMutation("/records/1", "POST", {});
-  queueMutation("/records/2", "PATCH", {});
+    removeMutationFromQueue(firstId);
 
-  clearOfflineQueue();
-  const queue = getOfflineQueue();
+    expect(getOfflineQueue()).toMatchObject([{ id: secondId }]);
+  });
 
-  console.assert(queue.length === 0, "Queue should be empty after clear");
-  console.log("✓ testClearQueue passed");
-}
+  it("increments retry information without changing other queued mutations", () => {
+    const retryId = queueMutation("/records/1", "POST", {});
+    const untouchedId = queueMutation("/records/2", "POST", {});
 
-// Test: Queue persists to localStorage
-function testPersistence() {
-  if (typeof localStorage === "undefined") {
-    console.log("⊘ testPersistence skipped (no localStorage in this environment)");
-    return;
-  }
+    updateMutationRetry(retryId, "Connection timeout");
+    updateMutationRetry(retryId, "Still offline");
 
-  clearOfflineQueue();
-  const id = queueMutation("/records/1", "POST", { title: "New" });
+    expect(getOfflineQueue()).toMatchObject([
+      { id: retryId, retryCount: 2, lastError: "Still offline" },
+      { id: untouchedId, retryCount: 0 }
+    ]);
+  });
 
-  // Manually verify localStorage (automated test would require mocking)
-  const stored = localStorage.getItem("archive-offline-queue");
-  console.assert(stored !== null, "Queue should be persisted to localStorage");
+  it("clears the queue and its persisted items", () => {
+    queueMutation("/records/1", "POST", {});
+    queueMutation("/records/2", "PATCH", {});
 
-  if (stored) {
-    const data = JSON.parse(stored) as { version: number; items: QueuedMutation[] };
-    console.assert(data.version === 1, "Storage version should match");
-    console.assert(data.items.length === 1, "Stored items should have 1 entry");
-    console.assert(data.items[0].id === id, "Stored mutation ID should match");
-  }
+    clearOfflineQueue();
 
-  console.log("✓ testPersistence passed");
-}
+    expect(getOfflineQueue()).toEqual([]);
+    expect(JSON.parse(storage.getItem(STORAGE_KEY) ?? "{}") as {
+      items: QueuedMutation[];
+    }).toEqual({ version: 1, items: [] });
+  });
 
-// Run all tests
-export function runOfflineQueueTests() {
-  console.log("Running offline queue tests...");
-  testQueueMutation();
-  testRemoveMutation();
-  testUpdateRetry();
-  testClearQueue();
-  testPersistence();
-  console.log("All tests passed! ✓");
-}
+  it("restores compatible persisted queue entries", () => {
+    const persisted: QueuedMutation = {
+      id: "persisted-mutation",
+      endpoint: "/records/42",
+      method: "PUT",
+      body: { status: "reviewed" },
+      createdAt: 1,
+      retryCount: 1,
+      lastError: "Timed out"
+    };
+    storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, items: [persisted] }));
 
-// Manual test instructions:
-// 1. Open browser DevTools
-// 2. In the console, run: import('archive-next/lib/offline-queue.test').then(m => m.runOfflineQueueTests())
-// 3. Check console output for test results
+    loadOfflineQueue();
+
+    expect(getOfflineQueue()).toEqual([persisted]);
+  });
+
+  it("ignores persisted entries from an incompatible storage version", () => {
+    storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: 99, items: [{ id: "obsolete" }] })
+    );
+
+    loadOfflineQueue();
+
+    expect(getOfflineQueue()).toEqual([]);
+  });
+});
