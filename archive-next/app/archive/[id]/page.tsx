@@ -8,6 +8,7 @@ import AppShell from "@/components/AppShell";
 import BroadcastMetadataPanel from "@/components/BroadcastMetadataPanel";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import MediaDerivativesTree from "./MediaDerivativesTree";
 import {
   createArchiveApiClient,
   deriveRecordSourcePath,
@@ -1315,6 +1316,7 @@ export default function ArchiveDetailPage() {
               onUpdate={handleUpdateRelation}
               onDelete={handleDeleteRelation}
             />
+            <MediaDerivativesTree record={state.record} />
             <RecordHistoryPanel
               entries={state.history}
               loading={state.historyLoading}

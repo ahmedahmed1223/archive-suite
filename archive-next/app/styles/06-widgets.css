@@ -264,6 +264,121 @@
   gap: var(--space-2);
 }
 
+.media-derivatives {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.derivative-tree,
+.derivative-tree__children {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.derivative-tree__root,
+.derivative-tree__artifact-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--color-surface-subtle);
+}
+
+.derivative-tree__root {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 42%, var(--color-border-secondary));
+  background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface-subtle));
+}
+
+.derivative-tree__root span,
+.derivative-tree__artifact-card span {
+  display: grid;
+  min-inline-size: 0;
+  gap: 2px;
+}
+
+.derivative-tree code {
+  overflow-wrap: anywhere;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.derivative-tree__children {
+  margin-inline-start: var(--space-3);
+  border-inline-start: 1px solid var(--color-border-secondary);
+  padding-inline-start: var(--space-3);
+}
+
+.derivative-tree__job > details {
+  border: 1px solid var(--color-border-secondary);
+  border-inline-start: 3px solid var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+}
+
+.derivative-tree__job[data-status="processing"] > details {
+  border-inline-start-color: var(--color-status-warning);
+}
+
+.derivative-tree__job[data-status="completed"] > details {
+  border-inline-start-color: var(--color-status-success);
+}
+
+.derivative-tree__job[data-status="failed"] > details {
+  border-inline-start-color: var(--color-status-error);
+}
+
+.derivative-tree__job summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 3rem;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.derivative-tree__job summary::-webkit-details-marker {
+  display: none;
+}
+
+.derivative-tree__job summary span:not(.badge) {
+  display: grid;
+  min-inline-size: 0;
+  gap: 2px;
+}
+
+.derivative-tree__job summary small {
+  overflow-wrap: anywhere;
+  color: var(--color-text-tertiary);
+}
+
+.derivative-tree__job-body {
+  display: grid;
+  gap: var(--space-3);
+  border-block-start: 1px solid var(--color-border-secondary);
+  padding: var(--space-3);
+}
+
+@media (max-width: 760px) {
+  .derivative-tree__children {
+    margin-inline-start: var(--space-2);
+    padding-inline-start: var(--space-2);
+  }
+
+  .derivative-tree__artifact-card,
+  .derivative-tree__job summary {
+    padding: var(--space-2);
+  }
+}
+
 @media (min-width: 760px) {
   .split-layout {
     grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.9fr);
