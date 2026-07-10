@@ -28,6 +28,7 @@ export const primaryNav = [
   { href: "/shares/with-me", label: "وارد المشاركة", section: "collaborate", icon: "MailCheck" },
   { href: "/collaboration", label: "التعاون", section: "collaborate", icon: "Users" },
   { href: "/automation", label: "الأتمتة", section: "collaborate", icon: "Bot" },
+  { href: "/copilot", label: "مساعد الأرشيف", section: "collaborate", icon: "BotMessageSquare" },
   { href: "/rights", label: "الحقوق", section: "collaborate", icon: "ShieldCheck" },
   // ── المؤشرات والمراقبة ──
   { href: "/activity", label: "النشاط", section: "insights", icon: "Activity" },

@@ -291,6 +291,99 @@
   align-items: start;
 }
 
+.copilot-content {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.copilot-safety-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  border-color: color-mix(in srgb, var(--color-status-info) 38%, var(--color-border-secondary));
+  background: color-mix(in srgb, var(--color-status-info) 8%, var(--color-bg-secondary));
+}
+
+.copilot-safety-banner > svg {
+  flex: 0 0 auto;
+  color: var(--color-status-info);
+}
+
+.copilot-safety-banner div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.copilot-safety-banner span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.copilot-workspace {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.copilot-conversation {
+  min-block-size: 28rem;
+}
+
+.copilot-composer {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.copilot-composer label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.copilot-composer textarea {
+  min-block-size: 7.5rem;
+}
+
+.copilot-guidance {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.copilot-guidance__list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.copilot-guidance__item {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.copilot-guidance__item .button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.copilot-guidance__item h3,
+.copilot-guidance__item p {
+  margin: 0;
+}
+
+.copilot-guidance__item p {
+  margin-block-start: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.copilot-guidance__icon {
+  color: var(--color-brand-primary);
+}
+
 .archive-workspace {
   align-items: start;
 }
@@ -502,6 +595,10 @@
 
   .add-workspace__support-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .copilot-workspace {
+    grid-template-columns: minmax(0, 1.22fr) minmax(18rem, 0.78fr);
   }
 }
 
