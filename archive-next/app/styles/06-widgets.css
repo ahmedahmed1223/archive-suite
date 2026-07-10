@@ -379,6 +379,64 @@
   }
 }
 
+.geotag-panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.geotag-view {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.geotag-view__meta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.geotag-view__meta span {
+  display: grid;
+  min-inline-size: 0;
+  gap: 2px;
+}
+
+.geotag-view__meta small {
+  color: var(--color-text-tertiary);
+}
+
+.geotag-map {
+  inline-size: 100%;
+  block-size: 220px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+}
+
+.geotag-nearby {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.geotag-nearby__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.geotag-nearby__list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-subtle);
+}
+
 @media (min-width: 760px) {
   .split-layout {
     grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.9fr);
