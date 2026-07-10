@@ -9,6 +9,7 @@ import BroadcastMetadataPanel from "@/components/BroadcastMetadataPanel";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
+import GeotagPanel from "./GeotagPanel";
 import MediaDerivativesTree from "./MediaDerivativesTree";
 import {
   createArchiveApiClient,
@@ -1335,6 +1336,10 @@ export default function ArchiveDetailPage() {
               onCreate={handleCreateRelation}
               onUpdate={handleUpdateRelation}
               onDelete={handleDeleteRelation}
+            />
+            <GeotagPanel
+              record={state.record}
+              onRecordUpdate={(updated) => setState((current) => (current.status === "ready" ? { ...current, record: updated } : current))}
             />
             <MediaDerivativesTree record={state.record} />
             <RecordHistoryPanel
