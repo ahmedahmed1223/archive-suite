@@ -2,18 +2,23 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class TagNodesControllerTest extends TestCase
 {
-    private string $userId = 'test-user-id';
+    use RefreshDatabase;
+
+    private User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
-        // Seed a test user for auth
-        $this->actingAs((object) ['getKey' => fn () => $this->userId]);
+        // Create a test user for auth
+        $this->user = User::factory()->create();
+        $this->actingAs($this->user);
     }
 
     public function test_can_create_tag_node_with_color(): void
@@ -88,8 +93,8 @@ class TagNodesControllerTest extends TestCase
     {
         $oldParentId = $this->createTagNode('old-parent', '');
         $newParentId = $this->createTagNode('new-parent', '');
-        $childId = $this->createTagNode('child', 'old-parent');
         $tagId = $this->createTagNode('tag', 'old-parent');
+        $childId = $this->createTagNode('child', 'tag');
 
         $response = $this->postJson(
             "/api/v1/tag-nodes/{$tagId}/move",
@@ -109,15 +114,15 @@ class TagNodesControllerTest extends TestCase
         // Verify child was also moved
         $this->assertDatabaseHas('tag_nodes', [
             'id' => $childId,
-            'parent' => 'new-parent',
+            'parent' => 'tag',
         ]);
     }
 
     public function test_can_move_tag_and_delete_children(): void
     {
         $parentId = $this->createTagNode('parent', '');
-        $childId = $this->createTagNode('child', 'parent');
         $tagId = $this->createTagNode('tag', 'parent');
+        $childId = $this->createTagNode('child', 'tag');
 
         $response = $this->postJson(
             "/api/v1/tag-nodes/{$tagId}/move",
@@ -179,7 +184,7 @@ class TagNodesControllerTest extends TestCase
         $id = (string) \Illuminate\Support\Str::uuid();
         DB::table('tag_nodes')->insert([
             'id' => $id,
-            'user_id' => $this->userId,
+            'user_id' => $this->user->id,
             'tag' => $tag,
             'parent' => $parent,
             'order_index' => 0,

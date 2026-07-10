@@ -27,12 +27,19 @@ class TagNodesController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if (! $request->has('parent')) {
+            return response()->json(['ok' => false, 'error' => 'The parent field is required.'], 422);
+        }
+
         $validated = $request->validate([
             'tag' => ['required', 'string', 'max:200'],
-            'parent' => ['required', 'string', 'max:200'],
+            'parent' => ['nullable', 'string', 'max:200'],
             'color' => ['sometimes', 'string', 'max:7', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'order_index' => ['sometimes', 'integer', 'min:0'],
         ]);
+
+        // Ensure parent defaults to empty string if null
+        $validated['parent'] = $validated['parent'] ?? '';
 
         $userId = $this->userId($request);
         $now = now();
@@ -167,10 +174,17 @@ class TagNodesController extends Controller
 
     public function move(Request $request, string $id): JsonResponse
     {
+        if (! $request->has('parent')) {
+            return response()->json(['ok' => false, 'error' => 'Parent field is required.'], 422);
+        }
+
         $validated = $request->validate([
-            'parent' => ['required', 'string'],
+            'parent' => ['nullable', 'string', 'max:200'],
             'deleteChildren' => ['sometimes', 'boolean'],
         ]);
+
+        // Ensure parent defaults to empty string if null
+        $validated['parent'] = $validated['parent'] ?? '';
 
         $userId = $this->userId($request);
         $node = DB::table('tag_nodes')->where('id', $id)->where('user_id', $userId)->first();
@@ -179,33 +193,34 @@ class TagNodesController extends Controller
             return response()->json(['ok' => false, 'error' => 'Tag node not found.', 'code' => 'not_found'], 404);
         }
 
-        // Prevent circular hierarchy
-        $newParent = DB::table('tag_nodes')
-            ->where('tag', $validated['parent'])
-            ->where('user_id', $userId)
-            ->first();
+        $newParentTag = trim($validated['parent']);
 
-        if ($newParent && $this->isDescendant($newParent->tag, $node->tag, $userId)) {
-            return response()->json(
-                ['ok' => false, 'error' => 'Cannot move tag to its own descendant.', 'code' => 'circular_hierarchy'],
-                400
-            );
+        // Prevent circular hierarchy (only if moving to a non-empty parent)
+        if ($newParentTag !== '') {
+            $newParent = DB::table('tag_nodes')
+                ->where('tag', $newParentTag)
+                ->where('user_id', $userId)
+                ->first();
+
+            if ($newParent && $this->isDescendant($newParent->tag, $node->tag, $userId)) {
+                return response()->json(
+                    ['ok' => false, 'error' => 'Cannot move tag to its own descendant.', 'code' => 'circular_hierarchy'],
+                    400
+                );
+            }
         }
 
+        // If deleteChildren is true, delete all children of this node
         if ((bool) ($validated['deleteChildren'] ?? false)) {
             DB::table('tag_nodes')
                 ->where('parent', $node->tag)
                 ->where('user_id', $userId)
                 ->delete();
-        } else {
-            DB::table('tag_nodes')
-                ->where('parent', $node->tag)
-                ->where('user_id', $userId)
-                ->update(['parent' => $validated['parent'], 'updated_at' => now()]);
         }
 
+        // Move the node itself
         DB::table('tag_nodes')->where('id', $id)->where('user_id', $userId)->update([
-            'parent' => $validated['parent'],
+            'parent' => $newParentTag,
             'updated_at' => now(),
         ]);
 

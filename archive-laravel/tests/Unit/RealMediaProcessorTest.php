@@ -27,6 +27,45 @@ class RealMediaProcessorTest extends TestCase
             'vtt'
         );
         $this->processor = new RealMediaProcessor($this->runner, $transcriber, 'ffmpeg', 'ffprobe');
+
+        // Create mock output directories for fake process tests
+        @mkdir('record-1', 0777, true);
+        @mkdir('record-2', 0777, true);
+        @mkdir('record-3', 0777, true);
+        @mkdir('record-watermark', 0777, true);
+        @mkdir('record-whisper', 0777, true);
+
+        // Create mock output files for thumbnails and transcoding
+        file_put_contents('record-1/thumb.jpg', 'mock image');
+        file_put_contents('record-2/thumb.jpg', 'mock image');
+        file_put_contents('record-1/transcoded.mp4', 'mock video');
+        file_put_contents('record-2/transcoded.mp4', 'mock video');
+        file_put_contents('record-watermark/transcoded.mp4', 'mock video');
+
+        // Create mock audio extraction and transcript files
+        file_put_contents('record-3/audio_extracted.wav', 'mock audio');
+        file_put_contents('record-3/transcript.srt', "1\n00:00:00,000 --> 00:00:01,000\nMock subtitle\n");
+        file_put_contents('record-3/transcript.vtt', "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nMock subtitle\n");
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        // Clean up mock directories
+        $this->removeMockDirectory('record-1');
+        $this->removeMockDirectory('record-2');
+        $this->removeMockDirectory('record-3');
+        $this->removeMockDirectory('record-watermark');
+        $this->removeMockDirectory('record-whisper');
+    }
+
+    private function removeMockDirectory(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        array_map('unlink', glob("{$dir}/*"));
+        @rmdir($dir);
     }
 
     public function test_thumbnail_builds_correct_command(): void

@@ -21,7 +21,6 @@ return new class extends Migration
             $table->string('status')->default('draft')->index();
             $table->timestamps();
 
-            $table->index('status');
             $table->index('created_at');
         });
     }

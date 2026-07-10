@@ -25,6 +25,38 @@ class WhisperTranscriberTest extends TestCase
             'ar',
             'vtt'
         );
+
+        // Create mock output directories for fake process tests
+        foreach (['record-1', 'record-2', 'record-3', 'record-4', 'record-diarize', 'record-diarize-no-token', 'record-gpu', 'record-whisper'] as $id) {
+            @mkdir($id, 0777, true);
+            $this->createMockTranscriptFiles($id);
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        // Clean up mock directories
+        foreach (['record-1', 'record-2', 'record-3', 'record-4', 'record-diarize', 'record-diarize-no-token', 'record-gpu', 'record-whisper'] as $id) {
+            $this->removeMockDirectory($id);
+        }
+    }
+
+    private function createMockTranscriptFiles(string $recordId): void
+    {
+        file_put_contents("{$recordId}/transcript.srt", "1\n00:00:00,000 --> 00:00:01,000\nMock subtitle\n");
+        file_put_contents("{$recordId}/transcript.vtt", "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nMock subtitle\n");
+        // Create audio file for tests that need audio extraction
+        file_put_contents("{$recordId}/audio_extracted.wav", 'mock audio');
+    }
+
+    private function removeMockDirectory(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        array_map('unlink', glob("{$dir}/*"));
+        @rmdir($dir);
     }
 
     public function test_transcribe_builds_correct_command(): void

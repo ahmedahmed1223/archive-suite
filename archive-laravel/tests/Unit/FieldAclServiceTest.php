@@ -7,8 +7,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-class FieldAclServiceTest extends RefreshDatabase
+class FieldAclServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected FieldAclService $service;
 
     protected function setUp(): void

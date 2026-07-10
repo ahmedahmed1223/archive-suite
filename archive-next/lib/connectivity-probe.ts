@@ -101,7 +101,9 @@ function subscribeConnectivity(listener: () => void) {
 /** Export store for useSyncExternalStore */
 export const connectivityStore = {
   subscribe: subscribeConnectivity,
-  getSnapshot: getConnectivitySnapshot
+  getSnapshot: getConnectivitySnapshot,
+  // SSR snapshot: assume online during prerender; client corrects after hydration.
+  getServerSnapshot: (): ConnectivityStatus => "online"
 };
 
 // ponytail: health check uses fetch timeout + browser online/offline events. Could add exponential backoff if check failure rate is high.
