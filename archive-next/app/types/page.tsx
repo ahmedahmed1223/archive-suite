@@ -20,17 +20,18 @@ export default function TypesPage() {
   useEffect(() => {
     async function loadTypes() {
       try {
-        const response = await api.get("/types");
+        const response = await fetch("/api/v1/types");
         if (response.ok) {
+          const data = await response.json() as { types?: ArchiveRecord[] };
           setState({
             status: "ready",
-            types: response.types || [],
+            types: data.types || [],
             selectedTypeId: null,
           });
         } else {
           setState({
             status: "error",
-            message: response.error || "Failed to load types",
+            message: "Failed to load types",
           });
         }
       } catch (error) {
@@ -46,13 +47,18 @@ export default function TypesPage() {
 
   async function handleSaveType(typeData: ArchiveRecord) {
     try {
-      const response = await api.post("/types", typeData);
+      const response = await fetch("/api/v1/types", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(typeData),
+      });
       if (response.ok) {
-        const listResponse = await api.get("/types");
+        const listResponse = await fetch("/api/v1/types");
         if (listResponse.ok) {
+          const data = await listResponse.json() as { types?: ArchiveRecord[] };
           setState({
             status: "ready",
-            types: listResponse.types || [],
+            types: data.types || [],
             selectedTypeId: typeData.id as string,
           });
         }
@@ -67,13 +73,14 @@ export default function TypesPage() {
     if (!window.confirm("حذف هذا النوع؟")) return;
 
     try {
-      const response = await api.delete(`/types/${typeId}`);
+      const response = await fetch(`/api/v1/types/${typeId}`, { method: "DELETE" });
       if (response.ok) {
-        const listResponse = await api.get("/types");
+        const listResponse = await fetch("/api/v1/types");
         if (listResponse.ok) {
+          const data = await listResponse.json() as { types?: ArchiveRecord[] };
           setState({
             status: "ready",
-            types: listResponse.types || [],
+            types: data.types || [],
             selectedTypeId: null,
           });
         }
@@ -84,14 +91,15 @@ export default function TypesPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell subtitle="الأنواع">
       <div className="flex flex-col h-full">
         <PageToolbar
           title="الأنواع"
-          action={{
-            label: "نوع جديد",
-            onClick: () => setIsEditorOpen(true),
-          }}
+          actions={
+            <button onClick={() => setIsEditorOpen(true)} className="button">
+              نوع جديد
+            </button>
+          }
         />
 
         <div className="flex-1 overflow-y-auto p-6">

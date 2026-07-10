@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArchiveRecord } from "@/lib/archive-api";
+import type { ArchiveRecord } from "@/lib/archive-api";
 
 type Field = {
   name: string;
@@ -84,7 +84,7 @@ export default function TypesEditor({ onSave, onCancel }: TypesEditorProps) {
 
     const typeData: ArchiveRecord = {
       id: typeId,
-      name: typeName,
+      title: typeName,
       fields: fields.map((f) => ({
         ...f,
         fieldAcl: f.fieldAcl ? { view: f.fieldAcl.view, edit: f.fieldAcl.edit } : undefined,

@@ -156,6 +156,36 @@ export function updateClip(
   return { ...project, clips, updatedAt: new Date().toISOString() };
 }
 
+export function orderedClips(project: MontageProject): MontageClip[] {
+  return allClipsOrdered(project);
+}
+
+export function reorderClip(
+  project: MontageProject,
+  clipId: string,
+  newIndex: number
+): MontageProject {
+  const orderedList = allClipsOrdered(project);
+  const currentIndex = orderedList.findIndex((c) => c.id === clipId);
+
+  if (currentIndex === -1) return project;
+
+  const targetIndex = Math.max(0, Math.min(newIndex, orderedList.length - 1));
+  if (currentIndex === targetIndex) return project;
+
+  const clip = orderedList[currentIndex];
+  const adjacentClip = orderedList[targetIndex];
+
+  // Move to the timeline position of the target clip
+  const updatedClip: MontageClip = {
+    ...clip,
+    timelineStartSec: adjacentClip.timelineStartSec
+  };
+
+  const clips = project.clips.map((c) => (c.id === clipId ? updatedClip : c));
+  return { ...project, clips, updatedAt: new Date().toISOString() };
+}
+
 export function addMarker(project: MontageProject, timeSec: number, label: string, color?: string): MontageProject {
   const marker: MontageMarker = { id: uid("marker"), timeSec: toNum(timeSec), label: label.trim(), color };
   return { ...project, markers: [...project.markers, marker], updatedAt: new Date().toISOString() };

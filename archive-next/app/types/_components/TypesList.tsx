@@ -1,6 +1,6 @@
 "use client";
 
-import { ArchiveRecord } from "@/lib/archive-api";
+import type { ArchiveRecord } from "@/lib/archive-api";
 
 type TypesListProps = {
   types: ArchiveRecord[];
@@ -37,7 +37,7 @@ export default function TypesList({
         >
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="font-semibold text-lg">{type.name}</h3>
+              <h3 className="font-semibold text-lg">{typeof type.name === 'string' ? type.name : String(type.id)}</h3>
               <p className="text-sm text-gray-500">{type.id}</p>
               <p className="text-sm mt-2">
                 {Array.isArray(type.fields) ? type.fields.length : 0} حقول

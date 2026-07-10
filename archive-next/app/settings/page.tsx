@@ -7,6 +7,7 @@ import AppShell from "@/components/AppShell";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import ShortcutsSettings from "@/components/ShortcutsSettings";
+import AppearanceSettings from "@/components/AppearanceSettings";
 import { BRAND } from "@/lib/brand";
 import {
   createArchiveApiClient,
@@ -418,6 +419,7 @@ export default function SettingsPage() {
         </article>
 
         <ShortcutsSettings />
+        <AppearanceSettings />
 
         <article className="workspace-panel" aria-label="ODBC bridge">
           <div className="workspace-panel__header">

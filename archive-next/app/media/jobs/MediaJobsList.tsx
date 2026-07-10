@@ -90,7 +90,8 @@ function statusLabel(status: MediaJobStatus) {
     queued: "قيد الانتظار",
     processing: "قيد المعالجة",
     completed: "مكتمل",
-    failed: "فشل"
+    failed: "فشل",
+    canceled: "ملغى"
   };
 
   return labels[status] || status;
