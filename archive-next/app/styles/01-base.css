@@ -244,11 +244,15 @@ a:hover {
 .content {
   inline-size: min(var(--max-width-wide), calc(100% - 2rem));
   margin-inline: auto;
-  padding-block: clamp(var(--space-5), 5vw, var(--space-8));
+  padding-block: clamp(var(--space-3), 3.5vw, var(--space-6));
   display: grid;
   gap: var(--space-5);
 }
 
 .app-content {
   inline-size: min(var(--max-width-page), calc(100% - 1.5rem));
+}
+
+.mobile-primary-nav {
+  display: none;
 }

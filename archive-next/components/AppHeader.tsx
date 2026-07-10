@@ -42,6 +42,16 @@ export default function AppHeader({
     return () => window.removeEventListener("archive:shortcuts-changed", updateShortcutDisplay);
   }, []);
 
+  useEffect(() => {
+    const toggleNavigation = () => {
+      setIsMenuOpen((current) => !current);
+      document.getElementById("app-primary-nav")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    };
+
+    window.addEventListener("archive:toggle-navigation", toggleNavigation);
+    return () => window.removeEventListener("archive:toggle-navigation", toggleNavigation);
+  }, []);
+
   async function handleLogout() {
     await auth.logout();
     router.replace(`/login?next=${encodeURIComponent(pathname)}`);

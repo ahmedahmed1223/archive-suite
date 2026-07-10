@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import OnboardingPrompt from "@/components/OnboardingPrompt";
+import MobilePrimaryNav from "@/components/MobilePrimaryNav";
 import WorkspaceCommandBar from "@/components/WorkspaceCommandBar";
 import { isFocusMode } from "@/lib/focus-mode";
 import type { PageKey } from "@/lib/contextual-tips";
@@ -47,6 +48,7 @@ export default function AppShell({
         <OnboardingPrompt />
         {children}
       </main>
+      <MobilePrimaryNav />
     </div>
   );
 }

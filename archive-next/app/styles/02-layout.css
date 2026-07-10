@@ -216,6 +216,10 @@
   line-height: var(--line-height-relaxed);
 }
 
+.onboarding-prompt .button-row {
+  flex: 0 0 auto;
+}
+
 .section-heading {
   margin: 0;
   color: var(--color-text-primary);

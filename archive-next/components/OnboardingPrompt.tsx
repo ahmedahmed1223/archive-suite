@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ONBOARDING_STORAGE_KEY } from "@/lib/onboarding";
+import { ONBOARDING_PROMPT_DISMISSED_KEY, ONBOARDING_STORAGE_KEY } from "@/lib/onboarding";
 
 const hiddenPathPrefixes = ["/first-run", "/login", "/share/", "/review/"];
 
@@ -20,7 +20,10 @@ export default function OnboardingPrompt() {
       return;
     }
 
-    setIsVisible(window.localStorage.getItem(ONBOARDING_STORAGE_KEY) !== "complete");
+    setIsVisible(
+      window.localStorage.getItem(ONBOARDING_STORAGE_KEY) !== "complete"
+      && window.localStorage.getItem(ONBOARDING_PROMPT_DISMISSED_KEY) !== "true"
+    );
   }, [pathname]);
 
   if (!isVisible) return null;
@@ -39,11 +42,11 @@ export default function OnboardingPrompt() {
           type="button"
           className="button button-secondary button-sm"
           onClick={() => {
-            window.localStorage.setItem(ONBOARDING_STORAGE_KEY, "complete");
+            window.localStorage.setItem(ONBOARDING_PROMPT_DISMISSED_KEY, "true");
             setIsVisible(false);
           }}
         >
-          تم التجهيز
+          إخفاء التذكير
         </button>
       </div>
     </section>
