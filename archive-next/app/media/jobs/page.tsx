@@ -11,13 +11,13 @@ export default function MediaJobsPage() {
       <PageToolbar
         icon={<FileVideo size={24} />}
         title="مهام الوسائط"
-        description="فحص job منفرد، إنشاء مهام جديدة، ومتابعة قائمة المعالجة من خلال ÙØ§Ø¦ÙØ© ÙØ¹Ø§ÙØ¬Ø© Ø§ÙØ®Ø§Ø¯Ù."
+        description="افحص مهمة محددة، وأنشئ مهام معالجة جديدة، وتابع قائمة الانتظار وحالة التنفيذ من مكان واحد."
         tone="accent"
         meta={
           <>
             <span className="badge">فحص مباشر</span>
-            <span className="badge">إنشاء jobs</span>
-            <span className="badge">مراقبة queue</span>
+            <span className="badge">إنشاء مهام</span>
+            <span className="badge">مراقبة قائمة الانتظار</span>
           </>
         }
         actions={(
@@ -34,7 +34,7 @@ export default function MediaJobsPage() {
         )}
       />
 
-      <div className={`split-layout ${styles.operationsConsole}`} aria-label="أدوات media jobs">
+      <div className={`split-layout ${styles.operationsConsole}`} aria-label="أدوات إدارة مهام الوسائط">
         <div className={styles.creationPanel}>
           <MediaJobLookup />
         </div>
