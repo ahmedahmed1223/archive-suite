@@ -11,10 +11,12 @@ import AppearanceSettings from "@/components/AppearanceSettings";
 import { BRAND } from "@/lib/brand";
 import {
   createArchiveApiClient,
+  type DatabaseConnectionResult,
   type OdbcProbe,
   type OdbcTablePreview,
   type OdbcWriteOperation,
-  type SecuritySettings
+  type SecuritySettings,
+  type StorageConnectionResult
 } from "@/lib/archive-api";
 
 const categoryCards = [
@@ -62,6 +64,21 @@ type OdbcWriteState =
   | { status: "saving" }
   | { status: "success"; message: string }
   | { status: "error"; message: string };
+
+type ConnectionTestState<TConnection> =
+  | { status: "idle" }
+  | { status: "pending" }
+  | { status: "success"; connection: TConnection }
+  | { status: "error"; message: string };
+
+type DatabaseTestForm = {
+  driver: "mysql" | "pgsql" | "sqlite";
+  host: string;
+  port: string;
+  database: string;
+  username: string;
+  password: string;
+};
 
 const odbcTableLabels: Record<OdbcCoreTable, string> = {
   items: "Items",
@@ -116,6 +133,16 @@ export default function SettingsPage() {
   const [odbcKeyValue, setOdbcKeyValue] = useState("");
   const [odbcValuesText, setOdbcValuesText] = useState('{\n  "name": "New item"\n}');
   const [odbcWriteState, setOdbcWriteState] = useState<OdbcWriteState>({ status: "idle" });
+  const [storageTestState, setStorageTestState] = useState<ConnectionTestState<StorageConnectionResult>>({ status: "idle" });
+  const [databaseTestState, setDatabaseTestState] = useState<ConnectionTestState<DatabaseConnectionResult>>({ status: "idle" });
+  const [databaseTestForm, setDatabaseTestForm] = useState<DatabaseTestForm>({
+    driver: "sqlite",
+    host: "",
+    port: "",
+    database: ":memory:",
+    username: "",
+    password: ""
+  });
 
   useEffect(() => {
     const fetchSecuritySettings = async () => {
@@ -227,6 +254,73 @@ export default function SettingsPage() {
       setOdbcWriteState({
         status: "error",
         message: err instanceof Error ? err.message : "تعذر تنفيذ عملية ODBC."
+      });
+    }
+  };
+
+  const runStorageConnectionTest = async () => {
+    setStorageTestState({ status: "pending" });
+
+    try {
+      const response = await createArchiveApiClient().testStorageConnection({
+        driver: "local",
+        name: "archive-local-storage",
+        config: {}
+      });
+
+      if (!response.ok) {
+        setStorageTestState({ status: "error", message: response.error || "تعذر فحص التخزين المحلي." });
+        return;
+      }
+
+      setStorageTestState({ status: "success", connection: response.connection });
+    } catch (err) {
+      setStorageTestState({
+        status: "error",
+        message: err instanceof Error ? err.message : "تعذر الاتصال بالخادم أثناء فحص التخزين."
+      });
+    }
+  };
+
+  const runDatabaseConnectionTest = async () => {
+    const database = databaseTestForm.database.trim();
+    if (!database) {
+      setDatabaseTestState({ status: "error", message: "أدخل اسم قاعدة البيانات أو مسار ملف SQLite قبل الفحص." });
+      return;
+    }
+
+    const port = Number(databaseTestForm.port);
+    if (databaseTestForm.port.trim() && (!Number.isInteger(port) || port < 1 || port > 65535)) {
+      setDatabaseTestState({ status: "error", message: "منفذ قاعدة البيانات يجب أن يكون رقماً بين 1 و65535." });
+      return;
+    }
+
+    setDatabaseTestState({ status: "pending" });
+
+    try {
+      const response = await createArchiveApiClient().testDatabaseConnection({
+        driver: databaseTestForm.driver,
+        database,
+        ...(databaseTestForm.driver === "sqlite"
+          ? {}
+          : {
+              host: databaseTestForm.host.trim() || undefined,
+              port: databaseTestForm.port.trim() ? port : undefined,
+              username: databaseTestForm.username.trim() || undefined,
+              password: databaseTestForm.password || undefined
+            })
+      });
+
+      if (!response.ok) {
+        setDatabaseTestState({ status: "error", message: response.error || "تعذر فحص اتصال قاعدة البيانات." });
+        return;
+      }
+
+      setDatabaseTestState({ status: "success", connection: response.connection });
+    } catch (err) {
+      setDatabaseTestState({
+        status: "error",
+        message: err instanceof Error ? err.message : "تعذر الاتصال بالخادم أثناء فحص قاعدة البيانات."
       });
     }
   };
@@ -625,28 +719,174 @@ export default function SettingsPage() {
           <div className="workspace-panel__header">
             <div>
               <h2>فحص الاتصالات</h2>
-              <p>تحقق من اتصالات التخزين وقاعدة البيانات قبل الاستخدام.</p>
+              <p>نفّذ فحصاً آمناً للقراءة والكتابة ثم راجع النتيجة قبل الاعتماد على أي اتصال.</p>
             </div>
           </div>
           <div className="stack">
-            <div className="helper-row">
-              <div>
-                <strong>اختبار التخزين المحلي</strong>
-                <p className="helper-text mt-tight">اختبر الوصول والكتابة إلى مجلد التخزين.</p>
+            <section className="section-divider stack" aria-labelledby="storage-connection-test-title">
+              <div className="helper-row">
+                <div>
+                  <strong id="storage-connection-test-title">اختبار التخزين المحلي</strong>
+                  <p className="helper-text mt-tight">يفحص مجلد التخزين الافتراضي على الخادم بإنشاء ملف اختبار وقراءته ثم حذفه.</p>
+                </div>
+                <button
+                  className="button button-secondary button-small"
+                  type="button"
+                  disabled={storageTestState.status === "pending"}
+                  aria-describedby="storage-connection-test-status"
+                  onClick={() => void runStorageConnectionTest()}
+                >
+                  {storageTestState.status === "pending"
+                    ? "جاري الفحص..."
+                    : storageTestState.status === "error"
+                      ? "إعادة المحاولة"
+                      : "فحص التخزين"}
+                </button>
               </div>
-              <button className="button button-secondary button-small" type="button" disabled>
-                قريبًا
-              </button>
-            </div>
-            <div className="helper-row">
-              <div>
-                <strong>اختبار قاعدة البيانات</strong>
-                <p className="helper-text mt-tight">تحقق من إمكانية الاتصال بقاعدة البيانات.</p>
+              <div id="storage-connection-test-status" aria-live="polite">
+                {storageTestState.status === "success" && (
+                  <div className="state-banner state-banner-success">
+                    <strong>التخزين المحلي متصل</strong>
+                    <p className="helper-text">{storageTestState.connection.message}</p>
+                  </div>
+                )}
+                {storageTestState.status === "error" && (
+                  <div className="state-banner state-banner-error" role="alert">
+                    <strong>فشل فحص التخزين</strong>
+                    <p className="helper-text">{storageTestState.message}</p>
+                  </div>
+                )}
               </div>
-              <button className="button button-secondary button-small" type="button" disabled>
-                قريبًا
-              </button>
-            </div>
+            </section>
+
+            <section className="section-divider stack" aria-labelledby="database-connection-test-title">
+              <div>
+                <strong id="database-connection-test-title">اختبار قاعدة البيانات</strong>
+                <p className="helper-text mt-tight">أدخل بيانات هدف الاختبار. لا تُحفظ كلمة المرور في المتصفح أو في هذه الصفحة.</p>
+              </div>
+              <div className="field-row" aria-label="بيانات اتصال قاعدة البيانات">
+                <label>
+                  <span className="field-note">المشغّل</span>
+                  <select
+                    className="search-input"
+                    value={databaseTestForm.driver}
+                    onChange={(event) => {
+                      const driver = event.target.value as DatabaseTestForm["driver"];
+                      setDatabaseTestForm((current) => ({
+                        ...current,
+                        driver,
+                        database: current.database === ":memory:" && driver !== "sqlite" ? "" : current.database
+                      }));
+                      setDatabaseTestState({ status: "idle" });
+                    }}
+                  >
+                    <option value="sqlite">SQLite</option>
+                    <option value="mysql">MySQL</option>
+                    <option value="pgsql">PostgreSQL</option>
+                  </select>
+                </label>
+                <label>
+                  <span className="field-note">{databaseTestForm.driver === "sqlite" ? "مسار قاعدة البيانات" : "اسم قاعدة البيانات"}</span>
+                  <input
+                    className="search-input"
+                    value={databaseTestForm.database}
+                    onChange={(event) => {
+                      setDatabaseTestForm((current) => ({ ...current, database: event.target.value }));
+                      setDatabaseTestState({ status: "idle" });
+                    }}
+                    placeholder={databaseTestForm.driver === "sqlite" ? ":memory: أو /path/to/database.sqlite" : "archive"}
+                    dir="ltr"
+                  />
+                </label>
+                {databaseTestForm.driver !== "sqlite" && (
+                  <>
+                    <label>
+                      <span className="field-note">المضيف</span>
+                      <input
+                        className="search-input"
+                        value={databaseTestForm.host}
+                        onChange={(event) => {
+                          setDatabaseTestForm((current) => ({ ...current, host: event.target.value }));
+                          setDatabaseTestState({ status: "idle" });
+                        }}
+                        placeholder="127.0.0.1"
+                        dir="ltr"
+                      />
+                    </label>
+                    <label>
+                      <span className="field-note">المنفذ</span>
+                      <input
+                        className="search-input"
+                        inputMode="numeric"
+                        value={databaseTestForm.port}
+                        onChange={(event) => {
+                          setDatabaseTestForm((current) => ({ ...current, port: event.target.value }));
+                          setDatabaseTestState({ status: "idle" });
+                        }}
+                        placeholder={databaseTestForm.driver === "mysql" ? "3306" : "5432"}
+                        dir="ltr"
+                      />
+                    </label>
+                    <label>
+                      <span className="field-note">اسم المستخدم</span>
+                      <input
+                        className="search-input"
+                        autoComplete="username"
+                        value={databaseTestForm.username}
+                        onChange={(event) => {
+                          setDatabaseTestForm((current) => ({ ...current, username: event.target.value }));
+                          setDatabaseTestState({ status: "idle" });
+                        }}
+                        dir="ltr"
+                      />
+                    </label>
+                    <label>
+                      <span className="field-note">كلمة المرور</span>
+                      <input
+                        className="search-input"
+                        type="password"
+                        autoComplete="current-password"
+                        value={databaseTestForm.password}
+                        onChange={(event) => {
+                          setDatabaseTestForm((current) => ({ ...current, password: event.target.value }));
+                          setDatabaseTestState({ status: "idle" });
+                        }}
+                        dir="ltr"
+                      />
+                    </label>
+                  </>
+                )}
+              </div>
+              <div className="helper-row">
+                <button
+                  className="button button-secondary button-small"
+                  type="button"
+                  disabled={databaseTestState.status === "pending"}
+                  aria-describedby="database-connection-test-status"
+                  onClick={() => void runDatabaseConnectionTest()}
+                >
+                  {databaseTestState.status === "pending"
+                    ? "جاري الفحص..."
+                    : databaseTestState.status === "error"
+                      ? "إعادة المحاولة"
+                      : "فحص قاعدة البيانات"}
+                </button>
+              </div>
+              <div id="database-connection-test-status" aria-live="polite">
+                {databaseTestState.status === "success" && (
+                  <div className="state-banner state-banner-success">
+                    <strong>قاعدة البيانات متصلة</strong>
+                    <p className="helper-text">{databaseTestState.connection.message}</p>
+                  </div>
+                )}
+                {databaseTestState.status === "error" && (
+                  <div className="state-banner state-banner-error" role="alert">
+                    <strong>فشل فحص قاعدة البيانات</strong>
+                    <p className="helper-text">{databaseTestState.message}</p>
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
         </article>
 
