@@ -2,13 +2,22 @@
 
 import { BotMessageSquare, CopyCheck, DatabaseZap, RefreshCw, Search, ShieldCheck, Tags } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import type { CopilotStatus } from "@/lib/copilot-status";
+import { useAuthSession } from "@/lib/auth-session";
 
 type StatusPhase = "loading" | "ready" | "error";
+
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+type SendPhase = "idle" | "sending";
 
 const safeStartingPoints = [
   {
@@ -37,6 +46,11 @@ const safeStartingPoints = [
 export default function CopilotPage() {
   const [phase, setPhase] = useState<StatusPhase>("loading");
   const [status, setStatus] = useState<CopilotStatus | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [draft, setDraft] = useState("");
+  const [sendPhase, setSendPhase] = useState<SendPhase>("idle");
+  const [sendError, setSendError] = useState<string | null>(null);
+  const { accessToken } = useAuthSession();
 
   const refreshStatus = useCallback(async () => {
     setPhase("loading");
@@ -57,12 +71,57 @@ export default function CopilotPage() {
     void refreshStatus();
   }, [refreshStatus]);
 
+  const sendConversation = useCallback(async (nextMessages: ChatMessage[]) => {
+    setSendPhase("sending");
+    setSendError(null);
+
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+      const response = await fetch("/api/copilot/chat", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ messages: nextMessages })
+      });
+
+      const payload = await response.json().catch(() => null) as { ok: true; reply: string } | { ok: false; error: string } | null;
+
+      if (!response.ok || !payload?.ok) {
+        setSendError(payload && !payload.ok ? payload.error : "تعذر إرسال الرسالة. حاول مرة أخرى.");
+        return;
+      }
+
+      setMessages([...nextMessages, { role: "assistant", content: payload.reply }]);
+    } catch {
+      setSendError("تعذر الاتصال بالخادم. تحقق من الاتصال ثم أعد المحاولة.");
+    } finally {
+      setSendPhase("idle");
+    }
+  }, [accessToken]);
+
+  const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = draft.trim();
+    if (!trimmed || sendPhase === "sending") return;
+
+    const nextMessages: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
+    setMessages(nextMessages);
+    setDraft("");
+    void sendConversation(nextMessages);
+  }, [draft, messages, sendConversation, sendPhase]);
+
+  const handleRetry = useCallback(() => {
+    if (messages.length === 0 || sendPhase === "sending") return;
+    void sendConversation(messages);
+  }, [messages, sendConversation, sendPhase]);
+
   const statusLabel = phase === "loading"
     ? "جارٍ التحقق"
     : phase === "error"
       ? "تعذر التحقق"
       : status?.configured
-        ? "تهيئة خادمية مرصودة"
+        ? "المحادثة مفعّلة"
         : "غير مهيأ";
 
   return (
@@ -71,11 +130,15 @@ export default function CopilotPage() {
         icon={<BotMessageSquare size={24} strokeWidth={1.8} />}
         eyebrow={<span className="badge">مساحة آمنة</span>}
         title="مساعد الأرشيف"
-        description="نقطة دخول موجهة لعمليات الأرشيف. لا ترسل هذه الشاشة نصوصاً أو ملفات إلى أي مزود ذكاء اصطناعي."
+        description={
+          status?.configured
+            ? "المحادثة محمية بجلسة تسجيل الدخول ولا تُرسل رسائلك إلا عند الضغط على إرسال."
+            : "نقطة دخول موجهة لعمليات الأرشيف. لا ترسل هذه الشاشة نصوصاً أو ملفات إلى أي مزود ذكاء اصطناعي."
+        }
         meta={(
           <>
             <span className="badge" data-tone={phase === "error" ? "danger" : undefined}>{statusLabel}</span>
-            <span className="badge">معالجة خارجية: متوقفة</span>
+            <span className="badge">معالجة خارجية: {status?.configured ? "نشطة عند الإرسال" : "متوقفة"}</span>
           </>
         )}
         actions={(
@@ -113,8 +176,8 @@ export default function CopilotPage() {
         <div className="state-banner copilot-safety-banner" role="status">
           <ShieldCheck aria-hidden="true" size={20} strokeWidth={2} />
           <div>
-            <strong>رُصدت تهيئة خادمية، لكن لا توجد محادثة مفعلة هنا</strong>
-            <span>لا تستدعي هذه الواجهة المزود الخارجي ولا تنقل إليه أي محتوى؛ يلزم ربط نقطة خدمة محمية ومراجعة الصلاحيات أولاً.</span>
+            <strong>المحادثة مفعّلة عبر نقطة خدمة محمية</strong>
+            <span>تُرسل رسالتك ورد المساعد فقط عند الضغط على إرسال، وتمر عبر التحقق من صلاحيتك أولاً.</span>
           </div>
         </div>
       ) : null}
@@ -122,8 +185,20 @@ export default function CopilotPage() {
       <MetricStrip
         ariaLabel="حدود مساعد الأرشيف"
         items={[
-          { label: "محادثات مرسلة", value: "0", description: "لا يوجد إرسال من المتصفح", icon: <BotMessageSquare size={20} />, tone: "accent" },
-          { label: "محتوى خارجي", value: "محجوب", description: "لا ملفات ولا نصوص تغادر هذه الشاشة", icon: <ShieldCheck size={20} />, tone: "success" },
+          {
+            label: "محادثات مرسلة",
+            value: String(messages.filter((message) => message.role === "user").length),
+            description: status?.configured ? "منذ فتح هذه الصفحة" : "لا يوجد إرسال من المتصفح",
+            icon: <BotMessageSquare size={20} />,
+            tone: "accent"
+          },
+          {
+            label: "محتوى خارجي",
+            value: status?.configured ? "عند الطلب فقط" : "محجوب",
+            description: "لا ملفات ولا نصوص تغادر هذه الشاشة دون إرسال صريح",
+            icon: <ShieldCheck size={20} />,
+            tone: "success"
+          },
           { label: "مسارات آمنة", value: safeStartingPoints.length, description: "ابدأ بعمليات النظام الحالية", icon: <DatabaseZap size={20} />, tone: "info" }
         ]}
       />
@@ -132,24 +207,77 @@ export default function CopilotPage() {
         <article className="panel copilot-conversation" aria-labelledby="copilot-conversation-title">
           <div className="panel-section-header">
             <h2 id="copilot-conversation-title">محادثة المساعد</h2>
-            <p>ستظهر المحادثات المراجعة خادمياً هنا بعد إضافة نقطة الخدمة المحمية.</p>
+            <p>
+              {status?.configured
+                ? "الرسائل هنا تُرسل إلى نقطة خدمة محمية على الخادم بعد التحقق من جلستك."
+                : "ستظهر المحادثات المراجعة خادمياً هنا بعد إضافة نقطة الخدمة المحمية."}
+            </p>
           </div>
-          <EmptyState
-            icon={<BotMessageSquare size={24} strokeWidth={1.8} />}
-            title="لا توجد محادثات بعد"
-            description="هذه مساحة فارغة مقصودة: لا تُنشأ أي طلبات ذكاء اصطناعي أو طلبات خارجية من هذا المتصفح."
-          />
-          <fieldset className="copilot-composer" disabled aria-describedby="copilot-composer-note">
-            <label htmlFor="copilot-prompt">اكتب طلبك</label>
-            <textarea id="copilot-prompt" className="search-input" placeholder="المحادثة غير متاحة حتى اكتمال التهيئة الخادمية الآمنة." />
-            <div className="button-row">
-              <button className="button button-primary" type="button">
-                <BotMessageSquare aria-hidden="true" size={17} strokeWidth={2} />
-                إرسال إلى المساعد
-              </button>
+
+          {messages.length === 0 ? (
+            <EmptyState
+              icon={<BotMessageSquare size={24} strokeWidth={1.8} />}
+              title="لا توجد محادثات بعد"
+              description={
+                status?.configured
+                  ? "اكتب سؤالك أدناه للبدء. لا يُرسل أي محتوى إلى المساعد قبل الضغط على إرسال."
+                  : "هذه مساحة فارغة مقصودة: لا تُنشأ أي طلبات ذكاء اصطناعي أو طلبات خارجية من هذا المتصفح."
+              }
+            />
+          ) : (
+            <div className="copilot-messages" role="log" aria-live="polite">
+              {messages.map((message, index) => (
+                <div className="workspace-panel copilot-message" data-role={message.role} key={index}>
+                  <strong>{message.role === "user" ? "أنت" : "المساعد"}</strong>
+                  <p>{message.content}</p>
+                </div>
+              ))}
+              {sendPhase === "sending" ? (
+                <p className="form-status" role="status">المساعد يكتب الرد…</p>
+              ) : null}
             </div>
-          </fieldset>
-          <p id="copilot-composer-note" className="helper-text">الحقل معطل عمداً، ولا تحفظ هذه الصفحة أي مسودة في المتصفح.</p>
+          )}
+
+          {sendError ? (
+            <div className="state-banner state-banner-error" role="alert">
+              <strong>تعذر إرسال الرسالة</strong>
+              <span className="helper-text">{sendError}</span>
+              <div className="button-row">
+                <button className="button button-secondary" type="button" onClick={handleRetry} disabled={sendPhase === "sending"}>
+                  <RefreshCw aria-hidden="true" size={17} strokeWidth={2} />
+                  إعادة المحاولة
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <form onSubmit={handleSubmit}>
+            <fieldset
+              className="copilot-composer"
+              disabled={!status?.configured || sendPhase === "sending"}
+              aria-describedby="copilot-composer-note"
+            >
+              <label htmlFor="copilot-prompt">اكتب طلبك</label>
+              <textarea
+                id="copilot-prompt"
+                className="search-input"
+                placeholder={status?.configured ? "اكتب سؤالك عن الأرشيف هنا…" : "المحادثة غير متاحة حتى اكتمال التهيئة الخادمية الآمنة."}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+              />
+              <div className="button-row">
+                <button className="button button-primary" type="submit" disabled={!draft.trim() || sendPhase === "sending"}>
+                  <BotMessageSquare aria-hidden="true" size={17} strokeWidth={2} />
+                  إرسال إلى المساعد
+                </button>
+              </div>
+            </fieldset>
+          </form>
+          <p id="copilot-composer-note" className="helper-text">
+            {status?.configured
+              ? "لا تحفظ هذه الصفحة أي مسودة في المتصفح؛ المحادثة تُفقد عند تحديث الصفحة."
+              : "الحقل معطل عمداً، ولا تحفظ هذه الصفحة أي مسودة في المتصفح."}
+          </p>
         </article>
 
         <aside className="copilot-guidance" aria-label="مسارات آمنة مقترحة">
