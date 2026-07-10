@@ -683,6 +683,26 @@ export interface ContentTypeRecord {
   updatedAt?: string;
 }
 
+export type ArchiveTypeFieldKind = "text" | "number" | "date" | "select" | "multi" | "boolean";
+
+export interface ArchiveTypeField {
+  name: string;
+  type: ArchiveTypeFieldKind;
+  fieldAcl?: {
+    view?: string[];
+    edit?: string[];
+  };
+}
+
+/** A configurable schema stored by the Laravel types endpoint. */
+export interface ArchiveType {
+  id: string;
+  name: string;
+  fields: ArchiveTypeField[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface SecuritySettings {
   accessTokenTtlMinutes: number;
   perUserRateLimit: number;
@@ -839,6 +859,10 @@ export interface ArchiveApiClient {
   sync(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
+  types(params?: { cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ types: ArchiveType[]; nextCursor?: string | null }>>;
+  type(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ type: ArchiveType }>>;
+  saveType(payload: ArchiveType, options?: AuthRequestOptions): Promise<ApiEnvelope<{ type: ArchiveType }>>;
+  deleteType(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted?: boolean }>>;
   bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
   bulkDeleteRecords(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: BulkDeleteResultItem[] }>>;
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
@@ -1158,6 +1182,19 @@ export function createArchiveApiClient({
       if (cursor) params.set("cursor", cursor);
       return get<RecordListPayload>(`/records?${params.toString()}`, options);
     },
+    types: (params?: { cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.cursor) queryParams.set("cursor", params.cursor);
+      if (params?.limit) queryParams.set("limit", String(clampApiLimit(params.limit, 50, 200)));
+      const query = queryParams.toString();
+      return get<{ types: ArchiveType[]; nextCursor?: string | null }>(`/types${query ? `?${query}` : ""}`, options);
+    },
+    type: (id: string, options?: AuthRequestOptions) =>
+      get<{ type: ArchiveType }>(`/types/${encodeURIComponent(id)}`, options),
+    saveType: (payload: ArchiveType, options?: AuthRequestOptions) =>
+      post<{ type: ArchiveType }>("/types", payload, options),
+    deleteType: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted?: boolean }>(`/types/${encodeURIComponent(id)}`, undefined, options),
     bulkRecords: (payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions) =>
       post<{ count: number }>("/records/bulk", payload, options),
     bulkDeleteRecords: (payload: { store: string; ids: string[] }, options?: AuthRequestOptions) =>

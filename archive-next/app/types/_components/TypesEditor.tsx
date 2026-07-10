@@ -1,237 +1,187 @@
 "use client";
 
-import { useState } from "react";
-import type { ArchiveRecord } from "@/lib/archive-api";
-
-type Field = {
-  name: string;
-  type: "text" | "number" | "date" | "select" | "multi" | "boolean";
-  fieldAcl?: {
-    view: string[];
-    edit: string[];
-  };
-};
+import { useEffect, useId, useState, type FormEvent } from "react";
+import { Button } from "@/components/ui/Button";
+import { FieldError, FormHint } from "@/components/ui/Form";
+import type { ArchiveType, ArchiveTypeField, ArchiveTypeFieldKind } from "@/lib/archive-api";
 
 type TypesEditorProps = {
-  onSave: (typeData: ArchiveRecord) => void;
+  initialType: ArchiveType | null;
+  isSaving: boolean;
+  requestError?: string;
+  onSave: (typeData: ArchiveType) => Promise<void>;
   onCancel: () => void;
 };
 
 const ROLES = ["viewer", "editor", "admin"];
-const FIELD_TYPES = ["text", "number", "date", "select", "multi", "boolean"];
+const FIELD_TYPES: Array<{ value: ArchiveTypeFieldKind; label: string }> = [
+  { value: "text", label: "نص" },
+  { value: "number", label: "رقم" },
+  { value: "date", label: "تاريخ" },
+  { value: "select", label: "اختيار واحد" },
+  { value: "multi", label: "اختيارات متعددة" },
+  { value: "boolean", label: "نعم / لا" },
+];
 
-export default function TypesEditor({ onSave, onCancel }: TypesEditorProps) {
+const EMPTY_FIELD: ArchiveTypeField = {
+  name: "",
+  type: "text",
+  fieldAcl: { view: [], edit: [] },
+};
+
+function cloneFields(fields: ArchiveTypeField[]) {
+  return fields.map((field) => ({
+    ...field,
+    fieldAcl: {
+      view: field.fieldAcl?.view ?? [],
+      edit: field.fieldAcl?.edit ?? [],
+    },
+  }));
+}
+
+export default function TypesEditor({ initialType, isSaving, requestError, onSave, onCancel }: TypesEditorProps) {
+  const formId = useId();
   const [typeId, setTypeId] = useState("");
   const [typeName, setTypeName] = useState("");
-  const [fields, setFields] = useState<Field[]>([]);
-  const [editingFieldIndex, setEditingFieldIndex] = useState<number | null>(null);
+  const [fields, setFields] = useState<ArchiveTypeField[]>([EMPTY_FIELD]);
+  const [formError, setFormError] = useState("");
+  const isEditing = initialType !== null;
 
-  function addField() {
-    setFields([
-      ...fields,
-      {
-        name: "",
-        type: "text",
+  useEffect(() => {
+    setTypeId(initialType?.id ?? "");
+    setTypeName(initialType?.name ?? "");
+    setFields(initialType ? cloneFields(initialType.fields) : [{ ...EMPTY_FIELD, fieldAcl: { view: [], edit: [] } }]);
+    setFormError("");
+  }, [initialType]);
+
+  function updateField(index: number, update: Partial<ArchiveTypeField>) {
+    setFields((current) => current.map((field, fieldIndex) => fieldIndex === index ? { ...field, ...update } : field));
+  }
+
+  function toggleFieldRole(fieldIndex: number, role: string, access: "view" | "edit") {
+    setFields((current) => current.map((field, index) => {
+      if (index !== fieldIndex) return field;
+      const fieldAcl = field.fieldAcl ?? { view: [], edit: [] };
+      const roles = fieldAcl[access] ?? [];
+      return {
+        ...field,
         fieldAcl: {
-          view: [],
-          edit: [],
+          ...fieldAcl,
+          [access]: roles.includes(role) ? roles.filter((item) => item !== role) : [...roles, role],
         },
-      },
-    ]);
-    setEditingFieldIndex(fields.length);
+      };
+    }));
   }
 
-  function updateField(index: number, field: Field) {
-    const newFields = [...fields];
-    newFields[index] = field;
-    setFields(newFields);
-  }
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedFields = fields.map((field) => ({ ...field, name: field.name.trim() }));
+    const duplicateField = normalizedFields.find((field, index) => normalizedFields.findIndex((candidate) => candidate.name === field.name) !== index);
 
-  function removeField(index: number) {
-    setFields(fields.filter((_, i) => i !== index));
-    if (editingFieldIndex === index) {
-      setEditingFieldIndex(null);
+    if (!typeId.trim() || !typeName.trim()) {
+      setFormError("أدخل معرّف النوع واسمه قبل الحفظ.");
+      return;
     }
-  }
-
-  function toggleFieldRole(
-    fieldIndex: number,
-    role: string,
-    type: "view" | "edit"
-  ) {
-    const field = fields[fieldIndex];
-    const acl = field.fieldAcl || { view: [], edit: [] };
-    const roles = acl[type];
-    const updated = roles.includes(role)
-      ? roles.filter((r) => r !== role)
-      : [...roles, role];
-
-    updateField(fieldIndex, {
-      ...field,
-      fieldAcl: {
-        ...acl,
-        [type]: updated,
-      },
-    });
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!typeId.trim() || !typeName.trim() || fields.length === 0) {
-      alert("الرجاء ملء جميع الحقول المطلوبة");
+    if (normalizedFields.some((field) => !field.name)) {
+      setFormError("أدخل اسمًا لكل حقل قبل الحفظ.");
+      return;
+    }
+    if (duplicateField) {
+      setFormError(`اسم الحقل «${duplicateField.name}» مكرر. استخدم اسمًا فريدًا لكل حقل.`);
       return;
     }
 
-    const typeData: ArchiveRecord = {
-      id: typeId,
-      title: typeName,
-      fields: fields.map((f) => ({
-        ...f,
-        fieldAcl: f.fieldAcl ? { view: f.fieldAcl.view, edit: f.fieldAcl.edit } : undefined,
-      })),
-    };
-
-    onSave(typeData);
+    setFormError("");
+    await onSave({ id: typeId.trim(), name: typeName.trim(), fields: normalizedFields });
   }
 
   return (
-    <div className="border rounded p-6 bg-white">
-      <h2 className="text-xl font-semibold mb-6">محرر الأنواع</h2>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <aside className="schema-editor" aria-labelledby={`${formId}-heading`}>
+      <div className="schema-editor__heading">
         <div>
-          <label className="block text-sm font-medium mb-2">معرف النوع</label>
+          <p className="schema-editor__eyebrow">{isEditing ? "تحرير النوع" : "نوع جديد"}</p>
+          <h2 id={`${formId}-heading`}>{isEditing ? typeName || "نوع غير مسمى" : "إنشاء مخطط بيانات"}</h2>
+        </div>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>إغلاق</Button>
+      </div>
+
+      <form className="schema-editor__form" onSubmit={handleSubmit} noValidate>
+        {(formError || requestError) ? <FieldError>{formError || requestError}</FieldError> : null}
+
+        <label className="schema-form-field">
+          <span>معرّف النوع</span>
           <input
-            type="text"
+            className="schema-field-control"
             value={typeId}
-            onChange={(e) => setTypeId(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
+            onChange={(event) => setTypeId(event.target.value)}
+            disabled={isEditing || isSaving}
+            aria-describedby={`${formId}-id-hint`}
             required
           />
-        </div>
+          <FormHint className="schema-field-hint" >
+            <span id={`${formId}-id-hint`}>{isEditing ? "لا يمكن تغيير المعرّف بعد الإنشاء." : "استخدم معرّفًا ثابتًا مثل document أو photo."}</span>
+          </FormHint>
+        </label>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">اسم النوع</label>
+        <label className="schema-form-field">
+          <span>اسم النوع</span>
           <input
-            type="text"
+            className="schema-field-control"
             value={typeName}
-            onChange={(e) => setTypeName(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
+            onChange={(event) => setTypeName(event.target.value)}
+            disabled={isSaving}
+            placeholder="مثال: مستند"
             required
           />
-        </div>
+        </label>
 
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <label className="block text-sm font-medium">الحقول</label>
-            <button
-              type="button"
-              onClick={addField}
-              className="text-blue-600 hover:text-blue-800 text-sm"
-            >
-              + إضافة حقل
-            </button>
-          </div>
+        <fieldset className="schema-fields">
+          <legend>الحقول</legend>
+          <FormHint>حدّد الحقول التي تظهر عند إدخال سجل من هذا النوع، ثم امنح الأدوار صلاحية العرض أو التحرير.</FormHint>
 
-          <div className="space-y-3">
+          <div className="schema-field-list">
             {fields.map((field, index) => (
-              <div key={index} className="border rounded p-3 bg-gray-50">
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label className="text-xs font-medium">اسم الحقل</label>
-                    <input
-                      type="text"
-                      value={field.name}
-                      onChange={(e) =>
-                        updateField(index, { ...field, name: e.target.value })
-                      }
-                      className="w-full px-2 py-1 text-sm border rounded"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium">النوع</label>
-                    <select
-                      value={field.type}
-                      onChange={(e) =>
-                        updateField(index, {
-                          ...field,
-                          type: e.target.value as Field["type"],
-                        })
-                      }
-                      className="w-full px-2 py-1 text-sm border rounded"
-                    >
-                      {FIELD_TYPES.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
+              <section className="schema-field-row" key={`${initialType?.id ?? "new"}-${index}`} aria-labelledby={`${formId}-field-${index}`}>
+                <div className="schema-field-row__topline">
+                  <strong id={`${formId}-field-${index}`}>الحقل {index + 1}</strong>
+                  <Button type="button" size="sm" variant="ghost" disabled={isSaving || fields.length === 1} onClick={() => setFields((current) => current.filter((_, itemIndex) => itemIndex !== index))}>حذف</Button>
+                </div>
+                <div className="schema-field-grid">
+                  <label className="schema-form-field">
+                    <span>اسم الحقل</span>
+                    <input className="schema-field-control" value={field.name} disabled={isSaving} onChange={(event) => updateField(index, { name: event.target.value })} placeholder="مثال: جهة الإصدار" required />
+                  </label>
+                  <label className="schema-form-field">
+                    <span>نوع البيانات</span>
+                    <select className="schema-field-control" value={field.type} disabled={isSaving} onChange={(event) => updateField(index, { type: event.target.value as ArchiveTypeFieldKind })}>
+                      {FIELD_TYPES.map((fieldType) => <option key={fieldType.value} value={fieldType.value}>{fieldType.label}</option>)}
                     </select>
-                  </div>
+                  </label>
                 </div>
-
-                <div className="text-xs font-medium mb-2">التحكم في الوصول</div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <p className="font-medium mb-1">يمكن العرض</p>
-                    {ROLES.map((role) => (
-                      <label key={role} className="flex items-center gap-2 mb-1">
-                        <input
-                          type="checkbox"
-                          checked={field.fieldAcl?.view.includes(role) || false}
-                          onChange={() =>
-                            toggleFieldRole(index, role, "view")
-                          }
-                        />
-                        {role}
-                      </label>
-                    ))}
-                  </div>
-                  <div>
-                    <p className="font-medium mb-1">يمكن التعديل</p>
-                    {ROLES.map((role) => (
-                      <label key={role} className="flex items-center gap-2 mb-1">
-                        <input
-                          type="checkbox"
-                          checked={field.fieldAcl?.edit.includes(role) || false}
-                          onChange={() =>
-                            toggleFieldRole(index, role, "edit")
-                          }
-                        />
-                        {role}
-                      </label>
-                    ))}
-                  </div>
+                <div className="schema-acl-grid">
+                  {(["view", "edit"] as const).map((access) => (
+                    <fieldset className="schema-acl" key={access}>
+                      <legend>{access === "view" ? "يمكن العرض" : "يمكن التحرير"}</legend>
+                      {ROLES.map((role) => (
+                        <label className="schema-check" key={role}>
+                          <input type="checkbox" checked={field.fieldAcl?.[access]?.includes(role) ?? false} disabled={isSaving} onChange={() => toggleFieldRole(index, role, access)} />
+                          <span>{role === "viewer" ? "مشاهد" : role === "editor" ? "محرر" : "مدير"}</span>
+                        </label>
+                      ))}
+                    </fieldset>
+                  ))}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => removeField(index)}
-                  className="text-red-600 hover:text-red-800 text-xs mt-2"
-                >
-                  حذف الحقل
-                </button>
-              </div>
+              </section>
             ))}
           </div>
-        </div>
+          <Button type="button" variant="secondary" disabled={isSaving} onClick={() => setFields((current) => [...current, { ...EMPTY_FIELD, fieldAcl: { view: [], edit: [] } }])}>إضافة حقل</Button>
+        </fieldset>
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-          >
-            حفظ
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 bg-gray-300 text-gray-800 py-2 rounded hover:bg-gray-400"
-          >
-            إلغاء
-          </button>
+        <div className="schema-editor__actions">
+          <Button type="submit" variant="primary" disabled={isSaving}>{isSaving ? "جارٍ الحفظ…" : "حفظ النوع"}</Button>
+          <Button type="button" variant="secondary" disabled={isSaving} onClick={onCancel}>إلغاء</Button>
         </div>
       </form>
-    </div>
+    </aside>
   );
 }
