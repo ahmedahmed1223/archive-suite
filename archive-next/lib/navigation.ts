@@ -62,6 +62,15 @@ export function isActivePath(pathname: string, href: string) {
     return pathname === "/";
   }
 
+  const siblingRoutes: Record<string, readonly string[]> = {
+    "/search": ["/search/saved"],
+    "/shares": ["/shares/with-me"]
+  };
+
+  if (siblingRoutes[href]?.some((sibling) => pathname === sibling || pathname.startsWith(`${sibling}/`))) {
+    return false;
+  }
+
   if (href === "/media/jobs") {
     return pathname.startsWith("/media");
   }
