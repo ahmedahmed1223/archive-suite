@@ -610,3 +610,33 @@
     transition-duration: 1ms;
   }
 }
+/* Keyboard focus is deliberately visible across shared controls. Component
+   styles may refine colors, but no control should become invisible on focus. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 3px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  input,
+  select,
+  textarea {
+    font-size: var(--font-size-md);
+  }
+
+  .view-switcher__button,
+  .nav-toggle,
+  .ui-tabs-trigger,
+  .ui-select-trigger,
+  .ui-dropdown-content [role="menuitem"],
+  .ui-select-item {
+    min-block-size: var(--control-height);
+  }
+}

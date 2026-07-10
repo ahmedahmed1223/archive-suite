@@ -6,7 +6,7 @@ import {
   updateAppearanceSettings,
   applyThemeTokens,
   getCurrentThemeTokens,
-  THEME_PRESETS,
+  getPreferredThemeMode,
   getActiveThemeMode,
   type AppearanceSettings,
   type ThemeMode,
@@ -31,20 +31,20 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
   useEffect(() => {
     const initialSettings = getAppearanceSettings();
     setSettings(initialSettings);
-    applyThemeTokens(getCurrentThemeTokens());
+    const mode = getPreferredThemeMode(initialSettings);
+    applyThemeTokens(getCurrentThemeTokens(initialSettings, mode));
+    document.documentElement.setAttribute("data-theme", mode);
+    document.documentElement.style.colorScheme = mode;
     setIsMounted(true);
-
-    // Apply scheduled theme mode if active
-    const activeMode = getActiveThemeMode();
-    if (activeMode) {
-      document.documentElement.setAttribute("data-theme", activeMode);
-    }
   }, []);
 
   // Apply theme token changes
   useEffect(() => {
     if (settings && isMounted) {
-      applyThemeTokens(getCurrentThemeTokens());
+      const mode = getPreferredThemeMode(settings);
+      applyThemeTokens(getCurrentThemeTokens(settings, mode));
+      document.documentElement.setAttribute("data-theme", mode);
+      document.documentElement.style.colorScheme = mode;
     }
   }, [settings, isMounted]);
 
@@ -53,10 +53,11 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (!isMounted) return;
 
     const checkSchedule = () => {
-      const activeMode = getActiveThemeMode();
-      if (activeMode) {
-        document.documentElement.setAttribute("data-theme", activeMode);
-      }
+      const currentSettings = getAppearanceSettings();
+      const mode = getPreferredThemeMode(currentSettings);
+      applyThemeTokens(getCurrentThemeTokens(currentSettings, mode));
+      document.documentElement.setAttribute("data-theme", mode);
+      document.documentElement.style.colorScheme = mode;
     };
 
     const interval = setInterval(checkSchedule, 60_000);
@@ -81,7 +82,10 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
     refreshTheme: () => {
       const updated = getAppearanceSettings();
       setSettings(updated);
-      applyThemeTokens(getCurrentThemeTokens());
+      const mode = getPreferredThemeMode(updated);
+      applyThemeTokens(getCurrentThemeTokens(updated, mode));
+      document.documentElement.setAttribute("data-theme", mode);
+      document.documentElement.style.colorScheme = mode;
     }
   };
 

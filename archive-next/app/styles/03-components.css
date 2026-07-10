@@ -373,7 +373,7 @@ button.badge:hover {
 }
 
 .button-sm {
-  min-block-size: 2.15rem;
+  min-block-size: var(--control-height);
   padding: 0.42rem 0.68rem;
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
