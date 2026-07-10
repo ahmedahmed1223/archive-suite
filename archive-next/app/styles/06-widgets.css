@@ -275,15 +275,27 @@
 }
 
 @media (max-width: 760px) {
+  body {
+    padding-block-end: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+
   .topbar {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: var(--space-3);
-    align-items: start;
+    align-items: center;
+    padding-block: var(--space-2);
   }
 
   .brand {
     min-inline-size: 0;
     grid-template-columns: 2.5rem minmax(0, 1fr);
+    grid-template-areas: "mark name";
+    gap: var(--space-2);
+  }
+
+  .brand-subtitle,
+  .brand-latin {
+    display: none;
   }
 
   .brand-mark {
@@ -294,6 +306,23 @@
   .nav-toggle {
     display: inline-flex;
     justify-self: end;
+  }
+
+  .topbar-actions {
+    grid-column: auto;
+    gap: var(--space-1);
+  }
+
+  .topbar-actions .primary-action-link,
+  .topbar-actions .focus-mode-toggle {
+    display: none;
+  }
+
+  .topbar-actions .session-chip {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
   }
 
   .route-links {
@@ -349,6 +378,50 @@
   .app-nav-link:not([aria-current="page"]) {
     flex: 1 1 calc(50% - var(--space-2));
     justify-content: center;
+  }
+
+  .mobile-primary-nav {
+    position: fixed;
+    z-index: 70;
+    inset-inline: var(--space-2);
+    inset-block-end: calc(var(--space-2) + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    border: 1px solid color-mix(in srgb, var(--color-brand-primary) 22%, var(--color-border-secondary));
+    border-radius: var(--radius-xl);
+    padding: var(--space-1);
+    background: color-mix(in srgb, var(--color-bg-secondary) 92%, transparent);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-primary-nav a,
+  .mobile-primary-nav button {
+    display: grid;
+    place-items: center;
+    gap: 2px;
+    min-block-size: 3.1rem;
+    border: 0;
+    border-radius: var(--radius-lg);
+    padding: var(--space-1);
+    color: var(--color-text-secondary);
+    background: transparent;
+    font: inherit;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+  }
+
+  .mobile-primary-nav a[aria-current="page"] {
+    color: var(--color-text-inverse);
+    background: var(--color-brand-primary);
+  }
+
+  .mobile-primary-nav button:focus-visible,
+  .mobile-primary-nav a:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
   }
 
   .toolbar-row {

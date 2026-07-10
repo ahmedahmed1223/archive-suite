@@ -1,4 +1,5 @@
 export const ONBOARDING_STORAGE_KEY = "masar:first-run:v1";
+export const ONBOARDING_PROMPT_DISMISSED_KEY = "masar:first-run:prompt-dismissed:v1";
 export const ONBOARDING_PRESET_STORAGE_KEY = "masar:first-run:preset";
 
 export type OnboardingPreset = "quick" | "advanced";
