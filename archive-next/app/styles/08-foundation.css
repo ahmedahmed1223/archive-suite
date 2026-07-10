@@ -512,7 +512,33 @@
   }
 
   .app-shell > .topbar .topbar-actions {
-    display: none;
+    order: 2;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: center;
+    gap: var(--space-2);
+    inline-size: 100%;
+    padding-block: var(--space-3);
+    border-block: 1px solid var(--color-border-secondary);
+  }
+
+  .app-shell > .topbar .topbar-actions .primary-action-link,
+  .app-shell > .topbar .topbar-actions .session-chip {
+    grid-column: 1 / -1;
+  }
+
+  .app-shell > .topbar .topbar-actions .notifications-panel-container,
+  .app-shell > .topbar .topbar-actions .icon-action {
+    min-inline-size: 0;
+  }
+
+  .app-shell > .topbar .topbar-actions .notifications-trigger,
+  .app-shell > .topbar .topbar-actions .icon-action {
+    inline-size: 100%;
+  }
+
+  .app-shell > .topbar .topbar-actions .session-chip {
+    max-inline-size: none;
   }
 
   .app-shell > .topbar .route-links {

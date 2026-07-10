@@ -63,8 +63,15 @@ export function getAllShortcuts(): Record<ShortcutKey, { label: string; binding:
 
 export function formatShortcutDisplay(binding: ShortcutBinding): string {
   const parts: string[] = [];
-  if (binding.ctrlKey) parts.push("Ctrl");
-  if (binding.metaKey) parts.push("Cmd");
+  // A binding with both modifiers represents the platform-native pair:
+  // Ctrl on Windows/Linux or Cmd on macOS. It must not require both keys.
+  if (binding.ctrlKey && binding.metaKey) {
+    parts.push("Ctrl / Cmd");
+  } else if (binding.ctrlKey) {
+    parts.push("Ctrl");
+  } else if (binding.metaKey) {
+    parts.push("Cmd");
+  }
   if (binding.shiftKey) parts.push("Shift");
   if (binding.altKey) parts.push("Alt");
   parts.push(binding.key.toUpperCase());
@@ -72,10 +79,14 @@ export function formatShortcutDisplay(binding: ShortcutBinding): string {
 }
 
 export function matchesKeyEvent(event: KeyboardEvent, binding: ShortcutBinding): boolean {
+  const matchesPrimaryModifier = binding.ctrlKey && binding.metaKey
+    ? event.ctrlKey || event.metaKey
+    : (binding.ctrlKey ? event.ctrlKey : !event.ctrlKey) &&
+      (binding.metaKey ? event.metaKey : !event.metaKey);
+
   return (
     event.key.toLowerCase() === binding.key.toLowerCase() &&
-    (binding.ctrlKey ? event.ctrlKey : !event.ctrlKey) &&
-    (binding.metaKey ? event.metaKey : !event.metaKey) &&
+    matchesPrimaryModifier &&
     (binding.shiftKey ? event.shiftKey : !event.shiftKey) &&
     (binding.altKey ? event.altKey : !event.altKey)
   );

@@ -9,7 +9,7 @@ export default function FocusModeToggle() {
   return (
     <button
       type="button"
-      className="icon-action"
+      className="icon-action focus-mode-toggle"
       onClick={toggleFocusMode}
       aria-label={isFocusMode ? "إيقاف وضع التركيز" : "تفعيل وضع التركيز"}
       title={isFocusMode ? "إيقاف (F11)" : "تفعيل (F11)"}
@@ -20,6 +20,7 @@ export default function FocusModeToggle() {
       ) : (
         <Icons.Maximize aria-hidden="true" size={18} strokeWidth={2} />
       )}
+      <span className="focus-mode-toggle__label">{isFocusMode ? "إنهاء التركيز" : "وضع التركيز"}</span>
     </button>
   );
 }
