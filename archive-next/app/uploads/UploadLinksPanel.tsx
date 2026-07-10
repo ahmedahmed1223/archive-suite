@@ -4,17 +4,31 @@ import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type UploadLink } from "@/lib/archive-api";
 
+type UploadLinksState =
+  | { status: "loading" }
+  | { status: "ready" }
+  | { status: "error"; message: string };
+
 export function UploadLinksPanel() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [links, setLinks] = useState<UploadLink[]>([]);
+  const [linksState, setLinksState] = useState<UploadLinksState>({ status: "loading" });
   const [label, setLabel] = useState("");
   const [folder, setFolder] = useState("");
   const [expiresInHours, setExpiresInHours] = useState(48);
   const [error, setError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   async function refresh() {
+    setLinksState({ status: "loading" });
     const response = await api.uploadLinks();
-    if (response.ok) setLinks(response.links);
+    if (response.ok) {
+      setLinks(response.links);
+      setLinksState({ status: "ready" });
+    } else {
+      setLinksState({ status: "error", message: response.error || "تعذر تحميل روابط الرفع." });
+    }
   }
 
   useEffect(() => {
@@ -25,6 +39,7 @@ export function UploadLinksPanel() {
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setIsCreating(true);
     const response = await api.createUploadLink({
       label: label || undefined,
       folder: folder || undefined,
@@ -33,17 +48,23 @@ export function UploadLinksPanel() {
 
     if (!response.ok) {
       setError(response.error);
+      setIsCreating(false);
       return;
     }
 
     setLabel("");
     setFolder("");
     await refresh();
+    setIsCreating(false);
   }
 
   async function handleRevoke(id: string) {
+    setError(null);
+    setRevokingId(id);
     const response = await api.revokeUploadLink(id);
     if (response.ok) await refresh();
+    else setError(response.error || "تعذر إلغاء الرابط.");
+    setRevokingId(null);
   }
 
   return (
@@ -74,7 +95,7 @@ export function UploadLinksPanel() {
             onChange={(event) => setExpiresInHours(Number(event.target.value) || 1)}
           />
         </label>
-        <button type="submit" className="button button-primary">إنشاء رابط</button>
+        <button type="submit" className="button button-primary" disabled={isCreating}>{isCreating ? "جار الإنشاء..." : "إنشاء رابط"}</button>
         {error ? (
           <p className="form-status" role="alert">
             {error}
@@ -82,7 +103,15 @@ export function UploadLinksPanel() {
         ) : null}
       </form>
 
-      {links.length === 0 ? (
+      {linksState.status === "loading" ? (
+        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل روابط الرفع...</p></div>
+      ) : linksState.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل روابط الرفع</strong>
+          <span className="helper-text">{linksState.message}</span>
+          <div><button type="button" className="button button-secondary button-sm" onClick={() => void refresh()}>إعادة المحاولة</button></div>
+        </div>
+      ) : links.length === 0 ? (
         <p className="helper-text">لا توجد روابط رفع بعد.</p>
       ) : (
         <ul className="stack">
@@ -93,8 +122,8 @@ export function UploadLinksPanel() {
               <span className="badge">{link.revoked ? "ملغى" : "فعّال"}</span>
               <span className="badge">{link.uploadCount} ملف مرفوع</span>
               {!link.revoked ? (
-                <button type="button" className="button button-secondary button-sm" onClick={() => void handleRevoke(link.id)}>
-                  إلغاء
+                <button type="button" className="button button-secondary button-sm" disabled={revokingId === link.id} onClick={() => void handleRevoke(link.id)}>
+                  {revokingId === link.id ? "جار الإلغاء..." : "إلغاء"}
                 </button>
               ) : null}
             </li>

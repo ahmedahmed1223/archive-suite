@@ -23,6 +23,12 @@ type ReviewCommentUpdatedEvent = {
   comment: ReviewComment;
 };
 
+type CommentsLoadState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready" }
+  | { status: "error"; message: string };
+
 function mergeReviewComments(current: ReviewComment[], incoming: ReviewComment): ReviewComment[] {
   const next = new Map<string, ReviewComment>();
 
@@ -57,7 +63,8 @@ export default function ReviewPage() {
   const [comments, setComments] = useState<ReviewComment[]>([]);
   const [body, setBody] = useState("");
   const [timecode, setTimecode] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [commentsState, setCommentsState] = useState<CommentsLoadState>({ status: "loading" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useCurrentTime, setUseCurrentTime] = useState(true);
   const [drawMode, setDrawMode] = useState(false);
@@ -66,21 +73,24 @@ export default function ReviewPage() {
   const currentMediaUid = useMemo(() => mediaUid.trim(), [mediaUid]);
 
   const fetchComments = useCallback(async () => {
-    if (!currentMediaUid) return;
+    if (!currentMediaUid) {
+      setComments([]);
+      setCommentsState({ status: "idle" });
+      return;
+    }
 
-    setLoading(true);
-    setError(null);
+    setComments([]);
+    setCommentsState({ status: "loading" });
     try {
       const result = await api.reviewComments(currentMediaUid);
       if (result.ok) {
         setComments(normalizeReviewComments(result.comments));
+        setCommentsState({ status: "ready" });
       } else {
-        setError(result.error);
+        setCommentsState({ status: "error", message: result.error || "تعذر تحميل تعليقات المراجعة." });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تحميل تعليقات المراجعة.");
-    } finally {
-      setLoading(false);
+      setCommentsState({ status: "error", message: err instanceof Error ? err.message : "تعذر تحميل تعليقات المراجعة." });
     }
   }, [api, currentMediaUid]);
 
@@ -119,6 +129,8 @@ export default function ReviewPage() {
       ? Math.round(playerRef.current.currentTime * 100) / 100
       : timecode;
 
+    setIsSubmitting(true);
+    setError(null);
     try {
       const result = await api.createReviewComment(currentMediaUid, {
         body: body.trim(),
@@ -138,6 +150,8 @@ export default function ReviewPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذر إضافة التعليق.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -285,8 +299,8 @@ export default function ReviewPage() {
                 />
               </label>
 
-              <button type="submit" className="button button-primary" disabled={!body.trim() || !currentMediaUid || loading}>
-                {loading ? "جار الإضافة" : "إضافة التعليق"}
+              <button type="submit" className="button button-primary" disabled={!body.trim() || !currentMediaUid || isSubmitting}>
+                {isSubmitting ? "جار الإضافة" : "إضافة التعليق"}
               </button>
             </form>
           </section>
@@ -296,23 +310,33 @@ export default function ReviewPage() {
               <div className={styles.commentsHeaderInfo}>
                 <h2>التعليقات</h2>
                 <p>
-                  {loading
+                  {commentsState.status === "loading"
                     ? "جار تحميل التعليقات..."
-                    : comments.length
+                    : commentsState.status === "ready" && comments.length
                       ? "مرتبة حسب الزمن داخل المادة."
-                      : "لا توجد تعليقات بعد."}
+                      : commentsState.status === "error"
+                        ? "تعذر تحميل التعليقات."
+                        : "لا توجد تعليقات بعد."}
                 </p>
               </div>
               <span className="badge">{comments.length}</span>
             </div>
 
             <div className={`review-comments-rail ${styles.commentsList}`}>
-              {comments.length === 0 ? (
+              {commentsState.status === "loading" ? (
+                <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل التعليقات...</p></div>
+              ) : commentsState.status === "error" ? (
+                <div className="state-banner state-banner-error" role="alert">
+                  <strong>تعذر تحميل التعليقات</strong>
+                  <span className="helper-text">{commentsState.message}</span>
+                  <div><button type="button" className="button button-secondary button-sm" onClick={() => void fetchComments()}>إعادة المحاولة</button></div>
+                </div>
+              ) : commentsState.status === "ready" && comments.length === 0 ? (
                 <EmptyState
                   title="لا توجد تعليقات بعد."
                   description="ابدأ بإضافة أول تعليق من النموذج المجاور للمشغل."
                 />
-              ) : (
+              ) : commentsState.status === "ready" ? (
                 comments.map((comment) => (
                   <article
                     key={comment.id}
@@ -336,7 +360,7 @@ export default function ReviewPage() {
                     <span className={styles.commentAuthor}>{comment.author}</span>
                   </article>
                 ))
-              )}
+              ) : null}
             </div>
           </aside>
         </div>

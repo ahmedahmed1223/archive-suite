@@ -13,6 +13,11 @@ interface DuplicateGroup {
   records: ArchiveRecord[];
 }
 
+type RecordsState =
+  | { status: "loading" }
+  | { status: "ready"; records: ArchiveRecord[] }
+  | { status: "error"; message: string };
+
 function checksumKey(record: ArchiveRecord) {
   const checksum = record.checksum || record.metadata?.checksum || record.metadata?.sha256;
   return typeof checksum === "string" && checksum.trim() ? `checksum:${checksum.trim()}` : "";
@@ -25,17 +30,23 @@ function titleKey(record: ArchiveRecord) {
 
 export default function DuplicatesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
-  const [records, setRecords] = useState<ArchiveRecord[]>([]);
-  const [error, setError] = useState("");
+  const [recordsState, setRecordsState] = useState<RecordsState>({ status: "loading" });
   const [mode, setMode] = useState<"checksum" | "title">("checksum");
 
+  async function loadRecords() {
+    setRecordsState({ status: "loading" });
+    const response = await api.search({ limit: 1000 });
+    setRecordsState(response.ok
+      ? { status: "ready", records: response.records }
+      : { status: "error", message: response.error || "تعذر تحميل السجلات." });
+  }
+
   useEffect(() => {
-    void (async () => {
-      const response = await api.search({ limit: 1000 });
-      if (response.ok) setRecords(response.records);
-      else setError(response.error);
-    })();
+    void loadRecords();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api]);
+
+  const records = recordsState.status === "ready" ? recordsState.records : [];
 
   const groups = useMemo<DuplicateGroup[]>(() => {
     const buckets = new Map<string, ArchiveRecord[]>();
@@ -74,14 +85,21 @@ export default function DuplicatesPage() {
         </div>
       </PageToolbar>
 
-      {error ? (
-        <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر فحص المكررات</strong>
-          <span className="helper-text">{error}</span>
+      {recordsState.status === "loading" ? (
+        <div className="panel panel-compact" role="status" aria-live="polite">
+          <p className="form-status">جار فحص السجلات بحثاً عن مكررات...</p>
         </div>
       ) : null}
 
-      {groups.length === 0 ? (
+      {recordsState.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر فحص المكررات</strong>
+          <span className="helper-text">{recordsState.message}</span>
+          <div><button className="button button-secondary button-sm" type="button" onClick={() => void loadRecords()}>إعادة المحاولة</button></div>
+        </div>
+      ) : null}
+
+      {recordsState.status === "ready" && groups.length === 0 ? (
         <EmptyState title="لا توجد مكررات ظاهرة." description="لا توجد مجموعات مطابقة ضمن طريقة الفحص الحالية." />
       ) : (
         <section className="stack" aria-label="مجموعات المكررات">
