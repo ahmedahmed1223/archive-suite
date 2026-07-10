@@ -23,6 +23,7 @@ import {
   saveProject,
   secondsToTimecode,
   updateClip,
+  type MontageClip,
   type MontageProject
 } from "@/lib/montage";
 
@@ -64,9 +65,11 @@ export default function ProjectsPage() {
   const [outSec, setOutSec] = useState("10");
 
   useEffect(() => {
-    const stored = listProjects();
-    setProjects(stored);
-    setSelectedId(stored[0]?.id || null);
+    void (async () => {
+      const stored = await listProjects();
+      setProjects(stored);
+      setSelectedId(stored[0]?.id || null);
+    })();
   }, []);
 
   const selected = projects.find((project) => project.id === selectedId) || null;
@@ -74,22 +77,29 @@ export default function ProjectsPage() {
   const validCount = clips.filter(isValidClip).length;
 
   function persist(project: MontageProject) {
-    setProjects(saveProject(project));
+    void (async () => {
+      const updated = await saveProject(project);
+      setProjects(Array.isArray(updated) ? updated : [updated]);
+    })();
   }
 
   function handleCreate() {
     const name = newName.trim();
     if (!name) return;
     const project = createProject(name);
-    setProjects(saveProject(project));
-    setSelectedId(project.id);
-    setNewName("");
-    setFeedback(`تم إنشاء المشروع "${project.name}"`);
+    void (async () => {
+      const updated = await saveProject(project);
+      setProjects(Array.isArray(updated) ? updated : [updated]);
+      setSelectedId(project.id);
+      setNewName("");
+      setFeedback(`تم إنشاء المشروع "${project.name}"`);
+    })();
   }
 
-  function handleDelete(project: MontageProject) {
+  async function handleDelete(project: MontageProject) {
     if (!window.confirm(`حذف المشروع "${project.name}"؟`)) return;
-    const next = deleteProject(project.id);
+    await deleteProject(project.id);
+    const next = await listProjects();
     setProjects(next);
     if (selectedId === project.id) setSelectedId(next[0]?.id || null);
     setFeedback(`تم حذف المشروع "${project.name}"`);
@@ -117,9 +127,12 @@ export default function ProjectsPage() {
       setFeedback("نقطة النهاية يجب أن تكون بعد نقطة البداية.");
       return;
     }
+    const videoTrack = selected.tracks.find((t) => t.type === "video");
+    const trackId = videoTrack?.id || selected.tracks[0]?.id || "";
     persist(addClip(selected, {
       itemId: record.id,
       title: record.title || record.id,
+      trackId,
       inSec: start,
       outSec: end
     }));
@@ -148,11 +161,12 @@ export default function ProjectsPage() {
 
     // Resolve each clip's record ID to its real stored file path before
     // submitting the job — ffmpeg needs a filesystem path, not a record ID.
-    const uniqueItemIds = Array.from(new Set(validClips.map((clip) => clip.itemId)));
+    const uniqueItemIds = Array.from(new Set(validClips.map((clip: MontageClip) => clip.itemId)));
     const sourceByItemId = new Map<string, { sourcePath: string; disk?: string } | null>();
     for (const itemId of uniqueItemIds) {
       const response = await api.record(itemId);
-      sourceByItemId.set(itemId, response.ok ? deriveRecordSourcePath(response.record) : null);
+      const source = response.ok && response.record ? deriveRecordSourcePath(response.record as ArchiveRecord) : null;
+      sourceByItemId.set(itemId, source);
     }
 
     const { clips, failures } = resolveMontageClipPaths(
@@ -306,7 +320,7 @@ export default function ProjectsPage() {
             {clips.length === 0 ? (
               <p className="helper-text">لا توجد قصاصات بعد. ابحث في الأرشيف أعلاه وأضف قصاصات إلى الخط الزمني.</p>
             ) : (
-              clips.map((clip, index) => (
+              clips.map((clip: MontageClip, index: number) => (
                 <div className="kanban-card" key={clip.id}>
                   <strong>{index + 1}. {clip.title || clip.itemId}</strong>
                   <span className="helper-text" dir="ltr">

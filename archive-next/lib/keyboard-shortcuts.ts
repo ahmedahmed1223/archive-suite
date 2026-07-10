@@ -12,7 +12,7 @@ interface ShortcutBinding {
 }
 
 interface ShortcutsStore {
-  [K in ShortcutKey]: ShortcutBinding;
+  commandPalette: ShortcutBinding;
 }
 
 const STORAGE_KEY = "archive:keyboard-shortcuts";
