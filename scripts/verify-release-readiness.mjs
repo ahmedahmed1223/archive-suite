@@ -102,7 +102,6 @@ assertIncludes("archive-server/deploy/Caddyfile", 'reverse_proxy {$CADDY_UPSTREA
 assertIncludes("archive-laravel/routes/api.php", "Route::prefix('v1')");
 assertIncludes("archive-laravel/routes/api.php", "archive.auth");
 assertIncludes("archive-laravel/ARCHIVE_MIGRATION.md", "canonical API target");
-assertIncludes("docs/laravel-nextjs-migration-plan.md", "canonical development path");
 assertIncludes("CLAUDE.md", "Frontend (canonical)");
 assertIncludes("CLAUDE.md", "`archive-next`");
 assertIncludes("CLAUDE.md", "Backend (canonical)");
