@@ -1,6 +1,6 @@
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
-import { Link2, PlusCircle, UploadCloud } from "lucide-react";
+import { Link2, PlusCircle } from "lucide-react";
 import { ImportFromUrlForm } from "./ImportFromUrlForm";
 import { IntakeTemplatesPanel } from "./IntakeTemplatesPanel";
 import { UploadForm } from "./UploadForm";
@@ -32,28 +32,21 @@ export default function UploadsPage() {
 
       <section className="add-workspace" aria-label="إضافة مادة للأرشيف">
         <div className="add-workspace__primary">
-          <div className="workspace-panel__header">
-            <div>
-              <h2>المعالج الرئيسي</h2>
-              <p>ابدأ من الملفات، ثم أكمل البيانات والمراجعة قبل إنشاء السجل.</p>
-            </div>
-            <span className="badge"><UploadCloud aria-hidden="true" size={14} /> رفع</span>
-          </div>
           <UploadForm />
         </div>
         <aside className="add-workspace__support" aria-label="أدوات الإضافة المساندة">
-          <section className="workspace-panel">
-            <div className="workspace-panel__header">
-              <div>
-                <h2>استيراد سريع</h2>
-                <p>جهّز مادة من رابط أو قالب أو رابط رفع خارجي.</p>
-              </div>
-              <span className="badge"><Link2 aria-hidden="true" size={14} /> أدوات</span>
+          <header className="add-workspace__support-header">
+            <div>
+              <h2>أدوات مساندة</h2>
+              <p>استورد من رابط، أو طبّق قالباً، أو أنشئ رابط رفع لفريقك دون مغادرة المعالج.</p>
             </div>
-          </section>
-          <ImportFromUrlForm />
-          <IntakeTemplatesPanel />
-          <UploadLinksPanel />
+            <span className="badge"><Link2 aria-hidden="true" size={14} /> أدوات</span>
+          </header>
+          <div className="add-workspace__support-grid">
+            <ImportFromUrlForm />
+            <IntakeTemplatesPanel />
+            <UploadLinksPanel />
+          </div>
         </aside>
       </section>
     </AppShell>
