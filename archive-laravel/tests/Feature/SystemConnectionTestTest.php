@@ -4,12 +4,26 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SystemConnectionTestTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected User $adminUser;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->adminUser = User::factory()->create(['role' => 'admin']);
+    }
+
+    protected function actingAsAdmin(): void
+    {
+        $this->actingAs($this->adminUser);
+    }
 
     public function test_test_storage_connection_local_succeeds(): void
     {

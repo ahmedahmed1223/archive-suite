@@ -12,7 +12,8 @@ import { offlineQueueStore, type QueuedMutation } from "./offline-queue";
 export function useConnectivity(): ConnectivityStatus {
   return useSyncExternalStore(
     connectivityStore.subscribe,
-    connectivityStore.getSnapshot
+    connectivityStore.getSnapshot,
+    connectivityStore.getServerSnapshot
   );
 }
 
@@ -24,7 +25,8 @@ export function useConnectivity(): ConnectivityStatus {
 export function useOfflineQueue(): QueuedMutation[] {
   return useSyncExternalStore(
     offlineQueueStore.subscribe,
-    offlineQueueStore.getSnapshot
+    offlineQueueStore.getSnapshot,
+    offlineQueueStore.getServerSnapshot
   );
 }
 

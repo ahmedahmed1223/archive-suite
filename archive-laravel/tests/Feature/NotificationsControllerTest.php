@@ -7,9 +7,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class NotificationsControllerTest extends RefreshDatabase
+class NotificationsControllerTest extends TestCase
 {
-    use TestCase;
+    use RefreshDatabase;
 
     private User $user;
 

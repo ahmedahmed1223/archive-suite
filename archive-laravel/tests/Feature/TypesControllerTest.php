@@ -7,8 +7,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-class TypesControllerTest extends RefreshDatabase
+class TypesControllerTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected User $adminUser;
     protected User $editorUser;
     protected User $viewerUser;

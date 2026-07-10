@@ -29,7 +29,14 @@ function subscribe(listener: () => void) {
 }
 
 function getSnapshot() {
-  return [...queue];
+  // queue is replaced immutably on every change, so the reference is a stable snapshot.
+  return queue;
+}
+
+const EMPTY_QUEUE: QueuedMutation[] = [];
+
+function getServerSnapshot() {
+  return EMPTY_QUEUE;
 }
 
 /** Load queue from localStorage on client startup */
@@ -123,7 +130,8 @@ export function getOfflineQueue() {
 /** Export store methods for use with useSyncExternalStore */
 export const offlineQueueStore = {
   subscribe,
-  getSnapshot
+  getSnapshot,
+  getServerSnapshot
 };
 
 // ponytail: external store pattern using native listeners. No Zustand/Jotai needed for this simple case.

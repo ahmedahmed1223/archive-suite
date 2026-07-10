@@ -3,14 +3,21 @@
 namespace Tests\Feature;
 
 use App\Models\MontageProject;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class MontageProjectsApiTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected User $user;
+
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutExceptionHandling();
+        $this->user = User::factory()->create();
+        $this->actingAs($this->user);
     }
 
     public function test_list_montage_projects(): void

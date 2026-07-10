@@ -11,11 +11,13 @@ type Props = {
 export default function OfflineStatusBanner({ className = "" }: Props) {
   const connectivity = useSyncExternalStore(
     connectivityStore.subscribe,
-    connectivityStore.getSnapshot
+    connectivityStore.getSnapshot,
+    connectivityStore.getServerSnapshot
   );
   const queuedMutations = useSyncExternalStore(
     offlineQueueStore.subscribe,
-    offlineQueueStore.getSnapshot
+    offlineQueueStore.getSnapshot,
+    offlineQueueStore.getServerSnapshot
   );
 
   if (connectivity === "online" && queuedMutations.length === 0) {

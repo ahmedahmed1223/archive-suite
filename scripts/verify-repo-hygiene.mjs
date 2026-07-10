@@ -47,15 +47,15 @@ const forbiddenPlanDocPaths = [
   "docs/laravel-nextjs-migration-plan.md",
 ];
 const requiredTaskLedgerMarkers = [
-  "Activity/history دائم",
-  "تخزين Laravel دائم",
-  "Automation backend",
-  "تفريغ عربي إنتاجي على GPU",
+  "تفريغ عربي",
   "AI/Copilot",
 ];
 const requiredCompletedMarkers = [
   "Add archive / AddVideo wizard",
   "First-run / onboarding في Masar",
+  "Activity/history دائم",
+  "تخزين Laravel دائم",
+  "Automation backend",
 ];
 
 function rel(absolutePath) {

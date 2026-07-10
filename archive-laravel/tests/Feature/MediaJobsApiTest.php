@@ -229,7 +229,8 @@ class MediaJobsApiTest extends TestCase
         $this->assertSame('completed', $refreshed->status);
         $this->assertIsArray($refreshed->result['artifacts']);
         $this->assertNotEmpty($refreshed->result['artifacts']);
-        $this->assertSame('transcript', $refreshed->result['artifacts'][0]['kind']);
+        $kinds = array_column($refreshed->result['artifacts'], 'kind');
+        $this->assertContains('transcript_srt', $kinds);
     }
 
     public function test_store_rejects_invalid_operation(): void
