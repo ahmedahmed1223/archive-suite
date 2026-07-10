@@ -14,10 +14,16 @@ type LoadState =
   | { status: "ready"; records: ArchiveRecord[] }
   | { status: "error"; message: string };
 
+type CollectionsLoadState =
+  | { status: "loading" }
+  | { status: "ready" }
+  | { status: "error"; message: string };
+
 export default function CollectionsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [collectionsState, setCollectionsState] = useState<CollectionsLoadState>({ status: "loading" });
   const [statusMessage, setStatusMessage] = useState("");
   const [name, setName] = useState("");
   const [query, setQuery] = useState("");
@@ -25,9 +31,16 @@ export default function CollectionsPage() {
   const [tag, setTag] = useState("all");
 
   async function refreshCollections() {
+    setCollectionsState({ status: "loading" });
     const response = await api.collections();
-    if (response.ok) setCollections(response.collections);
-    else setStatusMessage(response.error || "تعذر تحميل المجموعات.");
+    if (response.ok) {
+      setCollections(response.collections);
+      setCollectionsState({ status: "ready" });
+    } else {
+      const message = response.error || "تعذر تحميل المجموعات.";
+      setCollectionsState({ status: "error", message });
+      setStatusMessage(message);
+    }
   }
 
   useEffect(() => {
@@ -138,12 +151,21 @@ export default function CollectionsPage() {
         </div>
       ) : null}
 
-      {collections.length === 0 ? (
+      {collectionsState.status === "loading" ? <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل المجموعات...</p></div> : null}
+      {collectionsState.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل المجموعات</strong>
+          <span className="helper-text">{collectionsState.message}</span>
+          <div><button className="button button-secondary button-sm" type="button" onClick={() => void refreshCollections()}>إعادة المحاولة</button></div>
+        </div>
+      ) : null}
+
+      {collectionsState.status === "ready" && collections.length === 0 ? (
         <EmptyState
           title="لا توجد مجموعات محفوظة بعد."
           description="أنشئ مجموعة حسب بحث أو نوع أو وسم، أو استخدم أحد الاقتراحات الذكية أدناه."
         />
-      ) : (
+      ) : collectionsState.status === "ready" ? (
         <section className="dense-grid" aria-label="المجموعات المحفوظة">
           {collections.map((collection) => {
             const matches = records.filter((record) => recordMatches(record, collection));
@@ -171,7 +193,7 @@ export default function CollectionsPage() {
             );
           })}
         </section>
-      )}
+      ) : null}
 
       {smartSuggestions.length > 0 ? (
         <section className="page-section" aria-labelledby="smart-collections-heading">

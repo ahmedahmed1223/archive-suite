@@ -2,7 +2,7 @@
 
 import { useNotifications, type Notification } from "@/lib/use-notifications";
 import { useState } from "react";
-import { Trash2, CheckCircle2, AlertCircle, Info, Package } from "lucide-react";
+import { Trash2, CheckCircle2, Info, Package } from "lucide-react";
 import Link from "next/link";
 
 const typeIcons = {
@@ -73,7 +73,7 @@ function NotificationCard({ notification, onRead, onDelete }: {
 }
 
 export default function NotificationsPage() {
-  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, isLoading, error, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
   const filteredNotifications = filter === "unread"
@@ -122,9 +122,17 @@ export default function NotificationsPage() {
       </div>
 
       <div className="notifications-page__content">
-        {isLoading ? (
+        {error ? (
+          <div className="state-banner state-banner-error" role="alert">
+            <strong>تعذر إكمال طلب الإشعارات</strong>
+            <span className="helper-text">{error}</span>
+            <div><button className="button button-secondary button-sm" type="button" onClick={() => void fetchNotifications()}>إعادة المحاولة</button></div>
+          </div>
+        ) : null}
+
+        {isLoading && notifications.length === 0 ? (
           <div className="notifications-page__loading">جاري التحميل...</div>
-        ) : filteredNotifications.length === 0 ? (
+        ) : !isLoading && !error && filteredNotifications.length === 0 ? (
           <div className="notifications-page__empty">
             <Info size={48} aria-hidden="true" />
             <p>

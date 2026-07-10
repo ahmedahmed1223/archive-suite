@@ -7,9 +7,15 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord, type TagNode } from "@/lib/archive-api";
 import { countBy, normalizeText } from "@/lib/record-utils";
 
+type TagsLoadState =
+  | { status: "loading" }
+  | { status: "ready" }
+  | { status: "error"; message: string };
+
 export default function TagsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
+  const [loadState, setLoadState] = useState<TagsLoadState>({ status: "loading" });
   const [error, setError] = useState("");
   const [nodes, setNodes] = useState<TagNode[]>([]);
   const [filter, setFilter] = useState("");
@@ -20,13 +26,29 @@ export default function TagsPage() {
     else setError(response.error || "تعذر تحميل الوسوم.");
   }
 
+  async function loadTags() {
+    setLoadState({ status: "loading" });
+    setError("");
+    const [nodesResponse, recordsResponse] = await Promise.all([api.tagNodes(), api.search({ limit: 1000 })]);
+    if (!nodesResponse.ok || !recordsResponse.ok) {
+      const message = !nodesResponse.ok
+        ? nodesResponse.error || "تعذر تحميل الوسوم."
+        : !recordsResponse.ok
+          ? recordsResponse.error || "تعذر تحميل السجلات."
+          : "تعذر تحميل بيانات الوسوم.";
+      setLoadState({
+        status: "error",
+        message
+      });
+      return;
+    }
+    setNodes(nodesResponse.nodes);
+    setRecords(recordsResponse.records);
+    setLoadState({ status: "ready" });
+  }
+
   useEffect(() => {
-    void refreshNodes();
-    void (async () => {
-      const response = await api.search({ limit: 1000 });
-      if (response.ok) setRecords(response.records);
-      else setError(response.error);
-    })();
+    void loadTags();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api]);
 
@@ -107,14 +129,23 @@ export default function TagsPage() {
         </div>
       </PageToolbar>
 
-      {error ? (
+      {loadState.status === "loading" ? (
+        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل الوسوم والسجلات...</p></div>
+      ) : null}
+
+      {loadState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل الوسوم</strong>
-          <span className="helper-text">{error}</span>
+          <span className="helper-text">{loadState.message}</span>
+          <div><button className="button button-secondary button-sm" type="button" onClick={() => void loadTags()}>إعادة المحاولة</button></div>
         </div>
       ) : null}
 
-      {tagRows.length === 0 ? (
+      {error && loadState.status === "ready" ? (
+        <div className="state-banner state-banner-error" role="alert"><strong>تعذر حفظ تغيير الوسم</strong><span className="helper-text">{error}</span></div>
+      ) : null}
+
+      {loadState.status === "ready" && tagRows.length === 0 ? (
         <EmptyState title="لا توجد وسوم بعد." description="أضف وسوماً إلى السجلات من الأرشيف لتظهر هنا." />
       ) : (
         <section className="panel" aria-label="قائمة الوسوم">
@@ -153,7 +184,7 @@ export default function TagsPage() {
         </section>
       )}
 
-      {duplicateGroups.length > 0 ? (
+      {loadState.status === "ready" && duplicateGroups.length > 0 ? (
         <section className="page-section">
           <div className="toolbar-row toolbar-start">
             <h2 className="section-heading">تشابهات تحتاج مراجعة</h2>

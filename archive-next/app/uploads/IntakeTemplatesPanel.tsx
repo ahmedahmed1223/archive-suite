@@ -4,18 +4,32 @@ import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type IntakeTemplate } from "@/lib/archive-api";
 
+type IntakeTemplatesState =
+  | { status: "loading" }
+  | { status: "ready" }
+  | { status: "error"; message: string };
+
 export function IntakeTemplatesPanel() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [templates, setTemplates] = useState<IntakeTemplate[]>([]);
+  const [templatesState, setTemplatesState] = useState<IntakeTemplatesState>({ status: "loading" });
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [folder, setFolder] = useState("");
   const [tags, setTags] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function refresh() {
+    setTemplatesState({ status: "loading" });
     const response = await api.intakeTemplates();
-    if (response.ok) setTemplates(response.templates);
+    if (response.ok) {
+      setTemplates(response.templates);
+      setTemplatesState({ status: "ready" });
+    } else {
+      setTemplatesState({ status: "error", message: response.error || "تعذر تحميل قوالب الإدخال." });
+    }
   }
 
   useEffect(() => {
@@ -36,10 +50,12 @@ export function IntakeTemplatesPanel() {
       return;
     }
 
+    setIsCreating(true);
     const response = await api.createIntakeTemplate({ name, type: type || undefined, fields });
 
     if (!response.ok) {
       setError(response.error);
+      setIsCreating(false);
       return;
     }
 
@@ -48,11 +64,16 @@ export function IntakeTemplatesPanel() {
     setFolder("");
     setTags("");
     await refresh();
+    setIsCreating(false);
   }
 
   async function handleDelete(id: string) {
+    setError(null);
+    setDeletingId(id);
     const response = await api.deleteIntakeTemplate(id);
     if (response.ok) await refresh();
+    else setError(response.error || "تعذر حذف القالب.");
+    setDeletingId(null);
   }
 
   return (
@@ -81,7 +102,7 @@ export function IntakeTemplatesPanel() {
           وسوم افتراضية (مفصولة بفاصلة)
           <input type="text" value={tags} onChange={(event) => setTags(event.target.value)} />
         </label>
-        <button type="submit" className="button button-primary">حفظ القالب</button>
+        <button type="submit" className="button button-primary" disabled={isCreating}>{isCreating ? "جار الحفظ..." : "حفظ القالب"}</button>
         {error ? (
           <p className="form-status" role="alert">
             {error}
@@ -89,7 +110,15 @@ export function IntakeTemplatesPanel() {
         ) : null}
       </form>
 
-      {templates.length === 0 ? (
+      {templatesState.status === "loading" ? (
+        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل قوالب الإدخال...</p></div>
+      ) : templatesState.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل قوالب الإدخال</strong>
+          <span className="helper-text">{templatesState.message}</span>
+          <div><button type="button" className="button button-secondary button-sm" onClick={() => void refresh()}>إعادة المحاولة</button></div>
+        </div>
+      ) : templates.length === 0 ? (
         <p className="helper-text">لا توجد قوالب محفوظة بعد.</p>
       ) : (
         <ul className="stack">
@@ -97,8 +126,8 @@ export function IntakeTemplatesPanel() {
             <li key={template.id} className="record-meta">
               <span className="badge">{template.name}</span>
               {template.type ? <span className="badge">{template.type}</span> : null}
-              <button type="button" className="button button-secondary button-sm" onClick={() => void handleDelete(template.id)}>
-                حذف
+              <button type="button" className="button button-secondary button-sm" disabled={deletingId === template.id} onClick={() => void handleDelete(template.id)}>
+                {deletingId === template.id ? "جار الحذف..." : "حذف"}
               </button>
             </li>
           ))}

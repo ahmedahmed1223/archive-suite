@@ -9,10 +9,15 @@ import { createArchiveApiClient, type ArchiveRecord, type VocabularyTerm } from 
 import { countBy, normalizeText } from "@/lib/record-utils";
 
 type Kind = VocabularyTerm["kind"];
+type VocabularyLoadState =
+  | { status: "loading" }
+  | { status: "ready" }
+  | { status: "error"; message: string };
 
 export default function VocabularyPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
+  const [loadState, setLoadState] = useState<VocabularyLoadState>({ status: "loading" });
   const [error, setError] = useState("");
   const [terms, setTerms] = useState<VocabularyTerm[]>([]);
   const [term, setTerm] = useState("");
@@ -27,13 +32,29 @@ export default function VocabularyPage() {
     else setError(response.error || "تعذر تحميل المفردات.");
   }
 
+  async function loadVocabulary() {
+    setLoadState({ status: "loading" });
+    setError("");
+    const [termsResponse, recordsResponse] = await Promise.all([api.vocabularyTerms(), api.search({ limit: 1000 })]);
+    if (!termsResponse.ok || !recordsResponse.ok) {
+      const message = !termsResponse.ok
+        ? termsResponse.error || "تعذر تحميل المفردات."
+        : !recordsResponse.ok
+          ? recordsResponse.error || "تعذر تحميل السجلات."
+          : "تعذر تحميل بيانات المفردات.";
+      setLoadState({
+        status: "error",
+        message
+      });
+      return;
+    }
+    setTerms(termsResponse.terms);
+    setRecords(recordsResponse.records);
+    setLoadState({ status: "ready" });
+  }
+
   useEffect(() => {
-    void refreshTerms();
-    void (async () => {
-      const response = await api.search({ limit: 1000 });
-      if (response.ok) setRecords(response.records);
-      else setError(response.error);
-    })();
+    void loadVocabulary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api]);
 
@@ -123,14 +144,23 @@ export default function VocabularyPage() {
         </form>
       </PageToolbar>
 
-      {error ? (
+      {loadState.status === "loading" ? (
+        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل المفردات والسجلات...</p></div>
+      ) : null}
+
+      {loadState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر قراءة الأرشيف</strong>
-          <span className="helper-text">{error}</span>
+          <span className="helper-text">{loadState.message}</span>
+          <div><button className="button button-secondary button-sm" type="button" onClick={() => void loadVocabulary()}>إعادة المحاولة</button></div>
         </div>
       ) : null}
 
-      <section className="split-layout">
+      {error && loadState.status === "ready" ? (
+        <div className="state-banner state-banner-error" role="alert"><strong>تعذر حفظ تغيير المفردات</strong><span className="helper-text">{error}</span></div>
+      ) : null}
+
+      {loadState.status === "ready" ? <section className="split-layout">
         <article className="panel">
           <div className="panel-title-row">
             <div>
@@ -181,7 +211,7 @@ export default function VocabularyPage() {
             ))}
           </div>
         </article>
-      </section>
+      </section> : null}
     </AppShell>
   );
 }

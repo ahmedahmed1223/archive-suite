@@ -26,7 +26,7 @@ export interface NotificationsResponse {
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(async (page = 1, limit = 20) => {
@@ -34,16 +34,19 @@ export function useNotifications() {
       setIsLoading(true);
       setError(null);
       const response = await fetch(`/api/v1/notifications?page=${page}&limit=${limit}`);
+      if (!response.ok) {
+        throw new Error("تعذر تحميل الإشعارات.");
+      }
       const data: NotificationsResponse = await response.json();
 
       if (!data.ok) {
-        throw new Error("Failed to fetch notifications");
+        throw new Error("تعذر تحميل الإشعارات.");
       }
 
       setNotifications(data.notifications);
       setUnreadCount(data.notifications.filter((n) => !n.is_read).length);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "تعذر تحميل الإشعارات.");
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +60,7 @@ export function useNotifications() {
       const data = await response.json();
 
       if (!data.ok) {
-        throw new Error("Failed to mark notification as read");
+        throw new Error("تعذر تعليم الإشعار كمقروء.");
       }
 
       setNotifications((prev) =>
@@ -65,7 +68,7 @@ export function useNotifications() {
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "تعذر تعليم الإشعار كمقروء.");
     }
   }, []);
 
@@ -77,13 +80,13 @@ export function useNotifications() {
       const data = await response.json();
 
       if (!data.ok) {
-        throw new Error("Failed to mark all as read");
+        throw new Error("تعذر تعليم الإشعارات كمقروءة.");
       }
 
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "تعذر تعليم الإشعارات كمقروءة.");
     }
   }, []);
 
@@ -95,7 +98,7 @@ export function useNotifications() {
       const data = await response.json();
 
       if (!data.ok) {
-        throw new Error("Failed to delete notification");
+        throw new Error("تعذر حذف الإشعار.");
       }
 
       setNotifications((prev) => {
@@ -106,7 +109,7 @@ export function useNotifications() {
         return prev.filter((n) => n.id !== id);
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "تعذر حذف الإشعار.");
     }
   }, []);
 

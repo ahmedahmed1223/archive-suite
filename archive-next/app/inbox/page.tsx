@@ -16,9 +16,15 @@ const statusLabels: Record<InboxStatus, string> = {
   done: "مكتمل"
 };
 
+type InboxLoadState =
+  | { status: "loading" }
+  | { status: "ready" }
+  | { status: "error"; message: string };
+
 export default function InboxPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [items, setItems] = useState<InboxItem[]>([]);
+  const [loadState, setLoadState] = useState<InboxLoadState>({ status: "loading" });
   const [statusMessage, setStatusMessage] = useState("");
   const [title, setTitle] = useState("");
   const [source, setSource] = useState("");
@@ -26,9 +32,16 @@ export default function InboxPage() {
   const [filter, setFilter] = useState<InboxStatus | "all">("all");
 
   async function refreshInbox() {
+    setLoadState({ status: "loading" });
     const response = await api.inboxItems();
-    if (response.ok) setItems(response.items);
-    else setStatusMessage(response.error || "تعذر تحميل الوارد.");
+    if (response.ok) {
+      setItems(response.items);
+      setLoadState({ status: "ready" });
+    } else {
+      const message = response.error || "تعذر تحميل الوارد.";
+      setLoadState({ status: "error", message });
+      setStatusMessage(message);
+    }
   }
 
   useEffect(() => {
@@ -130,7 +143,19 @@ export default function InboxPage() {
         </div>
       </PageToolbar>
 
-      {visibleItems.length === 0 ? (
+      {loadState.status === "loading" ? (
+        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل عناصر الوارد...</p></div>
+      ) : null}
+
+      {loadState.status === "error" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>تعذر تحميل عناصر الوارد</strong>
+          <span className="helper-text">{loadState.message}</span>
+          <div><button type="button" className="button button-secondary button-sm" onClick={() => void refreshInbox()}>إعادة المحاولة</button></div>
+        </div>
+      ) : null}
+
+      {loadState.status === "ready" && visibleItems.length === 0 ? (
         <EmptyState title="لا توجد عناصر في هذا العرض." description="أضف عنصراً سريعاً أو غيّر فلتر الحالة." />
       ) : (
         <section className="dense-grid" aria-label="عناصر الوارد">
