@@ -2,7 +2,7 @@
 
 import { Bell, X, Trash2 } from "lucide-react";
 import { useNotifications, type Notification } from "@/lib/use-notifications";
-import { useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 export function NotificationsBadge() {
   const { unreadCount, isLoading } = useNotifications();
@@ -64,15 +64,52 @@ function NotificationItem({ notification, onRead, onDelete }: {
 export function NotificationsPanel() {
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const panelId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const closePanel = useCallback((returnFocus = true) => {
+    setIsOpen(false);
+    if (returnFocus) {
+      requestAnimationFrame(() => triggerRef.current?.focus());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!panelRef.current?.contains(target) && !triggerRef.current?.contains(target)) {
+        closePanel();
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closePanel();
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [closePanel, isOpen]);
 
   return (
     <div className="notifications-panel-container">
       <button
         type="button"
         className="notifications-trigger icon-action"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((current) => !current)}
         aria-label="فتح الإشعارات"
+        aria-expanded={isOpen}
+        aria-controls={panelId}
         title="الإشعارات"
+        ref={triggerRef}
       >
         <Bell aria-hidden="true" size={18} strokeWidth={2} />
         {unreadCount > 0 && (
@@ -81,12 +118,19 @@ export function NotificationsPanel() {
       </button>
 
       {isOpen && (
-        <div className="notifications-panel">
+        <div
+          className="notifications-panel"
+          id={panelId}
+          ref={panelRef}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby={`${panelId}-title`}
+        >
           <div className="notifications-panel__header">
-            <h2>الإشعارات</h2>
+            <h2 id={`${panelId}-title`}>الإشعارات</h2>
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={() => closePanel()}
               aria-label="إغلاق"
             >
               <X size={20} />

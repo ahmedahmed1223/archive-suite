@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArchiveRestore, LockKeyhole, RefreshCw, ServerCog, ShieldCheck, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
+import { Button } from "@/components/ui/Button";
+import { Dialog, DialogClose, DialogContent } from "@/components/ui/Dialog";
 import { createArchiveApiClient, type SystemControlAction, type SystemControlResult } from "@/lib/archive-api";
 
 type GateState =
@@ -51,6 +53,7 @@ function gateLabel(status: GateState["status"]) {
 export default function SystemControlPage() {
   const [gate, setGate] = useState<GateState>({ status: "loading" });
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
+  const [isClearCacheConfirmOpen, setIsClearCacheConfirmOpen] = useState(false);
   const apiRef = useRef(createArchiveApiClient());
 
   // Probe the gate by attempting a harmless status read; the definitive,
@@ -99,6 +102,15 @@ export default function SystemControlPage() {
   };
 
   const isDisabledGate = gate.status === "disabled";
+  const clearCacheDisabled = gate.status !== "enabled" || actionState.status === "running";
+
+  const requestAction = (action: SystemControlAction) => {
+    if (action === "clear-cache") {
+      setIsClearCacheConfirmOpen(true);
+      return;
+    }
+    void runAction(action);
+  };
 
   return (
     <AppShell subtitle="التحكم بالنظام" navLabel="التحكم بالنظام" contentClassName="observability-content">
@@ -201,7 +213,7 @@ export default function SystemControlPage() {
                 <button
                   type="button"
                   className="button button-primary"
-                  onClick={() => void runAction(action.id)}
+                  onClick={() => requestAction(action.id)}
                   disabled={disallowed}
                   title={isDisabledGate ? "غير مفعّل من إعدادات الخادم" : action.label}
                 >
@@ -212,6 +224,35 @@ export default function SystemControlPage() {
           })}
         </div>
       </section>
+
+      <Dialog open={isClearCacheConfirmOpen} onOpenChange={setIsClearCacheConfirmOpen}>
+        <DialogContent
+          className="system-control-confirmation"
+          title="تأكيد تفريغ الذاكرة المؤقتة"
+          description="سيتم تنفيذ الإجراء مباشرة على الخادم وتسجيله في سجل التدقيق. قد تتأخر الاستجابة التالية مؤقتًا أثناء إعادة بناء الإعدادات المخبأة."
+        >
+          <div className="system-control-confirmation__body">
+            <p>تأكد من أنك تريد متابعة الإجراء في بيئة الإنتاج.</p>
+            <div className="system-control-confirmation__actions">
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">إلغاء</Button>
+              </DialogClose>
+              <Button
+                type="button"
+                variant="danger"
+                disabled={clearCacheDisabled}
+                onClick={() => {
+                  setIsClearCacheConfirmOpen(false);
+                  void runAction("clear-cache");
+                }}
+              >
+                <Trash2 size={16} aria-hidden="true" />
+                تأكيد التفريغ
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
