@@ -85,3 +85,425 @@
 
 **الأسبوع 4 — التوحيد:**
 نظام أزرار واحد (`.ui-button`) وحذف البقية → دمج `.workspace-panel` في `.panel` → حسم الباليتة (كهرماني فقط أو كهرماني+نيلي بقرار) وإعادة تلوين الشعار → ترحيل الجلب اليدوي إلى TanStack Query → جداول متجاوبة موحّدة.
+
+---
+
+# مراجعة UI/UX الشاملة: Archive Suite / Masar — تحديث 2026-07-10
+
+تاريخ المراجعة: 2026-07-10
+
+المسار المعتمد: `archive-next` + `archive-laravel`
+
+المرجع التصميمي: `docs/superpowers/specs/2026-07-04-masar-command-workspace-design.md`
+الفلسفة: **Functional Warm Command Workspace** — مساحة تشغيل عربية RTL، عملية، دافئة، وكثيفة بوضوح.
+
+## نطاق وطريقة الفحص
+
+- جرد 48 صفحة Next.js، ومراجعة هيكل التنقل والمكوّنات المشتركة وملفات CSS والحالات التفاعلية الظاهرة في المصدر.
+- محاولة تشغيل التطبيق فعليًا على `127.0.0.1:3010` وفحصه بأبعاد 1280×800 و768×1024 و375×812.
+- تشغيل TypeScript typecheck ومراجعة أخطاء البناء التي تؤثر مباشرة في قابلية استخدام الواجهات.
+- مقارنة النظام الحالي بالمواصفات والصورة المرجعية المعتمدة.
+- التحقق من RTL، الجداول، النماذج، حالات التحميل/الخطأ/الفراغ، مؤشرات التركيز، تقليل الحركة، والتجاوب.
+
+> تنبيه منهجي: التطبيق لم يصل إلى واجهاته بسبب أخطاء بناء مؤكدة. لذلك النتائج المرئية المباشرة تخص شاشة العطل، أما مراجعة الصفحات نفسها فهي مراجعة تنفيذية موثقة من الكود والمكوّنات. يجب إعادة الجولة المرئية الكاملة بعد إصلاح P0.
+
+## اللقطات الملتقطة
+
+| اللقطة | المقاس | النتيجة |
+|---|---:|---|
+| `screenshots/review-build-blocker-desktop-1280.png` | 1280×800 | تعذر تصيير صفحة تسجيل الدخول بسبب فشل البناء |
+| `screenshots/review-build-blocker-tablet-768.png` | 768×1024 | العطل نفسه على التابلت |
+| `screenshots/review-build-blocker-mobile-375.png` | 375×812 | العطل نفسه على الهاتف |
+
+## الخلاصة التنفيذية
+
+المنتج يمتلك أساسًا واعدًا: اتجاه عربي صحيح، خريطة تنقل واسعة، مكوّنات تشغيل مشتركة، حالات فراغ وخطأ في أغلب الصفحات، واستخدام جيد نسبيًا للـARIA و`prefers-reduced-motion`. لكن حالته الحالية **غير قابلة للإطلاق** لأن واجهة Next.js لا تُبنى، كما أن 48 صفحة موزعة على مستويات نضج مختلفة؛ بعض الصفحات تتبع مساحة العمل الجديدة، وأخرى تبدو كأدوات منفصلة داخل القالب نفسه.
+
+الهدف المناسب ليس “تجميل الصفحات” فقط، بل تنفيذ ثلاث طبقات مرتبة: استعادة قابلية التشغيل، توحيد تجربة التشغيل، ثم تحسين كفاءة المهام والتجاوب وإمكانية الوصول. بعد ذلك فقط تأتي الحركة والتلميع البصري.
+
+## P0 — يجب إصلاحه قبل أي مراجعة أو إطلاق
+
+1. **استعادة البناء والتشغيل**
+   - `components/AppProviders.tsx` يستورد `@/components/ThemeProvider` غير الموجود.
+   - `lib/keyboard-shortcuts.ts` يعرّف mapped type داخل `interface` بصياغة غير صالحة للبناء؛ يجب تحويله إلى `type ShortcutsStore = Record<ShortcutKey, ShortcutBinding>` أو ما يكافئه.
+   - حزم OpenTelemetry/Sentry لا تربط `require-in-the-middle` و`import-in-the-middle` في التثبيت الحالي؛ يجب إصلاح lockfile/dependency graph ضمن الحزمة لا بواسطة وصلات محلية مؤقتة.
+2. **إغلاق أخطاء TypeScript المؤثرة في الواجهة**
+   - `app/media/jobs/MediaJobsList.tsx`: الحالة `canceled` غير ممثلة في خريطة التسميات.
+   - `app/projects/page.tsx`: استدعاءات montage غير متوافقة مع API الحالي، ونتائج Promise تُستخدم كبيانات جاهزة، و`trackId` مفقود.
+   - `app/types/page.tsx` ومكوّناته: استخدام API قديم (`get/post/delete`)، props قديمة لـ`AppShell` و`PageToolbar`، وأنواع سجلات غير صحيحة.
+3. **بوابة قبول P0**
+   - `pnpm typecheck` ينجح دون أخطاء.
+   - `pnpm build:next` ينجح.
+   - `/login` و`/` و`/archive` و`/uploads` تُصيّر دون 500.
+   - ثم تعاد لقطات desktop/tablet/mobile قبل بدء P1.
+
+## P1 — توحيد أساس تجربة المنتج
+
+### 1. الهيكل والتنقل
+
+- إبقاء `AppShell` كنقطة الدخول الوحيدة لكل الصفحات الخاصة، مع فصل واضح للصفحات العامة: login/share/review.
+- تقليل عبء قائمة من 40+ وجهة: إظهار 5–7 وجهات يومية، ووضع الباقي في مجموعات قابلة للطي مع حفظ حالة الطي، وإتاحة كل شيء عبر Command Palette.
+- إضافة شريط تنقل سفلي حقيقي للموبايل لأهم خمس وجهات: الرئيسية، الأرشيف، إضافة مادة، المهام/الوارد، المزيد. القائمة الحالية يجب ألا تتحول إلى قائمة طويلة داخل Drawer فقط.
+- توفير breadcrumbs في صفحات التفاصيل والمسارات العميقة مثل archive item وmedia وsettings/users.
+- توحيد تسمية المنتج؛ يظهر “لوحة المتابعة” في الكود بينما المرجع يستخدم “لوحة التحكم/التشغيل”. اختيار مصطلح واحد وتطبيقه في العنوان والتنقل وmetadata.
+
+### 2. نموذج الصفحة الموحد
+
+كل صفحة تشغيلية يجب أن تتبع ترتيبًا ثابتًا:
+
+1. `AppShell`
+2. `PageToolbar` بعنوان قصير ووصف نتيجة المستخدم
+3. إجراءات أساسية واحدة بارزة، والبقية ثانوية أو قائمة overflow
+4. فلاتر/بحث قابلة للطي
+5. سطح بيانات واحد رئيسي
+6. Inspector أو Drawer للتفاصيل بدل تكديس بطاقات
+7. حالات loading/error/empty/success موحدة
+
+- منع تكديس `panel` داخل `panel`؛ التصميم المرجعي يعتمد حدودًا ومساحات لونية أكثر من البطاقات والظلال.
+- إنشاء `WorkspacePanel` فعلي مشترك بدل استخدام `panel`, `workspace-panel`, `dense-grid`, و`auth-form` كبدائل متداخلة.
+- توحيد أحجام radius على 4/6/8px والظلال على overlays والعناصر النشطة فقط.
+
+### 3. نظام الاستجابة
+
+- نقاط قياس موحدة: 375، 768، 1024، 1280، و1440+، مع اختبار 320px كحالة حدية.
+- الهاتف: عمود واحد، إجراء أساسي sticky عند الحاجة، فلاتر Drawer، وتفاصيل Inspector داخل صفحة/Drawer كامل.
+- التابلت: لا يُعامل كهاتف كبير؛ استخدام عمودين انتقائيًا وإخفاء Inspector افتراضيًا.
+- سطح المكتب: sidebar ثابت + content مرن + inspector اختياري. حد أقصى للنصوص الطويلة 65–75 حرفًا.
+- الجداول: لا يكفي `overflow-x:auto`. الصفحات التشغيلية الأساسية تتحول إلى صفوف/بطاقات محسنة للمس على الهاتف، مع إظهار أهم 3–4 حقول فقط وإجراء “التفاصيل”.
+- كل هدف لمس 44×44px على الأقل، والنص الأساسي 16px على الهاتف.
+
+### 4. الوصول والاستعمال بلوحة المفاتيح
+
+- إضافة رابط “تجاوز إلى المحتوى”، وترتيب landmarks: header/nav/main/aside.
+- اختبار tab order فعليًا، خصوصًا sidebar وCommand Palette والجداول وDrawers.
+- توحيد `:focus-visible` لكل button/link/input/select/textarea وRadix triggers، لا لبعض الأصناف فقط.
+- ربط كل input بـ`label` حقيقي؛ `aria-label` وحده مناسب للأيقونات لا لكل النماذج.
+- جعل رسائل الحفظ `role=status` والأخطاء `role=alert` مع نقل التركيز لأول خطأ عند submit.
+- فحص تباين light/dark آليًا وفق WCAG AA، خصوصًا muted text والbadges والحالات الملونة.
+- دعم zoom 200%، forced colors، وتقليل الحركة دون فقدان الدلالة.
+
+### 5. الحالات والتغذية الراجعة
+
+- Skeletons مطابقة لبنية الصفحة بدل نص “جار التحميل”.
+- الأخطاء القابلة للاسترداد تتضمن “إعادة المحاولة” وسببًا مفهومًا؛ أخطاء الاتصال لا تُعرض كرسائل تقنية.
+- Empty states تشرح لماذا الصفحة فارغة وتقدم الإجراء التالي الوحيد.
+- كل mutation يحتاج pending/disabled/success/error، ومنع النقر المكرر، وoptimistic update فقط عند إمكان التراجع.
+- استخدام Toast للأحداث العابرة، وinline status للأحداث التي يحتاج المستخدم الرجوع إليها.
+
+## خطة تحسين كل مجموعة واجهات
+
+### أ. الدخول والواجهات العامة
+
+المسارات: `/login`, `/share/[token]`, `/review/[token]`, `/notifications`.
+
+- **الدخول:** الحفاظ على hero + card في desktop، والتحول إلى نموذج واحد مباشر في mobile؛ زر إظهار كلمة المرور 44px، دعم password managers، خطأ تحت الحقل، وحالة caps-lock.
+- **المشاركة/المراجعة العامة:** إظهار هوية المادة وصاحب المشاركة وصلاحية الرابط بوضوح، مع حالات expired/revoked/password-required، ومنع عرض shell الخاص.
+- **الإشعارات:** إدخالها ضمن `AppShell` أو توثيق سبب استقلالها؛ توفير tabs (الكل/غير المقروء)، bulk mark-read، undo للحذف، وتجميع زمني.
+
+### ب. لوحة التشغيل والمكتبة
+
+المسارات: `/`, `/archive`, `/archive/[id]`, `/search`, `/search/saved`, `/discover`, `/favorites`, `/reading-lists`, `/timeline`, `/graph`, `/files`.
+
+- **اللوحة:** تحويلها من قائمة أحدث سجلات فقط إلى مركز عمل: مهام تحتاج انتباه، ingest/jobs، نشاط حديث، وإجراءات سريعة قابلة للتخصيص. كل metric يجب أن يكون قابلًا للنقر ويشرح الفترة الزمنية.
+- **الأرشيف:** أقرب صفحة للمرجع؛ تثبيت filter rail على desktop، Drawer على mobile، حفظ الفلاتر في URL، bulk actions sticky، اختيار متعدد واضح، وInspector لا يضغط الجدول تحت 1120px.
+- **تفاصيل السجل:** header يحوي العنوان والحالة والإجراءات، tabs ثابتة (معلومات/ملفات/حقوق/نشاط)، حفظ تلقائي موضح، تحذير تغييرات غير محفوظة، وتسلسل حقول حسب النوع.
+- **البحث:** شريط بحث command-first، اقتراحات لوحة مفاتيح، chips للفلاتر، إظهار سبب تطابق النتيجة، وحفظ البحث من السياق الحالي.
+- **البحث المحفوظ:** last run + عدد النتائج الجديدة + مشاركة/تثبيت، وحالة query invalid بعد تغيّر الحقول.
+- **الاكتشاف:** أقسام موصى بها مع تفسير التوصية وfeedback، لا شبكة بطاقات عامة فقط.
+- **المفضلة وقوائم القراءة:** توحيد card/list view، فرز يدوي، bulk move/remove، وundo.
+- **الخط الزمني:** zoom/granularity sticky، تجميع قابل للطي، keyboard navigation، وتجنب المحور الزخرفي على الهاتف.
+- **العلاقات:** قائمة بديلة للرسم، zoom controls ظاهرة، legend، بحث داخل العقد، وInspector للعقدة المحددة؛ الرسم وحده غير كافٍ للوصول.
+- **الملفات:** breadcrumbs، نوع العرض، upload progress، preview، bulk operations، وتحويل الجدول إلى file cards على الهاتف.
+
+### ج. الإدخال والمعالجة والوسائط
+
+المسارات: `/uploads`, `/inbox`, `/ingest`, `/media/jobs`, `/transcriber`, `/media/play`, `/media/compare`, `/media/review`.
+
+- **إضافة مادة:** wizard من 3 مراحل (المصدر ← البيانات ← المراجعة)، حفظ مسودة، dropzone واضحة، queue للملفات، أخطاء لكل ملف، وملخص قبل الإرسال.
+- **الوارد:** فصل capture السريع عن triage؛ اختصارات قبول/تأجيل/رفض، فلاتر الحالة، وbulk triage.
+- **الاستيراد:** mapping preview قبل التنفيذ، validation summary، sample rows، resume/retry، وسجل أخطاء قابل للتنزيل.
+- **وظائف الوسائط:** إكمال حالة canceled، progress موحّد، ETA، retry/cancel، فلترة حسب النوع والحالة، وdetails drawer للسجل.
+- **التفريغ:** media player + transcript editor متزامنان، shortcuts موثقة، autosave indicator، speaker labels، بحث/استبدال، وتصدير واضح.
+- **المشغل:** source picker بدل إدخال مسار تقني فقط، empty state تعليمية، captions/audio tracks، سرعة تشغيل، وkeyboard shortcuts.
+- **المقارنة:** sync playhead اختياري، A/B labels ثابتة، waveform/metadata difference، واستجابة stack على الهاتف.
+- **المراجعة المرئية:** player كبير، timeline comments، فلترة resolved/unresolved، mentions، draft protection، وcomments drawer على الهاتف.
+
+### د. التنظيم والإنتاج
+
+المسارات: `/collections`, `/types`, `/vocabulary`, `/tags`, `/duplicates`, `/kanban`, `/projects`.
+
+- **المجموعات:** تمييز manual/smart، preview للشرط، counts حية، duplicate/archive actions.
+- **الأنواع:** إصلاح API والعقود أولًا؛ بعده list/editor split في desktop وroutes منفصلة في mobile، field builder مع drag handle، validation، preview، وتحذير أثر حذف حقل.
+- **المفردات:** بحث وmerge للمصطلحات، علاقات parent/alias، وتوضيح الفرق بين المفردات والوسوم.
+- **الوسوم:** color picker accessible، hierarchy/tree، merge/rename مع impact count، ومنع اختيار اللون وحده كدلالة.
+- **المكررات:** مقارنة جانبية، سبب الاشتباه ودرجة الثقة، اختيار canonical record، merge preview، وundo/سجل قرار.
+- **كانبان:** keyboard-accessible DnD، بديل قوائم، حدود WIP، فلاتر، وvirtualization عند كثرة البطاقات.
+- **المشاريع:** إيقاف تطوير UI حتى إصلاح عقد montage async؛ بعدها timeline متعدد المسارات، asset bin، autosave، undo/redo، export status، وlayout مخصص للشاشات الواسعة.
+
+### هـ. المشاركة والحقوق والأتمتة
+
+المسارات: `/shares`, `/shares/with-me`, `/collaboration`, `/automation`, `/rights`.
+
+- **المشاركات:** جدول بوضوح recipient/access/expiry/status، revoke confirmation، copy-link feedback، وbulk expiry.
+- **وارد المشاركة:** فصل الجديد عن المفتوح سابقًا، هوية المرسل، سبب المشاركة، قبول/إخفاء.
+- **التعاون:** activity + members + pending invites، presence غير مزعجة، permissions واضحة، وحالات conflict.
+- **الأتمتة:** builder على مراحل trigger/conditions/actions، test run، run history، enabled switch، ورسائل failure قابلة للتصرف.
+- **الحقوق:** استبدال نموذج أعلى الجدول بـDrawer لإضافة/تحرير السجل، تنبيه قرب الانتهاء، فلترة الترخيص، وإظهار أثر الحق على التحميل/المشاركة.
+
+### و. المراقبة والتقارير
+
+المسارات: `/activity`, `/analytics`, `/reports`, `/status`, `/sync`, `/errors`.
+
+- **النشاط:** timeline قابلة للبحث، actor/action/object filters، group repeated events، وروابط مباشرة للعنصر.
+- **التحليلات:** تعريف الفترة والمنطقة الزمنية، مقارنة بالفترة السابقة، tooltips، جداول بديلة للرسوم، وتصدير.
+- **التقارير:** gallery للقوالب + schedule/history، preview، progress، وحالات no-data/failed.
+- **الحالة:** health summary أولًا، ثم الخدمات؛ اللون + النص + الأيقونة، last checked، auto-refresh control، وincident history.
+- **المزامنة:** الجدول الحالي يحتاج cards على الهاتف، retry per row/bulk، conflict inspector، وشرح اتجاه المزامنة.
+- **الأخطاء:** severity/source/time، stack trace داخل disclosure لا في الجدول، copy ID، resolve/assign، وربط بالسجل أو job المتسبب.
+
+### ز. النظام والإعدادات
+
+المسارات: `/backup`, `/data-center`, `/system/control`, `/first-run`, `/settings`, `/settings/users`, `/help`.
+
+- **النسخ الاحتياطي:** آخر نسخة وRPO في الأعلى، create/restore منفصلان بصريًا، restore dry-run، تأكيد قوي، وسجل progress.
+- **مركز البيانات:** capacity trends، health لكل store، نقل البيانات كwizard، وتقدير الوقت والمساحة.
+- **التحكم بالنظام:** فصل الإجراءات الخطرة، gated permissions، typed confirmation للإجراءات غير القابلة للتراجع، audit trail.
+- **أول تشغيل:** progress stepper، preflight checks، اختبار اتصال، إمكانية الرجوع، وعدم إظهار الصفحة في التنقل اليومي بعد الإكمال.
+- **الإعدادات:** تنقل فرعي ثابت/بحث داخل الإعدادات، sections مستقلة، dirty-state bar، restore defaults لكل قسم.
+- **المستخدمون:** دعوات وحالاتها، roles matrix، search/filter، suspend vs delete، وتأكيد أثر تغيير الصلاحيات.
+- **المساعدة:** بحث، مساعدة سياقية حسب الصفحة، shortcuts، diagnostic bundle، وروابط دعم واضحة؛ checklist وحدها ليست مركز مساعدة.
+
+## P2 — التلميع البصري والهوية
+
+- توحيد theme حول warm ivory + archive green + deep indigo كما في المرجع؛ ملف `theme.css` الحالي يميل إلى dark anthracite/amber، ما يحتاج قرارًا صريحًا: هل هو الوضع الداكن فقط أم أصبح الهوية الأساسية؟
+- إنشاء type scale عربي ثابت: 12/14/16/20/24/32 مع line-height مناسبة، ومنع قيم محلية عشوائية.
+- استخدام أرقام tabular في المقاييس والوقت والحجوم، مع قرار متسق للأرقام العربية/اللاتينية حسب نوع البيانات.
+- إضافة motion tokens (fast/normal) و1px lift للعناصر القابلة للنقر فقط.
+- توحيد icon size/stroke، ومنع خلط SVG يدوي وLucide دون سبب.
+- بناء density setting (مريح/مضغوط) للجداول والقوائم، لأن مستخدم الأرشيف يحتاج كثافة مختلفة عن الهاتف.
+
+## خطة تنفيذ مقترحة
+
+### المرحلة 0 — استعادة الصحة (1–2 يوم)
+
+- إصلاح P0، تنظيف dependency graph، وتمرير typecheck/build.
+- إضافة smoke test لكل route يتأكد من عدم وجود 500.
+
+### المرحلة 1 — الأساس المشترك (3–5 أيام)
+
+- تثبيت tokens وThemeProvider وAppShell/navigation/mobile bottom bar.
+- توحيد PageToolbar/WorkspacePanel/states/forms/focus.
+- Story/test route للمكوّنات المشتركة في light/dark وRTL.
+
+### المرحلة 2 — المسارات الأساسية (5–8 أيام)
+
+- `/`, `/archive`, `/archive/[id]`, `/uploads`, `/search`, `/files`.
+- اختبار desktop/tablet/mobile وkeyboard وempty/error/loading.
+
+### المرحلة 3 — الإدخال والوسائط (5–8 أيام)
+
+- inbox/ingest/jobs/transcriber/play/compare/review.
+- اختبار upload progress، الفشل الجزئي، الإلغاء، والاستئناف.
+
+### المرحلة 4 — التنظيم والتعاون (5–8 أيام)
+
+- collections/types/tags/vocabulary/duplicates/kanban/projects/shares/rights/automation.
+- الأولوية للأنواع والمشاريع لأنها تحمل أخطاء عقود حالية.
+
+### المرحلة 5 — المراقبة والنظام (4–6 أيام)
+
+- analytics/reports/status/sync/errors/backup/data-center/control/settings/users/help.
+
+### المرحلة 6 — QA شامل (3–5 أيام)
+
+- مصفوفة 48 route × 3 breakpoints × light/dark.
+- keyboard-only، قارئ شاشة لعينة المسارات الحرجة، contrast، zoom 200%، reduced motion.
+- Playwright visual baselines وaxe، واختبارات مهام حقيقية لا مجرد فتح الصفحة.
+
+## معايير القبول النهائية
+
+- 0 أخطاء typecheck/build و0 صفحات 500.
+- لا يوجد horizontal page scroll عند 375px؛ الاستثناء فقط لسطح بيانات داخل container معلّم بوضوح.
+- جميع الأهداف اللمسية الأساسية ≥44px.
+- كل صفحة لها loading/error/empty/success قابلة للاختبار.
+- كل مهمة أساسية قابلة للإنجاز بلوحة المفاتيح.
+- WCAG AA للنصوص والعناصر التفاعلية في light/dark.
+- LCP أقل من 2.5s على المسارات الأساسية في build production محلي، وCLS أقل من 0.1.
+- لا توجد صفحة تشغيلية خارج AppShell دون سبب موثق.
+- تطابق بصري ووظيفي واضح مع مرجع Functional Warm Command Workspace، مع اختلافات موثقة لا عشوائية.
+
+## ما يستحق الحفاظ عليه
+
+- الاختيار الصحيح لـArabic-first وRTL بدل تعريب واجهة LTR لاحقًا.
+- وجود `AppShell`, `PageToolbar`, `MetricStrip`, `EmptyState`, وUI primitives قابلة للتوحيد.
+- استخدام واسع نسبيًا لـARIA والحالات الدلالية.
+- وجود `prefers-reduced-motion` ومؤشرات `focus-visible` في الأساس.
+- تقسيم المجال إلى إدخال، مكتبة، تنظيم، مشاركة، مؤشرات، ونظام؛ المشكلة في كثافة العرض لا في نموذج المجال نفسه.
+
+---
+
+# إعادة الفحص الحي للنسخة العاملة — 2026-07-10
+
+## حالة التشغيل المؤكدة
+
+- `pnpm run typecheck:next`: ناجح.
+- `pnpm run build:next`: ناجح على Next.js 16.2.9.
+- الخادم يعمل على `http://127.0.0.1:3010`، و`/api/v1/health` يعيد 200.
+- تسجيل الدخول بحساب التكامل نجح، والجلسة بقيت بعد تحديث `/media/jobs`.
+- تم فحص HTTP مصادق لكل صفحات Next.js الـ48؛ جميعها أعادت 200، بما فيها المسارات الديناميكية والعامة.
+- نتائج P0 السابقة الخاصة بفشل البناء وغياب `ThemeProvider` وmapped type لم تعد قائمة في النسخة الحالية.
+
+## اللقطات الجديدة
+
+حُفظت لقطات desktop/tablet/mobile للصفحات المرجعية داخل `screenshots/reaudit-live/`، وتشمل:
+
+- `login-*`
+- `dashboard-*`
+- `archive-*`
+- `uploads-*`
+- `files-*`
+- `types-*`
+- `settings-*`
+- `media-jobs-*`
+- `errors-*`
+- حالات تفاعلية: قائمة الهاتف المفتوحة، عرض جدول الأرشيف، والثيم الفاتح.
+
+> ملاحظة: دمج full-page screenshots مع sidebar ثابت أنتج أحيانًا stitching مكررًا؛ لذلك أضيفت لقطات viewport موثوقة للصفحات الأساسية.
+
+## ما يعمل جيدًا في النسخة الحالية
+
+- صفحة الدخول قوية بصريًا، واضحة وRTL، مع labels فعلية وزر إظهار/إخفاء كلمة المرور يعمل.
+- الصفحة الرئيسية تستخدم بيانات API حقيقية: 25 سجلًا وfacets فعلية، بدل النموذج الوهمي القديم.
+- البحث في `/archive` يعمل ويكتب الفلاتر في URL؛ البحث عن «افتتاح» أعاد سجلًا واحدًا ومعاينة وتفاصيل سليمة.
+- تبديل عرض الأرشيف إلى «جدول» يعمل، والجدول محصور داخل `overflow-x:auto` فلا يسبب page-level overflow على 375px.
+- لوحة الأوامر تفتح بالنقر وتستخدم dialog/combobox دلاليين.
+- `/uploads` يملك wizard واضحًا (ملفات ← بيانات ← مراجعة)، وحالات disabled صحيحة قبل اختيار ملف.
+- `/settings` و`/errors` و`/media/jobs` و`/archive` تعرض محتوى حقيقيًا داخل shell الموحد.
+- RTL والخصائص المنطقية و`prefers-reduced-motion` مطبقة جيدًا عمومًا.
+
+## P0 — مشكلات مؤكدة يجب إصلاحها أولًا
+
+### 1. أدوات الحساب والإشعارات مخفية على سطح المكتب
+
+عند `min-width:1120px` يخفي `08-foundation.css:514-516` كامل `.topbar-actions`. هذا يخفي:
+
+- تسجيل الخروج وهوية المستخدم.
+- لوحة الإشعارات.
+- Focus Mode.
+- زر لوحة الأوامر في الرأس.
+- إجراء «إضافة مادة» في الرأس.
+
+القياس الحي على 1280px أكد `display:none` وrect يساوي صفرًا، رغم وجود خمسة عناصر تفاعلية في DOM. زر «التنبيهات» البديل في `WorkspaceCommandBar.tsx:72-76` لا يملك `onClick`.
+
+**الإصلاح:** نقل حساب المستخدم والإشعارات إلى أسفل sidebar أو إبقاء مجموعة أدوات صغيرة ثابتة ظاهرة في desktop، وربط زر التنبيهات الفعلي.
+
+### 2. اختصار لوحة الأوامر المعلن لا يعمل
+
+النقر يفتح لوحة الأوامر، لكن اختبار `Ctrl+K` الفعلي لم يفتحها. القيمة الافتراضية في `lib/keyboard-shortcuts.ts:20-22` تطلب `ctrlKey=true` و`metaKey=true` معًا، والمطابقة حرفية في `74-80`.
+
+**الإصلاح:** تمثيل الاختصار كـControlOrMeta أو مطابقة Ctrl على Windows/Linux وMeta على macOS. إعادة ربط listener بعد تغيير الاختصار في `CommandPalette.tsx:24-47`.
+
+### 3. `/types` صفحة غير مكتملة بصريًا ووظيفيًا
+
+الفحص الحي أظهر عنوانًا وزر «نوع جديد» ونص فراغ فقط، ثم محررًا بدائيًا عند الضغط. السبب أن الصفحة ومكوناتها تستخدم Tailwind utilities بينما Tailwind غير موجود:
+
+- `app/types/page.tsx:95-141`
+- `app/types/_components/TypesList.tsx:20-58`
+- `app/types/_components/TypesEditor.tsx:98-234`
+
+كما أن عناصر القائمة `div` قابلة للنقر دون keyboard semantics، واسم النوع غير متسق بين `name` و`title`، والحفظ/الحذف يتجاوزان عميل API الموحد.
+
+**الإصلاح:** إعادة بناء الصفحة بمكونات `PageToolbar`, `WorkspacePanel`, `Button`, `Form`, `EmptyState` الحالية، وإكمال select/edit/delete وحالات busy/error.
+
+### 4. نص عربي مشوه في مهام الوسائط
+
+الفحص الحي لـ`/media/jobs` كشف mojibake ظاهرًا مثل `Ù...Ø...` في وصف الصفحة ونصوص الفحص، إلى جانب خلط كثيف لعبارات `job`, `queue`, `Access token`, و`Media Jobs`.
+
+**الإصلاح:** تصحيح encoding للنصوص المصدرية، ثم تعريب واجهة المستخدم مع إبقاء المصطلحات التقنية داخل تفاصيل/وضع متقدم فقط.
+
+### 5. Focus Mode قد يحبس مستخدم الهاتف
+
+`09-focus-contextual.css:5-8` يخفي الرأس بما فيه زر إلغاء وضع التركيز. طريق الخروج المتبقي يعتمد اختصارات لوحة مفاتيح في `use-focus-mode.ts:15-26`، غير متاحة للمس غالبًا.
+
+**الإصلاح:** زر عائم واضح «إنهاء التركيز» يبقى ظاهرًا دائمًا، وتمديد المحتوى إلى العرض الكامل عند إخفاء sidebar.
+
+## P1 — مشكلات عالية الأولوية
+
+### 1. تنقل الهاتف مزدحم والترويسة مضغوطة
+
+- القائمة المفتوحة تعرض نحو 40 رابطًا داخل مساحة تصل إلى 68vh وبعمودين.
+- الترويسة على 375px تضغط شعار/عنوان المنتج وتزيد ارتفاعها إلى نحو 260px قبل المحتوى.
+- لا يوجد bottom navigation للوجهات اليومية.
+
+**الإصلاح:** bottom nav من خمس وجهات، إخفاء اسم/وصف العلامة في الهاتف مع إبقاء الشعار، قائمة «المزيد» بمجموعات قابلة للطي وبحث.
+
+### 2. الثيم الفاتح غير مكتمل ومنخفض التباين
+
+اختبار `Neutral Light` غيّر الخلفية فعليًا إلى `rgb(250,251,252)`، لكن `data-theme` و`color-scheme` بقيا `dark`. الصورة أظهرت نصوص sidebar شديدة الخفوت.
+
+قياسات المصدر تؤكد تباينات ضعيفة على الخلفية الفاتحة: secondary نحو 1.85:1، accent نحو 2.33:1، success نحو 2.50:1. لا توجد selectors كاملة لـ`[data-theme=light]`.
+
+**الإصلاح:** إما إخفاء الوضع الفاتح مؤقتًا، أو تعريف light palette كاملة لكل surface/text/border/status وإدارة `color-scheme` وتطبيق tokens قبل hydration.
+
+### 3. أهداف اللمس والنصوص أصغر من المطلوب
+
+- control العام 40px، وبعض الأزرار 33–36px، ومشغل النصائح نحو 18px.
+- خط الأساس والحقول 14px؛ على iOS قد يسبب auto-zoom.
+
+**الإصلاح:** 44×44px للأهداف الأساسية، 16px للحقول على الهاتف، وعدم استخدام نص 12px إلا للمعلومات غير الحرجة.
+
+### 4. الجداول لا تتكيف دلاليًا مع الهاتف
+
+جدول الأرشيف آمن من page overflow، لكنه بعرض 704px داخل حاوية 336px ويعتمد التمرير الأفقي فقط. `DataTable` يفرض `min-width:44rem` ولا يضيف `aria-sort` أو وصفًا لحاوية التمرير.
+
+**الإصلاح:** cards/rows مختصرة للموبايل للصفحات التشغيلية، مع إبقاء الجدول كخيار، وجعل حاوية التمرير focusable ومعلّمة، وإضافة `aria-sort`.
+
+### 5. حالات فراغ كاذبة أثناء التحميل
+
+المسارات المتأثرة من تدقيق المصدر: `/duplicates`, `/inbox`, `/tags`, `/vocabulary`, أجزاء `/collections`, `/media/review`, `/notifications`, وقوالب/روابط الرفع.
+
+**الإصلاح:** state machine موحدة `loading | ready-empty | ready-data | error`؛ لا يظهر EmptyState إلا بعد نجاح الطلب.
+
+### 6. حدود بيانات صامتة
+
+- analytics من أول 500 سجل.
+- duplicates/tags/vocabulary/collections/kanban من أول 1000.
+- automation من أول 100.
+- كانبان يعرض 24 عنصرًا فقط في العمود دون «عرض المزيد».
+
+**الإصلاح:** aggregations/pagination من الخادم، أو إظهار نطاق البيانات بوضوح حتى يكتمل الدعم.
+
+### 7. ثغرات الوصول في overlays
+
+- NotificationsPanel وContextualTips يفتقدان `aria-expanded/controls` الصحيحة وإدارة Escape/outside-click/focus return.
+- لا يوجد Skip Link، و`AppShell` يضع header/nav داخل `<main>`.
+- UI kit لا يملك focus-visible موحدًا لكل primitives.
+
+**الإصلاح:** landmarks صحيحة (`header`, `nav`, `main`)، skip link، overlays عبر Radix primitives، وتوحيد focus ring.
+
+### 8. شريط عدم الاتصال يعتمد classes غير موجودة
+
+`OfflineStatusBanner.tsx` يستخدم Tailwind utilities، بينما المشروع لا يحتوي Tailwind. لذلك التنسيق المتوقع لا يطبق بصورة موثوقة.
+
+**الإصلاح:** نقل التنسيق إلى CSS module/ملف النظام الحالي، وتوحيد دلالة `role=alert`/`aria-live`.
+
+## P2 — تحسينات جودة واتساق
+
+- إزالة النصوص الإنجليزية الظاهرة: `Archive Workspace`, `Add Workspace`, `Metadata`, وعناوين Theme Settings.
+- توحيد confirmations؛ توجد عمليات حذف مباشرة، وبعض الصفحات تستخدم `window.confirm/alert/prompt`، بينما `clear-cache` في التحكم بالنظام ينفذ مباشرة.
+- منع submit المكرر وإضافة busy state إلى نماذج الوارد/المجموعات/القوالب/روابط الرفع.
+- إصلاح active navigation للمسارات المتداخلة: `/search` مع `/search/saved` و`/shares` مع `/shares/with-me`.
+- جعل `/reports` تقارير فعلية؛ الحالية خارطة جاهزية ثابتة أكثر من كونها لوحة تقارير.
+- تحسين الرفع: تحقق client-side من 600MB، حذف الملفات بهوية فريدة لا بالاسم، وإكمال URL import بدل المعاينة فقط.
+- تقليل ضوضاء المصادقة في صفحة الدخول: وضع التطوير يطلق 3 طلبات `/auth/me` و4 طلبات `/auth/refresh` بحالة 401 للزائر.
+
+## ترتيب التنفيذ المحدّث
+
+1. إظهار أدوات الحساب/الإشعارات وإصلاح `Ctrl+K` وFocus Mode.
+2. إعادة بناء `/types` وتصحيح encoding في `/media/jobs`.
+3. تثبيت navigation responsive + bottom bar + أهداف لمس 44px.
+4. إكمال light theme أو تعطيله مؤقتًا.
+5. توحيد async states والـdialogs والإجراءات الخطرة.
+6. إزالة حدود البيانات الصامتة وتحسين mobile tables.
+7. تدقيق accessibility كامل: keyboard, focus, overlays, skip link, contrast.
+8. تعريب المصطلحات المتبقية والتلميع البصري والأداء.
