@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EyeOff, RefreshCw, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
+import { RefreshCw, Sparkles } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord, type DiscoverSection } from "@/lib/archive-api";
-import { isRecommendationDismissed, setRecommendationFeedback } from "@/lib/recommendation-feedback";
+import SuggestionsPanel from "@/components/SuggestionsPanel";
+import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type DiscoverSection, type SuggestionFeedbackValue } from "@/lib/archive-api";
 
 type DiscoverState =
   | { status: "loading" }
@@ -33,18 +33,7 @@ function recordDate(record: ArchiveRecord) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("ar-SA");
 }
 
-function feedbackKey(record: ArchiveRecord) {
-  return String(record.id || record.uid || "");
-}
-
-function DiscoverCard({
-  record,
-  onFeedback
-}: Readonly<{
-  record: ArchiveRecord;
-  onFeedback: () => void;
-}>) {
-  const key = feedbackKey(record);
+function DiscoverCard({ record }: Readonly<{ record: ArchiveRecord }>) {
   const title = String(record.title || record.name || "بدون عنوان");
 
   return (
@@ -61,39 +50,6 @@ function DiscoverCard({
         <a className="button button-primary" href={`/archive/${encodeURIComponent(record.id || record.uid || "")}`}>
           فتح السجل
         </a>
-        <button
-          type="button"
-          className="button button-secondary"
-          onClick={() => {
-            setRecommendationFeedback(key, "useful");
-            onFeedback();
-          }}
-        >
-          <ThumbsUp aria-hidden="true" size={16} />
-          مفيد
-        </button>
-        <button
-          type="button"
-          className="button button-secondary"
-          onClick={() => {
-            setRecommendationFeedback(key, "not-useful");
-            onFeedback();
-          }}
-        >
-          <ThumbsDown aria-hidden="true" size={16} />
-          غير مفيد
-        </button>
-        <button
-          type="button"
-          className="button button-secondary"
-          onClick={() => {
-            setRecommendationFeedback(key, "dismissed");
-            onFeedback();
-          }}
-        >
-          <EyeOff aria-hidden="true" size={16} />
-          إخفاء
-        </button>
       </div>
     </article>
   );
@@ -102,13 +58,16 @@ function DiscoverCard({
 export default function DiscoverPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<DiscoverState>({ status: "loading" });
-  const [feedbackVersion, setFeedbackVersion] = useState(0);
+  const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
 
   const loadDiscover = useCallback(async () => {
     setState({ status: "loading" });
 
     try {
-      const response = await api.discover({ limit: 8 });
+      const [response, suggestionsResponse] = await Promise.all([
+        api.discover({ limit: 8 }),
+        api.suggestions({ context: "discover" })
+      ]);
 
       if (!response.ok) {
         setState({ status: "error", message: response.error || "تعذر تحميل مسارات الاكتشاف." });
@@ -116,6 +75,7 @@ export default function DiscoverPage() {
       }
 
       setState({ status: "ready", sections: response.sections });
+      setSuggestions(suggestionsResponse.ok ? suggestionsResponse.suggestions : []);
     } catch (error) {
       setState({ status: "error", message: error instanceof Error ? error.message : "تعذر تحميل مسارات الاكتشاف." });
     }
@@ -125,18 +85,15 @@ export default function DiscoverPage() {
     void loadDiscover();
   }, [loadDiscover]);
 
-  const visibleSections = useMemo(() => {
-    if (state.status !== "ready") {
-      return [];
-    }
-
-    return state.sections.map((section) => ({
-      ...section,
-      records: section.records.filter((record) => !isRecommendationDismissed(feedbackKey(record)))
-    }));
-  }, [feedbackVersion, state]);
+  const visibleSections = state.status === "ready" ? state.sections : [];
 
   const surfacedCount = visibleSections.reduce((total, section) => total + section.records.length, 0);
+
+  async function handleSuggestionFeedback(suggestion: ArchiveSuggestion, value: SuggestionFeedbackValue) {
+    const response = await api.submitSuggestionFeedback(suggestion.key, { value, context: "discover" });
+    if (!response.ok) throw new Error(response.error || "تعذر حفظ تقييم الاقتراح.");
+    if (value === "dismissed") setSuggestions((current) => current.filter((item) => item.key !== suggestion.key));
+  }
 
   return (
     <AppShell subtitle="الاكتشاف" navLabel="مسارات Masar">
@@ -175,6 +132,8 @@ export default function DiscoverPage() {
         </section>
       ) : null}
 
+      {state.status === "ready" ? <SuggestionsPanel suggestions={suggestions} title="تحسينات مقترحة للأرشيف" onFeedback={handleSuggestionFeedback} /> : null}
+
       {state.status === "ready" && surfacedCount === 0 ? (
         <section className="page-section">
           <EmptyState
@@ -201,11 +160,7 @@ export default function DiscoverPage() {
           ) : (
             <div className="records-surface" data-view="grid">
               {section.records.map((record) => (
-                <DiscoverCard
-                  key={`${section.key}:${record.id || record.uid}`}
-                  record={record}
-                  onFeedback={() => setFeedbackVersion((value) => value + 1)}
-                />
+                <DiscoverCard key={`${section.key}:${record.id || record.uid}`} record={record} />
               ))}
             </div>
           )}

@@ -501,6 +501,49 @@
         }
       }
     },
+    "/reports/compliance": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Generate an admin-only operational compliance report from audit events",
+        "operationId": "getComplianceReport",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+          { "name": "event", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 120 } },
+          { "name": "resourceType", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 120 } },
+          { "name": "outcome", "in": "query", "required": false, "schema": { "type": "string", "enum": ["success", "rejected", "failed"] } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 500 } }
+        ],
+        "responses": {
+          "200": { "description": "Operational compliance evidence and summary", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ComplianceReportResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/reports/compliance/export": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Export filtered operational compliance evidence as CSV without audit payloads",
+        "operationId": "exportComplianceReport",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+          { "name": "event", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 120 } },
+          { "name": "resourceType", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 120 } },
+          { "name": "outcome", "in": "query", "required": false, "schema": { "type": "string", "enum": ["success", "rejected", "failed"] } }
+        ],
+        "responses": {
+          "200": { "description": "CSV attachment", "content": { "text/csv": { "schema": { "type": "string", "format": "binary" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/broadcast-metadata": {
       "get": {
         "tags": ["Broadcast Metadata"],
@@ -696,6 +739,45 @@
                 "schema": { "$ref": "#/components/schemas/DiscoverResponse" }
               }
             }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/suggestions": {
+      "get": {
+        "tags": ["Discover"],
+        "summary": "Return deterministic archive improvement suggestions",
+        "operationId": "listSuggestions",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "context", "in": "query", "required": true, "schema": { "$ref": "#/components/schemas/SuggestionContext" } },
+          { "name": "recordId", "in": "query", "schema": { "type": "string" }, "description": "Required when context is detail" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suggestions available to the current user",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuggestionsResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/suggestions/{key}/feedback": {
+      "put": {
+        "tags": ["Discover"],
+        "summary": "Persist current-user feedback for a suggestion",
+        "operationId": "submitSuggestionFeedback",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "key", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuggestionFeedbackRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Persisted suggestion feedback",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuggestionFeedbackResponse" } } }
           },
           "401": { "$ref": "#/components/responses/Error" }
         }
@@ -3278,6 +3360,45 @@
           }
         ]
       },
+      "ComplianceReportEntry": {
+        "type": "object",
+        "required": ["id", "event", "resourceType", "resourceId", "actorId", "outcome", "statusCode", "action", "createdAt"],
+        "properties": {
+          "id": { "type": ["integer", "string"] },
+          "event": { "type": "string" },
+          "resourceType": { "type": ["string", "null"] },
+          "resourceId": { "type": ["string", "null"] },
+          "actorId": { "type": ["string", "null"] },
+          "outcome": { "type": "string", "enum": ["success", "rejected", "failed"] },
+          "statusCode": { "type": "integer" },
+          "action": { "type": "string" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "ComplianceReportSummary": {
+        "type": "object",
+        "required": ["total", "outcomes", "events", "resourceTypes"],
+        "properties": {
+          "total": { "type": "integer" },
+          "outcomes": { "type": "object", "additionalProperties": { "type": "integer" } },
+          "events": { "type": "object", "additionalProperties": { "type": "integer" } },
+          "resourceTypes": { "type": "object", "additionalProperties": { "type": "integer" } }
+        }
+      },
+      "ComplianceReportResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["filters", "summary", "entries"],
+            "properties": {
+              "filters": { "type": "object", "additionalProperties": true },
+              "summary": { "$ref": "#/components/schemas/ComplianceReportSummary" },
+              "entries": { "type": "array", "items": { "$ref": "#/components/schemas/ComplianceReportEntry" } }
+            }
+          }
+        ]
+      },
       "SyncLogEntry": {
         "type": "object",
         "required": ["uid", "store", "status", "syncVersion", "lastModifiedBy", "updatedAt"],
@@ -3385,6 +3506,67 @@
                 "items": { "$ref": "#/components/schemas/DiscoverSection" }
               }
             }
+          }
+        ]
+      },
+      "SuggestionContext": {
+        "type": "string",
+        "enum": ["discover", "search", "detail"]
+      },
+      "SuggestionFeedbackValue": {
+        "type": "string",
+        "enum": ["useful", "not-useful", "dismissed"]
+      },
+      "ArchiveSuggestion": {
+        "type": "object",
+        "required": ["key", "title", "detail", "severity", "count", "actionHref"],
+        "properties": {
+          "key": { "type": "string" },
+          "title": { "type": "string" },
+          "detail": { "type": "string" },
+          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+          "count": { "type": "integer", "minimum": 1 },
+          "actionHref": { "type": "string" }
+        }
+      },
+      "SuggestionFeedback": {
+        "type": "object",
+        "required": ["key", "context", "value"],
+        "properties": {
+          "key": { "type": "string" },
+          "context": { "$ref": "#/components/schemas/SuggestionContext" },
+          "value": { "$ref": "#/components/schemas/SuggestionFeedbackValue" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "SuggestionFeedbackRequest": {
+        "type": "object",
+        "required": ["value"],
+        "properties": {
+          "value": { "$ref": "#/components/schemas/SuggestionFeedbackValue" },
+          "context": { "$ref": "#/components/schemas/SuggestionContext" }
+        }
+      },
+      "SuggestionsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["context", "suggestions"],
+            "properties": {
+              "context": { "$ref": "#/components/schemas/SuggestionContext" },
+              "suggestions": { "type": "array", "items": { "$ref": "#/components/schemas/ArchiveSuggestion" } }
+            }
+          }
+        ]
+      },
+      "SuggestionFeedbackResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["feedback"],
+            "properties": { "feedback": { "$ref": "#/components/schemas/SuggestionFeedback" } }
           }
         ]
       },

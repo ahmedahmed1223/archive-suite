@@ -7,7 +7,8 @@ import AppShell from "@/components/AppShell";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacetBucket, type SearchFacets } from "@/lib/archive-api";
+import SuggestionsPanel from "@/components/SuggestionsPanel";
+import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 
 type SearchState =
   | { status: "idle" }
@@ -91,6 +92,7 @@ function SearchPageContent() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [savedStatus, setSavedStatus] = useState("");
+  const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
 
   const updateParams = useCallback(
     (q: string, s: string, page: number, type: string, tag: string) => {
@@ -149,6 +151,8 @@ function SearchPageContent() {
         cursor: response.nextCursor ?? null,
         facets: response.facets
       });
+      const suggestionsResponse = await api.suggestions({ context: "search" });
+      setSuggestions(suggestionsResponse.ok ? suggestionsResponse.suggestions : []);
       updateParams(q, s, page, type, tag);
     },
     [api, tagFilter, typeFilter, updateParams]
@@ -247,6 +251,12 @@ function SearchPageContent() {
       return;
     }
     await refreshSavedSearches();
+  };
+
+  const handleSuggestionFeedback = async (suggestion: ArchiveSuggestion, value: SuggestionFeedbackValue) => {
+    const response = await api.submitSuggestionFeedback(suggestion.key, { value, context: "search" });
+    if (!response.ok) throw new Error(response.error || "تعذر حفظ تقييم الاقتراح.");
+    if (value === "dismissed") setSuggestions((current) => current.filter((item) => item.key !== suggestion.key));
   };
 
   const resetSearch = () => {
@@ -422,6 +432,8 @@ function SearchPageContent() {
             </div>
 
             {visibleRecords.map(renderRecord)}
+
+            <SuggestionsPanel suggestions={suggestions} title="تحسينات مقترحة للبحث والأرشيف" onFeedback={handleSuggestionFeedback} />
 
             {totalPages > 1 ? (
               <div className="pagination">

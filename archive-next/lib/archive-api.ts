@@ -85,6 +85,25 @@ export interface DiscoverSection {
   records: ArchiveRecord[];
 }
 
+export type SuggestionContext = "discover" | "search" | "detail";
+export type SuggestionFeedbackValue = "useful" | "not-useful" | "dismissed";
+
+export interface ArchiveSuggestion {
+  key: string;
+  title: string;
+  detail: string;
+  severity: "high" | "medium" | "low" | string;
+  count: number;
+  actionHref: string;
+}
+
+export interface ArchiveSuggestionFeedback {
+  key: string;
+  context: SuggestionContext;
+  value: SuggestionFeedbackValue;
+  updatedAt?: string | null;
+}
+
 export type RelationTypeKey =
   | "is_part_of"
   | "contains"
@@ -415,6 +434,34 @@ export interface ActivityFilters {
   resourceId?: string;
   outcome?: "success" | "rejected" | "failed" | "";
   limit?: number;
+}
+
+export interface ComplianceReportFilters {
+  from?: string;
+  to?: string;
+  event?: string;
+  resourceType?: string;
+  outcome?: "success" | "rejected" | "failed" | "";
+  limit?: number;
+}
+
+export interface ComplianceReportEntry {
+  id: number | string;
+  event: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  actorId: string | null;
+  outcome: "success" | "rejected" | "failed";
+  statusCode: number;
+  action: string;
+  createdAt: string | null;
+}
+
+export interface ComplianceReportSummary {
+  total: number;
+  outcomes: Record<"success" | "rejected" | "failed", number>;
+  events: Record<string, number>;
+  resourceTypes: Record<string, number>;
 }
 
 export interface SyncLogEntry {
@@ -843,6 +890,8 @@ export interface ArchiveApiClient {
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[]; facets?: SearchFacets; nextCursor?: string | null }>>;
   discover(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sections: DiscoverSection[] }>>;
+  suggestions(params: { context: SuggestionContext; recordId?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ context: SuggestionContext; suggestions: ArchiveSuggestion[] }>>;
+  submitSuggestionFeedback(key: string, payload: { value: SuggestionFeedbackValue; context?: SuggestionContext }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ feedback: ArchiveSuggestionFeedback }>>;
   relationGraph(params?: { recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RelationGraphPayload>>;
   createRelation(payload: CreateRelationPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relation: RecordRelation }>>;
   updateRelation(id: string, payload: UpdateRelationPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relation: RecordRelation }>>;
@@ -855,6 +904,8 @@ export interface ArchiveApiClient {
   createRecordComment(recordId: string, payload: CreateRecordCommentPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: RecordComment }>>;
   deleteRecordComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   activity(params?: ActivityFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; filters: ActivityFilters }>>;
+  complianceReport(params?: ComplianceReportFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: ComplianceReportEntry[]; filters: ComplianceReportFilters; summary: ComplianceReportSummary }>>;
+  downloadComplianceReport(params?: ComplianceReportFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ blob: Blob; filename: string }>>;
   recordHistory(recordId: string, params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[] }>>;
   sync(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
@@ -1127,6 +1178,13 @@ export function createArchiveApiClient({
       const query = queryParams.toString();
       return get<{ sections: DiscoverSection[] }>(`/discover${query ? `?${query}` : ""}`, options);
     },
+    suggestions: (params: { context: SuggestionContext; recordId?: string }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams({ context: params.context });
+      if (params.recordId) queryParams.set("recordId", params.recordId);
+      return get<{ context: SuggestionContext; suggestions: ArchiveSuggestion[] }>(`/suggestions?${queryParams.toString()}`, options);
+    },
+    submitSuggestionFeedback: (key: string, payload: { value: SuggestionFeedbackValue; context?: SuggestionContext }, options?: AuthRequestOptions) =>
+      put<{ feedback: ArchiveSuggestionFeedback }>(`/suggestions/${encodeURIComponent(key)}/feedback`, payload, options),
     relationGraph: (params?: { recordId?: string; limit?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.recordId) queryParams.set("recordId", params.recordId);
@@ -1163,6 +1221,43 @@ export function createArchiveApiClient({
       if (params?.limit) queryParams.set("limit", String(params.limit));
       const query = queryParams.toString();
       return get<{ entries: RecordHistoryEntry[]; filters: ActivityFilters }>(`/activity${query ? `?${query}` : ""}`, options);
+    },
+    complianceReport: (params?: ComplianceReportFilters, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.from) queryParams.set("from", params.from);
+      if (params?.to) queryParams.set("to", params.to);
+      if (params?.event) queryParams.set("event", params.event);
+      if (params?.resourceType) queryParams.set("resourceType", params.resourceType);
+      if (params?.outcome) queryParams.set("outcome", params.outcome);
+      if (params?.limit) queryParams.set("limit", String(clampApiLimit(params.limit, 100, 500)));
+      const query = queryParams.toString();
+      return get<{ entries: ComplianceReportEntry[]; filters: ComplianceReportFilters; summary: ComplianceReportSummary }>(`/reports/compliance${query ? `?${query}` : ""}`, options);
+    },
+    downloadComplianceReport: async (params?: ComplianceReportFilters, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.from) queryParams.set("from", params.from);
+      if (params?.to) queryParams.set("to", params.to);
+      if (params?.event) queryParams.set("event", params.event);
+      if (params?.resourceType) queryParams.set("resourceType", params.resourceType);
+      if (params?.outcome) queryParams.set("outcome", params.outcome);
+      const query = queryParams.toString();
+      const headers = new Headers({ Accept: "text/csv" });
+      if (options?.accessToken) headers.set("Authorization", `Bearer ${options.accessToken}`);
+
+      try {
+        const response = await fetchImpl(`${baseUrl}/reports/compliance/export${query ? `?${query}` : ""}`, {
+          headers,
+          credentials: "include"
+        });
+        if (!response.ok) {
+          return { ok: false, error: `تعذر تصدير التقرير (رمز ${response.status}).` };
+        }
+        const contentDisposition = response.headers.get("content-disposition") || "";
+        const filename = contentDisposition.match(/filename=([^;]+)/i)?.[1]?.replace(/^"|"$/g, "") || "archive-compliance-report.csv";
+        return { ok: true, blob: await response.blob(), filename };
+      } catch {
+        return { ok: false, error: "تعذر الاتصال بالخادم لتصدير التقرير." };
+      }
     },
     recordHistory: (recordId: string, params?: { limit?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
