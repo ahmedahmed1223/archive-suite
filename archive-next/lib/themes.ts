@@ -81,6 +81,8 @@ export const THEME_PRESETS: ThemePreset[] = [
   }
 ];
 
+const PRESET_TOKEN_KEYS = [...new Set(THEME_PRESETS.flatMap((preset) => Object.keys(preset.tokens)))];
+
 // localStorage key for appearance settings
 const STORAGE_KEY = "masar.appearance";
 
@@ -146,15 +148,29 @@ export function updateAppearanceSettings(updates: Partial<AppearanceSettings>): 
 export function applyThemeTokens(tokens: ThemeTokens): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
+
+  // A scheduled mode can temporarily use a different base palette. Clear the
+  // preset's prior inline overrides first so CSS data-theme tokens can take
+  // effect instead of being shadowed by a previous preset.
+  PRESET_TOKEN_KEYS.forEach((key) => root.style.removeProperty(`--${key}`));
   Object.entries(tokens).forEach(([key, value]) => {
     root.style.setProperty(`--${key}`, value);
   });
 }
 
-export function getCurrentThemeTokens(): ThemeTokens {
-  const settings = getStorage();
+export function getPreferredThemeMode(settings = getStorage()): ThemeMode {
+  const activeRule = settings.schedulingEnabled
+    ? settings.scheduledRules.find((rule) => rule.enabled && isWithinScheduleWindow(rule))
+    : undefined;
+  if (activeRule) return activeRule.mode;
+
+  return settings.currentPreset === "neutral-light" ? "light" : "dark";
+}
+
+export function getCurrentThemeTokens(settings = getStorage(), mode = getPreferredThemeMode(settings)): ThemeTokens {
   const preset = THEME_PRESETS.find((p) => p.id === settings.currentPreset);
-  const presetTokens = preset?.tokens || {};
+  const presetMode: ThemeMode = settings.currentPreset === "neutral-light" ? "light" : "dark";
+  const presetTokens = presetMode === mode ? preset?.tokens || {} : {};
   return { ...presetTokens, ...settings.customTokens };
 }
 

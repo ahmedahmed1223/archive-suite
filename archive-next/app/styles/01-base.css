@@ -59,6 +59,26 @@ a:hover {
   background: color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
 }
 
+.skip-link {
+  position: fixed;
+  z-index: 200;
+  inset-block-start: var(--space-3);
+  inset-inline-start: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  color: var(--color-text-inverse);
+  background: var(--color-accent-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-180%);
+  transition: transform var(--duration-fast) var(--easing-default);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 3px solid var(--color-border-focus);
+  outline-offset: 3px;
+}
+
 .shell {
   min-height: 100vh;
   display: grid;

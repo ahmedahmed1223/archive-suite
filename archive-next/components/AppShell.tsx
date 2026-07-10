@@ -36,14 +36,17 @@ export default function AppShell({
   }, [isFocus]);
 
   return (
-    <main className="shell app-shell" data-focus-mode={isFocus ? "true" : "false"}>
+    <div className="shell app-shell" data-focus-mode={isFocus ? "true" : "false"}>
+      <a className="skip-link" href="#main-content">
+        الانتقال إلى المحتوى الرئيسي
+      </a>
       <AppHeader subtitle={subtitle} navLabel={navLabel} />
-      <section className={`content app-content ${contentClassName}`.trim()}>
+      <main id="main-content" tabIndex={-1} className={`content app-content ${contentClassName}`.trim()}>
         {tipsPage && <ContextualTips page={tipsPage} />}
         <WorkspaceCommandBar />
         <OnboardingPrompt />
         {children}
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }

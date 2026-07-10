@@ -508,3 +508,68 @@
     inset-block-start: 6rem;
   }
 }
+/* Connection feedback uses shared Metric UI tokens so it remains readable in
+   both theme modes without relying on a Tailwind utility build. */
+.offline-status-banner {
+  position: fixed;
+  z-index: 120;
+  inset-block-start: 0;
+  inset-inline: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-block-size: var(--control-height);
+  padding: var(--space-2) var(--space-4);
+  border-block-end: 1px solid currentColor;
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.offline-status-banner--offline {
+  background: var(--color-status-error);
+}
+
+.offline-status-banner--degraded {
+  background: var(--color-status-warning);
+}
+
+.offline-status-banner--pending {
+  background: var(--color-status-info);
+}
+
+.offline-status-banner__icon,
+.offline-status-banner__spacer {
+  flex: 0 0 var(--space-5);
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+}
+
+.offline-status-banner__icon svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.offline-status-banner__message {
+  flex: 1;
+  margin: 0;
+}
+
+.offline-status-banner__spinner {
+  animation: offline-status-spin 1s linear infinite;
+}
+
+@keyframes offline-status-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offline-status-banner__spinner {
+    animation: none;
+  }
+}

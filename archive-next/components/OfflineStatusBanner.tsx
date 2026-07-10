@@ -28,12 +28,7 @@ export default function OfflineStatusBanner({ className = "" }: Props) {
   const isDegraded = connectivity === "degraded";
   const hasPending = queuedMutations.length > 0;
 
-  // Determine banner style
-  const bannerClass = isOffline
-    ? "bg-red-900 text-red-50"
-    : isDegraded
-      ? "bg-amber-900 text-amber-50"
-      : "bg-blue-900 text-blue-50";
+  const tone = isOffline ? "offline" : isDegraded ? "degraded" : "pending";
 
   // Determine message
   let message = "";
@@ -49,24 +44,14 @@ export default function OfflineStatusBanner({ className = "" }: Props) {
 
   return (
     <div
-      className={`
-        fixed top-0 right-0 left-0 z-50
-        px-4 py-3
-        text-sm font-medium
-        ${bannerClass}
-        flex items-center justify-center gap-3
-        border-b
-        ${isOffline ? "border-red-800" : isDegraded ? "border-amber-800" : "border-blue-800"}
-        ${className}
-      `}
-      role="alert"
+      className={`offline-status-banner offline-status-banner--${tone} ${className}`.trim()}
+      role="status"
       aria-live="polite"
       aria-label={isOffline ? "تنبيه بعدم الاتصال" : isDegraded ? "تنبيه بضعف الاتصال" : "تنبيه بعمليات معلقة"}
     >
-      {/* Icon */}
-      <div className="flex-shrink-0">
+      <span className="offline-status-banner__icon" aria-hidden="true">
         {isOffline && (
-          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+          <svg fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M10.5 1.5H5.804a1.5 1.5 0 00-1.5 1.5v2.25H2.25a1.5 1.5 0 00-1.5 1.5v9.75a1.5 1.5 0 001.5 1.5h15.5a1.5 1.5 0 001.5-1.5v-9.75a1.5 1.5 0 00-1.5-1.5H17.3V3a1.5 1.5 0 00-1.5-1.5h-5.3V1.5z"
@@ -75,7 +60,7 @@ export default function OfflineStatusBanner({ className = "" }: Props) {
           </svg>
         )}
         {isDegraded && (
-          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+          <svg fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M8.485 2.495c.673-1.346 2.357-1.346 3.03 0l6.28 12.591c.675 1.345-.213 2.914-1.515 2.914H3.72c-1.302 0-2.19-1.569-1.514-2.914L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0V5.75A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
@@ -84,7 +69,7 @@ export default function OfflineStatusBanner({ className = "" }: Props) {
           </svg>
         )}
         {!isOffline && !isDegraded && hasPending && (
-          <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <svg className="offline-status-banner__spinner" fill="none" viewBox="0 0 24 24">
             <circle
               className="opacity-25"
               cx="12"
@@ -100,13 +85,11 @@ export default function OfflineStatusBanner({ className = "" }: Props) {
             />
           </svg>
         )}
-      </div>
+      </span>
 
-      {/* Message */}
-      <p className="flex-1 text-center">{message}</p>
+      <p className="offline-status-banner__message">{message}</p>
 
-      {/* Spacer for balance */}
-      <div className="flex-shrink-0 w-5" />
+      <span className="offline-status-banner__spacer" aria-hidden="true" />
     </div>
   );
 }

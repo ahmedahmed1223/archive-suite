@@ -1,4 +1,5 @@
-:root {
+:root,
+:root[data-theme="dark"] {
   color-scheme: dark;
 
   --font-family-display: var(--font-arabic, "Segoe UI"), "Segoe UI", Tahoma, sans-serif;
@@ -130,7 +131,7 @@
   --max-width-content: 72ch;
   --max-width-wide: 1120px;
   --max-width-page: 1440px;
-  --control-height: 2.5rem;
+  --control-height: 2.75rem;
 
   --sidebar-width: 64px;
   --topbar-height: 56px;
@@ -148,6 +149,82 @@
   --va-danger: var(--color-status-error);
   --va-success: var(--color-status-success);
   --va-shadow: var(--shadow-sm);
+}
+
+/* The light palette is complete rather than relying on a handful of preset
+   overrides. This keeps every shared surface, border and state legible when
+   the active mode changes, including pages that consume the Metric UI tokens. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --color-anthracite: #f8fafc;
+  --color-anthracite-light: #f1f5f9;
+  --color-anthracite-lighter: #e7edf5;
+  --color-anthracite-surface: #d9e2ec;
+  --color-anthracite-elevated: #c6d1de;
+
+  --color-silver: #172033;
+  --color-silver-dim: #4b5b70;
+  --color-silver-muted: #66758a;
+  --color-silver-faint: #93a1b2;
+
+  --color-amber: #9a5d0d;
+  --color-amber-light: #b86f12;
+  --color-amber-dim: #794605;
+  --color-amber-glow: rgb(154 93 13 / 14%);
+
+  --color-brand-primary: #9a5d0d;
+  --color-brand-primary-strong: #794605;
+  --color-brand-ink: #172033;
+  --color-brand-warm: #fff6e8;
+  --color-brand-sand: #fffaf2;
+  --color-brand-indigo: #3f5f92;
+  --color-brand-gold: #9a5d0d;
+  --color-shadow: #172033;
+
+  --color-bg-primary: #f8fafc;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f1f5f9;
+  --color-bg-inverse: #172033;
+  --color-surface-elevated: #ffffff;
+  --color-surface-subtle: #f1f5f9;
+  --color-surface-selected: rgb(154 93 13 / 12%);
+  --color-surface-primary: var(--color-bg-secondary);
+  --color-brand-soft: var(--color-surface-selected);
+
+  --color-text-primary: #172033;
+  --color-text-secondary: #43526a;
+  --color-text-tertiary: #64748b;
+  --color-text-muted: var(--color-text-tertiary);
+  --color-text-inverse: #ffffff;
+  --color-text-link: #794605;
+
+  --color-border-primary: #cbd5e1;
+  --color-border-secondary: #dbe4ee;
+  --color-border-strong: #94a3b8;
+  --color-border-focus: #79500d;
+
+  --color-accent-primary: #9a5d0d;
+  --color-accent-primary-hover: #794605;
+  --color-accent-primary-active: #633b05;
+  --color-accent-secondary: #3f5f92;
+  --color-accent-tertiary: #9a5d0d;
+  --color-accent-rose: #b43e4b;
+
+  --color-status-success: #1d7a46;
+  --color-status-warning: #9a5d0d;
+  --color-status-error: #b4233c;
+  --color-danger: var(--color-status-error);
+  --color-status-info: #2f609d;
+  --color-status-processing: #9a5d0d;
+  --color-surface-overlay: rgb(23 32 51 / 58%);
+
+  --shadow-sm: 0 1px 3px rgb(23 32 51 / 12%);
+  --shadow-xs: 0 1px 2px rgb(23 32 51 / 10%);
+  --shadow-md: 0 8px 24px rgb(23 32 51 / 14%);
+  --shadow-lg: 0 16px 48px rgb(23 32 51 / 18%);
+  --shadow-focus: 0 0 0 3px rgb(121 80 13 / 28%);
+  --shadow-glow: 0 0 20px rgb(154 93 13 / 14%);
 }
 
 @media (prefers-reduced-motion: reduce) {
