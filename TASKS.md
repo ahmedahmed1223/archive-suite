@@ -37,11 +37,7 @@
 
 ## P3 — توسعات تنافسية
 
-- [ ] **AI/Copilot** — صفحة `/copilot` أو سطح مساعد داخل البحث/التفاصيل مع provider gating آمن عند غياب المفاتيح.
-
 - [ ] **Auto-tagging + semantic search v2** — vision tagging، embeddings، named entities، visual duplicate detection، وfaceted semantic search.
-
-- [ ] **Suggestions engine** — اقتراحات تحسين على discover/search/detail مع feedback hooks.
 
 - [ ] **Public catalog gateway** — بوابة كتالوج عامة بضوابط نشر ومراجعة.
 
@@ -49,11 +45,7 @@
 
 - [ ] **Live broadcast simulation** — محاكاة بث حي/غرفة مراجعة تشغيلية.
 
-- [ ] **Compliance reports engine** — تقارير امتثال قابلة للتخصيص والتصدير.
-
 - [ ] **Geotagging** — خرائط/GPS وربط مكاني بالسجلات.
-
-- [ ] **Media derivatives tree** — شجرة اشتقاق الوسائط والتحويلات.
 
 - [ ] **M365/Google Workspace + SSO** — تكامل مستندات/مجلدات وهوية مؤسسية.
 
