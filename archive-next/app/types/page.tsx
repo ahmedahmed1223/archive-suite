@@ -1,145 +1,204 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { Button } from "@/components/ui/Button";
+import { createArchiveApiClient, type ArchiveType } from "@/lib/archive-api";
 import TypesList from "./_components/TypesList";
 import TypesEditor from "./_components/TypesEditor";
+import "./types.css";
 
 type TypesState =
-  | { status: "loading" }
-  | { status: "ready"; types: ArchiveRecord[]; selectedTypeId: string | null }
-  | { status: "error"; message: string };
+  | { status: "loading"; types: ArchiveType[] }
+  | { status: "ready"; types: ArchiveType[] }
+  | { status: "error"; types: ArchiveType[]; message: string };
 
 export default function TypesPage() {
-  const [state, setState] = useState<TypesState>({ status: "loading" });
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const api = createArchiveApiClient();
+  const api = useMemo(() => createArchiveApiClient(), []);
+  const [state, setState] = useState<TypesState>({ status: "loading", types: [] });
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
+  const [editorType, setEditorType] = useState<ArchiveType | null | undefined>(undefined);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingTypeId, setDeletingTypeId] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
+
+  const loadTypes = useCallback(async () => {
+    setState((current) => ({ status: "loading", types: current.types }));
+    const types: ArchiveType[] = [];
+    let cursor: string | undefined;
+
+    do {
+      const response = await api.types({ cursor, limit: 200 });
+      if (!response.ok) {
+        setState({ status: "error", types, message: response.error || "تعذر تحميل الأنواع." });
+        return;
+      }
+      types.push(...response.types);
+      cursor = response.nextCursor ?? undefined;
+    } while (cursor);
+
+    setState({ status: "ready", types });
+    setSelectedTypeId((current) => current && types.some((type) => type.id === current) ? current : types[0]?.id ?? null);
+  }, [api]);
 
   useEffect(() => {
-    async function loadTypes() {
-      try {
-        const response = await fetch("/api/v1/types");
-        if (response.ok) {
-          const data = await response.json() as { types?: ArchiveRecord[] };
-          setState({
-            status: "ready",
-            types: data.types || [],
-            selectedTypeId: null,
-          });
-        } else {
-          setState({
-            status: "error",
-            message: "Failed to load types",
-          });
-        }
-      } catch (error) {
-        setState({
-          status: "error",
-          message: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    }
+    void loadTypes();
+  }, [loadTypes]);
 
-    loadTypes();
-  }, []);
+  const selectedType = state.types.find((type) => type.id === selectedTypeId) ?? null;
+  const isEditorOpen = editorType !== undefined;
 
-  async function handleSaveType(typeData: ArchiveRecord) {
-    try {
-      const response = await fetch("/api/v1/types", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(typeData),
-      });
-      if (response.ok) {
-        const listResponse = await fetch("/api/v1/types");
-        if (listResponse.ok) {
-          const data = await listResponse.json() as { types?: ArchiveRecord[] };
-          setState({
-            status: "ready",
-            types: data.types || [],
-            selectedTypeId: typeData.id as string,
-          });
-        }
-        setIsEditorOpen(false);
-      }
-    } catch (error) {
-      console.error("Error saving type:", error);
-    }
+  function startCreate() {
+    setEditorError("");
+    setEditorType(null);
   }
 
-  async function handleDeleteType(typeId: string) {
-    if (!window.confirm("حذف هذا النوع؟")) return;
-
-    try {
-      const response = await fetch(`/api/v1/types/${typeId}`, { method: "DELETE" });
-      if (response.ok) {
-        const listResponse = await fetch("/api/v1/types");
-        if (listResponse.ok) {
-          const data = await listResponse.json() as { types?: ArchiveRecord[] };
-          setState({
-            status: "ready",
-            types: data.types || [],
-            selectedTypeId: null,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error deleting type:", error);
+  async function startEdit(type: ArchiveType) {
+    setEditorError("");
+    setActionMessage("");
+    const response = await api.type(type.id);
+    if (!response.ok) {
+      setActionMessage(response.error || "تعذر تحميل النوع للتحرير.");
+      return;
     }
+    setSelectedTypeId(response.type.id);
+    setEditorType(response.type);
+  }
+
+  function closeEditor() {
+    if (isSaving) return;
+    setEditorError("");
+    setEditorType(undefined);
+  }
+
+  async function handleSaveType(typeData: ArchiveType) {
+    setIsSaving(true);
+    setEditorError("");
+    setActionMessage("");
+    const response = await api.saveType(typeData);
+    setIsSaving(false);
+
+    if (!response.ok) {
+      setEditorError(response.error || "تعذر حفظ النوع. تحقق من البيانات ثم أعد المحاولة.");
+      return;
+    }
+
+    setState((current) => {
+      const index = current.types.findIndex((type) => type.id === response.type.id);
+      const types = index === -1
+        ? [...current.types, response.type]
+        : current.types.map((type) => type.id === response.type.id ? response.type : type);
+      return { status: "ready", types };
+    });
+    setSelectedTypeId(response.type.id);
+    setActionMessage(`تم حفظ النوع «${response.type.name}».`);
+    setEditorType(undefined);
+  }
+
+  async function handleDeleteType(type: ArchiveType) {
+    if (!window.confirm(`هل تريد حذف النوع «${type.name}»؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+
+    setDeletingTypeId(type.id);
+    setActionMessage("");
+    const response = await api.deleteType(type.id);
+    setDeletingTypeId(null);
+
+    if (!response.ok) {
+      setActionMessage(response.error || "تعذر حذف النوع. حاول مجددًا.");
+      return;
+    }
+
+    setState((current) => ({ status: "ready", types: current.types.filter((item) => item.id !== type.id) }));
+    setSelectedTypeId((current) => current === type.id ? null : current);
+    if (editorType?.id === type.id) setEditorType(undefined);
+    setActionMessage(`تم حذف النوع «${type.name}».`);
   }
 
   return (
-    <AppShell subtitle="الأنواع">
-      <div className="flex flex-col h-full">
-        <PageToolbar
-          title="الأنواع"
-          actions={
-            <button onClick={() => setIsEditorOpen(true)} className="button">
-              نوع جديد
-            </button>
-          }
-        />
+    <AppShell subtitle="الأنواع" contentClassName="types-content">
+      <PageToolbar
+        eyebrow={<span className="badge">تنظيم البيانات</span>}
+        title="الأنواع"
+        description="عرّف مخططات البيانات والحقول وصلاحيات كل دور قبل إدخال السجلات إلى الأرشيف."
+        meta={<span className="badge">{state.types.length} نوع</span>}
+        actions={<Button type="button" variant="primary" onClick={startCreate}>نوع جديد</Button>}
+      />
 
-        <div className="flex-1 overflow-y-auto p-6">
-          {state.status === "loading" && (
-            <div className="text-center py-12">جاري التحميل...</div>
-          )}
+      {actionMessage ? <p className="types-feedback" role="status">{actionMessage}</p> : null}
 
-          {state.status === "error" && (
-            <div className="bg-red-50 text-red-700 p-4 rounded">
-              {state.message}
-            </div>
-          )}
+      {state.status === "error" ? (
+        <section className="types-state" role="alert">
+          <strong>تعذر تحميل الأنواع</strong>
+          <p>{state.message}</p>
+          <Button type="button" variant="secondary" onClick={() => void loadTypes()}>إعادة المحاولة</Button>
+        </section>
+      ) : null}
 
-          {state.status === "ready" && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <TypesList
-                  types={state.types}
-                  selectedTypeId={state.selectedTypeId}
-                  onSelectType={(id) =>
-                    setState((prev) =>
-                      prev.status === "ready"
-                        ? { ...prev, selectedTypeId: id }
-                        : prev
-                    )
-                  }
-                  onDeleteType={handleDeleteType}
-                />
+      {state.status === "loading" && state.types.length === 0 ? (
+        <section className="types-state" aria-live="polite"><p>جارٍ تحميل الأنواع…</p></section>
+      ) : null}
+
+      {(state.status === "ready" || state.types.length > 0) ? (
+        <div className="schema-studio">
+          <section className="schema-sidebar" aria-labelledby="types-list-heading">
+            <div className="schema-sidebar__heading">
+              <div>
+                <p className="schema-editor__eyebrow">المخططات المتاحة</p>
+                <h2 id="types-list-heading">أنواع الأرشيف</h2>
               </div>
-
-              {isEditorOpen && (
-                <TypesEditor
-                  onSave={handleSaveType}
-                  onCancel={() => setIsEditorOpen(false)}
-                />
-              )}
+              {state.status === "loading" ? <span className="schema-loading">جارٍ التحديث…</span> : null}
             </div>
-          )}
+            <TypesList
+              types={state.types}
+              selectedTypeId={selectedTypeId}
+              deletingTypeId={deletingTypeId}
+              onSelectType={setSelectedTypeId}
+              onEditType={(type) => void startEdit(type)}
+              onDeleteType={(type) => void handleDeleteType(type)}
+              onCreateType={startCreate}
+            />
+          </section>
+
+          <section className="schema-preview" aria-labelledby="type-preview-heading">
+            {selectedType ? (
+              <>
+                <div className="schema-preview__heading">
+                  <div>
+                    <p className="schema-editor__eyebrow">معاينة المخطط</p>
+                    <h2 id="type-preview-heading">{selectedType.name}</h2>
+                    <code dir="ltr">{selectedType.id}</code>
+                  </div>
+                  <Button type="button" size="sm" onClick={() => void startEdit(selectedType)}>تحرير</Button>
+                </div>
+                <dl className="schema-preview__fields">
+                  {selectedType.fields.map((field) => (
+                    <div key={field.name}>
+                      <dt>{field.name}</dt>
+                      <dd>{FIELD_TYPES_LABELS[field.type]}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            ) : (
+              <EmptyState title="اختر نوعًا لمعاينة حقوله" description="أو أنشئ نوعًا جديدًا للبدء في تنظيم بيانات الأرشيف." actions={<Button type="button" variant="primary" onClick={startCreate}>نوع جديد</Button>} />
+            )}
+          </section>
+
+          {isEditorOpen ? <TypesEditor initialType={editorType ?? null} isSaving={isSaving} requestError={editorError} onSave={handleSaveType} onCancel={closeEditor} /> : <aside className="schema-editor schema-editor--placeholder"><p>اختر «نوع جديد» أو حرّر نوعًا موجودًا لتعديل المخطط.</p></aside>}
         </div>
-      </div>
+      ) : null}
     </AppShell>
   );
 }
+
+const FIELD_TYPES_LABELS: Record<ArchiveType["fields"][number]["type"], string> = {
+  text: "نص",
+  number: "رقم",
+  date: "تاريخ",
+  select: "اختيار واحد",
+  multi: "اختيارات متعددة",
+  boolean: "نعم / لا",
+};
