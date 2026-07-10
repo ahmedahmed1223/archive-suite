@@ -178,7 +178,13 @@ class RealMediaProcessor implements MediaProcessor
             );
 
             // Transcribe segment
-            $segmentArtifacts = $this->transcriber->transcribe($segmentPath, $job->record_id, [
+            // Each segment needs an isolated output directory. Whisper otherwise writes every
+            // transcript to the same fixed key and the later segment overwrites the earlier one.
+            $segmentRecordId = "{$job->record_id}/segments/{$index}";
+            if (!is_dir($segmentRecordId) && !mkdir($segmentRecordId, 0777, true) && !is_dir($segmentRecordId)) {
+                throw new \RuntimeException("Unable to create transcript output directory: {$segmentRecordId}");
+            }
+            $segmentArtifacts = $this->transcriber->transcribe($segmentPath, $segmentRecordId, [
                 'device' => $device,
                 'computeType' => $computeType,
                 'outputFormats' => $outputFormats,
@@ -196,7 +202,10 @@ class RealMediaProcessor implements MediaProcessor
                 preg_match('/transcript_(\w+)/', $artifact['kind'], $m);
                 if ($m) {
                     $format = $m[1];
-                    $allArtifacts['by_format'][$format][] = $artifact;
+                    $allArtifacts['by_format'][$format][] = [
+                        'artifact' => $artifact,
+                        'offsetSec' => (float) $segment['startSec'],
+                    ];
                 }
             }
         }
@@ -217,10 +226,9 @@ class RealMediaProcessor implements MediaProcessor
     }
 
     /**
-     * Merge per-segment transcript artifacts into unified documents with corrected timestamps.
-     * ponytail: simple concatenation for now; timestamp adjustment deferred per format.
+     * Merge per-segment transcript artifacts into unified documents with timeline timestamps.
      *
-     * @param  array<string, array<int, array{kind: string, key: string, url: null}>>  $byFormat
+     * @param  array<string, array<int, array{artifact: array{kind: string, key: string, url: null}, offsetSec: float}>>  $byFormat
      * @param  array<int, string>  $outputFormats
      * @return array<int, array{kind: string, key: string, url: null}>
      */
@@ -234,15 +242,42 @@ class RealMediaProcessor implements MediaProcessor
             }
 
             $key = "{$recordId}/transcript.{$format}";
-            $content = '';
+            $chunks = [];
+            $srtCueIndex = 0;
 
-            foreach ($byFormat[$format] as $artifact) {
+            foreach ($byFormat[$format] as $segmentArtifact) {
+                $artifact = $segmentArtifact['artifact'];
                 if (is_file($artifact['key'])) {
-                    $content .= file_get_contents($artifact['key']) . "\n\n";
+                    $content = file_get_contents($artifact['key']);
+                    if ($content === false) {
+                        continue;
+                    }
+
+                    $content = $this->shiftTranscriptTimestamps(
+                        $content,
+                        $format,
+                        $segmentArtifact['offsetSec']
+                    );
+
+                    if ($format === 'srt') {
+                        $content = $this->renumberSrtCueIdentifiers($content, $srtCueIndex);
+                    }
+
+                    if ($format === 'vtt') {
+                        $content = $this->withoutVttHeader($content);
+                    }
+
+                    $chunks[] = trim($content);
                 }
             }
 
-            if ($content !== '') {
+            $content = match ($format) {
+                'vtt' => "WEBVTT\n\n" . implode("\n\n", array_filter($chunks)),
+                'ttml' => $this->mergeTtmlChunks($chunks),
+                default => implode("\n\n", array_filter($chunks)),
+            };
+
+            if (trim($content) !== '') {
                 file_put_contents($key, trim($content));
                 $merged[] = [
                     'kind' => "transcript_{$format}",
@@ -253,6 +288,89 @@ class RealMediaProcessor implements MediaProcessor
         }
 
         return $merged;
+    }
+
+    private function shiftTranscriptTimestamps(string $content, string $format, float $offsetSec): string
+    {
+        if ($offsetSec === 0.0) {
+            return $content;
+        }
+
+        if ($format === 'ttml') {
+            return preg_replace_callback(
+                '/\\b(begin|end)=(["\'])([^"\']+)\\2/',
+                fn (array $match): string => "{$match[1]}={$match[2]}" . $this->shiftTimestamp($match[3], $offsetSec) . $match[2],
+                $content
+            ) ?? $content;
+        }
+
+        return preg_replace_callback(
+            '/(?:(?:\\d{2,}):)?\\d{2}:\\d{2}[,.]\\d{3}\\s*-->\\s*(?:(?:\\d{2,}):)?\\d{2}:\\d{2}[,.]\\d{3}/',
+            function (array $match) use ($offsetSec): string {
+                [$start, $end] = preg_split('/\\s*-->\\s*/', $match[0]) ?: [];
+
+                return $this->shiftTimestamp($start, $offsetSec)
+                    . ' --> '
+                    . $this->shiftTimestamp($end, $offsetSec);
+            },
+            $content
+        ) ?? $content;
+    }
+
+    private function shiftTimestamp(string $timestamp, float $offsetSec): string
+    {
+        if (!preg_match('/^(?:(\\d{2,}):)?(\\d{2}):(\\d{2})([,.])(\\d{3})$/', trim($timestamp), $match)) {
+            return $timestamp;
+        }
+
+        $hours = isset($match[1]) && $match[1] !== '' ? (int) $match[1] : 0;
+        $milliseconds = (int) round((($hours * 3600) + ((int) $match[2] * 60) + (int) $match[3] + $offsetSec) * 1000)
+            + (int) $match[5];
+        $hours = intdiv($milliseconds, 3_600_000);
+        $milliseconds %= 3_600_000;
+        $minutes = intdiv($milliseconds, 60_000);
+        $milliseconds %= 60_000;
+        $seconds = intdiv($milliseconds, 1000);
+        $milliseconds %= 1000;
+
+        return sprintf('%02d:%02d:%02d%s%03d', $hours, $minutes, $seconds, $match[4], $milliseconds);
+    }
+
+    private function renumberSrtCueIdentifiers(string $content, int &$nextCueIndex): string
+    {
+        return preg_replace_callback(
+            '/^\\d+\\R(?=\\d{2}:\\d{2}:\\d{2},\\d{3}\\s*-->)/m',
+            fn (): string => (++$nextCueIndex) . "\n",
+            $content
+        ) ?? $content;
+    }
+
+    private function withoutVttHeader(string $content): string
+    {
+        return preg_replace('/^(?:\\xEF\\xBB\\xBF)?WEBVTT[^\\r\\n]*(?:\\r?\\n){0,2}/', '', $content) ?? $content;
+    }
+
+    /**
+     * @param  array<int, string>  $chunks
+     */
+    private function mergeTtmlChunks(array $chunks): string
+    {
+        $paragraphs = [];
+
+        foreach ($chunks as $chunk) {
+            if (preg_match_all('/<p\\b[^>]*>.*?<\\/p>/is', $chunk, $matches)) {
+                array_push($paragraphs, ...$matches[0]);
+            }
+        }
+
+        if ($paragraphs === []) {
+            return '';
+        }
+
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+            . "<tt xmlns=\"http://www.w3.org/ns/ttml\">\n  <body>\n    <div>\n      "
+            . implode("\n      ", $paragraphs)
+            . "\n    </div>\n  </body>\n</tt>";
     }
 
     /**
