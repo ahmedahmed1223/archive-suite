@@ -167,6 +167,12 @@ function LoginPageContent() {
                       ? "سيتم تحويلك الآن إلى مساحة العمل."
                       : state.message}
                   </span>
+                  {state.status === "error" ? (
+                    <span className="button-row">
+                      <a className="button button-secondary button-sm" href="/status">افحص حالة الخادم</a>
+                      <a className="button button-secondary button-sm" href="/first-run">ارجع إلى رحلة الإعداد</a>
+                    </span>
+                  ) : null}
                 </div>
               )}
             </form>

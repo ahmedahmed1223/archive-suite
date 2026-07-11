@@ -79,6 +79,12 @@ export default function HelpPage() {
         )}
       />
 
+      <article className="state-banner state-banner-info" aria-label="مساعدة رحلة الإعداد">
+        <strong>ابدأ من الإجراء التالي، لا من قائمة عامة</strong>
+        <p>تعرض رحلة الإعداد نسبة الجاهزية والخطوة الحالية وروابط إصلاح الاتصال أو الدخول أو الإعدادات.</p>
+        <a className="button button-primary" href="/first-run">اعرض الإجراء التالي</a>
+      </article>
+
       <article className="panel" aria-label="قائمة البدء السريع">
         <div className="panel-section-header">
           <h2>قائمة البدء السريع</h2>

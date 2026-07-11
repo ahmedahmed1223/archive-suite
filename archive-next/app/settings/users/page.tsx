@@ -170,6 +170,11 @@ export default function UsersSettingsPage() {
         description="إدارة أعضاء الفريق وأدوارهم، ودعوة أعضاء جدد بالبريد الإلكتروني. مقتصر على المدراء."
         meta={<span className="badge">مدير فقط</span>}
       />
+      <div className="state-banner state-banner-info" role="status">
+        <strong>رحلة الإعداد: جهّز الفريق بعد التحقق من حساب المدير</strong>
+        <p>أضف المستخدمين والأدوار، ثم ارجع إلى الجاهزية لمراجعة الإجراء التالي.</p>
+        <a className="button button-secondary button-small" href="/first-run">عرض رحلة الإعداد</a>
+      </div>
 
       <article className="panel">
         <div className="toolbar-row">
