@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 
 REM Archive Suite - Windows Control Center launcher.
-REM Operates the canonical Laravel + Next.js stack (archive-server/docker-compose.yml).
+REM Operates the canonical Laravel + Next.js stack (infra/docker-compose.yml).
 REM Usage:
 REM   setup.bat                  (interactive menu)
 REM   setup.bat deploy           (provision .env + docker compose up -d --build)

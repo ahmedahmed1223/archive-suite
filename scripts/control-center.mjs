@@ -3,7 +3,7 @@
  * Masar — Control Center
  *
  * One English-first console to install, operate, configure, and maintain the
- * CANONICAL stack (Laravel API + Next.js, archive-server/docker-compose.yml)
+ * CANONICAL stack (Laravel API + Next.js, infra/docker-compose.yml)
  * on Windows (Setup-Archive.bat) and Linux/macOS (setup.sh). The old Node/Vite
  * deployment wizard stays reachable as the explicit "deploy-legacy" command.
  *
@@ -32,15 +32,17 @@ import { resolve, join } from "node:path";
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 const ROOT = resolve(__dirname, "..");
-const SERVER_DIR = join(ROOT, "archive-server");
-const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(SERVER_DIR, ".env");
-const ENV_EXAMPLE = join(SERVER_DIR, ".env.example");
+const INFRA_DIR = join(ROOT, "infra");
+// Legacy Node/Vite stack home — only the explicit legacy:* commands touch it.
+const LEGACY_SERVER_DIR = join(ROOT, "archive-server");
+const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(INFRA_DIR, ".env");
+const ENV_EXAMPLE = join(INFRA_DIR, ".env.example");
 // Canonical stack: Laravel API + Next.js (postgres/redis/laravel/worker/reverb/next/caddy).
 // ponytail: no automatic override layering — for the HTTP-only dev variant run
 // `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` by hand.
-const COMPOSE_FILE = join(SERVER_DIR, "docker-compose.yml");
-const BACKUP_DIR = join(SERVER_DIR, "backups");
-const SET_DB_PROVIDER = join(SERVER_DIR, "scripts", "set-db-provider.mjs");
+const COMPOSE_FILE = join(INFRA_DIR, "docker-compose.yml");
+const BACKUP_DIR = join(INFRA_DIR, "backups");
+const SET_DB_PROVIDER = join(LEGACY_SERVER_DIR, "scripts", "set-db-provider.mjs");
 
 // ─── Colours / logging ──────────────────────────────────────────────────────
 const C = { g: "\x1b[32m", y: "\x1b[33m", r: "\x1b[31m", c: "\x1b[36m", b: "\x1b[1m", d: "\x1b[2m", x: "\x1b[0m" };
@@ -159,7 +161,7 @@ function compose(actionArgs, { inherit = true, input } = {}) {
   const dc = dockerComposeCmd();
   if (!dc) { err("Docker (with Compose) was not found. Install Docker first."); return { status: 127 }; }
   const args = [...dc.pre, "-f", COMPOSE_FILE, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...actionArgs];
-  return spawnSync(dc.bin, args, { cwd: SERVER_DIR, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input });
+  return spawnSync(dc.bin, args, { cwd: INFRA_DIR, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input });
 }
 // The laravel service publishes no host port; Next (:3000) rewrites /api/v1/*
 // to it (archive-next/next.config.mjs), so probe Laravel's health through Next.
@@ -376,7 +378,7 @@ async function dbProvider() {
   if (!existsSync(SET_DB_PROVIDER)) return err("set-db-provider.mjs not found.");
   const p = await ask("Provider: postgres or pocketbase", "postgres");
   if (!["postgres", "pocketbase"].includes(p)) return err("Unknown provider.");
-  runNode(SET_DB_PROVIDER, [p], SERVER_DIR);
+  runNode(SET_DB_PROVIDER, [p], LEGACY_SERVER_DIR);
   warn("Restart the stack to use the new provider.");
 }
 
@@ -766,7 +768,7 @@ const COMMANDS = {
     console.log(`  ${C.c}first-run${C.x}        Show the quick/advanced first-run guide`);
     console.log(`  ${C.c}doctor${C.x}           Check Node/pnpm/Docker/.env before deploying`);
     console.log(`  ${C.c}deploy${C.x}           Provision .env secrets + docker compose up -d --build`);
-    console.log(`  ${C.c}start | stop | restart${C.x}  Manage the Docker stack (archive-server/docker-compose.yml)`);
+    console.log(`  ${C.c}start | stop | restart${C.x}  Manage the Docker stack (infra/docker-compose.yml)`);
     console.log(`  ${C.c}status | health | logs${C.x}  Monitor the running stack (health: /api/v1/health via Next)`);
     console.log(`  ${C.c}config${C.x}           View .env (secrets masked)`);
     console.log(`  ${C.c}set-url${C.x}          Set APP_BASE_URL + PUBLIC_DOMAIN + DOMAIN`);
@@ -786,7 +788,7 @@ const COMMANDS = {
     console.log(`  ${C.c}legacy:set-admin | legacy:migrate-status | legacy:migrate | legacy:db-provider${C.x}`);
     console.log(`\n${C.b}  Tips:${C.x}`);
     console.log(`  ${C.d}- In the interactive menu, option 1 is the single quick-start path; q and 0 both exit.${C.x}`);
-    console.log(`  ${C.d}- HTTP-only dev variant: docker compose -f docker-compose.yml -f docker-compose.dev.yml up (from archive-server/).${C.x}`);
+    console.log(`  ${C.d}- HTTP-only dev variant: docker compose -f docker-compose.yml -f docker-compose.dev.yml up (from infra/).${C.x}`);
     console.log(`  ${C.d}- "Stack not running" → run 'setup start' or 'setup doctor' to diagnose.${C.x}`);
     console.log(`  ${C.d}- "No .env found"     → run 'setup deploy' to provision a fresh configuration.${C.x}`);
     console.log(`\n${C.b}  Interactive menu (run 'setup' without arguments):${C.x}`);

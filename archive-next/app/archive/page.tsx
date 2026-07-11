@@ -14,7 +14,7 @@ import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type Sear
 import { toastError, toastSuccess } from "@/lib/toast";
 import styles from "./archive.module.css";
 
-// Workflow states mirrored from archive-app/src/features/archive/itemStatus.ts —
+// Workflow states mirrored from the legacy SPA's itemStatus state machine —
 // the server-authoritative state machine. The Laravel search/records endpoints
 // do not expose a status column or query param (verified against
 // SearchController/RecordsController), so this is a client-side facet only:

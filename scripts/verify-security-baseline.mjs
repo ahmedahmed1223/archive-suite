@@ -27,7 +27,7 @@ for (const file of activeConfigFiles) {
   assert.doesNotMatch(text, /APP_REPO|APP_REF|archive-app\.git|package-lock\.json|npm ci/, `${file} contains stale split-repo/npm deployment wiring`);
 }
 
-const envExample = readFileSync(path.join(ROOT, "archive-server/.env.example"), "utf8");
+const envExample = readFileSync(path.join(ROOT, "infra/.env.example"), "utf8");
 assert.match(envExample, /^ARCHIVE_PUBLIC_DEPLOY=1$/m, ".env.example should document public deploy guard");
 assert.match(envExample, /^JWT_SECRET=$/m, ".env.example should require operator-supplied JWT_SECRET");
 assert.match(envExample, /^ADMIN_PASSWORD=CHANGE_ME_STRONG_PASSWORD$/m, ".env.example should require a strong first admin password");

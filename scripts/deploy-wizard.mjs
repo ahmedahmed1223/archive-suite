@@ -11,7 +11,7 @@
  *   3. Configure the admin account
  *   4. Generate strong secrets (or reuse an existing .env)
  *   5. Optional integrations (SMTP, AI, file storage, backups, heavy services)
- *   6. Write archive-server/.env idempotently (backs up any existing file)
+ *   6. Write infra/.env idempotently (backs up any existing file)
  *   7. Readiness gate (pnpm security:baseline)
  *   8. Bring up the stack (full or --lite) via docker compose
  *   9. Wait for health (migrations + admin seed happen automatically)
@@ -38,13 +38,13 @@ import { isSupportedNodeVersion } from "./node-version.mjs";
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 const ROOT = resolve(__dirname, "..");
-const SERVER_DIR = join(ROOT, "archive-server");
+const INFRA_DIR = join(ROOT, "infra");
 // ARCHIVE_ENV_PATH lets CI / tests target a throwaway file instead of the real .env.
-const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(SERVER_DIR, ".env");
-const EXAMPLE_PATH = join(SERVER_DIR, ".env.example");
-const COMPOSE_BASE = join(SERVER_DIR, "docker-compose.postgres.yml");
-const COMPOSE_INTRANET = join(SERVER_DIR, "docker-compose.intranet.yml");
-const COMPOSE_LITE = join(SERVER_DIR, "docker-compose.lite.yml");
+const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(INFRA_DIR, ".env");
+const EXAMPLE_PATH = join(INFRA_DIR, ".env.example");
+const COMPOSE_BASE = join(INFRA_DIR, "docker-compose.postgres.yml");
+const COMPOSE_INTRANET = join(INFRA_DIR, "docker-compose.intranet.yml");
+const COMPOSE_LITE = join(INFRA_DIR, "docker-compose.lite.yml");
 
 // ─── Colours / logging ──────────────────────────────────────────────────────
 const GREEN = "\x1b[32m";
@@ -380,7 +380,7 @@ function runCompose(files, args, { label } = {}) {
   log("");
   return new Promise((res, rej) => {
     const child = spawn("docker", ["compose", ...files, ...args], {
-      cwd: SERVER_DIR,
+      cwd: INFRA_DIR,
       stdio: "inherit",
     });
     child.on("close", (code) => (code === 0 ? res() : rej(new Error(t("composeExit", { code })))));
@@ -459,7 +459,7 @@ async function waitForHealth(access, files, timeoutMs = 240_000) {
         }
       } else {
         const out = execSync(`docker compose ${files.join(" ")} ps --format "{{.Service}} {{.Health}}"`, {
-          cwd: SERVER_DIR,
+          cwd: INFRA_DIR,
           encoding: "utf-8",
         });
         if (/server\s+healthy/.test(out)) {

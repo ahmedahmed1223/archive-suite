@@ -7,9 +7,9 @@ on:
       - ".github/workflows/docker.yml"
       - "archive-next/**"
       - "archive-laravel/**"
-      - "archive-server/docker-compose.yml"
-      - "archive-server/docker-compose.laravel-next.yml"
-      - "archive-server/deploy/Caddyfile"
+      - "infra/docker-compose.yml"
+      - "infra/docker-compose.laravel-next.yml"
+      - "infra/deploy/Caddyfile"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -44,10 +44,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Render default Compose config
-        run: docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml config
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml config
 
       - name: Build Next image from default Compose
-        run: docker compose --env-file archive-server/.env.example -f archive-server/docker-compose.yml build next
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml build next
 
   publish:
     name: Publish images to GHCR

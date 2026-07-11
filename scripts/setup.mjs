@@ -29,7 +29,7 @@ import { isSupportedNodeVersion } from "./node-version.mjs";
 
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 const ROOT = resolve(__dirname, "..");
-const SERVER_DIR = join(ROOT, "archive-server");
+const INFRA_DIR = join(ROOT, "infra");
 
 const GREEN  = "\x1b[32m";
 const YELLOW = "\x1b[33m";
@@ -132,8 +132,8 @@ async function chooseMode() {
 async function configureEnv(mode) {
   step(4, t("setupStep4"));
 
-  const envPath = join(SERVER_DIR, ".env");
-  const examplePath = join(SERVER_DIR, ".env.example");
+  const envPath = join(INFRA_DIR, ".env");
+  const examplePath = join(INFRA_DIR, ".env.example");
 
   // Read example as base
   let envContent = existsSync(examplePath) ? readFileSync(examplePath, "utf-8") : "";
@@ -198,13 +198,13 @@ async function startDocker(mode) {
   step(5, t("setupStep5"));
 
   // Find the right compose file
-  const deployDir = join(SERVER_DIR, "deploy");
+  const deployDir = join(INFRA_DIR, "deploy");
   const composeFile = mode === "postgres"
     ? join(deployDir, "docker-compose.postgres.yml")
     : join(deployDir, "docker-compose.yml");
 
   const useFallback = !existsSync(composeFile);
-  const finalFile = useFallback ? join(SERVER_DIR, "docker-compose.yml") : composeFile;
+  const finalFile = useFallback ? join(INFRA_DIR, "docker-compose.yml") : composeFile;
 
   if (!existsSync(finalFile)) {
     err(t("composeNotFound", { path: finalFile }));
@@ -216,7 +216,7 @@ async function startDocker(mode) {
 
   await new Promise((resolve, reject) => {
     const child = spawn("docker", ["compose", "-f", finalFile, "up", "-d", "--build"], {
-      cwd: SERVER_DIR, stdio: "inherit",
+      cwd: INFRA_DIR, stdio: "inherit",
     });
     child.on("close", code => code === 0 ? resolve() : reject(new Error(`Docker exited ${code}`)));
   });
@@ -285,7 +285,7 @@ async function main() {
     if (doStart) {
       await startDocker(mode);
       // Read port from .env (may have been updated by user)
-      const envPath = join(SERVER_DIR, ".env");
+      const envPath = join(INFRA_DIR, ".env");
       let resolvedPort = port || "8787";
       if (existsSync(envPath)) {
         const m = readFileSync(envPath, "utf-8").match(/^API_PORT=(\d+)/m);

@@ -2,7 +2,7 @@
 # This is the canonical deployment path after the cutover. Legacy PocketBase,
 # Node, and Vite SPA variants remain in their explicit compose files only.
 #
-# Usage from archive-server/:
+# Usage from infra/:
 #   cp .env.example .env
 #   # edit the CHANGE_ME secrets before production
 #   docker compose up -d --build
