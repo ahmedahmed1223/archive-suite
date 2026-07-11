@@ -37,8 +37,6 @@
 
 - [ ] **Auto-tagging + semantic search v2** — vision tagging، embeddings، named entities، visual duplicate detection، وfaceted semantic search.
 
-- [ ] **M365/Google Workspace + SSO** — تكامل مستندات/مجلدات وهوية مؤسسية.
-
 ## صيانة التوثيق
 
 - [ ] عند إغلاق أي بند أعلاه، انقل موجزه إلى `ChangeLog.md` واحذف تفاصيله من هنا أو غيّر حالته إلى بند أصغر متبقٍ.
