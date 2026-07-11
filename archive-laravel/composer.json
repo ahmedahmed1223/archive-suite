@@ -15,7 +15,6 @@
         "league/flysystem-ftp": "^3.31",
         "league/flysystem-google-cloud-storage": "^3.34",
         "league/flysystem-sftp-v3": "^3.33",
-        "sentry/sentry-laravel": "^4.26",
         "spatie/flysystem-dropbox": "^3.1"
     },
     "require-dev": {

@@ -33,8 +33,6 @@
 
 - [ ] **ODBC live smoke (محظور بجهاز Windows وDSN/driver وبيانات اختبار معتمدة)** — تحقق Windows ODBC فعلي، ومعاملات/دفعات متعددة الصفوف إذا احتاجها التشغيل.
 
-- [ ] **Sentry live validation (محظور بـDSN وبيئة staging معتمدة)** — تجربة DSN حي، release tagging، source maps، وPII settings في بيئة staging.
-
 ## P3 — توسعات تنافسية
 
 - [ ] **Auto-tagging + semantic search v2** — vision tagging، embeddings، named entities، visual duplicate detection، وfaceted semantic search.
