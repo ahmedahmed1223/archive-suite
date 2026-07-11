@@ -557,6 +557,7 @@
         "responses": {
           "200": { "description": "Plugin catalog and permission review model", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PluginCatalogResponse" } } } },
           "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
           "422": { "$ref": "#/components/responses/Error" }
         }
       }

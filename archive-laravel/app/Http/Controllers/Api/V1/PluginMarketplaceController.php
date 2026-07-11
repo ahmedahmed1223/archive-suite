@@ -17,6 +17,10 @@ class PluginMarketplaceController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        if ($forbidden = $this->requireAdmin($request)) {
+            return $forbidden;
+        }
+
         $validated = $request->validate([
             'status' => ['nullable', 'string', Rule::in(self::STATUSES)],
             'category' => ['nullable', 'string', Rule::in(self::CATEGORIES)],
