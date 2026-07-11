@@ -556,6 +556,7 @@ export default function FilesPage() {
       {selectedKeys.length > 0 ? (
         <div className="bulk-action-bar" role="status">
           <strong>{selectedKeys.length} ملف محدد</strong>
+          <span className="helper-text">قبل أي نقل أو إعادة تسمية من مصدر خارجي، راجع روابط السجلات والمشاركات؛ هذه الواجهة لا تغيّر المسارات دون عملية مدعومة من الخادم.</span>
           <div className="button-row">
             <button
               onClick={handleCreateShare}

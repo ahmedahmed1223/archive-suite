@@ -288,6 +288,12 @@
   align-items: start;
   justify-content: space-between;
   gap: var(--space-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.add-workspace__support-header::-webkit-details-marker {
+  display: none;
 }
 
 .add-workspace__support-header h2 {

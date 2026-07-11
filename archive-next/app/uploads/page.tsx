@@ -34,20 +34,20 @@ export default function UploadsPage() {
         <div className="add-workspace__primary">
           <UploadForm />
         </div>
-        <aside className="add-workspace__support" aria-label="أدوات الإضافة المساندة">
-          <header className="add-workspace__support-header">
+        <details className="add-workspace__support" aria-label="أدوات الإضافة المساندة">
+          <summary className="add-workspace__support-header">
             <div>
               <h2>أدوات مساندة</h2>
-              <p>استورد من رابط، أو طبّق قالباً، أو أنشئ رابط رفع لفريقك دون مغادرة المعالج.</p>
+              <p>افتح عند الحاجة لاستيراد رابط أو إدارة القوالب وروابط الفريق.</p>
             </div>
             <span className="badge"><Link2 aria-hidden="true" size={14} /> أدوات</span>
-          </header>
+          </summary>
           <div className="add-workspace__support-grid">
             <ImportFromUrlForm />
             <IntakeTemplatesPanel />
             <UploadLinksPanel />
           </div>
-        </aside>
+        </details>
       </section>
     </AppShell>
   );

@@ -194,6 +194,11 @@ export default function IngestPage() {
         </article>
       </section>
 
+      <div className="state-banner state-banner-info" role="note">
+        <strong>فحص ما قبل التنفيذ</strong>
+        <span className="helper-text">اختر المصدر، راجع المسار وبيانات الاتصال، ثم نفّذ. تعرض النتيجة عدد العناصر المدخلة والمتجاوزة كمعاينة تشغيلية؛ لا توجد محاكاة dry-run في الـAPI الحالي.</span>
+      </div>
+
       <section className="panel ingest-operation-panel" data-active={activeSource === "scan" ? "true" : "false"} aria-label="فحص مجلد الاستيراد">
         <div className="panel-title-row">
           <div>

@@ -177,6 +177,8 @@ export default function InboxPage() {
                   {(Object.keys(statusLabels) as InboxStatus[]).map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
                 </select>
                 <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(normalizeText(item.title))}`}>بحث مشابه</a>
+                {item.status === "ready" ? <a className="button button-primary button-sm" href="/uploads">بدء الأرشفة</a> : null}
+                {item.status === "done" ? <a className="button button-secondary button-sm" href="/archive">فتح الأرشيف</a> : null}
                 <button className="button button-danger button-sm" type="button" onClick={() => void removeItem(item.id)}>حذف</button>
               </div>
             </article>

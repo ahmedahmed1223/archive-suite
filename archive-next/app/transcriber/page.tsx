@@ -36,6 +36,8 @@ export default function TranscriberPage() {
   const [recentState, setRecentState] = useState<RecentState>({ status: "loading" });
   const [showRaw, setShowRaw] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [mediaQuery, setMediaQuery] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadRecent = useCallback(async () => {
@@ -130,6 +132,19 @@ export default function TranscriberPage() {
   const transcriptText = trackedJob ? extractTranscriptText(trackedJob) : "";
   const cues: Cue[] = useMemo(() => parseSubtitles(transcriptText), [transcriptText]);
   const plainText = cues.length > 0 ? cues.map((cue) => cue.text).join(" ") : transcriptText;
+  const selectableJobs = recentState.status === "loaded"
+    ? recentState.jobs.filter((job) => `${job.recordId} ${job.sourcePath}`.toLowerCase().includes(mediaQuery.trim().toLowerCase()))
+    : [];
+
+  function selectPreviousMedia(job: MediaJob) {
+    const form = formRef.current;
+    if (!form) return;
+    const recordInput = form.elements.namedItem("recordId") as HTMLInputElement | null;
+    const sourceInput = form.elements.namedItem("sourcePath") as HTMLInputElement | null;
+    if (recordInput) recordInput.value = job.recordId;
+    if (sourceInput) sourceInput.value = job.sourcePath || "";
+    recordInput?.focus();
+  }
 
   async function handleCopy() {
     const text = showRaw ? transcriptText : plainText;
@@ -158,7 +173,20 @@ export default function TranscriberPage() {
 
       <div className={`split-layout ${styles.console}`} aria-label="أدوات التفريغ الصوتي">
         <div className={styles.formPanel}>
-          <form className="panel auth-form" onSubmit={handleSubmit} aria-label="إنشاء مهمة تفريغ صوتي">
+          <form ref={formRef} className="panel auth-form" onSubmit={handleSubmit} aria-label="إنشاء مهمة تفريغ صوتي">
+            <label>
+              ابحث في وسائط مهام التفريغ السابقة
+              <input type="search" value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} placeholder="معرّف السجل أو مسار الملف" />
+            </label>
+            {mediaQuery && selectableJobs.length ? (
+              <div className="stack" aria-label="نتائج اختيار الوسائط">
+                {selectableJobs.slice(0, 5).map((job) => (
+                  <button key={job.id} type="button" className="button button-secondary" onClick={() => selectPreviousMedia(job)}>
+                    {job.recordId} · {job.sourcePath || "بدون مسار"}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <label>
               معرّف السجل
               <input name="recordId" type="text" placeholder="record-id" required />
