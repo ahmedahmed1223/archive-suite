@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\MontageProjectsController;
 use App\Http\Controllers\Api\V1\NotificationsController;
+use App\Http\Controllers\Api\V1\PluginMarketplaceController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
 use App\Http\Controllers\Api\V1\RecordHistoryController;
@@ -114,6 +115,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/activity', [ActivityController::class, 'index']);
         Route::get('/reports/compliance', [ComplianceReportsController::class, 'index']);
         Route::get('/reports/compliance/export', [ComplianceReportsController::class, 'export']);
+        Route::get('/plugins', [PluginMarketplaceController::class, 'index']);
         Route::get('/search', [SearchController::class, 'index']);
         Route::get('/discover', [DiscoverController::class, 'index']);
         Route::get('/suggestions', [SuggestionsController::class, 'index']);
