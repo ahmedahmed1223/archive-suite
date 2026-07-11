@@ -20,6 +20,7 @@ import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwit
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { redactAdminSecrets } from "@/lib/admin-action-summary";
 import "./analytics.css";
 
 type TimeRange = "30d" | "90d" | "1y" | "all";
@@ -213,7 +214,7 @@ export default function AnalyticsPage() {
       {loadError ? (
         <section className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل التحليلات</strong>
-          <p>{loadError}</p>
+          <p>{redactAdminSecrets(loadError)} — تحقق من الاتصال ثم أعد المحاولة.</p>
         </section>
       ) : null}
 

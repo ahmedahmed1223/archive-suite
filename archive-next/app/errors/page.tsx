@@ -15,6 +15,7 @@ import {
   type ClientErrorLogEntry,
   type ClientErrorSeverity
 } from "@/lib/client-error-log";
+import { groupActionErrors, redactAdminSecrets } from "@/lib/admin-action-summary";
 
 const severityLabels: Record<ClientErrorSeverity, string> = {
   error: "خطأ",
@@ -70,7 +71,7 @@ export default function ErrorsPage() {
         cell: ({ row }) => (
           <div className="stack stack-tight">
             <strong>{row.original.name}</strong>
-            <span className="helper-text">{row.original.message}</span>
+            <span className="helper-text">{redactAdminSecrets(row.original.message)}</span>
           </div>
         )
       },
@@ -115,6 +116,7 @@ export default function ErrorsPage() {
     }, null),
     [filteredErrors]
   );
+  const groupedErrors = useMemo(() => groupActionErrors(filteredErrors), [filteredErrors]);
 
   const createManualError = () => {
     recordClientError({
@@ -211,6 +213,7 @@ export default function ErrorsPage() {
           }
         ]}
       />
+      {groupedErrors.length ? <section className="panel panel-compact" aria-label="ملخص الاسترداد"><div className="panel-title-row"><div><h2>خطوات الاسترداد المقترحة</h2><p>تجميع محلي للأنماط المتكررة، وليس تشخيصاً من الخادم.</p></div></div><div className="analytics-chip-list">{groupedErrors.map((group) => <span className="badge" key={group.key}>{group.label}: {group.count} — {group.recovery}</span>)}</div></section> : null}
 
       {filteredErrors.length === 0 ? (
         <EmptyState

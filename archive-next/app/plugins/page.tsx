@@ -14,6 +14,7 @@ import {
   type PluginRuntimePolicy,
   type PluginStatus
 } from "@/lib/archive-api";
+import { redactAdminSecrets } from "@/lib/admin-action-summary";
 
 const statusOptions: Array<{ value: PluginStatus | ""; label: string }> = [
   { value: "", label: "كل الحالات" },
@@ -252,7 +253,7 @@ export default function PluginsPage() {
       {error ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل كتالوج الإضافات</strong>
-          <p className="helper-text">{error}</p>
+          <p className="helper-text">{redactAdminSecrets(error)} — الكتالوج للقراءة والمراجعة فقط؛ أعد تحميل الصفحة بعد التحقق من الصلاحية.</p>
         </div>
       ) : null}
 

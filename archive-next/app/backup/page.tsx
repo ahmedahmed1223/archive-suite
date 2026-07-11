@@ -10,6 +10,7 @@ import {
   type BackupPreview,
   type BackupRunResult
 } from "@/lib/archive-api";
+import { buildBackupFreshness, redactAdminSecrets } from "@/lib/admin-action-summary";
 
 type BackupListState =
   | { status: "loading" }
@@ -138,6 +139,7 @@ export default function BackupPage() {
   const backups = listState.status === "ready" ? listState.backups : [];
   const totalSize = backups.reduce((sum, backup) => sum + backup.sizeBytes, 0);
   const isRestoreConfirmed = restoreTarget !== null && restoreConfirmName.trim() === restoreTarget;
+  const freshness = buildBackupFreshness(backups.map((backup) => backup.createdAt));
 
   return (
     <AppShell subtitle="مركز البيانات" navLabel="النسخ الاحتياطي" contentClassName="observability-content">
@@ -149,6 +151,7 @@ export default function BackupPage() {
           <>
             <span className="badge">{backups.length} نسخة</span>
             <span className="badge">{formatBytes(totalSize)}</span>
+            <span className={`badge badge-${freshness.tone}`}>{freshness.label}</span>
           </>
         )}
         actions={(
@@ -167,6 +170,7 @@ export default function BackupPage() {
           </>
         )}
       />
+      {listState.status === "ready" ? <div className="state-banner" role="status"><strong>{freshness.summary}</strong><span className="helper-text">{freshness.detail}</span></div> : null}
 
       {runState.status === "success" ? (
         <div className="state-banner state-banner-success" role="status">
@@ -180,7 +184,7 @@ export default function BackupPage() {
       {runState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر إنشاء النسخة الاحتياطية</strong>
-          <span className="helper-text">{runState.message}</span>
+          <span className="helper-text">{redactAdminSecrets(runState.message)}</span>
         </div>
       ) : null}
 
@@ -200,7 +204,7 @@ export default function BackupPage() {
       {restoreState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذرت الاستعادة</strong>
-          <span className="helper-text">{restoreState.message}</span>
+          <span className="helper-text">{redactAdminSecrets(restoreState.message)}</span>
         </div>
       ) : null}
 
@@ -260,7 +264,7 @@ export default function BackupPage() {
       {previewState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذرت المعاينة</strong>
-          <span className="helper-text">{previewState.message}</span>
+          <span className="helper-text">{redactAdminSecrets(previewState.message)}</span>
         </div>
       ) : null}
 
@@ -292,7 +296,7 @@ export default function BackupPage() {
       {listState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل النسخ الاحتياطية</strong>
-          <span className="helper-text">{listState.message} — هذه الصفحة متاحة للمشرفين فقط.</span>
+          <span className="helper-text">{redactAdminSecrets(listState.message)} — هذه الصفحة متاحة للمشرفين فقط.</span>
         </div>
       ) : null}
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { redactAdminSecrets } from "@/lib/admin-action-summary";
 
 type ShareState =
   | { status: "loading" }
@@ -48,13 +49,14 @@ export function ShareViewer({ token }: { token: string }) {
     return (
       <div className="state-banner state-banner-error" role="alert">
         <strong>تعذر تحميل المشاركة</strong>
-        <p className="helper-text">{state.message}</p>
+        <p className="helper-text">{redactAdminSecrets(state.message)}</p>
       </div>
     );
   }
 
   return (
-    <div className="share-list" aria-label="محتوى المشاركة">
+    <main className="share-list" aria-label="محتوى المشاركة">
+      <p className="helper-text">عارض عام محدود: لا تظهر إلا السجلات التي يسمح بها الرابط، ولا تتوفر هنا إجراءات إدارية.</p>
       <div className="kv-grid">
         <div className="kv-item">
           <strong>الصلاحية</strong>
@@ -71,7 +73,7 @@ export function ShareViewer({ token }: { token: string }) {
         state.records.map((record) => (
           <article className="panel" key={record.uid ?? record.id}>
             <h2>{record.title}</h2>
-            {record.description ? <p>{record.description}</p> : null}
+            {record.description ? <p>{redactAdminSecrets(record.description)}</p> : null}
             <div className="record-meta">
               <span className="badge">{record.type ?? "record"}</span>
               <span className="badge wrap-anywhere">{record.uid ?? record.id}</span>
@@ -79,6 +81,6 @@ export function ShareViewer({ token }: { token: string }) {
           </article>
         ))
       )}
-    </div>
+    </main>
   );
 }

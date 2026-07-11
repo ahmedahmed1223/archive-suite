@@ -4,6 +4,7 @@ import { useNotifications, type Notification } from "@/lib/use-notifications";
 import { useState } from "react";
 import { Trash2, CheckCircle2, Info, Package } from "lucide-react";
 import Link from "next/link";
+import { redactAdminSecrets } from "@/lib/admin-action-summary";
 
 const typeIcons = {
   ingest_complete: Package,
@@ -49,7 +50,7 @@ function NotificationCard({ notification, onRead, onDelete }: {
             </button>
           )}
         </div>
-        <p className="notification-card__message">{notification.message}</p>
+        <p className="notification-card__message">{redactAdminSecrets(notification.message)}</p>
         <time className="notification-card__time">
           {new Date(notification.created_at).toLocaleString("ar-SA", {
             year: "numeric",
@@ -125,7 +126,7 @@ export default function NotificationsPage() {
         {error ? (
           <div className="state-banner state-banner-error" role="alert">
             <strong>تعذر إكمال طلب الإشعارات</strong>
-            <span className="helper-text">{error}</span>
+            <span className="helper-text">{redactAdminSecrets(error)} — تحقق من الاتصال ثم أعد المحاولة.</span>
             <div><button className="button button-secondary button-sm" type="button" onClick={() => void fetchNotifications()}>إعادة المحاولة</button></div>
           </div>
         ) : null}
