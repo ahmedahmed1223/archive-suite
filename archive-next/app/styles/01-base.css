@@ -14,6 +14,7 @@ html,
 body {
   min-height: 100%;
   margin: 0;
+  overflow-x: clip;
 }
 
 html {
@@ -40,9 +41,20 @@ textarea {
 }
 
 button,
-input,
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
+  min-block-size: 2.75rem;
+  min-inline-size: 0;
+}
+
+:where(label:has(input[type="checkbox"]), label:has(input[type="radio"])) {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+}
+
+:where(h1, h2, h3, h4, h5, h6, p, span, strong, small, label) {
   min-inline-size: 0;
 }
 
@@ -243,6 +255,8 @@ a:hover {
 
 .content {
   inline-size: min(var(--max-width-wide), calc(100% - 2rem));
+  min-inline-size: 0;
+  max-inline-size: 100%;
   margin-inline: auto;
   padding-block: clamp(var(--space-3), 3.5vw, var(--space-6));
   display: grid;
@@ -251,6 +265,8 @@ a:hover {
 
 .app-content {
   inline-size: min(var(--max-width-page), calc(100% - 1.5rem));
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 .mobile-primary-nav {

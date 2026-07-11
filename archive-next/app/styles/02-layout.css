@@ -7,6 +7,8 @@
 .workspace-commandbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  max-inline-size: 100%;
   gap: var(--space-3);
   align-items: center;
   border: 1px solid var(--color-border-secondary);
@@ -23,6 +25,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 .workspace-commandbar__user {
@@ -84,6 +88,7 @@
 
 .workspace-commandbar__tools .icon-action {
   position: relative;
+  min-block-size: 2.75rem;
   min-inline-size: var(--control-height);
 }
 
@@ -273,6 +278,14 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
   gap: var(--space-4);
   margin-block-start: 0;
+}
+
+.grid > *,
+.dense-grid > *,
+.split-layout > *,
+.page-section > *,
+.stack > * {
+  min-inline-size: 0;
 }
 
 .split-layout {

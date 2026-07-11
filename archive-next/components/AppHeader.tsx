@@ -60,7 +60,7 @@ export default function AppHeader({
   const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id;
 
   return (
-    <header className="topbar" data-nav-open={isMenuOpen ? "true" : "false"}>
+    <header className="topbar" data-layout="app-header" data-nav-open={isMenuOpen ? "true" : "false"}>
       <Link className="brand" href="/" aria-label={`${BRAND.arabicName} - الرئيسية`}>
         <img className="brand-mark" src={BRAND.markPath} alt="" width={44} height={44} />
         <span className="brand-name">
