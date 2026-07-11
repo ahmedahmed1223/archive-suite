@@ -37,7 +37,7 @@ export default function WorkspaceCommandBar() {
   }, []);
 
   return (
-    <div className="workspace-commandbar" aria-label="شريط أوامر مساحة العمل">
+    <div className="workspace-commandbar" data-layout="workspace-commandbar" aria-label="شريط أوامر مساحة العمل">
       <div className="workspace-commandbar__context">
         <div className="workspace-commandbar__user" title={userLabel}>
           <UserCircle size={34} aria-hidden="true" />

@@ -87,8 +87,10 @@ export default function HelpPage() {
         <ul className="checklist">
           {gettingStartedChecklist.map((item) => (
             <li className="checklist-item" key={item}>
-              <input type="checkbox" aria-label={item} />
-              <span>{item}</span>
+              <label className="checklist-control">
+                <input type="checkbox" aria-label={item} />
+                <span>{item}</span>
+              </label>
             </li>
           ))}
         </ul>

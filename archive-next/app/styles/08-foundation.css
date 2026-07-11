@@ -6,10 +6,21 @@
 
 /* Masar Command Workspace foundation */
 .app-shell {
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-x: clip;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--color-brand-warm) 32%, transparent), transparent 22rem),
     radial-gradient(circle at 14% 8%, color-mix(in srgb, var(--color-brand-indigo) 8%, transparent), transparent 20rem),
     var(--color-bg-primary);
+}
+
+.app-shell > *,
+.app-content > *,
+.workspace-commandbar > * {
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 .page-toolbar {
@@ -487,7 +498,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  min-block-size: 2.35rem;
+  min-block-size: 2.75rem;
   border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-md);
   padding: 0.45rem 0.7rem;
@@ -787,6 +798,15 @@ textarea:focus-visible,
   outline-offset: 2px;
 }
 
+.mobile-primary-nav {
+  max-inline-size: 100%;
+}
+
+.mobile-primary-nav :where(a, button) {
+  min-block-size: 2.75rem;
+  min-inline-size: 0;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -823,10 +843,10 @@ textarea:focus-visible,
     grid-template-columns: minmax(0, 1fr);
   }
 
-  input,
+  input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    font-size: var(--font-size-md);
+    font-size: 1rem;
   }
 
   .view-switcher__button,

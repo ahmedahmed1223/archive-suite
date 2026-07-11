@@ -37,7 +37,7 @@ export default function AppShell({
   }, [isFocus]);
 
   return (
-    <div className="shell app-shell" data-focus-mode={isFocus ? "true" : "false"}>
+    <div className="shell app-shell" data-layout="app-shell" data-focus-mode={isFocus ? "true" : "false"}>
       <a className="skip-link" href="#main-content">
         الانتقال إلى المحتوى الرئيسي
       </a>
