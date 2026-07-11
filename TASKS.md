@@ -35,7 +35,7 @@
 
 ## P3 — توسعات تنافسية
 
-- [ ] **Auto-tagging + semantic search v2** — vision tagging، embeddings، named entities، visual duplicate detection، وfaceted semantic search.
+- [ ] **Auto-tagging + semantic search v2 — المتبقي الخارجي فقط** — vision tagging، embeddings، وvisual duplicate detection تحتاج مزود/نماذج/فهرس متجهات أو خط معالجة صور معتمد. (المنجز محلياً 2026-07-11: إثراء بحث آمن بقواعد محلية لاستخراج كيانات بسيطة ووسوم مقترحة من نتائج البحث الحالية — انظر ChangeLog.)
 
 ## صيانة التوثيق
 
