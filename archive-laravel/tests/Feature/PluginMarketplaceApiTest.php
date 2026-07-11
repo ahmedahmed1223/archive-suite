@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -39,5 +41,23 @@ class PluginMarketplaceApiTest extends TestCase
 
         $this->getJson('/api/v1/plugins?status=installed', $this->authHeaders())
             ->assertUnprocessable();
+    }
+
+    public function test_it_is_admin_only(): void
+    {
+        User::query()->create([
+            'name' => 'Archive Viewer',
+            'email' => 'plugin-viewer@example.test',
+            'role' => 'viewer',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        $token = $this->postJson('/api/v1/auth/login', [
+            'email' => 'plugin-viewer@example.test',
+            'password' => 'secret-password',
+        ])->assertOk()->json('accessToken');
+
+        $this->getJson('/api/v1/plugins', ['Authorization' => 'Bearer '.$token])
+            ->assertForbidden();
     }
 }
