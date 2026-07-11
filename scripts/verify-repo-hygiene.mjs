@@ -47,10 +47,11 @@ const forbiddenPlanDocPaths = [
   "docs/laravel-nextjs-migration-plan.md",
 ];
 const requiredTaskLedgerMarkers = [
-  "تفريغ عربي",
-  "AI/Copilot",
+  "قاعدة إعادة الفتح",
+  "المسار القانوني",
 ];
 const requiredCompletedMarkers = [
+  "تفريغ عربي",
   "Add archive / AddVideo wizard",
   "First-run / onboarding في Masar",
   "Activity/history دائم",

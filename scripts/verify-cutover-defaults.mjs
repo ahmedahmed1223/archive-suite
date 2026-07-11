@@ -66,7 +66,7 @@ assert.match(readme, /archive-laravel\/\s+# canonical backend/i);
 assert.match(readme, /legacy/i);
 
 const tasks = read("TASKS.md");
-assert.match(tasks, /Laravel \+ Next\.js هما المنتج القانوني/);
+assert.match(tasks, /المسار القانوني.*archive-next.*archive-laravel/);
 assert.doesNotMatch(tasks, /5e\.2-cutover.*\[ \]/s);
 
 const changelog = read("ChangeLog.md");
