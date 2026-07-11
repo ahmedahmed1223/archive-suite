@@ -7,8 +7,6 @@ export interface CopilotChatMessage {
 
 export const COPILOT_MAX_MESSAGES = 20;
 export const COPILOT_MAX_CONTENT_LENGTH = 4000;
-export const COPILOT_DEFAULT_MODEL = "claude-sonnet-5";
-export const COPILOT_MAX_TOKENS = 1024;
 
 export const COPILOT_SYSTEM_PROMPT =
   "أنت مساعد أرشيف Archive Suite. مهمتك مساعدة المستخدمين المصادَق عليهم في " +
@@ -77,29 +75,4 @@ export function trimMessagesToLimit(
   limit: number = COPILOT_MAX_MESSAGES
 ): CopilotChatMessage[] {
   return messages.length > limit ? messages.slice(messages.length - limit) : messages;
-}
-
-/** Resolves the provider model, allowing a server-only env override. */
-export function resolveCopilotModel(environment: Record<string, string | undefined>): string {
-  return environment.ARCHIVE_COPILOT_MODEL?.trim() || COPILOT_DEFAULT_MODEL;
-}
-
-export interface AnthropicMessagesRequestBody {
-  model: string;
-  max_tokens: number;
-  system: string;
-  messages: Array<{ role: CopilotRole; content: string }>;
-}
-
-/** Builds the Anthropic Messages API request payload from a validated conversation. */
-export function buildProviderRequestBody(
-  messages: CopilotChatMessage[],
-  environment: Record<string, string | undefined>
-): AnthropicMessagesRequestBody {
-  return {
-    model: resolveCopilotModel(environment),
-    max_tokens: COPILOT_MAX_TOKENS,
-    system: COPILOT_SYSTEM_PROMPT,
-    messages: trimMessagesToLimit(messages).map(({ role, content }) => ({ role, content }))
-  };
 }

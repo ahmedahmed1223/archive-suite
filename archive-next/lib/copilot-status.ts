@@ -1,3 +1,5 @@
+import { resolveCopilotProvider } from "./copilot-provider";
+
 export type CopilotStatus = {
   configured: boolean;
   reason: "ready" | "not_configured";
@@ -11,7 +13,7 @@ export type CopilotStatus = {
  */
 export function getCopilotStatus(environment: Record<string, string | undefined>): CopilotStatus {
   const configured = environment.ARCHIVE_COPILOT_ENABLED === "true"
-    && Boolean(environment.ARCHIVE_COPILOT_PROVIDER?.trim());
+    && resolveCopilotProvider(environment).ready;
 
   return configured
     ? { configured: true, reason: "ready" }

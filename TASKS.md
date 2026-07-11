@@ -27,7 +27,7 @@
 
 ## P2 — تكافؤ متقدم وتجربة تشغيل
 
-- [ ] **Settings/Admin extras — بقايا حية فقط (محظور باعتمادات Dropbox/S3/DB الحية)** — Dropbox OAuth الحي واختبار S3/DB على بيئات فعلية. (المنجز 2026-07-09: test-connection endpoints للتخزين وقاعدة البيانات، setup checklist، وربط hub — انظر ChangeLog.)
+- [ ] **Settings/Admin extras — بقايا حية فقط (محظور باعتمادات Dropbox/S3/DB الحية)** — اختبار حي فعلي لاعتمادات Dropbox/S3/DB على بيئات حقيقية (التوكن/المفاتيح غير متاحة في بيئة التطوير). (المنجز 2026-07-09: test-connection endpoints للتخزين وقاعدة البيانات، setup checklist، وربط hub؛ المنجز 2026-07-11: تسجيل أقراص Dropbox/Azure/GCS برمجياً + دعم S3-compatible endpoints + اختبارات offline-safe — انظر ChangeLog.)
 
 - [ ] **Kubernetes live validation (محظور بـKubernetes context وصلاحيات النشر)** — تشغيل dry-run/تطبيق حي عند توفر Kubernetes context، خصوصاً Redis/Whisper worker وGPU.
 

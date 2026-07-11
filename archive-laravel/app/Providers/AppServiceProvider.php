@@ -19,7 +19,16 @@ use App\Services\Media\WhisperTranscriber;
 use App\Services\Odbc\NativeOdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionProbe;
+use Google\Cloud\Storage\StorageClient;
+use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
+use League\Flysystem\AzureBlobStorage\AzureBlobStorageAdapter;
+use League\Flysystem\Filesystem;
+use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
+use MicrosoftAzure\Storage\Blob\BlobRestProxy;
+use Spatie\Dropbox\Client as DropboxClient;
+use Spatie\FlysystemDropbox\DropboxAdapter;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -108,6 +117,36 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Cloud storage drivers not shipped with Laravel core. Clients are
+        // built lazily inside each closure so no network/credential work
+        // happens at boot when a driver is unconfigured or unused.
+        Storage::extend('azure', function ($app, array $config) {
+            $client = BlobRestProxy::createBlobService($config['connection_string'] ?? '');
+
+            $adapter = new AzureBlobStorageAdapter($client, $config['container'] ?? '', $config['prefix'] ?? '');
+
+            return new FilesystemAdapter(new Filesystem($adapter, $config), $adapter, $config);
+        });
+
+        Storage::extend('gcs', function ($app, array $config) {
+            $clientConfig = ['projectId' => $config['project_id'] ?? null];
+            if (! empty($config['key_file'])) {
+                $clientConfig['keyFilePath'] = $config['key_file'];
+            }
+
+            $bucket = (new StorageClient($clientConfig))->bucket($config['bucket'] ?? '');
+
+            $adapter = new GoogleCloudStorageAdapter($bucket, $config['prefix'] ?? '');
+
+            return new FilesystemAdapter(new Filesystem($adapter, $config), $adapter, $config);
+        });
+
+        Storage::extend('dropbox', function ($app, array $config) {
+            $client = new DropboxClient($config['token'] ?? null);
+
+            $adapter = new DropboxAdapter($client, $config['prefix'] ?? '');
+
+            return new FilesystemAdapter(new Filesystem($adapter, $config), $adapter, $config);
+        });
     }
 }

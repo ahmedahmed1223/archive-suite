@@ -20,6 +20,12 @@
 
 ---
 
+## دعم مزودي تخزين وذكاء اصطناعي متعددين — مكتمل ومتحقق منه 2026-07-11
+
+- **تخزين سحابي متعدد (Laravel):** أقراص Dropbox وAzure Blob وGoogle Cloud Storage مسجّلة عبر `Storage::extend` في `AppServiceProvider`، بالإضافة إلى S3 القياسي (يغطي أيضاً الخدمات المتوافقة مع S3 مثل Cloudflare R2 وDigitalOcean Spaces وMinIO وBackblaze B2 عبر `AWS_ENDPOINT`) وSFTP/FTP الأصليين. اختبار `CloudStorageConfigTest` (11 حالة) يتحقق من تحليل كل قرص بدون اتصال شبكة فعلي.
+- **مزودو Copilot متعددون (Next.js):** `copilot-provider.ts` يوجّه بين Anthropic وOpenAI وGoogle وGroq وMistral وxAI وDeepSeek وOpenRouter وأي endpoint متوافق مع OpenAI، عبر Vercel AI SDK، مع تبديل بمتغيرات بيئة (`ARCHIVE_COPILOT_PROVIDER`/`ARCHIVE_COPILOT_MODEL`) ورجوع متوافق مع الإعداد القديم. 20 اختبار وحدة تغطي القرار.
+- التحقق: 406 اختبار Laravel ناجح، 33 اختبار Vitest ناجح، وtypecheck كامل (core + next) ناجح.
+
 ## موجة تطوير Metric UI المحلية — مكتملة ومتحقق منها 2026-07-10
 
 > يعتمد التنفيذ على النظام المحلي الحالي (`MetricStrip` + مكونات `components/ui` + CSS tokens)، ولا يضيف Metro/Metronic أو Tailwind. تُوثَّق كل شريحة منجزة هنا بعد التحقق وCommit مستقل.

@@ -13,7 +13,21 @@ describe("getCopilotStatus", () => {
     expect(getCopilotStatus({
       ARCHIVE_COPILOT_ENABLED: "true",
       ARCHIVE_COPILOT_PROVIDER: "openai",
-      ARCHIVE_COPILOT_API_KEY: "must-not-be-returned"
+      OPENAI_API_KEY: "must-not-be-returned"
+    })).toEqual({ configured: true, reason: "ready" });
+  });
+
+  it("stays unconfigured when opted in but the provider's key is missing", () => {
+    expect(getCopilotStatus({
+      ARCHIVE_COPILOT_ENABLED: "true",
+      ARCHIVE_COPILOT_PROVIDER: "openai"
+    })).toEqual({ configured: false, reason: "not_configured" });
+  });
+
+  it("defaults to anthropic and honors the legacy ARCHIVE_COPILOT_API_KEY fallback", () => {
+    expect(getCopilotStatus({
+      ARCHIVE_COPILOT_ENABLED: "true",
+      ARCHIVE_COPILOT_API_KEY: "legacy-key"
     })).toEqual({ configured: true, reason: "ready" });
   });
 });
