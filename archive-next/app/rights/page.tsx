@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import {
   createArchiveApiClient,
   type RightsRecord,
@@ -98,6 +99,9 @@ export default function RightsPage() {
     const remaining = daysUntil(record.expiresAt);
     return remaining !== null && remaining <= WARNING_WINDOW_DAYS;
   }).length;
+  const hasBlockedRights = Object.values(enforcementByItem).some(
+    (item) => item.status === "ready" && !item.enforcement.allowed
+  );
 
   const checkEnforcement = async (itemId: string) => {
     setEnforcementByItem((current) => ({ ...current, [itemId]: { status: "loading" } }));
@@ -214,6 +218,12 @@ export default function RightsPage() {
       >
         <DataViewSwitcher value={days} options={daysOptions} onChange={setDays} label="نافذة الانتهاء" />
       </PageToolbar>
+
+      <OperationalSafetyPanel
+        action="نشر أو مشاركة مادة"
+        rights={hasBlockedRights ? "blocked" : "allowed"}
+        auditHref="/activity"
+      />
 
       {isFormOpen ? (
         <section className="panel" aria-label="تسجيل حقوق جديدة">

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import {
   createArchiveApiClient,
   type ArchiveRecord,
@@ -211,6 +212,8 @@ export default function AutomationPage() {
         </form>
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
+
+      <OperationalSafetyPanel action="معاينة قواعد الأتمتة" dryRun confidence={82} auditHref="/activity" />
 
       {error ? (
         <div className="state-banner state-banner-error" role="alert">

@@ -5,6 +5,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
 import MediaSourcePicker from "@/components/MediaSourcePicker";
+import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
 import styles from "./compare.module.css";
 import "../media.css";
@@ -96,6 +97,8 @@ export default function ComparePage() {
           </label>
         </form>
       </PageToolbar>
+
+      <OperationalSafetyPanel action="مقارنة النسختين" dryRun confidence={92} auditHref="/activity" />
 
       {isValidPaths ? (
         <div className={`media-compare-grid ${styles.playersGrid}`} aria-label="مشغلات المقارنة">
