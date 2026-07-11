@@ -394,6 +394,15 @@ export default function SettingsPage() {
         )}
       />
 
+      <section className="state-banner state-banner-info" aria-label="رحلة الإعداد">
+        <strong>الخطوة الحالية: مراجعة إعدادات التشغيل</strong>
+        <p>نفّذ اختبارات التخزين وقاعدة البيانات أدناه، ثم راجع حالة النظام لتحديد الإجراء التالي.</p>
+        <div className="button-row">
+          <a className="button button-secondary button-small" href="/status">متابعة الجاهزية</a>
+          <a className="button button-secondary button-small" href="/first-run">عرض رحلة الإعداد</a>
+        </div>
+      </section>
+
       <MetricStrip
         ariaLabel="ملخص الإعدادات"
         items={[

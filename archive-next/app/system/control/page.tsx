@@ -179,6 +179,10 @@ export default function SystemControlPage() {
         <div className="state-banner state-banner-success" role="status">
           <strong>تم تنفيذ الإجراء: {actionState.result.action}</strong>
           <pre className="mono-text text-sm wrap-anywhere">{JSON.stringify(actionState.result.detail, null, 2)}</pre>
+          <div className="button-row">
+            <a className="button button-secondary" href="/status">تحقق من نتيجة الإجراء</a>
+            <a className="button button-secondary" href="/first-run">متابعة رحلة الإعداد</a>
+          </div>
         </div>
       ) : null}
 
@@ -186,6 +190,7 @@ export default function SystemControlPage() {
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تنفيذ الإجراء</strong>
           <p>{actionState.message}</p>
+          <a className="button button-secondary" href="/status">راجع حالة النظام وخطوات الإصلاح</a>
         </div>
       ) : null}
 

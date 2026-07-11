@@ -261,6 +261,19 @@ export default function StatusPage() {
         <section className="state-banner state-banner-error" role="alert">
           <strong>تعذر إكمال فحص الصحة</strong>
           <p>{state.error}</p>
+          <div className="button-row">
+            <button type="button" className="button button-primary" onClick={() => void checkHealth()}>أعد الفحص</button>
+            <a className="button button-secondary" href="/first-run">ارجع إلى رحلة الإعداد</a>
+            <a className="button button-secondary" href="/system/control">افتح التحكم بالنظام</a>
+          </div>
+        </section>
+      ) : null}
+
+      {isOnline ? (
+        <section className="state-banner state-banner-success" role="status">
+          <strong>خطوة الخادم مكتملة</strong>
+          <p>اتصال الخادم سليم. اعرض رحلة الإعداد لمعرفة الخطوة التالية ونسبة الجاهزية.</p>
+          <a className="button button-secondary" href="/first-run">متابعة رحلة الإعداد</a>
         </section>
       ) : null}
 

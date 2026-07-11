@@ -6,6 +6,8 @@ import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { BRAND } from "@/lib/brand";
 import { createArchiveApiClient } from "@/lib/archive-api";
+import { useAuthSession } from "@/lib/auth-session";
+import { deriveSetupJourney, type SetupStepId } from "@/lib/setup-journey";
 import {
   ONBOARDING_PRESET_STORAGE_KEY,
   ONBOARDING_STORAGE_KEY,
@@ -21,6 +23,7 @@ type HealthState =
   | { status: "error"; message: string };
 
 type DoneMap = Record<string, boolean>;
+const EXPERT_SKIP_STORAGE_KEY = "masar:first-run:expert-skip:v1";
 
 function formatUptime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds < 0) return "غير معروف";
@@ -43,23 +46,50 @@ function readDoneMap(preset: OnboardingPreset): DoneMap {
 
 export default function FirstRunPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const auth = useAuthSession();
   const [preset, setPreset] = useState<OnboardingPreset>("quick");
   const [done, setDone] = useState<DoneMap>({});
   const [health, setHealth] = useState<HealthState>({ status: "idle" });
+  const [expertSkip, setExpertSkip] = useState(false);
   const currentPreset = onboardingPresets[preset];
   const completedCount = currentPreset.steps.filter((step) => done[step.id]).length;
   const isComplete = completedCount === currentPreset.steps.length;
+  const journey = deriveSetupJourney(
+    {
+      status: health.status === "ready" ? "healthy" : health.status === "error" ? "offline" : health.status === "loading" ? "checking" : "unknown",
+      ...(health.status === "error" ? { message: health.message } : {})
+    },
+    { status: auth.status },
+    {
+      settingsReviewed: isComplete,
+      expertMode: expertSkip,
+      skipGuidedSetup: expertSkip
+    }
+  );
+  const journeySteps: Array<{ id: SetupStepId; title: string; description: string }> = [
+    { id: "server", title: "تشغيل الخادم", description: "فحص API ومحرك البيانات تلقائياً." },
+    { id: "account", title: "تسجيل الدخول", description: "التحقق من جلسة المستخدم الحالية." },
+    { id: "settings", title: "مراجعة الإعدادات", description: "اختبار الاتصالات ومراجعة إعدادات التشغيل." },
+    { id: "ready", title: "بدء العمل", description: "الانتقال إلى مساحة العمل بعد اكتمال الجاهزية." }
+  ];
 
   useEffect(() => {
     const storedPreset = window.localStorage.getItem(ONBOARDING_PRESET_STORAGE_KEY);
     const nextPreset = storedPreset === "advanced" ? "advanced" : "quick";
     setPreset(nextPreset);
     setDone(readDoneMap(nextPreset));
+    setExpertSkip(window.localStorage.getItem(EXPERT_SKIP_STORAGE_KEY) === "true");
   }, []);
 
   useEffect(() => {
     setDone(readDoneMap(preset));
   }, [preset]);
+
+  useEffect(() => {
+    void checkHealth();
+    // الفحص تلقائي مرة واحدة عند فتح الرحلة؛ يظل زر إعادة الفحص متاحاً.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function checkHealth() {
     setHealth({ status: "loading" });
@@ -106,6 +136,11 @@ export default function FirstRunPage() {
     setDone(next);
   }
 
+  function toggleExpertSkip(checked: boolean) {
+    setExpertSkip(checked);
+    window.localStorage.setItem(EXPERT_SKIP_STORAGE_KEY, String(checked));
+  }
+
   return (
     <AppShell subtitle="أول تشغيل" navLabel="مسار التهيئة" contentClassName="first-run-content">
       <PageToolbar
@@ -117,6 +152,7 @@ export default function FirstRunPage() {
             <span className="badge">setup.bat</span>
             <span className="badge">Control Center</span>
             <span className="badge">{completedCount}/{currentPreset.steps.length} مكتملة</span>
+            <span className="badge">الجاهزية {journey.readinessPercentage}%</span>
           </>
         )}
         actions={(
@@ -130,6 +166,37 @@ export default function FirstRunPage() {
           </>
         )}
       />
+
+      <section className="panel" aria-label="رحلة الجاهزية" aria-live="polite">
+        <div className="panel-section-header helper-row">
+          <div>
+            <h2>رحلة الإعداد الموحدة</h2>
+            <p>الخطوة الحالية: {journeySteps.find((step) => step.id === journey.currentStep)?.title}</p>
+          </div>
+          <a className="button button-primary" href={journey.nextAction.href}>{journey.nextAction.label}</a>
+        </div>
+        <progress max={100} value={journey.readinessPercentage} aria-label={`جاهزية النظام ${journey.readinessPercentage}%`} />
+        <label className="checklist-control">
+          <input
+            type="checkbox"
+            checked={expertSkip}
+            onChange={(event) => toggleExpertSkip(event.target.checked)}
+          />
+          <span>تخطي مراجعة الإعدادات للمستخدم الخبير</span>
+        </label>
+        <p className="helper-text">يتخطى هذا الخيار مراجعة الإعدادات فقط؛ لا يتجاوز فحص الخادم أو تسجيل الدخول.</p>
+        <ol className="first-run-steps">
+          {journeySteps.map((step, index) => (
+            <li key={step.id} className="first-run-step" data-complete={journey.completedSteps.includes(step.id) ? "true" : "false"}>
+              <div className="first-run-step__body">
+                <span className="badge">خطوة {index + 1}</span>
+                <h3>{step.title}</h3>
+                <p>{step.description}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <section className="page-section" aria-labelledby="preset-heading">
         <div className="panel">
