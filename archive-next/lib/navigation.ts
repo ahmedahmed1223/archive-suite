@@ -50,6 +50,8 @@ export const primaryNav = [
 ] as const;
 
 export type NavSection = (typeof primaryNav)[number]["section"];
+export type NavigationRole = "admin" | "editor" | "viewer";
+export type NavigationItem = (typeof primaryNav)[number];
 
 export const navSectionLabels: Record<NavSection, string> = {
   capture: "الإدخال",
@@ -59,6 +61,36 @@ export const navSectionLabels: Record<NavSection, string> = {
   insights: "المؤشرات",
   system: "النظام"
 };
+
+const dailyRoutes: Record<NavSection, readonly string[]> = {
+  capture: ["/uploads", "/inbox", "/ingest", "/media/jobs"],
+  library: ["/", "/archive", "/search", "/favorites"],
+  organize: ["/collections", "/tags", "/duplicates", "/projects"],
+  collaborate: ["/shares", "/collaboration", "/broadcast", "/rights"],
+  insights: ["/activity", "/analytics", "/reports", "/status"],
+  system: ["/settings", "/system/control", "/backup", "/help"]
+};
+
+const roleHomeSection: Record<NavigationRole, NavSection> = {
+  admin: "system",
+  editor: "capture",
+  viewer: "library"
+};
+
+export function getDailyNavigation(section: NavSection | undefined, role: NavigationRole = "viewer") {
+  const focusedSection = section ?? roleHomeSection[role];
+  const dailyHrefs = new Set(dailyRoutes[focusedSection]);
+  const daily = primaryNav.filter((item) => dailyHrefs.has(item.href));
+  const more = (Object.keys(navSectionLabels) as NavSection[])
+    .map((groupSection) => ({
+      section: groupSection,
+      label: navSectionLabels[groupSection],
+      items: primaryNav.filter((item) => item.section === groupSection && !dailyHrefs.has(item.href))
+    }))
+    .filter((group) => group.items.length > 0);
+
+  return { daily, more };
+}
 
 export function isActivePath(pathname: string, href: string) {
   if (href === "/") {

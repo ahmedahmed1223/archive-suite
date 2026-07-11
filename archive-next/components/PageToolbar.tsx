@@ -30,6 +30,7 @@ export default function PageToolbar({
       data-has-controls={children ? "true" : "false"}
       data-has-meta={meta ? "true" : "false"}
       data-has-icon={icon ? "true" : "false"}
+      aria-label={typeof title === "string" ? title : undefined}
     >
       <div className="page-toolbar__main">
         {eyebrow ? <div className="page-toolbar__eyebrow">{eyebrow}</div> : null}

@@ -3,7 +3,7 @@
 import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BRAND } from "@/lib/brand";
-import { isActivePath, navSectionLabels, primaryNav, type NavSection } from "@/lib/navigation";
+import { getDailyNavigation, isActivePath, primaryNav } from "@/lib/navigation";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,7 +13,6 @@ import FocusModeToggle from "@/components/FocusModeToggle";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
 
-const navSections = Object.keys(navSectionLabels) as NavSection[];
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
 
@@ -58,6 +57,8 @@ export default function AppHeader({
   }
 
   const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id;
+  const activeSection = primaryNav.find((link) => isActivePath(pathname, link.href))?.section;
+  const navigation = getDailyNavigation(activeSection, auth.user?.role ?? "viewer");
 
   return (
     <header className="topbar" data-layout="app-header" data-nav-open={isMenuOpen ? "true" : "false"}>
@@ -116,10 +117,9 @@ export default function AppHeader({
         </button>
       </div>
       <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>
-        {navSections.map((section) => (
-          <div className="nav-section" data-section={section} key={section}>
-            <span className="nav-section-label">{navSectionLabels[section]}</span>
-            {primaryNav.filter((link) => link.section === section).map((link) => {
+        <div className="nav-section" data-section={activeSection ?? "daily"}>
+          <span className="nav-section-label">يوميًا</span>
+          {navigation.daily.map((link) => {
               const isActive = isActivePath(pathname, link.href);
               const Icon = navIcon(link.icon);
 
@@ -135,9 +135,26 @@ export default function AppHeader({
                   <span>{link.label}</span>
                 </Link>
               );
-            })}
-          </div>
-        ))}
+          })}
+        </div>
+        <details className="nav-more">
+          <summary>المزيد</summary>
+          {navigation.more.map((group) => (
+            <div className="nav-section" data-section={group.section} key={group.section}>
+              <span className="nav-section-label">{group.label}</span>
+              {group.items.map((link) => {
+                const isActive = isActivePath(pathname, link.href);
+                const Icon = navIcon(link.icon);
+                return (
+                  <Link key={link.href} className="badge app-nav-link" data-section={link.section} href={link.href} aria-current={isActive ? "page" : undefined}>
+                    <Icon aria-hidden="true" className="app-nav-link__icon" size={16} strokeWidth={2} />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </details>
       </nav>
     </header>
   );
