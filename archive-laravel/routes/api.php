@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\MontageProjectsController;
 use App\Http\Controllers\Api\V1\NotificationsController;
+use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
 use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordsController;
@@ -69,6 +70,7 @@ Route::prefix('v1')->group(function (): void {
         return response()->json(json_decode((string) file_get_contents($contractPath), true));
     });
 
+    Route::get('/public/catalog', [PublicCatalogController::class, 'index']);
     Route::get('/share/{token}', [ShareController::class, 'show']);
     Route::get('/review-links/{token}', [ReviewLinksController::class, 'show']);
     Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept']);

@@ -26,6 +26,12 @@
 - [x] **إبقاء معالجة الأخطاء محلية** — صفحات الخطأ في Next.js بقيت موجودة وتعرض مرجع الخطأ عند توفره، مع تسجيل محلي عبر `console.error` بدلاً من إرسال خارجي.
 - [x] **تحديث بوابات الجاهزية** — أصبحت `verify-release-readiness` و`verify-infra-config` تتحقق من غياب Sentry في المسار القانوني بدلاً من فرضه. التحقق: `pnpm build:next`، `pnpm --filter @archive/next run typecheck`، `pnpm --filter @archive/next run test`، `pnpm run verify:api-contracts`، وفحص Laravel المركز (17 passed، 1 skipped لغياب `ext-ftp` في صورة الاختبار).
 
+## الكتالوج العام — مكتمل ومتحقق منه 2026-07-11
+
+- [x] **بوابة عامة read-only** — أضيف `GET /api/v1/public/catalog` لعرض السجلات المنشورة فقط (`workflowStatus/status = published`) دون جلسة، مع فلاتر `q/type/tag` وpagination، ومخرجات allowlist فقط (`id/uid/title/description/type/subtype/tags/createdAt/updatedAt`) بلا ملفات أو metadata داخلية.
+- [x] **واجهة `/catalog` العامة** — أضيفت صفحة كتالوج عربية عامة تستخدم `PublicHeader`/`PublicFooter` وفلاتر بسيطة وبطاقات سجلات وزر تحميل المزيد، وأضيف المسار إلى public prefixes في proxy وAuthProvider.
+- [x] **العقود والاختبارات** — وُثق المسار في OpenAPI وأضيفت schemas للكتالوج العام. التحقق: اختبار `PublicCatalogApiTest`، `pnpm run verify:api-contracts`، وبوابات Next.
+
 ## دعم مزودي تخزين وذكاء اصطناعي متعددين — مكتمل ومتحقق منه 2026-07-11
 
 - **تخزين سحابي متعدد (Laravel):** أقراص Dropbox وAzure Blob وGoogle Cloud Storage مسجّلة عبر `Storage::extend` في `AppServiceProvider`، بالإضافة إلى S3 القياسي (يغطي أيضاً الخدمات المتوافقة مع S3 مثل Cloudflare R2 وDigitalOcean Spaces وMinIO وBackblaze B2 عبر `AWS_ENDPOINT`) وSFTP/FTP الأصليين. اختبار `CloudStorageConfigTest` (11 حالة) يتحقق من تحليل كل قرص بدون اتصال شبكة فعلي.

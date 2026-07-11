@@ -2451,6 +2451,31 @@
         }
       }
     },
+    "/public/catalog": {
+      "get": {
+        "tags": ["Share"],
+        "summary": "Read the public catalog of published records",
+        "operationId": "getPublicCatalog",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "tag", "in": "query", "schema": { "type": "string" } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published public catalog records",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PublicCatalogResponse" }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/share": {
       "post": {
         "tags": ["Share"],
@@ -3122,6 +3147,38 @@
           "syncVersion": { "type": "integer" }
         },
         "additionalProperties": true
+      },
+      "PublicCatalogRecord": {
+        "type": "object",
+        "required": ["id", "uid", "title", "tags"],
+        "properties": {
+          "id": { "type": "string" },
+          "uid": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "type": { "type": ["string", "null"] },
+          "subtype": { "type": ["string", "null"] },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "PublicCatalogResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["records"],
+            "properties": {
+              "records": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/PublicCatalogRecord" }
+              },
+              "nextCursor": { "type": ["string", "null"] }
+            }
+          }
+        ]
       },
       "RecordListResponse": {
         "allOf": [

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const refreshCookieName = process.env.ARCHIVE_REFRESH_COOKIE ?? "va_refresh";
-const publicPathPrefixes = ["/login", "/first-run", "/share/", "/review/"];
+const publicPathPrefixes = ["/login", "/first-run", "/catalog", "/share/", "/review/"];
 
 function isPublicPath(pathname: string) {
   return publicPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
