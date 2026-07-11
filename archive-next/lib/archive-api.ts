@@ -55,6 +55,51 @@ export interface PublicCatalogRecord {
   updatedAt?: string | null;
 }
 
+export type PluginPermissionRisk = "low" | "medium" | "high" | string;
+export type PluginStatus = "reviewed" | "draft" | "blocked" | string;
+export type PluginCategory = "metadata" | "workflow" | "ai" | "integration" | string;
+
+export interface PluginRuntimePolicy {
+  mode: string;
+  allowsRemoteInstall: boolean;
+  allowsCodeExecution: boolean;
+  requiresAdminReview: boolean;
+  description: string;
+}
+
+export interface PluginPermission {
+  scope: string;
+  risk: PluginPermissionRisk;
+  reason: string;
+}
+
+export interface PluginSecurityReview {
+  networkAccess: boolean;
+  fileSystemAccess: boolean;
+  executesCode: boolean;
+  dataLeavesTenant: boolean;
+  adminApprovalRequired: boolean;
+}
+
+export interface PluginCatalogItem {
+  id: string;
+  name: string;
+  vendor: string;
+  version: string;
+  category: PluginCategory;
+  summary: string;
+  status: PluginStatus;
+  trustLevel: string;
+  permissions: PluginPermission[];
+  securityReview: PluginSecurityReview;
+}
+
+export interface PluginPermissionScopeSummary {
+  scope: string;
+  risk: PluginPermissionRisk;
+  pluginCount: number;
+}
+
 export interface RecordListPayload {
   records: ArchiveRecord[];
   nextCursor?: string | null;
@@ -902,6 +947,7 @@ export interface ArchiveApiClient {
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[]; facets?: SearchFacets; nextCursor?: string | null }>>;
   publicCatalog(params?: { q?: string; type?: string; tag?: string; cursor?: string; limit?: number }): Promise<ApiEnvelope<{ records: PublicCatalogRecord[]; nextCursor?: string | null }>>;
+  plugins(params?: { status?: string; category?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ runtimePolicy: PluginRuntimePolicy; plugins: PluginCatalogItem[]; permissionScopes: PluginPermissionScopeSummary[] }>>;
   discover(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sections: DiscoverSection[] }>>;
   suggestions(params: { context: SuggestionContext; recordId?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ context: SuggestionContext; suggestions: ArchiveSuggestion[] }>>;
   submitSuggestionFeedback(key: string, payload: { value: SuggestionFeedbackValue; context?: SuggestionContext }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ feedback: ArchiveSuggestionFeedback }>>;
@@ -1193,6 +1239,13 @@ export function createArchiveApiClient({
       if (cursor) params.set("cursor", cursor);
       params.set("limit", String(clampApiLimit(limit, 24, 100)));
       return get<{ records: PublicCatalogRecord[]; nextCursor?: string | null }>(`/public/catalog?${params.toString()}`);
+    },
+    plugins: ({ status = "", category = "" } = {}, options?: AuthRequestOptions) => {
+      const params = new URLSearchParams();
+      if (status) params.set("status", status);
+      if (category) params.set("category", category);
+      const suffix = params.toString() ? `?${params.toString()}` : "";
+      return get<{ runtimePolicy: PluginRuntimePolicy; plugins: PluginCatalogItem[]; permissionScopes: PluginPermissionScopeSummary[] }>(`/plugins${suffix}`, options);
     },
     discover: (params?: { limit?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();

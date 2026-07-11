@@ -40,6 +40,7 @@ export const primaryNav = [
   { href: "/errors", label: "الأخطاء", section: "insights", icon: "AlertTriangle" },
   // ── النظام ──
   { href: "/search/saved", label: "بحوث محفوظة", section: "system", icon: "Bookmark" },
+  { href: "/plugins", label: "الإضافات", section: "system", icon: "PlugZap" },
   { href: "/backup", label: "النسخ الاحتياطي", section: "system", icon: "HardDriveDownload" },
   { href: "/data-center", label: "مركز البيانات", section: "system", icon: "Database" },
   { href: "/system/control", label: "التحكم بالنظام", section: "system", icon: "MonitorCog" },

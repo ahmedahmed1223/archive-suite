@@ -544,6 +544,23 @@
         }
       }
     },
+    "/plugins": {
+      "get": {
+        "tags": ["Plugins"],
+        "summary": "Return the local catalog-only plugin marketplace with permission review metadata",
+        "operationId": "listPlugins",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["reviewed", "draft", "blocked"] } },
+          { "name": "category", "in": "query", "required": false, "schema": { "type": "string", "enum": ["metadata", "workflow", "ai", "integration"] } }
+        ],
+        "responses": {
+          "200": { "description": "Plugin catalog and permission review model", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PluginCatalogResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/broadcast-metadata": {
       "get": {
         "tags": ["Broadcast Metadata"],
@@ -3176,6 +3193,76 @@
                 "items": { "$ref": "#/components/schemas/PublicCatalogRecord" }
               },
               "nextCursor": { "type": ["string", "null"] }
+            }
+          }
+        ]
+      },
+      "PluginRuntimePolicy": {
+        "type": "object",
+        "required": ["mode", "allowsRemoteInstall", "allowsCodeExecution", "requiresAdminReview", "description"],
+        "properties": {
+          "mode": { "type": "string" },
+          "allowsRemoteInstall": { "type": "boolean" },
+          "allowsCodeExecution": { "type": "boolean" },
+          "requiresAdminReview": { "type": "boolean" },
+          "description": { "type": "string" }
+        }
+      },
+      "PluginPermission": {
+        "type": "object",
+        "required": ["scope", "risk", "reason"],
+        "properties": {
+          "scope": { "type": "string" },
+          "risk": { "type": "string", "enum": ["low", "medium", "high"] },
+          "reason": { "type": "string" }
+        }
+      },
+      "PluginSecurityReview": {
+        "type": "object",
+        "required": ["networkAccess", "fileSystemAccess", "executesCode", "dataLeavesTenant", "adminApprovalRequired"],
+        "properties": {
+          "networkAccess": { "type": "boolean" },
+          "fileSystemAccess": { "type": "boolean" },
+          "executesCode": { "type": "boolean" },
+          "dataLeavesTenant": { "type": "boolean" },
+          "adminApprovalRequired": { "type": "boolean" }
+        }
+      },
+      "PluginCatalogItem": {
+        "type": "object",
+        "required": ["id", "name", "vendor", "version", "category", "summary", "status", "trustLevel", "permissions", "securityReview"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "vendor": { "type": "string" },
+          "version": { "type": "string" },
+          "category": { "type": "string", "enum": ["metadata", "workflow", "ai", "integration"] },
+          "summary": { "type": "string" },
+          "status": { "type": "string", "enum": ["reviewed", "draft", "blocked"] },
+          "trustLevel": { "type": "string" },
+          "permissions": { "type": "array", "items": { "$ref": "#/components/schemas/PluginPermission" } },
+          "securityReview": { "$ref": "#/components/schemas/PluginSecurityReview" }
+        }
+      },
+      "PluginPermissionScopeSummary": {
+        "type": "object",
+        "required": ["scope", "risk", "pluginCount"],
+        "properties": {
+          "scope": { "type": "string" },
+          "risk": { "type": "string", "enum": ["low", "medium", "high"] },
+          "pluginCount": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "PluginCatalogResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["runtimePolicy", "plugins", "permissionScopes"],
+            "properties": {
+              "runtimePolicy": { "$ref": "#/components/schemas/PluginRuntimePolicy" },
+              "plugins": { "type": "array", "items": { "$ref": "#/components/schemas/PluginCatalogItem" } },
+              "permissionScopes": { "type": "array", "items": { "$ref": "#/components/schemas/PluginPermissionScopeSummary" } }
             }
           }
         ]

@@ -37,8 +37,6 @@
 
 - [ ] **Auto-tagging + semantic search v2** — vision tagging، embeddings، named entities، visual duplicate detection، وfaceted semantic search.
 
-- [ ] **Plugin marketplace** — بنية إضافات آمنة ومراجعة صلاحيات.
-
 - [ ] **M365/Google Workspace + SSO** — تكامل مستندات/مجلدات وهوية مؤسسية.
 
 ## صيانة التوثيق
