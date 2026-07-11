@@ -111,7 +111,7 @@ export default function FirstRunPage() {
       <PageToolbar
         eyebrow={<span className="badge">First-run</span>}
         title={`تهيئة ${BRAND.arabicName}`}
-        description="مسار عملي لأول تشغيل: اختر تهيئة سريعة أو متقدمة، نفذ أوامر Control Center بأمان، ثم تحقق من صحة Ø§ÙØ®Ø§Ø¯Ù ÙØ§ÙÙØ§Ø¬ÙØ© قبل بدء الاستخدام اليومي."
+        description="مسار عملي لأول تشغيل: اختر تهيئة سريعة أو متقدمة، نفذ أوامر Control Center بأمان، ثم تحقق من صحة الخادم والواجهة قبل بدء الاستخدام اليومي."
         meta={(
           <>
             <span className="badge">setup.bat</span>
@@ -167,7 +167,7 @@ export default function FirstRunPage() {
               <Server aria-hidden="true" size={20} />
             </div>
             <div className="health-metric__body">
-              <span id="health-heading">Ø§ÙØ®Ø§Ø¯Ù</span>
+              <span id="health-heading">الخادم</span>
               <strong>
                 {health.status === "ready"
                   ? "متصل"

@@ -10,14 +10,13 @@ return new class extends Migration
     {
         Schema::create('notifications', function (Blueprint $table): void {
             $table->id();
-            $table->string('user_id')->index();
+            $table->foreignId('user_id')->index()->constrained()->cascadeOnDelete();
             $table->string('type')->index(); // 'ingest_complete', 'backup_result', 'share_event', etc.
             $table->string('title');
             $table->text('message');
             $table->json('metadata')->nullable(); // For storing related IDs, context
             $table->boolean('is_read')->default(false)->index();
             $table->timestamps();
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

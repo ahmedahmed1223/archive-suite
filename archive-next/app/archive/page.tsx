@@ -804,7 +804,7 @@ function ArchivePageContent() {
           <EmptyState
             icon={<PanelRightOpen size={22} />}
             title="لا توجد سجلات مطابقة."
-            description="خفف الفلاتر أو اترك البحث فارغاً لعرض أحدث السجلات من Ø§ÙØ®Ø§Ø¯Ù."
+            description="خفف الفلاتر أو اترك البحث فارغاً لعرض أحدث السجلات من الخادم."
             actions={<button type="button" className="button button-secondary" onClick={resetFilters}>تصفير الفلاتر</button>}
           />
         ) : (

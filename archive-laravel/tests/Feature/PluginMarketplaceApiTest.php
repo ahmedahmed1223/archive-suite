@@ -5,16 +5,15 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class PluginMarketplaceApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use RefreshDatabase;
 
     public function test_it_returns_reviewed_catalog_with_runtime_policy(): void
     {
-        $response = $this->getJson('/api/v1/plugins', $this->authHeaders())
+        $response = $this->getJson('/api/v1/plugins', $this->adminHeaders())
             ->assertOk()
             ->assertJsonPath('ok', true)
             ->assertJsonPath('runtimePolicy.mode', 'catalog-only')
@@ -27,7 +26,7 @@ class PluginMarketplaceApiTest extends TestCase
 
     public function test_it_filters_by_status_and_category(): void
     {
-        $this->getJson('/api/v1/plugins?status=blocked&category=ai', $this->authHeaders())
+        $this->getJson('/api/v1/plugins?status=blocked&category=ai', $this->adminHeaders())
             ->assertOk()
             ->assertJsonCount(1, 'plugins')
             ->assertJsonPath('plugins.0.id', 'external-ai-enrichment')
@@ -39,7 +38,7 @@ class PluginMarketplaceApiTest extends TestCase
         $this->getJson('/api/v1/plugins')
             ->assertUnauthorized();
 
-        $this->getJson('/api/v1/plugins?status=installed', $this->authHeaders())
+        $this->getJson('/api/v1/plugins?status=installed', $this->adminHeaders())
             ->assertUnprocessable();
     }
 
@@ -59,5 +58,27 @@ class PluginMarketplaceApiTest extends TestCase
 
         $this->getJson('/api/v1/plugins', ['Authorization' => 'Bearer '.$token])
             ->assertForbidden();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function adminHeaders(): array
+    {
+        User::query()->firstOrCreate(
+            ['email' => 'plugin-admin@example.test'],
+            [
+                'name' => 'Plugin Admin',
+                'role' => 'admin',
+                'password' => Hash::make('secret-password'),
+            ],
+        );
+
+        $token = $this->postJson('/api/v1/auth/login', [
+            'email' => 'plugin-admin@example.test',
+            'password' => 'secret-password',
+        ])->assertOk()->json('accessToken');
+
+        return ['Authorization' => 'Bearer '.$token];
     }
 }

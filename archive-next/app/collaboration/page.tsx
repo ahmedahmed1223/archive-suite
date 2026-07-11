@@ -333,7 +333,7 @@ export default function CollaborationPage() {
       <PageToolbar
         eyebrow={<span className="badge">{isSyncing ? "جار المزامنة" : "مزامنة نشطة"}</span>}
         title="التعاون الحي"
-        description="غرفة تشغيلية لإظهار الحضور النشط، حجز موارد التحرير، وحفظ مسودة مشتركة عبر Ø§ÙØ®Ø§Ø¯Ù."
+        description="غرفة تشغيلية لإظهار الحضور النشط، حجز موارد التحرير، وحفظ مسودة مشتركة عبر الخادم."
         meta={
           <>
             <span className="badge">نافذة النشاط {activeWindowSeconds} ثانية</span>

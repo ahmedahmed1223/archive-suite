@@ -44,15 +44,19 @@ use App\Http\Controllers\Api\V1\UploadsController;
 use App\Http\Controllers\Api\V1\UsersController;
 use App\Http\Controllers\Api\V1\VocabularyController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('/health', function (): JsonResponse {
+        // ponytail: uptime measured from the first health call after deploy/cache clear.
+        $bootedAt = Cache::rememberForever('archive:health:booted_at', fn (): int => now()->getTimestamp());
+
         return response()->json([
             'ok' => true,
             'backend' => 'laravel',
             'engine' => config('database.default'),
-            'uptimeSec' => 0,
+            'uptimeSec' => max(0, now()->getTimestamp() - $bootedAt),
             'version' => config('app.version', '0.1.0'),
             'authRequired' => true,
         ]);
