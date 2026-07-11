@@ -4,18 +4,18 @@
 
 ## الحالة
 
-- المهام المحلية المفتوحة في المسار القانوني `archive-next/` + `archive-laravel/` هي بقية خطة UX/UI الشاملة أدناه.
+- لا توجد مهام محلية مفتوحة في المسار القانوني `archive-next/` + `archive-laravel/` ضمن خطة UX/UI الحالية.
 - البنود المكتملة نُفذت ووُثقت في `ChangeLog.md`.
 
 ## خطة UX/UI الشاملة — الشرائح المتبقية (مُرحَّلة من خطة 2026-07-11 قبل حذف ملفها)
 
 > المنهج لكل شريحة: اختبار فاشل أولاً → تنفيذ → typecheck/build/tests → لقطات 375/768/1280 → توثيق في ChangeLog وcommit مستقل. المهام 1–4 (الأساس المتجاوب، التنقل والحالات، رحلة أول تشغيل، رحلة الإضافة والمعالجة) منجزة.
 
-- [ ] **Task 5: Archive, Search and Record Workspace** — مساحة عمل الأرشيف والبحث وسجل المادة.
-- [ ] **Task 6: Organization and Quality Workspaces** — المجموعات، الوسوم، المفضلة، المكررات، الجودة.
-- [ ] **Task 7: Media Review, Collaboration, Automation and Rights** — مراجعة الوسائط، التعاون، الأتمتة، الحقوق.
-- [ ] **Task 8: Sharing, Observability and Administration** — المشاركة، المراقبة، الإدارة.
-- [ ] **Task 9: Whole-App Verification and Closure** — تحقق شامل للتطبيق وإغلاق الخطة.
+- [x] **Task 5: Archive, Search and Record Workspace** — مساحة عمل الأرشيف والبحث وسجل المادة.
+- [x] **Task 6: Organization and Quality Workspaces** — المجموعات، الوسوم، المفضلة، المكررات، الجودة.
+- [x] **Task 7: Media Review, Collaboration, Automation and Rights** — مراجعة الوسائط، التعاون، الأتمتة، الحقوق.
+- [x] **Task 8: Sharing, Observability and Administration** — المشاركة، المراقبة، الإدارة.
+- [x] **Task 9: Whole-App Verification and Closure** — تحقق شامل للتطبيق وإغلاق الخطة.
 - البنود التي تحتاج اعتمادات، أجهزة، سياقات نشر، أو عينات حية نُقلت إلى سجل “تحققات خارجية مؤجلة” داخل `ChangeLog.md` ولا تُعد مهام تطوير محلية نشطة.
 
 ## قاعدة إعادة الفتح

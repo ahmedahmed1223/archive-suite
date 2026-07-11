@@ -3194,3 +3194,10 @@
 
 - أضيفت وحدة `admin-action-summary` خالصة ومختبرة بأسلوب TDD: تنقيح قيم credentials الشائعة، حالات انتهاء روابط المشاركة، معاينة تصدير صادقة، حداثة النسخة الاحتياطية، وتجميع الأخطاء مع خطوة استرداد عملية.
 - طبّقت الشريحة واجهات أكثر أمناً في المشاركات وعلّاقات المراجعة العامة والتقارير والنسخ الاحتياطي وسجل الأخطاء والنشاط والتحليلات وكتالوج الإضافات والإشعارات: عارض عام محدود، حالة انتهاء واضحة، تأكيدات محلية لا تدّعي إبطال الرابط، معاينة قبل التصدير، وحالات خطأ منقحة مع إجراء تالٍ. لا توجد نقاط API أو ادعاءات تشغيلية جديدة.
+
+# 2026-07-11 — التحقق الشامل وإغلاق الخطة (Task 9)
+
+- شُخّص فشل `pnpm --filter @archive/next run test` أولاً: نجحت 122 حالة Vitest لكن اكتشاف Vitest الافتراضي ضمّ ملفّي Playwright تحت `archive-next/e2e/`، ففشلا لأن hooks Playwright نُفذت خارج runner الخاص بها.
+- أضيف `archive-next/vitest.config.ts` بإقصاء محدود لـ `e2e/**` فوق `configDefaults.exclude`؛ بذلك تبقى استثناءات Vitest الافتراضية، ولا تتأثر أوامر Playwright المنفصلة. RED: فشل التشغيل الكامل بملفي E2E؛ GREEN: 19 ملفاً و122 اختباراً ناجحاً.
+- بوابات محلية ناجحة: `pnpm --filter @archive/next run typecheck`، `pnpm --filter @archive/next run build` (51 route)، `node scripts/verify-api-contracts.mjs`، و`node scripts/verify-repo-hygiene.mjs`.
+- مراجعة static للاستجابة وحالات المسارات: `pnpm --filter @archive/next exec vitest run lib/responsive-layout.test.ts lib/page-state-contract.test.ts` نجح بـ 6/6. لم تُلتقط screenshots في هذه الجولة لأن مراجعة المتصفح الحية تتطلب تشغيل خدمات Next/Laravel وبيانات/جلسة اختبار؛ لا يعد ذلك فشلاً محلياً أو مهمة تطوير مفتوحة.
