@@ -7,6 +7,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
+import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import type { CopilotStatus } from "@/lib/copilot-status";
 import { useAuthSession } from "@/lib/auth-session";
 
@@ -148,6 +149,15 @@ export default function CopilotPage() {
           </button>
         )}
       />
+
+      <OperationalSafetyPanel
+        action="إرسال طلب إلى المساعد"
+        dryRun={!status?.configured}
+        confidence={status?.configured ? 75 : undefined}
+        rights="review"
+        auditHref="/activity"
+      />
+      <p className="helper-text">الخادم يطبق سياسات الحقوق والصلاحيات عند إرسال الطلب؛ تهيئة المساعد لا تعني موافقة حقوق محلية.</p>
 
       {phase === "loading" ? (
         <div className="panel panel-compact" role="status" aria-live="polite">

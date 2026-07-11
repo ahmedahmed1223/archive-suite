@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import {
   createArchiveApiClient,
   type CollaborationDocument,
@@ -343,6 +344,8 @@ export default function CollaborationPage() {
           </>
         }
       />
+
+      <OperationalSafetyPanel action="مراجعة حالة التعاون" dryRun confidence={90} auditHref="/activity" />
 
       <div className="split-layout" aria-label="التعاون الحي">
           <article className="panel auth-form">

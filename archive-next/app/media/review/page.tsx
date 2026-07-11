@@ -6,6 +6,7 @@ import AnnotationCanvas from "@/components/AnnotationCanvas";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
+import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ReviewComment, type ReviewRect } from "@/lib/archive-api";
 import { getEchoClient } from "@/lib/echo";
@@ -192,6 +193,8 @@ export default function ReviewPage() {
           </>
         )}
       />
+
+      <OperationalSafetyPanel action="إضافة تعليق مراجعة" confidence={88} auditHref="/activity" />
 
       {error && (
         <div className="state-banner state-banner-error" role="alert">

@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
 import PageToolbar from "@/components/PageToolbar";
+import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import {
   createArchiveApiClient,
   type CollaborationLock,
@@ -215,6 +216,8 @@ export default function BroadcastSimulationPage() {
           </>
         }
       />
+
+      <OperationalSafetyPanel action="مراجعة محاكاة البث" dryRun confidence={85} auditHref="/activity" />
 
       {error ? (
         <div className="state-banner state-banner-error" role="alert">

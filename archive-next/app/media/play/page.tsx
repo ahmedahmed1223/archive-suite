@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
 import MediaSourcePicker from "@/components/MediaSourcePicker";
+import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
 import { parseSubtitles } from "@/lib/media/subtitles";
 import styles from "./play.module.css";
@@ -117,6 +118,8 @@ export default function MediaPlayPage() {
           />
         </form>
       </PageToolbar>
+
+      <OperationalSafetyPanel action="تشغيل المادة" dryRun confidence={96} auditHref="/activity" />
 
       {path ? (
         <div className={styles.theaterLayout}>
