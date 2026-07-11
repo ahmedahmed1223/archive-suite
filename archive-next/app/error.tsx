@@ -1,6 +1,5 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
 export default function RouteError({
@@ -11,7 +10,7 @@ export default function RouteError({
   reset: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    console.error(error);
   }, [error]);
 
   return (
@@ -19,7 +18,7 @@ export default function RouteError({
       <section className="panel">
         <span className="badge badge-danger">تعذر عرض الصفحة</span>
         <h1>حدث خطأ أثناء تحميل هذه الشاشة.</h1>
-        <p>تم تسجيل الخطأ للمراجعة. أعد المحاولة، أو ارجع إلى الرئيسية.</p>
+        <p>أعد المحاولة، أو ارجع إلى الرئيسية إذا استمر الخطأ.</p>
         {error.digest ? <p className="muted">مرجع الخطأ: {error.digest}</p> : null}
         <div className="button-row">
           <button className="button button-primary" type="button" onClick={reset}>

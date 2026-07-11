@@ -1,6 +1,5 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 import { BRAND } from "@/lib/brand";
 
@@ -12,7 +11,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    console.error(error);
   }, [error]);
 
   return (
@@ -23,8 +22,8 @@ export default function GlobalError({
             <span className="badge badge-danger">خطأ غير متوقع</span>
             <h1>تعذر تحميل {BRAND.arabicName}.</h1>
             <p>
-              تم تسجيل الخطأ للمراجعة. يمكنك إعادة المحاولة، وإن تكرر الخطأ
-              فافتح سجل الأخطاء من لوحة التشغيل.
+              يمكنك إعادة المحاولة، وإن تكرر الخطأ فافتح سجل الأخطاء من لوحة
+              التشغيل.
             </p>
             {error.digest ? <p className="muted">مرجع الخطأ: {error.digest}</p> : null}
             <div className="button-row">
