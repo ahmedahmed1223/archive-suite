@@ -180,17 +180,18 @@ class SystemController extends Controller
             return $denied;
         }
 
+        // Missing/empty payload means "test the app's default local disk".
         $validated = $request->validate([
-            'driver' => ['required', 'string', 'in:local,s3'],
-            'name' => ['required', 'string', 'max:255'],
-            'config' => ['required', 'array'],
+            'driver' => ['sometimes', 'string', 'in:local,s3'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'config' => ['sometimes', 'array'],
         ]);
 
         try {
             $result = $this->probeStorageConnection(
-                $validated['driver'],
-                $validated['name'],
-                $validated['config']
+                $validated['driver'] ?? 'local',
+                $validated['name'] ?? 'default',
+                $validated['config'] ?? []
             );
 
             return response()->json([

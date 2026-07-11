@@ -105,6 +105,17 @@ function odbcStatusLabel(status: OdbcProbe["status"]) {
   return labels[status];
 }
 
+// ponytail: fixed API messages map 1:1 to status; dynamic driver errors stay raw
+function odbcStatusMessage(odbc: OdbcProbe) {
+  const messages: Partial<Record<OdbcProbe["status"], string>> = {
+    disabled: "جسر ODBC معطل في بيئة الخادم.",
+    "missing-dsn": "ODBC مفعل لكن قيمة ODBC_DSN فارغة.",
+    "driver-unavailable": "امتداد PHP ODBC أو مشغلات ODBC غير متاحة."
+  };
+
+  return messages[odbc.status] || odbc.error || odbc.message;
+}
+
 function formatPreviewValue(value: unknown) {
   if (value === null || value === undefined || value === "") {
     return "غير متاح";
@@ -350,7 +361,7 @@ export default function SettingsPage() {
     <AppShell subtitle="مركز الإعدادات" contentClassName="settings-content" tipsPage="settings">
       <PageToolbar
         icon={<Settings size={24} />}
-        eyebrow={<span className="badge">Settings Hub</span>}
+        eyebrow={<span className="badge">مركز الإعدادات</span>}
         title={`إعدادات ${BRAND.arabicName}`}
         description="مركز واحد للهوية، الأمان، التخزين، ODBC، API، والمظهر، مع تمييز ما هو مطبق فعلاً وما ينتظر صلاحيات تحرير أو backend إضافي."
         meta={(
@@ -410,7 +421,7 @@ export default function SettingsPage() {
           {
             label: "الكتابة",
             value: canPreviewOdbc ? "مقيدة" : "مغلقة",
-            description: selectedOdbcTable,
+            description: `الجدول المحدد: ${selectedOdbcTable}`,
             icon: <KeyRound size={20} />,
             tone: canPreviewOdbc ? "info" : "default"
           }
@@ -476,7 +487,7 @@ export default function SettingsPage() {
 
                 {settings && settings.cspPolicy && (
                   <div className="section-divider">
-                    <strong>CSP Policy (Deploy-time)</strong>
+                    <strong>سياسة CSP (وقت النشر)</strong>
                     <p className="helper-text mt-tight mono-text">
                       {settings.cspPolicy}
                     </p>
@@ -485,7 +496,7 @@ export default function SettingsPage() {
 
                 {settings && settings.corsOrigins && settings.corsOrigins.length > 0 && (
                   <div className="section-divider">
-                    <strong>CORS Origins (Deploy-time)</strong>
+                    <strong>مصادر CORS (وقت النشر)</strong>
                     <ul className="compact-list mt-tight">
                       {settings.corsOrigins.map((origin) => (
                         <li key={origin}>{origin}</li>
@@ -542,8 +553,8 @@ export default function SettingsPage() {
 
                 {(odbc.message || odbc.error) && (
                   <div className={`state-banner ${odbc.status === "connected" ? "state-banner-success" : "state-banner-error"}`}>
-                    <strong>{odbc.status === "connected" ? "الاتصال جاهز" : "يتطلب إعدادا"}</strong>
-                    <p className="helper-text">{odbc.error || odbc.message}</p>
+                    <strong>{odbc.status === "connected" ? "الاتصال جاهز" : "يتطلب إعداداً"}</strong>
+                    <p className="helper-text">{odbcStatusMessage(odbc)}</p>
                   </div>
                 )}
 

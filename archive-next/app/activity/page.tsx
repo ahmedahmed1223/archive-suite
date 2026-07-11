@@ -136,7 +136,7 @@ export default function ActivityPage() {
       <PageToolbar
         eyebrow={<span className="badge">Audit Activity</span>}
         title="النشاط والتاريخ"
-        description="سجل نشاط مصادق ومسنود من Ø³Ø¬Ù Ø§ÙØªØ¯ÙÙÙ ÙÙ Ø§ÙØ®Ø§Ø¯Ù، مع فلاتر حسب الحدث والنتيجة والمورد وقرارات استعادة عند توفر metadata كافية."
+        description="سجل نشاط مصادق ومسنود من سجل التدقيق في الخادم، مع فلاتر حسب الحدث والنتيجة والمورد وقرارات استعادة عند توفر metadata كافية."
         meta={(
           <>
             <span className="badge">{entries.length} حدث</span>

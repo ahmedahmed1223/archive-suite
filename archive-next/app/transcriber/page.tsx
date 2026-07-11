@@ -147,7 +147,7 @@ export default function TranscriberPage() {
     <AppShell subtitle="التفريغ الصوتي" contentClassName={`stack ${styles.transcriberContent}`}>
       <PageToolbar
         title="التفريغ الصوتي"
-        description="أنشئ مهمة تفريغ صوتي عبر ÙÙØ§Ù Ø§ÙÙØ³Ø§Ø¦Ø· وتابع تقدّمها حتى اكتمال النص بالطوابع الزمنية."
+        description="أنشئ مهمة تفريغ صوتي عبر مهام الوسائط وتابع تقدّمها حتى اكتمال النص بالطوابع الزمنية."
         meta={
           <>
             <span className="badge">تفريغ عبر queue</span>

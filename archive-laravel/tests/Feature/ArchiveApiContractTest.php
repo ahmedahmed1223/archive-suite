@@ -15,7 +15,7 @@ class ArchiveApiContractTest extends TestCase
                 ->where('ok', true)
                 ->where('backend', 'laravel')
                 ->has('engine')
-                ->has('uptimeSec')
+                ->where('uptimeSec', fn ($value) => is_int($value) && $value >= 0)
                 ->has('version')
                 ->has('authRequired')
             );

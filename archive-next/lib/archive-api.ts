@@ -1082,6 +1082,25 @@ export function getContractSummary() {
   };
 }
 
+const AUTH_ERROR_MESSAGES_AR: Record<string, string> = {
+  "Invalid credentials.": "بيانات الدخول غير صحيحة.",
+  "Unauthorized.": "انتهت الجلسة. سجّل الدخول مرة أخرى."
+};
+
+const GENERIC_LOGIN_ERROR_AR = "تعذر تسجيل الدخول. تحقق من البيانات وحاول مجدداً.";
+
+function localizeLoginError(error: string): string {
+  const known = AUTH_ERROR_MESSAGES_AR[error];
+
+  if (known) {
+    return known;
+  }
+
+  // Client-produced transport errors are already Arabic; keep them.
+  // Anything else (raw English API strings) falls back to a generic Arabic message.
+  return /[؀-ۿ]/.test(error) ? error : GENERIC_LOGIN_ERROR_AR;
+}
+
 function clampApiLimit(value: number | undefined, fallback: number, max: number) {
   if (!Number.isFinite(value)) {
     return fallback;
@@ -1215,7 +1234,15 @@ export function createArchiveApiClient({
 
   return {
     health: () => get("/health"),
-    login: (payload: LoginRequest) => post<AuthSession>("/auth/login", payload),
+    login: async (payload: LoginRequest): Promise<ApiEnvelope<AuthSession>> => {
+      const response = await post<AuthSession>("/auth/login", payload);
+
+      if (!response.ok) {
+        return { ...response, error: localizeLoginError(response.error) };
+      }
+
+      return response;
+    },
     me: (options?: AuthRequestOptions) => get("/auth/me", options),
     refresh: () => post<AuthSession>("/auth/refresh"),
     logout: (options?: AuthRequestOptions) => post("/auth/logout", undefined, options),
