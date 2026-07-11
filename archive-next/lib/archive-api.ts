@@ -43,6 +43,18 @@ export interface ArchiveRecord {
   [key: string]: unknown;
 }
 
+export interface PublicCatalogRecord {
+  id: string;
+  uid: string;
+  title: string;
+  description?: string | null;
+  type?: string | null;
+  subtype?: string | null;
+  tags: string[];
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
 export interface RecordListPayload {
   records: ArchiveRecord[];
   nextCursor?: string | null;
@@ -889,6 +901,7 @@ export interface ArchiveApiClient {
     params: { q?: string; store?: string; type?: string; subtype?: string; tag?: string; status?: string; cursor?: string; limit?: number },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[]; facets?: SearchFacets; nextCursor?: string | null }>>;
+  publicCatalog(params?: { q?: string; type?: string; tag?: string; cursor?: string; limit?: number }): Promise<ApiEnvelope<{ records: PublicCatalogRecord[]; nextCursor?: string | null }>>;
   discover(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sections: DiscoverSection[] }>>;
   suggestions(params: { context: SuggestionContext; recordId?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ context: SuggestionContext; suggestions: ArchiveSuggestion[] }>>;
   submitSuggestionFeedback(key: string, payload: { value: SuggestionFeedbackValue; context?: SuggestionContext }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ feedback: ArchiveSuggestionFeedback }>>;
@@ -1171,6 +1184,15 @@ export function createArchiveApiClient({
       if (cursor) params.set("cursor", cursor);
       params.set("limit", String(clampApiLimit(limit, 20, 100)));
       return get(`/search?${params.toString()}`, options);
+    },
+    publicCatalog: ({ q = "", type = "", tag = "", cursor = "", limit = 24 } = {}) => {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (type) params.set("type", type);
+      if (tag) params.set("tag", tag);
+      if (cursor) params.set("cursor", cursor);
+      params.set("limit", String(clampApiLimit(limit, 24, 100)));
+      return get<{ records: PublicCatalogRecord[]; nextCursor?: string | null }>(`/public/catalog?${params.toString()}`);
     },
     discover: (params?: { limit?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();

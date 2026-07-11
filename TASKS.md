@@ -37,8 +37,6 @@
 
 - [ ] **Auto-tagging + semantic search v2** — vision tagging، embeddings، named entities، visual duplicate detection، وfaceted semantic search.
 
-- [ ] **Public catalog gateway** — بوابة كتالوج عامة بضوابط نشر ومراجعة.
-
 - [ ] **Plugin marketplace** — بنية إضافات آمنة ومراجعة صلاحيات.
 
 - [ ] **Live broadcast simulation** — محاكاة بث حي/غرفة مراجعة تشغيلية.
