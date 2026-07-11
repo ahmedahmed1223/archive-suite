@@ -161,11 +161,11 @@ async function main() {
 
   const e2eCommand = pnpmInvocation([
     "--filter",
-    "@archive/app",
+    "@archive/next",
     "exec",
     "playwright",
     "test",
-    "tests/next-laravel-integration.spec.ts",
+    "e2e/next-laravel-integration.spec.ts",
   ]);
   const e2e = spawnChild("playwright", e2eCommand.command, e2eCommand.args, {
     env: {

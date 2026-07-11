@@ -58,7 +58,7 @@ docs/api/*
 !docs/api/archive-contract.openapi.json
 
 # Python (OCR service has its own Docker build)
-archive-server/ocr-service/
+infra/ocr-service/
 **/__pycache__
 **/*.pyc
 
@@ -77,4 +77,4 @@ archive-server/pocketbase/pb_data
 **/*.tar.gz
 
 # pgAdmin local config
-archive-server/deploy/pgadmin-servers.json
+infra/deploy/pgadmin-servers.json
