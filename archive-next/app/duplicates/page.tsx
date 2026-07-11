@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { buildChangeImpact } from "@/lib/change-impact";
 import { formatDate, normalizeText } from "@/lib/record-utils";
 
 interface DuplicateGroup {
@@ -123,6 +125,8 @@ export default function DuplicatesPage() {
                   </div>
                 ))}
               </div>
+              <ChangeImpactPreview impact={buildChangeImpact({ action: "merge", entity: "السجلات المتشابهة", affectedCount: group.records.length })} />
+              <p className="helper-text">هذه معاينة فقط: لا يوجد دمج أو حذف مفعّل حتى تتوفر عملية خادم قابلة للمراجعة.</p>
             </article>
           ))}
         </section>

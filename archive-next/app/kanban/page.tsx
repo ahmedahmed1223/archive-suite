@@ -22,7 +22,9 @@ import type { ReactNode } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { buildChangeImpact } from "@/lib/change-impact";
 import { formatDate, getRecordWorkflowStatus, WORKFLOW_STATES, workflowStatusLabels, type WorkflowStatus } from "@/lib/record-utils";
 
 type LoadState =
@@ -119,6 +121,7 @@ export default function KanbanPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [busyId, setBusyId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
+  const [lastMove, setLastMove] = useState<{ record: ArchiveRecord; previousStatus: WorkflowStatus } | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -151,7 +154,7 @@ export default function KanbanPage() {
     return map;
   }, [records]);
 
-  async function moveRecord(record: ArchiveRecord, status: WorkflowStatus) {
+  async function moveRecord(record: ArchiveRecord, status: WorkflowStatus, trackUndo = true) {
     setBusyId(record.id);
     setFeedback("");
     const response = await api.bulkRecords({
@@ -160,6 +163,7 @@ export default function KanbanPage() {
     });
     if (response.ok) {
       setFeedback(`تم نقل "${record.title || record.id}" إلى ${workflowStatusLabels[status]}`);
+      setLastMove(trackUndo ? { record, previousStatus: getRecordWorkflowStatus(record) } : null);
       await load();
     } else {
       setFeedback(response.error);
@@ -199,6 +203,10 @@ export default function KanbanPage() {
           <span className="helper-text">{feedback}</span>
         </div>
       ) : null}
+      <ChangeImpactPreview impact={buildChangeImpact({ action: "move", entity: "بطاقة كانبان", affectedCount: 1, reversible: true })} />
+      <p className="helper-text">يمكن استخدام قائمة «نقل» داخل كل بطاقة كبديل كامل قابل للوصول للسحب والإفلات.</p>
+      <p className="helper-text">جميع البطاقات متاحة عبر قائمة النقل، بما فيها البطاقات خارج مساحة العرض الأولى.</p>
+      {lastMove ? <button type="button" className="button button-secondary button-sm" disabled={busyId === lastMove.record.id} onClick={() => void moveRecord(lastMove.record, lastMove.previousStatus, false)}>تراجع عن آخر نقل</button> : null}
 
       {state.status === "loading" ? <div className="panel panel-compact"><p className="form-status">جار تحميل اللوحة...</p></div> : null}
       {state.status === "error" ? (
@@ -216,7 +224,7 @@ export default function KanbanPage() {
           <section className="workflow-board" aria-label="لوحة سير العمل">
             {WORKFLOW_STATES.map((status) => {
               const items = grouped.get(status) || [];
-              const visibleItems = items.slice(0, 24);
+              const visibleItems = items;
               return (
                 <WorkflowColumn key={status} status={status} itemIds={visibleItems.map((record) => record.id)}>
                   <div className="panel-title-row">

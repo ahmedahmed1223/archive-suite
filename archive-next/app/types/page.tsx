@@ -128,6 +128,10 @@ export default function TypesPage() {
       />
 
       {actionMessage ? <p className="types-feedback" role="status">{actionMessage}</p> : null}
+      <section className="state-banner" role="alert">
+        <strong>معاينة أثر المخطط</strong>
+        <span className="helper-text">تغيير الحقول أو حذف النوع قد يجعل بيانات السجلات الحالية غير متوافقة. راجع الحقول والصلاحيات قبل الحفظ؛ الحذف لا يمكن التراجع عنه.</span>
+      </section>
 
       {state.status === "error" ? (
         <section className="types-state" role="alert">

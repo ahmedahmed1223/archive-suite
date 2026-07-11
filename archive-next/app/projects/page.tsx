@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, deriveRecordSourcePath, type ArchiveRecord, type MediaJob } from "@/lib/archive-api";
+import { buildChangeImpact } from "@/lib/change-impact";
 import {
   addClip,
   buildEdl,
@@ -97,7 +99,7 @@ export default function ProjectsPage() {
   }
 
   async function handleDelete(project: MontageProject) {
-    if (!window.confirm(`حذف المشروع "${project.name}"؟`)) return;
+    if (!window.confirm(`حذف المشروع محلياً غير قابل للتراجع: "${project.name}". لن تتغير أي مادة أصلية.`)) return;
     await deleteProject(project.id);
     const next = await listProjects();
     setProjects(next);
@@ -137,6 +139,12 @@ export default function ProjectsPage() {
       outSec: end
     }));
     setFeedback(`تمت إضافة "${record.title || record.id}" إلى الخط الزمني`);
+  }
+
+  function handleRemoveClip(clip: MontageClip) {
+    if (!selected) return;
+    if (!window.confirm(`حذف القصاصة غير قابل للتراجع من هذا الخط الزمني: "${clip.title || clip.itemId}". لن تتغير المادة الأصلية.`)) return;
+    persist(removeClip(selected, clip.id));
   }
 
   useEffect(() => {
@@ -227,6 +235,7 @@ export default function ProjectsPage() {
           <span className="helper-text">{feedback}</span>
         </div>
       ) : null}
+      <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: "المشروع", affectedCount: 0 })} />
 
       <section className="panel panel-compact" aria-label="قائمة المشاريع">
         <div className="panel-title-row">
@@ -362,10 +371,11 @@ export default function ProjectsPage() {
                     </button>
                     <button
                       type="button" className="button button-secondary button-sm"
-                      onClick={() => persist(removeClip(selected, clip.id))}
+                      onClick={() => handleRemoveClip(clip)}
                     >
                       حذف
                     </button>
+                    <span className="helper-text">حذف القصاصة يغيّر الخط الزمني فقط؛ المادة الأصلية لا تتأثر.</span>
                   </div>
                 </div>
               ))

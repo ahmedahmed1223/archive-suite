@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord, type TagNode } from "@/lib/archive-api";
+import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
 
 type TagsLoadState =
@@ -177,6 +179,7 @@ export default function TagsPage() {
                     </select>
                     <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(row.tag)}`}>بحث</a>
                   </div>
+                  <p className="helper-text">تغيير الأب هيكلي فقط ولا يعدّل أي سجل؛ لا يتوفر تراجع تلقائي لهذا التحديث.</p>
                 </div>
               );
             })}
@@ -195,6 +198,8 @@ export default function TagsPage() {
               <article className="panel" key={group.join("|")}>
                 <h3>{group[0]}</h3>
                 <p>وسوم متقاربة بعد التطبيع: {group.join("، ")}</p>
+                <ChangeImpactPreview impact={buildChangeImpact({ action: "merge", entity: "الوسوم المتقاربة", affectedCount: records.filter((record) => (record.tags || []).some((tag) => group.includes(tag))).length })} />
+                <p className="helper-text">الدمج غير معروض هنا قبل توفير نقطة نهاية تدعم المعاينة؛ راجع السجلات أولاً.</p>
               </article>
             ))}
           </div>
