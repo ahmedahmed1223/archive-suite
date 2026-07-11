@@ -9,6 +9,7 @@ import WorkspaceCommandBar from "@/components/WorkspaceCommandBar";
 import { isFocusMode } from "@/lib/focus-mode";
 import type { PageKey } from "@/lib/contextual-tips";
 import ContextualTips from "@/components/ContextualTips";
+import WorkspacePositionRestorer from "@/components/WorkspacePositionRestorer";
 
 export default function AppShell({
   subtitle,
@@ -42,6 +43,7 @@ export default function AppShell({
         الانتقال إلى المحتوى الرئيسي
       </a>
       <AppHeader subtitle={subtitle} navLabel={navLabel} />
+      <WorkspacePositionRestorer />
       <main id="main-content" tabIndex={-1} className={`content app-content ${contentClassName}`.trim()}>
         {tipsPage && <ContextualTips page={tipsPage} />}
         <WorkspaceCommandBar />

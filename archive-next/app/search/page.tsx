@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
@@ -10,6 +10,7 @@ import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
+import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 
 type SearchState =
   | { status: "idle" }
@@ -94,6 +95,22 @@ function SearchPageContent() {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [savedStatus, setSavedStatus] = useState("");
   const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
+  const hasCompletedWorkspacePreferenceRestore = useRef(false);
+
+  useEffect(() => {
+    if (!searchParams.toString() && !hasCompletedWorkspacePreferenceRestore.current) return;
+    try {
+      const current = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY));
+      const next = updateWorkspacePreferences(current, "/search", {
+        view: viewMode,
+        previewId: previewId || undefined,
+        filters: { q: query, store, type: typeFilter, tag: tagFilter, page: String(currentPage) }
+      });
+      window.localStorage.setItem(WORKSPACE_PREFERENCES_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Local preferences are optional.
+    }
+  }, [currentPage, previewId, query, store, tagFilter, typeFilter, viewMode]);
 
   const updateParams = useCallback(
     (q: string, s: string, page: number, type: string, tag: string) => {
@@ -160,6 +177,33 @@ function SearchPageContent() {
   );
 
   useEffect(() => {
+    if (searchParams.toString() || hasCompletedWorkspacePreferenceRestore.current) return;
+    try {
+      const saved = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY)).routes["/search"];
+      if (!saved) return;
+      const restoredQuery = saved.filters?.q || "";
+      const restoredStore = saved.filters?.store || "";
+      const restoredType = saved.filters?.type || "all";
+      const restoredTag = saved.filters?.tag || "";
+      const restoredPage = Math.max(1, Number(saved.filters?.page) || 1);
+      if (saved.view === "cards" || saved.view === "list") setViewMode(saved.view);
+      if (saved.previewId) setPreviewId(saved.previewId);
+      setQuery(restoredQuery);
+      setStore(restoredStore);
+      setTypeFilter(restoredType);
+      setTagFilter(restoredTag);
+      setCurrentPage(restoredPage);
+      if (restoredQuery || restoredStore || restoredType !== "all" || restoredTag) {
+        void search(restoredQuery, restoredStore, restoredPage, restoredType, restoredTag);
+      }
+    } catch {
+      // Local preferences are optional.
+    } finally {
+      hasCompletedWorkspacePreferenceRestore.current = true;
+    }
+  }, [search, searchParams]);
+
+  useEffect(() => {
     void refreshSavedSearches();
     if (initialQuery || initialStore || initialType !== "all" || initialTag) {
       void search(initialQuery, initialStore, initialPage, initialType, initialTag);
@@ -189,6 +233,12 @@ function SearchPageContent() {
   }, [filteredRecords, currentPage, pageSize]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredRecords.length / pageSize)), [filteredRecords.length, pageSize]);
+  const resultCount = useMemo(() => deriveWorkspaceResultCount({
+    total: state.status === "ready" ? state.total : 0,
+    filtered: filteredRecords.length,
+    page: currentPage,
+    pageSize
+  }), [currentPage, filteredRecords.length, pageSize, state]);
   const previewRecord = useMemo(() => {
     if (previewId) return filteredRecords.find((record) => record.id === previewId) || filteredRecords[0] || null;
     return filteredRecords[0] || null;
@@ -430,7 +480,7 @@ function SearchPageContent() {
           <div className="search-results-surface" data-view={viewMode}>
             <div className="panel panel-compact">
               <p className="form-status">
-                عرض {visibleRecords.length} من {filteredRecords.length} نتيجة
+                {resultCount.label}
                 {typeof state.total === "number" ? ` · الإجمالي في الخادم: ${state.total}` : ""}
                 {query ? ` · البحث عن: "${query}"` : ""}
               </p>
