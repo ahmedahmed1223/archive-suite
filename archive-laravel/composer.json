@@ -10,7 +10,13 @@
         "laravel/framework": "^13.8",
         "laravel/reverb": "^1.0",
         "laravel/tinker": "^3.0",
-        "sentry/sentry-laravel": "^4.26"
+        "league/flysystem-aws-s3-v3": "^3.35",
+        "league/flysystem-azure-blob-storage": "^3.31",
+        "league/flysystem-ftp": "^3.31",
+        "league/flysystem-google-cloud-storage": "^3.34",
+        "league/flysystem-sftp-v3": "^3.33",
+        "sentry/sentry-laravel": "^4.26",
+        "spatie/flysystem-dropbox": "^3.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

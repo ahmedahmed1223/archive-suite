@@ -59,6 +59,7 @@ const commands = {
     ...rest,
   ],
   artisan: ["php", "artisan", ...rest],
+  composer: ["composer", ...rest],
   serve: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000", ...rest],
 };
 

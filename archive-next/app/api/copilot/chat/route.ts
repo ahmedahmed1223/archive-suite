@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCopilotStatus } from "@/lib/copilot-status";
-import { buildProviderRequestBody, validateChatMessages } from "@/lib/copilot-chat";
+import { generateText } from "ai";
+import { resolveCopilotProvider } from "@/lib/copilot-provider";
+import { COPILOT_SYSTEM_PROMPT, trimMessagesToLimit, validateChatMessages } from "@/lib/copilot-chat";
 
 export const dynamic = "force-dynamic";
 
-const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION = "2023-06-01";
 const PROVIDER_TIMEOUT_MS = 30_000;
 
 type ChatErrorCode = "unauthorized" | "provider_not_configured" | "invalid_request" | "provider_error" | "provider_timeout";
@@ -46,20 +45,6 @@ async function verifyArchiveSession(authorization: string | null, cookie: string
   }
 }
 
-function extractReplyText(payload: unknown): string | null {
-  if (typeof payload !== "object" || payload === null || !Array.isArray((payload as { content?: unknown }).content)) {
-    return null;
-  }
-
-  const text = (payload as { content: Array<{ type?: string; text?: string }> }).content
-    .filter((block) => block?.type === "text" && typeof block.text === "string")
-    .map((block) => block.text)
-    .join("\n")
-    .trim();
-
-  return text.length > 0 ? text : null;
-}
-
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get("authorization");
   const cookie = request.headers.get("cookie");
@@ -74,9 +59,13 @@ export async function POST(request: NextRequest) {
     return errorResponse(401, "تعذر التحقق من جلستك. سجّل الدخول مرة أخرى.", "unauthorized");
   }
 
-  const status = getCopilotStatus(process.env);
+  if (process.env.ARCHIVE_COPILOT_ENABLED !== "true") {
+    return errorResponse(503, "المساعد غير مهيأ خادمياً حالياً.", "provider_not_configured");
+  }
 
-  if (!status.configured) {
+  const resolution = resolveCopilotProvider(process.env);
+
+  if (!resolution.ready || !resolution.languageModel) {
     return errorResponse(503, "المساعد غير مهيأ خادمياً حالياً.", "provider_not_configured");
   }
 
@@ -87,34 +76,15 @@ export async function POST(request: NextRequest) {
     return errorResponse(422, validation.error, "invalid_request");
   }
 
-  const apiKey = process.env.ARCHIVE_COPILOT_API_KEY;
-
-  if (!apiKey) {
-    return errorResponse(503, "المساعد غير مهيأ خادمياً حالياً.", "provider_not_configured");
-  }
-
-  const providerBody = buildProviderRequestBody(validation.messages, process.env);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
-
   try {
-    const providerResponse = await fetch(ANTHROPIC_MESSAGES_URL, {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": ANTHROPIC_VERSION,
-        "content-type": "application/json"
-      },
-      body: JSON.stringify(providerBody),
-      signal: controller.signal
+    const { text } = await generateText({
+      model: resolution.languageModel,
+      system: COPILOT_SYSTEM_PROMPT,
+      messages: trimMessagesToLimit(validation.messages),
+      abortSignal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS)
     });
 
-    if (!providerResponse.ok) {
-      return errorResponse(502, "تعذر الحصول على رد من مزود الذكاء الاصطناعي. حاول مرة أخرى.", "provider_error");
-    }
-
-    const payload = await providerResponse.json().catch(() => null);
-    const reply = extractReplyText(payload);
+    const reply = text.trim();
 
     if (!reply) {
       return errorResponse(502, "رد المساعد كان فارغاً. حاول مرة أخرى.", "provider_error");
@@ -122,12 +92,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, reply }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    const name = error instanceof Error ? error.name : "";
+
+    if (name === "TimeoutError" || name === "AbortError") {
       return errorResponse(504, "انتهت مهلة الاتصال بمزود الذكاء الاصطناعي.", "provider_timeout");
     }
 
     return errorResponse(502, "تعذر الاتصال بمزود الذكاء الاصطناعي. حاول مرة أخرى.", "provider_error");
-  } finally {
-    clearTimeout(timeout);
   }
 }
