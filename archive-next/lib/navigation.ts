@@ -27,6 +27,7 @@ export const primaryNav = [
   { href: "/shares", label: "المشاركات", section: "collaborate", icon: "Share2" },
   { href: "/shares/with-me", label: "وارد المشاركة", section: "collaborate", icon: "MailCheck" },
   { href: "/collaboration", label: "التعاون", section: "collaborate", icon: "Users" },
+  { href: "/broadcast", label: "البث", section: "collaborate", icon: "Radio" },
   { href: "/automation", label: "الأتمتة", section: "collaborate", icon: "Bot" },
   { href: "/copilot", label: "مساعد الأرشيف", section: "collaborate", icon: "BotMessageSquare" },
   { href: "/rights", label: "الحقوق", section: "collaborate", icon: "ShieldCheck" },
