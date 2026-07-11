@@ -12,6 +12,7 @@ import {
   type ComplianceReportSummary
 } from "@/lib/archive-api";
 import { formatDate } from "@/lib/record-utils";
+import { buildExportPreview, redactAdminSecrets } from "@/lib/admin-action-summary";
 import "./reports.css";
 
 const eventOptions = [
@@ -94,6 +95,7 @@ export default function ReportsPage() {
 
   const entries = state.status === "ready" ? state.entries : [];
   const summary = state.status === "ready" ? state.summary : null;
+  const exportPreview = buildExportPreview({ total: summary?.total ?? 0, format: "CSV", limit: 10000 });
 
   return (
     <AppShell subtitle="التقارير" navLabel="التقارير" contentClassName="observability-content">
@@ -149,6 +151,7 @@ export default function ReportsPage() {
         </label>
         <button className="button button-primary" type="submit">تطبيق الفلاتر</button>
       </form>
+      {state.status === "ready" ? <div className="state-banner" role="status"><strong>{exportPreview.summary}</strong><span className="helper-text">{exportPreview.detail} لا يشمل CSV payload أو عنوان IP أو معلومات العميل.</span></div> : null}
 
       {summary ? (
         <section className="report-summary-grid" aria-label="ملخص الامتثال">
@@ -160,7 +163,7 @@ export default function ReportsPage() {
       ) : null}
 
       {state.status === "loading" ? <section className="state-banner" role="status" aria-live="polite"><strong>جار إعداد تقرير الامتثال</strong><p>يجري تجميع أحداث التدقيق بحسب الفلاتر المحددة.</p></section> : null}
-      {state.status === "error" ? <section className="state-banner state-banner-error" role="alert"><TriangleAlert size={18} aria-hidden="true" /><div><strong>تعذر إعداد التقرير</strong><p>{state.message}</p></div></section> : null}
+      {state.status === "error" ? <section className="state-banner state-banner-error" role="alert"><TriangleAlert size={18} aria-hidden="true" /><div><strong>تعذر إعداد التقرير</strong><p>{redactAdminSecrets(state.message)}</p><button type="button" className="button button-secondary button-sm" onClick={() => void loadReport(appliedFilters)}>إعادة المحاولة</button></div></section> : null}
       {state.status === "ready" && entries.length === 0 ? <EmptyState title="لا توجد أحداث مطابقة" description="عدّل نطاق التاريخ أو الفلاتر، أو نفّذ عملية موثقة لتظهر ضمن الدليل." /> : null}
 
       {state.status === "ready" && entries.length > 0 ? (

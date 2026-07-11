@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { redactAdminSecrets } from "@/lib/admin-action-summary";
 
 interface InboundShareEntry {
   token: string;
@@ -106,6 +107,7 @@ export default function SharedWithMePage() {
   }
 
   function clearHistory() {
+    if (history.length > 0 && !window.confirm("مسح تاريخ المشاركات من هذا المتصفح فقط؟ لن يؤدي ذلك إلى إلغاء الروابط.")) return;
     writeHistory([]);
     setHistory([]);
   }
@@ -151,7 +153,7 @@ export default function SharedWithMePage() {
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر فتح المشاركة</strong>
-          <span className="helper-text">{state.message}</span>
+          <span className="helper-text">{redactAdminSecrets(state.message)} — قد يكون الرابط منتهياً أو غير مسموح لك.</span>
         </div>
       ) : null}
 
@@ -164,6 +166,7 @@ export default function SharedWithMePage() {
             </div>
             <span className="badge">{state.permission || "view"}</span>
           </div>
+          <p className="helper-text">معاينة محدودة وفق صلاحية الرابط؛ لا تعرض حالة انتهاء إلا إذا قدمها مصدر الرابط.</p>
 
           {state.records.length === 0 ? (
             <EmptyState title="المشاركة لا تحتوي سجلات." description="قد تكون صلاحية الرابط محدودة أو انتهت." />

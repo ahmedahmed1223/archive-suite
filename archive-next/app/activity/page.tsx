@@ -6,6 +6,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ActivityFilters, type RecordHistoryEntry } from "@/lib/archive-api";
 import { formatDate } from "@/lib/record-utils";
+import { redactAdminSecrets } from "@/lib/admin-action-summary";
 
 const eventOptions = [
   ["", "كل الأحداث"],
@@ -205,7 +206,7 @@ export default function ActivityPage() {
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل النشاط</strong>
-          <span className="helper-text">{state.message}</span>
+          <span className="helper-text">{redactAdminSecrets(state.message)} — تحقق من الفلاتر والصلاحية ثم أعد المحاولة.</span>
         </div>
       ) : null}
 
@@ -228,7 +229,7 @@ export default function ActivityPage() {
                 <div className="panel-title-row">
                   <div>
                     <h2>{eventLabel(entry.event)}</h2>
-                    <p>{entry.action}</p>
+                    <p>{redactAdminSecrets(entry.action)}</p>
                   </div>
                   <span className={entry.outcome === "success" ? "badge" : "badge badge-danger"}>
                     {outcomeLabel(entry.outcome)}

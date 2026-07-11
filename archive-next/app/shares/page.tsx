@@ -5,6 +5,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { clearAllMintedLinks, listMintedLinks, removeMintedLink, type MintedLink } from "@/lib/minted-shares";
+import { buildShareExpiry } from "@/lib/admin-action-summary";
 
 function formatLocalDate(value?: string) {
   if (!value) return "-";
@@ -32,11 +33,13 @@ export default function SharesPage() {
   };
 
   const handleRemove = (token: string) => {
+    if (!window.confirm("حذف هذا الرابط من سجل هذا المتصفح فقط؟ لن يؤدي ذلك إلى إبطال الرابط على الخادم.")) return;
     removeMintedLink(token);
     setLinks(listMintedLinks());
   };
 
   const handleClearAll = () => {
+    if (links.length > 0 && !window.confirm("مسح سجل الروابط المحلية فقط؟ لن يؤدي ذلك إلى إبطال روابط المشاركة.")) return;
     clearAllMintedLinks();
     setLinks([]);
     setCleared(true);
@@ -94,7 +97,7 @@ export default function SharesPage() {
                     <span className="badge">مشاركة</span>
                     <h3>{link.itemLabel || "رابط مشاركة"}</h3>
                   </div>
-                  <span className="badge">{formatLocalDate(link.expiresAt)}</span>
+                  <span className={`badge badge-${buildShareExpiry(link.expiresAt).tone}`}>{buildShareExpiry(link.expiresAt).label} (تقدير)</span>
                 </div>
                 <p className="mono-text wrap-anywhere" dir="ltr">{link.url}</p>
                 <dl className="mobile-field-list">
@@ -104,7 +107,7 @@ export default function SharesPage() {
                   </div>
                   <div>
                     <dt>الانتهاء</dt>
-                    <dd>{formatLocalDate(link.expiresAt)}</dd>
+                    <dd>{formatLocalDate(link.expiresAt)} — {buildShareExpiry(link.expiresAt).detail} تقدير محلي حسب التاريخ المعلن؛ الإنفاذ بالخادم.</dd>
                   </div>
                 </dl>
                 <div className="button-row">

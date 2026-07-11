@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type ReviewLinkDetails } from "@/lib/archive-api";
+import { buildShareExpiry, redactAdminSecrets } from "@/lib/admin-action-summary";
 
 type ReviewLinkState =
   | { status: "loading" }
@@ -44,15 +45,17 @@ export function ReviewLinkViewer({ token }: { token: string }) {
     return (
       <div className="state-banner state-banner-error" role="alert">
         <strong>تعذر تحميل رابط المراجعة</strong>
-        <p className="helper-text">{state.message}</p>
+        <p className="helper-text">{redactAdminSecrets(state.message)}</p>
       </div>
     );
   }
 
   const { data } = state;
+  const expiry = buildShareExpiry(data.review.expiresAt);
 
   return (
-    <div className="share-list" aria-label="محتوى رابط المراجعة">
+    <main className="share-list" aria-label="محتوى رابط المراجعة">
+      <p className="helper-text">رابط مراجعة عام؛ لا يتيح إدارة الأصل أو تغيير صلاحياته.</p>
       <div className="kv-grid">
         <div className="kv-item">
           <strong>المادة</strong>
@@ -68,6 +71,7 @@ export function ReviewLinkViewer({ token }: { token: string }) {
             <time>{new Date(data.review.expiresAt).toLocaleString("ar-SA")}</time>
           </div>
         ) : null}
+        <div className="kv-item"><strong>تقدير الصلاحية</strong><span className={`badge badge-${expiry.tone}`}>{expiry.label}</span><small className="helper-text">تقدير محلي حسب التاريخ المعلن؛ الإنفاذ بالخادم.</small></div>
       </div>
       {data.comments.length === 0 ? (
         <div className="empty-state">لا توجد تعليقات متاحة لهذا الرابط.</div>
@@ -78,10 +82,10 @@ export function ReviewLinkViewer({ token }: { token: string }) {
               <h2>{comment.author}</h2>
               <span className="badge">{Math.floor(comment.timecodeSeconds / 60)}:{Math.floor(comment.timecodeSeconds % 60).toString().padStart(2, "0")}</span>
             </div>
-            <p>{comment.body}</p>
+            <p>{redactAdminSecrets(comment.body)}</p>
           </article>
         ))
       )}
-    </div>
+    </main>
   );
 }
