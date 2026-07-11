@@ -6,6 +6,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import PublicFooter from "@/components/PublicFooter";
 import PublicHeader from "@/components/PublicHeader";
+import WorkspacePositionRestorer from "@/components/WorkspacePositionRestorer";
 import { createArchiveApiClient, type PublicCatalogRecord } from "@/lib/archive-api";
 
 type CatalogState =
@@ -94,6 +95,7 @@ export default function PublicCatalogPage() {
 
   return (
     <main className="shell">
+      <WorkspacePositionRestorer />
       <PublicHeader subtitle="الكتالوج العام" />
 
       <section className="content public-content" aria-label="الكتالوج العام">

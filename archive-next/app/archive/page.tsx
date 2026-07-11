@@ -12,6 +12,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacets } from "@/lib/archive-api";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import styles from "./archive.module.css";
 
 // Workflow states mirrored from the legacy SPA's itemStatus state machine —
@@ -200,6 +201,40 @@ function ArchivePageContent() {
   const [savedViewStatus, setSavedViewStatus] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkFeedback, setBulkFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    if (searchParams.toString()) return;
+    try {
+      const saved = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY)).routes["/archive"];
+      if (!saved) return;
+      if (saved.view && viewOptions.some((option) => option.value === saved.view)) setViewMode(saved.view as ArchiveViewMode);
+      if (saved.density && itemSizeOptions.some((option) => option.value === saved.density)) setItemSize(saved.density);
+      if (saved.previewId) setPreviewId(saved.previewId);
+      setQuery(saved.filters?.q || "");
+      setStore(saved.filters?.store || "all");
+      setType(saved.filters?.type || "all");
+      setWorkflowStatus((saved.filters?.status as WorkflowStatus | "all") || "all");
+    } catch {
+      // Local preferences must never block archive loading.
+    }
+    // Restore once; URL parameters remain the explicit shareable state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      const current = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY));
+      const next = updateWorkspacePreferences(current, "/archive", {
+        view: viewMode,
+        density: itemSize,
+        previewId: previewId || undefined,
+        filters: { q: query, store, type, status: workflowStatus }
+      });
+      window.localStorage.setItem(WORKSPACE_PREFERENCES_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Storage can be unavailable in private or restricted browser contexts.
+    }
+  }, [itemSize, previewId, query, store, type, viewMode, workflowStatus]);
 
   const refreshSavedViews = useCallback(async () => {
     const response = await api.savedSearches();
