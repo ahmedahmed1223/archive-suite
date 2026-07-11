@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord, type Collection } from "@/lib/archive-api";
+import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
 import { toastError, toastSuccess } from "@/lib/toast";
 
@@ -89,6 +91,12 @@ export default function CollectionsPage() {
   }
 
   async function removeCollection(id: string) {
+    if (state.status !== "ready") {
+      setStatusMessage("تعذر تأكيد عدد السجلات قبل اكتمال التحميل.");
+      return;
+    }
+    const collection = collections.find((item) => item.id === id);
+    if (collection && !window.confirm(`حذف المجموعة لا يحذف السجلات نفسها. تحتوي المجموعة حالياً على ${records.filter((record) => recordMatches(record, collection)).length} سجل.`)) return;
     const response = await api.deleteCollection(id);
     if (!response.ok) setStatusMessage(response.error || "تعذر حذف المجموعة.");
     else setStatusMessage("تم حذف المجموعة.");
@@ -168,7 +176,7 @@ export default function CollectionsPage() {
       ) : collectionsState.status === "ready" ? (
         <section className="dense-grid" aria-label="المجموعات المحفوظة">
           {collections.map((collection) => {
-            const matches = records.filter((record) => recordMatches(record, collection));
+            const matches = state.status === "ready" ? records.filter((record) => recordMatches(record, collection)) : [];
             const searchTerm = collection.query || (collection.tag !== "all" ? collection.tag : collection.name);
             const searchHref = `/search?q=${encodeURIComponent(searchTerm)}${collection.type !== "all" ? `&type=${encodeURIComponent(collection.type)}` : ""}`;
             return (
@@ -185,9 +193,11 @@ export default function CollectionsPage() {
                   <div><dt>الوسم</dt><dd>{collection.tag === "all" ? "كل الوسوم" : collection.tag}</dd></div>
                   <div><dt>الإنشاء</dt><dd>{collection.createdAt ? formatDate(collection.createdAt) : "-"}</dd></div>
                 </dl>
+                <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: "المجموعة", affectedCount: 0 })} />
+                <p className="helper-text">{state.status === "ready" ? `المعاينة الحالية تشمل ${matches.length} سجل؛ حذف المجموعة لا يغيّر هذه السجلات.` : "تعذر تأكيد عدد السجلات قبل اكتمال التحميل."}</p>
                 <div className="button-row">
                   <a className="button button-primary button-sm" href={searchHref}>عرض النتائج</a>
-                  <button className="button button-danger button-sm" type="button" onClick={() => void removeCollection(collection.id)}>حذف</button>
+                  <button className="button button-danger button-sm" type="button" disabled={state.status !== "ready"} onClick={() => void removeCollection(collection.id)}>حذف</button>
                 </div>
               </article>
             );

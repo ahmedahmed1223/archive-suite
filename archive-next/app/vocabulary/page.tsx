@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord, type VocabularyTerm } from "@/lib/archive-api";
+import { buildChangeImpact, countAffectedRecords } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
 
 type Kind = VocabularyTerm["kind"];
@@ -184,6 +186,7 @@ export default function VocabularyPage() {
                     <span className="badge">{item.kind}</span>
                     <button type="button" className="button button-danger button-sm" onClick={() => void removeTerm(item.id)}>حذف</button>
                   </div>
+                  <span className="helper-text">معاينة: {countAffectedRecords(records, (record) => record.type === item.term || (record.tags || []).includes(item.term))} سجل يستخدم هذا المصطلح؛ حذفه من القاموس لا يعدّل السجلات.</span>
                 </div>
               ))}
             </div>
@@ -210,6 +213,7 @@ export default function VocabularyPage() {
               </div>
             ))}
           </div>
+          <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: "القاموس", affectedCount: 0 })} />
         </article>
       </section> : null}
     </AppShell>
