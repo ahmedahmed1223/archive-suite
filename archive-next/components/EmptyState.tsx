@@ -12,7 +12,7 @@ export default function EmptyState({
   actions?: ReactNode;
 }>) {
   return (
-    <div className="empty-state empty-state-rich">
+    <div className="empty-state empty-state-rich" data-page-state="empty">
       {icon ? <div className="empty-state__icon" aria-hidden="true">{icon}</div> : null}
       <strong>{title}</strong>
       {description ? <p className="helper-text">{description}</p> : null}

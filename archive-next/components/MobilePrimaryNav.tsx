@@ -1,19 +1,19 @@
 "use client";
 
-import { Archive, Grid2X2, Menu, Search, UploadCloud } from "lucide-react";
+import * as Icons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { isActivePath } from "@/lib/navigation";
+import { getDailyNavigation, isActivePath, primaryNav } from "@/lib/navigation";
+import { useAuthSession } from "@/lib/auth-session";
 
-const mobileItems = [
-  { href: "/", label: "اللوحة", icon: Grid2X2 },
-  { href: "/archive", label: "الأرشيف", icon: Archive },
-  { href: "/search", label: "البحث", icon: Search },
-  { href: "/uploads", label: "إضافة", icon: UploadCloud }
-] as const;
+const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 
 export default function MobilePrimaryNav() {
   const pathname = usePathname() || "/";
+  const auth = useAuthSession();
+  const activeSection = primaryNav.find((link) => isActivePath(pathname, link.href))?.section;
+  const mobileItems = getDailyNavigation(activeSection, auth.user?.role ?? "viewer").daily;
 
   function openAllRoutes() {
     window.dispatchEvent(new Event("archive:toggle-navigation"));
@@ -22,7 +22,7 @@ export default function MobilePrimaryNav() {
   return (
     <nav className="mobile-primary-nav" aria-label="التنقل اليومي">
       {mobileItems.map((item) => {
-        const Icon = item.icon;
+        const Icon = iconRegistry[item.icon] || Icons.Circle;
         const active = isActivePath(pathname, item.href);
 
         return (
@@ -33,7 +33,7 @@ export default function MobilePrimaryNav() {
         );
       })}
       <button type="button" onClick={openAllRoutes} aria-controls="app-primary-nav">
-        <Menu aria-hidden="true" size={20} strokeWidth={2} />
+        <Icons.Menu aria-hidden="true" size={20} strokeWidth={2} />
         <span>المزيد</span>
       </button>
     </nav>
