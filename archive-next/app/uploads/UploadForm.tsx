@@ -4,6 +4,15 @@ import type { ChangeEvent, DragEvent, FormEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import { createArchiveApiClient, type ArchiveRecord, type IntakeTemplate, type UploadedRecord } from "@/lib/archive-api";
+import {
+  deriveIntakeNextAction,
+  findDuplicateFiles,
+  intakeStatusLabels,
+  recoverIntakeDraft,
+  summarizeFileProgress,
+  type IntakeDraft,
+  type IntakeFileProgress,
+} from "@/lib/intake-journey";
 
 type WizardStep = "files" | "metadata" | "review";
 type IntakeMode = "guided" | "quick";
@@ -89,6 +98,8 @@ export function UploadForm() {
   const [templates, setTemplates] = useState<IntakeTemplate[]>([]);
   const [templateId, setTemplateId] = useState("");
   const [state, setState] = useState<UploadState>({ status: "idle" });
+  const [fileProgress, setFileProgress] = useState<IntakeFileProgress[]>([]);
+  const [draftRecovered, setDraftRecovered] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -102,11 +113,44 @@ export function UploadForm() {
     };
   }, [api]);
 
+  useEffect(() => {
+    const draft = recoverIntakeDraft(window.localStorage.getItem("archive.intake-draft"));
+    if (draft) {
+      setStep(draft.step);
+      setMode(draft.mode);
+      setFolder(draft.folder);
+      setTitlePrefix(draft.titlePrefix);
+      setType(draft.type);
+      setSubtype(draft.subtype);
+      setTags(draft.tags);
+      setSummary(draft.summary);
+      setTemplateId(draft.templateId);
+      setDraftRecovered(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const draft: IntakeDraft = {
+      version: 1, step, mode, folder, titlePrefix, type, subtype, tags, summary, templateId,
+      updatedAt: new Date().toISOString(),
+    };
+    window.localStorage.setItem("archive.intake-draft", JSON.stringify(draft));
+  }, [step, mode, folder, titlePrefix, type, subtype, tags, summary, templateId]);
+
   const selectedTemplate = templates.find((item) => item.id === templateId);
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
   const inferredType = files.length === 1 ? suggestedType(files[0]) : "";
   const effectiveType = type || selectedTemplate?.type || inferredType || "file";
   const tagList = parseTags(tags);
+  const duplicateFiles = findDuplicateFiles(files);
+  const progressSummary = summarizeFileProgress(fileProgress);
+  const nextAction = deriveIntakeNextAction({
+    fileCount: files.length,
+    mode,
+    type: effectiveType,
+    failedFiles: progressSummary.failed,
+    completed: state.status === "complete" && progressSummary.failed === 0,
+  });
   const hasVideo = files.some((file) => suggestedType(file) === "video") || effectiveType === "video";
 
   function applyTemplate(id: string) {
@@ -125,6 +169,7 @@ export function UploadForm() {
   function ingestFiles(list: FileList | File[]) {
     const next = Array.from(list ?? []);
     setFiles(next);
+    setFileProgress(next.map((file) => ({ fileName: file.name, status: "pending" })));
     setState({ status: "idle" });
 
     // Auto-fill video fields from the first video so they aren't typed manually.
@@ -161,6 +206,7 @@ export function UploadForm() {
 
   function removeFile(fileName: string) {
     setFiles((current) => current.filter((file) => file.name !== fileName));
+    setFileProgress((current) => current.filter((file) => file.fileName !== fileName));
   }
 
   function nextStep() {
@@ -188,6 +234,8 @@ export function UploadForm() {
     setVideoFrameRate("");
     setTemplateId("");
     setState({ status: "idle" });
+    setFileProgress([]);
+    window.localStorage.removeItem("archive.intake-draft");
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -258,13 +306,31 @@ export function UploadForm() {
     event.preventDefault();
     if (files.length === 0 || state.status === "uploading") return;
 
-    const results: UploadResult[] = [];
-    for (const file of files) {
+    await runUploads(files);
+  }
+
+  async function runUploads(targetFiles: File[]) {
+    const previousResults = state.status === "complete"
+      ? state.results.filter((result) => !targetFiles.some((file) => file.name === result.fileName))
+      : [];
+
+    const results: UploadResult[] = [...previousResults];
+    for (const file of targetFiles) {
       setState({ status: "uploading", current: file.name });
-      results.push(await uploadOne(file));
+      setFileProgress((current) => current.map((item) => item.fileName === file.name ? { ...item, status: "uploading", message: undefined } : item));
+      const result = await uploadOne(file);
+      results.push(result);
+      setFileProgress((current) => current.map((item) => item.fileName === file.name
+        ? { fileName: file.name, status: result.status, ...(result.status === "error" ? { message: result.message } : {}) }
+        : item));
     }
 
     setState({ status: "complete", results });
+  }
+
+  function retryFailedFiles() {
+    const failed = new Set(fileProgress.filter((item) => item.status === "error").map((item) => item.fileName));
+    void runUploads(files.filter((file) => failed.has(file.name)));
   }
 
   return (
@@ -300,6 +366,13 @@ export function UploadForm() {
       </div>
 
       <form className="auth-form" onSubmit={handleSubmit}>
+        {draftRecovered ? (
+          <div className="state-banner state-banner-info" role="status">
+            <strong>تمت استعادة مسودة الإضافة</strong>
+            <span className="helper-text">أعد اختيار الملفات فقط؛ بيانات الأرشفة والخطوة السابقة محفوظتان على هذا الجهاز.</span>
+            <button type="button" className="button button-secondary button-sm" onClick={() => setDraftRecovered(false)}>حسناً</button>
+          </div>
+        ) : null}
         {step === "files" ? (
           <section className="wizard-pane" aria-label="اختيار الملفات">
             <div
@@ -337,6 +410,9 @@ export function UploadForm() {
                     <div>
                       <strong>{file.name}</strong>
                       <span className="helper-text">{suggestedType(file)} · {formatBytes(file.size)}</span>
+                      <span className="helper-text" role="status">
+                        {intakeStatusLabels[fileProgress.find((item) => item.fileName === file.name)?.status ?? "pending"]}
+                      </span>
                     </div>
                     <button type="button" className="button button-secondary button-sm" onClick={() => removeFile(file.name)}>
                       إزالة
@@ -347,6 +423,12 @@ export function UploadForm() {
             ) : (
               <p className="helper-text">اختر ملفاً أو أكثر. في الوضع السريع يمكن المتابعة مباشرة للمراجعة.</p>
             )}
+            {duplicateFiles.length ? (
+              <div className="state-banner state-banner-warning" role="alert">
+                <strong>ملفات مكررة في القائمة</strong>
+                <span className="helper-text">تحقق قبل المتابعة: {duplicateFiles.join("، ")}</span>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -489,8 +571,9 @@ export function UploadForm() {
         </div>
 
         {state.status === "complete" ? (
-          <div className="state-banner state-banner-success">
-            <strong>اكتملت عملية الإضافة</strong>
+          <div className={progressSummary.failed ? "state-banner state-banner-warning" : "state-banner state-banner-success"}>
+            <strong>{progressSummary.failed ? "اكتملت الإضافة جزئياً" : "اكتملت عملية الإضافة"}</strong>
+            <span className="helper-text">نجح {progressSummary.succeeded} من {progressSummary.total}. الخطوة التالية: {nextAction.label}.</span>
             <ul className="compact-list">
               {state.results.map((result) => (
                 <li key={result.fileName}>
@@ -505,6 +588,10 @@ export function UploadForm() {
                 </li>
               ))}
             </ul>
+            <div className="button-row">
+              {progressSummary.failed ? <button type="button" className="button button-primary" onClick={retryFailedFiles}>إعادة محاولة المتعثر</button> : null}
+              {"href" in nextAction ? <a className="button button-primary" href={nextAction.href}>{nextAction.label}</a> : null}
+            </div>
           </div>
         ) : null}
       </form>
