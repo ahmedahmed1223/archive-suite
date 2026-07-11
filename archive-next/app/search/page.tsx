@@ -9,6 +9,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
+import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
 
 type SearchState =
   | { status: "idle" }
@@ -192,6 +193,10 @@ function SearchPageContent() {
     if (previewId) return filteredRecords.find((record) => record.id === previewId) || filteredRecords[0] || null;
     return filteredRecords[0] || null;
   }, [filteredRecords, previewId]);
+  const localEnrichment = useMemo(
+    () => deriveLocalSearchEnrichment(filteredRecords, query),
+    [filteredRecords, query]
+  );
 
   const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -432,6 +437,53 @@ function SearchPageContent() {
             </div>
 
             {visibleRecords.map(renderRecord)}
+
+            {localEnrichment.suggestedTags.length > 0 || localEnrichment.entities.length > 0 ? (
+              <section className="panel stack" aria-label="إثراء محلي للبحث">
+                <div className="panel-title-row">
+                  <div>
+                    <span className="badge">Local semantic fallback</span>
+                    <h2>وسوم وكيانات مقترحة محلياً</h2>
+                    <p className="helper-text">
+                      قواعد محلية آمنة فوق النتائج الحالية؛ لا ترسل البيانات لأي مزود خارجي ولا تعدّل السجلات تلقائياً.
+                    </p>
+                  </div>
+                  <span className="badge">{localEnrichment.coverage.recordsWithSuggestions} سجل قابل للتحسين</span>
+                </div>
+
+                {localEnrichment.suggestedTags.length > 0 ? (
+                  <div>
+                    <strong>وسوم مقترحة</strong>
+                    <div className="tag-list">
+                      {localEnrichment.suggestedTags.slice(0, 8).map((suggestion) => (
+                        <button
+                          className="tag"
+                          key={suggestion.tag}
+                          type="button"
+                          title={suggestion.reason}
+                          onClick={() => setTagFilter(suggestion.tag)}
+                        >
+                          #{suggestion.tag} · {suggestion.count}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {localEnrichment.entities.length > 0 ? (
+                  <div>
+                    <strong>كيانات مستخرجة</strong>
+                    <div className="tag-list">
+                      {localEnrichment.entities.slice(0, 10).map((entity) => (
+                        <span className="badge" key={`${entity.kind}:${entity.label}`}>
+                          {entity.label} · {entity.kind} · {entity.count}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
 
             <SuggestionsPanel suggestions={suggestions} title="تحسينات مقترحة للبحث والأرشيف" onFeedback={handleSuggestionFeedback} />
 
