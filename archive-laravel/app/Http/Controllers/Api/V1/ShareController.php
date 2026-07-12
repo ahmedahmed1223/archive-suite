@@ -54,8 +54,13 @@ class ShareController extends Controller
             return response()->json(['ok' => false, 'error' => 'Share link not found.'], 404);
         }
 
-        if ($share->password_hash && ! Hash::check((string) $request->query('password'), $share->password_hash)) {
-            return response()->json(['ok' => false, 'error' => 'Share password is required.'], 401);
+        if ($share->password_hash) {
+            // ponytail: query fallback kept for existing links during transition; drop in v1.1.
+            $password = $request->header('X-Share-Password') ?? $request->query('password');
+
+            if (! Hash::check((string) $password, $share->password_hash)) {
+                return response()->json(['ok' => false, 'error' => 'Share password is required.'], 401);
+            }
         }
 
         return response()->json([

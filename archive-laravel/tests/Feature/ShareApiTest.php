@@ -70,4 +70,34 @@ class ShareApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_password_protected_share_is_readable_via_header(): void
+    {
+        $token = $this->postJson('/api/v1/share', [
+            'scope' => ['itemIds' => ['item-1']],
+            'password' => 'correct horse battery',
+        ], $this->authHeaders())->assertCreated()->json('token');
+
+        $this->getJson('/api/v1/share/'.$token, ['X-Share-Password' => 'correct horse battery'])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->getJson('/api/v1/share/'.$token, ['X-Share-Password' => 'wrong'])
+            ->assertStatus(401);
+
+        $this->getJson('/api/v1/share/'.$token)
+            ->assertStatus(401);
+    }
+
+    public function test_password_protected_share_query_fallback_still_works(): void
+    {
+        // ponytail: covers the deprecated query-string fallback; delete this test alongside the fallback removal in v1.1.
+        $token = $this->postJson('/api/v1/share', [
+            'scope' => ['itemIds' => ['item-1']],
+            'password' => 'fallback-secret',
+        ], $this->authHeaders())->assertCreated()->json('token');
+
+        $this->getJson('/api/v1/share/'.$token.'?password=fallback-secret')
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+    }
 }
