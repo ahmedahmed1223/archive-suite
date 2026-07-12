@@ -1,0 +1,111 @@
+name: Release
+
+# Official releases: pushing a v* tag runs the FULL verification gate first,
+# then publishes images and a GitHub Release. Nothing ships unverified.
+# Stable tags (v1.2.3) also move the `latest` image tag; prereleases
+# (v1.0.0-rc.1 — anything with a dash) publish under their own tag only.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false # never cancel a running release
+
+permissions:
+  contents: write # create the GitHub Release
+  packages: write # push images to GHCR
+
+env:
+  NEXT_IMAGE: ghcr.io/${{ github.repository }}/masar-next
+  LARAVEL_IMAGE: ghcr.io/${{ github.repository }}/masar-laravel
+
+jobs:
+  verify:
+    name: Full release gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Release gate (verify + security + readiness)
+        run: pnpm run release:verify
+
+  publish:
+    name: Publish images + GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: verify
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Classify release
+        id: meta
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME}"
+          # Semver prerelease = anything with a dash (v1.0.0-rc.1, v2.0.0-beta.2)
+          if [[ "${version}" == *-* ]]; then
+            echo "prerelease=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "prerelease=false" >> "${GITHUB_OUTPUT}"
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push Next image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: archive-next/Dockerfile
+          push: true
+          tags: |
+            ${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.prerelease == 'false' && format('{0}:latest', env.NEXT_IMAGE) || '' }}
+          build-args: |
+            ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1
+            SENTRY_ENVIRONMENT=production
+            SENTRY_RELEASE=${{ steps.meta.outputs.version }}
+
+      - name: Build and push Laravel image
+        uses: docker/build-push-action@v6
+        with:
+          context: archive-laravel
+          file: archive-laravel/Dockerfile.worker
+          push: true
+          tags: |
+            ${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.prerelease == 'false' && format('{0}:latest', env.LARAVEL_IMAGE) || '' }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          flags=(--generate-notes --title "${GITHUB_REF_NAME}")
+          [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]] && flags+=(--prerelease)
+          gh release create "${GITHUB_REF_NAME}" "${flags[@]}"
