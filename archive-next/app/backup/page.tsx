@@ -32,7 +32,7 @@ type PreviewState =
 type RestoreState =
   | { status: "idle" }
   | { status: "running" }
-  | { status: "success"; name: string; counts: Record<string, number>; restoredAt: string }
+  | { status: "success"; name: string; counts: Record<string, number>; restoredAt: string; verified: boolean }
   | { status: "error"; message: string };
 
 function formatBytes(bytes?: number): string {
@@ -124,7 +124,8 @@ export default function BackupPage() {
           status: "success",
           name: response.result.name,
           counts: response.result.counts,
-          restoredAt: response.result.restoredAt
+          restoredAt: response.result.restoredAt,
+          verified: response.result.verified
         });
         setRestoreTarget(null);
         setRestoreConfirmName("");
@@ -197,6 +198,15 @@ export default function BackupPage() {
               .join(" · ") || "لا سجلات"}
             {" — "}
             {formatDate(restoreState.restoredAt)}
+          </span>
+        </div>
+      ) : null}
+
+      {restoreState.status === "success" && !restoreState.verified ? (
+        <div className="state-banner state-banner-warning" role="alert">
+          <strong>تحذير: لم يتم التحقق من سلامة النسخة الاحتياطية</strong>
+          <span className="helper-text">
+            هذه النسخة لا تحتوي على بصمة تحقق (checksum) قديمة من قبل هذه الميزة، فتمت الاستعادة اعتمادًا على فحص البنية فقط دون تأكيد عدم التلاعب أو التلف.
           </span>
         </div>
       ) : null}

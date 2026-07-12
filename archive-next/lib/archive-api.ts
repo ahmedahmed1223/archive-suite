@@ -592,6 +592,7 @@ export interface BackupRestoreResult {
   name: string;
   counts: Record<string, number>;
   restoredAt: string;
+  verified: boolean;
 }
 
 export interface BackupVerification {
