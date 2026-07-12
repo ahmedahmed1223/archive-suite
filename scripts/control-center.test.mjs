@@ -45,7 +45,7 @@ test("public setup and deployment guidance use only the canonical Control Center
   }
 
   const deployLauncher = readFileSync(join(ROOT, "infra/deploy/setup.sh"), "utf8");
-  assert.match(deployLauncher, /exec "\$ROOT\/setup\.sh" "\$@"/);
+  assert.match(deployLauncher, /exec bash "\$ROOT\/setup\.sh" "\$@"/);
   assert.doesNotMatch(deployLauncher, /exec sh "\$ROOT\/setup\.sh"/);
   for (const retiredOverride of [
     "infra/docker-compose.intranet.yml",
