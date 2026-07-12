@@ -112,7 +112,7 @@ export interface SearchFacetBucket {
 }
 
 export interface SearchFacets {
-  mode: "keyword" | "keyword-fallback" | string;
+  mode: "keyword" | "keyword-fallback" | "semantic" | string;
   store?: string | null;
   total?: number;
   stores?: SearchFacetBucket[];

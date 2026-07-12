@@ -3594,7 +3594,7 @@
         "type": "object",
         "required": ["mode", "total", "stores", "types", "subtypes", "tags", "statuses"],
         "properties": {
-          "mode": { "type": "string", "enum": ["keyword", "keyword-fallback"] },
+          "mode": { "type": "string", "enum": ["keyword", "keyword-fallback", "semantic"], "description": "'semantic' only when a pgvector query actually ran; degrades to 'keyword-fallback' when semantic search is unavailable (non-Postgres, pgvector missing, no embedding key, or embed failure)." },
           "store": { "type": ["string", "null"] },
           "total": { "type": "integer" },
           "stores": { "type": "array", "items": { "$ref": "#/components/schemas/SearchFacetBucket" } },

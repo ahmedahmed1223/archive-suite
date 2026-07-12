@@ -29,6 +29,14 @@ In addition, [Laracasts](https://laracasts.com) contains thousands of video tuto
 
 You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
 
+## Semantic search (pgvector)
+
+`GET /api/v1/search?semantic=true` optionally uses pgvector nearest-neighbor
+search and always degrades to keyword search when it's unavailable (non-
+Postgres, missing extension, or no embedding API key). See
+[`docs/semantic-search.md`](../docs/semantic-search.md) for setup, env vars,
+and the `php artisan embeddings:sync` command.
+
 ## Agentic Development
 
 Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
