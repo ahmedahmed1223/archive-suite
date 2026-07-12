@@ -468,6 +468,86 @@ function deployCanonical() {
   return 0;
 }
 
+// ─── Guided setup wizard ──────────────────────────────────────────────────────
+// Step-by-step first-run path: checks → questions → provision → deploy → verify.
+// Non-interactive shells (CI, piped stdin) fall back to the plain deploy.
+async function guidedSetup() {
+  if (!process.stdin.isTTY) {
+    warn("No interactive terminal detected — falling back to 'deploy' with generated defaults.");
+    return deployCanonical();
+  }
+  titleLine("Guided setup — Masar wizard");
+  log("This wizard walks you through the full first-run in 5 steps:");
+  log(`  ${C.d}1) Environment check   2) Your answers   3) Provision .env${C.x}`);
+  log(`  ${C.d}4) Build & start       5) Verify & next steps${C.x}`);
+  log("");
+
+  // Step 1 — environment check (read-only)
+  log(`${C.b}Step 1/5 — Environment check${C.x}`);
+  const doctorStatus = await runDoctor();
+  if (doctorStatus !== 0) {
+    err("Fix the critical issues above, then run the wizard again.");
+    return doctorStatus;
+  }
+
+  // Step 2 — questions (defaults are safe; Enter accepts them)
+  log(`\n${C.b}Step 2/5 — Configuration questions${C.x}`);
+  const existing = readEnv();
+  const email = await ask("Admin login email", existing.ADMIN_EMAIL || "admin@example.com");
+  let password = await ask("Admin password (blank = generate a strong one)", "");
+  let generatedPassword = false;
+  if (!password) { password = genPassword(); generatedPassword = true; }
+  const passwordError = validateAdminPassword(password);
+  if (passwordError) { err(passwordError); return 1; }
+  let port = await ask("App port (Next.js)", existing.NEXT_PUBLIC_PORT || "3000");
+  if (!/^\d+$/.test(port)) { warn("Port must be a number — keeping 3000."); port = "3000"; }
+  const publicUrl = await ask("Public URL (blank = local only)", existing.APP_BASE_URL && /^https?:\/\//.test(existing.APP_BASE_URL) ? existing.APP_BASE_URL : "");
+  if (publicUrl && !/^https?:\/\//.test(publicUrl)) { err("Public URL must start with http:// or https://"); return 1; }
+
+  log("");
+  log(`${C.b}Summary${C.x}`);
+  log(`  Admin email:  ${email}`);
+  log(`  Password:     ${generatedPassword ? `${C.d}(generated — shown after deploy)${C.x}` : "(as typed)"}`);
+  log(`  App port:     ${port}`);
+  log(`  Public URL:   ${publicUrl || `${C.d}http://localhost:${port} (local)${C.x}`}`);
+  if (!(await confirm("Apply this configuration and deploy?", "y"))) return log("Cancelled — nothing was changed.");
+
+  // Step 3 — provision .env with the answers; deploy fills remaining secrets
+  log(`\n${C.b}Step 3/5 — Provision configuration${C.x}`);
+  if (!existsSync(ENV_PATH)) {
+    if (!existsSync(ENV_EXAMPLE)) { err(`Neither ${ENV_PATH} nor ${ENV_EXAMPLE} exists.`); return 1; }
+    copyFileSync(ENV_EXAMPLE, ENV_PATH);
+    ok(`Created ${ENV_PATH} from .env.example`);
+  }
+  const updates = { ADMIN_EMAIL: email, ADMIN_PASSWORD: password, NEXT_PUBLIC_PORT: port };
+  if (publicUrl) {
+    updates.APP_BASE_URL = publicUrl;
+    const host = publicUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    if (host) { updates.PUBLIC_DOMAIN = host; updates.DOMAIN = host; }
+  }
+  if (!writeEnv(updates)) return 1;
+
+  // Step 4 — deploy (generates remaining secrets, builds, starts)
+  log(`\n${C.b}Step 4/5 — Build & start the stack${C.x}`);
+  const deployStatus = deployCanonical();
+  if (deployStatus !== 0) { err("Deploy failed — see the messages above. Re-run the wizard after fixing them."); return deployStatus; }
+  if (generatedPassword) {
+    log("");
+    ok(`Your admin password: ${C.b}${password}${C.x}  ${C.d}(store it now — shown once)${C.x}`);
+  }
+
+  // Step 5 — verify + next steps
+  log(`\n${C.b}Step 5/5 — Verify${C.x}`);
+  const healthStatus = await healthCheck();
+  log("");
+  log(`${C.b}Next steps${C.x}`);
+  log(`  1. Open ${C.c}${publicUrl || `http://localhost:${port}`}${C.x} and sign in as ${email}.`);
+  log(`  2. Optional: seed demo content — ${C.c}setup seed-demo${C.x}`);
+  log(`  3. Check status any time — ${C.c}setup status${C.x} / ${C.c}setup health${C.x}`);
+  if (healthStatus !== 0) warn("Health check did not pass yet — first boot can take a minute; retry with 'setup health'.");
+  return healthStatus;
+}
+
 // ─── Quick start (deploy + health) ────────────────────────────────────────────
 async function quickStart() {
   titleLine("Quick start — deploy → health check");
@@ -484,6 +564,9 @@ async function quickStart() {
 function firstRunGuide() {
   titleLine("First run — Masar onboarding guide");
   log("Use this guide when preparing the canonical Laravel + Next.js stack for the first time.");
+  log("");
+  log(`${C.b}Recommended${C.x}`);
+  log(`  ${C.c}setup wizard${C.x}   ${C.d}Guided setup: checks -> questions -> deploy -> verify.${C.x}`);
   log("");
   log(`${C.b}Quick preset${C.x}`);
   log(`  ${C.c}setup doctor${C.x}   ${C.d}Check Node.js, pnpm, Docker, and .env.${C.x}`);
@@ -593,37 +676,38 @@ async function runDoctor() {
 // ─── Menu ───────────────────────────────────────────────────────────────────
 const MENU = [
   ["sec", "— Quick Actions —"],
-  ["1", "Quick start (deploy + health)", quickStart],
-  ["2", "First-run guide", firstRunGuide],
-  ["3", "Doctor (pre-flight check)", runDoctor],
+  ["1", "Guided setup (wizard — recommended first run)", guidedSetup],
+  ["2", "Quick start (deploy + health)", quickStart],
+  ["3", "First-run guide", firstRunGuide],
+  ["4", "Doctor (pre-flight check)", runDoctor],
   ["sec", "— Deploy (Laravel + Next.js) —"],
-  ["4", "Deploy / Re-provision", deployCanonical],
+  ["5", "Deploy / Re-provision", deployCanonical],
   ["sec", "— Server —"],
-  ["5", "Status", serverStatus],
-  ["6", "Start", serverStart],
-  ["7", "Stop", serverStop],
-  ["8", "Restart", serverRestart],
-  ["9", "Logs", () => serverLogs({ follow: true })],
-  ["10", "Health check", healthCheck],
+  ["6", "Status", serverStatus],
+  ["7", "Start", serverStart],
+  ["8", "Stop", serverStop],
+  ["9", "Restart", serverRestart],
+  ["10", "Logs", () => serverLogs({ follow: true })],
+  ["11", "Health check", healthCheck],
   ["sec", "— Configure —"],
-  ["11", "View configuration", showConfig],
-  ["12", "Edit a setting", editSetting],
-  ["13", "Set public URL", setPublicUrl],
+  ["12", "View configuration", showConfig],
+  ["13", "Edit a setting", editSetting],
+  ["14", "Set public URL", setPublicUrl],
   ["sec", "— Security —"],
-  ["14", "Generate a strong password", printGeneratedPassword],
-  ["15", "Change admin password", changeAdminPassword],
-  ["16", "Rotate Reverb secrets", rotateSecrets],
+  ["15", "Generate a strong password", printGeneratedPassword],
+  ["16", "Change admin password", changeAdminPassword],
+  ["17", "Rotate Reverb secrets", rotateSecrets],
   ["sec", "— Database —"],
-  ["17", "Migration status (artisan)", migrateStatus],
-  ["18", "Apply migrations (artisan)", migrateDeploy],
-  ["19", "Seed demo data (types · sections · records)", seedDemoData],
+  ["18", "Migration status (artisan)", migrateStatus],
+  ["19", "Apply migrations (artisan)", migrateDeploy],
+  ["20", "Seed demo data (types · sections · records)", seedDemoData],
   ["sec", "— Backups —"],
-  ["20", "Backup now", backupNow],
-  ["21", "List backups", listBackups],
-  ["22", "Restore backup", restoreBackup],
+  ["21", "Backup now", backupNow],
+  ["22", "List backups", listBackups],
+  ["23", "Restore backup", restoreBackup],
   ["sec", "— Maintain —"],
-  ["23", "Diagnostics (pnpm verify)", runDiagnostics],
-  ["24", "Update & rebuild", updateAndRebuild],
+  ["24", "Diagnostics (pnpm verify)", runDiagnostics],
+  ["25", "Update & rebuild", updateAndRebuild],
   ["sec", ""],
   ["0", "Exit", null],
   ["q", "Exit", null],
@@ -669,13 +753,13 @@ function preflightSummary() {
   if (nodeMajor < 22) issues.push(`Node ${process.version} (need ≥22)`);
   if (!pnpmOk) issues.push("pnpm missing — run: npm i -g pnpm");
   if (!dockerOk) issues.push("Docker missing — required for the canonical Laravel + Next stack");
-  if (!envOk) issues.push(`.env not found — run option 4 (Deploy) first`);
+  if (!envOk) issues.push(`.env not found — run option 1 (Guided setup) or 5 (Deploy) first`);
   if (issues.length === 0) {
     ok(`Preflight: Node ${process.version} · pnpm OK · Docker OK · .env present`);
   } else {
     warn("Preflight found issues:");
     for (const issue of issues) log(`   ${C.y}-${C.x} ${issue}`);
-    log(`   ${C.d}Run option 3 (Doctor) for the full report.${C.x}`);
+    log(`   ${C.d}Run option 4 (Doctor) for the full report.${C.x}`);
   }
 }
 
@@ -698,6 +782,7 @@ async function interactive() {
 // ─── Non-interactive subcommands ──────────────────────────────────────────────
 const COMMANDS = {
   // Quick entry points
+  wizard: guidedSetup, "guided-setup": guidedSetup,
   quick: quickStart, "first-run": firstRunGuide, doctor: runDoctor,
   // Server
   status: serverStatus, start: serverStart, stop: serverStop, restart: serverRestart,
@@ -720,6 +805,8 @@ const COMMANDS = {
     console.log(`${C.b}  Quick-start examples:${C.x}`);
     console.log(`  ${C.d}# Review the first-run paths without changing anything:${C.x}`);
     console.log(`  ${C.c}setup first-run${C.x}`);
+    console.log(`  ${C.d}# Recommended first-time setup — guided, question by question:${C.x}`);
+    console.log(`  ${C.c}setup wizard${C.x}`);
     console.log(`  ${C.d}# First-time setup on this machine (deploy the Laravel+Next stack, then health):${C.x}`);
     console.log(`  ${C.c}setup quick${C.x}`);
     console.log(`  ${C.d}# Verify the environment before deploying (Node/pnpm/Docker/.env):${C.x}`);
@@ -731,6 +818,7 @@ const COMMANDS = {
     console.log(`  ${C.c}setup change-admin-password --generate${C.x}`);
     console.log("");
     console.log(`${C.b}  Commands (canonical Laravel + Next.js stack):${C.x}`);
+    console.log(`  ${C.c}wizard${C.x}           Guided first-run setup (checks -> questions -> deploy -> verify)`);
     console.log(`  ${C.c}quick${C.x}            Deploy + health check in one step`);
     console.log(`  ${C.c}first-run${C.x}        Show the quick/advanced first-run guide`);
     console.log(`  ${C.c}doctor [--mode=docker|native] [--platform=<id>]${C.x}  Read-only platform contract + pre-flight checks`);

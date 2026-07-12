@@ -63,8 +63,8 @@ test("help renders the grouped menu and every command group", () => {
   for (const s of [
     "Masar",
     "— Server —", "— Configure —", "— Security —", "— Database —", "— Backups —", "— Maintain —",
-    "1) Quick start", "4) Deploy / Re-provision", "14) Generate a strong password", "15) Change admin password",
-    "19) Seed demo data", "24) Update & rebuild", "0) Exit", "q) Exit",
+    "1) Guided setup", "2) Quick start", "5) Deploy / Re-provision", "15) Generate a strong password", "16) Change admin password",
+    "20) Seed demo data", "25) Update & rebuild", "0) Exit", "q) Exit",
   ]) {
     assert.ok(clean.includes(s), `help output should include "${s}"`);
   }
@@ -247,4 +247,35 @@ test("change-admin-password can generate and store a replacement password", () =
   assert.ok(password.length >= 20);
   assert.notEqual(password, "CHANGE_ME_STRONG_PASSWORD");
   assert.match(r.stdout, /Generated admin password:/);
+});
+
+test("wizard without a TTY falls back to deploy and still provisions secrets", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-"));
+  const envFile = join(dir, ".env");
+  writeFileSync(
+    envFile,
+    [
+      "POSTGRES_PASSWORD=CHANGE_ME_POSTGRES_PASSWORD",
+      "REDIS_PASSWORD=CHANGE_ME_REDIS_PASSWORD",
+      "ADMIN_EMAIL=admin@example.com",
+      "ADMIN_PASSWORD=CHANGE_ME_ADMIN_PASSWORD",
+      "",
+    ].join("\n")
+  );
+
+  const r = run(["wizard"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1" });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.match(r.stdout, /No interactive terminal detected/);
+
+  const content = readFileSync(envFile, "utf8");
+  assert.doesNotMatch(content, /CHANGE_ME_POSTGRES_PASSWORD/);
+  assert.doesNotMatch(content, /CHANGE_ME_ADMIN_PASSWORD/);
+});
+
+test("help lists the wizard as the recommended first-run path", () => {
+  const r = run(["help"]);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const clean = r.stdout.replace(/\x1b\[[0-9;]*m/g, "");
+  assert.match(clean, /setup wizard/);
+  assert.match(clean, /Guided setup \(wizard/);
 });
