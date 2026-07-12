@@ -31,6 +31,8 @@ const runtimeDockerfile = read("archive-laravel/Dockerfile.worker");
 const harness = read("scripts/laravel-docker.mjs");
 const infraVerifier = read("scripts/verify-infra-config.mjs");
 const releaseVerifier = read("scripts/verify-release-readiness.mjs");
+const requiredWorkerExtensions = ["curl", "mbstring", "zip", "pdo", "pdo_pgsql", "ftp"];
+const workerExtensionContract = /for \(const extension of \["curl", "mbstring", "zip", "pdo", "pdo_pgsql", "ftp"\]\) \{\s+assertWorkerInstallsExtension\("archive-laravel\/Dockerfile\.worker", extension\);\s+\}/;
 
 assert.match(
   runtimeDockerfile,
@@ -52,6 +54,16 @@ assert.match(
   /test -f vendor\/autoload\.php \|\| composer install --no-interaction/,
   "the Laravel harness must repair incomplete Composer installs before running tests"
 );
+for (const [name, verifier] of [
+  ["infrastructure", infraVerifier],
+  ["release", releaseVerifier],
+]) {
+  assert.match(
+    verifier,
+    workerExtensionContract,
+    `the ${name} verifier must require PHP extensions ${requiredWorkerExtensions.join(", ")}`
+  );
+}
 assert.match(
   infraVerifier,
   /assertWorkerInstallsExtension\("archive-laravel\/Dockerfile\.worker", "ftp"\)/,

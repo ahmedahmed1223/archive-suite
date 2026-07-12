@@ -102,7 +102,9 @@ assertIncludes("archive-next/Dockerfile", "COPY package.json pnpm-lock.yaml pnpm
 assertIncludes("archive-next/Dockerfile", "ARG ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1");
 assertIncludes("archive-next/Dockerfile", "COPY --from=builder /app/archive-next/public ./archive-next/public");
 assertIncludes("archive-laravel/Dockerfile.worker", "docker-php-ext-enable redis");
-assertWorkerInstallsExtension("archive-laravel/Dockerfile.worker", "ftp");
+for (const extension of ["curl", "mbstring", "zip", "pdo", "pdo_pgsql", "ftp"]) {
+  assertWorkerInstallsExtension("archive-laravel/Dockerfile.worker", extension);
+}
 assertIncludes("infra/deploy/Caddyfile", 'reverse_proxy {$CADDY_UPSTREAM:frontend:80}');
 
 assertIncludes("infra/k8s/network-policy.yaml", "app: server");
