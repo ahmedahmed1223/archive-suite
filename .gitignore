@@ -38,7 +38,6 @@ dist-cloud/
 **/blob-report/
 **/.vite/
 **/.next/
-archive-server/prisma/schema.active.prisma
 .claude/
 # transient brainstorm artifacts
 .superpowers/

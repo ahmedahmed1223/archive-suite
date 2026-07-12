@@ -62,12 +62,6 @@ infra/ocr-service/
 **/__pycache__
 **/*.pyc
 
-# Prisma: keep schema and migrations, exclude generated client
-archive-server/src/generated/
-
-# PocketBase runtime data
-archive-server/pocketbase/pb_data
-
 # Large binary/media assets that don't belong in the server image
 **/*.mp4
 **/*.avi

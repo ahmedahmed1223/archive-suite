@@ -4,16 +4,10 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const allowedAdvisories = new Map([
-  [
-    "GHSA-4r6h-8v6p-xvw6",
-    "xlsx has no patched npm release; legacy imports are constrained to guarded OOXML reads and workbook writes.",
-  ],
-  [
-    "GHSA-5pgg-2g8v-p4x9",
-    "xlsx has no patched npm release; legacy imports reject non-OOXML payloads and cap import size.",
-  ],
-]);
+// ponytail: the xlsx-specific allowlist was here for archive-app/archive-server,
+// which vendored an unpatched xlsx release. Both packages are gone (2026-07-12);
+// archive-next does not depend on xlsx, so there is nothing left to allow-list.
+const allowedAdvisories = new Map();
 
 const result = spawnSync("pnpm", ["audit", "--audit-level", "moderate", "--json"], {
   cwd: ROOT,
@@ -43,15 +37,7 @@ for (const advisory of advisories) {
   const id = advisory.github_advisory_id;
   const reason = allowedAdvisories.get(id);
 
-  if (
-    reason &&
-    advisory.module_name === "xlsx" &&
-    advisory.findings?.every((finding) =>
-      finding.paths?.every((findingPath) =>
-        findingPath === "archive-app>xlsx" || findingPath === "archive-server>xlsx"
-      )
-    )
-  ) {
+  if (reason) {
     allowed.push({ id, title: advisory.title, reason });
     continue;
   }

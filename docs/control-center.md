@@ -1,7 +1,7 @@
 # Masar Control Center
 
 A single English-first console to **install, operate, configure, and maintain** the
-canonical Masar stack (**Laravel API + Next.js**, `archive-server/docker-compose.yml`).
+canonical Masar stack (**Laravel API + Next.js**, `infra/docker-compose.yml`).
 The **Deploy** action provisions `.env` secrets and runs `docker compose up -d --build`;
 the old Node/Vite deployment wizard remains available as the explicit `deploy-legacy` command.
 
@@ -31,7 +31,7 @@ The interactive menu uses one start path: **1 = Quick start**. Both **0** and
 | **Database** | Migration status (artisan) · Apply migrations (artisan) | `migrate-status` `migrate` |
 | **Backups** | Backup now · List backups · Restore backup | `backup` `backups` `restore` |
 | **Maintain** | Diagnostics (`pnpm verify`) · Update & rebuild | `diagnostics` `update` |
-| **Legacy** | Legacy deploy wizard · admin · Prisma · DB provider | `deploy-legacy` `legacy:set-admin` `legacy:migrate-status` `legacy:migrate` `legacy:db-provider` |
+| **Legacy** | Legacy deploy wizard · admin | `deploy-legacy` `legacy:set-admin` |
 | — | Help | `help` |
 
 ### Examples
@@ -39,7 +39,7 @@ The interactive menu uses one start path: **1 = Quick start**. Both **0** and
 ```bash
 node scripts/control-center.mjs status      # show running services
 node scripts/control-center.mjs health      # probe /api/v1/health (Laravel, proxied through Next :3000)
-node scripts/control-center.mjs backup      # pg_dump to archive-server/backups/
+node scripts/control-center.mjs backup      # pg_dump to infra/backups/
 node scripts/control-center.mjs update      # pull -> install -> build -> docker compose up -d --build
 node scripts/control-center.mjs generate-password
 node scripts/control-center.mjs change-admin-password --generate
@@ -48,7 +48,7 @@ node scripts/control-center.mjs change-admin-password --email=admin@example.com 
 
 ## Safety
 
-- **Every `.env` write is backed up first** to `archive-server/.env.bak-<timestamp>`.
+- **Every `.env` write is backed up first** to `infra/.env.bak-<timestamp>`.
 - **Secrets are masked** in `config` output (any key ending in `SECRET`, `PASSWORD`,
   `TOKEN`, `KEY`, `DSN`, `URL`).
 - **Restore is destructive** — it overwrites the current database and requires an
@@ -64,10 +64,10 @@ node scripts/control-center.mjs change-admin-password --email=admin@example.com 
 ## Requirements
 
 - Node 22+ and Docker (with Compose v2 `docker compose`, or legacy `docker-compose`).
-- Reads `archive-server/.env`; controls `archive-server/docker-compose.yml` (canonical
+- Reads `infra/.env`; controls `infra/docker-compose.yml` (canonical
   Laravel + Next.js stack). For the HTTP-only dev variant run
-  `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` from `archive-server/`.
-- Backups live in `archive-server/backups/archive-<timestamp>.sql`.
+  `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` from `infra/`.
+- Backups live in `infra/backups/archive-<timestamp>.sql`.
 
 ## Notes
 

@@ -20,6 +20,12 @@
 
 ---
 
+## إزالة الحزم legacy النهائية (Phase B) — مكتملة 2026-07-12
+
+- [x] **Phase A (سابقة، commit a53b666)** — نُقلت الأصول القانونية (Docker compose/deploy) إلى `infra/` ومواصفات Next e2e إلى `archive-next/e2e`، تمهيداً لحذف الحزم legacy بأمان.
+- [x] **حذف ثلاث حزم legacy كاملة (~760MB)** — `git rm -r` على `archive-app/` (Vite SPA)، `archive-server/` (خادم Node/Prisma؛ أصوله القانونية منقولة سلفاً إلى `infra/`)، و`archive-core/` (مكتبة مشتركة تحقق أنها كانت تُستهلك حصراً من archive-app وarchive-server؛ archive-next لا يعتمد عليها). أُزيلت أيضاً بقايا غير متتبَّعة (node_modules، ملفات .env). الحزم متاحة عبر تاريخ git عند الحاجة.
+- [x] **مسح اتساق شامل** — `pnpm-workspace.yaml` أصبح يضم `archive-next` فقط (وallowBuilds أصبح esbuild+sharp فقط بعد تحقق `pnpm why`)؛ حُذفت أوامر package.json الخاصة بـ legacy (dev/build/verify/typecheck/audit:ui)؛ حُذفت 6 ملفات infra legacy-only (`docker-compose.postgres.yml`، `docker-compose.sqlserver.yml`، `deploy/render.yaml`، `deploy/railway.json`، `deploy/digitalocean-app.yaml`، `deploy/backup-cron.sh`) مع تحديث `verify-infra-config.mjs`؛ حُذف `scripts/verify-cloud-deploy.mjs` (فقد غرضه بحذف قوالب النشر) و`scripts/pb-init.mjs` (PocketBase legacy-only)؛ نُظّف `scripts/control-center.mjs` (حذف أمر `legacy:db-provider` و`legacy:migrate*` و`LEGACY_SERVER_DIR`)، و`scripts/verify-release-readiness.mjs`، و`scripts/verify-dependency-audit.mjs` (أُزيل allowlist لـ xlsx بعد زوال archive-app/archive-server)، و`scripts/verify-cutover-defaults.mjs` (أصبح يتحقق من **غياب** أوامر legacy بدل وجودها)؛ نُظّفت `.gitignore`/`.dockerignore`/`tsconfig.json`/`archive-next/Dockerfile` من مسارات archive-app/archive-core/archive-server؛ أُعيدت كتابة `CLAUDE.md`/`README.md`/`TASKS.md` لتعكس أن `archive-next` + `archive-laravel` هما الطبقتان الوحيدتان، مع جملة واحدة تُشير إلى أن الحزم legacy حُذفت بتاريخ 2026-07-12 ومتاحة عبر تاريخ git. أُصلح تعليق المسار الوحيد في `archive-laravel/config/media.php` (`archive-server/ocr-service` → `infra/ocr-service`).
+
 ## سلامة تشغيلية لمراجعة الوسائط والتعاون والحقوق — مكتملة محلياً 2026-07-11
 
 - [x] **عقد سلامة pure واختبارات TDD** — أضيف `buildOperationalSafety` مع خمس حالات مثبتة: معاينة dry-run بلا تغيير، تأكيد صريح للإجراء عالي التأثير، منع واضح عند الحقوق المحظورة، إفصاح ثقة بوصفه تقديراً، ورابط لسجل التدقيق.
@@ -3201,3 +3207,12 @@
 - أضيف `archive-next/vitest.config.ts` بإقصاء محدود لـ `e2e/**` فوق `configDefaults.exclude`؛ بذلك تبقى استثناءات Vitest الافتراضية، ولا تتأثر أوامر Playwright المنفصلة. RED: فشل التشغيل الكامل بملفي E2E؛ GREEN: 19 ملفاً و122 اختباراً ناجحاً.
 - بوابات محلية ناجحة: `pnpm --filter @archive/next run typecheck`، `pnpm --filter @archive/next run build` (51 route)، `node scripts/verify-api-contracts.mjs`، و`node scripts/verify-repo-hygiene.mjs`.
 - مراجعة static للاستجابة وحالات المسارات: `pnpm --filter @archive/next exec vitest run lib/responsive-layout.test.ts lib/page-state-contract.test.ts` نجح بـ 6/6. لم تُلتقط screenshots في هذه الجولة لأن مراجعة المتصفح الحية تتطلب تشغيل خدمات Next/Laravel وبيانات/جلسة اختبار؛ لا يعد ذلك فشلاً محلياً أو مهمة تطوير مفتوحة.
+# 2026-07-12 — تدقيق وخطة جاهزية الإصدار الأول
+
+- أُنجز تدقيق قراءة شامل ومتوازٍ للمنتج وUI/UX والخلفية والأمن والبيانات والتثبيت والتشغيل وCI وسلسلة التوريد.
+- سُجل قرار `NO-GO` الحالي مع مانعات P0 مثبتة، من بينها الصلاحيات ومسارات الوسائط وDR وحساب المدير الافتراضي وتعطل Control Center.
+- أضيف تقرير الجاهزية `docs/superpowers/specs/2026-07-12-v1-release-readiness-report.md`.
+- أضيفت خطة تنفيذ موجية قابلة للتوزيع على الوكلاء في `docs/superpowers/specs/2026-07-12-v1-agent-execution-plan.md`.
+- لم تنفذ هذه الجولة تغييرات في سلوك المنتج؛ تنفيذ الخطة يبدأ بعد اعتماد النطاق وترتيب الأولويات.
+- اعتُمد تصميم V1 متعدد الأنظمة: On‑Premises على Windows وLinux، Docker Compose افتراضياً، وNative خيار ضمن مصفوفة توافق مختبرة.
+- أضيفت ملفات تثبيت موصى به/كامل/مخصص وحزمتا Online وOffline في `docs/superpowers/specs/2026-07-12-v1-cross-platform-on-prem-design.md`.

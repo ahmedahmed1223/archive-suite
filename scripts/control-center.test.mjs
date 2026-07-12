@@ -19,13 +19,14 @@ test("help renders the grouped menu and every command group", () => {
   const clean = r.stdout.replace(/\x1b\[[0-9;]*m/g, "");
   for (const s of [
     "Masar",
-    "— Server —", "— Configure —", "— Security —", "— Database —", "— Backups —", "— Maintain —", "— Legacy (Node/Vite stack) —",
+    "— Server —", "— Configure —", "— Security —", "— Database —", "— Backups —", "— Maintain —",
     "1) Quick start", "4) Deploy / Re-provision", "14) Generate a strong password", "15) Change admin password",
-    "19) Seed demo data", "24) Update & rebuild", "25) Legacy deploy wizard", "0) Exit", "q) Exit",
+    "19) Seed demo data", "24) Update & rebuild", "0) Exit", "q) Exit",
   ]) {
     assert.ok(clean.includes(s), `help output should include "${s}"`);
   }
   assert.ok(!clean.includes("q) Quick start"), "q should be reserved for exit, not start/deploy");
+  assert.ok(!clean.includes("Legacy"), "legacy Node/Vite commands were removed with the legacy packages");
 });
 
 test("unknown command exits non-zero and lists the valid commands", () => {

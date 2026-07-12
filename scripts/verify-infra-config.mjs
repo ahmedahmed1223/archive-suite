@@ -12,13 +12,6 @@ const composeVariants = [
   ["docker-compose.yml"],
   ["docker-compose.yml", "docker-compose.dev.yml"],
   ["docker-compose.laravel-next.yml"],
-  ["docker-compose.postgres.yml"],
-  ["docker-compose.postgres.yml", "docker-compose.postgres.local.yml"],
-  ["docker-compose.postgres.yml", "docker-compose.intranet.yml"],
-  ["docker-compose.postgres.yml", "docker-compose.lite.yml"],
-  ["docker-compose.postgres.yml", "docker-compose.intranet.yml", "docker-compose.lite.yml"],
-  ["docker-compose.postgres.yml", "docker-compose.test.local.yml"],
-  ["docker-compose.sqlserver.yml"],
 ];
 
 function rel(...segments) {

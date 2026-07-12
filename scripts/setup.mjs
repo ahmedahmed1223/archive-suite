@@ -293,24 +293,11 @@ async function main() {
       }
       await waitForHealth(resolvedPort);
 
-      // Auto-init PocketBase schema when pocketbase backend was chosen
+      // ponytail: pb-init.mjs (auto-schema-init) was removed with the legacy
+      // PocketBase-backed server; point users at the manual init hint instead.
       if (mode === "pocketbase") {
-        const pbUrl      = `http://localhost:${resolvedPort}`;
-        const pbEmail    = process.env.PB_EMAIL    || "admin@archive.local";
-        const pbPassword = process.env.PB_PASSWORD || "";
-        if (pbPassword) {
-          step("6b", t("pbInitStep"));
-          const { spawnSync } = await import("node:child_process");
-          const result = spawnSync(process.execPath, [
-            join(__dirname, "pb-init.mjs"),
-            `--url=${pbUrl}`,
-            `--email=${pbEmail}`,
-            `--password=${pbPassword}`,
-          ], { stdio: "inherit" });
-          if (result.status !== 0) warn(t("pbInitFailed"));
-        } else {
-          log(`${CYAN}${t("pbInitHint", { url: pbUrl })}${RESET}`);
-        }
+        const pbUrl = `http://localhost:${resolvedPort}`;
+        log(`${CYAN}${t("pbInitHint", { url: pbUrl })}${RESET}`);
       }
 
       await openBrowser(resolvedPort);

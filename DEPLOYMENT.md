@@ -1,13 +1,13 @@
 # دليل النشر — Archive Suite (إنتاج)
 
-> **حالة cutover:** التطوير والتحقق الافتراضيان انتقلا إلى **Next.js + Laravel** (`pnpm dev`, `pnpm verify`)، و`Setup-Archive.bat` / `setup.sh` ينشران الآن الحزمة القانونية Laravel + Next (`archive-server/docker-compose.yml`) افتراضياً. المعالج الموجّه أدناه صار **legacy deployment** مبنياً حول Node/SPA ويُستدعى صراحةً فقط عبر `deploy-legacy`. لا تستخدمه كأساس لميزات جديدة.
+> **حالة cutover:** التطوير والتحقق الافتراضيان هما **Next.js + Laravel** (`pnpm dev`, `pnpm verify`)، و`Setup-Archive.bat` / `setup.sh` ينشران الحزمة القانونية Laravel + Next (`infra/docker-compose.yml`). الحزم القديمة (Node/SPA) ومعالج نشرها أُزيلت في 2026-07-12 وتبقى متاحة في تاريخ git فقط.
 > عند بناء واجهة Next.js الإنتاجية للمسار الجديد، يجب ضبط `ARCHIVE_API_BASE_URL` وقت البناء (مثال: `https://api.example.com/api/v1`) حتى تُولد rewrites إلى Laravel داخل build.
 
 نشر النظام legacy الكامل على **PostgreSQL** عبر **معالج موجّه واحد** يعمل على **Linux** و**Windows**.
 المعالج يفحص البيئة، يولّد الأسرار، يكتب `.env`، ويرفع الحزمة المُحصّنة عبر Docker.
 
 > للتفاصيل العميقة (النطاق، التخزين الخارجي، الترقية، المراقبة) راجع
-> [`archive-server/DOCKER_DEPLOYMENT.md`](archive-server/DOCKER_DEPLOYMENT.md).
+> [`infra/deploy/hostinger-vps.md`](infra/deploy/hostinger-vps.md).
 
 ---
 
@@ -21,29 +21,19 @@
 
 ## التشغيل بالمعالج
 
-> ملاحظة: `Setup-Archive.bat` / `setup.sh` بدون أوامر يفتحان Control Center الذي ينشر الحزمة القانونية Laravel + Next. للمعالج legacy أدناه استخدم الأمر الصريح `deploy-legacy`.
+> ملاحظة: النشر يتم عبر أمر `deploy` في Control Center، وهو ينشر الحزمة القانونية Laravel + Next من `infra/docker-compose.yml`. (معالج النشر القديم للنظام Node/Vite أُزيل في 2026-07-12 مع الحزم القديمة.)
 
 ### Windows
 ```powershell
-.\Setup-Archive.bat deploy-legacy
+.\Setup-Archive.bat deploy
 ```
 
 ### Linux / macOS
 ```bash
-bash setup.sh deploy-legacy        # أو: pnpm deploy
+bash setup.sh deploy        # أو: pnpm deploy
 ```
 
-المعالج يقودك عبر:
-1. فحص البيئة (OS / Node / Docker).
-2. **وضع الوصول:** داخلي (intranet) أو عام (نطاق + HTTPS).
-3. حساب المشرف.
-4. توليد كل الأسرار تلقائياً (PostgreSQL / Redis / JWT / pgAdmin / Grafana / تشفير النسخ الاحتياطي).
-5. تكاملات اختيارية (SMTP، AI).
-6. كتابة `archive-server/.env` (مع نسخة احتياطية لأي ملف سابق).
-7. بوابة الجاهزية (`pnpm security:baseline`).
-8. اختيار الحزمة: كاملة أو **خفيفة** (`--lite`، بلا OCR/Whisper/مراقبة).
-9. رفع الحزمة + انتظار الصحة (الترحيلات وبذر المشرف تلقائيان).
-10. ملخّص بالعناوين وبيانات الدخول (تُعرض **مرة واحدة** — احفظها).
+أمر Deploy يجهّز `infra/.env` بالأسرار المطلوبة (مع نسخة احتياطية لأي ملف سابق)، يرفع حزمة Laravel + Next عبر Docker Compose، وينتظر فحص الصحة (الترحيلات وبذر المشرف تلقائيان). راجع `docs/control-center.md` للتفاصيل.
 
 ---
 
@@ -54,30 +44,25 @@ bash setup.sh deploy-legacy        # أو: pnpm deploy
 ```
 http://SERVER_IP:8080
 ```
-يُستخدم تجاوز [`archive-server/docker-compose.intranet.yml`](archive-server/docker-compose.intranet.yml)
+يُستخدم تجاوز [`infra/docker-compose.intranet.yml`](infra/docker-compose.intranet.yml)
 (يكشف `frontend:8080` ويعطّل Caddy). لا حاجة لنطاق أو شهادة.
 
 ### عام (public) — لاحقاً
-أعد تشغيل المعالج واختر "عام"، وأدخل النطاق + بريد ACME:
+اضبط في `infra/.env` القيم `DOMAIN` و`ACME_EMAIL` و`ARCHIVE_PUBLIC_DEPLOY=1` ثم أعد تشغيل النشر:
 ```bash
-node scripts/deploy-wizard.mjs --public --domain=archive.example.com --acme-email=ops@example.com
+pnpm deploy
 ```
-يضبط المعالج `DOMAIN`/`ACME_EMAIL`/`ARCHIVE_PUBLIC_DEPLOY=1`، ويُصدر **Caddy** شهادة Let's Encrypt
-تلقائياً على 80/443 (بشرط أن DNS يشير للخادم). التبديل داخلي↔عام لا يتطلب أي تغيير كود — فقط `.env`.
+يُصدر **Caddy** شهادة Let's Encrypt تلقائياً على 80/443 (بشرط أن DNS يشير للخادم).
+التبديل داخلي↔عام لا يتطلب أي تغيير كود — فقط `.env`.
 
 ---
 
 ## غير تفاعلي (CI / أتمتة)
 
 ```bash
-# عام، بلا أسئلة
-node scripts/deploy-wizard.mjs --non-interactive --public \
-  --domain=archive.example.com --acme-email=ops@example.com --skip-gate
-
-# داخلي خفيف
-node scripts/deploy-wizard.mjs --non-interactive --intranet --lite
+node scripts/control-center.mjs deploy
 ```
-يولّد كل الأسرار، يكتب `.env`، ويرفع الحزمة دون تدخّل.
+الأوامر الفردية في Control Center غير تفاعلية (status/start/health/backup...)؛ راجع `docs/control-center.md`.
 
 ---
 
@@ -116,7 +101,7 @@ ssh -L 5050:127.0.0.1:5050 -L 3000:127.0.0.1:3000 user@server
 ## الإيقاف والترقية
 
 ```bash
-cd archive-server
+cd infra
 # إيقاف (البيانات تبقى في الأحجام)
 docker compose -f docker-compose.postgres.yml [-f docker-compose.intranet.yml] [-f docker-compose.lite.yml] down
 # ترقية بعد سحب تغييرات

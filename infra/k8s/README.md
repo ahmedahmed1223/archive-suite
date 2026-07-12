@@ -70,7 +70,7 @@ clusters.
 ### 2. Apply with kustomize
 
 ```bash
-kubectl apply -k archive-server/k8s/
+kubectl apply -k infra/k8s/
 ```
 
 ### 3. Verify rollout
@@ -118,7 +118,7 @@ kubectl -n archive describe certificate archive-tls
 
 ```bash
 # Update image tags in the deployment YAML files, then:
-kubectl apply -k archive-server/k8s/
+kubectl apply -k infra/k8s/
 
 # Or patch a single deployment in-place:
 kubectl -n archive set image deployment/server server=ghcr.io/OWNER/archive-server:v1.2.3
@@ -128,7 +128,7 @@ kubectl -n archive set image deployment/frontend frontend=ghcr.io/OWNER/archive-
 ## Uninstall
 
 ```bash
-kubectl delete -k archive-server/k8s/
+kubectl delete -k infra/k8s/
 # PVCs are NOT deleted by kustomize delete — remove manually if you want to
 # wipe data:
 kubectl -n archive delete pvc --all
