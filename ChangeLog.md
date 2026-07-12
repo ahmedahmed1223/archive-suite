@@ -3226,3 +3226,8 @@
 - أصبحت صورة `archive-laravel/Dockerfile.worker` تثبت امتداد PHP `ftp` المطلوب في `composer.lock` من `league/flysystem-ftp`.
 - أصبح `scripts/laravel-docker.mjs` يبني ويستخدم صورة Laravel الفعلية بدلاً من `composer:latest`، ويتحقق من تحميل `ext-ftp` قبل تثبيت Composer وتشغيل الاختبارات.
 - أضيف `scripts/verify-laravel-runtime.mjs` كفحص آلي يبني الصورة ويتحقق من `ext-ftp` ومن ربط الـharness بالصورة القانونية؛ أُثبت RED أولاً ثم شُغّل GREEN.
+# 2026-07-12 — V1-004a توحيد مداخل التثبيت والتشغيل
+
+- أصبح `pnpm setup` يستدعي `Control Center deploy` مباشرةً، مثل `pnpm deploy`، لمسار Laravel + Next القانوني في `infra/docker-compose.yml`.
+- أُزيل معالج الإعداد القديم وترجمات PocketBase التابعة له واختبارها، وأزيلت مراجع أوامر النشر وCompose القديمة من أدلة التثبيت والنشر وControl Center.
+- أُضيف اختبار Node يمنع عودة مداخل عامة أو وثائق تشير إلى `deploy-legacy` أو ملفات Compose القديمة.

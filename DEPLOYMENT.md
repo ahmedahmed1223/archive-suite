@@ -3,8 +3,9 @@
 > **حالة cutover:** التطوير والتحقق الافتراضيان هما **Next.js + Laravel** (`pnpm dev`, `pnpm verify`)، و`Setup-Archive.bat` / `setup.sh` ينشران الحزمة القانونية Laravel + Next (`infra/docker-compose.yml`). الحزم القديمة (Node/SPA) ومعالج نشرها أُزيلت في 2026-07-12 وتبقى متاحة في تاريخ git فقط.
 > عند بناء واجهة Next.js الإنتاجية للمسار الجديد، يجب ضبط `ARCHIVE_API_BASE_URL` وقت البناء (مثال: `https://api.example.com/api/v1`) حتى تُولد rewrites إلى Laravel داخل build.
 
-نشر النظام legacy الكامل على **PostgreSQL** عبر **معالج موجّه واحد** يعمل على **Linux** و**Windows**.
-المعالج يفحص البيئة، يولّد الأسرار، يكتب `.env`، ويرفع الحزمة المُحصّنة عبر Docker.
+انشر الحزمة القانونية **Laravel + Next.js** عبر **Control Center** الواحد على
+**Linux** و**Windows**. يفحص المعالج البيئة، يولّد الأسرار، يكتب `.env`، ويرفع
+`infra/docker-compose.yml` عبر Docker.
 
 > للتفاصيل العميقة (النطاق، التخزين الخارجي، الترقية، المراقبة) راجع
 > [`infra/deploy/hostinger-vps.md`](infra/deploy/hostinger-vps.md).
@@ -40,12 +41,8 @@ bash setup.sh deploy        # أو: pnpm deploy
 ## وضع الوصول
 
 ### داخلي (intranet) — ابدأ هنا
-التطبيق يُنشر على منفذ مضيف للوصول عبر الشبكة المحلية:
-```
-http://SERVER_IP:8080
-```
-يُستخدم تجاوز [`infra/docker-compose.intranet.yml`](infra/docker-compose.intranet.yml)
-(يكشف `frontend:8080` ويعطّل Caddy). لا حاجة لنطاق أو شهادة.
+شغّل `pnpm setup` أو `pnpm deploy` من الجذر، ثم استخدم العنوان الذي يطبعه
+Control Center للحزمة القانونية. لا يحتاج الوضع الداخلي نطاقاً أو شهادة.
 
 ### عام (public) — لاحقاً
 اضبط في `infra/.env` القيم `DOMAIN` و`ACME_EMAIL` و`ARCHIVE_PUBLIC_DEPLOY=1` ثم أعد تشغيل النشر:
@@ -101,10 +98,8 @@ ssh -L 5050:127.0.0.1:5050 -L 3000:127.0.0.1:3000 user@server
 ## الإيقاف والترقية
 
 ```bash
-cd infra
-# إيقاف (البيانات تبقى في الأحجام)
-docker compose -f docker-compose.postgres.yml [-f docker-compose.intranet.yml] [-f docker-compose.lite.yml] down
-# ترقية بعد سحب تغييرات
-git pull && docker compose -f docker-compose.postgres.yml ... up -d --build
+# إيقاف أو إعادة تشغيل الحزمة القانونية
+node scripts/control-center.mjs stop
+node scripts/control-center.mjs update
 ```
 الترحيلات تُطبَّق تلقائياً عند إقلاع الخادم. النسخ الاحتياطي المشفّر مُفعّل افتراضياً (راجع `BACKUP_*` في `.env`).

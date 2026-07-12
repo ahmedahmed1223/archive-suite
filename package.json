@@ -41,7 +41,7 @@
     "docker:config": "docker compose --env-file infra/.env.example -f infra/docker-compose.yml config",
     "docker:config:laravel-next": "docker compose --env-file infra/.env.example -f infra/docker-compose.laravel-next.yml config",
     "release:verify": "pnpm run verify:laravel-next && pnpm run security:baseline && pnpm run security:audit && node scripts/verify-release-readiness.mjs",
-    "setup": "node scripts/setup.mjs",
+    "setup": "node scripts/control-center.mjs deploy",
     "deploy": "node scripts/control-center.mjs deploy",
     "control": "node scripts/control-center.mjs"
   },
