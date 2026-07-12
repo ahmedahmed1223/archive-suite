@@ -49,6 +49,7 @@
 | الملفات والوسائط | أحمر | media jobs تقبل مسارات حرة، والرفع يعتمد على الامتداد دون فحص محتوى كافٍ |
 | البيانات وDR | أحمر | النسخ جزئي وDR drill قد يمسح بيانات الإنتاج |
 | التثبيت المحلي | أحمر | مركز التحكم يتعطل، ولا توجد حزمة offline/air-gap مختبرة |
+| دعم Windows/Linux وNative | أحمر | Docker هو المسار الموجود جزئياً؛ Native غير منفذ، وأدوات/وثائق عديدة ما زالت تشير إلى PocketBase وcompose قديم |
 | الترقية والتراجع | أحمر | migrations وseed تلقائياً عند البدء، بلا pre-backup أو rollback rehearsal |
 | CI والاختبارات | أحمر | بوابات wiring تنجح، لكن Next unit وlive E2E ليست بوابة CI كاملة |
 | سلسلة التوريد | أحمر | لا SBOM أو checksums أو signing أو image digests ثابتة |
@@ -68,6 +69,7 @@
 8. **تشغيل وإزاحة غير آمنين:** `migrate --force` و`db:seed` عند كل start، دون نسخة قبل migration أو maintenance/rollback gate.
 9. **لا artifact إصدار قابل للتسليم:** لا offline bundle أو immutable image manifest أو SBOM/checksums/signing.
 10. **حالة مصدر غير قابلة لإعادة الإنتاج:** worktree يحتوي أكثر من 1700 تغيير/حذف غير مثبت؛ لا يجوز بناء tag منه.
+11. **انجراف مسار النشر:** `Setup-Archive` وControl Center يستهدفان Compose القانوني، لكن `scripts/setup.mjs` و`wizard-i18n` وINSTALL/DEPLOYMENT وملفات deploy ما زالت تتضمن PocketBase و`deploy-legacy` و`docker-compose.postgres.yml` غير الموجود. لا يمكن تقديم اختيار Docker/Native موثوق قبل توحيد مصدر الحقيقة هذا.
 
 ## 5. P1 قبل الإصدار العام
 
@@ -102,6 +104,7 @@
 - صفر 500 أو console/page errors في الرحلات الحرجة.
 - صفر axe serious/critical، ولا horizontal overflow على المقاسات المعتمدة.
 - تثبيت offline على Windows نظيف، وتثبيت Docker/Linux نظيف.
+- تثبيت Native نظيف على Windows وعلى Linux، مع تشغيل الخدمات بعد restart للمضيف وتراجع وإزالة تحفظ البيانات.
 - migration rehearsal من آخر إصدار مدعوم، ثم rollback مختبر.
 - full backup/restore في بيئة معزولة مع مطابقة counts/checksums وقياس RPO/RTO.
 - صور immutable موقعة، SBOM وفحص ثغرات وتراخيص محفوظة مع الإصدار.

@@ -17,8 +17,10 @@
 - [ ] **V1-001 قفل النطاق:** مصفوفة كل route: V1، admin-only، experimental، hidden؛ feature flags افتراضية آمنة.
 - [ ] **V1-002 versioning/legal:** اعتماد الاسم والترخيص وSemVer وsupport window ونسخة `1.0.0-rc.1`.
 - [ ] **V1-003 reproducibility:** إصلاح clean install، حفظ نسخ Node/pnpm/PHP/Composer ونتائج baseline.
+- [ ] **V1-004 canonical deployment truth:** توحيد `Setup-Archive.bat` و`setup.sh` وControl Center وworkflow وقوالب env على compose القانوني الواحد؛ إزالة PocketBase و`deploy-legacy` وملفات/أوامر `docker-compose.postgres.yml` من المسار العام أو عزلها خارج الحزمة. يثبت اختبار CLI أن كل أمر يعرض ويستدعي نفس manifest.
+- [ ] **V1-005 platform contract:** إنشاء compatibility matrix قابلة للقراءة آلياً تحدد Windows 10/11 وWindows Server وLinux، وDocker/Native، والإصدارات الدنيا والموارد والمنافذ وملكية البيانات. يستهلكها `doctor` لتحديد الخيارات المسموحة بدلاً من نصوص ثابتة.
 
-**بوابة W0:** clean tree + scope معتمد + release branch + baseline يعاد من الصفر.
+**بوابة W0:** clean tree + scope معتمد + release branch + baseline يعاد من الصفر + أمر إعداد واحد لا يعرض مساراً قانونياً قديماً.
 
 ## الموجة 1 — إغلاق مخاطر الأمن والبيانات (ثلاثة مسارات متوازية)
 
@@ -53,9 +55,12 @@
 - [ ] **V1-206 offline bundle:** images save/load، compose versioned، env generator، مثبت ودليل، واختبار clean host بلا شبكة.
 - [ ] **V1-207 local observability:** structured logs، rotation، metrics/alerts وsupport bundle منزوعة الأسرار دون Sentry.
 - [ ] **V1-208 cross-platform installer:** ملفات موصى به/كامل/مخصص عبر `Setup-Archive.bat` و`setup.sh`، مع ملف إعداد declarative وinstallation manifest.
-- [ ] **V1-209 native deployment:** خدمات Windows وsystemd، compatibility matrix، واختبارات install/update/rollback/uninstall مستقلة عن Docker.
+- [ ] **V1-209 Docker profiles:** تحويل compose القانوني إلى profiles `core`, `media`, `ocr`, `ai`, `observability`؛ تثبيت Online وOffline يستهلك صوراً version+digest ولا يبني من المصدر لدى العميل.
+- [ ] **V1-210 native Windows:** توفير Native bundle موثق ينشئ خدمات Windows للمكونات web/queue/realtime، يثبت PostgreSQL وRedis وruntimes من حزمة موحدة أو مصادر المؤسسة، ويملك manifest وhealth/backup/update/rollback/uninstall.
+- [ ] **V1-211 native Linux:** توفير Native bundle مكافئ بوحدات systemd للمكونات web/queue/realtime، وتهيئة PostgreSQL/Redis وملكية paths وlogrotate وmanifest والأوامر نفسها.
+- [ ] **V1-212 parity matrix:** اختبارات acceptance مشتركة تقارن Docker وNative على Windows وLinux: install، restart، health، رحلة مادة، backup/restore، update/rollback، diagnostics، uninstall مع إبقاء البيانات.
 
-**بوابة W2:** تثبيت/ترقية/تراجع وbackup/restore من الحزمة نفسها، مع artifacts موقعة وimage digests محفوظة.
+**بوابة W2:** تثبيت/ترقية/تراجع وbackup/restore من الحزمة نفسها لكل صف مدعوم في مصفوفة Docker/Native وWindows/Linux، مع artifacts موقعة وimage digests محفوظة.
 
 ## الموجة 3 — المنتج وUX (متوازية)
 
@@ -95,7 +100,7 @@
 
 ## مصفوفة الاعتماد المختصرة
 
-`W0 → W1 → W2 → RC → GA` إلزامي. يمكن تنفيذ موجتي UX وCI بالتوازي بعد W0، لكن لا تغلقان قبل دمج عقود الأمن والبيانات. لا يبدأ pilot قبل W1 وW2 وW3 وW4.
+`W0 → W1 → W2 → RC → GA` إلزامي. يمكن تنفيذ موجتي UX وCI بالتوازي بعد W0، لكن لا تغلقان قبل دمج عقود الأمن والبيانات. تبدأ Native Windows وNative Linux بعد V1-005 وبالتوازي مع Docker profiles، ولا يبدأ pilot قبل W1 وW2 وW3 وW4.
 
 ## تعريف إنجاز أي مهمة
 
