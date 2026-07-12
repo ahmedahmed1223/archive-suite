@@ -44,6 +44,10 @@ class MontageProjectsController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -76,6 +80,10 @@ class MontageProjectsController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $project = MontageProject::query()->find($id);
 
         if (! $project) {
@@ -102,8 +110,12 @@ class MontageProjectsController extends Controller
         ]);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $project = MontageProject::query()->find($id);
 
         if (! $project) {

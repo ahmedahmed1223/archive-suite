@@ -16,7 +16,9 @@ class MontageProjectsApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->user = User::factory()->create();
+        // V1-102: write endpoints below require editor/admin; this suite exercises
+        // the montage CRUD flow itself, not role restrictions, so use editor.
+        $this->user = User::factory()->create(['role' => 'editor']);
         $this->actingAs($this->user);
     }
 
