@@ -5336,14 +5336,18 @@
             "properties": {
               "result": {
                 "type": "object",
-                "required": ["name", "counts", "restoredAt"],
+                "required": ["name", "counts", "restoredAt", "verified"],
                 "properties": {
                   "name": { "type": "string" },
                   "counts": {
                     "type": "object",
                     "additionalProperties": { "type": "integer", "minimum": 0 }
                   },
-                  "restoredAt": { "type": "string", "format": "date-time" }
+                  "restoredAt": { "type": "string", "format": "date-time" },
+                  "verified": {
+                    "type": "boolean",
+                    "description": "True when the backup's SHA-256 checksum was confirmed before restore. False for older backups with no checksum sidecar (structural validation only) — the restore still proceeded but its integrity is unverified."
+                  }
                 }
               }
             }

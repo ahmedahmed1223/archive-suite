@@ -93,10 +93,102 @@ class BackupsApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('ok', true)
             ->assertJsonPath('result.name', $name)
-            ->assertJsonPath('result.counts.archive-items', 2);
+            ->assertJsonPath('result.counts.archive-items', 2)
+            ->assertJsonPath('result.verified', true);
 
         $uids = DB::table('storage_rows')->where('store', 'archive-items')->orderBy('uid')->pluck('uid')->all();
         $this->assertSame(['a-001', 'a-002'], $uids);
+    }
+
+    public function test_restore_rejects_a_backup_with_a_tampered_checksum_and_leaves_live_data_unchanged(): void
+    {
+        $headers = $this->adminHeaders();
+        $this->seedRecords(['a-001' => 'First', 'a-002' => 'Second']);
+
+        $name = $this->postJson('/api/v1/system/backups/run', [], $headers)->json('backup.name');
+
+        $before = DB::table('storage_rows')->where('store', 'archive-items')->orderBy('uid')->get();
+
+        // Corrupt the backup content but keep the (now-stale) checksum sidecar in place,
+        // simulating a tampered or bit-rotted file.
+        $path = $this->backupDir.DIRECTORY_SEPARATOR.$name;
+        file_put_contents($path, file_get_contents($path).'corruption');
+
+        $this->postJson('/api/v1/system/backups/restore', ['name' => $name], $headers)
+            ->assertStatus(422)
+            ->assertJsonPath('ok', false);
+
+        $after = DB::table('storage_rows')->where('store', 'archive-items')->orderBy('uid')->get();
+        $this->assertEquals($before, $after);
+    }
+
+    public function test_restore_of_backup_without_checksum_sidecar_restores_and_reports_unverified(): void
+    {
+        $headers = $this->adminHeaders();
+        $this->seedRecords(['a-001' => 'First']);
+
+        if (! is_dir($this->backupDir)) {
+            mkdir($this->backupDir, 0755, true);
+        }
+
+        // Simulate a backup taken before the .sha256 sidecar existed: no checksum file
+        // written alongside it.
+        $snapshot = [
+            'archive-items' => [
+                ['uid' => 'legacy-1', 'data' => ['id' => 'legacy-1', 'title' => 'Legacy'], 'syncVersion' => null, 'lastModifiedBy' => null],
+            ],
+        ];
+        $name = 'backup-legacy-no-sidecar.json.gz';
+        $path = $this->backupDir.DIRECTORY_SEPARATOR.$name;
+        file_put_contents($path, gzencode(json_encode($snapshot), 9));
+
+        $this->postJson('/api/v1/system/backups/restore', ['name' => $name], $headers)
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('result.verified', false)
+            ->assertJsonPath('result.counts.archive-items', 1);
+
+        $uids = DB::table('storage_rows')->where('store', 'archive-items')->pluck('uid')->all();
+        $this->assertSame(['legacy-1'], $uids);
+    }
+
+    public function test_restore_that_fails_mid_apply_rolls_back_and_leaves_live_data_intact(): void
+    {
+        $headers = $this->adminHeaders();
+        $this->seedRecords(['a-001' => 'First', 'a-002' => 'Second']);
+
+        if (! is_dir($this->backupDir)) {
+            mkdir($this->backupDir, 0755, true);
+        }
+
+        $before = DB::table('storage_rows')->orderBy('store')->orderBy('uid')->get();
+
+        // First store applies cleanly; second store has a duplicate uid, which
+        // violates the (store, uid) primary key on insert and must roll back
+        // the whole transaction, including the first store's already-applied
+        // delete+insert.
+        $snapshot = [
+            'archive-items' => [
+                ['uid' => 'a-999', 'data' => ['id' => 'a-999', 'title' => 'Should not persist'], 'syncVersion' => null, 'lastModifiedBy' => null],
+            ],
+            'archive-items-bad' => [
+                ['uid' => 'dup', 'data' => ['id' => 'dup'], 'syncVersion' => null, 'lastModifiedBy' => null],
+                ['uid' => 'dup', 'data' => ['id' => 'dup'], 'syncVersion' => null, 'lastModifiedBy' => null],
+            ],
+        ];
+        $name = 'backup-mid-apply-failure.json.gz';
+        $path = $this->backupDir.DIRECTORY_SEPARATOR.$name;
+        $encoded = gzencode(json_encode($snapshot), 9);
+        file_put_contents($path, $encoded);
+        file_put_contents($path.'.sha256', hash('sha256', $encoded));
+
+        $this->postJson('/api/v1/system/backups/restore', ['name' => $name], $headers)
+            ->assertStatus(500)
+            ->assertJsonPath('ok', false);
+
+        $after = DB::table('storage_rows')->orderBy('store')->orderBy('uid')->get();
+        $this->assertEquals($before, $after);
+        $this->assertSame(0, DB::table('storage_rows')->where('store', 'archive-items-bad')->count());
     }
 
     public function test_restore_rejects_path_traversal_names(): void

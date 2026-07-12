@@ -121,51 +121,88 @@ class BackupService
     }
 
     /**
-     * @return array{name: string, counts: array<string, int>, restoredAt: string}
+     * @return array{name: string, counts: array<string, int>, restoredAt: string, verified: bool}
      */
     public function restore(string $name): array
     {
+        $path = $this->resolvePath($name);
+
+        // Integrity gate, BEFORE any data is touched. Reuses verify()'s checksum
+        // logic rather than duplicating it. Older backups predate the .sha256
+        // sidecar (V1-122 added it after the fact) — hard-failing every one of
+        // those would brick historical restores, so absence of a sidecar falls
+        // back to the structural validation readSnapshot() already performs and
+        // the result is flagged unverified. A sidecar that IS present but does
+        // not match means the file was corrupted or tampered with after backup;
+        // that always aborts, since it's the exact class of silent-overwrite bug
+        // this ticket exists to close.
+        $hasChecksum = is_file($path.'.sha256');
+        $verification = $this->verify($name);
+
+        if ($hasChecksum && ! $verification['verified']) {
+            throw new BackupException(
+                'Backup integrity check failed ('.$verification['message'].'). Restore aborted; live data was not touched.',
+                422
+            );
+        }
+
+        if (! $hasChecksum) {
+            logger()->warning('Restoring backup with no checksum sidecar; integrity unverified.', ['name' => $name]);
+        }
+
         $snapshot = $this->readSnapshot($name);
         $counts = [];
 
-        DB::transaction(function () use ($snapshot, &$counts): void {
-            $now = now();
+        try {
+            // ponytail: non-destructive via a single DB transaction rather than a
+            // separate pre-restore snapshot file — every driver this app runs on
+            // (sqlite, MySQL/InnoDB, Postgres) is transactional, so any failure
+            // partway through (bad row, constraint violation) rolls back every
+            // store's delete+insert together and live data ends up untouched.
+            // Upgrade to an explicit pre-restore dump only if a future storage
+            // backend can't guarantee transactional DDL here.
+            DB::transaction(function () use ($snapshot, &$counts): void {
+                $now = now();
 
-            foreach ($snapshot as $store => $rows) {
-                DB::table('storage_rows')->where('store', $store)->delete();
+                foreach ($snapshot as $store => $rows) {
+                    DB::table('storage_rows')->where('store', $store)->delete();
 
-                $inserts = [];
+                    $inserts = [];
 
-                foreach ($rows as $row) {
-                    $uid = (string) ($row['uid'] ?? '');
+                    foreach ($rows as $row) {
+                        $uid = (string) ($row['uid'] ?? '');
 
-                    if ($uid === '') {
-                        continue;
+                        if ($uid === '') {
+                            continue;
+                        }
+
+                        $inserts[] = [
+                            'store' => $store,
+                            'uid' => $uid,
+                            'data' => json_encode($row['data'] ?? [], JSON_THROW_ON_ERROR),
+                            'sync_version' => $row['syncVersion'] ?? null,
+                            'last_modified_by' => json_encode($row['lastModifiedBy'] ?? null, JSON_THROW_ON_ERROR),
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
                     }
 
-                    $inserts[] = [
-                        'store' => $store,
-                        'uid' => $uid,
-                        'data' => json_encode($row['data'] ?? [], JSON_THROW_ON_ERROR),
-                        'sync_version' => $row['syncVersion'] ?? null,
-                        'last_modified_by' => json_encode($row['lastModifiedBy'] ?? null, JSON_THROW_ON_ERROR),
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ];
-                }
+                    foreach (array_chunk($inserts, self::INSERT_CHUNK_SIZE) as $chunk) {
+                        DB::table('storage_rows')->insert($chunk);
+                    }
 
-                foreach (array_chunk($inserts, self::INSERT_CHUNK_SIZE) as $chunk) {
-                    DB::table('storage_rows')->insert($chunk);
+                    $counts[$store] = count($inserts);
                 }
-
-                $counts[$store] = count($inserts);
-            }
-        });
+            });
+        } catch (\Throwable $e) {
+            throw new BackupException('Restore failed and was rolled back; live data was not touched: '.$e->getMessage(), 500);
+        }
 
         return [
             'name' => $name,
             'counts' => $counts,
             'restoredAt' => now()->toIso8601String(),
+            'verified' => $verification['verified'],
         ];
     }
 

@@ -25,6 +25,47 @@
 - [ ] **عقد رموز أخطاء ثابتة (error codes) بين Laravel والواجهة** — حالياً تُعيد المتحكمات `$e->getMessage()` الخام كـ`error`، و~50 صفحة Next تعرض `response.error` مباشرة. الحل الصحيح: رموز آلية مستقرة (`code`) في مغلف الخطأ لتعرّبها الواجهة بلا كسر فحوص النص الحالية.
 - [ ] **إزالة اقتران sentinel-string الهش** — صفحات `data-center` و`status` و`system/control` تحكم حالتها بمطابقة نص خلفي خام (`"Forbidden."`, `"System control actions are disabled."`)؛ أي تغيير صياغة يكسر بوابات الصلاحية بصمت. يجب التحويل إلى رمز حالة/`code`. (مرتبط بالبند أعلاه.)
 
+## خطة الإصدار الأول (V1) — مدمجة من `docs/superpowers/specs/2026-07-12-v1-agent-execution-plan.md`
+
+> القرار الحالي **NO-GO** حتى إغلاق مانعات P0. التسلسل الإلزامي: `W0 → W1 → W2 → RC → GA` (UX/CI بالتوازي بعد W0). التفاصيل الكاملة لكل بند في ملف الخطة والتقرير `2026-07-12-v1-release-readiness-report.md`.
+
+### الموجة 0 — خط الأساس
+- [x] **V1-000 مراجعة cutover** — حذف الإرث (1700 ملف) وcommit نظيف. (منجز 2026-07-12)
+- [ ] **V1-001 قفل النطاق** — تصنيف كل route (V1/admin/experimental/hidden) + feature flags آمنة.
+- [ ] **V1-002 versioning/legal** — اسم + ترخيص + SemVer + support window + `1.0.0-rc.1`. (لا يوجد `LICENSE` جذري بعد.)
+- [ ] **V1-003 reproducibility** — clean install + حفظ نسخ Node/pnpm/PHP/Composer وbaseline. (جزئياً: ext-ftp runtime عبر `verify-laravel-runtime.mjs`.)
+- [x] **V1-004 canonical deployment truth** — توحيد Setup/Control Center/compose وإزالة PocketBase/deploy-legacy/docker-compose.postgres. (منجز 2026-07-12 بالدمج؛ setup.bat يعمل.)
+- [x] **V1-005 platform contract** — `infra/platform/compatibility.v1.json` + schema + `platform-contract.mjs` يستهلكها doctor. (منجز 2026-07-12 بالدمج.)
+
+### الموجة 1 — أمن وبيانات (P0/P1)
+- [ ] **V1-101** إزالة admin defaults ورفض `CHANGE_ME`/secure-cookie=false في production لكل compose variants. **(P0 #1)**
+- [ ] **V1-102** مصفوفة RBAC + Policies لكل endpoint مع `RoleMatrixApiTest`. **(P0 #4)**
+- [ ] **V1-103** قصر refresh cookie على `/auth/refresh` + Origin/CSRF/throttle + تحديث OpenAPI. **(P0 #5)**
+- [ ] **V1-104** share secrets في body/header لا query + rate limiting فعلي.
+- [ ] **V1-111** containment/ownership لـmedia jobs ومنع path traversal/arbitrary reads. **(P0 #2)**
+- [ ] **V1-112** upload validation: MIME+magic، UUID، quotas، quarantine/AV.
+- [ ] **V1-113** timeouts/backoff/idempotency/cancel للوظائف + تنقية الأخطاء والمسارات.
+- [ ] **V1-121** backup كامل: PostgreSQL + storage volumes + manifest/checksums. **(P0 #7)**
+- [x] **V1-122** استعادة غير مدمرة (معاملة DB ترجع الحيّة سليمة عند أي فشل) + تحقق checksum قبل الاستعادة (رفض النسخ التالفة 422، توافق خلفي للنسخ بلا sidecar بعلَم `verified:false`). (منجز 2026-07-12؛ 4 اختبارات جديدة، 15 تمر.) **(P0 #3)**
+- [ ] **V1-123** retention/pruning للجلسات/audit/jobs/backups + RPO/RTO.
+
+### الموجة 2 — التشغيل والتغليف
+- [x] **V1-201 Control Center** — إصلاح رمز legacy المفقود + إزالة الأوامر القديمة + اختبارات. (منجز 2026-07-12؛ 18 اختباراً.) **(كان P0 #6)**
+- [ ] **V1-202 production runtime** — استبدال PHP dev server + healthchecks عميقة + worker/Reverb readiness. (جزئياً: صورة Laravel حقيقية بـ ext-ftp.)
+- [ ] **V1-203 migration safety** — preflight + prebackup + maintenance/drain + migrate-once + rollback. **(P0 #8)**
+- [ ] **V1-204 immutable images** / **V1-205 supply chain (SBOM/checksums/signing)** / **V1-206 offline bundle**. **(P0 #9)**
+- [ ] **V1-207 observability** / **V1-208 cross-platform installer** / **V1-209 Docker profiles** / **V1-210 native Windows** / **V1-211 native Linux** / **V1-212 parity matrix**.
+
+### الموجة 3 — المنتج وUX
+- [ ] **V1-301 onboarding خادمي** / **V1-302 admin safety (last-admin/self guards)** / **V1-303 responsive+a11y (375/768/1280, axe)** / **V1-304 data correctness (إزالة الحدود الصامتة)** / **V1-305 offline truth** / **V1-306 language/help** / **V1-307 performance**.
+
+### الموجة 4 — CI والتوثيق
+- [ ] **V1-401 CI gates (Next+Laravel+live Playwright+axe)** / **V1-402 security gates** / **V1-403 release-readiness محتوى لا strings** / **V1-404 docs canonical-only** / **V1-405 release notes**.
+
+### الموجة 5 — RC وتجربة ميدانية / الموجة 6 — GA
+- [ ] **V1-501..505** Alpha/game-day، rc.1 في 3–5 بيئات، قياس RPO/RTO، تصنيف عيوب pilot، rehearsal نظيف.
+- [ ] **V1-601..605** Go/No-Go، tag `v1.0.0`، نشر artifacts/SBOM، اختبار تنزيل نهائي، فتح مراقبة/دعم.
+
 ## قاعدة إعادة الفتح
 
 لا يُضاف أي بند هنا إلا إذا كان قابلاً للتنفيذ محلياً أو توفرت له البيئة/الاعتمادات الحية المطلوبة. عند إضافة بند جديد:
