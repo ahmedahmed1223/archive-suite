@@ -20,6 +20,10 @@
 
 ---
 
+## إصلاح بوابة الأمن في Git worktree — مكتمل 2026-07-12
+
+- [x] **مسار safe.directory محلي** — أصبحت بوابة security baseline تثق فقط في مسار الـcheckout الحالي لكل استدعاء Git، فتعمل من clone عادي أو linked worktree من دون إعداد global.
+
 ## إزالة الحزم legacy النهائية (Phase B) — مكتملة 2026-07-12
 
 - [x] **Phase A (سابقة، commit a53b666)** — نُقلت الأصول القانونية (Docker compose/deploy) إلى `infra/` ومواصفات Next e2e إلى `archive-next/e2e`، تمهيداً لحذف الحزم legacy بأمان.
