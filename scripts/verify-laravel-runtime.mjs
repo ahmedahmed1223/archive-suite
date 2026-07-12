@@ -29,6 +29,8 @@ function run(label, command, args) {
 
 const runtimeDockerfile = read("archive-laravel/Dockerfile.worker");
 const harness = read("scripts/laravel-docker.mjs");
+const infraVerifier = read("scripts/verify-infra-config.mjs");
+const releaseVerifier = read("scripts/verify-release-readiness.mjs");
 
 assert.match(
   runtimeDockerfile,
@@ -49,6 +51,16 @@ assert.match(
   harness,
   /test -f vendor\/autoload\.php \|\| composer install --no-interaction/,
   "the Laravel harness must repair incomplete Composer installs before running tests"
+);
+assert.match(
+  infraVerifier,
+  /assertWorkerInstallsExtension\("archive-laravel\/Dockerfile\.worker", "ftp"\)/,
+  "the infrastructure verifier must require ext-ftp in the Laravel runtime"
+);
+assert.match(
+  releaseVerifier,
+  /assertWorkerInstallsExtension\("archive-laravel\/Dockerfile\.worker", "ftp"\)/,
+  "the release verifier must require ext-ftp in the Laravel runtime"
 );
 
 run("Laravel runtime image build", "docker", [
