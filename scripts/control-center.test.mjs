@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -10,8 +10,51 @@ import { join } from "node:path";
 // router, and read-only commands are covered end-to-end.
 
 const CLI = new URL("./control-center.mjs", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const ROOT = new URL("../", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 const run = (args, env = {}) =>
   spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8", env: { ...process.env, ...env } });
+
+test("public setup and deployment guidance use only the canonical Control Center stack", () => {
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  assert.equal(pkg.scripts.setup, "node scripts/control-center.mjs deploy");
+  assert.equal(pkg.scripts.deploy, "node scripts/control-center.mjs deploy");
+
+  const controlCenter = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
+  assert.doesNotMatch(controlCenter, /docker-compose\.dev\.yml/);
+
+  for (const file of [
+    "README.md",
+    "INSTALL.md",
+    "DEPLOYMENT.md",
+    "docs/control-center.md",
+    "Setup-Archive.bat",
+    "setup.bat",
+    "setup.sh",
+    "scripts/control-center.mjs",
+    "infra/deploy/setup.sh",
+    "infra/deploy/hostinger-vps.md",
+    "infra/.env.example",
+    "infra/docker-compose.yml",
+  ]) {
+    const content = readFileSync(join(ROOT, file), "utf8");
+    assert.doesNotMatch(content, /deploy-legacy|PocketBase|archive-server|docker-compose\.postgres\.yml/i);
+  }
+
+  for (const file of ["README.md", "INSTALL.md", "DEPLOYMENT.md", "docs/control-center.md", "infra/deploy/hostinger-vps.md"]) {
+    assert.match(readFileSync(join(ROOT, file), "utf8"), /infra\/docker-compose\.yml/);
+  }
+
+  const deployLauncher = readFileSync(join(ROOT, "infra/deploy/setup.sh"), "utf8");
+  assert.match(deployLauncher, /exec bash "\$ROOT\/setup\.sh" "\$@"/);
+  assert.doesNotMatch(deployLauncher, /exec sh "\$ROOT\/setup\.sh"/);
+  for (const retiredOverride of [
+    "infra/docker-compose.intranet.yml",
+    "infra/docker-compose.lite.yml",
+    "infra/docker-compose.test.local.yml",
+  ]) {
+    assert.equal(existsSync(join(ROOT, retiredOverride)), false, `${retiredOverride} must not remain a public deployment path`);
+  }
+});
 
 test("help renders the grouped menu and every command group", () => {
   const r = run(["help"]);
@@ -103,6 +146,24 @@ test("doctor uses the Windows-safe pnpm invocation and reports the environment",
   const out = r.stderr + r.stdout;
   assert.match(out, /Doctor/);
   assert.doesNotMatch(out, /pnpm not found/);
+});
+
+test("doctor filters the platform contract and keeps native deployment explicitly planned", () => {
+  const r = run(["doctor", "--mode=native", "--platform=linux-native"]);
+  const out = r.stderr + r.stdout;
+  assert.equal(r.status, 0, out);
+  assert.match(out, /Platform compatibility contract v1\.0/);
+  assert.match(out, /Linux Native \(linux-native\) — planned/);
+  assert.match(out, /Native deployment is planned: no install or start action is available yet\./);
+  assert.match(out, /Read-only report/);
+  assert.doesNotMatch(out, /docker compose up/);
+});
+
+test("doctor rejects an unknown platform without performing deployment", () => {
+  const r = run(["doctor", "--platform=not-a-platform"]);
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr + r.stdout, /Unknown platform/);
+  assert.doesNotMatch(r.stderr + r.stdout, /docker compose up/);
 });
 
 test("deploy replaces every duplicate ADMIN_PASSWORD placeholder with the generated password", () => {

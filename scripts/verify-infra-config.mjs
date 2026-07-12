@@ -34,6 +34,14 @@ function assertExcludes(file, forbidden) {
   assert.doesNotMatch(read(file), new RegExp(escapeRegExp(forbidden)), `${file} should not include ${forbidden}`);
 }
 
+function assertWorkerInstallsExtension(file, extension) {
+  assert.match(
+    read(file),
+    new RegExp(`docker-php-ext-install[^\\r\\n]*\\b${escapeRegExp(extension)}\\b`),
+    `${file} should install PHP ext-${extension}`
+  );
+}
+
 function shortOutput(value) {
   const text = (value ?? "").trim();
   if (!text) return "";
@@ -94,7 +102,9 @@ assertIncludes("archive-next/Dockerfile", "COPY package.json pnpm-lock.yaml pnpm
 assertIncludes("archive-next/Dockerfile", "ARG ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1");
 assertIncludes("archive-next/Dockerfile", "COPY --from=builder /app/archive-next/public ./archive-next/public");
 assertIncludes("archive-laravel/Dockerfile.worker", "docker-php-ext-enable redis");
-assertIncludes("archive-laravel/Dockerfile.worker", "docker-php-ext-install curl mbstring zip pdo pdo_pgsql");
+for (const extension of ["curl", "mbstring", "zip", "pdo", "pdo_pgsql", "ftp"]) {
+  assertWorkerInstallsExtension("archive-laravel/Dockerfile.worker", extension);
+}
 assertIncludes("infra/deploy/Caddyfile", 'reverse_proxy {$CADDY_UPSTREAM:frontend:80}');
 
 assertIncludes("infra/k8s/network-policy.yaml", "app: server");

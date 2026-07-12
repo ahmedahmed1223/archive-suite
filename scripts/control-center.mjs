@@ -25,6 +25,7 @@ import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync, readd
 import { createInterface } from "node:readline";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
+import { formatPlatformContractReport, loadPlatformContract, selectPlatforms } from "./platform-contract.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
@@ -33,8 +34,6 @@ const INFRA_DIR = join(ROOT, "infra");
 const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(INFRA_DIR, ".env");
 const ENV_EXAMPLE = join(INFRA_DIR, ".env.example");
 // Canonical stack: Laravel API + Next.js (postgres/redis/laravel/worker/reverb/next/caddy).
-// ponytail: no automatic override layering — for the HTTP-only dev variant run
-// `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` by hand.
 const COMPOSE_FILE = join(INFRA_DIR, "docker-compose.yml");
 const BACKUP_DIR = join(INFRA_DIR, "backups");
 
@@ -62,7 +61,7 @@ const confirm = async (q, def = "n") => {
 
 // ─── CLI flags ───────────────────────────────────────────────────────────────
 const ARGS = process.argv.slice(2);
-const hasFlag = (name) => ARGS.includes(`--${name}`);
+const hasFlag = (name) => ARGS.some((arg) => arg === `--${name}` || arg.startsWith(`--${name}=`));
 function flagValue(name) {
   const exact = `--${name}`;
   const prefix = `${exact}=`;
@@ -507,6 +506,26 @@ function firstRunGuide() {
 async function runDoctor() {
   titleLine("Doctor — environment pre-flight check");
   let issues = 0;
+  const mode = flagValue("mode");
+  const platformId = flagValue("platform");
+  const hasPlatformFilter = hasFlag("mode") || hasFlag("platform");
+  let selectedPlatforms = null;
+  if ((hasFlag("mode") && !mode) || (hasFlag("platform") && !platformId)) {
+    err("Doctor filters require a value: --mode=docker|native or --platform=<id>.");
+    return 1;
+  }
+  if (hasPlatformFilter) {
+    try {
+      const contract = loadPlatformContract();
+      selectedPlatforms = selectPlatforms(contract, { mode, platformId });
+      for (const line of formatPlatformContractReport(contract, selectedPlatforms)) log(line);
+      log("");
+    } catch (error) {
+      err(error.message);
+      return 1;
+    }
+  }
+  const nativeOnly = selectedPlatforms?.every((platform) => platform.mode === "native") ?? false;
 
   // Node.js version
   const nodeMajor = Number(process.version.slice(1).split(".")[0]);
@@ -526,20 +545,16 @@ async function runDoctor() {
     issues++;
   }
 
-  // Docker
-  const dockerCheck = spawnSync("docker", ["--version"], { stdio: "pipe", encoding: "utf8" });
-  if (dockerCheck.status === 0) {
-    ok(`Docker — ${(dockerCheck.stdout || "").trim()}`);
+  // Docker is a host prerequisite for the conditional Docker paths only.
+  if (!nativeOnly) {
+    const dockerCheck = spawnSync("docker", ["--version"], { stdio: "pipe", encoding: "utf8" });
+    if (dockerCheck.status === 0) ok(`Docker — ${(dockerCheck.stdout || "").trim()}`);
+    else warn("Docker not found — required for the canonical Laravel + Next stack");
+    const dc = dockerComposeCmd();
+    if (dc) ok("Docker Compose — available");
+    else warn("Docker Compose not found — install Docker Desktop or docker-compose v2");
   } else {
-    warn("Docker not found — required for the canonical Laravel + Next stack");
-  }
-
-  // Docker Compose
-  const dc = dockerComposeCmd();
-  if (dc) {
-    ok("Docker Compose — available");
-  } else {
-    warn("Docker Compose not found — install Docker Desktop or docker-compose v2");
+    log(`${C.d}Docker checks skipped: the selected native platform is planned and no native services are installed or started.${C.x}`);
   }
 
   // .env file
@@ -549,19 +564,25 @@ async function runDoctor() {
     warn(`.env not found at ${ENV_PATH} — run Deploy first`);
   }
 
-  // Server health (non-fatal if not running)
-  const env = readEnv();
-  const url = defaultHealthUrl(env);
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
-    ok(`${url} — server responding (HTTP ${res.status})`);
-  } catch {
-    log(`  ${C.d}${url} — not responding (server may not be started yet — run 'start')${C.x}`);
+  // Health is a safe GET, but does not apply to a planned native deployment.
+  if (!nativeOnly) {
+    const env = readEnv();
+    const url = defaultHealthUrl(env);
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
+      ok(`${url} — server responding (HTTP ${res.status})`);
+    } catch {
+      log(`  ${C.d}${url} — not responding (server may not be started yet — run 'start')${C.x}`);
+    }
+  } else {
+    log(`${C.d}Health endpoint skipped: native deployment is planned and this doctor command does not start services.${C.x}`);
   }
 
   // Summary
   hr();
-  if (issues === 0) {
+  if (issues === 0 && nativeOnly) {
+    ok("Read-only checks completed. Native deployment remains planned; no install or start action is available.");
+  } else if (issues === 0) {
     ok("All checks passed. Run 'setup quick' to deploy and start, or 'node scripts/control-center.mjs start'.");
   } else {
     err(`${issues} critical issue(s) found — resolve them before deploying.`);
@@ -712,7 +733,7 @@ const COMMANDS = {
     console.log(`${C.b}  Commands (canonical Laravel + Next.js stack):${C.x}`);
     console.log(`  ${C.c}quick${C.x}            Deploy + health check in one step`);
     console.log(`  ${C.c}first-run${C.x}        Show the quick/advanced first-run guide`);
-    console.log(`  ${C.c}doctor${C.x}           Check Node/pnpm/Docker/.env before deploying`);
+    console.log(`  ${C.c}doctor [--mode=docker|native] [--platform=<id>]${C.x}  Read-only platform contract + pre-flight checks`);
     console.log(`  ${C.c}deploy${C.x}           Provision .env secrets + docker compose up -d --build`);
     console.log(`  ${C.c}start | stop | restart${C.x}  Manage the Docker stack (infra/docker-compose.yml)`);
     console.log(`  ${C.c}status | health | logs${C.x}  Monitor the running stack (health: /api/v1/health via Next)`);
@@ -731,7 +752,6 @@ const COMMANDS = {
     console.log(`  ${C.c}update${C.x}           git pull → install → build → docker compose up -d --build`);
     console.log(`\n${C.b}  Tips:${C.x}`);
     console.log(`  ${C.d}- In the interactive menu, option 1 is the single quick-start path; q and 0 both exit.${C.x}`);
-    console.log(`  ${C.d}- HTTP-only dev variant: docker compose -f docker-compose.yml -f docker-compose.dev.yml up (from infra/).${C.x}`);
     console.log(`  ${C.d}- "Stack not running" → run 'setup start' or 'setup doctor' to diagnose.${C.x}`);
     console.log(`  ${C.d}- "No .env found"     → run 'setup deploy' to provision a fresh configuration.${C.x}`);
     console.log(`\n${C.b}  Interactive menu (run 'setup' without arguments):${C.x}`);

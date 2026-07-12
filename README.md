@@ -7,7 +7,7 @@
 - `archive-next/` — canonical frontend بواجهة Next.js 16 + TypeScript.
 - `archive-laravel/` — canonical backend/API مبني على Laravel 13.
 
-> الحزم legacy (`archive-app` — Vite SPA، `archive-server` — Node/Prisma server، `archive-core` — مكتبة النواة المشتركة) حُذفت نهائياً بتاريخ 2026-07-12 وهي متاحة فقط عبر تاريخ git.
+> أُزيلت حزم legacy نهائياً بتاريخ 2026-07-12 وتبقى متاحة فقط عبر تاريخ git.
 
 ## نظرة عامة
 
@@ -82,19 +82,13 @@ pnpm run build:next
 
 ## النشر عبر Docker
 
-المسار الافتراضي في `infra/docker-compose.yml` يشغّل Laravel + Next.js، لذلك تظهر واجهة مسار والصفحات الجديدة عند تشغيل Docker العادي:
+استخدم Control Center لنشر الحزمة القانونية Laravel + Next.js من
+`infra/docker-compose.yml`. ينشئ `infra/.env`، يولّد الأسرار الناقصة، ثم يدير
+`docker compose up -d --build` للمسار نفسه:
 
 ```bash
-cd infra
-cp .env.example .env
-# عدّل أسرار CHANGE_ME قبل الإنتاج
-docker compose up -d --build
-```
-
-للتشغيل المحلي بدون Caddy:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+pnpm setup
+# أو: pnpm deploy
 ```
 
 ## CI/CD والمراقبة
@@ -122,18 +116,17 @@ SENTRY_PROJECT
 SENTRY_AUTH_TOKEN
 ```
 
-## النشر الموجّه (legacy)
+## النشر الموجّه
 
-`Setup-Archive.bat` / `setup.sh` ينشران الآن الحزمة القانونية Laravel + Next افتراضياً. معالج النشر legacy القديم (Node/SPA) متاح كأمر صريح فقط:
+`Setup-Archive.bat` / `setup.sh` هما مشغلا Control Center للحزمة القانونية Laravel + Next:
 
 ```bash
 # Windows:
 .\Setup-Archive.bat                    # القائمة: 1 = Quick start، q/0 = خروج
 .\Setup-Archive.bat change-admin-password --generate
-.\Setup-Archive.bat deploy-legacy
 # Linux/macOS:
 bash setup.sh change-admin-password --generate
-bash setup.sh deploy-legacy        # أو: pnpm deploy
+bash setup.sh deploy               # أو: pnpm setup / pnpm deploy
 ```
 
 يفحص البيئة، يولّد الأسرار، ويرفع الحزمة المُحصّنة. التفاصيل في [`DEPLOYMENT.md`](DEPLOYMENT.md).
@@ -169,7 +162,7 @@ bash setup.sh deploy-legacy        # أو: pnpm deploy
 - يعتمد المستودع على `pnpm` workspace.
 - استخدام `pnpm-lock.yaml` لضمان اعتمادية قابلة للتكرار.
 - الحزمة الوحيدة في الـ workspace هي `@archive/next`؛ التشارك مع `archive-laravel` يمر عبر عقد `docs/api/archive-contract.openapi.json`.
-- الحزم legacy (`archive-app`، `archive-server`، `archive-core`) حُذفت نهائياً بتاريخ 2026-07-12، وهي متاحة فقط عبر تاريخ git.
+- أُزيلت حزم legacy بتاريخ 2026-07-12 وتبقى متاحة فقط عبر تاريخ git.
 
 ## للمطورين
 

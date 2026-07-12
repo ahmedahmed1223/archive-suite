@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://archive-suite.local/schemas/platform-compatibility.v1.schema.json",
+  "title": "Archive Suite V1 platform compatibility contract",
+  "type": "object",
+  "required": ["schemaVersion", "supportPolicy", "profiles", "ports", "dataPaths", "resources", "platforms"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "supportPolicy": { "type": "string", "minLength": 1 },
+    "profiles": {
+      "type": "object",
+      "required": ["core", "media", "ocr", "ai", "observability"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status", "description"],
+        "properties": {
+          "status": { "enum": ["conditional", "planned"] },
+          "description": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "ports": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "port", "protocol", "exposure", "purpose"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+          "protocol": { "enum": ["tcp", "udp"] },
+          "exposure": { "enum": ["public", "internal"] },
+          "purpose": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "dataPaths": {
+      "type": "object",
+      "required": ["windows", "linux"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["root", "postgres", "redis", "storage", "backups"],
+        "additionalProperties": { "type": "string", "minLength": 1 }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": ["status", "core", "media", "ocr", "ai", "observability"],
+      "properties": { "status": { "const": "provisional" } }
+    },
+    "platforms": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "mode", "status", "requirements", "profiles", "dataPathFamily", "resourceStatus"],
+        "properties": {
+          "id": { "enum": ["windows-10-11-docker", "linux-docker", "windows-native", "linux-native"] },
+          "label": { "type": "string", "minLength": 1 },
+          "mode": { "enum": ["docker", "native"] },
+          "status": { "enum": ["conditional", "planned"] },
+          "requirements": {
+            "type": "object",
+            "required": ["node", "docker", "php", "composer", "postgresql", "redis"],
+            "additionalProperties": { "type": "string", "minLength": 1 }
+          },
+          "profiles": { "type": "array", "minItems": 1, "items": { "enum": ["core", "media", "ocr", "ai", "observability"] } },
+          "dataPathFamily": { "enum": ["windows", "linux"] },
+          "resourceStatus": { "const": "provisional" }
+        }
+      }
+    }
+  }
+}

@@ -4,9 +4,10 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+const SAFE_DIRECTORY = ROOT.split(path.sep).join("/");
 
 function git(args) {
-  return execFileSync("git", ["-c", "safe.directory=D:/archiveaq/Arch_App", ...args], {
+  return execFileSync("git", ["-c", `safe.directory=${SAFE_DIRECTORY}`, ...args], {
     cwd: ROOT,
     encoding: "utf8"
   }).trim();

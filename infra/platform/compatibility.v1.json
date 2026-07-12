@@ -1,0 +1,193 @@
+{
+  "$schema": "./compatibility.v1.schema.json",
+  "schemaVersion": "1.0",
+  "title": "Archive Suite V1 platform compatibility contract",
+  "supportPolicy": "All entries are conditional or planned until validated on a clean target host. This contract does not assert tested support.",
+  "profiles": {
+    "core": {
+      "status": "conditional",
+      "description": "Canonical Laravel API, Next.js UI, PostgreSQL, Redis, worker, Reverb, and Caddy."
+    },
+    "media": {
+      "status": "conditional",
+      "description": "Media processing workloads; enable only after storage and capacity validation."
+    },
+    "ocr": {
+      "status": "planned",
+      "description": "OCR workloads remain planned pending runtime and resource validation."
+    },
+    "ai": {
+      "status": "planned",
+      "description": "Optional AI workloads remain planned and disabled by default."
+    },
+    "observability": {
+      "status": "conditional",
+      "description": "Local structured logs, diagnostics, and health/readiness reporting."
+    }
+  },
+  "ports": [
+    {
+      "id": "app",
+      "port": 3000,
+      "protocol": "tcp",
+      "exposure": "public",
+      "purpose": "Next.js application and proxied API health endpoint"
+    },
+    {
+      "id": "caddy-http",
+      "port": 80,
+      "protocol": "tcp",
+      "exposure": "public",
+      "purpose": "HTTP ingress"
+    },
+    {
+      "id": "caddy-https",
+      "port": 443,
+      "protocol": "tcp",
+      "exposure": "public",
+      "purpose": "HTTPS ingress when configured"
+    },
+    {
+      "id": "reverb",
+      "port": 8080,
+      "protocol": "tcp",
+      "exposure": "public",
+      "purpose": "Realtime WebSocket endpoint"
+    },
+    {
+      "id": "laravel",
+      "port": 8000,
+      "protocol": "tcp",
+      "exposure": "internal",
+      "purpose": "Laravel API service"
+    },
+    {
+      "id": "postgres",
+      "port": 5432,
+      "protocol": "tcp",
+      "exposure": "internal",
+      "purpose": "PostgreSQL database"
+    },
+    {
+      "id": "redis",
+      "port": 6379,
+      "protocol": "tcp",
+      "exposure": "internal",
+      "purpose": "Redis cache and queue"
+    }
+  ],
+  "dataPaths": {
+    "windows": {
+      "root": "C:\\ArchiveSuite\\data",
+      "postgres": "C:\\ArchiveSuite\\data\\postgres",
+      "redis": "C:\\ArchiveSuite\\data\\redis",
+      "storage": "C:\\ArchiveSuite\\data\\storage",
+      "backups": "C:\\ArchiveSuite\\data\\backups"
+    },
+    "linux": {
+      "root": "/var/lib/archive-suite",
+      "postgres": "/var/lib/archive-suite/postgres",
+      "redis": "/var/lib/archive-suite/redis",
+      "storage": "/var/lib/archive-suite/storage",
+      "backups": "/var/lib/archive-suite/backups"
+    }
+  },
+  "resources": {
+    "status": "provisional",
+    "core": {
+      "cpu": "4 vCPU",
+      "memory": "8 GiB RAM",
+      "disk": "100 GiB SSD"
+    },
+    "media": {
+      "cpu": "8 vCPU",
+      "memory": "16 GiB RAM",
+      "disk": "250 GiB SSD"
+    },
+    "ocr": {
+      "cpu": "8 vCPU",
+      "memory": "16 GiB RAM",
+      "disk": "250 GiB SSD"
+    },
+    "ai": {
+      "cpu": "8 vCPU",
+      "memory": "32 GiB RAM",
+      "disk": "500 GiB SSD; accelerator sizing is provider-specific"
+    },
+    "observability": {
+      "cpu": "4 vCPU",
+      "memory": "8 GiB RAM",
+      "disk": "150 GiB SSD including retained logs"
+    }
+  },
+  "platforms": [
+    {
+      "id": "windows-10-11-docker",
+      "label": "Windows 10/11 with Docker Desktop",
+      "mode": "docker",
+      "status": "conditional",
+      "requirements": {
+        "node": ">=22.12.0 on host",
+        "docker": "Docker Desktop with Docker Compose v2",
+        "php": "provided by the Laravel container",
+        "composer": "provided by the Laravel container",
+        "postgresql": "provided by the PostgreSQL container",
+        "redis": "provided by the Redis container"
+      },
+      "profiles": ["core", "media", "ocr", "ai", "observability"],
+      "dataPathFamily": "windows",
+      "resourceStatus": "provisional"
+    },
+    {
+      "id": "linux-docker",
+      "label": "Linux with Docker Engine",
+      "mode": "docker",
+      "status": "conditional",
+      "requirements": {
+        "node": ">=22.12.0 on host",
+        "docker": "Docker Engine with Docker Compose v2",
+        "php": "provided by the Laravel container",
+        "composer": "provided by the Laravel container",
+        "postgresql": "provided by the PostgreSQL container",
+        "redis": "provided by the Redis container"
+      },
+      "profiles": ["core", "media", "ocr", "ai", "observability"],
+      "dataPathFamily": "linux",
+      "resourceStatus": "provisional"
+    },
+    {
+      "id": "windows-native",
+      "label": "Windows Native",
+      "mode": "native",
+      "status": "planned",
+      "requirements": {
+        "node": ">=22.12.0",
+        "docker": "not required for the planned native path",
+        "php": "PHP runtime, version to be validated",
+        "composer": "Composer, version to be validated",
+        "postgresql": "PostgreSQL service, version to be validated",
+        "redis": "Redis-compatible service, version to be validated"
+      },
+      "profiles": ["core", "media", "ocr", "ai", "observability"],
+      "dataPathFamily": "windows",
+      "resourceStatus": "provisional"
+    },
+    {
+      "id": "linux-native",
+      "label": "Linux Native",
+      "mode": "native",
+      "status": "planned",
+      "requirements": {
+        "node": ">=22.12.0",
+        "docker": "not required for the planned native path",
+        "php": "PHP runtime, version to be validated",
+        "composer": "Composer, version to be validated",
+        "postgresql": "PostgreSQL service, version to be validated",
+        "redis": "Redis-compatible service, version to be validated"
+      },
+      "profiles": ["core", "media", "ocr", "ai", "observability"],
+      "dataPathFamily": "linux",
+      "resourceStatus": "provisional"
+    }
+  ]
+}

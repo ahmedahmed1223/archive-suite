@@ -13,12 +13,24 @@ function json(relativePath) {
   return JSON.parse(read(relativePath));
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function assertIncludes(file, expected) {
-  assert.match(read(file), new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${file} should include ${expected}`);
+  assert.match(read(file), new RegExp(escapeRegExp(expected)), `${file} should include ${expected}`);
 }
 
 function assertExcludes(file, forbidden) {
-  assert.doesNotMatch(read(file), new RegExp(forbidden.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${file} should not include ${forbidden}`);
+  assert.doesNotMatch(read(file), new RegExp(escapeRegExp(forbidden)), `${file} should not include ${forbidden}`);
+}
+
+function assertWorkerInstallsExtension(file, extension) {
+  assert.match(
+    read(file),
+    new RegExp(`docker-php-ext-install[^\\r\\n]*\\b${escapeRegExp(extension)}\\b`),
+    `${file} should install PHP ext-${extension}`
+  );
 }
 
 const rootPkg = json("package.json");
@@ -63,7 +75,9 @@ assertExcludes("archive-next/next.config.mjs", "withSentryConfig");
 assertExcludes("archive-next/package.json", "@sentry/nextjs");
 assertExcludes("archive-laravel/composer.json", "sentry/sentry-laravel");
 assertIncludes("archive-laravel/Dockerfile.worker", "libcurl4-openssl-dev");
-assertIncludes("archive-laravel/Dockerfile.worker", "docker-php-ext-install curl mbstring zip pdo pdo_pgsql");
+for (const extension of ["curl", "mbstring", "zip", "pdo", "pdo_pgsql", "ftp"]) {
+  assertWorkerInstallsExtension("archive-laravel/Dockerfile.worker", extension);
+}
 assertIncludes("archive-next/Dockerfile", "COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./");
 assertIncludes("archive-next/Dockerfile", "ARG ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1");
 assertIncludes("archive-next/Dockerfile", "COPY --from=builder /app/archive-next/public ./archive-next/public");

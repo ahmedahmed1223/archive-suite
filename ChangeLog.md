@@ -20,6 +20,15 @@
 
 ---
 
+## إصلاح بوابة الأمن في Git worktree — مكتمل 2026-07-12
+
+## توافق المنصات المقيد V1-005a — مكتمل 2026-07-12
+
+- أضيف عقد JSON قابل للقراءة آلياً لمنصات Docker على Windows 10/11 وLinux (conditional) ولمسارات Native على Windows وLinux (planned فقط)، مع schema وprofiles والمنافذ ومسارات البيانات والموارد المؤقتة.
+- أصبح `control doctor --mode=docker|native` و`control doctor --platform=<id>` يعرضان العقد وفحصاً read-only؛ Native يصرح بأنه مخطط فقط ولا ينفذ تثبيتاً أو بدء خدمات.
+
+- [x] **مسار safe.directory محلي** — أصبحت بوابة security baseline تثق فقط في مسار الـcheckout الحالي لكل استدعاء Git، فتعمل من clone عادي أو linked worktree من دون إعداد global.
+
 ## إزالة الحزم legacy النهائية (Phase B) — مكتملة 2026-07-12
 
 - [x] **Phase A (سابقة، commit a53b666)** — نُقلت الأصول القانونية (Docker compose/deploy) إلى `infra/` ومواصفات Next e2e إلى `archive-next/e2e`، تمهيداً لحذف الحزم legacy بأمان.
@@ -3217,3 +3226,16 @@
 - اعتُمد تصميم V1 متعدد الأنظمة: On‑Premises على Windows وLinux، Docker Compose افتراضياً، وNative خيار ضمن مصفوفة توافق مختبرة.
 - أضيفت ملفات تثبيت موصى به/كامل/مخصص وحزمتا Online وOffline في `docs/superpowers/specs/2026-07-12-v1-cross-platform-on-prem-design.md`.
 - أُجريت مراجعة ثانية للخطة: أضيفت فجوة التوثيق/الإعدادات القديمة، وبوابة توحيد مسار النشر، ومهام Native مستقلة لـWindows وLinux مع بوابة parity قبل RC.
+
+# 2026-07-12 — توافق Laravel Docker مع ext-ftp (V1-003b/V1-202)
+
+- أصبحت صورة `archive-laravel/Dockerfile.worker` تثبت امتداد PHP `ftp` المطلوب في `composer.lock` من `league/flysystem-ftp`.
+- أصبح `scripts/laravel-docker.mjs` يبني ويستخدم صورة Laravel الفعلية بدلاً من `composer:latest`، ويتحقق من تحميل `ext-ftp` قبل تثبيت Composer وتشغيل الاختبارات.
+- أضيف `scripts/verify-laravel-runtime.mjs` كفحص آلي يبني الصورة ويتحقق من `ext-ftp` ومن ربط الـharness بالصورة القانونية؛ أُثبت RED أولاً ثم شُغّل GREEN.
+# 2026-07-12 — V1-004a توحيد مداخل التثبيت والتشغيل
+
+- أصبح `pnpm setup` يستدعي `Control Center deploy` مباشرةً، مثل `pnpm deploy`، لمسار Laravel + Next القانوني في `infra/docker-compose.yml`.
+- أُزيل معالج الإعداد القديم وترجمات PocketBase التابعة له واختبارها، وأزيلت مراجع أوامر النشر وCompose القديمة من أدلة التثبيت والنشر وControl Center.
+- أُضيف اختبار Node يمنع عودة مداخل عامة أو وثائق تشير إلى `deploy-legacy` أو ملفات Compose القديمة.
+- عُزلت ملفات override القديمة، وأصبح launcher ودليل Hostinger تحت `infra/deploy/`
+  يوجهان إلى Control Center و`infra/docker-compose.yml` فقط.

@@ -78,9 +78,6 @@ bash setup.sh
 
 الترحيلات تعمل تلقائياً داخل حاوية Laravel عند الإقلاع.
 
-> معالج النشر القديم (Node/SPA) ما زال متاحاً كأمر صريح فقط:
-> `Setup-Archive.bat deploy-legacy` أو `bash setup.sh deploy-legacy`.
-
 > دليل النشر الكامل (الوضع الداخلي/العام، الإدارة، التشغيل عند الإقلاع، الترقية):
 > [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 
@@ -89,7 +86,6 @@ bash setup.sh
 ```
 http://127.0.0.1:8951      # Next.js + Laravel للتطوير
 http://localhost:3000      # الحزمة القانونية عبر Setup-Archive (Next.js)
-http://localhost:8080      # legacy Docker stack عند استخدام deploy-legacy
 https://<your-domain>      # وضع عام
 ```
 
