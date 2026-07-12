@@ -1002,7 +1002,7 @@ export interface ArchiveApiClient {
   updateBroadcastMetadata(recordId: string, payload: BroadcastMetadataPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   uploadFile(file: File, params?: { folder?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: UploadedRecord }>>;
-  share(token: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
+  share(token: string, password?: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
@@ -1073,6 +1073,7 @@ export interface ArchiveApiClient {
 
 export interface AuthRequestOptions {
   accessToken?: string;
+  headers?: Record<string, string>;
 }
 
 export function getContractSummary() {
@@ -1162,12 +1163,14 @@ export function createArchiveApiClient({
       method = "GET",
       body,
       accessToken,
-      skipRefresh = false
+      skipRefresh = false,
+      extraHeaders
     }: {
       method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
       body?: unknown;
       accessToken?: string;
       skipRefresh?: boolean;
+      extraHeaders?: Record<string, string>;
     } = {}
   ): Promise<ApiEnvelope<T>> {
     const headers = new Headers({ Accept: "application/json" });
@@ -1178,6 +1181,10 @@ export function createArchiveApiClient({
 
     if (accessToken) {
       headers.set("Authorization", `Bearer ${accessToken}`);
+    }
+
+    for (const [key, value] of Object.entries(extraHeaders ?? {})) {
+      headers.set(key, value);
     }
 
     let response: Response;
@@ -1230,7 +1237,7 @@ export function createArchiveApiClient({
   }
 
   const get = <T extends object>(path: string, options?: AuthRequestOptions) =>
-    request<T>(path, { accessToken: options?.accessToken });
+    request<T>(path, { accessToken: options?.accessToken, extraHeaders: options?.headers });
 
   const post = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
     request<T>(path, { method: "POST", body, accessToken: options?.accessToken });
@@ -1507,7 +1514,8 @@ export function createArchiveApiClient({
 
       return payload;
     },
-    share: (token: string) => get(`/share/${encodeURIComponent(token)}`),
+    share: (token: string, password?: string) =>
+      get(`/share/${encodeURIComponent(token)}`, password ? { headers: { "X-Share-Password": password } } : undefined),
     files: (params?: { q?: string }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.q) queryParams.set("q", params.q);

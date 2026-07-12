@@ -2533,6 +2533,13 @@
             "in": "path",
             "required": true,
             "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Share-Password",
+            "in": "header",
+            "required": false,
+            "description": "Password for password-protected share links. Preferred over the deprecated `password` query parameter, which is accepted only as a fallback and will be removed in v1.1.",
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
