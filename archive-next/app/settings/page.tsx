@@ -164,10 +164,10 @@ export default function SettingsPage() {
         if (response.ok) {
           setSettings(response.settings);
         } else {
-          setError(response.error || "Failed to load security settings");
+          setError(response.error || "تعذر تحميل إعدادات الأمان.");
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch settings");
+        setError(err instanceof Error ? err.message : "تعذر الاتصال بالخادم لجلب الإعدادات.");
       } finally {
         setIsLoading(false);
       }
@@ -185,10 +185,10 @@ export default function SettingsPage() {
         if (response.ok) {
           setOdbc(response.odbc);
         } else {
-          setOdbcError(response.error || "Failed to load ODBC status");
+          setOdbcError(response.error || "تعذر تحميل حالة ODBC.");
         }
       } catch (err) {
-        setOdbcError(err instanceof Error ? err.message : "Failed to fetch ODBC status");
+        setOdbcError(err instanceof Error ? err.message : "تعذر الاتصال بالخادم لجلب حالة ODBC.");
       } finally {
         setIsOdbcLoading(false);
       }
@@ -209,11 +209,11 @@ export default function SettingsPage() {
         setOdbcPreview(response);
       } else {
         setOdbcPreview(null);
-        setPreviewError(response.error || "Failed to load ODBC table preview");
+        setPreviewError(response.error || "تعذر تحميل معاينة جدول ODBC.");
       }
     } catch (err) {
       setOdbcPreview(null);
-      setPreviewError(err instanceof Error ? err.message : "Failed to fetch ODBC table preview");
+      setPreviewError(err instanceof Error ? err.message : "تعذر الاتصال بالخادم لمعاينة جدول ODBC.");
     } finally {
       setIsPreviewLoading(false);
     }
