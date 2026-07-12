@@ -17,6 +17,10 @@ class ShareController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'scope' => ['required', 'array'],
             'scope.itemIds' => ['nullable', 'array'],

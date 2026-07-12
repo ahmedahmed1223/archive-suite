@@ -28,6 +28,12 @@ trait AuthenticatesArchiveRequests
             [
                 'name' => 'Archive Admin',
                 'password' => Hash::make('secret-password'),
+                // V1-102: this trait is shared by tests that use the token purely
+                // to act as a normal working user (seeding fixtures via bulk
+                // upsert, creating shares, etc.), not to test role restrictions.
+                // Default role is viewer (read-only); use editor here so those
+                // write calls keep succeeding under requireEditor() gates.
+                'role' => 'editor',
             ],
         );
 

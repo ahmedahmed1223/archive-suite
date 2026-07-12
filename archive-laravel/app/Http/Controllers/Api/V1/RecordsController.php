@@ -89,6 +89,10 @@ class RecordsController extends Controller
      */
     public function bulk(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validator = Validator::make($request->all(), [
             'store' => ['required', 'string'],
             'records' => ['required', 'array', 'max:10000'],
@@ -138,6 +142,10 @@ class RecordsController extends Controller
      */
     public function bulkDelete(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'store' => ['required', 'string'],
             'ids' => ['required', 'array', 'min:1', 'max:10000'],
