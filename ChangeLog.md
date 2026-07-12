@@ -3220,3 +3220,9 @@
 - لم تنفذ هذه الجولة تغييرات في سلوك المنتج؛ تنفيذ الخطة يبدأ بعد اعتماد النطاق وترتيب الأولويات.
 - اعتُمد تصميم V1 متعدد الأنظمة: On‑Premises على Windows وLinux، Docker Compose افتراضياً، وNative خيار ضمن مصفوفة توافق مختبرة.
 - أضيفت ملفات تثبيت موصى به/كامل/مخصص وحزمتا Online وOffline في `docs/superpowers/specs/2026-07-12-v1-cross-platform-on-prem-design.md`.
+
+# 2026-07-12 — توافق Laravel Docker مع ext-ftp (V1-003b/V1-202)
+
+- أصبحت صورة `archive-laravel/Dockerfile.worker` تثبت امتداد PHP `ftp` المطلوب في `composer.lock` من `league/flysystem-ftp`.
+- أصبح `scripts/laravel-docker.mjs` يبني ويستخدم صورة Laravel الفعلية بدلاً من `composer:latest`، ويتحقق من تحميل `ext-ftp` قبل تثبيت Composer وتشغيل الاختبارات.
+- أضيف `scripts/verify-laravel-runtime.mjs` كفحص آلي يبني الصورة ويتحقق من `ext-ftp` ومن ربط الـharness بالصورة القانونية؛ أُثبت RED أولاً ثم شُغّل GREEN.

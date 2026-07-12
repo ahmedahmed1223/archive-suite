@@ -3,7 +3,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SETUP_PREFIX = "test -f .env || cp .env.example .env; test -d vendor || composer install --no-interaction";
+const SETUP_PREFIX = "test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction --no-progress --quiet";
+const LARAVEL_RUNTIME_IMAGE = "archive-laravel-runtime-test";
+const LARAVEL_RUNTIME_DOCKERFILE = "archive-laravel/Dockerfile.worker";
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -28,6 +30,26 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
+async function prepareLaravelRuntime() {
+  await run("docker", [
+    "build",
+    "--quiet",
+    "--tag",
+    LARAVEL_RUNTIME_IMAGE,
+    "--file",
+    LARAVEL_RUNTIME_DOCKERFILE,
+    "archive-laravel",
+  ]);
+  await run("docker", [
+    "run",
+    "--rm",
+    LARAVEL_RUNTIME_IMAGE,
+    "php",
+    "-r",
+    "exit(extension_loaded('ftp') ? 0 : 1);",
+  ]);
+}
+
 function dockerArgs(command, extra = []) {
   return [
     "run",
@@ -37,7 +59,7 @@ function dockerArgs(command, extra = []) {
     `${ROOT}:/app`,
     "-w",
     "/app/archive-laravel",
-    "composer:latest",
+    LARAVEL_RUNTIME_IMAGE,
     "sh",
     "-lc",
     `${SETUP_PREFIX}; ${command.map(shellQuote).join(" ")}`,
@@ -70,7 +92,9 @@ if (!mode || !commands[mode]) {
 
 const extraDockerArgs = mode === "serve" ? ["-p", `${servePort}:8000`] : [];
 
-run("docker", dockerArgs(commands[mode], extraDockerArgs)).catch((error) => {
+prepareLaravelRuntime()
+  .then(() => run("docker", dockerArgs(commands[mode], extraDockerArgs)))
+  .catch((error) => {
   console.error(error.message);
   process.exit(1);
-});
+  });
