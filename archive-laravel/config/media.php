@@ -6,7 +6,7 @@ return [
     'transcription_binary' => env('TRANSCRIPTION_BINARY', 'transcribe'),
     'processor' => env('MEDIA_PROCESSOR', 'fake'), // 'fake' or 'real'
 
-    // Base URL of the ocr-service microservice (archive-server/ocr-service);
+    // Base URL of the ocr-service microservice (infra/ocr-service);
     // POST {base}/ocr, multipart file upload, returns { text, lines, lang }.
     // Port 8788 matches main.py's PORT default / the service's Dockerfile EXPOSE.
     'ocr_service_url' => env('OCR_SERVICE_URL', 'http://ocr:8788'),

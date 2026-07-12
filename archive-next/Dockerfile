@@ -5,10 +5,7 @@ WORKDIR /app
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY archive-app/package.json ./archive-app/package.json
-COPY archive-core/package.json ./archive-core/package.json
 COPY archive-next/package.json ./archive-next/package.json
-COPY archive-server/package.json ./archive-server/package.json
 
 RUN pnpm install --frozen-lockfile --filter @archive/next...
 

@@ -45,7 +45,7 @@ ARCHIVE_E2E_USE_EXISTING_LARAVEL=1 LARAVEL_PORT=8950 pnpm verify:laravel-next:li
 
 ### 3. النشر عبر Control Center
 
-`Setup-Archive.bat` / `setup.sh` ينشران الآن الحزمة القانونية **Laravel + Next.js** (`archive-server/docker-compose.yml`).
+`Setup-Archive.bat` / `setup.sh` ينشران الآن الحزمة القانونية **Laravel + Next.js** (`infra/docker-compose.yml`).
 
 **Windows:** انقر نقراً مزدوجاً على `Setup-Archive.bat` — أو من الطرفية:
 
@@ -60,7 +60,7 @@ bash setup.sh
 ```
 
 خيار **Deploy** (أو الأمر `deploy`) يقوم بـ:
-- إنشاء `archive-server/.env` من `.env.example` إن لم يوجد
+- إنشاء `infra/.env` من `.env.example` إن لم يوجد
 - توليد الأسرار الناقصة تلقائياً (PostgreSQL / Redis / Reverb / `LARAVEL_APP_KEY`)
 - `docker compose up -d --build` وطباعة العناوين (Next على :3000، Reverb على :8080، Caddy على 80/443)
 
@@ -108,15 +108,9 @@ pnpm dev:laravel   # Laravel API فقط عبر Docker
 ARCHIVE_API_BASE_URL=https://api.example.com/api/v1 pnpm build:next
 pnpm build         # alias لـ build:next
 
-# مسارات legacy للمقارنة فقط
-pnpm dev:legacy
-pnpm server:legacy
-pnpm build:legacy
-
 # اختبارات
 pnpm verify        # cutover gate الرسمي
 pnpm verify:laravel-next:live
-pnpm verify:legacy # المرجع القديم عند الحاجة
 ```
 
 ## المساعدة

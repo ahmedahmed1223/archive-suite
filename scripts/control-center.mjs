@@ -4,8 +4,7 @@
  *
  * One English-first console to install, operate, configure, and maintain the
  * CANONICAL stack (Laravel API + Next.js, infra/docker-compose.yml)
- * on Windows (Setup-Archive.bat) and Linux/macOS (setup.sh). The old Node/Vite
- * deployment wizard stays reachable as the explicit "deploy-legacy" command.
+ * on Windows (Setup-Archive.bat) and Linux/macOS (setup.sh).
  *
  * Interactive:     node scripts/control-center.mjs        (or: pnpm control)
  * Non-interactive: node scripts/control-center.mjs <command>
@@ -16,8 +15,6 @@
  *   database: migrate-status | migrate | seed-demo
  *   backups:  backup | backups | restore
  *   deploy:   deploy   ·   help
- *   legacy:   deploy-legacy | legacy:set-admin | legacy:migrate-status |
- *             legacy:migrate | legacy:db-provider
  *
  * Cross-platform Node core; the .bat / .sh are thin launchers. English-first.
  * Any write to .env first backs it up to .env.bak-<timestamp>.
@@ -33,8 +30,6 @@ import { resolve, join } from "node:path";
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 const ROOT = resolve(__dirname, "..");
 const INFRA_DIR = join(ROOT, "infra");
-// Legacy Node/Vite stack home — only the explicit legacy:* commands touch it.
-const LEGACY_SERVER_DIR = join(ROOT, "archive-server");
 const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(INFRA_DIR, ".env");
 const ENV_EXAMPLE = join(INFRA_DIR, ".env.example");
 // Canonical stack: Laravel API + Next.js (postgres/redis/laravel/worker/reverb/next/caddy).
@@ -42,7 +37,6 @@ const ENV_EXAMPLE = join(INFRA_DIR, ".env.example");
 // `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` by hand.
 const COMPOSE_FILE = join(INFRA_DIR, "docker-compose.yml");
 const BACKUP_DIR = join(INFRA_DIR, "backups");
-const SET_DB_PROVIDER = join(LEGACY_SERVER_DIR, "scripts", "set-db-provider.mjs");
 
 // ─── Colours / logging ──────────────────────────────────────────────────────
 const C = { g: "\x1b[32m", y: "\x1b[33m", r: "\x1b[31m", c: "\x1b[36m", b: "\x1b[1m", d: "\x1b[2m", x: "\x1b[0m" };
@@ -327,18 +321,6 @@ async function changeAdminPassword() {
   }
   return 0;
 }
-async function setAdmin() {
-  titleLine("Set admin credentials (legacy Node stack)");
-  warn("Seeds ADMIN_USERNAME/ADMIN_PASSWORD for the legacy Node server only; the Laravel stack manages users in-app.");
-  const env = readEnv();
-  const username = await ask("Admin username", env.ADMIN_USERNAME || "admin");
-  const choice = await ask("Password — type one, or blank to auto-generate", "");
-  const password = choice || genPassword();
-  writeEnv({ ADMIN_USERNAME: username, ADMIN_PASSWORD: password });
-  if (!choice) log(`${C.b}Generated password:${C.x} ${password}  ${C.d}(store it now — shown once)${C.x}`);
-  warn("Applied on the next stack start/seed. For an already-seeded admin, restart the stack.");
-}
-
 // ─── Database (Phase 4) ────────────────────────────────────────────────────────
 function migrateStatus() {
   titleLine("Database migration status (php artisan migrate:status)");
@@ -361,27 +343,6 @@ async function seedDemoData() {
   else err(`Seeding failed (exit ${r.status}). Is the stack running? Try Server: start.`);
   return r.status ?? 1;
 }
-// Legacy Prisma actions — operate on the retired Node stack's schema/database.
-function legacyMigrateStatus() {
-  titleLine("Legacy: Prisma migration status");
-  return runPnpm(["--filter", "archive-server", "exec", "prisma", "migrate", "status"], ROOT, { env: readEnv() }).status ?? 1;
-}
-async function legacyMigrateDeploy() {
-  titleLine("Legacy: apply Prisma migrations (prisma migrate deploy)");
-  if (!(await confirm("Apply all pending Prisma migrations to the configured database?"))) { log("Cancelled."); return 0; }
-  const r = runPnpm(["--filter", "archive-server", "exec", "prisma", "migrate", "deploy"], ROOT, { env: readEnv() });
-  if (r.status === 0) ok("Migrations applied.");
-  return r.status ?? 1;
-}
-async function dbProvider() {
-  titleLine("Legacy: switch database provider");
-  if (!existsSync(SET_DB_PROVIDER)) return err("set-db-provider.mjs not found.");
-  const p = await ask("Provider: postgres or pocketbase", "postgres");
-  if (!["postgres", "pocketbase"].includes(p)) return err("Unknown provider.");
-  runNode(SET_DB_PROVIDER, [p], LEGACY_SERVER_DIR);
-  warn("Restart the stack to use the new provider.");
-}
-
 // ─── Backups (Phase 4) ─────────────────────────────────────────────────────────
 function listBackupFiles() {
   if (!existsSync(BACKUP_DIR)) return [];
@@ -506,11 +467,6 @@ function deployCanonical() {
     if (e.ADMIN_USERNAME) log(`  Legacy username:    ${e.ADMIN_USERNAME}`);
   }
   return 0;
-}
-
-function runLegacyDeploy() {
-  titleLine("Legacy deploy — launching the old Node/Vite deployment wizard");
-  return runNode(join(__dirname, "deploy-wizard.mjs")).status;
 }
 
 // ─── Quick start (deploy + health) ────────────────────────────────────────────
@@ -647,12 +603,6 @@ const MENU = [
   ["sec", "— Maintain —"],
   ["23", "Diagnostics (pnpm verify)", runDiagnostics],
   ["24", "Update & rebuild", updateAndRebuild],
-  ["sec", "— Legacy (Node/Vite stack) —"],
-  ["25", "Legacy deploy wizard", runLegacyDeploy],
-  ["26", "Legacy: set admin credentials", setAdmin],
-  ["27", "Legacy: Prisma migration status", legacyMigrateStatus],
-  ["28", "Legacy: apply Prisma migrations", legacyMigrateDeploy],
-  ["29", "Legacy: switch DB provider", dbProvider],
   ["sec", ""],
   ["0", "Exit", null],
   ["q", "Exit", null],
@@ -744,10 +694,6 @@ const COMMANDS = {
   backup: backupNow, backups: listBackups, restore: restoreBackup,
   // Maintenance
   diagnostics: runDiagnostics, update: updateAndRebuild, deploy: deployCanonical,
-  // Legacy (Node/Vite stack)
-  "deploy-legacy": runLegacyDeploy, "legacy:set-admin": setAdmin,
-  "legacy:migrate-status": legacyMigrateStatus, "legacy:migrate": legacyMigrateDeploy,
-  "legacy:db-provider": dbProvider,
   help: () => {
     printBanner();
     console.log(`${C.b}  Quick-start examples:${C.x}`);
@@ -783,9 +729,6 @@ const COMMANDS = {
     console.log(`  ${C.c}restore${C.x}          Restore a backup`);
     console.log(`  ${C.c}diagnostics${C.x}      Run the canonical gate: pnpm verify`);
     console.log(`  ${C.c}update${C.x}           git pull → install → build → docker compose up -d --build`);
-    console.log(`\n${C.b}  Legacy (retired Node/Vite stack — reference only):${C.x}`);
-    console.log(`  ${C.c}deploy-legacy${C.x}    Run the old Node/Vite deployment wizard`);
-    console.log(`  ${C.c}legacy:set-admin | legacy:migrate-status | legacy:migrate | legacy:db-provider${C.x}`);
     console.log(`\n${C.b}  Tips:${C.x}`);
     console.log(`  ${C.d}- In the interactive menu, option 1 is the single quick-start path; q and 0 both exit.${C.x}`);
     console.log(`  ${C.d}- HTTP-only dev variant: docker compose -f docker-compose.yml -f docker-compose.dev.yml up (from infra/).${C.x}`);

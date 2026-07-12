@@ -39,7 +39,7 @@ for (const name of [
   "verify:legacy",
   "typecheck:legacy",
 ]) {
-  assert.ok(scripts[name], `legacy script ${name} should remain explicit`);
+  assert.equal(scripts[name], undefined, `legacy script ${name} should have been removed with archive-app/archive-server`);
 }
 
 assert.ok(
@@ -58,7 +58,7 @@ assert.ok(
 const claude = read("CLAUDE.md");
 assert.match(claude, /Frontend \(canonical\).*`archive-next`/);
 assert.match(claude, /Backend \(canonical\).*`archive-laravel`/);
-assert.match(claude, /Legacy reference/);
+assert.match(claude, /removed on 2026-07-12/);
 
 const readme = read("README.md");
 assert.match(readme, /archive-next\/\s+# canonical frontend/i);
