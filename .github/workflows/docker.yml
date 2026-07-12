@@ -18,8 +18,9 @@ on:
     branches:
       - master
       - main
-    tags:
-      - "v*"
+  # Tag pushes are handled by release.yml (full verification gate before
+  # publish). This workflow only builds for PR/branch validation, plus a
+  # manual escape hatch below.
   workflow_dispatch:
 
 concurrency:
@@ -50,11 +51,11 @@ jobs:
         run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml build next
 
   publish:
-    name: Publish images to GHCR
+    name: Publish images to GHCR (manual only — releases go through release.yml)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: build
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,11 +71,7 @@ jobs:
         id: meta
         shell: bash
         run: |
-          version="${GITHUB_REF_NAME}"
-          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
-            version="manual-${GITHUB_SHA::12}"
-          fi
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "version=manual-${GITHUB_SHA::12}" >> "${GITHUB_OUTPUT}"
 
       - name: Build and push Next image
         uses: docker/build-push-action@v6
