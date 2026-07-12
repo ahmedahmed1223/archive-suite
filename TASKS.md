@@ -41,7 +41,7 @@
 - [x] **V1-101** رفض المدير الافتراضي/الضعيف و`ARCHIVE_SECURE_COOKIES=false` في الإنتاج (حارس Seeder + حارس boot، 12 اختباراً، 439 تمر). (منجز 2026-07-12) **(P0 #1)**
 - [ ] **V1-102** مصفوفة RBAC + Policies لكل endpoint مع `RoleMatrixApiTest`. **(P0 #4)**
 - [ ] **V1-103** قصر refresh cookie على `/auth/refresh` + Origin/CSRF/throttle + تحديث OpenAPI. **(P0 #5)**
-- [ ] **V1-104** share secrets في body/header لا query + rate limiting فعلي.
+- [x] **V1-104** share secrets في body/header لا query + rate limiting فعلي. (منجز 2026-07-12: throttle في 732b7c1، X-Share-Password في 9af5b6c)
 - [ ] **V1-111** containment/ownership لـmedia jobs ومنع path traversal/arbitrary reads. **(P0 #2)**
 - [ ] **V1-112** upload validation: MIME+magic، UUID، quotas، quarantine/AV.
 - [ ] **V1-113** timeouts/backoff/idempotency/cancel للوظائف + تنقية الأخطاء والمسارات.
