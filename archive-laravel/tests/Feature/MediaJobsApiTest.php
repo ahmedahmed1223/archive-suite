@@ -42,6 +42,7 @@ class MediaJobsApiTest extends TestCase
         $mediaJob = MediaJob::query()->create([
             'id' => 'media-job-status-1',
             'record_id' => 'media-record-2',
+            'created_by' => $this->authenticatedUserId(),
             'operation' => 'transcription',
             'status' => 'queued',
             'options' => ['language' => 'ar'],
@@ -82,6 +83,7 @@ class MediaJobsApiTest extends TestCase
         MediaJob::query()->create([
             'id' => 'media-job-list-1',
             'record_id' => 'media-record-4',
+            'created_by' => $this->authenticatedUserId(),
             'operation' => 'thumbnail',
             'status' => 'queued',
             'queued_at' => now()->subMinute(),
@@ -90,6 +92,7 @@ class MediaJobsApiTest extends TestCase
         MediaJob::query()->create([
             'id' => 'media-job-list-2',
             'record_id' => 'media-record-5',
+            'created_by' => $this->authenticatedUserId(),
             'operation' => 'transcode',
             'status' => 'completed',
             'queued_at' => now(),
@@ -110,6 +113,7 @@ class MediaJobsApiTest extends TestCase
         MediaJob::query()->create([
             'id' => 'media-job-filter-1',
             'record_id' => 'media-record-6',
+            'created_by' => $this->authenticatedUserId(),
             'operation' => 'thumbnail',
             'status' => 'queued',
             'queued_at' => now(),
@@ -118,6 +122,7 @@ class MediaJobsApiTest extends TestCase
         MediaJob::query()->create([
             'id' => 'media-job-filter-2',
             'record_id' => 'media-record-7',
+            'created_by' => $this->authenticatedUserId(),
             'operation' => 'transcode',
             'status' => 'completed',
             'queued_at' => now(),
@@ -136,6 +141,7 @@ class MediaJobsApiTest extends TestCase
         MediaJob::query()->create([
             'id' => 'media-job-record-filter-1',
             'record_id' => 'media-record-8',
+            'created_by' => $this->authenticatedUserId(),
             'operation' => 'thumbnail',
             'status' => 'queued',
             'queued_at' => now(),
@@ -144,6 +150,7 @@ class MediaJobsApiTest extends TestCase
         MediaJob::query()->create([
             'id' => 'media-job-record-filter-2',
             'record_id' => 'media-record-9',
+            'created_by' => $this->authenticatedUserId(),
             'operation' => 'transcode',
             'status' => 'queued',
             'queued_at' => now(),
@@ -163,6 +170,7 @@ class MediaJobsApiTest extends TestCase
             MediaJob::query()->create([
                 'id' => "media-job-limit-{$i}",
                 'record_id' => "media-record-limit-{$i}",
+                'created_by' => $this->authenticatedUserId(),
                 'operation' => 'thumbnail',
                 'status' => 'queued',
                 'queued_at' => now()->subMinutes($i),
@@ -325,5 +333,17 @@ class MediaJobsApiTest extends TestCase
         $this->assertIsArray($refreshed->result['artifacts']);
         $this->assertNotEmpty($refreshed->result['artifacts']);
         $this->assertSame('ocr_text', $refreshed->result['artifacts'][0]['kind']);
+    }
+
+    /**
+     * Id of the default authHeaders() test user, for tests that create a
+     * MediaJob directly (bypassing store()) and then exercise ownership-scoped
+     * endpoints (index/show/cancel) as that same user.
+     */
+    private function authenticatedUserId(): string
+    {
+        $this->authHeaders();
+
+        return (string) \App\Models\User::query()->where('email', 'admin@example.test')->firstOrFail()->getKey();
     }
 }

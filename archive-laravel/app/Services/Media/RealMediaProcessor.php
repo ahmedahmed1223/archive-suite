@@ -6,6 +6,8 @@ use App\Models\MediaJob;
 
 class RealMediaProcessor implements MediaProcessor
 {
+    private readonly MediaPathGuard $pathGuard;
+
     public function __construct(
         private readonly ProcessRunner $runner,
         private readonly WhisperTranscriber $transcriber,
@@ -14,7 +16,10 @@ class RealMediaProcessor implements MediaProcessor
         private readonly array $watermark = [],
         private readonly ?OcrClient $ocrClient = null,
         private readonly ?AudioPreprocessor $audioPreprocessor = null,
-    ) {}
+        ?MediaPathGuard $pathGuard = null,
+    ) {
+        $this->pathGuard = $pathGuard ?? new MediaPathGuard();
+    }
 
     /**
      * Process a media job using ffmpeg command-line tools.
@@ -35,17 +40,18 @@ class RealMediaProcessor implements MediaProcessor
 
     private function processThumbnail(MediaJob $job): array
     {
-        $sourceKey = $job->source_path;
+        $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
         $atSec = $job->options['atSec'] ?? 0;
         $outputKey = "{$job->record_id}/thumb.jpg";
+        $outputPath = $this->pathGuard->resolveOutput($outputKey, 'thumbnail output');
 
         $command = [
             $this->ffmpegPath,
-            '-i', $sourceKey,
+            '-i', $sourcePath,
             '-ss', (string) $atSec,
             '-vframes', '1',
             '-q:v', '2',
-            $outputKey,
+            $outputPath,
         ];
 
         $result = $this->runner->run($command);
@@ -64,13 +70,14 @@ class RealMediaProcessor implements MediaProcessor
 
     private function processTranscode(MediaJob $job): array
     {
-        $sourceKey = $job->source_path;
+        $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
         $outputKey = "{$job->record_id}/transcoded.mp4";
+        $outputPath = $this->pathGuard->resolveOutput($outputKey, 'transcode output');
         $watermark = $this->watermarkOptions($job);
 
         $command = [
             $this->ffmpegPath,
-            '-i', $sourceKey,
+            '-i', $sourcePath,
         ];
 
         if ($watermark !== null) {
@@ -90,7 +97,7 @@ class RealMediaProcessor implements MediaProcessor
             '-preset', 'medium',
             '-c:a', 'aac',
             '-b:a', '128k',
-            $outputKey,
+            $outputPath,
         );
 
         $result = $this->runner->run($command);
@@ -109,7 +116,8 @@ class RealMediaProcessor implements MediaProcessor
 
     private function processTranscription(MediaJob $job): array
     {
-        $preprocessor = $this->audioPreprocessor ?? new AudioPreprocessor($this->runner, $this->ffmpegPath);
+        $preprocessor = $this->audioPreprocessor ?? new AudioPreprocessor($this->runner, $this->ffmpegPath, pathGuard: $this->pathGuard);
+        $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
         $device = $job->options['device'] ?? 'cpu';
         $outputFormats = $job->options['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
 
@@ -129,7 +137,7 @@ class RealMediaProcessor implements MediaProcessor
         ]);
 
         // Extract audio to normalized 16kHz mono WAV
-        $audioPath = $preprocessor->extractAudio($job->source_path, $job->record_id);
+        $audioPath = $preprocessor->extractAudio($sourcePath, $job->record_id);
 
         // Plan segments (chunking for long audio)
         $segments = $preprocessor->planSegments($audioPath);
@@ -180,10 +188,9 @@ class RealMediaProcessor implements MediaProcessor
             // Transcribe segment
             // Each segment needs an isolated output directory. Whisper otherwise writes every
             // transcript to the same fixed key and the later segment overwrites the earlier one.
+            // resolveOutputDir contains + creates it (record_id is client input).
             $segmentRecordId = "{$job->record_id}/segments/{$index}";
-            if (!is_dir($segmentRecordId) && !mkdir($segmentRecordId, 0777, true) && !is_dir($segmentRecordId)) {
-                throw new \RuntimeException("Unable to create transcript output directory: {$segmentRecordId}");
-            }
+            $this->pathGuard->resolveOutputDir($segmentRecordId, 'segment transcript directory');
             $segmentArtifacts = $this->transcriber->transcribe($segmentPath, $segmentRecordId, [
                 'device' => $device,
                 'computeType' => $computeType,
@@ -247,8 +254,11 @@ class RealMediaProcessor implements MediaProcessor
 
             foreach ($byFormat[$format] as $segmentArtifact) {
                 $artifact = $segmentArtifact['artifact'];
-                if (is_file($artifact['key'])) {
-                    $content = file_get_contents($artifact['key']);
+                // These keys were written moments ago by our own transcriber run
+                // (not attacker input); absolutePath() still enforces containment.
+                $segmentArtifactPath = $this->pathGuard->absolutePath($artifact['key'], 'segment transcript');
+                if (is_file($segmentArtifactPath)) {
+                    $content = file_get_contents($segmentArtifactPath);
                     if ($content === false) {
                         continue;
                     }
@@ -278,7 +288,8 @@ class RealMediaProcessor implements MediaProcessor
             };
 
             if (trim($content) !== '') {
-                file_put_contents($key, trim($content));
+                $outputPath = $this->pathGuard->resolveOutput($key, 'merged transcript output');
+                file_put_contents($outputPath, trim($content));
                 $merged[] = [
                     'kind' => "transcript_{$format}",
                     'key' => $key,
@@ -389,6 +400,7 @@ class RealMediaProcessor implements MediaProcessor
         }
 
         $outputKey = "{$job->record_id}/montage.mp4";
+        $outputPath = $this->pathGuard->resolveOutput($outputKey, 'montage output');
         $segments = [];
 
         foreach ($clips as $index => $clip) {
@@ -397,13 +409,16 @@ class RealMediaProcessor implements MediaProcessor
                 throw new \RuntimeException('Montage export clip is missing a source path.');
             }
 
+            $clipPath = $this->pathGuard->resolveInput($path, "montage clip {$index} path");
+
             $inSec = (float) ($clip['inSec'] ?? 0);
             $outSec = (float) ($clip['outSec'] ?? 0);
             $segmentKey = "{$job->record_id}/montage-segment-{$index}.mp4";
+            $segmentPath = $this->pathGuard->resolveOutput($segmentKey, 'montage segment output');
 
             $trimCommand = [
                 $this->ffmpegPath,
-                '-i', $path,
+                '-i', $clipPath,
                 '-ss', (string) $inSec,
             ];
 
@@ -412,14 +427,14 @@ class RealMediaProcessor implements MediaProcessor
                 $trimCommand[] = (string) ($outSec - $inSec);
             }
 
-            array_push($trimCommand, '-c', 'copy', $segmentKey);
+            array_push($trimCommand, '-c', 'copy', $segmentPath);
 
             $trimResult = $this->runner->run($trimCommand);
             if ($trimResult['exitCode'] !== 0) {
                 throw new \RuntimeException("ffmpeg montage segment failed: {$trimResult['stderr']}");
             }
 
-            $segments[] = $segmentKey;
+            $segments[] = $segmentPath;
         }
 
         $listFile = tempnam(sys_get_temp_dir(), 'montage-concat-');
@@ -434,7 +449,7 @@ class RealMediaProcessor implements MediaProcessor
             '-safe', '0',
             '-i', $listFile,
             '-c', 'copy',
-            $outputKey,
+            $outputPath,
         ];
 
         $concatResult = $this->runner->run($concatCommand);
@@ -456,10 +471,12 @@ class RealMediaProcessor implements MediaProcessor
     private function processOcr(MediaJob $job): array
     {
         $client = $this->ocrClient ?? new OcrClient();
-        $text = $client->extractText($job->source_path);
+        $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
+        $text = $client->extractText($sourcePath);
 
         $outputKey = "{$job->record_id}/ocr.txt";
-        file_put_contents($outputKey, $text);
+        $outputPath = $this->pathGuard->resolveOutput($outputKey, 'OCR output');
+        file_put_contents($outputPath, $text);
 
         return [
             [
@@ -493,9 +510,18 @@ class RealMediaProcessor implements MediaProcessor
         if (! is_string($path) || trim($path) === '') {
             return null;
         }
+        $path = trim($path);
+
+        // Only contain the path when the *client* supplied it via job options.
+        // config('media.watermark.path') is trusted admin config and may
+        // legitimately live outside the archive-files storage root.
+        $clientSuppliedPath = is_array($jobWatermark) && is_string($jobWatermark['path'] ?? null) && trim((string) $jobWatermark['path']) !== '';
+        if ($clientSuppliedPath) {
+            $path = $this->pathGuard->resolveInput($path, 'watermark path');
+        }
 
         return [
-            'path' => trim($path),
+            'path' => $path,
             'position' => $this->normalizeWatermarkPosition($candidate['position'] ?? 'bottom-right'),
             'opacity' => $this->clampFloat($candidate['opacity'] ?? 0.85, 0.0, 1.0),
             'margin' => max(0, min((int) ($candidate['margin'] ?? 24), 512)),

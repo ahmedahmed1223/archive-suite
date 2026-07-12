@@ -4,19 +4,27 @@ namespace App\Services\Media;
 
 class AudioPreprocessor
 {
+    private readonly MediaPathGuard $pathGuard;
+
     public function __construct(
         private readonly ProcessRunner $runner,
         private readonly string $ffmpegPath = 'ffmpeg',
         private readonly int $segmentDurationSeconds = 300,
-    ) {}
+        ?MediaPathGuard $pathGuard = null,
+    ) {
+        $this->pathGuard = $pathGuard ?? new MediaPathGuard();
+    }
 
     /**
      * Extract audio from video/audio source and return normalized mono 16kHz WAV path.
-     * Throws if extraction fails.
+     * $sourcePath is expected to already be a resolved, contained absolute path
+     * (the caller resolves it once via MediaPathGuard::resolveInput). Throws if
+     * extraction fails.
      */
     public function extractAudio(string $sourcePath, string $recordId): string
     {
         $audioKey = "{$recordId}/audio_extracted.wav";
+        $audioPath = $this->pathGuard->resolveOutput($audioKey, 'audio extraction output');
 
         $command = [
             $this->ffmpegPath,
@@ -25,7 +33,7 @@ class AudioPreprocessor
             '-acodec', 'pcm_s16le',
             '-ar', '16000',
             '-ac', '1',
-            $audioKey,
+            $audioPath,
         ];
 
         $result = $this->runner->run($command);
@@ -33,11 +41,11 @@ class AudioPreprocessor
             throw new \RuntimeException("Audio extraction failed: {$result['stderr']}");
         }
 
-        if (!is_file($audioKey)) {
-            throw new \RuntimeException("Audio extraction completed but file not found: {$audioKey}");
+        if (!is_file($audioPath)) {
+            throw new \RuntimeException("Audio extraction completed but file not found: {$audioPath}");
         }
 
-        return $audioKey;
+        return $audioPath;
     }
 
     /**
@@ -74,6 +82,7 @@ class AudioPreprocessor
     public function extractSegment(string $audioPath, string $recordId, int $segmentIndex, float $startSec, float $endSec): string
     {
         $segmentKey = "{$recordId}/segment_{$segmentIndex}.wav";
+        $segmentPath = $this->pathGuard->resolveOutput($segmentKey, 'segment extraction output');
         $duration = $endSec - $startSec;
 
         $command = [
@@ -82,7 +91,7 @@ class AudioPreprocessor
             '-ss', (string) $startSec,
             '-t', (string) $duration,
             '-c', 'copy',
-            $segmentKey,
+            $segmentPath,
         ];
 
         $result = $this->runner->run($command);
@@ -90,11 +99,11 @@ class AudioPreprocessor
             throw new \RuntimeException("Segment extraction failed: {$result['stderr']}");
         }
 
-        if (!is_file($segmentKey)) {
-            throw new \RuntimeException("Segment extraction completed but file not found: {$segmentKey}");
+        if (!is_file($segmentPath)) {
+            throw new \RuntimeException("Segment extraction completed but file not found: {$segmentPath}");
         }
 
-        return $segmentKey;
+        return $segmentPath;
     }
 
     private function getAudioDuration(string $audioPath): float

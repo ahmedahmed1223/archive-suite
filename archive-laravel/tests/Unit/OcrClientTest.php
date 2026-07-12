@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\MediaJob;
 use App\Services\Media\FakeProcessRunner;
+use App\Services\Media\MediaPathGuard;
 use App\Services\Media\OcrClient;
 use App\Services\Media\RealMediaProcessor;
 use App\Services\Media\WhisperTranscriber;
@@ -63,8 +64,18 @@ class OcrClientTest extends TestCase
             'ocr-test:8788/ocr' => Http::response(['text' => 'Scanned text body'], 200),
         ]);
 
-        $sourcePath = tempnam(sys_get_temp_dir(), 'ocr');
-        file_put_contents($sourcePath, 'fake image bytes');
+        // MediaPathGuard requires source/output paths to resolve inside a
+        // storage root (V1-111 containment); root this test at an isolated
+        // temp dir and use relative recordId/sourcePath keys under it,
+        // matching how the controller/processor use it in production.
+        $root = sys_get_temp_dir().'/ocr-guard-'.uniqid();
+        mkdir($root, 0777, true);
+        $pathGuard = new MediaPathGuard($root);
+
+        $recordId = 'ocr-record-'.uniqid();
+        mkdir("{$root}/{$recordId}", 0777, true);
+        $sourceRelative = "{$recordId}/source.jpg";
+        file_put_contents("{$root}/{$sourceRelative}", 'fake image bytes');
 
         $runner = new FakeProcessRunner();
         $transcriber = new WhisperTranscriber($runner, 'whisper-ctranslate2', 'large-v3', 'ar', 'vtt');
@@ -75,25 +86,26 @@ class OcrClientTest extends TestCase
             'ffprobe',
             [],
             new OcrClient('http://ocr-test:8788'),
+            null,
+            $pathGuard,
         );
 
         $job = new MediaJob();
         $job->id = 'job-ocr';
-        $job->record_id = sys_get_temp_dir().'/ocr-record-'.uniqid();
+        $job->record_id = $recordId;
         $job->operation = 'ocr';
-        $job->source_path = $sourcePath;
+        $job->source_path = $sourceRelative;
         $job->options = [];
-
-        mkdir($job->record_id, 0777, true);
 
         $artifacts = $processor->process($job);
 
         $this->assertCount(1, $artifacts);
         $this->assertSame('ocr_text', $artifacts[0]['kind']);
-        $this->assertSame('Scanned text body', file_get_contents($artifacts[0]['key']));
+        $this->assertSame("{$recordId}/ocr.txt", $artifacts[0]['key']);
+        $this->assertSame('Scanned text body', file_get_contents("{$root}/{$artifacts[0]['key']}"));
 
-        unlink($sourcePath);
-        unlink($artifacts[0]['key']);
-        rmdir($job->record_id);
+        array_map('unlink', glob("{$root}/{$recordId}/*"));
+        rmdir("{$root}/{$recordId}");
+        rmdir($root);
     }
 }
