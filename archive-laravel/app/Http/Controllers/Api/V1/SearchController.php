@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\Search\EmbeddingService;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,10 @@ use stdClass;
 
 class SearchController extends Controller
 {
+    public function __construct(private readonly EmbeddingService $embeddings)
+    {
+    }
+
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -24,11 +29,23 @@ class SearchController extends Controller
             'workflowStatus' => ['nullable', 'string'],
             'cursor' => ['nullable', 'string'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'semantic' => ['nullable', 'boolean'],
+            // ponytail: not validated as `boolean` — that rule only accepts
+            // true/false/0/1/"0"/"1", so a real `?semantic=true` query string
+            // would 422. $request->boolean() below handles "true"/"false" too.
+            'semantic' => ['nullable', 'string'],
         ]);
 
         $limit = (int) ($validated['limit'] ?? 20);
         $queryText = trim((string) ($validated['q'] ?? ''));
+        $wantsSemantic = $request->boolean('semantic');
+
+        if ($wantsSemantic) {
+            $semanticResponse = $this->semanticSearch($queryText, $validated['store'] ?? null, $limit, $validated);
+            if ($semanticResponse !== null) {
+                return response()->json($semanticResponse);
+            }
+        }
+
         $cursorUid = isset($validated['cursor']) ? StorageRowPayload::decodeCursor($validated['cursor']) : null;
 
         $query = DB::table('storage_rows')
@@ -48,7 +65,7 @@ class SearchController extends Controller
             ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
             ->values();
 
-        $facets = $this->buildFacets($records, $validated);
+        $facets = $this->buildFacets($records, $validated, $wantsSemantic ? 'keyword-fallback' : 'keyword');
 
         $pageRecords = $records
             ->filter(fn (array $record): bool => $cursorUid === null || strcmp((string) ($record['uid'] ?? $record['id'] ?? ''), $cursorUid) > 0)
@@ -64,6 +81,60 @@ class SearchController extends Controller
             'facets' => $facets,
             'nextCursor' => $hasMore && is_array($lastRecord) ? StorageRowPayload::encodeCursor((string) ($lastRecord['uid'] ?? $lastRecord['id'] ?? '')) : null,
         ]);
+    }
+
+    /**
+     * Attempts a pgvector nearest-neighbor search and shapes it into the same
+     * response envelope as the keyword path. Returns null whenever semantic
+     * search can't actually run (disabled/misconfigured/embed failure) so
+     * the caller falls back to the existing keyword-fallback behavior.
+     *
+     * ponytail: cursor here is a plain offset into the ranked pool, not a uid
+     * — simplest correct pagination for a ranked (non-sorted-by-key) list.
+     * Deep pagination beyond the pool size falls off; fine for a search UI.
+     *
+     * @param array<string, mixed> $validated
+     * @return array<string, mixed>|null
+     */
+    private function semanticSearch(string $queryText, ?string $store, int $limit, array $validated): ?array
+    {
+        $poolSize = max($limit * 5, 100);
+        $orderedUids = $this->embeddings->search($queryText, $store, $poolSize);
+
+        if ($orderedUids === null) {
+            return null;
+        }
+
+        $rowsByUid = DB::table('storage_rows')
+            ->whereIn('uid', $orderedUids)
+            ->when($store !== null, fn ($query) => $query->where('store', $store))
+            ->get()
+            ->keyBy('uid');
+
+        $records = collect($orderedUids)
+            ->map(fn (string $uid): mixed => $rowsByUid->get($uid))
+            ->filter(fn (mixed $row): bool => $row instanceof stdClass)
+            ->map(fn (stdClass $row): array => StorageRowPayload::format($row))
+            ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
+            ->values();
+
+        $facets = $this->buildFacets($records, $validated, 'semantic');
+
+        $offset = 0;
+        if (isset($validated['cursor'])) {
+            $decoded = StorageRowPayload::decodeCursor($validated['cursor']);
+            $offset = ctype_digit($decoded) ? (int) $decoded : 0;
+        }
+
+        $pageRecords = $records->slice($offset, $limit)->values();
+        $hasMore = ($offset + $limit) < $records->count();
+
+        return [
+            'ok' => true,
+            'records' => $pageRecords,
+            'facets' => $facets,
+            'nextCursor' => $hasMore ? StorageRowPayload::encodeCursor((string) ($offset + $limit)) : null,
+        ];
     }
 
     private function escapeLike(string $value): string
@@ -105,10 +176,10 @@ class SearchController extends Controller
      * @param array<string, mixed> $validated
      * @return array<string, mixed>
      */
-    private function buildFacets(Collection $records, array $validated): array
+    private function buildFacets(Collection $records, array $validated, string $mode): array
     {
         return [
-            'mode' => ($validated['semantic'] ?? false) ? 'keyword-fallback' : 'keyword',
+            'mode' => $mode,
             'store' => $validated['store'] ?? null,
             'total' => $records->count(),
             'stores' => $this->facetCounts($records, fn (array $record): mixed => $record['store'] ?? null),
