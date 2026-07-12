@@ -2,8 +2,8 @@
 
 A single English-first console to **install, operate, configure, and maintain** the
 canonical Masar stack (**Laravel API + Next.js**, `infra/docker-compose.yml`).
-The **Deploy** action provisions `.env` secrets and runs `docker compose up -d --build`;
-the old Node/Vite deployment wizard remains available as the explicit `deploy-legacy` command.
+The **Deploy** action provisions `.env` secrets and runs `docker compose up -d --build`
+against that canonical Compose file.
 
 ## Launch
 
@@ -31,7 +31,6 @@ The interactive menu uses one start path: **1 = Quick start**. Both **0** and
 | **Database** | Migration status (artisan) · Apply migrations (artisan) | `migrate-status` `migrate` |
 | **Backups** | Backup now · List backups · Restore backup | `backup` `backups` `restore` |
 | **Maintain** | Diagnostics (`pnpm verify`) · Update & rebuild | `diagnostics` `update` |
-| **Legacy** | Legacy deploy wizard · admin | `deploy-legacy` `legacy:set-admin` |
 | — | Help | `help` |
 
 ### Examples
@@ -63,10 +62,9 @@ node scripts/control-center.mjs change-admin-password --email=admin@example.com 
 
 ## Requirements
 
-- Node 22+ and Docker (with Compose v2 `docker compose`, or legacy `docker-compose`).
-- Reads `infra/.env`; controls `infra/docker-compose.yml` (canonical
-  Laravel + Next.js stack). For the HTTP-only dev variant run
-  `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` from `infra/`.
+- Node 22+ and Docker with Compose v2 (`docker compose`).
+- Reads `infra/.env`; controls `infra/docker-compose.yml` (the canonical
+  Laravel + Next.js stack).
 - Backups live in `infra/backups/archive-<timestamp>.sql`.
 
 ## Notes

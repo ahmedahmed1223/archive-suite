@@ -33,8 +33,6 @@ const INFRA_DIR = join(ROOT, "infra");
 const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(INFRA_DIR, ".env");
 const ENV_EXAMPLE = join(INFRA_DIR, ".env.example");
 // Canonical stack: Laravel API + Next.js (postgres/redis/laravel/worker/reverb/next/caddy).
-// ponytail: no automatic override layering — for the HTTP-only dev variant run
-// `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` by hand.
 const COMPOSE_FILE = join(INFRA_DIR, "docker-compose.yml");
 const BACKUP_DIR = join(INFRA_DIR, "backups");
 
@@ -731,7 +729,6 @@ const COMMANDS = {
     console.log(`  ${C.c}update${C.x}           git pull → install → build → docker compose up -d --build`);
     console.log(`\n${C.b}  Tips:${C.x}`);
     console.log(`  ${C.d}- In the interactive menu, option 1 is the single quick-start path; q and 0 both exit.${C.x}`);
-    console.log(`  ${C.d}- HTTP-only dev variant: docker compose -f docker-compose.yml -f docker-compose.dev.yml up (from infra/).${C.x}`);
     console.log(`  ${C.d}- "Stack not running" → run 'setup start' or 'setup doctor' to diagnose.${C.x}`);
     console.log(`  ${C.d}- "No .env found"     → run 'setup deploy' to provision a fresh configuration.${C.x}`);
     console.log(`\n${C.b}  Interactive menu (run 'setup' without arguments):${C.x}`);

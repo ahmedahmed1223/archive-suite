@@ -10,8 +10,24 @@ import { join } from "node:path";
 // router, and read-only commands are covered end-to-end.
 
 const CLI = new URL("./control-center.mjs", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const ROOT = new URL("../", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 const run = (args, env = {}) =>
   spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8", env: { ...process.env, ...env } });
+
+test("public setup and deployment guidance use only the canonical Control Center stack", () => {
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  assert.equal(pkg.scripts.setup, "node scripts/control-center.mjs deploy");
+  assert.equal(pkg.scripts.deploy, "node scripts/control-center.mjs deploy");
+
+  const controlCenter = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
+  assert.doesNotMatch(controlCenter, /docker-compose\.dev\.yml/);
+
+  for (const file of ["README.md", "INSTALL.md", "DEPLOYMENT.md", "docs/control-center.md"]) {
+    const content = readFileSync(join(ROOT, file), "utf8");
+    assert.match(content, /infra\/docker-compose\.yml/);
+    assert.doesNotMatch(content, /deploy-legacy|docker-compose\.(postgres|lite|dev|intranet)\.yml|PocketBase/i);
+  }
+});
 
 test("help renders the grouped menu and every command group", () => {
   const r = run(["help"]);

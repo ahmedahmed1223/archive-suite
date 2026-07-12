@@ -82,19 +82,13 @@ pnpm run build:next
 
 ## النشر عبر Docker
 
-المسار الافتراضي في `infra/docker-compose.yml` يشغّل Laravel + Next.js، لذلك تظهر واجهة مسار والصفحات الجديدة عند تشغيل Docker العادي:
+استخدم Control Center لنشر الحزمة القانونية Laravel + Next.js من
+`infra/docker-compose.yml`. ينشئ `infra/.env`، يولّد الأسرار الناقصة، ثم يدير
+`docker compose up -d --build` للمسار نفسه:
 
 ```bash
-cd infra
-cp .env.example .env
-# عدّل أسرار CHANGE_ME قبل الإنتاج
-docker compose up -d --build
-```
-
-للتشغيل المحلي بدون Caddy:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+pnpm setup
+# أو: pnpm deploy
 ```
 
 ## CI/CD والمراقبة
@@ -122,18 +116,17 @@ SENTRY_PROJECT
 SENTRY_AUTH_TOKEN
 ```
 
-## النشر الموجّه (legacy)
+## النشر الموجّه
 
-`Setup-Archive.bat` / `setup.sh` ينشران الآن الحزمة القانونية Laravel + Next افتراضياً. معالج النشر legacy القديم (Node/SPA) متاح كأمر صريح فقط:
+`Setup-Archive.bat` / `setup.sh` هما مشغلا Control Center للحزمة القانونية Laravel + Next:
 
 ```bash
 # Windows:
 .\Setup-Archive.bat                    # القائمة: 1 = Quick start، q/0 = خروج
 .\Setup-Archive.bat change-admin-password --generate
-.\Setup-Archive.bat deploy-legacy
 # Linux/macOS:
 bash setup.sh change-admin-password --generate
-bash setup.sh deploy-legacy        # أو: pnpm deploy
+bash setup.sh deploy               # أو: pnpm setup / pnpm deploy
 ```
 
 يفحص البيئة، يولّد الأسرار، ويرفع الحزمة المُحصّنة. التفاصيل في [`DEPLOYMENT.md`](DEPLOYMENT.md).
