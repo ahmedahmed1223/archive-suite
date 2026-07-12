@@ -61,6 +61,18 @@ class SystemConnectionTestTest extends TestCase
         $response->assertJsonPath('error', 'Connection test failed.');
     }
 
+    public function test_test_storage_connection_default_disk_succeeds_with_empty_body(): void
+    {
+        $this->actingAsAdmin();
+
+        $response = $this->postJson('/api/v1/system/test-storage', []);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('ok', true);
+        $response->assertJsonPath('connection.status', 'connected');
+        $response->assertJsonPath('connection.driver', 'local');
+    }
+
     public function test_test_storage_connection_requires_admin(): void
     {
         $response = $this->postJson('/api/v1/system/test-storage', [
@@ -118,6 +130,35 @@ class SystemConnectionTestTest extends TestCase
         $response->assertJsonPath('ok', true);
         $response->assertJsonPath('connection.status', 'connected');
         $response->assertJsonPath('connection.driver', 'pgsql');
+    }
+
+    public function test_test_database_connection_sqlite_memory_succeeds(): void
+    {
+        $this->actingAsAdmin();
+
+        $response = $this->postJson('/api/v1/system/test-database', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('ok', true);
+        $response->assertJsonPath('connection.status', 'connected');
+        $response->assertJsonPath('connection.driver', 'sqlite');
+    }
+
+    public function test_test_database_connection_mysql_missing_database_returns_clean_422(): void
+    {
+        $this->actingAsAdmin();
+
+        $response = $this->postJson('/api/v1/system/test-database', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'port' => 3306,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.database.0', 'The database field is required.');
     }
 
     public function test_test_database_connection_fails_invalid_credentials(): void
