@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\UploadContentMismatchException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUploadRequest;
 use App\Jobs\ProcessMediaWorkflow;
+use App\Services\Uploads\UploadFileValidator;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -12,18 +15,52 @@ use Illuminate\Support\Str;
 
 class UploadsController extends Controller
 {
+    /** Bytes sampled from the start of the file for magic-byte sniffing. */
+    private const SNIFF_SAMPLE_BYTES = 8192;
+
+    public function __construct(private readonly UploadFileValidator $validator) {}
+
     public function store(StoreUploadRequest $request): JsonResponse
     {
         $disk = (string) config('ingest.disk');
         $directory = trim((string) config('ingest.directory'), '/');
         $folder = trim((string) $request->validated('folder', ''), '/');
         $targetDir = $folder !== '' ? "{$directory}/uploads/{$folder}" : "{$directory}/uploads";
+        $quarantineDir = "{$directory}/quarantine";
 
         $file = $request->file('file');
         $fileName = $file->getClientOriginalName();
-        $storedPath = $file->storeAs($targetDir, $fileName, ['disk' => $disk]);
-
+        $extension = strtolower((string) $file->getClientOriginalExtension());
         $checksum = hash_file('sha256', $file->getRealPath());
+
+        // UUID-based storage name — never the client-supplied filename, so
+        // path traversal / overwrite via crafted filenames is not possible.
+        $storedName = (string) Str::uuid().($extension !== '' ? '.'.$extension : '');
+
+        $storage = Storage::disk($disk);
+
+        // Quarantine tier: land the upload in a non-public, non-served
+        // directory first. It is moved into the servable uploads path only
+        // after content validation passes; on failure it is deleted, not
+        // just rejected with an HTTP error, so nothing invalid lingers on
+        // disk (V1-112 — real AV/ClamAV scanning is deferred, see TASKS.md).
+        $quarantinePath = $file->storeAs($quarantineDir, $storedName, ['disk' => $disk]);
+
+        try {
+            $this->assertSafeContent($storage, $quarantinePath, $extension);
+        } catch (UploadContentMismatchException $exception) {
+            $storage->delete($quarantinePath);
+
+            return response()->json([
+                'ok' => false,
+                'error' => $exception->getMessage(),
+                'code' => 'unsafe_file_content',
+            ], 422);
+        }
+
+        $storedPath = "{$targetDir}/{$storedName}";
+        $storage->move($quarantinePath, $storedPath);
+
         $recordId = (string) Str::uuid();
         $now = now();
 
@@ -55,6 +92,29 @@ class UploadsController extends Controller
             'ok' => true,
             'record' => $recordData,
         ], 201);
+    }
+
+    /**
+     * Reads a leading sample of the quarantined file's real bytes (works for
+     * any disk driver, not just local) and runs it through magic-byte
+     * validation. Throws on mismatch; caller is responsible for deleting the
+     * quarantined file.
+     */
+    private function assertSafeContent(Filesystem $storage, string $quarantinePath, string $extension): void
+    {
+        $stream = $storage->readStream($quarantinePath);
+
+        if (! is_resource($stream)) {
+            throw new UploadContentMismatchException('Upload rejected: unable to read file content.');
+        }
+
+        try {
+            $sample = fread($stream, self::SNIFF_SAMPLE_BYTES);
+        } finally {
+            fclose($stream);
+        }
+
+        $this->validator->assertSafeContent($sample !== false ? $sample : '', $extension);
     }
 
     private function isMediaFile(string $fileName): bool
