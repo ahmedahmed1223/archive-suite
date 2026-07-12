@@ -52,6 +52,10 @@ services:
       APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
       APP_URL: ${LARAVEL_APP_URL:-http://localhost:8000}
       ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
+      # V1-101: db:seed --force refuses to run in production without these
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_NAME: ${ADMIN_NAME:-Archive Admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: "5432"
@@ -102,6 +106,7 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
+      ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: "5432"
@@ -165,12 +170,15 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
+      ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: "5432"
       DB_DATABASE: ${POSTGRES_DB:-archive}
       DB_USERNAME: ${POSTGRES_USER:-archive}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      # match laravel/worker — avoids hitting the DB cache table before migrations run
+      CACHE_STORE: redis
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
