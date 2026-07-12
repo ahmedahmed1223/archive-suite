@@ -97,7 +97,7 @@ return [
         'sftp' => [
             'driver' => 'sftp',
             'host' => env('SFTP_HOST'),
-            'port' => env('SFTP_PORT', 22),
+            'port' => (int) env('SFTP_PORT', 22),
             'username' => env('SFTP_USERNAME'),
             'password' => env('SFTP_PASSWORD'),
             'privateKey' => env('SFTP_PRIVATE_KEY'),
@@ -110,7 +110,7 @@ return [
         'ftp' => [
             'driver' => 'ftp',
             'host' => env('FTP_HOST'),
-            'port' => env('FTP_PORT', 21),
+            'port' => (int) env('FTP_PORT', 21),
             'username' => env('FTP_USERNAME'),
             'password' => env('FTP_PASSWORD'),
             'root' => env('FTP_ROOT', ''),
