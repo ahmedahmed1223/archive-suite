@@ -45,7 +45,7 @@
 - [ ] **V1-111** containment/ownership لـmedia jobs ومنع path traversal/arbitrary reads. **(P0 #2)**
 - [ ] **V1-112** upload validation: MIME+magic، UUID، quotas، quarantine/AV.
 - [ ] **V1-113** timeouts/backoff/idempotency/cancel للوظائف + تنقية الأخطاء والمسارات.
-- [ ] **V1-121** backup كامل: PostgreSQL + storage volumes + manifest/checksums. **(P0 #7)**
+- [x] **V1-121** backup كامل: كل جداول التطبيق (schema-driven) + ملفات file_root + manifest/checksums لكل ملف. (منجز 2026-07-12 في d8537e2؛ 21 اختبارًا. خارج النطاق موثقًا: pg_dump-level وملفات السحابة.) **(P0 #7)**
 - [x] **V1-122** استعادة غير مدمرة (معاملة DB ترجع الحيّة سليمة عند أي فشل) + تحقق checksum قبل الاستعادة (رفض النسخ التالفة 422، توافق خلفي للنسخ بلا sidecar بعلَم `verified:false`). (منجز 2026-07-12؛ 4 اختبارات جديدة، 15 تمر.) **(P0 #3)**
 - [ ] **V1-123** retention/pruning للجلسات/audit/jobs/backups + RPO/RTO.
 
