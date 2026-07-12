@@ -4,6 +4,8 @@ namespace App\Services\Media;
 
 class WhisperTranscriber
 {
+    private readonly MediaPathGuard $pathGuard;
+
     public function __construct(
         private readonly ProcessRunner $runner,
         private readonly string $whisperBinary = 'whisper-ctranslate2',
@@ -14,7 +16,10 @@ class WhisperTranscriber
         private readonly string $whisperComputeType = '',
         private readonly bool $whisperDiarize = false,
         private readonly string $hfToken = '',
-    ) {}
+        ?MediaPathGuard $pathGuard = null,
+    ) {
+        $this->pathGuard = $pathGuard ?? new MediaPathGuard();
+    }
 
     /**
      * Build and run a whisper-ctranslate2 transcription command.
@@ -36,13 +41,18 @@ class WhisperTranscriber
             $outputFormats[] = 'vtt';
         }
 
+        // recordId is client input; resolveOutputDir contains it under the
+        // storage root and creates it. Artifact keys stay relative to recordId
+        // (unchanged API contract) — only the on-disk path is absolute.
+        $outputDir = $this->pathGuard->resolveOutputDir($recordId, 'transcription output');
+
         $command = [
             $this->whisperBinary,
             $inputPath,
             '--model', $this->whisperModel,
             '--language', $this->whisperLanguage,
             '--output_format', 'all',
-            '--output_dir', $recordId,
+            '--output_dir', $outputDir,
         ];
 
         if ($device !== '') {
@@ -68,8 +78,9 @@ class WhisperTranscriber
         $artifacts = [];
         foreach ($outputFormats as $format) {
             $key = "{$recordId}/transcript.{$format}";
-            $this->renameCliOutput($inputPath, $recordId, $format, $key);
-            if (is_file($key)) {
+            $targetPath = $outputDir.DIRECTORY_SEPARATOR."transcript.{$format}";
+            $this->renameCliOutput($inputPath, $outputDir, $format, $targetPath);
+            if (is_file($targetPath)) {
                 $artifacts[] = [
                     'kind' => "transcript_{$format}",
                     'key' => $key,
@@ -80,13 +91,13 @@ class WhisperTranscriber
 
         // Derive TTML from VTT if both are requested
         if (in_array('ttml', $outputFormats, true) && in_array('vtt', $outputFormats, true)) {
-            $vttKey = "{$recordId}/transcript.vtt";
-            $ttmlKey = "{$recordId}/transcript.ttml";
-            $this->deriveTtml($vttKey, $ttmlKey);
-            if (is_file($ttmlKey) && !$this->hasArtifact($artifacts, 'transcript_ttml')) {
+            $vttPath = $outputDir.DIRECTORY_SEPARATOR.'transcript.vtt';
+            $ttmlPath = $outputDir.DIRECTORY_SEPARATOR.'transcript.ttml';
+            $this->deriveTtml($vttPath, $ttmlPath);
+            if (is_file($ttmlPath) && !$this->hasArtifact($artifacts, 'transcript_ttml')) {
                 $artifacts[] = [
                     'kind' => 'transcript_ttml',
-                    'key' => $ttmlKey,
+                    'key' => "{$recordId}/transcript.ttml",
                     'url' => null,
                 ];
             }
@@ -113,16 +124,16 @@ class WhisperTranscriber
      * move it to the fixed transcript.{ext} key the rest of the system expects.
      * No-op if the CLI's file isn't on local disk (e.g. fake/test runs).
      */
-    private function renameCliOutput(string $inputPath, string $recordId, string $extension, string $targetKey): void
+    private function renameCliOutput(string $inputPath, string $outputDir, string $extension, string $targetPath): void
     {
         $basename = pathinfo($inputPath, PATHINFO_FILENAME);
-        $cliOutputPath = "{$recordId}/{$basename}.{$extension}";
+        $cliOutputPath = $outputDir.DIRECTORY_SEPARATOR."{$basename}.{$extension}";
 
-        if (! is_file($cliOutputPath) || $cliOutputPath === $targetKey) {
+        if (! is_file($cliOutputPath) || $cliOutputPath === $targetPath) {
             return;
         }
 
-        rename($cliOutputPath, $targetKey);
+        rename($cliOutputPath, $targetPath);
     }
 
     /**

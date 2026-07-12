@@ -137,7 +137,10 @@ class RealMediaProcessorTest extends TestCase
 
         $this->assertCount(1, $artifacts);
         $this->assertSame('video', $artifacts[0]['kind']);
-        $this->assertContains('branding/archive-logo.png', $command);
+        // Client-supplied watermark paths are contained (V1-111): the command
+        // carries the resolved absolute path, not the raw client string.
+        $watermarkArg = current(array_filter($command, fn ($arg): bool => is_string($arg) && str_ends_with($arg, 'branding/archive-logo.png')));
+        $this->assertNotFalse($watermarkArg);
         $this->assertNotFalse($filterIndex);
         $this->assertSame(
             '[1:v]format=rgba,colorchannelmixer=aa=0.6[wm];[0:v][wm]overlay=x=W-w-18:y=18[v]',

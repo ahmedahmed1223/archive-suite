@@ -16,6 +16,7 @@ class MediaJob extends Model
     protected $fillable = [
         'id',
         'record_id',
+        'created_by',
         'operation',
         'status',
         'source_path',

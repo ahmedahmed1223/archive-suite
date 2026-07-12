@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
+use App\Models\User;
+use App\Services\Media\MediaPathGuard;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -14,16 +17,27 @@ class MediaJobsController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
+        $safePathRule = function (string $attribute, mixed $value, Closure $fail): void {
+            if (! MediaPathGuard::isSafeRelative((string) $value)) {
+                $fail("The {$attribute} must be a relative path without \"..\" traversal or an absolute path.");
+            }
+        };
+
         $validated = $request->validate([
-            'recordId' => ['required', 'string'],
+            'recordId' => ['required', 'string', 'max:255', $safePathRule],
             'operation' => ['required', 'string', Rule::in(['thumbnail', 'transcode', 'transcription', 'ocr', 'montage_export'])],
-            'sourcePath' => ['nullable', 'string'],
+            'sourcePath' => ['nullable', 'string', 'max:2048', $safePathRule],
             'options' => ['nullable', 'array'],
+            'options.clips' => ['nullable', 'array'],
+            'options.clips.*.path' => ['nullable', 'string', 'max:2048', $safePathRule],
+            'options.watermark' => ['nullable', 'array'],
+            'options.watermark.path' => ['nullable', 'string', 'max:2048', $safePathRule],
         ]);
 
         $mediaJob = MediaJob::query()->create([
             'id' => (string) Str::uuid(),
             'record_id' => $validated['recordId'],
+            'created_by' => $this->userId($request),
             'operation' => $validated['operation'],
             'status' => 'queued',
             'source_path' => $validated['sourcePath'] ?? null,
@@ -48,6 +62,10 @@ class MediaJobsController extends Controller
 
         $query = MediaJob::query();
 
+        if (! $this->isAdmin($request)) {
+            $query->where('created_by', $this->userId($request));
+        }
+
         if ($status) {
             $query->where('status', $status);
         }
@@ -67,11 +85,11 @@ class MediaJobsController extends Controller
         ]);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $mediaJob = MediaJob::query()->find($id);
 
-        if (! $mediaJob) {
+        if (! $mediaJob || ! $this->canAccess($request, $mediaJob)) {
             return response()->json(['ok' => false, 'error' => 'Media job not found.'], 404);
         }
 
@@ -81,11 +99,11 @@ class MediaJobsController extends Controller
         ]);
     }
 
-    public function cancel(string $id): JsonResponse
+    public function cancel(Request $request, string $id): JsonResponse
     {
         $mediaJob = MediaJob::query()->find($id);
 
-        if (! $mediaJob) {
+        if (! $mediaJob || ! $this->canAccess($request, $mediaJob)) {
             return response()->json(['ok' => false, 'error' => 'Media job not found.'], 404);
         }
 
@@ -102,6 +120,34 @@ class MediaJobsController extends Controller
             'ok' => true,
             'job' => $this->payload($mediaJob),
         ]);
+    }
+
+    /**
+     * Non-admins may only reach jobs they created; admins reach every job.
+     */
+    private function canAccess(Request $request, MediaJob $mediaJob): bool
+    {
+        if ($this->isAdmin($request)) {
+            return true;
+        }
+
+        $userId = $this->userId($request);
+
+        return $userId !== null && $userId === (string) $mediaJob->created_by;
+    }
+
+    private function isAdmin(Request $request): bool
+    {
+        $user = $request->attributes->get('archive_user');
+
+        return $user instanceof User && $user->role === 'admin';
+    }
+
+    private function userId(Request $request): ?string
+    {
+        $user = $request->attributes->get('archive_user');
+
+        return $user instanceof User ? (string) $user->getKey() : null;
     }
 
     /**
