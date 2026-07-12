@@ -117,6 +117,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->assertSecureCookiesInProduction();
+
         // Cloud storage drivers not shipped with Laravel core. Clients are
         // built lazily inside each closure so no network/credential work
         // happens at boot when a driver is unconfigured or unused.
@@ -148,5 +150,34 @@ class AppServiceProvider extends ServiceProvider
 
             return new FilesystemAdapter(new Filesystem($adapter, $config), $adapter, $config);
         });
+    }
+
+    /**
+     * V1-101: refuse to boot in production with an insecure refresh cookie.
+     *
+     * ponytail: only guards the auth-critical `va_refresh` cookie flag
+     * (config('archive.auth.secure_cookies'), consumed in
+     * AuthController::refreshCookie()) — not SESSION_SECURE_COOKIE, which
+     * isn't wired to anything auth-critical here.
+     */
+    private function assertSecureCookiesInProduction(): void
+    {
+        // composer's post-autoload-dump hook runs this during the Docker image
+        // build, before any real .env/APP_ENV exists — config's env() fallback
+        // resolves to "production" there even though it isn't a real deploy.
+        if ($this->app->runningConsoleCommand('package:discover')) {
+            return;
+        }
+
+        if (! $this->app->environment('production')) {
+            return;
+        }
+
+        if (! config('archive.auth.secure_cookies')) {
+            throw new \RuntimeException(
+                'ARCHIVE_SECURE_COOKIES must be true in production. Set ARCHIVE_SECURE_COOKIES=true '
+                . 'so the va_refresh auth cookie is only sent over HTTPS.'
+            );
+        }
     }
 }
