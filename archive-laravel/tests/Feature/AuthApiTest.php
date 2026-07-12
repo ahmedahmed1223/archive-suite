@@ -89,6 +89,97 @@ class AuthApiTest extends TestCase
         $this->assertSame(1, ApiSession::query()->count());
     }
 
+    public function test_refresh_cookie_is_scoped_to_the_refresh_route_path(): void
+    {
+        User::query()->create([
+            'name' => 'Archive Admin',
+            'email' => 'admin@example.test',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => 'admin@example.test',
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        $cookie = $this->responseCookie($login, 'va_refresh');
+        $this->assertNotNull($cookie);
+        $this->assertSame('/api/v1/auth/refresh', $cookie->getPath());
+    }
+
+    public function test_refresh_rejects_a_disallowed_origin(): void
+    {
+        User::query()->create([
+            'name' => 'Archive Admin',
+            'email' => 'admin@example.test',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => 'admin@example.test',
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        $refreshCookie = $this->responseCookieValue($login, 'va_refresh');
+
+        $this->call('POST', '/api/v1/auth/refresh', [], [
+            'va_refresh' => $refreshCookie,
+        ], [], [
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_ORIGIN' => 'https://evil.example.test',
+        ])
+            ->assertStatus(403)
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_refresh_allows_the_configured_frontend_origin(): void
+    {
+        User::query()->create([
+            'name' => 'Archive Admin',
+            'email' => 'admin@example.test',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => 'admin@example.test',
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        $refreshCookie = $this->responseCookieValue($login, 'va_refresh');
+
+        $this->call('POST', '/api/v1/auth/refresh', [], [
+            'va_refresh' => $refreshCookie,
+        ], [], [
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_ORIGIN' => 'http://localhost:3000',
+        ])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+    }
+
+    public function test_refresh_is_throttled_after_repeated_attempts(): void
+    {
+        User::query()->create([
+            'name' => 'Archive Admin',
+            'email' => 'admin@example.test',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        for ($i = 0; $i < 30; $i++) {
+            $this->call('POST', '/api/v1/auth/refresh', [], [
+                'va_refresh' => 'not-a-real-token',
+            ], [], [
+                'HTTP_ACCEPT' => 'application/json',
+            ])->assertUnauthorized();
+        }
+
+        $this->call('POST', '/api/v1/auth/refresh', [], [
+            'va_refresh' => 'not-a-real-token',
+        ], [], [
+            'HTTP_ACCEPT' => 'application/json',
+        ])->assertStatus(429);
+    }
+
     public function test_it_logs_out_and_revokes_the_session(): void
     {
         User::query()->create([
@@ -115,9 +206,14 @@ class AuthApiTest extends TestCase
 
     private function responseCookieValue(mixed $response, string $name): ?string
     {
+        return $this->responseCookie($response, $name)?->getValue();
+    }
+
+    private function responseCookie(mixed $response, string $name): ?\Symfony\Component\HttpFoundation\Cookie
+    {
         foreach ($response->headers->getCookies() as $cookie) {
             if ($cookie->getName() === $name) {
-                return $cookie->getValue();
+                return $cookie;
             }
         }
 
