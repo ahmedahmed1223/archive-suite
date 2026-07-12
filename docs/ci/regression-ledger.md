@@ -18,8 +18,11 @@
 - **النسخ الرسمية**: دفع tag بنمط `v*` يُشغّل `release.yml` — بوابة
   `pnpm release:verify` كاملة **قبل** نشر أي صورة أو Release. النسخ المستقرة
   (بدون لاحقة مثل `-rc.1`) فقط تحرّك وسم `latest`.
-- النشر اليدوي الاستثنائي: `docker.yml` عبر `workflow_dispatch` فقط، ويوسم
-  `manual-<sha>` — لا يلمس `latest`.
+- النشر اليدوي الاستثنائي: `docker.yml` عبر `workflow_dispatch`، ويوسم
+  `manual-<sha>`.
+- ملاحظة انتقالية: `docker.yml` ما زال ينشر أيضًا عند الـ tags (مسار احتياطي
+  بلا بوابة). بعد أن يثبت `release.yml` نفسه في أول إصدار، يُزال مشغّل
+  الـ tags من `docker.yml` ليصبح النشر الرسمي حصريًا عبر البوابة.
 
 ## السجل
 
@@ -30,7 +33,7 @@
 | 2026-07-10 | سلوك مختلف بين CI والمحلي | ملف `.env.local` متتبَّع في git يغيّر السلوك | `verify:repo-hygiene` يرفض ملفات env متتبَّعة |
 | 2026-07-10 | فشل توثيق: تأكيد على ملف محذوف | assertion ميت بعد حذف الإرث | تحديث `control-center.test.mjs` ليقرأ الواقع لا القائمة القديمة |
 | 2026-07-12 | حاويات الإنتاج المحلي في crash-loop بعد V1-101 | compose يعلن `APP_ENV=production` دون تمرير `ARCHIVE_SECURE_COOKIES`/`ADMIN_*` لكل خدمات Laravel | `verify:infra` + إصلاح `docker-compose.laravel-next.yml` (ae2a954) |
-| 2026-07-12 | نشر صور عند دفع tag دون تشغيل الاختبارات | `docker.yml` كان ينشر على tags بلا بوابة تحقق | `release.yml`: publish `needs: verify` — لا نشر بلا بوابة |
+| 2026-07-12 | نشر صور عند دفع tag دون تشغيل الاختبارات | `docker.yml` ينشر على tags بلا بوابة تحقق | `release.yml`: publish `needs: verify` (مسار docker.yml الاحتياطي يُزال بعد أول إصدار ناجح) |
 
 ## كيف تضيف حارسًا جديدًا
 
