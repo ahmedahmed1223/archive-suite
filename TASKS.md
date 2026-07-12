@@ -38,7 +38,7 @@
 - [x] **V1-005 platform contract** — `infra/platform/compatibility.v1.json` + schema + `platform-contract.mjs` يستهلكها doctor. (منجز 2026-07-12 بالدمج.)
 
 ### الموجة 1 — أمن وبيانات (P0/P1)
-- [ ] **V1-101** إزالة admin defaults ورفض `CHANGE_ME`/secure-cookie=false في production لكل compose variants. **(P0 #1)**
+- [x] **V1-101** رفض المدير الافتراضي/الضعيف و`ARCHIVE_SECURE_COOKIES=false` في الإنتاج (حارس Seeder + حارس boot، 12 اختباراً، 439 تمر). (منجز 2026-07-12) **(P0 #1)**
 - [ ] **V1-102** مصفوفة RBAC + Policies لكل endpoint مع `RoleMatrixApiTest`. **(P0 #4)**
 - [ ] **V1-103** قصر refresh cookie على `/auth/refresh` + Origin/CSRF/throttle + تحديث OpenAPI. **(P0 #5)**
 - [ ] **V1-104** share secrets في body/header لا query + rate limiting فعلي.
