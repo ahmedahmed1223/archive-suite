@@ -41,6 +41,7 @@ dist-cloud/
 .claude/
 # transient brainstorm artifacts
 .superpowers/
+.worktrees/
 
 # Local agent/tool state and test output.
 output/
