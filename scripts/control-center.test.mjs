@@ -148,6 +148,24 @@ test("doctor uses the Windows-safe pnpm invocation and reports the environment",
   assert.doesNotMatch(out, /pnpm not found/);
 });
 
+test("doctor filters the platform contract and keeps native deployment explicitly planned", () => {
+  const r = run(["doctor", "--mode=native", "--platform=linux-native"]);
+  const out = r.stderr + r.stdout;
+  assert.equal(r.status, 0, out);
+  assert.match(out, /Platform compatibility contract v1\.0/);
+  assert.match(out, /Linux Native \(linux-native\) — planned/);
+  assert.match(out, /Native deployment is planned: no install or start action is available yet\./);
+  assert.match(out, /Read-only report/);
+  assert.doesNotMatch(out, /docker compose up/);
+});
+
+test("doctor rejects an unknown platform without performing deployment", () => {
+  const r = run(["doctor", "--platform=not-a-platform"]);
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr + r.stdout, /Unknown platform/);
+  assert.doesNotMatch(r.stderr + r.stdout, /docker compose up/);
+});
+
 test("deploy replaces every duplicate ADMIN_PASSWORD placeholder with the generated password", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-"));
   const envFile = join(dir, ".env");

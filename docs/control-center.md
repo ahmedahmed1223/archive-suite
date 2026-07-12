@@ -23,7 +23,7 @@ The interactive menu uses one start path: **1 = Quick start**. Both **0** and
 
 | Group | Menu options | Non-interactive command |
 |-------|--------------|-------------------------|
-| **Quick** | Quick start · First-run guide · Doctor | `quick` `first-run` `doctor` |
+| **Quick** | Quick start · First-run guide · Doctor | `quick` `first-run` `doctor [--mode=docker\|native] [--platform=<id>]` |
 | **Deploy** | Deploy / Re-provision (Laravel + Next.js) | `deploy` |
 | **Server** | Status · Start · Stop · Restart · Logs · Health | `status` `start` `stop` `restart` `logs` `health` |
 | **Configure** | View configuration · Edit a setting · Set public URL | `config` `set-url` |

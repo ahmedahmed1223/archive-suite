@@ -22,6 +22,11 @@
 
 ## إصلاح بوابة الأمن في Git worktree — مكتمل 2026-07-12
 
+## توافق المنصات المقيد V1-005a — مكتمل 2026-07-12
+
+- أضيف عقد JSON قابل للقراءة آلياً لمنصات Docker على Windows 10/11 وLinux (conditional) ولمسارات Native على Windows وLinux (planned فقط)، مع schema وprofiles والمنافذ ومسارات البيانات والموارد المؤقتة.
+- أصبح `control doctor --mode=docker|native` و`control doctor --platform=<id>` يعرضان العقد وفحصاً read-only؛ Native يصرح بأنه مخطط فقط ولا ينفذ تثبيتاً أو بدء خدمات.
+
 - [x] **مسار safe.directory محلي** — أصبحت بوابة security baseline تثق فقط في مسار الـcheckout الحالي لكل استدعاء Git، فتعمل من clone عادي أو linked worktree من دون إعداد global.
 
 ## إزالة الحزم legacy النهائية (Phase B) — مكتملة 2026-07-12
