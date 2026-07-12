@@ -6,14 +6,16 @@ namespace App\Services\Backup;
 
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use JsonException;
-use stdClass;
 
 /**
- * Synchronous JSON backup/restore for the storage_rows table, grouped by
- * store. Ported from the legacy Node backup scheduler (list/run/preview/
- * restore); encryption, checksums, and retention were deliberately left
- * behind — add them if backups start leaving the host.
+ * Synchronous JSON backup/restore covering the full application schema
+ * (every table but framework plumbing — auto-discovered, not a hardcoded
+ * list) plus local files under archive.file_root (media, thumbnails,
+ * exports). V1-122 added checksums/verification for the whole archive;
+ * V1-121 adds a manifest, full-table coverage, per-file checksums, and
+ * dependency-ordered restore on top of that.
  */
 class BackupService
 {
@@ -21,6 +23,20 @@ class BackupService
     private const NAME_PATTERN = '/^backup-[A-Za-z0-9._-]+\.json\.gz$/';
 
     private const INSERT_CHUNK_SIZE = 500;
+
+    // Framework plumbing: rebuilt by migrations/queue workers, never
+    // meaningful application data. Everything else the schema reports is
+    // backed up automatically — adding a migration is enough, no edit here.
+    private const EXCLUDED_TABLES = [
+        'migrations',
+        'cache',
+        'cache_locks',
+        'jobs',
+        'job_batches',
+        'failed_jobs',
+        'sessions',
+        'password_reset_tokens',
+    ];
 
     /**
      * @return list<array{name: string, sizeBytes: int, createdAt: string, checksum: string|null}>
@@ -57,25 +73,34 @@ class BackupService
      */
     public function run(): array
     {
-        $snapshot = [];
+        $tables = $this->dumpTables();
+        $files = $this->dumpFiles();
 
-        foreach (DB::table('storage_rows')->orderBy('store')->orderBy('uid')->get() as $row) {
-            $snapshot[$row->store][] = [
-                'uid' => $row->uid,
-                'data' => json_decode((string) $row->data, true),
-                'syncVersion' => $row->sync_version,
-                'lastModifiedBy' => $row->last_modified_by !== null
-                    ? json_decode((string) $row->last_modified_by, true)
-                    : null,
-            ];
-        }
+        $manifest = [
+            'createdAt' => now()->toIso8601String(),
+            'appVersion' => app()->version(),
+            'dbDriver' => DB::connection()->getDriverName(),
+            'tables' => array_map('count', $tables),
+            'files' => array_map(static fn (array $f): array => [
+                'path' => $f['path'],
+                'sha256' => $f['sha256'],
+                'sizeBytes' => $f['sizeBytes'],
+            ], $files),
+            'totalSizeBytes' => array_sum(array_column($files, 'sizeBytes')),
+        ];
+
+        $payload = [
+            'manifest' => $manifest,
+            'tables' => $tables,
+            'files' => $files,
+        ];
 
         // Microsecond stamp keeps names unique without a counter file.
         $name = 'backup-'.now()->format('Y-m-d\TH-i-s-u').'.json.gz';
         $path = $this->directory().DIRECTORY_SEPARATOR.$name;
 
         try {
-            $encoded = gzencode(json_encode($snapshot === [] ? new stdClass : $snapshot, JSON_THROW_ON_ERROR), 9);
+            $encoded = gzencode(json_encode($payload, JSON_THROW_ON_ERROR), 9);
         } catch (JsonException $e) {
             throw new BackupException('Failed to serialize backup snapshot: '.$e->getMessage(), 500);
         }
@@ -100,7 +125,7 @@ class BackupService
         return [
             'name' => $name,
             'sizeBytes' => (int) filesize($path),
-            'stores' => array_map('count', $snapshot),
+            'stores' => $this->storesFromStorageRows($tables['storage_rows'] ?? []),
             'completedAt' => now()->toIso8601String(),
             'checksum' => $checksum,
         ];
@@ -111,7 +136,8 @@ class BackupService
      */
     public function preview(string $name): array
     {
-        $stores = array_map('count', $this->readSnapshot($name));
+        $archive = $this->readArchive($name);
+        $stores = $this->storesFromStorageRows($archive['tables']['storage_rows'] ?? []);
 
         return [
             'name' => $name,
@@ -121,7 +147,7 @@ class BackupService
     }
 
     /**
-     * @return array{name: string, counts: array<string, int>, restoredAt: string, verified: bool}
+     * @return array{name: string, counts: array<string, int>, tableCounts: array<string, int>, restoredAt: string, verified: bool}
      */
     public function restore(string $name): array
     {
@@ -131,7 +157,7 @@ class BackupService
         // logic rather than duplicating it. Older backups predate the .sha256
         // sidecar (V1-122 added it after the fact) — hard-failing every one of
         // those would brick historical restores, so absence of a sidecar falls
-        // back to the structural validation readSnapshot() already performs and
+        // back to the structural validation readArchive() already performs and
         // the result is flagged unverified. A sidecar that IS present but does
         // not match means the file was corrupted or tampered with after backup;
         // that always aborts, since it's the exact class of silent-overwrite bug
@@ -150,57 +176,76 @@ class BackupService
             logger()->warning('Restoring backup with no checksum sidecar; integrity unverified.', ['name' => $name]);
         }
 
-        $snapshot = $this->readSnapshot($name);
-        $counts = [];
+        $archive = $this->readArchive($name);
+
+        // Manifest-driven per-file checksum gate, same "verify before applying"
+        // shape as the whole-archive gate above — a corrupt or tampered file
+        // entry inside an otherwise-valid archive must not silently overwrite
+        // the file it maps to. Legacy archives carry no file entries, so this
+        // is a no-op for them.
+        foreach ($archive['files'] as $file) {
+            $content = base64_decode((string) ($file['contentBase64'] ?? ''), true);
+            $expected = (string) ($file['sha256'] ?? '');
+
+            if ($content === false || $expected === '' || ! hash_equals($expected, hash('sha256', $content))) {
+                throw new BackupException(
+                    'Backup file entry "'.((string) ($file['path'] ?? '?')).'" failed checksum verification. Restore aborted; live data was not touched.',
+                    422
+                );
+            }
+        }
+
+        // Dependency-ordered per table, driven by the schema's own foreign
+        // keys (not a hardcoded table order) so parents restore before the
+        // children that reference them, and deletes run in the opposite
+        // direction. See orderByDependency().
+        $insertOrder = $this->orderByDependency(array_keys($archive['tables']));
+        $deleteOrder = array_reverse($insertOrder);
 
         try {
             // ponytail: non-destructive via a single DB transaction rather than a
             // separate pre-restore snapshot file — every driver this app runs on
             // (sqlite, MySQL/InnoDB, Postgres) is transactional, so any failure
             // partway through (bad row, constraint violation) rolls back every
-            // store's delete+insert together and live data ends up untouched.
-            // Upgrade to an explicit pre-restore dump only if a future storage
-            // backend can't guarantee transactional DDL here.
-            DB::transaction(function () use ($snapshot, &$counts): void {
-                $now = now();
-
-                foreach ($snapshot as $store => $rows) {
-                    DB::table('storage_rows')->where('store', $store)->delete();
-
-                    $inserts = [];
-
-                    foreach ($rows as $row) {
-                        $uid = (string) ($row['uid'] ?? '');
-
-                        if ($uid === '') {
-                            continue;
-                        }
-
-                        $inserts[] = [
-                            'store' => $store,
-                            'uid' => $uid,
-                            'data' => json_encode($row['data'] ?? [], JSON_THROW_ON_ERROR),
-                            'sync_version' => $row['syncVersion'] ?? null,
-                            'last_modified_by' => json_encode($row['lastModifiedBy'] ?? null, JSON_THROW_ON_ERROR),
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ];
+            // table's delete+insert together and live data ends up untouched.
+            DB::transaction(function () use ($archive, $insertOrder, $deleteOrder): void {
+                foreach ($deleteOrder as $table) {
+                    if (Schema::hasTable($table)) {
+                        DB::table($table)->delete();
                     }
+                }
+
+                foreach ($insertOrder as $table) {
+                    if (! Schema::hasTable($table)) {
+                        // Table existed when the backup was taken and has since
+                        // been dropped; skip it rather than fail the whole restore.
+                        continue;
+                    }
+
+                    $inserts = array_values(array_filter($archive['tables'][$table], 'is_array'));
 
                     foreach (array_chunk($inserts, self::INSERT_CHUNK_SIZE) as $chunk) {
-                        DB::table('storage_rows')->insert($chunk);
+                        if ($chunk !== []) {
+                            DB::table($table)->insert($chunk);
+                        }
                     }
-
-                    $counts[$store] = count($inserts);
                 }
             });
         } catch (\Throwable $e) {
             throw new BackupException('Restore failed and was rolled back; live data was not touched: '.$e->getMessage(), 500);
         }
 
+        // Filesystem writes aren't part of the DB transaction — the filesystem
+        // isn't transactional — so they only run after the DB commit succeeds.
+        // Checksums were already verified above, before the DB was touched.
+        foreach ($archive['files'] as $file) {
+            $this->writeRestoredFile($file);
+        }
+
         return [
             'name' => $name,
-            'counts' => $counts,
+            'counts' => $this->storesFromStorageRows($archive['tables']['storage_rows'] ?? []),
+            'tableCounts' => array_map('count', $archive['tables']),
             'restoredAt' => now()->toIso8601String(),
             'verified' => $verification['verified'],
         ];
@@ -243,9 +288,194 @@ class BackupService
     }
 
     /**
+     * Full, schema-driven dump of every application table. Table list comes
+     * from the schema itself (minus EXCLUDED_TABLES), so newly migrated
+     * tables are picked up on the next backup with no code change here.
+     *
      * @return array<string, list<array<string, mixed>>>
      */
-    private function readSnapshot(string $name): array
+    private function dumpTables(): array
+    {
+        $tables = [];
+
+        foreach (Schema::getTableListing(schemaQualified: false) as $table) {
+            if (in_array($table, self::EXCLUDED_TABLES, true)) {
+                continue;
+            }
+
+            $tables[$table] = array_map(
+                static fn (object $row): array => (array) $row,
+                DB::table($table)->get()->all()
+            );
+        }
+
+        return $tables;
+    }
+
+    /**
+     * Dump every file under archive.file_root (uploaded/derived media,
+     * thumbnails, exports on the local disk) into the archive, content
+     * included as base64 so restore can write it back without touching a
+     * live disk mid-backup.
+     *
+     * ponytail: only the local file_root is covered. Files living on a
+     * remote-only disk (S3/Azure/GCS/Dropbox/SFTP/FTP) never touch this
+     * host's filesystem, so there's nothing here to hash or embed — that
+     * needs the provider's own snapshot/versioning, not app-level backup.
+     *
+     * @return list<array{path: string, sha256: string, sizeBytes: int, contentBase64: string}>
+     */
+    private function dumpFiles(): array
+    {
+        $root = (string) config('archive.file_root');
+
+        if (! is_dir($root)) {
+            return [];
+        }
+
+        $files = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $fileInfo) {
+            if (! $fileInfo->isFile()) {
+                continue;
+            }
+
+            $realPath = $fileInfo->getPathname();
+            $relative = ltrim(str_replace('\\', '/', substr($realPath, strlen($root))), '/');
+            $content = (string) file_get_contents($realPath);
+
+            $files[] = [
+                'path' => $relative,
+                'sha256' => hash('sha256', $content),
+                'sizeBytes' => strlen($content),
+                'contentBase64' => base64_encode($content),
+            ];
+        }
+
+        // Deterministic order for a readable manifest and stable tests.
+        usort($files, static fn (array $a, array $b): int => strcmp($a['path'], $b['path']));
+
+        return $files;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows  raw storage_rows rows (store, uid, data, ...)
+     * @return array<string, int>
+     */
+    private function storesFromStorageRows(array $rows): array
+    {
+        $counts = [];
+
+        foreach ($rows as $row) {
+            $store = (string) ($row['store'] ?? '');
+
+            if ($store === '') {
+                continue;
+            }
+
+            $counts[$store] = ($counts[$store] ?? 0) + 1;
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Topologically orders tables so a table referenced by a foreign key
+     * comes before the table that references it (dependency-first, for
+     * inserts; the caller reverses it for deletes). Driven by the schema's
+     * own FK metadata via Schema::getForeignKeys() — not a hardcoded
+     * dependency list — so it keeps working as tables and relationships
+     * change.
+     *
+     * @param  list<string>  $tables
+     * @return list<string>
+     */
+    private function orderByDependency(array $tables): array
+    {
+        $known = array_flip($tables);
+        $dependsOn = [];
+
+        foreach ($tables as $table) {
+            $dependsOn[$table] = [];
+
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+
+            try {
+                foreach (Schema::getForeignKeys($table) as $fk) {
+                    $referenced = $fk['foreign_table'] ?? null;
+
+                    if (is_string($referenced) && $referenced !== $table && isset($known[$referenced])) {
+                        $dependsOn[$table][] = $referenced;
+                    }
+                }
+            } catch (\Throwable) {
+                // Driver couldn't report FKs for this table; treat as dependency-free.
+            }
+        }
+
+        $ordered = [];
+        $done = [];
+        $visiting = [];
+
+        $visit = function (string $table) use (&$visit, &$dependsOn, &$ordered, &$done, &$visiting): void {
+            if (isset($done[$table]) || isset($visiting[$table])) {
+                return; // already placed, or a cycle — best effort, don't loop forever.
+            }
+
+            $visiting[$table] = true;
+
+            foreach ($dependsOn[$table] ?? [] as $dependency) {
+                $visit($dependency);
+            }
+
+            unset($visiting[$table]);
+            $done[$table] = true;
+            $ordered[] = $table;
+        };
+
+        foreach ($tables as $table) {
+            $visit($table);
+        }
+
+        return $ordered;
+    }
+
+    /**
+     * @param  array{path?: mixed, contentBase64?: mixed}  $file
+     */
+    private function writeRestoredFile(array $file): void
+    {
+        $relative = (string) ($file['path'] ?? '');
+
+        if ($relative === '' || str_contains($relative, '..')) {
+            return; // defensive: never write outside file_root.
+        }
+
+        $root = (string) config('archive.file_root');
+        $target = $root.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
+        $dir = dirname($target);
+
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        file_put_contents($target, base64_decode((string) ($file['contentBase64'] ?? ''), true));
+    }
+
+    /**
+     * Reads and validates a backup archive, normalizing both the current
+     * (V1-121) format and the pre-manifest legacy format into the same
+     * {tables, files, manifest} shape so restore()/preview() only need one
+     * code path.
+     *
+     * @return array{tables: array<string, list<array<string, mixed>>>, files: list<array<string, mixed>>, manifest: array<string, mixed>|null}
+     */
+    private function readArchive(string $name): array
     {
         $path = $this->resolvePath($name);
         $content = (string) file_get_contents($path);
@@ -262,26 +492,95 @@ class BackupService
         }
 
         try {
-            $snapshot = json_decode($decoded, true, 512, JSON_THROW_ON_ERROR);
+            $payload = json_decode($decoded, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             throw new BackupException('Backup file does not contain valid JSON.', 422);
         }
 
-        if (! is_array($snapshot)) {
+        if (! is_array($payload)) {
             throw new BackupException('Backup file does not contain a valid snapshot.', 422);
         }
 
-        $stores = [];
+        if (isset($payload['manifest'], $payload['tables']) && is_array($payload['tables'])) {
+            return $this->readV2Archive($payload);
+        }
 
-        foreach ($snapshot as $store => $rows) {
-            if (! is_string($store) || ! is_array($rows)) {
+        return $this->readLegacyArchive($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{tables: array<string, list<array<string, mixed>>>, files: list<array<string, mixed>>, manifest: array<string, mixed>|null}
+     */
+    private function readV2Archive(array $payload): array
+    {
+        $tables = [];
+
+        foreach ($payload['tables'] as $table => $rows) {
+            if (! is_string($table) || ! is_array($rows)) {
                 throw new BackupException('Backup file does not contain a valid snapshot.', 422);
             }
 
-            $stores[$store] = array_values(array_filter($rows, 'is_array'));
+            $tables[$table] = array_values(array_filter($rows, 'is_array'));
         }
 
-        return $stores;
+        $files = is_array($payload['files'] ?? null)
+            ? array_values(array_filter($payload['files'], 'is_array'))
+            : [];
+
+        return [
+            'tables' => $tables,
+            'files' => $files,
+            'manifest' => is_array($payload['manifest']) ? $payload['manifest'] : null,
+        ];
+    }
+
+    /**
+     * Pre-V1-121 format: a flat map of store => rows, covering only
+     * storage_rows. Reshaped into the same {tables, files} structure the
+     * restore path uses, so one restore implementation serves both.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{tables: array{storage_rows: list<array<string, mixed>>}, files: list<empty>, manifest: null}
+     */
+    private function readLegacyArchive(array $payload): array
+    {
+        $now = now();
+        $rows = [];
+
+        foreach ($payload as $store => $storeRows) {
+            if (! is_string($store) || ! is_array($storeRows)) {
+                throw new BackupException('Backup file does not contain a valid snapshot.', 422);
+            }
+
+            foreach ($storeRows as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+
+                $uid = (string) ($row['uid'] ?? '');
+
+                if ($uid === '') {
+                    continue;
+                }
+
+                $rows[] = [
+                    'store' => $store,
+                    'uid' => $uid,
+                    'data' => json_encode($row['data'] ?? [], JSON_THROW_ON_ERROR),
+                    'sync_version' => $row['syncVersion'] ?? null,
+                    'last_modified_by' => json_encode($row['lastModifiedBy'] ?? null, JSON_THROW_ON_ERROR),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        return [
+            'tables' => ['storage_rows' => $rows],
+            'files' => [],
+            'manifest' => null,
+        ];
     }
 
     /**
