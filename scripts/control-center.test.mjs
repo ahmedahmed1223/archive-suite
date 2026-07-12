@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -22,10 +22,36 @@ test("public setup and deployment guidance use only the canonical Control Center
   const controlCenter = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
   assert.doesNotMatch(controlCenter, /docker-compose\.dev\.yml/);
 
-  for (const file of ["README.md", "INSTALL.md", "DEPLOYMENT.md", "docs/control-center.md"]) {
+  for (const file of [
+    "README.md",
+    "INSTALL.md",
+    "DEPLOYMENT.md",
+    "docs/control-center.md",
+    "Setup-Archive.bat",
+    "setup.bat",
+    "setup.sh",
+    "scripts/control-center.mjs",
+    "infra/deploy/setup.sh",
+    "infra/deploy/hostinger-vps.md",
+    "infra/.env.example",
+    "infra/docker-compose.yml",
+  ]) {
     const content = readFileSync(join(ROOT, file), "utf8");
-    assert.match(content, /infra\/docker-compose\.yml/);
-    assert.doesNotMatch(content, /deploy-legacy|docker-compose\.(postgres|lite|dev|intranet)\.yml|PocketBase/i);
+    assert.doesNotMatch(content, /deploy-legacy|PocketBase|archive-server|docker-compose\.postgres\.yml/i);
+  }
+
+  for (const file of ["README.md", "INSTALL.md", "DEPLOYMENT.md", "docs/control-center.md", "infra/deploy/hostinger-vps.md"]) {
+    assert.match(readFileSync(join(ROOT, file), "utf8"), /infra\/docker-compose\.yml/);
+  }
+
+  const deployLauncher = readFileSync(join(ROOT, "infra/deploy/setup.sh"), "utf8");
+  assert.match(deployLauncher, /exec sh "\$ROOT\/setup\.sh" "\$@"/);
+  for (const retiredOverride of [
+    "infra/docker-compose.intranet.yml",
+    "infra/docker-compose.lite.yml",
+    "infra/docker-compose.test.local.yml",
+  ]) {
+    assert.equal(existsSync(join(ROOT, retiredOverride)), false, `${retiredOverride} must not remain a public deployment path`);
   }
 });
 

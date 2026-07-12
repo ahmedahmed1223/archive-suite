@@ -7,7 +7,7 @@
 - `archive-next/` — canonical frontend بواجهة Next.js 16 + TypeScript.
 - `archive-laravel/` — canonical backend/API مبني على Laravel 13.
 
-> الحزم legacy (`archive-app` — Vite SPA، `archive-server` — Node/Prisma server، `archive-core` — مكتبة النواة المشتركة) حُذفت نهائياً بتاريخ 2026-07-12 وهي متاحة فقط عبر تاريخ git.
+> أُزيلت حزم legacy نهائياً بتاريخ 2026-07-12 وتبقى متاحة فقط عبر تاريخ git.
 
 ## نظرة عامة
 
@@ -162,7 +162,7 @@ bash setup.sh deploy               # أو: pnpm setup / pnpm deploy
 - يعتمد المستودع على `pnpm` workspace.
 - استخدام `pnpm-lock.yaml` لضمان اعتمادية قابلة للتكرار.
 - الحزمة الوحيدة في الـ workspace هي `@archive/next`؛ التشارك مع `archive-laravel` يمر عبر عقد `docs/api/archive-contract.openapi.json`.
-- الحزم legacy (`archive-app`، `archive-server`، `archive-core`) حُذفت نهائياً بتاريخ 2026-07-12، وهي متاحة فقط عبر تاريخ git.
+- أُزيلت حزم legacy بتاريخ 2026-07-12 وتبقى متاحة فقط عبر تاريخ git.
 
 ## للمطورين
 
