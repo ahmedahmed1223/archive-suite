@@ -39,7 +39,7 @@
 
 ### الموجة 1 — أمن وبيانات (P0/P1)
 - [x] **V1-101** رفض المدير الافتراضي/الضعيف و`ARCHIVE_SECURE_COOKIES=false` في الإنتاج (حارس Seeder + حارس boot، 12 اختباراً، 439 تمر). (منجز 2026-07-12) **(P0 #1)**
-- [ ] **V1-102** مصفوفة RBAC + Policies لكل endpoint مع `RoleMatrixApiTest`. **(P0 #4)**
+- [x] **V1-102** مصفوفة RBAC + Policies لكل endpoint مع `RoleMatrixApiTest`. (منجز 2026-07-13: أدوار admin/editor/viewer الموجودة أصلاً في عمود `users.role` مُفعَّلة عبر Gate abilities حقيقية (`manage-system`/`manage-content` في `AuthServiceProvider`) و`Controller::requireAdmin()`/`requireEditor()`. الثغرات المُغلَقة: `/records/bulk`+`/records/bulk-delete`+`POST /share`+كتابة/حذف montage-projects كانت مفتوحة لأي مستخدم مصادَق (حتى viewer)؛ نقاط admin/system-control/backup كانت محمية أصلاً بـ`requireAdmin` قبل هذا التغيير. media jobs تبقى معزولة بالملكية (V1-111) بتصميم مقصود. `RoleMatrixApiTest` جديد (14 اختباراً)، الحزمة الكاملة 475 تمر/0 فشل. خارج النطاق موثقاً: tag-nodes/vocabulary/collections/relations/types/automation-rules/ingest/upload-links لا تزال مفتوحة لأي دور مصادَق — يحتاج تمريرة تالية.) **(P0 #4)**
 - [ ] **V1-103** قصر refresh cookie على `/auth/refresh` + Origin/CSRF/throttle + تحديث OpenAPI. **(P0 #5)**
 - [x] **V1-104** share secrets في body/header لا query + rate limiting فعلي. (منجز 2026-07-12: throttle في 732b7c1، X-Share-Password في 9af5b6c)
 - [x] **V1-111** containment/ownership لـmedia jobs ومنع path traversal/arbitrary reads. (منجز 2026-07-12 في 18f7336؛ MediaPathGuard + created_by، 16 اختبار احتواء جديدًا، الحزمة 461 تمر.) **(P0 #2)**
