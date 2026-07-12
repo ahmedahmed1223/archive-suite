@@ -14,6 +14,11 @@ use Symfony\Component\HttpFoundation\Cookie;
 
 class AuthController extends Controller
 {
+    // V1-103: the refresh cookie must only ever be sent to the refresh route
+    // itself — scoping `path` here (instead of `/`) means the browser won't
+    // attach it to every other API call, shrinking the CSRF/XSS blast radius.
+    private const REFRESH_COOKIE_PATH = '/api/v1/auth/refresh';
+
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -43,6 +48,10 @@ class AuthController extends Controller
 
     public function refresh(Request $request): JsonResponse
     {
+        if ($rejected = $this->rejectDisallowedOrigin($request)) {
+            return $rejected;
+        }
+
         $session = $this->sessionFromRefreshCookie($request);
 
         if (! $session) {
@@ -63,7 +72,33 @@ class AuthController extends Controller
             $session->delete();
         }
 
-        return response()->json(['ok' => true])->withoutCookie($this->cookieName());
+        return response()->json(['ok' => true])->withoutCookie($this->cookieName(), self::REFRESH_COOKIE_PATH);
+    }
+
+    /**
+     * V1-103: reject cross-origin refresh attempts. Laravel's api.php routes
+     * are stateless (no CSRF middleware), so a same-site cookie alone isn't
+     * enough defense-in-depth — validate Origin against the same allow-list
+     * already used for CORS (config('archive.security.cors_origins')).
+     * Requests without an Origin header (same-origin navigations, non-browser
+     * clients, curl) are allowed through — SameSite=Strict already blocks the
+     * cross-site browser case that Origin checking targets.
+     */
+    private function rejectDisallowedOrigin(Request $request): ?JsonResponse
+    {
+        $origin = $request->headers->get('Origin');
+
+        if ($origin === null || $origin === '') {
+            return null;
+        }
+
+        $allowed = (array) config('archive.security.cors_origins', []);
+
+        if (in_array($origin, $allowed, true)) {
+            return null;
+        }
+
+        return response()->json(['ok' => false, 'error' => 'Origin not allowed.'], 403);
     }
 
     private function issueSession(User $user, int $status): JsonResponse
@@ -111,7 +146,7 @@ class AuthController extends Controller
             name: $this->cookieName(),
             value: $token,
             minutes: max(1, now()->diffInMinutes($expiresAt)),
-            path: '/',
+            path: self::REFRESH_COOKIE_PATH,
             domain: null,
             secure: (bool) config('archive.auth.secure_cookies'),
             httpOnly: true,

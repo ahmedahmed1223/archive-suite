@@ -113,7 +113,9 @@
         "security": [{ "cookieAuth": [] }],
         "responses": {
           "200": { "$ref": "#/components/responses/AuthSuccess" },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" }
         }
       }
     },
