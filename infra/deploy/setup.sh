@@ -5,4 +5,4 @@
 set -eu
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
-exec sh "$ROOT/setup.sh" "$@"
+exec "$ROOT/setup.sh" "$@"
