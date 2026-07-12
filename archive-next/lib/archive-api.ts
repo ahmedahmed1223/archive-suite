@@ -1101,6 +1101,13 @@ function localizeLoginError(error: string): string {
   return /[؀-ۿ]/.test(error) ? error : GENERIC_LOGIN_ERROR_AR;
 }
 
+// ponytail: only exact-matches known backend strings ("Unauthorized.", "Invalid
+// credentials.") so sentinel checks elsewhere (e.g. response.error === "Forbidden.")
+// keep working; a full raw-message translation layer needs backend error codes first.
+function translateKnownApiError(error: string): string {
+  return AUTH_ERROR_MESSAGES_AR[error] ?? error;
+}
+
 function clampApiLimit(value: number | undefined, fallback: number, max: number) {
   if (!Number.isFinite(value)) {
     return fallback;
@@ -1212,6 +1219,10 @@ export function createArchiveApiClient({
 
     if (!response.ok && payload.ok !== false) {
       return { ok: false, error: `فشل الطلب (رمز ${response.status}). أعد المحاولة أو تواصل مع مسؤول النظام.` };
+    }
+
+    if (payload.ok === false) {
+      return { ...payload, error: translateKnownApiError(payload.error) };
     }
 
     return payload;
