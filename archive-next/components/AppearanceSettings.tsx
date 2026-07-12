@@ -46,7 +46,7 @@ export default function AppearanceSettings() {
         setImportError(null);
         refreshTheme();
       } else {
-        setImportError(result.error || "Unknown error");
+        setImportError(result.error || "خطأ غير معروف أثناء الاستيراد.");
       }
     };
     reader.readAsText(file);
@@ -87,7 +87,7 @@ export default function AppearanceSettings() {
     <div className="appearance-settings">
       {/* Presets */}
       <div className="settings-section">
-        <h3>Theme Presets</h3>
+        <h3>سمات جاهزة</h3>
         <div className="preset-grid">
           {THEME_PRESETS.map((preset) => (
             <button
@@ -104,7 +104,7 @@ export default function AppearanceSettings() {
 
       {/* Export/Import */}
       <div className="settings-section">
-        <h3>Theme Data</h3>
+        <h3>بيانات السمة</h3>
         <div className="button-group">
           <button
             type="button"
@@ -112,7 +112,7 @@ export default function AppearanceSettings() {
             onClick={handleExport}
           >
             <Download size={16} />
-            Export Theme
+            تصدير السمة
           </button>
           <button
             type="button"
@@ -120,7 +120,7 @@ export default function AppearanceSettings() {
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload size={16} />
-            Import Theme
+            استيراد السمة
           </button>
           <input
             ref={fileInputRef}
@@ -133,7 +133,7 @@ export default function AppearanceSettings() {
         {importError && <div className="error-message">{importError}</div>}
         {exportedJson && (
           <details className="export-preview">
-            <summary>Preview exported JSON</summary>
+            <summary>معاينة JSON المُصدَّر</summary>
             <pre>{exportedJson}</pre>
           </details>
         )}
@@ -143,7 +143,7 @@ export default function AppearanceSettings() {
       <div className="settings-section">
         <h3>
           <Clock size={16} />
-          Scheduled Theme Switching
+          تبديل السمة حسب الوقت
         </h3>
         <label className="checkbox-label">
           <input
@@ -151,7 +151,7 @@ export default function AppearanceSettings() {
             checked={settings.schedulingEnabled}
             onChange={handleToggleScheduling}
           />
-          Enable time-based theme switching
+          تفعيل التبديل التلقائي حسب الوقت
         </label>
 
         <div className="rules-list">
@@ -163,13 +163,13 @@ export default function AppearanceSettings() {
                   checked={rule.enabled}
                   onChange={(e) => handleToggleRule(rule.id, e.target.checked)}
                 />
-                {rule.startTime} - {rule.endTime}: {rule.mode}
+                {rule.startTime} - {rule.endTime}: {rule.mode === "dark" ? "داكن" : "فاتح"}
               </label>
               <button
                 type="button"
                 className="btn-icon"
                 onClick={() => handleRemoveRule(rule.id)}
-                title="Delete rule"
+                title="حذف القاعدة"
               >
                 <Trash2 size={16} />
               </button>
@@ -185,7 +185,7 @@ export default function AppearanceSettings() {
               onChange={(e) =>
                 setNewRuleTime({ ...newRuleTime, start: e.target.value })
               }
-              placeholder="Start time"
+              placeholder="وقت البدء"
             />
             <input
               type="time"
@@ -193,14 +193,14 @@ export default function AppearanceSettings() {
               onChange={(e) =>
                 setNewRuleTime({ ...newRuleTime, end: e.target.value })
               }
-              placeholder="End time"
+              placeholder="وقت الانتهاء"
             />
             <select
               value={newRuleMode}
               onChange={(e) => setNewRuleMode(e.target.value as "light" | "dark")}
             >
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
+              <option value="light">فاتح</option>
+              <option value="dark">داكن</option>
             </select>
             <button
               type="button"
@@ -208,7 +208,7 @@ export default function AppearanceSettings() {
               onClick={handleAddRule}
             >
               <Plus size={16} />
-              Add
+              إضافة
             </button>
           </div>
         </div>

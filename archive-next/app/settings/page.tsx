@@ -323,7 +323,11 @@ export default function SettingsPage() {
       });
 
       if (!response.ok) {
-        setDatabaseTestState({ status: "error", message: response.error || "تعذر فحص اتصال قاعدة البيانات." });
+        const detailsText = response.details !== undefined ? ` — ${formatPreviewValue(response.details)}` : "";
+        setDatabaseTestState({
+          status: "error",
+          message: `${response.error || "تعذر فحص اتصال قاعدة البيانات."}${detailsText}`
+        });
         return;
       }
 
@@ -430,7 +434,7 @@ export default function SettingsPage() {
           {
             label: "الكتابة",
             value: canPreviewOdbc ? "مقيدة" : "مغلقة",
-            description: `الجدول المحدد: ${selectedOdbcTable}`,
+            description: `الجدول المحدد: ${odbcTableLabels[selectedOdbcTable]}`,
             icon: <KeyRound size={20} />,
             tone: canPreviewOdbc ? "info" : "default"
           }

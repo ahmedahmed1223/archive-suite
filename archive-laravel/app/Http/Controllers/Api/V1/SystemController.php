@@ -244,7 +244,7 @@ class SystemController extends Controller
         $testContent = 'Archive connection test at ' . now()->toIso8601String();
 
         if ($driver === 'local') {
-            $path = $config['root'] ?? storage_path('app');
+            $path = $config['root'] ?? config('filesystems.disks.local.root');
             if (!is_dir($path)) {
                 throw new \RuntimeException('Local storage path does not exist: ' . $path);
             }
@@ -323,7 +323,7 @@ class SystemController extends Controller
     {
         $driver = $params['driver'];
         $host = $params['host'] ?? 'localhost';
-        $port = $params['port'];
+        $port = $params['port'] ?? null;
         $database = $params['database'];
         $username = $params['username'] ?? '';
         $password = $params['password'] ?? '';
