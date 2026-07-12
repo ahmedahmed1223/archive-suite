@@ -1,14 +1,8 @@
 # Default stack: Masar / مسار on Laravel + Next.js.
-# This is the canonical deployment path after the cutover. Legacy PocketBase,
-# Node, and Vite SPA variants remain in their explicit compose files only.
+# This is the canonical Laravel + Next.js deployment path after the cutover.
 #
-# Usage from infra/:
-#   cp .env.example .env
-#   # edit the CHANGE_ME secrets before production
-#   docker compose up -d --build
-#
-# Local HTTP-only run:
-#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# Deploy through Control Center from the repository root:
+#   pnpm setup
 
 services:
   postgres:

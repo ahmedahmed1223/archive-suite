@@ -3231,3 +3231,5 @@
 - أصبح `pnpm setup` يستدعي `Control Center deploy` مباشرةً، مثل `pnpm deploy`، لمسار Laravel + Next القانوني في `infra/docker-compose.yml`.
 - أُزيل معالج الإعداد القديم وترجمات PocketBase التابعة له واختبارها، وأزيلت مراجع أوامر النشر وCompose القديمة من أدلة التثبيت والنشر وControl Center.
 - أُضيف اختبار Node يمنع عودة مداخل عامة أو وثائق تشير إلى `deploy-legacy` أو ملفات Compose القديمة.
+- عُزلت ملفات override القديمة، وأصبح launcher ودليل Hostinger تحت `infra/deploy/`
+  يوجهان إلى Control Center و`infra/docker-compose.yml` فقط.
