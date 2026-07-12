@@ -76,15 +76,17 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::get('/public/catalog', [PublicCatalogController::class, 'index']);
-    Route::get('/share/{token}', [ShareController::class, 'show']);
-    Route::get('/review-links/{token}', [ReviewLinksController::class, 'show']);
-    Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept']);
+    // Public token endpoints: throttle to blunt token-guessing brute force.
+    Route::get('/share/{token}', [ShareController::class, 'show'])->middleware('throttle:30,1');
+    Route::get('/review-links/{token}', [ReviewLinksController::class, 'show'])->middleware('throttle:30,1');
+    Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept'])->middleware('throttle:30,1');
     // Public validation for external upload-link recipients (no archive session).
-    Route::get('/upload-links/{token}', [UploadLinksController::class, 'show']);
+    Route::get('/upload-links/{token}', [UploadLinksController::class, 'show'])->middleware('throttle:30,1');
 
     // Brute-force guard: contract documents the 429 response on login.
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
-    Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+    // Refresh-token replay/abuse guard — same 429 class as login.
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('throttle:30,1');
 
     // Media streaming: auth only (no per-range audit spam). Range-capable so the
     // browser can stream/seek local archive media over HTTP instead of file://.

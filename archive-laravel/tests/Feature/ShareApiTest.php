@@ -39,6 +39,17 @@ class ShareApiTest extends TestCase
             ->assertJsonPath('records.0.uid', 'item-1');
     }
 
+    public function test_public_share_endpoint_is_rate_limited(): void
+    {
+        // 30 requests/minute; the 31st in the window is rejected with 429,
+        // blunting token-guessing brute force against the public share reader.
+        for ($i = 0; $i < 30; $i++) {
+            $this->getJson('/api/v1/share/nonexistent-token')->assertNotFound();
+        }
+
+        $this->getJson('/api/v1/share/nonexistent-token')->assertStatus(429);
+    }
+
     public function test_it_hides_expired_share_links(): void
     {
         $response = $this->postJson('/api/v1/share', [
