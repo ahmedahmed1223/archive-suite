@@ -60,7 +60,7 @@ from process.env — nothing is broken. The new `.env.example` lists only the
 ## Kept verbatim (operator must set these)
 
 `BACKEND`, `API_PORT`, `NODE_ENV`, `APP_BASE_URL`,
-`DATABASE_URL`, `POCKETBASE_URL`,
+`DATABASE_URL`,
 `JWT_AUTH_SECRET`, `JWT_SHARE_SECRET`, `OAUTH_STATE_SECRET`, `JWT_SECRET`,
 `ADMIN_USERNAME`, `ADMIN_PASSWORD`,
 `FILE_STORE`, `FILE_STORE_DIR`,
