@@ -116,12 +116,21 @@ assertExcludes("infra/k8s/network-policy.yaml", "app: archive-server");
 assertExcludes("infra/k8s/network-policy.yaml", "app: archive-frontend");
 
 for (const file of [
+  "infra/k8s/postgres-statefulset.yaml",
+  "infra/k8s/postgres-service.yaml",
   "infra/k8s/redis-deployment.yaml",
   "infra/k8s/redis-service.yaml",
-  "infra/k8s/whisper-worker-deployment.yaml",
 ]) {
   assert.ok(existsSync(rel(file)), `missing k8s resource: ${file}`);
   assertIncludes("infra/k8s/kustomization.yaml", path.basename(file));
+}
+for (const legacyResource of [
+  "server-deployment.yaml",
+  "whisper-worker-deployment.yaml",
+  "frontend-deployment.yaml",
+]) {
+  assertExcludes("infra/k8s/kustomization.yaml", legacyResource);
+  assert.ok(!existsSync(rel("infra", "k8s", legacyResource)), `legacy deployable should be removed: ${legacyResource}`);
 }
 
 assertIncludes("infra/k8s/configmap.yaml", 'REDIS_URL: "redis://redis:6379"');
@@ -129,8 +138,6 @@ assertIncludes("infra/k8s/configmap.yaml", 'MEDIA_PROCESSOR: "real"');
 assertIncludes("infra/k8s/configmap.yaml", 'WHISPER_MODEL: "large-v3"');
 assertIncludes("infra/k8s/secret.yaml", "APP_KEY:");
 assertIncludes("infra/k8s/redis-service.yaml", "app: redis");
-assertIncludes("infra/k8s/whisper-worker-deployment.yaml", "app: whisper-worker");
-assertIncludes("infra/k8s/whisper-worker-deployment.yaml", "nvidia.com/gpu");
 
 for (const variant of composeVariants) {
   const label = variant.map((file) => `infra/${file}`).join(" + ");

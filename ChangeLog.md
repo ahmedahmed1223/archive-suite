@@ -22,6 +22,8 @@
 
 ## صور إصدار ثابتة وغير قابلة للتعويم (V1-204) — مكتمل 2026-07-13
 
+- إصلاح مراجعة P1: ثُبتت صور pgvector وRedis وCaddy في Compose القانوني بـ`version@sha256` موثقة من registry، وثُبت PostgreSQL وRedis في موارد Kustomize القابلة للتطبيق. حُذفت Deployments القديمة غير القانونية (`archive-server`/`archive-frontend`/worker placeholder) من Kustomize ومن المستودع بدل اختراع digests لصور غير منشورة؛ K8s موثق الآن كمرجع data-services فقط، بينما يبقى Laravel+Next عبر Compose مسار التطبيق القانوني.
+- وُسع فحص immutability ليقرأ كل `image:` في ملفي Compose وموارد `kustomization.yaml` الفعلية ويمنع صورة بلا `version@digest` أو مورد تطبيق legacy. تحقق إصلاح المراجعة: 8/8 focused، Compose config للملفين، وinfra verification؛ كما نجحت مراحل Next الكاملة (typecheck و122 اختبارًا وproduction build وrepo hygiene). آخر Laravel كامل موثق قبل إصلاح manifests نجح 526/526؛ محاولة البوابة بعده قوطعت أثناء Laravel بلا فشل ظاهر، ولم يُعد تشغيلها لأن الإصلاح لا يغير PHP.
 - ثُبتت صور الأساس القانونية في `archive-next/Dockerfile` و`archive-laravel/Dockerfile.worker` بصيغة مقروءة `tag@sha256` لـNode وPHP وComposer. كشف البناء أن pnpm 11.9 يتطلب Node 22.13، فحُدّث عقد toolchain المتسق من 22.12.0 إلى 22.13.0 وثُبت Corepack 0.31.0 وpnpm 11.9.0 داخل صورة Next.
 - أزيل إنتاج `latest` من مساري release والنشر اليدوي. أصبح `release-images.txt` يرفق مرجعي التطبيق بصيغة `image:version@digest`، من دون ادعاء نشر خارجي محلي.
 - أضيف smoke للصورتين بعد دفع tag الإصدار: Next عبر HTTP 200 وLaravel عبر boot حقيقي لـArtisan مع production cookie guard. أضيف Trivy للصورتين بسياسة صريحة: يفشل الإصدار على ثغرات `CRITICAL` القابلة للإصلاح (`ignore-unfixed: true`, `exit-code: 1`). بقي signing ضمن V1-205 والحزمة غير المتصلة ضمن V1-206 بلا تغيير.
