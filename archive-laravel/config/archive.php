@@ -50,4 +50,26 @@ return [
             array_map('trim', explode(',', env('ARCHIVE_CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173')))
         )),
     ],
+
+    // V1-001: scope-lock feature flags for experimental/hidden route groups
+    // (see docs/scope/v1-route-scope.md). Default true in local/testing so
+    // the existing test suite keeps passing without every test opting in;
+    // false everywhere else (staging/production) until explicitly enabled.
+    //
+    // NOTE: use env('APP_ENV') here, not app()->environment() — config files
+    // are loaded by LoadConfiguration::bootstrap() *before* it calls
+    // $app->detectEnvironment(), so $app['env'] isn't bound yet at this
+    // point and app()->environment() throws "Target class [env] does not
+    // exist." (confirmed by booting the kernel directly; see git history
+    // for the reproduction). config/app.php's own 'env' key has the same
+    // constraint and uses env('APP_ENV', ...) for the same reason.
+    'features' => [
+        // Generic external-database (ODBC) read/write proxy. No RBAC gate
+        // (any authenticated user can hit an allowlisted table) and depends
+        // on an external DSN most deployments never configure.
+        'odbc' => (bool) env('ARCHIVE_FEATURE_ODBC', in_array(env('APP_ENV', 'production'), ['local', 'testing'], true)),
+        // MOS/MXF broadcast-industry metadata on archive records. Already
+        // degrades gracefully when unconfigured; niche enough to keep flagged.
+        'broadcast_metadata' => (bool) env('ARCHIVE_FEATURE_BROADCAST_METADATA', in_array(env('APP_ENV', 'production'), ['local', 'testing'], true)),
+    ],
 ];
