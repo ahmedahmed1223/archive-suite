@@ -170,16 +170,16 @@ services:
     volumes:
       - laravel_next_storage:/app/storage/app
     depends_on:
+      laravel-fpm:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      # Liveness of the worker process itself (procps' pgrep, added in
-      # Dockerfile.worker) — queue:monitor checks backlog depth, not
-      # whether this container's worker is even alive, so it's the wrong
-      # tool here.
-      test: ["CMD-SHELL", "pgrep -f 'queue:work' >/dev/null || exit 1"]
+      # Inspect PID 1 directly: the exec-form command makes the real queue
+      # worker PID 1, while [q] prevents the probe text matching itself.
+      test: ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -243,6 +243,8 @@ services:
     ports:
       - "${REVERB_SERVER_PUBLISHED_PORT:-8080}:8080"
     depends_on:
+      laravel-fpm:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
