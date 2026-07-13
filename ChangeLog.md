@@ -3247,3 +3247,9 @@
 - cancel حقيقي: `handle()` و`RealMediaProcessor::guardNotCanceled()` يعيدان قراءة الحالة من القاعدة قبل بدء المعالجة وعند كل مقطع في transcription متعددة المقاطع، فيوقفان العمل عبر `JobCanceledException` الجديد بدل الاكتفاء بعلم DB لا يقرأه أحد.
 - تنقية الأخطاء: رسائل الاستثناءات تُنقّى من أي مسار مطلق (Unix/Windows) قبل تخزينها في `media_jobs.error` المُعاد عبر الـAPI؛ التفاصيل الخام تُسجَّل في السجلات فقط. `failed()` الجديدة تكتب status=failed مرة واحدة بعد استنفاد كل المحاولات، لا عند كل محاولة.
 - 12 اختباراً جديداً (`MediaJobsReliabilityTest`)، الحزمة الكاملة 500 تمر/0 فشل.
+
+# 2026-07-13 — V1-123 retention/pruning للجلسات/audit/jobs/backups + RPO/RTO
+
+- أربعة أوامر artisan جديدة/مُفعَّلة على جدولة يومية (`Schedule::command(...)->daily()` في `routes/console.php`): `sessions:prune` (يحذف `api_sessions` المنتهية الصلاحية — الآلية الفعلية للجلسات، لا جدول `sessions` غير المستخدَم أصلاً)، `audit:prune` (`AUDIT_LOG_RETENTION_DAYS`، افتراضي 365 يوماً)، `media:prune-jobs` (`MEDIA_JOB_RETENTION_DAYS`، افتراضي 90 يوماً، يستثني `queued`/`processing` بالكامل عبر فلترة الحالة)، و`backup:cleanup` (كان موجوداً من V1-121 لكنه لم يكن مجدولاً).
+- قياس RPO/RTO حقيقي عبر `DrReadinessService::rpoRtoReport()` وأمر `dr:report` جديد: RPO = عمر آخر نسخة احتياطية ناجحة بالساعات (من `filemtime` مباشرة)؛ RTO = مدة آخر `backup:dr-drill` فعلي (يقيس `microtime()` حول الاستعادة الفعلية) أو `null` صراحة مع رسالة "غير مُقاس بعد" قبل أول تشغيل، بدل رقم مُخمَّن.
+- 9 اختبارات جديدة (`RetentionPruningTest`)، الحزمة الكاملة 506 تمر/0 فشل.
