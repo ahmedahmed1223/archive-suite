@@ -23,7 +23,7 @@
     "build:next": "pnpm --filter @archive/next run build",
     "verify": "pnpm run verify:laravel-next",
     "verify:laravel-next": "pnpm run verify:reproducibility && pnpm run verify:cutover && pnpm run verify:api-contracts && pnpm run typecheck && pnpm run test:next && pnpm run build:next && pnpm run verify:repo-hygiene && pnpm run verify:laravel",
-    "verify:reproducibility": "node --test scripts/verify-reproducibility.test.mjs scripts/verify-immutable-images.test.mjs",
+    "verify:reproducibility": "node --test scripts/verify-reproducibility.test.mjs scripts/verify-immutable-images.test.mjs scripts/verify-release-supply-chain.test.mjs",
     "verify:cutover": "node scripts/verify-cutover-defaults.mjs",
     "verify:laravel": "node scripts/laravel-docker.mjs test",
     "verify:laravel-next:live": "node scripts/verify-next-laravel-live.mjs",
