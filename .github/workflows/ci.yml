@@ -66,11 +66,98 @@ jobs:
       - name: Run Laravel tests
         run: pnpm run verify:laravel
 
+      - name: Verify release wiring
+        run: node scripts/verify-release-readiness.mjs
+
+  live-integration:
+    name: Live Laravel + Next integration (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @archive/next exec playwright install --with-deps chromium
+
+      # Launches a Laravel container (self-provisions .env from .env.example,
+      # migrates+seeds NextIntegrationSeeder) plus a Next.js production build,
+      # then runs the Playwright integration spec against both. See
+      # scripts/verify-next-laravel-live.mjs.
+      - name: Run live Laravel/Next integration
+        run: pnpm run verify:laravel-next:live
+
+      # ponytail: no dedicated axe/a11y suite exists in archive-next and
+      # @axe-core/playwright is not an installed dependency (checked
+      # archive-next/package.json, 2026-07-13). Deferred rather than adding a
+      # new dependency here -- add @axe-core/playwright + a smoke spec
+      # (login page + home) when a11y coverage is prioritized.
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-live-integration
+          path: |
+            archive-next/playwright-report/
+            archive-next/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  security:
+    name: Security gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Run security baseline
         run: pnpm run security:baseline
 
       - name: Run dependency audit
         run: pnpm run security:audit
 
-      - name: Verify release wiring
-        run: node scripts/verify-release-readiness.mjs
+      # ponytail: continue-on-error because `composer audit` currently fails
+      # only on 2 abandoned-package advisories (league/flysystem-azure-blob-storage,
+      # microsoft/azure-storage-blob) -- zero vulnerability advisories, verified
+      # locally 2026-07-13. Flip to blocking once those packages are replaced.
+      - name: Composer audit (Laravel)
+        continue-on-error: true
+        run: node scripts/laravel-docker.mjs composer audit
