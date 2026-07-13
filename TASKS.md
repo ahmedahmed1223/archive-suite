@@ -32,7 +32,7 @@
 ### الموجة 0 — خط الأساس
 - [x] **V1-000 مراجعة cutover** — حذف الإرث (1700 ملف) وcommit نظيف. (منجز 2026-07-12)
 - [ ] **V1-001 قفل النطاق** — تصنيف كل route (V1/admin/experimental/hidden) + feature flags آمنة.
-- [ ] **V1-002 versioning/legal** — اسم + ترخيص + SemVer + support window + `1.0.0-rc.1`. (لا يوجد `LICENSE` جذري بعد.)
+- [x] **V1-002 versioning/legal** — منجز 2026-07-13: LICENSE جذري MIT (قرار المستخدم)، `package.json` إلى `1.0.0-rc.1` + حقل license، سياسة SemVer ونافذة الدعم في `docs/versioning.md`؛ الإطلاق الرسمي بدفع tag مطابق عبر بوابة `release.yml`.
 - [ ] **V1-003 reproducibility** — clean install + حفظ نسخ Node/pnpm/PHP/Composer وbaseline. (جزئياً: ext-ftp runtime عبر `verify-laravel-runtime.mjs`.)
 - [x] **V1-004 canonical deployment truth** — توحيد Setup/Control Center/compose وإزالة PocketBase/deploy-legacy/docker-compose.postgres. (منجز 2026-07-12 بالدمج؛ setup.bat يعمل.)
 - [x] **V1-005 platform contract** — `infra/platform/compatibility.v1.json` + schema + `platform-contract.mjs` يستهلكها doctor. (منجز 2026-07-12 بالدمج.)
