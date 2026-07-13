@@ -7,6 +7,11 @@ services:
     image: pgvector/pgvector:pg17@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0
     container_name: archive-ln-postgres
     restart: unless-stopped
+    logging: &local-logging
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "5"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-archive}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -25,6 +30,7 @@ services:
     image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     container_name: archive-ln-redis
     restart: unless-stopped
+    logging: *local-logging
     command: ["sh", "-c", "exec redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save \"\" --requirepass \"$${REDIS_PASSWORD}\""]
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
@@ -48,6 +54,7 @@ services:
       dockerfile: Dockerfile.worker
     container_name: archive-ln-laravel
     restart: unless-stopped
+    logging: *local-logging
     command: ["nginx", "-g", "daemon off;"]
     volumes:
       - laravel_next_storage:/app/storage/app
@@ -71,6 +78,7 @@ services:
       dockerfile: Dockerfile.worker
     container_name: archive-ln-laravel-fpm
     restart: unless-stopped
+    logging: *local-logging
     # V1-203: archive:migrate-safe wraps migrate --force with a preflight
     # check, a pre-migration backup, a maintenance window, and --isolated
     # locking so two containers can't double-migrate. See
@@ -79,6 +87,7 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
+      LOG_CHANNEL: stderr_json
       APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
       APP_URL: ${LARAVEL_APP_URL:-http://localhost:8000}
       ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
@@ -134,10 +143,12 @@ services:
       dockerfile: Dockerfile.worker
     container_name: archive-ln-laravel-worker
     restart: unless-stopped
+    logging: *local-logging
     command: ["php", "artisan", "queue:work", "--queue=default", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
+      LOG_CHANNEL: stderr_json
       APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
       ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
       DB_CONNECTION: pgsql
@@ -188,6 +199,7 @@ services:
       context: ./ocr-service
     container_name: archive-ln-ocr
     restart: unless-stopped
+    logging: *local-logging
     environment:
       OCR_LANG: ${OCR_LANG:-ar}
       OCR_USE_GPU: ${OCR_USE_GPU:-false}
@@ -208,10 +220,12 @@ services:
       dockerfile: Dockerfile.worker
     container_name: archive-ln-laravel-reverb
     restart: unless-stopped
+    logging: *local-logging
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
+      LOG_CHANNEL: stderr_json
       APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
       ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
       DB_CONNECTION: pgsql
@@ -268,6 +282,7 @@ services:
         NEXT_PUBLIC_REVERB_SCHEME: ${REVERB_SCHEME:-http}
     container_name: archive-ln-next
     restart: unless-stopped
+    logging: *local-logging
     environment:
       NODE_ENV: production
       PORT: "3000"

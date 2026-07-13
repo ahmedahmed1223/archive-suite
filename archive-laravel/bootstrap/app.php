@@ -3,6 +3,7 @@
 use App\Http\Middleware\AuditArchiveApiRequest;
 use App\Http\Middleware\AuthenticateArchiveApiRequest;
 use App\Http\Middleware\FeatureGate;
+use App\Http\Middleware\CorrelateRequest;
 use App\Support\ApiError;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ['prefix' => 'api/v1', 'middleware' => ['archive.auth']],
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(CorrelateRequest::class);
         $middleware->encryptCookies(except: [
             'va_refresh',
         ]);

@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## المراقبة المحلية وحزمة الدعم (V1-207) — مكتملة 2026-07-13
+
+- أضيف تسجيل JSON إلى Laravel web/worker/Reverb عبر stderr وإلى Caddy access logs، مع middleware يمرر `X-Request-ID` الآمن أو يولد UUID ويضيفه إلى سياق السجل والاستجابة. بقي Next ضمن stdout/stderr الملتقط محليًا من Docker دون telemetry خارجية.
+- طبقت خدمتا Compose القانونيتان Docker `local` logging على جميع الخدمات بحد دوران 10MB وخمسة ملفات. بقيت probes العميقة الحالية لـDB/Redis/storage بلا تكرار، وتغطي فحوص المشغل حالة الخدمات بما فيها worker/Reverb، عمق Redis queue، ضغط القرص، عمر النسخة/RPO، وتكرار الأخطاء.
+- أضيف أمرا Control Center عابرا Windows/Linux: `observability` لفحوص وتنبيهات JSON محلية، و`support-bundle` لحزمة JSON بصلاحية 0600 وallow-list من versions/config/health/logs/manifests. الحزمة محدودة بـ200 سطر و1MB، تنقح الأسرار والاعتمادات والتوكنات والمسارات، ولا تجمع محتوى الأرشيف أو ملفات المستخدم.
+- التحقق: observability+Control Center ‏22/22، HealthApiTest ‏5/5، security baseline، infra gate وCompose config للملفين، ثم `pnpm verify` كاملًا: reproducibility ‏32/32، Next ‏122/122 مع build، وLaravel ‏528 ناجحًا (2473 assertion)، تحذير قديم واحد واختبارا DB integration متخطيان. بيئة التشغيل Node 24 أظهرت تحذير engine لأن العقد القانوني Node 22.13.x.
+
 ## مفتاح الأولويات
 
 | الوسم | المعنى | الأفق الزمني |
