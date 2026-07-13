@@ -53,7 +53,7 @@
 - [x] **V1-201 Control Center** — إصلاح رمز legacy المفقود + إزالة الأوامر القديمة + اختبارات. (منجز 2026-07-12؛ 18 اختباراً.) **(كان P0 #6)**
 - [ ] **V1-202 production runtime** — استبدال PHP dev server + healthchecks عميقة + worker/Reverb readiness. (جزئياً: صورة Laravel حقيقية بـ ext-ftp.)
 - [ ] **V1-203 migration safety** — preflight + prebackup + maintenance/drain + migrate-once + rollback. **(P0 #8)**
-- [ ] **V1-204 immutable images** / **V1-205 supply chain (SBOM/checksums/signing)** / **V1-206 offline bundle**. **(P0 #9)**
+- [ ] **V1-204 immutable images** / **V1-205 supply chain (SBOM/checksums/signing)** / **V1-206 offline bundle**. (جزئياً 2026-07-13 في 40f1011: SBOM+provenance للصورتين + release-images.txt بمراجع digest ثابتة تُرفق بالـ Release. المتبقي: توقيع cosign، offline bundle.) **(P0 #9)**
 - [ ] **V1-207 observability** / **V1-208 cross-platform installer** / **V1-209 Docker profiles** / **V1-210 native Windows** / **V1-211 native Linux** / **V1-212 parity matrix**.
 
 ### الموجة 3 — المنتج وUX
