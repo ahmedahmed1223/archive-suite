@@ -151,10 +151,19 @@ function dockerComposeCmd() {
   if (v1.status === 0) return { bin: "docker-compose", pre: [] };
   return null;
 }
+// V1-209: default is full stack (media + edge) so existing operators see no
+// behavior change — native `profiles:` on ocr/caddy otherwise skips them on a
+// bare `docker compose up`. ARCHIVE_COMPOSE_PROFILES="" (empty string) opts
+// into core-only; a comma list picks specific profiles.
+function composeProfileArgs() {
+  const raw = process.env.ARCHIVE_COMPOSE_PROFILES;
+  const profiles = raw === undefined ? ["media", "edge"] : raw.split(",").map((p) => p.trim()).filter(Boolean);
+  return profiles.flatMap((p) => ["--profile", p]);
+}
 function compose(actionArgs, { inherit = true, input } = {}) {
   const dc = dockerComposeCmd();
   if (!dc) { err("Docker (with Compose) was not found. Install Docker first."); return { status: 127 }; }
-  const args = [...dc.pre, "-f", COMPOSE_FILE, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...actionArgs];
+  const args = [...dc.pre, "-f", COMPOSE_FILE, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...composeProfileArgs(), ...actionArgs];
   return spawnSync(dc.bin, args, { cwd: INFRA_DIR, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input });
 }
 // The laravel service publishes no host port; Next (:3000) rewrites /api/v1/*
