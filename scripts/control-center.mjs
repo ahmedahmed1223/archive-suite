@@ -29,7 +29,7 @@ import { formatPlatformContractReport, loadPlatformContract, selectPlatforms } f
 import { buildOperatorReport, buildReadinessContract, collectOperatorSnapshot, createSupportBundle } from "./observability.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
-const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const ROOT = resolve(__dirname, "..");
 const INFRA_DIR = join(ROOT, "infra");
 const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(INFRA_DIR, ".env");

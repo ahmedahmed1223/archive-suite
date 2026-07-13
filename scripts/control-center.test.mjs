@@ -9,8 +9,8 @@ import { join } from "node:path";
 // its non-interactive subcommand router (no module refactor needed) so the menu,
 // router, and read-only commands are covered end-to-end.
 
-const CLI = new URL("./control-center.mjs", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
-const ROOT = new URL("../", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const CLI = new URL("./control-center.mjs", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+const ROOT = new URL("../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const run = (args, env = {}) =>
   spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8", env: { ...process.env, ...env } });
 
