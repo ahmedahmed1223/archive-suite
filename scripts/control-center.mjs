@@ -396,12 +396,12 @@ function runDiagnostics() {
 }
 async function updateAndRebuild() {
   titleLine("Update & rebuild");
-  warn("Runs: git pull → pnpm install → pnpm build → docker compose up -d --build.");
+  warn("Runs: git pull → pnpm install --frozen-lockfile → pnpm build → docker compose up -d --build.");
   log(`${C.d}(Migrations run automatically inside the laravel container on start.)${C.x}`);
   if (!(await confirm("Proceed?"))) return log("Cancelled.");
   const steps = [
     ["git pull", () => spawnSync("git", ["pull", "--ff-only"], { cwd: ROOT, stdio: "inherit" })],
-    ["pnpm install", () => runPnpm(["install"])],
+    ["pnpm install --frozen-lockfile", () => runPnpm(["install", "--frozen-lockfile"])],
     ["build", () => runPnpm(["run", "build"])],
     ["rebuild containers", () => compose(["up", "-d", "--build"])],
   ];

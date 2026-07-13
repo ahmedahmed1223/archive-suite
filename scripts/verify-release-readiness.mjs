@@ -37,15 +37,15 @@ const rootPkg = json("package.json");
 const nextPkg = json("archive-next/package.json");
 const laravelPkg = json("archive-laravel/package.json");
 const laravelComposer = json("archive-laravel/composer.json");
+const toolchain = json("infra/platform/toolchain.v1.json");
 
-for (const [name, pkg] of Object.entries({ root: rootPkg, next: nextPkg })) {
-  assert.equal(pkg.engines?.node, ">=22.12.0", `${name} package should require Node.js 22.12+`);
-}
+assert.equal(rootPkg.engines?.node, `>=${toolchain.node} <23`, "root package should use the supported Node.js line");
+assert.equal(nextPkg.engines?.node, `>=${toolchain.node}`, "Next package should require the toolchain Node.js baseline");
 
 assertExcludes("INSTALL.md", "Node.js 18+");
 assertIncludes("INSTALL.md", "Node.js 22.12+");
 assertIncludes("DEPLOYMENT.md", "Node.js 22.12+");
-assertIncludes("scripts/node-version.mjs", 'MIN_NODE_VERSION = "22.12.0"');
+assertIncludes("scripts/node-version.mjs", `MIN_NODE_VERSION = "${toolchain.node}"`);
 
 assert.equal(rootPkg.scripts?.dev, "node scripts/dev-laravel-next.mjs", "root dev should run Laravel + Next.js");
 assert.equal(rootPkg.scripts?.build, "pnpm run build:next", "root build should build Next.js");
