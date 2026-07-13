@@ -37,7 +37,8 @@ class SystemControlApiTest extends TestCase
         $this->postJson('/api/v1/system/control/clear-cache', [], $this->adminHeaders())
             ->assertStatus(503)
             ->assertJsonPath('ok', false)
-            ->assertJsonPath('error', 'System control actions are disabled.');
+            ->assertJsonPath('error', 'System control actions are disabled.')
+            ->assertJsonPath('code', 'SYSTEM_CONTROL_DISABLED');
 
         $this->assertSame(
             'rejected',
@@ -54,7 +55,8 @@ class SystemControlApiTest extends TestCase
         config(['archive.system_control_enabled' => true]);
 
         $this->postJson('/api/v1/system/control/clear-cache', [], $this->viewerHeaders())
-            ->assertForbidden();
+            ->assertForbidden()
+            ->assertJsonPath('code', 'FORBIDDEN');
 
         $log = AuditLog::query()->latest('id')->first();
         $this->assertSame('rejected', $log?->outcome);
@@ -92,7 +94,8 @@ class SystemControlApiTest extends TestCase
 
         $this->postJson('/api/v1/system/control/nuke-everything', [], $this->adminHeaders())
             ->assertStatus(422)
-            ->assertJsonPath('ok', false);
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'VALIDATION_FAILED');
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\ApiSession;
+use App\Support\ApiError;
 use App\Support\ApiToken;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +26,7 @@ class AuthenticateArchiveApiRequest
         }
 
         if (! $session) {
-            return response()->json(['ok' => false, 'error' => 'Unauthorized.'], 401);
+            return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
         }
 
         // Only save if this is a real persisted session (not a test session)

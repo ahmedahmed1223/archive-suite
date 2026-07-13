@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\System;
 
 use App\Services\Backup\BackupService;
+use App\Support\ApiError;
 use Illuminate\Support\Facades\Artisan;
 
 /**
@@ -48,7 +49,7 @@ class SystemControlService
     public function run(string $action): array
     {
         if (! $this->isEnabled()) {
-            throw new SystemControlException('System control actions are disabled.', 503);
+            throw new SystemControlException('System control actions are disabled.', 503, apiCode: ApiError::SYSTEM_CONTROL_DISABLED);
         }
 
         if (! array_key_exists($action, self::ACTIONS)) {
