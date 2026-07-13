@@ -22,8 +22,8 @@
 
 > إصلاحات جراحية أُنجزت (تسريب أخطاء 401/الإعدادات، تحقق checksum عند الاستعادة). البنود أدناه تحتاج قراراً تصميمياً لا تعديلاً صغيراً.
 
-- [ ] **عقد رموز أخطاء ثابتة (error codes) بين Laravel والواجهة** — حالياً تُعيد المتحكمات `$e->getMessage()` الخام كـ`error`، و~50 صفحة Next تعرض `response.error` مباشرة. الحل الصحيح: رموز آلية مستقرة (`code`) في مغلف الخطأ لتعرّبها الواجهة بلا كسر فحوص النص الحالية.
-- [ ] **إزالة اقتران sentinel-string الهش** — صفحات `data-center` و`status` و`system/control` تحكم حالتها بمطابقة نص خلفي خام (`"Forbidden."`, `"System control actions are disabled."`)؛ أي تغيير صياغة يكسر بوابات الصلاحية بصمت. يجب التحويل إلى رمز حالة/`code`. (مرتبط بالبند أعلاه.)
+- [x] **عقد رموز أخطاء ثابتة (error codes)** — منجز 2026-07-13 في ba927be: `ApiError` بثمانية رموز مستقرة + renderer مركزي + تعقيم 500 في الإنتاج؛ حقل `error` النصي باقٍ كما هو (إضافة صرفة).
+- [x] **إزالة اقتران sentinel-string الهش** — منجز 2026-07-13 في ba927be: صفحات data-center/status/system-control تفرّع على `code` (المطابقة النصية القديمة fallback انتقالي موسوم للإزالة).
 
 ## خطة الإصدار الأول (V1) — مدمجة من `docs/superpowers/specs/2026-07-12-v1-agent-execution-plan.md`
 
@@ -31,7 +31,7 @@
 
 ### الموجة 0 — خط الأساس
 - [x] **V1-000 مراجعة cutover** — حذف الإرث (1700 ملف) وcommit نظيف. (منجز 2026-07-12)
-- [ ] **V1-001 قفل النطاق** — تصنيف كل route (V1/admin/experimental/hidden) + feature flags آمنة.
+- [x] **V1-001 قفل النطاق** — منجز 2026-07-13 في d071fa2: تصنيف 135 مسارًا (108 v1 / 20 admin / 7 experimental خلف ARCHIVE_FEATURE_* معطلة في الإنتاج / 0 hidden) + `RouteScopeTest` يمنع شحن مسار غير مصنّف + جدول `docs/scope/v1-route-scope.md`. متابعة مفتوحة: إضافة requireAdmin لمسارات ODBC (chip).
 - [x] **V1-002 versioning/legal** — منجز 2026-07-13: LICENSE جذري MIT (قرار المستخدم)، `package.json` إلى `1.0.0-rc.1` + حقل license، سياسة SemVer ونافذة الدعم في `docs/versioning.md`؛ الإطلاق الرسمي بدفع tag مطابق عبر بوابة `release.yml`.
 - [ ] **V1-003 reproducibility** — clean install + حفظ نسخ Node/pnpm/PHP/Composer وbaseline. (جزئياً: ext-ftp runtime عبر `verify-laravel-runtime.mjs`.)
 - [x] **V1-004 canonical deployment truth** — توحيد Setup/Control Center/compose وإزالة PocketBase/deploy-legacy/docker-compose.postgres. (منجز 2026-07-12 بالدمج؛ setup.bat يعمل.)
