@@ -4,6 +4,16 @@ use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schedule;
+
+// V1-123: retention/pruning schedule. Each command is independently safe to
+// run daily — see the command classes in app/Console/Commands for the
+// per-domain retention window and what's excluded (queued/processing media
+// jobs, the most-recent backup regardless of age).
+Schedule::command('sessions:prune')->daily();
+Schedule::command('audit:prune')->daily();
+Schedule::command('media:prune-jobs')->daily();
+Schedule::command('backup:cleanup')->daily();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

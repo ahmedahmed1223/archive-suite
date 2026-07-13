@@ -30,6 +30,11 @@ return [
         'max_age_days' => (int) env('BACKUP_MAX_AGE_DAYS', 90),
     ],
 
+    // V1-123: audit log retention. audit:prune deletes rows older than this;
+    // kept generous by default since audit_logs is the compliance trail, not
+    // operational noise.
+    'audit_log_retention_days' => (int) env('AUDIT_LOG_RETENTION_DAYS', 365),
+
     // Defaults for the security settings panel. The safe subset (rate limit,
     // legacy password upgrade) can be overridden at runtime and persisted; CSP
     // and CORS are deploy-time only (read-only in the API).
