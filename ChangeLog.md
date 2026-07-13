@@ -20,6 +20,14 @@
 
 ---
 
+## تشغيل Laravel الإنتاجي عبر nginx وPHP-FPM (V1-202) — مكتمل 2026-07-13
+
+- استُبدل خادم PHP التطويري أحادي العملية بطبقتين من الصورة القانونية نفسها: `laravel` يشغّل nginx ويحافظ على عقد DNS/المنفذ العام `laravel:8000`، و`laravel-fpm` يشغّل PHP-FPM على 9000 داخل شبكة Compose فقط من دون `ports` أو `expose` للمضيف.
+- أضيف endpoint صحة عميق يفحص قاعدة البيانات وRedis وقراءة/كتابة التخزين المحلي، ويعيد 503 منظماً عند فشل أي اعتماد. أصبح uptime مستقلاً عن Redis كي يبقى endpoint قابلاً للتشخيص عند تعطل cache، وأضيفت اختبارات نجاح وفشل storage وRedis.
+- أضيفت healthchecks ذات معنى لـPHP-FPM والعامل وReverb، وأصبح Next ينتظر صحة Reverb لا مجرد بدء الحاوية. وُحّدت التغييرات في `infra/docker-compose.yml` و`infra/docker-compose.laravel-next.yml` مع إبقاء حل localhost الحالي في الملف الافتراضي (Caddy `DOMAIN=localhost` و`ACME_EMAIL` fallback) دون تغيير.
+- عُدلت صلاحيات `storage` و`bootstrap/cache` إلى `www-data` داخل الصورة؛ كشف smoke الأول أن FPM لا يستطيع كتابة health artifact، ثم أثبتت إعادة البناء نجاح nginx→FPM واستجابة 200 مع `db/redis/storage=true`. أكد `docker port` عدم نشر 9000، ونجح `nginx -t`.
+- التحقق: Compose config للملفين؛ بناء `archive-laravel/Dockerfile.worker`؛ smoke مع حاويتي nginx/FPM مؤقتتين؛ اختبارات الصحة والعقد 5/5 (43 assertion)؛ و`pnpm verify` كاملًا: 19 ملف/122 اختبار Next، Next production build، و526 اختبار Laravel (2468 assertion) بلا فشل. بقي تحذير قديم واحد `mkdir(): File exists` واختبارَا تكامل MySQL/PostgreSQL متخطيين لغياب الإعداد، وهما غير ناجمين عن V1-202.
+
 ## إصلاح بوابة الأمن في Git worktree — مكتمل 2026-07-12
 
 ## توافق المنصات المقيد V1-005a — مكتمل 2026-07-12

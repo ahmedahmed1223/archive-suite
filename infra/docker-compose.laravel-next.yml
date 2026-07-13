@@ -36,20 +36,46 @@ services:
     networks:
       - archive
 
+  # V1-202: split into laravel (nginx, public-facing on :8000 — keeps the
+  # `laravel:8000` DNS contract next.config/healthchecks already rely on)
+  # + laravel-fpm (php-fpm, internal-only on :9000, owns migrate/seed).
+  # Simplest production-grade replacement for the single-threaded `php -S`
+  # dev server without a process supervisor: one image (Dockerfile.worker,
+  # now php:8.4-fpm + nginx), two single-process containers.
   laravel:
     build:
       context: ../archive-laravel
       dockerfile: Dockerfile.worker
     container_name: archive-ln-laravel
     restart: unless-stopped
-    # php -S directly (not `artisan serve`) — ServeCommand strips compose env vars
-    # from the web process; see docker-compose.yml for the full note.
-    # (the framework router resolves the public path from getcwd, hence cd public)
+    command: ["nginx", "-g", "daemon off;"]
+    volumes:
+      - laravel_next_storage:/app/storage/app
+    depends_on:
+      laravel-fpm:
+        condition: service_healthy
+    healthcheck:
+      # Deep check: exercises nginx -> fpm -> DB/redis/storage end to end
+      # (see routes/api.php's /api/v1/health for what "deep" means here).
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - archive
+
+  laravel-fpm:
+    build:
+      context: ../archive-laravel
+      dockerfile: Dockerfile.worker
+    container_name: archive-ln-laravel-fpm
+    restart: unless-stopped
     # V1-203: archive:migrate-safe wraps migrate --force with a preflight
     # check, a pre-migration backup, a maintenance window, and --isolated
     # locking so two containers can't double-migrate. See
     # archive-laravel/app/Console/Commands/MigrateSafe.php.
-    command: ["sh", "-c", "php artisan archive:migrate-safe && php artisan db:seed --force && cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
+    command: ["sh", "-c", "php artisan archive:migrate-safe && php artisan db:seed --force && exec php-fpm"]
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
@@ -91,7 +117,10 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "php artisan about --only=environment >/dev/null || exit 1"]
+      # Shallow on purpose: just "is php-fpm accepting connections". The
+      # deep functional check lives on the public-facing `laravel` (nginx)
+      # healthcheck above so it isn't done twice.
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9000'"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -141,6 +170,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      # Liveness of the worker process itself (procps' pgrep, added in
+      # Dockerfile.worker) — queue:monitor checks backlog depth, not
+      # whether this container's worker is even alive, so it's the wrong
+      # tool here.
+      test: ["CMD-SHELL", "pgrep -f 'queue:work' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
     networks:
       - archive
 
@@ -203,6 +242,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      # TCP-only readiness: Reverb expects a websocket upgrade, so a plain
+      # HTTP probe just returns 4xx noise. bash's /dev/tcp is enough to
+      # prove the listener is up without adding a package.
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
     networks:
       - archive
 
@@ -233,7 +281,7 @@ services:
       laravel:
         condition: service_healthy
       laravel-reverb:
-        condition: service_started
+        condition: service_healthy
     networks:
       - archive
 

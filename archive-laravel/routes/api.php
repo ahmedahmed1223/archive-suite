@@ -51,8 +51,9 @@ use Illuminate\Support\Facades\Storage;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('/health', function (): JsonResponse {
-        // ponytail: uptime measured from the first health call after deploy/cache clear.
-        $bootedAt = Cache::rememberForever('archive:health:booted_at', fn (): int => now()->getTimestamp());
+        // Keep uptime independent of Redis so an unavailable cache can still be
+        // reported as a structured 503 instead of aborting the health request.
+        $bootedAt = defined('LARAVEL_START') ? (float) LARAVEL_START : microtime(true);
 
         // V1-202: deep health for compose healthchecks (laravel-fpm has no
         // other fast way to know redis/storage are actually reachable, not
@@ -91,7 +92,7 @@ Route::prefix('v1')->group(function (): void {
             'ok' => $ok,
             'backend' => 'laravel',
             'engine' => config('database.default'),
-            'uptimeSec' => max(0, now()->getTimestamp() - $bootedAt),
+            'uptimeSec' => max(0, (int) floor(microtime(true) - $bootedAt)),
             'version' => config('app.version', '0.1.0'),
             'authRequired' => true,
             'checks' => $checks,

@@ -18,6 +18,7 @@ class ArchiveApiContractTest extends TestCase
                 ->where('uptimeSec', fn ($value) => is_int($value) && $value >= 0)
                 ->has('version')
                 ->has('authRequired')
+                ->has('checks') // V1-202: deep db/redis/storage health checks
             );
     }
 

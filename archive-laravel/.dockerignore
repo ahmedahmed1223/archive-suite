@@ -18,3 +18,11 @@ storage/framework/views
 database/database.sqlite
 tests
 .phpunit.result.cache
+
+# V1-202: a dev machine running `php artisan` locally regenerates these
+# (gitignored, never committed) — baking a stale one into the image makes
+# `composer dump-autoload && package:discover` boot the app against a
+# manifest that doesn't match the fresh --no-dev vendor/ install, which
+# fails with a cryptic "Target class [env] does not exist". Always rebuild
+# inside the image instead.
+bootstrap/cache/*.php

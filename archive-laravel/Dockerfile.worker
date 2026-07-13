@@ -1,6 +1,18 @@
 # PHP 8.4+ required: composer.lock resolves Symfony 8.x (php >=8.4.1) —
 # the test harness (scripts/laravel-docker.mjs) runs this image to match production.
-FROM php:8.4-cli
+#
+# V1-202: base switched cli -> fpm. The official php:8.4-fpm image bundles
+# BOTH the php-fpm daemon AND the plain `php` CLI binary (verified: same
+# docker-php-ext-* build, just a different SAPI on top), so `php artisan ...`
+# (worker/reverb/migrate/tests) keeps working unchanged while `laravel-fpm`
+# gets a real multi-process web SAPI instead of the single-threaded `php -S`
+# dev server. nginx is layered on top of the same image so one image serves
+# four roles (nginx front, php-fpm, queue worker, reverb) via `command:`
+# overrides in compose — simplest arrangement that avoids a process
+# supervisor (s6/supervisord) since each compose service is already its own
+# single-process container. curl and bash ship in the base image already
+# (used by healthchecks below); nginx/procps are the only additions.
+FROM php:8.4-fpm
 
 # Install system dependencies including ffmpeg + python3/pip for whisper-ctranslate2
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -11,10 +23,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libonig-dev \
     libpq-dev \
     libzip-dev \
+    nginx \
+    procps \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && docker-php-ext-install curl ftp mbstring zip pdo pdo_pgsql pcntl \
+    && rm -f /etc/nginx/sites-enabled/default \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# nginx front config for the laravel-fpm split (see V1-202 note above).
+COPY docker/nginx/laravel.conf /etc/nginx/conf.d/laravel.conf
 
 # CPU-only whisper CLI (WHISPER_BINARY default); matches the flags
 # WhisperTranscriber builds (--model/--language/--output_format/--output_dir/
@@ -36,7 +54,9 @@ COPY . .
 
 # Regenerate autoloader + package manifest now that artisan exists
 RUN composer dump-autoload --optimize --no-interaction \
-    && php artisan package:discover --ansi
+    && php artisan package:discover --ansi \
+    && chown -R www-data:www-data storage bootstrap/cache
 
-# Run queue worker
+# Default CMD (fallback only — every compose service overrides `command:`
+# with its actual role: nginx, php-fpm, queue:work, or reverb:start).
 CMD ["php", "artisan", "queue:work", "--max-jobs=1000", "--max-time=3600"]
