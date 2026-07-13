@@ -35,6 +35,8 @@ final class ApiError
 
     public const SERVER_ERROR = 'SERVER_ERROR';
 
+    public const LAST_ADMIN_PROTECTED = 'LAST_ADMIN_PROTECTED';
+
     /**
      * Build the envelope for a manually-thrown JSON error response. Pass an
      * explicit $code when the status code alone is ambiguous (e.g. a 503

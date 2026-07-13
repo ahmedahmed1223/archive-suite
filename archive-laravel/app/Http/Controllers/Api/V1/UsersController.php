@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserInvitation;
+use App\Support\ApiError;
 use App\Support\ApiToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -81,6 +82,13 @@ class UsersController extends Controller
             return response()->json(['ok' => false, 'error' => 'User not found.'], 404);
         }
 
+        if ($user->role === 'admin' && $validated['role'] !== 'admin' && $this->countAdmins() <= 1) {
+            return response()->json(
+                ApiError::envelope('Cannot demote the last remaining admin.', 422, ApiError::LAST_ADMIN_PROTECTED),
+                422
+            );
+        }
+
         $user->update(['role' => $validated['role']]);
 
         return response()->json(['ok' => true, 'user' => $this->formatUser($user)]);
@@ -99,6 +107,13 @@ class UsersController extends Controller
             return response()->json(['ok' => false, 'error' => 'User not found.'], 404);
         }
 
+        if ($user->role === 'admin' && $this->countAdmins() <= 1) {
+            return response()->json(
+                ApiError::envelope('Cannot remove the last remaining admin.', 422, ApiError::LAST_ADMIN_PROTECTED),
+                422
+            );
+        }
+
         if ($actingUser instanceof User && $actingUser->id === $user->id) {
             return response()->json(['ok' => false, 'error' => 'You cannot remove your own account.'], 422);
         }
@@ -106,6 +121,11 @@ class UsersController extends Controller
         $user->delete();
 
         return response()->json(['ok' => true]);
+    }
+
+    private function countAdmins(): int
+    {
+        return User::query()->where('role', 'admin')->count();
     }
 
     /**
