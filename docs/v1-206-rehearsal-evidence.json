@@ -1,8 +1,13 @@
 {
   "schemaVersion": 1,
-  "project": "archive-suite-v1-206-1783940165566",
-  "version": "v1.0.0-rc.1-v1-206-review",
-  "startedAt": "2026-07-13T10:56:05.566Z",
+  "project": "archive-suite-v1-206-1783940768175",
+  "version": "v1.0.0-rc.1-v1-206-head",
+  "sourceCommit": "8d12732e270fda42f695749bd1ad996a012ef90e",
+  "manifestSha256": "545fc2c2f9f89f2bad2f903e2e3c93976ad8067baa4845ac39c541c67cb04e06",
+  "archiveSha256": "b9f7a82f40adf60d42b69a2bfe6c90c49aced124cb39c7f4d0eb1af166eebc87",
+  "fileCount": 14,
+  "imageCount": 5,
+  "startedAt": "2026-07-13T11:06:08.791Z",
   "pullPolicy": "never",
   "buildDirectives": 0,
   "loadedImages": [
@@ -15,5 +20,10 @@
   "healthy": true,
   "https": true,
   "cleanup": true,
-  "finishedAt": "2026-07-13T10:58:03.650Z"
+  "cleanupAbsence": {
+    "containers": true,
+    "volumes": true,
+    "networks": true
+  },
+  "finishedAt": "2026-07-13T11:07:57.922Z"
 }

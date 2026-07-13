@@ -104,7 +104,7 @@ function rehearsal(dir, evidencePath) {
   const manifestPath = join(dir, "manifest.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const archivePath = join(resolve(dir, ".."), `${basename(dir)}.tar.gz`);
-  const evidence = { schemaVersion: 1, project, version, sourceCommit: manifest.sourceCommit, manifestSha256: sha256(manifestPath), archiveSha256: sha256(archivePath), fileCount: 14, imageCount: 5, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, https: false, cleanup: false, cleanupAbsence: { containers: false, volumes: false, networks: false } };
+  const evidence = { schemaVersion: 1, project, version, sourceCommit: manifest.sourceCommit, manifestSha256: sha256(manifestPath), archiveSha256: null, fileCount: 14, imageCount: 5, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, https: false, cleanup: false, cleanupAbsence: { containers: false, volumes: false, networks: false } };
   rmSync(env, { force: true });
   try {
     run(process.execPath, [join(dir, "generate-env.mjs"), env], { env: { ...process.env, ARCHIVE_VERSION: version } });
@@ -121,6 +121,7 @@ function rehearsal(dir, evidencePath) {
   } finally {
     evidence.cleanupAbsence = cleanupRehearsal({ project, compose, envPath: env, childEnv: { ...process.env, HTTP_PORT: httpPort, HTTPS_PORT: httpsPort } });
     evidence.cleanup = true;
+    evidence.archiveSha256 = sha256(archivePath);
     evidence.finishedAt = new Date().toISOString();
     if (evidencePath) writeFileSync(resolve(evidencePath), `${JSON.stringify(evidence, null, 2)}\n`);
   }
