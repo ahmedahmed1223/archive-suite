@@ -172,7 +172,7 @@ bash setup.sh deploy               # أو: pnpm setup / pnpm deploy
 ## للمطورين
 
 - اعمل في فرع مستقل لكل ميزة أو إصلاح.
-- استخدم `pnpm install` من جذر المشروع.
+- استخدم `pnpm install --frozen-lockfile` من جذر المشروع.
 - شغل `pnpm run verify` قبل فتح أي PR؛ وللتحقق الحي الكامل شغل `pnpm run verify:laravel-next:live`.
 - في بناء Next.js الإنتاجي اضبط `ARCHIVE_API_BASE_URL` وقت البناء، وليس عند التشغيل فقط.
 

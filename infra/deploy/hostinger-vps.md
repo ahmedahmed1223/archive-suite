@@ -31,7 +31,7 @@ sudo ufw --force enable
 ```bash
 git clone https://github.com/ahmedahmed1223/archive-suite.git
 cd archive-suite
-pnpm install
+pnpm install --frozen-lockfile
 pnpm setup
 ```
 
