@@ -6,7 +6,7 @@
 
 services:
   postgres:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg17@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0
     container_name: archive-ln-postgres
     restart: unless-stopped
     environment:
@@ -24,7 +24,7 @@ services:
       - archive
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     container_name: archive-ln-redis
     restart: unless-stopped
     command: ["sh", "-c", "exec redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save \"\" --requirepass \"$${REDIS_PASSWORD}\""]
@@ -293,7 +293,7 @@ services:
       - archive
 
   caddy:
-    image: caddy:2.11-alpine
+    image: caddy:2.11-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
     container_name: archive-caddy
     restart: unless-stopped
     ports:

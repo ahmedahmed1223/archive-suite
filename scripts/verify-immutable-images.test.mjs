@@ -6,6 +6,22 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 
 const dockerfiles = ["archive-next/Dockerfile", "archive-laravel/Dockerfile.worker"];
 const productionWorkflows = [".github/workflows/release.yml", ".github/workflows/docker.yml"];
+const productionCompose = ["infra/docker-compose.yml", "infra/docker-compose.laravel-next.yml"];
+
+function imageLines(contents) {
+  return contents.match(/^\s*image:\s*\S+.*$/gim) ?? [];
+}
+
+function kustomizeResources() {
+  const kustomization = read("infra/k8s/kustomization.yaml");
+  return [...kustomization.matchAll(/^\s{2}-\s+([^\s#]+\.ya?ml)\s*$/gim)].map(([, path]) => `infra/k8s/${path}`);
+}
+
+function assertPinnedImages(path) {
+  for (const line of imageLines(read(path))) {
+    assert.match(line, /\S+:\S+@sha256:[a-f0-9]{64}(?:\s+#.*)?$/i, `${path} must pin ${line.trim()} by version and digest`);
+  }
+}
 
 test("production Dockerfile base images use readable tags pinned by sha256 digest", () => {
   for (const path of dockerfiles) {
@@ -25,6 +41,16 @@ test("production Dockerfile base images use readable tags pinned by sha256 diges
 test("production image publishing never creates or consumes latest tags", () => {
   for (const path of productionWorkflows) {
     assert.doesNotMatch(read(path), /(?:^|[\s"'])[^\s"']+:latest(?:$|[\s"'])/m, `${path} must not use :latest`);
+  }
+});
+
+test("canonical production Compose and deployable Kubernetes resources pin every image", () => {
+  for (const path of [...productionCompose, ...kustomizeResources()]) assertPinnedImages(path);
+});
+
+test("deployable Kubernetes resources do not include legacy application images", () => {
+  for (const path of kustomizeResources()) {
+    assert.doesNotMatch(read(path), /archive-(?:frontend|server|laravel-worker)/, `${path} must not deploy a legacy or unpublished app image`);
   }
 });
 
