@@ -135,6 +135,49 @@ class UsersApiTest extends TestCase
         $this->deleteJson("/api/v1/users/{$adminId}", [], $headers)->assertUnprocessable();
     }
 
+    public function test_cannot_delete_the_last_admin(): void
+    {
+        $headers = $this->adminHeaders();
+        $adminId = User::query()->where('email', 'admin@example.test')->value('id');
+
+        $this->deleteJson("/api/v1/users/{$adminId}", [], $headers)
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 'LAST_ADMIN_PROTECTED');
+
+        $this->assertDatabaseHas('users', ['id' => $adminId]);
+    }
+
+    public function test_cannot_demote_the_last_admin(): void
+    {
+        $headers = $this->adminHeaders();
+        $adminId = User::query()->where('email', 'admin@example.test')->value('id');
+
+        $this->patchJson("/api/v1/users/{$adminId}", ['role' => 'viewer'], $headers)
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 'LAST_ADMIN_PROTECTED');
+
+        $this->assertDatabaseHas('users', ['id' => $adminId, 'role' => 'admin']);
+    }
+
+    public function test_admin_can_demote_self_when_another_admin_exists(): void
+    {
+        $headers = $this->adminHeaders();
+        $adminId = User::query()->where('email', 'admin@example.test')->value('id');
+
+        User::query()->create([
+            'name' => 'Second Admin',
+            'email' => 'admin2@example.test',
+            'password' => Hash::make('secret-password'),
+            'role' => 'admin',
+        ]);
+
+        $this->patchJson("/api/v1/users/{$adminId}", ['role' => 'editor'], $headers)
+            ->assertOk()
+            ->assertJsonPath('user.role', 'editor');
+
+        $this->assertDatabaseHas('users', ['id' => $adminId, 'role' => 'editor']);
+    }
+
     public function test_invitation_can_be_accepted_to_create_a_new_user(): void
     {
         $admin = User::query()->create([
