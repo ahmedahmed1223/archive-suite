@@ -48,6 +48,7 @@
 		header_up X-Real-IP {remote}
 		header_up X-Forwarded-For {remote}
 		header_up X-Forwarded-Proto {scheme}
+		header_up X-Request-ID {http.request.header.X-Request-ID}
 	}
 
 	# Generous request body — bulk imports can be large.
