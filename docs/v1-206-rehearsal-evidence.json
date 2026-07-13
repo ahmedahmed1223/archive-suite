@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "project": "archive-suite-v1-206-1783940165566",
+  "version": "v1.0.0-rc.1-v1-206-review",
+  "startedAt": "2026-07-13T10:56:05.566Z",
+  "pullPolicy": "never",
+  "buildDirectives": 0,
+  "loadedImages": [
+    "next",
+    "laravel",
+    "postgres",
+    "redis",
+    "caddy"
+  ],
+  "healthy": true,
+  "https": true,
+  "cleanup": true,
+  "finishedAt": "2026-07-13T10:58:03.650Z"
+}
