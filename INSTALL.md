@@ -2,7 +2,7 @@
 
 ## المتطلبات
 
-- [Node.js 22.12+](https://nodejs.org)
+- [Node.js 22.13+](https://nodejs.org)
 - [Docker Desktop](https://docs.docker.com/desktop/) (أو Docker Engine + Compose على Linux)
 - لا تحتاج PHP أو Composer محلياً؛ Laravel يعمل عبر Docker في سكربتات الجذر.
 

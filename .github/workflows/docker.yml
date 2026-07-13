@@ -79,9 +79,7 @@ jobs:
           context: .
           file: archive-next/Dockerfile
           push: true
-          tags: |
-            ${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}
-            ${{ env.NEXT_IMAGE }}:latest
+          tags: ${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}
           build-args: |
             ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1
             SENTRY_ENVIRONMENT=production
@@ -93,6 +91,4 @@ jobs:
           context: archive-laravel
           file: archive-laravel/Dockerfile.worker
           push: true
-          tags: |
-            ${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}
-            ${{ env.LARAVEL_IMAGE }}:latest
+          tags: ${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}

@@ -43,8 +43,8 @@ assert.equal(rootPkg.engines?.node, `>=${toolchain.node} <23`, "root package sho
 assert.equal(nextPkg.engines?.node, `>=${toolchain.node}`, "Next package should require the toolchain Node.js baseline");
 
 assertExcludes("INSTALL.md", "Node.js 18+");
-assertIncludes("INSTALL.md", "Node.js 22.12+");
-assertIncludes("DEPLOYMENT.md", "Node.js 22.12+");
+assertIncludes("INSTALL.md", "Node.js 22.13+");
+assertIncludes("DEPLOYMENT.md", "Node.js 22.13+");
 assertIncludes("scripts/node-version.mjs", `MIN_NODE_VERSION = "${toolchain.node}"`);
 
 assert.equal(rootPkg.scripts?.dev, "node scripts/dev-laravel-next.mjs", "root dev should run Laravel + Next.js");

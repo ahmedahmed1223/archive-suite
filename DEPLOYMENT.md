@@ -15,7 +15,7 @@
 ## المتطلبات
 
 - [Docker](https://docs.docker.com/) + Docker Compose v2 (Docker Desktop على Windows، Docker Engine على Linux).
-- [Node.js 22.12+](https://nodejs.org) (لتشغيل المعالج فقط).
+- [Node.js 22.13+](https://nodejs.org) (لتشغيل المعالج فقط).
 - للوضع العام: **نطاق** يشير سجل DNS الخاص به إلى الخادم.
 
 ---

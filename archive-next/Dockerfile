@@ -1,8 +1,10 @@
-FROM node:22.12.0-alpine AS deps
+FROM node:22.13.0-alpine@sha256:f2dc6eea95f787e25f173ba9904c9d0647ab2506178c7b5b7c5a3d02bc4af145 AS deps
 
 WORKDIR /app
 
-RUN corepack enable
+RUN npm install --global corepack@0.31.0 \
+  && corepack enable \
+  && corepack prepare pnpm@11.9.0 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY archive-next/package.json ./archive-next/package.json
@@ -28,7 +30,7 @@ COPY archive-next ./archive-next
 
 RUN pnpm --filter @archive/next run build
 
-FROM node:22.12.0-alpine AS runner
+FROM node:22.13.0-alpine@sha256:f2dc6eea95f787e25f173ba9904c9d0647ab2506178c7b5b7c5a3d02bc4af145 AS runner
 
 WORKDIR /app
 
