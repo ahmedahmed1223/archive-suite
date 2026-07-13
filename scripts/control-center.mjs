@@ -216,7 +216,7 @@ async function localObservabilityCheck() {
   titleLine("Local operator checks");
   const expectedServices = ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "ocr", "laravel-reverb", "next", "caddy"];
   const ps = compose(["ps", "--all", "--format", "json"], { inherit: false });
-  const recent = compose(["logs", "--tail=500", "--no-color"], { inherit: false });
+  const recent = compose(["logs", "--tail=500", "--no-color", "--no-log-prefix", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next", "caddy"], { inherit: false });
   const queue = compose(["exec", "-T", "redis", "sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" LLEN queues:default"], { inherit: false });
   const disk = statfsSync(ROOT);
   const diskUsedPercent = disk.blocks ? Math.round((1 - Number(disk.bavail) / Number(disk.blocks)) * 100) : 0;

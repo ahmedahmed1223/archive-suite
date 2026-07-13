@@ -91,15 +91,18 @@ function parseComposeRecords(result, expected) {
 function countErrorEvents(text, now, windowMinutes) {
   const cutoff = now.getTime() - windowMinutes * 60_000;
   let count = 0;
+  let malformed = false;
   for (const line of String(text || "").split(/\r?\n/).filter(Boolean)) {
+    const payload = line.replace(/^\s*[^|\r\n]+\|\s*/, "");
+    if (!payload.trimStart().startsWith("{")) continue;
     try {
-      const event = JSON.parse(line);
+      const event = JSON.parse(payload);
       const level = String(event.level || event.level_name || "").toLowerCase();
       const timestamp = Date.parse(event.timestamp || event.datetime || event.time || "");
       if (["error", "critical", "alert", "emergency"].includes(level) && Number.isFinite(timestamp) && timestamp >= cutoff && timestamp <= now.getTime()) count++;
-    } catch { /* only structured, timestamped events count */ }
+    } catch { malformed = true; }
   }
-  return count;
+  return { count, malformed };
 }
 
 export function collectOperatorSnapshot({ expectedServices, composePs, redis, logs, diskUsedPercent, backupAgeHours, now = new Date(), errorWindowMinutes = 60 }) {
@@ -109,8 +112,10 @@ export function collectOperatorSnapshot({ expectedServices, composePs, redis, lo
   const queueDepth = redis?.status === 0 && /^\d+$/.test(queueRaw) ? Number(queueRaw) : null;
   if (queueDepth === null) unknown.push("redis");
   let repeatedErrors = null;
-  if (logs?.status === 0) repeatedErrors = countErrorEvents(logs.stdout, now, errorWindowMinutes);
-  else unknown.push("logs");
+  if (logs?.status === 0) {
+    const errors = countErrorEvents(logs.stdout, now, errorWindowMinutes);
+    if (errors.malformed) unknown.push("logs"); else repeatedErrors = errors.count;
+  } else unknown.push("logs");
   return { services: parsed.services, queueDepth, diskUsedPercent, backupAgeHours, repeatedErrors, unknown: [...new Set(unknown)], errorWindowMinutes };
 }
 

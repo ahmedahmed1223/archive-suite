@@ -84,6 +84,16 @@ test("collector rejects malformed compose ps and counts timestamped error events
   assert.equal(valid.repeatedErrors, 2);
 });
 
+test("error collector parses actual Compose service prefixes and fails closed on malformed JSON events", () => {
+  const base = { expectedServices: ["next"], composePs: { status: 0, stdout: '{"Service":"next","State":"running","Health":"healthy"}' }, redis: { status: 0, stdout: "0" }, diskUsedPercent: 1, backupAgeHours: 1, now: new Date("2026-07-13T12:00:00Z") };
+  const prefixed = collectOperatorSnapshot({ ...base, logs: { status: 0, stdout: 'archive-ln-next | {"timestamp":"2026-07-13T11:59:00Z","level":"error","message":"failed"}' } });
+  assert.equal(prefixed.repeatedErrors, 1);
+  assert.equal(prefixed.unknown.includes("logs"), false);
+  const malformed = collectOperatorSnapshot({ ...base, logs: { status: 0, stdout: 'archive-ln-next | {"timestamp":"broken"' } });
+  assert.equal(malformed.repeatedErrors, null);
+  assert.equal(malformed.unknown.includes("logs"), true);
+});
+
 test("collector accepts Docker Compose JSON arrays and marks unhealthy containers down", () => {
   const snapshot = collectOperatorSnapshot({ expectedServices: ["laravel", "laravel-worker"], composePs: { status: 0, stdout: JSON.stringify([{ Service: "laravel", State: "running", Health: "healthy" }, { Service: "laravel-worker", State: "running", Health: "unhealthy" }]) }, redis: { status: 0, stdout: "0" }, logs: { status: 0, stdout: "" }, diskUsedPercent: 1, backupAgeHours: 1 });
   assert.equal(snapshot.services.laravel, "running");
@@ -126,6 +136,7 @@ test("canonical compose and Caddy wire rotation and JSON logs", () => {
   const caddy = readFileSync(new URL("../infra/deploy/Caddyfile", import.meta.url), "utf8");
   assert.match(caddy, /format json/);
   assert.match(caddy, /X-Request-ID/);
+  assert.match(caddy, /log_append request_id \{http\.response\.header\.X-Request-ID\}/);
   const nginx = readFileSync(new URL("../archive-laravel/docker/nginx/laravel.conf", import.meta.url), "utf8");
   assert.match(nginx, /log_format archive_json escape=json/);
   const proxy = readFileSync(new URL("../archive-next/proxy.ts", import.meta.url), "utf8");
@@ -137,5 +148,6 @@ test("canonical compose and Caddy wire rotation and JSON logs", () => {
   assert.match(docs, /200 lines[\s\S]*1 MB/i);
   const control = readFileSync(new URL("./control-center.mjs", import.meta.url), "utf8");
   assert.match(control, /\["ps", "--all", "--format", "json"\]/);
+  assert.match(control, /"logs", "--tail=500", "--no-color", "--no-log-prefix"/);
   assert.match(control, /"laravel-worker"[\s\S]*"laravel-reverb"/);
 });
