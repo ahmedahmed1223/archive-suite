@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { verifyBundle } from "../infra/offline/verify-bundle.mjs";
 
 const root = resolve(new URL("..", import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/, (m) => m.slice(1)));
 const inventory = JSON.parse(readFileSync(join(root, "infra/offline/images.v1.json"), "utf8"));
@@ -17,22 +18,11 @@ const normalizedVersion = (value) => {
   return value;
 };
 
-export function verifyBundle(dir) {
-  const manifestPath = join(dir, "manifest.json");
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  for (const file of manifest.files) {
-    const path = join(dir, file.path);
-    if (!existsSync(path) || statSync(path).size !== file.bytes || sha256(path) !== file.sha256) throw new Error(`bundle verification failed: ${file.path}`);
-  }
-  if (manifest.images.length !== inventory.images.length) throw new Error("bundle image inventory is incomplete");
-  process.stdout.write(`Verified ${manifest.files.length} files and ${manifest.images.length} images.\n`);
-}
-
 function build(version, output) {
   const dir = join(output, `archive-suite-offline-${version}`);
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(join(dir, "images"), { recursive: true });
-  for (const name of ["compose.v1.yml", "generate-env.mjs", "install.sh", "install.ps1", "README.ar.md"]) cpSync(join(root, "infra/offline", name), join(dir, name));
+  for (const name of ["compose.v1.yml", "generate-env.mjs", "verify-bundle.mjs", "images.v1.json", "install.sh", "install.ps1", "README.ar.md"]) cpSync(join(root, "infra/offline", name), join(dir, name));
   cpSync(join(root, "infra/deploy/Caddyfile"), join(dir, "Caddyfile"));
   writeFileSync(join(dir, "VERSION"), `${version}\n`);
   const images = inventory.images.map((image) => {
@@ -65,23 +55,45 @@ function build(version, output) {
   process.stdout.write(`${join(output, archiveName)}\n`);
 }
 
-function rehearsal(dir) {
+function rehearsal(dir, evidencePath) {
   verifyBundle(dir);
   const project = `archive-suite-v1-206-${Date.now()}`;
   const env = join(dir, ".env.rehearsal");
   const version = readFileSync(join(dir, "VERSION"), "utf8").trim();
+  const httpPort = String(18000 + (Date.now() % 1000));
+  const httpsPort = String(19000 + (Date.now() % 1000));
+  const compose = ["compose", "--project-name", project, "--env-file", env, "-f", join(dir, "compose.v1.yml")];
+  const evidence = { schemaVersion: 1, project, version, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, https: false, cleanup: false };
   rmSync(env, { force: true });
-  run(process.execPath, [join(dir, "generate-env.mjs"), env], { env: { ...process.env, ARCHIVE_VERSION: version } });
-  for (const image of inventory.images) run("docker", ["image", "load", "--input", join(dir, "images", `${image.id}.tar`)], { stdio: "ignore" });
-  run("docker", ["compose", "--project-name", project, "--env-file", env, "-f", join(dir, "compose.v1.yml"), "config", "--quiet"]);
-  rmSync(env, { force: true });
-  process.stdout.write(`Offline rehearsal passed with isolated project ${project}; no containers were started.\n`);
+  try {
+    run(process.execPath, [join(dir, "generate-env.mjs"), env], { env: { ...process.env, ARCHIVE_VERSION: version } });
+    for (const image of inventory.images) {
+      run("docker", ["image", "load", "--input", join(dir, "images", `${image.id}.tar`)], { stdio: "ignore" });
+      evidence.loadedImages.push(image.id);
+    }
+    const childEnv = { ...process.env, HTTP_PORT: httpPort, HTTPS_PORT: httpsPort };
+    run("docker", [...compose, "config", "--quiet"], { env: childEnv });
+    run("docker", [...compose, "up", "-d", "--wait", "--wait-timeout", "240"], { env: childEnv });
+    evidence.healthy = true;
+    run("curl", ["--fail", "--silent", "--show-error", "--insecure", `https://localhost:${httpsPort}/`], { stdio: "ignore" });
+    evidence.https = true;
+  } finally {
+    run("docker", [...compose, "down", "--volumes", "--remove-orphans"], { env: { ...process.env, HTTP_PORT: httpPort, HTTPS_PORT: httpsPort } });
+    const containers = run("docker", ["ps", "-a", "--filter", `label=com.docker.compose.project=${project}`, "--quiet"], { capture: true });
+    const volumes = run("docker", ["volume", "ls", "--filter", `label=com.docker.compose.project=${project}`, "--quiet"], { capture: true });
+    if (containers || volumes) throw new Error(`scoped rehearsal resources remain for ${project}`);
+    evidence.cleanup = true;
+    evidence.finishedAt = new Date().toISOString();
+    rmSync(env, { force: true });
+    if (evidencePath) writeFileSync(resolve(evidencePath), `${JSON.stringify(evidence, null, 2)}\n`);
+  }
+  process.stdout.write(`Offline rehearsal passed: ${project}; local load, healthy stack, HTTPS, scoped cleanup.\n`);
 }
 
 if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}` || process.argv[1]?.endsWith("offline-bundle.mjs")) {
   const [command, arg, out = join(root, "output/offline")] = process.argv.slice(2);
   if (command === "build") build(normalizedVersion(arg), resolve(out));
   else if (command === "verify") verifyBundle(resolve(arg));
-  else if (command === "rehearse") rehearsal(resolve(arg));
+  else if (command === "rehearse") rehearsal(resolve(arg), out === join(root, "output/offline") ? undefined : out);
   else throw new Error("Usage: node scripts/offline-bundle.mjs build <version> [output] | verify <bundle-dir> | rehearse <bundle-dir>");
 }

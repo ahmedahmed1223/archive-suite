@@ -232,9 +232,11 @@ jobs:
         shell: bash
         run: |
           offline_bundle="release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}.tar.gz"
-          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_bundle}")
+          offline_asset="$(basename "${offline_bundle}")"
+          cp "${offline_bundle}" "${offline_asset}"
+          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}")
           sha256sum "${artifacts[@]}" > SHA256SUMS
           sha256sum --check SHA256SUMS
           flags=(--generate-notes --title "${GITHUB_REF_NAME}")
           [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]] && flags+=(--prerelease)
-          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_bundle}" SHA256SUMS
+          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}" SHA256SUMS
