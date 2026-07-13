@@ -56,14 +56,14 @@
 - [x] **V1-204 immutable images** — منجز 2026-07-13: صور Node/PHP/Composer الأساسية مثبتة بـ`tag@sha256`، نشر الإصدار لا ينشئ `latest`، و`release-images.txt` يسجل `version@digest`. أضيف فحص static وبناء/smoke للصورتين وTrivy بسياسة فشل للثغرات `CRITICAL` القابلة للإصلاح. **(P0 #9)**
 - [x] **V1-205 supply chain (SBOM/checksums/signing)** — منجز 2026-07-13: يحتفظ الإصدار بـSBOM/provenance attestations المرفقة بالصور، ويصدّر SPDX JSON قابلًا للتنزيل لكل digest قانوني، ويولّد inventories تراخيص إنتاجية لـpnpm وComposer ويفرض allowlist صريحة (رفض forbidden/unknown بلا استثناءات حالية)، ويوقّع digest الصورتين بـCosign keyless/OIDC ثم يتحقق من هوية workflow وissuer قبل إنشاء الإصدار. كل artifact قابل للتنزيل مغطى بـ`SHA256SUMS` مفحوص، والصلاحيات مقيدة لكل job. لا يوجد ادعاء توقيع محلي؛ التوقيع يحدث فقط عند tag داخل GitHub Actions.
 - [x] **V1-206 offline bundle** — منجز 2026-07-13: حزمة Docker air-gapped مُرقّمة وقابلة للتحقق تضم صورتي Next/Laravel وكل صور runtime المثبتة لملف core (pgvector/Redis/Caddy)، مع Compose محلي بلا build/pull، مولد أسرار، مثبتَي Windows/Linux Docker، checksums/manifest، وربط GitHub Release بعد تحقق التوقيعات. نجحت بروفة load وتشغيل/صحة/HTTPS بمشروع وvolumes معزولة ثم تنظيفه بالكامل. لا يوجد ادعاء native، وبقي V1-208+ مفتوحًا.
-- [ ] **V1-207 observability** — التنفيذ واختبارات focused مكتملة، لكن الإغلاق معلّق على real canonical Next+Laravel+Caddy correlation E2E بعد توفر Docker execution؛ لا يُعد harness المحاكي دليل إغلاق.
+- [x] **V1-207 observability** — منجز 2026-07-13 في e643fb4: نُفّذ الـrehearsal القانوني الحقيقي (صور Next+Laravel خلف Caddy TLS) وأثبت المعرّف نفسه (صريح ومولَّد) في response وسجلات Caddy/Next/Laravel — الدليل في `docs/ops/v1-207-correlation-evidence.md`. التشغيل الحقيقي كشف وأصلح علتين: ملكية storage volume لـfpm (chown عند الإقلاع) وDOMAIN المحلي.
 - [ ] **V1-208 cross-platform installer** / **V1-209 Docker profiles** / **V1-210 native Windows** / **V1-211 native Linux** / **V1-212 parity matrix**.
 
 ### الموجة 3 — المنتج وUX
-- [ ] **V1-301 onboarding خادمي** / **V1-302 admin safety (last-admin/self guards)** / **V1-303 responsive+a11y (375/768/1280, axe)** / **V1-304 data correctness (إزالة الحدود الصامتة)** / **V1-305 offline truth** / **V1-306 language/help** / **V1-307 performance**.
+- [ ] **V1-301 onboarding خادمي** / [x] **V1-302 admin safety** (منجز 2026-07-13 في ac7dfcc: منع حذف/تخفيض آخر admin + LAST_ADMIN_PROTECTED، الحزمة 532 تمر) / **V1-303 responsive+a11y (375/768/1280, axe)** / **V1-304 data correctness (إزالة الحدود الصامتة)** / **V1-305 offline truth** / **V1-306 language/help** / **V1-307 performance**.
 
 ### الموجة 4 — CI والتوثيق
-- [ ] **V1-401 CI gates (Next+Laravel+live Playwright+axe)** / **V1-402 security gates** / **V1-403 release-readiness محتوى لا strings** / **V1-404 docs canonical-only** / **V1-405 release notes**.
+- [ ] **V1-401 CI gates (Next+Laravel+live Playwright+axe)** / **V1-402 security gates** / **V1-403 release-readiness محتوى لا strings** / [x] **V1-404 docs canonical-only** (منجز 2026-07-13 في b32a083) / [x] **V1-405 release notes** (منجز 2026-07-13 في b32a083: `docs/release-notes/v1.0.0-rc.1.md`).
 
 ### الموجة 5 — RC وتجربة ميدانية / الموجة 6 — GA
 - [ ] **V1-501..505** Alpha/game-day، rc.1 في 3–5 بيئات، قياس RPO/RTO، تصنيف عيوب pilot، rehearsal نظيف.
