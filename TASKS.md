@@ -63,7 +63,7 @@
 - [ ] **V1-301 onboarding خادمي** / [x] **V1-302 admin safety** (منجز 2026-07-13 في ac7dfcc: منع حذف/تخفيض آخر admin + LAST_ADMIN_PROTECTED، الحزمة 532 تمر) / **V1-303 responsive+a11y (375/768/1280, axe)** / **V1-304 data correctness (إزالة الحدود الصامتة)** / **V1-305 offline truth** / **V1-306 language/help** / **V1-307 performance**.
 
 ### الموجة 4 — CI والتوثيق
-- [ ] **V1-401 CI gates (Next+Laravel+live Playwright+axe)** / **V1-402 security gates** / **V1-403 release-readiness محتوى لا strings** / [x] **V1-404 docs canonical-only** (منجز 2026-07-13 في b32a083) / [x] **V1-405 release notes** (منجز 2026-07-13 في b32a083: `docs/release-notes/v1.0.0-rc.1.md`).
+- [ ] **V1-401 CI gates (Next+Laravel+live Playwright+axe)** / **V1-402 security gates** / [x] **V1-403 release-readiness محتوى لا strings** (منجز 2026-07-13: فحص تماسك الإصدار/الرخصة/بنية release.yml/العقد/P0 المفتوحة/اكتمال env، 8 اختبارات) / [x] **V1-404 docs canonical-only** (منجز 2026-07-13 في b32a083) / [x] **V1-405 release notes** (منجز 2026-07-13 في b32a083: `docs/release-notes/v1.0.0-rc.1.md`).
 
 ### الموجة 5 — RC وتجربة ميدانية / الموجة 6 — GA
 - [ ] **V1-501..505** Alpha/game-day، rc.1 في 3–5 بيئات، قياس RPO/RTO، تصنيف عيوب pilot، rehearsal نظيف.
