@@ -45,21 +45,57 @@ use App\Http\Controllers\Api\V1\UsersController;
 use App\Http\Controllers\Api\V1\VocabularyController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('/health', function (): JsonResponse {
         // ponytail: uptime measured from the first health call after deploy/cache clear.
         $bootedAt = Cache::rememberForever('archive:health:booted_at', fn (): int => now()->getTimestamp());
 
+        // V1-202: deep health for compose healthchecks (laravel-fpm has no
+        // other fast way to know redis/storage are actually reachable, not
+        // just that PHP booted). Each check is wrapped so one failure
+        // doesn't take the others down with it; total cost is a handful of
+        // in-process/local-disk round trips, well under the 1s budget.
+        $checks = ['db' => false, 'redis' => false, 'storage' => false];
+
+        try {
+            DB::select('select 1');
+            $checks['db'] = true;
+        } catch (\Throwable) {
+            // left false
+        }
+
+        try {
+            $key = 'archive:health:check';
+            Cache::put($key, '1', 5);
+            $checks['redis'] = Cache::get($key) === '1';
+        } catch (\Throwable) {
+            // left false
+        }
+
+        try {
+            $file = 'health-check-'.getmypid().'.tmp';
+            Storage::disk('local')->put($file, 'ok');
+            $checks['storage'] = Storage::disk('local')->get($file) === 'ok';
+            Storage::disk('local')->delete($file);
+        } catch (\Throwable) {
+            // left false
+        }
+
+        $ok = ! in_array(false, $checks, true);
+
         return response()->json([
-            'ok' => true,
+            'ok' => $ok,
             'backend' => 'laravel',
             'engine' => config('database.default'),
             'uptimeSec' => max(0, now()->getTimestamp() - $bootedAt),
             'version' => config('app.version', '0.1.0'),
             'authRequired' => true,
-        ]);
+            'checks' => $checks,
+        ], $ok ? 200 : 503);
     });
 
     Route::get('/public/openapi.json', function (): JsonResponse {
@@ -110,8 +146,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/records/{id}/comments', [RecordCommentsController::class, 'index']);
         Route::post('/records/{id}/comments', [RecordCommentsController::class, 'store']);
         Route::get('/records/{id}/history', [RecordHistoryController::class, 'index']);
-        Route::get('/records/{id}/broadcast-metadata', [RecordBroadcastMetadataController::class, 'show']);
-        Route::put('/records/{id}/broadcast-metadata', [RecordBroadcastMetadataController::class, 'update']);
+        // V1-001: niche broadcast (MOS/MXF) integration — experimental, flagged.
+        Route::middleware('archive.feature:broadcast_metadata')->group(function (): void {
+            Route::get('/records/{id}/broadcast-metadata', [RecordBroadcastMetadataController::class, 'show']);
+            Route::put('/records/{id}/broadcast-metadata', [RecordBroadcastMetadataController::class, 'update']);
+        });
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::post('/records/bulk-delete', [RecordsController::class, 'bulkDelete']);
         Route::patch('/record-notes/{id}', [RecordNotesController::class, 'update']);
@@ -213,11 +252,14 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/media/{mediaUid}/review-links', [ReviewLinksController::class, 'store']);
         Route::patch('/review-comments/{id}', [ReviewCommentsController::class, 'update']);
 
-        Route::get('/system/odbc', [SystemController::class, 'odbc']);
-        Route::get('/system/odbc/tables/{table}', [SystemController::class, 'odbcReadTable']);
-        Route::post('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcCreateRow']);
-        Route::patch('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcUpdateRow']);
-        Route::delete('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcDeleteRow']);
+        // V1-001: generic external-database (ODBC) proxy — experimental, flagged.
+        Route::middleware('archive.feature:odbc')->group(function (): void {
+            Route::get('/system/odbc', [SystemController::class, 'odbc']);
+            Route::get('/system/odbc/tables/{table}', [SystemController::class, 'odbcReadTable']);
+            Route::post('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcCreateRow']);
+            Route::patch('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcUpdateRow']);
+            Route::delete('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcDeleteRow']);
+        });
         Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
         Route::post('/system/test-storage', [SystemController::class, 'testStorageConnection']);
