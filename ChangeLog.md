@@ -20,6 +20,14 @@
 
 ---
 
+## حزمة التثبيت دون اتصال (V1-206) — مكتملة 2026-07-13
+
+- أضيفت حمولة إصدار Docker فقط تحت `infra/offline/`: ملف Compose مرقّم يستخدم tags محلية خاصة بالإصدار مع `pull_policy: never` ولا يحتوي `build`، ومخزون صور آلي يغطي Next وLaravel وpgvector وRedis وCaddy المثبتة. لا تشمل الحزمة OCR غير المنشور ضمن صورتي التطبيق القانونيتين، ولا تدّعي مثبتًا native؛ بقي V1-208 وما بعده مفتوحًا.
+- يبني `scripts/offline-bundle.mjs` الحزمة من مراجع تطبيقيّة `image@sha256` متحقق منها وصور runtime المثبتة، ويصدر كل صورة عبر `docker save`، ثم ينشئ `manifest.json` يحصي كل ملف وصورة مع SHA-256 و`SHA256SUMS` مفحوصًا، وأرشيف `tar.gz` مرقّمًا. يرفض مولد البيئة الكتابة فوق ملف موجود، ويولد الأسرار عبر randomness تشفيري ولا يطبع قيمها.
+- أضيف مدخلا تثبيت Windows PowerShell وLinux shell يقومان بالتحقق قبل `docker load` ولا يستدعيان registry، مع دليل عربي موجز للتثبيت والتحقق والترقية/الرجوع والإزالة وروابط الوثائق القانونية. حدّث release workflow لبناء الحزمة فقط بعد Cosign signature verification وإرفاقها في GitHub Release وإدراجها ضمن `SHA256SUMS` الأعلى.
+- أضيفت 6 اختبارات static لتغطية الحمولة والصور ومنع pull/build وتسرب defaults وربط الإصدار. التحقق: reproducibility 25/25، infra config، release-readiness، Next 122/122 وproduction build وrepo hygiene، وLaravel gate (نجح في الإعادة؛ المحاولة الأولى كشفت test-state عابرًا في اختبارات الوسائط غير المعدلة). البيئة المحلية تستخدم Node 24 وأظهرت تحذير engine لأن العقد القانوني Node 22.13.x، دون فشل.
+- بُني artifact فعلي من 5 صور وتحقق من 12 ملفًا/5 صور. حُمّلت archives الخمسة من artifact، ثم شُغّلت الخدمات الثماني عبر مشروع `archive-suite-v1-206-rehearsal` على منافذ معزولة ونجح `compose up -d --wait` وHTTPS المحلي. كشفت الجولة الأولى غياب production secure-cookie guard فأضيف `ARCHIVE_SECURE_COOKIES=true` وأعيد بناء الحزمة؛ بعد النجاح حُذفت حاويات وشبكة وvolumes المشروع ذي labels المطابقة فقط، وتحقق عدم بقاء موارده، دون حذف أي صورة مستخدم. لم يُستخدم firewall أو daemon منفصل؛ عدم الاتصال أثناء التثبيت مثبت بـlocal images و`pull_policy: never` ومنع build/pull static.
+
 ## سلسلة توريد الإصدار (V1-205) — مكتمل 2026-07-13
 
 - أُكمل توقيع digest الصورتين القانونيتين (Next وLaravel) عبر Cosign keyless وGitHub OIDC داخل release workflow، يتبعه تحقق صريح من signature باستخدام هوية ملف workflow الخاصة بالـtag وissuer الرسمي قبل إنشاء GitHub Release. لم يُنشأ توقيع محلي ولم تُضف مفاتيح أو أسرار خاصة.
