@@ -134,11 +134,31 @@ assertIncludes("infra/k8s/whisper-worker-deployment.yaml", "nvidia.com/gpu");
 
 for (const variant of composeVariants) {
   const label = variant.map((file) => `infra/${file}`).join(" + ");
-  runChecked(
+  const rendered = runChecked(
     `docker compose config (${label})`,
     "docker",
-    ["compose", "--env-file", "infra/.env.example", ...variant.flatMap((file) => ["-f", `infra/${file}`]), "config"],
+    ["compose", "--env-file", "infra/.env.example", ...variant.flatMap((file) => ["-f", `infra/${file}`]), "config", "--format", "json"],
     ROOT
+  );
+
+  const config = JSON.parse(rendered.stdout);
+  const worker = config.services?.["laravel-worker"];
+  const reverb = config.services?.["laravel-reverb"];
+
+  assert.deepEqual(
+    worker?.healthcheck?.test,
+    ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"],
+    `${label}: worker healthcheck must inspect PID 1 without matching its own probe`
+  );
+  assert.equal(
+    worker?.depends_on?.["laravel-fpm"]?.condition,
+    "service_healthy",
+    `${label}: worker must wait for migrations/seed and healthy PHP-FPM`
+  );
+  assert.equal(
+    reverb?.depends_on?.["laravel-fpm"]?.condition,
+    "service_healthy",
+    `${label}: Reverb must wait for migrations/seed and healthy PHP-FPM`
   );
 }
 
