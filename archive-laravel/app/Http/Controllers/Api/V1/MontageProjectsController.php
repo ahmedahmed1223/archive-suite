@@ -15,16 +15,22 @@ class MontageProjectsController extends Controller
         $status = $request->query('status', 'draft');
         $limit = (int) ($request->query('limit', 50));
         $limit = min(max($limit, 1), 100);
+        $page = max((int) $request->query('page', 1), 1);
 
-        $projects = MontageProject::query()
+        $paginated = MontageProject::query()
             ->where('status', $status)
             ->orderByDesc('updated_at')
-            ->limit($limit)
-            ->get();
+            ->paginate($limit, ['*'], 'page', $page);
 
         return response()->json([
             'ok' => true,
-            'projects' => $projects->map(fn (MontageProject $p) => $this->payload($p))->values()->toArray(),
+            'projects' => collect($paginated->items())->map(fn (MontageProject $p) => $this->payload($p))->values()->toArray(),
+            'pagination' => [
+                'total' => $paginated->total(),
+                'page' => $paginated->currentPage(),
+                'limit' => $limit,
+                'hasMore' => $paginated->hasMorePages(),
+            ],
         ]);
     }
 

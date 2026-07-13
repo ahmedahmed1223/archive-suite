@@ -435,6 +435,12 @@
             "in": "query",
             "required": false,
             "schema": { "type": "integer", "minimum": 1, "maximum": 200 }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1 }
           }
         ],
         "responses": {
@@ -487,6 +493,12 @@
             "in": "query",
             "required": false,
             "schema": { "type": "string", "enum": ["success", "rejected", "failed"] }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1 }
           }
         ],
         "responses": {
@@ -639,6 +651,12 @@
             "in": "query",
             "required": false,
             "schema": { "type": "integer", "minimum": 1, "maximum": 500 }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1 }
           }
         ],
         "responses": {
@@ -1159,6 +1177,11 @@
             "name": "limit",
             "in": "query",
             "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1 }
           }
         ],
         "responses": {
@@ -1176,7 +1199,8 @@
                         "jobs": {
                           "type": "array",
                           "items": { "$ref": "#/components/schemas/MediaJob" }
-                        }
+                        },
+                        "pagination": { "$ref": "#/components/schemas/PaginationMeta" }
                       }
                     }
                   ]
@@ -3473,6 +3497,16 @@
           "createdAt": { "type": ["string", "null"], "format": "date-time" }
         }
       },
+      "PaginationMeta": {
+        "type": "object",
+        "required": ["total", "page", "limit", "hasMore"],
+        "properties": {
+          "total": { "type": "integer", "description": "Total matching rows across all pages." },
+          "page": { "type": "integer", "minimum": 1 },
+          "limit": { "type": "integer", "minimum": 1 },
+          "hasMore": { "type": "boolean", "description": "True when additional pages exist beyond this one." }
+        }
+      },
       "RecordHistoryResponse": {
         "allOf": [
           { "$ref": "#/components/schemas/OkEnvelope" },
@@ -3483,7 +3517,8 @@
               "entries": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/RecordHistoryEntry" }
-              }
+              },
+              "pagination": { "$ref": "#/components/schemas/PaginationMeta" }
             }
           }
         ]
@@ -3509,7 +3544,8 @@
                   "outcome": { "type": ["string", "null"], "enum": ["success", "rejected", "failed", null] },
                   "limit": { "type": "integer", "minimum": 1, "maximum": 200 }
                 }
-              }
+              },
+              "pagination": { "$ref": "#/components/schemas/PaginationMeta" }
             }
           }
         ]
@@ -3585,7 +3621,8 @@
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/SyncLogEntry" }
               },
-              "summary": { "$ref": "#/components/schemas/SyncSummary" }
+              "summary": { "$ref": "#/components/schemas/SyncSummary" },
+              "pagination": { "$ref": "#/components/schemas/PaginationMeta" }
             }
           }
         ]

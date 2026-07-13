@@ -59,4 +59,36 @@ class SyncApiTest extends TestCase
             ->assertUnauthorized()
             ->assertJsonPath('ok', false);
     }
+
+    public function test_it_signals_more_sync_entries_exist_beyond_the_page_limit(): void
+    {
+        $now = now();
+        $rows = [];
+        for ($i = 0; $i < 4; $i++) {
+            $rows[] = [
+                'store' => 'archive-items',
+                'uid' => "sync-page-{$i}",
+                'data' => json_encode(['uid' => "sync-page-{$i}", 'title' => "Row {$i}"], JSON_THROW_ON_ERROR),
+                'sync_version' => $i === 0 ? null : 1,
+                'last_modified_by' => null,
+                'created_at' => $now,
+                'updated_at' => $now->copy()->addSeconds($i),
+            ];
+        }
+        DB::table('storage_rows')->insert($rows);
+
+        $response = $this->getJson('/api/v1/sync?limit=3', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('pagination.total', 4)
+            ->assertJsonPath('pagination.limit', 3)
+            ->assertJsonPath('pagination.page', 1)
+            ->assertJsonPath('pagination.hasMore', true)
+            // summary reflects the grand total across ALL rows, not just this page
+            ->assertJsonPath('summary.total', 4)
+            ->assertJsonPath('summary.conflicts', 1)
+            ->assertJsonPath('summary.synced', 3);
+
+        $this->assertCount(3, $response->json('entries'));
+    }
 }

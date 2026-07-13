@@ -24,19 +24,31 @@ class RecordHistoryController extends Controller
 
         $validated = $request->validate([
             'limit' => ['nullable', 'integer', 'min:1', 'max:200'],
+            'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $limit = (int) ($validated['limit'] ?? 100);
+        $page = (int) ($validated['page'] ?? 1);
 
-        $entries = DB::table('audit_logs')
+        $paginated = DB::table('audit_logs')
             ->where('resource_id', $recordId)
             ->orderByDesc('created_at')
-            ->limit($limit)
-            ->get()
+            ->paginate($limit, ['*'], 'page', $page);
+
+        $entries = collect($paginated->items())
             ->map(fn (stdClass $row): array => $this->formatEntry($row))
             ->values();
 
-        return response()->json(['ok' => true, 'entries' => $entries]);
+        return response()->json([
+            'ok' => true,
+            'entries' => $entries,
+            'pagination' => [
+                'total' => $paginated->total(),
+                'page' => $paginated->currentPage(),
+                'limit' => $limit,
+                'hasMore' => $paginated->hasMorePages(),
+            ],
+        ]);
     }
 
     private function recordExists(string $id): bool

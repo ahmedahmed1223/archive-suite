@@ -48,4 +48,32 @@ class ActivityApiTest extends TestCase
 
         $this->assertSame(0, DB::table('audit_logs')->count());
     }
+
+    public function test_it_signals_more_activity_exists_beyond_the_page_limit(): void
+    {
+        $now = now();
+        for ($i = 0; $i < 4; $i++) {
+            DB::table('audit_logs')->insert([
+                'action' => 'test.action',
+                'event' => 'test.event',
+                'resource_type' => 'record',
+                'resource_id' => "activity-page-{$i}",
+                'actor_id' => 1,
+                'outcome' => 'success',
+                'status_code' => 200,
+                'created_at' => $now->copy()->addSeconds($i),
+            ]);
+        }
+
+        $response = $this->getJson('/api/v1/activity?limit=3', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('filters.limit', 3)
+            ->assertJsonPath('pagination.total', 4)
+            ->assertJsonPath('pagination.limit', 3)
+            ->assertJsonPath('pagination.page', 1)
+            ->assertJsonPath('pagination.hasMore', true);
+
+        $this->assertCount(3, $response->json('entries'));
+    }
 }
