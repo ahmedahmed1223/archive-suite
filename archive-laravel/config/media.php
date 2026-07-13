@@ -18,6 +18,10 @@ return [
     // duplicate dispatch() for the same media_jobs.id while one is still
     // queued/running is dropped instead of double-processed.
     'job_unique_for_seconds' => (int) env('MEDIA_JOB_UNIQUE_FOR_SECONDS', 3600),
+    // V1-123: media:prune-jobs deletes terminal (completed/failed/canceled)
+    // media_jobs rows once completed_at is older than this. queued/processing
+    // rows are never touched regardless of age.
+    'job_retention_days' => (int) env('MEDIA_JOB_RETENTION_DAYS', 90),
 
     // Base URL of the ocr-service microservice (infra/ocr-service);
     // POST {base}/ocr, multipart file upload, returns { text, lines, lang }.

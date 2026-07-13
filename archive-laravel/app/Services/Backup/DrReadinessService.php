@@ -24,7 +24,7 @@ class DrReadinessService
     }
 
     /**
-     * @return array{lastBackupAt: string|null, lastBackupName: string|null, lastRestoreTestAt: string|null, lastRestoreTestOk: bool|null}
+     * @return array{lastBackupAt: string|null, lastBackupName: string|null, lastRestoreTestAt: string|null, lastRestoreTestOk: bool|null, rpoHours: float|null}
      */
     public function probe(): array
     {
@@ -38,7 +38,46 @@ class DrReadinessService
             'lastBackupName' => $latest['name'] ?? null,
             'lastRestoreTestAt' => $marker['at'] ?? null,
             'lastRestoreTestOk' => $marker['ok'] ?? null,
+            'rpoHours' => $this->rpoHours($latest['createdAt'] ?? null),
         ];
+    }
+
+    /**
+     * V1-123: RPO/RTO in one place. RPO is measured directly (age of the
+     * most recent backup — "if we lost data now, we'd lose up to this much").
+     * RTO comes from the last DR drill's actual restore duration when one has
+     * run; otherwise it's explicitly reported as not-yet-measured rather than
+     * a made-up number.
+     *
+     * @return array{rpoHours: float|null, lastBackupAt: string|null, rtoSeconds: float|null, rtoMeasuredAt: string|null, rtoSource: string}
+     */
+    public function rpoRtoReport(): array
+    {
+        $backups = $this->backups->list();
+        $latest = $backups[0] ?? null;
+        $drill = $this->drillStatus();
+
+        $rtoSeconds = $drill['durationSeconds'] ?? null;
+
+        return [
+            'rpoHours' => $this->rpoHours($latest['createdAt'] ?? null),
+            'lastBackupAt' => $latest['createdAt'] ?? null,
+            'rtoSeconds' => is_numeric($rtoSeconds) ? (float) $rtoSeconds : null,
+            'rtoMeasuredAt' => $drill['drillAt'] ?? null,
+            'rtoSource' => $rtoSeconds !== null ? 'last DR drill (backup:dr-drill)' : 'not yet measured — run backup:dr-drill',
+        ];
+    }
+
+    private function rpoHours(?string $lastBackupAt): ?float
+    {
+        if (! is_string($lastBackupAt) || $lastBackupAt === '') {
+            return null;
+        }
+
+        // RPO exposure: age of the most recent successful backup, i.e. how
+        // much data we'd lose right now if we lost the live DB. No backup
+        // yet is "unbounded" (null), never zero.
+        return round(now()->diffInMinutes(\Carbon\Carbon::parse($lastBackupAt), true) / 60, 2);
     }
 
     public function recordRestoreTest(bool $ok): void
@@ -53,11 +92,15 @@ class DrReadinessService
 
     /**
      * Run a DR drill: restore latest backup to a temp location and report pass/fail.
+     * V1-123: also times the restore — durationSeconds becomes the measured
+     * RTO surfaced by rpoRtoReport()/dr:report, instead of a guessed number.
      *
-     * @return array{status: string, message: string, latestBackupName: string|null, drillAt: string, passed: bool}
+     * @return array{status: string, message: string, latestBackupName: string|null, drillAt: string, passed: bool, durationSeconds: float}
      */
     public function runDrDrill(BackupService $backups): array
     {
+        $startedAt = microtime(true);
+
         $backupList = $backups->list();
         $latest = $backupList[0] ?? null;
 
@@ -68,6 +111,7 @@ class DrReadinessService
                 'latestBackupName' => null,
                 'drillAt' => now()->toIso8601String(),
                 'passed' => false,
+                'durationSeconds' => round(microtime(true) - $startedAt, 3),
             ];
             $this->recordDrillStatus($status);
 
@@ -95,6 +139,7 @@ class DrReadinessService
                 'latestBackupName' => $latest['name'],
                 'drillAt' => now()->toIso8601String(),
                 'passed' => $passed,
+                'durationSeconds' => round(microtime(true) - $startedAt, 3),
             ];
         } catch (\Exception $e) {
             // Restore original state and mark as failed
@@ -106,6 +151,7 @@ class DrReadinessService
                 'latestBackupName' => $latest['name'] ?? null,
                 'drillAt' => now()->toIso8601String(),
                 'passed' => false,
+                'durationSeconds' => round(microtime(true) - $startedAt, 3),
             ];
         }
 
