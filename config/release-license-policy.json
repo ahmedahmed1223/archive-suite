@@ -1,4 +1,5 @@
 {
+  "expressionSemantics": "An OR expression is accepted when at least one complete alternative is allowed; an AND expression is accepted only when all required terms are allowed. Parentheses are preserved. Malformed, forbidden, and unknown required terms fail closed.",
   "allowed": [
     "0BSD", "AFL-2.1", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "BlueOak-1.0.0",
     "CC-BY-3.0", "CC-BY-4.0", "CC0-1.0", "ISC", "LGPL-3.0-or-later", "MIT", "MPL-2.0", "Python-2.0", "Unlicense", "WTFPL", "Zlib"

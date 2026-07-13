@@ -35,6 +35,7 @@ test("release inventories and enforces licenses for pnpm and Composer", () => {
   assert.ok(policy.allowed.length > 0);
   assert.ok(policy.forbidden.length > 0);
   assert.deepEqual(policy.exceptions, []);
+  assert.match(policy.expressionSemantics, /OR.+alternative.+AND.+all/i);
 });
 
 test("release checksums every downloadable artifact and attaches them together", () => {

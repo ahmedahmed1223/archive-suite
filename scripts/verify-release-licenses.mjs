@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { evaluateLicenseExpression } from "./release-license-policy.mjs";
 
 const [, , pnpmPath, composerPath, policyPath = "config/release-license-policy.json"] = process.argv;
 if (!pnpmPath || !composerPath) throw new Error("usage: verify-release-licenses.mjs <pnpm.json> <composer.json> [policy.json]");
@@ -11,14 +12,10 @@ const exceptions = new Set(policy.exceptions.map(({ package: name, license }) =>
 const failures = [];
 
 function check(name, expression) {
-  const alternatives = String(expression ?? "UNKNOWN").replaceAll(/[()]/g, "").split(/\s+OR\s+/i);
-  const acceptable = alternatives.some((alternative) =>
-    alternative.split(/\s+AND\s+/i).map((id) => id.trim()).every((license) => allowed.has(license) || exceptions.has(`${name}:${license}`)),
-  );
-  if (acceptable) return;
-  const ids = alternatives.flatMap((alternative) => alternative.split(/\s+AND\s+/i).map((id) => id.trim()));
-  const blocked = ids.filter((license) => forbidden.has(license));
-  failures.push(blocked.length ? `${name}: forbidden license ${blocked.join(", ")}` : `${name}: unknown/unapproved license ${ids.join(", ")}`);
+  const result = evaluateLicenseExpression(name, expression, { allowed, forbidden, exceptions });
+  if (result.accepted) return;
+  const details = result.rejected.map(({ kind, license }) => `${kind} license ${license}`).join(", ");
+  failures.push(`${name}: ${details}`);
 }
 
 const pnpm = load(pnpmPath);
