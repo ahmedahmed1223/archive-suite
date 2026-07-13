@@ -6,6 +6,19 @@ return [
     'transcription_binary' => env('TRANSCRIPTION_BINARY', 'transcribe'),
     'processor' => env('MEDIA_PROCESSOR', 'fake'), // 'fake' or 'real'
 
+    // ProcessMediaWorkflow queue behaviour (V1-113). Timeout is generous
+    // because transcription of long recordings can legitimately take
+    // several minutes; tries+backoff only help with transient failures
+    // (disk hiccup, OCR service blip) — a deterministic failure (bad file,
+    // missing binary) will fail identically on every attempt.
+    'job_timeout_seconds' => (int) env('MEDIA_JOB_TIMEOUT_SECONDS', 900),
+    'job_tries' => (int) env('MEDIA_JOB_TRIES', 3),
+    'job_backoff_seconds' => [30, 120, 300],
+    // How long a dispatched job's uniqueId lock is held (ShouldBeUnique) so a
+    // duplicate dispatch() for the same media_jobs.id while one is still
+    // queued/running is dropped instead of double-processed.
+    'job_unique_for_seconds' => (int) env('MEDIA_JOB_UNIQUE_FOR_SECONDS', 3600),
+
     // Base URL of the ocr-service microservice (infra/ocr-service);
     // POST {base}/ocr, multipart file upload, returns { text, lines, lang }.
     // Port 8788 matches main.py's PORT default / the service's Dockerfile EXPOSE.

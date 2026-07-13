@@ -2,6 +2,7 @@
 
 namespace App\Services\Media;
 
+use App\Exceptions\JobCanceledException;
 use App\Models\MediaJob;
 
 class RealMediaProcessor implements MediaProcessor
@@ -28,6 +29,8 @@ class RealMediaProcessor implements MediaProcessor
      */
     public function process(MediaJob $job): array
     {
+        $this->guardNotCanceled($job);
+
         return match ($job->operation) {
             'thumbnail' => $this->processThumbnail($job),
             'transcode' => $this->processTranscode($job),
@@ -170,6 +173,12 @@ class RealMediaProcessor implements MediaProcessor
         $allArtifacts = [];
 
         foreach ($segments as $index => $segment) {
+            // Real mid-job cancel checkpoint: a long transcription is the
+            // only operation here with a natural pause point between
+            // steps. Single-shot ffmpeg/OCR calls have no such checkpoint —
+            // killing an in-flight subprocess is out of scope (V1-113).
+            $this->guardNotCanceled($job);
+
             $segmentPercent = 15 + (int) (($index / $totalSegments) * 70);
             $job->update([
                 'progress_stage' => "transcribing_segment_{$index}_{$totalSegments}",
@@ -561,6 +570,25 @@ class RealMediaProcessor implements MediaProcessor
     private function clampFloat(mixed $value, float $min, float $max): float
     {
         return max($min, min((float) $value, $max));
+    }
+
+    /**
+     * Re-reads the job's persisted status and stops processing if it was
+     * canceled via the cancel API. No-ops for unsaved/in-memory jobs (unit
+     * tests that construct a MediaJob without persisting it) since there is
+     * nothing in the database to have been canceled.
+     */
+    private function guardNotCanceled(MediaJob $job): void
+    {
+        if (! $job->exists) {
+            return;
+        }
+
+        $status = MediaJob::query()->whereKey($job->getKey())->value('status');
+
+        if ($status === 'canceled') {
+            throw new JobCanceledException('Media job was canceled before completion.');
+        }
     }
 
     private function truthy(mixed $value): bool
