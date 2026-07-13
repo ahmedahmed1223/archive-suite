@@ -50,7 +50,11 @@ services:
     # which env vars reach the real web process, silently dropping DB_*/ADMIN_*
     # from compose. Direct php -S inherits the full container environment.
     # (the framework router resolves the public path from getcwd, hence cd public)
-    command: ["sh", "-c", "php artisan migrate --force && php artisan db:seed --force && cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
+    # V1-203: archive:migrate-safe wraps migrate --force with a preflight
+    # check, a pre-migration backup, a maintenance window, and --isolated
+    # locking so two containers can't double-migrate. See
+    # archive-laravel/app/Console/Commands/MigrateSafe.php.
+    command: ["sh", "-c", "php artisan archive:migrate-safe && php artisan db:seed --force && cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
     environment:
       APP_ENV: production
       APP_DEBUG: "false"

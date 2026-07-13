@@ -30,6 +30,10 @@ return [
         'max_age_days' => (int) env('BACKUP_MAX_AGE_DAYS', 90),
     ],
 
+    // V1-203: optional bypass secret for `php artisan down` during
+    // archive:migrate-safe. Unset means no secret URL is issued.
+    'migration_maintenance_secret' => env('ARCHIVE_MIGRATION_SECRET'),
+
     // V1-123: audit log retention. audit:prune deletes rows older than this;
     // kept generous by default since audit_logs is the compliance trail, not
     // operational noise.
