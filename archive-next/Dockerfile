@@ -1,4 +1,4 @@
-FROM node:22-alpine AS deps
+FROM node:22.12.0-alpine AS deps
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ COPY archive-next ./archive-next
 
 RUN pnpm --filter @archive/next run build
 
-FROM node:22-alpine AS runner
+FROM node:22.12.0-alpine AS runner
 
 WORKDIR /app
 
