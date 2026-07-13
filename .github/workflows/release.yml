@@ -148,6 +148,17 @@ jobs:
           cosign verify --certificate-identity "${identity}" --certificate-oidc-issuer "${issuer}" "${NEXT_IMAGE}@${{ steps.push_next.outputs.digest }}"
           cosign verify --certificate-identity "${identity}" --certificate-oidc-issuer "${issuer}" "${LARAVEL_IMAGE}@${{ steps.push_laravel.outputs.digest }}"
 
+      # Air-gapped artifact is produced only from the two signature-verified
+      # application digests plus the pinned core runtime images.
+      - name: Build offline bundle
+        shell: bash
+        env:
+          NEXT_IMAGE: "${{ env.NEXT_IMAGE }}@${{ steps.push_next.outputs.digest }}"
+          LARAVEL_IMAGE: "${{ env.LARAVEL_IMAGE }}@${{ steps.push_laravel.outputs.digest }}"
+        run: |
+          node scripts/offline-bundle.mjs build "${{ steps.meta.outputs.version }}" release-offline
+          node scripts/offline-bundle.mjs verify "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}"
+
       - name: Export Next image SBOM
         uses: anchore/sbom-action@v0
         with:
@@ -220,9 +231,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json)
+          offline_bundle="release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}.tar.gz"
+          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_bundle}")
           sha256sum "${artifacts[@]}" > SHA256SUMS
           sha256sum --check SHA256SUMS
           flags=(--generate-notes --title "${GITHUB_REF_NAME}")
           [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]] && flags+=(--prerelease)
-          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json SHA256SUMS
+          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_bundle}" SHA256SUMS
