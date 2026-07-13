@@ -326,10 +326,12 @@ function migrateStatus() {
   return compose(["exec", "-T", "laravel", "php", "artisan", "migrate:status"]).status ?? 1;
 }
 async function migrateDeploy() {
-  titleLine("Apply pending migrations (php artisan migrate --force)");
+  titleLine("Apply pending migrations (php artisan archive:migrate-safe)");
+  log("Preflight-checked: backs up the database first, runs in a maintenance window, and exits cleanly if nothing is pending.");
   if (!(await confirm("Apply all pending migrations to the configured database?"))) { log("Cancelled."); return 0; }
-  const r = compose(["exec", "-T", "laravel", "php", "artisan", "migrate", "--force"]);
+  const r = compose(["exec", "-T", "laravel", "php", "artisan", "archive:migrate-safe"]);
   if (r.status === 0) ok("Migrations applied.");
+  else err("Migration failed — application left in maintenance mode. See command output above for rollback steps.");
   return r.status ?? 1;
 }
 async function seedDemoData() {
@@ -831,7 +833,7 @@ const COMMANDS = {
     console.log(`  ${C.c}change-admin-password${C.x}  Update ADMIN_EMAIL/PASSWORD and apply to Laravel when running`);
     console.log(`  ${C.c}rotate-secrets${C.x}   Regenerate REVERB_APP_KEY/SECRET (then re-deploy)`);
     console.log(`  ${C.c}migrate-status${C.x}   php artisan migrate:status (in the laravel container)`);
-    console.log(`  ${C.c}migrate${C.x}          php artisan migrate --force (in the laravel container)`);
+    console.log(`  ${C.c}migrate${C.x}          php artisan archive:migrate-safe (backup + maintenance window, in the laravel container)`);
     console.log(`  ${C.c}seed-demo${C.x}        Seed demo archive data (types, sections, classifications)`);
     console.log(`  ${C.c}backup${C.x}           pg_dump the running database`);
     console.log(`  ${C.c}backups${C.x}          List available backups`);

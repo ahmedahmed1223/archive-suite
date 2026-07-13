@@ -57,3 +57,43 @@ with `Database\Seeders\NextIntegrationSeeder`, run Laravel and Next.js, then run
 ```powershell
 pnpm run verify:laravel-next:live
 ```
+
+## Migration safety (V1-203)
+
+The `laravel` compose service (both `infra/docker-compose.yml` and
+`infra/docker-compose.laravel-next.yml`) runs
+`php artisan archive:migrate-safe` on every container start instead of a raw
+`migrate --force`. `scripts/control-center.mjs migrate` calls the same
+command. Source: `app/Console/Commands/MigrateSafe.php`.
+
+What it does, in order:
+
+1. **Preflight** — checks `migrate:status`-equivalent pending-migration list.
+   If nothing is pending, exits `0` immediately: no backup, no downtime.
+2. **Backup** — takes a full snapshot via `BackupService` before touching the
+   schema, unless `--skip-backup` is passed or the database has no tables yet
+   (first boot on an empty volume auto-skips and logs why).
+3. **Maintenance** — only once pending migrations are confirmed, runs
+   `php artisan down` (optionally with `ARCHIVE_MIGRATION_SECRET` as the
+   bypass secret).
+4. **Migrate-once** — runs `migrate --force --isolated` so two containers
+   starting concurrently can't both apply migrations. Falls back to a plain
+   `--force` run with a warning if the active cache store doesn't support
+   atomic locks (only `file`/`null` cache stores lack this; the default
+   `redis`/`database`/`array` stores all support it).
+5. **Recovery** — on success, runs `php artisan up` and the app comes back
+   online. On failure, the app is **left in maintenance mode** on purpose
+   (rolling forward on a half-migrated schema is worse than a visible
+   maintenance page) and the command prints the exact rollback command.
+
+### Rollback
+
+If `archive:migrate-safe` fails, it prints the backup name it took right
+before the failure. To roll back:
+
+```bash
+php artisan tinker --execute="app(\App\Services\Backup\BackupService::class)->restore('<backup-name>')"
+php artisan up
+```
+
+Then fix the migration and re-run `archive:migrate-safe` (or redeploy).
