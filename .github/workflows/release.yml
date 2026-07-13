@@ -2,8 +2,8 @@ name: Release
 
 # Official releases: pushing a v* tag runs the FULL verification gate first,
 # then publishes images and a GitHub Release. Nothing ships unverified.
-# Stable tags (v1.2.3) also move the `latest` image tag; prereleases
-# (v1.0.0-rc.1 — anything with a dash) publish under their own tag only.
+# Every release publishes only its explicit version tag. Deployments consume
+# the version + digest references attached in release-images.txt.
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.12.0"
+          node-version: "22.13.0"
           cache: pnpm
 
       - name: Install workspace dependencies
@@ -88,9 +88,7 @@ jobs:
           push: true
           sbom: true
           provenance: mode=max
-          tags: |
-            ${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}
-            ${{ steps.meta.outputs.prerelease == 'false' && format('{0}:latest', env.NEXT_IMAGE) || '' }}
+          tags: ${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}
           build-args: |
             ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1
             SENTRY_ENVIRONMENT=production
@@ -105,9 +103,40 @@ jobs:
           push: true
           sbom: true
           provenance: mode=max
-          tags: |
-            ${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}
-            ${{ steps.meta.outputs.prerelease == 'false' && format('{0}:latest', env.LARAVEL_IMAGE) || '' }}
+          tags: ${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}
+
+      - name: Smoke Next image
+        shell: bash
+        run: |
+          container_id="$(docker run --detach --publish 127.0.0.1::3000 "${NEXT_IMAGE}:${{ steps.meta.outputs.version }}")"
+          trap 'docker rm --force "${container_id}"' EXIT
+          port="$(docker port "${container_id}" 3000/tcp | sed 's/.*://')"
+          for attempt in {1..30}; do
+            curl --fail --silent --show-error "http://127.0.0.1:${port}/" >/dev/null && exit 0
+            sleep 2
+          done
+          docker logs "${container_id}"
+          exit 1
+
+      - name: Smoke Laravel image
+        shell: bash
+        run: docker run --rm --env ARCHIVE_SECURE_COOKIES=true "${LARAVEL_IMAGE}:${{ steps.meta.outputs.version }}" php artisan --version
+
+      - name: Scan Next image (fail on fixable critical vulnerabilities)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: "${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}"
+          severity: "CRITICAL"
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Scan Laravel image (fail on fixable critical vulnerabilities)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: "${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}"
+          severity: "CRITICAL"
+          ignore-unfixed: true
+          exit-code: "1"
 
       # Immutable reference manifest: deploy by digest, not by mutable tag.
       - name: Write image digests manifest
@@ -115,8 +144,8 @@ jobs:
         run: |
           cat > release-images.txt <<EOF
           # Masar ${GITHUB_REF_NAME} — immutable image references (deploy by digest)
-          ${NEXT_IMAGE}@${{ steps.push_next.outputs.digest }}
-          ${LARAVEL_IMAGE}@${{ steps.push_laravel.outputs.digest }}
+          ${NEXT_IMAGE}:${{ steps.meta.outputs.version }}@${{ steps.push_next.outputs.digest }}
+          ${LARAVEL_IMAGE}:${{ steps.meta.outputs.version }}@${{ steps.push_laravel.outputs.digest }}
           EOF
           cat release-images.txt
 

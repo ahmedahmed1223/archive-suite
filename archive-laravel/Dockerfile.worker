@@ -12,9 +12,9 @@
 # supervisor (s6/supervisord) since each compose service is already its own
 # single-process container. curl and bash ship in the base image already
 # (used by healthchecks below); nginx/procps are the only additions.
-FROM composer:2.9.5 AS composer
+FROM composer:2.9.5@sha256:698d3801b2a622ace460c4743c781282fcbcb733a4cbf8b31c44731e846585e8 AS composer
 
-FROM php:8.4.23-fpm
+FROM php:8.4.23-fpm@sha256:1c3585e1e99f3fd7fbfed9db21601534082c9e1def91aa02e06e85fff0bc57ae
 
 # Install system dependencies including ffmpeg + python3/pip for whisper-ctranslate2
 RUN apt-get update && apt-get install -y --no-install-recommends \

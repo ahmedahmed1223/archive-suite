@@ -7,7 +7,7 @@
 ## المتطلبات
 
 - Ubuntu 24.04 LTS أو توزيعة Linux مدعومة.
-- Docker Engine مع Compose v2 وNode.js 22.12+.
+- Docker Engine مع Compose v2 وNode.js 22.13+.
 - نطاق يشير سجل DNS الخاص به إلى عنوان VPS عند النشر العام.
 
 ## 1. إعداد المضيف

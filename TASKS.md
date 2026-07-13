@@ -33,7 +33,7 @@
 - [x] **V1-000 مراجعة cutover** — حذف الإرث (1700 ملف) وcommit نظيف. (منجز 2026-07-12)
 - [x] **V1-001 قفل النطاق** — منجز 2026-07-13 في d071fa2: تصنيف 135 مسارًا (108 v1 / 20 admin / 7 experimental خلف ARCHIVE_FEATURE_* معطلة في الإنتاج / 0 hidden) + `RouteScopeTest` يمنع شحن مسار غير مصنّف + جدول `docs/scope/v1-route-scope.md`. متابعة مفتوحة: إضافة requireAdmin لمسارات ODBC (chip).
 - [x] **V1-002 versioning/legal** — منجز 2026-07-13: LICENSE جذري MIT (قرار المستخدم)، `package.json` إلى `1.0.0-rc.1` + حقل license، سياسة SemVer ونافذة الدعم في `docs/versioning.md`؛ الإطلاق الرسمي بدفع tag مطابق عبر بوابة `release.yml`.
-- [x] **V1-003 reproducibility** — منجز 2026-07-13: عقد toolchain آلي (Node 22.12.0، pnpm 11.9.0، PHP 8.4.23، Composer 2.9.5)، تثبيت frozen معزول، وفحص drift داخل `pnpm verify`.
+- [x] **V1-003 reproducibility** — منجز 2026-07-13: عقد toolchain آلي (Node 22.13.0، pnpm 11.9.0، PHP 8.4.23، Composer 2.9.5)، تثبيت frozen معزول، وفحص drift داخل `pnpm verify`. رُفع Node من 22.12 إلى 22.13 ضمن V1-204 لأن pnpm 11.9 يتطلب 22.13 كحد أدنى.
 - [x] **V1-004 canonical deployment truth** — توحيد Setup/Control Center/compose وإزالة PocketBase/deploy-legacy/docker-compose.postgres. (منجز 2026-07-12 بالدمج؛ setup.bat يعمل.)
 - [x] **V1-005 platform contract** — `infra/platform/compatibility.v1.json` + schema + `platform-contract.mjs` يستهلكها doctor. (منجز 2026-07-12 بالدمج.)
 
@@ -53,7 +53,9 @@
 - [x] **V1-201 Control Center** — إصلاح رمز legacy المفقود + إزالة الأوامر القديمة + اختبارات. (منجز 2026-07-12؛ 18 اختباراً.) **(كان P0 #6)**
 - [x] **V1-202 production runtime** — منجز 2026-07-13: استُبدل PHP dev server بواجهة nginx على `laravel:8000` وPHP-FPM داخلي غير منشور على `laravel-fpm:9000`، مع health عميق للقاعدة وRedis والتخزين، وفحوص liveness/readiness للعامل وReverb. بقي حل localhost الحالي (Caddy `DOMAIN=localhost` وACME fallback) محفوظاً. تحقق: Compose config للملفين، image build، smoke nginx→FPM (health 200 وكل checks=true و9000 بلا host binding)، و`pnpm verify` (122 Next + 526 Laravel، 0 فشل). **(P0 runtime)**
 - [x] **V1-203 migration safety** — منجز 2026-07-13 في 7ae55f4: أمر `archive:migrate-safe` (preflight → prebackup عبر BackupService → maintenance عند الحاجة فقط → `--isolated` migrate-once → up عند النجاح/بقاء down + تعليمات rollback عند الفشل)، مربوط في compose الملفين وControl Center. 4 اختبارات جديدة، الحزمة 510 تمر. **(P0 #8)**
-- [ ] **V1-204 immutable images** / **V1-205 supply chain (SBOM/checksums/signing)** / **V1-206 offline bundle**. (جزئياً 2026-07-13 في 40f1011: SBOM+provenance للصورتين + release-images.txt بمراجع digest ثابتة تُرفق بالـ Release. المتبقي: توقيع cosign، offline bundle.) **(P0 #9)**
+- [x] **V1-204 immutable images** — منجز 2026-07-13: صور Node/PHP/Composer الأساسية مثبتة بـ`tag@sha256`، نشر الإصدار لا ينشئ `latest`، و`release-images.txt` يسجل `version@digest`. أضيف فحص static وبناء/smoke للصورتين وTrivy بسياسة فشل للثغرات `CRITICAL` القابلة للإصلاح. **(P0 #9)**
+- [ ] **V1-205 supply chain (SBOM/checksums/signing)** — SBOM+provenance موجودان من 40f1011؛ signing/checksums المتبقية خارج V1-204.
+- [ ] **V1-206 offline bundle** — لم يبدأ؛ خارج V1-204.
 - [ ] **V1-207 observability** / **V1-208 cross-platform installer** / **V1-209 Docker profiles** / **V1-210 native Windows** / **V1-211 native Linux** / **V1-212 parity matrix**.
 
 ### الموجة 3 — المنتج وUX

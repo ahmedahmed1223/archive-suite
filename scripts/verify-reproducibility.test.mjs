@@ -20,9 +20,11 @@ test("canonical toolchain pins are declared and consumed without floating runtim
   assert.match(toolchain.composer, /^2\.\d+\.\d+$/);
   assert.equal(rootPackage.engines.node, `>=${toolchain.node} <23`);
   assert.match(rootPackage.packageManager, new RegExp(`^pnpm@${toolchain.pnpm.replaceAll(".", "\\.")}\\+`));
-  assert.match(nextDockerfile, new RegExp(`FROM node:${toolchain.node.replaceAll(".", "\\.")}-alpine`));
-  assert.match(laravelDockerfile, new RegExp(`FROM php:${toolchain.php.replaceAll(".", "\\.")}-fpm`));
-  assert.match(laravelDockerfile, new RegExp(`FROM composer:${toolchain.composer.replaceAll(".", "\\.")} AS composer`));
+  assert.match(nextDockerfile, new RegExp(`FROM node:${toolchain.node.replaceAll(".", "\\.")}-alpine@sha256:`));
+  assert.match(nextDockerfile, /npm install --global corepack@0\.31\.0/);
+  assert.match(nextDockerfile, new RegExp(`corepack prepare pnpm@${toolchain.pnpm.replaceAll(".", "\\.")} --activate`));
+  assert.match(laravelDockerfile, new RegExp(`FROM php:${toolchain.php.replaceAll(".", "\\.")}-fpm@sha256:`));
+  assert.match(laravelDockerfile, new RegExp(`FROM composer:${toolchain.composer.replaceAll(".", "\\.")}@sha256:[a-f0-9]{64} AS composer`));
   for (const workflow of workflows) {
     assert.match(workflow, new RegExp(`node-version: "${toolchain.node.replaceAll(".", "\\.")}"`));
     assert.match(workflow, /pnpm install --frozen-lockfile/);
@@ -49,7 +51,7 @@ test("root frozen install and reproducibility verification are canonical gates",
   const ci = read(".github/workflows/ci.yml");
 
   assert.equal(rootPackage.scripts.bootstrap, "pnpm install --frozen-lockfile");
-  assert.equal(rootPackage.scripts["verify:reproducibility"], "node --test scripts/verify-reproducibility.test.mjs");
+  assert.equal(rootPackage.scripts["verify:reproducibility"], "node --test scripts/verify-reproducibility.test.mjs scripts/verify-immutable-images.test.mjs");
   assert.match(rootPackage.scripts["verify:laravel-next"], /verify:reproducibility/);
   for (const document of canonicalInstallDocs) {
     assert.doesNotMatch(document, /pnpm install(?! --frozen-lockfile)/);

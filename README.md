@@ -44,7 +44,7 @@ pnpm install --frozen-lockfile
 ```
 
 خط الأدوات المدعوم للمسار القانوني محفوظ آلياً في
-`infra/platform/toolchain.v1.json`: Node.js 22.12.0 (خط 22 فقط)، pnpm 11.9.0،
+`infra/platform/toolchain.v1.json`: Node.js 22.13.0 (خط 22 فقط)، pnpm 11.9.0،
 PHP 8.4.23، وComposer 2.9.5. يوفر Docker نسختي PHP وComposer، فلا يلزم تثبيتهما
 على المضيف.
 

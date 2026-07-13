@@ -20,6 +20,13 @@
 
 ---
 
+## صور إصدار ثابتة وغير قابلة للتعويم (V1-204) — مكتمل 2026-07-13
+
+- ثُبتت صور الأساس القانونية في `archive-next/Dockerfile` و`archive-laravel/Dockerfile.worker` بصيغة مقروءة `tag@sha256` لـNode وPHP وComposer. كشف البناء أن pnpm 11.9 يتطلب Node 22.13، فحُدّث عقد toolchain المتسق من 22.12.0 إلى 22.13.0 وثُبت Corepack 0.31.0 وpnpm 11.9.0 داخل صورة Next.
+- أزيل إنتاج `latest` من مساري release والنشر اليدوي. أصبح `release-images.txt` يرفق مرجعي التطبيق بصيغة `image:version@digest`، من دون ادعاء نشر خارجي محلي.
+- أضيف smoke للصورتين بعد دفع tag الإصدار: Next عبر HTTP 200 وLaravel عبر boot حقيقي لـArtisan مع production cookie guard. أضيف Trivy للصورتين بسياسة صريحة: يفشل الإصدار على ثغرات `CRITICAL` القابلة للإصلاح (`ignore-unfixed: true`, `exit-code: 1`). بقي signing ضمن V1-205 والحزمة غير المتصلة ضمن V1-206 بلا تغيير.
+- أضيف `scripts/verify-immutable-images.test.mjs` إلى بوابة reproducibility لمنع Dockerfile غير مثبت أو `latest` في workflows الإنتاجية، ولتثبيت smoke/scan وmanifest. التحقق: focused tests 6/6؛ بناء صورتي Next وLaravel؛ smoke Next HTTP 200 وLaravel 13.17.0؛ و`pnpm verify` كاملًا (122 اختبار Next و526 اختبار Laravel، بلا فشل؛ تحذير قديم واحد واختبارا قاعدة بيانات متخطيان).
+
 ## تشغيل Laravel الإنتاجي عبر nginx وPHP-FPM (V1-202) — مكتمل 2026-07-13
 
 - استُبدل خادم PHP التطويري أحادي العملية بطبقتين من الصورة القانونية نفسها: `laravel` يشغّل nginx ويحافظ على عقد DNS/المنفذ العام `laravel:8000`، و`laravel-fpm` يشغّل PHP-FPM على 9000 داخل شبكة Compose فقط من دون `ports` أو `expose` للمضيف.
