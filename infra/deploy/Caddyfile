@@ -24,6 +24,9 @@
 		output stdout
 		format json
 	}
+	# Record the validated/generated ID returned by Next/Laravel. log_append runs
+	# late, after reverse_proxy, so this is the same final ID seen downstream.
+	log_append request_id {http.response.header.X-Request-ID}
 	encode zstd gzip
 
 	# Hardened headers — same posture as the nginx config inside the frontend
