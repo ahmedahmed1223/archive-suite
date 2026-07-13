@@ -2,8 +2,10 @@
 # Next.js app. DOMAIN and ACME_EMAIL come from the .env file via docker
 # compose env interpolation.
 #
-# For local-only (no public DNS), set DOMAIN=localhost in .env and Caddy
-# will use its internal CA — browsers will warn unless you trust it.
+# Local-only (DOMAIN=localhost): plain HTTP is served directly on :80 (no
+# redirect) because the internal-CA HTTPS cert triggers browser warnings.
+# localhost is a secure context in browsers, so Secure cookies still work.
+# https://localhost stays available for anyone who trusts the internal CA.
 
 {
 	# Operator email for ACME (renewal warnings, key recovery).
@@ -19,7 +21,9 @@
 	}
 }
 
-{$DOMAIN} {
+# Shared app definition — imported by every site block below so the proxy,
+# logging, and header posture never drift between HTTP and HTTPS variants.
+(app) {
 	log {
 		output stdout
 		format json
@@ -58,4 +62,17 @@
 	request_body {
 		max_size 256MB
 	}
+}
+
+# Public domains get auto-HTTPS (Let's Encrypt) + the standard HTTP->HTTPS
+# redirect. On DOMAIN=localhost this becomes https://localhost (internal CA).
+{$DOMAIN} {
+	import app
+}
+
+# Local convenience: answer plain HTTP for localhost instead of Caddy's
+# default 308 redirect to the untrusted internal-CA HTTPS. Only matches
+# Host: localhost on :80 — real public domains are unaffected.
+http://localhost {
+	import app
 }
