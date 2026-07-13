@@ -20,7 +20,7 @@ cd archive-suite
 ### 2. تشغيل النظام المعتمد للتطوير
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
@@ -95,7 +95,7 @@ https://<your-domain>      # وضع عام
 
 ```bash
 # تطوير محلي (Docker للـ Laravel)
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev           # Next.js + Laravel
 pnpm dev:next      # Next.js فقط
 pnpm dev:laravel   # Laravel API فقط عبر Docker

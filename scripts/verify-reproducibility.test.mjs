@@ -38,15 +38,20 @@ test("canonical toolchain pins are declared and consumed without floating runtim
 
 test("root frozen install and reproducibility verification are canonical gates", () => {
   const rootPackage = json("package.json");
-  const readme = read("README.md");
-  const hostinger = read("infra/deploy/hostinger-vps.md");
+  const canonicalInstallDocs = [
+    "README.md",
+    "INSTALL.md",
+    "DEPLOYMENT.md",
+    "CLAUDE.md",
+    "infra/deploy/hostinger-vps.md"
+  ].map(read);
   const controlCenter = read("scripts/control-center.mjs");
   const ci = read(".github/workflows/ci.yml");
 
   assert.equal(rootPackage.scripts.bootstrap, "pnpm install --frozen-lockfile");
   assert.equal(rootPackage.scripts["verify:reproducibility"], "node --test scripts/verify-reproducibility.test.mjs");
   assert.match(rootPackage.scripts["verify:laravel-next"], /verify:reproducibility/);
-  for (const document of [readme, hostinger]) {
+  for (const document of canonicalInstallDocs) {
     assert.doesNotMatch(document, /pnpm install(?! --frozen-lockfile)/);
   }
   assert.doesNotMatch(controlCenter, /runPnpm\(\["install"\]\)/);
