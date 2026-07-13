@@ -20,6 +20,14 @@
 
 ---
 
+## سلسلة توريد الإصدار (V1-205) — مكتمل 2026-07-13
+
+- أُكمل توقيع digest الصورتين القانونيتين (Next وLaravel) عبر Cosign keyless وGitHub OIDC داخل release workflow، يتبعه تحقق صريح من signature باستخدام هوية ملف workflow الخاصة بالـtag وissuer الرسمي قبل إنشاء GitHub Release. لم يُنشأ توقيع محلي ولم تُضف مفاتيح أو أسرار خاصة.
+- حُفظت attestations الحالية (`sbom: true` و`provenance: mode=max`) وملف `release-images.txt` غير القابل للتعويم، وأضيف ملف SPDX JSON قابل للتنزيل لكل صورة مبني على `image@digest`.
+- أضيف inventory إنتاجي منفصل لتبعيات pnpm/Next وComposer/Laravel، مع سياسة تراخيص صريحة تسمح بتراخيص محددة وتفشل عند forbidden أو unknown. البدائل المزدوجة تُقبل فقط إن وُجد مسار ترخيص مسموح، وتعبيرات AND تتطلب قبول كل مكون؛ لا توجد استثناءات حالية.
+- يولّد الإصدار `SHA256SUMS` لكل artifact قابل للتنزيل (`release-images.txt` وSBOMs وlicense inventories) ويتحقق منه قبل الإرفاق، ثم يرفق الملفات والmanifest معًا. حُصرت صلاحيات verify في `contents: read` وpublish في `contents/packages/id-token: write` فقط.
+- أضيف فحص static مركّز إلى بوابة reproducibility. التحقق: focused 5/5، release-readiness، reproducibility 13/13، inventory policy على تبعيات الإنتاج الحالية، وكل مراحل `pnpm verify` (122 Next + build + hygiene و526 Laravel)؛ احتاج Laravel إلى إعادة تشغيل Docker خارج sandbox بعد منع الوصول إلى إعداد Docker، ونجح. بقي V1-206 مفتوحًا ولم تُنفذ الحزمة غير المتصلة.
+
 ## صور إصدار ثابتة وغير قابلة للتعويم (V1-204) — مكتمل 2026-07-13
 
 - إصلاح مراجعة P1: ثُبتت صور pgvector وRedis وCaddy في Compose القانوني بـ`version@sha256` موثقة من registry، وثُبت PostgreSQL وRedis في موارد Kustomize القابلة للتطبيق. حُذفت Deployments القديمة غير القانونية (`archive-server`/`archive-frontend`/worker placeholder) من Kustomize ومن المستودع بدل اختراع digests لصور غير منشورة؛ K8s موثق الآن كمرجع data-services فقط، بينما يبقى Laravel+Next عبر Compose مسار التطبيق القانوني.

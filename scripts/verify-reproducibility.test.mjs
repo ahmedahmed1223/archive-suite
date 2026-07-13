@@ -51,7 +51,7 @@ test("root frozen install and reproducibility verification are canonical gates",
   const ci = read(".github/workflows/ci.yml");
 
   assert.equal(rootPackage.scripts.bootstrap, "pnpm install --frozen-lockfile");
-  assert.equal(rootPackage.scripts["verify:reproducibility"], "node --test scripts/verify-reproducibility.test.mjs scripts/verify-immutable-images.test.mjs");
+  assert.equal(rootPackage.scripts["verify:reproducibility"], "node --test scripts/verify-reproducibility.test.mjs scripts/verify-immutable-images.test.mjs scripts/verify-release-supply-chain.test.mjs");
   assert.match(rootPackage.scripts["verify:laravel-next"], /verify:reproducibility/);
   for (const document of canonicalInstallDocs) {
     assert.doesNotMatch(document, /pnpm install(?! --frozen-lockfile)/);

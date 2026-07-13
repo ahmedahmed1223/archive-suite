@@ -14,9 +14,7 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false # never cancel a running release
 
-permissions:
-  contents: write # create the GitHub Release
-  packages: write # push images to GHCR
+permissions: {}
 
 env:
   NEXT_IMAGE: ghcr.io/${{ github.repository }}/masar-next
@@ -27,6 +25,8 @@ jobs:
     name: Full release gate
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
     env:
       CI: "true"
     steps:
@@ -53,9 +53,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: verify
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: pnpm
+
+      - name: Setup PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer:2.9.5
+
+      - name: Install dependencies for license inventories
+        run: |
+          pnpm install --frozen-lockfile
+          composer install --working-dir=archive-laravel --no-dev --no-interaction --no-scripts
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -104,6 +128,48 @@ jobs:
           sbom: true
           provenance: mode=max
           tags: ${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v4
+
+      - name: Sign immutable image digests (keyless OIDC)
+        shell: bash
+        env:
+          COSIGN_YES: "true"
+        run: |
+          cosign sign "${NEXT_IMAGE}@${{ steps.push_next.outputs.digest }}"
+          cosign sign "${LARAVEL_IMAGE}@${{ steps.push_laravel.outputs.digest }}"
+
+      - name: Verify keyless image signatures
+        shell: bash
+        run: |
+          identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@refs/tags/${GITHUB_REF_NAME}"
+          issuer="https://token.actions.githubusercontent.com"
+          cosign verify --certificate-identity "${identity}" --certificate-oidc-issuer "${issuer}" "${NEXT_IMAGE}@${{ steps.push_next.outputs.digest }}"
+          cosign verify --certificate-identity "${identity}" --certificate-oidc-issuer "${issuer}" "${LARAVEL_IMAGE}@${{ steps.push_laravel.outputs.digest }}"
+
+      - name: Export Next image SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: "${{ env.NEXT_IMAGE }}@${{ steps.push_next.outputs.digest }}"
+          format: spdx-json
+          output-file: next-image.spdx.json
+          upload-artifact: false
+
+      - name: Export Laravel image SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: "${{ env.LARAVEL_IMAGE }}@${{ steps.push_laravel.outputs.digest }}"
+          format: spdx-json
+          output-file: laravel-image.spdx.json
+          upload-artifact: false
+
+      - name: Generate and enforce dependency license inventories
+        shell: bash
+        run: |
+          pnpm licenses list --prod --json > pnpm-licenses.json
+          composer licenses --working-dir=archive-laravel --format=json --no-dev > composer-licenses.json
+          node scripts/verify-release-licenses.mjs pnpm-licenses.json composer-licenses.json
 
       - name: Smoke Next image
         shell: bash
@@ -154,6 +220,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json)
+          sha256sum "${artifacts[@]}" > SHA256SUMS
+          sha256sum --check SHA256SUMS
           flags=(--generate-notes --title "${GITHUB_REF_NAME}")
           [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]] && flags+=(--prerelease)
-          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt
+          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json SHA256SUMS
