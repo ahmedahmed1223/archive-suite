@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -31,7 +32,7 @@ abstract class Controller
         $user = $request->attributes->get('archive_user');
 
         if (! $user instanceof User || Gate::forUser($user)->denies($ability)) {
-            return response()->json(['ok' => false, 'error' => 'Forbidden.'], 403);
+            return response()->json(ApiError::envelope('Forbidden.', 403), 403);
         }
 
         return null;

@@ -51,7 +51,10 @@ export default function DataCenterPage() {
     try {
       const response = await apiRef.current.systemStatus();
       if (!response.ok) {
-        if ("error" in response && response.error === "Forbidden.") {
+        // ponytail: `error === "Forbidden."` is a transitional fallback for
+        // an older API that predates the `code` field — drop once the API
+        // is guaranteed to always send `code`.
+        if (response.code === "FORBIDDEN" || response.error === "Forbidden.") {
           setSummary({ status: "forbidden" });
           return;
         }

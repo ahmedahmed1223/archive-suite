@@ -8,8 +8,15 @@ use RuntimeException;
 
 class SystemControlException extends RuntimeException
 {
-    public function __construct(string $message, public readonly int $status = 400)
-    {
+    /**
+     * ponytail: named apiCode, not code — Exception already declares a
+     * (non-readonly) $code property and PHP forbids redeclaring it readonly.
+     */
+    public function __construct(
+        string $message,
+        public readonly int $status = 400,
+        public readonly ?string $apiCode = null,
+    ) {
         parent::__construct($message);
     }
 }

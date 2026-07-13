@@ -2,6 +2,8 @@
 
 use App\Http\Middleware\AuditArchiveApiRequest;
 use App\Http\Middleware\AuthenticateArchiveApiRequest;
+use App\Http\Middleware\FeatureGate;
+use App\Support\ApiError;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -29,10 +31,23 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'archive.audit' => AuditArchiveApiRequest::class,
             'archive.auth' => AuthenticateArchiveApiRequest::class,
+            'archive.feature' => FeatureGate::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // Central fallback for exceptions that escape controller code
+        // uncaught (framework validation, routing 404s, throttling, and any
+        // unhandled Throwable). Controllers that catch their own exceptions
+        // and build a response via ApiError::envelope() never reach this.
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ApiError::renderException($e, $request);
+        });
     })->create();

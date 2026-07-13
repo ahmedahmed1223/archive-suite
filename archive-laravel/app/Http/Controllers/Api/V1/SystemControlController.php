@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Services\System\SystemControlException;
 use App\Services\System\SystemControlService;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -28,7 +29,7 @@ class SystemControlController extends Controller
 
             return response()->json(['ok' => true, 'result' => $result]);
         } catch (SystemControlException $e) {
-            return response()->json(['ok' => false, 'error' => $e->getMessage()], $e->status);
+            return response()->json(ApiError::envelope($e->getMessage(), $e->status, $e->apiCode), $e->status);
         }
     }
 }
