@@ -4,6 +4,7 @@ repo-git-backups/
 
 # Dependencies and package-manager noise.
 node_modules/
+support-bundles/
 **/node_modules/
 package-lock.json
 **/package-lock.json

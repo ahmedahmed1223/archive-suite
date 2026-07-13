@@ -20,6 +20,10 @@
 }
 
 {$DOMAIN} {
+	log {
+		output stdout
+		format json
+	}
 	encode zstd gzip
 
 	# Hardened headers — same posture as the nginx config inside the frontend

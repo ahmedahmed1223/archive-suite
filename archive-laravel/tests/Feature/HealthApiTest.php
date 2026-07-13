@@ -10,6 +10,23 @@ use Tests\TestCase;
 
 class HealthApiTest extends TestCase
 {
+    public function test_health_endpoint_propagates_a_safe_correlation_id(): void
+    {
+        $this->withHeader('X-Request-ID', 'support-case-207')
+            ->getJson('/api/v1/health')
+            ->assertOk()
+            ->assertHeader('X-Request-ID', 'support-case-207');
+    }
+
+    public function test_health_endpoint_replaces_an_unsafe_correlation_id(): void
+    {
+        $response = $this->withHeader('X-Request-ID', "secret\nheader")
+            ->getJson('/api/v1/health');
+
+        $response->assertOk();
+        $this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', (string) $response->headers->get('X-Request-ID'));
+    }
+
     public function test_health_endpoint_reports_ok_with_all_checks_passing(): void
     {
         $this->getJson('/api/v1/health')
