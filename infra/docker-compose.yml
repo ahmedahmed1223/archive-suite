@@ -201,6 +201,12 @@ services:
       - archive
 
   ocr:
+    # V1-209: gated behind the `media` profile — heavy PaddleOCR image, only
+    # needed when OCR jobs run. laravel-fpm/laravel-worker keep OCR_SERVICE_URL
+    # set unconditionally; when this service is absent, OcrClient::extractText()
+    # (app/Services/Media/OcrClient.php) just fails that one media job with a
+    # RuntimeException at call time — it is never touched at container boot.
+    profiles: ["media"]
     build:
       context: ./ocr-service
     container_name: archive-ln-ocr
@@ -310,6 +316,8 @@ services:
       - archive
 
   caddy:
+    # V1-209: gated behind the `edge` profile — only needed for public TLS deployments.
+    profiles: ["edge"]
     image: caddy:2.11-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
     container_name: archive-caddy
     restart: unless-stopped

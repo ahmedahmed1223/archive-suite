@@ -45,6 +45,27 @@ node scripts/control-center.mjs change-admin-password --generate
 node scripts/control-center.mjs change-admin-password --email=admin@example.com --password=New-Strong-Password-123
 ```
 
+## Profiles: core / media / edge
+
+`infra/docker-compose.yml` and `infra/docker-compose.laravel-next.yml` use native Compose
+`profiles:` to let operators run a lighter stack:
+
+| Profile | Services | When you need it |
+|---------|----------|-------------------|
+| core (no profile) | postgres · redis · laravel · laravel-fpm · laravel-worker · laravel-reverb · next | Always on |
+| `media` | ocr | OCR jobs (heavy PaddleOCR image). Without it, OCR media jobs fail with a job-level error — the stack still boots fine, since `laravel-fpm`/`laravel-worker` only call the OCR service lazily per-job, never at startup |
+| `edge` | caddy (`docker-compose.yml` only) | Public TLS termination |
+
+Control Center's `compose()` passes `--profile media --profile edge` by default so `docker
+compose up` behavior for existing operators is unchanged. Override with the
+`ARCHIVE_COMPOSE_PROFILES` environment variable (comma-separated list; set it to an empty
+string for core-only):
+
+```bash
+ARCHIVE_COMPOSE_PROFILES= node scripts/control-center.mjs start   # core only
+ARCHIVE_COMPOSE_PROFILES=media node scripts/control-center.mjs start  # core + OCR, no Caddy
+```
+
 ## Safety
 
 - **Every `.env` write is backed up first** to `infra/.env.bak-<timestamp>`.

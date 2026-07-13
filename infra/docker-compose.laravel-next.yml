@@ -197,6 +197,9 @@ services:
       - archive
 
   ocr:
+    # V1-209: gated behind the `media` profile — see infra/docker-compose.yml
+    # for the rationale (heavy PaddleOCR image; OCR job fails gracefully when absent).
+    profiles: ["media"]
     build:
       context: ./ocr-service
     container_name: archive-ln-ocr
