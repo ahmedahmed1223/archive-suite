@@ -43,6 +43,7 @@ function build(version, output) {
     version,
     profile: "core",
     createdAt: new Date().toISOString(),
+    sourceCommit: run("git", ["-c", `safe.directory=${root.replaceAll("\\", "/")}`, "rev-parse", "HEAD"], { capture: true }),
     images,
     files: payload.map((path) => ({ path: relative(dir, path).replaceAll("\\", "/"), bytes: statSync(path).size, sha256: sha256(path) })),
   };
@@ -55,6 +56,43 @@ function build(version, output) {
   process.stdout.write(`${join(output, archiveName)}\n`);
 }
 
+export function cleanupRehearsal({ project, compose, envPath, childEnv = process.env, runCommand = run }) {
+  const errors = [];
+  const absence = { containers: false, volumes: false, networks: false };
+  try {
+    try { runCommand("docker", [...compose, "down", "--volumes", "--remove-orphans"], { env: childEnv }); }
+    catch (error) { errors.push(error); }
+    for (const [resource, args] of [
+      ["containers", ["ps", "-a"]],
+      ["volumes", ["volume", "ls"]],
+      ["networks", ["network", "ls"]],
+    ]) {
+      try {
+        const remaining = runCommand("docker", [...args, "--filter", `label=com.docker.compose.project=${project}`, "--quiet"], { capture: true });
+        absence[resource] = !remaining;
+        if (remaining) errors.push(new Error(`scoped rehearsal ${resource} remain for ${project}`));
+      } catch (error) { errors.push(error); }
+    }
+  } finally {
+    try { rmSync(envPath, { force: true }); }
+    catch (error) { errors.push(error); }
+  }
+  if (errors.length) throw new AggregateError(errors, errors.map(({ message }) => message).join("; "));
+  return absence;
+}
+
+function verifyEvidence(dir, evidencePath) {
+  verifyBundle(dir);
+  const manifestPath = join(dir, "manifest.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const evidence = JSON.parse(readFileSync(resolve(evidencePath), "utf8"));
+  const archive = join(resolve(dir, ".."), `${basename(dir)}.tar.gz`);
+  if (evidence.sourceCommit !== manifest.sourceCommit || evidence.manifestSha256 !== sha256(manifestPath) || evidence.archiveSha256 !== sha256(archive)) throw new Error("stale rehearsal evidence: artifact identity mismatch");
+  if (evidence.fileCount !== 14 || evidence.fileCount !== manifest.files.length || evidence.imageCount !== 5 || evidence.imageCount !== manifest.images.length) throw new Error("stale rehearsal evidence: bundle counts mismatch");
+  if (!evidence.https || !evidence.healthy || !evidence.cleanup || Object.values(evidence.cleanupAbsence).some((value) => value !== true)) throw new Error("rehearsal evidence does not prove health/HTTPS/cleanup");
+  process.stdout.write(`Verified rehearsal evidence for ${evidence.sourceCommit}.\n`);
+}
+
 function rehearsal(dir, evidencePath) {
   verifyBundle(dir);
   const project = `archive-suite-v1-206-${Date.now()}`;
@@ -63,7 +101,10 @@ function rehearsal(dir, evidencePath) {
   const httpPort = String(18000 + (Date.now() % 1000));
   const httpsPort = String(19000 + (Date.now() % 1000));
   const compose = ["compose", "--project-name", project, "--env-file", env, "-f", join(dir, "compose.v1.yml")];
-  const evidence = { schemaVersion: 1, project, version, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, https: false, cleanup: false };
+  const manifestPath = join(dir, "manifest.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const archivePath = join(resolve(dir, ".."), `${basename(dir)}.tar.gz`);
+  const evidence = { schemaVersion: 1, project, version, sourceCommit: manifest.sourceCommit, manifestSha256: sha256(manifestPath), archiveSha256: sha256(archivePath), fileCount: 14, imageCount: 5, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, https: false, cleanup: false, cleanupAbsence: { containers: false, volumes: false, networks: false } };
   rmSync(env, { force: true });
   try {
     run(process.execPath, [join(dir, "generate-env.mjs"), env], { env: { ...process.env, ARCHIVE_VERSION: version } });
@@ -78,13 +119,9 @@ function rehearsal(dir, evidencePath) {
     run("curl", ["--fail", "--silent", "--show-error", "--insecure", `https://localhost:${httpsPort}/`], { stdio: "ignore" });
     evidence.https = true;
   } finally {
-    run("docker", [...compose, "down", "--volumes", "--remove-orphans"], { env: { ...process.env, HTTP_PORT: httpPort, HTTPS_PORT: httpsPort } });
-    const containers = run("docker", ["ps", "-a", "--filter", `label=com.docker.compose.project=${project}`, "--quiet"], { capture: true });
-    const volumes = run("docker", ["volume", "ls", "--filter", `label=com.docker.compose.project=${project}`, "--quiet"], { capture: true });
-    if (containers || volumes) throw new Error(`scoped rehearsal resources remain for ${project}`);
+    evidence.cleanupAbsence = cleanupRehearsal({ project, compose, envPath: env, childEnv: { ...process.env, HTTP_PORT: httpPort, HTTPS_PORT: httpsPort } });
     evidence.cleanup = true;
     evidence.finishedAt = new Date().toISOString();
-    rmSync(env, { force: true });
     if (evidencePath) writeFileSync(resolve(evidencePath), `${JSON.stringify(evidence, null, 2)}\n`);
   }
   process.stdout.write(`Offline rehearsal passed: ${project}; local load, healthy stack, HTTPS, scoped cleanup.\n`);
@@ -95,5 +132,6 @@ if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}` || pr
   if (command === "build") build(normalizedVersion(arg), resolve(out));
   else if (command === "verify") verifyBundle(resolve(arg));
   else if (command === "rehearse") rehearsal(resolve(arg), out === join(root, "output/offline") ? undefined : out);
+  else if (command === "verify-evidence") verifyEvidence(resolve(arg), out);
   else throw new Error("Usage: node scripts/offline-bundle.mjs build <version> [output] | verify <bundle-dir> | rehearse <bundle-dir>");
 }

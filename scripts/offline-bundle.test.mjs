@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import test from "node:test";
+import { cleanupRehearsal } from "./offline-bundle.mjs";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
@@ -102,6 +103,31 @@ test("rehearsal automates isolated up, HTTPS, finally cleanup, and absence check
   assert.match(script, /finally/);
   assert.match(script, /down[^\n]+--volumes/);
   assert.match(script, /com\.docker\.compose\.project/);
+});
+
+test("cleanup deletes rehearsal secrets and checks networks when compose down fails", () => {
+  const dir = mkdtempSync(join(tmpdir(), "archive-cleanup-test-"));
+  const envPath = join(dir, ".env.rehearsal");
+  writeFileSync(envPath, "PASSWORD=never-log-this\n");
+  const attempted = [];
+  const fakeRun = (command, args) => {
+    attempted.push([command, ...args].join(" "));
+    if (args.includes("down")) throw new Error("simulated down failure");
+    return "";
+  };
+  assert.throws(() => cleanupRehearsal({ project: "archive-suite-v1-206-test", compose: ["compose"], envPath, runCommand: fakeRun }), /simulated down failure/);
+  assert.equal(existsSync(envPath), false);
+  assert.ok(attempted.some((line) => line.includes("docker ps") && line.includes("archive-suite-v1-206-test")));
+  assert.ok(attempted.some((line) => line.includes("docker volume ls") && line.includes("archive-suite-v1-206-test")));
+  assert.ok(attempted.some((line) => line.includes("docker network ls") && line.includes("archive-suite-v1-206-test")));
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("evidence binds source commit, manifest, final archive, exact counts, and cleanup absence", () => {
+  const script = read("scripts/offline-bundle.mjs");
+  for (const field of ["sourceCommit", "manifestSha256", "archiveSha256", "fileCount", "imageCount", "containers", "volumes", "networks"]) assert.match(script, new RegExp(field));
+  assert.match(script, /fileCount:\s*14/);
+  assert.match(script, /imageCount:\s*5/);
 });
 
 test("operator guide verifies top-level checksum before extraction and uses schema-compatible restore", () => {

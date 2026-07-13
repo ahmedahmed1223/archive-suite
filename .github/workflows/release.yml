@@ -158,6 +158,8 @@ jobs:
         run: |
           node scripts/offline-bundle.mjs build "${{ steps.meta.outputs.version }}" release-offline
           node scripts/offline-bundle.mjs verify "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}"
+          node scripts/offline-bundle.mjs rehearse "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}" release-offline/v1-206-rehearsal-evidence.json
+          node scripts/offline-bundle.mjs verify-evidence "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}" release-offline/v1-206-rehearsal-evidence.json
 
       - name: Export Next image SBOM
         uses: anchore/sbom-action@v0
@@ -233,10 +235,12 @@ jobs:
         run: |
           offline_bundle="release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}.tar.gz"
           offline_asset="$(basename "${offline_bundle}")"
+          evidence_asset="v1-206-rehearsal-evidence.json"
           cp "${offline_bundle}" "${offline_asset}"
-          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}")
+          cp "release-offline/${evidence_asset}" "${evidence_asset}"
+          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}" "${evidence_asset}")
           sha256sum "${artifacts[@]}" > SHA256SUMS
           sha256sum --check SHA256SUMS
           flags=(--generate-notes --title "${GITHUB_REF_NAME}")
           [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]] && flags+=(--prerelease)
-          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}" SHA256SUMS
+          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}" "${evidence_asset}" SHA256SUMS
