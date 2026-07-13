@@ -3239,3 +3239,11 @@
 - أُضيف اختبار Node يمنع عودة مداخل عامة أو وثائق تشير إلى `deploy-legacy` أو ملفات Compose القديمة.
 - عُزلت ملفات override القديمة، وأصبح launcher ودليل Hostinger تحت `infra/deploy/`
   يوجهان إلى Control Center و`infra/docker-compose.yml` فقط.
+
+# 2026-07-13 — V1-113 timeouts/backoff/idempotency/cancel حقيقي لوظائف الوسائط
+
+- `ProcessMediaWorkflow` (الوظيفة الوحيدة في النظام) أصبحت تحمل `$timeout`/`$tries`/`backoff()` قابلة للضبط عبر `config/media.php`، بدل الاعتماد على افتراضيات Laravel الضمنية.
+- idempotency حقيقي: `ShouldBeUnique` (يُسقِط dispatch مكرراً لنفس معرّف الوظيفة) + middleware `WithoutOverlapping` (يمنع تشغيل نفس الوظيفة من عاملين متزامنين).
+- cancel حقيقي: `handle()` و`RealMediaProcessor::guardNotCanceled()` يعيدان قراءة الحالة من القاعدة قبل بدء المعالجة وعند كل مقطع في transcription متعددة المقاطع، فيوقفان العمل عبر `JobCanceledException` الجديد بدل الاكتفاء بعلم DB لا يقرأه أحد.
+- تنقية الأخطاء: رسائل الاستثناءات تُنقّى من أي مسار مطلق (Unix/Windows) قبل تخزينها في `media_jobs.error` المُعاد عبر الـAPI؛ التفاصيل الخام تُسجَّل في السجلات فقط. `failed()` الجديدة تكتب status=failed مرة واحدة بعد استنفاد كل المحاولات، لا عند كل محاولة.
+- 12 اختباراً جديداً (`MediaJobsReliabilityTest`)، الحزمة الكاملة 500 تمر/0 فشل.
