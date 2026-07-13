@@ -109,6 +109,34 @@ class MontageProjectsApiTest extends TestCase
         $response->assertJsonPath('projects.0.name', 'Finalized');
     }
 
+    public function test_list_signals_more_projects_exist_beyond_the_page_limit(): void
+    {
+        for ($i = 0; $i < 4; $i++) {
+            MontageProject::query()->create([
+                'id' => "proj-more-{$i}",
+                'name' => "Project {$i}",
+                'fps' => 25,
+                'tracks' => [],
+                'clips' => [],
+                'markers' => [],
+                'comments' => [],
+                'transitions' => [],
+                'status' => 'draft',
+                'updated_at' => now()->addSeconds($i),
+            ]);
+        }
+
+        $response = $this->getJson('/api/v1/montage-projects?status=draft&limit=3');
+
+        $response->assertOk();
+        $response->assertJsonPath('ok', true);
+        $response->assertJsonPath('pagination.total', 4);
+        $response->assertJsonPath('pagination.limit', 3);
+        $response->assertJsonPath('pagination.page', 1);
+        $response->assertJsonPath('pagination.hasMore', true);
+        $response->assertJsonCount(3, 'projects');
+    }
+
     public function test_get_montage_project(): void
     {
         $project = MontageProject::query()->create([

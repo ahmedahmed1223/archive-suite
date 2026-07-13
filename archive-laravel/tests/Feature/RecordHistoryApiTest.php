@@ -43,6 +43,35 @@ class RecordHistoryApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_it_signals_more_history_exists_beyond_the_page_limit(): void
+    {
+        $this->seedArchiveRecord();
+
+        $now = now();
+        for ($i = 0; $i < 4; $i++) {
+            DB::table('audit_logs')->insert([
+                'action' => 'test.action',
+                'event' => 'test.event',
+                'resource_type' => 'record',
+                'resource_id' => 'item-1',
+                'actor_id' => 1,
+                'outcome' => 'success',
+                'status_code' => 200,
+                'created_at' => $now->copy()->addSeconds($i),
+            ]);
+        }
+
+        $response = $this->getJson('/api/v1/records/item-1/history?limit=3', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('pagination.total', 4)
+            ->assertJsonPath('pagination.limit', 3)
+            ->assertJsonPath('pagination.page', 1)
+            ->assertJsonPath('pagination.hasMore', true);
+
+        $this->assertCount(3, $response->json('entries'));
+    }
+
     private function seedArchiveRecord(): void
     {
         $now = now();

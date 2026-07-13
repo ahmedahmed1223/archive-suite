@@ -192,6 +192,32 @@ class MediaJobsApiTest extends TestCase
         $this->assertLessThanOrEqual(100, count($response->json('jobs')));
     }
 
+    public function test_list_signals_more_jobs_exist_beyond_the_page_limit(): void
+    {
+        $userId = $this->authenticatedUserId();
+
+        for ($i = 0; $i < 4; $i++) {
+            MediaJob::query()->create([
+                'id' => "media-job-more-{$i}",
+                'record_id' => "media-record-more-{$i}",
+                'created_by' => $userId,
+                'operation' => 'thumbnail',
+                'status' => 'queued',
+                'queued_at' => now()->addSeconds($i),
+            ]);
+        }
+
+        $response = $this->getJson('/api/v1/media/jobs?limit=3', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('pagination.total', 4)
+            ->assertJsonPath('pagination.limit', 3)
+            ->assertJsonPath('pagination.page', 1)
+            ->assertJsonPath('pagination.hasMore', true);
+
+        $this->assertCount(3, $response->json('jobs'));
+    }
+
     public function test_list_requires_authentication(): void
     {
         $this->getJson('/api/v1/media/jobs')

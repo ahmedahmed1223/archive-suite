@@ -18,25 +18,38 @@ class SyncController extends Controller
     {
         $validated = $request->validate([
             'limit' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $limit = (int) ($validated['limit'] ?? 200);
+        $page = (int) ($validated['page'] ?? 1);
 
-        $rows = DB::table('storage_rows')
+        $paginated = DB::table('storage_rows')
             ->orderByDesc('updated_at')
-            ->limit($limit)
-            ->get();
+            ->paginate($limit, ['*'], 'page', $page);
 
-        $entries = $rows->map(fn (stdClass $row): array => $this->formatEntry($row))->values();
-        $conflicts = $entries->filter(fn (array $entry): bool => $entry['status'] === 'conflict')->count();
+        $entries = collect($paginated->items())->map(fn (stdClass $row): array => $this->formatEntry($row))->values();
+
+        // ponytail: summary counts are computed across ALL rows (not just this
+        // page) so "total"/"conflicts" stay correct once results are paginated
+        // — the old code silently reported the current page's count as the
+        // grand total once row count exceeded the limit.
+        $totalRows = $paginated->total();
+        $totalConflicts = DB::table('storage_rows')->whereNull('sync_version')->count();
 
         return response()->json([
             'ok' => true,
             'entries' => $entries,
             'summary' => [
-                'total' => $entries->count(),
-                'synced' => $entries->count() - $conflicts,
-                'conflicts' => $conflicts,
+                'total' => $totalRows,
+                'synced' => $totalRows - $totalConflicts,
+                'conflicts' => $totalConflicts,
+            ],
+            'pagination' => [
+                'total' => $totalRows,
+                'page' => $paginated->currentPage(),
+                'limit' => $limit,
+                'hasMore' => $paginated->hasMorePages(),
             ],
         ]);
     }

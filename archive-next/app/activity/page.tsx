@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ActivityFilters, type RecordHistoryEntry } from "@/lib/archive-api";
+import { createArchiveApiClient, type ActivityFilters, type PaginationMeta, type RecordHistoryEntry } from "@/lib/archive-api";
 import { formatDate } from "@/lib/record-utils";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
 
@@ -40,7 +40,7 @@ const resourceTypeOptions = [
 
 type ActivityState =
   | { status: "loading" }
-  | { status: "ready"; entries: RecordHistoryEntry[] }
+  | { status: "ready"; entries: RecordHistoryEntry[]; pagination?: PaginationMeta }
   | { status: "error"; message: string };
 
 function eventLabel(event: string) {
@@ -106,24 +106,39 @@ export default function ActivityPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<ActivityState>({ status: "loading" });
   const [filters, setFilters] = useState<ActivityFilters>({ limit: 100 });
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const loadActivity = useCallback(async (nextFilters: ActivityFilters = filters) => {
     setState({ status: "loading" });
-    const response = await api.activity(nextFilters);
+    const response = await api.activity({ ...nextFilters, page: 1 });
 
     if (!response.ok) {
       setState({ status: "error", message: response.error || "تعذر تحميل سجل النشاط." });
       return;
     }
 
-    setState({ status: "ready", entries: response.entries });
+    setState({ status: "ready", entries: response.entries, pagination: response.pagination });
   }, [api, filters]);
+
+  const loadMoreActivity = useCallback(async () => {
+    if (state.status !== "ready" || !state.pagination?.hasMore || loadingMore) return;
+    setLoadingMore(true);
+    const response = await api.activity({ ...filters, page: state.pagination.page + 1 });
+    setLoadingMore(false);
+
+    if (!response.ok) return;
+
+    setState((current) => (current.status === "ready"
+      ? { status: "ready", entries: [...current.entries, ...response.entries], pagination: response.pagination }
+      : current));
+  }, [api, filters, loadingMore, state]);
 
   useEffect(() => {
     void loadActivity(filters);
   }, [filters, loadActivity]);
 
   const entries = state.status === "ready" ? state.entries : [];
+  const pagination = state.status === "ready" ? state.pagination : undefined;
   const stats = useMemo(() => {
     const failed = entries.filter((entry) => entry.outcome === "failed").length;
     const rejected = entries.filter((entry) => entry.outcome === "rejected").length;
@@ -140,7 +155,7 @@ export default function ActivityPage() {
         description="سجل نشاط مصادق ومسنود من سجل التدقيق في الخادم، مع فلاتر حسب الحدث والنتيجة والمورد وقرارات استعادة عند توفر metadata كافية."
         meta={(
           <>
-            <span className="badge">{entries.length} حدث</span>
+            <span className="badge">{pagination ? `${entries.length} من ${pagination.total}` : entries.length} حدث</span>
             <span className={stats.failed > 0 ? "badge badge-danger" : "badge"}>{stats.failed} فاشلة</span>
             <span className={stats.rejected > 0 ? "badge badge-danger" : "badge"}>{stats.rejected} مرفوضة</span>
             <span className="badge">{stats.withRestoreDecision} قابلة للمراجعة</span>
@@ -261,6 +276,14 @@ export default function ActivityPage() {
             );
           })}
         </section>
+      ) : null}
+
+      {state.status === "ready" && pagination?.hasMore ? (
+        <div className="button-row" style={{ justifyContent: "center" }}>
+          <button type="button" className="button button-secondary" onClick={() => void loadMoreActivity()} disabled={loadingMore}>
+            {loadingMore ? "جار التحميل..." : "تحميل المزيد"}
+          </button>
+        </div>
       ) : null}
     </AppShell>
   );

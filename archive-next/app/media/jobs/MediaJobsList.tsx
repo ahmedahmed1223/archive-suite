@@ -7,13 +7,13 @@ import { z } from "zod";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import { FieldError } from "@/components/ui/Form";
-import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation } from "@/lib/archive-api";
+import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type PaginationMeta } from "@/lib/archive-api";
 import "../media.css";
 
 type ListState =
   | { status: "loading" }
   | { status: "empty" }
-  | { status: "loaded"; jobs: MediaJob[] }
+  | { status: "loaded"; jobs: MediaJob[]; pagination?: PaginationMeta }
   | { status: "error"; message: string };
 
 type CreateState =
@@ -107,6 +107,7 @@ export function MediaJobsList() {
   const [createState, setCreateState] = useState<CreateState>({ status: "idle" });
   const [ingestState, setIngestState] = useState<IngestState>({ status: "idle" });
   const [statusFilter, setStatusFilter] = useState<MediaJobStatus | "">("");
+  const [loadingMore, setLoadingMore] = useState(false);
   const createForm = useForm<MediaJobFormValues>({
     defaultValues: {
       recordId: "",
@@ -137,6 +138,7 @@ export function MediaJobsList() {
     setListState({ status: "loading" });
     const response = await api.mediaJobs({
       limit: 20,
+      page: 1,
       status: statusFilter || undefined
     });
 
@@ -150,8 +152,25 @@ export function MediaJobsList() {
       return;
     }
 
-    setListState({ status: "loaded", jobs: response.jobs });
+    setListState({ status: "loaded", jobs: response.jobs, pagination: response.pagination });
   }, [api, statusFilter]);
+
+  const loadMoreJobs = useCallback(async () => {
+    if (listState.status !== "loaded" || !listState.pagination?.hasMore || loadingMore) return;
+    setLoadingMore(true);
+    const response = await api.mediaJobs({
+      limit: 20,
+      page: listState.pagination.page + 1,
+      status: statusFilter || undefined
+    });
+    setLoadingMore(false);
+
+    if (!response.ok) return;
+
+    setListState((current) => (current.status === "loaded"
+      ? { status: "loaded", jobs: [...current.jobs, ...response.jobs], pagination: response.pagination }
+      : current));
+  }, [api, listState, loadingMore, statusFilter]);
 
   useEffect(() => {
     void loadJobs();
@@ -250,7 +269,11 @@ export function MediaJobsList() {
           {
             label: "المهام المعروضة",
             value: listState.status === "loading" ? "..." : jobs.length,
-            description: statusFilter ? `مفلترة: ${statusLabel(statusFilter)}` : "أحدث 20 مهمة",
+            description: statusFilter
+              ? `مفلترة: ${statusLabel(statusFilter)}`
+              : listState.status === "loaded" && listState.pagination
+                ? `من إجمالي ${listState.pagination.total} مهمة`
+                : "أحدث المهام",
             icon: <Clock3 size={20} />,
             tone: "accent"
           },
@@ -542,6 +565,13 @@ export function MediaJobsList() {
                 )}
               </article>
             ))}
+            {listState.pagination?.hasMore ? (
+              <div className="button-row" style={{ justifyContent: "center" }}>
+                <button type="button" className="button button-secondary" onClick={() => void loadMoreJobs()} disabled={loadingMore}>
+                  {loadingMore ? "جار التحميل..." : "تحميل المزيد"}
+                </button>
+              </div>
+            ) : null}
           </div>
         )}
       </section>

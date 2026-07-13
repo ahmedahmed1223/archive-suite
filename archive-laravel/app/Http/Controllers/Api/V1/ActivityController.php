@@ -14,6 +14,7 @@ class ActivityController extends Controller
     {
         $validated = $request->validate([
             'limit' => ['nullable', 'integer', 'min:1', 'max:200'],
+            'page' => ['nullable', 'integer', 'min:1'],
             'event' => ['nullable', 'string', 'max:120'],
             'resourceType' => ['nullable', 'string', 'max:120'],
             'resourceId' => ['nullable', 'string', 'max:255'],
@@ -21,6 +22,7 @@ class ActivityController extends Controller
         ]);
 
         $limit = (int) ($validated['limit'] ?? 100);
+        $page = (int) ($validated['page'] ?? 1);
 
         $query = DB::table('audit_logs')->orderByDesc('created_at');
 
@@ -40,9 +42,9 @@ class ActivityController extends Controller
             $query->where('outcome', $validated['outcome']);
         }
 
-        $entries = $query
-            ->limit($limit)
-            ->get()
+        $paginated = $query->paginate($limit, ['*'], 'page', $page);
+
+        $entries = collect($paginated->items())
             ->map(fn (stdClass $row): array => $this->formatEntry($row))
             ->values();
 
@@ -55,6 +57,12 @@ class ActivityController extends Controller
                 'resourceId' => $validated['resourceId'] ?? null,
                 'outcome' => $validated['outcome'] ?? null,
                 'limit' => $limit,
+            ],
+            'pagination' => [
+                'total' => $paginated->total(),
+                'page' => $paginated->currentPage(),
+                'limit' => $limit,
+                'hasMore' => $paginated->hasMorePages(),
             ],
         ]);
     }

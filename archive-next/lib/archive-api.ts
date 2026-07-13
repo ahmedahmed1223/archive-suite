@@ -472,6 +472,13 @@ export interface CreateAutomationRulePayload {
 
 export type UpdateAutomationRulePayload = Partial<CreateAutomationRulePayload>;
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 export interface RecordHistoryEntry {
   id: number | string;
   event: string;
@@ -491,6 +498,7 @@ export interface ActivityFilters {
   resourceId?: string;
   outcome?: "success" | "rejected" | "failed" | "";
   limit?: number;
+  page?: number;
 }
 
 export interface ComplianceReportFilters {
@@ -963,11 +971,11 @@ export interface ArchiveApiClient {
   recordComments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: RecordComment[] }>>;
   createRecordComment(recordId: string, payload: CreateRecordCommentPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: RecordComment }>>;
   deleteRecordComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
-  activity(params?: ActivityFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; filters: ActivityFilters }>>;
+  activity(params?: ActivityFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; filters: ActivityFilters; pagination?: PaginationMeta }>>;
   complianceReport(params?: ComplianceReportFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: ComplianceReportEntry[]; filters: ComplianceReportFilters; summary: ComplianceReportSummary }>>;
   downloadComplianceReport(params?: ComplianceReportFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ blob: Blob; filename: string }>>;
-  recordHistory(recordId: string, params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[] }>>;
-  sync(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary }>>;
+  recordHistory(recordId: string, params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; pagination?: PaginationMeta }>>;
+  sync(params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
   types(params?: { cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ types: ArchiveType[]; nextCursor?: string | null }>>;
@@ -995,7 +1003,7 @@ export interface ArchiveApiClient {
   ingestFtpPull(payload: FtpPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   ingestSmbPull(payload: SmbPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
-  mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[] }>>;
+  mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[]; pagination?: PaginationMeta }>>;
   createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   cancelMediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   broadcastMetadata(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
@@ -1340,8 +1348,9 @@ export function createArchiveApiClient({
       if (params?.resourceId) queryParams.set("resourceId", params.resourceId);
       if (params?.outcome) queryParams.set("outcome", params.outcome);
       if (params?.limit) queryParams.set("limit", String(params.limit));
+      if (params?.page) queryParams.set("page", String(params.page));
       const query = queryParams.toString();
-      return get<{ entries: RecordHistoryEntry[]; filters: ActivityFilters }>(`/activity${query ? `?${query}` : ""}`, options);
+      return get<{ entries: RecordHistoryEntry[]; filters: ActivityFilters; pagination?: PaginationMeta }>(`/activity${query ? `?${query}` : ""}`, options);
     },
     complianceReport: (params?: ComplianceReportFilters, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
@@ -1380,17 +1389,19 @@ export function createArchiveApiClient({
         return { ok: false, error: "تعذر الاتصال بالخادم لتصدير التقرير." };
       }
     },
-    recordHistory: (recordId: string, params?: { limit?: number }, options?: AuthRequestOptions) => {
+    recordHistory: (recordId: string, params?: { limit?: number; page?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.limit) queryParams.set("limit", String(params.limit));
+      if (params?.page) queryParams.set("page", String(params.page));
       const query = queryParams.toString();
-      return get<{ entries: RecordHistoryEntry[] }>(`/records/${encodeURIComponent(recordId)}/history${query ? `?${query}` : ""}`, options);
+      return get<{ entries: RecordHistoryEntry[]; pagination?: PaginationMeta }>(`/records/${encodeURIComponent(recordId)}/history${query ? `?${query}` : ""}`, options);
     },
-    sync: (params?: { limit?: number }, options?: AuthRequestOptions) => {
+    sync: (params?: { limit?: number; page?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.limit) queryParams.set("limit", String(params.limit));
+      if (params?.page) queryParams.set("page", String(params.page));
       const query = queryParams.toString();
-      return get<{ entries: SyncLogEntry[]; summary: SyncSummary }>(`/sync${query ? `?${query}` : ""}`, options);
+      return get<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>(`/sync${query ? `?${query}` : ""}`, options);
     },
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
     records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
@@ -1455,13 +1466,14 @@ export function createArchiveApiClient({
     ingestSmbPull: (payload: SmbPullPayload, options?: AuthRequestOptions) =>
       post<{ ingested: unknown[]; skipped: number }>("/ingest/smb/pull", payload, options),
     mediaJob: (id: string, options?: AuthRequestOptions) => get<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}`, options),
-    mediaJobs: (params?: { status?: MediaJobStatus; recordId?: string; limit?: number }, options?: AuthRequestOptions) => {
+    mediaJobs: (params?: { status?: MediaJobStatus; recordId?: string; limit?: number; page?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.status) queryParams.set("status", params.status);
       if (params?.recordId) queryParams.set("recordId", params.recordId);
       if (params?.limit) queryParams.set("limit", String(params.limit));
+      if (params?.page) queryParams.set("page", String(params.page));
       const query = queryParams.toString();
-      return get<{ jobs: MediaJob[] }>(`/media/jobs${query ? `?${query}` : ""}`, options);
+      return get<{ jobs: MediaJob[]; pagination?: PaginationMeta }>(`/media/jobs${query ? `?${query}` : ""}`, options);
     },
     createMediaJob: (payload: CreateMediaJobPayload, options?: AuthRequestOptions) =>
       post<{ job: MediaJob }>("/media/jobs", payload, options),

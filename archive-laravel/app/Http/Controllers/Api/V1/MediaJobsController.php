@@ -59,6 +59,7 @@ class MediaJobsController extends Controller
         $recordId = $request->query('recordId');
         $limit = (int) ($request->query('limit', 20));
         $limit = min(max($limit, 1), 100); // Cap between 1-100
+        $page = max((int) $request->query('page', 1), 1);
 
         $query = MediaJob::query();
 
@@ -74,14 +75,19 @@ class MediaJobsController extends Controller
             $query->where('record_id', $recordId);
         }
 
-        $jobs = $query
+        $paginated = $query
             ->orderByDesc('queued_at')
-            ->limit($limit)
-            ->get();
+            ->paginate($limit, ['*'], 'page', $page);
 
         return response()->json([
             'ok' => true,
-            'jobs' => $jobs->map(fn (MediaJob $job) => $this->payload($job))->values()->toArray(),
+            'jobs' => collect($paginated->items())->map(fn (MediaJob $job) => $this->payload($job))->values()->toArray(),
+            'pagination' => [
+                'total' => $paginated->total(),
+                'page' => $paginated->currentPage(),
+                'limit' => $limit,
+                'hasMore' => $paginated->hasMorePages(),
+            ],
         ]);
     }
 
