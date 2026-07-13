@@ -77,12 +77,17 @@ jobs:
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
+      # sbom+provenance: BuildKit attaches SPDX SBOM and SLSA provenance
+      # attestations to the pushed image (V1-205 supply chain).
       - name: Build and push Next image
+        id: push_next
         uses: docker/build-push-action@v6
         with:
           context: .
           file: archive-next/Dockerfile
           push: true
+          sbom: true
+          provenance: mode=max
           tags: |
             ${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}
             ${{ steps.meta.outputs.prerelease == 'false' && format('{0}:latest', env.NEXT_IMAGE) || '' }}
@@ -92,14 +97,28 @@ jobs:
             SENTRY_RELEASE=${{ steps.meta.outputs.version }}
 
       - name: Build and push Laravel image
+        id: push_laravel
         uses: docker/build-push-action@v6
         with:
           context: archive-laravel
           file: archive-laravel/Dockerfile.worker
           push: true
+          sbom: true
+          provenance: mode=max
           tags: |
             ${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}
             ${{ steps.meta.outputs.prerelease == 'false' && format('{0}:latest', env.LARAVEL_IMAGE) || '' }}
+
+      # Immutable reference manifest: deploy by digest, not by mutable tag.
+      - name: Write image digests manifest
+        shell: bash
+        run: |
+          cat > release-images.txt <<EOF
+          # Masar ${GITHUB_REF_NAME} — immutable image references (deploy by digest)
+          ${NEXT_IMAGE}@${{ steps.push_next.outputs.digest }}
+          ${LARAVEL_IMAGE}@${{ steps.push_laravel.outputs.digest }}
+          EOF
+          cat release-images.txt
 
       - name: Create GitHub Release
         env:
@@ -108,4 +127,4 @@ jobs:
         run: |
           flags=(--generate-notes --title "${GITHUB_REF_NAME}")
           [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]] && flags+=(--prerelease)
-          gh release create "${GITHUB_REF_NAME}" "${flags[@]}"
+          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt
