@@ -12,7 +12,9 @@
 # supervisor (s6/supervisord) since each compose service is already its own
 # single-process container. curl and bash ship in the base image already
 # (used by healthchecks below); nginx/procps are the only additions.
-FROM php:8.4-fpm
+FROM composer:2.9.5 AS composer
+
+FROM php:8.4.23-fpm
 
 # Install system dependencies including ffmpeg + python3/pip for whisper-ctranslate2
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -46,8 +48,8 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 
 # Install PHP dependencies (scripts skipped: artisan is not copied yet)
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && composer install --no-interaction --no-dev --no-scripts
+COPY --from=composer /usr/bin/composer /usr/local/bin/composer
+RUN composer install --no-interaction --no-dev --no-scripts
 
 # Copy application code
 COPY . .

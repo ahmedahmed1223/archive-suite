@@ -3261,3 +3261,10 @@
 - أربعة أوامر artisan جديدة/مُفعَّلة على جدولة يومية (`Schedule::command(...)->daily()` في `routes/console.php`): `sessions:prune` (يحذف `api_sessions` المنتهية الصلاحية — الآلية الفعلية للجلسات، لا جدول `sessions` غير المستخدَم أصلاً)، `audit:prune` (`AUDIT_LOG_RETENTION_DAYS`، افتراضي 365 يوماً)، `media:prune-jobs` (`MEDIA_JOB_RETENTION_DAYS`، افتراضي 90 يوماً، يستثني `queued`/`processing` بالكامل عبر فلترة الحالة)، و`backup:cleanup` (كان موجوداً من V1-121 لكنه لم يكن مجدولاً).
 - قياس RPO/RTO حقيقي عبر `DrReadinessService::rpoRtoReport()` وأمر `dr:report` جديد: RPO = عمر آخر نسخة احتياطية ناجحة بالساعات (من `filemtime` مباشرة)؛ RTO = مدة آخر `backup:dr-drill` فعلي (يقيس `microtime()` حول الاستعادة الفعلية) أو `null` صراحة مع رسالة "غير مُقاس بعد" قبل أول تشغيل، بدل رقم مُخمَّن.
 - 9 اختبارات جديدة (`RetentionPruningTest`)، الحزمة الكاملة 506 تمر/0 فشل.
+
+# 2026-07-13 — V1-003 reproducibility baseline
+
+- أضيف عقد toolchain قابل للفحص آلياً في `infra/platform/toolchain.v1.json`: Node.js 22.12.0 ضمن خط 22، pnpm 11.9.0، PHP 8.4.23، وComposer 2.9.5.
+- ثُبتت نسخ Node في CI وصورة Next ونسختا PHP/Composer في صورة Laravel، وربطت المتطلبات بعقد توافق المنصات؛ لم يعد Dockerfile ينزّل Composer عائماً.
+- أصبح `pnpm install --frozen-lockfile` مسار التثبيت الجذري الموثق، وأضيف `verify:reproducibility` إلى `pnpm verify` لمنع drift أو pins مفقودة.
+- نجح frozen install في checkout معزول (262 حزمة، pnpm 11.9.0)، ثم نجح `pnpm verify`: 122 اختبار Next، build لـ51 route، و526 اختبار Laravel (2468 assertion؛ تحذير معروف و2 skipped).

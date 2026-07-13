@@ -4,7 +4,7 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.12.0 <23"
   },
   "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b",
   "pnpm": {
@@ -14,7 +14,7 @@
     ]
   },
   "scripts": {
-    "bootstrap": "pnpm install",
+    "bootstrap": "pnpm install --frozen-lockfile",
     "dev": "node scripts/dev-laravel-next.mjs",
     "dev:next": "pnpm --filter @archive/next run dev",
     "dev:laravel": "node scripts/laravel-docker.mjs serve",
@@ -22,7 +22,8 @@
     "build": "pnpm run build:next",
     "build:next": "pnpm --filter @archive/next run build",
     "verify": "pnpm run verify:laravel-next",
-    "verify:laravel-next": "pnpm run verify:cutover && pnpm run verify:api-contracts && pnpm run typecheck && pnpm run test:next && pnpm run build:next && pnpm run verify:repo-hygiene && pnpm run verify:laravel",
+    "verify:laravel-next": "pnpm run verify:reproducibility && pnpm run verify:cutover && pnpm run verify:api-contracts && pnpm run typecheck && pnpm run test:next && pnpm run build:next && pnpm run verify:repo-hygiene && pnpm run verify:laravel",
+    "verify:reproducibility": "node --test scripts/verify-reproducibility.test.mjs",
     "verify:cutover": "node scripts/verify-cutover-defaults.mjs",
     "verify:laravel": "node scripts/laravel-docker.mjs test",
     "verify:laravel-next:live": "node scripts/verify-next-laravel-live.mjs",
