@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -16,6 +17,18 @@ class HealthApiTest extends TestCase
             ->getJson('/api/v1/health')
             ->assertOk()
             ->assertHeader('X-Request-ID', 'support-case-207');
+    }
+
+    public function test_request_id_is_bound_to_the_structured_log_context(): void
+    {
+        Log::shouldReceive('withContext')
+            ->once()
+            ->with(['request_id' => 'e2e-support-207']);
+
+        $this->withHeader('X-Request-ID', 'e2e-support-207')
+            ->getJson('/api/v1/health')
+            ->assertOk()
+            ->assertHeader('X-Request-ID', 'e2e-support-207');
     }
 
     public function test_health_endpoint_replaces_an_unsafe_correlation_id(): void

@@ -26,7 +26,7 @@ import { createInterface } from "node:readline";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { formatPlatformContractReport, loadPlatformContract, selectPlatforms } from "./platform-contract.mjs";
-import { buildOperatorReport, createSupportBundle } from "./observability.mjs";
+import { buildOperatorReport, buildReadinessContract, collectOperatorSnapshot, createSupportBundle } from "./observability.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
@@ -214,22 +214,23 @@ async function healthCheck() {
 
 async function localObservabilityCheck() {
   titleLine("Local operator checks");
-  const ps = compose(["ps", "--format", "json"], { inherit: false });
-  const services = {};
-  for (const line of String(ps.stdout || "").split(/\r?\n/).filter(Boolean)) {
-    try { const item = JSON.parse(line); services[item.Service || item.Name] = String(item.State || "").toLowerCase(); } catch { /* diagnostic input only */ }
-  }
+  const expectedServices = ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "ocr", "laravel-reverb", "next", "caddy"];
+  const ps = compose(["ps", "--all", "--format", "json"], { inherit: false });
   const recent = compose(["logs", "--tail=500", "--no-color"], { inherit: false });
-  const repeatedErrors = (String(recent.stdout || "").match(/\b(error|critical|alert|emergency)\b/gi) || []).length;
   const queue = compose(["exec", "-T", "redis", "sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" LLEN queues:default"], { inherit: false });
-  const queueDepth = Number.parseInt(String(queue.stdout || "0"), 10) || 0;
   const disk = statfsSync(ROOT);
   const diskUsedPercent = disk.blocks ? Math.round((1 - Number(disk.bavail) / Number(disk.blocks)) * 100) : 0;
   const backups = listBackupFiles().map((name) => statSync(join(BACKUP_DIR, name)).mtimeMs);
   const backupAgeHours = backups.length ? (Date.now() - Math.max(...backups)) / 3_600_000 : null;
-  const report = buildOperatorReport({ services, queueDepth, diskUsedPercent, backupAgeHours, repeatedErrors });
-  console.log(JSON.stringify(report, null, 2));
-  return report.ok ? 0 : 1;
+  const env = readEnv();
+  const snapshot = collectOperatorSnapshot({ expectedServices, composePs: ps, redis: queue, logs: recent, diskUsedPercent, backupAgeHours, errorWindowMinutes: Number(env.OBS_ERROR_WINDOW_MINUTES || 60) });
+  const thresholds = { queueDepth: Number(env.OBS_QUEUE_DEPTH_THRESHOLD || 100), diskUsedPercent: Number(env.OBS_DISK_USED_PERCENT_THRESHOLD || 85), backupAgeHours: Number(env.OBS_BACKUP_AGE_HOURS_THRESHOLD || 24), repeatedErrors: Number(env.OBS_REPEATED_ERRORS_THRESHOLD || 5) };
+  let deepHealth = { ok: false, error: "unavailable" };
+  try { const response = await fetch(defaultHealthUrl(env), { signal: AbortSignal.timeout(5000) }); deepHealth = await response.json(); } catch { snapshot.unknown.push("deep_health"); }
+  const readiness = buildReadinessContract({ deepHealth, services: snapshot.services, unknown: snapshot.unknown });
+  const report = buildOperatorReport(snapshot, thresholds);
+  console.log(JSON.stringify({ ...report, readiness }, null, 2));
+  return report.ok && readiness.ok ? 0 : 1;
 }
 
 async function supportBundle() {
