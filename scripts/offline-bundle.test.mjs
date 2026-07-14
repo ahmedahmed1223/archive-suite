@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import test from "node:test";
-import { cleanupRehearsal, resolveReleaseInventory } from "./offline-bundle.mjs";
+import { build, cleanupRehearsal, resolveReleaseInventory } from "./offline-bundle.mjs";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
@@ -148,6 +148,32 @@ test("offline bundle resolves signature-verified workflow image refs and rejects
   assert.equal(resolved.find((image) => image.id === "postgres").source, env.POSTGRES_IMAGE);
   assert.throws(() => resolveReleaseInventory("v1.0.0", { ...env, NEXT_IMAGE: "registry.test/next:latest" }), /NEXT_IMAGE/);
   assert.throws(() => resolveReleaseInventory("v1.0.0", { ...env, REDIS_IMAGE: undefined }), /REDIS_IMAGE/);
+});
+
+test("builder path writes workflow-shaped digest-only application refs into a consumable bundle manifest", () => {
+  const output = mkdtempSync(join(tmpdir(), "archive-offline-build-"));
+  const original = { NEXT_IMAGE: process.env.NEXT_IMAGE, LARAVEL_IMAGE: process.env.LARAVEL_IMAGE, POSTGRES_IMAGE: process.env.POSTGRES_IMAGE, REDIS_IMAGE: process.env.REDIS_IMAGE };
+  Object.assign(process.env, {
+    NEXT_IMAGE: `ghcr.io/workflow/next@sha256:${"d".repeat(64)}`,
+    LARAVEL_IMAGE: `ghcr.io/workflow/laravel@sha256:${"c".repeat(64)}`,
+    POSTGRES_IMAGE: `ghcr.io/workflow/postgres@sha256:${"a".repeat(64)}`,
+    REDIS_IMAGE: `ghcr.io/workflow/redis@sha256:${"b".repeat(64)}`,
+  });
+  try {
+    build("v1.0.0-rc.1", output, { runCommand: (command, args) => {
+      if (command === "git") return "test-commit";
+      if (command === "docker" && args[0] === "save") writeFileSync(args[args.indexOf("--output") + 1], `tar:${args.at(-1)}`);
+      if (command === "tar") writeFileSync(args[1], "archive");
+      return "";
+    } });
+    const manifest = JSON.parse(readFileSync(join(output, "archive-suite-offline-v1.0.0-rc.1", "manifest.json"), "utf8"));
+    assert.equal(manifest.version, "v1.0.0-rc.1");
+    assert.equal(manifest.images.find((image) => image.id === "next").source, process.env.NEXT_IMAGE);
+    assert.equal(manifest.images.find((image) => image.id === "laravel-reverb").source, process.env.LARAVEL_IMAGE);
+  } finally {
+    for (const [key, value] of Object.entries(original)) value === undefined ? delete process.env[key] : process.env[key] = value;
+    rmSync(output, { recursive: true, force: true });
+  }
 });
 
 test("operator guide verifies top-level checksum before extraction and uses schema-compatible restore", () => {

@@ -30,7 +30,7 @@ export function resolveReleaseInventory(version, environment = process.env, base
   });
 }
 
-function build(version, output) {
+export function build(version, output, { runCommand = run } = {}) {
   const resolvedInventory = resolveReleaseInventory(version);
   const dir = join(output, `archive-suite-offline-${version}`);
   rmSync(dir, { recursive: true, force: true });
@@ -41,12 +41,12 @@ function build(version, output) {
   writeFileSync(join(dir, "VERSION"), `${version}\n`);
   const images = resolvedInventory.map((image) => {
     const source = image.source;
-    if (!source || !/:\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?@sha256:[a-f0-9]{64}$/.test(source)) throw new Error(`offline inventory image ${image.id} must be a signed immutable version@sha256 reference`);
+    if (!source || !/@sha256:[a-f0-9]{64}$/.test(source)) throw new Error(`offline inventory image ${image.id} must be a signed immutable image@sha256 reference`);
     const bundleRef = image.bundleRef.replace("$VERSION", version);
-    run("docker", ["pull", source]);
-    run("docker", ["tag", source, bundleRef]);
+    runCommand("docker", ["pull", source]);
+    runCommand("docker", ["tag", source, bundleRef]);
     const archive = join(dir, "images", `${image.id}.tar`);
-    run("docker", ["save", "--output", archive, bundleRef]);
+    runCommand("docker", ["save", "--output", archive, bundleRef]);
     return { id: image.id, kind: image.kind, source, bundleRef, archive: `images/${image.id}.tar`, sha256: sha256(archive) };
   });
   const payload = files(dir).filter((path) => basename(path) !== "manifest.json" && basename(path) !== "SHA256SUMS");
@@ -55,7 +55,7 @@ function build(version, output) {
     version,
     profile: "core",
     createdAt: new Date().toISOString(),
-    sourceCommit: run("git", ["-c", `safe.directory=${root.replaceAll("\\", "/")}`, "rev-parse", "HEAD"], { capture: true }),
+    sourceCommit: runCommand("git", ["-c", `safe.directory=${root.replaceAll("\\", "/")}`, "rev-parse", "HEAD"], { capture: true }),
     images,
     files: payload.map((path) => ({ path: relative(dir, path).replaceAll("\\", "/"), bytes: statSync(path).size, sha256: sha256(path) })),
   };
@@ -64,7 +64,7 @@ function build(version, output) {
   writeFileSync(join(dir, "SHA256SUMS"), checked.map((file) => `${file.sha256}  ${file.path}`).join("\n") + "\n");
   verifyBundle(dir);
   const archiveName = `${basename(dir)}.tar.gz`;
-  run("tar", ["-czf", join(output, archiveName), "-C", output, basename(dir)]);
+  runCommand("tar", ["-czf", join(output, archiveName), "-C", output, basename(dir)]);
   process.stdout.write(`${join(output, archiveName)}\n`);
 }
 

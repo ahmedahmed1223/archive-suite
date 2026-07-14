@@ -12,7 +12,10 @@ const sha256 = (path) => createHash("sha256").update(readFileSync(path)).digest(
 function validCoreBundle() {
   const dir = mkdtempSync(join(tmpdir(), "release-offline-core-"));
   const descriptor = loadReleaseDescriptor();
-  const images = descriptor.images.filter((image) => image.profile === "core").map((image) => ({ id: image.id, kind: "application", source: image.online, bundleRef: image.offlineRef.replace("$VERSION", descriptor.version) }));
+  const images = descriptor.images.filter((image) => image.profile === "core").map((image) => {
+    const application = ["next", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb"].includes(image.service);
+    return { id: image.id, kind: "application", source: application ? `ghcr.io/workflow/${image.id === "next" ? "next" : "laravel"}@sha256:${image.id === "next" ? "d".repeat(64) : "c".repeat(64)}` : image.online, bundleRef: image.offlineRef.replace("$VERSION", descriptor.version) };
+  });
   writeFileSync(join(dir, "images.v1.json"), JSON.stringify({ schemaVersion: 1, profile: "core", images }));
   writeFileSync(join(dir, "verify-bundle.mjs"), readFileSync(new URL("../../infra/offline/verify-bundle.mjs", import.meta.url)));
   mkdirSync(join(dir, "images"));
@@ -23,7 +26,7 @@ function validCoreBundle() {
     return { ...image, archive, sha256: sha256(archivePath) };
   });
   const records = files.map((path) => ({ path, bytes: readFileSync(join(dir, path)).length, sha256: sha256(join(dir, path)) }));
-  writeFileSync(join(dir, "manifest.json"), JSON.stringify({ schemaVersion: 1, version: descriptor.version, profile: "core", images: manifestImages, files: records }));
+  writeFileSync(join(dir, "manifest.json"), JSON.stringify({ schemaVersion: 1, version: `v${descriptor.version}`, profile: "core", images: manifestImages, files: records }));
   writeFileSync(join(dir, "SHA256SUMS"), "");
   return dir;
 }
@@ -69,6 +72,7 @@ test("a complete core offline bundle resolves, verifies, loads, tags, and inspec
   assert.equal(release.images.length, 7);
   assert.equal(release.environment.ARCHIVE_RELEASE_PULL_POLICY, "never");
   assert.deepEqual(release.images.map((image) => image.service).sort(), ["laravel", "laravel-fpm", "laravel-reverb", "laravel-worker", "next", "postgres", "redis"]);
+  assert.match(release.images.find((image) => image.service === "next").online, /^ghcr\.io\/workflow\/next@sha256:/);
   const calls = [];
   loadOfflineReleaseImages(release, { runDocker: (args) => calls.push(args) });
   assert.equal(calls.filter((args) => args[1] === "load").length, 7);
