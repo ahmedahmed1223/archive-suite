@@ -6,6 +6,7 @@
 - أضيف compose إصدار مستقل لا يحتوي `build:`؛ adapter التثبيت/الإصلاح يطلب `up -d` فقط.
 - أضيف تحقق offline فعلي قبل Compose: manifest مغلق وchecksums وربط image ref/version/profile؛ يفرض `pull_policy: never` للـoffline.
 - بقي مسار Compose المبني من المصدر تطويرياً صريحاً؛ لا يستخدم adapter المستخدم `--build`.
+- تصحيح مراجعة: كل lifecycle للمستخدم صار يستمد release context من manifest، وتُحمّل offline archives وتُفحص قبل Compose. Compose الإصدار يصف stack core الكامل ويجعل media/edge اختيارية فعلاً.
 - تظل `plan` و`import-config` صِرفين، وتظل update/rollback/uninstall غير منفذة هنا.
 
 ## دليل الاختبار

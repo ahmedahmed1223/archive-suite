@@ -12,6 +12,7 @@
 - أضيف عقد إصدار مغلق versioned في `infra/platform/release.v1.json` وschema مرافق له. لا يقبل إلا مراجع online بصيغة `image:version@sha256:<digest>`، ويرفض التكرار، غياب خدمات `core`، اختلاف semantic version، والحقول أو القيم الحساسة.
 - أضيف `infra/docker-compose.release.yml` لمسار المستخدم: لا يحتوي `build:` ويستخدم مراجع العقد فقط. يمرّر adapter `install` و`repair` إلى `up -d` بلا `--build`، ويظل `--build` محصوراً في adapter تطوير صريح (`buildLocal: true`) ومسار Compose التطويري القديم.
 - يراجع مسار offline manifest/checksums والحزمة المغلقة قبل Compose، ويربط كل image محمّلة محلياً بمرجع الإصدار؛ يمرر `pull_policy: never` عند offline. لا يعد بنجاح offline إذا نقصت الحزمة أو اختلف الإصدار/profile/image.
+- **تصحيح مراجعة:** تستخدم lifecycle للمستخدم (`start/stop/restart/status/health/logs/exec`) سياق الإصدار من manifest وCompose الإصدار حصراً. توسع Compose الإصدار بالخدمات والبيئة والتخزين والشبكة والمنافذ والاعتمادات القانونية لـcore، مع defaults لا تتطلب متغيرات media/edge. يُحمّل offline archives ويُفحص محلياً قبل Compose.
 - أُدخلت artifacts الآمنة المستخرجة من عقد الإصدار في manifest القابل للاستئناف، وتبقى `plan` و`import-config` بلا Docker أو كتابة manifest. التحقق: 56 اختبار Node (Control Center/manifest/adapter/release/platform) ناجح، وفحص syntax و`git diff --check`؛ `pnpm verify:infra` محجوب محلياً بإصدار Node/Docker المعروفين.
 
 ## V1-208D — installation manifest قابل للاستئناف — مكتمل 2026-07-14

@@ -3,7 +3,7 @@ import test from "node:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadReleaseDescriptor, resolveRelease } from "./release-descriptor.mjs";
+import { loadOfflineReleaseImages, loadReleaseDescriptor, resolveRelease } from "./release-descriptor.mjs";
 
 const configuration = (overrides = {}) => ({ mode: "docker", source: "online", runtimeProfiles: ["core"], ...overrides });
 
@@ -40,4 +40,23 @@ test("release contract rejects a floating or mismatched image descriptor", () =>
 
 test("offline release requires a verifiable bundle before Compose", () => {
   assert.throws(() => resolveRelease({ configuration: configuration({ source: "offline" }), offlineBundlePath: join(tmpdir(), "missing-bundle") }), { code: "OFFLINE_BUNDLE_REQUIRED" });
+});
+
+test("verified offline images are loaded and inspected before the release adapter can compose", () => {
+  const calls = [];
+  loadOfflineReleaseImages({
+    environment: { ARCHIVE_RELEASE_PULL_POLICY: "never" },
+    images: [
+      { archive: "C:/bundle/images/laravel.tar", checksum: "a".repeat(64), reference: "archive-suite/laravel:1.0.0-rc.1" },
+      { archive: "C:/bundle/images/laravel.tar", checksum: "a".repeat(64), reference: "archive-suite/laravel:1.0.0-rc.1" },
+      { archive: "C:/bundle/images/next.tar", checksum: "b".repeat(64), reference: "archive-suite/next:1.0.0-rc.1" },
+    ],
+  }, { runDocker: (args) => calls.push(args) });
+  assert.deepEqual(calls, [
+    ["image", "load", "--input", "C:/bundle/images/laravel.tar"],
+    ["image", "inspect", "archive-suite/laravel:1.0.0-rc.1"],
+    ["image", "inspect", "archive-suite/laravel:1.0.0-rc.1"],
+    ["image", "load", "--input", "C:/bundle/images/next.tar"],
+    ["image", "inspect", "archive-suite/next:1.0.0-rc.1"],
+  ]);
 });

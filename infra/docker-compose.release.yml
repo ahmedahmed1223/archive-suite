@@ -1,35 +1,90 @@
 name: archive-suite-release
 
-# User-mode release Compose. It is intentionally independent from
-# infra/docker-compose.yml (the explicit source-building development path).
-# Values are supplied only by the closed release descriptor.
+# Immutable user-mode stack. infra/docker-compose.yml remains the separately
+# gated source-building development stack; this file never has build directives.
+x-laravel-env: &laravel-env
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
+  APP_URL: ${LARAVEL_APP_URL:-http://localhost}
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_DATABASE: ${POSTGRES_DB:-archive}
+  DB_USERNAME: ${POSTGRES_USER:-archive}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+  QUEUE_CONNECTION: redis
+  CACHE_STORE: redis
+  SESSION_DRIVER: database
+  REDIS_HOST: redis
+  REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+  REDIS_PORT: "6379"
+
 services:
   postgres:
     image: ${ARCHIVE_RELEASE_IMAGE_POSTGRES:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    environment: { POSTGRES_USER: "${POSTGRES_USER:-archive}", POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}", POSTGRES_DB: "${POSTGRES_DB:-archive}" }
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"], interval: 10s, timeout: 5s, retries: 5 }
+    networks: [archive]
   redis:
     image: ${ARCHIVE_RELEASE_IMAGE_REDIS:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    command: ["sh", "-c", "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""]
+    environment: { REDIS_PASSWORD: "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}" }
+    healthcheck: { test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"], interval: 10s, timeout: 5s, retries: 5 }
+    networks: [archive]
   laravel-fpm:
     image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL_FPM:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    command: ["sh", "-c", "php artisan archive:migrate-safe && php artisan db:seed --force && exec php-fpm"]
+    environment: *laravel-env
+    volumes: [storage:/app/storage/app]
+    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_healthy } }
+    networks: [archive]
   laravel:
     image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    command: ["nginx", "-g", "daemon off;"]
+    volumes: [storage:/app/storage/app]
+    depends_on: { laravel-fpm: { condition: service_started } }
+    networks: [archive]
   laravel-worker:
     image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL_WORKER:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    command: ["php", "artisan", "queue:work", "--queue=default", "--sleep=1", "--tries=3"]
+    environment: *laravel-env
+    volumes: [storage:/app/storage/app]
+    depends_on: { laravel-fpm: { condition: service_started } }
+    networks: [archive]
   laravel-reverb:
     image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL_REVERB:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    environment: { REVERB_SERVER_HOST: "0.0.0.0", REVERB_SERVER_PORT: "8080", REVERB_APP_ID: "${REVERB_APP_ID:?Set REVERB_APP_ID in .env}", REVERB_APP_KEY: "${REVERB_APP_KEY:?Set REVERB_APP_KEY in .env}", REVERB_APP_SECRET: "${REVERB_APP_SECRET:?Set REVERB_APP_SECRET in .env}" }
+    ports: ["${REVERB_SERVER_PUBLISHED_PORT:-8080}:8080"]
+    depends_on: { laravel-fpm: { condition: service_started } }
+    networks: [archive]
   next:
     image: ${ARCHIVE_RELEASE_IMAGE_NEXT:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    environment: { NODE_ENV: production, PORT: "3000", HOSTNAME: "0.0.0.0", ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1 }
+    ports: ["${NEXT_PUBLIC_PORT:-3000}:3000"]
+    depends_on: { laravel: { condition: service_started }, laravel-reverb: { condition: service_started } }
+    networks: [archive]
   ocr:
     profiles: ["media"]
-    image: ${ARCHIVE_RELEASE_IMAGE_OCR:?Release descriptor is required}
+    image: ${ARCHIVE_RELEASE_IMAGE_OCR:-archive-suite/optional:0.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    networks: [archive]
   caddy:
     profiles: ["edge"]
-    image: ${ARCHIVE_RELEASE_IMAGE_CADDY:?Release descriptor is required}
+    image: ${ARCHIVE_RELEASE_IMAGE_CADDY:-archive-suite/optional:0.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    ports: ["80:80", "443:443"]
+    depends_on: { next: { condition: service_started } }
+    networks: [archive]
+
+volumes: { postgres_data: {}, storage: {} }
+networks: { archive: { driver: bridge } }
