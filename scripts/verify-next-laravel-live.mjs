@@ -5,6 +5,12 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const containerName = `archive-laravel-e2e-${process.pid}`;
+// Built from the same Dockerfile.worker as scripts/laravel-docker.mjs and the
+// production images (V1-202) — composer.lock resolves league/flysystem-ftp,
+// which requires ext-ftp. Plain `composer:latest` lacks it and fails
+// `composer install`, so vendor/autoload.php never gets created (silent
+// downstream failure: "Laravel did not become ready").
+const LARAVEL_RUNTIME_IMAGE = "archive-laravel-e2e-runtime";
 const children = [];
 let startedLaravelContainer = false;
 
@@ -105,6 +111,16 @@ async function main() {
   if (useExistingLaravel) {
     console.log("Using existing Laravel server for live verification.");
   } else {
+    await runStep("build-laravel-runtime", "docker", [
+      "build",
+      "--quiet",
+      "--tag",
+      LARAVEL_RUNTIME_IMAGE,
+      "--file",
+      "archive-laravel/Dockerfile.worker",
+      "archive-laravel",
+    ]);
+
     startedLaravelContainer = true;
     laravel = spawnChild("laravel", "docker", [
       "run",
@@ -117,7 +133,7 @@ async function main() {
       "/app/archive-laravel",
       "-p",
       `${laravelPort}:8000`,
-      "composer:latest",
+      LARAVEL_RUNTIME_IMAGE,
       "sh",
       "-lc",
       "test -f .env || cp .env.example .env; test -d vendor || composer install --no-interaction; php artisan config:clear && php artisan migrate:fresh --seed --seeder=NextIntegrationSeeder --force && php artisan serve --host=0.0.0.0 --port=8000",
