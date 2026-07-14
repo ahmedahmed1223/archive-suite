@@ -24,6 +24,7 @@ test("support bundle is bounded and contains only allow-listed diagnostics", () 
     logs: { laravel: Array.from({ length: 500 }, (_, i) => `line-${i}`).join("\n") },
     maxLogLines: 25,
     maxBytes: 16_384,
+    secure: () => {},
   });
   const bundle = JSON.parse(readFileSync(result.path, "utf8"));
   assert.deepEqual(Object.keys(bundle).sort(), ["config", "generatedAt", "health", "logs", "manifests", "schemaVersion", "versions"]);
@@ -43,7 +44,7 @@ test("final bundle removes adversarial JSON, query, env, multiline, CLI and enco
     `tool --password ${secrets[5]} --safe yes`,
     `CLIENT_SECRET='${secrets[6]}\ncontinued'`,
   ].join("\n");
-  const result = createSupportBundle({ outputDir: dir, logs: { app: logs }, config: logs, manifests: { compose: logs } });
+  const result = createSupportBundle({ outputDir: dir, logs: { app: logs }, config: logs, manifests: { compose: logs }, secure: () => {} });
   const serialized = readFileSync(result.path, "utf8");
   for (const secret of secrets) assert.equal(serialized.includes(secret), false, secret);
   if (process.platform !== "win32") assert.equal(statSync(result.path).mode & 0o777, 0o600);

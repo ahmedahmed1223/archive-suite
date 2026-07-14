@@ -53,7 +53,7 @@ export function secureBundleFile(path, platform = process.platform, run = spawnS
   }
 }
 
-export function createSupportBundle({ outputDir, now = new Date(), versions = {}, config = "", health = {}, manifests = {}, logs = {}, maxLogLines = 200, maxBytes = 1_000_000 }) {
+export function createSupportBundle({ outputDir, now = new Date(), versions = {}, config = "", health = {}, manifests = {}, logs = {}, maxLogLines = 200, maxBytes = 1_000_000, secure = secureBundleFile }) {
   const safeLogs = Object.fromEntries(Object.entries(logs).map(([name, content]) => [name, boundedTail(content, maxLogLines)]));
   const bundle = { schemaVersion: 1, generatedAt: now.toISOString(), versions: sanitize(versions), config: sanitizeLogLines(config), health: sanitize(health), logs: safeLogs, manifests: sanitize(manifests) };
   let encoded = JSON.stringify(bundle, null, 2);
@@ -65,7 +65,7 @@ export function createSupportBundle({ outputDir, now = new Date(), versions = {}
   mkdirSync(outputDir, { recursive: true });
   const path = join(outputDir, `archive-support-${now.toISOString().replace(/[:.]/g, "-")}.json`);
   writeFileSync(path, encoded, { encoding: "utf8", mode: 0o600, flag: "wx" });
-  try { secureBundleFile(path); } catch (error) { try { unlinkSync(path); } catch {} throw error; }
+  try { secure(path); } catch (error) { try { unlinkSync(path); } catch {} throw error; }
   return { path, bytes: Buffer.byteLength(encoded) };
 }
 

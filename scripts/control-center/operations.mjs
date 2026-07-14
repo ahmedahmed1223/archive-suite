@@ -56,10 +56,10 @@ export function createControlOperations({ adapter, composeFile, backupDir, readE
     output.titleLine("Database migration status (php artisan migrate:status)");
     return commandStatus(adapter.exec(["php", "artisan", "migrate:status"]));
   };
-  const migrateDeploy = async () => {
+  const migrateDeploy = async ({ confirmed = false } = {}) => {
     output.titleLine("Apply pending migrations (php artisan archive:migrate-safe)");
     output.log("Preflight-checked: backs up the database first, runs in a maintenance window, and exits cleanly if nothing is pending.");
-    if (!(await confirm("Apply all pending migrations to the configured database?"))) { output.log("Cancelled."); return 0; }
+    if (!confirmed && !(await confirm("Apply all pending migrations to the configured database?"))) { output.log("Cancelled."); return 0; }
     const status = commandStatus(adapter.exec(["php", "artisan", "archive:migrate-safe"]));
     (status === 0 ? output.ok : output.err)(status === 0 ? "Migrations applied." : "Migration failed — application left in maintenance mode. See command output above for rollback steps.");
     return status;
@@ -115,9 +115,9 @@ export function createControlOperations({ adapter, composeFile, backupDir, readE
     return commandStatus(result);
   };
 
-  const runDiagnostics = () => {
+  const runDiagnostics = ({ quiet = false } = {}) => {
     output.titleLine("Diagnostics — canonical verify gate (pnpm verify)");
-    const result = runPnpm(["run", "verify"]);
+    const result = runPnpm(["run", "verify"], root, { stdio: quiet ? "pipe" : "inherit" });
     (result.status === 0 ? output.ok : output.err)(`verify ${result.status === 0 ? "passed" : `exit ${result.status}`}`);
     return result.status ?? 1;
   };

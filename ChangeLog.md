@@ -7,6 +7,14 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208G — بوابة Setup الأساسية — مكتمل 2026-07-14
+
+- أصبحت أوامر Setup الأساسية في وضع `--json` تعيد كائنًا واحدًا وثابت الحقول: `ok`, `code`, `message`, `details`, `nextActions`، مع exit code موافق. لا يُدرج transcript البشري أو مخرجات أدوات فرعية في JSON، فلا يمكنه تسريب credentials أو secrets.
+- تظل أوامر `plan` و`import-config` و`export-config` و`install` و`repair` و`wizard` بعقودها المتخصصة القائمة، بينما تستخدم lifecycle (`start/stop/restart/status/health/logs/migrate-status`) إصدار Docker المسجل فقط. لا تنفذ عمليات update/rollback/uninstall غير المدعومة.
+- أصبح `rotate-secrets --json` و`migrate --json` يتطلبان `--yes`: بلاه يعيدان `CONFIRMATION_REQUIRED` بلا كتابة أو تشغيل. ومعه يتجاوزان prompt فقط وينفذان العملية الفعلية؛ وبذلك لا يُبلّغ JSON عن نجاح إلغاء غير تفاعلي.
+- أصبحت diagnostics صامتة عند JSON حتى لا تلوث مخرجات `pnpm verify` الغلاف الآلي. وحزمة الدعم تقبل مسار إخراج مضبوطًا للتشغيل، وتبقى محمية بـACL/0600 في الإنتاج؛ تفشل بأمان وتحذف الملف إن تعذر تثبيت ACL.
+- دليل TDD: اختبارات CLI الجديدة بدأت بفشل JSON أمام النص الملون وفشل حزمة الدعم، ثم غطت help/config/lifecycle/doctor/rotate/migrate/diagnostics/support-bundle وunknown command، مع fixtures URL/password/token والتحقق من stdout/stderr والملف. فُصل اختبار محتوى الحزمة المعقم عن ACL Windows الإنتاجي عبر dependency injection، وبقي اختبار ACL الفاشل مغلقًا بأمان. التحقق: 78 اختبار Node مركزًا ناجحًا (Control Center/manifest/release/runtime/observability/platform)، و`node --check` و`git diff --check`. بوابة `pnpm verify:infra` محجوبة محليًا بإصدار Node 24 خارج العقد وصلاحيات Docker/`--env-file` المعروفة.
+
 ## V1-208F — واجهة Setup wizard الشاملة — مكتمل 2026-07-14
 
 - صار `setup wizard --config=<file>` المسار غير التفاعلي للمعالج: يستدعي `setup plan` نفسه حرفياً، فينتج العقد والـplan والـcodes نفسها بلا إنشاء `.env` أو manifest أو مسارات بيانات أو استدعاء Docker.
