@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 export const CONTRACT_PATH = fileURLToPath(new URL("../infra/platform/compatibility.v1.json", import.meta.url));
 export const SCHEMA_PATH = fileURLToPath(new URL("../infra/platform/compatibility.v1.schema.json", import.meta.url));
 const COMPOSE_PATH = fileURLToPath(new URL("../infra/docker-compose.yml", import.meta.url));
-const CONTROL_CENTER_PATH = fileURLToPath(new URL("./control-center.mjs", import.meta.url));
 
 const PLATFORM_IDS = ["windows-10-11-docker", "linux-docker", "windows-native", "linux-native"];
 const MODES = ["docker", "native"];
@@ -59,17 +58,12 @@ export function resolveComposeProfiles(contract, raw) {
 
 export function validateRuntimeOptionSources(contract, {
   composeSource = readFileSync(COMPOSE_PATH, "utf8"),
-  setupSource = readFileSync(CONTROL_CENTER_PATH, "utf8"),
 } = {}) {
   const composeProfiles = composeProfilesFrom(composeSource);
   const expectedComposeProfiles = optionalRuntimeProfiles(contract);
   assertContract(
     hasExactly(composeProfiles, expectedComposeProfiles),
     `Docker Compose runtime profiles must be exactly ${expectedComposeProfiles.join(", ")}; capabilities must not be Docker Compose profiles`
-  );
-  assertContract(
-    /resolveComposeProfiles\(\s*contract\s*,\s*configuredProfiles\s*\)/.test(setupSource),
-    "Control Center must resolve Docker Compose profiles from the platform contract"
   );
 }
 

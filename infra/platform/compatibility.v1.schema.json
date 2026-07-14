@@ -10,25 +10,21 @@
     "runtimeProfiles": {
       "type": "object",
       "required": ["core", "media", "edge"],
-      "additionalProperties": {
-        "type": "object",
-        "required": ["status", "description"],
-        "properties": {
-          "status": { "enum": ["conditional", "planned"] },
-          "description": { "type": "string", "minLength": 1 }
-        }
+      "additionalProperties": false,
+      "properties": {
+        "core": { "$ref": "#/$defs/option" },
+        "media": { "$ref": "#/$defs/option" },
+        "edge": { "$ref": "#/$defs/option" }
       }
     },
     "capabilities": {
       "type": "object",
       "required": ["ocr", "ai", "observability"],
-      "additionalProperties": {
-        "type": "object",
-        "required": ["status", "description"],
-        "properties": {
-          "status": { "enum": ["conditional", "planned"] },
-          "description": { "type": "string", "minLength": 1 }
-        }
+      "additionalProperties": false,
+      "properties": {
+        "ocr": { "$ref": "#/$defs/option" },
+        "ai": { "$ref": "#/$defs/option" },
+        "observability": { "$ref": "#/$defs/option" }
       }
     },
     "ports": {
@@ -81,6 +77,16 @@
           "dataPathFamily": { "enum": ["windows", "linux"] },
           "resourceStatus": { "const": "provisional" }
         }
+      }
+    }
+  },
+  "$defs": {
+    "option": {
+      "type": "object",
+      "required": ["status", "description"],
+      "properties": {
+        "status": { "enum": ["conditional", "planned"] },
+        "description": { "type": "string", "minLength": 1 }
       }
     }
   }

@@ -87,6 +87,12 @@ test("q command exits successfully instead of starting deployment", () => {
   assert.equal(r.stderr.trim(), "");
 });
 
+test("server commands reject capabilities as Compose profiles before Docker access", () => {
+  const r = run(["status"], { ARCHIVE_COMPOSE_PROFILES: "ocr", PATH: "", Path: "" });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr + r.stdout, /capabilities cannot be enabled as Docker Compose profiles/i);
+});
+
 test("first-run guide renders quick and advanced setup paths without deploying", () => {
   const r = run(["first-run"], { ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1" });
   assert.equal(r.status, 0);
