@@ -43,7 +43,15 @@ test("deduplicates selections and rejects unknown or ambiguous special tokens", 
   );
   const unknown = parseWizardChoices("media, accelerated", { options: ["media", "edge"] });
   assert.equal(unknown.code, "CHOICE_UNKNOWN");
-  assert.match(unknown.message, /accelerated/i);
+  assert.match(unknown.message, /\[REDACTED_INPUT\]/);
+  assert.doesNotMatch(unknown.message, /accelerated/i);
   const mixed = parseWizardChoices("all, media", { options: ["media", "edge"], allowAll: true });
   assert.equal(mixed.code, "CHOICE_SPECIAL_TOKEN_MIXED");
+});
+
+test("redacts raw unknown tokens so interactive errors cannot reveal credential URLs", () => {
+  const result = parseWizardChoices("https://operator:topsecret@example.test/media", { options: ["media", "edge"] });
+  assert.equal(result.code, "CHOICE_UNKNOWN");
+  assert.doesNotMatch(result.message, /topsecret|operator|example\.test/i);
+  assert.match(result.message, /\[REDACTED_INPUT\]/);
 });

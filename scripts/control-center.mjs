@@ -575,7 +575,11 @@ async function guidedSetup() {
   const publicUrl = await ask("Public URL — leave blank for local-only access", existing.APP_BASE_URL && /^https?:\/\//.test(existing.APP_BASE_URL) ? existing.APP_BASE_URL : "");
   if (publicUrl && !/^https?:\/\//.test(publicUrl)) { err("The public URL must start with http:// or https://."); return 1; }
   const planned = setupConfiguration.planInput(runtimeChoices.candidate);
-  if (!planned.ok) return renderSetupResult(planned);
+  if (!planned.ok) {
+    renderSetupResult(planned);
+    log("Please correct the choices above. Nothing has been changed.");
+    return guidedSetup();
+  }
   const resolved = planned.details.configuration;
 
   // Step 1 is deliberately run after resolving the requested platform. That
@@ -589,7 +593,7 @@ async function guidedSetup() {
   }
 
   log("");
-  log(`${C.b}Choice summary${C.x}`);
+  log(`${C.b}Your setup summary${C.x}`);
   log(`  Mode/platform: ${resolved.mode} / ${resolved.platform}`);
   log(`  Source/access: ${resolved.source} / ${resolved.access}`);
   log(`  Storage: ${resolved.storage.path} (local)`);
