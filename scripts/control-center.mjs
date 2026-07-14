@@ -22,12 +22,11 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync, readdirSync, statSync, statfsSync } from "node:fs";
-import { createInterface } from "node:readline";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { formatPlatformContractReport, loadPlatformContract, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
 import { buildOperatorReport, buildReadinessContract, collectOperatorSnapshot, createSupportBundle } from "./observability.mjs";
-import { createCli } from "./control-center/cli.mjs";
+import { createCli, createConsoleUi } from "./control-center/cli.mjs";
 import { createConfiguration, validateAdminPassword } from "./control-center/configuration.mjs";
 import { createDockerCompose } from "./control-center/docker-compose.mjs";
 import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs";
@@ -43,28 +42,10 @@ const ENV_EXAMPLE = join(INFRA_DIR, ".env.example");
 const COMPOSE_FILE = join(INFRA_DIR, "docker-compose.yml");
 const BACKUP_DIR = join(INFRA_DIR, "backups");
 
-// ─── Colours / logging ──────────────────────────────────────────────────────
-const C = { g: "\x1b[32m", y: "\x1b[33m", r: "\x1b[31m", c: "\x1b[36m", b: "\x1b[1m", d: "\x1b[2m", x: "\x1b[0m" };
-const log = (m = "") => console.log(`  ${m}`);
-const ok = (m) => console.log(`  ${C.g}OK${C.x}  ${m}`);
-const warn = (m) => console.log(`  ${C.y}!!${C.x}  ${m}`);
-const err = (m) => console.error(`  ${C.r}xx${C.x}  ${m}`);
-const titleLine = (m) => console.log(`\n${C.b}${C.c}${m}${C.x}\n`);
-const hr = () => console.log(`${C.d}${"-".repeat(60)}${C.x}`);
+// ─── CLI display and prompt ─────────────────────────────────────────────────
+const ui = createConsoleUi();
+const { C, log, ok, warn, err, titleLine, hr, ask, confirm, close, printBanner, printMenu } = ui;
 const output = { log, ok, warn, err, titleLine };
-
-// ─── Prompt (lazily-created shared readline) ─────────────────────────────────
-let _rl = null;
-function rl() {
-  if (!_rl) _rl = createInterface({ input: process.stdin, output: process.stdout });
-  return _rl;
-}
-const ask = (q, def = "") =>
-  new Promise((res) => rl().question(`  ${C.c}?${C.x} ${q}${def ? ` ${C.y}(${def})${C.x}` : ""}: `, (a) => res(a.trim() || def)));
-const confirm = async (q, def = "n") => {
-  const a = await ask(`${q} ${C.d}(y/n)${C.x}`, def);
-  return a.toLowerCase().startsWith("y");
-};
 
 // ─── CLI and configuration ──────────────────────────────────────────────────
 const { args: ARGS, hasFlag, flagValue, command: cliCommand } = createCli(process.argv);
@@ -647,33 +628,6 @@ const MENU = [
   ["q", "Exit", null],
 ];
 
-function printBanner() {
-  const width = 48;
-  const edge = (l, r) => `  ${C.c}${l}${"─".repeat(width)}${r}${C.x}`;
-  const row = (text, style) => {
-    const pad = Math.max(0, width - 1 - text.length);
-    return `  ${C.c}│${C.x} ${style}${text}${C.x}${" ".repeat(pad)}${C.c}│${C.x}`;
-  };
-  console.log("");
-  console.log(edge("╭", "╮"));
-  console.log(row("Masar — Control Center", C.b));
-  console.log(row("Install · Operate · Configure · Maintain", C.d));
-  console.log(row("Laravel API + Next.js", C.d));
-  console.log(edge("╰", "╯"));
-  console.log("");
-}
-function printMenu() {
-  for (const row of MENU) {
-    if (row[0] === "sec") {
-      if (row[1]) console.log(`\n  ${C.b}${C.c}${row[1]}${C.x}`);
-      continue;
-    }
-    log(`${C.c}${C.b}${row[0].padStart(2)}${C.x}) ${row[1]}`);
-  }
-  console.log("");
-  hr();
-}
-
 // One-line preflight summary printed at the top of the interactive menu.
 // Avoids the full Doctor wall of text but still surfaces blockers up front
 // (missing Node/pnpm/Docker, missing .env) so the operator doesn't pick
@@ -701,7 +655,7 @@ async function interactive() {
   printBanner();
   preflightSummary();
   for (;;) {
-    printMenu();
+    printMenu(MENU);
     const choice = await ask("Choose an option");
     const item = MENU.find((m) => m[0] === choice && m[0] !== "sec");
     if (!item) { warn("Unknown option."); continue; }
@@ -709,7 +663,7 @@ async function interactive() {
     try { await item[2](); } catch (e) { err(e.message); }
     log("");
   }
-  if (_rl) _rl.close();
+  close();
   log("Goodbye.");
 }
 
@@ -779,7 +733,7 @@ const COMMANDS = {
     console.log(`  ${C.d}- "Stack not running" → run 'setup start' or 'setup doctor' to diagnose.${C.x}`);
     console.log(`  ${C.d}- "No .env found"     → run 'setup deploy' to provision a fresh configuration.${C.x}`);
     console.log(`\n${C.b}  Interactive menu (run 'setup' without arguments):${C.x}`);
-    printMenu();
+    printMenu(MENU);
     console.log(`  ${C.d}Usage: node scripts/control-center.mjs <command>${C.x}\n`);
   },
 };
@@ -792,7 +746,7 @@ if (cmd) {
   const fn = COMMANDS[cmd];
   if (!fn) { err(`Unknown command "${cmd}". Try: ${Object.keys(COMMANDS).join(", ")}`); process.exit(1); }
   const status = await fn();
-  if (_rl) _rl.close();
+  close();
   if (typeof status === "number" && status !== 0) process.exit(status);
 } else {
   await interactive();
