@@ -117,10 +117,10 @@ test("Control Center entry point composes focused modules", () => {
   assert.doesNotMatch(entry, /function printMenu\(/);
 });
 
-test("server commands reject capabilities as Compose profiles before Docker access", () => {
+test("server commands require a recorded release before Docker access", () => {
   const r = run(["status"], { ARCHIVE_COMPOSE_PROFILES: "ocr", PATH: "", Path: "" });
   assert.notEqual(r.status, 0);
-  assert.match(r.stderr + r.stdout, /capabilities cannot be enabled as Docker Compose profiles/i);
+  assert.match(r.stderr + r.stdout, /No release installation manifest/i);
 });
 
 test("setup plan validates a declarative configuration deterministically without Docker or writes", () => {
@@ -282,6 +282,12 @@ test("user release Compose never builds locally while the explicit development C
   assert.match(release, /pull_policy: \$\{ARCHIVE_RELEASE_PULL_POLICY:-missing\}/);
   assert.match(development, /^\s*build:/m);
   assert.doesNotMatch(readFileSync(join(ROOT, "scripts/control-center/runtime-adapter.mjs"), "utf8"), /compose\(\["up", "-d", "--build"\]\)/);
+  assert.match(release, /laravel-fpm:[\s\S]*archive:migrate-safe/);
+  assert.match(release, /next:[\s\S]*ARCHIVE_API_BASE_URL/);
+  assert.match(release, /ocr:[\s\S]*ARCHIVE_RELEASE_IMAGE_OCR:-/);
+  assert.match(release, /caddy:[\s\S]*ARCHIVE_RELEASE_IMAGE_CADDY:-/);
+  const entry = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
+  for (const command of ["status", "start", "stop", "restart", "logs", "health", "exec"]) assert.match(entry, new RegExp(`lifecycle\\(\\"${command}\\"`));
 });
 
 test("first-run guide renders quick and advanced setup paths without deploying", () => {
@@ -326,13 +332,13 @@ test("backups command renders without throwing", () => {
   assert.match(r.stdout, /Backups/);
 });
 
-test("health exits non-zero when the configured server port is not responding", () => {
+test("health exits non-zero without a recorded release", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-"));
   const envFile = join(dir, ".env");
   writeFileSync(envFile, "HEALTH_URL=http://127.0.0.1:9/api/health\n");
   const r = run(["health"], { ARCHIVE_ENV_PATH: envFile });
   assert.notEqual(r.status, 0);
-  assert.match(r.stderr + r.stdout, /No response from http:\/\/127\.0\.0\.1:9\/api\/health/);
+  assert.match(r.stderr + r.stdout, /No release installation manifest/i);
 });
 
 test("doctor uses the Windows-safe pnpm invocation and reports the environment", () => {

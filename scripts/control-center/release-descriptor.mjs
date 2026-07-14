@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { verifyBundle } from "../../infra/offline/verify-bundle.mjs";
@@ -51,7 +52,28 @@ function verifyOfflineBundle(bundlePath, descriptor, selected) {
     if (!bundleImage || bundleImage.bundleRef !== reference || !/^[a-f0-9]{64}$/.test(bundleImage.sha256 || "")) fail("OFFLINE_IMAGE_MISMATCH", "Offline bundle images do not match the selected release/profile.");
     if (checksum(join(bundlePath, bundleImage.archive)) !== bundleImage.sha256) fail("OFFLINE_CHECKSUM_INVALID", "Offline image checksum verification failed.");
   }
-  return selected.map((image) => ({ ...image, reference: image.offlineRef.replace("$VERSION", descriptor.version), checksum: byId.get(image.id).sha256 }));
+  return selected.map((image) => {
+    const reference = image.offlineRef.replace("$VERSION", descriptor.version);
+    const bundleImage = byId.get(image.id) || manifest.images.find((candidate) => candidate.bundleRef === reference);
+    return { ...image, reference, checksum: bundleImage.sha256, archive: join(bundlePath, bundleImage.archive) };
+  });
+}
+
+// This is deliberately separate from resolveRelease: plan/import remain pure,
+// while the install/repair lifecycle must load and inspect every verified tar
+// before Compose is allowed to start an offline stack.
+export function loadOfflineReleaseImages(release, { runDocker } = {}) {
+  if (release?.environment?.ARCHIVE_RELEASE_PULL_POLICY !== "never") return;
+  const invoke = runDocker || ((args) => {
+    const result = spawnSync("docker", args, { stdio: "inherit" });
+    if (result.status !== 0) throw new ReleaseDescriptorError("OFFLINE_IMAGE_LOAD_FAILED", "Docker could not load or inspect a verified offline image.");
+  });
+  const loaded = new Set();
+  for (const image of release.images) {
+    if (!image.archive || !image.checksum) fail("OFFLINE_IMAGE_MISMATCH", "Offline image archive metadata is missing.");
+    if (!loaded.has(image.archive)) { invoke(["image", "load", "--input", image.archive]); loaded.add(image.archive); }
+    invoke(["image", "inspect", image.reference]);
+  }
 }
 
 export function resolveRelease({ configuration, descriptorPath, offlineBundlePath } = {}) {

@@ -33,7 +33,7 @@ import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs
 import { createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
 import * as installationManifest from "./control-center/installation-manifest.mjs";
-import { ReleaseDescriptorError, resolveRelease } from "./control-center/release-descriptor.mjs";
+import { ReleaseDescriptorError, loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -112,6 +112,7 @@ function setupInstallOrRepair(operation) {
       installationManifest.beginInstallationOperation({ ...request, operation });
       installationManifest.updateLastSuccessfulStep({ ...request, step: "docker-compose-skipped" });
     } else {
+      loadOfflineReleaseImages(release);
       const runtime = createDockerRuntimeAdapter({
         compose: (args, options = {}) => releaseCompose(args, { ...options, env: { ...release.environment, ...(options.env || {}) } }),
         health: healthProbe,
@@ -198,13 +199,13 @@ const operations = createControlOperations({
   root: ROOT,
 });
 const {
-  serverStatus,
-  serverStart,
-  serverStop,
-  serverRestart,
-  serverLogs,
-  healthCheck,
-  migrateStatus,
+  serverStatus: developmentServerStatus,
+  serverStart: developmentServerStart,
+  serverStop: developmentServerStop,
+  serverRestart: developmentServerRestart,
+  serverLogs: developmentServerLogs,
+  healthCheck: developmentHealthCheck,
+  migrateStatus: developmentMigrateStatus,
   migrateDeploy,
   seedDemoData,
   listBackupFiles,
@@ -214,6 +215,51 @@ const {
   runDiagnostics,
   updateAndRebuild,
 } = operations;
+
+function releaseConfigurationFromManifest() {
+  const manifest = installationManifest.readInstallationManifest(INSTALLATION_MANIFEST_PATH);
+  if (!manifest) throw new ReleaseDescriptorError("RELEASE_NOT_INSTALLED", "No release installation manifest was found.", ["Run setup install --config=<file> first."]);
+  return {
+    mode: manifest.mode,
+    source: manifest.source,
+    platform: manifest.platform,
+    runtimeProfiles: manifest.runtimeProfiles,
+    capabilities: manifest.capabilities,
+    storage: { driver: "local", path: manifest.dataPaths.storage },
+  };
+}
+
+function releaseRuntimeForLifecycle() {
+  const release = resolveRelease({ configuration: releaseConfigurationFromManifest() });
+  return createDockerRuntimeAdapter({
+    compose: (args, options = {}) => releaseCompose(args, { ...options, env: { ...release.environment, ...(options.env || {}) } }),
+    health: healthProbe,
+  });
+}
+
+function lifecycle(operation, ...args) {
+  try {
+    const result = releaseRuntimeForLifecycle()[operation](...args);
+    return result.status ?? 1;
+  } catch (error) {
+    err(error.message || "Release lifecycle could not be prepared.");
+    return 1;
+  }
+}
+
+const serverStatus = () => lifecycle("status");
+const serverStart = () => lifecycle("start");
+const serverStop = () => lifecycle("stop");
+const serverRestart = () => lifecycle("restart");
+const serverLogs = (options) => lifecycle("logs", options);
+const healthCheck = async () => lifecycle("health");
+const migrateStatus = () => lifecycle("exec", ["php", "artisan", "migrate:status"]);
+const releaseExec = () => {
+  const commandIndex = ARGS.indexOf("exec");
+  const command = ARGS.slice(commandIndex + 1).filter((arg) => !arg.startsWith("--"));
+  if (!command.length) { err("Usage: setup exec <command> [args...]"); return 1; }
+  return lifecycle("exec", command);
+};
 
 async function localObservabilityCheck() {
   titleLine("Local operator checks");
@@ -767,7 +813,7 @@ const COMMANDS = {
   quick: quickStart, "first-run": firstRunGuide, doctor: runDoctor,
   // Server
   status: serverStatus, start: serverStart, stop: serverStop, restart: serverRestart,
-  logs: () => serverLogs({ follow: false }), health: healthCheck,
+  logs: () => serverLogs({ follow: false }), health: healthCheck, exec: releaseExec,
   // Config
   config: showConfig, "set-url": setPublicUrl, plan: setupPlan, "import-config": setupImportConfig, "export-config": setupExportConfig,
   install: () => setupInstallOrRepair("install"), repair: () => setupInstallOrRepair("repair"),
