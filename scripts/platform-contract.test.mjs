@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
   loadPlatformContract,
   resolveComposeProfiles,
+  SCHEMA_PATH,
   selectPlatforms,
   validateRuntimeOptionSources,
 } from "./platform-contract.mjs";
@@ -47,9 +49,19 @@ test("platform selection filters by mode or exact platform id", () => {
   assert.throws(() => selectPlatforms(contract, { platformId: "unknown" }), /platform/i);
 });
 
+test("platform schema permits only the legal runtime profile and capability keys", () => {
+  const schema = JSON.parse(readFileSync(SCHEMA_PATH, "utf8"));
+  const runtimeProfiles = schema.properties.runtimeProfiles;
+  const capabilities = schema.properties.capabilities;
+
+  assert.deepEqual(Object.keys(runtimeProfiles.properties), ["core", "media", "edge"]);
+  assert.equal(runtimeProfiles.additionalProperties, false);
+  assert.deepEqual(Object.keys(capabilities.properties), ["ocr", "ai", "observability"]);
+  assert.equal(capabilities.additionalProperties, false);
+});
+
 test("runtime option gate rejects profile drift and never enables capabilities", () => {
   const contract = loadPlatformContract();
-  const setupSource = "resolveComposeProfiles(contract, configuredProfiles)";
 
   assert.deepEqual(resolveComposeProfiles(contract, undefined), []);
   assert.deepEqual(resolveComposeProfiles(contract, "media,edge"), ["media", "edge"]);
@@ -58,15 +70,7 @@ test("runtime option gate rejects profile drift and never enables capabilities",
   assert.throws(
     () => validateRuntimeOptionSources(contract, {
       composeSource: 'profiles: ["media", "ocr"]',
-      setupSource,
     }),
     /Docker Compose runtime profiles/i
-  );
-  assert.throws(
-    () => validateRuntimeOptionSources(contract, {
-      composeSource: 'profiles: ["media", "edge"]',
-      setupSource: "const profiles = [\"media\", \"ocr\"]",
-    }),
-    /Control Center/i
   );
 });

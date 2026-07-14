@@ -6,7 +6,7 @@
   "runtimeProfiles": {
     "core": {
       "status": "conditional",
-      "description": "Canonical Laravel API, Next.js UI, PostgreSQL, Redis, worker, Reverb, and Caddy."
+      "description": "Canonical Laravel API, Next.js UI, PostgreSQL, Redis, worker, and Reverb."
     },
     "media": {
       "status": "conditional",

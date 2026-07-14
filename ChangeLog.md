@@ -13,6 +13,7 @@
 - صار Control Center يبدأ بـ`core` فقط. يتيح Setup اختيار `media` صراحةً لمعالجة الوسائط/OCR الاختيارية ذات العبء الأعلى، و`edge` صراحةً للوصول العام وTLS، ويحفظ الاختيار في `ARCHIVE_COMPOSE_PROFILES`. قيمة shell لهذا المتغير تعلو الإعداد المحفوظ لجلسة واحدة، بينما ترفض البوابة تمرير `ocr` أو `ai` كـprofile.
 - أُضيفت بوابة drift في `scripts/platform-contract.mjs`: تتحقق من تطابق أسماء Compose الاختيارية مع العقد ومن أن Setup يحلها من العقد، وتفشل برسالة صريحة عند إدخال capability أو اسم مخالف. دليل TDD: اختبار RED أثبت أن الافتراضي القديم كان `media,edge`، ثم صار GREEN مع `core` فقط؛ و`node --test scripts/platform-contract.test.mjs` نجح 3/3 و`node --test scripts/control-center.test.mjs` نجح 18/18.
 - محاولة `pnpm verify:infra` لم تصل إلى تحقق Compose بسبب البيئة المحلية: Node `v24.15.0` خارج العقد `>=22.13.0 <23`، وDocker لا يملك صلاحية قراءة `C:\Users\LAPTOP PC WORLD\.docker\config.json` ولا يتعرف على `compose --env-file`. لا يُخفى ذلك كنجاح؛ تفاصيله في تقرير V1-208A.
+- **تصحيح مراجعة لاحق:** schema صار مغلقاً فعلياً (`additionalProperties: false`) مع مفاتيح صريحة فقط لكل من runtime profiles وcapabilities. أزيل فحص النص الهش لمسار Setup؛ بدله اختبار CLI سلوكي يشغّل `status` مع `PATH` فارغ و`ARCHIVE_COMPOSE_PROFILES=ocr` ويثبت أن capability تُرفض قبل أي اكتشاف Docker. صُحح وصف `core` كي لا ينسب Caddy إليه؛ Caddy جزء من `edge`. التحقق المحدّث: contract ‏4/4 وControl Center ‏19/19.
 
 ## إصلاح CI: throttle تسجيل الدخول في اختبار التكامل الحي — 2026-07-14
 

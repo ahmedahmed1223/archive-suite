@@ -162,8 +162,6 @@ function composeProfileArgs() {
   return profiles.flatMap((p) => ["--profile", p]);
 }
 function compose(actionArgs, { inherit = true, input } = {}) {
-  const dc = dockerComposeCmd();
-  if (!dc) { err("Docker (with Compose) was not found. Install Docker first."); return { status: 127 }; }
   let profileArgs;
   try {
     profileArgs = composeProfileArgs();
@@ -171,6 +169,8 @@ function compose(actionArgs, { inherit = true, input } = {}) {
     err(error.message);
     return { status: 1 };
   }
+  const dc = dockerComposeCmd();
+  if (!dc) { err("Docker (with Compose) was not found. Install Docker first."); return { status: 127 }; }
   const args = [...dc.pre, "-f", COMPOSE_FILE, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...profileArgs, ...actionArgs];
   return spawnSync(dc.bin, args, { cwd: INFRA_DIR, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input });
 }
