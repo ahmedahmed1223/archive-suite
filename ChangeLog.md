@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208O — لغة إنجليزية إلزامية لمخرجات Setup — مكتمل 2026-07-14
+
+- قرار مستخدم صريح: العربية في نصوص Setup التفاعلية (wizard prompts + ملخص الاختيارات، منذ V1-208F) تظهر mojibake في ترميزات Windows terminal الشائعة. تُرجمت `WIZARD_RUNTIME_PROMPTS` بالكامل (`scripts/control-center/setup-wizard.mjs`) ونصوص `guidedSetup()` (الأسئلة، السجل، ملخص الاختيارات، رسائل الرفض/الإلغاء) في `scripts/control-center.mjs` إلى الإنجليزية دون أي تغيير منطقي أو بنيوي.
+- اختبار `control-center.test.mjs` (كان يفرض وجود شرح عربي في كل prompt) عُكس ليفرض غياب نطاق الأحرف العربية (`؀-ۿ`) بدلاً من ذلك، بتعليق يوثق السبب (mojibake) لمنع رجوع مستقبلي عن غير قصد.
+- هذا قرار سياسة عامة لكل مخرجات Setup التفاعلية المستقبلية (لا استثناء لهذا التغيير فقط) — أي نص جديد يُضاف لـwizard/CLI يجب أن يبقى إنجليزيًا.
+- التحقق: `node --test scripts/control-center.test.mjs scripts/control-center/*.test.mjs` ‏95/95، `node --check` على الملفين المعدَّلين.
+
 ## V1-208H — النسخ والاستعادة القانونية في Setup — مكتمل 2026-07-14
 
 - استُبدل `pg_dump`/`psql` الخام في `scripts/control-center/operations.mjs` (backupNow/listBackups/restoreBackup) بأربعة أوامر artisan جديدة (`archive:backup-run|list|verify|restore`) تُغلّف `BackupService` الموجودة أصلاً (DB+files+manifest+sha256 كاملة)، عبر trait مشترك `EmitsBackupResult` يفرض عقد `{ok, code, message, details}` بسطر JSON واحد فقط على stdout عند `--json` (السرد البشري يمر عبر `$this->components`/stderr، فلا يلوث parsing).

@@ -560,20 +560,20 @@ async function guidedSetup() {
   const existing = readEnv();
   const contract = loadPlatformContract();
   const currentPlatform = existing.ARCHIVE_PLATFORM || (process.platform === "win32" ? "windows-10-11-docker" : "linux-docker");
-  log("اختيارات التشغيل: Docker مدعوم لمسار الإصدار الحالي؛ Native معروض للتخطيط فقط ولا يثبت خدمات بعد.");
-  log(`  منصات العقد: ${contract.platforms.map((platform) => `${platform.id} (${platform.mode}, ${platform.status})`).join("؛ ")}`);
+  log("Runtime choices: Docker is supported for the current release path; Native is shown for planning only and does not install services yet.");
+  log(`  Contract platforms: ${contract.platforms.map((platform) => `${platform.id} (${platform.mode}, ${platform.status})`).join("; ")}`);
   const runtimeChoices = await collectWizardRuntimeChoices({ ask, existing, contract, platformId: currentPlatform });
-  log("خدمات البيانات: PostgreSQL وRedis أساسيتان للتطبيق وتبقيان مفعّلتين تلقائياً.");
-  const email = await ask("بريد مدير النظام — يُستخدم لتسجيل الدخول الأول", existing.ADMIN_EMAIL || "admin@example.com");
-  let password = await ask("كلمة مرور المدير — اتركها فارغة لإنشاء كلمة قوية", "");
+  log("Data services: PostgreSQL and Redis are required by the application and stay enabled automatically.");
+  const email = await ask("System admin email — used for the first login", existing.ADMIN_EMAIL || "admin@example.com");
+  let password = await ask("Admin password — leave blank to generate a strong one", "");
   let generatedPassword = false;
   if (!password) { password = genPassword(); generatedPassword = true; }
   const passwordError = validateAdminPassword(password);
-  if (passwordError) { err(`كلمة المرور غير صالحة: ${passwordError}`); return 1; }
-  let port = await ask("منفذ التطبيق (Next.js) — المنفذ المحلي للواجهة", existing.NEXT_PUBLIC_PORT || "3000");
-  if (!/^\d+$/.test(port)) { warn("المنفذ يجب أن يكون رقماً؛ سيُستخدم 3000."); port = "3000"; }
-  const publicUrl = await ask("الرابط العام — اتركه فارغاً للوصول المحلي فقط", existing.APP_BASE_URL && /^https?:\/\//.test(existing.APP_BASE_URL) ? existing.APP_BASE_URL : "");
-  if (publicUrl && !/^https?:\/\//.test(publicUrl)) { err("يجب أن يبدأ الرابط العام بـ http:// أو https://."); return 1; }
+  if (passwordError) { err(`Invalid password: ${passwordError}`); return 1; }
+  let port = await ask("Application port (Next.js) — local port for the frontend", existing.NEXT_PUBLIC_PORT || "3000");
+  if (!/^\d+$/.test(port)) { warn("Port must be numeric; using 3000."); port = "3000"; }
+  const publicUrl = await ask("Public URL — leave blank for local-only access", existing.APP_BASE_URL && /^https?:\/\//.test(existing.APP_BASE_URL) ? existing.APP_BASE_URL : "");
+  if (publicUrl && !/^https?:\/\//.test(publicUrl)) { err("The public URL must start with http:// or https://."); return 1; }
   const planned = setupConfiguration.planInput(runtimeChoices.candidate);
   if (!planned.ok) return renderSetupResult(planned);
   const resolved = planned.details.configuration;
@@ -589,19 +589,19 @@ async function guidedSetup() {
   }
 
   log("");
-  log(`${C.b}ملخص الاختيارات${C.x}`);
-  log(`  النمط/المنصة: ${resolved.mode} / ${resolved.platform}`);
-  log(`  المصدر/الوصول: ${resolved.source} / ${resolved.access}`);
-  log(`  التخزين: ${resolved.storage.path} (محلي)`);
-  log("  خدمات البيانات: PostgreSQL + Redis (مطلوبة)");
-  log(`  بريد المدير:  ${email}`);
-  log(`  كلمة المرور:  ${generatedPassword ? `${C.d}(مولّدة — تظهر بعد التثبيت)${C.x}` : "(أدخلتها أنت)"}`);
-  log(`  منفذ التطبيق: ${port}`);
-  log(`  الرابط العام: ${publicUrl || `${C.d}http://localhost:${port} (محلي)${C.x}`}`);
-  log(`  ملفات التشغيل: ${resolved.runtimeProfiles.join(", ")}`);
-  log(`  القدرات: ${resolved.capabilities.join(", ") || "لا شيء"}`);
-  log("  تحققت الخطة عبر resolver نفسه المستخدم في `setup plan --config`؛ لم تُكتب أي ملفات بعد.");
-  if (!(await confirm("هل تريد حفظ الإعداد وتثبيت الإصدار الموقّع؟", "y"))) return log("أُلغي الأمر؛ لم يتغير شيء.");
+  log(`${C.b}Choice summary${C.x}`);
+  log(`  Mode/platform: ${resolved.mode} / ${resolved.platform}`);
+  log(`  Source/access: ${resolved.source} / ${resolved.access}`);
+  log(`  Storage: ${resolved.storage.path} (local)`);
+  log("  Data services: PostgreSQL + Redis (required)");
+  log(`  Admin email:  ${email}`);
+  log(`  Admin password:  ${generatedPassword ? `${C.d}(generated — shown after install)${C.x}` : "(you entered it)"}`);
+  log(`  Application port: ${port}`);
+  log(`  Public URL: ${publicUrl || `${C.d}http://localhost:${port} (local)${C.x}`}`);
+  log(`  Runtime profiles: ${resolved.runtimeProfiles.join(", ")}`);
+  log(`  Capabilities: ${resolved.capabilities.join(", ") || "none"}`);
+  log("  The plan was validated via the same resolver used by `setup plan --config`; no files have been written yet.");
+  if (!(await confirm("Save this configuration and install the signed release?", "y"))) return log("Cancelled; nothing changed.");
   if (resolved.mode !== "docker") {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Native installation is planned and cannot be executed yet; no files or services were changed.", { mode: resolved.mode }));
   }
