@@ -2,12 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use App\Services\Odbc\OdbcConnection;
 use App\Services\Odbc\OdbcConnectionFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
+/**
+ * V1-102G: ODBC is a raw external-database proxy, so every action (probe,
+ * read, write) is admin-only via Controller::requireAdmin(), not just
+ * feature-flagged. authHeaders() from AuthenticatesArchiveRequests is
+ * editor-role by design (see that trait's doc-comment) and is intentionally
+ * not used here anymore -- see adminHeaders()/editorHeaders()/viewerHeaders().
+ */
 class OdbcReadApiTest extends TestCase
 {
     use RefreshDatabase, AuthenticatesArchiveRequests;
@@ -18,13 +27,93 @@ class OdbcReadApiTest extends TestCase
             ->assertUnauthorized();
     }
 
+    // -- role coverage (V1-102G: ODBC is admin-only, not just feature-flagged) --
+
+    public function test_viewer_cannot_probe_odbc(): void
+    {
+        $this->getJson('/api/v1/system/odbc', $this->viewerHeaders())
+            ->assertForbidden()
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_editor_cannot_probe_odbc(): void
+    {
+        $this->getJson('/api/v1/system/odbc', $this->editorHeaders())
+            ->assertForbidden()
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_viewer_cannot_read_an_odbc_table(): void
+    {
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+
+        $this->getJson('/api/v1/system/odbc/tables/items', $this->viewerHeaders())
+            ->assertForbidden()
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_editor_cannot_read_an_odbc_table(): void
+    {
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+
+        $this->getJson('/api/v1/system/odbc/tables/items', $this->editorHeaders())
+            ->assertForbidden()
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_viewer_cannot_write_an_odbc_row(): void
+    {
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+
+        $this->postJson(
+            '/api/v1/system/odbc/tables/items/rows',
+            ['values' => ['id' => 101, 'name' => 'Viewer attempt']],
+            $this->viewerHeaders()
+        )->assertForbidden();
+
+        $this->patchJson(
+            '/api/v1/system/odbc/tables/settings/rows',
+            ['keyColumn' => 'key', 'keyValue' => 'app_name', 'values' => ['value' => 'Hijacked']],
+            $this->viewerHeaders()
+        )->assertForbidden();
+
+        $this->deleteJson(
+            '/api/v1/system/odbc/tables/items/rows',
+            ['keyColumn' => 'id', 'keyValue' => 10],
+            $this->viewerHeaders()
+        )->assertForbidden();
+    }
+
+    public function test_editor_cannot_write_an_odbc_row(): void
+    {
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+
+        $this->postJson(
+            '/api/v1/system/odbc/tables/items/rows',
+            ['values' => ['id' => 101, 'name' => 'Editor attempt']],
+            $this->editorHeaders()
+        )->assertForbidden();
+
+        $this->patchJson(
+            '/api/v1/system/odbc/tables/settings/rows',
+            ['keyColumn' => 'key', 'keyValue' => 'app_name', 'values' => ['value' => 'Hijacked']],
+            $this->editorHeaders()
+        )->assertForbidden();
+
+        $this->deleteJson(
+            '/api/v1/system/odbc/tables/items/rows',
+            ['keyColumn' => 'id', 'keyValue' => 10],
+            $this->editorHeaders()
+        )->assertForbidden();
+    }
+
     public function test_odbc_read_returns_rows_from_allowed_table(): void
     {
         $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/items?limit=5',
-            $this->authHeaders()
+            $this->adminHeaders()
         );
 
         $response
@@ -43,7 +132,7 @@ class OdbcReadApiTest extends TestCase
 
         $this->getJson(
             '/api/v1/system/odbc/tables/admin_secrets',
-            $this->authHeaders()
+            $this->adminHeaders()
         )
             ->assertForbidden()
             ->assertJsonPath('ok', false)
@@ -56,7 +145,7 @@ class OdbcReadApiTest extends TestCase
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/users?limit=1',
-            $this->authHeaders()
+            $this->adminHeaders()
         );
 
         $response->assertOk();
@@ -72,7 +161,7 @@ class OdbcReadApiTest extends TestCase
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/items?limit=10',
-            $this->authHeaders()
+            $this->adminHeaders()
         );
 
         $response->assertOk();
@@ -86,7 +175,7 @@ class OdbcReadApiTest extends TestCase
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/items',
-            $this->authHeaders()
+            $this->adminHeaders()
         );
 
         $response->assertOk();
@@ -99,7 +188,7 @@ class OdbcReadApiTest extends TestCase
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/items?limit=999',
-            $this->authHeaders()
+            $this->adminHeaders()
         );
 
         $response->assertOk();
@@ -113,7 +202,7 @@ class OdbcReadApiTest extends TestCase
         $this->postJson(
             '/api/v1/system/odbc/tables/items/rows',
             ['values' => ['id' => 101, 'name' => 'New item']],
-            $this->authHeaders()
+            $this->adminHeaders()
         )
             ->assertCreated()
             ->assertJsonPath('ok', true)
@@ -129,7 +218,7 @@ class OdbcReadApiTest extends TestCase
         $this->patchJson(
             '/api/v1/system/odbc/tables/users/rows',
             ['keyColumn' => 'email', 'keyValue' => 'alice@example.test', 'values' => ['display_name' => 'Alice']],
-            $this->authHeaders()
+            $this->adminHeaders()
         )
             ->assertUnprocessable()
             ->assertJsonPath('ok', false);
@@ -142,7 +231,7 @@ class OdbcReadApiTest extends TestCase
         $this->patchJson(
             '/api/v1/system/odbc/tables/settings/rows',
             ['keyColumn' => 'key', 'keyValue' => 'app_name', 'values' => ['value' => 'Masar']],
-            $this->authHeaders()
+            $this->adminHeaders()
         )
             ->assertOk()
             ->assertJsonPath('ok', true)
@@ -157,12 +246,60 @@ class OdbcReadApiTest extends TestCase
         $this->deleteJson(
             '/api/v1/system/odbc/tables/items/rows',
             ['keyColumn' => 'id', 'keyValue' => 10],
-            $this->authHeaders()
+            $this->adminHeaders()
         )
             ->assertOk()
             ->assertJsonPath('ok', true)
             ->assertJsonPath('operation', 'delete')
             ->assertJsonPath('affected', 1);
+    }
+
+    // -- role helpers ---------------------------------------------------------
+
+    /**
+     * @return array<string, string>
+     */
+    private function adminHeaders(): array
+    {
+        return $this->odbcHeadersFor('admin', 'odbc-admin@example.test');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function editorHeaders(): array
+    {
+        return $this->odbcHeadersFor('editor', 'odbc-editor@example.test');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function viewerHeaders(): array
+    {
+        return $this->odbcHeadersFor('viewer', 'odbc-viewer@example.test');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function odbcHeadersFor(string $role, string $email): array
+    {
+        $user = User::query()->firstOrCreate(
+            ['email' => $email],
+            [
+                'name' => ucfirst($role),
+                'password' => Hash::make('secret-password'),
+                'role' => $role,
+            ],
+        );
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        return ['Authorization' => 'Bearer '.$login->json('accessToken')];
     }
 }
 

@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
@@ -238,7 +240,9 @@ class RouteScopeTest extends TestCase
     {
         config(['archive.features.odbc' => true]);
 
-        $this->getJson('/api/v1/system/odbc', $this->authHeaders())
+        // V1-102G: ODBC is admin-only, not just feature-flagged — authHeaders()
+        // is editor-role (see AuthenticatesArchiveRequests) and would now 403.
+        $this->getJson('/api/v1/system/odbc', $this->adminHeaders())
             ->assertOk()
             ->assertJsonPath('ok', true);
     }
@@ -263,6 +267,28 @@ class RouteScopeTest extends TestCase
         $this->getJson('/api/v1/records/item-1/broadcast-metadata', $this->authHeaders())
             ->assertOk()
             ->assertJsonPath('ok', true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function adminHeaders(): array
+    {
+        $user = User::query()->firstOrCreate(
+            ['email' => 'route-scope-admin@example.test'],
+            [
+                'name' => 'Route Scope Admin',
+                'password' => Hash::make('secret-password'),
+                'role' => 'admin',
+            ],
+        );
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        return ['Authorization' => 'Bearer '.$login->json('accessToken')];
     }
 
     private function seedArchiveRecord(): void

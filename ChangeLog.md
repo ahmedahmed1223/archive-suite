@@ -7,6 +7,15 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## قصر ODBC على admin (V1-102G) — مكتمل 2026-07-14
+
+- أُضيف `Controller::requireAdmin()` كأول سطر في الدوال الخمس لـ`SystemController`: `odbc()` (probe)، `odbcReadTable()`، `odbcCreateRow()`، `odbcUpdateRow()`، `odbcDeleteRow()`. كانت هذه المسارات محمية فقط بعلَم الميزة `archive.feature:odbc` وبقائمة سماح الجداول (allowlist) داخل `OdbcReadRepository`، بلا أي فحص دور — أي مستخدم مصادَق (حتى viewer) كان يستطيع قراءة/كتابة/حذف صفوف من قاعدة بيانات خارجية عبر ODBC.
+- `odbc()` لم تكن تستقبل `Request $request` أصلاً؛ أُضيف كمعامل (لا يغيّر توقيع الاستدعاء من route، Laravel يحقن الاعتماديات بالنوع).
+- `tests/Feature/OdbcReadApiTest.php`: كان يستخدم `AuthenticatesArchiveRequests::authHeaders()` المشترك (دور editor افتراضيًا بحكم تعليق الثقة في تلك السمة) لكل اختباراته الاثني عشر — بعد هذا التغيير كانت ستفشل جميعًا بـ403. أُضيفت `adminHeaders()`/`editorHeaders()`/`viewerHeaders()` محليان (نفس نمط `RoleMatrixApiTest`)، واستُبدلت كل استدعاءات `authHeaders()` بـ`adminHeaders()`، وأُضيفت 6 اختبارات رفض جديدة: viewer/editor على probe، read table، وwrite (create+update+delete مجمّعة في اختبار واحد لكل دور).
+- `tests/Feature/RouteScopeTest.php::test_odbc_route_is_reachable_when_its_feature_flag_is_on` كان يستخدم نفس `authHeaders()` المشترك (editor) للتحقق من أن المسار يعمل عند تفعيل العلَم — كان سيفشل بـ403 لنفس السبب. أُضيف `adminHeaders()` محلي وأُصلح الاستدعاء.
+- التحقق: `OdbcReadApiTest` + `RouteScopeTest` معًا ‏23 اختبارًا ناجحًا/86 تأكيدًا، صفر فشل.
+- خارج النطاق موثقًا: V1-X02 (تحقق ODBC حي على DSN/driver فعلي) يبقى تحققًا مشروطًا منفصلًا في `TASKS.md` — هذه المهمة أغلقت الثغرة الأمنية (RBAC) فقط، لا الوظيفة نفسها.
+
 ## إغلاق بقية مصفوفة RBAC (V1-102F) — مكتمل 2026-07-14
 
 - أُضيف `Controller::requireEditor()` كأول سطر في كل دالة كتابة (POST/PATCH/DELETE) في ثمانية متحكمات كانت مفتوحة لأي دور مصادَق منذ V1-102 الأصلي: `TagNodesController` (store/update/destroy/reorder/merge/move)، `VocabularyController` (store/destroy)، `CollectionsController` (store/destroy)، `RelationsController` (store/update/destroy)، `TypesController` (store/destroy)، `AutomationRulesController` (store/update/destroy/run)، `IngestController` (scan/ftpPull/smbPull)، `UploadLinksController` (store/revoke).

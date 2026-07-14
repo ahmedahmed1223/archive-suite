@@ -15,8 +15,12 @@ use Illuminate\Http\Request;
 
 class SystemController extends Controller
 {
-    public function odbc(OdbcConnectionProbe $probe): JsonResponse
+    public function odbc(Request $request, OdbcConnectionProbe $probe): JsonResponse
     {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
         return response()->json([
             'ok' => true,
             'odbc' => $probe->probe(),
@@ -28,6 +32,10 @@ class SystemController extends Controller
         string $table,
         OdbcConnectionFactory $factory,
     ): JsonResponse {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
         $repository = new OdbcReadRepository(
             $factory->connect(
                 config('odbc.dsn', ''),
@@ -61,6 +69,10 @@ class SystemController extends Controller
         string $table,
         OdbcConnectionFactory $factory,
     ): JsonResponse {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'values' => ['required', 'array', 'min:1'],
         ]);
@@ -79,6 +91,10 @@ class SystemController extends Controller
         string $table,
         OdbcConnectionFactory $factory,
     ): JsonResponse {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'keyColumn' => ['required', 'string'],
             'keyValue' => ['required'],
@@ -103,6 +119,10 @@ class SystemController extends Controller
         string $table,
         OdbcConnectionFactory $factory,
     ): JsonResponse {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'keyColumn' => ['required', 'string'],
             'keyValue' => ['required'],
