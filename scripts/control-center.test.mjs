@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
 import { collectWizardRuntimeChoices } from "./control-center/setup-wizard.mjs";
 import { applySafeMigration } from "./control-center/operations.mjs";
+import { runInteractiveMenu } from "./control-center/cli.mjs";
 import { loadPlatformContract } from "./platform-contract.mjs";
 
 // Smoke tests for the Control Center CLI. They exercise the real binary through
@@ -103,6 +104,93 @@ test("q command exits successfully instead of starting deployment", () => {
   assert.equal(r.status, 0);
   assert.equal(r.stdout.trim(), "");
   assert.equal(r.stderr.trim(), "");
+});
+
+test("interactive menu acknowledges a completed operation once before returning", async () => {
+  const prompts = ["1", "", "q"];
+  let executions = 0;
+  const result = await runInteractiveMenu({
+    prompt: async () => prompts.shift(),
+    log: () => {},
+    warn: () => {},
+    menuItems: [["1", "Status", async () => { executions += 1; }]],
+  });
+
+  assert.equal(result, "quit");
+  assert.equal(executions, 1);
+});
+
+test("interactive acknowledgement q exits without rerunning the command", async () => {
+  const prompts = ["1", "q"];
+  let executions = 0;
+  const result = await runInteractiveMenu({
+    prompt: async () => prompts.shift(),
+    log: () => {},
+    warn: () => {},
+    menuItems: [["1", "Status", async () => { executions += 1; }]],
+  });
+
+  assert.equal(result, "quit");
+  assert.equal(executions, 1);
+});
+
+test("invalid acknowledgement repeats only the acknowledgement prompt", async () => {
+  const prompts = ["1", "x", "", "q"];
+  const seen = [];
+  let executions = 0;
+  await runInteractiveMenu({
+    prompt: async (question) => { seen.push(question); return prompts.shift(); },
+    log: () => {},
+    warn: () => {},
+    menuItems: [["1", "Status", async () => { executions += 1; }]],
+  });
+
+  assert.equal(executions, 1);
+  assert.deepEqual(seen, [
+    "Choose an option",
+    "Press Enter to return to the main menu, or q to quit: ",
+    "Press Enter to return to the main menu, or q to quit: ",
+    "Choose an option",
+  ]);
+});
+
+test("interactive menu acknowledges an operation error without running it again", async () => {
+  const prompts = ["1", "", "q"];
+  let executions = 0;
+  const warnings = [];
+  const result = await runInteractiveMenu({
+    prompt: async () => prompts.shift(),
+    log: () => {},
+    warn: (message) => warnings.push(message),
+    menuItems: [["1", "Status", async () => { executions += 1; throw new Error("Status failed"); }]],
+  });
+
+  assert.equal(result, "quit");
+  assert.equal(executions, 1);
+  assert.deepEqual(warnings, ["Status failed"]);
+});
+
+test("interactive menu rejects duplicate shortcuts before executing a command", async () => {
+  let executions = 0;
+  await assert.rejects(
+    runInteractiveMenu({
+      prompt: async () => "1",
+      log: () => {},
+      warn: () => {},
+      menuItems: [
+        ["1", "Status", async () => { executions += 1; }],
+        ["1", "Start", async () => { executions += 1; }],
+      ],
+    }),
+    /duplicate shortcut: 1/i
+  );
+  assert.equal(executions, 0);
+});
+
+test("named JSON command never renders the interactive acknowledgement prompt", () => {
+  const r = run(["help", "--json"]);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.doesNotMatch(r.stdout + r.stderr, /Press Enter to return to the main menu/i);
 });
 
 test("the Setup gateway returns one safe JSON envelope for core command success and failure", () => {
