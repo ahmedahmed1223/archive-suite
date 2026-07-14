@@ -3,7 +3,7 @@
   "schemaVersion": "1.0",
   "title": "Archive Suite V1 platform compatibility contract",
   "supportPolicy": "All entries are conditional or planned until validated on a clean target host. This contract does not assert tested support.",
-  "profiles": {
+  "runtimeProfiles": {
     "core": {
       "status": "conditional",
       "description": "Canonical Laravel API, Next.js UI, PostgreSQL, Redis, worker, Reverb, and Caddy."
@@ -12,6 +12,12 @@
       "status": "conditional",
       "description": "Media processing workloads; enable only after storage and capacity validation."
     },
+    "edge": {
+      "status": "conditional",
+      "description": "Public TLS ingress through Caddy; enable only for edge-facing deployments."
+    }
+  },
+  "capabilities": {
     "ocr": {
       "status": "planned",
       "description": "OCR workloads remain planned pending runtime and resource validation."
@@ -134,7 +140,8 @@
         "postgresql": "provided by the PostgreSQL container",
         "redis": "provided by the Redis container"
       },
-      "profiles": ["core", "media", "ocr", "ai", "observability"],
+      "profiles": ["core", "media", "edge"],
+      "capabilities": ["ocr", "ai", "observability"],
       "dataPathFamily": "windows",
       "resourceStatus": "provisional"
     },
@@ -151,7 +158,8 @@
         "postgresql": "provided by the PostgreSQL container",
         "redis": "provided by the Redis container"
       },
-      "profiles": ["core", "media", "ocr", "ai", "observability"],
+      "profiles": ["core", "media", "edge"],
+      "capabilities": ["ocr", "ai", "observability"],
       "dataPathFamily": "linux",
       "resourceStatus": "provisional"
     },
@@ -168,7 +176,8 @@
         "postgresql": "PostgreSQL service, version to be validated",
         "redis": "Redis-compatible service, version to be validated"
       },
-      "profiles": ["core", "media", "ocr", "ai", "observability"],
+      "profiles": ["core", "media", "edge"],
+      "capabilities": ["ocr", "ai", "observability"],
       "dataPathFamily": "windows",
       "resourceStatus": "provisional"
     },
@@ -185,7 +194,8 @@
         "postgresql": "PostgreSQL service, version to be validated",
         "redis": "Redis-compatible service, version to be validated"
       },
-      "profiles": ["core", "media", "ocr", "ai", "observability"],
+      "profiles": ["core", "media", "edge"],
+      "capabilities": ["ocr", "ai", "observability"],
       "dataPathFamily": "linux",
       "resourceStatus": "provisional"
     }

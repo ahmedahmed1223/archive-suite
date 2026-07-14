@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { loadPlatformContract, selectPlatforms } from "./platform-contract.mjs";
+import {
+  loadPlatformContract,
+  resolveComposeProfiles,
+  selectPlatforms,
+  validateRuntimeOptionSources,
+} from "./platform-contract.mjs";
 
 test("platform contract loads the four constrained deployment targets", () => {
   const contract = loadPlatformContract();
@@ -15,7 +20,12 @@ test("platform contract loads the four constrained deployment targets", () => {
     contract.platforms.map((platform) => platform.status),
     ["conditional", "conditional", "planned", "planned"]
   );
-  assert.deepEqual(Object.keys(contract.profiles), ["core", "media", "ocr", "ai", "observability"]);
+  assert.deepEqual(Object.keys(contract.runtimeProfiles), ["core", "media", "edge"]);
+  assert.deepEqual(Object.keys(contract.capabilities), ["ocr", "ai", "observability"]);
+  for (const platform of contract.platforms) {
+    assert.deepEqual(platform.profiles, ["core", "media", "edge"]);
+    assert.deepEqual(platform.capabilities, ["ocr", "ai", "observability"]);
+  }
   assert.ok(contract.ports.some((port) => port.exposure === "public"));
   assert.ok(contract.ports.some((port) => port.exposure === "internal"));
   assert.ok(contract.dataPaths.windows.root);
@@ -35,4 +45,28 @@ test("platform selection filters by mode or exact platform id", () => {
   );
   assert.throws(() => selectPlatforms(contract, { mode: "unsupported" }), /mode/i);
   assert.throws(() => selectPlatforms(contract, { platformId: "unknown" }), /platform/i);
+});
+
+test("runtime option gate rejects profile drift and never enables capabilities", () => {
+  const contract = loadPlatformContract();
+  const setupSource = "resolveComposeProfiles(contract, configuredProfiles)";
+
+  assert.deepEqual(resolveComposeProfiles(contract, undefined), []);
+  assert.deepEqual(resolveComposeProfiles(contract, "media,edge"), ["media", "edge"]);
+  assert.deepEqual(resolveComposeProfiles(contract, ""), []);
+  assert.throws(() => resolveComposeProfiles(contract, "media,ocr"), /capabilit/i);
+  assert.throws(
+    () => validateRuntimeOptionSources(contract, {
+      composeSource: 'profiles: ["media", "ocr"]',
+      setupSource,
+    }),
+    /Docker Compose runtime profiles/i
+  );
+  assert.throws(
+    () => validateRuntimeOptionSources(contract, {
+      composeSource: 'profiles: ["media", "edge"]',
+      setupSource: "const profiles = [\"media\", \"ocr\"]",
+    }),
+    /Control Center/i
+  );
 });

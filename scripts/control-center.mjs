@@ -25,7 +25,7 @@ import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync, readd
 import { createInterface } from "node:readline";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
-import { formatPlatformContractReport, loadPlatformContract, selectPlatforms } from "./platform-contract.mjs";
+import { formatPlatformContractReport, loadPlatformContract, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
 import { buildOperatorReport, buildReadinessContract, collectOperatorSnapshot, createSupportBundle } from "./observability.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
@@ -151,19 +151,27 @@ function dockerComposeCmd() {
   if (v1.status === 0) return { bin: "docker-compose", pre: [] };
   return null;
 }
-// V1-209: default is full stack (media + edge) so existing operators see no
-// behavior change — native `profiles:` on ocr/caddy otherwise skips them on a
-// bare `docker compose up`. ARCHIVE_COMPOSE_PROFILES="" (empty string) opts
-// into core-only; a comma list picks specific profiles.
+// V1-208A: profiles are resolved from the platform contract. `core` is always
+// present, while `media` and `edge` remain optional; capabilities never become
+// Docker Compose profiles. Core-only is the default; Setup persists an explicit
+// optional selection in .env and a shell variable takes precedence for one run.
 function composeProfileArgs() {
-  const raw = process.env.ARCHIVE_COMPOSE_PROFILES;
-  const profiles = raw === undefined ? ["media", "edge"] : raw.split(",").map((p) => p.trim()).filter(Boolean);
+  const contract = loadPlatformContract();
+  const configuredProfiles = process.env.ARCHIVE_COMPOSE_PROFILES ?? readEnv().ARCHIVE_COMPOSE_PROFILES;
+  const profiles = resolveComposeProfiles(contract, configuredProfiles);
   return profiles.flatMap((p) => ["--profile", p]);
 }
 function compose(actionArgs, { inherit = true, input } = {}) {
   const dc = dockerComposeCmd();
   if (!dc) { err("Docker (with Compose) was not found. Install Docker first."); return { status: 127 }; }
-  const args = [...dc.pre, "-f", COMPOSE_FILE, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...composeProfileArgs(), ...actionArgs];
+  let profileArgs;
+  try {
+    profileArgs = composeProfileArgs();
+  } catch (error) {
+    err(error.message);
+    return { status: 1 };
+  }
+  const args = [...dc.pre, "-f", COMPOSE_FILE, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...profileArgs, ...actionArgs];
   return spawnSync(dc.bin, args, { cwd: INFRA_DIR, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input });
 }
 // The laravel service publishes no host port; Next (:3000) rewrites /api/v1/*
@@ -595,6 +603,17 @@ async function guidedSetup() {
   if (!/^\d+$/.test(port)) { warn("Port must be a number — keeping 3000."); port = "3000"; }
   const publicUrl = await ask("Public URL (blank = local only)", existing.APP_BASE_URL && /^https?:\/\//.test(existing.APP_BASE_URL) ? existing.APP_BASE_URL : "");
   if (publicUrl && !/^https?:\/\//.test(publicUrl)) { err("Public URL must start with http:// or https://"); return 1; }
+  const optionalProfiles = await ask(
+    "Optional runtime profiles (blank = core only; media = media processing/OCR and extra resources; edge = public access/TLS)",
+    existing.ARCHIVE_COMPOSE_PROFILES || ""
+  );
+  let profiles;
+  try {
+    profiles = resolveComposeProfiles(loadPlatformContract(), optionalProfiles);
+  } catch (error) {
+    err(error.message);
+    return 1;
+  }
 
   log("");
   log(`${C.b}Summary${C.x}`);
@@ -602,6 +621,7 @@ async function guidedSetup() {
   log(`  Password:     ${generatedPassword ? `${C.d}(generated — shown after deploy)${C.x}` : "(as typed)"}`);
   log(`  App port:     ${port}`);
   log(`  Public URL:   ${publicUrl || `${C.d}http://localhost:${port} (local)${C.x}`}`);
+  log(`  Runtime profiles: ${profiles.join(", ") || "core only"}`);
   if (!(await confirm("Apply this configuration and deploy?", "y"))) return log("Cancelled — nothing was changed.");
 
   // Step 3 — provision .env with the answers; deploy fills remaining secrets
@@ -611,7 +631,7 @@ async function guidedSetup() {
     copyFileSync(ENV_EXAMPLE, ENV_PATH);
     ok(`Created ${ENV_PATH} from .env.example`);
   }
-  const updates = { ADMIN_EMAIL: email, ADMIN_PASSWORD: password, NEXT_PUBLIC_PORT: port };
+  const updates = { ADMIN_EMAIL: email, ADMIN_PASSWORD: password, NEXT_PUBLIC_PORT: port, ARCHIVE_COMPOSE_PROFILES: profiles.join(",") };
   if (publicUrl) {
     updates.APP_BASE_URL = publicUrl;
     const host = publicUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
@@ -664,6 +684,7 @@ function firstRunGuide() {
   log(`  ${C.c}setup doctor${C.x}   ${C.d}Check Node.js, pnpm, Docker, and .env.${C.x}`);
   log(`  ${C.c}setup quick${C.x}    ${C.d}Deploy, start Docker, and run the health check.${C.x}`);
   log(`  ${C.c}setup change-admin-password --generate${C.x}  ${C.d}Generate and apply a new first-login password.${C.x}`);
+  log(`  ${C.d}Setup defaults to core only; select media (OCR/resources) or edge (public TLS) explicitly in the wizard.${C.x}`);
   log("");
   log(`${C.b}Advanced preset${C.x}`);
   log(`  ${C.c}setup doctor${C.x}          ${C.d}Pre-flight report.${C.x}`);

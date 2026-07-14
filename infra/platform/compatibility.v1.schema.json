@@ -3,13 +3,25 @@
   "$id": "https://archive-suite.local/schemas/platform-compatibility.v1.schema.json",
   "title": "Archive Suite V1 platform compatibility contract",
   "type": "object",
-  "required": ["schemaVersion", "supportPolicy", "profiles", "ports", "dataPaths", "resources", "platforms"],
+  "required": ["schemaVersion", "supportPolicy", "runtimeProfiles", "capabilities", "ports", "dataPaths", "resources", "platforms"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "supportPolicy": { "type": "string", "minLength": 1 },
-    "profiles": {
+    "runtimeProfiles": {
       "type": "object",
-      "required": ["core", "media", "ocr", "ai", "observability"],
+      "required": ["core", "media", "edge"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status", "description"],
+        "properties": {
+          "status": { "enum": ["conditional", "planned"] },
+          "description": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "required": ["ocr", "ai", "observability"],
       "additionalProperties": {
         "type": "object",
         "required": ["status", "description"],
@@ -53,7 +65,7 @@
       "minItems": 4,
       "items": {
         "type": "object",
-        "required": ["id", "label", "mode", "status", "requirements", "profiles", "dataPathFamily", "resourceStatus"],
+        "required": ["id", "label", "mode", "status", "requirements", "profiles", "capabilities", "dataPathFamily", "resourceStatus"],
         "properties": {
           "id": { "enum": ["windows-10-11-docker", "linux-docker", "windows-native", "linux-native"] },
           "label": { "type": "string", "minLength": 1 },
@@ -64,7 +76,8 @@
             "required": ["node", "docker", "php", "composer", "postgresql", "redis"],
             "additionalProperties": { "type": "string", "minLength": 1 }
           },
-          "profiles": { "type": "array", "minItems": 1, "items": { "enum": ["core", "media", "ocr", "ai", "observability"] } },
+          "profiles": { "type": "array", "minItems": 1, "items": { "enum": ["core", "media", "edge"] } },
+          "capabilities": { "type": "array", "minItems": 1, "items": { "enum": ["ocr", "ai", "observability"] } },
           "dataPathFamily": { "enum": ["windows", "linux"] },
           "resourceStatus": { "const": "provisional" }
         }
