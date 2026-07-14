@@ -82,7 +82,7 @@ test("help renders the grouped menu and every command group", () => {
     "Masar",
     "— Server —", "— Configure —", "— Security —", "— Database —", "— Backups —", "— Maintain —",
     "1) Guided setup", "2) Quick start", "5) Development deploy / re-provision", "15) Generate a strong password", "16) Change admin password",
-    "20) Seed demo data", "25) Development update & rebuild", "0) Exit", "q) Exit",
+    "20) Seed demo data", "24) Verify a backup", "26) Development update & rebuild", "0) Exit", "q) Exit",
   ]) {
     assert.ok(clean.includes(s), `help output should include "${s}"`);
   }
@@ -566,11 +566,24 @@ test("config without an .env guides the operator to deploy", () => {
   assert.match(r.stdout, /No .env yet/);
 });
 
-test("backups command renders without throwing", () => {
+test("backups command renders without throwing when the Laravel container is unreachable", () => {
+  // V1-208H: backups now list via `php artisan archive:backup-list --json`
+  // inside the laravel container (BackupService), not local .sql files, so
+  // this environment (no stack running) legitimately reports a failure —
+  // the guarantee this test checks is that the CLI degrades gracefully
+  // (prints the section header, exits with a defined status) rather than
+  // throwing an uncaught exception.
   const dir = mkdtempSync(join(tmpdir(), "cc-"));
   const r = run(["backups"], { ARCHIVE_ENV_PATH: join(dir, ".env") });
-  assert.equal(r.status, 0);
+  assert.equal(typeof r.status, "number");
   assert.match(r.stdout, /Backups/);
+});
+
+test("verify-backup command is wired and renders without throwing when the Laravel container is unreachable", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-"));
+  const r = run(["verify-backup", "--name=backup-x.json.gz"], { ARCHIVE_ENV_PATH: join(dir, ".env") });
+  assert.equal(typeof r.status, "number");
+  assert.match(r.stdout, /Verify a backup/);
 });
 
 test("health exits non-zero without a recorded release", () => {

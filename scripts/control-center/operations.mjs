@@ -1,6 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { join } from "node:path";
 
 export function createHealthProbe({ readEnv, defaultHealthUrl, output }) {
   return async () => {
@@ -29,9 +28,32 @@ export async function applySafeMigration({ adapter, confirmed = false, output, c
   return status;
 }
 
-export function createControlOperations({ adapter, composeFile, backupDir, readEnv, output, ask, confirm, runPnpm, root }) {
+// V1-208H: backups now go through BackupService's legal DB+files+manifest+
+// checksums archive (see archive-laravel BackupRunCommand/BackupListCommand/
+// BackupVerifyCommand/BackupRestoreCommand), not raw pg_dump/psql — Setup's
+// CLI has no HTTP session, so it drives those `php artisan archive:backup-*
+// --json` commands through the same adapter.exec() the migrate commands use
+// (defaults to the laravel container, not postgres) and parses their single
+// JSON stdout line. A command that can't be reached at all (stack down,
+// unparsable output) degrades to a structured failure instead of throwing.
+function runBackupCommand(adapter, commandArgs) {
+  const result = adapter.exec(["php", "artisan", ...commandArgs, "--json"], { inherit: false });
+  const raw = (result.stdout || "").trim();
+  const lastLine = raw.split("\n").filter(Boolean).pop() || "";
+  try {
+    return JSON.parse(lastLine);
+  } catch {
+    const detail = (result.stderr || raw || `exit ${result.status ?? 1}`).slice(0, 300);
+    return { ok: false, code: "BACKUP_COMMAND_UNREACHABLE", message: `Could not reach "php artisan ${commandArgs[0]}" — is the stack running? ${detail}`, details: {} };
+  }
+}
+
+export function createControlOperations({ adapter, composeFile, output, ask, confirm, runPnpm, root }) {
   const commandStatus = (result) => result.status ?? 1;
-  const listBackupFiles = () => !existsSync(backupDir) ? [] : readdirSync(backupDir).filter((file) => file.endsWith(".sql")).sort().reverse();
+  const listBackupFiles = () => {
+    const payload = runBackupCommand(adapter, ["archive:backup-list"]);
+    return payload.ok ? (payload.details?.backups ?? []) : [];
+  };
 
   const serverStatus = () => {
     output.titleLine("Server status");
@@ -78,44 +100,64 @@ export function createControlOperations({ adapter, composeFile, backupDir, readE
   };
 
   const backupNow = () => {
-    output.titleLine("Backup — pg_dump of the running database");
-    const env = readEnv();
-    const user = env.POSTGRES_USER || "archive";
-    const database = env.POSTGRES_DB || "archive";
-    if (!existsSync(backupDir)) mkdirSync(backupDir, { recursive: true });
-    const outFile = join(backupDir, `archive-${new Date().toISOString().replace(/[:.]/g, "-")}.sql`);
-    output.log(`Dumping "${database}" as "${user}" -> ${outFile}`);
-    const result = adapter.exec(["pg_dump", "-U", user, database], { service: "postgres", inherit: false });
-    if (result.status === 0 && result.stdout) {
-      try { writeFileSync(outFile, result.stdout); output.ok(`Backup written: ${outFile}`); return 0; }
-      catch (error) { output.err(`Dump ran but could not write file: ${error.message}`); return 1; }
+    output.titleLine("Backup — full legal backup (DB + files + manifest + checksums)");
+    const payload = runBackupCommand(adapter, ["archive:backup-run"]);
+    (payload.ok ? output.ok : output.err)(payload.message);
+    if (payload.ok && payload.details?.backup) {
+      output.log(`Backup: ${payload.details.backup.name} (${payload.details.backup.sizeBytes} bytes, checksum ${payload.details.backup.checksum?.slice(0, 12)}…)`);
     }
-    output.err("Backup failed — start the stack first (the 'postgres' service must be running).");
-    return 1;
+    return payload.ok ? 0 : 1;
   };
   const listBackups = () => {
-    output.titleLine("Backups");
-    const files = listBackupFiles();
-    if (!files.length) { output.log("No backups yet."); return 0; }
-    files.forEach((file, index) => output.log(`${String(index + 1).padStart(2)}) ${file}`));
+    output.titleLine("Backups (legal DB + files + manifest, via BackupService)");
+    const payload = runBackupCommand(adapter, ["archive:backup-list"]);
+    if (!payload.ok) { output.err(payload.message); return 1; }
+    const backups = payload.details?.backups ?? [];
+    if (!backups.length) { output.log("No backups yet."); return 0; }
+    backups.forEach((backup, index) => output.log(`${String(index + 1).padStart(2)}) ${backup.name}  (${backup.createdAt}, ${backup.checksum ? "checksum on file" : "no checksum"})`));
     return 0;
   };
   const restoreBackup = async () => {
     output.titleLine("Restore a backup");
-    const files = listBackupFiles();
-    if (!files.length) { output.warn("No backups to restore."); return 0; }
-    files.forEach((file, index) => output.log(`${String(index + 1).padStart(2)}) ${file}`));
-    const selected = files[Number(await ask("Restore which backup number")) - 1];
+    const listPayload = runBackupCommand(adapter, ["archive:backup-list"]);
+    if (!listPayload.ok) { output.err(listPayload.message); return 1; }
+    const backups = listPayload.details?.backups ?? [];
+    if (!backups.length) { output.warn("No backups to restore."); return 0; }
+    backups.forEach((backup, index) => output.log(`${String(index + 1).padStart(2)}) ${backup.name}`));
+    const selected = backups[Number(await ask("Restore which backup number")) - 1];
     if (!selected) { output.log("Cancelled."); return 0; }
-    output.warn(`This OVERWRITES the current database with ${selected}. This cannot be undone.`);
+    output.warn(`This OVERWRITES the current database with ${selected.name}. This cannot be undone.`);
     if (!(await confirm("Type y to proceed with the destructive restore"))) { output.log("Cancelled."); return 0; }
-    const env = readEnv();
-    const result = adapter.exec(["psql", "-U", env.POSTGRES_USER || "archive", env.POSTGRES_DB || "archive"], {
-      service: "postgres", inherit: false, input: readFileSync(join(backupDir, selected), "utf8"),
-    });
-    if (result.status === 0) output.ok("Restore complete.");
-    else output.err(`Restore failed (exit ${result.status}). ${(result.stderr || "").slice(0, 200)}`);
-    return commandStatus(result);
+    // archive:backup-restore itself refuses a checksum-mismatched backup
+    // before touching any live data (BackupService::restore()) — this call
+    // doesn't re-check that, it just surfaces the command's verdict.
+    const payload = runBackupCommand(adapter, ["archive:backup-restore", selected.name, "--force"]);
+    (payload.ok ? output.ok : output.err)(payload.message);
+    // A legacy backup with no .sha256 sidecar restores successfully but
+    // unverified (BackupService.restore() only hard-blocks a sidecar that's
+    // present and mismatched) — surface that so a green "Restore complete"
+    // doesn't read as "integrity confirmed" when it wasn't checked.
+    if (payload.ok && payload.details?.result?.verified === false) {
+      output.warn("Integrity was not verified for this backup (no checksum sidecar) — restored anyway, but unconfirmed.");
+    }
+    return payload.ok ? 0 : 1;
+  };
+  const verifyBackup = async ({ name } = {}) => {
+    output.titleLine("Verify a backup's checksum");
+    let target = name;
+    if (!target) {
+      const listPayload = runBackupCommand(adapter, ["archive:backup-list"]);
+      if (!listPayload.ok) { output.err(listPayload.message); return 1; }
+      const backups = listPayload.details?.backups ?? [];
+      if (!backups.length) { output.warn("No backups to verify."); return 0; }
+      backups.forEach((backup, index) => output.log(`${String(index + 1).padStart(2)}) ${backup.name}`));
+      const selected = backups[Number(await ask("Verify which backup number")) - 1];
+      if (!selected) { output.log("Cancelled."); return 0; }
+      target = selected.name;
+    }
+    const payload = runBackupCommand(adapter, ["archive:backup-verify", target]);
+    (payload.ok ? output.ok : output.err)(payload.message);
+    return payload.ok ? 0 : 1;
   };
 
   const runDiagnostics = ({ quiet = false } = {}) => {
@@ -144,5 +186,5 @@ export function createControlOperations({ adapter, composeFile, backupDir, readE
     output.ok("Update complete.");
     return 0;
   };
-  return { serverStatus, serverStart, serverStop, serverRestart, serverLogs, healthCheck, migrateStatus, migrateDeploy, seedDemoData, listBackupFiles, backupNow, listBackups, restoreBackup, runDiagnostics, updateAndRebuild };
+  return { serverStatus, serverStart, serverStop, serverRestart, serverLogs, healthCheck, migrateStatus, migrateDeploy, seedDemoData, listBackupFiles, backupNow, listBackups, restoreBackup, verifyBackup, runDiagnostics, updateAndRebuild };
 }
