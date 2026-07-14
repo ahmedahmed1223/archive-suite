@@ -32,7 +32,7 @@ import { createDockerCompose } from "./control-center/docker-compose.mjs";
 import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs";
 import { applySafeMigration, createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
-import { collectWizardRuntimeChoices } from "./control-center/setup-wizard.mjs";
+import { collectWizardRuntimeChoices, requestWizardConfirmation } from "./control-center/setup-wizard.mjs";
 import * as installationManifest from "./control-center/installation-manifest.mjs";
 import { ReleaseDescriptorError, loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
 
@@ -562,7 +562,7 @@ async function guidedSetup() {
   const currentPlatform = existing.ARCHIVE_PLATFORM || (process.platform === "win32" ? "windows-10-11-docker" : "linux-docker");
   log("Runtime choices: Docker is supported for the current release path; Native is shown for planning only and does not install services yet.");
   log(`  Contract platforms: ${contract.platforms.map((platform) => `${platform.id} (${platform.mode}, ${platform.status})`).join("; ")}`);
-  const runtimeChoices = await collectWizardRuntimeChoices({ ask, existing, contract, platformId: currentPlatform });
+  const runtimeChoices = await collectWizardRuntimeChoices({ ask, log, existing, contract, platformId: currentPlatform });
   log("Data services: PostgreSQL and Redis are required by the application and stay enabled automatically.");
   const email = await ask("System admin email — used for the first login", existing.ADMIN_EMAIL || "admin@example.com");
   let password = await ask("Admin password — leave blank to generate a strong one", "");
@@ -601,7 +601,11 @@ async function guidedSetup() {
   log(`  Runtime profiles: ${resolved.runtimeProfiles.join(", ")}`);
   log(`  Capabilities: ${resolved.capabilities.join(", ") || "none"}`);
   log("  The plan was validated via the same resolver used by `setup plan --config`; no files have been written yet.");
-  if (!(await confirm("Save this configuration and install the signed release?", "y"))) return log("Cancelled; nothing changed.");
+  const confirmation = await requestWizardConfirmation({ ask, log });
+  if (confirmation !== "confirm") {
+    log(confirmation === "back" ? "Returning to the configuration questions; nothing has been changed." : "Cancelled; nothing changed.");
+    return confirmation === "back" ? guidedSetup() : 0;
+  }
   if (resolved.mode !== "docker") {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Native installation is planned and cannot be executed yet; no files or services were changed.", { mode: resolved.mode }));
   }

@@ -2,7 +2,26 @@
 // declarative candidate; validation and all policy decisions remain in
 // setup-config.mjs so interactive and file-driven flows cannot drift.
 
-const splitChoice = (value) => String(value).split(",").map((item) => item.trim()).filter(Boolean);
+import { parseWizardChoices } from "./wizard-choice-parser.mjs";
+
+const OPTIONAL_PROFILE_CHOICES = ["media", "edge"];
+const CAPABILITY_CHOICES = ["ocr", "ai", "observability"];
+
+const PROFILE_ALIASES = Object.freeze({
+  media: "media",
+  "media processing": "media",
+  tls: "edge",
+  "public tls": "edge",
+  ingress: "edge",
+});
+
+const CAPABILITY_ALIASES = Object.freeze({
+  ocr: "ocr",
+  ai: "ai",
+  "artificial intelligence": "ai",
+  monitoring: "observability",
+  observability: "observability",
+});
 
 export const WIZARD_RUNTIME_PROMPTS = Object.freeze({
   mode: "Runtime mode (docker/native) — Docker is the supported release path; Native is planning-only for now",
@@ -14,7 +33,43 @@ export const WIZARD_RUNTIME_PROMPTS = Object.freeze({
   capabilities: "Optional capabilities — ocr/ai/observability are not Compose profiles and don't enable services on their own",
 });
 
-export async function collectWizardRuntimeChoices({ ask, existing = {}, contract, platformId }) {
+const CHOICE_HELP = Object.freeze({
+  profiles: [
+    "Optional runtime profiles (core is always enabled):",
+    "  1) media — media processing and OCR workloads; validate capacity first.",
+    "  2) edge — public TLS ingress; select it explicitly only for public access.",
+    "  Enter names or numbers separated by commas, +, ;, or |. Type all or none.",
+    "  Aliases: tls = edge. This choice never adds edge automatically.",
+  ].join("\n"),
+  capabilities: [
+    "Optional capabilities (these do not enable Docker services by themselves):",
+    "  1) ocr — planned OCR workloads.",
+    "  2) ai — planned optional AI workloads.",
+    "  3) observability — local logs, diagnostics, and readiness reporting.",
+    "  Enter names or numbers separated by commas, +, ;, or |. Type all or none.",
+  ].join("\n"),
+});
+
+async function collectChoice({ ask, log, prompt, defaultValue, options, aliases, help }) {
+  log(help);
+  for (;;) {
+    const parsed = parseWizardChoices(await ask(prompt, defaultValue), { options, aliases, allowAll: true, allowNone: true });
+    if (Array.isArray(parsed)) return parsed;
+    log(`Choice not accepted: ${parsed.message}`);
+  }
+}
+
+export async function requestWizardConfirmation({ ask, log = () => {} }) {
+  for (;;) {
+    const answer = String(await ask("Type confirm to save and install, back to change choices, or q to quit", "")).trim().toLowerCase();
+    if (answer === "confirm") return "confirm";
+    if (answer === "back") return "back";
+    if (answer === "q") return "quit";
+    log("Please type confirm, back, or q. No changes have been made.");
+  }
+}
+
+export async function collectWizardRuntimeChoices({ ask, log = () => {}, existing = {}, contract, platformId }) {
   const defaultPlatform = existing.ARCHIVE_PLATFORM || platformId;
   const mode = await ask(WIZARD_RUNTIME_PROMPTS.mode, existing.ARCHIVE_MODE || "docker");
   const platform = await ask(WIZARD_RUNTIME_PROMPTS.platform, defaultPlatform);
@@ -23,8 +78,14 @@ export async function collectWizardRuntimeChoices({ ask, existing = {}, contract
   const source = await ask(WIZARD_RUNTIME_PROMPTS.source, existing.ARCHIVE_SETUP_SOURCE || "online");
   const access = await ask(WIZARD_RUNTIME_PROMPTS.access, existing.ACCESS_MODE || "local");
   const storagePath = await ask(WIZARD_RUNTIME_PROMPTS.storage, existing.ARCHIVE_STORAGE_PATH || contract.dataPaths[defaultFamily].storage);
-  const optionalProfiles = await ask(WIZARD_RUNTIME_PROMPTS.profiles, existing.ARCHIVE_COMPOSE_PROFILES || "");
-  const optionalCapabilities = await ask(WIZARD_RUNTIME_PROMPTS.capabilities, existing.ARCHIVE_CAPABILITIES || "");
+  const optionalProfiles = await collectChoice({
+    ask, log, prompt: WIZARD_RUNTIME_PROMPTS.profiles, defaultValue: existing.ARCHIVE_COMPOSE_PROFILES || "none",
+    options: OPTIONAL_PROFILE_CHOICES, aliases: PROFILE_ALIASES, help: CHOICE_HELP.profiles,
+  });
+  const optionalCapabilities = await collectChoice({
+    ask, log, prompt: WIZARD_RUNTIME_PROMPTS.capabilities, defaultValue: existing.ARCHIVE_CAPABILITIES || "none",
+    options: CAPABILITY_CHOICES, aliases: CAPABILITY_ALIASES, help: CHOICE_HELP.capabilities,
+  });
   return {
     candidate: {
       schemaVersion: "1.0",
@@ -33,8 +94,8 @@ export async function collectWizardRuntimeChoices({ ask, existing = {}, contract
       source,
       intent: "fresh",
       access,
-      runtimeProfiles: ["core", ...splitChoice(optionalProfiles)],
-      capabilities: splitChoice(optionalCapabilities),
+      runtimeProfiles: ["core", ...optionalProfiles],
+      capabilities: optionalCapabilities,
       dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
       storage: { driver: "local", path: storagePath },
     },
