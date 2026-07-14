@@ -1,0 +1,39 @@
+// Runtime adapter contract used by the Control Center. Native adapters may
+// implement it later; this release only supplies the Docker Compose adapter.
+export const RUNTIME_OPERATIONS = [
+  "install", "start", "stop", "restart", "status", "health", "logs", "exec", "update", "rollback", "uninstall",
+];
+
+function completed(result, { includeOutput = false } = {}) {
+  const status = result?.status ?? 1;
+  const response = { ok: status === 0, supported: true, status };
+  if (includeOutput && result?.stdout !== undefined) response.stdout = result.stdout;
+  if (includeOutput && result?.stderr !== undefined) response.stderr = result.stderr;
+  return response;
+}
+
+function unsupported(operation) {
+  return { ok: false, supported: false, operation, reason: "unsupported" };
+}
+
+export function createDockerRuntimeAdapter({ compose, health }) {
+  return {
+    install: () => completed(compose(["up", "-d", "--build"])),
+    start: () => completed(compose(["up", "-d"])),
+    stop: () => completed(compose(["down"])),
+    restart: () => completed(compose(["restart"])),
+    status: () => completed(compose(["ps"])),
+    health: async () => completed(await health()),
+    logs: ({ follow = false } = {}) => completed(compose(["logs", "--tail=200", ...(follow ? ["-f"] : [])])),
+    exec: (args, options = {}) => {
+      const { service = "laravel-fpm", ...composeOptions } = options;
+      return completed(
+        compose(["exec", "-T", service, ...args], Object.keys(composeOptions).length ? composeOptions : undefined),
+        { includeOutput: true }
+      );
+    },
+    update: () => unsupported("update"),
+    rollback: () => unsupported("rollback"),
+    uninstall: () => unsupported("uninstall"),
+  };
+}

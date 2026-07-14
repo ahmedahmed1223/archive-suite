@@ -27,6 +27,11 @@ import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { formatPlatformContractReport, loadPlatformContract, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
 import { buildOperatorReport, buildReadinessContract, collectOperatorSnapshot, createSupportBundle } from "./observability.mjs";
+import { createCli } from "./control-center/cli.mjs";
+import { createConfiguration, validateAdminPassword } from "./control-center/configuration.mjs";
+import { createDockerCompose } from "./control-center/docker-compose.mjs";
+import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs";
+import { createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -46,6 +51,7 @@ const warn = (m) => console.log(`  ${C.y}!!${C.x}  ${m}`);
 const err = (m) => console.error(`  ${C.r}xx${C.x}  ${m}`);
 const titleLine = (m) => console.log(`\n${C.b}${C.c}${m}${C.x}\n`);
 const hr = () => console.log(`${C.d}${"-".repeat(60)}${C.x}`);
+const output = { log, ok, warn, err, titleLine };
 
 // ─── Prompt (lazily-created shared readline) ─────────────────────────────────
 let _rl = null;
@@ -60,69 +66,10 @@ const confirm = async (q, def = "n") => {
   return a.toLowerCase().startsWith("y");
 };
 
-// ─── CLI flags ───────────────────────────────────────────────────────────────
-const ARGS = process.argv.slice(2);
-const hasFlag = (name) => ARGS.some((arg) => arg === `--${name}` || arg.startsWith(`--${name}=`));
-function flagValue(name) {
-  const exact = `--${name}`;
-  const prefix = `${exact}=`;
-  const inline = ARGS.find((arg) => arg.startsWith(prefix));
-  if (inline) return inline.slice(prefix.length);
-  const idx = ARGS.indexOf(exact);
-  if (idx >= 0 && ARGS[idx + 1] && !ARGS[idx + 1].startsWith("-")) return ARGS[idx + 1];
-  return null;
-}
-
-// ─── .env helpers ───────────────────────────────────────────────────────────
-function readEnvRaw() {
-  return existsSync(ENV_PATH) ? readFileSync(ENV_PATH, "utf8") : "";
-}
-function readEnv() {
-  const out = {};
-  for (const line of readEnvRaw().split(/\r?\n/)) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m) out[m[1]] = parseEnvValue(m[2]);
-  }
-  return out;
-}
-function parseEnvValue(value) {
-  const raw = String(value ?? "").trim();
-  if (raw.startsWith("#")) return "";
-  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) return raw.slice(1, -1);
-  return raw.replace(/\s+#.*$/, "").trim();
-}
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-function setVar(content, key, value) {
-  const re = new RegExp(`^(${escapeRegExp(key)}=).*`, "gm");
-  return re.test(content)
-    ? content.replace(re, (_line, prefix) => `${prefix}${value}`)
-    : `${content.replace(/\n?$/, "\n")}${key}=${value}`;
-}
-/** Apply key→value updates to .env, backing up first. Returns true on success. */
-function writeEnv(updates) {
-  if (!existsSync(ENV_PATH)) { err(`No .env at ${ENV_PATH} — run Deploy first.`); return false; }
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  copyFileSync(ENV_PATH, `${ENV_PATH}.bak-${stamp}`);
-  let content = readEnvRaw();
-  for (const [k, v] of Object.entries(updates)) content = setVar(content, k, v);
-  writeFileSync(ENV_PATH, content);
-  ok(`Updated ${Object.keys(updates).join(", ")} (backup: .env.bak-${stamp})`);
-  warn("Restart the stack for changes to take effect (menu: Server: restart).");
-  return true;
-}
-const SECRET_KEYS = /(SECRET|PASSWORD|TOKEN|KEY|DSN|URL)$/;
-const maskValue = (k, v) => (SECRET_KEYS.test(k) && v ? v.slice(0, 3) + "...(hidden)" : v);
-const genSecret = (bytes = 32) => randomBytes(bytes).toString("hex");
-const genPassword = (length = 24) => randomBytes(length).toString("base64url").slice(0, length);
-const MIN_ADMIN_PASSWORD_LENGTH = 12;
-function validateAdminPassword(password) {
-  if (String(password || "").length < MIN_ADMIN_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_ADMIN_PASSWORD_LENGTH} characters.`;
-  }
-  return null;
-}
+// ─── CLI and configuration ──────────────────────────────────────────────────
+const { args: ARGS, hasFlag, flagValue, command: cliCommand } = createCli(process.argv);
+const configuration = createConfiguration({ envPath: ENV_PATH, output });
+const { readEnvRaw, readEnv, writeEnv, maskValue, genSecret, genPassword, isPlaceholder } = configuration;
 
 // ─── Process helpers ──────────────────────────────────────────────────────────
 const PNPM = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
@@ -144,36 +91,17 @@ const checkPnpm = () => {
 };
 
 // ─── Docker compose ─────────────────────────────────────────────────────────
-function dockerComposeCmd() {
-  const v2 = spawnSync("docker", ["compose", "version"], { stdio: "ignore" });
-  if (v2.status === 0) return { bin: "docker", pre: ["compose"] };
-  const v1 = spawnSync("docker-compose", ["version"], { stdio: "ignore" });
-  if (v1.status === 0) return { bin: "docker-compose", pre: [] };
-  return null;
-}
-// V1-208A: profiles are resolved from the platform contract. `core` is always
-// present, while `media` and `edge` remain optional; capabilities never become
-// Docker Compose profiles. Core-only is the default; Setup persists an explicit
-// optional selection in .env and a shell variable takes precedence for one run.
-function composeProfileArgs() {
-  const contract = loadPlatformContract();
-  const configuredProfiles = process.env.ARCHIVE_COMPOSE_PROFILES ?? readEnv().ARCHIVE_COMPOSE_PROFILES;
-  const profiles = resolveComposeProfiles(contract, configuredProfiles);
-  return profiles.flatMap((p) => ["--profile", p]);
-}
-function compose(actionArgs, { inherit = true, input } = {}) {
-  let profileArgs;
-  try {
-    profileArgs = composeProfileArgs();
-  } catch (error) {
-    err(error.message);
-    return { status: 1 };
-  }
-  const dc = dockerComposeCmd();
-  if (!dc) { err("Docker (with Compose) was not found. Install Docker first."); return { status: 127 }; }
-  const args = [...dc.pre, "-f", COMPOSE_FILE, ...(existsSync(ENV_PATH) ? ["--env-file", ENV_PATH] : []), ...profileArgs, ...actionArgs];
-  return spawnSync(dc.bin, args, { cwd: INFRA_DIR, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input });
-}
+// V1-208A policy remains here through the shared platform contract: `core` is
+// always enabled, while `media`/`edge` are explicit optional Compose profiles.
+const { dockerComposeCmd, compose } = createDockerCompose({
+  composeFile: COMPOSE_FILE,
+  infraDir: INFRA_DIR,
+  envPath: ENV_PATH,
+  readEnv,
+  output,
+  loadPlatformContract,
+  resolveComposeProfiles,
+});
 // The laravel service publishes no host port; Next (:3000) rewrites /api/v1/*
 // to it (archive-next/next.config.mjs), so probe Laravel's health through Next.
 function defaultHealthUrl(env = readEnv()) {
@@ -185,49 +113,37 @@ function appUrl(env = readEnv()) {
   return `http://localhost:${env.NEXT_PUBLIC_PORT || "3000"}`;
 }
 
-// ─── Server control ───────────────────────────────────────────────────────────
-function serverStatus() {
-  titleLine("Server status");
-  if (!existsSync(COMPOSE_FILE)) { warn("No compose file yet — run Deploy first."); return 1; }
-  return compose(["ps"]).status ?? 1;
-}
-function serverStart() {
-  titleLine("Starting (docker compose up -d)");
-  const status = compose(["up", "-d"]).status ?? 1;
-  if (status === 0) ok("Stack started."); else err(`Docker compose start failed (exit ${status}).`);
-  return status;
-}
-function serverStop() {
-  titleLine("Stopping (docker compose down)");
-  const status = compose(["down"]).status ?? 1;
-  if (status === 0) ok("Stack stopped."); else err(`Docker compose stop failed (exit ${status}).`);
-  return status;
-}
-function serverRestart() {
-  titleLine("Restarting (docker compose restart)");
-  const status = compose(["restart"]).status ?? 1;
-  if (status === 0) ok("Stack restarted."); else err(`Docker compose restart failed (exit ${status}).`);
-  return status;
-}
-function serverLogs({ follow = false } = {}) {
-  titleLine("Service logs (last 200 lines)" + (follow ? " — following, Ctrl+C to stop" : ""));
-  return compose(["logs", "--tail=200", ...(follow ? ["-f"] : [])]).status ?? 1;
-}
-async function healthCheck() {
-  titleLine("Health check");
-  const env = readEnv();
-  const url = defaultHealthUrl(env);
-  log(`GET ${url}`);
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    const body = await res.text();
-    (res.ok ? ok : warn)(`HTTP ${res.status}. ${body.slice(0, 200)}`);
-    return res.ok ? 0 : 1;
-  } catch (e) {
-    err(`No response from ${url} — is the stack running? (${e.name})`);
-    return 1;
-  }
-}
+// ─── Runtime adapter and service operations ──────────────────────────────────
+const healthProbe = createHealthProbe({ readEnv, defaultHealthUrl, output });
+const dockerRuntime = createDockerRuntimeAdapter({ compose, health: healthProbe });
+const operations = createControlOperations({
+  adapter: dockerRuntime,
+  composeFile: COMPOSE_FILE,
+  backupDir: BACKUP_DIR,
+  readEnv,
+  output,
+  ask,
+  confirm,
+  runPnpm,
+  root: ROOT,
+});
+const {
+  serverStatus,
+  serverStart,
+  serverStop,
+  serverRestart,
+  serverLogs,
+  healthCheck,
+  migrateStatus,
+  migrateDeploy,
+  seedDemoData,
+  listBackupFiles,
+  backupNow,
+  listBackups,
+  restoreBackup,
+  runDiagnostics,
+  updateAndRebuild,
+} = operations;
 
 async function localObservabilityCheck() {
   titleLine("Local operator checks");
@@ -396,102 +312,7 @@ async function changeAdminPassword() {
   }
   return 0;
 }
-// ─── Database (Phase 4) ────────────────────────────────────────────────────────
-function migrateStatus() {
-  titleLine("Database migration status (php artisan migrate:status)");
-  return compose(["exec", "-T", "laravel-fpm", "php", "artisan", "migrate:status"]).status ?? 1;
-}
-async function migrateDeploy() {
-  titleLine("Apply pending migrations (php artisan archive:migrate-safe)");
-  log("Preflight-checked: backs up the database first, runs in a maintenance window, and exits cleanly if nothing is pending.");
-  if (!(await confirm("Apply all pending migrations to the configured database?"))) { log("Cancelled."); return 0; }
-  const r = compose(["exec", "-T", "laravel-fpm", "php", "artisan", "archive:migrate-safe"]);
-  if (r.status === 0) ok("Migrations applied.");
-  else err("Migration failed — application left in maintenance mode. See command output above for rollback steps.");
-  return r.status ?? 1;
-}
-async function seedDemoData() {
-  titleLine("Seed demo archive data (php artisan db:seed --class=DemoArchiveSeeder)");
-  log("Adds sample archive records with content types, sections, and classifications.");
-  log(`${C.d}Idempotent — safe to re-run; never duplicates existing demo rows.${C.x}`);
-  if (!(await confirm("Insert demo archive content into the configured database?"))) { log("Cancelled."); return 0; }
-  const r = compose(["exec", "-T", "laravel-fpm", "php", "artisan", "db:seed", "--class=DemoArchiveSeeder", "--force"]);
-  if (r.status === 0) ok("Demo archive data seeded — open /archive to see it.");
-  else err(`Seeding failed (exit ${r.status}). Is the stack running? Try Server: start.`);
-  return r.status ?? 1;
-}
-// ─── Backups (Phase 4) ─────────────────────────────────────────────────────────
-function listBackupFiles() {
-  if (!existsSync(BACKUP_DIR)) return [];
-  return readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".sql")).sort().reverse();
-}
-function backupNow() {
-  titleLine("Backup — pg_dump of the running database");
-  const env = readEnv();
-  const user = env.POSTGRES_USER || "archive";
-  const db = env.POSTGRES_DB || "archive";
-  if (!existsSync(BACKUP_DIR)) mkdirSync(BACKUP_DIR, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const outFile = join(BACKUP_DIR, `archive-${stamp}.sql`);
-  log(`Dumping "${db}" as "${user}" -> ${outFile}`);
-  const r = compose(["exec", "-T", "postgres", "pg_dump", "-U", user, db], { inherit: false });
-  if (r.status === 0 && r.stdout) {
-    try { writeFileSync(outFile, r.stdout); ok(`Backup written: ${outFile}`); }
-    catch (e) { err(`Dump ran but could not write file: ${e.message}`); }
-  } else err("Backup failed — start the stack first (the 'postgres' service must be running).");
-}
-function listBackups() {
-  titleLine("Backups");
-  const files = listBackupFiles();
-  if (!files.length) return log("No backups yet.");
-  files.forEach((f, i) => log(`${C.b}${String(i + 1).padStart(2)}${C.x}) ${f}`));
-}
-async function restoreBackup() {
-  titleLine("Restore a backup");
-  const files = listBackupFiles();
-  if (!files.length) return warn("No backups to restore.");
-  files.forEach((f, i) => log(`${C.b}${String(i + 1).padStart(2)}${C.x}) ${f}`));
-  const pick = files[Number(await ask("Restore which backup number")) - 1];
-  if (!pick) return log("Cancelled.");
-  warn(`This OVERWRITES the current database with ${pick}. This cannot be undone.`);
-  if (!(await confirm("Type y to proceed with the destructive restore"))) return log("Cancelled.");
-  const env = readEnv();
-  const user = env.POSTGRES_USER || "archive";
-  const db = env.POSTGRES_DB || "archive";
-  const sql = readFileSync(join(BACKUP_DIR, pick), "utf8");
-  const r = compose(["exec", "-T", "postgres", "psql", "-U", user, db], { inherit: false, input: sql });
-  if (r.status === 0) ok("Restore complete."); else err(`Restore failed (exit ${r.status}). ${(r.stderr || "").slice(0, 200)}`);
-}
-
-// ─── Maintenance (Phase 5) ─────────────────────────────────────────────────────
-function runDiagnostics() {
-  titleLine("Diagnostics — canonical verify gate (pnpm verify)");
-  const r = runPnpm(["run", "verify"]);
-  (r.status === 0 ? ok : err)(`verify ${r.status === 0 ? "passed" : `exit ${r.status}`}`);
-  return r.status ?? 1;
-}
-async function updateAndRebuild() {
-  titleLine("Update & rebuild");
-  warn("Runs: git pull → pnpm install --frozen-lockfile → pnpm build → docker compose up -d --build.");
-  log(`${C.d}(Migrations run automatically inside the laravel container on start.)${C.x}`);
-  if (!(await confirm("Proceed?"))) return log("Cancelled.");
-  const steps = [
-    ["git pull", () => spawnSync("git", ["pull", "--ff-only"], { cwd: ROOT, stdio: "inherit" })],
-    ["pnpm install --frozen-lockfile", () => runPnpm(["install", "--frozen-lockfile"])],
-    ["build", () => runPnpm(["run", "build"])],
-    ["rebuild containers", () => compose(["up", "-d", "--build"])],
-  ];
-  for (const [name, fn] of steps) {
-    log(`\n${C.b}-> ${name}${C.x}`);
-    const r = fn();
-    if (r.status !== 0) return err(`Step "${name}" failed (exit ${r.status}). Stopping.`);
-  }
-  ok("Update complete.");
-}
-
-// Values shipped in .env.example that must be replaced before a real deploy.
-const PLACEHOLDER_VALUES = new Set(["archive-collab", "archive-collab-key", "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="]);
-const isPlaceholder = (v) => !v || v.includes("CHANGE_ME") || PLACEHOLDER_VALUES.has(v);
+// Database, backup, and maintenance commands are composed in operations.mjs.
 
 async function deployCanonical() {
   titleLine("Deploy — canonical Laravel + Next.js stack");
@@ -966,7 +787,7 @@ const COMMANDS = {
 COMMANDS["0"] = () => 0;
 COMMANDS.q = () => 0;
 
-const cmd = ARGS.find((a) => !a.startsWith("-"));
+const cmd = cliCommand;
 if (cmd) {
   const fn = COMMANDS[cmd];
   if (!fn) { err(`Unknown command "${cmd}". Try: ${Object.keys(COMMANDS).join(", ")}`); process.exit(1); }
