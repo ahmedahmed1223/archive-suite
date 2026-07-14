@@ -14,6 +14,20 @@ const ROOT = new URL("../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, 
 const run = (args, env = {}) =>
   spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8", env: { ...process.env, ...env } });
 
+const validSetupConfig = (overrides = {}) => ({
+  schemaVersion: "1.0",
+  mode: "docker",
+  platform: "linux-docker",
+  source: "online",
+  intent: "fresh",
+  access: "local",
+  runtimeProfiles: ["core"],
+  capabilities: [],
+  dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
+  storage: { driver: "local", path: "/srv/archive-suite/storage" },
+  ...overrides,
+});
+
 test("public setup and deployment guidance use only the canonical Control Center stack", () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
   assert.equal(pkg.scripts.setup, "node scripts/control-center.mjs deploy");
@@ -142,24 +156,43 @@ test("setup plan validates a declarative configuration deterministically without
   assert.equal(existsSync(envFile), false, "import-config must not create .env");
 });
 
-test("setup plan rejects invalid contract options before writes", () => {
+test("setup plan rejects a platform that does not match its mode before writes", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-plan-invalid-"));
   const configFile = join(dir, "setup.json");
   const envFile = join(dir, ".env");
-  writeFileSync(configFile, JSON.stringify({
-    schemaVersion: "1.0", mode: "docker", platform: "linux-native", source: "online", intent: "fresh", access: "local",
-    runtimeProfiles: ["ocr"], capabilities: [],
-    dataServices: { postgres: { enabled: true }, redis: { enabled: true } }, storage: { driver: "local", path: "/srv/archive-suite/storage" },
-  }));
+  writeFileSync(configFile, JSON.stringify(validSetupConfig({ platform: "linux-native" })));
 
   const r = run(["plan", `--config=${configFile}`, "--json"], { ARCHIVE_ENV_PATH: envFile, PATH: "", Path: "" });
   assert.notEqual(r.status, 0);
   const result = JSON.parse(r.stdout);
   assert.deepEqual(Object.keys(result), ["ok", "code", "message", "details", "nextActions"]);
   assert.equal(result.ok, false);
-  assert.match(result.message, /capabilit|platform/i);
+  assert.match(result.message, /does not match mode/i);
   assert.equal(existsSync(envFile), false, "invalid input must fail before writing .env");
 });
+
+for (const [name, overrides, message] of [
+  ["capability used as a runtime profile", { runtimeProfiles: ["core", "ocr"] }, /capability .*runtime profile/i],
+  ["illegal runtime profile", { runtimeProfiles: ["core", "not-a-profile"] }, /illegal runtime profile/i],
+  ["invalid source", { source: "remote" }, /source must be one of/i],
+  ["storage URL with credentials", { storage: { driver: "local", path: "https://archive:topsecret@example.test/storage" } }, /storage\.path/i],
+]) {
+  test(`setup plan rejects ${name} before writes`, () => {
+    const dir = mkdtempSync(join(tmpdir(), "cc-plan-invalid-"));
+    const configFile = join(dir, "setup.json");
+    const envFile = join(dir, ".env");
+    writeFileSync(configFile, JSON.stringify(validSetupConfig(overrides)));
+
+    const r = run(["plan", `--config=${configFile}`, "--json"], { ARCHIVE_ENV_PATH: envFile, PATH: "", Path: "" });
+    assert.notEqual(r.status, 0);
+    const result = JSON.parse(r.stdout);
+    assert.deepEqual(Object.keys(result), ["ok", "code", "message", "details", "nextActions"]);
+    assert.equal(result.ok, false);
+    assert.match(result.message, message);
+    assert.ok(!r.stdout.includes("topsecret"), "failure output must not echo credentials");
+    assert.equal(existsSync(envFile), false, "invalid input must fail before writing .env");
+  });
+}
 
 test("setup export-config emits a safe canonical configuration or a clear absent result", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-export-"));
@@ -177,6 +210,34 @@ test("setup export-config emits a safe canonical configuration or a clear absent
   assert.ok(!serialized.includes("never-export-this"));
   assert.ok(!serialized.includes("also-secret"));
   assert.ok(!/password|token|secret|_url/i.test(JSON.stringify(result.details)));
+});
+
+test("setup export-config rejects a credential-bearing storage path without exposing it", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-export-sensitive-"));
+  const envFile = join(dir, ".env");
+  writeFileSync(envFile, "ARCHIVE_STORAGE_PATH=https://archive:topsecret@example.test/storage\n");
+
+  const r = run(["export-config", "--json"], { ARCHIVE_ENV_PATH: envFile, PATH: "", Path: "" });
+  assert.notEqual(r.status, 0);
+  const result = JSON.parse(r.stdout);
+  assert.deepEqual(Object.keys(result), ["ok", "code", "message", "details", "nextActions"]);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /storage\.path/i);
+  assert.ok(!r.stdout.includes("topsecret"));
+  assert.ok(!r.stdout.includes("example.test"));
+});
+
+test("setup export-config returns structured JSON when the configured env path cannot be read", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-export-directory-"));
+  const r = run(["export-config", "--json"], { ARCHIVE_ENV_PATH: dir, PATH: "", Path: "" });
+
+  assert.notEqual(r.status, 0);
+  assert.notEqual(r.stdout.trim(), "", "JSON failures must return a result object");
+  const result = JSON.parse(r.stdout);
+  assert.deepEqual(Object.keys(result), ["ok", "code", "message", "details", "nextActions"]);
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "CONFIG_READ_FAILED");
+  assert.equal(r.stderr, "", "JSON failures must not print a stack trace");
 });
 
 test("first-run guide renders quick and advanced setup paths without deploying", () => {

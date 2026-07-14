@@ -39,6 +39,14 @@ function requireString(value, name) {
   return value.trim();
 }
 
+function requireSafeStoragePath(value) {
+  const path = requireString(value, "storage.path");
+  if (/[a-z][a-z\d+.-]*:\/\//i.test(path) || /[^/\\\s:@]+:[^/\\\s@]+@/.test(path)) {
+    throw new SetupConfigError("CONFIG_INVALID", "storage.path must be a local path without a URL or credentials.", { field: "storage.path" });
+  }
+  return path;
+}
+
 function requireUniqueStrings(value, name) {
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item.trim()) || new Set(value).size !== value.length) {
     throw new SetupConfigError("CONFIG_INVALID", `${name} must be an array of unique non-empty strings.`, { field: name });
@@ -96,7 +104,7 @@ export function createSetupConfiguration({ loadPlatformContract }) {
 
     const storage = requireObject(config.storage, "storage");
     if (Object.keys(storage).length !== 2 || storage.driver !== "local") throw new SetupConfigError("CONFIG_INVALID", "storage must use the supported local driver.", { field: "storage" });
-    const storagePath = requireString(storage.path, "storage.path");
+    const storagePath = requireSafeStoragePath(storage.path);
 
     return {
       schemaVersion: SETUP_SCHEMA_VERSION,
@@ -164,5 +172,7 @@ export function createSetupConfiguration({ loadPlatformContract }) {
     } catch (error) { return failure(error); }
   };
 
-  return { importConfig, plan, exportConfig };
+  const errorResult = (code, message, details = {}) => failure(new SetupConfigError(code, message, details));
+
+  return { importConfig, plan, exportConfig, errorResult };
 }
