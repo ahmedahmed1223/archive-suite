@@ -67,7 +67,13 @@ function renderSetupResult(result) {
 
 function setupPlan() { return renderSetupResult(setupConfiguration.plan(flagValue("config"))); }
 function setupImportConfig() { return renderSetupResult(setupConfiguration.importConfig(flagValue("config"))); }
-function setupExportConfig() { return renderSetupResult(setupConfiguration.exportConfig({ envPath: ENV_PATH, env: readEnv() })); }
+function setupExportConfig() {
+  try {
+    return renderSetupResult(setupConfiguration.exportConfig({ envPath: ENV_PATH, env: readEnv() }));
+  } catch {
+    return renderSetupResult(setupConfiguration.errorResult("CONFIG_READ_FAILED", "Unable to read the current configuration."));
+  }
+}
 
 // ─── Process helpers ──────────────────────────────────────────────────────────
 const PNPM = process.platform === "win32" ? "pnpm.cmd" : "pnpm";

@@ -29,7 +29,7 @@
       "required": ["driver", "path"],
       "properties": {
         "driver": { "const": "local" },
-        "path": { "type": "string", "minLength": 1 }
+        "path": { "type": "string", "minLength": 1, "pattern": "^(?![A-Za-z][A-Za-z0-9+.-]*://)(?!.*[^/\\\\s:@]+:[^/\\\\s@]+@).+$" }
       }
     }
   }
