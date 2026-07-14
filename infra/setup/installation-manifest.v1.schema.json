@@ -7,12 +7,12 @@
   "required": ["schemaVersion", "version", "source", "mode", "platform", "runtimeProfiles", "capabilities", "artifacts", "services", "dataPaths", "lastSuccessfulStep", "previousVersion", "operation"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
-    "version": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "source": { "enum": ["online", "offline"] },
     "mode": { "enum": ["docker", "native"] },
-    "platform": { "type": "string", "minLength": 1 },
-    "runtimeProfiles": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
-    "capabilities": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "platform": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "runtimeProfiles": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },
+    "capabilities": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },
     "artifacts": {
       "type": "array",
       "items": {
@@ -21,20 +21,21 @@
         "required": ["id"],
         "anyOf": [{ "required": ["digest"] }, { "required": ["checksum"] }],
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "digest": { "type": "string", "minLength": 1 },
-          "checksum": { "type": "string", "minLength": 1 }
+          "id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "digest": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "checksum": { "type": "string", "minLength": 1, "pattern": "\\S" }
         }
       }
     },
-    "services": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "services": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },
     "dataPaths": {
       "type": "object",
       "minProperties": 1,
-      "propertyNames": { "pattern": "^(?!.*(?:[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Tt][Oo][Kk][Ee][Nn]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn]|[Cc][Oo][Oo][Kk][Ii][Ee]|[Dd][Ss][Nn]|[Cc][Oo][Nn][Nn][Ee][Cc][Tt][Ii][Oo][Nn]|[Uu][Rr][Ll]|[Kk][Ee][Yy])).+$" },
+      "propertyNames": { "pattern": "^(?=.*\\S)(?!.*(?:[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Tt][Oo][Kk][Ee][Nn]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn]|[Cc][Oo][Oo][Kk][Ii][Ee]|[Dd][Ss][Nn]|[Cc][Oo][Nn][Nn][Ee][Cc][Tt][Ii][Oo][Nn]|[Uu][Rr][Ll]|[Kk][Ee][Yy])).+$" },
       "additionalProperties": {
         "type": "string",
         "minLength": 1,
+        "pattern": "\\S",
         "allOf": [
           { "not": { "pattern": "^[a-zA-Z][a-zA-Z0-9+.-]*://" } },
           { "not": { "pattern": "(^|[^\\s:/\\\\])[^\\s:/\\\\]+:[^\\s@]+@" } },
@@ -42,8 +43,8 @@
         ]
       }
     },
-    "lastSuccessfulStep": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
-    "previousVersion": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+    "lastSuccessfulStep": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "pattern": "\\S" }] },
+    "previousVersion": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "pattern": "\\S" }] },
     "operation": {
       "type": "object",
       "additionalProperties": false,
@@ -51,8 +52,8 @@
       "properties": {
         "type": { "enum": ["install", "repair"] },
         "status": { "enum": ["in-progress", "failed", "succeeded"] },
-        "failedStep": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
-        "nextActions": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        "failedStep": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "pattern": "\\S" }] },
+        "nextActions": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" } }
       }
     }
   }

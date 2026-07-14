@@ -58,6 +58,7 @@ function normalizeDataPaths(value) {
   if (!value || typeof value !== "object" || Array.isArray(value) || !Object.keys(value).length) fail("dataPaths must be a non-empty object.");
   const normalized = {};
   for (const [name, path] of Object.entries(value)) {
+    requireString(name, "dataPaths key");
     if (SENSITIVE_KEY.test(name)) fail(`dataPaths.${name} is a sensitive field.`);
     const safePath = requireString(path, `dataPaths.${name}`);
     if (URL.test(safePath) || CREDENTIAL_URL.test(safePath) || CREDENTIAL_PAIR.test(safePath)) fail(`dataPaths.${name} must be a local path without credentials.`);
