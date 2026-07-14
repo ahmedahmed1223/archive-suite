@@ -10,6 +10,7 @@
 - تصحيح مراجعة ثانٍ: أصبحت حزمة core offline تتضمن postgres/redis/laravel/fpm/worker/reverb/next فقط، وتطابق `source` immutable للعقد. يثبت اختبار happy-path البنية الكاملة ثم load/tag/inspect قبل Compose؛ Reverb وCaddy في release Compose يحملان البيئة والحجوم والاعتمادات القانونية عند تشغيلهما.
 - تصحيح مراجعة ثالث: rehearsal core يتحقق من HTTP بدلاً من HTTPS/edge، وتُولّد inventory الفعلية داخل الحزمة من مراجع workflow الموقعة (`NEXT_IMAGE`/`LARAVEL_IMAGE` ومراجع runtime)، مع رفض الغياب أو المراجع غير immutable قبل pull.
 - تصحيح مراجعة رابع: يقبل builder مراجع workflow digest-only، ويطبعها في manifest. تطبّع Setup offline `v` في version وتقبل مراجع التطبيق الموقعة في bundle بعد تحقق سلامة الحزمة، بينما تبقى runtime مقيدة بعقد الإصدار. اختبار E2E يبني bundle بصورة workflow ثم يمرره إلى Setup offline والتحقق/load/tag/inspect.
+- تصحيح مراجعة خامس: تطبّع pipeline أيضاً `:vX.Y.Z@digest` إلى `:X.Y.Z@digest` في sources وbundle refs، فيطابق عقد Setup. يغطي اختبار E2E الواحد builder الفعلي ثم Setup وload/tag/inspect.
 - تظل `plan` و`import-config` صِرفين، وتظل update/rollback/uninstall غير منفذة هنا.
 
 ## دليل الاختبار

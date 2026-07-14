@@ -52,14 +52,14 @@ function verifyOfflineBundle(bundlePath, descriptor, selected) {
   for (const image of selected) {
     const reference = image.offlineRef.replace("$VERSION", descriptor.version);
     const bundleImage = byId.get(image.id) || manifest.images.find((candidate) => candidate.bundleRef === reference);
-    const workflowSignedApplication = applicationService(image.service) && DIGEST_REF.test(bundleImage?.source || "");
+    const workflowSignedApplication = applicationService(image.service) && (DIGEST_REF.test(bundleImage?.source || "") || IMMUTABLE.test(bundleImage?.source || ""));
     if (!bundleImage || bundleImage.bundleRef !== reference || (!workflowSignedApplication && bundleImage.source !== image.online) || !/^[a-f0-9]{64}$/.test(bundleImage.sha256 || "")) fail("OFFLINE_IMAGE_MISMATCH", "Offline bundle images do not match the selected release/profile.");
     if (checksum(join(bundlePath, bundleImage.archive)) !== bundleImage.sha256) fail("OFFLINE_CHECKSUM_INVALID", "Offline image checksum verification failed.");
   }
   return selected.map((image) => {
     const reference = image.offlineRef.replace("$VERSION", descriptor.version);
     const bundleImage = byId.get(image.id) || manifest.images.find((candidate) => candidate.bundleRef === reference);
-    const online = applicationService(image.service) && DIGEST_REF.test(bundleImage.source || "") ? bundleImage.source : image.online;
+    const online = applicationService(image.service) && (DIGEST_REF.test(bundleImage.source || "") || IMMUTABLE.test(bundleImage.source || "")) ? bundleImage.source : image.online;
     return { ...image, online, reference, digest: online.slice(online.lastIndexOf("@") + 1), checksum: bundleImage.sha256, archive: join(bundlePath, bundleImage.archive) };
   });
 }
