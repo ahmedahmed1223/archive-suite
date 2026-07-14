@@ -28,7 +28,7 @@ function fakeManifestStore(manifest, failures = {}) {
     calls,
     readInstallationManifest: () => { if (failures.read) throw failures.read; return current; },
     beginOperation: (request) => { if (failures.begin) throw failures.begin; calls.push(["begin", request.type, request.target?.version]); },
-    updateLastSuccessfulStep: (request) => { if (failures.step) throw failures.step; calls.push(["success", request.step]); },
+    updateLastSuccessfulStep: (request) => { const error = typeof failures.step === "function" ? failures.step(request.step) : failures.step instanceof Error ? failures.step : failures.step?.[request.step]; if (error) throw error; calls.push(["success", request.step]); },
     markInstallationFailed: (request) => { if (failures.fail) throw failures.fail; calls.push(["failed", request.failedStep, request.nextActions]); },
     completeUpdateOperation: (request) => { if (failures.complete) throw failures.complete; calls.push(["complete", request.previousVersion, request.step]); current = { ...current, version: request.input.version, previousVersion: request.previousVersion }; },
   };
@@ -37,6 +37,7 @@ function fakeManifestStore(manifest, failures = {}) {
 function buildDeps({ manifest = baseManifest(), release, resolveReleaseImpl, backupOk = true, migrationOk = true, healthOk = true, smokeOk = true, pullOk = true, switchOk = true, restoreOk = true, offline = false, manifestFailures } = {}) {
   const store = fakeManifestStore(manifest, manifestFailures);
   const adapters = [];
+  const restoreCalls = [];
   const resolvedRelease = release ?? {
     descriptor: { version: "1.1.0" },
     environment: { ARCHIVE_RELEASE_IMAGE_NEXT: "ghcr.io/archive-suite/next:1.1.0@sha256:" + "b".repeat(64) },
@@ -63,10 +64,10 @@ function buildDeps({ manifest = baseManifest(), release, resolveReleaseImpl, bac
     runMigration: (adapter) => { const result = adapter.exec(["php", "artisan", "archive:migrate-safe"]); return { ok: result.status === 0, status: result.status, output: result.stdout || undefined }; },
     checkHealth: async () => (healthOk ? { ok: true, status: 200 } : { ok: false, status: 503 }),
     runRoleSmoke: async () => (smokeOk ? { ok: true, checkedRoles: ["operator"] } : { ok: false, message: "operator smoke failed" }),
-    restorePreviousRelease: async () => ({ ok: restoreOk, status: restoreOk ? 0 : 1 }),
+    restorePreviousRelease: async (request) => { restoreCalls.push(request.cause); return { ok: restoreOk, status: restoreOk ? 0 : 1 }; },
     output: { titleLine: () => {} },
   };
-  return { deps, store, adapters, resolvedRelease };
+  return { deps, store, adapters, restoreCalls, resolvedRelease };
 }
 
 test("update fast-fails when already on the target version, with zero side effects", async () => {
@@ -244,6 +245,22 @@ for (const [name, failure] of [
     assert.equal(result.code, "UPDATE_MANIFEST_IO_FAILED");
     assert.doesNotMatch(JSON.stringify(result), /admin:secret|example\.test/);
     assert.ok(Array.isArray(result.nextActions));
+  });
+}
+
+for (const [name, failure] of [
+  ["switched progress", { step: { switched: new Error("disk full") } }],
+  ["health progress", { step: { "health-verified": new Error("disk full") } }],
+  ["smoke progress", { step: { "role-smoke-verified": new Error("disk full") } }],
+  ["completion", { complete: new Error("disk full") }],
+]) {
+  test(`post-switch manifest ${name} failure restores the previous release before returning JSON-safe I/O failure`, async () => {
+    const { deps, restoreCalls } = buildDeps({ manifestFailures: failure });
+    const result = await createReleaseUpdate(deps)();
+
+    assert.equal(result.code, "UPDATE_MANIFEST_IO_FAILED");
+    assert.equal(result.details.restoredPreviousRelease, true);
+    assert.equal(restoreCalls.length, 1);
   });
 }
 
