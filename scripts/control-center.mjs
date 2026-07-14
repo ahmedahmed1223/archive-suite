@@ -32,6 +32,7 @@ import { createDockerCompose } from "./control-center/docker-compose.mjs";
 import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs";
 import { createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
+import * as installationManifest from "./control-center/installation-manifest.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -39,6 +40,7 @@ const ROOT = resolve(__dirname, "..");
 const INFRA_DIR = join(ROOT, "infra");
 const ENV_PATH = process.env.ARCHIVE_ENV_PATH || join(INFRA_DIR, ".env");
 const ENV_EXAMPLE = join(INFRA_DIR, ".env.example");
+const INSTALLATION_MANIFEST_PATH = process.env.ARCHIVE_INSTALLATION_MANIFEST_PATH || join(INFRA_DIR, "setup", "installation-manifest.json");
 // Canonical stack: Laravel API + Next.js (postgres/redis/laravel/worker/reverb/next/caddy).
 const COMPOSE_FILE = join(INFRA_DIR, "docker-compose.yml");
 const BACKUP_DIR = join(INFRA_DIR, "backups");
@@ -72,6 +74,59 @@ function setupExportConfig() {
     return renderSetupResult(setupConfiguration.exportConfig({ envPath: ENV_PATH, env: readEnv() }));
   } catch {
     return renderSetupResult(setupConfiguration.errorResult("CONFIG_READ_FAILED", "Unable to read the current configuration."));
+  }
+}
+
+function manifestArtifacts() {
+  const compose = readFileSync(COMPOSE_FILE, "utf8");
+  return [...compose.matchAll(/^\s*image:\s*[^@\s]+@(sha256:[a-f\d]{64})\s*$/gmi)]
+    .map((match, index) => ({ id: `compose-image-${index + 1}`, digest: match[1] }));
+}
+
+function manifestServices(configuration) {
+  const services = ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"];
+  if (configuration.runtimeProfiles.includes("media")) services.push("ocr");
+  if (configuration.runtimeProfiles.includes("edge")) services.push("caddy");
+  return services;
+}
+
+function manifestInput(configuration) {
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  return {
+    version: String(pkg.version || "0.0.0"),
+    source: configuration.source,
+    mode: configuration.mode,
+    platform: configuration.platform,
+    runtimeProfiles: configuration.runtimeProfiles,
+    capabilities: configuration.capabilities,
+    artifacts: manifestArtifacts(),
+    services: manifestServices(configuration),
+    dataPaths: { storage: configuration.storage.path },
+  };
+}
+
+function setupInstallOrRepair(operation) {
+  const imported = setupConfiguration.importConfig(flagValue("config"));
+  if (!imported.ok) return renderSetupResult(imported);
+  const configuration = imported.details;
+  if (configuration.mode !== "docker") {
+    return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Install and repair are currently available for Docker mode only.", { mode: configuration.mode }));
+  }
+  const request = { path: INSTALLATION_MANIFEST_PATH, input: manifestInput(configuration) };
+  try {
+    if (process.env.ARCHIVE_CONTROL_CENTER_SKIP_DOCKER === "1") {
+      installationManifest.beginInstallationOperation({ ...request, operation });
+      installationManifest.updateLastSuccessfulStep({ ...request, step: "docker-compose-skipped" });
+    } else {
+      const result = operation === "install" ? dockerRuntime.install(request) : dockerRuntime.repair(request);
+      if (!result.ok) {
+        return renderSetupResult({ ok: false, code: "INSTALL_FAILED", message: "Docker Compose did not complete the requested operation.", details: { status: result.status }, nextActions: ["Review Docker Compose output and run repair after correcting the failure."] });
+      }
+    }
+    const manifest = installationManifest.readInstallationManifest(INSTALLATION_MANIFEST_PATH);
+    return renderSetupResult({ ok: true, code: operation === "install" ? "INSTALL_RECORDED" : "REPAIR_RECORDED", message: `${operation === "install" ? "Installation" : "Repair"} completed and recorded safely.`, details: { manifest }, nextActions: ["Run setup health to verify the running stack."] });
+  } catch {
+    return renderSetupResult({ ok: false, code: "MANIFEST_WRITE_FAILED", message: "Installation state could not be recorded safely.", details: {}, nextActions: ["Correct the local filesystem issue and run repair."] });
   }
 }
 
@@ -119,7 +174,7 @@ function appUrl(env = readEnv()) {
 
 // ─── Runtime adapter and service operations ──────────────────────────────────
 const healthProbe = createHealthProbe({ readEnv, defaultHealthUrl, output });
-const dockerRuntime = createDockerRuntimeAdapter({ compose, health: healthProbe });
+const dockerRuntime = createDockerRuntimeAdapter({ compose, health: healthProbe, manifestStore: installationManifest });
 const operations = createControlOperations({
   adapter: dockerRuntime,
   composeFile: COMPOSE_FILE,
@@ -700,6 +755,7 @@ const COMMANDS = {
   logs: () => serverLogs({ follow: false }), health: healthCheck,
   // Config
   config: showConfig, "set-url": setPublicUrl, plan: setupPlan, "import-config": setupImportConfig, "export-config": setupExportConfig,
+  install: () => setupInstallOrRepair("install"), repair: () => setupInstallOrRepair("repair"),
   // Security
   "generate-password": printGeneratedPassword, password: printGeneratedPassword,
   "change-admin-password": changeAdminPassword, "set-admin-password": changeAdminPassword, "admin-password": changeAdminPassword,
@@ -740,6 +796,8 @@ const COMMANDS = {
     console.log(`  ${C.c}plan --config=<file>${C.x}  Validate a setup config and print a read-only deterministic plan`);
     console.log(`  ${C.c}import-config --config=<file>${C.x}  Validate and print normalized setup configuration (no writes)`);
     console.log(`  ${C.c}export-config${C.x}    Export current non-secret setup choices from .env`);
+    console.log(`  ${C.c}install --config=<file>${C.x} Run the Docker install and write its safe resumable manifest`);
+    console.log(`  ${C.c}repair --config=<file>${C.x} Resume or repair the Docker install using its manifest`);
     console.log(`  ${C.c}set-url${C.x}          Set APP_BASE_URL + PUBLIC_DOMAIN + DOMAIN`);
     console.log(`  ${C.c}generate-password${C.x}  Print a strong password without changing .env`);
     console.log(`  ${C.c}change-admin-password${C.x}  Update ADMIN_EMAIL/PASSWORD and apply to Laravel when running`);
