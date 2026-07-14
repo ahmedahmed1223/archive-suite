@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { createSetupConfiguration } from "./setup-config.mjs";
+import { loadPlatformContract } from "../platform-contract.mjs";
 
-const ACCESS_MODES = new Set(["local", "intranet", "public"]);
-const SECRET_KEY = /(password|secret|token|credential|(^|_)key$|_url$|dsn$)/i;
+const setupConfiguration = createSetupConfiguration({ loadPlatformContract });
 
 function result(ok, code, message, details = {}, nextActions = []) {
   return { ok, code, message, details, nextActions };
@@ -37,16 +38,6 @@ function accessSummary(config = {}) {
   };
 }
 
-function profilePolicy(configuration) {
-  const { access, runtimeProfiles } = configuration || {};
-  if (!ACCESS_MODES.has(access)) return result(false, "ACCESS_MODE_INVALID", "Access mode must be local, intranet, or public.", { field: "access" });
-  if (!Array.isArray(runtimeProfiles) || !runtimeProfiles.includes("core")) return result(false, "CORE_PROFILE_REQUIRED", "The core runtime profile must remain enabled.", { field: "runtimeProfiles" });
-  const edge = runtimeProfiles.includes("edge");
-  if (access === "public" && !edge) return result(false, "PUBLIC_ACCESS_REQUIRES_EDGE", "Public access requires the edge runtime profile for TLS ingress.", { field: "access", requiredProfile: "edge" });
-  if (access !== "public" && edge) return result(false, "EDGE_REQUIRES_PUBLIC_ACCESS", "The edge runtime profile is reserved for public TLS access.", { field: "runtimeProfiles", profile: "edge", access });
-  return null;
-}
-
 async function runProbe(name, probe, input) {
   try {
     const answer = await probe(input);
@@ -64,18 +55,33 @@ async function runProbe(name, probe, input) {
 // in-memory until health confirms the change or a restore is required.
 export function createEnvAccessStore({ envPath }) {
   const readRaw = () => existsSync(envPath) ? readFileSync(envPath, "utf8") : "";
+  const snapshots = new WeakMap();
+  const snapshot = () => {
+    const raw = readRaw();
+    const token = Object.freeze({});
+    snapshots.set(token, {
+      raw,
+      summary: accessSummary({
+        access: envValue(raw, "ACCESS_MODE") || "local",
+        runtimeProfiles: ["core", ...envValue(raw, "ARCHIVE_COMPOSE_PROFILES").split(",").map((value) => value.trim()).filter(Boolean)],
+      }),
+    });
+    return token;
+  };
+  const saved = (token) => {
+    const value = snapshots.get(token);
+    if (!value) throw new Error("Unknown access configuration snapshot.");
+    return value;
+  };
   return {
-    snapshot: () => ({ raw: readRaw(), ...accessSummary({
-      access: envValue(readRaw(), "ACCESS_MODE") || "local",
-      runtimeProfiles: ["core", ...envValue(readRaw(), "ARCHIVE_COMPOSE_PROFILES").split(",").map((value) => value.trim()).filter(Boolean)],
-    }) }),
-    describe: (snapshot) => accessSummary(snapshot),
+    snapshot,
+    describe: (token) => ({ ...saved(token).summary, runtimeProfiles: [...saved(token).summary.runtimeProfiles] }),
     apply: async (configuration) => {
       let next = setEnvValue(readRaw(), "ACCESS_MODE", configuration.access);
       next = setEnvValue(next, "ARCHIVE_COMPOSE_PROFILES", configuration.runtimeProfiles.filter((profile) => profile !== "core").join(","));
       atomicWrite(envPath, next);
     },
-    restore: async (snapshot) => atomicWrite(envPath, snapshot.raw),
+    restore: async (token) => atomicWrite(envPath, saved(token).raw),
   };
 }
 
@@ -86,41 +92,40 @@ export function createAccessModeManager({ store, portProbe, dnsProbe, certificat
   if (!store || !portProbe || !dnsProbe || !certificateProbe || !healthProbe) throw new Error("Access mode manager requires a store and all probes.");
   return {
     async switchAccess(configuration) {
-      const policyFailure = profilePolicy(configuration);
-      if (policyFailure) return policyFailure;
+      const { port, publicDomain, ...setupInput } = configuration || {};
+      const canonical = setupConfiguration.planInput(setupInput);
+      if (!canonical.ok) return canonical;
+      const candidate = { ...canonical.details.configuration, port, publicDomain };
+      if (candidate.access === "public" && (typeof candidate.publicDomain !== "string" || !candidate.publicDomain.trim())) {
+        return result(false, "PUBLIC_DOMAIN_REQUIRED", "Public access requires a domain for DNS and certificate preflight.", { field: "publicDomain" }, ["Provide a public domain and retry the access change."]);
+      }
 
-      const portFailure = await runProbe("port", portProbe, { port: configuration.port, access: configuration.access });
+      const portFailure = await runProbe("port", portProbe, { port: candidate.port, access: candidate.access });
       if (portFailure) return portFailure;
-      if (configuration.access === "public") {
-        const dnsFailure = await runProbe("dns", dnsProbe, { domain: configuration.publicDomain });
+      if (candidate.access === "public") {
+        const dnsFailure = await runProbe("dns", dnsProbe, { domain: candidate.publicDomain });
         if (dnsFailure) return dnsFailure;
-        const certificateFailure = await runProbe("certificate", certificateProbe, { domain: configuration.publicDomain });
+        const certificateFailure = await runProbe("certificate", certificateProbe, { domain: candidate.publicDomain });
         if (certificateFailure) return certificateFailure;
       }
 
       const snapshot = store.snapshot();
       try {
-        await store.apply(configuration);
+        await store.apply(candidate);
       } catch {
         return result(false, "ACCESS_SWITCH_WRITE_FAILED", "Access configuration could not be applied atomically.", {}, ["Check write permissions and retry."]);
       }
 
       let healthy = false;
-      try { healthy = Boolean((await healthProbe({ access: configuration.access })).ok); } catch { /* restore below */ }
-      if (healthy) return result(true, "ACCESS_SWITCHED", "Access configuration was applied and passed health verification.", { configuration: accessSummary(configuration) }, ["Use setup health to monitor the service."]);
+      try { healthy = Boolean((await healthProbe({ access: candidate.access })).ok); } catch { /* restore below */ }
+      if (healthy) return result(true, "ACCESS_SWITCHED", "Access configuration was applied and passed health verification.", { configuration: accessSummary(candidate) }, ["Use setup health to monitor the service."]);
 
       try {
         await store.restore(snapshot);
-        return result(false, "ACCESS_SWITCH_ROLLED_BACK", "Health verification failed; the previous access configuration was restored.", { restored: true, previous: store.describe ? store.describe(snapshot) : accessSummary(snapshot) }, ["Resolve the health issue before retrying the access change."]);
+        return result(false, "ACCESS_SWITCH_ROLLED_BACK", "Health verification failed; the previous access configuration was restored.", { restored: true, previous: store.describe ? store.describe(snapshot) : {} }, ["Resolve the health issue before retrying the access change."]);
       } catch {
         return result(false, "ACCESS_SWITCH_RESTORE_FAILED", "Health verification failed and the previous access configuration could not be restored automatically.", { restored: false }, ["Restore the previous non-secret access configuration from a secure backup."]);
       }
     },
   };
-}
-
-// Kept exported for callers that need to redact operation context before
-// displaying it. The manager itself never includes raw snapshots in results.
-export function redactAccessDetails(details) {
-  return Object.fromEntries(Object.entries(details || {}).filter(([key]) => !SECRET_KEY.test(key)));
 }
