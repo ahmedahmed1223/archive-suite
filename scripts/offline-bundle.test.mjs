@@ -32,19 +32,23 @@ test("offline compose covers core images without builds, pulls, or floating tags
   assert.doesNotMatch(compose, /^\s*build:/m);
   assert.doesNotMatch(compose, /pull_policy:\s*(?:always|missing)/);
   assert.match(compose, /pull_policy:\s*never/g);
-  for (const service of ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next", "caddy"]) {
+  for (const service of ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"]) {
     assert.match(compose, new RegExp(`^  ${service}:`, "m"));
   }
   assert.doesNotMatch(compose, /^  ocr:/m);
+  assert.doesNotMatch(compose, /^  caddy:/m);
 });
 
-test("image inventory includes both application images and every pinned core runtime", () => {
+test("image inventory matches the immutable release descriptor's complete core service set", () => {
   const inventory = JSON.parse(read("infra/offline/images.v1.json"));
-  assert.deepEqual(inventory.images.map(({ id }) => id), ["next", "laravel", "postgres", "redis", "caddy"]);
+  assert.deepEqual(inventory.images.map(({ id }) => id), ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"]);
+  const release = JSON.parse(read("infra/platform/release.v1.json"));
   for (const image of inventory.images) {
     assert.match(image.bundleRef, /^archive-suite\/[a-z-]+:\$VERSION$/);
-    if (image.kind === "runtime") assert.match(image.source, /:\S+@sha256:[a-f0-9]{64}$/);
+    assert.match(image.source, /:\d+\.\d+\.\d+(?:-[\w.-]+)?@sha256:[a-f0-9]{64}$/);
+    assert.equal(image.source, release.images.find((candidate) => candidate.id === image.id)?.online);
   }
+  assert.ok(!inventory.images.some((image) => image.id === "caddy" || image.id === "ocr"));
 });
 
 test("environment generator uses cryptographic randomness and never prints secrets", () => {
@@ -84,11 +88,11 @@ test("semantic verifier enforces image archive checksum and inventory reference"
   const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
   try {
     cpSync(new URL("infra/offline/verify-bundle.mjs", root), join(dir, "verify-bundle.mjs"));
-    writeFileSync(join(dir, "images.v1.json"), JSON.stringify({ images: [{ id: "next", kind: "application", bundleRef: "archive-suite/next:$VERSION" }] }));
+    writeFileSync(join(dir, "images.v1.json"), JSON.stringify({ images: [{ id: "next", kind: "application", source: "registry.test/next:1.0.0@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", bundleRef: "archive-suite/next:$VERSION" }] }));
     cpSync(join(dir, "images.v1.json"), join(dir, "next.tar"));
     writeFileSync(join(dir, "SHA256SUMS"), "");
     const records = ["verify-bundle.mjs", "images.v1.json", "next.tar"].map((path) => ({ path, bytes: readFileSync(join(dir, path)).length, sha256: hash(join(dir, path)) }));
-    const manifest = { schemaVersion: 1, version: "v1.0.0", profile: "core", images: [{ id: "next", kind: "application", bundleRef: "wrong/ref:v1.0.0", archive: "next.tar", sha256: records[2].sha256 }], files: records };
+    const manifest = { schemaVersion: 1, version: "v1.0.0", profile: "core", images: [{ id: "next", kind: "application", source: "registry.test/next:1.0.0@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", bundleRef: "wrong/ref:v1.0.0", archive: "next.tar", sha256: records[2].sha256 }], files: records };
     writeFileSync(join(dir, "manifest.json"), JSON.stringify(manifest));
     const result = spawnSync(process.execPath, [join(dir, "verify-bundle.mjs"), dir], { encoding: "utf8" });
     assert.notEqual(result.status, 0);
@@ -127,7 +131,7 @@ test("evidence binds source commit, manifest, final archive, exact counts, and c
   const script = read("scripts/offline-bundle.mjs");
   for (const field of ["sourceCommit", "manifestSha256", "archiveSha256", "fileCount", "imageCount", "containers", "volumes", "networks"]) assert.match(script, new RegExp(field));
   assert.match(script, /fileCount:\s*14/);
-  assert.match(script, /imageCount:\s*5/);
+  assert.match(script, /imageCount:\s*7/);
 });
 
 test("operator guide verifies top-level checksum before extraction and uses schema-compatible restore", () => {

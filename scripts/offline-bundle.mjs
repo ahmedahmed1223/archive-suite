@@ -26,12 +26,10 @@ function build(version, output) {
   cpSync(join(root, "infra/deploy/Caddyfile"), join(dir, "Caddyfile"));
   writeFileSync(join(dir, "VERSION"), `${version}\n`);
   const images = inventory.images.map((image) => {
-    const source = image.source ?? process.env[image.sourceEnv];
-    if (!source) throw new Error(`Set ${image.sourceEnv} to the signed, verified image@digest`);
-    if (image.kind === "application" && !/@sha256:[a-f0-9]{64}$/.test(source)) throw new Error(`${image.sourceEnv} must be immutable image@sha256:digest`);
+    const source = image.source;
+    if (!source || !/:\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?@sha256:[a-f0-9]{64}$/.test(source)) throw new Error(`offline inventory image ${image.id} must be a signed immutable version@sha256 reference`);
     const bundleRef = image.bundleRef.replace("$VERSION", version);
-    if (image.kind === "runtime") run("docker", ["pull", source]);
-    else run("docker", ["image", "inspect", source], { capture: true });
+    run("docker", ["pull", source]);
     run("docker", ["tag", source, bundleRef]);
     const archive = join(dir, "images", `${image.id}.tar`);
     run("docker", ["save", "--output", archive, bundleRef]);
@@ -88,7 +86,7 @@ function verifyEvidence(dir, evidencePath) {
   const evidence = JSON.parse(readFileSync(resolve(evidencePath), "utf8"));
   const archive = join(resolve(dir, ".."), `${basename(dir)}.tar.gz`);
   if (evidence.sourceCommit !== manifest.sourceCommit || evidence.manifestSha256 !== sha256(manifestPath) || evidence.archiveSha256 !== sha256(archive)) throw new Error("stale rehearsal evidence: artifact identity mismatch");
-  if (evidence.fileCount !== 14 || evidence.fileCount !== manifest.files.length || evidence.imageCount !== 5 || evidence.imageCount !== manifest.images.length) throw new Error("stale rehearsal evidence: bundle counts mismatch");
+  if (evidence.fileCount !== 14 || evidence.fileCount !== manifest.files.length || evidence.imageCount !== 7 || evidence.imageCount !== manifest.images.length) throw new Error("stale rehearsal evidence: bundle counts mismatch");
   if (!evidence.https || !evidence.healthy || !evidence.cleanup || Object.values(evidence.cleanupAbsence).some((value) => value !== true)) throw new Error("rehearsal evidence does not prove health/HTTPS/cleanup");
   process.stdout.write(`Verified rehearsal evidence for ${evidence.sourceCommit}.\n`);
 }
@@ -104,7 +102,7 @@ function rehearsal(dir, evidencePath) {
   const manifestPath = join(dir, "manifest.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const archivePath = join(resolve(dir, ".."), `${basename(dir)}.tar.gz`);
-  const evidence = { schemaVersion: 1, project, version, sourceCommit: manifest.sourceCommit, manifestSha256: sha256(manifestPath), archiveSha256: null, fileCount: 14, imageCount: 5, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, https: false, cleanup: false, cleanupAbsence: { containers: false, volumes: false, networks: false } };
+  const evidence = { schemaVersion: 1, project, version, sourceCommit: manifest.sourceCommit, manifestSha256: sha256(manifestPath), archiveSha256: null, fileCount: 14, imageCount: 7, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, https: false, cleanup: false, cleanupAbsence: { containers: false, volumes: false, networks: false } };
   rmSync(env, { force: true });
   try {
     run(process.execPath, [join(dir, "generate-env.mjs"), env], { env: { ...process.env, ARCHIVE_VERSION: version } });

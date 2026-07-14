@@ -1,11 +1,32 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadOfflineReleaseImages, loadReleaseDescriptor, resolveRelease } from "./release-descriptor.mjs";
 
 const configuration = (overrides = {}) => ({ mode: "docker", source: "online", runtimeProfiles: ["core"], ...overrides });
+const sha256 = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+
+function validCoreBundle() {
+  const dir = mkdtempSync(join(tmpdir(), "release-offline-core-"));
+  const descriptor = loadReleaseDescriptor();
+  const images = descriptor.images.filter((image) => image.profile === "core").map((image) => ({ id: image.id, kind: "application", source: image.online, bundleRef: image.offlineRef.replace("$VERSION", descriptor.version) }));
+  writeFileSync(join(dir, "images.v1.json"), JSON.stringify({ schemaVersion: 1, profile: "core", images }));
+  writeFileSync(join(dir, "verify-bundle.mjs"), readFileSync(new URL("../../infra/offline/verify-bundle.mjs", import.meta.url)));
+  mkdirSync(join(dir, "images"));
+  const files = ["images.v1.json", "verify-bundle.mjs"];
+  const manifestImages = images.map((image) => {
+    const archive = `images/${image.id}.tar`; const archivePath = join(dir, archive);
+    writeFileSync(archivePath, `verified ${image.id}`); files.push(archive);
+    return { ...image, archive, sha256: sha256(archivePath) };
+  });
+  const records = files.map((path) => ({ path, bytes: readFileSync(join(dir, path)).length, sha256: sha256(join(dir, path)) }));
+  writeFileSync(join(dir, "manifest.json"), JSON.stringify({ schemaVersion: 1, version: descriptor.version, profile: "core", images: manifestImages, files: records }));
+  writeFileSync(join(dir, "SHA256SUMS"), "");
+  return dir;
+}
 
 test("online release resolves core to immutable version+digest image references without optional services", () => {
   const release = resolveRelease({ configuration: configuration() });
@@ -40,6 +61,19 @@ test("release contract rejects a floating or mismatched image descriptor", () =>
 
 test("offline release requires a verifiable bundle before Compose", () => {
   assert.throws(() => resolveRelease({ configuration: configuration({ source: "offline" }), offlineBundlePath: join(tmpdir(), "missing-bundle") }), { code: "OFFLINE_BUNDLE_REQUIRED" });
+});
+
+test("a complete core offline bundle resolves, verifies, loads, tags, and inspects before Compose", () => {
+  const bundle = validCoreBundle();
+  const release = resolveRelease({ configuration: configuration({ source: "offline" }), offlineBundlePath: bundle });
+  assert.equal(release.images.length, 7);
+  assert.equal(release.environment.ARCHIVE_RELEASE_PULL_POLICY, "never");
+  assert.deepEqual(release.images.map((image) => image.service).sort(), ["laravel", "laravel-fpm", "laravel-reverb", "laravel-worker", "next", "postgres", "redis"]);
+  const calls = [];
+  loadOfflineReleaseImages(release, { runDocker: (args) => calls.push(args) });
+  assert.equal(calls.filter((args) => args[1] === "load").length, 7);
+  assert.equal(calls.filter((args) => args[1] === "tag").length, 7);
+  assert.equal(calls.filter((args) => args[1] === "inspect").length, 14);
 });
 
 test("verified offline images are loaded and inspected before the release adapter can compose", () => {

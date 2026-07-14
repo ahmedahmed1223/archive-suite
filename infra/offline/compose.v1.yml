@@ -94,22 +94,6 @@ services:
       HOSTNAME: 0.0.0.0
       ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1
     depends_on: { laravel: { condition: service_started } }
-  caddy:
-    image: archive-suite/caddy:${ARCHIVE_VERSION}
-    pull_policy: never
-    environment:
-      DOMAIN: ${DOMAIN:-localhost}
-      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
-      CADDY_UPSTREAM: next:3000
-    ports: ["${HTTP_PORT:-80}:80", "${HTTPS_PORT:-443}:443"]
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on: { next: { condition: service_started } }
-
 volumes:
   postgres_data:
   storage:
-  caddy_data:
-  caddy_config:
