@@ -5,13 +5,23 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createAccessModeManager, createEnvAccessStore } from "./access-mode.mjs";
 
-const publicConfig = (overrides = {}) => ({
+const setupConfig = (overrides = {}) => ({
+  schemaVersion: "1.0",
+  mode: "docker",
+  platform: "windows-10-11-docker",
+  source: "online",
+  intent: "reconfigure",
   access: "public",
   runtimeProfiles: ["core", "edge"],
+  capabilities: [],
+  dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
+  storage: { driver: "local", path: "C:\\ArchiveSuite\\data\\storage" },
   port: 443,
   publicDomain: "archive.example.test",
   ...overrides,
 });
+
+const publicConfig = (overrides = {}) => setupConfig(overrides);
 
 function probes(overrides = {}) {
   return {
@@ -36,7 +46,7 @@ test("local and intranet switch without edge or public probes", async () => {
   });
 
   for (const access of ["local", "intranet"]) {
-    const result = await manager.switchAccess({ access, runtimeProfiles: ["core"], port: 3000 });
+    const result = await manager.switchAccess(setupConfig({ access, runtimeProfiles: ["core"], port: 3000 }));
     assert.equal(result.ok, true);
     assert.equal(result.code, "ACCESS_SWITCHED");
   }
@@ -64,7 +74,7 @@ test("edge remains reserved for public access before any probe or write", async 
     store: { snapshot: () => ({}), apply: async () => { writes++; }, restore: async () => {} },
     ...probes({ portProbe: async () => { probeCalls++; return { ok: true }; } }),
   });
-  const result = await manager.switchAccess({ access: "intranet", runtimeProfiles: ["core", "edge"], port: 3000 });
+  const result = await manager.switchAccess(setupConfig({ access: "intranet", runtimeProfiles: ["core", "edge"], port: 3000 }));
   assert.equal(result.code, "EDGE_REQUIRES_PUBLIC_ACCESS");
   assert.equal(probeCalls, 0);
   assert.equal(writes, 0);
@@ -77,7 +87,7 @@ test("port conflict stops before configuration write or health", async () => {
     store: { snapshot: () => ({}), apply: async () => { writes++; }, restore: async () => {} },
     ...probes({ portProbe: async () => ({ ok: false, reason: "in_use" }), healthProbe: async () => { healthCalls++; return { ok: true }; } }),
   });
-  const result = await manager.switchAccess({ access: "local", runtimeProfiles: ["core"], port: 3000 });
+  const result = await manager.switchAccess(setupConfig({ access: "local", runtimeProfiles: ["core"], port: 3000 }));
   assert.equal(result.code, "PORT_CONFLICT");
   assert.equal(writes, 0);
   assert.equal(healthCalls, 0);
@@ -97,21 +107,21 @@ test("DNS and certificate failures are explicit public preflight contracts witho
   }
 });
 
-test("health failure restores the atomically captured previous access configuration", async () => {
+test("health failure restores an opaque previous access configuration without exposing its raw env content", async () => {
   const events = [];
-  const snapshot = { access: "local", runtimeProfiles: ["core"], raw: "POSTGRES_PASSWORD=do-not-log" };
+  const snapshot = Object.freeze({});
   const manager = createAccessModeManager({
     store: {
       snapshot: () => snapshot,
       apply: async () => events.push("apply"),
       restore: async (value) => { events.push("restore"); assert.equal(value, snapshot); },
+      describe: () => ({ access: "local", runtimeProfiles: ["core"] }),
     },
     ...probes({ healthProbe: async () => ({ ok: false }) }),
   });
   const result = await manager.switchAccess(publicConfig());
   assert.equal(result.code, "ACCESS_SWITCH_ROLLED_BACK");
   assert.deepEqual(events, ["apply", "restore"]);
-  assert.ok(!JSON.stringify(result).includes("do-not-log"));
   assert.equal(result.details.restored, true);
 });
 
@@ -121,10 +131,33 @@ test("environment access store uses atomic writes and never exposes unrelated se
   writeFileSync(envPath, "POSTGRES_PASSWORD=hidden-value\nACCESS_MODE=local\nARCHIVE_COMPOSE_PROFILES=\n");
   const store = createEnvAccessStore({ envPath });
   const snapshot = store.snapshot();
+  assert.deepEqual(Object.keys(snapshot), [], "the rollback token must not expose raw .env data");
+  assert.ok(!JSON.stringify(snapshot).includes("hidden-value"));
   assert.deepEqual(store.describe(snapshot), { access: "local", runtimeProfiles: ["core"] });
   await store.apply(publicConfig());
   assert.match(readFileSync(envPath, "utf8"), /ACCESS_MODE=public/);
   assert.match(readFileSync(envPath, "utf8"), /ARCHIVE_COMPOSE_PROFILES=edge/);
   await store.restore(snapshot);
   assert.equal(readFileSync(envPath, "utf8"), "POSTGRES_PASSWORD=hidden-value\nACCESS_MODE=local\nARCHIVE_COMPOSE_PROFILES=\n");
+});
+
+test("canonical setup resolver rejects invalid platform/profile and nested credential URLs before probes or writes", async () => {
+  let probeCalls = 0;
+  let writes = 0;
+  const manager = createAccessModeManager({
+    store: { snapshot: () => ({}), apply: async () => { writes++; }, restore: async () => {} },
+    ...probes({ portProbe: async () => { probeCalls++; return { ok: true }; } }),
+  });
+  for (const input of [
+    setupConfig({ platform: "linux-native" }),
+    setupConfig({ runtimeProfiles: ["core", "typo-profile"] }),
+    setupConfig({ storage: { driver: "local", path: "https://archive:topsecret@example.test/storage" } }),
+  ]) {
+    const result = await manager.switchAccess(input);
+    assert.equal(result.ok, false);
+    assert.equal(probeCalls, 0);
+    assert.equal(writes, 0);
+    assert.ok(!JSON.stringify(result).includes("topsecret"));
+    assert.ok(!JSON.stringify(result).includes("example.test"));
+  }
 });
