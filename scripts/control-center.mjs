@@ -32,7 +32,7 @@ import { createDockerCompose } from "./control-center/docker-compose.mjs";
 import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs";
 import { applySafeMigration, createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
-import { collectWizardRuntimeChoices, requestWizardConfirmation } from "./control-center/setup-wizard.mjs";
+import { collectWizardRuntimeChoices, runGuidedProvisioningFlow } from "./control-center/setup-wizard.mjs";
 import * as installationManifest from "./control-center/installation-manifest.mjs";
 import { ReleaseDescriptorError, loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
 
@@ -605,11 +605,7 @@ async function guidedSetup() {
   log(`  Runtime profiles: ${resolved.runtimeProfiles.join(", ")}`);
   log(`  Capabilities: ${resolved.capabilities.join(", ") || "none"}`);
   log("  The plan was validated via the same resolver used by `setup plan --config`; no files have been written yet.");
-  const confirmation = await requestWizardConfirmation({ ask, log });
-  if (confirmation !== "confirm") {
-    log(confirmation === "back" ? "Returning to the configuration questions; nothing has been changed." : "Cancelled; nothing changed.");
-    return confirmation === "back" ? guidedSetup() : 0;
-  }
+  const flow = await runGuidedProvisioningFlow({ ask, log, configuration: resolved, provision: async () => {
   if (resolved.mode !== "docker") {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Native installation is planned and cannot be executed yet; no files or services were changed.", { mode: resolved.mode }));
   }
@@ -671,6 +667,12 @@ async function guidedSetup() {
   log(`  3. Check status any time — ${C.c}setup status${C.x} / ${C.c}setup health${C.x}`);
   if (healthStatus !== 0) warn("Health check did not pass yet — first boot can take a minute; retry with 'setup health'.");
   return healthStatus;
+  }});
+  if (flow.action !== "confirm") {
+    log(flow.action === "back" ? "Returning to the configuration questions; nothing has been changed." : "Cancelled; nothing changed.");
+    return flow.action === "back" ? guidedSetup() : 0;
+  }
+  return flow.result;
 }
 
 // ─── Quick start (deploy + health) ────────────────────────────────────────────

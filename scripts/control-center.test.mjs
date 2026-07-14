@@ -5,7 +5,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
-import { collectWizardRuntimeChoices, requestWizardConfirmation } from "./control-center/setup-wizard.mjs";
+import { collectWizardRuntimeChoices, requestWizardConfirmation, runGuidedProvisioningFlow } from "./control-center/setup-wizard.mjs";
 import { applySafeMigration } from "./control-center/operations.mjs";
 import { runInteractiveMenu } from "./control-center/cli.mjs";
 import { loadPlatformContract } from "./platform-contract.mjs";
@@ -487,6 +487,48 @@ test("wizard profile numbers and aliases follow the core-implicit contract", asy
     existing: {}, contract: loadPlatformContract(), platformId: "linux-docker",
   });
   assert.deepEqual(aliased.candidate.runtimeProfiles, ["core", "media", "edge"]);
+
+  const coreAnswers = ["docker", "linux-docker", "online", "local", "/srv/archive-suite/profiles", "1, 1", "none"];
+  const implicitCore = await collectWizardRuntimeChoices({
+    ask: async (_prompt, fallback) => coreAnswers.shift() || fallback,
+    existing: {}, contract: loadPlatformContract(), platformId: "linux-docker",
+  });
+  assert.deepEqual(implicitCore.candidate.runtimeProfiles, ["core"], "1 is the implicit core profile and must not duplicate it");
+
+  const allAnswers = ["docker", "linux-docker", "online", "public", "/srv/archive-suite/profiles", "all", "none"];
+  const allProfiles = await collectWizardRuntimeChoices({
+    ask: async (_prompt, fallback) => allAnswers.shift() || fallback,
+    existing: {}, contract: loadPlatformContract(), platformId: "linux-docker",
+  });
+  assert.deepEqual(allProfiles.candidate.runtimeProfiles, ["core", "media", "edge"]);
+
+});
+
+test("guided provisioning flow keeps .env and Docker side effects behind confirm", async () => {
+  const effects = [];
+  const mockedSystem = {
+    writeEnv: () => effects.push(".env"),
+    dockerInstall: () => effects.push("docker"),
+  };
+  const provision = async (configuration) => {
+    assert.deepEqual(configuration, { platform: "linux-docker" });
+    mockedSystem.writeEnv();
+    mockedSystem.dockerInstall();
+    return 0;
+  };
+
+  for (const answer of ["back", "q"]) {
+    effects.length = 0;
+    const result = await runGuidedProvisioningFlow({ ask: async () => answer, log: () => {}, configuration: { platform: "linux-docker" }, provision });
+    assert.equal(result.action, answer === "q" ? "quit" : "back");
+    assert.deepEqual(effects, [], `${answer} must not write .env or invoke Docker`);
+  }
+
+  effects.length = 0;
+  const confirmed = await runGuidedProvisioningFlow({ ask: async () => "confirm", log: () => {}, configuration: { platform: "linux-docker" }, provision });
+  assert.equal(confirmed.action, "confirm");
+  assert.equal(confirmed.result, 0);
+  assert.deepEqual(effects, [".env", "docker"], "confirm invokes the actual provisioning callback exactly once");
 });
 
 test("wizard confirmation requires confirm and never provisions after back or q", async () => {
@@ -510,8 +552,8 @@ test("wizard confirmation requires confirm and never provisions after back or q"
 
 test("guided setup uses the explicit confirmation gate before it can provision", () => {
   const controlCenter = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
-  assert.match(controlCenter, /requestWizardConfirmation\(\{ ask, log \}\)/);
-  assert.match(controlCenter, /if \(confirmation !== "confirm"\) \{[\s\S]*return/);
+  assert.match(controlCenter, /runGuidedProvisioningFlow\(\{ ask, log, configuration: resolved, provision: async \(\) => \{/);
+  assert.match(controlCenter, /if \(flow\.action !== "confirm"\) \{[\s\S]*return/);
   assert.match(controlCenter, /Your setup summary/);
   assert.doesNotMatch(controlCenter, /Choice summary/);
   assert.doesNotMatch(controlCenter, /confirm\("Save this configuration and install the signed release\?", "y"\)/);
