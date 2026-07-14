@@ -2,10 +2,15 @@
 
 > هذا هو ملف المهام النشطة الوحيد بعد دمج خطط Laravel/Next وUI وlegacy parity.
 
+> **للوكلاء المنفذين:** تُنفذ مهمة واحدة في كل مرة بـTDD ومراجعة مستقلة. بعد إغلاق P1 يمكن تشغيل P3 وP4 وP6 بالتوازي؛ لا يعمل وكيلان على الملفات نفسها، ولا تُدمج مهمة قبل بواباتها المدرجة أدناه.
+
 ## الحالة
 
-- لا توجد مهام محلية مفتوحة في المسار القانوني `archive-next/` + `archive-laravel/` ضمن خطة UX/UI الحالية.
-- البنود المكتملة نُفذت ووُثقت في `ChangeLog.md`.
+- أُغلقت جميع مانعات P0 الأصلية، لكن الإصدار يبقى **NO-GO** للاستخدام العام حتى إكمال التشغيل المزدوج وSetup الشامل وجاهزية المستخدم والتجربة الميدانية وبوابات GA أدناه.
+- توجد مهام تطوير محلية مفتوحة في `archive-next/` و`archive-laravel/` و`scripts/` و`infra/`؛ البنود التي تحتاج Windows/Linux نظيفين أو اعتمادات حية موسومة صراحة كتحقق خارجي.
+- التصميم الحاكم: [`docs/superpowers/specs/2026-07-14-daily-use-dual-runtime-design.md`](docs/superpowers/specs/2026-07-14-daily-use-dual-runtime-design.md).
+- ترتيب التنفيذ: `P1 Setup core → P2 lifecycle → (P3 Windows Native + P4 Linux Native + P6 daily UX) → P5 parity → P7 RC/GA`.
+- البنود المكتملة نُفذت ووُثقت في `ChangeLog.md` ولا تُعاد إلا بمتابعة جديدة ذات معرّف مستقل.
 
 ## خطة UX/UI الشاملة — الشرائح المتبقية (مُرحَّلة من خطة 2026-07-11 قبل حذف ملفها)
 
@@ -27,7 +32,7 @@
 
 ## خطة الإصدار الأول (V1) — مدمجة من `docs/superpowers/specs/2026-07-12-v1-agent-execution-plan.md`
 
-> القرار الحالي **NO-GO** حتى إغلاق مانعات P0. التسلسل الإلزامي: `W0 → W1 → W2 → RC → GA` (UX/CI بالتوازي بعد W0). التفاصيل الكاملة لكل بند في ملف الخطة والتقرير `2026-07-12-v1-release-readiness-report.md`.
+> القرار الحالي **NO-GO** رغم إغلاق P0؛ الموانع الحالية هي W2/W3 والقبول الحي وRC/GA. تقرير 2026-07-12 مرجع تاريخي لخط الأساس، أما حالة التنفيذ الحالية ومصدر الأولوية فهما هذا الملف وتصميم 2026-07-14 أعلاه.
 
 ### الموجة 0 — خط الأساس
 - [x] **V1-000 مراجعة cutover** — حذف الإرث (1700 ملف) وcommit نظيف. (منجز 2026-07-12)
@@ -49,6 +54,13 @@
 - [x] **V1-122** استعادة غير مدمرة (معاملة DB ترجع الحيّة سليمة عند أي فشل) + تحقق checksum قبل الاستعادة (رفض النسخ التالفة 422، توافق خلفي للنسخ بلا sidecar بعلَم `verified:false`). (منجز 2026-07-12؛ 4 اختبارات جديدة، 15 تمر.) **(P0 #3)**
 - [x] **V1-123** retention/pruning للجلسات/audit/jobs/backups + RPO/RTO. (منجز 2026-07-13: أربع أوامر artisan جديدة، كل واحد بنافذة احتفاظ قابلة للضبط عبر env مع افتراضي آمن. **`sessions:prune`**: يحذف صفوف `api_sessions` (آلية الجلسات الفعلية المستخدمة فعلاً — `AuthController`/`AuthenticateArchiveApiRequest` عبر bearer token + كوكي `va_refresh`، وليس جدول `sessions` الافتراضي لـLaravel الذي لا يُكتب فيه شيء أصلاً لغياب أي استخدام لـ'web' session middleware) بمجرد انتهاء `refresh_expires_at` (لم تعد قابلة للتجديد أصلاً). **`audit:prune`**: يحذف صفوف `audit_logs` الأقدم من `AUDIT_LOG_RETENTION_DAYS` (افتراضي 365 يوماً، `config('archive.audit_log_retention_days')`) — سجل الامتثال يبقى طويل الأمد بشكل افتراضي وليس قصيراً كسجلات تشغيلية. **`media:prune-jobs`**: يحذف صفوف `media_jobs` الطرفية فقط (`completed`/`failed`/`canceled`) التي مضى على `completed_at` أكثر من `MEDIA_JOB_RETENTION_DAYS` (افتراضي 90 يوماً، `config('media.job_retention_days')`)؛ الفلترة بالحالة وحدها كافية لضمان عدم لمس أي وظيفة `queued`/`processing` بغض النظر عن قِدَمها. **`backup:cleanup`** كان موجوداً أصلاً من V1-121 (حد أقصى للعدد + العمر) لكنه لم يكن مجدولاً — أُضيف الآن على الجدولة اليومية مع البقية عبر `Schedule::command(...)->daily()` في `routes/console.php` (Laravel 13 يكتشفها تلقائياً بلا حاجة لـKernel)؛ منطقه الحالي يحمي دوماً آخر `max_count` نسخة بغض النظر عن عمرها (لا يُفرغ الأرشيف بالكامل حتى لو كانت كل النسخ قديمة). **قياس RPO/RTO حقيقي وليس ادعاءً**: `DrReadinessService::rpoRtoReport()` (مكشوف عبر أمر `dr:report` جديد ومدمج في `probe()` الحالية التي تغذي `/api/v1/system/status`) يُرجع **RPO** = عمر آخر نسخة احتياطية ناجحة بالساعات (محسوب مباشرة من `filemtime` النسخة، لا تقدير) — غياب أي نسخة يُرجع `null` (تعرّض غير محدود) لا صفراً. **RTO** = مدة آخر تشغيل فعلي لـ`backup:dr-drill` (V1-122)؛ `runDrDrill()` أصبح يقيس `microtime(true)` قبل/بعد الاستعادة الفعلية ويخزّن `durationSeconds` ضمن `dr-drill-status.json` الموجود أصلاً، فتُعرَض قيمة مُقاسة حقاً لا تخمين؛ قبل أول تشغيل للـdrill تُعرض `rtoSeconds: null` و`rtoSource: "not yet measured — run backup:dr-drill"` صراحة بدل رقم ملفّق. 9 اختبارات جديدة في `RetentionPruningTest` (تغطي: حذف الجلسة المنتهية فقط، حذف سجل التدقيق القديم فقط، حذف الوظائف الطرفية القديمة فقط مع بقاء `queued`/`processing` مهما قدُم تاريخها، عدم حذف النسخة الاحتياطية الوحيدة حتى لو كانت قديمة جداً، الاحتفاظ بأحدث نسخة عند تجاوز `max_count`، وتقرير RPO/RTO قبل/بعد تسجيل drill)، الحزمة الكاملة 506 تمر/0 فشل (كانت 500 عند V1-113). خارج النطاق موثقاً: (1) قياس RTO من استعادة حقيقية على بيئة إنتاج فعلية بحجم بيانات واقعي — الرقم المُقاس يأتي من `backup:dr-drill` الذي يستعيد إلى حالة مؤقتة على نفس القاعدة (نفس آلية V1-122)، وهو مؤشر اتجاه صحيح لكنه ليس محاكاة كاملة لاستعادة كارثة فعلية (استرجاع سيرفر جديد بالكامل، إلخ). (2) أرشفة صفوف `audit_logs`/`media_jobs` المحذوفة إلى تخزين بارد قبل الحذف النهائي — الحذف هنا نهائي مباشرة، لا يوجد مسار أرشفة وسيط.)
 
+#### متابعات أمن وبيانات أُعيد فتحها بعد مراجعة الجاهزية
+
+- [ ] **V1-102F إغلاق بقية مصفوفة RBAC** — حماية tag-nodes/vocabulary/collections/relations/types/automation-rules/ingest/upload-links حسب admin/editor/viewer، وإضافة كل route إلى `RoleMatrixApiTest`. القبول: viewer لا يكتب، editor لا يدير النظام، admin يملك المسارات الإدارية فقط؛ `pnpm verify:laravel` يمر.
+- [ ] **V1-102G قصر ODBC على admin** — إضافة `requireAdmin()` لجميع read/write/probe في `SystemController` وتغطية admin/editor/viewer داخل `OdbcReadApiTest`. هذا مانع إطلاق عند تفعيل `ARCHIVE_FEATURE_ODBC`.
+- [ ] **V1-102H بوابة route/role مشتركة** — ربط تصنيف `RouteScopeTest` بمصفوفة صلاحيات بحيث يفشل CI عند إضافة route مصادَق عليه بلا توقع admin/editor/viewer أو استثناء موثق.
+- [ ] **V1-112F حماية سعة الرفع** — إضافة حد تخزين مؤسسي قابل للضبط وفحص مساحة القرص قبل قبول الرفع. يكون AV شرطًا عند تمكين upload-links العامة، واختياريًا في النشر الداخلي؛ القبول يشمل 413/507 مستقرة وعدم ترك ملفات في quarantine بعد الرفض.
+
 ### الموجة 2 — التشغيل والتغليف
 - [x] **V1-201 Control Center** — إصلاح رمز legacy المفقود + إزالة الأوامر القديمة + اختبارات. (منجز 2026-07-12؛ 18 اختباراً.) **(كان P0 #6)**
 - [x] **V1-202 production runtime** — منجز 2026-07-13: استُبدل PHP dev server بواجهة nginx على `laravel:8000` وPHP-FPM داخلي غير منشور على `laravel-fpm:9000`، مع health عميق للقاعدة وRedis والتخزين، وفحوص liveness/readiness للعامل وReverb. بقي حل localhost الحالي (Caddy `DOMAIN=localhost` وACME fallback) محفوظاً. تحقق: Compose config للملفين، image build، smoke nginx→FPM (health 200 وكل checks=true و9000 بلا host binding)، و`pnpm verify` (122 Next + 526 Laravel، 0 فشل). **(P0 runtime)**
@@ -57,22 +69,122 @@
 - [x] **V1-205 supply chain (SBOM/checksums/signing)** — منجز 2026-07-13: يحتفظ الإصدار بـSBOM/provenance attestations المرفقة بالصور، ويصدّر SPDX JSON قابلًا للتنزيل لكل digest قانوني، ويولّد inventories تراخيص إنتاجية لـpnpm وComposer ويفرض allowlist صريحة (رفض forbidden/unknown بلا استثناءات حالية)، ويوقّع digest الصورتين بـCosign keyless/OIDC ثم يتحقق من هوية workflow وissuer قبل إنشاء الإصدار. كل artifact قابل للتنزيل مغطى بـ`SHA256SUMS` مفحوص، والصلاحيات مقيدة لكل job. لا يوجد ادعاء توقيع محلي؛ التوقيع يحدث فقط عند tag داخل GitHub Actions.
 - [x] **V1-206 offline bundle** — منجز 2026-07-13: حزمة Docker air-gapped مُرقّمة وقابلة للتحقق تضم صورتي Next/Laravel وكل صور runtime المثبتة لملف core (pgvector/Redis/Caddy)، مع Compose محلي بلا build/pull، مولد أسرار، مثبتَي Windows/Linux Docker، checksums/manifest، وربط GitHub Release بعد تحقق التوقيعات. نجحت بروفة load وتشغيل/صحة/HTTPS بمشروع وvolumes معزولة ثم تنظيفه بالكامل. لا يوجد ادعاء native، وبقي V1-208+ مفتوحًا.
 - [x] **V1-207 observability** — منجز 2026-07-13 في e643fb4: نُفّذ الـrehearsal القانوني الحقيقي (صور Next+Laravel خلف Caddy TLS) وأثبت المعرّف نفسه (صريح ومولَّد) في response وسجلات Caddy/Next/Laravel — الدليل في `docs/ops/v1-207-correlation-evidence.md`. التشغيل الحقيقي كشف وأصلح علتين: ملكية storage volume لـfpm (chown عند الإقلاع) وDOMAIN المحلي.
-- [ ] **V1-208 cross-platform installer** / [x] **V1-209 Docker profiles** (منجز 2026-07-13 في 7020528: core/media/edge، الافتراضي كامل عبر Control Center، ARCHIVE_COMPOSE_PROFILES للتخصيص) / **V1-210 native Windows** / **V1-211 native Linux** / [x] **V1-212 parity matrix** (منجز 2026-07-13 في bb8a689: `docs/platform-parity.md` مرآة عقد المنصات).
+- [x] **V1-209 Docker profiles** — منجز 2026-07-13 في 7020528: `core/media/edge`، والافتراضي كامل عبر Control Center، و`ARCHIVE_COMPOSE_PROFILES` للتخصيص.
+- [x] **V1-212A مصفوفة التوافق الوصفية** — منجز 2026-07-13 في bb8a689: `docs/platform-parity.md` مرآة للعقد. لا يُعد هذا تحقق تكافؤ حيًا؛ المتابعة في V1-212B أدناه.
+
+#### P1 — Setup core وV1-208
+
+- [ ] **V1-208A توحيد عقد الخيارات** — فصل runtime profiles (`core/media/edge`) عن capabilities (`ocr/ai/observability`) في `infra/platform/compatibility.v1.json` وschema وCompose وSetup، وإضافة اختبار CI يفشل عند drift. القبول: `pnpm verify:infra` و`node --test scripts/platform-contract.test.mjs` يمران.
+- [ ] **V1-208B تفكيك Control Center إلى وحدات** — استخراج CLI shell وconfiguration وplatform contract وoperations وruntime adapters من `scripts/control-center.mjs` مع الحفاظ على الأوامر الحالية. يبدأ التنفيذ باختبارات فاشلة لكل interface، ثم يمر `node --test scripts/control-center.test.mjs` دون تغيير سلوك Docker القائم.
+- [ ] **V1-208C schema وخطة تثبيت declarative** — إضافة ملف إعداد versioned يغطي mode/platform/source/intent/access/profile/capabilities/data/storage، وأوامر `setup plan/export-config/import-config`، ونتيجة `--json` ثابتة (`ok/code/message/details/nextActions`). `plan` وimport validation صِرفان بلا كتابة؛ الإعداد الخاطئ يُرفض قبل إنشاء `.env` أو خدمة أو مجلد بيانات.
+- [ ] **V1-208D installation manifest قابل للاستئناف** — تسجيل version/source/mode/platform/profiles/capabilities/digests/services/data paths/last successful step/previous version بلا أسرار، وجعل install/repair idempotent وقابلين للاستئناف بعد فشل متوسط.
+- [ ] **V1-208E Docker release adapter** — تنفيذ install/start/stop/restart/status/health/logs/exec عبر adapter يستهلك صور version+digest في online وoffline؛ يحظر `git pull` و`pnpm install` و`--build` في وضع المستخدم، مع إبقائها لأوامر التطوير فقط.
+- [ ] **V1-208F واجهة wizard شاملة** — عرض Docker/Native وخيارات المنصة والمصدر والوصول والـprofiles والتخزين وخدمات البيانات بحسب العقد، ورفض غير المدعوم قبل الكتابة. الوضع التفاعلي وغير التفاعلي يستدعيان الدوال نفسها ويملكان اختبارات parity.
+- [ ] **V1-208G بوابة Setup الأساسية** — تغطية help/plan/install/repair/start/stop/restart/status/health/logs/config/doctor/rotate-secrets/migrate/diagnostics/support-bundle عبر اختبارات CLI، وإضافة فحص redaction للمخرجات وmanifest. القبول المحلي: اختبارات Control Center + `pnpm verify`.
+- [ ] **V1-208M فحوص خدمات البيانات والتخزين** — probes غير مدمرة لـPostgreSQL وRedis-compatible والتخزين المحلي والمزود الخارجي، مع اختبار read/write/delete داخل namespace مؤقت وتنظيفه. لا تُحفظ credentials في manifest أو support bundle.
+- [ ] **V1-208N أوضاع الوصول والشهادات** — local وintranet وpublic TLS عبر العقد نفسه؛ فحص تعارض المنافذ وDNS/certificate قبل switch، وحفظ الإعداد السابق للرجوع عند فشل health.
+
+#### P2 — دورة حياة الإصدار والبيانات عبر Setup
+
+- [ ] **V1-208H النسخ والاستعادة القانونية** — استبدال `pg_dump`/`psql` المعروضين كنسخة كاملة باستدعاء BackupService/أوامر Laravel القانونية التي تشمل DB+files+manifest+checksums؛ إضافة `setup verify-backup` ورفض النسخة التالفة قبل أي تغيير.
+- [ ] **V1-208I update ذري من artifacts** — preflight → backup كامل → تثبيت الإصدار بجانب الحالي → `archive:migrate-safe` → switch → health + smoke حسب الدور. يفشل بأمان عند download/signature/migration/health ولا يحذف الإصدار السابق.
+- [ ] **V1-208J rollback حقيقي** — إعادة artifact/config السابقين، ومع migration غير قابلة للعكس عرض أثر فقد بيانات ما بعد التحديث وطلب تأكيد قبل استعادة النسخة السابقة. القبول: نجاح rollback بعد فشل health، ورفض downgrade غير المتوافق.
+- [ ] **V1-208K uninstall وإعادة الربط** — إبقاء البيانات افتراضيًا، إزالة الخدمات والقواعد التي يملكها manifest فقط، وإضافة `reconnect-data`. حذف البيانات خيار منفصل يتطلب عبارة تأكيد وbackup حديثًا ناجحًا.
+- [ ] **V1-208L اختبارات فشل دورة الحياة** — checksum/signature تالف، منفذ مشغول، مساحة ناقصة، اعتماد مفقود، فشل منتصف التثبيت، تشغيل الأمر مرتين، DB/worker/Reverb down، قرص ممتلئ، وفشل restore/update/rollback؛ لكل سيناريو code وnextActions ثابتان.
+
+#### P3 — V1-210 Windows Native
+
+- [ ] **V1-210A حزمة Windows Native** — artifact موقعة من نفس commit تشغّل Next standalone وLaravel FastCGI والعامل وReverb والجدولة كخدمات Windows تحت حساب محدود؛ service wrapper مثبت الإصدار ومدرج في SBOM.
+- [ ] **V1-210B Windows runtime adapter** — تنفيذ دورة Setup كاملة للخدمات وACL/firewall/logs والـhealth، وإزالة الموارد التي سجل manifest ملكيتها فقط.
+- [ ] **V1-210C خدمات البيانات على Windows** — PostgreSQL محلي مُدار أو endpoint خارجي؛ database queue/cache baseline، وRedis-compatible endpoint خيار بعد probe. تغطية تبديل الخيار ورفض endpoint غير السليم قبل التثبيت.
+- [ ] **V1-210D قبول Windows نظيف — تحقق خارجي** — Windows 10 و11: online/offline، local/intranet/public TLS، reboot، backup/restore، update/rollback، uninstall/reconnect؛ إرفاق logs/manifest/support bundle منزوعة الأسرار.
+
+#### P4 — V1-211 Linux Native
+
+- [ ] **V1-211A حزمة Linux Native** — artifact موقعة من نفس commit لـNext standalone وPHP-FPM/HTTP والعامل وReverb والجدولة، مع مستخدم خدمة غير تفاعلي.
+- [ ] **V1-211B Linux runtime adapter** — وحدات systemd منفصلة، ownership وlogrotate وfirewall اختياري، ودورة Setup كاملة دون تعديل موارد نظام لا يملكها manifest.
+- [ ] **V1-211C خدمات البيانات على Linux** — PostgreSQL محلي/خارجي، database queue/cache baseline، وRedis محلي/خارجي اختياري بعد probe؛ اختبارات service restart وفشل الاتصال والتعافي.
+- [ ] **V1-211D قبول Linux نظيف — تحقق خارجي** — توزيعة Linux المدعومة في عقد المنصات: online/offline، local/intranet/public TLS، reboot، backup/restore، update/rollback، uninstall/reconnect مع أدلة منزوعة الأسرار.
+
+#### P5 — V1-212B تكافؤ حي بين المنصات
+
+- [ ] **V1-212B harness قبول موحد** — تشغيل نفس scenario IDs على Windows Docker/Native وLinux Docker/Native: install/reconfigure/operate/data/release/uninstall/security، وحفظ النتائج كartifacts.
+- [ ] **V1-212C بوابة ادعاء الدعم** — منع انتقال أي platform من `planned/conditional` إلى supported ما لم تمر مصفوفته الحية كاملة من artifact إصدار نهائي على clean host.
 
 ### الموجة 3 — المنتج وUX
-- [ ] **V1-301 onboarding خادمي** / [x] **V1-302 admin safety** (منجز 2026-07-13 في ac7dfcc: منع حذف/تخفيض آخر admin + LAST_ADMIN_PROTECTED، الحزمة 532 تمر) / **V1-303 responsive+a11y (375/768/1280, axe)** — جزئياً 2026-07-14: بوابة axe-core آلية (`archive-next/e2e/accessibility.spec.ts`، `@axe-core/playwright`) على 8 مسارات غير مرتبطة بـLaravel حي (`/`, `/login`, `/help`, `/reports`, `/settings`, `/archive`, `/share/demo-token`, `/media/jobs`) عند 375/768/1280، مدمجة في `verify:laravel-next:live`؛ 48/48 تمر بلا انتهاكات serious/critical. المتبقي: بقية المسارات تتطلب إما بيانات Laravel حية أو كوكي مصادقة (records التفصيلية، rights، backup، إلخ) — تحتاج تمريرة منفصلة بتركيبة حية، ومراجعة الاستجابة البصرية اليدوية عبر التطبيق كاملاً. / [x] **V1-304 data correctness** (منجز 2026-07-13 في eb40845: pagination envelope إضافي على 5 نقاط كانت تقتطع بصمت + إصلاح summary.total في sync، الحزمة 537 تمر. متابعات موثقة: automation/rules limit(25)، حافة cursor في catalog، غياب montage-projects من العقد) / [x] **V1-305 offline truth** (منجز 2026-07-14: إزالة ادعاء PWA الخاطئ من `DEPLOYMENT.md` — لا manifest.json/service worker في `archive-next` القانوني — وتوثيق حدود طابور `offline-queue.ts`/`offline-manager.ts` الفعلية بدل بناء PWA كاملة؛ توثيق فقط، بلا تغيير كود) / **V1-306 language/help** / **V1-307 performance**.
+- [x] **V1-302 admin safety** — منجز 2026-07-13 في ac7dfcc: منع حذف/تخفيض آخر admin + `LAST_ADMIN_PROTECTED`، والحزمة 532 تمر.
+- [x] **V1-304A data correctness الأساسية** — منجز 2026-07-13 في eb40845: pagination envelope على خمس نقاط وإصلاح `summary.total` في sync.
+- [x] **V1-305 offline truth** — منجز 2026-07-14: إزالة ادعاء PWA وتوثيق حدود queue المحلية الفعلية.
+
+#### P6A — V1-301 onboarding محفوظ خادميًا
+
+- [ ] **V1-301A عقد تقدم onboarding** — نموذج/تخزين خادمي لمراحل المؤسسة والتخزين والدعوة وأول مادة وأول بحث، مع API typed وتحديث OpenAPI. لكل مرحلة timestamp وحالة، ويمنع viewer من تعديلها.
+- [ ] **V1-301B واجهة first-run مستأنفة** — ربط `archive-next/app/first-run` بالعقد الخادمي، استئناف التقدم بعد logout/login وعلى جهاز آخر، وإظهار خطوة قابلة للتنفيذ لا checklist محلية كاذبة.
+- [ ] **V1-301C رحلة admin حية** — fixture مدير جديد ينفذ المؤسسة→التخزين→الدعوة→أول مادة→أول بحث، مع حالات فشل/retry وعدم وسم الخطوة مكتملة قبل تأكيد الخادم.
+
+#### P6B — V1-303 responsive والوصولية
+
+- [x] **V1-303A بوابة public axe الأساسية** — ثمانية مسارات عند 375/768/1280 في `archive-next/e2e/accessibility.spec.ts` بلا serious/critical.
+- [ ] **V1-303B fixtures مصادقة حسب الدور** — admin/editor/viewer وبيانات records/rights/backups/jobs معزولة داخل live Playwright؛ لا تستخدم token مدير موحدًا.
+- [ ] **V1-303C تغطية جميع المسارات المصنفة** — axe على المسارات المصادَق عليها والحالات loading/empty/error/ready عند 375/768/1280 وzoom 200%، وربط inventory بـRouteScope لمنع route بلا اختبار.
+- [ ] **V1-303D لوحة المفاتيح وقارئ الشاشة** — tab order، focus traps، Escape، skip link، announcements وعينة فعلية لقارئ شاشة على onboarding/archive/record/upload/search/admin.
+- [ ] **V1-303E مراجعة بصرية حية** — screenshots ثابتة للمسارات الأساسية عند نقاط العرض الثلاث، صفر overflow أفقي أو إجراء أساسي خارج الوصول، وتوثيق الاستثناءات المقبولة فقط.
+
+#### P6C — V1-304 متابعات صحة البيانات
+
+- [ ] **V1-304B automation pagination** — إزالة `limit(25)` الصامت أو إرجاع pagination envelope كامل مع total/next cursor، وتحديث العميل والعقد والاختبارات.
+- [ ] **V1-304C catalog cursor edge** — اختبار وإصلاح حافة التكرار/الفقد عند تساوي sort keys وبين الصفحات.
+- [ ] **V1-304D montage contract** — إضافة montage-projects إلى OpenAPI والتحقق من توافق request/response مع العميل الفعلي.
+
+#### P6D — V1-306 اللغة والمساعدة
+
+- [ ] **V1-306A إزالة dialogs الأصلية** — استبدال كل `window.prompt/window.confirm/confirm` الموجودة في Next بحوارات Metric UI/Radix قابلة للوحة المفاتيح، مع وصف الأثر والإجراء الآمن والتركيز الصحيح.
+- [ ] **V1-306B اتساق العربية وRTL** — تدقيق النصوص والمصطلحات والتواريخ والأرقام واتجاه الأيقونات عبر المسارات المصنفة، واختبار يمنع mojibake والنصوص التشغيلية الإنجليزية غير المعتمدة.
+- [ ] **V1-306C أدلة حسب الدور** — مساعدة سياقية لـadmin/editor/viewer مرتبطة بالصفحة والإجراء، ولا تعرض للمستخدم إجراء لا تسمح به صلاحياته.
+
+#### P6E — V1-307 الأداء
+
+- [ ] **V1-307A مولد بيانات benchmark** — 100 ألف سجل عربي و10 آلاف ملف وعينة رفع 1GB ببذرة ثابتة، دون إدراج بيانات حقيقية أو حساسة.
+- [ ] **V1-307B قياسات الواجهة** — LCP p75 ≤2.5s وCLS ≤0.1 وINP ≤200ms على جهاز baseline بعقد الموارد، للمسارات اليومية وعند نقاط العرض المطلوبة.
+- [ ] **V1-307C قياسات API والرفع** — P95 البحث ≤1.5s، فتح السجل ≤1s، وبدء جلسة الرفع ≤2s دون زمن النقل، على Docker وNative بالأداة والبيانات نفسيهما.
+- [ ] **V1-307D بوابة regression** — حفظ baseline ونتائج قابلة للمقارنة، وفشل CI/release rehearsal عند تجاوز budget دون استثناء إصدار موثق.
 
 ### الموجة 4 — CI والتوثيق
 - [x] **V1-401 CI gates** (منجز 2026-07-14: وظيفة live-integration بـPlaywright الحي + رفع الآثار (798be19) + بوابة axe-core (`e2e/accessibility.spec.ts`) مدمجة في نفس التشغيل الحي عبر `scripts/verify-next-laravel-live.mjs`؛ راجع V1-303 لنطاق التغطية) / [x] **V1-402 security gates** (منجز 2026-07-13 في 798be19: gitleaks حاجب + baseline/audit + composer audit) / [x] **V1-403 release-readiness محتوى لا strings** (منجز 2026-07-13: فحص تماسك الإصدار/الرخصة/بنية release.yml/العقد/P0 المفتوحة/اكتمال env، 8 اختبارات) / [x] **V1-404 docs canonical-only** (منجز 2026-07-13 في b32a083) / [x] **V1-405 release notes** (منجز 2026-07-13 في b32a083: `docs/release-notes/v1.0.0-rc.1.md`).
+- [ ] **V1-406 بوابة المهام المانعة للإصدار** — تحديث release-readiness ليفشل عند بقاء أي بند P1–P6 موسوم كمانع أو غياب أدلة المنصة، بدل الاقتصار على P0 التاريخية. لا تمنع البنود الخارجية ميزة معطلة، لكنها تمنع تفعيلها دون دليل.
 
 ### الموجة 5 — RC وتجربة ميدانية / الموجة 6 — GA
-- [ ] **V1-501..505** Alpha/game-day، rc.1 في 3–5 بيئات، قياس RPO/RTO، تصنيف عيوب pilot، rehearsal نظيف.
-- [ ] **V1-601..605** Go/No-Go، tag `v1.0.0`، نشر artifacts/SBOM، اختبار تنزيل نهائي، فتح مراقبة/دعم.
+- [ ] **V1-501 Alpha داخلي وgame-day** — فشل DB/cache/queue/worker/Reverb/network/disk/certificate على تثبيت Docker وNative؛ توثيق الكشف والتنبيه والتعافي وعدم فساد البيانات.
+- [ ] **V1-502 نشر rc.1 ميداني — تحقق خارجي** — 3–5 بيئات تغطي Windows/Linux وDocker/Native وonline/offline، باستخدام Setup وartifacts الموقعة فقط.
+- [ ] **V1-503 قياسات التشغيل — تحقق خارجي** — زمن التثبيت، نجاح onboarding لكل دور، budgets الأداء، RPO/RTO من DR drill، استهلاك الموارد ومعدل الأخطاء.
+- [ ] **V1-504 triage pilot** — إغلاق كل P0/P1؛ كل P2 إما مغلق أو مؤجل بقرار Product يذكر الأثر والحل المؤقت والموعد.
+- [ ] **V1-505 release rehearsal نظيف** — checkout/runner بلا cache يبني artifacts مرة واحدة، يتحقق من التواقيع، ثم يثبت ويختبر النسخة على clean hosts دون build عند العميل.
+- [ ] **V1-601 Go/No-Go** — توقيع Product/Security/Operations/Support بعد إرفاق نتائج P5/P6 والـpilot وعدم وجود مانع مفتوح.
+- [ ] **V1-602 إصدار `v1.0.0`** — tag من commit مجمد، بناء artifacts مرة واحدة، ومطابقة version/digest/signature/provenance.
+- [ ] **V1-603 نشر الإصدار** — الصور وحزم Docker/Windows Native/Linux Native والدليل وملاحظات الإصدار وSBOM/checksums والتواقيع.
+- [ ] **V1-604 اختبار التنزيل النهائي — تحقق خارجي** — تثبيت online وoffline من artifacts العامة نفسها، لا من workspace أو registry خاص.
+- [ ] **V1-605 فتح التشغيل والدعم** — لوحات الصحة المحلية، سياسة الدعم والتصعيد، runbooks للنسخ/الاستعادة/التحديث/التراجع، وقناة استقبال العيوب.
+
+### تحققات قدرات اختيارية — لا تمنع GA وهي معطلة
+
+- [ ] **V1-X01 التخزين الخارجي — تحقق مشروط** — Dropbox/S3 أو المزود المعلن: اعتماد حي، read/write/delete، ملف كبير، انقطاع واعادة محاولة، وعدم تسرب الاعتماد. يصبح مانعًا فقط عند تضمين المزود في عرض الإصدار.
+- [ ] **V1-X02 ODBC على Windows — تحقق مشروط** — DSN/driver حي وبيانات اختبار بعد إغلاق V1-102G؛ read/write المسموح ورفض الجدول/الدور غير المسموح. تبقى feature flag معطلة بدونه.
+- [ ] **V1-X03 تفريغ عربي GPU — تحقق مشروط** — عينة عربية معتمدة ومقاييس دقة/زمن وموارد على GPU مستهدف؛ لا يُعلن profile media/التفريغ كمدعوم قبل الدليل.
+- [ ] **V1-X04 AI/vision/embeddings — تحقق مشروط** — مزود وفهرس/خط معالجة حي، حدود timeout/rate/cost، عزل البيانات وفشل آمن؛ تبقى القدرة اختيارية ومعطلة افتراضيًا.
+
+## بوابات التنفيذ لكل مهمة مفتوحة
+
+- تبدأ باختبار فاشل يثبت السلوك أو العقد المطلوب، ثم أقل تنفيذ ينجحه، ثم refactor محدود.
+- تحقق المهمة محليًا بأضيق اختبار أولًا، ثم `pnpm typecheck` و`pnpm test:next` أو `pnpm verify:laravel` حسب النطاق، ثم `pnpm verify` قبل الإغلاق.
+- مهام Setup تشغّل أيضًا `node --test scripts/control-center.test.mjs scripts/platform-contract.test.mjs` و`pnpm verify:infra`.
+- مهام الرحلات والأدوار والوصولية تشغّل `pnpm verify:laravel-next:live` وتحفظ screenshots/traces/reports اللازمة.
+- مهام clean-host لا تُغلق بمحاكاة محلية؛ تُرفق platform/version/mode/source/manifest ونتيجة كل scenario ID من الجهاز المستهدف.
+- كل مهمة تغلق بتحديث `ChangeLog.md` و`TASKS.md` وcommit مستقل لا يضم تعديلات مستخدم غير مرتبطة.
 
 ## قاعدة إعادة الفتح
 
 لا يُضاف أي بند هنا إلا إذا كان قابلاً للتنفيذ محلياً أو توفرت له البيئة/الاعتمادات الحية المطلوبة. عند إضافة بند جديد:
 
-- يكون التطوير الجديد في `archive-next/` و`archive-laravel/` فقط؛ التشارك بين الواجهة والـ API يمر عبر عقد `docs/api/archive-contract.openapi.json`.
+- ميزات المنتج الجديدة تكون في `archive-next/` و`archive-laravel/` فقط، والتشارك بين الواجهة والـAPI يمر عبر `docs/api/archive-contract.openapi.json`. أعمال التثبيت والتشغيل والبوابات الخاصة بهذه الخطة تكون في `scripts/` و`infra/` و`.github/workflows/` دون إنشاء runtime منتج موازٍ.
 - حُذفت حزم `archive-app` و`archive-server` و`archive-core` نهائياً بتاريخ 2026-07-12 (راجع `ChangeLog.md`)؛ لا تُضاف إليها ميزات جديدة — هي متاحة فقط عبر تاريخ git عند الحاجة لمرجع legacy.
 - تُنفذ كل شريحة ببوابات تحقق مناسبة، ثم تُوثق في `ChangeLog.md` وتُدمج في commit مستقل.
