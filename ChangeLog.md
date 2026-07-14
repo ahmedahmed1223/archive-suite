@@ -25,6 +25,7 @@
 - `tests/Feature/RouteScopeTest.php::test_odbc_route_is_reachable_when_its_feature_flag_is_on` كان يستخدم نفس `authHeaders()` المشترك (editor) للتحقق من أن المسار يعمل عند تفعيل العلَم — كان سيفشل بـ403 لنفس السبب. أُضيف `adminHeaders()` محلي وأُصلح الاستدعاء.
 - التحقق: `OdbcReadApiTest` + `RouteScopeTest` معًا ‏23 اختبارًا ناجحًا/86 تأكيدًا، صفر فشل.
 - خارج النطاق موثقًا: V1-X02 (تحقق ODBC حي على DSN/driver فعلي) يبقى تحققًا مشروطًا منفصلًا في `TASKS.md` — هذه المهمة أغلقت الثغرة الأمنية (RBAC) فقط، لا الوظيفة نفسها.
+- **تصحيح لاحق (أثناء تحقق V1-112F الشامل):** بحث الملفات وقت V1-102G استخدم نمط تسمية `tests/Feature/*{Vocabulary,Collection,...}*.php` فلم يلتقط `OdbcStatusApiTest.php` (تسمية مختلفة، لا تحمل كلمة "Odbc" في نمط البحث المستخدم). كان يستخدم `authHeaders()` المشترك (editor) رغم أن اسم الاختبار يدّعي "for_authenticated_admin" — لم يُكتشف إلا عند تشغيل `pnpm verify:laravel` الكامل (لا المُصفّى) فكشف فشل 403 بدل 200 المتوقع. أُصلح بنفس نمط `adminHeaders()` المحلي، وأُضيف اختبار `test_odbc_status_is_forbidden_for_non_admin_roles` جديد. الدرس: بحث الملفات بنمط الاسم وحده غير كافٍ لضمان اكتشاف كل التبعيات — `grep` مباشر على السلوك (هنا: `requireAdmin`) أو تشغيل الحزمة الكاملة قبل الإغلاق هو الضامن الفعلي.
 
 ## إغلاق بقية مصفوفة RBAC (V1-102F) — مكتمل 2026-07-14
 
