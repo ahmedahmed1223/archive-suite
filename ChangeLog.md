@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## Setup wizard flexible choices and explicit confirmation — 2026-07-14
+
+- The interactive Setup wizard now explains optional runtime profiles and capabilities in English, including why each option exists, its resource or exposure impact, and how to enter it. It accepts exact names, option numbers, declared aliases (such as `tls` for `edge`), and comma/`+`/`;`/`|` separators; `all` and `none` are explicit choices. Unknown input is rejected and re-prompted rather than guessed.
+- `core` remains enabled automatically. The wizard never adds `edge` implicitly: selecting public access without an explicit `edge` selection is still rejected by the shared configuration resolver before any write or Docker operation.
+- The summary now requires the literal word `confirm` before provisioning. `back` restarts the questions without changes and `q` cancels. An empty response is not a confirmation, preventing accidental duplicate or automatic installation.
+- TDD evidence: parser tests cover normalization, aliases, numeric selection, `all`/`none`, duplicates, and unknown input; controlled wizard tests cover English help plus confirmation/back/quit behavior. Focused Control Center and parser tests pass locally.
+
 ## Setup interactive menu result acknowledgement — 2026-07-14
 
 - Interactive Setup now keeps each completed operation's result visible until the operator presses Enter to return to the main menu or `q` to exit. Invalid acknowledgement input repeats only that acknowledgement prompt, and each selected handler runs exactly once.

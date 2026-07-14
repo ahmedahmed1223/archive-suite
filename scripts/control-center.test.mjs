@@ -5,7 +5,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
-import { collectWizardRuntimeChoices } from "./control-center/setup-wizard.mjs";
+import { collectWizardRuntimeChoices, requestWizardConfirmation } from "./control-center/setup-wizard.mjs";
 import { applySafeMigration } from "./control-center/operations.mjs";
 import { runInteractiveMenu } from "./control-center/cli.mjs";
 import { loadPlatformContract } from "./platform-contract.mjs";
@@ -454,6 +454,49 @@ test("controlled wizard prompts create the same candidate accepted by the declar
   // Setup's terminal output is English-only: Arabic mojibakes in common
   // Windows terminal codepages, so every prompt must be plain ASCII-range text.
   assert.ok(prompts.every((prompt) => !/[\u0600-\u06FF]/.test(prompt)), "runtime choice prompts must be English, not Arabic (terminal mojibake)");
+});
+
+test("wizard accepts flexible named, numbered, and aliased option choices with English help", async () => {
+  const prompts = [];
+  const notices = [];
+  const answers = ["docker", "linux-docker", "offline", "public", "/srv/archive-suite/flexible", "Media + TLS", "ocr, 3"];
+  const choices = await collectWizardRuntimeChoices({
+    ask: async (prompt, fallback) => { prompts.push(prompt); return answers.shift() || fallback; },
+    log: (message) => notices.push(message),
+    existing: {},
+    contract: loadPlatformContract(),
+    platformId: "linux-docker",
+  });
+  assert.deepEqual(choices.candidate.runtimeProfiles, ["core", "media", "edge"]);
+  assert.deepEqual(choices.candidate.capabilities, ["ocr", "observability"]);
+  assert.ok(notices.some((message) => /Enter names or numbers/i.test(message)));
+  assert.ok([...prompts, ...notices].every((text) => !/[\u0600-\u06FF]/.test(text)), "wizard choice help must be English");
+});
+
+test("wizard confirmation requires confirm and never provisions after back or q", async () => {
+  for (const [answer, expected] of [["back", "back"], ["q", "quit"], ["confirm", "confirm"]]) {
+    let provisions = 0;
+    const decision = await requestWizardConfirmation({ ask: async () => answer, log: () => {} });
+    if (decision === "confirm") provisions += 1;
+    assert.equal(decision, expected);
+    assert.equal(provisions, expected === "confirm" ? 1 : 0);
+  }
+  const answers = ["", "q"];
+  const blankDecision = await requestWizardConfirmation({
+    ask: async (_prompt, fallback) => {
+      const answer = answers.shift();
+      return answer || fallback;
+    },
+    log: () => {},
+  });
+  assert.equal(blankDecision, "quit", "an empty confirmation must not use confirm as a default");
+});
+
+test("guided setup uses the explicit confirmation gate before it can provision", () => {
+  const controlCenter = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
+  assert.match(controlCenter, /requestWizardConfirmation\(\{ ask, log \}\)/);
+  assert.match(controlCenter, /if \(confirmation !== "confirm"\) \{[\s\S]*return/);
+  assert.doesNotMatch(controlCenter, /confirm\("Save this configuration and install the signed release\?", "y"\)/);
 });
 
 for (const [name, overrides, code] of [
