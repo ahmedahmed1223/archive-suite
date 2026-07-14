@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
@@ -102,6 +102,106 @@ test("q command exits successfully instead of starting deployment", () => {
   assert.equal(r.status, 0);
   assert.equal(r.stdout.trim(), "");
   assert.equal(r.stderr.trim(), "");
+});
+
+test("the Setup gateway returns one safe JSON envelope for core command success and failure", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-json-gateway-"));
+  const envFile = join(dir, ".env");
+  writeFileSync(envFile, "DATABASE_URL=postgres://archive:topsecret@example.test/archive\nPOSTGRES_PASSWORD=never-print-this\n");
+
+  for (const [command, expectedCode, expectedStatus] of [
+    ["help", "HELP_COMPLETED", 0],
+    ["config", "CONFIG_COMPLETED", 0],
+    ["status", "STATUS_FAILED", 1],
+    ["start", "START_FAILED", 1],
+    ["stop", "STOP_FAILED", 1],
+    ["restart", "RESTART_FAILED", 1],
+    ["health", "HEALTH_FAILED", 1],
+    ["logs", "LOGS_FAILED", 1],
+    ["migrate-status", "MIGRATE_STATUS_FAILED", 1],
+    ["diagnostics", "DIAGNOSTICS_FAILED", 1],
+  ]) {
+    const r = run([command, "--json"], {
+      ARCHIVE_ENV_PATH: envFile,
+      ARCHIVE_INSTALLATION_MANIFEST_PATH: join(dir, "missing-manifest.json"),
+      PATH: "", Path: "",
+    });
+    assert.equal(r.status, expectedStatus, `${command}: ${r.stderr} ${r.stdout}`);
+    const result = JSON.parse(r.stdout);
+    assert.deepEqual(Object.keys(result), ["ok", "code", "message", "details", "nextActions"]);
+    assert.equal(result.code, expectedCode);
+    assert.equal(result.details.command, command);
+    assert.ok(!`${r.stdout}${r.stderr}`.includes("topsecret"), `${command} must not disclose credential URLs`);
+    assert.ok(!`${r.stdout}${r.stderr}`.includes("never-print-this"), `${command} must not disclose secrets`);
+  }
+
+  const unknown = run(["not-a-command", "--json"], { ARCHIVE_ENV_PATH: envFile });
+  assert.equal(unknown.status, 1);
+  assert.deepEqual(JSON.parse(unknown.stdout), {
+    ok: false,
+    code: "UNKNOWN_COMMAND",
+    message: "Unknown setup command.",
+    details: { command: "not-a-command" },
+    nextActions: ["Run setup help to view supported commands."],
+  });
+  const maliciousUnknown = run(["bad?token=do-not-echo", "--json"], { ARCHIVE_ENV_PATH: envFile });
+  assert.equal(maliciousUnknown.status, 1);
+  assert.equal(JSON.parse(maliciousUnknown.stdout).details.command, "invalid");
+  assert.ok(!`${maliciousUnknown.stdout}${maliciousUnknown.stderr}`.includes("do-not-echo"));
+
+  const doctor = run(["doctor", "--mode=native", "--platform=linux-native", "--json"], { ARCHIVE_ENV_PATH: envFile });
+  assert.equal(doctor.status, 0, doctor.stderr + doctor.stdout);
+  assert.equal(JSON.parse(doctor.stdout).code, "DOCTOR_COMPLETED");
+
+  for (const command of ["rotate-secrets", "migrate"]) {
+    const r = run([command, "--json"], { ARCHIVE_ENV_PATH: envFile });
+    assert.equal(r.status, 1);
+    const result = JSON.parse(r.stdout);
+    assert.equal(result.code, "CONFIRMATION_REQUIRED");
+    assert.equal(result.details.command, command);
+  }
+  assert.match(readFileSync(envFile, "utf8"), /never-print-this/, "confirmation must prevent rotation writes");
+  const confirmedMigrate = run(["migrate", "--yes", "--json"], {
+    ARCHIVE_ENV_PATH: envFile,
+    ARCHIVE_INSTALLATION_MANIFEST_PATH: join(dir, "missing-manifest.json"),
+  });
+  assert.equal(confirmedMigrate.status, 1);
+  assert.equal(JSON.parse(confirmedMigrate.stdout).code, "MIGRATE_FAILED");
+
+  writeFileSync(envFile, "REVERB_APP_KEY=old-key\nREVERB_APP_SECRET=old-secret\n");
+  const confirmedRotation = run(["rotate-secrets", "--yes", "--json"], { ARCHIVE_ENV_PATH: envFile });
+  assert.equal(confirmedRotation.status, 0, confirmedRotation.stderr + confirmedRotation.stdout);
+  assert.equal(JSON.parse(confirmedRotation.stdout).code, "ROTATE_SECRETS_COMPLETED");
+  const rotated = readFileSync(envFile, "utf8");
+  assert.doesNotMatch(rotated, /old-key|old-secret/);
+  assert.doesNotMatch(`${confirmedRotation.stdout}${confirmedRotation.stderr}`, /old-key|old-secret/);
+});
+
+test("support-bundle CLI returns a redacted JSON failure when secure Windows ACLs cannot be applied", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-support-bundle-"));
+  const outputDir = join(dir, "bundles");
+  const envFile = join(dir, ".env");
+  writeFileSync(envFile, [
+    "DATABASE_URL=postgres://archive:topsecret@example.test/archive",
+    "POSTGRES_PASSWORD=never-print-this",
+    "EXTERNAL_TOKEN=token-value",
+    "HEALTH_URL=http://127.0.0.1:9/api/health",
+    "",
+  ].join("\n"));
+
+  const r = run(["support-bundle", "--json"], {
+    ARCHIVE_ENV_PATH: envFile,
+    ARCHIVE_SUPPORT_BUNDLE_DIR: outputDir,
+    ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1",
+    PATH: "", Path: "",
+  });
+  assert.equal(r.status, 1, r.stderr + r.stdout);
+  const result = JSON.parse(r.stdout);
+  assert.equal(result.code, "SUPPORT_BUNDLE_FAILED");
+  assert.equal(readdirSync(outputDir).length, 0, "the unsafe bundle must be removed after ACL failure");
+  for (const secret of ["topsecret", "never-print-this", "token-value", "example.test"]) {
+    assert.ok(!`${r.stdout}${r.stderr}`.includes(secret), `support output must redact ${secret}`);
+  }
 });
 
 test("Control Center entry point composes focused modules", () => {

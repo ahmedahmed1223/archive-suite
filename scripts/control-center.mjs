@@ -117,7 +117,7 @@ function setupInstallOrRepair(operation, configurationInput = null) {
     } else {
       loadOfflineReleaseImages(release);
       const runtime = createDockerRuntimeAdapter({
-        compose: (args, options = {}) => releaseCompose(args, { ...options, env: { ...release.environment, ...(options.env || {}) } }),
+        compose: (args, options = {}) => releaseCompose(args, { ...options, inherit: hasFlag("json") ? false : options.inherit, env: { ...release.environment, ...(options.env || {}) } }),
         health: healthProbe,
         manifestStore: installationManifest,
       });
@@ -145,9 +145,10 @@ function quoteCmdArg(value) {
 }
 function runPnpm(args, cwd = ROOT, options = {}) {
   const env = options.env ? { ...process.env, ...options.env } : process.env;
-  if (process.platform !== "win32") return spawnSync(PNPM, args, { cwd, stdio: "inherit", env });
+  const stdio = options.stdio || "inherit";
+  if (process.platform !== "win32") return spawnSync(PNPM, args, { cwd, stdio, env });
   const command = [PNPM, ...args].map(quoteCmdArg).join(" ");
-  return spawnSync(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", command], { cwd, stdio: "inherit", env });
+  return spawnSync(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", command], { cwd, stdio, env });
 }
 const runNode = (file, args = [], cwd = ROOT) => spawnSync(process.execPath, [file, ...args], { cwd, stdio: "inherit" });
 const checkPnpm = () => {
@@ -235,7 +236,7 @@ function releaseConfigurationFromManifest() {
 function releaseRuntimeForLifecycle() {
   const release = resolveRelease({ configuration: releaseConfigurationFromManifest() });
   return createDockerRuntimeAdapter({
-    compose: (args, options = {}) => releaseCompose(args, { ...options, env: { ...release.environment, ...(options.env || {}) } }),
+    compose: (args, options = {}) => releaseCompose(args, { ...options, inherit: hasFlag("json") ? false : options.inherit, env: { ...release.environment, ...(options.env || {}) } }),
     health: healthProbe,
   });
 }
@@ -293,7 +294,7 @@ async function supportBundle() {
   const logs = compose(["logs", "--tail=200", "--no-color"], { inherit: false });
   const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
   const result = createSupportBundle({
-    outputDir: join(ROOT, "support-bundles"),
+    outputDir: process.env.ARCHIVE_SUPPORT_BUNDLE_DIR || join(ROOT, "support-bundles"),
     versions: { archiveSuite: pkg.version, node: process.version, platform: process.platform },
     config: readEnvRaw(), health,
     manifests: { "docker-compose.yml": readFileSync(COMPOSE_FILE, "utf8") },
@@ -341,7 +342,7 @@ async function rotateSecrets() {
   titleLine("Rotate Reverb secrets");
   warn("This drops live realtime (Reverb) sessions; clients reconnect after a rebuild.");
   warn("REVERB_APP_KEY is baked into the Next.js image — run 'deploy' or 'update' afterwards to rebuild.");
-  if (!(await confirm("Rotate REVERB_APP_KEY and REVERB_APP_SECRET?"))) return log("Cancelled.");
+  if (!hasFlag("yes") && !(await confirm("Rotate REVERB_APP_KEY and REVERB_APP_SECRET?"))) return log("Cancelled.");
   writeEnv({ REVERB_APP_KEY: genSecret(16), REVERB_APP_SECRET: genSecret(32) });
   // ponytail: LARAVEL_APP_KEY deliberately excluded — rotating it invalidates
   // all data Laravel encrypted with it. Rotate manually only with a recovery plan.
@@ -864,12 +865,12 @@ const COMMANDS = {
   "change-admin-password": changeAdminPassword, "set-admin-password": changeAdminPassword, "admin-password": changeAdminPassword,
   "rotate-secrets": rotateSecrets,
   // Database
-  "migrate-status": migrateStatus, migrate: migrateDeploy,
+  "migrate-status": migrateStatus, migrate: () => migrateDeploy({ confirmed: hasFlag("yes") }),
   "seed-demo": seedDemoData, "demo-data": seedDemoData,
   // Backups
   backup: backupNow, backups: listBackups, restore: restoreBackup,
   // Maintenance
-  diagnostics: runDiagnostics, observability: localObservabilityCheck, "support-bundle": supportBundle,
+  diagnostics: () => runDiagnostics({ quiet: hasFlag("json") }), observability: localObservabilityCheck, "support-bundle": supportBundle,
   update: () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : (err("Update & rebuild is development-only; release update is not supported yet."), 1),
   deploy: deployCanonical,
   help: () => {
@@ -932,10 +933,86 @@ COMMANDS["0"] = () => 0;
 COMMANDS.q = () => 0;
 
 const cmd = cliCommand;
+const SETUP_RESULT_KEYS = ["ok", "code", "message", "details", "nextActions"];
+const SPECIAL_JSON_COMMANDS = new Set(["plan", "import-config", "export-config", "install", "repair", "wizard", "guided-setup"]);
+
+function commandCode(command, outcome) {
+  return `${String(command).replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "").toUpperCase()}_${outcome}`;
+}
+
+function safeCommandName(command) {
+  const value = String(command || "");
+  return /^[A-Za-z][A-Za-z0-9-]*$/.test(value) ? value : "invalid";
+}
+
+function writeJsonResult(result) {
+  // Keep this explicit list in the serialization path so a future caller
+  // cannot accidentally add command output (which can contain credentials).
+  const safe = Object.fromEntries(SETUP_RESULT_KEYS.map((key) => [key, result[key]]));
+  process.stdout.write(`${JSON.stringify(safe)}\n`);
+}
+
+async function runJsonCommand(command, fn) {
+  // Existing command implementations render a human-friendly transcript.
+  // JSON automation must receive exactly one stable, secret-free object, so
+  // suppress that transcript rather than embedding it in `details`.
+  const originalLog = console.log;
+  const originalError = console.error;
+  console.log = () => {};
+  console.error = () => {};
+  let status = 1;
+  try {
+    const returned = await fn();
+    status = typeof returned === "number" ? returned : 0;
+  } catch {
+    status = 1;
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
+  const okResult = status === 0;
+  writeJsonResult({
+    ok: okResult,
+    code: commandCode(command, okResult ? "COMPLETED" : "FAILED"),
+    message: okResult ? "Setup command completed." : "Setup command did not complete.",
+    details: { command: safeCommandName(command) },
+    nextActions: okResult ? [] : ["Review the command prerequisites and run setup doctor."],
+  });
+  return status;
+}
+
+function confirmationRequired(command) {
+  writeJsonResult({
+    ok: false,
+    code: "CONFIRMATION_REQUIRED",
+    message: "This setup command changes a running installation and requires --yes in JSON mode.",
+    details: { command: safeCommandName(command) },
+    nextActions: [`Review the impact, then run setup ${command} --yes --json.`],
+  });
+  return 1;
+}
+
 if (cmd) {
   const fn = COMMANDS[cmd];
-  if (!fn) { err(`Unknown command "${cmd}". Try: ${Object.keys(COMMANDS).join(", ")}`); process.exit(1); }
-  const status = await fn();
+  if (!fn) {
+    if (hasFlag("json")) {
+      writeJsonResult({
+        ok: false,
+        code: "UNKNOWN_COMMAND",
+        message: "Unknown setup command.",
+        details: { command: safeCommandName(cmd) },
+        nextActions: ["Run setup help to view supported commands."],
+      });
+    } else {
+      err(`Unknown command "${cmd}". Try: ${Object.keys(COMMANDS).join(", ")}`);
+    }
+    process.exit(1);
+  }
+  const status = hasFlag("json") && ["rotate-secrets", "migrate"].includes(cmd) && !hasFlag("yes")
+    ? confirmationRequired(cmd)
+    : hasFlag("json") && !SPECIAL_JSON_COMMANDS.has(cmd)
+      ? await runJsonCommand(cmd, fn)
+      : await fn();
   close();
   if (typeof status === "number" && status !== 0) process.exit(status);
 } else {
