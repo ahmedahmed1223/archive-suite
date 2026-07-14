@@ -25,12 +25,12 @@ import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync, readd
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { formatPlatformContractReport, loadPlatformContract, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
-import { buildOperatorReport, buildReadinessContract, collectOperatorSnapshot, createSupportBundle } from "./observability.mjs";
+import { buildOperatorReport, buildReadinessContract, collectOperatorSnapshot, createSupportBundle, sanitize } from "./observability.mjs";
 import { createCli, createConsoleUi } from "./control-center/cli.mjs";
 import { createConfiguration, validateAdminPassword } from "./control-center/configuration.mjs";
 import { createDockerCompose } from "./control-center/docker-compose.mjs";
 import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs";
-import { createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
+import { applySafeMigration, createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
 import { collectWizardRuntimeChoices } from "./control-center/setup-wizard.mjs";
 import * as installationManifest from "./control-center/installation-manifest.mjs";
@@ -59,15 +59,28 @@ const configuration = createConfiguration({ envPath: ENV_PATH, output });
 const { readEnvRaw, readEnv, writeEnv, maskValue, genSecret, genPassword, isPlaceholder } = configuration;
 const setupConfiguration = createSetupConfiguration({ loadPlatformContract });
 
-function renderSetupResult(result) {
-  if (hasFlag("json")) {
-    console.log(JSON.stringify(result));
-  } else {
-    (result.ok ? ok : err)(result.message);
-    if (result.details && Object.keys(result.details).length) log(JSON.stringify(result.details, null, 2));
-    for (const action of result.nextActions || []) log(`Next: ${action}`);
+function redactSetupResult(value) {
+  const sanitized = sanitize(value);
+  if (typeof sanitized === "string") {
+    // Error text can legally name a malformed field value. A URL may carry
+    // credentials, so hide the whole URL rather than merely its password.
+    return sanitized.replace(/\b[a-z][a-z\d+.-]*:\/\/[^\s"']+/gi, "[REDACTED_URL]");
   }
-  return result.ok ? 0 : 1;
+  if (Array.isArray(sanitized)) return sanitized.map(redactSetupResult);
+  if (sanitized && typeof sanitized === "object") return Object.fromEntries(Object.entries(sanitized).map(([key, item]) => [key, redactSetupResult(item)]));
+  return sanitized;
+}
+
+function renderSetupResult(result) {
+  const safeResult = redactSetupResult(result);
+  if (hasFlag("json")) {
+    console.log(JSON.stringify(safeResult));
+  } else {
+    (safeResult.ok ? ok : err)(safeResult.message);
+    if (safeResult.details && Object.keys(safeResult.details).length) log(JSON.stringify(safeResult.details, null, 2));
+    for (const action of safeResult.nextActions || []) log(`Next: ${action}`);
+  }
+  return safeResult.ok ? 0 : 1;
 }
 
 function setupPlan() { return renderSetupResult(setupConfiguration.plan(flagValue("config"))); }
@@ -210,7 +223,6 @@ const {
   serverLogs: developmentServerLogs,
   healthCheck: developmentHealthCheck,
   migrateStatus: developmentMigrateStatus,
-  migrateDeploy,
   seedDemoData,
   listBackupFiles,
   backupNow,
@@ -258,6 +270,14 @@ const serverRestart = () => lifecycle("restart");
 const serverLogs = (options) => lifecycle("logs", options);
 const healthCheck = async () => lifecycle("health");
 const migrateStatus = () => lifecycle("exec", ["php", "artisan", "migrate:status"]);
+async function releaseMigrateDeploy({ confirmed = false } = {}) {
+  try {
+    return await applySafeMigration({ adapter: releaseRuntimeForLifecycle(), confirmed, output, confirm });
+  } catch (error) {
+    err(error.message || "Release migration could not be prepared.");
+    return 1;
+  }
+}
 const releaseExec = () => {
   const commandIndex = ARGS.indexOf("exec");
   const command = ARGS.slice(commandIndex + 1).filter((arg) => !arg.startsWith("--"));
@@ -796,7 +816,7 @@ const MENU = [
   ["17", "Rotate Reverb secrets", rotateSecrets],
   ["sec", "— Database —"],
   ["18", "Migration status (artisan)", migrateStatus],
-  ["19", "Apply migrations (artisan)", migrateDeploy],
+  ["19", "Apply migrations (artisan)", releaseMigrateDeploy],
   ["20", "Seed demo data (types · sections · records)", seedDemoData],
   ["sec", "— Backups —"],
   ["21", "Backup now", backupNow],
@@ -865,7 +885,7 @@ const COMMANDS = {
   "change-admin-password": changeAdminPassword, "set-admin-password": changeAdminPassword, "admin-password": changeAdminPassword,
   "rotate-secrets": rotateSecrets,
   // Database
-  "migrate-status": migrateStatus, migrate: () => migrateDeploy({ confirmed: hasFlag("yes") }),
+  "migrate-status": migrateStatus, migrate: () => releaseMigrateDeploy({ confirmed: hasFlag("yes") }),
   "seed-demo": seedDemoData, "demo-data": seedDemoData,
   // Backups
   backup: backupNow, backups: listBackups, restore: restoreBackup,

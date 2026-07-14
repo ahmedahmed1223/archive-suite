@@ -19,6 +19,16 @@ export function createHealthProbe({ readEnv, defaultHealthUrl, output }) {
   };
 }
 
+export async function applySafeMigration({ adapter, confirmed = false, output, confirm }) {
+  output.titleLine("Apply pending migrations (php artisan archive:migrate-safe)");
+  output.log("Preflight-checked: backs up the database first, runs in a maintenance window, and exits cleanly if nothing is pending.");
+  if (!confirmed && !(await confirm("Apply all pending migrations to the configured database?"))) { output.log("Cancelled."); return 0; }
+  const result = adapter.exec(["php", "artisan", "archive:migrate-safe"]);
+  const status = result.status ?? 1;
+  (status === 0 ? output.ok : output.err)(status === 0 ? "Migrations applied." : "Migration failed — application left in maintenance mode. See command output above for rollback steps.");
+  return status;
+}
+
 export function createControlOperations({ adapter, composeFile, backupDir, readEnv, output, ask, confirm, runPnpm, root }) {
   const commandStatus = (result) => result.status ?? 1;
   const listBackupFiles = () => !existsSync(backupDir) ? [] : readdirSync(backupDir).filter((file) => file.endsWith(".sql")).sort().reverse();
@@ -56,14 +66,7 @@ export function createControlOperations({ adapter, composeFile, backupDir, readE
     output.titleLine("Database migration status (php artisan migrate:status)");
     return commandStatus(adapter.exec(["php", "artisan", "migrate:status"]));
   };
-  const migrateDeploy = async ({ confirmed = false } = {}) => {
-    output.titleLine("Apply pending migrations (php artisan archive:migrate-safe)");
-    output.log("Preflight-checked: backs up the database first, runs in a maintenance window, and exits cleanly if nothing is pending.");
-    if (!confirmed && !(await confirm("Apply all pending migrations to the configured database?"))) { output.log("Cancelled."); return 0; }
-    const status = commandStatus(adapter.exec(["php", "artisan", "archive:migrate-safe"]));
-    (status === 0 ? output.ok : output.err)(status === 0 ? "Migrations applied." : "Migration failed — application left in maintenance mode. See command output above for rollback steps.");
-    return status;
-  };
+  const migrateDeploy = ({ confirmed = false } = {}) => applySafeMigration({ adapter, confirmed, output, confirm });
   const seedDemoData = async () => {
     output.titleLine("Seed demo archive data (php artisan db:seed --class=DemoArchiveSeeder)");
     output.log("Adds sample archive records with content types, sections, and classifications.");

@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
 import { collectWizardRuntimeChoices } from "./control-center/setup-wizard.mjs";
+import { applySafeMigration } from "./control-center/operations.mjs";
 import { loadPlatformContract } from "./platform-contract.mjs";
 
 // Smoke tests for the Control Center CLI. They exercise the real binary through
@@ -259,6 +260,28 @@ test("setup plan validates a declarative configuration deterministically without
   assert.equal(existsSync(envFile), false, "import-config must not create .env");
 });
 
+test("special setup JSON commands redact credential-bearing validation errors", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-special-json-redaction-"));
+  const configFile = join(dir, "setup.json");
+  writeFileSync(configFile, JSON.stringify(validSetupConfig({
+    platform: "https://archive:topsecret@example.test/runtime",
+  })));
+
+  for (const command of ["plan", "import-config", "install", "wizard"]) {
+    const r = run([command, `--config=${configFile}`, "--json"], {
+      ARCHIVE_ENV_PATH: join(dir, ".env"),
+      ARCHIVE_INSTALLATION_MANIFEST_PATH: join(dir, "installation-manifest.json"),
+      PATH: "", Path: "",
+    });
+    assert.notEqual(r.status, 0, `${command} must reject the invalid configuration`);
+    const result = JSON.parse(r.stdout);
+    assert.deepEqual(Object.keys(result), ["ok", "code", "message", "details", "nextActions"]);
+    for (const secret of ["topsecret", "example.test"]) {
+      assert.ok(!`${r.stdout}${r.stderr}`.includes(secret), `${command} must not disclose ${secret}`);
+    }
+  }
+});
+
 test("wizard config mode has parity with the non-interactive plan for every supported choice family", () => {
   const cases = [
     { runtimeProfiles: ["core"], source: "online", access: "local", storage: "/srv/archive-suite/local" },
@@ -473,6 +496,24 @@ test("setup plan and import never create a manifest, while install and repair re
   assert.deepEqual(second.lastSuccessfulStep, first.lastSuccessfulStep);
   assert.equal(second.operation.type, "repair");
   assert.equal(second.operation.status, "succeeded");
+});
+
+test("confirmed migration constructs archive:migrate-safe through the manifest-backed release runtime", async () => {
+  const calls = [];
+  const output = { titleLine: () => {}, log: () => {}, ok: () => {}, err: () => {} };
+  const status = await applySafeMigration({
+    adapter: { exec: (args) => { calls.push(args); return { status: 0 }; } },
+    confirmed: true,
+    output,
+    confirm: async () => { throw new Error("--yes must not prompt"); },
+  });
+  assert.equal(status, 0);
+  assert.deepEqual(calls, [["php", "artisan", "archive:migrate-safe"]]);
+
+  const entry = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
+  assert.match(entry, /function releaseMigrateDeploy[\s\S]*applySafeMigration\(\{ adapter: releaseRuntimeForLifecycle\(\)/);
+  assert.match(entry, /migrate: \(\) => releaseMigrateDeploy\(\{ confirmed: hasFlag\("yes"\) \}\)/);
+  assert.doesNotMatch(entry, /migrate: \(\) => developmentMigrateDeploy/);
 });
 
 test("user release Compose never builds locally while the explicit development Compose remains source-built", () => {
