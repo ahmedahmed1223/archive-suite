@@ -7,6 +7,15 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208H — النسخ والاستعادة القانونية في Setup — مكتمل 2026-07-14
+
+- استُبدل `pg_dump`/`psql` الخام في `scripts/control-center/operations.mjs` (backupNow/listBackups/restoreBackup) بأربعة أوامر artisan جديدة (`archive:backup-run|list|verify|restore`) تُغلّف `BackupService` الموجودة أصلاً (DB+files+manifest+sha256 كاملة)، عبر trait مشترك `EmitsBackupResult` يفرض عقد `{ok, code, message, details}` بسطر JSON واحد فقط على stdout عند `--json` (السرد البشري يمر عبر `$this->components`/stderr، فلا يلوث parsing).
+- `archive:backup-restore` يرفض العمل بلا `--force` قبل لمس `BackupService` إطلاقًا (لا أثر جانبي)؛ تأكيد المشغّل التفاعلي يبقى في Setup/Node كما كان. بوابة checksum الموجودة في `BackupService::restore()` (ترفض نسخة تالفة قبل أي تغيير في البيانات الحية) لم تُعدَّل ولا يمكن تجاوزها من المسار الجديد.
+- أضيف أمر `setup verify-backup` (CLI + قائمة تفاعلية) يستدعي `archive:backup-verify` دون لمس بيانات حية. جانب Node (`runBackupCommand`) يفشل بأمان (`ok:false`) عند stdout غير صالح أو حاوية غير متاحة، فلا تُقرأ استجابة تالفة كنجاح.
+- **تصحيح مراجعة أمنية مستقلة (Opus):** وُسّع catch في `BackupRunCommand`/`BackupRestoreCommand`/`BackupVerifyCommand` ليشمل `Throwable` غير المتوقع (لا `BackupException` فقط) فيُسجَّل عبر `report()` ويُعاد عبر envelope JSON نظيف بدل ترك stack trace خام يصل لـstderr المشغّل. أصبح Node يحذّر صراحة (`output.warn`) عند استعادة نسخة قديمة بلا `.sha256` sidecar تنجح لكن بلا تحقق (`verified:false`) بدل عرض "Restore complete" غير المشروط.
+- دليل TDD: `archive-laravel/tests/Feature/BackupCommandsTest.php` (7 اختبارات: run/list/verify سليم وتالف/restore بلا force مرفوض/restore بنسخة مزوَّرة الـchecksum مرفوض مع بقاء البيانات كما هي/استعادة صحيحة تُطبَّق، وتحقق أن `--json` سطر JSON واحد فقط). `scripts/control-center/operations.test.mjs` جديد (13 اختبارًا) + تحديث `scripts/control-center.test.mjs` (ترقيم القائمة بعد إضافة verify-backup، واختبار wiring). التحقق الكامل بعد تصحيح المراجعة: `node --test scripts/control-center.test.mjs scripts/control-center/*.test.mjs` ‏95/95، و`pnpm verify:laravel` ‏585 تمر/0 فشل (2736 تأكيدًا، تحذير واحد قديم واختباران متخطيان معروفان)، و`php -l` نظيف على الملفات الستة الجديدة/المعدَّلة.
+- خارج النطاق موثقًا (مهام تالية منفصلة): V1-208I (update ذري)، V1-208J (rollback حقيقي)، V1-208K (uninstall/reconnect-data)، V1-208L (اختبارات فشل دورة الحياة).
+
 ## V1-208M — فحوص خدمات البيانات والتخزين — مكتمل 2026-07-14
 
 - أضيفت وحدة مستقلة `scripts/control-center/data-probes.mjs` لعقد probes قابل للتركيب داخل Setup أو adapters المنصات. تتحقق PostgreSQL باستعلام ثابت read-only (`SELECT 1 AS archive_probe`) فقط، فلا تنشئ أو تعدّل بيانات المستخدم.

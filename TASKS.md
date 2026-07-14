@@ -86,7 +86,7 @@
 
 #### P2 — دورة حياة الإصدار والبيانات عبر Setup
 
-- [ ] **V1-208H النسخ والاستعادة القانونية** — استبدال `pg_dump`/`psql` المعروضين كنسخة كاملة باستدعاء BackupService/أوامر Laravel القانونية التي تشمل DB+files+manifest+checksums؛ إضافة `setup verify-backup` ورفض النسخة التالفة قبل أي تغيير.
+- [x] **V1-208H النسخ والاستعادة القانونية** — مكتملة 2026-07-14: `pg_dump`/`psql` في Setup استُبدلا بأربعة أوامر artisan (`archive:backup-run|list|verify|restore`) تُغلّف `BackupService` القانونية (DB+files+manifest+checksums) بعقد `{ok,code,message,details}` JSON. `restore` يرفض بلا `--force` قبل أي أثر جانبي؛ بوابة checksum الموجودة في `BackupService::restore()` لم تُعدَّل. أُضيف `setup verify-backup`. مراجعة أمنية مستقلة (Opus) أثبتت السلامة وأضافت تصحيحين: `catch (Throwable)` عام بدل تسريب stack trace خام، وتحذير Node صريح عند استعادة نسخة غير مُتحقَّقة (بلا sidecar). التفاصيل الكاملة في `ChangeLog.md`. التحقق: 95/95 Node، 585/585 Laravel (2736 تأكيدًا).
 - [ ] **V1-208I update ذري من artifacts** — preflight → backup كامل → تثبيت الإصدار بجانب الحالي → `archive:migrate-safe` → switch → health + smoke حسب الدور. يفشل بأمان عند download/signature/migration/health ولا يحذف الإصدار السابق.
 - [ ] **V1-208J rollback حقيقي** — إعادة artifact/config السابقين، ومع migration غير قابلة للعكس عرض أثر فقد بيانات ما بعد التحديث وطلب تأكيد قبل استعادة النسخة السابقة. القبول: نجاح rollback بعد فشل health، ورفض downgrade غير المتوافق.
 - [ ] **V1-208K uninstall وإعادة الربط** — إبقاء البيانات افتراضيًا، إزالة الخدمات والقواعد التي يملكها manifest فقط، وإضافة `reconnect-data`. حذف البيانات خيار منفصل يتطلب عبارة تأكيد وbackup حديثًا ناجحًا.

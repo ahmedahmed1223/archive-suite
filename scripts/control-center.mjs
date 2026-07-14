@@ -21,7 +21,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync, readdirSync, statSync, statfsSync } from "node:fs";
+import { existsSync, readFileSync, copyFileSync, statfsSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { formatPlatformContractReport, loadPlatformContract, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
@@ -46,7 +46,6 @@ const INSTALLATION_MANIFEST_PATH = process.env.ARCHIVE_INSTALLATION_MANIFEST_PAT
 // Canonical stack: Laravel API + Next.js (postgres/redis/laravel/worker/reverb/next/caddy).
 const COMPOSE_FILE = join(INFRA_DIR, "docker-compose.yml");
 const RELEASE_COMPOSE_FILE = join(INFRA_DIR, "docker-compose.release.yml");
-const BACKUP_DIR = join(INFRA_DIR, "backups");
 
 // ─── CLI display and prompt ─────────────────────────────────────────────────
 const ui = createConsoleUi();
@@ -207,8 +206,6 @@ const dockerRuntime = createDockerRuntimeAdapter({ compose, health: healthProbe,
 const operations = createControlOperations({
   adapter: dockerRuntime,
   composeFile: COMPOSE_FILE,
-  backupDir: BACKUP_DIR,
-  readEnv,
   output,
   ask,
   confirm,
@@ -228,6 +225,7 @@ const {
   backupNow,
   listBackups,
   restoreBackup,
+  verifyBackup,
   runDiagnostics,
   updateAndRebuild,
 } = operations;
@@ -293,8 +291,11 @@ async function localObservabilityCheck() {
   const queue = compose(["exec", "-T", "redis", "sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" LLEN queues:default"], { inherit: false });
   const disk = statfsSync(ROOT);
   const diskUsedPercent = disk.blocks ? Math.round((1 - Number(disk.bavail) / Number(disk.blocks)) * 100) : 0;
-  const backups = listBackupFiles().map((name) => statSync(join(BACKUP_DIR, name)).mtimeMs);
-  const backupAgeHours = backups.length ? (Date.now() - Math.max(...backups)) / 3_600_000 : null;
+  // Backups live inside the laravel container's storage (BackupService), not
+  // on the host filesystem, so age comes from the command's own createdAt
+  // rather than a host stat() call.
+  const backupTimestamps = listBackupFiles().map((backup) => Date.parse(backup.createdAt)).filter((ms) => !Number.isNaN(ms));
+  const backupAgeHours = backupTimestamps.length ? (Date.now() - Math.max(...backupTimestamps)) / 3_600_000 : null;
   const env = readEnv();
   const snapshot = collectOperatorSnapshot({ expectedServices, composePs: ps, redis: queue, logs: recent, diskUsedPercent, backupAgeHours, errorWindowMinutes: Number(env.OBS_ERROR_WINDOW_MINUTES || 60) });
   const thresholds = { queueDepth: Number(env.OBS_QUEUE_DEPTH_THRESHOLD || 100), diskUsedPercent: Number(env.OBS_DISK_USED_PERCENT_THRESHOLD || 85), backupAgeHours: Number(env.OBS_BACKUP_AGE_HOURS_THRESHOLD || 24), repeatedErrors: Number(env.OBS_REPEATED_ERRORS_THRESHOLD || 5) };
@@ -822,9 +823,10 @@ const MENU = [
   ["21", "Backup now", backupNow],
   ["22", "List backups", listBackups],
   ["23", "Restore backup", restoreBackup],
+  ["24", "Verify a backup", verifyBackup],
   ["sec", "— Maintain —"],
-  ["24", "Diagnostics (pnpm verify)", runDiagnostics],
-  ["25", "Development update & rebuild", () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : (err("Update & rebuild is development-only; release update is not supported yet."), 1)],
+  ["25", "Diagnostics (pnpm verify)", runDiagnostics],
+  ["26", "Development update & rebuild", () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : (err("Update & rebuild is development-only; release update is not supported yet."), 1)],
   ["sec", ""],
   ["0", "Exit", null],
   ["q", "Exit", null],
@@ -889,6 +891,7 @@ const COMMANDS = {
   "seed-demo": seedDemoData, "demo-data": seedDemoData,
   // Backups
   backup: backupNow, backups: listBackups, restore: restoreBackup,
+  "verify-backup": () => verifyBackup({ name: flagValue("name") }),
   // Maintenance
   diagnostics: () => runDiagnostics({ quiet: hasFlag("json") }), observability: localObservabilityCheck, "support-bundle": supportBundle,
   update: () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : (err("Update & rebuild is development-only; release update is not supported yet."), 1),
@@ -932,9 +935,10 @@ const COMMANDS = {
     console.log(`  ${C.c}migrate-status${C.x}   php artisan migrate:status (in the laravel container)`);
     console.log(`  ${C.c}migrate${C.x}          php artisan archive:migrate-safe (backup + maintenance window, in the laravel container)`);
     console.log(`  ${C.c}seed-demo${C.x}        Seed demo archive data (types, sections, classifications)`);
-    console.log(`  ${C.c}backup${C.x}           pg_dump the running database`);
-    console.log(`  ${C.c}backups${C.x}          List available backups`);
-    console.log(`  ${C.c}restore${C.x}          Restore a backup`);
+    console.log(`  ${C.c}backup${C.x}           Full legal backup: DB + files + manifest + checksums (php artisan archive:backup-run)`);
+    console.log(`  ${C.c}backups${C.x}          List available backups (name, size, createdAt, checksum)`);
+    console.log(`  ${C.c}restore${C.x}          Restore a backup (refuses a checksum-mismatched backup before touching data)`);
+    console.log(`  ${C.c}verify-backup [--name=<file>]${C.x}  Verify a backup's checksum without restoring; rejects a corrupt backup`);
     console.log(`  ${C.c}diagnostics${C.x}      Run the canonical gate: pnpm verify`);
     console.log(`  ${C.c}observability${C.x}    Local service/error/backup alert checks (JSON)`);
     console.log(`  ${C.c}support-bundle${C.x}   Create a bounded, redacted local diagnostics bundle`);
