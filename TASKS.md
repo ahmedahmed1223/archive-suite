@@ -7,7 +7,7 @@
 ## الحالة
 
 - أُغلقت جميع مانعات P0 الأصلية، لكن الإصدار يبقى **NO-GO** للاستخدام العام حتى إكمال التشغيل المزدوج وSetup الشامل وجاهزية المستخدم والتجربة الميدانية وبوابات GA أدناه.
-- توجد مهام تطوير محلية مفتوحة في `archive-next/` و`archive-laravel/` و`scripts/` و`infra/`؛ البنود التي تحتاج Windows/Linux نظيفين أو اعتمادات حية موسومة صراحة كتحقق خارجي.
+- توجد مهام تطوير محلية مفتوحة في المسار القانوني `archive-next/` و`archive-laravel/` (وأيضًا `scripts/` و`infra/` للتثبيت والتشغيل)؛ البنود التي تحتاج Windows/Linux نظيفين أو اعتمادات حية موسومة صراحة كتحقق خارجي.
 - التصميم الحاكم: [`docs/superpowers/specs/2026-07-14-daily-use-dual-runtime-design.md`](docs/superpowers/specs/2026-07-14-daily-use-dual-runtime-design.md).
 - ترتيب التنفيذ: `P1 Setup core → P2 lifecycle → (P3 Windows Native + P4 Linux Native + P6 daily UX) → P5 parity → P7 RC/GA`.
 - البنود المكتملة نُفذت ووُثقت في `ChangeLog.md` ولا تُعاد إلا بمتابعة جديدة ذات معرّف مستقل.
