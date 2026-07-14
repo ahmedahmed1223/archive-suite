@@ -29,20 +29,50 @@ test("Docker runtime adapter returns a programmatic unsupported result without i
   assert.deepEqual(commands, []);
 });
 
-test("Docker runtime adapter maps server lifecycle operations to compose", () => {
+test("Docker runtime adapter maps every supported lifecycle operation to Compose", async () => {
   const commands = [];
   const adapter = createDockerRuntimeAdapter({
     compose: (args, options) => {
       commands.push({ args, options });
-      return { status: 0, stdout: "ok" };
+      return { status: 0, stdout: "ok", stderr: "" };
     },
     health: async () => ({ status: 0 }),
   });
 
+  assert.deepEqual(adapter.install(), { ok: true, supported: true, status: 0 });
   assert.deepEqual(adapter.start(), { ok: true, supported: true, status: 0 });
-  assert.deepEqual(adapter.exec(["php", "artisan", "about"]), { ok: true, supported: true, status: 0, stdout: "ok" });
+  assert.deepEqual(adapter.stop(), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(adapter.restart(), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(adapter.status(), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(await adapter.health(), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(adapter.logs(), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(adapter.logs({ follow: true }), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(adapter.exec(["php", "artisan", "about"]), { ok: true, supported: true, status: 0, stdout: "ok", stderr: "" });
   assert.deepEqual(commands, [
+    { args: ["up", "-d", "--build"], options: undefined },
     { args: ["up", "-d"], options: undefined },
+    { args: ["down"], options: undefined },
+    { args: ["restart"], options: undefined },
+    { args: ["ps"], options: undefined },
+    { args: ["logs", "--tail=200"], options: undefined },
+    { args: ["logs", "--tail=200", "-f"], options: undefined },
     { args: ["exec", "-T", "laravel-fpm", "php", "artisan", "about"], options: undefined },
   ]);
+});
+
+test("Docker runtime adapter propagates Compose and health failures as structured results", async () => {
+  const adapter = createDockerRuntimeAdapter({
+    compose: () => ({ status: 23, stdout: "compose output", stderr: "compose failure" }),
+    health: async () => ({ status: 503 }),
+  });
+
+  assert.deepEqual(adapter.restart(), { ok: false, supported: true, status: 23 });
+  assert.deepEqual(await adapter.health(), { ok: false, supported: true, status: 503 });
+  assert.deepEqual(adapter.exec(["php", "artisan", "about"]), {
+    ok: false,
+    supported: true,
+    status: 23,
+    stdout: "compose output",
+    stderr: "compose failure",
+  });
 });

@@ -94,9 +94,13 @@ test("Control Center entry point composes focused modules", () => {
   }
   const entry = readFileSync(join(ROOT, "scripts", "control-center.mjs"), "utf8");
   assert.match(entry, /\.\/control-center\/cli\.mjs/);
+  assert.match(entry, /createConsoleUi/);
   assert.match(entry, /\.\/control-center\/configuration\.mjs/);
   assert.match(entry, /\.\/control-center\/docker-compose\.mjs/);
   assert.match(entry, /\.\/control-center\/operations\.mjs/);
+  assert.doesNotMatch(entry, /createInterface/);
+  assert.doesNotMatch(entry, /function printBanner\(/);
+  assert.doesNotMatch(entry, /function printMenu\(/);
 });
 
 test("server commands reject capabilities as Compose profiles before Docker access", () => {

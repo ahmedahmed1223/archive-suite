@@ -49,3 +49,9 @@
 - معدل: `ChangeLog.md`
 
 لم يُلمس `archive-next/next-env.d.ts`; التعديل الموجود فيه سابق ومملوك للمستخدم ولن يُدرج في commit هذه المهمة.
+
+## تصحيح المراجعة اللاحق
+
+- أُضيف اختبار RED تركيبي يثبت أن نقطة الدخول تستدعي `createConsoleUi` ولا تعرّف `createInterface` أو `printBanner` أو `printMenu` محليًا. فشل كما هو متوقع قبل الاستخراج، ثم صار GREEN بعد نقل colors/log/format/banner/menu/prompt/confirm/close إلى `scripts/control-center/cli.mjs`.
+- وُسع `scripts/control-center/runtime-adapter.test.mjs` إلى اختبارات سلوكية لكل lifecycle مدعوم: `install`, `start`, `stop`, `restart`, `status`, `health`, `logs` (العادي والمتابع)، و`exec`. تثبت الاختبارات أوامر Compose الدقيقة ونتائجها؛ كما تثبت propagation لحالة Compose الفاشلة وحالة health الفاشلة، والنتائج الصريحة للعمليات غير المدعومة `update` و`rollback` و`uninstall`.
+- التحقق المحدّث: `node --test scripts/control-center.test.mjs scripts/control-center/runtime-adapter.test.mjs` نجح 24/24 و`node --test scripts/platform-contract.test.mjs` نجح 4/4.
