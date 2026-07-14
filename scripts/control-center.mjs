@@ -315,14 +315,33 @@ function applyLaravelAdminPassword(email, password) {
   const ps = compose(["ps", "--services", "--status", "running"], { inherit: false });
   if (ps.status !== 0) return { applied: false, reason: "the stack is not running or Docker is unavailable." };
   const services = String(ps.stdout || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-  if (!services.includes("laravel")) return { applied: false, reason: "the laravel service is not running." };
+  // V1-202 split "laravel" into nginx (public, no app env vars) + "laravel-fpm"
+  // (php-fpm, carries APP_KEY/DB_*/REDIS_* and can run artisan). Running
+  // artisan against the nginx container fails immediately for lack of env.
+  if (!services.includes("laravel-fpm")) return { applied: false, reason: "the laravel-fpm service is not running." };
   const result = compose(
-    ["exec", "-T", "laravel", "php", "artisan", "archive:admin-password", `--email=${email}`],
+    ["exec", "-T", "laravel-fpm", "php", "artisan", "archive:admin-password", `--email=${email}`],
     { inherit: false, input: `${password}\n` }
   );
   if (result.status === 0) return { applied: true };
   const detail = String(result.stderr || result.stdout || "").trim().split(/\r?\n/)[0] || `artisan exited ${result.status}`;
   return { applied: false, reason: detail };
+}
+// Poll /api/v1/health until it responds OK or the timeout elapses. Once it
+// does, laravel-fpm's startup chain (chown && migrate-safe && db:seed &&
+// exec php-fpm) has necessarily finished — seeding races are impossible by
+// construction, since php-fpm only execs after db:seed completes.
+async function waitForHealthy(env, timeoutMs = 90000) {
+  const url = defaultHealthUrl(env);
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) return true;
+    } catch { /* not ready yet */ }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  return false;
 }
 async function changeAdminPassword() {
   titleLine("Change admin password");
@@ -372,13 +391,13 @@ async function changeAdminPassword() {
 // ─── Database (Phase 4) ────────────────────────────────────────────────────────
 function migrateStatus() {
   titleLine("Database migration status (php artisan migrate:status)");
-  return compose(["exec", "-T", "laravel", "php", "artisan", "migrate:status"]).status ?? 1;
+  return compose(["exec", "-T", "laravel-fpm", "php", "artisan", "migrate:status"]).status ?? 1;
 }
 async function migrateDeploy() {
   titleLine("Apply pending migrations (php artisan archive:migrate-safe)");
   log("Preflight-checked: backs up the database first, runs in a maintenance window, and exits cleanly if nothing is pending.");
   if (!(await confirm("Apply all pending migrations to the configured database?"))) { log("Cancelled."); return 0; }
-  const r = compose(["exec", "-T", "laravel", "php", "artisan", "archive:migrate-safe"]);
+  const r = compose(["exec", "-T", "laravel-fpm", "php", "artisan", "archive:migrate-safe"]);
   if (r.status === 0) ok("Migrations applied.");
   else err("Migration failed — application left in maintenance mode. See command output above for rollback steps.");
   return r.status ?? 1;
@@ -388,7 +407,7 @@ async function seedDemoData() {
   log("Adds sample archive records with content types, sections, and classifications.");
   log(`${C.d}Idempotent — safe to re-run; never duplicates existing demo rows.${C.x}`);
   if (!(await confirm("Insert demo archive content into the configured database?"))) { log("Cancelled."); return 0; }
-  const r = compose(["exec", "-T", "laravel", "php", "artisan", "db:seed", "--class=DemoArchiveSeeder", "--force"]);
+  const r = compose(["exec", "-T", "laravel-fpm", "php", "artisan", "db:seed", "--class=DemoArchiveSeeder", "--force"]);
   if (r.status === 0) ok("Demo archive data seeded — open /archive to see it.");
   else err(`Seeding failed (exit ${r.status}). Is the stack running? Try Server: start.`);
   return r.status ?? 1;
@@ -466,7 +485,7 @@ async function updateAndRebuild() {
 const PLACEHOLDER_VALUES = new Set(["archive-collab", "archive-collab-key", "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="]);
 const isPlaceholder = (v) => !v || v.includes("CHANGE_ME") || PLACEHOLDER_VALUES.has(v);
 
-function deployCanonical() {
+async function deployCanonical() {
   titleLine("Deploy — canonical Laravel + Next.js stack");
   if (!existsSync(ENV_PATH)) {
     if (!existsSync(ENV_EXAMPLE)) { err(`Neither ${ENV_PATH} nor ${ENV_EXAMPLE} exists.`); return 1; }
@@ -508,10 +527,32 @@ function deployCanonical() {
   log(`  API health:         http://localhost:${e.NEXT_PUBLIC_PORT || "3000"}/api/v1/health (proxied to Laravel)`);
   log(`  Realtime (Reverb):  ws://localhost:${e.REVERB_SERVER_PUBLISHED_PORT || "8080"}`);
   log(`  Caddy (80/443):     http://${e.DOMAIN || "localhost"}`);
+  let passwordApplyWarning = null;
+  if (!dockerSkipped && generatedAdminPassword) {
+    // A newly generated password only reaches the live database via db:seed's
+    // firstOrCreate on a genuinely fresh install (no existing admin row yet).
+    // On any redeploy over an existing volume, firstOrCreate is a silent
+    // no-op — the live account keeps its OLD password while .env and this
+    // printout show the new one, so the credentials shown never work. Apply
+    // it explicitly once the stack is healthy so what's printed always
+    // matches what actually unlocks the account.
+    log("Waiting for the stack to become healthy so the new admin password can be applied...");
+    const healthy = await waitForHealthy(e);
+    if (healthy) {
+      const live = applyLaravelAdminPassword(e.ADMIN_EMAIL || "admin@example.com", generatedAdminPassword);
+      if (!live.applied) passwordApplyWarning = live.reason;
+    } else {
+      passwordApplyWarning = "the stack did not become healthy in time";
+    }
+  }
   if (generatedAdminPassword) {
     log("");
     ok(`Login email: ${e.ADMIN_EMAIL || "admin@example.com"} / ${C.b}${generatedAdminPassword}${C.x}  ${C.d}(store it now — shown once)${C.x}`);
     if (e.ADMIN_USERNAME) log(`  Legacy username:    ${e.ADMIN_USERNAME}`);
+    if (passwordApplyWarning) {
+      warn(`Could not confirm the password above was applied to the live account (${passwordApplyWarning}).`);
+      warn(`Once the stack is healthy, run: setup change-admin-password --email=${e.ADMIN_EMAIL || "admin@example.com"} --password=<the password above>`);
+    }
   } else {
     log(`  Login email:        ${e.ADMIN_EMAIL || "admin@example.com"} (existing password unchanged)`);
     if (e.ADMIN_USERNAME) log(`  Legacy username:    ${e.ADMIN_USERNAME}`);
@@ -580,7 +621,7 @@ async function guidedSetup() {
 
   // Step 4 — deploy (generates remaining secrets, builds, starts)
   log(`\n${C.b}Step 4/5 — Build & start the stack${C.x}`);
-  const deployStatus = deployCanonical();
+  const deployStatus = await deployCanonical();
   if (deployStatus !== 0) { err("Deploy failed — see the messages above. Re-run the wizard after fixing them."); return deployStatus; }
   if (generatedPassword) {
     log("");
@@ -603,7 +644,7 @@ async function guidedSetup() {
 async function quickStart() {
   titleLine("Quick start — deploy → health check");
   log("Step 1/2: Deploy (builds and starts the stack)");
-  const deployStatus = deployCanonical();
+  const deployStatus = await deployCanonical();
   if (deployStatus !== 0) { err("Deploy failed. Aborting quick start."); return deployStatus || 1; }
   log("\nStep 2/2: Health check");
   const healthStatus = await healthCheck();
