@@ -5,13 +5,13 @@
 const splitChoice = (value) => String(value).split(",").map((item) => item.trim()).filter(Boolean);
 
 export const WIZARD_RUNTIME_PROMPTS = Object.freeze({
-  mode: "نمط التشغيل (docker/native) — Docker هو مسار الإصدار المدعوم؛ Native للتخطيط فقط حالياً",
-  platform: "معرّف المنصة — اختر منصة العقد المطابقة لنمط التشغيل والجهاز",
-  source: "مصدر الإصدار (online/offline) — online ينزّل الصور الموقعة، وoffline يحتاج حزمة موثقة",
-  access: "نمط الوصول (local/intranet/public) — public يتطلب edge/TLS، وedge مخصص للوصول public فقط",
-  storage: "مسار التخزين المحلي — لا تستخدم URL أو بيانات اعتماد؛ سيُسجّل للتركيب",
-  profiles: "ملفات التشغيل الاختيارية — core مفعل دائماً؛ media للوسائط/OCR، وedge لـTLS العام",
-  capabilities: "القدرات الاختيارية — ocr/ai/observability ليست ملفات Compose ولا تُفعّل الخدمات وحدها",
+  mode: "Runtime mode (docker/native) — Docker is the supported release path; Native is planning-only for now",
+  platform: "Platform id — choose the contract platform matching your runtime mode and machine",
+  source: "Release source (online/offline) — online downloads signed images; offline needs a verified bundle",
+  access: "Access mode (local/intranet/public) — public requires edge/TLS, and edge is reserved for public access only",
+  storage: "Local storage path — do not use a URL or credentials; it will be recorded for install",
+  profiles: "Optional runtime profiles — core is always enabled; media is for media/OCR, edge is for public TLS",
+  capabilities: "Optional capabilities — ocr/ai/observability are not Compose profiles and don't enable services on their own",
 });
 
 export async function collectWizardRuntimeChoices({ ask, existing = {}, contract, platformId }) {

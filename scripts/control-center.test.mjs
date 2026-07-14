@@ -355,7 +355,9 @@ test("controlled wizard prompts create the same candidate accepted by the declar
     capabilities: ["ocr", "observability"], storage: { driver: "local", path: "/srv/archive-suite/interactive" },
   }));
   assert.equal(prompts.length, 7);
-  assert.ok(prompts.every((prompt) => /[\u0600-\u06FF]/.test(prompt)), "every runtime choice prompt must have a concise Arabic explanation");
+  // Setup's terminal output is English-only: Arabic mojibakes in common
+  // Windows terminal codepages, so every prompt must be plain ASCII-range text.
+  assert.ok(prompts.every((prompt) => !/[\u0600-\u06FF]/.test(prompt)), "runtime choice prompts must be English, not Arabic (terminal mojibake)");
 });
 
 for (const [name, overrides, code] of [
