@@ -17,7 +17,7 @@
 
 ## التحقق
 
-- `node --test scripts/control-center.test.mjs scripts/control-center/installation-manifest.test.mjs scripts/control-center/runtime-adapter.test.mjs scripts/platform-contract.test.mjs` — 48/48 ناجح.
+- `node --test scripts/control-center.test.mjs scripts/control-center/installation-manifest.test.mjs scripts/control-center/runtime-adapter.test.mjs scripts/platform-contract.test.mjs` — 49/49 ناجح.
 - `node --test scripts/platform-contract.test.mjs` — 4/4 ناجح.
 - `node --check scripts/control-center.mjs`
 - `node --check scripts/control-center/installation-manifest.mjs`
@@ -34,3 +34,4 @@
 - schema والتنفيذ متطابقان في عدم قبول artifact بلا digest/checksum، ومسارات بيانات فارغة أو تحمل URL/credential pair أو تسمية/قيمة حساسة.
 - قرار resume يُستخرج من manifest السابق قبل أن يكتب `begin` حالة `in-progress`. يعرف المسار `environment-ready → services-started`؛ وعندما تكون `services-started` آخر خطوة مؤكدة لا يعيد adapter تشغيل Compose.
 - إذا رمى Compose استثناءً، يسجل adapter `services-start` كفاشل مع next action ثم يعيد رمي الخطأ الأصلي. يميّز CLI ذلك عن فشل الكتابة ويعرض `INSTALL_FAILED`.
+- أضيفت parity صريحة للـwhitespace-only: كل string قابل للكتابة في schema له `pattern: "\\S"` (وأسماء data paths كذلك) حيث يطبّق التنفيذ `trim`. يثبت regression أن schema والتنفيذ يقبلان المحتوى الحقيقي ويرفضان الفراغ في artifact/data path/الخطوات الاختيارية.
