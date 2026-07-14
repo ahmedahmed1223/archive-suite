@@ -156,6 +156,57 @@ class UploadsApiTest extends TestCase
             ->assertJsonValidationErrors('file');
     }
 
+    public function test_it_rejects_upload_when_free_disk_space_is_below_the_configured_margin(): void
+    {
+        // Force the "not enough headroom" branch without mocking disk_free_space():
+        // require more free space than any real disk will ever report.
+        config(['ingest.min_free_bytes' => PHP_INT_MAX]);
+
+        $file = UploadedFile::fake()->createWithContent('report.pdf', "%PDF-1.4\n%\xe2\xe3\xcf\xd3\npadding");
+
+        $this->postJson('/api/v1/uploads', ['file' => $file], $this->authHeaders())
+            ->assertStatus(507)
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'insufficient_disk_space');
+
+        $this->assertSame(0, DB::table('storage_rows')->count());
+        Storage::disk(config('ingest.disk'))->assertDirectoryEmpty(
+            trim((string) config('ingest.directory'), '/').'/quarantine',
+        );
+    }
+
+    public function test_it_rejects_upload_when_it_would_exceed_the_storage_quota(): void
+    {
+        // Force the "over quota" branch without mocking disk_total_space():
+        // a 1-byte quota is exceeded by disk usage on any real machine.
+        config(['ingest.storage_quota_bytes' => 1]);
+
+        $file = UploadedFile::fake()->createWithContent('report.pdf', "%PDF-1.4\n%\xe2\xe3\xcf\xd3\npadding");
+
+        $this->postJson('/api/v1/uploads', ['file' => $file], $this->authHeaders())
+            ->assertStatus(413)
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'storage_quota_exceeded');
+
+        $this->assertSame(0, DB::table('storage_rows')->count());
+        Storage::disk(config('ingest.disk'))->assertDirectoryEmpty(
+            trim((string) config('ingest.directory'), '/').'/quarantine',
+        );
+    }
+
+    public function test_it_uploads_normally_when_no_quota_is_configured(): void
+    {
+        Queue::fake();
+
+        // Defaults: storage_quota_bytes is null (unlimited), min_free_bytes
+        // is a small safety margin — neither should trip on a real test disk.
+        $file = UploadedFile::fake()->createWithContent('report.pdf', "%PDF-1.4\n%\xe2\xe3\xcf\xd3\npadding");
+
+        $this->postJson('/api/v1/uploads', ['file' => $file], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('ok', true);
+    }
+
     public function test_it_requires_authentication(): void
     {
         $file = UploadedFile::fake()->create('report.pdf', 10, 'application/pdf');

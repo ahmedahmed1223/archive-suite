@@ -3,6 +3,18 @@
 return [
     'disk' => env('INGEST_DISK', 'local'),
     'directory' => env('INGEST_DIR', 'ingest'),
+
+    // V1-112F: organizational storage limit. Null (default) = unlimited.
+    // Measured as disk usage on the ingest volume (total - free), not a
+    // per-record ledger, since this deployment is single-org-per-install
+    // (see docs/platform contract) — a multi-tenant install would need a
+    // real per-org usage counter instead.
+    'storage_quota_bytes' => env('INGEST_STORAGE_QUOTA_BYTES'),
+
+    // V1-112F: minimum free bytes an upload must leave on the ingest disk.
+    // Default 100MB is a safety margin against filling the volume, not a
+    // quota. Only enforced when the ingest disk uses the 'local' driver.
+    'min_free_bytes' => (int) env('INGEST_MIN_FREE_BYTES', 100 * 1024 * 1024),
     'media_extensions' => [
         'mp4', 'mov', 'mxf', 'avi', 'mkv', 'wmv', 'flv',
         'webm', 'ts', 'm2ts', 'mts', 'dv', 'mov',

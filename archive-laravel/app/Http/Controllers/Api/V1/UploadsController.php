@@ -33,6 +33,10 @@ class UploadsController extends Controller
         $extension = strtolower((string) $file->getClientOriginalExtension());
         $checksum = hash_file('sha256', $file->getRealPath());
 
+        if ($denied = $this->assertCapacityAvailable($disk, (int) $file->getSize())) {
+            return $denied;
+        }
+
         // UUID-based storage name — never the client-supplied filename, so
         // path traversal / overwrite via crafted filenames is not possible.
         $storedName = (string) Str::uuid().($extension !== '' ? '.'.$extension : '');
@@ -115,6 +119,47 @@ class UploadsController extends Controller
         }
 
         $this->validator->assertSafeContent($sample !== false ? $sample : '', $extension);
+    }
+
+    /**
+     * Rejects an upload before it ever touches disk when it would leave
+     * less than the configured safety margin of free space, or push usage
+     * past the configured storage quota. Runs before the quarantine write,
+     * so a rejection never leaves a file behind.
+     */
+    private function assertCapacityAvailable(string $disk, int $incomingBytes): ?JsonResponse
+    {
+        if (config("filesystems.disks.{$disk}.driver") !== 'local') {
+            return null;
+        }
+
+        $root = Storage::disk($disk)->path('');
+        $free = @disk_free_space($root);
+        $total = @disk_total_space($root);
+
+        if ($free === false || $total === false) {
+            return null;
+        }
+
+        $minFreeBytes = (int) config('ingest.min_free_bytes', 100 * 1024 * 1024);
+        if ($free - $incomingBytes < $minFreeBytes) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Not enough free disk space to accept this upload.',
+                'code' => 'insufficient_disk_space',
+            ], 507);
+        }
+
+        $quotaBytes = config('ingest.storage_quota_bytes');
+        if ($quotaBytes !== null && ($total - $free) + $incomingBytes > (int) $quotaBytes) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Storage quota exceeded.',
+                'code' => 'storage_quota_exceeded',
+            ], 413);
+        }
+
+        return null;
     }
 
     private function isMediaFile(string $fileName): bool
