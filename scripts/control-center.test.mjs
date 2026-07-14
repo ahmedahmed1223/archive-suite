@@ -87,6 +87,18 @@ test("q command exits successfully instead of starting deployment", () => {
   assert.equal(r.stderr.trim(), "");
 });
 
+test("Control Center entry point composes focused modules", () => {
+  const modules = ["cli.mjs", "configuration.mjs", "docker-compose.mjs", "operations.mjs", "runtime-adapter.mjs"];
+  for (const file of modules) {
+    assert.equal(existsSync(join(ROOT, "scripts", "control-center", file)), true, `missing focused Control Center module: ${file}`);
+  }
+  const entry = readFileSync(join(ROOT, "scripts", "control-center.mjs"), "utf8");
+  assert.match(entry, /\.\/control-center\/cli\.mjs/);
+  assert.match(entry, /\.\/control-center\/configuration\.mjs/);
+  assert.match(entry, /\.\/control-center\/docker-compose\.mjs/);
+  assert.match(entry, /\.\/control-center\/operations\.mjs/);
+});
+
 test("server commands reject capabilities as Compose profiles before Docker access", () => {
   const r = run(["status"], { ARCHIVE_COMPOSE_PROFILES: "ocr", PATH: "", Path: "" });
   assert.notEqual(r.status, 0);

@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208B — تفكيك Control Center إلى وحدات — مكتمل 2026-07-14
+
+- بقي `scripts/control-center.mjs` نقطة الدخول العامة نفسها للأوامر والقائمة التفاعلية، لكنه أصبح shell تركيبيًا يستدعي وحدات مركزة تحت `scripts/control-center/`: `cli.mjs` لتحليل الأعلام والأمر، `configuration.mjs` لقراءة/كتابة `.env` والنسخ الاحتياطي وإخفاء الأسرار، `docker-compose.mjs` لاكتشاف Compose وتمرير الـprofiles المتحقق منها، و`operations.mjs` لعمليات الخادم والهجرات والنسخ الاحتياطية والتشخيص/التحديث.
+- أضيف `runtime-adapter.mjs` بعقد lifecycle موحد: `install`, `start`, `stop`, `restart`, `status`, `health`, `logs`, `exec`, `update`, `rollback`, `uninstall`. Docker adapter يربط العمليات المنفذة بـCompose ويحافظ على السلوك السابق؛ `update` و`rollback` و`uninstall` غير المنفذة في هذا adapter تعيد `{ ok: false, supported: false, operation, reason: "unsupported" }` بلا أمر أو سلوك وهمي. لا يوجد تنفيذ Native في هذه الشريحة.
+- حفظ التفكيك قرار V1-208A: `core` افتراضي، و`media` و`edge` اختيار صريح فقط، وcapabilities ليست Compose profiles. أضيف اختبار RED ثم GREEN للعقد والنتائج غير المدعومة، واختبار تركيبي للـentry point، مع بقاء اختبارات CLI عبر العملية الفعلية.
+- التحقق: `node --test scripts/control-center.test.mjs scripts/control-center/runtime-adapter.test.mjs` نجح 23/23؛ `node --test scripts/platform-contract.test.mjs` نجح 4/4؛ `node --check` لكل وحدات Control Center و`git diff --check` نجحا. محاولة `pnpm verify:infra` فشلت خارج الكود: Node `v24.15.0` لا يطابق `>=22.13.0 <23`، وDocker لا يستطيع قراءة `C:\Users\LAPTOP PC WORLD\.docker\config.json` ثم يرفض `compose --env-file`. التفاصيل الكاملة في `.superpowers/sdd/v1-208b-report.md`.
+
 ## V1-208A — توحيد عقد الخيارات — مكتمل 2026-07-14
 
 - فُصلت خيارات التشغيل القانونية في `infra/platform/compatibility.v1.json` وschema إلى runtime profiles هي `core` و`media` و`edge`، وcapabilities هي `ocr` و`ai` و`observability`. كل منصة تعلن المجموعتين بصورة مستقلة؛ ولا يُعامل أي capability كـDocker Compose profile.
