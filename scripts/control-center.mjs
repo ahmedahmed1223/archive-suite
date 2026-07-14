@@ -33,6 +33,7 @@ import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs
 import { createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
 import * as installationManifest from "./control-center/installation-manifest.mjs";
+import { ReleaseDescriptorError, resolveRelease } from "./control-center/release-descriptor.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -43,6 +44,7 @@ const ENV_EXAMPLE = join(INFRA_DIR, ".env.example");
 const INSTALLATION_MANIFEST_PATH = process.env.ARCHIVE_INSTALLATION_MANIFEST_PATH || join(INFRA_DIR, "setup", "installation-manifest.json");
 // Canonical stack: Laravel API + Next.js (postgres/redis/laravel/worker/reverb/next/caddy).
 const COMPOSE_FILE = join(INFRA_DIR, "docker-compose.yml");
+const RELEASE_COMPOSE_FILE = join(INFRA_DIR, "docker-compose.release.yml");
 const BACKUP_DIR = join(INFRA_DIR, "backups");
 
 // ─── CLI display and prompt ─────────────────────────────────────────────────
@@ -77,30 +79,16 @@ function setupExportConfig() {
   }
 }
 
-function manifestArtifacts() {
-  const compose = readFileSync(COMPOSE_FILE, "utf8");
-  return [...compose.matchAll(/^\s*image:\s*[^@\s]+@(sha256:[a-f\d]{64})\s*$/gmi)]
-    .map((match, index) => ({ id: `compose-image-${index + 1}`, digest: match[1] }));
-}
-
-function manifestServices(configuration) {
-  const services = ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"];
-  if (configuration.runtimeProfiles.includes("media")) services.push("ocr");
-  if (configuration.runtimeProfiles.includes("edge")) services.push("caddy");
-  return services;
-}
-
-function manifestInput(configuration) {
-  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+function manifestInput(configuration, release) {
   return {
-    version: String(pkg.version || "0.0.0"),
+    version: release.descriptor.version,
     source: configuration.source,
     mode: configuration.mode,
     platform: configuration.platform,
     runtimeProfiles: configuration.runtimeProfiles,
     capabilities: configuration.capabilities,
-    artifacts: manifestArtifacts(),
-    services: manifestServices(configuration),
+    artifacts: release.artifacts,
+    services: release.images.map((image) => image.service),
     dataPaths: { storage: configuration.storage.path },
   };
 }
@@ -112,13 +100,24 @@ function setupInstallOrRepair(operation) {
   if (configuration.mode !== "docker") {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Install and repair are currently available for Docker mode only.", { mode: configuration.mode }));
   }
-  const request = { path: INSTALLATION_MANIFEST_PATH, input: manifestInput(configuration) };
+  let release;
+  try { release = resolveRelease({ configuration }); }
+  catch (error) {
+    const code = error instanceof ReleaseDescriptorError ? error.code : "RELEASE_DESCRIPTOR_INVALID";
+    return renderSetupResult({ ok: false, code, message: error.message || "Release descriptor validation failed.", details: {}, nextActions: error.nextActions || ["Correct the release configuration and run repair."] });
+  }
+  const request = { path: INSTALLATION_MANIFEST_PATH, input: manifestInput(configuration, release) };
   try {
     if (process.env.ARCHIVE_CONTROL_CENTER_SKIP_DOCKER === "1") {
       installationManifest.beginInstallationOperation({ ...request, operation });
       installationManifest.updateLastSuccessfulStep({ ...request, step: "docker-compose-skipped" });
     } else {
-      const result = operation === "install" ? dockerRuntime.install(request) : dockerRuntime.repair(request);
+      const runtime = createDockerRuntimeAdapter({
+        compose: (args, options = {}) => releaseCompose(args, { ...options, env: { ...release.environment, ...(options.env || {}) } }),
+        health: healthProbe,
+        manifestStore: installationManifest,
+      });
+      const result = operation === "install" ? runtime.install(request) : runtime.repair(request);
       if (!result.ok) {
         return renderSetupResult({ ok: false, code: "INSTALL_FAILED", message: "Docker Compose did not complete the requested operation.", details: { status: result.status }, nextActions: ["Review Docker Compose output and run repair after correcting the failure."] });
       }
@@ -157,6 +156,15 @@ const checkPnpm = () => {
 // always enabled, while `media`/`edge` are explicit optional Compose profiles.
 const { dockerComposeCmd, compose } = createDockerCompose({
   composeFile: COMPOSE_FILE,
+  infraDir: INFRA_DIR,
+  envPath: ENV_PATH,
+  readEnv,
+  output,
+  loadPlatformContract,
+  resolveComposeProfiles,
+});
+const { compose: releaseCompose } = createDockerCompose({
+  composeFile: RELEASE_COMPOSE_FILE,
   infraDir: INFRA_DIR,
   envPath: ENV_PATH,
   readEnv,
@@ -378,6 +386,10 @@ async function changeAdminPassword() {
 
 async function deployCanonical() {
   titleLine("Deploy — canonical Laravel + Next.js stack");
+  if (process.env.ARCHIVE_DEVELOPMENT_MODE !== "1") {
+    err("Source deployment is a development-only command. User installations must run 'setup install --config=<file>' with a signed release descriptor.");
+    return 1;
+  }
   if (!existsSync(ENV_PATH)) {
     if (!existsSync(ENV_EXAMPLE)) { err(`Neither ${ENV_PATH} nor ${ENV_EXAMPLE} exists.`); return 1; }
     copyFileSync(ENV_EXAMPLE, ENV_PATH);
@@ -677,7 +689,7 @@ const MENU = [
   ["3", "First-run guide", firstRunGuide],
   ["4", "Doctor (pre-flight check)", runDoctor],
   ["sec", "— Deploy (Laravel + Next.js) —"],
-  ["5", "Deploy / Re-provision", deployCanonical],
+  ["5", "Development deploy / re-provision", deployCanonical],
   ["sec", "— Server —"],
   ["6", "Status", serverStatus],
   ["7", "Start", serverStart],
@@ -703,7 +715,7 @@ const MENU = [
   ["23", "Restore backup", restoreBackup],
   ["sec", "— Maintain —"],
   ["24", "Diagnostics (pnpm verify)", runDiagnostics],
-  ["25", "Update & rebuild", updateAndRebuild],
+  ["25", "Development update & rebuild", () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : (err("Update & rebuild is development-only; release update is not supported yet."), 1)],
   ["sec", ""],
   ["0", "Exit", null],
   ["q", "Exit", null],
@@ -769,7 +781,9 @@ const COMMANDS = {
   // Backups
   backup: backupNow, backups: listBackups, restore: restoreBackup,
   // Maintenance
-  diagnostics: runDiagnostics, observability: localObservabilityCheck, "support-bundle": supportBundle, update: updateAndRebuild, deploy: deployCanonical,
+  diagnostics: runDiagnostics, observability: localObservabilityCheck, "support-bundle": supportBundle,
+  update: () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : (err("Update & rebuild is development-only; release update is not supported yet."), 1),
+  deploy: deployCanonical,
   help: () => {
     printBanner();
     console.log(`${C.b}  Quick-start examples:${C.x}`);

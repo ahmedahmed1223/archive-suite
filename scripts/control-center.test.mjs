@@ -77,8 +77,8 @@ test("help renders the grouped menu and every command group", () => {
   for (const s of [
     "Masar",
     "— Server —", "— Configure —", "— Security —", "— Database —", "— Backups —", "— Maintain —",
-    "1) Guided setup", "2) Quick start", "5) Deploy / Re-provision", "15) Generate a strong password", "16) Change admin password",
-    "20) Seed demo data", "25) Update & rebuild", "0) Exit", "q) Exit",
+    "1) Guided setup", "2) Quick start", "5) Development deploy / re-provision", "15) Generate a strong password", "16) Change admin password",
+    "20) Seed demo data", "25) Development update & rebuild", "0) Exit", "q) Exit",
   ]) {
     assert.ok(clean.includes(s), `help output should include "${s}"`);
   }
@@ -263,6 +263,8 @@ test("setup plan and import never create a manifest, while install and repair re
   const first = JSON.parse(readFileSync(manifestFile, "utf8"));
   assert.equal(first.operation.status, "succeeded");
   assert.ok(!JSON.stringify(first).match(/password|secret|token|credential|_url/i));
+  assert.ok(first.artifacts.every((artifact) => /^sha256:[a-f0-9]{64}$/.test(artifact.digest || "")), "install manifest must record immutable release digests");
+  assert.ok(first.services.includes("ocr") && !first.services.includes("caddy"), "only explicitly selected media service is added; edge remains disabled");
 
   const repaired = run(["repair", `--config=${configFile}`, "--json"], env);
   assert.equal(repaired.status, 0, repaired.stderr + repaired.stdout);
@@ -271,6 +273,15 @@ test("setup plan and import never create a manifest, while install and repair re
   assert.deepEqual(second.lastSuccessfulStep, first.lastSuccessfulStep);
   assert.equal(second.operation.type, "repair");
   assert.equal(second.operation.status, "succeeded");
+});
+
+test("user release Compose never builds locally while the explicit development Compose remains source-built", () => {
+  const release = readFileSync(join(ROOT, "infra/docker-compose.release.yml"), "utf8");
+  const development = readFileSync(join(ROOT, "infra/docker-compose.yml"), "utf8");
+  assert.doesNotMatch(release, /^\s*build:/m);
+  assert.match(release, /pull_policy: \$\{ARCHIVE_RELEASE_PULL_POLICY:-missing\}/);
+  assert.match(development, /^\s*build:/m);
+  assert.doesNotMatch(readFileSync(join(ROOT, "scripts/control-center/runtime-adapter.mjs"), "utf8"), /compose\(\["up", "-d", "--build"\]\)/);
 });
 
 test("first-run guide renders quick and advanced setup paths without deploying", () => {
@@ -373,7 +384,7 @@ test("deploy replaces every duplicate ADMIN_PASSWORD placeholder with the genera
     ].join("\n")
   );
 
-  const r = run(["deploy"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1" });
+  const r = run(["deploy"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1", ARCHIVE_DEVELOPMENT_MODE: "1" });
   assert.equal(r.status, 0, r.stderr + r.stdout);
 
   const content = readFileSync(envFile, "utf8");
@@ -449,7 +460,7 @@ test("wizard without a TTY falls back to deploy and still provisions secrets", (
     ].join("\n")
   );
 
-  const r = run(["wizard"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1" });
+  const r = run(["wizard"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1", ARCHIVE_DEVELOPMENT_MODE: "1" });
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /No interactive terminal detected/);
 

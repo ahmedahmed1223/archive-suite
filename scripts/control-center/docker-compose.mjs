@@ -9,13 +9,13 @@ export function createDockerCompose({ composeFile, infraDir, envPath, readEnv, o
     if (v1.status === 0) return { bin: "docker-compose", pre: [] };
     return null;
   };
-  const composeProfileArgs = () => {
-    const configuredProfiles = process.env.ARCHIVE_COMPOSE_PROFILES ?? readEnv().ARCHIVE_COMPOSE_PROFILES;
+  const composeProfileArgs = (env = process.env) => {
+    const configuredProfiles = env.ARCHIVE_COMPOSE_PROFILES ?? readEnv().ARCHIVE_COMPOSE_PROFILES;
     return resolveComposeProfiles(loadPlatformContract(), configuredProfiles).flatMap((profile) => ["--profile", profile]);
   };
-  const compose = (actionArgs, { inherit = true, input } = {}) => {
+  const compose = (actionArgs, { inherit = true, input, env } = {}) => {
     let profileArgs;
-    try { profileArgs = composeProfileArgs(); }
+    try { profileArgs = composeProfileArgs(env ? { ...process.env, ...env } : process.env); }
     catch (error) { output.err(error.message); return { status: 1 }; }
     const docker = dockerComposeCmd();
     if (!docker) { output.err("Docker (with Compose) was not found. Install Docker first."); return { status: 127 }; }
@@ -23,7 +23,7 @@ export function createDockerCompose({ composeFile, infraDir, envPath, readEnv, o
       ...docker.pre, "-f", composeFile, ...(existsSync(envPath) ? ["--env-file", envPath] : []),
       ...profileArgs, ...actionArgs,
     ];
-    return spawnSync(docker.bin, args, { cwd: infraDir, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input });
+    return spawnSync(docker.bin, args, { cwd: infraDir, stdio: inherit ? "inherit" : "pipe", encoding: "utf8", input, env: env ? { ...process.env, ...env } : process.env });
   };
   return { dockerComposeCmd, compose, composeProfileArgs };
 }

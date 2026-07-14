@@ -16,7 +16,7 @@ function unsupported(operation) {
   return { ok: false, supported: false, operation, reason: "unsupported" };
 }
 
-export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest } = {}) {
+export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest, buildLocal = false } = {}) {
   const installOrRepair = (operation, request = manifestRequest) => {
     const session = manifestStore && request ? manifestStore.beginInstallationOperation({ ...request, operation }) : null;
     const decision = session?.decision;
@@ -26,7 +26,7 @@ export function createDockerRuntimeAdapter({ compose, health, manifestStore, man
     }
     let result;
     try {
-      result = completed(compose(["up", "-d", "--build"]));
+      result = completed(compose(["up", "-d", ...(buildLocal ? ["--build"] : [])]));
     } catch (error) {
       if (manifestStore && request) {
         try {

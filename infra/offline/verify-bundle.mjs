@@ -5,7 +5,7 @@ import { basename, join, relative, resolve } from "node:path";
 const sha256 = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
 const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)]);
 
-export function verifyBundle(inputDir) {
+export function verifyBundle(inputDir, { log = (message) => process.stdout.write(message) } = {}) {
   const dir = resolve(inputDir);
   const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
   const inventory = JSON.parse(readFileSync(join(dir, "images.v1.json"), "utf8"));
@@ -36,7 +36,7 @@ export function verifyBundle(inputDir) {
   }
   const tarFiles = actualFiles.filter((path) => /^images\/[^/]+\.tar$/.test(path));
   if (tarFiles.length !== archives.size || tarFiles.some((path) => !archives.has(path))) throw new Error("image archives are not one-to-one with inventory");
-  process.stdout.write(`Verified ${manifest.files.length} files and ${manifest.images.length} images (closed world).\n`);
+  log(`Verified ${manifest.files.length} files and ${manifest.images.length} images (closed world).\n`);
 }
 
 if (process.argv[1] && basename(process.argv[1]) === "verify-bundle.mjs") verifyBundle(process.argv[2] ?? ".");
