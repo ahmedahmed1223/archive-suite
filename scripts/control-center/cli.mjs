@@ -16,7 +16,7 @@ export function createCli(argv) {
 
 export async function acknowledgeMenuResult({ prompt, log }) {
   for (;;) {
-    const answer = String((await prompt("Press Enter to return to the main menu, or q to quit: ")) ?? "").trim().toLowerCase();
+    const answer = String((await prompt("Press Enter to return to the main menu, or q to quit")) ?? "").trim().toLowerCase();
     if (answer === "") return "menu";
     if (answer === "q") return "quit";
     log("Please press Enter to return, or q to quit.");
@@ -61,7 +61,7 @@ export function createConsoleUi({ input = process.stdin, stdout = process.stdout
     return reader;
   };
   const ask = (question, defaultValue = "") => new Promise((resolve) =>
-    readline().question(`  ${C.c}?${C.x} ${question}${defaultValue ? ` ${C.y}(${defaultValue})${C.x}` : ""}${question.endsWith(": ") ? "" : ": "}`, (answer) => resolve(answer.trim() || defaultValue))
+    readline().question(`  ${C.c}?${C.x} ${question}${defaultValue ? ` ${C.y}(${defaultValue})${C.x}` : ""}: `, (answer) => resolve(answer.trim() || defaultValue))
   );
   const confirm = async (question, defaultValue = "n") => (await ask(`${question} ${C.d}(y/n)${C.x}`, defaultValue)).toLowerCase().startsWith("y");
   const printBanner = () => {

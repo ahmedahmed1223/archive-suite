@@ -10,7 +10,7 @@
 ## Setup interactive menu result acknowledgement — 2026-07-14
 
 - Interactive Setup now keeps each completed operation's result visible until the operator presses Enter to return to the main menu or `q` to exit. Invalid acknowledgement input repeats only that acknowledgement prompt, and each selected handler runs exactly once.
-- Menu shortcut validation rejects duplicate selectable shortcuts before an operation can run. Named commands, `--json`, and non-TTY execution remain prompt-free and automation-safe.
+- Menu shortcut validation rejects duplicate selectable shortcuts before an operation can run. Named commands and `--json` remain prompt-free; stdin without a named command now fails clearly instead of opening the menu, keeping piped and non-TTY execution automation-safe.
 
 ## V1-208O — لغة إنجليزية إلزامية لمخرجات Setup — مكتمل 2026-07-14
 
