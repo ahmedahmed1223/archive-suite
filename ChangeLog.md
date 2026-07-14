@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208E — Docker release adapter — مكتمل 2026-07-14
+
+- أضيف عقد إصدار مغلق versioned في `infra/platform/release.v1.json` وschema مرافق له. لا يقبل إلا مراجع online بصيغة `image:version@sha256:<digest>`، ويرفض التكرار، غياب خدمات `core`، اختلاف semantic version، والحقول أو القيم الحساسة.
+- أضيف `infra/docker-compose.release.yml` لمسار المستخدم: لا يحتوي `build:` ويستخدم مراجع العقد فقط. يمرّر adapter `install` و`repair` إلى `up -d` بلا `--build`، ويظل `--build` محصوراً في adapter تطوير صريح (`buildLocal: true`) ومسار Compose التطويري القديم.
+- يراجع مسار offline manifest/checksums والحزمة المغلقة قبل Compose، ويربط كل image محمّلة محلياً بمرجع الإصدار؛ يمرر `pull_policy: never` عند offline. لا يعد بنجاح offline إذا نقصت الحزمة أو اختلف الإصدار/profile/image.
+- أُدخلت artifacts الآمنة المستخرجة من عقد الإصدار في manifest القابل للاستئناف، وتبقى `plan` و`import-config` بلا Docker أو كتابة manifest. التحقق: 56 اختبار Node (Control Center/manifest/adapter/release/platform) ناجح، وفحص syntax و`git diff --check`؛ `pnpm verify:infra` محجوب محلياً بإصدار Node/Docker المعروفين.
+
 ## V1-208D — installation manifest قابل للاستئناف — مكتمل 2026-07-14
 
 - أضيف schema مغلق `infra/setup/installation-manifest.v1.schema.json` ووحدة `scripts/control-center/installation-manifest.mjs`. يسجل الـmanifest حقولًا معلنة فقط: الإصدار، المصدر، الوضع والمنصة، runtime profiles وcapabilities، digests/checksums المتاحة، الخدمات المملوكة ومسارات البيانات، آخر خطوة ناجحة والإصدار السابق، وحالة install/repair مع إجراءاته التالية.

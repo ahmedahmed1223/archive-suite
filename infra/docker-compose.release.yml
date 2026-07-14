@@ -1,0 +1,35 @@
+name: archive-suite-release
+
+# User-mode release Compose. It is intentionally independent from
+# infra/docker-compose.yml (the explicit source-building development path).
+# Values are supplied only by the closed release descriptor.
+services:
+  postgres:
+    image: ${ARCHIVE_RELEASE_IMAGE_POSTGRES:?Release descriptor is required}
+    pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+  redis:
+    image: ${ARCHIVE_RELEASE_IMAGE_REDIS:?Release descriptor is required}
+    pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+  laravel-fpm:
+    image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL_FPM:?Release descriptor is required}
+    pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+  laravel:
+    image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL:?Release descriptor is required}
+    pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+  laravel-worker:
+    image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL_WORKER:?Release descriptor is required}
+    pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+  laravel-reverb:
+    image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL_REVERB:?Release descriptor is required}
+    pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+  next:
+    image: ${ARCHIVE_RELEASE_IMAGE_NEXT:?Release descriptor is required}
+    pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+  ocr:
+    profiles: ["media"]
+    image: ${ARCHIVE_RELEASE_IMAGE_OCR:?Release descriptor is required}
+    pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+  caddy:
+    profiles: ["edge"]
+    image: ${ARCHIVE_RELEASE_IMAGE_CADDY:?Release descriptor is required}
+    pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}

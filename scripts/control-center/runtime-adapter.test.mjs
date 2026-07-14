@@ -103,7 +103,7 @@ test("Docker runtime adapter maps every supported lifecycle operation to Compose
   assert.deepEqual(adapter.logs({ follow: true }), { ok: true, supported: true, status: 0 });
   assert.deepEqual(adapter.exec(["php", "artisan", "about"]), { ok: true, supported: true, status: 0, stdout: "ok", stderr: "" });
   assert.deepEqual(commands, [
-    { args: ["up", "-d", "--build"], options: undefined },
+    { args: ["up", "-d"], options: undefined },
     { args: ["up", "-d"], options: undefined },
     { args: ["down"], options: undefined },
     { args: ["restart"], options: undefined },
@@ -112,6 +112,13 @@ test("Docker runtime adapter maps every supported lifecycle operation to Compose
     { args: ["logs", "--tail=200", "-f"], options: undefined },
     { args: ["exec", "-T", "laravel-fpm", "php", "artisan", "about"], options: undefined },
   ]);
+});
+
+test("Docker runtime adapter permits a local build only for an explicit development adapter", () => {
+  const commands = [];
+  const adapter = createDockerRuntimeAdapter({ compose: (args) => { commands.push(args); return { status: 0 }; }, buildLocal: true });
+  assert.deepEqual(adapter.install(), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(commands, [["up", "-d", "--build"]]);
 });
 
 test("Docker runtime adapter propagates Compose and health failures as structured results", async () => {
