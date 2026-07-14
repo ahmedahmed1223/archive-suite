@@ -13,13 +13,14 @@
 - يتحقق Redis-compatible والتخزين المحلي أو الخارجي عبر namespace عشوائي منشأ داخلياً: Redis يستعمل مفتاحاً مؤقتاً وstorage يستعمل كائناً مؤقتاً، ثم `delete/remove` داخل النطاق الذي أنشأه probe فقط في النجاح أو الفشل أو timeout. لا تقبل الوحدة namespace مقدماً من المستخدم ولا تلامس أي مسار خارجه.
 - النتائج JSON آمنة وثابتة الحقول (`ok/code/message/details/nextActions`)؛ لا تنسخ أخطاء drivers أو URLs/credentials إلى stdout أو manifest أو support bundle. لكل backend timeout وحدود اتصال وإجراء تالٍ مفهوم، والتنظيف best-effort ومحدود بالنطاق نفسه.
 - دليل TDD: RED لاختبارات الوحدة الغائبة ثم GREEN. تغطي اختبارات mock نجاح/فشل/timeout والتنظيف لـPostgreSQL وRedis والتخزين، وعدم مسار مستخدم، وتنقية credential URLs وعقد JSON. التحقق: `node --test scripts/control-center/data-probes.test.mjs` ‏7/7، و`node --check` و`git diff --check`; بوابة `pnpm verify:infra` تبقى محجوبة محلياً بإصدار Node/Docker المعروفين.
+- **تصحيح مراجعة:** أصبحت كل عملية driver تستقبل `AbortSignal` لتتوقف فوراً عندما يدعمه backend. وإذا تجاهل backend الإلغاء وأكمل write/set متأخراً، تُجدول عملية cleanup ثانية داخل namespace نفسه بعد اكتماله، فلا يبقى object/key يتيمًا. لم يعد فشل cleanup يُبتلع: يعيد `REDIS_CLEANUP_FAILED` أو `STORAGE_CLEANUP_FAILED` بمعاملة JSON آمنة وإجراء يدوي واضح؛ تغطي اختبارات regression الكتابة المتأخرة وفشل cleanup لكل من Redis والتخزين.
 
 ## V1-208N — أوضاع الوصول والشهادات — مكتمل 2026-07-14
 
-- أضيفت `scripts/control-center/access-mode.mjs` كوحدة مستقلة عن wizard وبوابة الأوامر: تثبت سياسة العقد ذاتها (`public` مع `edge` فقط، و`local`/`intranet` بلا `edge`) قبل تشغيل أي probe أو كتابة.
+- أضيفت `scripts/control-center/access-mode.mjs` كوحدة مستقلة عن wizard وبوابة الأوامر: تمرر اختيار الوصول أولًا إلى resolver المعياري في `setup-config.mjs`، فتثبت سياسة العقد (`public` مع `edge` فقط) وصحة mode/platform/profiles/storage قبل تشغيل أي probe أو كتابة.
 - تفحص كل عملية switch تعارض المنفذ أولًا؛ ويضيف وضع public فحصي DNS والشهادة بعقد probe صريح. لا يفسر الفحص غير المدعوم أو الفاشل كنجاح ولا يصل إلى Docker أو كتابة الإعداد.
-- يخزن `createEnvAccessStore` snapshot داخليًا فقط، ويغير `ACCESS_MODE` و`ARCHIVE_COMPOSE_PROFILES` بملف مؤقت ثم rename ذري. بعد health فاشل يعيد snapshot؛ لا تدخل القيم السرية أو محتوى `.env` الخام في النتيجة أو السجل.
-- دليل TDD: بدأ اختبار RED باستيراد وحدة غير موجودة، ثم غطى local/intranet/public، تعارض المنفذ، DNS/certificate غير المتاحين، rollback، وتعقيم snapshot. التحقق: `node --test scripts/control-center/access-mode.test.mjs` ‏7/7 و`git diff --check`. لم تُشغّل `pnpm verify:infra` لأنها محجوبة محليًا بإصدار Node/Docker المعروفين.
+- يخزن `createEnvAccessStore` snapshot داخليًا داخل `WeakMap` خلف token معتم، ويغير `ACCESS_MODE` و`ARCHIVE_COMPOSE_PROFILES` بملف مؤقت ثم rename ذري. بعد health فاشل يعيد snapshot؛ لا تدخل القيم السرية أو محتوى `.env` الخام في النتيجة أو السجل أو API.
+- دليل TDD: بدأ اختبار RED باستيراد وحدة غير موجودة، ثم غطى local/intranet/public، تعارض المنفذ، DNS/certificate غير المتاحين، rollback، تعقيم snapshot، ورفض platform/profile/credential-URL غير القانونيين قبل probes/writes. التحقق: `node --test scripts/control-center/access-mode.test.mjs` ‏8/8 و`git diff --check`. لم تُشغّل `pnpm verify:infra` لأنها محجوبة محليًا بإصدار Node/Docker المعروفين.
 
 ## V1-208G — بوابة Setup الأساسية — مكتمل 2026-07-14
 
