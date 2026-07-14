@@ -7,6 +7,11 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## Setup interactive menu result acknowledgement — 2026-07-14
+
+- Interactive Setup now keeps each completed operation's result visible until the operator presses Enter to return to the main menu or `q` to exit. Invalid acknowledgement input repeats only that acknowledgement prompt, and each selected handler runs exactly once.
+- Menu shortcut validation rejects duplicate selectable shortcuts before an operation can run. Named commands, `--json`, and non-TTY execution remain prompt-free and automation-safe.
+
 ## V1-208O — لغة إنجليزية إلزامية لمخرجات Setup — مكتمل 2026-07-14
 
 - قرار مستخدم صريح: العربية في نصوص Setup التفاعلية (wizard prompts + ملخص الاختيارات، منذ V1-208F) تظهر mojibake في ترميزات Windows terminal الشائعة. تُرجمت `WIZARD_RUNTIME_PROMPTS` بالكامل (`scripts/control-center/setup-wizard.mjs`) ونصوص `guidedSetup()` (الأسئلة، السجل، ملخص الاختيارات، رسائل الرفض/الإلغاء) في `scripts/control-center.mjs` إلى الإنجليزية دون أي تغيير منطقي أو بنيوي.

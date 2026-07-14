@@ -14,6 +14,39 @@ export function createCli(argv) {
   return { args, hasFlag, flagValue, command: args.find((arg) => !arg.startsWith("-")) };
 }
 
+export async function acknowledgeMenuResult({ prompt, log }) {
+  for (;;) {
+    const answer = String((await prompt("Press Enter to return to the main menu, or q to quit: ")) ?? "").trim().toLowerCase();
+    if (answer === "") return "menu";
+    if (answer === "q") return "quit";
+    log("Please press Enter to return, or q to quit.");
+  }
+}
+
+function ensureUniqueMenuShortcuts(menuItems) {
+  const shortcuts = new Set();
+  for (const [shortcut] of menuItems) {
+    if (shortcut === "sec") continue;
+    const normalized = String(shortcut).trim().toLowerCase();
+    if (shortcuts.has(normalized)) throw new Error(`Interactive menu contains a duplicate shortcut: ${shortcut}`);
+    shortcuts.add(normalized);
+  }
+}
+
+export async function runInteractiveMenu({ prompt, log, warn, menuItems, renderMenu = () => {}, acknowledge = acknowledgeMenuResult }) {
+  ensureUniqueMenuShortcuts(menuItems);
+  for (;;) {
+    renderMenu();
+    const choice = String((await prompt("Choose an option")) ?? "").trim().toLowerCase();
+    if (choice === "0" || choice === "q") return "quit";
+    const item = menuItems.find((entry) => entry[0] !== "sec" && String(entry[0]).toLowerCase() === choice);
+    if (!item) { warn("Unknown option."); continue; }
+    try { await item[2](); } catch (error) { warn(error.message); }
+    log("");
+    if (await acknowledge({ prompt, log }) === "quit") return "quit";
+  }
+}
+
 export function createConsoleUi({ input = process.stdin, stdout = process.stdout, sink = console } = {}) {
   const C = { g: "\x1b[32m", y: "\x1b[33m", r: "\x1b[31m", c: "\x1b[36m", b: "\x1b[1m", d: "\x1b[2m", x: "\x1b[0m" };
   const log = (message = "") => sink.log(`  ${message}`);
@@ -28,7 +61,7 @@ export function createConsoleUi({ input = process.stdin, stdout = process.stdout
     return reader;
   };
   const ask = (question, defaultValue = "") => new Promise((resolve) =>
-    readline().question(`  ${C.c}?${C.x} ${question}${defaultValue ? ` ${C.y}(${defaultValue})${C.x}` : ""}: `, (answer) => resolve(answer.trim() || defaultValue))
+    readline().question(`  ${C.c}?${C.x} ${question}${defaultValue ? ` ${C.y}(${defaultValue})${C.x}` : ""}${question.endsWith(": ") ? "" : ": "}`, (answer) => resolve(answer.trim() || defaultValue))
   );
   const confirm = async (question, defaultValue = "n") => (await ask(`${question} ${C.d}(y/n)${C.x}`, defaultValue)).toLowerCase().startsWith("y");
   const printBanner = () => {

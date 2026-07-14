@@ -26,7 +26,7 @@ import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { formatPlatformContractReport, loadPlatformContract, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
 import { buildOperatorReport, buildReadinessContract, collectOperatorSnapshot, createSupportBundle, sanitize } from "./observability.mjs";
-import { createCli, createConsoleUi } from "./control-center/cli.mjs";
+import { createCli, createConsoleUi, runInteractiveMenu } from "./control-center/cli.mjs";
 import { createConfiguration, validateAdminPassword } from "./control-center/configuration.mjs";
 import { createDockerCompose } from "./control-center/docker-compose.mjs";
 import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs";
@@ -858,15 +858,7 @@ function preflightSummary() {
 async function interactive() {
   printBanner();
   preflightSummary();
-  for (;;) {
-    printMenu(MENU);
-    const choice = await ask("Choose an option");
-    const item = MENU.find((m) => m[0] === choice && m[0] !== "sec");
-    if (!item) { warn("Unknown option."); continue; }
-    if (item[0] === "0" || item[0] === "q") break;
-    try { await item[2](); } catch (e) { err(e.message); }
-    log("");
-  }
+  await runInteractiveMenu({ prompt: ask, log, warn: err, menuItems: MENU, renderMenu: () => printMenu(MENU) });
   close();
   log("Goodbye.");
 }
