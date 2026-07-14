@@ -7,6 +7,20 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208M — فحوص خدمات البيانات والتخزين — مكتمل 2026-07-14
+
+- أضيفت وحدة مستقلة `scripts/control-center/data-probes.mjs` لعقد probes قابل للتركيب داخل Setup أو adapters المنصات. تتحقق PostgreSQL باستعلام ثابت read-only (`SELECT 1 AS archive_probe`) فقط، فلا تنشئ أو تعدّل بيانات المستخدم.
+- يتحقق Redis-compatible والتخزين المحلي أو الخارجي عبر namespace عشوائي منشأ داخلياً: Redis يستعمل مفتاحاً مؤقتاً وstorage يستعمل كائناً مؤقتاً، ثم `delete/remove` داخل النطاق الذي أنشأه probe فقط في النجاح أو الفشل أو timeout. لا تقبل الوحدة namespace مقدماً من المستخدم ولا تلامس أي مسار خارجه.
+- النتائج JSON آمنة وثابتة الحقول (`ok/code/message/details/nextActions`)؛ لا تنسخ أخطاء drivers أو URLs/credentials إلى stdout أو manifest أو support bundle. لكل backend timeout وحدود اتصال وإجراء تالٍ مفهوم، والتنظيف best-effort ومحدود بالنطاق نفسه.
+- دليل TDD: RED لاختبارات الوحدة الغائبة ثم GREEN. تغطي اختبارات mock نجاح/فشل/timeout والتنظيف لـPostgreSQL وRedis والتخزين، وعدم مسار مستخدم، وتنقية credential URLs وعقد JSON. التحقق: `node --test scripts/control-center/data-probes.test.mjs` ‏7/7، و`node --check` و`git diff --check`; بوابة `pnpm verify:infra` تبقى محجوبة محلياً بإصدار Node/Docker المعروفين.
+
+## V1-208N — أوضاع الوصول والشهادات — مكتمل 2026-07-14
+
+- أضيفت `scripts/control-center/access-mode.mjs` كوحدة مستقلة عن wizard وبوابة الأوامر: تثبت سياسة العقد ذاتها (`public` مع `edge` فقط، و`local`/`intranet` بلا `edge`) قبل تشغيل أي probe أو كتابة.
+- تفحص كل عملية switch تعارض المنفذ أولًا؛ ويضيف وضع public فحصي DNS والشهادة بعقد probe صريح. لا يفسر الفحص غير المدعوم أو الفاشل كنجاح ولا يصل إلى Docker أو كتابة الإعداد.
+- يخزن `createEnvAccessStore` snapshot داخليًا فقط، ويغير `ACCESS_MODE` و`ARCHIVE_COMPOSE_PROFILES` بملف مؤقت ثم rename ذري. بعد health فاشل يعيد snapshot؛ لا تدخل القيم السرية أو محتوى `.env` الخام في النتيجة أو السجل.
+- دليل TDD: بدأ اختبار RED باستيراد وحدة غير موجودة، ثم غطى local/intranet/public، تعارض المنفذ، DNS/certificate غير المتاحين، rollback، وتعقيم snapshot. التحقق: `node --test scripts/control-center/access-mode.test.mjs` ‏7/7 و`git diff --check`. لم تُشغّل `pnpm verify:infra` لأنها محجوبة محليًا بإصدار Node/Docker المعروفين.
+
 ## V1-208G — بوابة Setup الأساسية — مكتمل 2026-07-14
 
 - أصبحت أوامر Setup الأساسية في وضع `--json` تعيد كائنًا واحدًا وثابت الحقول: `ok`, `code`, `message`, `details`, `nextActions`، مع exit code موافق. لا يُدرج transcript البشري أو مخرجات أدوات فرعية في JSON، فلا يمكنه تسريب credentials أو secrets.
