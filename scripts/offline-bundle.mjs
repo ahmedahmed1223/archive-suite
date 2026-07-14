@@ -18,14 +18,28 @@ const normalizedVersion = (value) => {
   return value;
 };
 
+export function resolveReleaseInventory(version, environment = process.env, baseInventory = inventory) {
+  normalizedVersion(version);
+  const required = { postgres: "POSTGRES_IMAGE", redis: "REDIS_IMAGE", next: "NEXT_IMAGE", laravel: "LARAVEL_IMAGE", "laravel-fpm": "LARAVEL_IMAGE", "laravel-worker": "LARAVEL_IMAGE", "laravel-reverb": "LARAVEL_IMAGE" };
+  return baseInventory.images.map((image) => {
+    const source = required[image.id] ? environment[required[image.id]] : (environment[`${image.id.toUpperCase().replaceAll("-", "_")}_IMAGE`] || image.source);
+    if (!source || !/@sha256:[a-f0-9]{64}$/.test(source)) throw new Error(`Set ${required[image.id] || `${image.id.toUpperCase().replaceAll("-", "_")}_IMAGE`} to the signature-verified immutable image@sha256 digest`);
+    // Application images from CI are verified before this command and may be
+    // digest-only refs; their released semantic version is carried by VERSION.
+    return { ...image, source };
+  });
+}
+
 function build(version, output) {
+  const resolvedInventory = resolveReleaseInventory(version);
   const dir = join(output, `archive-suite-offline-${version}`);
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(join(dir, "images"), { recursive: true });
-  for (const name of ["compose.v1.yml", "generate-env.mjs", "verify-bundle.mjs", "images.v1.json", "install.sh", "install.ps1", "README.ar.md"]) cpSync(join(root, "infra/offline", name), join(dir, name));
+  for (const name of ["compose.v1.yml", "generate-env.mjs", "verify-bundle.mjs", "install.sh", "install.ps1", "README.ar.md"]) cpSync(join(root, "infra/offline", name), join(dir, name));
+  writeFileSync(join(dir, "images.v1.json"), `${JSON.stringify({ ...inventory, images: resolvedInventory }, null, 2)}\n`);
   cpSync(join(root, "infra/deploy/Caddyfile"), join(dir, "Caddyfile"));
   writeFileSync(join(dir, "VERSION"), `${version}\n`);
-  const images = inventory.images.map((image) => {
+  const images = resolvedInventory.map((image) => {
     const source = image.source;
     if (!source || !/:\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?@sha256:[a-f0-9]{64}$/.test(source)) throw new Error(`offline inventory image ${image.id} must be a signed immutable version@sha256 reference`);
     const bundleRef = image.bundleRef.replace("$VERSION", version);
@@ -87,7 +101,7 @@ function verifyEvidence(dir, evidencePath) {
   const archive = join(resolve(dir, ".."), `${basename(dir)}.tar.gz`);
   if (evidence.sourceCommit !== manifest.sourceCommit || evidence.manifestSha256 !== sha256(manifestPath) || evidence.archiveSha256 !== sha256(archive)) throw new Error("stale rehearsal evidence: artifact identity mismatch");
   if (evidence.fileCount !== 14 || evidence.fileCount !== manifest.files.length || evidence.imageCount !== 7 || evidence.imageCount !== manifest.images.length) throw new Error("stale rehearsal evidence: bundle counts mismatch");
-  if (!evidence.https || !evidence.healthy || !evidence.cleanup || Object.values(evidence.cleanupAbsence).some((value) => value !== true)) throw new Error("rehearsal evidence does not prove health/HTTPS/cleanup");
+  if (!evidence.http || !evidence.healthy || !evidence.cleanup || Object.values(evidence.cleanupAbsence).some((value) => value !== true)) throw new Error("rehearsal evidence does not prove core HTTP health/cleanup");
   process.stdout.write(`Verified rehearsal evidence for ${evidence.sourceCommit}.\n`);
 }
 
@@ -97,12 +111,11 @@ function rehearsal(dir, evidencePath) {
   const env = join(dir, ".env.rehearsal");
   const version = readFileSync(join(dir, "VERSION"), "utf8").trim();
   const httpPort = String(18000 + (Date.now() % 1000));
-  const httpsPort = String(19000 + (Date.now() % 1000));
   const compose = ["compose", "--project-name", project, "--env-file", env, "-f", join(dir, "compose.v1.yml")];
   const manifestPath = join(dir, "manifest.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const archivePath = join(resolve(dir, ".."), `${basename(dir)}.tar.gz`);
-  const evidence = { schemaVersion: 1, project, version, sourceCommit: manifest.sourceCommit, manifestSha256: sha256(manifestPath), archiveSha256: null, fileCount: 14, imageCount: 7, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, https: false, cleanup: false, cleanupAbsence: { containers: false, volumes: false, networks: false } };
+  const evidence = { schemaVersion: 1, project, version, sourceCommit: manifest.sourceCommit, manifestSha256: sha256(manifestPath), archiveSha256: null, fileCount: 14, imageCount: 7, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, http: false, cleanup: false, cleanupAbsence: { containers: false, volumes: false, networks: false } };
   rmSync(env, { force: true });
   try {
     run(process.execPath, [join(dir, "generate-env.mjs"), env], { env: { ...process.env, ARCHIVE_VERSION: version } });
@@ -110,20 +123,20 @@ function rehearsal(dir, evidencePath) {
       run("docker", ["image", "load", "--input", join(dir, "images", `${image.id}.tar`)], { stdio: "ignore" });
       evidence.loadedImages.push(image.id);
     }
-    const childEnv = { ...process.env, HTTP_PORT: httpPort, HTTPS_PORT: httpsPort };
+    const childEnv = { ...process.env, HTTP_PORT: httpPort };
     run("docker", [...compose, "config", "--quiet"], { env: childEnv });
     run("docker", [...compose, "up", "-d", "--wait", "--wait-timeout", "240"], { env: childEnv });
     evidence.healthy = true;
-    run("curl", ["--fail", "--silent", "--show-error", "--insecure", `https://localhost:${httpsPort}/`], { stdio: "ignore" });
-    evidence.https = true;
+    run("curl", ["--fail", "--silent", "--show-error", `http://localhost:${httpPort}/`], { stdio: "ignore" });
+    evidence.http = true;
   } finally {
-    evidence.cleanupAbsence = cleanupRehearsal({ project, compose, envPath: env, childEnv: { ...process.env, HTTP_PORT: httpPort, HTTPS_PORT: httpsPort } });
+    evidence.cleanupAbsence = cleanupRehearsal({ project, compose, envPath: env, childEnv: { ...process.env, HTTP_PORT: httpPort } });
     evidence.cleanup = true;
     evidence.archiveSha256 = sha256(archivePath);
     evidence.finishedAt = new Date().toISOString();
     if (evidencePath) writeFileSync(resolve(evidencePath), `${JSON.stringify(evidence, null, 2)}\n`);
   }
-  process.stdout.write(`Offline rehearsal passed: ${project}; local load, healthy stack, HTTPS, scoped cleanup.\n`);
+  process.stdout.write(`Offline core rehearsal passed: ${project}; local load, healthy stack, HTTP, scoped cleanup.\n`);
 }
 
 if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}` || process.argv[1]?.endsWith("offline-bundle.mjs")) {

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import test from "node:test";
-import { cleanupRehearsal } from "./offline-bundle.mjs";
+import { cleanupRehearsal, resolveReleaseInventory } from "./offline-bundle.mjs";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
@@ -42,11 +42,9 @@ test("offline compose covers core images without builds, pulls, or floating tags
 test("image inventory matches the immutable release descriptor's complete core service set", () => {
   const inventory = JSON.parse(read("infra/offline/images.v1.json"));
   assert.deepEqual(inventory.images.map(({ id }) => id), ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"]);
-  const release = JSON.parse(read("infra/platform/release.v1.json"));
   for (const image of inventory.images) {
     assert.match(image.bundleRef, /^archive-suite\/[a-z-]+:\$VERSION$/);
-    assert.match(image.source, /:\d+\.\d+\.\d+(?:-[\w.-]+)?@sha256:[a-f0-9]{64}$/);
-    assert.equal(image.source, release.images.find((candidate) => candidate.id === image.id)?.online);
+    assert.equal(image.source, undefined, "production sources are injected only after signature verification");
   }
   assert.ok(!inventory.images.some((image) => image.id === "caddy" || image.id === "ocr"));
 });
@@ -100,10 +98,11 @@ test("semantic verifier enforces image archive checksum and inventory reference"
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test("rehearsal automates isolated up, HTTPS, finally cleanup, and absence checks", () => {
+test("core rehearsal automates isolated up, HTTP, finally cleanup, and absence checks", () => {
   const script = read("scripts/offline-bundle.mjs");
   assert.match(script, /up[^\n]+--wait/);
-  assert.match(script, /https:\/\/localhost/);
+  assert.match(script, /http:\/\/localhost/);
+  assert.doesNotMatch(script, /https:\/\/localhost/);
   assert.match(script, /finally/);
   assert.match(script, /down[^\n]+--volumes/);
   assert.match(script, /com\.docker\.compose\.project/);
@@ -127,11 +126,28 @@ test("cleanup deletes rehearsal secrets and checks networks when compose down fa
   rmSync(dir, { recursive: true, force: true });
 });
 
-test("evidence binds source commit, manifest, final archive, exact counts, and cleanup absence", () => {
+test("evidence binds source commit, manifest, final archive, exact counts, core HTTP and cleanup absence", () => {
   const script = read("scripts/offline-bundle.mjs");
   for (const field of ["sourceCommit", "manifestSha256", "archiveSha256", "fileCount", "imageCount", "containers", "volumes", "networks"]) assert.match(script, new RegExp(field));
   assert.match(script, /fileCount:\s*14/);
   assert.match(script, /imageCount:\s*7/);
+  assert.match(script, /evidence\.http/);
+  assert.doesNotMatch(script, /evidence\.https/);
+});
+
+test("offline bundle resolves signature-verified workflow image refs and rejects missing or mutable inputs", () => {
+  const env = {
+    POSTGRES_IMAGE: "registry.test/postgres@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    REDIS_IMAGE: "registry.test/redis@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    LARAVEL_IMAGE: "registry.test/laravel@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    NEXT_IMAGE: "registry.test/next@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  };
+  const resolved = resolveReleaseInventory("v1.0.0", env);
+  assert.equal(resolved.find((image) => image.id === "next").source, env.NEXT_IMAGE);
+  assert.equal(resolved.find((image) => image.id === "laravel-worker").source, env.LARAVEL_IMAGE);
+  assert.equal(resolved.find((image) => image.id === "postgres").source, env.POSTGRES_IMAGE);
+  assert.throws(() => resolveReleaseInventory("v1.0.0", { ...env, NEXT_IMAGE: "registry.test/next:latest" }), /NEXT_IMAGE/);
+  assert.throws(() => resolveReleaseInventory("v1.0.0", { ...env, REDIS_IMAGE: undefined }), /REDIS_IMAGE/);
 });
 
 test("operator guide verifies top-level checksum before extraction and uses schema-compatible restore", () => {
@@ -148,6 +164,9 @@ test("release builds bundle after signature verification and attaches it with to
   const bundled = release.indexOf("Build offline bundle");
   assert.ok(verified >= 0 && bundled > verified);
   assert.match(release, /archive-suite-offline-[^\n]+\.tar\.gz/);
+  assert.match(release, /POSTGRES_IMAGE/);
+  assert.match(release, /REDIS_IMAGE/);
+  assert.match(release, /NEXT_IMAGE: "\$\{\{ env\.NEXT_IMAGE \}\}@/);
   assert.match(release, /SHA256SUMS/);
   assert.match(release, /basename[^\n]+offline_bundle/);
   assert.match(release, /gh release create[^\n]+\$\{offline_asset\}/);

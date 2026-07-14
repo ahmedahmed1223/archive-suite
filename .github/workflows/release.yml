@@ -156,6 +156,8 @@ jobs:
           NEXT_IMAGE: "${{ env.NEXT_IMAGE }}@${{ steps.push_next.outputs.digest }}"
           LARAVEL_IMAGE: "${{ env.LARAVEL_IMAGE }}@${{ steps.push_laravel.outputs.digest }}"
         run: |
+          export POSTGRES_IMAGE="$(node -e \"const r=require('./infra/platform/release.v1.json'); console.log(r.images.find(i=>i.id==='postgres').online)\")"
+          export REDIS_IMAGE="$(node -e \"const r=require('./infra/platform/release.v1.json'); console.log(r.images.find(i=>i.id==='redis').online)\")"
           node scripts/offline-bundle.mjs build "${{ steps.meta.outputs.version }}" release-offline
           node scripts/offline-bundle.mjs verify "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}"
           node scripts/offline-bundle.mjs rehearse "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}" release-offline/v1-206-rehearsal-evidence.json

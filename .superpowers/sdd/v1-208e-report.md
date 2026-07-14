@@ -8,11 +8,12 @@
 - بقي مسار Compose المبني من المصدر تطويرياً صريحاً؛ لا يستخدم adapter المستخدم `--build`.
 - تصحيح مراجعة: كل lifecycle للمستخدم صار يستمد release context من manifest، وتُحمّل offline archives وتُفحص قبل Compose. Compose الإصدار يصف stack core الكامل ويجعل media/edge اختيارية فعلاً.
 - تصحيح مراجعة ثانٍ: أصبحت حزمة core offline تتضمن postgres/redis/laravel/fpm/worker/reverb/next فقط، وتطابق `source` immutable للعقد. يثبت اختبار happy-path البنية الكاملة ثم load/tag/inspect قبل Compose؛ Reverb وCaddy في release Compose يحملان البيئة والحجوم والاعتمادات القانونية عند تشغيلهما.
+- تصحيح مراجعة ثالث: rehearsal core يتحقق من HTTP بدلاً من HTTPS/edge، وتُولّد inventory الفعلية داخل الحزمة من مراجع workflow الموقعة (`NEXT_IMAGE`/`LARAVEL_IMAGE` ومراجع runtime)، مع رفض الغياب أو المراجع غير immutable قبل pull.
 - تظل `plan` و`import-config` صِرفين، وتظل update/rollback/uninstall غير منفذة هنا.
 
 ## دليل الاختبار
 
 - RED: اختبارات release descriptor وadapter وسيناريو user release Compose قبل التنفيذ.
-- GREEN: `node --test scripts/offline-bundle.test.mjs scripts/control-center.test.mjs scripts/control-center/installation-manifest.test.mjs scripts/control-center/runtime-adapter.test.mjs scripts/control-center/release-descriptor.test.mjs scripts/platform-contract.test.mjs` — 71/71.
+- GREEN: `node --test scripts/offline-bundle.test.mjs scripts/control-center.test.mjs scripts/control-center/installation-manifest.test.mjs scripts/control-center/runtime-adapter.test.mjs scripts/control-center/release-descriptor.test.mjs scripts/platform-contract.test.mjs` — 72/72.
 - `node --check scripts/control-center.mjs` و`node --check scripts/control-center/release-descriptor.mjs` و`git diff --check` نجحت.
 - لم ينجح `pnpm verify:infra` في البيئة المحلية المعروفة: Node الحالي v24 خارج خط المشروع 22، وDocker لا يملك وصولاً إلى config المستخدم ويعيد مشكلة `--env-file`. لم يُدّع نجاحه.
