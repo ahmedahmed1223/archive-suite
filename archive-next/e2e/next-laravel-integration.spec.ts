@@ -1,17 +1,38 @@
-import { expect, test } from '@playwright/test';
+import { expect, request as playwrightRequest, test } from '@playwright/test';
+import type { Cookie } from '@playwright/test';
 
 const shareToken = process.env.ARCHIVE_E2E_SHARE_TOKEN ?? 'next-laravel-share';
 const email = process.env.ARCHIVE_E2E_EMAIL ?? 'it@archive.test';
 const password = process.env.ARCHIVE_E2E_PASSWORD ?? 'password123';
 
 // The operational pages (/archive, /archive/[id], /media/jobs) are guarded by the
-// cookie-session middleware. Log in once per test so the context carries the
-// httpOnly va_refresh cookie; page.request shares the page's cookie jar.
-test.beforeEach(async ({ page }) => {
-  const response = await page.request.post('/api/v1/auth/login', {
+// cookie-session middleware. /auth/login is throttled (10/min, see V1-104) — 5
+// tests x 2 browser projects x CI retries would blow past that logging in once
+// per test, failing every test on an unrelated 429 instead of a real bug.
+// Log in exactly once per project instead, and hand the resulting cookie to
+// each test's context locally (no extra network round trip).
+let sessionCookie: Cookie | undefined;
+
+test.beforeAll(async () => {
+  const apiContext = await playwrightRequest.newContext({
+    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000',
+  });
+
+  const response = await apiContext.post('/api/v1/auth/login', {
     data: { email, password },
   });
   expect(response.ok()).toBeTruthy();
+
+  sessionCookie = (await apiContext.storageState()).cookies.find((c) => c.name === 'va_refresh');
+  expect(sessionCookie).toBeDefined();
+
+  await apiContext.dispose();
+});
+
+test.beforeEach(async ({ context }) => {
+  if (sessionCookie) {
+    await context.addCookies([sessionCookie]);
+  }
 });
 
 test('renders a public share record through the Next.js to Laravel API rewrite', async ({ page }) => {
