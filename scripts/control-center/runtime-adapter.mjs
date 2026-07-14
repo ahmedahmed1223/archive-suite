@@ -18,8 +18,24 @@ function unsupported(operation) {
 
 export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest } = {}) {
   const installOrRepair = (operation, request = manifestRequest) => {
-    if (manifestStore && request) manifestStore.beginInstallationOperation({ ...request, operation });
-    const result = completed(compose(["up", "-d", "--build"]));
+    const session = manifestStore && request ? manifestStore.beginInstallationOperation({ ...request, operation }) : null;
+    const decision = session?.decision;
+    if (decision?.action === "resume" && decision.nextStep === null) {
+      manifestStore.updateLastSuccessfulStep({ ...request, step: decision.after });
+      return completed({ status: 0 });
+    }
+    let result;
+    try {
+      result = completed(compose(["up", "-d", "--build"]));
+    } catch (error) {
+      if (manifestStore && request) {
+        try {
+          manifestStore.markInstallationFailed({ ...request, failedStep: "services-start", nextActions: ["Docker Compose terminated unexpectedly. Review its output and run repair."] });
+        } catch { /* never hide the original Compose error */ }
+      }
+      try { error.controlCenterOperation = "compose"; } catch { /* preserve the original error */ }
+      throw error;
+    }
     if (manifestStore && request) {
       if (result.ok) manifestStore.updateLastSuccessfulStep({ ...request, step: "services-started" });
       else manifestStore.markInstallationFailed({ ...request, failedStep: "services-start", nextActions: ["Check Docker Compose output and run repair."] });
