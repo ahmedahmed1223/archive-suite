@@ -47,16 +47,22 @@ test("verified offline images are loaded and inspected before the release adapte
   loadOfflineReleaseImages({
     environment: { ARCHIVE_RELEASE_PULL_POLICY: "never" },
     images: [
-      { archive: "C:/bundle/images/laravel.tar", checksum: "a".repeat(64), reference: "archive-suite/laravel:1.0.0-rc.1" },
-      { archive: "C:/bundle/images/laravel.tar", checksum: "a".repeat(64), reference: "archive-suite/laravel:1.0.0-rc.1" },
-      { archive: "C:/bundle/images/next.tar", checksum: "b".repeat(64), reference: "archive-suite/next:1.0.0-rc.1" },
+      { archive: "C:/bundle/images/laravel.tar", checksum: "a".repeat(64), reference: "archive-suite/laravel:1.0.0-rc.1", online: `registry.test/laravel:1.0.0-rc.1@sha256:${"a".repeat(64)}` },
+      { archive: "C:/bundle/images/laravel.tar", checksum: "a".repeat(64), reference: "archive-suite/laravel:1.0.0-rc.1", online: `registry.test/laravel:1.0.0-rc.1@sha256:${"a".repeat(64)}` },
+      { archive: "C:/bundle/images/next.tar", checksum: "b".repeat(64), reference: "archive-suite/next:1.0.0-rc.1", online: `registry.test/next:1.0.0-rc.1@sha256:${"b".repeat(64)}` },
     ],
   }, { runDocker: (args) => calls.push(args) });
   assert.deepEqual(calls, [
     ["image", "load", "--input", "C:/bundle/images/laravel.tar"],
+    ["image", "tag", "archive-suite/laravel:1.0.0-rc.1", "registry.test/laravel:1.0.0-rc.1"],
+    ["image", "inspect", "registry.test/laravel:1.0.0-rc.1"],
     ["image", "inspect", "archive-suite/laravel:1.0.0-rc.1"],
+    ["image", "tag", "archive-suite/laravel:1.0.0-rc.1", "registry.test/laravel:1.0.0-rc.1"],
+    ["image", "inspect", "registry.test/laravel:1.0.0-rc.1"],
     ["image", "inspect", "archive-suite/laravel:1.0.0-rc.1"],
     ["image", "load", "--input", "C:/bundle/images/next.tar"],
+    ["image", "tag", "archive-suite/next:1.0.0-rc.1", "registry.test/next:1.0.0-rc.1"],
+    ["image", "inspect", "registry.test/next:1.0.0-rc.1"],
     ["image", "inspect", "archive-suite/next:1.0.0-rc.1"],
   ]);
 });

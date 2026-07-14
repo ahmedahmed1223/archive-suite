@@ -49,13 +49,13 @@ function verifyOfflineBundle(bundlePath, descriptor, selected) {
   for (const image of selected) {
     const reference = image.offlineRef.replace("$VERSION", descriptor.version);
     const bundleImage = byId.get(image.id) || manifest.images.find((candidate) => candidate.bundleRef === reference);
-    if (!bundleImage || bundleImage.bundleRef !== reference || !/^[a-f0-9]{64}$/.test(bundleImage.sha256 || "")) fail("OFFLINE_IMAGE_MISMATCH", "Offline bundle images do not match the selected release/profile.");
+    if (!bundleImage || bundleImage.bundleRef !== reference || bundleImage.source !== image.online || !/^[a-f0-9]{64}$/.test(bundleImage.sha256 || "")) fail("OFFLINE_IMAGE_MISMATCH", "Offline bundle images do not match the selected release/profile.");
     if (checksum(join(bundlePath, bundleImage.archive)) !== bundleImage.sha256) fail("OFFLINE_CHECKSUM_INVALID", "Offline image checksum verification failed.");
   }
   return selected.map((image) => {
     const reference = image.offlineRef.replace("$VERSION", descriptor.version);
     const bundleImage = byId.get(image.id) || manifest.images.find((candidate) => candidate.bundleRef === reference);
-    return { ...image, reference, checksum: bundleImage.sha256, archive: join(bundlePath, bundleImage.archive) };
+    return { ...image, reference, digest: image.online.slice(image.online.lastIndexOf("@") + 1), checksum: bundleImage.sha256, archive: join(bundlePath, bundleImage.archive) };
   });
 }
 
@@ -72,6 +72,11 @@ export function loadOfflineReleaseImages(release, { runDocker } = {}) {
   for (const image of release.images) {
     if (!image.archive || !image.checksum) fail("OFFLINE_IMAGE_MISMATCH", "Offline image archive metadata is missing.");
     if (!loaded.has(image.archive)) { invoke(["image", "load", "--input", image.archive]); loaded.add(image.archive); }
+    // Docker tags cannot contain @sha256, so bind the loaded archive to the
+    // descriptor's immutable version tag after its manifest source digest was
+    // validated above, then inspect that local binding before Compose.
+    invoke(["image", "tag", image.reference, image.online.slice(0, image.online.lastIndexOf("@"))]);
+    invoke(["image", "inspect", image.online.slice(0, image.online.lastIndexOf("@"))]);
     invoke(["image", "inspect", image.reference]);
   }
 }
