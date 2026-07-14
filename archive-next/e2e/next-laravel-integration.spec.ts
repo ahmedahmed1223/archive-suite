@@ -27,7 +27,11 @@ test.beforeAll(async ({ browser }) => {
   const response = await setupContext.request.post('/api/v1/auth/login', {
     data: { email, password },
   });
-  expect(response.ok()).toBeTruthy();
+  if (!response.ok()) {
+    throw new Error(
+      `login failed: ${response.status()} ${response.statusText()} — ${await response.text()}`
+    );
+  }
 
   sessionCookie = (await setupContext.cookies()).find((c) => c.name === 'va_refresh');
   expect(sessionCookie).toBeDefined();
