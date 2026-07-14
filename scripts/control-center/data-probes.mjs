@@ -32,6 +32,17 @@ function timeout(backend) {
   );
 }
 
+function cleanupFailed(backend) {
+  const names = { redis: "Redis", storage: "Storage" };
+  return result(
+    false,
+    `${backend.toUpperCase()}_CLEANUP_FAILED`,
+    `${names[backend]} probe cleanup could not be confirmed.`,
+    backend,
+    [`Remove the generated ${names[backend]} probe namespace before retrying.`],
+  );
+}
+
 function requireMethod(adapter, method, backend) {
   if (!adapter || typeof adapter[method] !== "function") throw new Error(`${backend} probe adapter is incomplete.`);
 }
@@ -41,15 +52,39 @@ function createTimeout(timeoutMs) {
   return timeoutMs;
 }
 
-async function bounded(operation, timeoutMs) {
+async function bounded(operation, timeoutMs, { onLateCompletion } = {}) {
+  const controller = new AbortController();
+  let timedOut = false;
   let timer;
+  const pending = Promise.resolve().then(() => operation({ signal: controller.signal }));
+  if (onLateCompletion) {
+    pending.then(
+      () => { if (timedOut) void Promise.resolve(onLateCompletion()).catch(() => {}); },
+      () => { if (timedOut) void Promise.resolve(onLateCompletion()).catch(() => {}); },
+    );
+  }
   try {
     return await Promise.race([
-      Promise.resolve().then(operation),
-      new Promise((_, reject) => { timer = setTimeout(() => reject(new ProbeTimeoutError("probe timed out")), timeoutMs); }),
+      pending,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+          reject(new ProbeTimeoutError("probe timed out"));
+        }, timeoutMs);
+      }),
     ]);
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function scopedCleanup(adapter, method, target, backend, timeoutMs) {
+  try {
+    await bounded(({ signal }) => adapter[method](target, { signal }), timeoutMs);
+    return null;
+  } catch {
+    return cleanupFailed(backend);
   }
 }
 
@@ -70,7 +105,7 @@ export function createDataProbes({ postgres, redis, storage, timeoutMs = DEFAULT
   const probePostgres = async () => {
     try {
       requireMethod(postgres, "query", "PostgreSQL");
-      await bounded(() => postgres.query("SELECT 1 AS archive_probe"), limit);
+      await bounded(({ signal }) => postgres.query("SELECT 1 AS archive_probe", { signal }), limit);
       return result(true, "POSTGRES_READY", "PostgreSQL connection and limited read permission verified.", "postgres");
     } catch (error) {
       return error instanceof ProbeTimeoutError ? timeout("postgres") : unavailable("postgres");
@@ -79,43 +114,43 @@ export function createDataProbes({ postgres, redis, storage, timeoutMs = DEFAULT
 
   const probeRedis = async () => {
     let key;
+    let outcome;
+    const cleanup = () => scopedCleanup(redis, "del", key, "redis", limit);
     try {
       requireMethod(redis, "ping", "Redis");
       requireMethod(redis, "set", "Redis");
       requireMethod(redis, "del", "Redis");
       key = `${safeNamespace(createNamespace())}:redis`;
-      const pong = await bounded(() => redis.ping(), limit);
+      const pong = await bounded(({ signal }) => redis.ping({ signal }), limit);
       if (String(pong).toUpperCase() !== "PONG") throw new Error("Redis PING did not return PONG.");
-      await bounded(() => redis.set(key, PROBE_VALUE), limit);
+      await bounded(({ signal }) => redis.set(key, PROBE_VALUE, { signal }), limit, { onLateCompletion: cleanup });
       requireMethod(redis, "get", "Redis");
-      if (await bounded(() => redis.get(key), limit) !== PROBE_VALUE) throw new Error("Redis probe value did not match.");
-      return result(true, "REDIS_READY", "Redis connection and temporary namespace permission verified.", "redis");
+      if (await bounded(({ signal }) => redis.get(key, { signal }), limit) !== PROBE_VALUE) throw new Error("Redis probe value did not match.");
+      outcome = result(true, "REDIS_READY", "Redis connection and temporary namespace permission verified.", "redis");
     } catch (error) {
-      return error instanceof ProbeTimeoutError ? timeout("redis") : unavailable("redis");
-    } finally {
-      if (key) {
-        try { await bounded(() => redis.del(key), limit); } catch { /* cleanup is intentionally best-effort and remains namespace-scoped */ }
-      }
+      outcome = error instanceof ProbeTimeoutError ? timeout("redis") : unavailable("redis");
     }
+    const cleanupOutcome = key ? await cleanup() : null;
+    return cleanupOutcome || outcome;
   };
 
   const probeStorage = async () => {
     let path;
+    let outcome;
+    const cleanup = () => scopedCleanup(storage, "remove", path, "storage", limit);
     try {
       requireMethod(storage, "write", "Storage");
       requireMethod(storage, "remove", "Storage");
       path = `${safeNamespace(createNamespace())}/storage-probe.txt`;
-      await bounded(() => storage.write(path, PROBE_VALUE), limit);
+      await bounded(({ signal }) => storage.write(path, PROBE_VALUE, { signal }), limit, { onLateCompletion: cleanup });
       requireMethod(storage, "read", "Storage");
-      if (await bounded(() => storage.read(path), limit) !== PROBE_VALUE) throw new Error("Storage probe value did not match.");
-      return result(true, "STORAGE_READY", "Storage write, read, and scoped cleanup permission verified.", "storage");
+      if (await bounded(({ signal }) => storage.read(path, { signal }), limit) !== PROBE_VALUE) throw new Error("Storage probe value did not match.");
+      outcome = result(true, "STORAGE_READY", "Storage write, read, and scoped cleanup permission verified.", "storage");
     } catch (error) {
-      return error instanceof ProbeTimeoutError ? timeout("storage") : unavailable("storage");
-    } finally {
-      if (path) {
-        try { await bounded(() => storage.remove(path), limit); } catch { /* cleanup is intentionally best-effort and remains namespace-scoped */ }
-      }
+      outcome = error instanceof ProbeTimeoutError ? timeout("storage") : unavailable("storage");
     }
+    const cleanupOutcome = path ? await cleanup() : null;
+    return cleanupOutcome || outcome;
   };
 
   return { postgres: probePostgres, redis: probeRedis, storage: probeStorage, all: async () => ({ postgres: await probePostgres(), redis: await probeRedis(), storage: await probeStorage() }) };

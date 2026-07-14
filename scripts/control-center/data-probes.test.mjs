@@ -84,6 +84,46 @@ test("Redis probe times out and still attempts generated-key cleanup", async () 
   assert.deepEqual(deleted, ["archive-setup-probe-fixed:redis"]);
 });
 
+test("Redis timeout aborts when supported and deletes again after a late set completes", async () => {
+  const probes = await loadProbes();
+  assert.ok(probes, "data probes module must exist");
+  const calls = [];
+  let aborted = false;
+  const result = await probes.createDataProbes({
+    redis: {
+      ping: async () => "PONG",
+      set: (key, _value, { signal }) => new Promise((resolve) => setTimeout(() => { aborted = signal.aborted; calls.push(["set", key]); resolve(); }, 20)),
+      del: async (key) => calls.push(["del", key]),
+    },
+    createNamespace: namespace(), timeoutMs: 5,
+  }).redis();
+  assert.equal(result.code, "REDIS_TIMEOUT");
+  await new Promise((resolve) => setTimeout(resolve, 35));
+  assert.equal(aborted, true);
+  assert.deepEqual(calls, [
+    ["del", "archive-setup-probe-fixed:redis"],
+    ["set", "archive-setup-probe-fixed:redis"],
+    ["del", "archive-setup-probe-fixed:redis"],
+  ]);
+});
+
+test("Redis cleanup failure is returned safely instead of a ready or timeout result", async () => {
+  const probes = await loadProbes();
+  assert.ok(probes, "data probes module must exist");
+  const result = await probes.createDataProbes({
+    redis: { ping: async () => "PONG", set: async () => {}, get: async () => "archive-setup-probe", del: async () => { throw new Error("redis://admin:topsecret@example.test"); } },
+    createNamespace: namespace(),
+  }).redis();
+  assert.deepEqual(result, {
+    ok: false,
+    code: "REDIS_CLEANUP_FAILED",
+    message: "Redis probe cleanup could not be confirmed.",
+    details: { backend: "redis" },
+    nextActions: ["Remove the generated Redis probe namespace before retrying."],
+  });
+  assert.equal(JSON.stringify(result).includes("topsecret"), false);
+});
+
 test("storage probe uses an isolated generated namespace and removes it after verification", async () => {
   const probes = await loadProbes();
   assert.ok(probes, "data probes module must exist");
@@ -121,6 +161,45 @@ test("storage probe cleans its generated object after failure or timeout without
   }).storage();
   assert.equal(timedOut.code, "STORAGE_TIMEOUT");
   assert.deepEqual(removedAfterTimeout, ["archive-setup-probe-fixed/storage-probe.txt"]);
+});
+
+test("storage timeout aborts when supported and removes a late write after it completes", async () => {
+  const probes = await loadProbes();
+  assert.ok(probes, "data probes module must exist");
+  const calls = [];
+  let aborted = false;
+  const result = await probes.createDataProbes({
+    storage: {
+      write: (path, _value, { signal }) => new Promise((resolve) => setTimeout(() => { aborted = signal.aborted; calls.push(["write", path]); resolve(); }, 20)),
+      remove: async (path) => calls.push(["remove", path]),
+    },
+    createNamespace: namespace(), timeoutMs: 5,
+  }).storage();
+  assert.equal(result.code, "STORAGE_TIMEOUT");
+  await new Promise((resolve) => setTimeout(resolve, 35));
+  assert.equal(aborted, true);
+  assert.deepEqual(calls, [
+    ["remove", "archive-setup-probe-fixed/storage-probe.txt"],
+    ["write", "archive-setup-probe-fixed/storage-probe.txt"],
+    ["remove", "archive-setup-probe-fixed/storage-probe.txt"],
+  ]);
+});
+
+test("storage cleanup failure is returned safely instead of a ready or unavailable result", async () => {
+  const probes = await loadProbes();
+  assert.ok(probes, "data probes module must exist");
+  const result = await probes.createDataProbes({
+    storage: { write: async () => {}, read: async () => "archive-setup-probe", remove: async () => { throw new Error("s3://access:topsecret@example.test"); } },
+    createNamespace: namespace(),
+  }).storage();
+  assert.deepEqual(result, {
+    ok: false,
+    code: "STORAGE_CLEANUP_FAILED",
+    message: "Storage probe cleanup could not be confirmed.",
+    details: { backend: "storage" },
+    nextActions: ["Remove the generated Storage probe namespace before retrying."],
+  });
+  assert.equal(JSON.stringify(result).includes("topsecret"), false);
 });
 
 test("probeAll preserves a machine-readable result per backend", async () => {
