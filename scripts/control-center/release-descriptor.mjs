@@ -6,11 +6,14 @@ import { verifyBundle } from "../../infra/offline/verify-bundle.mjs";
 
 const SEMVER = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/;
 const IMMUTABLE = /^[a-z0-9][a-z0-9./_-]*:[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?@sha256:[a-f0-9]{64}$/;
+const DIGEST_REF = /^[a-z0-9][a-z0-9./_-]*@sha256:[a-f0-9]{64}$/;
 const REF = /^[a-z0-9][a-z0-9./_-]*:\$VERSION$/;
 const PROFILES = new Set(["core", "media", "edge"]);
 const CORE_SERVICES = new Set(["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"]);
 const FORBIDDEN = /(password|secret|token|credential|authorization|cookie|dsn|connection|url|key)/i;
 const DEFAULT_PATH = new URL("../../infra/platform/release.v1.json", import.meta.url);
+const canonicalVersion = (value) => String(value || "").replace(/^v/, "");
+const applicationService = (service) => ["next", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb"].includes(service);
 
 export class ReleaseDescriptorError extends Error {
   constructor(code, message, nextActions = ["Correct the release descriptor and run setup repair."]) { super(message); this.code = code; this.nextActions = nextActions; }
@@ -44,18 +47,20 @@ function verifyOfflineBundle(bundlePath, descriptor, selected) {
   if (!bundlePath || !existsSync(bundlePath)) fail("OFFLINE_BUNDLE_REQUIRED", "Offline setup requires ARCHIVE_OFFLINE_BUNDLE_PATH with a verified bundle.", ["Provide the complete verified offline release bundle."]);
   try { verifyBundle(bundlePath, { log: () => {} }); } catch { fail("OFFLINE_BUNDLE_INVALID", "Offline bundle checksum or manifest verification failed.", ["Replace the bundle with a verified release package."]); }
   const manifest = readJson(join(bundlePath, "manifest.json"));
-  if (manifest.version !== descriptor.version) fail("OFFLINE_VERSION_MISMATCH", "Offline bundle version does not match the selected release.");
+  if (canonicalVersion(manifest.version) !== canonicalVersion(descriptor.version)) fail("OFFLINE_VERSION_MISMATCH", "Offline bundle version does not match the selected release.");
   const byId = new Map(manifest.images.map((image) => [image.id, image]));
   for (const image of selected) {
     const reference = image.offlineRef.replace("$VERSION", descriptor.version);
     const bundleImage = byId.get(image.id) || manifest.images.find((candidate) => candidate.bundleRef === reference);
-    if (!bundleImage || bundleImage.bundleRef !== reference || bundleImage.source !== image.online || !/^[a-f0-9]{64}$/.test(bundleImage.sha256 || "")) fail("OFFLINE_IMAGE_MISMATCH", "Offline bundle images do not match the selected release/profile.");
+    const workflowSignedApplication = applicationService(image.service) && DIGEST_REF.test(bundleImage?.source || "");
+    if (!bundleImage || bundleImage.bundleRef !== reference || (!workflowSignedApplication && bundleImage.source !== image.online) || !/^[a-f0-9]{64}$/.test(bundleImage.sha256 || "")) fail("OFFLINE_IMAGE_MISMATCH", "Offline bundle images do not match the selected release/profile.");
     if (checksum(join(bundlePath, bundleImage.archive)) !== bundleImage.sha256) fail("OFFLINE_CHECKSUM_INVALID", "Offline image checksum verification failed.");
   }
   return selected.map((image) => {
     const reference = image.offlineRef.replace("$VERSION", descriptor.version);
     const bundleImage = byId.get(image.id) || manifest.images.find((candidate) => candidate.bundleRef === reference);
-    return { ...image, reference, digest: image.online.slice(image.online.lastIndexOf("@") + 1), checksum: bundleImage.sha256, archive: join(bundlePath, bundleImage.archive) };
+    const online = applicationService(image.service) && DIGEST_REF.test(bundleImage.source || "") ? bundleImage.source : image.online;
+    return { ...image, online, reference, digest: online.slice(online.lastIndexOf("@") + 1), checksum: bundleImage.sha256, archive: join(bundlePath, bundleImage.archive) };
   });
 }
 
