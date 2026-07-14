@@ -29,6 +29,10 @@ class VocabularyController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'term' => ['required', 'string', 'max:200'],
             'kind' => ['nullable', 'string', 'in:'.implode(',', self::KINDS)],
@@ -59,6 +63,10 @@ class VocabularyController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $userId = $this->userId($request);
 
         $deleted = DB::table('vocabulary_terms')

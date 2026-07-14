@@ -16,8 +16,10 @@ class TagNodesControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Create a test user for auth
-        $this->user = User::factory()->create();
+        // Create a test user for auth. Role must be editor (not the
+        // viewer default) since V1-102F gates every write method here
+        // behind Controller::requireEditor().
+        $this->user = User::factory()->create(['role' => 'editor']);
         $this->actingAs($this->user);
     }
 

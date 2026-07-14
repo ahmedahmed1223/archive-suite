@@ -27,6 +27,10 @@ class CollectionsController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:200'],
             'query' => ['nullable', 'string', 'max:500'],
@@ -59,6 +63,10 @@ class CollectionsController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $userId = $this->userId($request);
 
         $deleted = DB::table('collections')

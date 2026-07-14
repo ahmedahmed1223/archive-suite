@@ -65,6 +65,10 @@ class RelationsController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'sourceId' => ['required', 'string', 'max:255'],
             'targetId' => ['required', 'string', 'max:255', 'different:sourceId'],
@@ -118,6 +122,10 @@ class RelationsController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'type' => ['sometimes', 'string', Rule::in(array_keys(self::RELATION_TYPES))],
             'note' => ['nullable', 'string', 'max:2000'],
@@ -167,8 +175,12 @@ class RelationsController extends Controller
         ]);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $deleted = DB::table('record_relations')->where('id', $id)->delete();
 
         if ($deleted < 1) {
