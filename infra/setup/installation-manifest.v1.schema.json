@@ -43,17 +43,49 @@
         ]
       }
     },
+    "releaseEnvironment": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^(ARCHIVE_RELEASE_PULL_POLICY|ARCHIVE_COMPOSE_PROFILES|ARCHIVE_RELEASE_IMAGE_[A-Z0-9_]+)$" },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S",
+        "allOf": [
+          { "not": { "pattern": "^[a-zA-Z][a-zA-Z0-9+.-]*://" } },
+          { "not": { "pattern": "(?:[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Tt][Oo][Kk][Ee][Nn]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll])" } }
+        ]
+      }
+    },
     "lastSuccessfulStep": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "pattern": "\\S" }] },
     "previousVersion": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "pattern": "\\S" }] },
+    "previousRelease": { "$ref": "#/properties/operation/properties/target" },
     "operation": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "status", "failedStep", "nextActions"],
       "properties": {
-        "type": { "enum": ["install", "repair"] },
+        "type": { "enum": ["install", "repair", "update", "rollback"] },
         "status": { "enum": ["in-progress", "failed", "succeeded"] },
         "failedStep": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "pattern": "\\S" }] },
-        "nextActions": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" } }
+        "nextActions": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" } },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "source", "mode", "platform", "runtimeProfiles", "capabilities", "artifacts", "services", "dataPaths"],
+          "properties": {
+            "version": { "type": "string", "minLength": 1, "pattern": "\\S" },
+            "source": { "enum": ["online", "offline"] },
+            "mode": { "enum": ["docker", "native"] },
+            "platform": { "type": "string", "minLength": 1, "pattern": "\\S" },
+            "runtimeProfiles": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },
+            "capabilities": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },
+            "artifacts": { "$ref": "#/properties/artifacts" },
+            "services": { "$ref": "#/properties/services" },
+            "dataPaths": { "$ref": "#/properties/dataPaths" },
+            "releaseEnvironment": { "$ref": "#/properties/releaseEnvironment" }
+          }
+        }
       }
     }
   }

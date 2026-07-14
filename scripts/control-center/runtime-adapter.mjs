@@ -16,7 +16,7 @@ function unsupported(operation) {
   return { ok: false, supported: false, operation, reason: "unsupported" };
 }
 
-export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest, buildLocal = false } = {}) {
+export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest, buildLocal = false, updateOperation } = {}) {
   const installOrRepair = (operation, request = manifestRequest) => {
     const session = manifestStore && request ? manifestStore.beginInstallationOperation({ ...request, operation }) : null;
     const decision = session?.decision;
@@ -58,7 +58,10 @@ export function createDockerRuntimeAdapter({ compose, health, manifestStore, man
         { includeOutput: true }
       );
     },
-    update: () => unsupported("update"),
+    // V1-208I: Docker's update is the only real implementation so far; a
+    // future Native adapter supplies its own updateOperation to the same
+    // constructor param and gets the identical request-in/result-out shape.
+    update: (request) => (updateOperation ? updateOperation(request) : unsupported("update")),
     rollback: () => unsupported("rollback"),
     uninstall: () => unsupported("uninstall"),
   };

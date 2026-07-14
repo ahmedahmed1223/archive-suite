@@ -198,6 +198,96 @@ test("installation manifest rejects sensitive operation and version metadata alr
   );
 });
 
+test("operation.type accepts update and rollback, and both schema and execution stay in sync", async () => {
+  const manifest = await loadManifest();
+  assert.ok(manifest, "installation manifest module must exist");
+  const dir = mkdtempSync(join(tmpdir(), "archive-manifest-update-type-"));
+  const path = join(dir, "installation-manifest.json");
+  manifest.createInstallationManifest({ path, input: safeInput() });
+
+  const updated = manifest.beginOperation({ path, type: "update" });
+  assert.equal(updated.operation.type, "update");
+  assert.equal(updated.operation.status, "in-progress");
+  assert.deepEqual(manifest.readInstallationManifest(path), updated);
+
+  const schema = JSON.parse(readFileSync(new URL("../../infra/setup/installation-manifest.v1.schema.json", import.meta.url), "utf8"));
+  assert.deepEqual(schema.properties.operation.properties.type.enum, ["install", "repair", "update", "rollback"]);
+
+  assert.throws(() => manifest.beginOperation({ path, type: "install" }), /operation must be update or rollback/i);
+  assert.throws(() => manifest.beginOperation({ path: join(dir, "missing.json"), type: "update" }), /does not exist/i);
+});
+
+test("completeUpdateOperation atomically records the new version and sets previousVersion, never regressing it to null", async () => {
+  const manifest = await loadManifest();
+  assert.ok(manifest, "installation manifest module must exist");
+  const dir = mkdtempSync(join(tmpdir(), "archive-manifest-complete-update-"));
+  const path = join(dir, "installation-manifest.json");
+  manifest.createInstallationManifest({ path, input: safeInput({ version: "1.0.0" }) });
+  manifest.beginOperation({ path, type: "update" });
+  manifest.updateLastSuccessfulStep({ path, step: "preflight-verified" });
+
+  const next = manifest.completeUpdateOperation({
+    path,
+    input: safeInput({ version: "1.1.0", artifacts: [{ id: "next", digest: "sha256:def456" }] }),
+    previousVersion: "1.0.0",
+    step: "health-verified",
+  });
+
+  assert.equal(next.version, "1.1.0");
+  assert.equal(next.previousVersion, "1.0.0");
+  assert.equal(next.lastSuccessfulStep, "health-verified");
+  assert.equal(next.operation.type, "update");
+  assert.equal(next.operation.status, "succeeded");
+  assert.deepEqual(manifest.readInstallationManifest(path), next);
+
+  // A second update must not regress previousVersion back to null, and must
+  // move it forward to the version that was actually just replaced.
+  manifest.beginOperation({ path, type: "update" });
+  const second = manifest.completeUpdateOperation({
+    path,
+    input: safeInput({ version: "1.2.0", artifacts: [{ id: "next", digest: "sha256:aaa111" }] }),
+    previousVersion: "1.1.0",
+    step: "health-verified",
+  });
+  assert.equal(second.version, "1.2.0");
+  assert.equal(second.previousVersion, "1.1.0");
+
+  assert.throws(() => manifest.completeUpdateOperation({ path: join(dir, "missing.json"), input: safeInput(), previousVersion: "1.0.0", step: "health-verified" }), /does not exist/i);
+});
+
+test("update manifest records a safe target while in progress and a complete previous release reference after success", async () => {
+  const manifest = await loadManifest();
+  assert.ok(manifest, "installation manifest module must exist");
+  const dir = mkdtempSync(join(tmpdir(), "archive-manifest-update-reference-"));
+  const path = join(dir, "installation-manifest.json");
+  const oldInput = safeInput({ version: "1.0.0", releaseEnvironment: { ARCHIVE_RELEASE_PULL_POLICY: "missing", ARCHIVE_RELEASE_IMAGE_NEXT: "registry/archive-next:1.0.0@sha256:abc" } });
+  const targetInput = safeInput({ version: "1.1.0", releaseEnvironment: { ARCHIVE_RELEASE_PULL_POLICY: "missing", ARCHIVE_RELEASE_IMAGE_NEXT: "registry/archive-next:1.1.0@sha256:def" } });
+  manifest.createInstallationManifest({ path, input: oldInput });
+
+  const started = manifest.beginOperation({ path, type: "update", target: targetInput });
+  assert.equal(started.operation.target.version, "1.1.0");
+  assert.equal(started.version, "1.0.0", "the active release remains the old release until success");
+
+  const completed = manifest.completeUpdateOperation({ path, input: targetInput, previousVersion: "1.0.0", step: "role-smoke-verified" });
+  assert.equal(completed.version, "1.1.0");
+  assert.equal(completed.previousRelease.version, "1.0.0");
+  assert.equal(completed.previousRelease.releaseEnvironment.ARCHIVE_RELEASE_IMAGE_NEXT, oldInput.releaseEnvironment.ARCHIVE_RELEASE_IMAGE_NEXT);
+});
+
+test("an unfamiliar lastSuccessfulStep (left by a failed update) forces a full repair instead of a bogus install resume", async () => {
+  const manifest = await loadManifest();
+  assert.ok(manifest, "installation manifest module must exist");
+  const dir = mkdtempSync(join(tmpdir(), "archive-manifest-unknown-step-"));
+  const path = join(dir, "installation-manifest.json");
+  manifest.createInstallationManifest({ path, input: safeInput() });
+  manifest.beginOperation({ path, type: "update" });
+  manifest.updateLastSuccessfulStep({ path, step: "migrated" }); // update-vocabulary step, unknown to INSTALLATION_STEPS
+  manifest.markInstallationFailed({ path, failedStep: "switched", nextActions: ["Run setup status."] });
+
+  const decision = manifest.decideInstallationResume({ path, input: safeInput() });
+  assert.deepEqual(decision, { action: "repair", reason: "unknown-successful-step" });
+});
+
 test("malformed manifest is never overwritten during a resume decision", async () => {
   const manifest = await loadManifest();
   assert.ok(manifest, "installation manifest module must exist");

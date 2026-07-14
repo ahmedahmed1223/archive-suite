@@ -323,6 +323,26 @@ test("server commands require a recorded release before Docker access", () => {
   assert.match(r.stderr + r.stdout, /No release installation manifest/i);
 });
 
+test("update requires a recorded release before Docker access, and never falls through to the removed not-supported message", () => {
+  const r = run(["update", "--json"], { ARCHIVE_INSTALLATION_MANIFEST_PATH: join(mkdtempSync(join(tmpdir(), "cc-update-missing-")), "installation-manifest.json"), PATH: "", Path: "" });
+  assert.equal(r.status, 1, r.stderr + r.stdout);
+  const result = JSON.parse(r.stdout);
+  assert.equal(result.code, "RELEASE_NOT_INSTALLED");
+  assert.doesNotMatch(r.stdout + r.stderr, /not supported yet/i);
+});
+
+test("update stays development-only for the git-pull path when ARCHIVE_DEVELOPMENT_MODE=1, unaffected by the release update path", () => {
+  const entry = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
+  assert.match(entry, /ARCHIVE_DEVELOPMENT_MODE === "1" \? updateAndRebuild\(\) : releaseUpdate\(\)/);
+});
+
+test("help documents the real release update sequence instead of the old not-supported placeholder", () => {
+  const r = run(["help"]);
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /preflight.*backup.*pull new images.*migrate-safe.*switch.*health/i);
+  assert.doesNotMatch(r.stdout, /release update is not supported yet/i);
+});
+
 test("setup plan validates a declarative configuration deterministically without Docker or writes", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-plan-"));
   const configFile = join(dir, "setup.json");

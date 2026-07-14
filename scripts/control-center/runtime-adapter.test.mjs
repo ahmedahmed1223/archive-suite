@@ -83,6 +83,22 @@ test("Docker runtime adapter returns a programmatic unsupported result without i
   assert.deepEqual(commands, []);
 });
 
+test("Docker runtime adapter delegates update to an injected updateOperation and forwards its result verbatim", async () => {
+  const calls = [];
+  const adapter = createDockerRuntimeAdapter({
+    compose: () => ({ status: 0 }),
+    updateOperation: async (request) => { calls.push(request); return { ok: true, code: "UPDATE_COMPLETE", message: "done", details: {}, nextActions: [] }; },
+  });
+
+  const result = await adapter.update({ path: "manifest.json" });
+
+  assert.deepEqual(result, { ok: true, code: "UPDATE_COMPLETE", message: "done", details: {}, nextActions: [] });
+  assert.deepEqual(calls, [{ path: "manifest.json" }]);
+  // rollback/uninstall remain the programmatic unsupported stub — only
+  // update has a real implementation for Docker so far.
+  assert.deepEqual(adapter.rollback(), { ok: false, supported: false, operation: "rollback", reason: "unsupported" });
+});
+
 test("Docker runtime adapter maps every supported lifecycle operation to Compose", async () => {
   const commands = [];
   const adapter = createDockerRuntimeAdapter({
