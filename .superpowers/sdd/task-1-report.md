@@ -16,6 +16,11 @@
   `edge`. Unknown raw input is redacted before terminal output, invalid plans
   return to the questions before writes, and the summary heading is `Your
   setup summary`.
+- Re-review follow-up: extracted `runGuidedProvisioningFlow` and wired the
+  Control Center's actual `.env` + Docker path as its sole provision callback.
+  The controlled flow test uses explicit `.env` and Docker mocks: `back`/`q`
+  leave both untouched, and `confirm` invokes each once. It also covers `1`
+  as implicit core without duplication and `all` profiles.
 
 ## TDD and verification
 
@@ -26,7 +31,9 @@
   the default was removed before the final run.
 - RED (review follow-up): numeric profile selection, credential-URL redaction,
   and the renamed heading each failed before the implementation was aligned.
-- Final: `node --test scripts/control-center.test.mjs scripts/control-center/*.test.mjs scripts/platform-contract.test.mjs` — 130 passed, 0 failed.
+- RED (re-review): the controlled guided-flow test initially failed because
+  the orchestration export did not exist; it now controls the real callback.
+- Final: `node --test scripts/control-center.test.mjs scripts/control-center/*.test.mjs scripts/platform-contract.test.mjs` — 138 passed, 0 failed.
 - Final: `node --check` passed for `control-center.mjs`, `setup-wizard.mjs`, and `wizard-choice-parser.mjs`; `git diff --check` passed.
 
 ## Scope and isolation

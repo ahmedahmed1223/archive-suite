@@ -14,6 +14,7 @@
 - The summary now requires the literal word `confirm` before provisioning. `back` restarts the questions without changes and `q` cancels. An empty response is not a confirmation, preventing accidental duplicate or automatic installation.
 - TDD evidence: parser tests cover normalization, aliases, numeric selection, `all`/`none`, duplicates, and unknown input; controlled wizard tests cover English help plus confirmation/back/quit behavior. Focused Control Center and parser tests pass locally.
 - Review hardening: the profile contract now exposes `1) core` as already enabled, `2) media` (also `ocr`), and `3) edge` (also `tls`/`public`), so displayed numbers and accepted input cannot drift. Unknown values are replaced by `[REDACTED_INPUT]` before terminal display, preventing pasted credential URLs from leaking. Resolver-invalid interactive choices return to the questions without writes, and the heading is now `Your setup summary`.
+- Re-review hardening: Setup now routes the real `.env`/Docker provisioning callback through one injectable confirmation flow. Controlled tests prove `back` and `q` perform no `.env` or Docker calls, while literal `confirm` invokes the callback once. The same tests assert `1` keeps implicit core un-duplicated and `all` resolves to core, media, and edge.
 
 ## Setup interactive menu result acknowledgement — 2026-07-14
 

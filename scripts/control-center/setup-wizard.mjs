@@ -75,6 +75,15 @@ export async function requestWizardConfirmation({ ask, log = () => {} }) {
   }
 }
 
+// Keep the confirmation decision and the only provisioning callback in one
+// path. This makes back/quit mechanically incapable of reaching .env writes
+// or Docker operations, while the Control Center supplies the real callback.
+export async function runGuidedProvisioningFlow({ ask, log = () => {}, configuration, provision }) {
+  const action = await requestWizardConfirmation({ ask, log });
+  if (action !== "confirm") return { action, result: null };
+  return { action, result: await provision(configuration) };
+}
+
 export async function collectWizardRuntimeChoices({ ask, log = () => {}, existing = {}, contract, platformId }) {
   const defaultPlatform = existing.ARCHIVE_PLATFORM || platformId;
   const mode = await ask(WIZARD_RUNTIME_PROMPTS.mode, existing.ARCHIVE_MODE || "docker");
