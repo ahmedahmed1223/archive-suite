@@ -7,6 +7,16 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## بوابة route/role مشتركة (V1-102H) — مكتمل 2026-07-14
+
+- أُضيف `RouteScopeTest::ROLE_FIXTURE`: خريطة "METHOD uri" ← admin/editor/any لكل مسار مصادَق عليه تحت `/api/v1` (127 مسارًا)، تستخدم نفس آلية `test_every_registered_v1_route_is_classified` الموجودة أصلاً لتصنيف النطاق (V1/ADMIN/EXPERIMENTAL) — لكن كمحور مستقل عن النطاق، لا امتدادًا له.
+- `PUBLIC_ROUTES` (9 مسارات: health، public/openapi.json، public/catalog، share/{token}، review-links/{token}، invitations/{token}/accept، upload-links/{token}، auth/login، auth/refresh) مستبعدة صراحة بقائمة ثابتة، لا باستبطان middleware عبر `gatherMiddleware()` — أبسط وأوثق تدقيقًا من الاعتماد على سلوك Laravel الداخلي لحل الـalias.
+- اختباران جديدان يعيدان نفس نمط `test_every_registered_v1_route_is_classified`/`test_fixture_has_no_stale_entries`: `test_every_authenticated_route_has_expected_role_coverage` يفشل عند إضافة route مصادَق عليه بلا تصنيف في `ROLE_FIXTURE` (ولا في `PUBLIC_ROUTES`)، و`test_role_fixture_has_no_stale_entries` يمنع بقاء إدخالات لمسارات حُذفت.
+- القيمة `any` (صراحة، لا الغياب) تعني "أي دور مصادَق بما فيه viewer" — توثيق قرار متعمد، وهي الأغلبية (86 من 127) لأن معظم القراءة والعمل على سجلات المستخدم نفسه (media jobs، rights، uploads، إلخ) مصمم كذلك.
+- تأكيد عملي أن النطاق (scope) والدور (role) محوران مستقلان كما ينص تصميم 2026-07-14: `system/odbc/*` نطاقه EXPERIMENTAL ودوره admin (بعد V1-102G)، بينما `records/{id}/broadcast-metadata` نطاقه EXPERIMENTAL أيضًا لكن دوره any — لا يمكن اشتقاق أحدهما من الآخر.
+- خارج النطاق موثقًا: هذا الاختبار لا يستدعي كل route فعليًا للتحقق من مطابقة سلوكه HTTP الحقيقي (403/200) للقيمة المُعلنة — ذلك يقع على `RoleMatrixApiTest`/`OdbcReadApiTest` للمجموعات المحمية فعليًا؛ الضمانة هنا هي منع إضافة route جديد بلا توقع موثّق على الإطلاق (لا التحقق السلوكي الشامل لكل route قديم).
+- التحقق: `RouteScopeTest` كاملاً ‏8 اختبارات/19 تأكيدًا، صفر فشل — بما فيها الاختباران الجديدان يمران من أول تشغيل لأن `ROLE_FIXTURE` بُني مباشرة من نتائج grep حقيقية لكل استدعاء `requireAdmin()`/`requireEditor()` في القاعدة الكودية، لا تخمينًا.
+
 ## قصر ODBC على admin (V1-102G) — مكتمل 2026-07-14
 
 - أُضيف `Controller::requireAdmin()` كأول سطر في الدوال الخمس لـ`SystemController`: `odbc()` (probe)، `odbcReadTable()`، `odbcCreateRow()`، `odbcUpdateRow()`، `odbcDeleteRow()`. كانت هذه المسارات محمية فقط بعلَم الميزة `archive.feature:odbc` وبقائمة سماح الجداول (allowlist) داخل `OdbcReadRepository`، بلا أي فحص دور — أي مستخدم مصادَق (حتى viewer) كان يستطيع قراءة/كتابة/حذف صفوف من قاعدة بيانات خارجية عبر ODBC.
