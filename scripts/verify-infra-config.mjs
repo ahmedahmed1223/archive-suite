@@ -34,6 +34,27 @@ function assertExcludes(file, forbidden) {
   assert.doesNotMatch(read(file), new RegExp(escapeRegExp(forbidden)), `${file} should not include ${forbidden}`);
 }
 
+// Regression guard (2026-07-14): an unquoted dotenv value containing
+// whitespace ("ADMIN_NAME=Archive Admin") makes Laravel's strict phpdotenv
+// parser throw "Encountered unexpected whitespace" the moment composer's
+// package:discover hook boots the framework — breaking every Docker-based
+// Laravel test/deploy that copies this file to .env. See
+// docs/ci/regression-ledger.md.
+function assertEnvValuesAreDotenvSafe(file) {
+  for (const line of read(file).split(/\r?\n/)) {
+    const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+    if (!m) continue;
+    const [, key, rawValue] = m;
+    const value = rawValue.trim();
+    if (value === "" || value.startsWith('"') || value.startsWith("'")) continue;
+    const beforeComment = value.split(/\s+#/)[0].trim();
+    assert.ok(
+      !/\s/.test(beforeComment),
+      `${file}: ${key} has an unquoted value containing whitespace ("${value}") — wrap it in quotes.`
+    );
+  }
+}
+
 function assertWorkerInstallsExtension(file, extension) {
   assert.match(
     read(file),
@@ -106,6 +127,23 @@ for (const extension of ["curl", "mbstring", "zip", "pdo", "pdo_pgsql", "ftp"]) 
   assertWorkerInstallsExtension("archive-laravel/Dockerfile.worker", extension);
 }
 assertIncludes("infra/deploy/Caddyfile", 'reverse_proxy {$CADDY_UPSTREAM:frontend:80}');
+
+assertEnvValuesAreDotenvSafe("archive-laravel/.env.example");
+assertEnvValuesAreDotenvSafe("infra/.env.example");
+
+// Regression guard (2026-07-14): a plain `composer:latest` image lacks
+// ext-ftp, which composer.lock requires (league/flysystem-ftp) — composer
+// install fails silently and the live-integration job never boots Laravel.
+assertExcludes("scripts/verify-next-laravel-live.mjs", '"composer:latest"');
+assertIncludes("scripts/verify-next-laravel-live.mjs", "Dockerfile.worker");
+
+// Regression guard (2026-07-14): V1-202 split "laravel" into nginx (no app
+// env vars) + "laravel-fpm" (carries APP_KEY/DB_*/REDIS_*, can run artisan).
+// Any `exec ... laravel php artisan ...` targeting the bare nginx service
+// fails for lack of environment — this silently broke change-admin-password,
+// migrate-status, migrate, and seed-demo until fixed. See
+// docs/ci/regression-ledger.md.
+assertExcludes("scripts/control-center.mjs", '"exec", "-T", "laravel", "php"');
 
 assertIncludes("infra/k8s/network-policy.yaml", "app: server");
 assertIncludes("infra/k8s/network-policy.yaml", "app: frontend");
