@@ -7,6 +7,12 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-406 — Release-blocking task gate — 2026-07-14
+
+- `scripts/verify-release-readiness.mjs` now enforces the full V1 plan, not just historical P0s. A new `tasks-v1-blockers` check fails the gate while any unchecked `**V1-` item remains in `TASKS.md` (optional `V1-X` capability verifications and the B backlog never block). Enforcement applies only in release mode — a `v*` tag pointing at HEAD (the trigger for `release.yml`) or `READINESS_RELEASE=1`; regular CI pushes print a warning with the open-blocker count instead of going permanently red while the declared decision is NO-GO.
+- A new `platform-support-evidence` check rejects any platform in `infra/platform/compatibility.v1.json` claiming `status: "supported"` without an `evidence` reference. Planned/conditional platforms block nothing (disabled features stay free), but promoting a support claim now requires recorded proof, backing the V1-212C gate.
+- TDD: 5 new tests (blocker failure, V1-X/B exemption, CI warning mode, evidence rejection and acceptance); full suite `node --test scripts/verify-release-readiness.test.mjs` 13/13. Live run against the repo confirms 41 open blockers → warning + exit 0 in CI mode, hard failure in release mode.
+
 ## V1-208I — Atomic artifact release update — 2026-07-14
 
 - `setup update` now follows the Docker release lifecycle: immutable-descriptor preflight, legal full backup, verified online pull or offline bundle load, `archive:migrate-safe`, switch, deep health, and an anonymous/authenticated access-boundary smoke check. Development mode retains its separate source rebuild path.

@@ -129,6 +129,87 @@ test("fails when the OpenAPI contract has no paths", () => {
   }
 });
 
+test("release mode fails when TASKS.md has an unchecked V1 blocker", () => {
+  const dir = baselineFixture();
+  try {
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "- [ ] **V1-999 open blocker** — pending\n- [x] **V1-100 done** — done\n"
+    );
+    const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /release-blocking V1 item/);
+    assert.match(r.stderr, /V1-999/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("release mode ignores optional V1-X items and backlog B items", () => {
+  const dir = baselineFixture();
+  try {
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "- [ ] **V1-X01 optional capability** — conditional\n- [ ] **B01** backlog idea\n"
+    );
+    const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
+    assert.doesNotMatch(r.stderr, /release-blocking V1 item/, r.stderr);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("non-release mode only warns about open V1 blockers", () => {
+  const dir = baselineFixture();
+  try {
+    writeFileSync(join(dir, "TASKS.md"), "- [ ] **V1-999 open blocker** — pending\n");
+    const r = run({ READINESS_ROOT: dir });
+    assert.doesNotMatch(r.stderr, /release-blocking V1 item/, r.stderr);
+    assert.match(r.stdout + r.stderr, /V1 release blocker/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("release mode fails when a platform claims supported without evidence", () => {
+  const dir = baselineFixture();
+  try {
+    mkdirSync(join(dir, "infra", "platform"), { recursive: true });
+    writeFileSync(
+      join(dir, "infra", "platform", "compatibility.v1.json"),
+      JSON.stringify({
+        platforms: [{ id: "linux-docker", status: "supported" }],
+      })
+    );
+    const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /"supported" without evidence/);
+    assert.match(r.stderr, /linux-docker/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("release mode accepts supported platforms that carry evidence", () => {
+  const dir = baselineFixture();
+  try {
+    mkdirSync(join(dir, "infra", "platform"), { recursive: true });
+    writeFileSync(
+      join(dir, "infra", "platform", "compatibility.v1.json"),
+      JSON.stringify({
+        platforms: [
+          { id: "linux-docker", status: "supported", evidence: "docs/ops/linux-docker-acceptance.md" },
+          { id: "windows-native", status: "planned" },
+        ],
+      })
+    );
+    const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
+    assert.doesNotMatch(r.stderr, /"supported" without evidence/, r.stderr);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("fails when release.yml has no publish job that needs verify", () => {
   const dir = baselineFixture();
   try {

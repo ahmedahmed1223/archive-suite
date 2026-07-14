@@ -171,6 +171,56 @@ function checkTasksP0() {
   );
 }
 
+// 6b. V1-406: in release mode, no unchecked release-blocking V1 item may remain.
+// Release mode = a v* tag points at HEAD, or READINESS_RELEASE=1 (release.yml
+// runs on tag push, so the tag check covers it; CI pushes only get a warning).
+// V1-X items (optional capability verifications) and B backlog items never block.
+function isReleaseMode() {
+  if (process.env.READINESS_RELEASE === "1") return true;
+  try {
+    return execFileSync("git", ["-C", ROOT, "tag", "--points-at", "HEAD"], { encoding: "utf8" })
+      .split("\n")
+      .some((t) => /^v\d/.test(t.trim()));
+  } catch {
+    return false;
+  }
+}
+
+function checkTasksV1Blockers() {
+  const file = "TASKS.md";
+  if (!exists(file)) return;
+  const offenders = read(file)
+    .split("\n")
+    .filter((line) => /^- \[ \] \*\*V1-(?!X)/.test(line));
+  if (offenders.length === 0) return;
+  if (!isReleaseMode()) {
+    console.warn(
+      `warning: ${offenders.length} open V1 release blocker(s) in TASKS.md (release will be blocked until they close)`
+    );
+    return;
+  }
+  assert.fail(
+    `TASKS.md has unchecked release-blocking V1 item(s), release cannot proceed:\n${offenders.join("\n")}`
+  );
+}
+
+// 6c. V1-406: no platform may claim "supported" without recorded evidence.
+// Planned/conditional platforms never block (disabled features stay free),
+// but flipping one to supported requires an evidence reference (V1-212C).
+function checkPlatformSupportEvidence() {
+  const file = "infra/platform/compatibility.v1.json";
+  if (!exists(file)) return;
+  const contract = json(file);
+  const offenders = (contract.platforms ?? []).filter(
+    (p) => p.status === "supported" && !p.evidence
+  );
+  assert.equal(
+    offenders.length,
+    0,
+    `${file}: platform(s) claim "supported" without evidence: ${offenders.map((p) => p.id).join(", ")}`
+  );
+}
+
 // 7. Every ${VAR:?...} required by docker-compose.yml has a line in .env.example.
 function checkEnvExampleCompleteness() {
   const composeFile = "infra/docker-compose.yml";
@@ -295,6 +345,8 @@ await run("versioning-doc", checkVersioningDoc);
 await run("release-workflow", checkReleaseWorkflow);
 await run("openapi-contract", checkOpenApiContract);
 await run("tasks-p0", checkTasksP0);
+await run("tasks-v1-blockers", checkTasksV1Blockers);
+await run("platform-support-evidence", checkPlatformSupportEvidence);
 await run("env-example-completeness", checkEnvExampleCompleteness);
 await run("node-engine-coherence", checkNodeEngineCoherence);
 await run("script-wiring", checkScriptWiring);
