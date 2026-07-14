@@ -4,7 +4,16 @@ import { expect, test } from '@playwright/test';
 // V1-303/V1-401: automated axe-core gate for the canonical routes, at the
 // project's required breakpoints (375/768/1280). Routes below don't require
 // a live Laravel backend or auth cookie (see next-migration-shell.spec.ts).
-const ROUTES = ['/', '/login', '/help', '/reports', '/settings', '/archive'];
+const ROUTES = [
+  '/',
+  '/login',
+  '/help',
+  '/reports',
+  '/settings',
+  '/archive',
+  '/share/demo-token',
+  '/media/jobs',
+];
 const VIEWPORTS = [
   { name: 'mobile-375', width: 375, height: 812 },
   { name: 'tablet-768', width: 768, height: 1024 },

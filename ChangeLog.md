@@ -11,6 +11,7 @@
 
 - أُضيف `@axe-core/playwright` كتبعية تطوير في `archive-next` (كانت غائبة صراحةً وموثقة كمانع في `.github/workflows/ci.yml` منذ 798be19).
 - سبك جديد `archive-next/e2e/accessibility.spec.ts` يفحص 6 مسارات لا تتطلب Laravel حياً أو كوكي مصادقة (`/`, `/login`, `/help`, `/reports`, `/settings`, `/archive`) عند العتبات الثلاث المطلوبة (375/768/1280) مقابل وسمي `wcag2a`/`wcag2aa`، ويفشل عند أي انتهاك `serious`/`critical`. 18 اختبارًا (6 مسارات × 3 عتبات)، جميعها ناجحة مقابل بناء إنتاجي حقيقي (`pnpm run build` ثم `next start`) — تحقق فعلي وليس تشغيلاً جافاً فقط.
+- توسيع 2026-07-14: أُضيف `/share/demo-token` و`/media/jobs` إلى قائمة المسارات (مُثبَتان أصلاً في `next-migration-shell.spec.ts` كمسارَين يُرسَمان بلا Laravel حي)، فأصبحت البوابة تغطي 8 مسارات. 48 اختباراً (8 مسارات × 3 عتبات × مشروعَي Playwright chromium/mobile-chrome)، جميعها ناجحة.
 - أُدمجت البوابة داخل `scripts/verify-next-laravel-live.mjs` (سطر استدعاء playwright) فتُنفَّذ تلقائيًا ضمن نفس خادم Next الحي الذي تستخدمه وظيفة `live-integration` في CI؛ حُذف تعليق "ponytail" القديم في `ci.yml` الذي كان يوثق التأجيل.
 - أُضيف سكربت جذري `e2e:next:a11y` (بنمط `e2e:next`/`e2e:next:integration` الموجودين) للتشغيل المستقل.
 - خارج النطاق موثقًا: تغطية المسارات المتبقية (records/media/rights/إلخ) ومراجعة الاستجابة البصرية اليدوية الكاملة للتطبيق — هذه تبقى ضمن V1-303 المفتوح جزئيًا.
