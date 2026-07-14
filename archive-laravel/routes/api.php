@@ -114,16 +114,21 @@ Route::prefix('v1')->group(function (): void {
 
     Route::get('/public/catalog', [PublicCatalogController::class, 'index']);
     // Public token endpoints: throttle to blunt token-guessing brute force.
-    Route::get('/share/{token}', [ShareController::class, 'show'])->middleware('throttle:30,1');
-    Route::get('/review-links/{token}', [ReviewLinksController::class, 'show'])->middleware('throttle:30,1');
-    Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept'])->middleware('throttle:30,1');
+    // Each gets its own prefix — Laravel's throttle:X,Y middleware keys
+    // solely on route-domain+IP (ThrottleRequests::resolveRequestSignature),
+    // with no route distinction, so without a distinct prefix every
+    // throttle:-protected route on this app shares one counter per caller
+    // and unrelated traffic on one route silently exhausts another's budget.
+    Route::get('/share/{token}', [ShareController::class, 'show'])->middleware('throttle:30,1,share-view');
+    Route::get('/review-links/{token}', [ReviewLinksController::class, 'show'])->middleware('throttle:30,1,review-link-view');
+    Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept'])->middleware('throttle:30,1,invitation-accept');
     // Public validation for external upload-link recipients (no archive session).
-    Route::get('/upload-links/{token}', [UploadLinksController::class, 'show'])->middleware('throttle:30,1');
+    Route::get('/upload-links/{token}', [UploadLinksController::class, 'show'])->middleware('throttle:30,1,upload-link-view');
 
     // Brute-force guard: contract documents the 429 response on login.
-    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1,login');
     // Refresh-token replay/abuse guard — same 429 class as login.
-    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('throttle:30,1');
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('throttle:30,1,refresh');
 
     // Media streaming: auth only (no per-range audit spam). Range-capable so the
     // browser can stream/seek local archive media over HTTP instead of file://.
