@@ -13,10 +13,11 @@
 1. **RED:** أضيفت اختبارات لوحدة manifest ولعملية `repair` في Docker adapter. فشل التشغيل `7/10` كما هو متوقع: الوحدة غير موجودة و`repair` غير معرّف.
 2. **GREEN:** أضيف schema والوحدة وربط adapter؛ نجح التشغيل المركّز `10/10`.
 3. **RED/Green للتكامل:** أضيف اختبار CLI يثبت أن `plan` و`import-config` لا ينشئان manifest، وأن `install` ثم `repair` يعيدان استخدام manifest آمن واحد. فشل أولًا لأن `install` لم يكن أمرًا معروفًا، ثم نجح بعد الربط.
+4. **تصحيح مراجعة (RED/Green):** فشلت اختبارات جديدة لمفاتيح `apiKey`/`privateKey`/`key`، ولتطابق schema، ولحساب قرار resume قبل الكتابة، ولمنع إعادة Compose بعد آخر خطوة، ولتسجيل وإعادة رمي استثناء Compose. أصبحت خضراء بعد تقوية schema والتنقية والـadapter.
 
 ## التحقق
 
-- `node --test scripts/control-center.test.mjs scripts/control-center/installation-manifest.test.mjs scripts/control-center/runtime-adapter.test.mjs` — 40/40 ناجح.
+- `node --test scripts/control-center.test.mjs scripts/control-center/installation-manifest.test.mjs scripts/control-center/runtime-adapter.test.mjs scripts/platform-contract.test.mjs` — 48/48 ناجح.
 - `node --test scripts/platform-contract.test.mjs` — 4/4 ناجح.
 - `node --check scripts/control-center.mjs`
 - `node --check scripts/control-center/installation-manifest.mjs`
@@ -27,3 +28,9 @@
 
 - لا يوجد تنفيذ Native أو release artifact adapter في هذه الشريحة؛ يرفض `install` و`repair` الوضع Native صراحةً.
 - manifest يسجل digests أو checksums المتاحة في Compose الحالي فقط؛ حل صور الإصدارات online/offline الكامل مؤجل إلى V1-208E.
+
+## تصحيح المراجعة
+
+- schema والتنفيذ متطابقان في عدم قبول artifact بلا digest/checksum، ومسارات بيانات فارغة أو تحمل URL/credential pair أو تسمية/قيمة حساسة.
+- قرار resume يُستخرج من manifest السابق قبل أن يكتب `begin` حالة `in-progress`. يعرف المسار `environment-ready → services-started`؛ وعندما تكون `services-started` آخر خطوة مؤكدة لا يعيد adapter تشغيل Compose.
+- إذا رمى Compose استثناءً، يسجل adapter `services-start` كفاشل مع next action ثم يعيد رمي الخطأ الأصلي. يميّز CLI ذلك عن فشل الكتابة ويعرض `INSTALL_FAILED`.

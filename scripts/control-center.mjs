@@ -125,7 +125,10 @@ function setupInstallOrRepair(operation) {
     }
     const manifest = installationManifest.readInstallationManifest(INSTALLATION_MANIFEST_PATH);
     return renderSetupResult({ ok: true, code: operation === "install" ? "INSTALL_RECORDED" : "REPAIR_RECORDED", message: `${operation === "install" ? "Installation" : "Repair"} completed and recorded safely.`, details: { manifest }, nextActions: ["Run setup health to verify the running stack."] });
-  } catch {
+  } catch (error) {
+    if (error?.controlCenterOperation === "compose") {
+      return renderSetupResult({ ok: false, code: "INSTALL_FAILED", message: "Docker Compose did not complete the requested operation.", details: {}, nextActions: ["Review Docker Compose output and run repair after correcting the failure."] });
+    }
     return renderSetupResult({ ok: false, code: "MANIFEST_WRITE_FAILED", message: "Installation state could not be recorded safely.", details: {}, nextActions: ["Correct the local filesystem issue and run repair."] });
   }
 }

@@ -19,6 +19,7 @@
         "type": "object",
         "additionalProperties": false,
         "required": ["id"],
+        "anyOf": [{ "required": ["digest"] }, { "required": ["checksum"] }],
         "properties": {
           "id": { "type": "string", "minLength": 1 },
           "digest": { "type": "string", "minLength": 1 },
@@ -27,9 +28,22 @@
       }
     },
     "services": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
-    "dataPaths": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } },
-    "lastSuccessfulStep": { "type": ["string", "null"] },
-    "previousVersion": { "type": ["string", "null"] },
+    "dataPaths": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^(?!.*(?:[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Tt][Oo][Kk][Ee][Nn]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn]|[Cc][Oo][Oo][Kk][Ii][Ee]|[Dd][Ss][Nn]|[Cc][Oo][Nn][Nn][Ee][Cc][Tt][Ii][Oo][Nn]|[Uu][Rr][Ll]|[Kk][Ee][Yy])).+$" },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "allOf": [
+          { "not": { "pattern": "^[a-zA-Z][a-zA-Z0-9+.-]*://" } },
+          { "not": { "pattern": "(^|[^\\s:/\\\\])[^\\s:/\\\\]+:[^\\s@]+@" } },
+          { "not": { "pattern": "(?:[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Tt][Oo][Kk][Ee][Nn]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll])" } }
+        ]
+      }
+    },
+    "lastSuccessfulStep": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+    "previousVersion": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
     "operation": {
       "type": "object",
       "additionalProperties": false,
@@ -37,7 +51,7 @@
       "properties": {
         "type": { "enum": ["install", "repair"] },
         "status": { "enum": ["in-progress", "failed", "succeeded"] },
-        "failedStep": { "type": ["string", "null"] },
+        "failedStep": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
         "nextActions": { "type": "array", "items": { "type": "string", "minLength": 1 } }
       }
     }

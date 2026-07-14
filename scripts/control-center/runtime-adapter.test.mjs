@@ -30,6 +30,39 @@ test("Docker runtime adapter records install and repair lifecycle only when a ma
   ]);
 });
 
+test("Docker runtime adapter resumes after the last successful step without rerunning Compose when no next Docker step remains", () => {
+  const calls = [];
+  const adapter = createDockerRuntimeAdapter({
+    compose: () => { calls.push(["compose"]); return { status: 0 }; },
+    manifestStore: {
+      beginInstallationOperation: () => ({ decision: { action: "resume", after: "services-started", nextStep: null } }),
+      updateLastSuccessfulStep: (request) => calls.push(["success", request.step]),
+      markInstallationFailed: () => calls.push(["failed"]),
+    },
+    manifestRequest: { path: "manifest.json", input: { version: "1.2.3" } },
+  });
+
+  assert.deepEqual(adapter.repair(), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(calls, [["success", "services-started"]]);
+});
+
+test("Docker runtime adapter records a compose exception then rethrows the original error", () => {
+  const calls = [];
+  const original = new Error("docker unavailable");
+  const adapter = createDockerRuntimeAdapter({
+    compose: () => { throw original; },
+    manifestStore: {
+      beginInstallationOperation: () => ({ decision: { action: "install" } }),
+      updateLastSuccessfulStep: () => calls.push(["success"]),
+      markInstallationFailed: (request) => calls.push(["failed", request.failedStep, request.nextActions]),
+    },
+    manifestRequest: { path: "manifest.json", input: { version: "1.2.3" } },
+  });
+
+  assert.throws(() => adapter.install(), (error) => error === original);
+  assert.deepEqual(calls, [["failed", "services-start", ["Docker Compose terminated unexpectedly. Review its output and run repair."]]]);
+});
+
 test("Docker runtime adapter returns a programmatic unsupported result without invoking a command", () => {
   const commands = [];
   const adapter = createDockerRuntimeAdapter({
