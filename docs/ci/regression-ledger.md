@@ -32,6 +32,9 @@
 | 2026-07-10 | فشل توثيق: تأكيد على ملف محذوف | assertion ميت بعد حذف الإرث | تحديث `control-center.test.mjs` ليقرأ الواقع لا القائمة القديمة |
 | 2026-07-12 | حاويات الإنتاج المحلي في crash-loop بعد V1-101 | compose يعلن `APP_ENV=production` دون تمرير `ARCHIVE_SECURE_COOKIES`/`ADMIN_*` لكل خدمات Laravel | `verify:infra` + إصلاح `docker-compose.laravel-next.yml` (ae2a954) |
 | 2026-07-12 | نشر صور عند دفع tag دون تشغيل الاختبارات | `docker.yml` كان ينشر على tags بلا بوابة تحقق | `release.yml`: publish `needs: verify`؛ أُزيل مشغّل tags من `docker.yml` (551bb5c) |
+| 2026-07-14 | فشل كل اختبارات Laravel في CI: `Encountered unexpected whitespace at [Archive Admin]` | `ADMIN_NAME=Archive Admin` غير مقتبَسة (تحوي مسافة) في ملفَي `.env.example`؛ محلل phpdotenv الصارم يرفضها فيفشل `package:discover` عند كل بناء | `assertEnvValuesAreDotenvSafe` في `verify:infra` (bfaf338) |
+| 2026-07-14 | فشل وظيفة Live Laravel/Next integration: Laravel لا يُقلع أبدًا | `verify-next-laravel-live.mjs` يستخدم صورة `composer:latest` العامة بلا `ext-ftp` التي يتطلبها `composer.lock` | `verify:infra` يمنع رجوع `"composer:latest"` ويُلزم استخدام `Dockerfile.worker` (bfaf338) |
+| 2026-07-14 | تعذّر تسجيل الدخول بعد `setup.bat` بكل من البيانات الافتراضية وكلمة السر العشوائية | (أ) `DatabaseSeeder::firstOrCreate` لا يُحدّث كلمة سر حساب admin موجود مسبقًا، وكان `deployCanonical()` لا يطبّق كلمة السر المولَّدة حديثًا على القاعدة الحية؛ (ب) بعد تقسيم V1-202 صار `exec` في Control Center يستهدف خدمة `laravel` (nginx بلا متغيرات بيئة) بدل `laravel-fpm` | `verify:infra` يمنع رجوع `exec ... "laravel" "php"`؛ إصلاح المسارات الأربعة + `deployCanonical()` ينتظر الصحة ويطبّق كلمة السر فعليًا (9f6a7b9) |
 
 ## كيف تضيف حارسًا جديدًا
 
