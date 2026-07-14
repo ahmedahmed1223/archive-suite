@@ -1,7 +1,7 @@
 // Runtime adapter contract used by the Control Center. Native adapters may
 // implement it later; this release only supplies the Docker Compose adapter.
 export const RUNTIME_OPERATIONS = [
-  "install", "start", "stop", "restart", "status", "health", "logs", "exec", "update", "rollback", "uninstall",
+  "install", "repair", "start", "stop", "restart", "status", "health", "logs", "exec", "update", "rollback", "uninstall",
 ];
 
 function completed(result, { includeOutput = false } = {}) {
@@ -16,9 +16,19 @@ function unsupported(operation) {
   return { ok: false, supported: false, operation, reason: "unsupported" };
 }
 
-export function createDockerRuntimeAdapter({ compose, health }) {
+export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest } = {}) {
+  const installOrRepair = (operation, request = manifestRequest) => {
+    if (manifestStore && request) manifestStore.beginInstallationOperation({ ...request, operation });
+    const result = completed(compose(["up", "-d", "--build"]));
+    if (manifestStore && request) {
+      if (result.ok) manifestStore.updateLastSuccessfulStep({ ...request, step: "services-started" });
+      else manifestStore.markInstallationFailed({ ...request, failedStep: "services-start", nextActions: ["Check Docker Compose output and run repair."] });
+    }
+    return result;
+  };
   return {
-    install: () => completed(compose(["up", "-d", "--build"])),
+    install: (request) => installOrRepair("install", request),
+    repair: (request) => installOrRepair("repair", request),
     start: () => completed(compose(["up", "-d"])),
     stop: () => completed(compose(["down"])),
     restart: () => completed(compose(["restart"])),

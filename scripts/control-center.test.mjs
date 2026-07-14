@@ -240,6 +240,39 @@ test("setup export-config returns structured JSON when the configured env path c
   assert.equal(r.stderr, "", "JSON failures must not print a stack trace");
 });
 
+test("setup plan and import never create a manifest, while install and repair reuse one safe manifest", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-install-manifest-"));
+  const configFile = join(dir, "setup.json");
+  const manifestFile = join(dir, "installation-manifest.json");
+  writeFileSync(configFile, JSON.stringify(validSetupConfig({ runtimeProfiles: ["core", "media"], capabilities: ["ocr"] })));
+  const env = {
+    ARCHIVE_ENV_PATH: join(dir, ".env"),
+    ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile,
+    ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1",
+    PATH: "", Path: "",
+  };
+
+  for (const command of ["plan", "import-config"]) {
+    const result = run([command, `--config=${configFile}`, "--json"], env);
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    assert.equal(existsSync(manifestFile), false, `${command} must not create a manifest`);
+  }
+
+  const installed = run(["install", `--config=${configFile}`, "--json"], env);
+  assert.equal(installed.status, 0, installed.stderr + installed.stdout);
+  const first = JSON.parse(readFileSync(manifestFile, "utf8"));
+  assert.equal(first.operation.status, "succeeded");
+  assert.ok(!JSON.stringify(first).match(/password|secret|token|credential|_url/i));
+
+  const repaired = run(["repair", `--config=${configFile}`, "--json"], env);
+  assert.equal(repaired.status, 0, repaired.stderr + repaired.stdout);
+  const second = JSON.parse(readFileSync(manifestFile, "utf8"));
+  assert.deepEqual(second.previousVersion, first.previousVersion);
+  assert.deepEqual(second.lastSuccessfulStep, first.lastSuccessfulStep);
+  assert.equal(second.operation.type, "repair");
+  assert.equal(second.operation.status, "succeeded");
+});
+
 test("first-run guide renders quick and advanced setup paths without deploying", () => {
   const r = run(["first-run"], { ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1" });
   assert.equal(r.status, 0);

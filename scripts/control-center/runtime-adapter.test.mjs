@@ -5,7 +5,28 @@ import { RUNTIME_OPERATIONS, createDockerRuntimeAdapter } from "./runtime-adapte
 
 test("Docker runtime adapter declares every lifecycle operation", () => {
   assert.deepEqual(RUNTIME_OPERATIONS, [
-    "install", "start", "stop", "restart", "status", "health", "logs", "exec", "update", "rollback", "uninstall",
+    "install", "repair", "start", "stop", "restart", "status", "health", "logs", "exec", "update", "rollback", "uninstall",
+  ]);
+});
+
+test("Docker runtime adapter records install and repair lifecycle only when a manifest store is supplied", () => {
+  const calls = [];
+  const adapter = createDockerRuntimeAdapter({
+    compose: () => ({ status: 0 }),
+    manifestStore: {
+      beginInstallationOperation: (request) => calls.push(["begin", request.operation]),
+      updateLastSuccessfulStep: (request) => calls.push(["success", request.step]),
+      markInstallationFailed: () => calls.push(["failed"]),
+    },
+    manifestRequest: { path: "manifest.json", input: { version: "1.2.3" } },
+  });
+
+  adapter.install();
+  adapter.repair();
+
+  assert.deepEqual(calls, [
+    ["begin", "install"], ["success", "services-started"],
+    ["begin", "repair"], ["success", "services-started"],
   ]);
 });
 

@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208D — installation manifest قابل للاستئناف — مكتمل 2026-07-14
+
+- أضيف schema مغلق `infra/setup/installation-manifest.v1.schema.json` ووحدة `scripts/control-center/installation-manifest.mjs`. يسجل الـmanifest حقولًا معلنة فقط: الإصدار، المصدر، الوضع والمنصة، runtime profiles وcapabilities، digests/checksums المتاحة، الخدمات المملوكة ومسارات البيانات، آخر خطوة ناجحة والإصدار السابق، وحالة install/repair مع إجراءاته التالية.
+- الكتابة ذرية عبر ملف مؤقت ثم rename؛ لا تستبدل JSON السابق عند فشل الكتابة. ترفض الوحدة المفاتيح والقيم الحساسة، وURLs أو مسارات بيانات ذات credentials، ولا تعرض الأسرار عند الفشل.
+- أضيف `install --config=<file>` و`repair --config=<file>` لمسار Docker المتاح حاليًا؛ يعيدان استخدام manifest الواحد ويحتفظان بـ`previousVersion` و`lastSuccessfulStep` حتى تنجح خطوة جديدة. يبقى `plan` و`import-config` صِرفين بلا manifest أو Docker، ولا تنفذ هذه الشريحة update/rollback/uninstall.
+- دليل TDD: RED لوحدة manifest و`repair` غير الموجودين ثم GREEN لإنشاء آمن، رفض secrets، الكتابة الذرية، الاستئناف بعد فشل، repair idempotent، وعدم إنشاء manifest في plan/import. التحقق: `node --test scripts/control-center.test.mjs scripts/control-center/installation-manifest.test.mjs scripts/control-center/runtime-adapter.test.mjs` ‏40/40، و`node --test scripts/platform-contract.test.mjs` ‏4/4، و`node --check` للوحدات، و`git diff --check`.
+
 ## V1-208C — schema وخطة تثبيت declarative — مكتمل 2026-07-14
 
 - أُضيف `infra/platform/setup-config.v1.schema.json`، وهو schema إصدار 1.0 مغلق يغطي `mode` و`platform` و`source` و`intent` و`access` وruntime profiles وcapabilities وخدمتي البيانات والتخزين المحلي، فلا يقبل حقول credentials أو keys إضافية.
