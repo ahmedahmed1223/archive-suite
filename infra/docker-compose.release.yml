@@ -62,7 +62,14 @@ services:
     image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL_REVERB:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
-    environment: { REVERB_SERVER_HOST: "0.0.0.0", REVERB_SERVER_PORT: "8080", REVERB_APP_ID: "${REVERB_APP_ID:?Set REVERB_APP_ID in .env}", REVERB_APP_KEY: "${REVERB_APP_KEY:?Set REVERB_APP_KEY in .env}", REVERB_APP_SECRET: "${REVERB_APP_SECRET:?Set REVERB_APP_SECRET in .env}" }
+    environment:
+      <<: *laravel-env
+      BROADCAST_CONNECTION: reverb
+      REVERB_SERVER_HOST: "0.0.0.0"
+      REVERB_SERVER_PORT: "8080"
+      REVERB_APP_ID: "${REVERB_APP_ID:?Set REVERB_APP_ID in .env}"
+      REVERB_APP_KEY: "${REVERB_APP_KEY:?Set REVERB_APP_KEY in .env}"
+      REVERB_APP_SECRET: "${REVERB_APP_SECRET:?Set REVERB_APP_SECRET in .env}"
     ports: ["${REVERB_SERVER_PUBLISHED_PORT:-8080}:8080"]
     depends_on: { laravel-fpm: { condition: service_started } }
     networks: [archive]
@@ -82,9 +89,11 @@ services:
     profiles: ["edge"]
     image: ${ARCHIVE_RELEASE_IMAGE_CADDY:-archive-suite/optional:0.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
+    environment: { DOMAIN: "${DOMAIN:-localhost}", ACME_EMAIL: "${ACME_EMAIL:-admin@example.com}", CADDY_UPSTREAM: next:3000 }
     ports: ["80:80", "443:443"]
+    volumes: ["./deploy/Caddyfile:/etc/caddy/Caddyfile:ro", "caddy_data:/data", "caddy_config:/config"]
     depends_on: { next: { condition: service_started } }
     networks: [archive]
 
-volumes: { postgres_data: {}, storage: {} }
+volumes: { postgres_data: {}, storage: {}, caddy_data: {}, caddy_config: {} }
 networks: { archive: { driver: bridge } }
