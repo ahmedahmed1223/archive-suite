@@ -11,6 +11,11 @@
   still rejects public access without an explicit edge selection.
 - Replaced the confirmation default with literal `confirm`; `back` restarts
   choices without writes and `q` cancels. Empty input cannot install.
+- Review follow-up: profile numbering now reserves `1` for implicit `core`, so
+  `2`/`media`/`ocr` select `media` and `3`/`edge`/`tls`/`public` select
+  `edge`. Unknown raw input is redacted before terminal output, invalid plans
+  return to the questions before writes, and the summary heading is `Your
+  setup summary`.
 
 ## TDD and verification
 
@@ -19,7 +24,9 @@
   did not use the explicit confirmation gate.
 - RED: empty confirmation test caught an unsafe implicit `confirm` default;
   the default was removed before the final run.
-- Final: `node --test scripts/control-center.test.mjs scripts/control-center/*.test.mjs scripts/platform-contract.test.mjs` — 128 passed, 0 failed.
+- RED (review follow-up): numeric profile selection, credential-URL redaction,
+  and the renamed heading each failed before the implementation was aligned.
+- Final: `node --test scripts/control-center.test.mjs scripts/control-center/*.test.mjs scripts/platform-contract.test.mjs` — 130 passed, 0 failed.
 - Final: `node --check` passed for `control-center.mjs`, `setup-wizard.mjs`, and `wizard-choice-parser.mjs`; `git diff --check` passed.
 
 ## Scope and isolation

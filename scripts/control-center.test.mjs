@@ -473,6 +473,22 @@ test("wizard accepts flexible named, numbered, and aliased option choices with E
   assert.ok([...prompts, ...notices].every((text) => !/[\u0600-\u06FF]/.test(text)), "wizard choice help must be English");
 });
 
+test("wizard profile numbers and aliases follow the core-implicit contract", async () => {
+  const answers = ["docker", "linux-docker", "online", "public", "/srv/archive-suite/profiles", "2, 3", "none"];
+  const numbered = await collectWizardRuntimeChoices({
+    ask: async (_prompt, fallback) => answers.shift() || fallback,
+    existing: {}, contract: loadPlatformContract(), platformId: "linux-docker",
+  });
+  assert.deepEqual(numbered.candidate.runtimeProfiles, ["core", "media", "edge"]);
+
+  const aliasAnswers = ["docker", "linux-docker", "online", "public", "/srv/archive-suite/profiles", "ocr, public", "none"];
+  const aliased = await collectWizardRuntimeChoices({
+    ask: async (_prompt, fallback) => aliasAnswers.shift() || fallback,
+    existing: {}, contract: loadPlatformContract(), platformId: "linux-docker",
+  });
+  assert.deepEqual(aliased.candidate.runtimeProfiles, ["core", "media", "edge"]);
+});
+
 test("wizard confirmation requires confirm and never provisions after back or q", async () => {
   for (const [answer, expected] of [["back", "back"], ["q", "quit"], ["confirm", "confirm"]]) {
     let provisions = 0;
@@ -496,6 +512,8 @@ test("guided setup uses the explicit confirmation gate before it can provision",
   const controlCenter = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
   assert.match(controlCenter, /requestWizardConfirmation\(\{ ask, log \}\)/);
   assert.match(controlCenter, /if \(confirmation !== "confirm"\) \{[\s\S]*return/);
+  assert.match(controlCenter, /Your setup summary/);
+  assert.doesNotMatch(controlCenter, /Choice summary/);
   assert.doesNotMatch(controlCenter, /confirm\("Save this configuration and install the signed release\?", "y"\)/);
 });
 

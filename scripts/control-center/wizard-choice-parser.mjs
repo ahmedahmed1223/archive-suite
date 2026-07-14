@@ -13,6 +13,13 @@ function splitTokens(input) {
     .filter(Boolean);
 }
 
+function safeUnknownToken() {
+  // Interactive errors are displayed before the Setup-wide result redactor
+  // runs. Do not echo arbitrary input here: a pasted URL can contain a user,
+  // password, token, or internal hostname.
+  return "[REDACTED_INPUT]";
+}
+
 // This parser deliberately recognizes only declared names, numbers, and
 // aliases. Similar-looking input is rejected instead of guessed so a wizard
 // choice cannot unexpectedly expose a service or consume extra resources.
@@ -36,7 +43,7 @@ export function parseWizardChoices(input, { options, aliases = {}, allowAll = fa
   for (const token of tokens) {
     const numericIndex = /^\d+$/.test(token) ? Number(token) - 1 : null;
     const canonical = numericIndex === null ? lookup.get(token) : canonicalOptions[numericIndex];
-    if (!canonical) return error("CHOICE_UNKNOWN", `Unknown choice "${token}". Use one of: ${canonicalOptions.join(", ")}.`);
+    if (!canonical) return error("CHOICE_UNKNOWN", `Unknown choice ${safeUnknownToken()}. Use one of: ${canonicalOptions.join(", ")}.`);
     selected.add(canonical);
   }
   return canonicalOptions.filter((option) => selected.has(option));

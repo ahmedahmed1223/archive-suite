@@ -4,14 +4,19 @@
 
 import { parseWizardChoices } from "./wizard-choice-parser.mjs";
 
-const OPTIONAL_PROFILE_CHOICES = ["media", "edge"];
+// Numbering intentionally includes implicit core: 2/media/ocr resolves to
+// media and 3/edge/tls/public resolves to edge. Keep this list and the help
+// text aligned; generic optional indexing would make 2 mean edge instead.
+const PROFILE_CHOICES = ["core", "media", "edge"];
 const CAPABILITY_CHOICES = ["ocr", "ai", "observability"];
 
 const PROFILE_ALIASES = Object.freeze({
   media: "media",
   "media processing": "media",
+  ocr: "media",
   tls: "edge",
   "public tls": "edge",
+  public: "edge",
   ingress: "edge",
 });
 
@@ -36,10 +41,11 @@ export const WIZARD_RUNTIME_PROMPTS = Object.freeze({
 const CHOICE_HELP = Object.freeze({
   profiles: [
     "Optional runtime profiles (core is always enabled):",
-    "  1) media — media processing and OCR workloads; validate capacity first.",
-    "  2) edge — public TLS ingress; select it explicitly only for public access.",
+    "  1) core — required and already enabled; you do not need to select it.",
+    "  2) media — media processing and OCR workloads; validate capacity first.",
+    "  3) edge — public TLS ingress; select it explicitly only for public access.",
     "  Enter names or numbers separated by commas, +, ;, or |. Type all or none.",
-    "  Aliases: tls = edge. This choice never adds edge automatically.",
+    "  Aliases: ocr = media; tls or public = edge. This choice never adds edge automatically.",
   ].join("\n"),
   capabilities: [
     "Optional capabilities (these do not enable Docker services by themselves):",
@@ -80,7 +86,7 @@ export async function collectWizardRuntimeChoices({ ask, log = () => {}, existin
   const storagePath = await ask(WIZARD_RUNTIME_PROMPTS.storage, existing.ARCHIVE_STORAGE_PATH || contract.dataPaths[defaultFamily].storage);
   const optionalProfiles = await collectChoice({
     ask, log, prompt: WIZARD_RUNTIME_PROMPTS.profiles, defaultValue: existing.ARCHIVE_COMPOSE_PROFILES || "none",
-    options: OPTIONAL_PROFILE_CHOICES, aliases: PROFILE_ALIASES, help: CHOICE_HELP.profiles,
+    options: PROFILE_CHOICES, aliases: PROFILE_ALIASES, help: CHOICE_HELP.profiles,
   });
   const optionalCapabilities = await collectChoice({
     ask, log, prompt: WIZARD_RUNTIME_PROMPTS.capabilities, defaultValue: existing.ARCHIVE_CAPABILITIES || "none",
@@ -94,7 +100,7 @@ export async function collectWizardRuntimeChoices({ ask, log = () => {}, existin
       source,
       intent: "fresh",
       access,
-      runtimeProfiles: ["core", ...optionalProfiles],
+      runtimeProfiles: ["core", ...optionalProfiles.filter((profile) => profile !== "core")],
       capabilities: optionalCapabilities,
       dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
       storage: { driver: "local", path: storagePath },
