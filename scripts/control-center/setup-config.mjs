@@ -105,14 +105,25 @@ export function createSetupConfiguration({ loadPlatformContract }) {
     const storage = requireObject(config.storage, "storage");
     if (Object.keys(storage).length !== 2 || storage.driver !== "local") throw new SetupConfigError("CONFIG_INVALID", "storage must use the supported local driver.", { field: "storage" });
     const storagePath = requireSafeStoragePath(storage.path);
+    const source = requireEnum(config.source, "source", SOURCES);
+    const access = requireEnum(config.access, "access", ACCESS_MODES);
+    const edgeEnabled = runtimeProfiles.includes("edge");
+    // `edge` owns the public TLS ingress. Keep local/intranet deployments
+    // private by default and refuse an accidental public exposure without it.
+    if (access === "public" && !edgeEnabled) {
+      throw new SetupConfigError("PUBLIC_ACCESS_REQUIRES_EDGE", "Public access requires the edge runtime profile for TLS ingress.", { field: "access", requiredProfile: "edge" });
+    }
+    if (access !== "public" && edgeEnabled) {
+      throw new SetupConfigError("EDGE_REQUIRES_PUBLIC_ACCESS", "The edge runtime profile is reserved for public TLS access; remove edge or choose public access.", { field: "runtimeProfiles", profile: "edge", access });
+    }
 
     return {
       schemaVersion: SETUP_SCHEMA_VERSION,
       mode,
       platform: platformId,
-      source: requireEnum(config.source, "source", SOURCES),
+      source,
       intent: requireEnum(config.intent, "intent", INTENTS),
-      access: requireEnum(config.access, "access", ACCESS_MODES),
+      access,
       runtimeProfiles: profileIds.filter((id) => runtimeProfiles.includes(id)),
       capabilities: capabilityIds.filter((id) => capabilities.includes(id)),
       dataServices: { postgres: { enabled: true }, redis: { enabled: true } },

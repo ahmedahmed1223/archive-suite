@@ -11,15 +11,20 @@
   أساسيتان. يبقى `core` مفروضاً و`media` و`edge` اختياريين صريحين.
 - التنفيذ بعد الخطة يمرر الإعداد المعياري إلى مسار إصدار Docker `install`؛ لا
   يستعمل مسار Compose التطويري. Native مخطط فقط ويرفض التنفيذ قبل أي كتابة أو Docker.
+- **تصحيح المراجعة:** طبقة `setup-wizard.mjs` تجمع إجابات runtime القابلة للاختبار
+  عبر prompts عربية موجزة، ثم تبني candidate واحداً للـresolver. أصبحت سياسة
+  الوصول جزءاً من resolver: `public` يتطلب `edge` و`edge` محصور بـ`public`؛
+  المخالفات تعيد codes ثابتة قبل أي كتابة أو Docker.
 
 ## TDD والتحقق
 
 1. أضيفت اختبارات parity لـ`wizard --config` ثم شُغلت كـRED: فشلت لأن wizard
    كان يتجاهل config ويعود إلى deploy.
 2. أضيف اختبار resolver المباشر ثم شُغل كـRED: فشل لأن `planInput` لم يكن موجوداً.
-3. بعد التنفيذ نجحت:
+3. أضيف اختبار controlled prompt/TTY-flow لطبقة الإجابات، واختبارا رفض
+   `public` بلا `edge` و`edge` مع intranet، ثم نجحت:
 
-   `node --test scripts/control-center.test.mjs` — 34/34
+   `node --test scripts/control-center.test.mjs` — 37/37
 
 4. نجح `node --check scripts/control-center.mjs` و`node --check
    scripts/control-center/setup-config.mjs`.
@@ -29,5 +34,5 @@
 
 ## ملاحظة دمج
 
-لم يُعدل `TASKS.md` لأنه كان معدلاً مسبقاً في شجرة العمل من مهمة متزامنة؛ يلزم
-تحديث سطر V1-208F ووسم المهمة مكتملة عند الدمج من دون ضم تعديلات الغير.
+حُدّث سطر V1-208F فقط ووُسم مكتمل باستخدام staging جزئي؛ لم تُضم حزمة backlog
+غير المتعلقة بالمهمة الموجودة مسبقاً في `TASKS.md`.
