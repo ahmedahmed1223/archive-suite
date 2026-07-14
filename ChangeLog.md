@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208C — schema وخطة تثبيت declarative — مكتمل 2026-07-14
+
+- أُضيف `infra/platform/setup-config.v1.schema.json`، وهو schema إصدار 1.0 مغلق يغطي `mode` و`platform` و`source` و`intent` و`access` وruntime profiles وcapabilities وخدمتي البيانات والتخزين المحلي، فلا يقبل حقول credentials أو keys إضافية.
+- أضيفت طبقة `scripts/control-center/setup-config.mjs` التي تتحقق من الإعداد عبر عقد V1-208A الفعلي: `core` إلزامي، ولا يجوز تمرير capability كـruntime profile، ولا profile/capability خارج ما تعلنه المنصة، ولا mode لا يطابق platform. يستعمل `plan` و`import-config` القراءة والتحقق فقط؛ لا `.env` ولا Docker ولا إنشاء مسارات. `export-config` يبني إعدادًا قانونيًا من `.env` ويستبعد كل secret وpassword وtoken وURL حساس.
+- أضيفت أوامر Control Center: `plan --config=<file>` للخطة الحتمية الصِرفة، و`import-config --config=<file>` لطباعة الإعداد المعياري فقط، و`export-config` لتصدير الاختيارات الحالية غير السرية. مع `--json` ينتج كل مسار الحقول نفسها تمامًا: `ok`, `code`, `message`, `details`, `nextActions`، ويعود بفشل غير صفري عند رفض الإعداد.
+- دليل TDD: بدأت اختبارات CLI كـRED، وفشلت 3 حالات لأن الأوامر كانت غير معروفة/لا تنتج JSON، ثم أصبحت GREEN بعد التنفيذ. تغطي الاختبارات خطة حتمية، عدم إنشاء `.env` تحت PATH فارغ، منع platform/profile غير السليم قبل الكتابة، وغياب تسريب password/URL. التحقق: `node --test scripts/control-center.test.mjs` ‏23/23، و`node --test scripts/platform-contract.test.mjs` ‏4/4، و`node --check` للوحدتين، و`git diff --check`.
+
 ## V1-208B — تفكيك Control Center إلى وحدات — مكتمل 2026-07-14
 
 - بقي `scripts/control-center.mjs` نقطة الدخول العامة نفسها للأوامر والقائمة التفاعلية، لكنه أصبح shell تركيبيًا يستدعي وحدات مركزة تحت `scripts/control-center/`: `cli.mjs` لتحليل الأعلام والأمر، `configuration.mjs` لقراءة/كتابة `.env` والنسخ الاحتياطي وإخفاء الأسرار، `docker-compose.mjs` لاكتشاف Compose وتمرير الـprofiles المتحقق منها، و`operations.mjs` لعمليات الخادم والهجرات والنسخ الاحتياطية والتشخيص/التحديث.

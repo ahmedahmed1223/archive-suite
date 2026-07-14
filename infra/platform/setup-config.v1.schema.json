@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "archive-suite/setup-config.v1",
+  "title": "Archive Suite V1 declarative setup configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "mode", "platform", "source", "intent", "access", "runtimeProfiles", "capabilities", "dataServices", "storage"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "mode": { "enum": ["docker", "native"] },
+    "platform": { "type": "string", "minLength": 1 },
+    "source": { "enum": ["online", "offline"] },
+    "intent": { "enum": ["fresh", "repair", "reconfigure", "update", "rollback", "uninstall", "reconnect-data"] },
+    "access": { "enum": ["local", "intranet", "public"] },
+    "runtimeProfiles": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "capabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "dataServices": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["postgres", "redis"],
+      "properties": {
+        "postgres": { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } },
+        "redis": { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["driver", "path"],
+      "properties": {
+        "driver": { "const": "local" },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

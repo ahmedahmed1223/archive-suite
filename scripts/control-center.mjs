@@ -31,6 +31,7 @@ import { createConfiguration, validateAdminPassword } from "./control-center/con
 import { createDockerCompose } from "./control-center/docker-compose.mjs";
 import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs";
 import { createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
+import { createSetupConfiguration } from "./control-center/setup-config.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -51,6 +52,22 @@ const output = { log, ok, warn, err, titleLine };
 const { args: ARGS, hasFlag, flagValue, command: cliCommand } = createCli(process.argv);
 const configuration = createConfiguration({ envPath: ENV_PATH, output });
 const { readEnvRaw, readEnv, writeEnv, maskValue, genSecret, genPassword, isPlaceholder } = configuration;
+const setupConfiguration = createSetupConfiguration({ loadPlatformContract });
+
+function renderSetupResult(result) {
+  if (hasFlag("json")) {
+    console.log(JSON.stringify(result));
+  } else {
+    (result.ok ? ok : err)(result.message);
+    if (result.details && Object.keys(result.details).length) log(JSON.stringify(result.details, null, 2));
+    for (const action of result.nextActions || []) log(`Next: ${action}`);
+  }
+  return result.ok ? 0 : 1;
+}
+
+function setupPlan() { return renderSetupResult(setupConfiguration.plan(flagValue("config"))); }
+function setupImportConfig() { return renderSetupResult(setupConfiguration.importConfig(flagValue("config"))); }
+function setupExportConfig() { return renderSetupResult(setupConfiguration.exportConfig({ envPath: ENV_PATH, env: readEnv() })); }
 
 // ─── Process helpers ──────────────────────────────────────────────────────────
 const PNPM = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
@@ -676,7 +693,7 @@ const COMMANDS = {
   status: serverStatus, start: serverStart, stop: serverStop, restart: serverRestart,
   logs: () => serverLogs({ follow: false }), health: healthCheck,
   // Config
-  config: showConfig, "set-url": setPublicUrl,
+  config: showConfig, "set-url": setPublicUrl, plan: setupPlan, "import-config": setupImportConfig, "export-config": setupExportConfig,
   // Security
   "generate-password": printGeneratedPassword, password: printGeneratedPassword,
   "change-admin-password": changeAdminPassword, "set-admin-password": changeAdminPassword, "admin-password": changeAdminPassword,
@@ -714,6 +731,9 @@ const COMMANDS = {
     console.log(`  ${C.c}start | stop | restart${C.x}  Manage the Docker stack (infra/docker-compose.yml)`);
     console.log(`  ${C.c}status | health | logs${C.x}  Monitor the running stack (health: /api/v1/health via Next)`);
     console.log(`  ${C.c}config${C.x}           View .env (secrets masked)`);
+    console.log(`  ${C.c}plan --config=<file>${C.x}  Validate a setup config and print a read-only deterministic plan`);
+    console.log(`  ${C.c}import-config --config=<file>${C.x}  Validate and print normalized setup configuration (no writes)`);
+    console.log(`  ${C.c}export-config${C.x}    Export current non-secret setup choices from .env`);
     console.log(`  ${C.c}set-url${C.x}          Set APP_BASE_URL + PUBLIC_DOMAIN + DOMAIN`);
     console.log(`  ${C.c}generate-password${C.x}  Print a strong password without changing .env`);
     console.log(`  ${C.c}change-admin-password${C.x}  Update ADMIN_EMAIL/PASSWORD and apply to Laravel when running`);
