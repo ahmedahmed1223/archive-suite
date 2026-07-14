@@ -25,7 +25,7 @@ function success(code, message, details, nextActions = []) {
   return { ok: true, code, message, details, nextActions };
 }
 
-function manifestIoFailure() {
+function manifestIoFailure(details = {}) {
   // Do not include a filesystem error string here: it may contain a local
   // path or a credential-bearing URL. The CLI's JSON contract must never
   // turn a manifest exception into an unstructured rejection or leak it.
@@ -33,6 +33,7 @@ function manifestIoFailure() {
     "UPDATE_MANIFEST_IO_FAILED",
     "Update state could not be recorded safely.",
     ["Correct the local manifest storage issue, confirm the running version with setup status, then retry the update."],
+    details,
   );
 }
 
@@ -182,12 +183,22 @@ export function createReleaseUpdate({
         "Review setup health and setup logs before retrying.",
       ], { runningVersion: restoredPreviousRelease ? previousVersion : "unknown", imagesSwitched: !restoredPreviousRelease, restoredPreviousRelease });
     };
+    const restoreAfterManifestIo = async (cause) => {
+      let restoration;
+      try { restoration = await restorePreviousRelease({ oldAdapter, newAdapter, manifest, target: input, cause }); }
+      catch { restoration = { ok: false }; }
+      return manifestIoFailure({
+        previousVersion,
+        runningVersion: restoration?.ok ? previousVersion : "unknown",
+        restoredPreviousRelease: restoration?.ok === true,
+      });
+    };
 
     const switched = newAdapter.start();
     if (!switched.ok) {
       return restore("switched", "SWITCH_FAILED", "Docker Compose did not complete switching to the new release.", "switch");
     }
-    { const failed = recordStep("switched"); if (failed) return failed; }
+    { const failed = recordStep("switched"); if (failed) return restoreAfterManifestIo("manifest-switched"); }
 
     // 6. Health + role-based smoke. Scope limit (documented, not silent): the
     // full multi-role smoke harness is V1-303/V1-307 territory. This reuses
@@ -198,20 +209,20 @@ export function createReleaseUpdate({
     if (!health.ok) {
       return restore("health-verified", "HEALTH_CHECK_FAILED", "The new version did not pass its health check.", "health");
     }
-    { const failed = recordStep("health-verified"); if (failed) return failed; }
+    { const failed = recordStep("health-verified"); if (failed) return restoreAfterManifestIo("manifest-health"); }
 
     // Role smoke is deliberately injected: deployments may have different
     // role matrices, while this lifecycle must always gate the switch on the
     // same explicit, testable contract. It only runs after deep health.
     const smoke = await runRoleSmoke({ adapter: newAdapter, manifest, release });
     if (!smoke.ok) return restore("role-smoke-verified", "ROLE_SMOKE_FAILED", smoke.message || "The new version did not pass role-based smoke checks.", "role-smoke");
-    { const failed = recordStep("role-smoke-verified"); if (failed) return failed; }
+    { const failed = recordStep("role-smoke-verified"); if (failed) return restoreAfterManifestIo("manifest-role-smoke"); }
 
     // 7. Success — record the new version, keep previousVersion for a future
     // rollback (V1-208J). Nothing here prunes or removes the previous
     // version's images; Docker's own layer cache keeps them untouched.
     try { manifestStore.completeUpdateOperation({ path: manifestPath, input, previousVersion, step: "role-smoke-verified" }); }
-    catch { return manifestIoFailure(); }
+    catch { return restoreAfterManifestIo("manifest-complete"); }
     return success(
       "UPDATE_COMPLETE",
       `Updated from ${previousVersion} to ${release.descriptor.version}.`,

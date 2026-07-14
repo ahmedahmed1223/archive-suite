@@ -36,6 +36,7 @@ import { collectWizardRuntimeChoices, runGuidedProvisioningFlow } from "./contro
 import * as installationManifest from "./control-center/installation-manifest.mjs";
 import { ReleaseDescriptorError, loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
 import { createReleaseUpdate } from "./control-center/update-release.mjs";
+import { createRoleSmoke } from "./control-center/role-smoke.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -292,17 +293,9 @@ async function updateHealthCheck() {
   return { ok: (result.status ?? 1) === 0, status: result.status };
 }
 async function updateRoleSmoke() {
-  // A release must retain the anonymous/authenticated access boundary after
-  // deep health succeeds. `/auth/me` is deliberately protected: an anonymous
-  // request must remain rejected, so this probes a real role boundary without
-  // placing an operator token in Setup or its manifest/logs.
-  try {
-    const response = await fetch(`${appUrl()}/api/v1/auth/me`, { signal: AbortSignal.timeout(5000) });
-    const ok = response.status === 401 || response.status === 403;
-    return { ok, checkedRoles: ["anonymous", "authenticated"], message: ok ? undefined : `Expected protected auth boundary (401/403), received HTTP ${response.status}.` };
-  } catch {
-    return { ok: false, checkedRoles: ["anonymous", "authenticated"], message: "Could not verify the anonymous/authenticated access boundary." };
-  }
+  // This token is supplied only to the update process environment. It is
+  // never written into .env, a manifest, JSON output, or diagnostics.
+  return createRoleSmoke({ baseUrl: appUrl(), accessToken: process.env.ARCHIVE_UPDATE_SMOKE_TOKEN })();
 }
 async function restorePreviousUpdateRelease({ oldAdapter, newAdapter }) {
   // `down` first removes any partial target containers/workers. The old

@@ -13,6 +13,7 @@
 - A failed switch, health check, or smoke check stops the unsafe target containers and automatically recreates the pinned previous release. The manifest keeps the active release until success, records the attempted target while an update is in progress, and stores a complete safe previous-release reference after success; images are never pruned.
 - Manifest read/write failures now return the redacted `UPDATE_MANIFEST_IO_FAILED` result envelope, including JSON mode, rather than rejecting with a raw filesystem error. Existing manifests without a pinned prior-release reference fail closed before an update.
 - TDD coverage includes switch/health/smoke restoration, ordered health-then-smoke gating, target/previous reference recording, and begin/step/fail/complete manifest I/O failures. Final Control Center suite: 139 passing, 0 failing; `node --check` and `git diff --check` pass.
+- Review hardening: any manifest write failure after the target has switched now restores the pinned prior release before returning `UPDATE_MANIFEST_IO_FAILED`. Role smoke now requires both a real anonymous denial and an authenticated `/auth/me` acceptance using `ARCHIVE_UPDATE_SMOKE_TOKEN`, which is process-only and never persisted, rendered, or included in diagnostics.
 
 ## Setup wizard flexible choices and explicit confirmation — 2026-07-14
 
