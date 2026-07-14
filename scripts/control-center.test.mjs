@@ -4,6 +4,8 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createSetupConfiguration } from "./control-center/setup-config.mjs";
+import { loadPlatformContract } from "./platform-contract.mjs";
 
 // Smoke tests for the Control Center CLI. They exercise the real binary through
 // its non-interactive subcommand router (no module refactor needed) so the menu,
@@ -154,6 +156,62 @@ test("setup plan validates a declarative configuration deterministically without
   assert.equal(imported.status, 0, imported.stderr + imported.stdout);
   assert.deepEqual(JSON.parse(imported.stdout).details, result.details.configuration);
   assert.equal(existsSync(envFile), false, "import-config must not create .env");
+});
+
+test("wizard config mode has parity with the non-interactive plan for every supported choice family", () => {
+  const cases = [
+    { runtimeProfiles: ["core"], source: "online", access: "local", storage: "/srv/archive-suite/local" },
+    { runtimeProfiles: ["core", "media"], source: "offline", access: "intranet", storage: "/srv/archive-suite/media" },
+    { runtimeProfiles: ["core", "edge"], source: "online", access: "public", storage: "/srv/archive-suite/edge" },
+    { runtimeProfiles: ["core", "media", "edge"], source: "offline", access: "public", storage: "/srv/archive-suite/full" },
+  ];
+
+  for (const [index, choice] of cases.entries()) {
+    const dir = mkdtempSync(join(tmpdir(), `cc-wizard-parity-${index}-`));
+    const configFile = join(dir, "setup.json");
+    const envFile = join(dir, ".env");
+    const manifestFile = join(dir, "installation-manifest.json");
+    writeFileSync(configFile, JSON.stringify(validSetupConfig({
+      ...choice,
+      storage: { driver: "local", path: choice.storage },
+    })));
+    const env = { ARCHIVE_ENV_PATH: envFile, ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile, PATH: "", Path: "" };
+
+    const planned = run(["plan", `--config=${configFile}`, "--json"], env);
+    const wizard = run(["wizard", `--config=${configFile}`, "--json"], env);
+    assert.equal(wizard.status, 0, wizard.stderr + wizard.stdout);
+    assert.deepEqual(JSON.parse(wizard.stdout), JSON.parse(planned.stdout), `wizard parity case ${index}`);
+    assert.equal(existsSync(envFile), false, "wizard validation must not create .env");
+    assert.equal(existsSync(manifestFile), false, "wizard validation must not create a manifest");
+  }
+});
+
+test("wizard config mode keeps a planned native choice read-only before execution", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-wizard-invalid-"));
+  const configFile = join(dir, "setup.json");
+  const envFile = join(dir, ".env");
+  writeFileSync(configFile, JSON.stringify(validSetupConfig({ mode: "native", platform: "linux-native" })));
+
+  const r = run(["wizard", `--config=${configFile}`, "--json"], { ARCHIVE_ENV_PATH: envFile, PATH: "", Path: "" });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const result = JSON.parse(r.stdout);
+  assert.equal(result.code, "PLAN_READY");
+  assert.match(JSON.stringify(result.nextActions), /install/i);
+  assert.equal(existsSync(envFile), false, "planned native selection must not write .env");
+});
+
+test("wizard answers use the declarative planner resolver rather than a second selection rule", () => {
+  const setup = createSetupConfiguration({ loadPlatformContract });
+  const answers = validSetupConfig({
+    source: "offline",
+    access: "public",
+    runtimeProfiles: ["core", "media", "edge"],
+    capabilities: ["ocr", "observability"],
+    storage: { driver: "local", path: "/srv/archive-suite/wizard" },
+  });
+  const planned = setup.planInput(answers);
+  assert.equal(planned.ok, true);
+  assert.deepEqual(planned.details.configuration, answers);
 });
 
 test("setup plan rejects a platform that does not match its mode before writes", () => {

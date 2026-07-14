@@ -93,8 +93,10 @@ function manifestInput(configuration, release) {
   };
 }
 
-function setupInstallOrRepair(operation) {
-  const imported = setupConfiguration.importConfig(flagValue("config"));
+function setupInstallOrRepair(operation, configurationInput = null) {
+  const imported = configurationInput
+    ? setupConfiguration.importInput(configurationInput)
+    : setupConfiguration.importConfig(flagValue("config"));
   if (!imported.ok) return renderSetupResult(imported);
   const configuration = imported.details;
   if (configuration.mode !== "docker") {
@@ -510,9 +512,14 @@ async function deployCanonical() {
 }
 
 // ─── Guided setup wizard ──────────────────────────────────────────────────────
-// Step-by-step first-run path: checks → questions → provision → deploy → verify.
+// Step-by-step first-run path: choices → checks → provision → signed release → verify.
 // Non-interactive shells (CI, piped stdin) fall back to the plain deploy.
 async function guidedSetup() {
+  // `wizard --config` is the non-interactive form of the same first-run
+  // journey.  It deliberately delegates to the declarative planner: a CI or
+  // support operator can review exactly the result the wizard would use,
+  // without creating .env, a manifest, data paths, or touching Docker.
+  if (flagValue("config")) return setupPlan();
   if (!process.stdin.isTTY) {
     warn("No interactive terminal detected — falling back to 'deploy' with generated defaults.");
     return deployCanonical();
@@ -520,20 +527,26 @@ async function guidedSetup() {
   titleLine("Guided setup — Masar wizard");
   log("This wizard walks you through the full first-run in 5 steps:");
   log(`  ${C.d}1) Environment check   2) Your answers   3) Provision .env${C.x}`);
-  log(`  ${C.d}4) Build & start       5) Verify & next steps${C.x}`);
+  log(`  ${C.d}4) Install signed release   5) Verify & next steps${C.x}`);
   log("");
 
-  // Step 1 — environment check (read-only)
-  log(`${C.b}Step 1/5 — Environment check${C.x}`);
-  const doctorStatus = await runDoctor();
-  if (doctorStatus !== 0) {
-    err("Fix the critical issues above, then run the wizard again.");
-    return doctorStatus;
-  }
-
-  // Step 2 — questions (defaults are safe; Enter accepts them)
+  // Step 2 — questions. The resulting object is always resolved by the same
+  // declarative planner used by `setup plan --config`; this is deliberately
+  // not a second set of wizard-only validation rules.
   log(`\n${C.b}Step 2/5 — Configuration questions${C.x}`);
   const existing = readEnv();
+  const contract = loadPlatformContract();
+  const currentPlatform = existing.ARCHIVE_PLATFORM || (process.platform === "win32" ? "windows-10-11-docker" : "linux-docker");
+  log("اختيارات التشغيل: Docker مدعوم لمسار الإصدار الحالي؛ Native معروض للتخطيط فقط ولا يثبت خدمات بعد.");
+  log(`  ${contract.platforms.map((platform) => `${platform.id} (${platform.mode}, ${platform.status})`).join("; ")}`);
+  const mode = await ask("Runtime mode (docker/native)", existing.ARCHIVE_MODE || "docker");
+  const platform = await ask("Platform id", currentPlatform);
+  const source = await ask("Release source (online/offline; offline requires a verified bundle)", existing.ARCHIVE_SETUP_SOURCE || "online");
+  const access = await ask("Access (local/intranet/public; edge enables public TLS)", existing.ACCESS_MODE || "local");
+  log("خدمات البيانات: PostgreSQL وRedis أساسيتان للتطبيق وتبقيان مفعّلتين تلقائياً.");
+  const selectedPlatform = contract.platforms.find((candidate) => candidate.id === platform);
+  const storageDefault = existing.ARCHIVE_STORAGE_PATH || contract.dataPaths[selectedPlatform?.dataPathFamily || (process.platform === "win32" ? "windows" : "linux")].storage;
+  const storagePath = await ask("Local storage path (no URL or credentials)", storageDefault);
   const email = await ask("Admin login email", existing.ADMIN_EMAIL || "admin@example.com");
   let password = await ask("Admin password (blank = generate a strong one)", "");
   let generatedPassword = false;
@@ -545,34 +558,80 @@ async function guidedSetup() {
   const publicUrl = await ask("Public URL (blank = local only)", existing.APP_BASE_URL && /^https?:\/\//.test(existing.APP_BASE_URL) ? existing.APP_BASE_URL : "");
   if (publicUrl && !/^https?:\/\//.test(publicUrl)) { err("Public URL must start with http:// or https://"); return 1; }
   const optionalProfiles = await ask(
-    "Optional runtime profiles (blank = core only; media = media processing/OCR and extra resources; edge = public access/TLS)",
+    "Optional profiles (blank = core only; media = OCR/media resources; edge = public TLS)",
     existing.ARCHIVE_COMPOSE_PROFILES || ""
   );
-  let profiles;
-  try {
-    profiles = resolveComposeProfiles(loadPlatformContract(), optionalProfiles);
-  } catch (error) {
-    err(error.message);
-    return 1;
+  const optionalCapabilities = await ask("Optional capabilities (ocr/ai/observability; capabilities are not Compose profiles)", existing.ARCHIVE_CAPABILITIES || "");
+  const splitChoice = (value) => String(value).split(",").map((item) => item.trim()).filter(Boolean);
+  const candidate = {
+    schemaVersion: "1.0", mode, platform, source, intent: "fresh", access,
+    runtimeProfiles: ["core", ...splitChoice(optionalProfiles)],
+    capabilities: splitChoice(optionalCapabilities),
+    dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
+    storage: { driver: "local", path: storagePath },
+  };
+  const planned = setupConfiguration.planInput(candidate);
+  if (!planned.ok) return renderSetupResult(planned);
+  const resolved = planned.details.configuration;
+
+  // Step 1 is deliberately run after resolving the requested platform. That
+  // lets a planned Native choice remain inspectable even on a host without
+  // Docker, while Docker choices still receive their platform-specific checks.
+  log(`\n${C.b}Step 1/5 — Environment check (read-only)${C.x}`);
+  const doctorStatus = await runDoctor({ mode: resolved.mode, platformId: resolved.platform });
+  if (doctorStatus !== 0) {
+    err("Fix the critical issues above, then run the wizard again.");
+    return doctorStatus;
   }
 
   log("");
   log(`${C.b}Summary${C.x}`);
+  log(`  Mode/platform: ${resolved.mode} / ${resolved.platform}`);
+  log(`  Source/access: ${resolved.source} / ${resolved.access}`);
+  log(`  Storage: ${resolved.storage.path} (local)`);
+  log("  Data services: PostgreSQL + Redis (required)");
   log(`  Admin email:  ${email}`);
   log(`  Password:     ${generatedPassword ? `${C.d}(generated — shown after deploy)${C.x}` : "(as typed)"}`);
   log(`  App port:     ${port}`);
   log(`  Public URL:   ${publicUrl || `${C.d}http://localhost:${port} (local)${C.x}`}`);
-  log(`  Runtime profiles: ${profiles.join(", ") || "core only"}`);
+  log(`  Runtime profiles: ${resolved.runtimeProfiles.join(", ")}`);
+  log(`  Capabilities: ${resolved.capabilities.join(", ") || "none"}`);
+  log("  Plan validated by the same resolver as `setup plan --config` (no changes yet).");
   if (!(await confirm("Apply this configuration and deploy?", "y"))) return log("Cancelled — nothing was changed.");
+  if (resolved.mode !== "docker") {
+    return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Native installation is planned and cannot be executed yet; no files or services were changed.", { mode: resolved.mode }));
+  }
 
-  // Step 3 — provision .env with the answers; deploy fills remaining secrets
+  // Step 3 — provision only after the common resolver accepted every choice.
   log(`\n${C.b}Step 3/5 — Provision configuration${C.x}`);
   if (!existsSync(ENV_PATH)) {
     if (!existsSync(ENV_EXAMPLE)) { err(`Neither ${ENV_PATH} nor ${ENV_EXAMPLE} exists.`); return 1; }
     copyFileSync(ENV_EXAMPLE, ENV_PATH);
     ok(`Created ${ENV_PATH} from .env.example`);
   }
-  const updates = { ADMIN_EMAIL: email, ADMIN_PASSWORD: password, NEXT_PUBLIC_PORT: port, ARCHIVE_COMPOSE_PROFILES: profiles.join(",") };
+  const envBefore = readEnv();
+  const updates = {
+    ADMIN_EMAIL: email,
+    ADMIN_PASSWORD: password,
+    NEXT_PUBLIC_PORT: port,
+    ARCHIVE_MODE: resolved.mode,
+    ARCHIVE_PLATFORM: resolved.platform,
+    ARCHIVE_SETUP_SOURCE: resolved.source,
+    ARCHIVE_SETUP_INTENT: resolved.intent,
+    ACCESS_MODE: resolved.access,
+    ARCHIVE_COMPOSE_PROFILES: resolved.runtimeProfiles.filter((id) => id !== "core").join(","),
+    ARCHIVE_CAPABILITIES: resolved.capabilities.join(","),
+    ARCHIVE_STORAGE_PATH: resolved.storage.path,
+  };
+  if (isPlaceholder(envBefore.POSTGRES_PASSWORD)) updates.POSTGRES_PASSWORD = genPassword();
+  if (isPlaceholder(envBefore.REDIS_PASSWORD)) updates.REDIS_PASSWORD = genPassword();
+  if (isPlaceholder(envBefore.REVERB_APP_ID)) updates.REVERB_APP_ID = genSecret(8);
+  if (isPlaceholder(envBefore.REVERB_APP_KEY)) updates.REVERB_APP_KEY = genSecret(16);
+  if (isPlaceholder(envBefore.REVERB_APP_SECRET)) updates.REVERB_APP_SECRET = genSecret(32);
+  if (isPlaceholder(envBefore.LARAVEL_APP_KEY)) updates.LARAVEL_APP_KEY = `base64:${randomBytes(32).toString("base64")}`;
+  if (updates.POSTGRES_PASSWORD && (envBefore.DATABASE_URL || "").includes("CHANGE_ME_POSTGRES_PASSWORD")) {
+    updates.DATABASE_URL = envBefore.DATABASE_URL.replaceAll("CHANGE_ME_POSTGRES_PASSWORD", updates.POSTGRES_PASSWORD);
+  }
   if (publicUrl) {
     updates.APP_BASE_URL = publicUrl;
     const host = publicUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
@@ -580,10 +639,11 @@ async function guidedSetup() {
   }
   if (!writeEnv(updates)) return 1;
 
-  // Step 4 — deploy (generates remaining secrets, builds, starts)
-  log(`\n${C.b}Step 4/5 — Build & start the stack${C.x}`);
-  const deployStatus = await deployCanonical();
-  if (deployStatus !== 0) { err("Deploy failed — see the messages above. Re-run the wizard after fixing them."); return deployStatus; }
+  // Step 4 — release installation. It uses the V1-208E immutable release
+  // adapter, never the development source-build Compose path.
+  log(`\n${C.b}Step 4/5 — Install signed release${C.x}`);
+  const deployStatus = setupInstallOrRepair("install", resolved);
+  if (deployStatus !== 0) { err("Install failed — see the messages above. Run setup repair after correcting it."); return deployStatus; }
   if (generatedPassword) {
     log("");
     ok(`Your admin password: ${C.b}${password}${C.x}  ${C.d}(store it now — shown once)${C.x}`);
@@ -640,12 +700,12 @@ function firstRunGuide() {
 }
 
 // ─── Doctor — environment pre-flight check ───────────────────────────────────
-async function runDoctor() {
+async function runDoctor({ mode: requestedMode, platformId: requestedPlatformId } = {}) {
   titleLine("Doctor — environment pre-flight check");
   let issues = 0;
-  const mode = flagValue("mode");
-  const platformId = flagValue("platform");
-  const hasPlatformFilter = hasFlag("mode") || hasFlag("platform");
+  const mode = requestedMode ?? flagValue("mode");
+  const platformId = requestedPlatformId ?? flagValue("platform");
+  const hasPlatformFilter = requestedMode !== undefined || requestedPlatformId !== undefined || hasFlag("mode") || hasFlag("platform");
   let selectedPlatforms = null;
   if ((hasFlag("mode") && !mode) || (hasFlag("platform") && !platformId)) {
     err("Doctor filters require a value: --mode=docker|native or --platform=<id>.");
@@ -848,7 +908,8 @@ const COMMANDS = {
     console.log(`  ${C.c}setup change-admin-password --generate${C.x}`);
     console.log("");
     console.log(`${C.b}  Commands (canonical Laravel + Next.js stack):${C.x}`);
-    console.log(`  ${C.c}wizard${C.x}           Guided first-run setup (checks -> questions -> deploy -> verify)`);
+    console.log(`  ${C.c}wizard${C.x}           Guided first-run setup (checks -> choices -> signed release -> verify)`);
+    console.log(`  ${C.c}wizard --config=<file>${C.x}  Validate the same wizard choices non-interactively (read-only)`);
     console.log(`  ${C.c}quick${C.x}            Deploy + health check in one step`);
     console.log(`  ${C.c}first-run${C.x}        Show the quick/advanced first-run guide`);
     console.log(`  ${C.c}doctor [--mode=docker|native] [--platform=<id>]${C.x}  Read-only platform contract + pre-flight checks`);

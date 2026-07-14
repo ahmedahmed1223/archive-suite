@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208F — واجهة Setup wizard الشاملة — مكتمل 2026-07-14
+
+- صار `setup wizard --config=<file>` المسار غير التفاعلي للمعالج: يستدعي `setup plan` نفسه حرفياً، فينتج العقد والـplan والـcodes نفسها بلا إنشاء `.env` أو manifest أو مسارات بيانات أو استدعاء Docker.
+- تستدعي إجابات الواجهة التفاعلية الدالة المشتركة `planInput` في `setup-config.mjs` قبل أي كتابة. تعرض الخيارات المعلنة في العقد: Docker/Native والمنصة والمصدر online/offline ونمط الوصول وprofiles (`core` إلزامي و`media`/`edge` اختياريان) وcapabilities والتخزين المحلي، وتوضح بالعربية أن PostgreSQL وRedis خدمتا البيانات الأساسيتان المفعّلتان تلقائياً. Native يبقى للتخطيط فقط ويرفض التنفيذ قبل الكتابة أو Docker.
+- بعد قبول الخطة لا يستدعي المعالج مسار Compose التطويري؛ يجهز `.env` ثم يمرر الاختيار المعياري إلى `install` الخاص بإصدار Docker الموقّع. يبقى `wizard` القديم بلا config متوافقاً مع وضع التطوير الصريح فقط.
+- دليل TDD: اختبارات RED لمسار `wizard --config` الغائب ولدالة resolver المباشرة، ثم GREEN. تغطي parity بين wizard والخطة لكل core/media/edge، online/offline، local/intranet/public ومسارات تخزين مختلفة، وتتحقق من عدم الكتابة وعدم إنشاء manifest. التحقق: `node --test scripts/control-center.test.mjs` ‏34/34 و`node --check` للوحدات و`git diff --check`.
+
 ## V1-208E — Docker release adapter — مكتمل 2026-07-14
 
 - أضيف عقد إصدار مغلق versioned في `infra/platform/release.v1.json` وschema مرافق له. لا يقبل إلا مراجع online بصيغة `image:version@sha256:<digest>`، ويرفض التكرار، غياب خدمات `core`، اختلاف semantic version، والحقول أو القيم الحساسة.

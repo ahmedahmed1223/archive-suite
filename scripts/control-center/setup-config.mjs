@@ -127,16 +127,16 @@ export function createSetupConfiguration({ loadPlatformContract }) {
     catch (error) { throw new SetupConfigError("CONFIG_INVALID", `Configuration file is not valid JSON: ${error.message}.`, { path }); }
   };
 
-  const importConfig = (path) => {
+  const importInput = (input) => {
     try {
-      const configuration = normalize(readConfig(path));
+      const configuration = normalize(input);
       return success("CONFIG_IMPORTED", "Configuration is valid and normalized; no files or services were changed.", configuration, ["Review the normalized configuration.", "Run setup plan --config=<file> to create a read-only plan."]);
     } catch (error) { return failure(error); }
   };
 
-  const plan = (path) => {
+  const planInput = (input) => {
     try {
-      const configuration = normalize(readConfig(path));
+      const configuration = normalize(input);
       const plan = [
         "Validate the declarative setup configuration.",
         `Prepare ${configuration.mode} deployment for ${configuration.platform} from ${configuration.source} source.`,
@@ -145,6 +145,19 @@ export function createSetupConfiguration({ loadPlatformContract }) {
       ];
       return success("PLAN_READY", "Deterministic setup plan created; no files, services, or data paths were changed.", { configuration, plan }, ["Review the plan.", "Installation is intentionally not implemented in V1-208C."]);
     } catch (error) { return failure(error); }
+  };
+
+  // Both the wizard and a JSON file use this exact resolver.  Keeping the
+  // path-reading wrapper outside the resolver prevents choice drift between
+  // interactive and non-interactive Setup.
+  const importConfig = (path) => {
+    try { return importInput(readConfig(path)); }
+    catch (error) { return failure(error); }
+  };
+
+  const plan = (path) => {
+    try { return planInput(readConfig(path)); }
+    catch (error) { return failure(error); }
   };
 
   const exportConfig = ({ envPath, env }) => {
@@ -174,5 +187,5 @@ export function createSetupConfiguration({ loadPlatformContract }) {
 
   const errorResult = (code, message, details = {}) => failure(new SetupConfigError(code, message, details));
 
-  return { importConfig, plan, exportConfig, errorResult };
+  return { importConfig, importInput, plan, planInput, exportConfig, errorResult };
 }
