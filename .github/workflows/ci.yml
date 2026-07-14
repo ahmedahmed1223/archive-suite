@@ -96,16 +96,11 @@ jobs:
 
       # Launches a Laravel container (self-provisions .env from .env.example,
       # migrates+seeds NextIntegrationSeeder) plus a Next.js production build,
-      # then runs the Playwright integration spec against both. See
+      # then runs the integration spec and the axe-core a11y gate
+      # (e2e/accessibility.spec.ts) against both. See
       # scripts/verify-next-laravel-live.mjs.
       - name: Run live Laravel/Next integration
         run: pnpm run verify:laravel-next:live
-
-      # ponytail: no dedicated axe/a11y suite exists in archive-next and
-      # @axe-core/playwright is not an installed dependency (checked
-      # archive-next/package.json, 2026-07-13). Deferred rather than adding a
-      # new dependency here -- add @axe-core/playwright + a smoke spec
-      # (login page + home) when a11y coverage is prioritized.
 
       - name: Upload Playwright artifacts
         if: failure()
