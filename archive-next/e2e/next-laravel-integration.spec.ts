@@ -1,4 +1,4 @@
-import { expect, request as playwrightRequest, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import type { Cookie } from '@playwright/test';
 
 const shareToken = process.env.ARCHIVE_E2E_SHARE_TOKEN ?? 'next-laravel-share';
@@ -13,20 +13,26 @@ const password = process.env.ARCHIVE_E2E_PASSWORD ?? 'password123';
 // each test's context locally (no extra network round trip).
 let sessionCookie: Cookie | undefined;
 
-test.beforeAll(async () => {
-  const apiContext = await playwrightRequest.newContext({
+test.beforeAll(async ({ browser }) => {
+  // A real browser context (not the standalone `request` API context) —
+  // matches how the previous per-test page.request.post() successfully
+  // captured the cookie. A bare APIRequestContext's storageState() did not
+  // reliably surface the Set-Cookie from this rewritten response in CI;
+  // browser-context cookies() is the same mechanism the working per-test
+  // version relied on.
+  const setupContext = await browser.newContext({
     baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000',
   });
 
-  const response = await apiContext.post('/api/v1/auth/login', {
+  const response = await setupContext.request.post('/api/v1/auth/login', {
     data: { email, password },
   });
   expect(response.ok()).toBeTruthy();
 
-  sessionCookie = (await apiContext.storageState()).cookies.find((c) => c.name === 'va_refresh');
+  sessionCookie = (await setupContext.cookies()).find((c) => c.name === 'va_refresh');
   expect(sessionCookie).toBeDefined();
 
-  await apiContext.dispose();
+  await setupContext.close();
 });
 
 test.beforeEach(async ({ context }) => {
