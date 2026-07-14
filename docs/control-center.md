@@ -56,13 +56,14 @@ node scripts/control-center.mjs change-admin-password --email=admin@example.com 
 | `media` | ocr | OCR jobs (heavy PaddleOCR image). Without it, OCR media jobs fail with a job-level error — the stack still boots fine, since `laravel-fpm`/`laravel-worker` only call the OCR service lazily per-job, never at startup |
 | `edge` | caddy (`docker-compose.yml` only) | Public TLS termination |
 
-Control Center's `compose()` passes `--profile media --profile edge` by default so `docker
-compose up` behavior for existing operators is unchanged. Override with the
-`ARCHIVE_COMPOSE_PROFILES` environment variable (comma-separated list; set it to an empty
-string for core-only):
+Control Center starts the core stack by default. The Setup wizard records an explicit
+optional selection in `ARCHIVE_COMPOSE_PROFILES`; a shell value (comma-separated) overrides
+it for one command. `media` enables optional media processing/OCR and its resource burden;
+`edge` enables public TLS termination. Capabilities such as `ocr` and `ai` are never Docker
+Compose profiles:
 
 ```bash
-ARCHIVE_COMPOSE_PROFILES= node scripts/control-center.mjs start   # core only
+node scripts/control-center.mjs start                              # core only
 ARCHIVE_COMPOSE_PROFILES=media node scripts/control-center.mjs start  # core + OCR, no Caddy
 ```
 

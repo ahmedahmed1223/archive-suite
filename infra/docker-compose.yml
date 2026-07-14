@@ -201,8 +201,8 @@ services:
       - archive
 
   ocr:
-    # V1-209: gated behind the `media` profile — heavy PaddleOCR image, only
-    # needed when OCR jobs run. laravel-fpm/laravel-worker keep OCR_SERVICE_URL
+    # V1-208A: OCR is a capability gated by the `media` runtime profile, never
+    # an independent Docker Compose profile. laravel-fpm/laravel-worker keep OCR_SERVICE_URL
     # set unconditionally; when this service is absent, OcrClient::extractText()
     # (app/Services/Media/OcrClient.php) just fails that one media job with a
     # RuntimeException at call time — it is never touched at container boot.
