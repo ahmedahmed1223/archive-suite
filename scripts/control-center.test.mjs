@@ -109,6 +109,76 @@ test("server commands reject capabilities as Compose profiles before Docker acce
   assert.match(r.stderr + r.stdout, /capabilities cannot be enabled as Docker Compose profiles/i);
 });
 
+test("setup plan validates a declarative configuration deterministically without Docker or writes", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-plan-"));
+  const configFile = join(dir, "setup.json");
+  const envFile = join(dir, ".env");
+  const config = {
+    schemaVersion: "1.0",
+    mode: "docker",
+    platform: "linux-docker",
+    source: "offline",
+    intent: "fresh",
+    access: "local",
+    runtimeProfiles: ["core", "media"],
+    capabilities: ["ocr", "observability"],
+    dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
+    storage: { driver: "local", path: "/srv/archive-suite/storage" },
+  };
+  writeFileSync(configFile, JSON.stringify(config));
+
+  const r = run(["plan", `--config=${configFile}`, "--json"], { ARCHIVE_ENV_PATH: envFile, PATH: "", Path: "" });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const result = JSON.parse(r.stdout);
+  assert.deepEqual(Object.keys(result), ["ok", "code", "message", "details", "nextActions"]);
+  assert.equal(result.ok, true);
+  assert.equal(result.code, "PLAN_READY");
+  assert.deepEqual(result.details.configuration.runtimeProfiles, ["core", "media"]);
+  assert.equal(existsSync(envFile), false, "plan must not create .env");
+
+  const imported = run(["import-config", `--config=${configFile}`, "--json"], { ARCHIVE_ENV_PATH: envFile, PATH: "", Path: "" });
+  assert.equal(imported.status, 0, imported.stderr + imported.stdout);
+  assert.deepEqual(JSON.parse(imported.stdout).details, result.details.configuration);
+  assert.equal(existsSync(envFile), false, "import-config must not create .env");
+});
+
+test("setup plan rejects invalid contract options before writes", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-plan-invalid-"));
+  const configFile = join(dir, "setup.json");
+  const envFile = join(dir, ".env");
+  writeFileSync(configFile, JSON.stringify({
+    schemaVersion: "1.0", mode: "docker", platform: "linux-native", source: "online", intent: "fresh", access: "local",
+    runtimeProfiles: ["ocr"], capabilities: [],
+    dataServices: { postgres: { enabled: true }, redis: { enabled: true } }, storage: { driver: "local", path: "/srv/archive-suite/storage" },
+  }));
+
+  const r = run(["plan", `--config=${configFile}`, "--json"], { ARCHIVE_ENV_PATH: envFile, PATH: "", Path: "" });
+  assert.notEqual(r.status, 0);
+  const result = JSON.parse(r.stdout);
+  assert.deepEqual(Object.keys(result), ["ok", "code", "message", "details", "nextActions"]);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /capabilit|platform/i);
+  assert.equal(existsSync(envFile), false, "invalid input must fail before writing .env");
+});
+
+test("setup export-config emits a safe canonical configuration or a clear absent result", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-export-"));
+  const envFile = join(dir, ".env");
+  let r = run(["export-config", "--json"], { ARCHIVE_ENV_PATH: envFile, PATH: "", Path: "" });
+  assert.notEqual(r.status, 0);
+  assert.equal(JSON.parse(r.stdout).code, "CONFIG_NOT_FOUND");
+
+  writeFileSync(envFile, "ARCHIVE_COMPOSE_PROFILES=media\nACCESS_MODE=local\nPOSTGRES_PASSWORD=never-export-this\nREDIS_URL=redis://:also-secret@redis:6379\n");
+  r = run(["export-config", "--json"], { ARCHIVE_ENV_PATH: envFile, PATH: "", Path: "" });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const result = JSON.parse(r.stdout);
+  const serialized = JSON.stringify(result);
+  assert.equal(result.code, "CONFIG_EXPORTED");
+  assert.ok(!serialized.includes("never-export-this"));
+  assert.ok(!serialized.includes("also-secret"));
+  assert.ok(!/password|token|secret|_url/i.test(JSON.stringify(result.details)));
+});
+
 test("first-run guide renders quick and advanced setup paths without deploying", () => {
   const r = run(["first-run"], { ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1" });
   assert.equal(r.status, 0);
