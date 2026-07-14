@@ -24,6 +24,10 @@ class UploadLinksController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'label' => ['nullable', 'string', 'max:200'],
             'folder' => ['nullable', 'string', 'max:255'],
@@ -56,8 +60,12 @@ class UploadLinksController extends Controller
         ], 201);
     }
 
-    public function revoke(string $id): JsonResponse
+    public function revoke(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $link = DB::table('upload_links')->where('id', $id)->first();
 
         if (! $link instanceof stdClass) {

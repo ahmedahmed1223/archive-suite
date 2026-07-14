@@ -7,6 +7,16 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## إغلاق بقية مصفوفة RBAC (V1-102F) — مكتمل 2026-07-14
+
+- أُضيف `Controller::requireEditor()` كأول سطر في كل دالة كتابة (POST/PATCH/DELETE) في ثمانية متحكمات كانت مفتوحة لأي دور مصادَق منذ V1-102 الأصلي: `TagNodesController` (store/update/destroy/reorder/merge/move)، `VocabularyController` (store/destroy)، `CollectionsController` (store/destroy)، `RelationsController` (store/update/destroy)، `TypesController` (store/destroy)، `AutomationRulesController` (store/update/destroy/run)، `IngestController` (scan/ftpPull/smbPull)، `UploadLinksController` (store/revoke).
+- نقاط القراءة (index/show/graph) بقيت مفتوحة لأي دور مصادَق عمدًا (تصفح الأرشيف لا يحتاج editor)، وكذلك `POST /types/{id}/check-field-acl` — فحص صلاحية حقل للمستخدم الحالي (read semantics رغم فعل POST)، ليس كتابة؛ `TypesControllerTest` القائم يمارسها بدور viewer دون توقع 403.
+- ثلاث دوال (`RelationsController::destroy`، `TypesController::destroy`، `UploadLinksController::revoke`) لم تكن تستقبل `Request` أصلاً؛ أُضيف كمعامل أول (Laravel يحقنه عبر type-hint بغض النظر عن الترتيب، معامل المسار `{id}` يبقى مربوطًا بالاسم فقط).
+- `RoleMatrixApiTest` أضاف 24 اختبارًا جديدًا: رفض viewer لكل route كتابة في المجموعات الثمانية + دورة حياة editor كاملة لكل مجموعة (إنشاء→تعديل→حذف أو ما يعادلها).
+- إصلاح جانبي اكتشفه هذا التغيير: `tests/Feature/Api/V1/TagNodesControllerTest.php` كان ينشئ مستخدم اختبار عبر `User::factory()->create()` بلا `role` (فيرث القيمة الافتراضية `viewer` من المهاجرة) ثم `actingAs()` — كانت ستفشل كل اختبارات الكتابة فيه بـ403 بعد هذا التغيير؛ أُصلح إلى `['role' => 'editor']`.
+- التحقق: نطاق مركّز (`RoleMatrixApiTest` + ثمانية ملفات اختبار المتحكمات المتأثرة + `RouteScopeTest`) ‏99 اختبارًا ناجحًا/472 تأكيدًا، صفر فشل.
+- خارج النطاق موثقًا: V1-102G (تقييد ODBC على admin) وV1-102H (بوابة CI تربط تصنيف الأدوار تلقائيًا) مهمتان منفصلتان في `TASKS.md`.
+
 ## بوابة axe-core للوصولية (V1-401 CI gates، جزء من V1-303) — مكتمل 2026-07-14
 
 - أُضيف `@axe-core/playwright` كتبعية تطوير في `archive-next` (كانت غائبة صراحةً وموثقة كمانع في `.github/workflows/ci.yml` منذ 798be19).

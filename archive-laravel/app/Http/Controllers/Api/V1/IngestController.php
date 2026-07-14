@@ -18,8 +18,12 @@ class IngestController extends Controller
     ) {
     }
 
-    public function scan(): JsonResponse
+    public function scan(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $result = $this->scanner->scan();
 
         return response()->json([
@@ -31,6 +35,10 @@ class IngestController extends Controller
 
     public function ftpPull(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'host' => ['required', 'string'],
             'port' => ['sometimes', 'integer', 'min:1', 'max:65535'],
@@ -66,6 +74,10 @@ class IngestController extends Controller
 
     public function smbPull(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'share' => ['required', 'string'],
             'path' => ['sometimes', 'string'],

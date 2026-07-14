@@ -27,6 +27,10 @@ class TagNodesController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         if (! $request->has('parent')) {
             return response()->json(['ok' => false, 'error' => 'The parent field is required.'], 422);
         }
@@ -64,6 +68,10 @@ class TagNodesController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'tag' => ['sometimes', 'string', 'max:200'],
             'parent' => ['sometimes', 'string', 'max:200'],
@@ -92,6 +100,10 @@ class TagNodesController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $userId = $this->userId($request);
 
         $deleted = DB::table('tag_nodes')
@@ -115,6 +127,10 @@ class TagNodesController extends Controller
 
     public function reorder(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'order' => ['required', 'array'],
             'order.*.id' => ['required', 'string'],
@@ -135,6 +151,10 @@ class TagNodesController extends Controller
 
     public function merge(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'mergeInto' => ['required', 'string'],
         ]);
@@ -174,6 +194,10 @@ class TagNodesController extends Controller
 
     public function move(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         if (! $request->has('parent')) {
             return response()->json(['ok' => false, 'error' => 'Parent field is required.'], 422);
         }

@@ -89,6 +89,10 @@ class TypesController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'id' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
@@ -141,8 +145,12 @@ class TypesController extends Controller
     /**
      * Delete a type definition.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $deleted = DB::table('storage_rows')
             ->where('store', 'types')
             ->where('uid', $id)

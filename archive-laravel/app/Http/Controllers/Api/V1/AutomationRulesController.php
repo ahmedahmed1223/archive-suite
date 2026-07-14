@@ -57,6 +57,10 @@ class AutomationRulesController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate($this->ruleValidationRules(requireName: true));
         $userId = $this->userId($request);
         $now = now();
@@ -88,6 +92,10 @@ class AutomationRulesController extends Controller
      */
     public function update(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $userId = $this->userId($request);
         $rule = DB::table('automation_rules')
             ->where('id', $id)
@@ -128,6 +136,10 @@ class AutomationRulesController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $deleted = DB::table('automation_rules')
             ->where('id', $id)
             ->where('user_id', $this->userId($request))
@@ -145,6 +157,10 @@ class AutomationRulesController extends Controller
      */
     public function run(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'dryRun' => ['nullable', 'boolean'],
         ]);
