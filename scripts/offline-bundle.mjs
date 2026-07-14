@@ -22,7 +22,10 @@ export function resolveReleaseInventory(version, environment = process.env, base
   normalizedVersion(version);
   const required = { postgres: "POSTGRES_IMAGE", redis: "REDIS_IMAGE", next: "NEXT_IMAGE", laravel: "LARAVEL_IMAGE", "laravel-fpm": "LARAVEL_IMAGE", "laravel-worker": "LARAVEL_IMAGE", "laravel-reverb": "LARAVEL_IMAGE" };
   return baseInventory.images.map((image) => {
-    const source = required[image.id] ? environment[required[image.id]] : (environment[`${image.id.toUpperCase().replaceAll("-", "_")}_IMAGE`] || image.source);
+    const supplied = required[image.id] ? environment[required[image.id]] : (environment[`${image.id.toUpperCase().replaceAll("-", "_")}_IMAGE`] || image.source);
+    // Git tags are conventionally vX.Y.Z while release descriptors use X.Y.Z.
+    // Normalize only that tag position; the registry/name/digest stay intact.
+    const source = supplied?.replace(/:v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)@sha256:/, ":$1@sha256:");
     if (!source || !/@sha256:[a-f0-9]{64}$/.test(source)) throw new Error(`Set ${required[image.id] || `${image.id.toUpperCase().replaceAll("-", "_")}_IMAGE`} to the signature-verified immutable image@sha256 digest`);
     // Application images from CI are verified before this command and may be
     // digest-only refs; their released semantic version is carried by VERSION.
@@ -31,6 +34,7 @@ export function resolveReleaseInventory(version, environment = process.env, base
 }
 
 export function build(version, output, { runCommand = run } = {}) {
+  const canonicalVersion = normalizedVersion(version).replace(/^v/, "");
   const resolvedInventory = resolveReleaseInventory(version);
   const dir = join(output, `archive-suite-offline-${version}`);
   rmSync(dir, { recursive: true, force: true });
@@ -38,11 +42,11 @@ export function build(version, output, { runCommand = run } = {}) {
   for (const name of ["compose.v1.yml", "generate-env.mjs", "verify-bundle.mjs", "install.sh", "install.ps1", "README.ar.md"]) cpSync(join(root, "infra/offline", name), join(dir, name));
   writeFileSync(join(dir, "images.v1.json"), `${JSON.stringify({ ...inventory, images: resolvedInventory }, null, 2)}\n`);
   cpSync(join(root, "infra/deploy/Caddyfile"), join(dir, "Caddyfile"));
-  writeFileSync(join(dir, "VERSION"), `${version}\n`);
+  writeFileSync(join(dir, "VERSION"), `${canonicalVersion}\n`);
   const images = resolvedInventory.map((image) => {
     const source = image.source;
     if (!source || !/@sha256:[a-f0-9]{64}$/.test(source)) throw new Error(`offline inventory image ${image.id} must be a signed immutable image@sha256 reference`);
-    const bundleRef = image.bundleRef.replace("$VERSION", version);
+    const bundleRef = image.bundleRef.replace("$VERSION", canonicalVersion);
     runCommand("docker", ["pull", source]);
     runCommand("docker", ["tag", source, bundleRef]);
     const archive = join(dir, "images", `${image.id}.tar`);

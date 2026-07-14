@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import test from "node:test";
 import { build, cleanupRehearsal, resolveReleaseInventory } from "./offline-bundle.mjs";
+import { loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
@@ -154,10 +155,10 @@ test("builder path writes workflow-shaped digest-only application refs into a co
   const output = mkdtempSync(join(tmpdir(), "archive-offline-build-"));
   const original = { NEXT_IMAGE: process.env.NEXT_IMAGE, LARAVEL_IMAGE: process.env.LARAVEL_IMAGE, POSTGRES_IMAGE: process.env.POSTGRES_IMAGE, REDIS_IMAGE: process.env.REDIS_IMAGE };
   Object.assign(process.env, {
-    NEXT_IMAGE: `ghcr.io/workflow/next@sha256:${"d".repeat(64)}`,
-    LARAVEL_IMAGE: `ghcr.io/workflow/laravel@sha256:${"c".repeat(64)}`,
-    POSTGRES_IMAGE: `ghcr.io/workflow/postgres@sha256:${"a".repeat(64)}`,
-    REDIS_IMAGE: `ghcr.io/workflow/redis@sha256:${"b".repeat(64)}`,
+    NEXT_IMAGE: `ghcr.io/workflow/next:v1.0.0-rc.1@sha256:${"d".repeat(64)}`,
+    LARAVEL_IMAGE: `ghcr.io/workflow/laravel:v1.0.0-rc.1@sha256:${"c".repeat(64)}`,
+    POSTGRES_IMAGE: "ghcr.io/archive-suite/postgres:v1.0.0-rc.1@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0",
+    REDIS_IMAGE: "ghcr.io/archive-suite/redis:v1.0.0-rc.1@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99",
   });
   try {
     build("v1.0.0-rc.1", output, { runCommand: (command, args) => {
@@ -168,8 +169,14 @@ test("builder path writes workflow-shaped digest-only application refs into a co
     } });
     const manifest = JSON.parse(readFileSync(join(output, "archive-suite-offline-v1.0.0-rc.1", "manifest.json"), "utf8"));
     assert.equal(manifest.version, "v1.0.0-rc.1");
-    assert.equal(manifest.images.find((image) => image.id === "next").source, process.env.NEXT_IMAGE);
-    assert.equal(manifest.images.find((image) => image.id === "laravel-reverb").source, process.env.LARAVEL_IMAGE);
+    assert.equal(manifest.images.find((image) => image.id === "next").source, process.env.NEXT_IMAGE.replace(":v1.0.0-rc.1@", ":1.0.0-rc.1@"));
+    assert.equal(manifest.images.find((image) => image.id === "laravel-reverb").source, process.env.LARAVEL_IMAGE.replace(":v1.0.0-rc.1@", ":1.0.0-rc.1@"));
+    const bundle = join(output, "archive-suite-offline-v1.0.0-rc.1");
+    const release = resolveRelease({ configuration: { mode: "docker", source: "offline", runtimeProfiles: ["core"] }, offlineBundlePath: bundle });
+    const calls = [];
+    loadOfflineReleaseImages(release, { runDocker: (args) => calls.push(args) });
+    assert.equal(calls.filter((args) => args[0] === "image" && args[1] === "load").length, 7);
+    assert.match(release.images.find((image) => image.service === "next").online, /:1\.0\.0-rc\.1@sha256:/);
   } finally {
     for (const [key, value] of Object.entries(original)) value === undefined ? delete process.env[key] : process.env[key] = value;
     rmSync(output, { recursive: true, force: true });

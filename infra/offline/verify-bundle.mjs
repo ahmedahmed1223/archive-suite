@@ -27,7 +27,7 @@ export function verifyBundle(inputDir, { log = (message) => process.stdout.write
   for (const [index, image] of manifest.images.entries()) {
     const declared = inventory.images[index];
     const archive = `images/${image.id}.tar`;
-    const expectedRef = declared.bundleRef.replace("$VERSION", manifest.version);
+    const expectedRef = declared.bundleRef.replace("$VERSION", String(manifest.version).replace(/^v/, ""));
     if (image.archive !== archive || image.bundleRef !== expectedRef || image.kind !== declared.kind || image.source !== declared.source) throw new Error(`image metadata mismatch: ${image.id}`);
     if (archives.has(image.archive)) throw new Error(`duplicate image archive: ${image.archive}`);
     archives.add(image.archive);
