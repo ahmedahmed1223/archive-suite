@@ -1032,5 +1032,9 @@ if (cmd) {
   close();
   if (typeof status === "number" && status !== 0) process.exit(status);
 } else {
+  if (!process.stdin.isTTY) {
+    err("No interactive terminal detected. Run 'setup help' to view supported commands, or provide a named command.");
+    process.exit(1);
+  }
   await interactive();
 }

@@ -106,6 +106,14 @@ test("q command exits successfully instead of starting deployment", () => {
   assert.equal(r.stderr.trim(), "");
 });
 
+test("piped input without a named command refuses to open the interactive menu", () => {
+  const r = spawnSync(process.execPath, [CLI], { input: "q\n", encoding: "utf8", env: { ...process.env } });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /No interactive terminal detected/i);
+  assert.match(r.stderr, /setup help/i);
+  assert.doesNotMatch(r.stdout, /Masar — Control Center|Choose an option/i);
+});
+
 test("interactive menu acknowledges a completed operation once before returning", async () => {
   const prompts = ["1", "", "q"];
   let executions = 0;
@@ -148,8 +156,8 @@ test("invalid acknowledgement repeats only the acknowledgement prompt", async ()
   assert.equal(executions, 1);
   assert.deepEqual(seen, [
     "Choose an option",
-    "Press Enter to return to the main menu, or q to quit: ",
-    "Press Enter to return to the main menu, or q to quit: ",
+    "Press Enter to return to the main menu, or q to quit",
+    "Press Enter to return to the main menu, or q to quit",
     "Choose an option",
   ]);
 });
