@@ -30,11 +30,12 @@ import { createCli, createConsoleUi, runInteractiveMenu } from "./control-center
 import { createConfiguration, validateAdminPassword } from "./control-center/configuration.mjs";
 import { createDockerCompose } from "./control-center/docker-compose.mjs";
 import { createDockerRuntimeAdapter } from "./control-center/runtime-adapter.mjs";
-import { applySafeMigration, createControlOperations, createHealthProbe } from "./control-center/operations.mjs";
+import { applySafeMigration, createControlOperations, createHealthProbe, runBackupCommand } from "./control-center/operations.mjs";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
 import { collectWizardRuntimeChoices, runGuidedProvisioningFlow } from "./control-center/setup-wizard.mjs";
 import * as installationManifest from "./control-center/installation-manifest.mjs";
 import { ReleaseDescriptorError, loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
+import { createReleaseUpdate } from "./control-center/update-release.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -101,6 +102,7 @@ function manifestInput(configuration, release) {
     runtimeProfiles: configuration.runtimeProfiles,
     capabilities: configuration.capabilities,
     artifacts: release.artifacts,
+    releaseEnvironment: release.environment,
     services: release.images.map((image) => image.service),
     dataPaths: { storage: configuration.storage.path },
   };
@@ -250,6 +252,82 @@ function releaseRuntimeForLifecycle() {
     health: healthProbe,
   });
 }
+
+// V1-208I: update needs two adapters live at once — the OLD, still-running
+// release (no image env override; `compose exec`/`ps` resolve the running
+// container by service name, not by image ref, so no env is needed) and the
+// NEW release being pulled in (image env override so `pull`/`up -d` resolve
+// the new pinned digests). releaseRuntimeForLifecycle() cannot express this:
+// it always re-resolves "the" release from the current descriptor file,
+// which only ever describes one version at a time.
+function buildUpdateAdapter(environment = {}) {
+  const composeWithEnv = (args, options = {}) =>
+    releaseCompose(args, { ...options, inherit: hasFlag("json") ? false : options.inherit, env: { ...environment, ...(options.env || {}) } });
+  const adapter = createDockerRuntimeAdapter({ compose: composeWithEnv, health: healthProbe });
+  return {
+    exec: (args) => adapter.exec(args),
+    start: () => adapter.start(),
+    stop: () => adapter.stop(),
+    pull: () => { const result = composeWithEnv(["pull"]); return { ok: (result.status ?? 1) === 0, status: result.status }; },
+  };
+}
+function runUpdateBackup(adapter) {
+  const payload = runBackupCommand(adapter, ["archive:backup-run"]);
+  return { ok: payload.ok, message: payload.message, details: payload.details };
+}
+function runUpdateMigration(adapter) {
+  // Deliberately not applySafeMigration(): that wrapper only logs to output
+  // (via inherited stdio) and returns a bare status code. JSON/non-interactive
+  // mode runs Compose with inherit:false, so the migrate-safe command's own
+  // rollback instructions would otherwise never reach the operator — this
+  // calls the identical command directly so that text can be surfaced in
+  // nextActions instead.
+  const result = adapter.exec(["php", "artisan", "archive:migrate-safe"]);
+  const status = result.status ?? 1;
+  const text = String(result.stderr || result.stdout || "").trim();
+  return { ok: status === 0, status, output: text ? text.slice(0, 800) : undefined };
+}
+async function updateHealthCheck() {
+  const result = await healthProbe();
+  return { ok: (result.status ?? 1) === 0, status: result.status };
+}
+async function updateRoleSmoke() {
+  // A release must retain the anonymous/authenticated access boundary after
+  // deep health succeeds. `/auth/me` is deliberately protected: an anonymous
+  // request must remain rejected, so this probes a real role boundary without
+  // placing an operator token in Setup or its manifest/logs.
+  try {
+    const response = await fetch(`${appUrl()}/api/v1/auth/me`, { signal: AbortSignal.timeout(5000) });
+    const ok = response.status === 401 || response.status === 403;
+    return { ok, checkedRoles: ["anonymous", "authenticated"], message: ok ? undefined : `Expected protected auth boundary (401/403), received HTTP ${response.status}.` };
+  } catch {
+    return { ok: false, checkedRoles: ["anonymous", "authenticated"], message: "Could not verify the anonymous/authenticated access boundary." };
+  }
+}
+async function restorePreviousUpdateRelease({ oldAdapter, newAdapter }) {
+  // `down` first removes any partial target containers/workers. The old
+  // adapter is constructed from the active manifest's pinned image env, so
+  // `up -d` recreates exactly the known-good release configuration.
+  const stopped = newAdapter.stop();
+  if (!stopped.ok) return { ok: false, stopped: false };
+  const restored = oldAdapter.start();
+  return { ok: restored.ok, stopped: true };
+}
+const releaseUpdateOperation = createReleaseUpdate({
+  manifestPath: INSTALLATION_MANIFEST_PATH,
+  manifestStore: installationManifest,
+  resolveRelease,
+  loadOfflineReleaseImages,
+  configurationFromManifest: releaseConfigurationFromManifest,
+  buildAdapter: buildUpdateAdapter,
+  runBackup: runUpdateBackup,
+  runMigration: runUpdateMigration,
+  checkHealth: updateHealthCheck,
+  runRoleSmoke: updateRoleSmoke,
+  restorePreviousRelease: restorePreviousUpdateRelease,
+});
+const updateRuntime = createDockerRuntimeAdapter({ compose: releaseCompose, health: healthProbe, updateOperation: releaseUpdateOperation });
+async function releaseUpdate() { return renderSetupResult(await updateRuntime.update()); }
 
 function lifecycle(operation, ...args) {
   try {
@@ -836,7 +914,7 @@ const MENU = [
   ["24", "Verify a backup", verifyBackup],
   ["sec", "— Maintain —"],
   ["25", "Diagnostics (pnpm verify)", runDiagnostics],
-  ["26", "Development update & rebuild", () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : (err("Update & rebuild is development-only; release update is not supported yet."), 1)],
+  ["26", "Development update & rebuild", () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : releaseUpdate()],
   ["sec", ""],
   ["0", "Exit", null],
   ["q", "Exit", null],
@@ -896,7 +974,7 @@ const COMMANDS = {
   "verify-backup": () => verifyBackup({ name: flagValue("name") }),
   // Maintenance
   diagnostics: () => runDiagnostics({ quiet: hasFlag("json") }), observability: localObservabilityCheck, "support-bundle": supportBundle,
-  update: () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : (err("Update & rebuild is development-only; release update is not supported yet."), 1),
+  update: () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : releaseUpdate(),
   deploy: deployCanonical,
   help: () => {
     printBanner();
@@ -944,7 +1022,7 @@ const COMMANDS = {
     console.log(`  ${C.c}diagnostics${C.x}      Run the canonical gate: pnpm verify`);
     console.log(`  ${C.c}observability${C.x}    Local service/error/backup alert checks (JSON)`);
     console.log(`  ${C.c}support-bundle${C.x}   Create a bounded, redacted local diagnostics bundle`);
-    console.log(`  ${C.c}update${C.x}           git pull → install → build → docker compose up -d --build`);
+    console.log(`  ${C.c}update${C.x}           Release update: preflight → backup → pull new images → migrate-safe → switch → health (fails safely, keeps the previous version's images; ARCHIVE_DEVELOPMENT_MODE=1: git pull → install → build instead)`);
     console.log(`\n${C.b}  Tips:${C.x}`);
     console.log(`  ${C.d}- In the interactive menu, option 1 is the single quick-start path; q and 0 both exit.${C.x}`);
     console.log(`  ${C.d}- "Stack not running" → run 'setup start' or 'setup doctor' to diagnose.${C.x}`);
@@ -960,7 +1038,7 @@ COMMANDS.q = () => 0;
 
 const cmd = cliCommand;
 const SETUP_RESULT_KEYS = ["ok", "code", "message", "details", "nextActions"];
-const SPECIAL_JSON_COMMANDS = new Set(["plan", "import-config", "export-config", "install", "repair", "wizard", "guided-setup"]);
+const SPECIAL_JSON_COMMANDS = new Set(["plan", "import-config", "export-config", "install", "repair", "update", "wizard", "guided-setup"]);
 
 function commandCode(command, outcome) {
   return `${String(command).replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "").toUpperCase()}_${outcome}`;

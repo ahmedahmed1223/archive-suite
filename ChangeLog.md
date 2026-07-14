@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-208I — Atomic artifact release update — 2026-07-14
+
+- `setup update` now follows the Docker release lifecycle: immutable-descriptor preflight, legal full backup, verified online pull or offline bundle load, `archive:migrate-safe`, switch, deep health, and an anonymous/authenticated access-boundary smoke check. Development mode retains its separate source rebuild path.
+- A failed switch, health check, or smoke check stops the unsafe target containers and automatically recreates the pinned previous release. The manifest keeps the active release until success, records the attempted target while an update is in progress, and stores a complete safe previous-release reference after success; images are never pruned.
+- Manifest read/write failures now return the redacted `UPDATE_MANIFEST_IO_FAILED` result envelope, including JSON mode, rather than rejecting with a raw filesystem error. Existing manifests without a pinned prior-release reference fail closed before an update.
+- TDD coverage includes switch/health/smoke restoration, ordered health-then-smoke gating, target/previous reference recording, and begin/step/fail/complete manifest I/O failures. Final Control Center suite: 139 passing, 0 failing; `node --check` and `git diff --check` pass.
+
 ## Setup wizard flexible choices and explicit confirmation — 2026-07-14
 
 - The interactive Setup wizard now explains optional runtime profiles and capabilities in English, including why each option exists, its resource or exposure impact, and how to enter it. It accepts exact names, option numbers, declared aliases (such as `tls` for `edge`), and comma/`+`/`;`/`|` separators; `all` and `none` are explicit choices. Unknown input is rejected and re-prompted rather than guessed.

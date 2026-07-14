@@ -36,7 +36,7 @@ export async function applySafeMigration({ adapter, confirmed = false, output, c
 // (defaults to the laravel container, not postgres) and parses their single
 // JSON stdout line. A command that can't be reached at all (stack down,
 // unparsable output) degrades to a structured failure instead of throwing.
-function runBackupCommand(adapter, commandArgs) {
+export function runBackupCommand(adapter, commandArgs) {
   const result = adapter.exec(["php", "artisan", ...commandArgs, "--json"], { inherit: false });
   const raw = (result.stdout || "").trim();
   const lastLine = raw.split("\n").filter(Boolean).pop() || "";
