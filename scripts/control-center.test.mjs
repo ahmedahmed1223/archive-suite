@@ -5,6 +5,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
+import { collectWizardRuntimeChoices } from "./control-center/setup-wizard.mjs";
 import { loadPlatformContract } from "./platform-contract.mjs";
 
 // Smoke tests for the Control Center CLI. They exercise the real binary through
@@ -213,6 +214,47 @@ test("wizard answers use the declarative planner resolver rather than a second s
   assert.equal(planned.ok, true);
   assert.deepEqual(planned.details.configuration, answers);
 });
+
+test("controlled wizard prompts create the same candidate accepted by the declarative planner", async () => {
+  const setup = createSetupConfiguration({ loadPlatformContract });
+  const prompts = [];
+  const answers = ["docker", "linux-docker", "offline", "public", "/srv/archive-suite/interactive", "media,edge", "ocr,observability"];
+  const choices = await collectWizardRuntimeChoices({
+    ask: async (prompt, fallback) => { prompts.push(prompt); return answers.shift() || fallback; },
+    existing: {},
+    contract: loadPlatformContract(),
+    platformId: "linux-docker",
+  });
+  const planned = setup.planInput(choices.candidate);
+  assert.equal(planned.ok, true);
+  assert.deepEqual(planned.details.configuration, validSetupConfig({
+    source: "offline", access: "public", runtimeProfiles: ["core", "media", "edge"],
+    capabilities: ["ocr", "observability"], storage: { driver: "local", path: "/srv/archive-suite/interactive" },
+  }));
+  assert.equal(prompts.length, 7);
+  assert.ok(prompts.every((prompt) => /[\u0600-\u06FF]/.test(prompt)), "every runtime choice prompt must have a concise Arabic explanation");
+});
+
+for (const [name, overrides, code] of [
+  ["public access without edge", { access: "public", runtimeProfiles: ["core"] }, "PUBLIC_ACCESS_REQUIRES_EDGE"],
+  ["edge outside public access", { access: "intranet", runtimeProfiles: ["core", "edge"] }, "EDGE_REQUIRES_PUBLIC_ACCESS"],
+]) {
+  test(`wizard config rejects ${name} before Docker or writes`, () => {
+    const dir = mkdtempSync(join(tmpdir(), "cc-wizard-access-invalid-"));
+    const configFile = join(dir, "setup.json");
+    const envFile = join(dir, ".env");
+    const manifestFile = join(dir, "installation-manifest.json");
+    writeFileSync(configFile, JSON.stringify(validSetupConfig(overrides)));
+    const r = run(["wizard", `--config=${configFile}`, "--json"], {
+      ARCHIVE_ENV_PATH: envFile, ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile, PATH: "", Path: "",
+    });
+    assert.notEqual(r.status, 0);
+    const result = JSON.parse(r.stdout);
+    assert.equal(result.code, code);
+    assert.equal(existsSync(envFile), false);
+    assert.equal(existsSync(manifestFile), false);
+  });
+}
 
 test("setup plan rejects a platform that does not match its mode before writes", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-plan-invalid-"));

@@ -10,9 +10,10 @@
 ## V1-208F — واجهة Setup wizard الشاملة — مكتمل 2026-07-14
 
 - صار `setup wizard --config=<file>` المسار غير التفاعلي للمعالج: يستدعي `setup plan` نفسه حرفياً، فينتج العقد والـplan والـcodes نفسها بلا إنشاء `.env` أو manifest أو مسارات بيانات أو استدعاء Docker.
-- تستدعي إجابات الواجهة التفاعلية الدالة المشتركة `planInput` في `setup-config.mjs` قبل أي كتابة. تعرض الخيارات المعلنة في العقد: Docker/Native والمنصة والمصدر online/offline ونمط الوصول وprofiles (`core` إلزامي و`media`/`edge` اختياريان) وcapabilities والتخزين المحلي، وتوضح بالعربية أن PostgreSQL وRedis خدمتا البيانات الأساسيتان المفعّلتان تلقائياً. Native يبقى للتخطيط فقط ويرفض التنفيذ قبل الكتابة أو Docker.
+- تستدعي إجابات الواجهة التفاعلية الدالة المشتركة `planInput` في `setup-config.mjs` قبل أي كتابة. تعرض الخيارات المعلنة في العقد بالعربية: Docker/Native والمنصة والمصدر online/offline ونمط الوصول وprofiles (`core` إلزامي و`media`/`edge` اختياريان) وcapabilities والتخزين المحلي، وتوضح أن PostgreSQL وRedis خدمتا البيانات الأساسيتان المفعّلتان تلقائياً. Native يبقى للتخطيط فقط ويرفض التنفيذ قبل الكتابة أو Docker.
+- سياسة الوصول صريحة داخل resolver: `public` يتطلب profile `edge` الذي يملك TLS، و`edge` لا يصح مع `local` أو`intranet`. ترفض الأوامر المخالفة بالكودين الثابتين `PUBLIC_ACCESS_REQUIRES_EDGE` و`EDGE_REQUIRES_PUBLIC_ACCESS` قبل `.env` أو manifest أو Docker.
 - بعد قبول الخطة لا يستدعي المعالج مسار Compose التطويري؛ يجهز `.env` ثم يمرر الاختيار المعياري إلى `install` الخاص بإصدار Docker الموقّع. يبقى `wizard` القديم بلا config متوافقاً مع وضع التطوير الصريح فقط.
-- دليل TDD: اختبارات RED لمسار `wizard --config` الغائب ولدالة resolver المباشرة، ثم GREEN. تغطي parity بين wizard والخطة لكل core/media/edge، online/offline، local/intranet/public ومسارات تخزين مختلفة، وتتحقق من عدم الكتابة وعدم إنشاء manifest. التحقق: `node --test scripts/control-center.test.mjs` ‏34/34 و`node --check` للوحدات و`git diff --check`.
+- دليل TDD: اختبارات RED لمسار `wizard --config` الغائب ولدالة resolver المباشرة، ثم GREEN. أضيف تصحيح مراجعة باختبار controlled-prompt يستدعي طبقة إجابات wizard ويطابق ناتج resolver، وحالات رفض الوصول قبل الكتابة. التحقق: `node --test scripts/control-center.test.mjs` ‏37/37 و`node --check` للوحدات و`git diff --check`.
 
 ## V1-208E — Docker release adapter — مكتمل 2026-07-14
 
