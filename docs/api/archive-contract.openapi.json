@@ -214,6 +214,63 @@
         }
       }
     },
+    "/records/{id}/transcript": {
+      "patch": {
+        "tags": ["Records"],
+        "summary": "Persist an imported subtitle transcript for a record",
+        "operationId": "updateRecordTranscript",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["transcript"],
+                "properties": {
+                  "transcript": { "type": "string", "minLength": 1, "maxLength": 1000000 },
+                  "store": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/OkEnvelope" },
+                    {
+                      "type": "object",
+                      "required": ["record"],
+                      "properties": {
+                        "record": { "$ref": "#/components/schemas/ArchiveRecord" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/notes": {
       "get": {
         "tags": ["Record Notes"],
@@ -3482,6 +3539,7 @@
           "thumbnail": { "type": "string" },
           "tags": { "type": "array", "items": { "type": "string" } },
           "metadata": { "type": "object", "additionalProperties": true },
+          "transcript": { "type": "string" },
           "descriptorCompletion": {
             "type": "object",
             "required": ["status", "complete", "total", "missing"],

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
@@ -9,6 +9,7 @@ import MediaSourcePicker from "@/components/MediaSourcePicker";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
 import { parseSubtitles } from "@/lib/media/subtitles";
+import { createArchiveApiClient } from "@/lib/archive-api";
 import styles from "./play.module.css";
 import "../media.css";
 
@@ -20,12 +21,16 @@ export default function MediaPlayPage() {
   const [transcriptText, setTranscriptText] = useState("");
   const [transcriptFileName, setTranscriptFileName] = useState("");
   const [transcriptStatus, setTranscriptStatus] = useState("");
+  const [recordId, setRecordId] = useState("");
+  const [recordStore, setRecordStore] = useState("");
   const transcriptCueCount = parseSubtitles(transcriptText).length;
+  const api = useMemo(() => createArchiveApiClient(), []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const pathParam = params.get("path")?.trim() ?? "";
     const diskParam = params.get("disk")?.trim() ?? "";
+    const recordIdParam = params.get("recordId")?.trim() ?? "";
 
     if (pathParam) {
       setPathInput(pathParam);
@@ -36,7 +41,24 @@ export default function MediaPlayPage() {
       setDiskInput(diskParam);
       setDisk(diskParam);
     }
-  }, []);
+
+    if (!recordIdParam) return;
+
+    setRecordId(recordIdParam);
+    setTranscriptStatus("جار تحميل التفريغ المحفوظ...");
+    void api.record(recordIdParam)
+      .then((response) => {
+        if (!response.ok) {
+          setTranscriptStatus(`تعذر تحميل التفريغ المحفوظ: ${response.error}`);
+          return;
+        }
+
+        setTranscriptText(response.record.transcript ?? "");
+        setRecordStore(response.record.store ?? "");
+        setTranscriptStatus(response.record.transcript?.trim() ? "تم تحميل التفريغ المحفوظ." : "لا يوجد تفريغ محفوظ لهذا السجل.");
+      })
+      .catch(() => setTranscriptStatus("تعذر تحميل التفريغ المحفوظ."));
+  }, [api]);
 
   async function handleTranscriptFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -58,7 +80,21 @@ export default function MediaPlayPage() {
 
       setTranscriptText(text);
       setTranscriptFileName(file.name);
-      setTranscriptStatus(`تم استيراد ${cues.length} مقطع زمني.`);
+      if (!recordId) {
+        setTranscriptStatus(`تم استيراد ${cues.length} مقطع زمني للمعاينة فقط.`);
+        return;
+      }
+
+      setTranscriptStatus("جار حفظ التفريغ في السجل...");
+      const response = await api.updateRecordTranscript(recordId, {
+        transcript: text,
+        ...(recordStore ? { store: recordStore } : {})
+      });
+      setTranscriptStatus(
+        response.ok
+          ? `تم استيراد وحفظ ${cues.length} مقطع زمني في السجل.`
+          : `تم الاستيراد للمعاينة، وتعذر حفظ التفريغ: ${response.error}`
+      );
     } catch (error) {
       setTranscriptStatus(error instanceof Error ? error.message : "تعذر قراءة ملف التفريغ.");
     } finally {
@@ -137,7 +173,7 @@ export default function MediaPlayPage() {
             <div className="panel-title-row">
               <div>
                 <h2>تفريغ زمني</h2>
-                <p>VTT أو SRT</p>
+                <p>{recordId ? "VTT أو SRT — يحفظ في السجل" : "VTT أو SRT — معاينة محلية"}</p>
               </div>
               <span className="badge">{transcriptCueCount > 0 ? `${transcriptCueCount} مقطع` : "اختياري"}</span>
             </div>

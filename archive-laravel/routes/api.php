@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
+use App\Http\Controllers\Api\V1\RecordTranscriptController;
 use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
@@ -148,6 +149,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/records', [RecordsController::class, 'index']);
         Route::get('/records/{id}', [RecordsController::class, 'show']);
+        Route::patch('/records/{id}/transcript', [RecordTranscriptController::class, 'update']);
         Route::get('/records/{id}/notes', [RecordNotesController::class, 'index']);
         Route::post('/records/{id}/notes', [RecordNotesController::class, 'store']);
         Route::get('/records/{id}/comments', [RecordCommentsController::class, 'index']);
