@@ -6,7 +6,7 @@
 
 services:
   postgres:
-    image: pgvector/pgvector:pg17@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0
+    image: pgvector/pgvector:pg17@sha256:815bf5378222044da3b34d98e6a5fdac37b15c428b67d09c7c2d90a038e597bf
     container_name: archive-ln-postgres
     restart: unless-stopped
     logging: &local-logging
