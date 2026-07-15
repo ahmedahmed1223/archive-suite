@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\MontageProjectsController;
 use App\Http\Controllers\Api\V1\NotificationsController;
+use App\Http\Controllers\Api\V1\OnboardingProgressController;
 use App\Http\Controllers\Api\V1\PluginMarketplaceController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
@@ -256,6 +257,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/users', [UsersController::class, 'store']);
         Route::patch('/users/{id}', [UsersController::class, 'update']);
         Route::delete('/users/{id}', [UsersController::class, 'destroy']);
+
+        Route::get('/onboarding/progress', [OnboardingProgressController::class, 'index']);
+        Route::patch('/onboarding/progress/{stage}', [OnboardingProgressController::class, 'update']);
 
         Route::post('/ingest/scan', [IngestController::class, 'scan']);
         Route::post('/ingest/ftp/pull', [IngestController::class, 'ftpPull']);
