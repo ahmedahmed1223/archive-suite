@@ -845,6 +845,18 @@ export interface ArchiveTypeFieldCondition {
   equals: string | number | boolean;
 }
 
+export type OnboardingStageId = "organization" | "storage" | "invitation" | "first_record" | "first_search";
+
+export interface OnboardingStage {
+  id: OnboardingStageId;
+  status: "pending" | "completed";
+  completedAt: string | null;
+}
+
+export interface OnboardingProgress {
+  stages: OnboardingStage[];
+}
+
 export interface ArchiveTypeField {
   name: string;
   type: ArchiveTypeFieldKind;
@@ -1095,6 +1107,8 @@ export interface ArchiveApiClient {
   inviteUser(payload: { email: string; role: ManagedUserRole }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ invitation: PendingInvitation; token: string }>>;
   updateUserRole(id: string, payload: { role: ManagedUserRole }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ user: ManagedUser }>>;
   deleteUser(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope>;
+  onboardingProgress(options?: AuthRequestOptions): Promise<ApiEnvelope<{ progress: OnboardingProgress }>>;
+  updateOnboardingStage(stage: OnboardingStageId, payload: { status: OnboardingStage["status"] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ progress: OnboardingProgress }>>;
   acceptInvitation(token: string, payload: { name: string; password: string }): Promise<ApiEnvelope<{ user: ManagedUser }>>;
   intakeTemplates(options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: IntakeTemplate[] }>>;
   createIntakeTemplate(payload: CreateIntakeTemplatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: IntakeTemplate }>>;
@@ -1644,6 +1658,9 @@ export function createArchiveApiClient({
     updateUserRole: (id: string, payload: { role: ManagedUserRole }, options?: AuthRequestOptions) =>
       patch<{ user: ManagedUser }>(`/users/${encodeURIComponent(id)}`, payload, options),
     deleteUser: (id: string, options?: AuthRequestOptions) => del(`/users/${encodeURIComponent(id)}`, undefined, options),
+    onboardingProgress: (options?: AuthRequestOptions) => get<{ progress: OnboardingProgress }>("/onboarding/progress", options),
+    updateOnboardingStage: (stage: OnboardingStageId, payload: { status: OnboardingStage["status"] }, options?: AuthRequestOptions) =>
+      patch<{ progress: OnboardingProgress }>(`/onboarding/progress/${encodeURIComponent(stage)}`, payload, options),
     acceptInvitation: (token: string, payload: { name: string; password: string }) =>
       post<{ user: ManagedUser }>(`/invitations/${encodeURIComponent(token)}/accept`, payload),
     collaborationPresence: (roomKey: string, options?: AuthRequestOptions) =>

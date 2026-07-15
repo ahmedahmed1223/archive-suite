@@ -2979,6 +2979,60 @@
         }
       }
     },
+    "/onboarding/progress": {
+      "get": {
+        "tags": ["Onboarding"],
+        "summary": "Read the shared organisation onboarding progress",
+        "operationId": "getOnboardingProgress",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Shared onboarding progress",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OnboardingProgressResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/onboarding/progress/{stage}": {
+      "patch": {
+        "tags": ["Onboarding"],
+        "summary": "Update one shared onboarding stage (admin only)",
+        "operationId": "updateOnboardingStage",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{
+          "name": "stage",
+          "in": "path",
+          "required": true,
+          "schema": { "$ref": "#/components/schemas/OnboardingStageId" }
+        }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateOnboardingStageRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated shared onboarding progress",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OnboardingProgressResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/users": {
       "get": {
         "tags": ["Users"],
@@ -5789,6 +5843,48 @@
         "properties": {
           "name": { "type": "string", "minLength": 1, "maxLength": 255 },
           "password": { "type": "string", "minLength": 8 }
+        }
+      },
+      "OnboardingStageId": {
+        "type": "string",
+        "enum": ["organization", "storage", "invitation", "first_record", "first_search"]
+      },
+      "OnboardingStage": {
+        "type": "object",
+        "required": ["id", "status", "completedAt"],
+        "properties": {
+          "id": { "$ref": "#/components/schemas/OnboardingStageId" },
+          "status": { "type": "string", "enum": ["pending", "completed"] },
+          "completedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "OnboardingProgress": {
+        "type": "object",
+        "required": ["stages"],
+        "properties": {
+          "stages": {
+            "type": "array",
+            "minItems": 5,
+            "maxItems": 5,
+            "items": { "$ref": "#/components/schemas/OnboardingStage" }
+          }
+        }
+      },
+      "OnboardingProgressResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["progress"],
+            "properties": { "progress": { "$ref": "#/components/schemas/OnboardingProgress" } }
+          }
+        ]
+      },
+      "UpdateOnboardingStageRequest": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["pending", "completed"] }
         }
       },
       "SecuritySettings": {
