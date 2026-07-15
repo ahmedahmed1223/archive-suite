@@ -44,6 +44,7 @@ export interface ArchiveRecord {
   type?: string;
   subtype?: string | null;
   tags?: string[];
+  transcript?: string;
   metadata?: Record<string, unknown>;
   descriptorCompletion?: DescriptorCompletion;
   createdAt?: string;
@@ -1024,6 +1025,7 @@ export interface ArchiveApiClient {
   recordHistory(recordId: string, params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; pagination?: PaginationMeta }>>;
   sync(params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
+  updateRecordTranscript(id: string, payload: { transcript: string; store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
   types(params?: { cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ types: ArchiveType[]; nextCursor?: string | null }>>;
   type(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ type: ArchiveType }>>;
@@ -1454,6 +1456,8 @@ export function createArchiveApiClient({
       return get<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>(`/sync${query ? `?${query}` : ""}`, options);
     },
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
+    updateRecordTranscript: (id: string, payload: { transcript: string; store?: string }, options?: AuthRequestOptions) =>
+      patch<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}/transcript`, payload, options),
     records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams({ store, limit: String(clampApiLimit(limit, 50, 200)) });
       if (cursor) params.set("cursor", cursor);

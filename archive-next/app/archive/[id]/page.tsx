@@ -72,6 +72,15 @@ function relationEdgeSummary(edge: RelationGraphEdge) {
   return edge.label;
 }
 
+function mediaPlayerHref(record: ArchiveRecord, recordId: string): string | null {
+  const source = deriveRecordSourcePath(record);
+  if (!source) return null;
+
+  const params = new URLSearchParams({ path: source.sourcePath, recordId });
+  if (source.disk) params.set("disk", source.disk);
+  return `/media/play?${params.toString()}`;
+}
+
 function RelationPreviewPanel({
   graph,
   recordId,
@@ -951,6 +960,7 @@ export default function ArchiveDetailPage() {
       : state.status === "error"
         ? "تعذر تحميل بيانات السجل من الخادم."
         : "جار تحميل بيانات السجل من الخادم.";
+  const playerHref = state.status === "ready" ? mediaPlayerHref(state.record, id) : null;
 
   useEffect(() => {
     let active = true;
@@ -1112,6 +1122,7 @@ export default function ArchiveDetailPage() {
             <Link href="/archive" className="button button-secondary">
               العودة إلى الأرشيف
             </Link>
+            {playerHref ? <Link href={playerHref} className="button button-secondary">تشغيل الوسائط</Link> : null}
             {state.status === "ready" ? (
               <button
                 type="button"
