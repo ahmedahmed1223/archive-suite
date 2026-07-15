@@ -94,6 +94,66 @@ class RecordsApiTest extends TestCase
             ->assertJsonPath('record.title', 'No Store Lookup');
     }
 
+    public function test_it_returns_server_authoritative_descriptor_completion_for_records(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [[
+                'uid' => 'completion-001',
+                'title' => '  Complete title  ',
+                'description' => '  ',
+                'type' => ' photograph ',
+                'tags' => ['  ', 'history', '', 42],
+                'descriptorCompletion' => [
+                    'complete' => 4,
+                    'status' => 'green',
+                    'missing' => [],
+                ],
+            ]],
+        ], $this->authHeaders())->assertOk();
+
+        $this->getJson('/api/v1/records/completion-001?store=archive-items', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('record.descriptorCompletion.complete', 3)
+            ->assertJsonPath('record.descriptorCompletion.status', 'yellow')
+            ->assertJsonPath('record.descriptorCompletion.missing', ['description']);
+    }
+
+    public function test_it_classifies_descriptor_completion_as_green_yellow_or_red(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [
+                [
+                    'uid' => 'completion-green',
+                    'title' => 'عنوان',
+                    'description' => 'وصف',
+                    'type' => 'document',
+                    'tags' => ['archive'],
+                ],
+                [
+                    'uid' => 'completion-red',
+                    'title' => 'عنوان فقط',
+                    'description' => '',
+                    'type' => ' ',
+                    'tags' => [' '],
+                ],
+            ],
+        ], $this->authHeaders())->assertOk();
+
+        $this->getJson('/api/v1/records/completion-green?store=archive-items', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('record.descriptorCompletion.status', 'green')
+            ->assertJsonPath('record.descriptorCompletion.complete', 4)
+            ->assertJsonPath('record.descriptorCompletion.missing', []);
+
+        $this->getJson('/api/v1/records/completion-red?store=archive-items', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('record.descriptorCompletion.status', 'red')
+            ->assertJsonPath('record.descriptorCompletion.complete', 1)
+            ->assertJsonPath('record.descriptorCompletion.missing', ['description', 'type', 'tags']);
+    }
+
     public function test_it_returns_404_for_nonexistent_record(): void
     {
         $this->getJson('/api/v1/records/nonexistent-id?store=archive-items', $this->authHeaders())

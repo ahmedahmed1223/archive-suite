@@ -3451,6 +3451,20 @@
           "thumbnail": { "type": "string" },
           "tags": { "type": "array", "items": { "type": "string" } },
           "metadata": { "type": "object", "additionalProperties": true },
+          "descriptorCompletion": {
+            "type": "object",
+            "required": ["status", "complete", "total", "missing"],
+            "properties": {
+              "status": { "type": "string", "enum": ["green", "yellow", "red"] },
+              "complete": { "type": "integer", "minimum": 0, "maximum": 4 },
+              "total": { "type": "integer", "const": 4 },
+              "missing": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["title", "description", "type", "tags"] }
+              }
+            },
+            "additionalProperties": false
+          },
           "isDeleted": { "type": "boolean", "default": false },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" },
