@@ -1,4 +1,4 @@
-FROM node:22.13.0-alpine@sha256:f2dc6eea95f787e25f173ba9904c9d0647ab2506178c7b5b7c5a3d02bc4af145 AS deps
+FROM node:22.23.1-alpine@sha256:b74031e546d7f4faf561d797ac1b76beccac856a042815ca77db4fd047581605 AS deps
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ COPY archive-next ./archive-next
 
 RUN pnpm --filter @archive/next run build
 
-FROM node:22.13.0-alpine@sha256:f2dc6eea95f787e25f173ba9904c9d0647ab2506178c7b5b7c5a3d02bc4af145 AS runner
+FROM node:22.23.1-alpine@sha256:b74031e546d7f4faf561d797ac1b76beccac856a042815ca77db4fd047581605 AS runner
 
 WORKDIR /app
 

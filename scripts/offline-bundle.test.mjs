@@ -157,7 +157,7 @@ test("builder path writes workflow-shaped digest-only application refs into a co
   Object.assign(process.env, {
     NEXT_IMAGE: `ghcr.io/workflow/next:v1.0.0-rc.1@sha256:${"d".repeat(64)}`,
     LARAVEL_IMAGE: `ghcr.io/workflow/laravel:v1.0.0-rc.1@sha256:${"c".repeat(64)}`,
-    POSTGRES_IMAGE: "ghcr.io/archive-suite/postgres:v1.0.0-rc.1@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0",
+    POSTGRES_IMAGE: "ghcr.io/archive-suite/postgres:v1.0.0-rc.1@sha256:815bf5378222044da3b34d98e6a5fdac37b15c428b67d09c7c2d90a038e597bf",
     REDIS_IMAGE: "ghcr.io/archive-suite/redis:v1.0.0-rc.1@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99",
   });
   try {

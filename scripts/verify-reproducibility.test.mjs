@@ -47,7 +47,7 @@ test("root frozen install and reproducibility verification are canonical gates",
     "CLAUDE.md",
     "infra/deploy/hostinger-vps.md"
   ].map(read);
-  const controlCenter = read("scripts/control-center.mjs");
+  const controlCenterOperations = read("scripts/control-center/operations.mjs");
   const ci = read(".github/workflows/ci.yml");
 
   assert.equal(rootPackage.scripts.bootstrap, "pnpm install --frozen-lockfile");
@@ -56,7 +56,7 @@ test("root frozen install and reproducibility verification are canonical gates",
   for (const document of canonicalInstallDocs) {
     assert.doesNotMatch(document, /pnpm install(?! --frozen-lockfile)/);
   }
-  assert.doesNotMatch(controlCenter, /runPnpm\(\["install"\]\)/);
-  assert.match(controlCenter, /runPnpm\(\["install", "--frozen-lockfile"\]\)/);
+  assert.doesNotMatch(controlCenterOperations, /runPnpm\(\["install"\]\)/);
+  assert.match(controlCenterOperations, /runPnpm\(\["install", "--frozen-lockfile"\]\)/);
   assert.match(ci, /pnpm run verify:reproducibility/);
 });

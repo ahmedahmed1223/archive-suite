@@ -138,7 +138,7 @@
       "mode": "docker",
       "status": "conditional",
       "requirements": {
-        "node": ">=22.13.0 <23 on host; baseline 22.13.0",
+        "node": ">=22.23.1 <23 on host; baseline 22.23.1",
         "docker": "Docker Desktop with Docker Compose v2",
         "php": "8.4.23 provided by the Laravel container",
         "composer": "2.9.5 provided by the Laravel container",
@@ -156,7 +156,7 @@
       "mode": "docker",
       "status": "conditional",
       "requirements": {
-        "node": ">=22.13.0 <23 on host; baseline 22.13.0",
+        "node": ">=22.23.1 <23 on host; baseline 22.23.1",
         "docker": "Docker Engine with Docker Compose v2",
         "php": "8.4.23 provided by the Laravel container",
         "composer": "2.9.5 provided by the Laravel container",
@@ -174,7 +174,7 @@
       "mode": "native",
       "status": "planned",
       "requirements": {
-        "node": ">=22.13.0 <23",
+        "node": ">=22.23.1 <23",
         "docker": "not required for the planned native path",
         "php": "PHP 8.4.23 baseline; native support remains planned",
         "composer": "Composer 2.9.5 baseline; native support remains planned",
@@ -192,7 +192,7 @@
       "mode": "native",
       "status": "planned",
       "requirements": {
-        "node": ">=22.13.0 <23",
+        "node": ">=22.23.1 <23",
         "docker": "not required for the planned native path",
         "php": "PHP 8.4.23 baseline; native support remains planned",
         "composer": "Composer 2.9.5 baseline; native support remains planned",
