@@ -142,7 +142,7 @@
 #### P6A — V1-301 onboarding محفوظ خادميًا
 
 - [x] **V1-301A عقد تقدم onboarding** — منجز 2026-07-15: تقدم موحد على مستوى المؤسسة في `storage_rows` بمراحل ثابتة (`organization` و`storage` و`invitation` و`first_record` و`first_search`)؛ لكل مرحلة `pending|completed` و`completedAt`. `GET /onboarding/progress` متاح لكل مصادَق و`PATCH /onboarding/progress/{stage}` للـadmin فقط، مع OpenAPI وعميل TypeScript مطابقين. تحقق: `OnboardingProgressApiTest` 3/3 (23 assertion)، `RouteScopeTest` 8/8، API contracts، typecheck، وbuild.
-- [ ] **V1-301B واجهة first-run مستأنفة** — ربط `archive-next/app/first-run` بالعقد الخادمي، استئناف التقدم بعد logout/login وعلى جهاز آخر، وإظهار خطوة قابلة للتنفيذ لا checklist محلية كاذبة.
+- [x] **V1-301B واجهة first-run مستأنفة** — منجز 2026-07-15: `/first-run` يقرأ مراحل المؤسسة من API بعد المصادقة ويعرض loading/error/retry وحالة دخول قابلة للتنفيذ للضيف؛ لا يبقى `localStorage` مصدرًا لتقدم المراحل. الـadmin فقط يحدّث مرحلة وينتظر تأكيد الخادم، بينما editor/viewer يقرآن الحالة دون أدوات تغيير. تحقق: Vitest 8/8، typecheck، وbuild.
 - [ ] **V1-301C رحلة admin حية** — fixture مدير جديد ينفذ المؤسسة→التخزين→الدعوة→أول مادة→أول بحث، مع حالات فشل/retry وعدم وسم الخطوة مكتملة قبل تأكيد الخادم.
 
 #### P6B — V1-303 responsive والوصولية

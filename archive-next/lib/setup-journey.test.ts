@@ -69,3 +69,14 @@ describe("first-run expert skip wiring", () => {
     expect(source).not.toContain('skipGuidedSetup: preset === "advanced" && isComplete');
   });
 });
+
+describe("first-run server progress wiring", () => {
+  it("loads and changes onboarding progress through the canonical API", () => {
+    const source = readFileSync(new URL("../app/first-run/page.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("api.onboardingProgress()");
+    expect(source).toContain('auth.user?.role === "admin"');
+    expect(source).toContain("api.updateOnboardingStage(stepId");
+    expect(source).not.toContain("ONBOARDING_STORAGE_KEY");
+  });
+});
