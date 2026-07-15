@@ -16,8 +16,23 @@ function unsupported(operation) {
   return { ok: false, supported: false, operation, reason: "unsupported" };
 }
 
-export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest, buildLocal = false, updateOperation, rollbackOperation, uninstallOperation } = {}) {
+export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest, buildLocal = false, updateOperation, rollbackOperation, uninstallOperation, preflight } = {}) {
   const installOrRepair = (operation, request = manifestRequest) => {
+    // V1-208L: host preconditions are checked before anything is written or
+    // started, so a host that cannot hold the install fails with a stable code
+    // instead of a half-created stack. Preflight is sync like compose(), and
+    // opt-in: adapters that inject none behave exactly as before.
+    if (preflight) {
+      const verdict = preflight();
+      if (!verdict.ok) {
+        if (manifestStore && request) {
+          try {
+            manifestStore.markInstallationFailed({ ...request, failedStep: "host-preflight", nextActions: verdict.nextActions });
+          } catch { /* the preflight verdict is the answer; never mask it with a manifest error */ }
+        }
+        return { ok: false, supported: true, ...verdict };
+      }
+    }
     const session = manifestStore && request ? manifestStore.beginInstallationOperation({ ...request, operation }) : null;
     const decision = session?.decision;
     if (decision?.action === "resume" && decision.nextStep === null) {

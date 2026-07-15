@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createInstallPreflight } from "./install-preflight.mjs";
+import { createInstallPreflight, createHostProbes } from "./install-preflight.mjs";
 
 // V1-208L: the two host preconditions that had no implementation to test —
 // free disk space and required dependencies. Probes are injected so these
@@ -61,6 +61,44 @@ test("an unreadable disk probe fails closed instead of assuming space", async ()
   assert.equal(result.code, "DISK_PROBE_FAILED");
   // The raw path from the probe error must not leak into the operator result.
   assert.doesNotMatch(JSON.stringify(result), /ArchiveSuite/);
+});
+
+test("host disk probe converts statfs blocks into available bytes", () => {
+  const probes = createHostProbes({
+    dataPath: "/data",
+    statfs: (path) => {
+      assert.equal(path, "/data");
+      // bavail is space available to an unprivileged writer; bfree includes
+      // root-reserved blocks the installer cannot actually use.
+      return { bsize: 4096, bavail: 100, blocks: 500, bfree: 200 };
+    },
+    run: () => ({ status: 0 }),
+  });
+  assert.deepEqual(probes.diskProbe(), { free: 4096 * 100, total: 4096 * 500 });
+});
+
+test("host dependency probe reports docker present only on a zero exit", () => {
+  const calls = [];
+  const probes = createHostProbes({
+    dataPath: "/data",
+    statfs: () => ({ bsize: 1, bavail: 1, blocks: 1 }),
+    run: (command, args) => {
+      calls.push([command, args]);
+      return { status: command === "docker" ? 0 : 1 };
+    },
+  });
+  assert.deepEqual(probes.dependencyProbe("docker"), { installed: true });
+  assert.deepEqual(probes.dependencyProbe("nope"), { installed: false });
+  assert.deepEqual(calls, [["docker", ["--version"]], ["nope", ["--version"]]]);
+});
+
+test("host dependency probe treats a spawn failure as missing, never as present", () => {
+  const probes = createHostProbes({
+    dataPath: "/data",
+    statfs: () => ({ bsize: 1, bavail: 1, blocks: 1 }),
+    run: () => { throw new Error("ENOENT"); },
+  });
+  assert.deepEqual(probes.dependencyProbe("docker"), { installed: false });
 });
 
 test("dependency checks run even when disk space is the first failure", async () => {

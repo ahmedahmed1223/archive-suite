@@ -104,6 +104,33 @@ function validateContract(contract) {
   return contract;
 }
 
+/**
+ * Free disk the host needs before installing the given selection.
+ *
+ * The contract states each profile's disk as a whole-host recommendation
+ * (core=100GiB, media=250GiB), not an increment on top of core — so the
+ * requirement is the largest selected entry, never the sum. `core` is always
+ * included because the setup contract keeps it implicitly enabled; without
+ * that, an empty selection would resolve to zero and let any disk pass.
+ */
+export function requiredDiskBytes(contract, { runtimeProfiles = [], capabilities = [] } = {}) {
+  const selected = new Set(["core", ...runtimeProfiles, ...capabilities]);
+  let required = 0;
+  for (const id of selected) {
+    const declared = contract.resources?.[id]?.diskBytes;
+    // `edge` is a real profile with no resource entry of its own (it adds an
+    // ingress container, not storage). Only reject ids the contract knows
+    // nothing about, so a typo can never silently lower the requirement.
+    if (declared === undefined) {
+      const known = id in (contract.runtimeProfiles ?? {}) || id in (contract.capabilities ?? {});
+      assertContract(known, `unknown profile or capability "${id}" has no declared resources`);
+      continue;
+    }
+    required = Math.max(required, declared);
+  }
+  return required;
+}
+
 export function loadPlatformContract() {
   // Parse the schema too so a missing or malformed schema is a deterministic
   // operator error even though validation is intentionally dependency-free.

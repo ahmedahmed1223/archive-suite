@@ -24,7 +24,8 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, copyFileSync, rmSync, statSync, statfsSync, unlinkSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
-import { formatPlatformContractReport, loadPlatformContract, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
+import { formatPlatformContractReport, loadPlatformContract, requiredDiskBytes, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
+import { createHostProbes, createInstallPreflight } from "./control-center/install-preflight.mjs";
 import { buildOperatorReport, buildReadinessContract, collectOperatorSnapshot, createSupportBundle, sanitize } from "./observability.mjs";
 import { createCli, createConsoleUi, runInteractiveMenu } from "./control-center/cli.mjs";
 import { createConfiguration, validateAdminPassword } from "./control-center/configuration.mjs";
@@ -111,6 +112,26 @@ function manifestInput(configuration, release) {
   };
 }
 
+/**
+ * V1-208L: the host gate for a real install. `requiredBytes` comes from the
+ * platform contract's declared resources for the selected profiles, never a
+ * hardcoded number, so raising a profile's footprint there raises the gate.
+ */
+function hostPreflightFor(configuration) {
+  const contract = loadPlatformContract();
+  const required = requiredDiskBytes(contract, {
+    runtimeProfiles: configuration.runtimeProfiles,
+    capabilities: configuration.capabilities,
+  });
+  const probes = createHostProbes({ dataPath: configuration.storage.path });
+  const preflight = createInstallPreflight({
+    diskProbe: probes.diskProbe,
+    dependencyProbe: probes.dependencyProbe,
+    requiredDependencies: ["docker"],
+  });
+  return () => preflight.run({ requiredBytes: required });
+}
+
 function localManifestInput(configuration) {
   const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
   const services = ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"];
@@ -168,9 +189,16 @@ function setupInstallOrRepair(operation, configurationInput = null) {
         health: healthProbe,
         manifestStore: installationManifest,
         buildLocal: localSource,
+        preflight: hostPreflightFor(configuration),
       });
       const result = operation === "install" ? runtime.install(request) : runtime.repair(request);
       if (!result.ok) {
+        // A preflight verdict carries its own stable code; only a Compose
+        // failure is an INSTALL_FAILED. Collapsing both would hide the
+        // actionable reason the host was rejected.
+        if (result.code) {
+          return renderSetupResult({ ok: false, code: result.code, message: result.message, details: result.details, nextActions: result.nextActions });
+        }
         return renderSetupResult({ ok: false, code: "INSTALL_FAILED", message: "Docker Compose did not complete the requested operation.", details: { status: result.status }, nextActions: ["Review Docker Compose output and run repair after correcting the failure."] });
       }
     }
