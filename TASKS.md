@@ -131,8 +131,8 @@
 
 #### P5 — V1-212B تكافؤ حي بين المنصات
 
-- [ ] **V1-212B harness قبول موحد** — تشغيل نفس scenario IDs على Windows Docker/Native وLinux Docker/Native: install/reconfigure/operate/data/release/uninstall/security، وحفظ النتائج كartifacts.
-- [ ] **V1-212C بوابة ادعاء الدعم** — منع انتقال أي platform من `planned/conditional` إلى supported ما لم تمر مصفوفته الحية كاملة من artifact إصدار نهائي على clean host.
+- [x] **V1-212B harness قبول موحد** — تشغيل نفس scenario IDs على Windows Docker/Native وLinux Docker/Native: install/reconfigure/operate/data/release/uninstall/security، وحفظ النتائج كartifacts. *(2026-07-15: `acceptance-harness.mjs` — نفس 7 سيناريوهات على المنصات الأربع من `compatibility.v1.json`، منفذ السيناريو محقون (live runners لاحقاً)، ونتيجة لا تُحفظ كأثر تُبطل التشغيلة كلها.)*
+- [x] **V1-212C بوابة ادعاء الدعم** — منع انتقال أي platform من `planned/conditional` إلى supported ما لم تمر مصفوفته الحية كاملة من artifact إصدار نهائي على clean host. *(2026-07-15: `support-claim-gate.mjs` — يرفض prerelease/غير موقع، مصفوفة ناقصة أو فاشلة، host غير نظيف أو دليل من إصدار آخر؛ يحكم على الأدلة ولا يعدّل العقد.)*
 
 ### الموجة 3 — المنتج وUX
 - [x] **V1-302 admin safety** — منجز 2026-07-13 في ac7dfcc: منع حذف/تخفيض آخر admin + `LAST_ADMIN_PROTECTED`، والحزمة 532 تمر.
