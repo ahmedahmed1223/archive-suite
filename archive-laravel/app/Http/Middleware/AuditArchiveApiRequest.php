@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\AuditLog;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuditArchiveApiRequest
@@ -14,6 +15,7 @@ class AuditArchiveApiRequest
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $recordBefore = $this->recordBefore($request);
         $response = $next($request);
 
         if (! $request->isMethodSafe()) {
@@ -27,7 +29,7 @@ class AuditArchiveApiRequest
                 'actor_id' => $request->attributes->get('archive_user')?->getKey(),
                 'outcome' => $taxonomy['outcome'],
                 'status_code' => $response->getStatusCode(),
-                'metadata' => $this->metadata($request, $taxonomy),
+                'metadata' => $this->metadata($request, $taxonomy, $recordBefore),
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
@@ -130,7 +132,7 @@ class AuditArchiveApiRequest
      * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
      * @return array<string, mixed>
      */
-    private function metadata(Request $request, array $taxonomy): array
+    private function metadata(Request $request, array $taxonomy, ?array $recordBefore = null): array
     {
         $payload = $this->redact($request->except(['password', 'password_confirmation']));
         $metadata = [
@@ -147,9 +149,71 @@ class AuditArchiveApiRequest
                 'fields' => $this->fieldPaths($payload),
                 'after' => $payload,
             ];
+
+            $recordDiff = $this->recordDiff($request, $taxonomy, $recordBefore);
+            if ($recordDiff !== null) {
+                $metadata['diff'] = [...$metadata['diff'], ...$recordDiff];
+            }
         }
 
         return $metadata;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function recordBefore(Request $request): ?array
+    {
+        if (! $request->isMethod('post') || $request->route()?->uri() !== 'api/v1/records/bulk') return null;
+
+        $records = $request->input('records');
+        if (! is_array($records) || count($records) !== 1 || ! is_array($records[0] ?? null)) return null;
+
+        $id = $records[0]['uid'] ?? $records[0]['id'] ?? null;
+        if (! is_string($id) || $id === '') return null;
+
+        $row = DB::table('storage_rows')
+            ->where('store', (string) ($request->input('store') ?: 'archive-items'))
+            ->where(function ($query) use ($id): void {
+                $query->where('uid', $id)->orWhere('data->>\'id\'', $id);
+            })
+            ->first();
+        $data = $row?->data ? json_decode((string) $row->data, true) : null;
+
+        return is_array($data) ? $data : null;
+    }
+
+    /**
+     * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
+     * @param array<string, mixed>|null $recordBefore
+     * @return array{before: array<string, mixed>, after: array<string, mixed>, fields: array<int, string>}|null
+     */
+    private function recordDiff(Request $request, array $taxonomy, ?array $recordBefore): ?array
+    {
+        if ($taxonomy['event'] !== 'records.bulk_upsert' || $taxonomy['outcome'] !== 'success' || $recordBefore === null) return null;
+
+        $records = $request->input('records');
+        $record = is_array($records) && is_array($records[0] ?? null) ? $records[0] : null;
+        if ($record === null) return null;
+
+        $before = [];
+        $after = [];
+        foreach ($this->redact($record) as $field => $value) {
+            if ($this->isSensitiveKey((string) $field)) {
+                continue;
+            }
+
+            $previous = $this->redact([$field => $recordBefore[$field] ?? null])[$field];
+            if ($previous !== $value) {
+                $before[$field] = $previous;
+                $after[$field] = $value;
+            }
+        }
+
+        return $after === [] ? null : ['before' => $before, 'after' => $after, 'fields' => array_keys($after)];
+    }
+
+    private function isSensitiveKey(string $key): bool
+    {
+        return preg_match('/password|token|secret|key|dsn|credential|authorization/', strtolower($key)) === 1;
     }
 
     /**
@@ -199,7 +263,7 @@ class AuditArchiveApiRequest
 
         foreach ($value as $key => $item) {
             $normalizedKey = strtolower((string) $key);
-            if (preg_match('/password|token|secret|key|dsn|credential|authorization/', $normalizedKey)) {
+            if ($this->isSensitiveKey($normalizedKey)) {
                 $redacted[$key] = '[redacted]';
                 continue;
             }
