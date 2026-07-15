@@ -5,6 +5,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, deriveRecordSourcePath, type ArchiveRecord, type MediaJob } from "@/lib/archive-api";
 import { buildChangeImpact } from "@/lib/change-impact";
 import {
@@ -51,6 +52,7 @@ function downloadText(content: string, filename: string, type: string): void {
 }
 
 export default function ProjectsPage() {
+  const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [projects, setProjects] = useState<MontageProject[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -99,7 +101,13 @@ export default function ProjectsPage() {
   }
 
   async function handleDelete(project: MontageProject) {
-    if (!window.confirm(`حذف المشروع محلياً غير قابل للتراجع: "${project.name}". لن تتغير أي مادة أصلية.`)) return;
+    const confirmed = await dialogs.confirm({
+      title: "حذف المشروع",
+      message: `حذف المشروع محلياً غير قابل للتراجع: "${project.name}". لن تتغير أي مادة أصلية.`,
+      confirmLabel: "حذف",
+      destructive: true
+    });
+    if (!confirmed) return;
     await deleteProject(project.id);
     const next = await listProjects();
     setProjects(next);
@@ -141,9 +149,15 @@ export default function ProjectsPage() {
     setFeedback(`تمت إضافة "${record.title || record.id}" إلى الخط الزمني`);
   }
 
-  function handleRemoveClip(clip: MontageClip) {
+  async function handleRemoveClip(clip: MontageClip) {
     if (!selected) return;
-    if (!window.confirm(`حذف القصاصة غير قابل للتراجع من هذا الخط الزمني: "${clip.title || clip.itemId}". لن تتغير المادة الأصلية.`)) return;
+    const confirmed = await dialogs.confirm({
+      title: "حذف القصاصة",
+      message: `حذف القصاصة غير قابل للتراجع من هذا الخط الزمني: "${clip.title || clip.itemId}". لن تتغير المادة الأصلية.`,
+      confirmLabel: "حذف",
+      destructive: true
+    });
+    if (!confirmed) return;
     persist(removeClip(selected, clip.id));
   }
 

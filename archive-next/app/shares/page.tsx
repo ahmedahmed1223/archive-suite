@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { clearAllMintedLinks, listMintedLinks, removeMintedLink, type MintedLink } from "@/lib/minted-shares";
 import { buildShareExpiry } from "@/lib/admin-action-summary";
 
@@ -14,6 +15,7 @@ function formatLocalDate(value?: string) {
 }
 
 export default function SharesPage() {
+  const dialogs = useConfirmDialog();
   const [links, setLinks] = useState<MintedLink[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [cleared, setCleared] = useState(false);
@@ -32,14 +34,29 @@ export default function SharesPage() {
     }
   };
 
-  const handleRemove = (token: string) => {
-    if (!window.confirm("حذف هذا الرابط من سجل هذا المتصفح فقط؟ لن يؤدي ذلك إلى إبطال الرابط على الخادم.")) return;
+  const handleRemove = async (token: string) => {
+    const confirmed = await dialogs.confirm({
+      title: "حذف الرابط",
+      message: "حذف هذا الرابط من سجل هذا المتصفح فقط؟ لن يؤدي ذلك إلى إبطال الرابط على الخادم.",
+      confirmLabel: "حذف",
+      destructive: true
+    });
+    if (!confirmed) return;
     removeMintedLink(token);
     setLinks(listMintedLinks());
   };
 
-  const handleClearAll = () => {
-    if (links.length > 0 && !window.confirm("مسح سجل الروابط المحلية فقط؟ لن يؤدي ذلك إلى إبطال روابط المشاركة.")) return;
+  const handleClearAll = async () => {
+    if (
+      links.length > 0 &&
+      !(await dialogs.confirm({
+        title: "مسح السجل المحلي",
+        message: "مسح سجل الروابط المحلية فقط؟ لن يؤدي ذلك إلى إبطال روابط المشاركة.",
+        confirmLabel: "مسح",
+        destructive: true
+      }))
+    )
+      return;
     clearAllMintedLinks();
     setLinks([]);
     setCleared(true);

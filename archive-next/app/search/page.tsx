@@ -8,6 +8,7 @@ import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwit
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
 import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
@@ -71,6 +72,7 @@ export default function SearchPage() {
 }
 
 function SearchPageContent() {
+  const dialogs = useConfirmDialog();
   const router = useRouter();
   const searchParams = useSearchParams();
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -262,7 +264,11 @@ function SearchPageContent() {
 
   const saveCurrentSearch = async () => {
     if (!query.trim() && !store && typeFilter === "all" && !tagFilter) return;
-    const name = window.prompt("اسم البحث المحفوظ", query.trim() || "بحث مخصص");
+    const name = await dialogs.prompt({
+      title: "حفظ البحث",
+      message: "اسم البحث المحفوظ",
+      defaultValue: query.trim() || "بحث مخصص"
+    });
     if (!name?.trim()) return;
 
     setSavedStatus("جار حفظ البحث...");

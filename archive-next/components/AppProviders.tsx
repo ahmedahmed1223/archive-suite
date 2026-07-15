@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import CommandPalette from "@/components/CommandPalette";
 import { TooltipProvider } from "@/components/ui/Tooltip";
+import { ConfirmDialogProvider } from "@/components/ui/ConfirmDialog";
 import { ToastProvider, ToastViewport } from "@/components/ui/Toast";
 import ToastHub from "@/components/ui/ToastHub";
 import OfflineStatusBanner from "@/components/OfflineStatusBanner";
@@ -41,11 +42,13 @@ export default function AppProviders({ children }: Readonly<{ children: ReactNod
         <AuthProvider>
           <TooltipProvider delayDuration={180}>
             <ToastProvider swipeDirection="right">
-              <OfflineStatusBanner />
-              <AuthGate>{children}</AuthGate>
-              <CommandPalette />
-              <ToastHub />
-              <ToastViewport />
+              <ConfirmDialogProvider>
+                <OfflineStatusBanner />
+                <AuthGate>{children}</AuthGate>
+                <CommandPalette />
+                <ToastHub />
+                <ToastViewport />
+              </ConfirmDialogProvider>
             </ToastProvider>
           </TooltipProvider>
         </AuthProvider>

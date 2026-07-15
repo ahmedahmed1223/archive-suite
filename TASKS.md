@@ -90,8 +90,8 @@
 
 - [x] **V1-208H النسخ والاستعادة القانونية** — مكتملة 2026-07-14: `pg_dump`/`psql` في Setup استُبدلا بأربعة أوامر artisan (`archive:backup-run|list|verify|restore`) تُغلّف `BackupService` القانونية (DB+files+manifest+checksums) بعقد `{ok,code,message,details}` JSON. `restore` يرفض بلا `--force` قبل أي أثر جانبي؛ بوابة checksum الموجودة في `BackupService::restore()` لم تُعدَّل. أُضيف `setup verify-backup`. مراجعة أمنية مستقلة (Opus) أثبتت السلامة وأضافت تصحيحين: `catch (Throwable)` عام بدل تسريب stack trace خام، وتحذير Node صريح عند استعادة نسخة غير مُتحقَّقة (بلا sidecar). التفاصيل الكاملة في `ChangeLog.md`. التحقق: 95/95 Node، 585/585 Laravel (2736 تأكيدًا).
 - [x] **V1-208I update ذري من artifacts** — مكتملة 2026-07-14: `setup update` (Docker release فقط) ينفذ preflight للـdescriptor غير القابل للتغيير ثم backup قانونيًا وpull/load متحققًا و`archive:migrate-safe` وswitch وhealth وrole smoke. فشل switch/health/smoke أو أي كتابة manifest بعد switch يوقف حالة target غير الآمنة ويستعيد تلقائيًا الإصدار/config المثبتين السابقين؛ smoke يثبت رفض anonymous وقبول مستخدم authenticated فعليًا عبر `ARCHIVE_UPDATE_SMOKE_TOKEN` المؤقت غير المخزن. manifest يسجل target أثناء التنفيذ وprevious release reference بعد النجاح ولا يحذف images. أخطاء manifest I/O تتحول إلى envelope JSON أحمر `UPDATE_MANIFEST_IO_FAILED` بلا raw rejection أو تسريب URL.
-- [ ] **V1-208J rollback حقيقي** — إعادة artifact/config السابقين، ومع migration غير قابلة للعكس عرض أثر فقد بيانات ما بعد التحديث وطلب تأكيد قبل استعادة النسخة السابقة. القبول: نجاح rollback بعد فشل health، ورفض downgrade غير المتوافق.
-- [ ] **V1-208K uninstall وإعادة الربط** — إبقاء البيانات افتراضيًا، إزالة الخدمات والقواعد التي يملكها manifest فقط، وإضافة `reconnect-data`. حذف البيانات خيار منفصل يتطلب عبارة تأكيد وbackup حديثًا ناجحًا.
+- [x] **V1-208J rollback حقيقي** — منجز 2026-07-15: `scripts/control-center/rollback-release.mjs` يعيد artifact/config السابقين عبر manifest، ويعرض أثر فقد البيانات ويطلب تأكيدًا صريحًا لmigration غير قابلة للعكس قبل استعادة النسخة السابقة. rollback ينجح بعد فشل health، ويُرفض downgrade غير المتوافق (platform/mode mismatch) بكود ثابت. مربوط في `scripts/control-center.mjs` وadapter. التحقق: `node --test scripts/control-center/rollback-release.test.mjs` ‏17/17.
+- [x] **V1-208K uninstall وإعادة الربط** — منجز 2026-07-15: `scripts/control-center/uninstall.mjs` يُبقي البيانات افتراضيًا ويزيل فقط الخدمات/القواعد التي يملكها manifest، مع أمر `reconnect-data --storage=<path>` جديد. حذف البيانات يتطلب عبارة تأكيد حرفية وbackup ناجحًا حديثًا. مربوط في CLI (`uninstall`, `reconnect-data`). التحقق: `node --test scripts/control-center/uninstall.test.mjs` ‏16/16.
 - [ ] **V1-208L اختبارات فشل دورة الحياة** — checksum/signature تالف، منفذ مشغول، مساحة ناقصة، اعتماد مفقود، فشل منتصف التثبيت، تشغيل الأمر مرتين، DB/worker/Reverb down، قرص ممتلئ، وفشل restore/update/rollback؛ لكل سيناريو code وnextActions ثابتان.
 
 #### P3 — V1-210 Windows Native
@@ -134,8 +134,8 @@
 
 #### P6C — V1-304 متابعات صحة البيانات
 
-- [ ] **V1-304B automation pagination** — إزالة `limit(25)` الصامت أو إرجاع pagination envelope كامل مع total/next cursor، وتحديث العميل والعقد والاختبارات.
-- [ ] **V1-304C catalog cursor edge** — اختبار وإصلاح حافة التكرار/الفقد عند تساوي sort keys وبين الصفحات.
+- [x] **V1-304B automation pagination** — منجز 2026-07-15: `AutomationRulesController::index` يستبدل `limit(25)` الصامت بـ`paginate()` حقيقي (`total/page/limit/hasMore`)، والعميل `archive-api.ts::automationRules` يقبل `{limit, page}` ويُعيد `pagination` اختياريًا. اختبار جديد `AutomationRulesApiTest`.
+- [x] **V1-304C catalog cursor edge** — منجز 2026-07-15: `PublicCatalogController` يرتّب ويُرمّز cursor على زوج `(uid, store)` بدل `uid` وحده (المفتاح الأساسي فعليًا مركّب)، فيمنع فقد/تكرار سجلات عند تساوي `uid` بين مخازن مختلفة عبر حدود الصفحات؛ cursor القديم (uid فقط) يبقى مقبولاً للتوافق الخلفي. اختبار جديد `PublicCatalogApiTest`.
 - [ ] **V1-304D montage contract** — إضافة montage-projects إلى OpenAPI والتحقق من توافق request/response مع العميل الفعلي.
 
 #### P6D — V1-306 اللغة والمساعدة

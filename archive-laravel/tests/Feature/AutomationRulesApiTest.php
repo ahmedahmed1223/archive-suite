@@ -56,6 +56,37 @@ class AutomationRulesApiTest extends TestCase
             ->assertJsonPath('deleted', true);
     }
 
+    public function test_runs_list_reports_pagination_beyond_limit(): void
+    {
+        $created = $this->postJson('/api/v1/automation/rules', [
+            'name' => 'Paginated runs rule',
+            'trigger' => 'schedule.daily',
+            'action' => 'notify-admin',
+        ], $this->authHeaders())->assertCreated();
+
+        $ruleId = $created->json('rule.id');
+        $this->assertIsString($ruleId);
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->postJson('/api/v1/automation/rules/'.$ruleId.'/run', ['dryRun' => true], $this->authHeaders())
+                ->assertCreated();
+        }
+
+        $this->getJson('/api/v1/automation/rules?limit=2', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(2, 'runs')
+            ->assertJsonPath('pagination.total', 3)
+            ->assertJsonPath('pagination.page', 1)
+            ->assertJsonPath('pagination.limit', 2)
+            ->assertJsonPath('pagination.hasMore', true);
+
+        $this->getJson('/api/v1/automation/rules?limit=2&page=2', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(1, 'runs')
+            ->assertJsonPath('pagination.page', 2)
+            ->assertJsonPath('pagination.hasMore', false);
+    }
+
     public function test_it_rejects_unsafe_or_missing_automation_requests(): void
     {
         $this->postJson('/api/v1/automation/rules', [

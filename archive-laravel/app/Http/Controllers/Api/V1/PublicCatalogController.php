@@ -22,18 +22,35 @@ class PublicCatalogController extends Controller
         ]);
 
         $limit = (int) ($validated['limit'] ?? 24);
-        $cursorUid = isset($validated['cursor']) ? StorageRowPayload::decodeCursor($validated['cursor']) : null;
+        $cursor = isset($validated['cursor']) ? $this->decodeCatalogCursor($validated['cursor']) : null;
 
         $records = [];
         $lastPublishedUid = null;
+        $lastPublishedStore = null;
         $nextCursor = null;
 
+        // V1-304C: storage_rows PK is (store, uid), so uid alone is not unique
+        // across stores. Order and cursor on (uid, store) so equal uids at a
+        // page boundary are neither lost nor duplicated.
         $query = DB::table('storage_rows')
             ->orderBy('uid')
+            ->orderBy('store')
             ->limit(500);
 
-        if ($cursorUid !== null) {
-            $query->where('uid', '>', $cursorUid);
+        if ($cursor !== null) {
+            [$cursorUid, $cursorStore] = $cursor;
+
+            if ($cursorStore === null) {
+                // Legacy uid-only cursor issued before the composite format.
+                $query->where('uid', '>', $cursorUid);
+            } else {
+                $query->where(function ($tieBreak) use ($cursorUid, $cursorStore): void {
+                    $tieBreak->where('uid', '>', $cursorUid)
+                        ->orWhere(function ($sameUid) use ($cursorUid, $cursorStore): void {
+                            $sameUid->where('uid', $cursorUid)->where('store', '>', $cursorStore);
+                        });
+                });
+            }
         }
 
         foreach ($query->get() as $row) {
@@ -48,12 +65,16 @@ class PublicCatalogController extends Controller
             }
 
             if (count($records) >= $limit) {
-                $nextCursor = StorageRowPayload::encodeCursor($lastPublishedUid ?? $row->uid);
+                $nextCursor = $this->encodeCatalogCursor(
+                    $lastPublishedUid ?? $row->uid,
+                    $lastPublishedStore ?? $row->store,
+                );
                 break;
             }
 
             $records[] = $this->publicRecord($record);
             $lastPublishedUid = $row->uid;
+            $lastPublishedStore = $row->store;
         }
 
         return response()->json([
@@ -150,5 +171,30 @@ class PublicCatalogController extends Controller
     private function normalize(string $value): string
     {
         return mb_strtolower(trim($value));
+    }
+
+    private const CURSOR_SEPARATOR = "\x1f";
+
+    private function encodeCatalogCursor(string $uid, string $store): string
+    {
+        return StorageRowPayload::encodeCursor($uid.self::CURSOR_SEPARATOR.$store);
+    }
+
+    /**
+     * @return array{0: string, 1: string|null}
+     */
+    private function decodeCatalogCursor(string $cursor): array
+    {
+        $decoded = StorageRowPayload::decodeCursor($cursor);
+        $separatorPosition = strpos($decoded, self::CURSOR_SEPARATOR);
+
+        if ($separatorPosition === false) {
+            return [$decoded, null];
+        }
+
+        return [
+            substr($decoded, 0, $separatorPosition),
+            substr($decoded, $separatorPosition + 1),
+        ];
     }
 }

@@ -9,6 +9,7 @@ import BroadcastMetadataPanel from "@/components/BroadcastMetadataPanel";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import GeotagPanel from "./GeotagPanel";
 import MediaDerivativesTree from "./MediaDerivativesTree";
 import {
@@ -83,6 +84,7 @@ function RelationPreviewPanel({
   onUpdate: (id: string, payload: UpdateRelationPayload) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }>) {
+  const dialogs = useConfirmDialog();
   const relationTypes = graph?.relationTypes?.length
     ? graph.relationTypes
     : [{ key: "related_to" as RelationTypeKey, label: "مرتبط بـ", inverse: "related_to", bidirectional: true }];
@@ -145,7 +147,12 @@ function RelationPreviewPanel({
 
   async function handleDelete(edge: RelationGraphEdge) {
     if (!edge.relationId || busy) return;
-    const confirmed = window.confirm("حذف هذه العلاقة اليدوية؟");
+    const confirmed = await dialogs.confirm({
+      title: "حذف العلاقة",
+      message: "سيتم حذف هذه العلاقة اليدوية بين السجلين. هل تريد المتابعة؟",
+      confirmLabel: "حذف",
+      destructive: true
+    });
     if (!confirmed) return;
 
     setBusy(true);

@@ -1893,6 +1893,20 @@
         "summary": "List automation rules and recent execution runs",
         "operationId": "listAutomationRules",
         "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 25 }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1 }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Automation rules and runs",
@@ -2492,6 +2506,141 @@
           "401": { "$ref": "#/components/responses/Error" },
           "403": { "$ref": "#/components/responses/Error" },
           "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/montage-projects": {
+      "get": {
+        "tags": ["Montage"],
+        "summary": "List montage projects filtered by status",
+        "operationId": "listMontageProjects",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["draft", "finalized", "archived"], "default": "draft" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 50 }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Montage projects for the requested status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MontageProjectsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Montage"],
+        "summary": "Create a montage project",
+        "operationId": "createMontageProject",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateMontageProjectRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created montage project",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MontageProjectResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/montage-projects/{id}": {
+      "get": {
+        "tags": ["Montage"],
+        "summary": "Read a montage project",
+        "operationId": "getMontageProject",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Montage project",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MontageProjectResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "put": {
+        "tags": ["Montage"],
+        "summary": "Update a montage project",
+        "operationId": "updateMontageProject",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateMontageProjectRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated montage project",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MontageProjectResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Montage"],
+        "summary": "Delete a montage project",
+        "operationId": "deleteMontageProject",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -4672,7 +4821,8 @@
             "required": ["rules", "runs"],
             "properties": {
               "rules": { "type": "array", "items": { "$ref": "#/components/schemas/AutomationRule" } },
-              "runs": { "type": "array", "items": { "$ref": "#/components/schemas/AutomationRuleRun" } }
+              "runs": { "type": "array", "items": { "$ref": "#/components/schemas/AutomationRuleRun" } },
+              "pagination": { "$ref": "#/components/schemas/PaginationMeta" }
             }
           }
         ]
@@ -4697,6 +4847,79 @@
             "required": ["run"],
             "properties": {
               "run": { "$ref": "#/components/schemas/AutomationRuleRun" }
+            }
+          }
+        ]
+      },
+      "MontageProject": {
+        "type": "object",
+        "required": ["id", "name", "fps", "tracks", "clips", "markers", "comments", "transitions", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string", "maxLength": 255 },
+          "description": { "type": ["string", "null"] },
+          "fps": { "type": "integer", "minimum": 1, "maximum": 120, "default": 25 },
+          "tracks": { "type": "array", "items": { "type": "object" }, "description": "Timeline tracks; item shape is client-defined and stored as-is." },
+          "clips": { "type": "array", "items": { "type": "object" }, "description": "Timeline clips; item shape is client-defined and stored as-is." },
+          "markers": { "type": "array", "items": { "type": "object" } },
+          "comments": { "type": "array", "items": { "type": "object" } },
+          "transitions": { "type": "array", "items": { "type": "object" } },
+          "status": { "type": "string", "enum": ["draft", "finalized", "archived"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CreateMontageProjectRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 255 },
+          "description": { "type": ["string", "null"] },
+          "fps": { "type": ["integer", "null"], "minimum": 1, "maximum": 120 },
+          "tracks": { "type": ["array", "null"], "items": { "type": "object" } },
+          "clips": { "type": ["array", "null"], "items": { "type": "object" } },
+          "markers": { "type": ["array", "null"], "items": { "type": "object" } },
+          "comments": { "type": ["array", "null"], "items": { "type": "object" } },
+          "transitions": { "type": ["array", "null"], "items": { "type": "object" } }
+        },
+        "description": "New projects are always created with status 'draft'; unknown extra fields are ignored by the server."
+      },
+      "UpdateMontageProjectRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": ["string", "null"], "maxLength": 255 },
+          "description": { "type": ["string", "null"] },
+          "fps": { "type": ["integer", "null"], "minimum": 1, "maximum": 120 },
+          "tracks": { "type": ["array", "null"], "items": { "type": "object" } },
+          "clips": { "type": ["array", "null"], "items": { "type": "object" } },
+          "markers": { "type": ["array", "null"], "items": { "type": "object" } },
+          "comments": { "type": ["array", "null"], "items": { "type": "object" } },
+          "transitions": { "type": ["array", "null"], "items": { "type": "object" } },
+          "status": { "type": ["string", "null"], "enum": ["draft", "finalized", "archived", null] }
+        },
+        "description": "Fields sent as null are ignored (not cleared); unknown extra fields are ignored by the server."
+      },
+      "MontageProjectsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["projects", "pagination"],
+            "properties": {
+              "projects": { "type": "array", "items": { "$ref": "#/components/schemas/MontageProject" } },
+              "pagination": { "$ref": "#/components/schemas/PaginationMeta" }
+            }
+          }
+        ]
+      },
+      "MontageProjectResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["project"],
+            "properties": {
+              "project": { "$ref": "#/components/schemas/MontageProject" }
             }
           }
         ]

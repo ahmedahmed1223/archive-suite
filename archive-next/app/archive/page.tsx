@@ -10,6 +10,7 @@ import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacets } from "@/lib/archive-api";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
@@ -182,6 +183,7 @@ function savedArchiveViewFromSearch(search: SavedSearch): SavedArchiveView {
 }
 
 function ArchivePageContent() {
+  const dialogs = useConfirmDialog();
   const router = useRouter();
   const searchParams = useSearchParams();
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -441,7 +443,7 @@ function ArchivePageContent() {
   };
 
   const saveCurrentView = async () => {
-    const name = window.prompt("اسم العرض المحفوظ");
+    const name = await dialogs.prompt({ title: "حفظ العرض", message: "اسم العرض المحفوظ" });
     if (!name?.trim()) return;
 
     setSavedViewStatus("جار حفظ العرض...");
@@ -538,7 +540,7 @@ function ArchivePageContent() {
   };
 
   const bulkAddTag = async () => {
-    const tag = window.prompt("أضف وسمًا للسجلات المحددة");
+    const tag = await dialogs.prompt({ title: "إضافة وسم", message: "أضف وسمًا للسجلات المحددة" });
     if (!tag?.trim()) return;
     const trimmedTag = tag.trim();
     await applyBulkPatch(
@@ -548,7 +550,7 @@ function ArchivePageContent() {
   };
 
   const bulkSetType = async () => {
-    const nextType = window.prompt("النوع الجديد للسجلات المحددة");
+    const nextType = await dialogs.prompt({ title: "تغيير النوع", message: "النوع الجديد للسجلات المحددة" });
     if (!nextType?.trim()) return;
     const trimmedType = nextType.trim();
     await applyBulkPatch(
@@ -562,9 +564,12 @@ function ArchivePageContent() {
     const selectedRecords = records.filter((record) => selectedIdSet.has(record.id));
     if (selectedRecords.length === 0) return;
 
-    const confirmed = window.confirm(
-      `تحذير: سيتم حذف ${selectedRecords.length} سجل نهائيًا من الأرشيف ولا يمكن التراجع عن هذا الإجراء.\n\nهل أنت متأكد من المتابعة؟`
-    );
+    const confirmed = await dialogs.confirm({
+      title: "حذف نهائي",
+      message: `تحذير: سيتم حذف ${selectedRecords.length} سجل نهائيًا من الأرشيف ولا يمكن التراجع عن هذا الإجراء. هل أنت متأكد من المتابعة؟`,
+      confirmLabel: "حذف نهائيًا",
+      destructive: true
+    });
     if (!confirmed) return;
 
     const idsByStore = new Map<string, string[]>();

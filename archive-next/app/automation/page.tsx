@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   createArchiveApiClient,
   type ArchiveRecord,
@@ -38,6 +39,7 @@ function formatDate(value?: string | null) {
 }
 
 export default function AutomationPage() {
+  const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
   const [error, setError] = useState("");
@@ -122,7 +124,12 @@ export default function AutomationPage() {
   }
 
   async function deleteRule(rule: AutomationRule) {
-    const confirmed = window.confirm(`حذف القاعدة "${rule.name}"؟`);
+    const confirmed = await dialogs.confirm({
+      title: "حذف القاعدة",
+      message: `سيتم حذف القاعدة "${rule.name}" ولن تعمل تلقائيًا بعد الآن. هل تريد المتابعة؟`,
+      confirmLabel: "حذف",
+      destructive: true
+    });
     if (!confirmed) return;
 
     setBusyId(rule.id);
