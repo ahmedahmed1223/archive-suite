@@ -839,9 +839,15 @@ export interface ContentTypeRecord {
 
 export type ArchiveTypeFieldKind = "text" | "number" | "date" | "select" | "multi" | "boolean";
 
+export interface ArchiveTypeFieldCondition {
+  field: string;
+  equals: string | number | boolean;
+}
+
 export interface ArchiveTypeField {
   name: string;
   type: ArchiveTypeFieldKind;
+  condition?: ArchiveTypeFieldCondition;
   fieldAcl?: {
     view?: string[];
     edit?: string[];
