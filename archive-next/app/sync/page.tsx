@@ -8,6 +8,7 @@ import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SyncLogEntry, type SyncSummary } from "@/lib/archive-api";
 import "./sync.css";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type SyncState =
   | { status: "loading" }
@@ -130,8 +131,8 @@ export default function SyncPage() {
       ) : null}
 
       {state.status === "loading" && (
-        <div className="panel panel-compact" role="status" aria-live="polite">
-          <p className="form-status">جار تحميل سجل المزامنة...</p>
+        <div className="panel panel-compact">
+          <Skeleton label="جار تحميل سجل المزامنة..." />
         </div>
       )}
 

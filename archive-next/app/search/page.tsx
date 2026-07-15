@@ -12,6 +12,7 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
 import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type SearchState =
   | { status: "idle" }
@@ -61,8 +62,8 @@ export default function SearchPage() {
   return (
     <Suspense fallback={(
       <AppShell subtitle="بحث متقدم">
-        <div className="panel panel-compact" role="status">
-          <p className="helper-text">جار تحميل البحث...</p>
+        <div className="panel panel-compact">
+          <Skeleton label="جار تحميل البحث..." />
         </div>
       </AppShell>
     )}>

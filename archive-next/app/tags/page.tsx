@@ -8,6 +8,7 @@ import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord, type TagNode } from "@/lib/archive-api";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type TagsLoadState =
   | { status: "loading" }
@@ -132,7 +133,7 @@ export default function TagsPage() {
       </PageToolbar>
 
       {loadState.status === "loading" ? (
-        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل الوسوم والسجلات...</p></div>
+        <div className="panel panel-compact"><Skeleton label="جار تحميل الوسوم والسجلات..." /></div>
       ) : null}
 
       {loadState.status === "error" ? (

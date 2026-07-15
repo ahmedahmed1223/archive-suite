@@ -12,6 +12,8 @@ import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveFile, type FileBrowserEntry } from "@/lib/archive-api";
 import { addMintedLink } from "@/lib/minted-shares";
+import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type FileState =
   | { status: "loading" }
@@ -133,7 +135,7 @@ function getFileName(file: ArchiveFile) {
 }
 
 function getInitialFileViewMode(): FileViewMode {
-  if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+  if (matchesMediaQuery(MOBILE_VIEWPORT_QUERY)) {
     return "cards";
   }
 
@@ -626,7 +628,7 @@ export default function FilesPage() {
           </nav>
 
           {browserState.status === "loading" ? (
-            <p className="form-status" role="status" aria-live="polite">جار تحميل محتوى المجلد...</p>
+            <Skeleton label="جار تحميل محتوى المجلد..." />
           ) : null}
 
           {browserState.status === "error" ? (
@@ -654,8 +656,8 @@ export default function FilesPage() {
       ) : null}
 
       {viewMode !== "browser" && state.status === "loading" ? (
-        <div className="panel panel-compact" role="status" aria-live="polite">
-          <p className="form-status">جار تحميل قائمة الملفات...</p>
+        <div className="panel panel-compact">
+          <Skeleton label="جار تحميل قائمة الملفات..." />
         </div>
       ) : null}
 

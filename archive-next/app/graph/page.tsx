@@ -15,6 +15,7 @@ import {
   type RelationTypeOption
 } from "@/lib/archive-api";
 import "./graph.css";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type GraphState =
   | { status: "loading" }
@@ -524,7 +525,7 @@ export default function GraphPage() {
       {state.status === "loading" ? (
         <section className="page-section" role="status" aria-live="polite">
           <div className="panel panel-compact">
-            <p className="form-status">جار تحميل خريطة العلاقات...</p>
+            <Skeleton label="جار تحميل خريطة العلاقات..." />
           </div>
         </section>
       ) : null}

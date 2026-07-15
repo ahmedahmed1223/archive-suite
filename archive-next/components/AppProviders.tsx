@@ -9,6 +9,7 @@ import { ConfirmDialogProvider } from "@/components/ui/ConfirmDialog";
 import { ToastProvider, ToastViewport } from "@/components/ui/Toast";
 import ToastHub from "@/components/ui/ToastHub";
 import OfflineStatusBanner from "@/components/OfflineStatusBanner";
+import RouteProgress from "@/components/ui/RouteProgress";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthGate, AuthProvider } from "@/lib/auth-session";
 import { initializeOfflineManager, shutdownOfflineManager } from "@/lib/offline-manager";
@@ -43,6 +44,7 @@ export default function AppProviders({ children }: Readonly<{ children: ReactNod
           <TooltipProvider delayDuration={180}>
             <ToastProvider swipeDirection="right">
               <ConfirmDialogProvider>
+                <RouteProgress />
                 <OfflineStatusBanner />
                 <AuthGate>{children}</AuthGate>
                 <CommandPalette />

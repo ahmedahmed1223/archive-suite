@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type IntakeTemplate } from "@/lib/archive-api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type IntakeTemplatesState =
   | { status: "loading" }
@@ -111,7 +112,7 @@ export function IntakeTemplatesPanel() {
       </form>
 
       {templatesState.status === "loading" ? (
-        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل قوالب الإدخال...</p></div>
+        <div className="panel panel-compact"><Skeleton label="جار تحميل قوالب الإدخال..." /></div>
       ) : templatesState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل قوالب الإدخال</strong>

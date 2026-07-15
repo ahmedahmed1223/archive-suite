@@ -26,6 +26,7 @@ import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { formatDate, getRecordWorkflowStatus, WORKFLOW_STATES, workflowStatusLabels, type WorkflowStatus } from "@/lib/record-utils";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type LoadState =
   | { status: "loading" }
@@ -208,7 +209,7 @@ export default function KanbanPage() {
       <p className="helper-text">جميع البطاقات متاحة عبر قائمة النقل، بما فيها البطاقات خارج مساحة العرض الأولى.</p>
       {lastMove ? <button type="button" className="button button-secondary button-sm" disabled={busyId === lastMove.record.id} onClick={() => void moveRecord(lastMove.record, lastMove.previousStatus, false)}>تراجع عن آخر نقل</button> : null}
 
-      {state.status === "loading" ? <div className="panel panel-compact"><p className="form-status">جار تحميل اللوحة...</p></div> : null}
+      {state.status === "loading" ? <div className="panel panel-compact"><Skeleton label="جار تحميل اللوحة..." /></div> : null}
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل كانبان</strong>

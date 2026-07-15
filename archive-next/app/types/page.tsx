@@ -10,6 +10,7 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import TypesList from "./_components/TypesList";
 import TypesEditor from "./_components/TypesEditor";
 import "./types.css";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type TypesState =
   | { status: "loading"; types: ArchiveType[] }
@@ -150,7 +151,7 @@ export default function TypesPage() {
       ) : null}
 
       {state.status === "loading" && state.types.length === 0 ? (
-        <section className="types-state" aria-live="polite"><p>جارٍ تحميل الأنواع…</p></section>
+        <section className="types-state"><Skeleton label="جارٍ تحميل الأنواع…" /></section>
       ) : null}
 
       {(state.status === "ready" || state.types.length > 0) ? (

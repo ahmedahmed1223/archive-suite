@@ -11,6 +11,7 @@ import {
   type ShortcutKey
 } from "@/lib/keyboard-shortcuts";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type RecordingKey = ShortcutKey | null;
 
@@ -92,7 +93,7 @@ export default function ShortcutsSettings() {
         <div className="workspace-panel__header">
           <div>
             <h2>اختصارات لوحة المفاتيح</h2>
-            <p>جاري التحميل...</p>
+            <Skeleton label="جاري تحميل الاختصارات..." lines={2} />
           </div>
         </div>
       </article>

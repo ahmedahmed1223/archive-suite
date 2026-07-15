@@ -9,6 +9,7 @@ import MetricStrip, { type MetricStripItem } from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord, type SearchFacets } from "@/lib/archive-api";
 import { formatDate } from "@/lib/record-utils";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type LoadState =
   | { status: "loading" }
@@ -81,8 +82,8 @@ export default function HomeDashboard() {
       />
 
       {state.status === "loading" ? (
-        <section className="panel" aria-busy="true">
-          <p className="muted">جار تحميل بيانات اللوحة...</p>
+        <section className="panel">
+          <Skeleton label="جار تحميل بيانات اللوحة..." />
         </section>
       ) : null}
 

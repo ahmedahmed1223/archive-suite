@@ -13,8 +13,10 @@ import PageToolbar from "@/components/PageToolbar";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacets } from "@/lib/archive-api";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
 import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import styles from "./archive.module.css";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 // Workflow states mirrored from the legacy SPA's itemStatus state machine —
 // the server-authoritative state machine. The Laravel search/records endpoints
@@ -136,7 +138,7 @@ function getInitialViewMode(params: URLSearchParams): ArchiveViewMode {
     return value as ArchiveViewMode;
   }
 
-  if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+  if (matchesMediaQuery(MOBILE_VIEWPORT_QUERY)) {
     return "list";
   }
 
@@ -828,7 +830,7 @@ function ArchivePageContent() {
 
       {state.status === "loading" ? (
         <div className="panel panel-compact" aria-live="polite" role="status">
-          <p className="form-status">جار تحميل السجلات...</p>
+          <Skeleton label="جار تحميل السجلات..." />
         </div>
       ) : null}
 

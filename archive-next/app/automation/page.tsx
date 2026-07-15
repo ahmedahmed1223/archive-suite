@@ -16,6 +16,7 @@ import {
   type AutomationRuleTrigger
 } from "@/lib/archive-api";
 import { getRecordWorkflowStatus, recordMatches } from "@/lib/record-utils";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const triggerLabels: Record<AutomationRuleTrigger, string> = {
   "record.created": "عند إنشاء سجل",
@@ -231,7 +232,7 @@ export default function AutomationPage() {
 
       {loading ? (
         <div className="panel panel-compact" role="status">
-          <p className="form-status">جار تحميل قواعد الأتمتة...</p>
+          <Skeleton label="جار تحميل قواعد الأتمتة..." />
         </div>
       ) : null}
 

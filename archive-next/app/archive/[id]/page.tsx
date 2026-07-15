@@ -29,6 +29,7 @@ import {
   type SuggestionFeedbackValue
 } from "@/lib/archive-api";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type DetailState =
   | { status: "loading" }
@@ -387,7 +388,7 @@ function RecordNotesPanel({
       </div>
 
       {loading ? (
-        <p className="form-status" role="status" aria-live="polite">جار تحميل الملاحظات...</p>
+        <Skeleton label="جار تحميل الملاحظات..." />
       ) : null}
 
       {error ? (
@@ -505,7 +506,7 @@ function RecordCommentsPanel({
       </div>
 
       {loading ? (
-        <p className="form-status" role="status" aria-live="polite">جار تحميل التعليقات...</p>
+        <Skeleton label="جار تحميل التعليقات..." />
       ) : null}
 
       {error ? (
@@ -633,7 +634,7 @@ function RecordHistoryPanel({
       </div>
 
       {loading ? (
-        <p className="form-status" role="status" aria-live="polite">جار تحميل السجل...</p>
+        <Skeleton label="جار تحميل السجل..." />
       ) : null}
 
       {error ? (
@@ -1158,8 +1159,8 @@ export default function ArchiveDetailPage() {
       )}
 
       {state.status === "loading" && (
-        <div className="panel panel-compact" role="status" aria-live="polite">
-          <p className="form-status">جار تحميل السجل...</p>
+        <div className="panel panel-compact">
+          <Skeleton label="جار تحميل السجل..." />
         </div>
       )}
 

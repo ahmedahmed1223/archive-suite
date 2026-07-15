@@ -7,6 +7,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ActivityFilters, type PaginationMeta, type RecordHistoryEntry } from "@/lib/archive-api";
 import { formatDate } from "@/lib/record-utils";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const eventOptions = [
   ["", "كل الأحداث"],
@@ -213,8 +214,8 @@ export default function ActivityPage() {
       </form>
 
       {state.status === "loading" ? (
-        <div className="panel panel-compact" role="status" aria-live="polite">
-          <p className="form-status">جار تحميل سجل النشاط...</p>
+        <div className="panel panel-compact">
+          <Skeleton label="جار تحميل سجل النشاط..." />
         </div>
       ) : null}
 

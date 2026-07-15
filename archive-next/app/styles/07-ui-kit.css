@@ -586,3 +586,78 @@
     max-block-size: calc(100vh - 2rem);
   }
 }
+
+/* ── Skeleton: حالة تحميل موحّدة (V1-767) ── */
+.ui-skeleton {
+  display: block;
+  inline-size: 100%;
+}
+
+.ui-skeleton__bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-skeleton__bar {
+  display: block;
+  block-size: 0.75rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg-tertiary);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(228, 231, 236, 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: ui-skeleton-shimmer 1.4s var(--easing-default) infinite;
+}
+
+.ui-skeleton__bar:last-child:not(:only-child) {
+  inline-size: 60%;
+}
+
+.ui-skeleton[data-variant="block"] .ui-skeleton__bar {
+  block-size: 4rem;
+}
+
+.ui-skeleton[data-variant="block"] .ui-skeleton__bar:last-child:not(:only-child) {
+  inline-size: 100%;
+}
+
+@keyframes ui-skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Route progress: شريط تقدّم علوي رفيع (V1-780) ── */
+.ui-route-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 2px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.ui-route-progress__fill {
+  block-size: 100%;
+  inline-size: 100%;
+  background: linear-gradient(90deg, var(--color-accent-primary), var(--color-accent-primary-hover));
+  /* المستند RTL: التعبئة تنمو من الحافة اليمنى. */
+  transform-origin: right center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-skeleton__bar {
+    animation: none;
+    background-image: none;
+  }
+}

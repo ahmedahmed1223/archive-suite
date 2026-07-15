@@ -12,6 +12,7 @@ import { createArchiveApiClient, type ReviewComment, type ReviewRect } from "@/l
 import { getEchoClient } from "@/lib/echo";
 import styles from "./review.module.css";
 import "../media.css";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 function formatTimecode(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
@@ -327,7 +328,7 @@ export default function ReviewPage() {
 
             <div className={`review-comments-rail ${styles.commentsList}`}>
               {commentsState.status === "loading" ? (
-                <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل التعليقات...</p></div>
+                <div className="panel panel-compact"><Skeleton label="جار تحميل التعليقات..." /></div>
               ) : commentsState.status === "error" ? (
                 <div className="state-banner state-banner-error" role="alert">
                   <strong>تعذر تحميل التعليقات</strong>

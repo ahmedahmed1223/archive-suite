@@ -8,6 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type InboxItem, type InboxStatus } from "@/lib/archive-api";
 import { formatDate, normalizeText } from "@/lib/record-utils";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const statusLabels: Record<InboxStatus, string> = {
   new: "وارد جديد",
@@ -144,7 +145,7 @@ export default function InboxPage() {
       </PageToolbar>
 
       {loadState.status === "loading" ? (
-        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل عناصر الوارد...</p></div>
+        <div className="panel panel-compact"><Skeleton label="جار تحميل عناصر الوارد..." /></div>
       ) : null}
 
       {loadState.status === "error" ? (
