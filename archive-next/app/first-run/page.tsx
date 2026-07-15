@@ -1,16 +1,16 @@
 "use client";
 
-import { CheckCircle2, Circle, Copy, ExternalLink, RefreshCw, Server, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Circle, ExternalLink, RefreshCw, Server, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { BRAND } from "@/lib/brand";
-import { createArchiveApiClient } from "@/lib/archive-api";
+import { createArchiveApiClient, type OnboardingProgress, type OnboardingStageId } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
+import { toOnboardingProgressSteps } from "@/lib/onboarding-progress";
 import { deriveSetupJourney, type SetupStepId } from "@/lib/setup-journey";
 import {
   ONBOARDING_PRESET_STORAGE_KEY,
-  ONBOARDING_STORAGE_KEY,
   onboardingChecklist,
   onboardingPresets,
   type OnboardingPreset
@@ -22,8 +22,12 @@ type HealthState =
   | { status: "ready"; backend: string; engine: string; uptimeSec: number }
   | { status: "error"; message: string };
 
-type DoneMap = Record<string, boolean>;
 const EXPERT_SKIP_STORAGE_KEY = "masar:first-run:expert-skip:v1";
+
+type ProgressState =
+  | { status: "idle" | "loading" }
+  | { status: "ready"; progress: OnboardingProgress }
+  | { status: "error"; message: string };
 
 function formatUptime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds < 0) return "غير معروف";
@@ -34,26 +38,19 @@ function formatUptime(seconds: number) {
   return `${hours} ساعة و${minutes % 60} دقيقة`;
 }
 
-function readDoneMap(preset: OnboardingPreset): DoneMap {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(`${ONBOARDING_STORAGE_KEY}:${preset}`);
-    return raw ? JSON.parse(raw) as DoneMap : {};
-  } catch {
-    return {};
-  }
-}
-
 export default function FirstRunPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
   const [preset, setPreset] = useState<OnboardingPreset>("quick");
-  const [done, setDone] = useState<DoneMap>({});
+  const [progressState, setProgressState] = useState<ProgressState>({ status: "idle" });
+  const [updatingStage, setUpdatingStage] = useState<OnboardingStageId | null>(null);
   const [health, setHealth] = useState<HealthState>({ status: "idle" });
   const [expertSkip, setExpertSkip] = useState(false);
   const currentPreset = onboardingPresets[preset];
-  const completedCount = currentPreset.steps.filter((step) => done[step.id]).length;
-  const isComplete = completedCount === currentPreset.steps.length;
+  const progressSteps = progressState.status === "ready" ? toOnboardingProgressSteps(progressState.progress) : [];
+  const completedCount = progressSteps.filter((step) => step.completed).length;
+  const isComplete = progressSteps.length === 5 && completedCount === progressSteps.length;
+  const isAdmin = auth.user?.role === "admin";
   const journey = deriveSetupJourney(
     {
       status: health.status === "ready" ? "healthy" : health.status === "error" ? "offline" : health.status === "loading" ? "checking" : "unknown",
@@ -77,13 +74,16 @@ export default function FirstRunPage() {
     const storedPreset = window.localStorage.getItem(ONBOARDING_PRESET_STORAGE_KEY);
     const nextPreset = storedPreset === "advanced" ? "advanced" : "quick";
     setPreset(nextPreset);
-    setDone(readDoneMap(nextPreset));
     setExpertSkip(window.localStorage.getItem(EXPERT_SKIP_STORAGE_KEY) === "true");
   }, []);
 
   useEffect(() => {
-    setDone(readDoneMap(preset));
-  }, [preset]);
+    if (auth.status === "authenticated") {
+      void loadProgress();
+    }
+    // تغيّر الجلسة هو سبب إعادة التحميل الوحيد؛ العميل ثابت داخل الصفحة.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.status]);
 
   useEffect(() => {
     void checkHealth();
@@ -115,25 +115,48 @@ export default function FirstRunPage() {
     }
   }
 
+  async function loadProgress() {
+    setProgressState({ status: "loading" });
+
+    try {
+      const response = await api.onboardingProgress();
+      if (!response.ok) {
+        setProgressState({ status: "error", message: response.error || "تعذر تحميل تقدم أول تشغيل." });
+        return;
+      }
+      setProgressState({ status: "ready", progress: response.progress });
+    } catch (error) {
+      setProgressState({
+        status: "error",
+        message: error instanceof Error ? error.message : "تعذر تحميل تقدم أول تشغيل."
+      });
+    }
+  }
+
   function changePreset(nextPreset: OnboardingPreset) {
     setPreset(nextPreset);
     window.localStorage.setItem(ONBOARDING_PRESET_STORAGE_KEY, nextPreset);
-    setDone(readDoneMap(nextPreset));
   }
 
-  function toggleStep(stepId: string) {
-    setDone((current) => {
-      const next = { ...current, [stepId]: !current[stepId] };
-      window.localStorage.setItem(`${ONBOARDING_STORAGE_KEY}:${preset}`, JSON.stringify(next));
-      return next;
-    });
-  }
+  async function updateProgressStage(stepId: OnboardingStageId, completed: boolean) {
+    if (!isAdmin || progressState.status !== "ready") return;
 
-  function markComplete() {
-    const next = Object.fromEntries(currentPreset.steps.map((step) => [step.id, true]));
-    window.localStorage.setItem(`${ONBOARDING_STORAGE_KEY}:${preset}`, JSON.stringify(next));
-    window.localStorage.setItem(ONBOARDING_STORAGE_KEY, "complete");
-    setDone(next);
+    setUpdatingStage(stepId);
+    try {
+      const response = await api.updateOnboardingStage(stepId, { status: completed ? "pending" : "completed" });
+      if (!response.ok) {
+        setProgressState({ status: "error", message: response.error || "تعذر حفظ تقدم أول تشغيل." });
+        return;
+      }
+      setProgressState({ status: "ready", progress: response.progress });
+    } catch (error) {
+      setProgressState({
+        status: "error",
+        message: error instanceof Error ? error.message : "تعذر حفظ تقدم أول تشغيل."
+      });
+    } finally {
+      setUpdatingStage(null);
+    }
   }
 
   function toggleExpertSkip(checked: boolean) {
@@ -151,7 +174,7 @@ export default function FirstRunPage() {
           <>
             <span className="badge">setup.bat</span>
             <span className="badge">Control Center</span>
-            <span className="badge">{completedCount}/{currentPreset.steps.length} مكتملة</span>
+            <span className="badge">{completedCount}/5 مراحل مؤسسية مكتملة</span>
             <span className="badge">الجاهزية {journey.readinessPercentage}%</span>
           </>
         )}
@@ -271,53 +294,57 @@ export default function FirstRunPage() {
         <article className="panel">
           <div className="panel-section-header helper-row">
             <div>
-              <h2 id="steps-heading">خطوات {currentPreset.label}</h2>
-              <p>ضع علامة على كل خطوة بعد تنفيذها. الحفظ محلي للمتصفح ولا يرسل أسراراً إلى API.</p>
+              <h2 id="steps-heading">مراحل أول استخدام المؤسسة</h2>
+              <p>هذه الحالة محفوظة للمؤسسة وتُستأنف بعد تسجيل الدخول أو من جهاز آخر.</p>
             </div>
-            <button type="button" className="button button-secondary button-sm" onClick={markComplete}>
-              اعتبارها مكتملة
-            </button>
+            {progressState.status === "error" ? (
+              <button type="button" className="button button-secondary button-sm" onClick={() => void loadProgress()}>
+                <RefreshCw aria-hidden="true" size={15} />
+                إعادة المحاولة
+              </button>
+            ) : null}
           </div>
 
-          <ol className="first-run-steps">
-            {currentPreset.steps.map((step, index) => (
-              <li key={step.id} className="first-run-step" data-complete={done[step.id] ? "true" : "false"}>
-                <button
-                  type="button"
-                  className="first-run-step__toggle"
-                  onClick={() => toggleStep(step.id)}
-                  aria-pressed={done[step.id] ? "true" : "false"}
-                  aria-label={`${done[step.id] ? "إلغاء إكمال" : "إكمال"} ${step.title}`}
-                >
-                  {done[step.id] ? <CheckCircle2 aria-hidden="true" size={20} /> : <Circle aria-hidden="true" size={20} />}
-                </button>
-                <div className="first-run-step__body">
-                  <span className="badge">خطوة {index + 1}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.description}</p>
-                  {step.command ? (
-                    <div className="first-run-command">
-                      <code dir="ltr">{step.command}</code>
-                      <button
-                        type="button"
-                        className="button button-secondary button-sm"
-                        onClick={() => void navigator.clipboard?.writeText(step.command || "")}
-                      >
-                        <Copy aria-hidden="true" size={15} />
-                        نسخ
-                      </button>
-                    </div>
-                  ) : null}
-                  {step.href ? (
+          {auth.status === "guest" ? (
+            <p className="helper-text">سجّل الدخول لعرض تقدم المؤسسة المحفوظ واستئناف الخطوة التالية.</p>
+          ) : null}
+          {auth.status === "guest" ? <a className="button button-primary button-sm" href="/login?next=%2Ffirst-run">تسجيل الدخول</a> : null}
+          {auth.status !== "guest" && progressState.status !== "ready" ? (
+            <p className="helper-text" role="status">{progressState.status === "error" ? progressState.message : "جار تحميل تقدم أول تشغيل..."}</p>
+          ) : null}
+          {progressState.status === "ready" ? (
+            <ol className="first-run-steps">
+              {progressSteps.map((step, index) => (
+                <li key={step.id} className="first-run-step" data-complete={step.completed ? "true" : "false"}>
+                  {isAdmin ? (
+                    <button
+                      type="button"
+                      className="first-run-step__toggle"
+                      onClick={() => void updateProgressStage(step.id, step.completed)}
+                      aria-pressed={step.completed}
+                      aria-label={`${step.completed ? "إلغاء إكمال" : "إكمال"} ${step.title}`}
+                      disabled={updatingStage === step.id}
+                    >
+                      {step.completed ? <CheckCircle2 aria-hidden="true" size={20} /> : <Circle aria-hidden="true" size={20} />}
+                    </button>
+                  ) : (
+                    <span className="first-run-step__toggle" aria-hidden="true">
+                      {step.completed ? <CheckCircle2 aria-hidden="true" size={20} /> : <Circle aria-hidden="true" size={20} />}
+                    </span>
+                  )}
+                  <div className="first-run-step__body">
+                    <span className="badge">مرحلة {index + 1}</span>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
                     <a className="button button-secondary button-sm" href={step.href}>
-                      {step.actionLabel || "فتح"}
+                      {step.actionLabel}
                       <ExternalLink aria-hidden="true" size={15} />
                     </a>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ol>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : null}
         </article>
       </section>
 
