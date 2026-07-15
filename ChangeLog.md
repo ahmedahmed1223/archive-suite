@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-701 / V1-702 / V1-704 — إثراء السجل والتفريغ — 2026-07-15
+
+- **V1-701:** أضيف `descriptorCompletion` محسوب خادميًا من العنوان والوصف والنوع والوسوم، بثلاث حالات صريحة (مكتمل/يحتاج استكمالًا/ناقص). لا يمكن للعميل تزوير النتيجة؛ العقد وبطاقة الأرشيف يعرضانها بنص ورمز، لا باللون فقط.
+- **V1-702:** أصبح مخطط النوع يدعم `condition: { field, equals }` اختياريًا. الخادم يرفض المرجع الذاتي والحقل غير الموجود والقيم غير الصالحة، والمحرر العربي يستبعد الحقل ذاته ويزيل الشرط عند إيقافه. صلاحيات الحقول السابقة بقيت كما هي.
+- **V1-704:** استيراد SRT/VTT من مشغّل الوسائط يحفظ التفريغ عبر `PATCH /records/{id}/transcript` عندما يكون المشغّل مرتبطًا بسجل. التحديث مقيد بالمحرر، مقفل داخل معاملة، ويحفظ حقل التفريغ فقط؛ تشغيل ملف بلا `recordId` يظل معاينة لا تعدّل أي سجل.
+- التحقق المشترك: اختبارات Laravel الموجهة، `pnpm verify:api-contracts`، `pnpm typecheck`، و`pnpm build:next` نجحت لكل ميزة. تحذير إصدار Node المحلي (24 خارج نطاق العقد 22) بقي تحذيرًا فقط.
+
 ## V1-767 / V1-771 / V1-780 — Shared UI infrastructure — 2026-07-15
 
 - **Skeleton (B39):** one `components/ui/Skeleton.tsx` applied to 31 call sites across 28 files. The dominant wrapper `<div className="panel panel-compact" role="status" aria-live="polite">` already carried a live region, so nesting Skeleton (which owns `role="status"`/`aria-live`/`aria-busy`) inside would double-announce; the wrapper ARIA was stripped wherever a Skeleton took over, verified with zero surviving nested live regions. Bars are `aria-hidden`, only the visually-hidden `label` is announced, and the CSS-only shimmer stops under `prefers-reduced-motion`. Deliberately skipped: 5 `state-banner` sites with real explanatory copy a skeleton would delete, 2 sites passing loading text as a prop value rather than a rendered placeholder, an `EmptyState` `title` prop, 3 inline `helper-text` hints, and a readiness *check* status that is not a load.
