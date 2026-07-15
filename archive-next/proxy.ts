@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const refreshCookieName = process.env.ARCHIVE_REFRESH_COOKIE ?? "va_refresh";
+const sessionCookieName = process.env.ARCHIVE_SESSION_COOKIE ?? "va_session";
 const publicPathPrefixes = ["/login", "/first-run", "/catalog", "/share/", "/review/"];
 
 function isPublicPath(pathname: string) {
@@ -21,7 +21,7 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  if (isPublicPath(pathname) || request.cookies.has(refreshCookieName)) {
+  if (isPublicPath(pathname) || request.cookies.has(sessionCookieName)) {
     const response = NextResponse.next({ request: { headers: requestHeaders } });
     response.headers.set("X-Request-ID", requestId);
     return response;

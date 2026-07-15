@@ -1192,6 +1192,8 @@ function clampApiLimit(value: number | undefined, fallback: number, max: number)
   return Math.min(max, Math.max(1, Math.floor(value as number)));
 }
 
+let pendingRefreshAccessToken: Promise<string | null> | null = null;
+
 export function createArchiveApiClient({
   baseUrl = "/api/v1",
   fetchImpl = fetch,
@@ -1201,6 +1203,7 @@ export function createArchiveApiClient({
   fetchImpl?: typeof fetch;
   onUnauthorized?: () => void;
 } = {}): ArchiveApiClient {
+  let cachedAccessToken: string | undefined;
   function handleUnauthorized() {
     onUnauthorized?.();
 
@@ -1210,6 +1213,14 @@ export function createArchiveApiClient({
   }
 
   async function refreshAccessToken(): Promise<string | null> {
+    if (pendingRefreshAccessToken) return pendingRefreshAccessToken;
+    pendingRefreshAccessToken = refreshAccessTokenOnce().finally(() => {
+      pendingRefreshAccessToken = null;
+    });
+    return pendingRefreshAccessToken;
+  }
+
+  async function refreshAccessTokenOnce(): Promise<string | null> {
     let response: Response;
 
     try {
@@ -1253,8 +1264,9 @@ export function createArchiveApiClient({
       headers.set("Content-Type", "application/json");
     }
 
-    if (accessToken) {
-      headers.set("Authorization", `Bearer ${accessToken}`);
+    const effectiveAccessToken = accessToken ?? cachedAccessToken;
+    if (effectiveAccessToken) {
+      headers.set("Authorization", `Bearer ${effectiveAccessToken}`);
     }
 
     for (const [key, value] of Object.entries(extraHeaders ?? {})) {
@@ -1288,6 +1300,7 @@ export function createArchiveApiClient({
       const refreshedAccessToken = await refreshAccessToken();
 
       if (refreshedAccessToken) {
+        cachedAccessToken = refreshedAccessToken;
         return request<T>(path, {
           method,
           body,
@@ -1333,6 +1346,8 @@ export function createArchiveApiClient({
       if (!response.ok) {
         return { ...response, error: localizeLoginError(response.error) };
       }
+
+      cachedAccessToken = response.accessToken;
 
       return response;
     },

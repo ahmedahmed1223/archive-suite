@@ -173,7 +173,11 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        if (! config('archive.auth.secure_cookies')) {
+        $host = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $loopbackHttp = in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+            && str_starts_with((string) config('app.url'), 'http://');
+
+        if (! config('archive.auth.secure_cookies') && ! $loopbackHttp) {
             throw new \RuntimeException(
                 'ARCHIVE_SECURE_COOKIES must be true in production. Set ARCHIVE_SECURE_COOKIES=true '
                 . 'so the va_refresh auth cookie is only sent over HTTPS.'

@@ -465,6 +465,11 @@ async function releaseReconnectData() { return renderSetupResult(await reconnect
 
 function lifecycle(operation, ...args) {
   try {
+    if (process.env.ARCHIVE_DEVELOPMENT_MODE === "1") {
+      const developmentOperations = { status: developmentServerStatus, start: developmentServerStart, stop: developmentServerStop, restart: developmentServerRestart, logs: developmentServerLogs, health: developmentHealthCheck, exec: dockerRuntime.exec };
+      const developmentResult = developmentOperations[operation](...args);
+      return developmentResult.status ?? developmentResult;
+    }
     const result = releaseRuntimeForLifecycle()[operation](...args);
     return result.status ?? 1;
   } catch (error) {
@@ -680,6 +685,7 @@ async function deployCanonical() {
   }
   const env = readEnv();
   const updates = {};
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(env.APP_BASE_URL || "")) updates.ARCHIVE_SECURE_COOKIES = "false";
   if (isPlaceholder(env.POSTGRES_PASSWORD)) updates.POSTGRES_PASSWORD = genPassword();
   if (isPlaceholder(env.REDIS_PASSWORD)) updates.REDIS_PASSWORD = genPassword();
   if (isPlaceholder(env.REVERB_APP_ID)) updates.REVERB_APP_ID = genSecret(8);
