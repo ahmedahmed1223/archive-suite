@@ -22,6 +22,7 @@ interface AuthSessionContextValue extends AuthSessionState {
 }
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
+let pendingBootstrapRefresh: ReturnType<ReturnType<typeof createArchiveApiClient>["refresh"]> | null = null;
 
 const publicPathPrefixes = ["/login", "/first-run", "/catalog", "/share/", "/review/"];
 
@@ -32,6 +33,16 @@ function isPublicPath(pathname: string) {
 function loginPathFor(pathname: string) {
   const next = pathname && pathname !== "/" ? `?next=${encodeURIComponent(pathname)}` : "";
   return `/login${next}`;
+}
+
+function refreshBootstrap(api: ReturnType<typeof createArchiveApiClient>) {
+  if (!pendingBootstrapRefresh) {
+    pendingBootstrapRefresh = api.refresh().finally(() => {
+      pendingBootstrapRefresh = null;
+    });
+  }
+
+  return pendingBootstrapRefresh;
 }
 
 export function safeNextPath(value: string | null) {
@@ -82,21 +93,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     let cancelled = false;
 
     async function bootstrap() {
-      const response = await api.me();
-
-      if (cancelled) {
-        return;
-      }
-
-      if (response.ok) {
-        setSession({
-          status: "authenticated",
-          user: response.user
-        });
-        return;
-      }
-
-      const refreshed = await api.refresh();
+      const refreshed = await refreshBootstrap(api);
 
       if (cancelled) {
         return;
@@ -112,7 +109,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         return;
       }
 
-      setSession({ status: "guest", user: null });
+      setSession((current) => current.status === "authenticated" ? current : { status: "guest", user: null });
     }
 
     void bootstrap();

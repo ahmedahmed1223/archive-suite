@@ -143,7 +143,7 @@
 
 - [x] **V1-301A عقد تقدم onboarding** — منجز 2026-07-15: تقدم موحد على مستوى المؤسسة في `storage_rows` بمراحل ثابتة (`organization` و`storage` و`invitation` و`first_record` و`first_search`)؛ لكل مرحلة `pending|completed` و`completedAt`. `GET /onboarding/progress` متاح لكل مصادَق و`PATCH /onboarding/progress/{stage}` للـadmin فقط، مع OpenAPI وعميل TypeScript مطابقين. تحقق: `OnboardingProgressApiTest` 3/3 (23 assertion)، `RouteScopeTest` 8/8، API contracts، typecheck، وbuild.
 - [x] **V1-301B واجهة first-run مستأنفة** — منجز 2026-07-15: `/first-run` يقرأ مراحل المؤسسة من API بعد المصادقة ويعرض loading/error/retry وحالة دخول قابلة للتنفيذ للضيف؛ لا يبقى `localStorage` مصدرًا لتقدم المراحل. الـadmin فقط يحدّث مرحلة وينتظر تأكيد الخادم، بينما editor/viewer يقرآن الحالة دون أدوات تغيير. تحقق: Vitest 8/8، typecheck، وbuild.
-- [ ] **V1-301C رحلة admin حية** — fixture مدير جديد ينفذ المؤسسة→التخزين→الدعوة→أول مادة→أول بحث، مع حالات فشل/retry وعدم وسم الخطوة مكتملة قبل تأكيد الخادم.
+- [x] **V1-301C رحلة admin حية** — منجز 2026-07-15: رحلة Playwright لمدير عبر تسجيل الدخول الحقيقي تنفذ المؤسسة→التخزين→الدعوة→أول مادة→أول بحث. تحاكي فشل حفظ المرحلة الأولى ثم retry، ولا تُظهرها مكتملة قبل رد الخادم، ثم تعيد الدخول بعد reload لإثبات أن المراحل الخمس محفوظة خادميًا. تحقق: Vitest 7/7، typecheck، build، و`ARCHIVE_E2E_SPECS=e2e/onboarding-progress.authed.spec.ts pnpm verify:laravel-next:live` على Node 22 (2/2).
 
 #### P6B — V1-303 responsive والوصولية
 
