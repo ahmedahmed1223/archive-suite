@@ -1193,6 +1193,7 @@ function clampApiLimit(value: number | undefined, fallback: number, max: number)
 }
 
 let pendingRefreshAccessToken: Promise<string | null> | null = null;
+let cachedAccessToken: string | undefined;
 
 export function createArchiveApiClient({
   baseUrl = "/api/v1",
@@ -1203,7 +1204,6 @@ export function createArchiveApiClient({
   fetchImpl?: typeof fetch;
   onUnauthorized?: () => void;
 } = {}): ArchiveApiClient {
-  let cachedAccessToken: string | undefined;
   function handleUnauthorized() {
     onUnauthorized?.();
 
