@@ -1072,7 +1072,7 @@ export interface ArchiveApiClient {
   reorderTagNodes(order: Array<{ id: string; order_index: number }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ updated: number }>>;
   mergeTagNodes(id: string, mergeInto: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ merged: boolean; targetNode: TagNode }>>;
   moveTagNode(id: string, parent: string, deleteChildren?: boolean, options?: AuthRequestOptions): Promise<ApiEnvelope<{ moved: boolean; node: TagNode }>>;
-  automationRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>>;
+  automationRules(params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: AutomationRule[]; runs: AutomationRuleRun[]; pagination?: PaginationMeta }>>;
   createAutomationRule(payload: CreateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   deleteAutomationRule(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -1670,8 +1670,13 @@ export function createArchiveApiClient({
       post<{ merged: boolean; targetNode: TagNode }>(`/tag-nodes/${encodeURIComponent(id)}/merge`, { mergeInto }, options),
     moveTagNode: (id: string, parent: string, deleteChildren?: boolean, options?: AuthRequestOptions) =>
       post<{ moved: boolean; node: TagNode }>(`/tag-nodes/${encodeURIComponent(id)}/move`, { parent, deleteChildren }, options),
-    automationRules: (options?: AuthRequestOptions) =>
-      get<{ rules: AutomationRule[]; runs: AutomationRuleRun[] }>("/automation/rules", options),
+    automationRules: (params?: { limit?: number; page?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      if (params?.page) queryParams.set("page", String(params.page));
+      const query = queryParams.toString();
+      return get<{ rules: AutomationRule[]; runs: AutomationRuleRun[]; pagination?: PaginationMeta }>(`/automation/rules${query ? `?${query}` : ""}`, options);
+    },
     createAutomationRule: (payload: CreateAutomationRulePayload, options?: AuthRequestOptions) =>
       post<{ rule: AutomationRule }>("/automation/rules", payload, options),
     updateAutomationRule: (id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions) =>

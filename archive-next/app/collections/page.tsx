@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord, type Collection } from "@/lib/archive-api";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
 import { toastError, toastSuccess } from "@/lib/toast";
@@ -22,6 +23,7 @@ type CollectionsLoadState =
   | { status: "error"; message: string };
 
 export default function CollectionsPage() {
+  const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -96,7 +98,16 @@ export default function CollectionsPage() {
       return;
     }
     const collection = collections.find((item) => item.id === id);
-    if (collection && !window.confirm(`حذف المجموعة لا يحذف السجلات نفسها. تحتوي المجموعة حالياً على ${records.filter((record) => recordMatches(record, collection)).length} سجل.`)) return;
+    if (
+      collection &&
+      !(await dialogs.confirm({
+        title: "حذف المجموعة",
+        message: `حذف المجموعة لا يحذف السجلات نفسها. تحتوي المجموعة حالياً على ${records.filter((record) => recordMatches(record, collection)).length} سجل. هل تريد المتابعة؟`,
+        confirmLabel: "حذف",
+        destructive: true
+      }))
+    )
+      return;
     const response = await api.deleteCollection(id);
     if (!response.ok) setStatusMessage(response.error || "تعذر حذف المجموعة.");
     else setStatusMessage("تم حذف المجموعة.");

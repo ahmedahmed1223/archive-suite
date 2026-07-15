@@ -32,6 +32,13 @@ class AutomationRulesController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $limit = (int) ($validated['limit'] ?? 25);
+        $page = (int) ($validated['page'] ?? 1);
         $userId = $this->userId($request);
 
         $rules = DB::table('automation_rules')
@@ -41,15 +48,28 @@ class AutomationRulesController extends Controller
             ->map(fn (stdClass $row): array => $this->formatRule($row))
             ->values();
 
-        $runs = DB::table('automation_rule_runs')
+        // V1-304B: the runs list was silently capped at 25; paginate it with
+        // the same envelope shape as the V1-304A endpoints.
+        $paginated = DB::table('automation_rule_runs')
             ->where('user_id', $userId)
             ->orderByDesc('created_at')
-            ->limit(25)
-            ->get()
+            ->paginate($limit, ['*'], 'page', $page);
+
+        $runs = collect($paginated->items())
             ->map(fn (stdClass $row): array => $this->formatRun($row))
             ->values();
 
-        return response()->json(['ok' => true, 'rules' => $rules, 'runs' => $runs]);
+        return response()->json([
+            'ok' => true,
+            'rules' => $rules,
+            'runs' => $runs,
+            'pagination' => [
+                'total' => $paginated->total(),
+                'page' => $paginated->currentPage(),
+                'limit' => $limit,
+                'hasMore' => $paginated->hasMorePages(),
+            ],
+        ]);
     }
 
     /**

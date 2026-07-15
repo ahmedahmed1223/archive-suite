@@ -8,6 +8,7 @@ import DataTable from "@/components/ui/DataTable";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   clearClientErrors,
   listClientErrors,
@@ -34,6 +35,7 @@ function severityClass(severity: ClientErrorSeverity) {
 }
 
 export default function ErrorsPage() {
+  const dialogs = useConfirmDialog();
   const [errors, setErrors] = useState<ClientErrorLogEntry[]>([]);
   const [severityFilter, setSeverityFilter] = useState<ClientErrorSeverity | "">("");
 
@@ -128,8 +130,16 @@ export default function ErrorsPage() {
     });
   };
 
-  const clearAll = () => {
-    if (errors.length > 0 && !window.confirm("مسح سجل الأخطاء الحالي؟")) {
+  const clearAll = async () => {
+    if (
+      errors.length > 0 &&
+      !(await dialogs.confirm({
+        title: "مسح سجل الأخطاء",
+        message: "سيتم مسح سجل الأخطاء الحالي من هذا المتصفح. هل تريد المتابعة؟",
+        confirmLabel: "مسح",
+        destructive: true
+      }))
+    ) {
       return;
     }
 

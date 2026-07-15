@@ -63,6 +63,59 @@ class PublicCatalogApiTest extends TestCase
             ->assertJsonPath('nextCursor', null);
     }
 
+    public function test_cursor_pagination_does_not_lose_records_when_uids_tie_across_stores(): void
+    {
+        // storage_rows PK is (store, uid): the same uid can exist in two stores,
+        // so ordering/cursoring by uid alone has equal sort keys at page boundaries.
+        $now = now();
+
+        foreach ([
+            ['store' => 'archive-items', 'uid' => 'tie-clip', 'id' => 'item-a'],
+            ['store' => 'media-items', 'uid' => 'tie-clip', 'id' => 'item-b'],
+            ['store' => 'archive-items', 'uid' => 'zz-last', 'id' => 'item-c'],
+        ] as $seed) {
+            DB::table('storage_rows')->insert([
+                'store' => $seed['store'],
+                'uid' => $seed['uid'],
+                'data' => json_encode([
+                    'uid' => $seed['uid'],
+                    'id' => $seed['id'],
+                    'title' => 'Published '.$seed['id'],
+                    'type' => 'video',
+                    'tags' => ['public'],
+                    'workflowStatus' => 'published',
+                ], JSON_THROW_ON_ERROR),
+                'sync_version' => 1,
+                'last_modified_by' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        // Walk every page with limit=1 so the page boundary falls exactly
+        // between the two rows that share uid 'tie-clip'.
+        $ids = [];
+        $cursor = null;
+
+        for ($page = 0; $page < 6; $page++) {
+            $url = '/api/v1/public/catalog?limit=1'.($cursor !== null ? '&cursor='.urlencode($cursor) : '');
+            $response = $this->getJson($url)->assertOk();
+
+            foreach ($response->json('records') as $record) {
+                $ids[] = $record['id'];
+            }
+
+            $cursor = $response->json('nextCursor');
+            if ($cursor === null) {
+                break;
+            }
+        }
+
+        $this->assertCount(3, $ids, 'a record was lost or duplicated across page boundaries');
+        sort($ids);
+        $this->assertSame(['item-a', 'item-b', 'item-c'], $ids);
+    }
+
     public function test_public_catalog_filters_published_records(): void
     {
         $this->seedCatalogRecords();
