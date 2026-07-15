@@ -124,9 +124,9 @@
 
 #### P4 — V1-211 Linux Native
 
-- [ ] **V1-211A حزمة Linux Native** — artifact موقعة من نفس commit لـNext standalone وPHP-FPM/HTTP والعامل وReverb والجدولة، مع مستخدم خدمة غير تفاعلي.
-- [ ] **V1-211B Linux runtime adapter** — وحدات systemd منفصلة، ownership وlogrotate وfirewall اختياري، ودورة Setup كاملة دون تعديل موارد نظام لا يملكها manifest.
-- [ ] **V1-211C خدمات البيانات على Linux** — PostgreSQL محلي/خارجي، database queue/cache baseline، وRedis محلي/خارجي اختياري بعد probe؛ اختبارات service restart وفشل الاتصال والتعافي.
+- [x] **V1-211A حزمة Linux Native** — artifact موقعة من نفس commit لـNext standalone وPHP-FPM/HTTP والعامل وReverb والجدولة، مع مستخدم خدمة غير تفاعلي. *(2026-07-15: `linux-services.mjs` — 6 وحدات systemd تحت مستخدم `archive` غير تفاعلي، مانيفست حزمة يرفض غياب التوقيع المنفصل؛ قرارات موثقة في `docs/superpowers/specs/2026-07-15-v1-211-linux-native-decisions.md`. المنصة planned حتى V1-211D.)*
+- [x] **V1-211B Linux runtime adapter** — وحدات systemd منفصلة، ownership وlogrotate وfirewall اختياري، ودورة Setup كاملة دون تعديل موارد نظام لا يملكها manifest. *(2026-07-15: `linux-runtime-adapter.mjs` فوق محرك مشترك جديد `native-runtime-adapter.mjs` — خطوات ownership→logrotate→firewall(اختياري)→units قابلة للاستئناف؛ مزيل يزيل المملوك بالـmanifest فقط. غلاف Windows أعيد فوق نفس المحرك بلا تغيير واجهة.)*
+- [x] **V1-211C خدمات البيانات على Linux** — PostgreSQL محلي/خارجي، database queue/cache baseline، وRedis محلي/خارجي اختياري بعد probe؛ اختبارات service restart وفشل الاتصال والتعافي. *(2026-07-15: بوابة مشتركة `native-data-services.mjs`؛ اختبارات فشل اتصال→حجب، تعافي→repair يكمل، وrestart لكل الوحدات في `linux-runtime-adapter.test.mjs`.)*
 - [ ] **V1-211D قبول Linux نظيف — تحقق خارجي** — توزيعة Linux المدعومة في عقد المنصات: online/offline، local/intranet/public TLS، reboot، backup/restore، update/rollback، uninstall/reconnect مع أدلة منزوعة الأسرار.
 
 #### P5 — V1-212B تكافؤ حي بين المنصات
