@@ -1352,8 +1352,18 @@ export function createArchiveApiClient({
       return response;
     },
     me: (options?: AuthRequestOptions) => get("/auth/me", options),
-    refresh: () => post<AuthSession>("/auth/refresh"),
-    logout: (options?: AuthRequestOptions) => post("/auth/logout", undefined, options),
+    refresh: async () => {
+      const response = await post<AuthSession>("/auth/refresh");
+      if (response.ok) {
+        cachedAccessToken = response.accessToken;
+      }
+      return response;
+    },
+    logout: async (options?: AuthRequestOptions) => {
+      const response = await post("/auth/logout", undefined, options);
+      cachedAccessToken = undefined;
+      return response;
+    },
     search: ({ q = "", store = "", type = "", subtype = "", tag = "", status = "", cursor = "", limit = 20 }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
@@ -1594,8 +1604,9 @@ export function createArchiveApiClient({
       if (params?.folder) formData.set("folder", params.folder);
 
       const headers = new Headers({ Accept: "application/json" });
-      if (options?.accessToken) {
-        headers.set("Authorization", `Bearer ${options.accessToken}`);
+      const effectiveAccessToken = options?.accessToken ?? cachedAccessToken;
+      if (effectiveAccessToken) {
+        headers.set("Authorization", `Bearer ${effectiveAccessToken}`);
       }
 
       let response: Response;

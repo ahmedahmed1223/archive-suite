@@ -130,6 +130,19 @@ class ProductionHardeningTest extends TestCase
         $this->assertTrue(Hash::check('CorrectHorseBatteryStaple9!', $admin->password));
     }
 
+    public function test_seeder_assigns_the_configured_admin_role(): void
+    {
+        $this->setEnv('ADMIN_EMAIL', 'ops@real-org.example.com');
+        $this->setEnv('ADMIN_PASSWORD', 'CorrectHorseBatteryStaple9!');
+
+        $this->runSeederAs('production');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'ops@real-org.example.com',
+            'role' => 'admin',
+        ]);
+    }
+
     public function test_seeder_still_works_in_testing_env_with_defaults(): void
     {
         $this->setEnv('ADMIN_EMAIL', null);

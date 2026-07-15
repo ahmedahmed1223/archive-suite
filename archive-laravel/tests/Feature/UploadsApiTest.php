@@ -82,6 +82,19 @@ class UploadsApiTest extends TestCase
         $this->assertSame(1, DB::table('media_jobs')->count());
     }
 
+    public function test_it_uploads_wav_audio_and_enqueues_a_media_job(): void
+    {
+        Queue::fake();
+
+        $file = UploadedFile::fake()->createWithContent('acceptance.wav', "RIFF\x24\x00\x00\x00WAVEfmt ".str_repeat("\x00", 48));
+
+        $this->postJson('/api/v1/uploads', ['file' => $file], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('record.fileName', 'acceptance.wav');
+
+        $this->assertSame(1, DB::table('media_jobs')->count());
+    }
+
     public function test_it_does_not_enqueue_a_media_job_for_non_media_uploads(): void
     {
         Queue::fake();

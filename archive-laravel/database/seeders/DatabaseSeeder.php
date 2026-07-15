@@ -27,13 +27,18 @@ class DatabaseSeeder extends Seeder
         }
 
         // firstOrCreate: safe to run on every deploy/restart, never duplicates.
-        User::query()->firstOrCreate(
+        $admin = User::query()->firstOrCreate(
             ['email' => $adminEmail],
             [
                 'name' => env('ADMIN_NAME', 'Archive Admin'),
                 'password' => $adminPassword,
+                'role' => 'admin',
             ],
         );
+
+        if ($admin->role !== 'admin') {
+            $admin->forceFill(['role' => 'admin'])->save();
+        }
 
         // Opt-in demo archive content (types/sections/classifications + records).
         // Off by default to keep production clean; enable with SEED_DEMO_DATA=true
