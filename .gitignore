@@ -42,6 +42,8 @@ dist-cloud/
 **/blob-report/
 **/.vite/
 **/.next/
+# Role storage states include live refresh cookies; auth.setup.ts recreates them.
+archive-next/e2e/.auth/
 .claude/
 # transient brainstorm artifacts
 .superpowers/

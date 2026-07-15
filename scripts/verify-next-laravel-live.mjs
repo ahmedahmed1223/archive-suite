@@ -183,6 +183,7 @@ async function main() {
     "test",
     "e2e/next-laravel-integration.spec.ts",
     "e2e/accessibility.spec.ts",
+    "e2e/auth-fixtures.authed.spec.ts",
   ]);
   const e2e = spawnChild("playwright", e2eCommand.command, e2eCommand.args, {
     env: {

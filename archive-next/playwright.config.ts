@@ -31,12 +31,31 @@ export default defineConfig({
   },
 
   projects: [
+    // V1-303B: provisioning lives in a setup *project*, not a config-level
+    // `globalSetup`. A globalSetup would run on every invocation — including
+    // `pnpm e2e:next` and `e2e:next:a11y`, which deliberately run against a
+    // bare Next.js shell with no Laravel — and fail there. As a dependency it
+    // runs only when an authenticated spec is actually selected.
+    {
+      name: 'setup-roles',
+      testMatch: /auth\.setup\.ts$/,
+    },
+    {
+      name: 'authenticated',
+      testMatch: /.*\.authed\.spec\.ts$/,
+      dependencies: ['setup-roles'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // The unauthenticated projects must never pick up the setup or the
+    // authenticated specs, or they would run them without a backend.
     {
       name: 'chromium',
+      testIgnore: [/auth\.setup\.ts$/, /.*\.authed\.spec\.ts$/],
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'mobile-chrome',
+      testIgnore: [/auth\.setup\.ts$/, /.*\.authed\.spec\.ts$/],
       use: { ...devices['Pixel 5'] },
     },
   ],
