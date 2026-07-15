@@ -18,6 +18,7 @@ return [
     'media_extensions' => [
         'mp4', 'mov', 'mxf', 'avi', 'mkv', 'wmv', 'flv',
         'webm', 'ts', 'm2ts', 'mts', 'dv', 'mov',
+        'wav', 'mp3', 'm4a', 'aac', 'ogg', 'opus', 'flac',
         'jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'webp',
     ],
 

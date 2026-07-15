@@ -4,6 +4,7 @@ import type { ChangeEvent, DragEvent, FormEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import { createArchiveApiClient, type ArchiveRecord, type IntakeTemplate, type UploadedRecord } from "@/lib/archive-api";
+import { useAuthSession } from "@/lib/auth-session";
 import {
   deriveIntakeNextAction,
   findDuplicateFiles,
@@ -82,6 +83,7 @@ function probeVideoMetadata(file: File): Promise<{ durationSeconds?: number; res
 
 export function UploadForm() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const { accessToken } = useAuthSession();
   const [files, setFiles] = useState<File[]>([]);
   const [step, setStep] = useState<WizardStep>("files");
   const [mode, setMode] = useState<IntakeMode>("guided");
@@ -282,14 +284,15 @@ export function UploadForm() {
   }
 
   async function uploadOne(file: File): Promise<UploadResult> {
-    const uploaded = await api.uploadFile(file, folder.trim() ? { folder: folder.trim() } : undefined);
+    const auth = accessToken ? { accessToken } : undefined;
+    const uploaded = await api.uploadFile(file, folder.trim() ? { folder: folder.trim() } : undefined, auth);
 
     if (!uploaded.ok) {
       return { status: "error", fileName: file.name, message: uploaded.error };
     }
 
     const record = buildArchiveRecord(file, uploaded.record);
-    const update = await api.bulkRecords({ store: "archive-items", records: [record] });
+    const update = await api.bulkRecords({ store: "archive-items", records: [record] }, auth);
 
     if (!update.ok) {
       return {
