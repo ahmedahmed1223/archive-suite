@@ -21,6 +21,13 @@
 - الصيغة المتقدمة غير الصحيحة، الحقول المجهولة، العوامل المعلقة، الاقتباس غير المغلق، أو تجاوز 128 رمزًا تعيد 422؛ البحث النصي العادي يحتفظ بمساره السابق ولا يُقيد بهذا الحد. مسار DSL لا يستخدم البحث الدلالي/المتجهي، وتبقى فلاتر URL متصلة به بمنطق AND.
 - واجهة البحث تعرض مثالًا عربيًا مرتبطًا بحقل الإدخال عبر `aria-describedby`. التحقق: `SearchApiTest` 8/8 (67 assertion)، API contracts، typecheck والبناء، ومراجعة مستقلة بعد إصلاح enum `SearchFacets.mode`.
 
+## V1-708 — فرق بصري لتاريخ السجل — 2026-07-15
+
+- تحديث سجل واحد عبر `/records/bulk` يسجل الآن، عند النجاح فقط، حقولًا عليا متغيرة في `metadata.diff.before` و`metadata.diff.after`. لا تغير القراءة والأحداث الأخرى سلوكها، والسجلات القديمة تظل صالحة.
+- المفاتيح الحساسة مستبعدة كليًا من لقطات الفرق؛ يبقى payload التدقيق العام خاضعًا للتنقيح القائم (`[redacted]`).
+- صفحة السجل تعرض جدولًا عربيًا قابلًا للوصول للحقل والقيمة السابقة والقيمة الجديدة، مع الحفاظ على شارات الحقول وpayload المنقح كبديل عندما لا تتوفر لقطتان.
+- التحقق: `RecordHistoryApiTest` 5/5 (32 assertion)، API contracts، typecheck والبناء، ومراجعة مستقلة للأمن والتوافق.
+
 ## V1-767 / V1-771 / V1-780 — Shared UI infrastructure — 2026-07-15
 
 - **Skeleton (B39):** one `components/ui/Skeleton.tsx` applied to 31 call sites across 28 files. The dominant wrapper `<div className="panel panel-compact" role="status" aria-live="polite">` already carried a live region, so nesting Skeleton (which owns `role="status"`/`aria-live`/`aria-busy`) inside would double-announce; the wrapper ARIA was stripped wherever a Skeleton took over, verified with zero surviving nested live regions. Bars are `aria-hidden`, only the visually-hidden `label` is announced, and the CSS-only shimmer stops under `prefers-reduced-motion`. Deliberately skipped: 5 `state-banner` sites with real explanatory copy a skeleton would delete, 2 sites passing loading text as a prop value rather than a rendered placeholder, an `EmptyState` `title` prop, 3 inline `helper-text` hints, and a readiness *check* status that is not a load.
