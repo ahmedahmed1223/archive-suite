@@ -3861,7 +3861,10 @@
           "actorId": { "type": ["string", "null"] },
           "outcome": { "type": "string" },
           "statusCode": { "type": "integer" },
-          "metadata": { "type": ["object", "null"] },
+          "metadata": {
+            "type": ["object", "null"],
+            "description": "Sanitized audit metadata. For a successful single-record bulk update, diff.before and diff.after contain only changed top-level fields; secret-like values are redacted or excluded."
+          },
           "createdAt": { "type": ["string", "null"], "format": "date-time" }
         }
       },

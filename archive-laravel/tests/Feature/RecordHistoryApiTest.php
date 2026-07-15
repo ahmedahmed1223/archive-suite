@@ -36,6 +36,27 @@ class RecordHistoryApiTest extends TestCase
             ->assertJsonPath('code', 'not_found');
     }
 
+    public function test_it_includes_sanitized_before_and_after_values_for_a_record_update(): void
+    {
+        $this->seedArchiveRecord();
+
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [[
+                'uid' => 'item-1', 'id' => 'item-1', 'title' => 'Updated history title',
+                'type' => 'video', 'tags' => ['history'], 'apiToken' => 'must-not-leak',
+            ]],
+        ], $this->authHeaders())->assertOk();
+
+        $this->getJson('/api/v1/records/item-1/history', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('entries.0.event', 'records.bulk_upsert')
+            ->assertJsonPath('entries.0.metadata.diff.before.title', 'Record with history')
+            ->assertJsonPath('entries.0.metadata.diff.after.title', 'Updated history title')
+            ->assertJsonMissingPath('entries.0.metadata.diff.after.apiToken')
+            ->assertJsonPath('entries.0.metadata.diff.fields', ['title']);
+    }
+
     public function test_it_rejects_unauthenticated_history_requests(): void
     {
         $this->getJson('/api/v1/records/item-1/history')

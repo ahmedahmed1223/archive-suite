@@ -604,6 +604,38 @@ function auditDiffFields(entry: RecordHistoryEntry) {
   return Array.isArray(fields) ? fields.filter((field): field is string => typeof field === "string") : [];
 }
 
+type AuditComparison = Readonly<{
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
+}>;
+
+function nonEmptyObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function auditComparison(entry: RecordHistoryEntry): AuditComparison | null {
+  const metadata = metadataObject(entry);
+  const diff = nonEmptyObject(metadata?.["diff"]);
+  const before = nonEmptyObject(diff?.["before"]);
+  const after = nonEmptyObject(diff?.["after"]);
+
+  return before && after ? { before, after } : null;
+}
+
+function auditValue(value: unknown): string {
+  if (value === undefined) return "—";
+  if (typeof value === "string") return value || "—";
+  if (typeof value === "number" || typeof value === "boolean" || value === null) return String(value);
+
+  try {
+    return JSON.stringify(value) ?? "—";
+  } catch {
+    return "—";
+  }
+}
+
 function auditRequestPayload(entry: RecordHistoryEntry) {
   const metadata = metadataObject(entry);
   const request = metadata?.["request"];
@@ -657,8 +689,12 @@ function RecordHistoryPanel({
         <ul className="record-history-list">
           {entries.map((entry) => {
             const fields = auditDiffFields(entry);
+            const comparison = auditComparison(entry);
             const payload = auditRequestPayload(entry);
             const decision = auditRestoreDecision(entry);
+            const comparisonFields = comparison
+              ? [...new Set([...Object.keys(comparison.before), ...Object.keys(comparison.after)])]
+              : [];
 
             return (
               <li key={entry.id}>
@@ -690,6 +726,30 @@ function RecordHistoryPanel({
                       ))}
                       {fields.length > 12 ? <span className="tag">+{fields.length - 12}</span> : null}
                     </div>
+                  </div>
+                ) : null}
+
+                {comparison ? (
+                  <div className="audit-diff">
+                    <strong>مقارنة التغيير</strong>
+                    <table aria-label="مقارنة القيم السابقة والجديدة">
+                      <thead>
+                        <tr>
+                          <th scope="col">الحقل</th>
+                          <th scope="col">القيمة السابقة</th>
+                          <th scope="col">القيمة الجديدة</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {comparisonFields.map((field) => (
+                          <tr key={field}>
+                            <th scope="row">{field}</th>
+                            <td>{auditValue(comparison.before[field])}</td>
+                            <td>{auditValue(comparison.after[field])}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 ) : null}
 
