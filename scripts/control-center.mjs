@@ -21,7 +21,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, copyFileSync, statfsSync } from "node:fs";
+import { existsSync, readFileSync, copyFileSync, rmSync, statSync, statfsSync, unlinkSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { formatPlatformContractReport, loadPlatformContract, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
@@ -36,6 +36,8 @@ import { collectWizardRuntimeChoices, runGuidedProvisioningFlow } from "./contro
 import * as installationManifest from "./control-center/installation-manifest.mjs";
 import { ReleaseDescriptorError, loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
 import { createReleaseUpdate } from "./control-center/update-release.mjs";
+import { createReleaseRollback } from "./control-center/rollback-release.mjs";
+import { createReconnectData, createUninstall } from "./control-center/uninstall.mjs";
 import { createRoleSmoke } from "./control-center/role-smoke.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
@@ -109,6 +111,33 @@ function manifestInput(configuration, release) {
   };
 }
 
+function localManifestInput(configuration) {
+  const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
+  const services = ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"];
+  if (configuration.runtimeProfiles.includes("media")) services.push("ocr");
+  if (configuration.runtimeProfiles.includes("edge")) services.push("caddy");
+  return {
+    version,
+    source: "local",
+    mode: configuration.mode,
+    platform: configuration.platform,
+    runtimeProfiles: configuration.runtimeProfiles,
+    capabilities: configuration.capabilities,
+    artifacts: [],
+    services,
+    dataPaths: { storage: configuration.storage.path },
+  };
+}
+
+function localComposeFor(configuration) {
+  const profiles = configuration.runtimeProfiles.filter((profile) => profile !== "core").join(",");
+  return (args, options = {}) => compose(args, {
+    ...options,
+    inherit: hasFlag("json") ? false : options.inherit,
+    env: { ARCHIVE_COMPOSE_PROFILES: profiles, ...(options.env || {}) },
+  });
+}
+
 function setupInstallOrRepair(operation, configurationInput = null) {
   const imported = configurationInput
     ? setupConfiguration.importInput(configurationInput)
@@ -118,23 +147,27 @@ function setupInstallOrRepair(operation, configurationInput = null) {
   if (configuration.mode !== "docker") {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Install and repair are currently available for Docker mode only.", { mode: configuration.mode }));
   }
+  const localSource = configuration.source === "local";
   let release;
-  try { release = resolveRelease({ configuration }); }
-  catch (error) {
-    const code = error instanceof ReleaseDescriptorError ? error.code : "RELEASE_DESCRIPTOR_INVALID";
-    return renderSetupResult({ ok: false, code, message: error.message || "Release descriptor validation failed.", details: {}, nextActions: error.nextActions || ["Correct the release configuration and run repair."] });
+  if (!localSource) {
+    try { release = resolveRelease({ configuration }); }
+    catch (error) {
+      const code = error instanceof ReleaseDescriptorError ? error.code : "RELEASE_DESCRIPTOR_INVALID";
+      return renderSetupResult({ ok: false, code, message: error.message || "Release descriptor validation failed.", details: {}, nextActions: error.nextActions || ["Correct the release configuration and run repair."] });
+    }
   }
-  const request = { path: INSTALLATION_MANIFEST_PATH, input: manifestInput(configuration, release) };
+  const request = { path: INSTALLATION_MANIFEST_PATH, input: localSource ? localManifestInput(configuration) : manifestInput(configuration, release) };
   try {
     if (process.env.ARCHIVE_CONTROL_CENTER_SKIP_DOCKER === "1") {
       installationManifest.beginInstallationOperation({ ...request, operation });
       installationManifest.updateLastSuccessfulStep({ ...request, step: "docker-compose-skipped" });
     } else {
-      loadOfflineReleaseImages(release);
+      if (!localSource) loadOfflineReleaseImages(release);
       const runtime = createDockerRuntimeAdapter({
-        compose: (args, options = {}) => releaseCompose(args, { ...options, inherit: hasFlag("json") ? false : options.inherit, env: { ...release.environment, ...(options.env || {}) } }),
+        compose: localSource ? localComposeFor(configuration) : (args, options = {}) => releaseCompose(args, { ...options, inherit: hasFlag("json") ? false : options.inherit, env: { ...release.environment, ...(options.env || {}) } }),
         health: healthProbe,
         manifestStore: installationManifest,
+        buildLocal: localSource,
       });
       const result = operation === "install" ? runtime.install(request) : runtime.repair(request);
       if (!result.ok) {
@@ -247,7 +280,11 @@ function releaseConfigurationFromManifest() {
 }
 
 function releaseRuntimeForLifecycle() {
-  const release = resolveRelease({ configuration: releaseConfigurationFromManifest() });
+  const configuration = releaseConfigurationFromManifest();
+  if (configuration.source === "local") {
+    return createDockerRuntimeAdapter({ compose: localComposeFor(configuration), health: healthProbe });
+  }
+  const release = resolveRelease({ configuration });
   return createDockerRuntimeAdapter({
     compose: (args, options = {}) => releaseCompose(args, { ...options, inherit: hasFlag("json") ? false : options.inherit, env: { ...release.environment, ...(options.env || {}) } }),
     health: healthProbe,
@@ -319,8 +356,84 @@ const releaseUpdateOperation = createReleaseUpdate({
   runRoleSmoke: updateRoleSmoke,
   restorePreviousRelease: restorePreviousUpdateRelease,
 });
-const updateRuntime = createDockerRuntimeAdapter({ compose: releaseCompose, health: healthProbe, updateOperation: releaseUpdateOperation });
+// V1-208J: rollback impact assessment. ponytail: per-migration reversibility
+// detection would need an artisan capability that does not exist yet, so
+// every rollback across a completed update is conservatively treated as
+// irreversible — the operator always sees the data-loss impact and must pass
+// --yes before the pre-update backup is restored. Compatibility (mode/
+// platform) is checked structurally by the rollback module itself.
+async function assessReleaseRollbackImpact({ manifest, previousRelease }) {
+  return {
+    ok: true,
+    compatible: true,
+    reversible: false,
+    dataLossImpact: [
+      `Database and file changes made after updating to ${manifest.version} will be lost when the pre-update backup is restored to return to ${previousRelease.version}.`,
+    ],
+  };
+}
+async function restoreLatestBackupForRollback(adapter) {
+  const list = runBackupCommand(adapter, ["archive:backup-list"]);
+  if (!list.ok) return { ok: false, message: list.message };
+  const backups = (list.details?.backups ?? [])
+    .filter((backup) => !Number.isNaN(Date.parse(backup.createdAt)))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  if (!backups.length) return { ok: false, message: "No backup is available to restore." };
+  // archive:backup-restore refuses a checksum-mismatched backup itself.
+  const restored = runBackupCommand(adapter, ["archive:backup-restore", backups[0].name, "--force"]);
+  return { ok: restored.ok === true, message: restored.message };
+}
+const releaseRollbackOperation = createReleaseRollback({
+  manifestPath: INSTALLATION_MANIFEST_PATH,
+  manifestStore: installationManifest,
+  buildAdapter: buildUpdateAdapter,
+  assessRollbackImpact: assessReleaseRollbackImpact,
+  runRestoreBackup: restoreLatestBackupForRollback,
+  checkHealth: updateHealthCheck,
+});
+// V1-208K: uninstall removes only what the manifest records ownership of —
+// `compose down` limited to the recorded release project; named volumes are
+// removed only on the doubly-confirmed --delete-data path.
+function removeReleaseServices({ manifest, deleteVolumes }) {
+  const result = manifest.source === "local"
+    ? localComposeFor({ runtimeProfiles: manifest.runtimeProfiles })(["down", ...(deleteVolumes ? ["--volumes"] : [])])
+    : releaseCompose(["down", ...(deleteVolumes ? ["--volumes"] : [])], { inherit: hasFlag("json") ? false : undefined, env: manifest.releaseEnvironment || {} });
+  return { ok: (result.status ?? 1) === 0, status: result.status };
+}
+function listReleaseBackups(manifest) {
+  const adapter = manifest.source === "local"
+    ? createDockerRuntimeAdapter({ compose: localComposeFor({ runtimeProfiles: manifest.runtimeProfiles }), health: healthProbe })
+    : buildUpdateAdapter(manifest.releaseEnvironment);
+  const payload = runBackupCommand(adapter, ["archive:backup-list"]);
+  return payload.ok ? (payload.details?.backups ?? []) : [];
+}
+function deleteReleaseDataPaths(dataPaths) {
+  for (const path of Object.values(dataPaths || {})) rmSync(path, { recursive: true, force: true });
+}
+const releaseUninstallOperation = createUninstall({
+  manifestPath: INSTALLATION_MANIFEST_PATH,
+  manifestStore: installationManifest,
+  removeServices: removeReleaseServices,
+  listBackups: listReleaseBackups,
+  deleteDataPaths: deleteReleaseDataPaths,
+  removeManifest: () => unlinkSync(INSTALLATION_MANIFEST_PATH),
+});
+const reconnectDataOperation = createReconnectData({
+  manifestPath: INSTALLATION_MANIFEST_PATH,
+  manifestStore: installationManifest,
+  inspectDataPath: (path) => ({ exists: existsSync(path) && statSync(path).isDirectory() }),
+});
+const updateRuntime = createDockerRuntimeAdapter({ compose: releaseCompose, health: healthProbe, updateOperation: releaseUpdateOperation, rollbackOperation: releaseRollbackOperation, uninstallOperation: releaseUninstallOperation });
 async function releaseUpdate() { return renderSetupResult(await updateRuntime.update()); }
+async function releaseRollback() { return renderSetupResult(await updateRuntime.rollback({ confirmed: hasFlag("yes") })); }
+async function releaseUninstall() {
+  return renderSetupResult(await updateRuntime.uninstall({
+    confirmed: hasFlag("yes"),
+    deleteDataRequested: hasFlag("delete-data"),
+    deleteConfirmationPhrase: flagValue("confirm-delete") || "",
+  }));
+}
+async function releaseReconnectData() { return renderSetupResult(await reconnectDataOperation({ storagePath: flagValue("storage") })); }
 
 function lifecycle(operation, ...args) {
   try {
@@ -621,7 +734,7 @@ async function guidedSetup() {
   titleLine("Guided setup — Masar wizard");
   log("This wizard walks you through the full first-run in 5 steps:");
   log(`  ${C.d}1) Environment check   2) Your answers   3) Provision .env${C.x}`);
-  log(`  ${C.d}4) Install signed release   5) Verify & next steps${C.x}`);
+  log(`  ${C.d}4) Install selected source   5) Verify & next steps${C.x}`);
   log("");
 
   // Step 2 — questions. The resulting object is always resolved by the same
@@ -718,9 +831,9 @@ async function guidedSetup() {
   }
   if (!writeEnv(updates)) return 1;
 
-  // Step 4 — release installation. It uses the V1-208E immutable release
-  // adapter, never the development source-build Compose path.
-  log(`\n${C.b}Step 4/5 — Install signed release${C.x}`);
+  // Step 4 — selected deployment source. Local builds the checked-out source;
+  // online/offline continue through the immutable release adapter.
+  log(`\n${C.b}Step 4/5 — ${resolved.source === "local" ? "Build and start local source" : "Install signed release"}${C.x}`);
   const deployStatus = setupInstallOrRepair("install", resolved);
   if (deployStatus !== 0) { err("Install failed — see the messages above. Run setup repair after correcting it."); return deployStatus; }
   if (generatedPassword) {
@@ -968,6 +1081,9 @@ const COMMANDS = {
   // Maintenance
   diagnostics: () => runDiagnostics({ quiet: hasFlag("json") }), observability: localObservabilityCheck, "support-bundle": supportBundle,
   update: () => process.env.ARCHIVE_DEVELOPMENT_MODE === "1" ? updateAndRebuild() : releaseUpdate(),
+  rollback: releaseRollback,
+  uninstall: releaseUninstall,
+  "reconnect-data": releaseReconnectData,
   deploy: deployCanonical,
   help: () => {
     printBanner();
@@ -987,7 +1103,7 @@ const COMMANDS = {
     console.log(`  ${C.c}setup change-admin-password --generate${C.x}`);
     console.log("");
     console.log(`${C.b}  Commands (canonical Laravel + Next.js stack):${C.x}`);
-    console.log(`  ${C.c}wizard${C.x}           Guided first-run setup (checks -> choices -> signed release -> verify)`);
+    console.log(`  ${C.c}wizard${C.x}           Guided first-run setup (choose local source build, online release, or offline bundle)`);
     console.log(`  ${C.c}wizard --config=<file>${C.x}  Validate the same wizard choices non-interactively (read-only)`);
     console.log(`  ${C.c}quick${C.x}            Deploy + health check in one step`);
     console.log(`  ${C.c}first-run${C.x}        Show the quick/advanced first-run guide`);
@@ -1016,6 +1132,9 @@ const COMMANDS = {
     console.log(`  ${C.c}observability${C.x}    Local service/error/backup alert checks (JSON)`);
     console.log(`  ${C.c}support-bundle${C.x}   Create a bounded, redacted local diagnostics bundle`);
     console.log(`  ${C.c}update${C.x}           Release update: preflight → backup → pull new images → migrate-safe → switch → health (fails safely, keeps the previous version's images; ARCHIVE_DEVELOPMENT_MODE=1: git pull → install → build instead)`);
+    console.log(`  ${C.c}rollback [--yes]${C.x} Return to the previous pinned release recorded by the last update; shows the data-loss impact and requires --yes before restoring the pre-update backup`);
+    console.log(`  ${C.c}uninstall --yes${C.x}  Remove the manifest-owned services; data is kept by default (--delete-data additionally requires --confirm-delete="DELETE ARCHIVE DATA" and a recent successful backup)`);
+    console.log(`  ${C.c}reconnect-data --storage=<path>${C.x}  Re-attach an existing data directory to a fresh install`);
     console.log(`\n${C.b}  Tips:${C.x}`);
     console.log(`  ${C.d}- In the interactive menu, option 1 is the single quick-start path; q and 0 both exit.${C.x}`);
     console.log(`  ${C.d}- "Stack not running" → run 'setup start' or 'setup doctor' to diagnose.${C.x}`);
@@ -1031,7 +1150,7 @@ COMMANDS.q = () => 0;
 
 const cmd = cliCommand;
 const SETUP_RESULT_KEYS = ["ok", "code", "message", "details", "nextActions"];
-const SPECIAL_JSON_COMMANDS = new Set(["plan", "import-config", "export-config", "install", "repair", "update", "wizard", "guided-setup"]);
+const SPECIAL_JSON_COMMANDS = new Set(["plan", "import-config", "export-config", "install", "repair", "update", "rollback", "uninstall", "reconnect-data", "wizard", "guided-setup"]);
 
 function commandCode(command, outcome) {
   return `${String(command).replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "").toUpperCase()}_${outcome}`;

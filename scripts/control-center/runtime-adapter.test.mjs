@@ -99,6 +99,21 @@ test("Docker runtime adapter delegates update to an injected updateOperation and
   assert.deepEqual(adapter.rollback(), { ok: false, supported: false, operation: "rollback", reason: "unsupported" });
 });
 
+test("Docker runtime adapter delegates rollback and uninstall to injected operations and forwards their results verbatim", async () => {
+  const calls = [];
+  const adapter = createDockerRuntimeAdapter({
+    compose: () => ({ status: 0 }),
+    rollbackOperation: async (request) => { calls.push(["rollback", request]); return { ok: true, code: "ROLLBACK_COMPLETE", message: "done", details: {}, nextActions: [] }; },
+    uninstallOperation: async (request) => { calls.push(["uninstall", request]); return { ok: true, code: "UNINSTALL_COMPLETE", message: "done", details: {}, nextActions: [] }; },
+  });
+
+  assert.deepEqual(await adapter.rollback({ confirmed: true }), { ok: true, code: "ROLLBACK_COMPLETE", message: "done", details: {}, nextActions: [] });
+  assert.deepEqual(await adapter.uninstall({ confirmed: true }), { ok: true, code: "UNINSTALL_COMPLETE", message: "done", details: {}, nextActions: [] });
+  assert.deepEqual(calls, [["rollback", { confirmed: true }], ["uninstall", { confirmed: true }]]);
+  // update remains the programmatic unsupported stub when not injected.
+  assert.deepEqual(adapter.update(), { ok: false, supported: false, operation: "update", reason: "unsupported" });
+});
+
 test("Docker runtime adapter maps every supported lifecycle operation to Compose", async () => {
   const commands = [];
   const adapter = createDockerRuntimeAdapter({

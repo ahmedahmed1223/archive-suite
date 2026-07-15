@@ -274,6 +274,47 @@ test("update manifest records a safe target while in progress and a complete pre
   assert.equal(completed.previousRelease.releaseEnvironment.ARCHIVE_RELEASE_IMAGE_NEXT, oldInput.releaseEnvironment.ARCHIVE_RELEASE_IMAGE_NEXT);
 });
 
+test("updateDataPaths atomically re-points data directories and still rejects unsafe values", async () => {
+  const manifest = await loadManifest();
+  assert.ok(manifest, "installation manifest module must exist");
+  const dir = mkdtempSync(join(tmpdir(), "archive-manifest-datapaths-"));
+  const path = join(dir, "installation-manifest.json");
+  manifest.createInstallationManifest({ path, input: safeInput() });
+
+  const next = manifest.updateDataPaths({ path, dataPaths: { storage: "/mnt/old-archive/storage" } });
+  assert.deepEqual(next.dataPaths, { storage: "/mnt/old-archive/storage" });
+  assert.deepEqual(manifest.readInstallationManifest(path).dataPaths, { storage: "/mnt/old-archive/storage" });
+
+  assert.throws(() => manifest.updateDataPaths({ path, dataPaths: { storage: "postgres://user:secret@host/db" } }), /local path|credential/i);
+  assert.throws(() => manifest.updateDataPaths({ path: join(dir, "missing.json"), dataPaths: { storage: "/mnt/x" } }), /does not exist/i);
+});
+
+test("completeRollbackOperation swaps the previous release back in as the active release", async () => {
+  const manifest = await loadManifest();
+  assert.ok(manifest, "installation manifest module must exist");
+  const dir = mkdtempSync(join(tmpdir(), "archive-manifest-complete-rollback-"));
+  const path = join(dir, "installation-manifest.json");
+  const oldInput = safeInput({ version: "1.0.0", releaseEnvironment: { ARCHIVE_RELEASE_PULL_POLICY: "missing", ARCHIVE_RELEASE_IMAGE_NEXT: "registry/archive-next:1.0.0@sha256:abc" } });
+  const targetInput = safeInput({ version: "1.1.0", releaseEnvironment: { ARCHIVE_RELEASE_PULL_POLICY: "missing", ARCHIVE_RELEASE_IMAGE_NEXT: "registry/archive-next:1.1.0@sha256:def" } });
+  manifest.createInstallationManifest({ path, input: oldInput });
+  manifest.beginOperation({ path, type: "update", target: targetInput });
+  manifest.completeUpdateOperation({ path, input: targetInput, previousVersion: "1.0.0", step: "role-smoke-verified" });
+
+  manifest.beginOperation({ path, type: "rollback" });
+  const rolledBack = manifest.completeRollbackOperation({ path, step: "health-verified" });
+
+  assert.equal(rolledBack.version, "1.0.0");
+  assert.equal(rolledBack.releaseEnvironment.ARCHIVE_RELEASE_IMAGE_NEXT, oldInput.releaseEnvironment.ARCHIVE_RELEASE_IMAGE_NEXT);
+  assert.equal(rolledBack.previousVersion, "1.1.0", "previousVersion must record the version rolled back from");
+  assert.equal(rolledBack.previousRelease, undefined, "a rollback consumes the previous release reference; there is no roll-forward");
+  assert.deepEqual(rolledBack.operation, { type: "rollback", status: "succeeded", failedStep: null, nextActions: [] });
+  assert.deepEqual(manifest.readInstallationManifest(path), rolledBack);
+
+  // A second rollback has no reference left and must fail closed.
+  assert.throws(() => manifest.completeRollbackOperation({ path, step: "health-verified" }), /previous release/i);
+  assert.throws(() => manifest.completeRollbackOperation({ path: join(dir, "missing.json"), step: "health-verified" }), /does not exist/i);
+});
+
 test("an unfamiliar lastSuccessfulStep (left by a failed update) forces a full repair instead of a bogus install resume", async () => {
   const manifest = await loadManifest();
   assert.ok(manifest, "installation manifest module must exist");

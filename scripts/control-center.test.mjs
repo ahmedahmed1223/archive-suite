@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSetupConfiguration } from "./control-center/setup-config.mjs";
@@ -521,7 +521,6 @@ test("wizard profile numbers and aliases follow the core-implicit contract", asy
     existing: {}, contract: loadPlatformContract(), platformId: "linux-docker",
   });
   assert.deepEqual(allProfiles.candidate.runtimeProfiles, ["core", "media", "edge"]);
-
 });
 
 test("guided provisioning flow keeps .env and Docker side effects behind confirm", async () => {
@@ -551,10 +550,11 @@ test("guided provisioning flow keeps .env and Docker side effects behind confirm
   assert.deepEqual(effects, [".env", "docker"], "confirm invokes the actual provisioning callback exactly once");
 });
 
-test("wizard confirmation requires confirm and never provisions after back or q", async () => {
-  for (const [answer, expected] of [["back", "back"], ["q", "quit"], ["confirm", "confirm"]]) {
+test("wizard confirmation accepts visible short confirmations and never provisions after back or q", async () => {
+  for (const [answer, expected] of [["back", "back"], ["q", "quit"], ["confirm", "confirm"], ["c", "confirm"], ["yes", "confirm"], ["y", "confirm"]]) {
     let provisions = 0;
-    const decision = await requestWizardConfirmation({ ask: async () => answer, log: () => {} });
+    const answers = [answer, "q"];
+    const decision = await requestWizardConfirmation({ ask: async () => answers.shift(), log: () => {} });
     if (decision === "confirm") provisions += 1;
     assert.equal(decision, expected);
     assert.equal(provisions, expected === "confirm" ? 1 : 0);
@@ -570,12 +570,19 @@ test("wizard confirmation requires confirm and never provisions after back or q"
   assert.equal(blankDecision, "quit", "an empty confirmation must not use confirm as a default");
 });
 
+test("wizard confirmation prompt highlights every accepted confirmation shortcut", async () => {
+  let prompt = "";
+  const answers = ["y", "q"];
+  await requestWizardConfirmation({ ask: async (question) => { prompt = question; return answers.shift(); }, log: () => {} });
+  assert.match(prompt, /\x1b\[32m\[y\/yes\/c\/confirm\]\x1b\[0m/);
+});
+
 test("guided setup uses the explicit confirmation gate before it can provision", () => {
   const controlCenter = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
-  assert.match(controlCenter, /runGuidedProvisioningFlow\(\{ ask, log, configuration: resolved, provision: async \(\) => \{/);
-  assert.match(controlCenter, /if \(flow\.action !== "confirm"\) \{[\s\S]*return/);
   assert.match(controlCenter, /Your setup summary/);
   assert.doesNotMatch(controlCenter, /Choice summary/);
+  assert.match(controlCenter, /runGuidedProvisioningFlow\(\{ ask, log, configuration: resolved, provision: async \(\) => \{/);
+  assert.match(controlCenter, /if \(flow\.action !== "confirm"\) \{[\s\S]*return/);
   assert.doesNotMatch(controlCenter, /confirm\("Save this configuration and install the signed release\?", "y"\)/);
 });
 
@@ -717,6 +724,130 @@ test("setup plan and import never create a manifest, while install and repair re
   assert.deepEqual(second.lastSuccessfulStep, first.lastSuccessfulStep);
   assert.equal(second.operation.type, "repair");
   assert.equal(second.operation.status, "succeeded");
+});
+
+test("setup install accepts the local source and records a source-build manifest without registry images", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-local-install-"));
+  const configFile = join(dir, "setup.json");
+  const manifestFile = join(dir, "installation-manifest.json");
+  writeFileSync(configFile, JSON.stringify(validSetupConfig({ source: "local" })));
+
+  const result = run(["install", `--config=${configFile}`, "--json"], {
+    ARCHIVE_ENV_PATH: join(dir, ".env"),
+    ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile,
+    ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1",
+    PATH: "", Path: "",
+  });
+
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  const manifest = JSON.parse(readFileSync(manifestFile, "utf8"));
+  assert.equal(manifest.source, "local");
+  assert.deepEqual(manifest.artifacts, []);
+  assert.equal("releaseEnvironment" in manifest, false);
+});
+
+const releaseManifest = (version, image) => ({
+  version,
+  source: "online",
+  mode: "docker",
+  platform: "linux-docker",
+  runtimeProfiles: ["core"],
+  capabilities: [],
+  artifacts: [{ id: "next", digest: `sha256:${image.repeat(64)}` }],
+  services: ["next"],
+  dataPaths: { storage: "/srv/archive-suite/storage" },
+  releaseEnvironment: { ARCHIVE_RELEASE_PULL_POLICY: "missing", ARCHIVE_RELEASE_IMAGE_NEXT: `ghcr.io/archive-suite/next:${version}@sha256:${image.repeat(64)}` },
+});
+
+const installedManifest = (overrides = {}) => ({
+  schemaVersion: "1.0",
+  ...releaseManifest("1.1.0", "b"),
+  lastSuccessfulStep: "role-smoke-verified",
+  previousVersion: "1.0.0",
+  operation: { type: "update", status: "succeeded", failedStep: null, nextActions: [] },
+  previousRelease: releaseManifest("1.0.0", "a"),
+  ...overrides,
+});
+
+test("setup rollback --json refuses without a previous release reference and requires --yes before restoring data", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-rollback-"));
+  const manifestFile = join(dir, "installation-manifest.json");
+  const env = { ARCHIVE_ENV_PATH: join(dir, ".env"), ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile, PATH: "", Path: "" };
+
+  // No installation at all → stable not-installed code.
+  const notInstalled = run(["rollback", "--json"], env);
+  assert.notEqual(notInstalled.status, 0);
+  const notInstalledResult = JSON.parse(notInstalled.stdout);
+  assert.equal(notInstalledResult.code, "RELEASE_NOT_INSTALLED");
+
+  // Installed but never updated → no rollback reference, stable refusal.
+  const fresh = installedManifest({ previousVersion: null, operation: { type: "install", status: "succeeded", failedStep: null, nextActions: [] } });
+  delete fresh.previousRelease;
+  writeFileSync(manifestFile, JSON.stringify(fresh));
+  const noReference = run(["rollback", "--json"], env);
+  assert.notEqual(noReference.status, 0);
+  const noReferenceResult = JSON.parse(noReference.stdout);
+  assert.deepEqual(Object.keys(noReferenceResult), ["ok", "code", "message", "details", "nextActions"]);
+  assert.equal(noReferenceResult.code, "ROLLBACK_REFERENCE_MISSING");
+
+  // A recorded previous release without --yes must show the data-loss impact
+  // and refuse the silent rollback before any Docker side effect.
+  writeFileSync(manifestFile, JSON.stringify(installedManifest()));
+  const unconfirmed = run(["rollback", "--json"], env);
+  assert.notEqual(unconfirmed.status, 0);
+  const unconfirmedResult = JSON.parse(unconfirmed.stdout);
+  assert.equal(unconfirmedResult.ok, false);
+  assert.equal(unconfirmedResult.code, "ROLLBACK_CONFIRMATION_REQUIRED");
+  assert.ok(unconfirmedResult.nextActions.some((line) => line.includes("--yes")));
+  assert.ok(Array.isArray(unconfirmedResult.details.dataLossImpact) && unconfirmedResult.details.dataLossImpact.length > 0);
+  const untouched = JSON.parse(readFileSync(manifestFile, "utf8"));
+  assert.equal(untouched.operation.type, "update", "an unconfirmed rollback must not begin the rollback operation");
+  assert.equal(unconfirmed.stderr, "", "JSON failures must not print a stack trace");
+});
+
+test("setup uninstall --json refuses without --yes and gates data deletion behind the typed phrase", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-uninstall-"));
+  const manifestFile = join(dir, "installation-manifest.json");
+  writeFileSync(manifestFile, JSON.stringify(installedManifest()));
+  const env = { ARCHIVE_ENV_PATH: join(dir, ".env"), ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile, PATH: "", Path: "" };
+
+  const unconfirmed = run(["uninstall", "--json"], env);
+  assert.notEqual(unconfirmed.status, 0);
+  const unconfirmedResult = JSON.parse(unconfirmed.stdout);
+  assert.deepEqual(Object.keys(unconfirmedResult), ["ok", "code", "message", "details", "nextActions"]);
+  assert.equal(unconfirmedResult.code, "UNINSTALL_CONFIRMATION_REQUIRED");
+  assert.ok(unconfirmedResult.nextActions.some((line) => line.includes("--yes")));
+
+  const wrongPhrase = run(["uninstall", "--yes", "--delete-data", "--confirm-delete=yes please", "--json"], env);
+  assert.notEqual(wrongPhrase.status, 0);
+  const wrongPhraseResult = JSON.parse(wrongPhrase.stdout);
+  assert.equal(wrongPhraseResult.code, "UNINSTALL_DELETE_PHRASE_REQUIRED");
+  assert.ok(existsSync(manifestFile), "a refused uninstall must leave the manifest untouched");
+  assert.equal(wrongPhrase.stderr, "", "JSON failures must not print a stack trace");
+});
+
+test("setup reconnect-data --json validates the path and re-attaches an existing data directory", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-reconnect-"));
+  const manifestFile = join(dir, "installation-manifest.json");
+  writeFileSync(manifestFile, JSON.stringify(installedManifest()));
+  const dataDir = join(dir, "old-storage");
+  mkdirSync(dataDir);
+  const env = { ARCHIVE_ENV_PATH: join(dir, ".env"), ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile, PATH: "", Path: "" };
+
+  const missingFlag = run(["reconnect-data", "--json"], env);
+  assert.notEqual(missingFlag.status, 0);
+  assert.equal(JSON.parse(missingFlag.stdout).code, "RECONNECT_DATA_PATH_REQUIRED");
+
+  const missingDir = run(["reconnect-data", `--storage=${join(dir, "does-not-exist")}`, "--json"], env);
+  assert.notEqual(missingDir.status, 0);
+  assert.equal(JSON.parse(missingDir.stdout).code, "RECONNECT_DATA_NOT_FOUND");
+
+  const reconnected = run(["reconnect-data", `--storage=${dataDir}`, "--json"], env);
+  assert.equal(reconnected.status, 0, reconnected.stderr + reconnected.stdout);
+  const result = JSON.parse(reconnected.stdout);
+  assert.equal(result.code, "RECONNECT_COMPLETE");
+  assert.ok(result.nextActions.some((line) => line.includes("restart")));
+  assert.equal(JSON.parse(readFileSync(manifestFile, "utf8")).dataPaths.storage, dataDir, "the manifest must record the reconnected directory");
 });
 
 test("confirmed migration constructs archive:migrate-safe through the manifest-backed release runtime", async () => {

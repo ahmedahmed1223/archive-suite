@@ -16,7 +16,7 @@ function unsupported(operation) {
   return { ok: false, supported: false, operation, reason: "unsupported" };
 }
 
-export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest, buildLocal = false, updateOperation } = {}) {
+export function createDockerRuntimeAdapter({ compose, health, manifestStore, manifestRequest, buildLocal = false, updateOperation, rollbackOperation, uninstallOperation } = {}) {
   const installOrRepair = (operation, request = manifestRequest) => {
     const session = manifestStore && request ? manifestStore.beginInstallationOperation({ ...request, operation }) : null;
     const decision = session?.decision;
@@ -62,7 +62,10 @@ export function createDockerRuntimeAdapter({ compose, health, manifestStore, man
     // future Native adapter supplies its own updateOperation to the same
     // constructor param and gets the identical request-in/result-out shape.
     update: (request) => (updateOperation ? updateOperation(request) : unsupported("update")),
-    rollback: () => unsupported("rollback"),
-    uninstall: () => unsupported("uninstall"),
+    // V1-208J/V1-208K: like update, rollback and uninstall are injected
+    // operations — a future Native adapter supplies its own to the same
+    // constructor params and gets the identical request-in/result-out shape.
+    rollback: (request) => (rollbackOperation ? rollbackOperation(request) : unsupported("rollback")),
+    uninstall: (request) => (uninstallOperation ? uninstallOperation(request) : unsupported("uninstall")),
   };
 }
