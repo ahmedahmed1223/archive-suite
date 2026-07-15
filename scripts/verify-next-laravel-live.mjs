@@ -133,6 +133,8 @@ async function main() {
       "/app/archive-laravel",
       "-p",
       `${laravelPort}:8000`,
+      "-e",
+      `ARCHIVE_CORS_ORIGINS=http://127.0.0.1:${nextPort}`,
       LARAVEL_RUNTIME_IMAGE,
       "sh",
       "-lc",
@@ -175,15 +177,21 @@ async function main() {
 
   await waitForJson(`${nextUrl}/api/v1/health`, "Next.js rewrite");
 
+  const e2eSpecs = process.env.ARCHIVE_E2E_SPECS
+    ? process.env.ARCHIVE_E2E_SPECS.split(",").map((spec) => spec.trim()).filter(Boolean)
+    : [
+      "e2e/next-laravel-integration.spec.ts",
+      "e2e/accessibility.spec.ts",
+      "e2e/auth-fixtures.authed.spec.ts",
+      "e2e/onboarding-progress.authed.spec.ts",
+    ];
   const e2eCommand = pnpmInvocation([
     "--filter",
     "@archive/next",
     "exec",
     "playwright",
     "test",
-    "e2e/next-laravel-integration.spec.ts",
-    "e2e/accessibility.spec.ts",
-    "e2e/auth-fixtures.authed.spec.ts",
+    ...e2eSpecs,
   ]);
   const e2e = spawnChild("playwright", e2eCommand.command, e2eCommand.args, {
     env: {

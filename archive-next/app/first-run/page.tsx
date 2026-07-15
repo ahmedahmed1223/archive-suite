@@ -119,7 +119,9 @@ export default function FirstRunPage() {
     setProgressState({ status: "loading" });
 
     try {
-      const response = await api.onboardingProgress();
+      const response = await api.onboardingProgress(
+        auth.accessToken ? { accessToken: auth.accessToken } : undefined,
+      );
       if (!response.ok) {
         setProgressState({ status: "error", message: response.error || "تعذر تحميل تقدم أول تشغيل." });
         return;
@@ -143,7 +145,11 @@ export default function FirstRunPage() {
 
     setUpdatingStage(stepId);
     try {
-      const response = await api.updateOnboardingStage(stepId, { status: completed ? "pending" : "completed" });
+      const response = await api.updateOnboardingStage(
+        stepId,
+        { status: completed ? "pending" : "completed" },
+        auth.accessToken ? { accessToken: auth.accessToken } : undefined,
+      );
       if (!response.ok) {
         setProgressState({ status: "error", message: response.error || "تعذر حفظ تقدم أول تشغيل." });
         return;
