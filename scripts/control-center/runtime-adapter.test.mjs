@@ -145,6 +145,76 @@ test("Docker runtime adapter maps every supported lifecycle operation to Compose
   ]);
 });
 
+test("install stops before Compose when host preflight fails", () => {
+  const commands = [];
+  const adapter = createDockerRuntimeAdapter({
+    compose: (args) => { commands.push(args); return { status: 0 }; },
+    preflight: () => ({
+      ok: false,
+      code: "INSUFFICIENT_DISK_SPACE",
+      message: "not enough space",
+      details: { freeBytes: 1, requiredBytes: 2 },
+      nextActions: ["Free space, then run install again."],
+    }),
+  });
+
+  const result = adapter.install();
+  // Nothing may be written or started when the host cannot host the install.
+  assert.deepEqual(commands, []);
+  assert.equal(result.ok, false);
+  assert.equal(result.supported, true);
+  assert.equal(result.code, "INSUFFICIENT_DISK_SPACE");
+  assert.ok(result.nextActions.length > 0);
+});
+
+test("install proceeds to Compose when host preflight passes", () => {
+  const commands = [];
+  const adapter = createDockerRuntimeAdapter({
+    compose: (args) => { commands.push(args); return { status: 0 }; },
+    preflight: () => ({ ok: true, code: "PREFLIGHT_PASSED", message: "ok", details: {}, nextActions: [] }),
+  });
+
+  assert.deepEqual(adapter.install(), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(commands, [["up", "-d"]]);
+});
+
+test("repair runs host preflight too, and records the failure in the manifest without touching Compose", () => {
+  const commands = [];
+  const failures = [];
+  const adapter = createDockerRuntimeAdapter({
+    compose: (args) => { commands.push(args); return { status: 0 }; },
+    manifestStore: {
+      beginInstallationOperation: () => ({ decision: { action: "start", nextStep: "services-start" } }),
+      updateLastSuccessfulStep: () => {},
+      markInstallationFailed: (entry) => failures.push(entry),
+    },
+    manifestRequest: { path: "manifest.json" },
+    preflight: () => ({
+      ok: false,
+      code: "DEPENDENCY_MISSING",
+      message: "docker missing",
+      details: { missing: ["docker"] },
+      nextActions: ["Install docker on this host, then run install again."],
+    }),
+  });
+
+  const result = adapter.repair();
+  assert.deepEqual(commands, []);
+  assert.equal(result.code, "DEPENDENCY_MISSING");
+  // The manifest must record why the install stopped, at the preflight step.
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0].failedStep, "host-preflight");
+  assert.deepEqual(failures[0].nextActions, ["Install docker on this host, then run install again."]);
+});
+
+test("an adapter with no preflight installs unchanged", () => {
+  // Preflight is opt-in: existing callers that inject none must not break.
+  const commands = [];
+  const adapter = createDockerRuntimeAdapter({ compose: (args) => { commands.push(args); return { status: 0 }; } });
+  assert.deepEqual(adapter.install(), { ok: true, supported: true, status: 0 });
+  assert.deepEqual(commands, [["up", "-d"]]);
+});
+
 test("Docker runtime adapter permits a local build only for an explicit development adapter", () => {
   const commands = [];
   const adapter = createDockerRuntimeAdapter({ compose: (args) => { commands.push(args); return { status: 0 }; }, buildLocal: true });

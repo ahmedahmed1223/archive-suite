@@ -54,7 +54,21 @@
     "resources": {
       "type": "object",
       "required": ["status", "core", "media", "ocr", "ai", "observability"],
-      "properties": { "status": { "const": "provisional" } }
+      "properties": { "status": { "const": "provisional" } },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["cpu", "memory", "disk", "diskBytes"],
+        "properties": {
+          "cpu": { "type": "string" },
+          "memory": { "type": "string" },
+          "disk": { "type": "string" },
+          "diskBytes": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Machine-readable form of disk, consumed by install preflight. The prose in disk stays for humans."
+          }
+        }
+      }
     },
     "platforms": {
       "type": "array",

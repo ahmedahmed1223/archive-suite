@@ -103,27 +103,32 @@
     "core": {
       "cpu": "4 vCPU",
       "memory": "8 GiB RAM",
-      "disk": "100 GiB SSD"
+      "disk": "100 GiB SSD",
+      "diskBytes": 107374182400
     },
     "media": {
       "cpu": "8 vCPU",
       "memory": "16 GiB RAM",
-      "disk": "250 GiB SSD"
+      "disk": "250 GiB SSD",
+      "diskBytes": 268435456000
     },
     "ocr": {
       "cpu": "8 vCPU",
       "memory": "16 GiB RAM",
-      "disk": "250 GiB SSD"
+      "disk": "250 GiB SSD",
+      "diskBytes": 268435456000
     },
     "ai": {
       "cpu": "8 vCPU",
       "memory": "32 GiB RAM",
-      "disk": "500 GiB SSD; accelerator sizing is provider-specific"
+      "disk": "500 GiB SSD; accelerator sizing is provider-specific",
+      "diskBytes": 536870912000
     },
     "observability": {
       "cpu": "4 vCPU",
       "memory": "8 GiB RAM",
-      "disk": "150 GiB SSD including retained logs"
+      "disk": "150 GiB SSD including retained logs",
+      "diskBytes": 161061273600
     }
   },
   "platforms": [

@@ -4,11 +4,51 @@ import test from "node:test";
 
 import {
   loadPlatformContract,
+  requiredDiskBytes,
   resolveComposeProfiles,
   SCHEMA_PATH,
   selectPlatforms,
   validateRuntimeOptionSources,
 } from "./platform-contract.mjs";
+
+const GIB = 1024 ** 3;
+
+test("every resource profile declares machine-readable diskBytes matching its prose", () => {
+  const contract = loadPlatformContract();
+  for (const [id, value] of Object.entries(contract.resources)) {
+    if (id === "status") continue;
+    assert.ok(Number.isInteger(value.diskBytes), `resources.${id}.diskBytes must be an integer`);
+    // The prose string stays for humans; diskBytes must not drift from it.
+    const gib = Number(/(\d+)\s*GiB/.exec(value.disk)?.[1]);
+    assert.equal(value.diskBytes, gib * GIB, `resources.${id}.diskBytes must equal the GiB stated in resources.${id}.disk`);
+  }
+});
+
+test("required disk is the largest selected profile, not the sum", () => {
+  const contract = loadPlatformContract();
+  // core=100GiB and media=250GiB are each a total-host recommendation, so
+  // running both needs 250GiB, not 350GiB.
+  assert.equal(requiredDiskBytes(contract, { runtimeProfiles: ["core", "media"] }), 250 * GIB);
+  assert.equal(requiredDiskBytes(contract, { runtimeProfiles: ["core"] }), 100 * GIB);
+});
+
+test("required disk covers capabilities as well as runtime profiles", () => {
+  const contract = loadPlatformContract();
+  // ai declares the largest footprint of all, so it must dominate core.
+  assert.equal(requiredDiskBytes(contract, { runtimeProfiles: ["core"], capabilities: ["ai"] }), 500 * GIB);
+});
+
+test("required disk always includes core even when it is not passed explicitly", () => {
+  const contract = loadPlatformContract();
+  // core is implicit in the setup contract; an empty selection must never
+  // resolve to a zero-byte requirement that lets any disk pass.
+  assert.equal(requiredDiskBytes(contract, {}), 100 * GIB);
+});
+
+test("required disk rejects an unknown profile instead of silently ignoring it", () => {
+  const contract = loadPlatformContract();
+  assert.throws(() => requiredDiskBytes(contract, { runtimeProfiles: ["core", "nope"] }), /nope/);
+});
 
 test("platform contract loads the four constrained deployment targets", () => {
   const contract = loadPlatformContract();
