@@ -35,7 +35,8 @@
     { "name": "Intake Templates" },
     { "name": "Import" },
     { "name": "Upload Links" },
-    { "name": "Saved Searches" }
+    { "name": "Saved Searches" },
+    { "name": "Trash" }
   ],
   "paths": {
     "/health": {
@@ -717,6 +718,115 @@
             }
           },
           "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/trash": {
+      "get": {
+        "tags": ["Trash"],
+        "summary": "Browse trashed records",
+        "description": "Records removed via /records/bulk-delete. Entries are permanently dropped by the scheduled trash:prune once older than the retention window (TRASH_RETENTION_DAYS, default 30). Any authenticated role may browse.",
+        "operationId": "listTrash",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "store",
+            "in": "query",
+            "required": false,
+            "description": "Restrict to one store. Omit to list every store.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Case-insensitive substring match against the uid and the raw JSON payload.",
+            "schema": { "type": "string", "maxLength": 200 }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated trash entries, newest deletion first",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TrashListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/trash/restore": {
+      "post": {
+        "tags": ["Trash"],
+        "summary": "Restore trashed records to their prior state",
+        "description": "Requires the editor role. Restores the original payload, syncVersion and timestamps. A record whose uid is live again is refused with restored=false and reason=conflict rather than overwriting it; the trash entry survives.",
+        "operationId": "restoreTrash",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TrashTargetsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-item restore results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TrashRestoreResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/trash/purge": {
+      "post": {
+        "tags": ["Trash"],
+        "summary": "Permanently delete trashed records",
+        "description": "Requires the admin role. Irreversible: destroys the last copy of the record held outside backups.",
+        "operationId": "purgeTrash",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TrashTargetsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-item purge results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TrashPurgeResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
           "422": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -3655,6 +3765,110 @@
           "limit": { "type": "integer", "minimum": 1 },
           "hasMore": { "type": "boolean", "description": "True when additional pages exist beyond this one." }
         }
+      },
+      "TrashEntry": {
+        "type": "object",
+        "required": ["id", "store", "uid", "record", "deletedAt"],
+        "properties": {
+          "id": { "type": "integer", "description": "Trash entry id, not the record id." },
+          "store": { "type": "string" },
+          "uid": { "type": "string" },
+          "record": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The record payload exactly as it was at deletion."
+          },
+          "syncVersion": { "type": ["integer", "null"] },
+          "deletedAt": { "type": "string", "format": "date-time" },
+          "deletedBy": {
+            "type": ["integer", "null"],
+            "description": "User id that deleted the record; null once that user is removed."
+          },
+          "originalCreatedAt": { "type": ["string", "null"], "format": "date-time" },
+          "originalUpdatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "TrashListResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["items", "pagination"],
+            "properties": {
+              "items": { "type": "array", "items": { "$ref": "#/components/schemas/TrashEntry" } },
+              "pagination": { "$ref": "#/components/schemas/PaginationMeta" }
+            }
+          }
+        ]
+      },
+      "TrashTargetsRequest": {
+        "type": "object",
+        "required": ["store", "ids"],
+        "properties": {
+          "store": { "type": "string" },
+          "ids": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1,
+            "maxItems": 10000,
+            "description": "Record uids as listed in the trash."
+          }
+        }
+      },
+      "TrashRestoreResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["count", "results"],
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "How many entries were actually restored."
+              },
+              "results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["uid", "restored"],
+                  "properties": {
+                    "uid": { "type": "string" },
+                    "restored": { "type": "boolean" },
+                    "reason": {
+                      "type": "string",
+                      "enum": ["not_found", "conflict"],
+                      "description": "Present only when restored is false."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TrashPurgeResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["count", "results"],
+            "properties": {
+              "count": { "type": "integer", "minimum": 0 },
+              "results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["uid", "purged"],
+                  "properties": {
+                    "uid": { "type": "string" },
+                    "purged": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       "RecordHistoryResponse": {
         "allOf": [

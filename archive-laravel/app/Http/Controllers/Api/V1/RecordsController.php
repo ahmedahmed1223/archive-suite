@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -154,16 +155,36 @@ class RecordsController extends Controller
 
         $results = [];
         $count = 0;
+        $actor = $request->attributes->get('archive_user');
 
         // ponytail: one delete per id keeps per-item results simple; batch it if 10k-id payloads show up for real.
         foreach (array_values(array_unique($validated['ids'])) as $id) {
-            $deleted = DB::table('storage_rows')
+            // V1-731: delete is now a move into `trashed_records`, not a
+            // destroy. The row still leaves storage_rows, so every reader of
+            // that table behaves exactly as before; the payload survives for
+            // the retention window and TrashController can put it back.
+            $rows = DB::table('storage_rows')
                 ->where('store', $validated['store'])
                 ->where(function ($query) use ($id): void {
                     $query->where('uid', $id)
                         ->orWhere('data->>\'id\'', $id);
                 })
-                ->delete();
+                ->get();
+
+            $deleted = 0;
+
+            foreach ($rows as $row) {
+                DB::transaction(function () use ($row, $actor): void {
+                    TrashController::trashRow($row, $actor instanceof User ? $actor : null);
+
+                    DB::table('storage_rows')
+                        ->where('store', $row->store)
+                        ->where('uid', $row->uid)
+                        ->delete();
+                });
+
+                $deleted++;
+            }
 
             $results[] = ['uid' => $id, 'deleted' => $deleted > 0];
 
