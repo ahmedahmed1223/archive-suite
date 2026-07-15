@@ -173,7 +173,7 @@ class AuditArchiveApiRequest
         $row = DB::table('storage_rows')
             ->where('store', (string) ($request->input('store') ?: 'archive-items'))
             ->where(function ($query) use ($id): void {
-                $query->where('uid', $id)->orWhere('data->>\'id\'', $id);
+                $query->where('uid', $id)->orWhereRaw("data->>'id' = ?", [$id]);
             })
             ->first();
         $data = $row?->data ? json_decode((string) $row->data, true) : null;

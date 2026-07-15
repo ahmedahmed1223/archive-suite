@@ -64,7 +64,7 @@ class RecordsController extends Controller
             ->when($store !== null, fn ($query) => $query->where('store', $store))
             ->where(function ($query) use ($id): void {
                 $query->where('uid', $id)
-                    ->orWhere('data->>\'id\'', $id);
+                    ->orWhereRaw("data->>'id' = ?", [$id]);
             })
             ->first();
 
