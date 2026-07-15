@@ -9,10 +9,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use stdClass;
 
 class SearchController extends Controller
 {
+    private const MAX_ADVANCED_QUERY_TOKENS = 128;
+
     public function __construct(private readonly EmbeddingService $embeddings)
     {
     }
@@ -38,8 +41,10 @@ class SearchController extends Controller
         $limit = (int) ($validated['limit'] ?? 20);
         $queryText = trim((string) ($validated['q'] ?? ''));
         $wantsSemantic = $request->boolean('semantic');
+        $advancedQuery = $this->parseAdvancedQuery($queryText);
+        $isAdvancedQuery = $advancedQuery !== null;
 
-        if ($wantsSemantic) {
+        if ($wantsSemantic && ! $isAdvancedQuery) {
             $semanticResponse = $this->semanticSearch($queryText, $validated['store'] ?? null, $limit, $validated);
             if ($semanticResponse !== null) {
                 return response()->json($semanticResponse);
@@ -55,17 +60,18 @@ class SearchController extends Controller
             $query->where('store', $validated['store']);
         }
 
-        if ($queryText !== '') {
+        if ($queryText !== '' && ! $isAdvancedQuery) {
             $query->where('data', 'like', '%'.$this->escapeLike($queryText).'%');
         }
 
         $records = $query
             ->get()
             ->map(fn (stdClass $row): array => StorageRowPayload::format($row))
+            ->filter(fn (array $record): bool => $advancedQuery === null || $this->matchesAdvancedQuery($record, $advancedQuery))
             ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
             ->values();
 
-        $facets = $this->buildFacets($records, $validated, $wantsSemantic ? 'keyword-fallback' : 'keyword');
+        $facets = $this->buildFacets($records, $validated, $isAdvancedQuery ? 'advanced' : ($wantsSemantic ? 'keyword-fallback' : 'keyword'));
 
         $pageRecords = $records
             ->filter(fn (array $record): bool => $cursorUid === null || strcmp((string) ($record['uid'] ?? $record['id'] ?? ''), $cursorUid) > 0)
@@ -140,6 +146,200 @@ class SearchController extends Controller
     private function escapeLike(string $value): string
     {
         return addcslashes($value, '%_\\');
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function parseAdvancedQuery(string $query): ?array
+    {
+        if ($query === '' || ! preg_match('/(?:^|\s)(?:[A-Za-z]+:|AND(?:\s|$)|OR(?:\s|$)|NOT(?:\s|$))/', $query)) {
+            return null;
+        }
+
+        $tokens = $this->tokenizeAdvancedQuery($query);
+        $position = 0;
+        $ast = $this->parseAdvancedOr($tokens, $position);
+
+        if ($position !== count($tokens)) {
+            $this->invalidAdvancedQuery();
+        }
+
+        return $ast;
+    }
+
+    /**
+     * @return array<int, array{type: string, field?: string, value?: string}>
+     */
+    private function tokenizeAdvancedQuery(string $query): array
+    {
+        $tokens = [];
+        $length = strlen($query);
+        $offset = 0;
+
+        while ($offset < $length) {
+            while ($offset < $length && preg_match('/\s/u', $query[$offset]) === 1) {
+                $offset++;
+            }
+            if ($offset >= $length) {
+                break;
+            }
+            if (in_array($query[$offset], ['(', ')'], true)) {
+                $this->invalidAdvancedQuery();
+            }
+
+            $start = $offset;
+            while ($offset < $length && preg_match('/[A-Za-z]/', $query[$offset]) === 1) {
+                $offset++;
+            }
+            $word = substr($query, $start, $offset - $start);
+
+            if ($word !== '' && $offset < $length && $query[$offset] === ':') {
+                $field = strtolower($word);
+                if (! in_array($field, ['title', 'description', 'type', 'subtype', 'tag', 'store', 'status', 'uid'], true)) {
+                    $this->invalidAdvancedQuery();
+                }
+                $offset++;
+                if ($offset >= $length || preg_match('/\s/u', $query[$offset]) === 1) {
+                    $this->invalidAdvancedQuery();
+                }
+
+                if ($query[$offset] === '"') {
+                    $offset++;
+                    $valueStart = $offset;
+                    while ($offset < $length && $query[$offset] !== '"') {
+                        $offset++;
+                    }
+                    if ($offset >= $length) {
+                        $this->invalidAdvancedQuery();
+                    }
+                    $value = substr($query, $valueStart, $offset - $valueStart);
+                    $offset++;
+                    if ($value === '' || ($offset < $length && preg_match('/\s/u', $query[$offset]) !== 1)) {
+                        $this->invalidAdvancedQuery();
+                    }
+                } else {
+                    $valueStart = $offset;
+                    while ($offset < $length && preg_match('/\s/u', $query[$offset]) !== 1) {
+                        if (in_array($query[$offset], ['(', ')', '"'], true)) {
+                            $this->invalidAdvancedQuery();
+                        }
+                        $offset++;
+                    }
+                    $value = substr($query, $valueStart, $offset - $valueStart);
+                    if ($value === '') {
+                        $this->invalidAdvancedQuery();
+                    }
+                }
+                $this->appendAdvancedToken($tokens, ['type' => 'predicate', 'field' => $field, 'value' => $value]);
+                continue;
+            }
+
+            if (in_array($word, ['AND', 'OR', 'NOT'], true) && ($offset === $length || preg_match('/\s/u', $query[$offset]) === 1)) {
+                $this->appendAdvancedToken($tokens, ['type' => $word]);
+                continue;
+            }
+
+            $this->invalidAdvancedQuery();
+        }
+
+        if ($tokens === []) {
+            $this->invalidAdvancedQuery();
+        }
+
+        return $tokens;
+    }
+
+    /**
+     * @param array<int, array{type: string, field?: string, value?: string}> $tokens
+     * @param array{type: string, field?: string, value?: string} $token
+     */
+    private function appendAdvancedToken(array &$tokens, array $token): void
+    {
+        if (count($tokens) >= self::MAX_ADVANCED_QUERY_TOKENS) {
+            $this->invalidAdvancedQuery();
+        }
+
+        $tokens[] = $token;
+    }
+
+    /** @param array<int, array{type: string, field?: string, value?: string}> $tokens */
+    private function parseAdvancedOr(array $tokens, int &$position): array
+    {
+        $node = $this->parseAdvancedAnd($tokens, $position);
+        while (($tokens[$position]['type'] ?? null) === 'OR') {
+            $position++;
+            $node = ['kind' => 'or', 'left' => $node, 'right' => $this->parseAdvancedAnd($tokens, $position)];
+        }
+
+        return $node;
+    }
+
+    /** @param array<int, array{type: string, field?: string, value?: string}> $tokens */
+    private function parseAdvancedAnd(array $tokens, int &$position): array
+    {
+        $node = $this->parseAdvancedUnary($tokens, $position);
+        while (($type = $tokens[$position]['type'] ?? null) !== null && $type !== 'OR') {
+            if ($type === 'AND') {
+                $position++;
+            }
+            $node = ['kind' => 'and', 'left' => $node, 'right' => $this->parseAdvancedUnary($tokens, $position)];
+        }
+
+        return $node;
+    }
+
+    /** @param array<int, array{type: string, field?: string, value?: string}> $tokens */
+    private function parseAdvancedUnary(array $tokens, int &$position): array
+    {
+        $token = $tokens[$position] ?? null;
+        if ($token === null) {
+            $this->invalidAdvancedQuery();
+        }
+        if ($token['type'] === 'NOT') {
+            $position++;
+
+            return ['kind' => 'not', 'node' => $this->parseAdvancedUnary($tokens, $position)];
+        }
+        if ($token['type'] !== 'predicate') {
+            $this->invalidAdvancedQuery();
+        }
+        $position++;
+
+        return ['kind' => 'predicate', 'field' => $token['field'], 'value' => $token['value']];
+    }
+
+    private function invalidAdvancedQuery(): never
+    {
+        throw ValidationException::withMessages(['q' => 'صيغة البحث المتقدم غير صالحة.']);
+    }
+
+    /** @param array<string, mixed> $record @param array<string, mixed> $node */
+    private function matchesAdvancedQuery(array $record, array $node): bool
+    {
+        return match ($node['kind']) {
+            'and' => $this->matchesAdvancedQuery($record, $node['left']) && $this->matchesAdvancedQuery($record, $node['right']),
+            'or' => $this->matchesAdvancedQuery($record, $node['left']) || $this->matchesAdvancedQuery($record, $node['right']),
+            'not' => ! $this->matchesAdvancedQuery($record, $node['node']),
+            'predicate' => $this->matchesAdvancedPredicate($record, (string) $node['field'], (string) $node['value']),
+        };
+    }
+
+    /** @param array<string, mixed> $record */
+    private function matchesAdvancedPredicate(array $record, string $field, string $value): bool
+    {
+        $needle = $this->normalize($value);
+        if (in_array($field, ['title', 'description'], true)) {
+            return str_contains($this->normalize((string) ($record[$field] ?? '')), $needle);
+        }
+        if ($field === 'tag') {
+            return in_array($needle, array_map(fn (mixed $tag): string => $this->normalize((string) $tag), (array) ($record['tags'] ?? [])), true);
+        }
+        if ($field === 'status') {
+            return $this->normalize($this->workflowStatus($record)) === $needle;
+        }
+
+        return $this->normalize((string) ($record[$field] ?? '')) === $needle;
     }
 
     /**

@@ -895,7 +895,12 @@
         "operationId": "searchRecords",
         "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
         "parameters": [
-          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Free-text search, or an advanced field query. Supported fields: title, description, type, subtype, tag, store, status, uid. Clauses use field:value (quoted values may contain spaces), with NOT, AND (including implicit whitespace AND), then OR precedence. Parentheses are unsupported. Invalid advanced syntax returns 422."
+          },
           { "name": "store", "in": "query", "schema": { "type": "string" } },
           { "name": "type", "in": "query", "schema": { "type": "string" } },
           { "name": "subtype", "in": "query", "schema": { "type": "string" } },
@@ -919,7 +924,8 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -4106,7 +4112,7 @@
         "type": "object",
         "required": ["mode", "total", "stores", "types", "subtypes", "tags", "statuses"],
         "properties": {
-          "mode": { "type": "string", "enum": ["keyword", "keyword-fallback", "semantic"], "description": "'semantic' only when a pgvector query actually ran; degrades to 'keyword-fallback' when semantic search is unavailable (non-Postgres, pgvector missing, no embedding key, or embed failure)." },
+          "mode": { "type": "string", "enum": ["keyword", "keyword-fallback", "semantic", "advanced"], "description": "'advanced' is returned for validated field-query DSL searches and never uses semantic/vector search. 'semantic' is returned only when a pgvector query actually ran; semantic requests degrade to 'keyword-fallback' when unavailable (non-Postgres, pgvector missing, no embedding key, or embed failure)." },
           "store": { "type": ["string", "null"] },
           "total": { "type": "integer" },
           "stores": { "type": "array", "items": { "$ref": "#/components/schemas/SearchFacetBucket" } },

@@ -57,6 +57,49 @@ class SearchApiTest extends TestCase
         $this->assertSame(1, $response->json('facets.types.0.count'));
     }
 
+    public function test_it_supports_advanced_field_clauses_and_quoted_values(): void
+    {
+        $this->seedRecords();
+
+        $this->getJson('/api/v1/search?store=archive-items&q=type%3Avideo%20AND%20description%3A%22City%20planning%22&semantic=true&limit=10', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('facets.mode', 'advanced')
+            ->assertJsonCount(1, 'records')
+            ->assertJsonPath('records.0.uid', 'clip-001');
+    }
+
+    public function test_advanced_search_respects_not_and_and_before_or_and_existing_filters(): void
+    {
+        $this->seedRecords();
+
+        $this->getJson('/api/v1/search?store=archive-items&type=video&q=tag%3Ariyadh%20OR%20tag%3Ajeddah%20AND%20NOT%20status%3Adraft&limit=10', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('facets.mode', 'advanced')
+            ->assertJsonCount(1, 'records')
+            ->assertJsonPath('records.0.uid', 'clip-001');
+    }
+
+    public function test_it_rejects_invalid_advanced_search_syntax(): void
+    {
+        $this->seedRecords();
+
+        foreach (['unknown:value', 'type:', 'type:"unterminated', 'type:video AND'] as $query) {
+            $this->getJson('/api/v1/search?store=archive-items&q='.rawurlencode($query), $this->authHeaders())
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('q');
+        }
+    }
+
+    public function test_it_rejects_advanced_search_queries_with_too_many_tokens(): void
+    {
+        $this->seedRecords();
+        $query = implode(' ', array_fill(0, 129, 'type:video'));
+
+        $this->getJson('/api/v1/search?store=archive-items&q='.rawurlencode($query), $this->authHeaders())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('q');
+    }
+
     public function test_it_rejects_unauthenticated_search_requests(): void
     {
         $this->getJson('/api/v1/search?q=archive')
