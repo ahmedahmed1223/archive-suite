@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type MediaJob } from "@/lib/archive-api";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { parseSubtitles, formatCueTime, type Cue } from "@/lib/media/subtitles";
 import styles from "./transcriber.module.css";
 
@@ -32,6 +33,7 @@ function extractTranscriptText(job: MediaJob): string {
 
 export default function TranscriberPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const dialogs = useConfirmDialog();
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
   const [recentState, setRecentState] = useState<RecentState>({ status: "loading" });
   const [showRaw, setShowRaw] = useState(false);
@@ -122,7 +124,7 @@ export default function TranscriberPage() {
   async function handleCancel(jobId: string) {
     const response = await api.cancelMediaJob(jobId);
     if (!response.ok) {
-      alert(`فشل الإلغاء: ${response.error}`);
+      await dialogs.alert({ title: "تعذر إلغاء المهمة", message: `فشل الإلغاء: ${response.error}` });
       return;
     }
     setSubmitState({ status: "tracking", job: response.job });

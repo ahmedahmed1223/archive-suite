@@ -6,6 +6,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { Button } from "@/components/ui/Button";
 import { createArchiveApiClient, type ArchiveType } from "@/lib/archive-api";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import TypesList from "./_components/TypesList";
 import TypesEditor from "./_components/TypesEditor";
 import "./types.css";
@@ -17,6 +18,7 @@ type TypesState =
 
 export default function TypesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const dialogs = useConfirmDialog();
   const [state, setState] = useState<TypesState>({ status: "loading", types: [] });
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [editorType, setEditorType] = useState<ArchiveType | null | undefined>(undefined);
@@ -99,7 +101,13 @@ export default function TypesPage() {
   }
 
   async function handleDeleteType(type: ArchiveType) {
-    if (!window.confirm(`هل تريد حذف النوع «${type.name}»؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+    const confirmed = await dialogs.confirm({
+      title: "حذف النوع",
+      message: `هل تريد حذف النوع «${type.name}»؟ لا يمكن التراجع عن هذا الإجراء.`,
+      confirmLabel: "حذف",
+      destructive: true
+    });
+    if (!confirmed) return;
 
     setDeletingTypeId(type.id);
     setActionMessage("");

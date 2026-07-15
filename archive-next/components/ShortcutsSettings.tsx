@@ -10,10 +10,12 @@ import {
   formatShortcutDisplay,
   type ShortcutKey
 } from "@/lib/keyboard-shortcuts";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 type RecordingKey = ShortcutKey | null;
 
 export default function ShortcutsSettings() {
+  const dialogs = useConfirmDialog();
   const [shortcuts, setShortcuts] = useState<ReturnType<typeof getAllShortcuts> | null>(null);
   const [recordingKey, setRecordingKey] = useState<RecordingKey>(null);
   const [recordedBinding, setRecordedBinding] = useState<any>(null);
@@ -70,13 +72,18 @@ export default function ShortcutsSettings() {
     setRecordedBinding(null);
   };
 
-  const handleReset = () => {
-    if (confirm("إعادة تعيين جميع اختصارات لوحة المفاتيح إلى الافتراضية؟")) {
-      resetShortcuts();
-      setShortcuts(getAllShortcuts());
-      setRecordingKey(null);
-      setRecordedBinding(null);
-    }
+  const handleReset = async () => {
+    const confirmed = await dialogs.confirm({
+      title: "إعادة تعيين الاختصارات",
+      message: "إعادة تعيين جميع اختصارات لوحة المفاتيح إلى الافتراضية؟ ستفقد أي اختصارات خصصتها.",
+      confirmLabel: "إعادة تعيين",
+      destructive: true
+    });
+    if (!confirmed) return;
+    resetShortcuts();
+    setShortcuts(getAllShortcuts());
+    setRecordingKey(null);
+    setRecordedBinding(null);
   };
 
   if (!shortcuts) {
