@@ -390,11 +390,15 @@ function SearchPageContent() {
             <span>الكلمات المفتاحية</span>
             <input
               type="search"
-              placeholder="العنوان، الوسوم، الوصف..."
+              placeholder={'العنوان، الوسوم، الوصف... أو type:video AND tag:"تاريخ شفهي"'}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="search-input"
+              aria-describedby="advanced-search-hint"
             />
+            <span id="advanced-search-hint" className="helper-text">
+              للبحث المهيكل استخدم مثلاً: <code dir="ltr">type:video AND tag:"تاريخ شفهي"</code>
+            </span>
           </label>
           <label>
             <span>المخزن</span>
