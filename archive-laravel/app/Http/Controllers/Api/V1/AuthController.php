@@ -72,7 +72,9 @@ class AuthController extends Controller
             $session->delete();
         }
 
-        return response()->json(['ok' => true])->withoutCookie($this->cookieName(), self::REFRESH_COOKIE_PATH);
+        return response()->json(['ok' => true])
+            ->withoutCookie($this->cookieName(), self::REFRESH_COOKIE_PATH)
+            ->withoutCookie($this->sessionCookieName(), '/');
     }
 
     /**
@@ -123,7 +125,9 @@ class AuthController extends Controller
             'user' => $this->formatUser($user),
             'accessToken' => $accessToken,
             'expiresAt' => $accessExpiresAt->toISOString(),
-        ], $status)->withCookie($this->refreshCookie($refreshToken, $refreshExpiresAt));
+        ], $status)
+            ->withCookie($this->refreshCookie($refreshToken, $refreshExpiresAt))
+            ->withCookie($this->sessionCookie($refreshExpiresAt));
     }
 
     private function sessionFromRefreshCookie(Request $request): ?ApiSession
@@ -155,6 +159,21 @@ class AuthController extends Controller
         );
     }
 
+    private function sessionCookie(mixed $expiresAt): Cookie
+    {
+        return cookie(
+            name: $this->sessionCookieName(),
+            value: '1',
+            minutes: max(1, now()->diffInMinutes($expiresAt)),
+            path: '/',
+            domain: null,
+            secure: (bool) config('archive.auth.secure_cookies'),
+            httpOnly: true,
+            raw: false,
+            sameSite: 'Strict',
+        );
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -172,5 +191,10 @@ class AuthController extends Controller
     private function cookieName(): string
     {
         return (string) config('archive.auth.refresh_cookie');
+    }
+
+    private function sessionCookieName(): string
+    {
+        return (string) config('archive.auth.session_cookie');
     }
 }

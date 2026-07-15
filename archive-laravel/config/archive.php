@@ -20,6 +20,7 @@ return [
         'access_ttl_minutes' => (int) env('ARCHIVE_ACCESS_TTL_MINUTES', 15),
         'refresh_ttl_days' => (int) env('ARCHIVE_REFRESH_TTL_DAYS', 14),
         'refresh_cookie' => env('ARCHIVE_REFRESH_COOKIE', 'va_refresh'),
+        'session_cookie' => env('ARCHIVE_SESSION_COOKIE', 'va_session'),
         'secure_cookies' => (bool) env('ARCHIVE_SECURE_COOKIES', false),
     ],
 

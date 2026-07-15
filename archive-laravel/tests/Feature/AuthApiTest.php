@@ -27,6 +27,7 @@ class AuthApiTest extends TestCase
         ])
             ->assertOk()
             ->assertCookie('va_refresh')
+            ->assertCookie('va_session')
             ->assertJsonPath('ok', true)
             ->assertJsonPath('user.email', 'admin@example.test');
 
@@ -105,6 +106,23 @@ class AuthApiTest extends TestCase
         $cookie = $this->responseCookie($login, 'va_refresh');
         $this->assertNotNull($cookie);
         $this->assertSame('/api/v1/auth/refresh', $cookie->getPath());
+    }
+
+    public function test_login_issues_a_root_scoped_presence_cookie_without_broadening_the_refresh_cookie(): void
+    {
+        User::query()->create([
+            'name' => 'Archive Admin',
+            'email' => 'admin@example.test',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => 'admin@example.test',
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        $this->assertSame('/api/v1/auth/refresh', $this->responseCookie($login, 'va_refresh')?->getPath());
+        $this->assertSame('/', $this->responseCookie($login, 'va_session')?->getPath());
     }
 
     public function test_refresh_rejects_a_disallowed_origin(): void
