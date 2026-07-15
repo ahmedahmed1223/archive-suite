@@ -8,7 +8,7 @@
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "version": { "type": "string", "minLength": 1, "pattern": "\\S" },
-    "source": { "enum": ["online", "offline"] },
+    "source": { "enum": ["online", "offline", "local"] },
     "mode": { "enum": ["docker", "native"] },
     "platform": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "runtimeProfiles": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },
@@ -75,7 +75,7 @@
           "required": ["version", "source", "mode", "platform", "runtimeProfiles", "capabilities", "artifacts", "services", "dataPaths"],
           "properties": {
             "version": { "type": "string", "minLength": 1, "pattern": "\\S" },
-            "source": { "enum": ["online", "offline"] },
+            "source": { "enum": ["online", "offline", "local"] },
             "mode": { "enum": ["docker", "native"] },
             "platform": { "type": "string", "minLength": 1, "pattern": "\\S" },
             "runtimeProfiles": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },

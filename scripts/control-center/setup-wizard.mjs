@@ -31,7 +31,7 @@ const CAPABILITY_ALIASES = Object.freeze({
 export const WIZARD_RUNTIME_PROMPTS = Object.freeze({
   mode: "Runtime mode (docker/native) — Docker is the supported release path; Native is planning-only for now",
   platform: "Platform id — choose the contract platform matching your runtime mode and machine",
-  source: "Release source (online/offline) — online downloads signed images; offline needs a verified bundle",
+  source: "Deployment source (online/offline/local) — local builds this checkout; online downloads signed images; offline needs a verified bundle",
   access: "Access mode (local/intranet/public) — public requires edge/TLS, and edge is reserved for public access only",
   storage: "Local storage path — do not use a URL or credentials; it will be recorded for install",
   profiles: "Optional runtime profiles — core is always enabled; media is for media/OCR, edge is for public TLS",
@@ -67,11 +67,11 @@ async function collectChoice({ ask, log, prompt, defaultValue, options, aliases,
 
 export async function requestWizardConfirmation({ ask, log = () => {} }) {
   for (;;) {
-    const answer = String(await ask("Type confirm to save and install, back to change choices, or q to quit", "")).trim().toLowerCase();
-    if (answer === "confirm") return "confirm";
+    const answer = String(await ask(`Save and install: \x1b[32m[y/yes/c/confirm]\x1b[0m · change choices: \x1b[33m[back]\x1b[0m · quit: \x1b[31m[q]\x1b[0m`, "")).trim().toLowerCase();
+    if (["y", "yes", "c", "confirm"].includes(answer)) return "confirm";
     if (answer === "back") return "back";
     if (answer === "q") return "quit";
-    log("Please type confirm, back, or q. No changes have been made.");
+    log("Choose y, yes, c, or confirm to install; back to change choices; or q to quit. No changes have been made.");
   }
 }
 

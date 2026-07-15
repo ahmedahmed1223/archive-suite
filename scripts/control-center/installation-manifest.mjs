@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 export const nodeFs = { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync };
 
 const SCHEMA_VERSION = "1.0";
-const SAFE_SOURCES = new Set(["online", "offline"]);
+const SAFE_SOURCES = new Set(["online", "offline", "local"]);
 const SAFE_MODES = new Set(["docker", "native"]);
 const SENSITIVE_KEY = /(password|secret|token|credential|authorization|cookie|dsn|connection|url|key)/i;
 const CREDENTIAL_URL = /^[a-z][a-z\d+.-]*:\/\/[^/\s:@]+:[^/\s@]+@/i;
@@ -93,7 +93,7 @@ function normalizeInput(input) {
   const version = requireString(input.version, "version");
   const source = requireString(input.source, "source");
   const mode = requireString(input.mode, "mode");
-  if (!SAFE_SOURCES.has(source)) fail("source must be online or offline.");
+  if (!SAFE_SOURCES.has(source)) fail("source must be online, offline, or local.");
   if (!SAFE_MODES.has(mode)) fail("mode must be docker or native.");
   const normalized = {
     version,
@@ -195,6 +195,17 @@ export function updateLastSuccessfulStep({ path, step, fs = nodeFs }) {
   return next;
 }
 
+// updateDataPaths (V1-208K reconnect-data): atomically re-points the
+// recorded data directories at an existing data set. normalizeDataPaths
+// keeps rejecting URLs and credential-bearing values.
+export function updateDataPaths({ path, dataPaths, fs = nodeFs }) {
+  const manifest = readInstallationManifest(path, { fs });
+  if (!manifest) fail("does not exist.");
+  const next = { ...manifest, dataPaths: normalizeDataPaths(dataPaths) };
+  atomicWrite(path, next, fs);
+  return next;
+}
+
 export function markInstallationFailed({ path, failedStep, nextActions, fs = nodeFs }) {
   const manifest = readInstallationManifest(path, { fs });
   if (!manifest) fail("does not exist.");
@@ -254,6 +265,25 @@ export function beginOperation({ path, type, target, fs = nodeFs }) {
 // again), and marks the operation succeeded. It never removes or rewrites
 // anything about how the previous version's images were referenced — there
 // is nothing here for a future rollback (V1-208J) to conflict with.
+// completeRollbackOperation (V1-208J) is the one atomic write that lands a
+// successful rollback: the recorded previousRelease becomes the active
+// release again, previousVersion records the version rolled back FROM, and
+// the reference is consumed — there is no roll-forward from a rollback.
+export function completeRollbackOperation({ path, step, fs = nodeFs }) {
+  const existing = readInstallationManifest(path, { fs });
+  if (!existing) fail("does not exist.");
+  if (!existing.previousRelease) fail("has no previous release reference to roll back to.");
+  const next = {
+    schemaVersion: SCHEMA_VERSION,
+    ...existing.previousRelease,
+    lastSuccessfulStep: requireString(step, "step"),
+    previousVersion: existing.version,
+    operation: { type: "rollback", status: "succeeded", failedStep: null, nextActions: [] },
+  };
+  atomicWrite(path, next, fs);
+  return next;
+}
+
 export function completeUpdateOperation({ path, input, previousVersion, step, fs = nodeFs }) {
   const existing = readInstallationManifest(path, { fs });
   if (!existing) fail("does not exist.");

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 
 const SETUP_SCHEMA_VERSION = "1.0";
-const SOURCES = ["online", "offline"];
+const SOURCES = ["online", "offline", "local"];
 const INTENTS = ["fresh", "repair", "reconfigure", "update", "rollback", "uninstall", "reconnect-data"];
 const ACCESS_MODES = ["local", "intranet", "public"];
 const SETUP_KEYS = ["schemaVersion", "mode", "platform", "source", "intent", "access", "runtimeProfiles", "capabilities", "dataServices", "storage"];
