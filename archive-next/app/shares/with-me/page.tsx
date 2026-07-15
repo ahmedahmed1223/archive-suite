@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
 
 interface InboundShareEntry {
@@ -61,6 +62,7 @@ function formatDate(value?: string) {
 
 export default function SharedWithMePage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const dialogs = useConfirmDialog();
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<InboundShareEntry[]>([]);
   const [state, setState] = useState<ShareState>({ status: "idle" });
@@ -106,8 +108,17 @@ export default function SharedWithMePage() {
     void openShare(input);
   }
 
-  function clearHistory() {
-    if (history.length > 0 && !window.confirm("مسح تاريخ المشاركات من هذا المتصفح فقط؟ لن يؤدي ذلك إلى إلغاء الروابط.")) return;
+  async function clearHistory() {
+    if (
+      history.length > 0 &&
+      !(await dialogs.confirm({
+        title: "مسح تاريخ المشاركات",
+        message: "مسح تاريخ المشاركات من هذا المتصفح فقط؟ لن يؤدي ذلك إلى إلغاء الروابط.",
+        confirmLabel: "مسح",
+        destructive: true
+      }))
+    )
+      return;
     writeHistory([]);
     setHistory([]);
   }

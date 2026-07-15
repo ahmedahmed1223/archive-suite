@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-306A — Accessible dialogs replace native browser dialogs — 2026-07-15
+
+- `archive-next/components/ui/ConfirmDialog.tsx` adds `ConfirmDialogProvider` and `useConfirmDialog()`, exposing promise-based `confirm`, `prompt`, and `alert` that preserve native semantics exactly (`false`/`null` on cancel or dismiss). They build on the existing Radix `Dialog`/`DialogContent`, inheriting focus trap, Escape handling, and ARIA wiring rather than reimplementing them.
+- Initial focus is set explicitly via `onOpenAutoFocus`: the input for `prompt`, and the **safe** action (Cancel) for `confirm`. Destructive calls pass `destructive: true`, which colors the confirm button as a danger action while focus stays on Cancel, so Enter never triggers a destructive default.
+- The provider mounts in `components/AppProviders.tsx` under the root `app/layout.tsx`, covering every route. 17 call sites across 11 files were converted (archive, archive/[id], automation, collections, errors, projects, search, shares, shares/with-me, transcriber, types, ShortcutsSettings). Every message now states the action's impact instead of a bare confirmation, and Arabic copy stays consistent with the surrounding pages.
+- Verification: grep proves zero `window.confirm`/`prompt`/`alert` remain in application code; 11 new `ConfirmDialog` tests cover resolved values, cancel, dismiss, and the out-of-provider throw; full Next suite 133/133; `pnpm typecheck` clean; `pnpm build:next` succeeds. Closes backlog item B40.
+
 ## V1-406 — Release-blocking task gate — 2026-07-14
 
 - `scripts/verify-release-readiness.mjs` now enforces the full V1 plan, not just historical P0s. A new `tasks-v1-blockers` check fails the gate while any unchecked `**V1-` item remains in `TASKS.md` (optional `V1-X` capability verifications and the B backlog never block). Enforcement applies only in release mode — a `v*` tag pointing at HEAD (the trigger for `release.yml`) or `READINESS_RELEASE=1`; regular CI pushes print a warning with the open-blocker count instead of going permanently red while the declared decision is NO-GO.
