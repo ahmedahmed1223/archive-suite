@@ -32,6 +32,7 @@ const EMPTY_FIELD: ArchiveTypeField = {
 function cloneFields(fields: ArchiveTypeField[]) {
   return fields.map((field) => ({
     ...field,
+    ...(field.condition ? { condition: { ...field.condition } } : {}),
     fieldAcl: {
       view: field.fieldAcl?.view ?? [],
       edit: field.fieldAcl?.edit ?? [],
@@ -55,7 +56,15 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
   }, [initialType]);
 
   function updateField(index: number, update: Partial<ArchiveTypeField>) {
-    setFields((current) => current.map((field, fieldIndex) => fieldIndex === index ? { ...field, ...update } : field));
+    setFields((current) => current.map((field, fieldIndex) => {
+      if (fieldIndex !== index) return field;
+      if ("condition" in update && update.condition === undefined) {
+        const { condition: _, ...fieldWithoutCondition } = field;
+        const { condition: __, ...updateWithoutCondition } = update;
+        return { ...fieldWithoutCondition, ...updateWithoutCondition };
+      }
+      return { ...field, ...update };
+    }));
   }
 
   function toggleFieldRole(fieldIndex: number, role: string, access: "view" | "edit") {
@@ -75,7 +84,19 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const normalizedFields = fields.map((field) => ({ ...field, name: field.name.trim() }));
+    const normalizedFields = fields.map((field) => ({
+      ...field,
+      name: field.name.trim(),
+      ...(field.condition
+        ? {
+            condition: {
+              ...field.condition,
+              field: field.condition.field.trim(),
+              equals: typeof field.condition.equals === "string" ? field.condition.equals.trim() : field.condition.equals,
+            },
+          }
+        : {}),
+    }));
     const duplicateField = normalizedFields.find((field, index) => normalizedFields.findIndex((candidate) => candidate.name === field.name) !== index);
 
     if (!typeId.trim() || !typeName.trim()) {
@@ -88,6 +109,10 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
     }
     if (duplicateField) {
       setFormError(`اسم الحقل «${duplicateField.name}» مكرر. استخدم اسمًا فريدًا لكل حقل.`);
+      return;
+    }
+    if (normalizedFields.some((field) => field.condition && (!field.condition.field || (typeof field.condition.equals === "string" && !field.condition.equals)))) {
+      setFormError("أدخل الحقل المصدر وقيمة المقارنة لكل عرض مشروط قبل الحفظ.");
       return;
     }
 
@@ -158,6 +183,45 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
                     </select>
                   </label>
                 </div>
+                <fieldset className="schema-acl">
+                  <label className="schema-check">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(field.condition)}
+                      disabled={isSaving}
+                      onChange={(event) => updateField(index, { condition: event.target.checked ? { field: "", equals: "" } : undefined })}
+                    />
+                    <span>عرض مشروط</span>
+                  </label>
+                  {field.condition ? (
+                    <div className="schema-field-grid">
+                      <label className="schema-form-field">
+                        <span>الحقل المصدر</span>
+                        <select
+                          className="schema-field-control"
+                          value={field.condition.field}
+                          disabled={isSaving}
+                          onChange={(event) => updateField(index, { condition: { ...(field.condition ?? { field: "", equals: "" }), field: event.target.value } })}
+                        >
+                          <option value="">اختر الحقل المصدر</option>
+                          {fields
+                            .filter((candidate) => candidate.name.trim() && candidate.name.trim() !== field.name.trim())
+                            .map((candidate, candidateIndex) => <option key={`${candidate.name}-${candidateIndex}`} value={candidate.name.trim()}>{candidate.name.trim()}</option>)}
+                        </select>
+                      </label>
+                      <label className="schema-form-field">
+                        <span>يساوي</span>
+                        <input
+                          className="schema-field-control"
+                          value={String(field.condition.equals)}
+                          disabled={isSaving}
+                          onChange={(event) => updateField(index, { condition: { ...(field.condition ?? { field: "", equals: "" }), equals: event.target.value } })}
+                          required
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+                </fieldset>
                 <div className="schema-acl-grid">
                   {(["view", "edit"] as const).map((access) => (
                     <fieldset className="schema-acl" key={access}>

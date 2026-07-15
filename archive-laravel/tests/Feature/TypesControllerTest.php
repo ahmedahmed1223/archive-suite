@@ -67,6 +67,80 @@ class TypesControllerTest extends TestCase
         $this->assertCount(2, $data['fields']);
     }
 
+    public function test_create_type_with_conditional_field(): void
+    {
+        $payload = [
+            'id' => 'licensed-asset-type',
+            'name' => 'Licensed Asset',
+            'fields' => [
+                [
+                    'name' => 'hasLicense',
+                    'type' => 'boolean',
+                ],
+                [
+                    'name' => 'licenseNumber',
+                    'type' => 'text',
+                    'condition' => [
+                        'field' => 'hasLicense',
+                        'equals' => true,
+                    ],
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->adminUser)->postJson('/api/v1/types', $payload);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('type.fields.1.condition.field', 'hasLicense');
+        $response->assertJsonPath('type.fields.1.condition.equals', true);
+    }
+
+    public function test_create_type_rejects_condition_referencing_own_field(): void
+    {
+        $payload = [
+            'id' => 'self-reference-type',
+            'name' => 'Self Reference',
+            'fields' => [
+                [
+                    'name' => 'hasLicense',
+                    'type' => 'boolean',
+                    'condition' => [
+                        'field' => 'hasLicense',
+                        'equals' => true,
+                    ],
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->adminUser)->postJson('/api/v1/types', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['fields.0.condition.field']);
+    }
+
+    public function test_create_type_rejects_condition_referencing_unknown_field(): void
+    {
+        $payload = [
+            'id' => 'unknown-reference-type',
+            'name' => 'Unknown Reference',
+            'fields' => [
+                [
+                    'name' => 'licenseNumber',
+                    'type' => 'text',
+                    'condition' => [
+                        'field' => 'hasLicense',
+                        'equals' => true,
+                    ],
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->adminUser)->postJson('/api/v1/types', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['fields.0.condition.field']);
+    }
+
     public function test_get_type_definition(): void
     {
         $typeData = [

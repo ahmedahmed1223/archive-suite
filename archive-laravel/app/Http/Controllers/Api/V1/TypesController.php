@@ -93,18 +93,47 @@ class TypesController extends Controller
             return $denied;
         }
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'id' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
             'fields' => ['required', 'array'],
             'fields.*.name' => ['required', 'string', 'max:255'],
             'fields.*.type' => ['required', 'string', 'in:text,number,date,select,multi,boolean'],
+            'fields.*.condition' => ['sometimes', 'array:field,equals'],
+            'fields.*.condition.field' => ['required_with:fields.*.condition', 'string', 'min:1', 'max:255'],
+            'fields.*.condition.equals' => [
+                'required_with:fields.*.condition',
+                static function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (!is_string($value) && !is_int($value) && !is_float($value) && !is_bool($value)) {
+                        $fail('The '.$attribute.' field must be a string, number, or boolean.');
+                    }
+                },
+            ],
             'fields.*.fieldAcl' => ['nullable', 'array'],
             'fields.*.fieldAcl.view' => ['nullable', 'array'],
             'fields.*.fieldAcl.view.*' => ['string'],
             'fields.*.fieldAcl.edit' => ['nullable', 'array'],
             'fields.*.fieldAcl.edit.*' => ['string'],
         ]);
+
+        $validator->after(function ($validator) use ($request): void {
+            $fields = $request->input('fields', []);
+            $fieldNames = collect($fields)->pluck('name')->filter(static fn (mixed $name): bool => is_string($name))->all();
+
+            foreach ($fields as $index => $field) {
+                $conditionField = $field['condition']['field'] ?? null;
+
+                if (!is_string($conditionField)) {
+                    continue;
+                }
+
+                if ($conditionField === ($field['name'] ?? null) || !in_array($conditionField, $fieldNames, true)) {
+                    $validator->errors()->add("fields.{$index}.condition.field", 'The condition field must reference another field in this type.');
+                }
+            }
+        });
+
+        $validated = $validator->validate();
 
         $row = DB::table('storage_rows')
             ->where('store', 'types')
