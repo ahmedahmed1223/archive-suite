@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\V1\TagNodesController;
 use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
+use App\Http\Controllers\Api\V1\TrashController;
 use App\Http\Controllers\Api\V1\TypesController;
 use App\Http\Controllers\Api\V1\UploadLinksController;
 use App\Http\Controllers\Api\V1\UploadsController;
@@ -159,6 +160,11 @@ Route::prefix('v1')->group(function (): void {
         });
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::post('/records/bulk-delete', [RecordsController::class, 'bulkDelete']);
+        // V1-731: trash. restore is editor (undo of a write they could make);
+        // purge is admin-only (the only irreversible step).
+        Route::get('/trash', [TrashController::class, 'index']);
+        Route::post('/trash/restore', [TrashController::class, 'restore']);
+        Route::post('/trash/purge', [TrashController::class, 'purge']);
         Route::patch('/record-notes/{id}', [RecordNotesController::class, 'update']);
         Route::delete('/record-notes/{id}', [RecordNotesController::class, 'destroy']);
         Route::delete('/record-comments/{id}', [RecordCommentsController::class, 'destroy']);

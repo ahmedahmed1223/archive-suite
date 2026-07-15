@@ -21,6 +21,7 @@ export const primaryNav = [
   { href: "/vocabulary", label: "المفردات", section: "organize", icon: "Library" },
   { href: "/tags", label: "الوسوم", section: "organize", icon: "Tags" },
   { href: "/duplicates", label: "المكررات", section: "organize", icon: "CopyCheck" },
+  { href: "/trash", label: "سلة المهملات", section: "organize", icon: "Trash2" },
   { href: "/kanban", label: "كانبان", section: "organize", icon: "Columns3" },
   { href: "/projects", label: "المشاريع", section: "organize", icon: "BriefcaseBusiness" },
   // ── المشاركة والتعاون ──

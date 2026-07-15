@@ -14,6 +14,7 @@ Schedule::command('sessions:prune')->daily();
 Schedule::command('audit:prune')->daily();
 Schedule::command('media:prune-jobs')->daily();
 Schedule::command('backup:cleanup')->daily();
+Schedule::command('trash:prune')->daily();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

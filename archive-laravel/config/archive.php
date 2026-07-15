@@ -39,6 +39,12 @@ return [
     // operational noise.
     'audit_log_retention_days' => (int) env('AUDIT_LOG_RETENTION_DAYS', 365),
 
+    // V1-731: trash retention. trash:prune permanently deletes trashed_records
+    // entries older than this. 30 days is an undo window, not an archive — the
+    // record is already out of storage_rows, and backups (not this table) are
+    // the long-term recovery story.
+    'trash_retention_days' => (int) env('TRASH_RETENTION_DAYS', 30),
+
     // Defaults for the security settings panel. The safe subset (rate limit,
     // legacy password upgrade) can be overridden at runtime and persisted; CSP
     // and CORS are deploy-time only (read-only in the API).

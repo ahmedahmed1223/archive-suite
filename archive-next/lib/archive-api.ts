@@ -662,6 +662,39 @@ export interface BulkDeleteResultItem {
   deleted: boolean;
 }
 
+/** V1-731: a record moved to the trash by bulkDeleteRecords. */
+export interface TrashEntry {
+  /** Trash entry id, not the record id. */
+  id: number;
+  store: string;
+  uid: string;
+  record: ArchiveRecord;
+  syncVersion: number | null;
+  deletedAt: string;
+  deletedBy: number | null;
+  originalCreatedAt: string | null;
+  originalUpdatedAt: string | null;
+}
+
+export interface TrashRestoreResultItem {
+  uid: string;
+  restored: boolean;
+  /** Present only when restored is false. */
+  reason?: "not_found" | "conflict";
+}
+
+export interface TrashPurgeResultItem {
+  uid: string;
+  purged: boolean;
+}
+
+export interface TrashFilters {
+  store?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
 export interface FileBrowserEntry {
   key: string;
   name: string;
@@ -984,6 +1017,9 @@ export interface ArchiveApiClient {
   deleteType(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted?: boolean }>>;
   bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
   bulkDeleteRecords(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: BulkDeleteResultItem[] }>>;
+  trash(params?: TrashFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ items: TrashEntry[]; pagination?: PaginationMeta }>>;
+  restoreTrash(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: TrashRestoreResultItem[] }>>;
+  purgeTrash(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: TrashPurgeResultItem[] }>>;
   rights(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   upsertRights(payload: Omit<RightsRecord, "id" | "createdAt" | "updatedAt">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   expiringRights(params?: { days?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ records: RightsRecord[] }>>;
@@ -1426,6 +1462,19 @@ export function createArchiveApiClient({
       post<{ count: number }>("/records/bulk", payload, options),
     bulkDeleteRecords: (payload: { store: string; ids: string[] }, options?: AuthRequestOptions) =>
       post<{ count: number; results: BulkDeleteResultItem[] }>("/records/bulk-delete", payload, options),
+    trash: (params?: TrashFilters, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.store) queryParams.set("store", params.store);
+      if (params?.q) queryParams.set("q", params.q);
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      if (params?.page) queryParams.set("page", String(params.page));
+      const query = queryParams.toString();
+      return get<{ items: TrashEntry[]; pagination?: PaginationMeta }>(`/trash${query ? `?${query}` : ""}`, options);
+    },
+    restoreTrash: (payload: { store: string; ids: string[] }, options?: AuthRequestOptions) =>
+      post<{ count: number; results: TrashRestoreResultItem[] }>("/trash/restore", payload, options),
+    purgeTrash: (payload: { store: string; ids: string[] }, options?: AuthRequestOptions) =>
+      post<{ count: number; results: TrashPurgeResultItem[] }>("/trash/purge", payload, options),
     rights: (itemId: string, options?: AuthRequestOptions) => get<{ record: RightsRecord }>(`/rights?itemId=${encodeURIComponent(itemId)}`, options),
     upsertRights: (payload: Omit<RightsRecord, "id" | "createdAt" | "updatedAt">, options?: AuthRequestOptions) =>
       post<{ record: RightsRecord }>("/rights", payload, options),
