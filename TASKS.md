@@ -117,9 +117,9 @@
 
 #### P3 — V1-210 Windows Native
 
-- [ ] **V1-210A حزمة Windows Native** — artifact موقعة من نفس commit تشغّل Next standalone وLaravel FastCGI والعامل وReverb والجدولة كخدمات Windows تحت حساب محدود؛ service wrapper مثبت الإصدار ومدرج في SBOM.
-- [ ] **V1-210B Windows runtime adapter** — تنفيذ دورة Setup كاملة للخدمات وACL/firewall/logs والـhealth، وإزالة الموارد التي سجل manifest ملكيتها فقط.
-- [ ] **V1-210C خدمات البيانات على Windows** — PostgreSQL محلي مُدار أو endpoint خارجي؛ database queue/cache baseline، وRedis-compatible endpoint خيار بعد probe. تغطية تبديل الخيار ورفض endpoint غير السليم قبل التثبيت.
+- [x] **V1-210A حزمة Windows Native** — artifact موقعة من نفس commit تشغّل Next standalone وLaravel FastCGI والعامل وReverb والجدولة كخدمات Windows تحت حساب محدود؛ service wrapper مثبت الإصدار ومدرج في SBOM. *(2026-07-15: `windows-services.mjs` — طوبولوجيا 6 خدمات بحسابات NT SERVICE افتراضية، WinSW 2.12.0 مثبّت في SBOM، رفض `.exe` غير موقّع؛ قرارات موثقة في `docs/superpowers/specs/2026-07-15-v1-210-windows-native-decisions.md`. المنصة تبقى planned حتى V1-210D.)*
+- [x] **V1-210B Windows runtime adapter** — تنفيذ دورة Setup كاملة للخدمات وACL/firewall/logs والـhealth، وإزالة الموارد التي سجل manifest ملكيتها فقط. *(2026-07-15: `windows-runtime-adapter.mjs` — نفس عقد `RUNTIME_OPERATIONS` بخطوات manifest قابلة للاستئناف data→acl→firewall→install→start؛ `createWindowsServiceRemover` يزيل المملوك بالـmanifest فقط عبر `createUninstall({supportedModes:["native"]})`. update/rollback تُحقن لاحقاً.)*
+- [x] **V1-210C خدمات البيانات على Windows** — PostgreSQL محلي مُدار أو endpoint خارجي؛ database queue/cache baseline، وRedis-compatible endpoint خيار بعد probe. تغطية تبديل الخيار ورفض endpoint غير السليم قبل التثبيت. *(2026-07-15: `windows-data-services.mjs` — خطة محسومة + بوابة ما قبل التثبيت تحجب `DATA_ENDPOINT_UNHEALTHY`/`REDIS_ENDPOINT_UNHEALTHY` قبل إنشاء أي خدمة؛ اختبارات تبديل الخيار.)*
 - [ ] **V1-210D قبول Windows نظيف — تحقق خارجي** — Windows 10 و11: online/offline، local/intranet/public TLS، reboot، backup/restore، update/rollback، uninstall/reconnect؛ إرفاق logs/manifest/support bundle منزوعة الأسرار.
 
 #### P4 — V1-211 Linux Native

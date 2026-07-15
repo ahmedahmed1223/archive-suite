@@ -22,6 +22,9 @@ export function createUninstall({
   removeManifest,
   recentBackupMaxAgeMs = RECENT_BACKUP_MAX_AGE_MS,
   now = Date.now,
+  // V1-210B: the Windows Native wiring passes ["native"] with its own
+  // removeServices; the Docker default keeps the original behaviour.
+  supportedModes = ["docker"],
 }) {
   return async function uninstall({ confirmed = false, deleteDataRequested = false, deleteConfirmationPhrase = "" } = {}) {
     // 1. Preflight — nothing below this block has a side effect.
@@ -32,7 +35,7 @@ export function createUninstall({
       return fail("UNINSTALL_MANIFEST_IO_FAILED", "The installation manifest could not be read safely.", ["Correct the local manifest storage issue, then retry the uninstall."]);
     }
     if (!manifest) return fail("RELEASE_NOT_INSTALLED", "No release installation manifest was found; nothing to uninstall.", ["Nothing was changed."]);
-    if (manifest.mode !== "docker") return fail("MODE_UNSUPPORTED", "Uninstall is currently available for Docker mode only.", ["Native uninstall is not implemented yet (separate ticket)."], { mode: manifest.mode });
+    if (!supportedModes.includes(manifest.mode)) return fail("MODE_UNSUPPORTED", `Uninstall is not wired for the "${manifest.mode}" installation mode in this build.`, ["Use the setup build that matches the installed runtime mode."], { mode: manifest.mode });
     if (!confirmed) {
       return fail(
         "UNINSTALL_CONFIRMATION_REQUIRED",

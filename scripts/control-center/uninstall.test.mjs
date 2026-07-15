@@ -47,6 +47,16 @@ test("uninstall is refused for non-Docker installations with a stable code", asy
   assert.equal(result.code, "MODE_UNSUPPORTED");
 });
 
+test("uninstall accepts a native installation when the native wiring declares support (V1-210B)", async () => {
+  const { deps, calls } = buildDeps({ manifest: baseManifest({ mode: "native", services: ["archive-http", "archive-next"] }) });
+  const result = await createUninstall({ ...deps, supportedModes: ["native"] })({ confirmed: true });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.code, "UNINSTALL_COMPLETE");
+  assert.deepEqual(result.details.removedServices, ["archive-http", "archive-next"]);
+  assert.ok(calls.some(([name]) => name === "removeServices"));
+});
+
 test("uninstall requires explicit confirmation before touching any service", async () => {
   const { deps, calls } = buildDeps();
   const result = await createUninstall(deps)();
