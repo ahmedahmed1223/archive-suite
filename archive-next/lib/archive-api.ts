@@ -28,6 +28,13 @@ export interface AuthSession {
   expiresAt: string;
 }
 
+export interface DescriptorCompletion {
+  status: "green" | "yellow" | "red";
+  complete: number;
+  total: number;
+  missing: Array<"title" | "description" | "type" | "tags">;
+}
+
 export interface ArchiveRecord {
   id: string;
   uid?: string;
@@ -38,6 +45,7 @@ export interface ArchiveRecord {
   subtype?: string | null;
   tags?: string[];
   metadata?: Record<string, unknown>;
+  descriptorCompletion?: DescriptorCompletion;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;

@@ -36,6 +36,12 @@ const workflowStatusLabels: Record<WorkflowStatus, string> = {
   archived: "مؤرشف"
 };
 
+const descriptorCompletionLabels = {
+  green: { icon: "🟢", label: "مكتمل التوصيف" },
+  yellow: { icon: "🟡", label: "يحتاج استكمالًا" },
+  red: { icon: "🔴", label: "توصيف ناقص" },
+} as const;
+
 function getRecordWorkflowStatus(record: ArchiveRecord): WorkflowStatus {
   const value = record.workflowStatus;
   return typeof value === "string" && (WORKFLOW_STATES as string[]).includes(value)
@@ -666,6 +672,16 @@ function ArchivePageContent() {
             {record.store ? <span className="badge">{record.store}</span> : null}
             {record.type ? <span className="badge">{record.type}</span> : null}
             {record.subtype ? <span className="badge">{record.subtype}</span> : null}
+            {record.descriptorCompletion ? (
+              <span
+                className="badge"
+                aria-label={`اكتمال التوصيف: ${descriptorCompletionLabels[record.descriptorCompletion.status].label}`}
+                title={`اكتمال التوصيف ${record.descriptorCompletion.complete} من ${record.descriptorCompletion.total}`}
+              >
+                {descriptorCompletionLabels[record.descriptorCompletion.status].icon}{" "}
+                {descriptorCompletionLabels[record.descriptorCompletion.status].label}
+              </span>
+            ) : null}
             <time className="created-at">{formatDate(record.updatedAt || record.createdAt)}</time>
           </div>
           {record.tags && record.tags.length > 0 ? (
