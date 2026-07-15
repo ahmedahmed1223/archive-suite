@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Trash2, CheckCircle2, Info, Package } from "lucide-react";
 import Link from "next/link";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const typeIcons = {
   ingest_complete: Package,
@@ -132,7 +133,7 @@ export default function NotificationsPage() {
         ) : null}
 
         {isLoading && notifications.length === 0 ? (
-          <div className="notifications-page__loading">جاري التحميل...</div>
+          <Skeleton className="notifications-page__loading" label="جاري تحميل الإشعارات..." />
         ) : !isLoading && !error && filteredNotifications.length === 0 ? (
           <div className="notifications-page__empty">
             <Info size={48} aria-hidden="true" />

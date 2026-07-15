@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SavedSearch } from "@/lib/archive-api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function SavedSearchesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -95,7 +96,7 @@ export default function SavedSearchesPage() {
 
       {loading ? (
         <div className="panel panel-compact" role="status">
-          <p className="form-status">جار تحميل البحوث المحفوظة...</p>
+          <Skeleton label="جار تحميل البحوث المحفوظة..." />
         </div>
       ) : null}
 

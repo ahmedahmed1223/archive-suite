@@ -12,6 +12,7 @@ import {
   type RightsRecord,
   type RightsEnforcementStatus
 } from "@/lib/archive-api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type RightsState =
   | { status: "loading" }
@@ -282,8 +283,8 @@ export default function RightsPage() {
       ) : null}
 
       {state.status === "loading" ? (
-        <div className="panel panel-compact" role="status" aria-live="polite">
-          <p className="form-status">جار تحميل سجلات الحقوق...</p>
+        <div className="panel panel-compact">
+          <Skeleton label="جار تحميل سجلات الحقوق..." />
         </div>
       ) : null}
 

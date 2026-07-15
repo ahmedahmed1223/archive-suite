@@ -9,6 +9,7 @@ import PageToolbar from "@/components/PageToolbar";
 import DataTable from "@/components/ui/DataTable";
 import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type ManagedUser, type ManagedUserRole, type PendingInvitation } from "@/lib/archive-api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const roleLabels: Record<ManagedUserRole, string> = {
   admin: "مدير",
@@ -220,7 +221,7 @@ export default function UsersSettingsPage() {
       <article className="panel">
         <h2>الأعضاء</h2>
 
-        {state.status === "loading" && <div className="empty-state">جار التحميل...</div>}
+        {state.status === "loading" && <Skeleton label="جار تحميل الأعضاء..." />}
         {state.status === "error" && <p className="helper-text status-error">خطأ: {state.message}</p>}
 
         {state.status === "ready" && (

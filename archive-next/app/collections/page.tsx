@@ -11,6 +11,7 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type LoadState =
   | { status: "loading" }
@@ -162,7 +163,7 @@ export default function CollectionsPage() {
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
 
-      {state.status === "loading" ? <div className="panel panel-compact"><p className="form-status">جار تحميل السجلات...</p></div> : null}
+      {state.status === "loading" ? <div className="panel panel-compact"><Skeleton label="جار تحميل السجلات..." /></div> : null}
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل السجلات</strong>
@@ -170,7 +171,7 @@ export default function CollectionsPage() {
         </div>
       ) : null}
 
-      {collectionsState.status === "loading" ? <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل المجموعات...</p></div> : null}
+      {collectionsState.status === "loading" ? <div className="panel panel-compact"><Skeleton label="جار تحميل المجموعات..." /></div> : null}
       {collectionsState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل المجموعات</strong>

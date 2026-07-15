@@ -3,6 +3,7 @@
 import { Bell, X, Trash2 } from "lucide-react";
 import { useNotifications, type Notification } from "@/lib/use-notifications";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export function NotificationsBadge() {
   const { unreadCount, isLoading } = useNotifications();
@@ -151,7 +152,7 @@ export function NotificationsPanel() {
 
           <div className="notifications-panel__list">
             {isLoading ? (
-              <div className="notifications-panel__loading">جاري التحميل...</div>
+              <Skeleton className="notifications-panel__loading" label="جاري تحميل الإشعارات..." />
             ) : notifications.length === 0 ? (
               <div className="notifications-panel__empty">لا توجد إشعارات</div>
             ) : (

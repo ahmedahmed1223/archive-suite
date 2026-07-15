@@ -9,6 +9,7 @@ import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord, type VocabularyTerm } from "@/lib/archive-api";
 import { buildChangeImpact, countAffectedRecords } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type Kind = VocabularyTerm["kind"];
 type VocabularyLoadState =
@@ -147,7 +148,7 @@ export default function VocabularyPage() {
       </PageToolbar>
 
       {loadState.status === "loading" ? (
-        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل المفردات والسجلات...</p></div>
+        <div className="panel panel-compact"><Skeleton label="جار تحميل المفردات والسجلات..." /></div>
       ) : null}
 
       {loadState.status === "error" ? (

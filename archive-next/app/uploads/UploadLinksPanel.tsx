@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type UploadLink } from "@/lib/archive-api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type UploadLinksState =
   | { status: "loading" }
@@ -104,7 +105,7 @@ export function UploadLinksPanel() {
       </form>
 
       {linksState.status === "loading" ? (
-        <div className="panel panel-compact" role="status" aria-live="polite"><p className="form-status">جار تحميل روابط الرفع...</p></div>
+        <div className="panel panel-compact"><Skeleton label="جار تحميل روابط الرفع..." /></div>
       ) : linksState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
           <strong>تعذر تحميل روابط الرفع</strong>

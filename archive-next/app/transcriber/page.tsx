@@ -9,6 +9,7 @@ import { createArchiveApiClient, type MediaJob } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { parseSubtitles, formatCueTime, type Cue } from "@/lib/media/subtitles";
 import styles from "./transcriber.module.css";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -342,7 +343,7 @@ export default function TranscriberPage() {
           <h2>مهام التفريغ الأخيرة</h2>
         </div>
 
-        {recentState.status === "loading" && <p className="form-status">جار التحميل...</p>}
+        {recentState.status === "loading" && <Skeleton label="جار تحميل عمليات التفريغ الأخيرة..." />}
         {recentState.status === "empty" && <p className="empty-state">لا توجد مهام تفريغ سابقة.</p>}
         {recentState.status === "error" && (
           <p role="alert" className="form-status status-error">

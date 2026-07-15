@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type DiscoverSection, type SuggestionFeedbackValue } from "@/lib/archive-api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type DiscoverState =
   | { status: "loading" }
@@ -118,7 +119,7 @@ export default function DiscoverPage() {
       {state.status === "loading" ? (
         <section className="page-section" role="status" aria-live="polite">
           <div className="panel panel-compact">
-            <p className="form-status">جار تحميل مسارات الاكتشاف...</p>
+            <Skeleton label="جار تحميل مسارات الاكتشاف..." />
           </div>
         </section>
       ) : null}

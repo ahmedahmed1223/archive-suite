@@ -11,6 +11,7 @@ import {
   type BackupRunResult
 } from "@/lib/archive-api";
 import { buildBackupFreshness, redactAdminSecrets } from "@/lib/admin-action-summary";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type BackupListState =
   | { status: "loading" }
@@ -298,8 +299,8 @@ export default function BackupPage() {
       ) : null}
 
       {listState.status === "loading" ? (
-        <div className="panel panel-compact" role="status" aria-live="polite">
-          <p className="form-status">جار تحميل النسخ الاحتياطية...</p>
+        <div className="panel panel-compact">
+          <Skeleton label="جار تحميل النسخ الاحتياطية..." />
         </div>
       ) : null}
 

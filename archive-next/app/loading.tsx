@@ -1,8 +1,10 @@
+import { Skeleton } from "@/components/ui/Skeleton";
+
 export default function RouteLoading() {
   return (
-    <main className="content" aria-busy="true">
+    <main className="content">
       <section className="panel">
-        <p className="muted">جار تحميل الصفحة...</p>
+        <Skeleton label="جار تحميل الصفحة..." lines={4} />
       </section>
     </main>
   );
