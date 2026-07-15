@@ -7,6 +7,13 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 20 يونيو 2026.
 
+## V1-304D — Montage projects added to the API contract — 2026-07-15
+
+- `docs/api/archive-contract.openapi.json` now documents `/montage-projects` (GET/POST) and `/montage-projects/{id}` (GET/PUT/DELETE) with five schemas: `MontageProject`, `MontageProjectsResponse`, `MontageProjectResponse`, `CreateMontageProjectRequest`, and `UpdateMontageProjectRequest`.
+- The contract describes reality, verified against three sources: `routes/api.php` (update is `PUT`, not PATCH), `MontageProjectsController::payload()` (actual fields including ISO `createdAt`/`updatedAt`; the list response reuses the shared `PaginationMeta` because `index()` returns exactly `{total, page, limit, hasMore}`), and the real client `archive-next/lib/montage.ts` — which calls `fetch` directly rather than going through `archive-api.ts`, reads `data.projects`/`data.project`, and picks POST for new projects and PUT for existing ones.
+- The documented 403 on writes is real, backed by `requireEditor` in store/update/destroy (from V1-102F). `tracks`, `clips`, `markers`, `comments`, and `transitions` are documented as open-shaped object arrays because the server stores them as-is without structural validation — recording actual behavior rather than asserting an unenforced shape.
+- Verification: `pnpm verify:api-contracts` clean; `MontageProjectsApiTest` 13/13 (67 assertions).
+
 ## V1-306A — Accessible dialogs replace native browser dialogs — 2026-07-15
 
 - `archive-next/components/ui/ConfirmDialog.tsx` adds `ConfirmDialogProvider` and `useConfirmDialog()`, exposing promise-based `confirm`, `prompt`, and `alert` that preserve native semantics exactly (`false`/`null` on cancel or dismiss). They build on the existing Radix `Dialog`/`DialogContent`, inheriting focus trap, Escape handling, and ARIA wiring rather than reimplementing them.
