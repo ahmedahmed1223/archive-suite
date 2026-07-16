@@ -11,6 +11,8 @@ import { buildChangeImpact } from "@/lib/change-impact";
 import {
   addClip,
   buildEdl,
+  buildFcpXml,
+  buildPremiereXml,
   buildTimelineJson,
   clipDuration,
   createProject,
@@ -216,15 +218,38 @@ export default function ProjectsPage() {
     }
   }
 
-  function handleExport(kind: "json" | "edl") {
+  function handleExport(kind: "json" | "edl" | "premiere" | "fcpxml") {
     if (!selected) return;
     const base = safeFileName(selected.name);
-    if (kind === "json") {
-      downloadText(JSON.stringify(buildTimelineJson(selected), null, 2), `${base}.timeline.json`, "application/json");
-    } else {
-      downloadText(buildEdl(selected), `${base}.edl`, "text/plain");
-    }
-    setFeedback(kind === "json" ? "تم تنزيل ملف JSON للخط الزمني" : "تم تنزيل ملف EDL (CMX3600)");
+    const formats = {
+      json: {
+        content: () => JSON.stringify(buildTimelineJson(selected), null, 2),
+        filename: `${base}.timeline.json`,
+        type: "application/json",
+        message: "تم تنزيل ملف JSON للخط الزمني"
+      },
+      edl: {
+        content: () => buildEdl(selected),
+        filename: `${base}.edl`,
+        type: "text/plain",
+        message: "تم تنزيل ملف EDL (CMX3600)"
+      },
+      premiere: {
+        content: () => buildPremiereXml(selected),
+        filename: `${base}.xml`,
+        type: "application/xml",
+        message: "تم تنزيل ملف Premiere XML"
+      },
+      fcpxml: {
+        content: () => buildFcpXml(selected),
+        filename: `${base}.fcpxml`,
+        type: "application/xml",
+        message: "تم تنزيل ملف FCPXML"
+      }
+    } as const;
+    const format = formats[kind];
+    downloadText(format.content(), format.filename, format.type);
+    setFeedback(format.message);
   }
 
   return (
@@ -407,6 +432,12 @@ export default function ProjectsPage() {
               </button>
               <button type="button" className="button" onClick={() => handleExport("edl")} disabled={validCount === 0}>
                 تصدير EDL
+              </button>
+              <button type="button" className="button" onClick={() => handleExport("premiere")} disabled={validCount === 0}>
+                تصدير Premiere XML
+              </button>
+              <button type="button" className="button" onClick={() => handleExport("fcpxml")} disabled={validCount === 0}>
+                تصدير FCPXML
               </button>
               <button
                 type="button"
