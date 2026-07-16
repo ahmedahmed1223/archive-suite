@@ -6069,7 +6069,7 @@
       },
       "SystemMetrics": {
         "type": "object",
-        "required": ["cpuLoad", "memory", "disk", "queueDepth"],
+        "required": ["cpuLoad", "memory", "disk", "queueDepth", "queues"],
         "properties": {
           "cpuLoad": {
             "type": "array",
@@ -6091,7 +6091,25 @@
               "totalBytes": { "type": "integer", "minimum": 0 }
             }
           },
-          "queueDepth": { "type": "integer", "minimum": 0 }
+          "queueDepth": { "type": "integer", "minimum": 0 },
+          "queues": {
+            "type": "array",
+            "description": "V1-760: per-queue breakdown. queueDepth is the sum of every depth here; a queue appears once it has pending or failed work.",
+            "items": {
+              "type": "object",
+              "required": ["name", "depth", "failed", "oldestJobAgeSec"],
+              "properties": {
+                "name": { "type": "string" },
+                "depth": { "type": "integer", "minimum": 0 },
+                "failed": { "type": "integer", "minimum": 0 },
+                "oldestJobAgeSec": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Age of the oldest pending job. 0 when the queue is idle — the signal that separates a stalled queue from a busy one."
+                }
+              }
+            }
+          }
         }
       },
       "SystemStatusResponse": {

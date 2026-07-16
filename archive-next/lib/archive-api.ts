@@ -642,11 +642,26 @@ export interface DrProbe {
   lastRestoreTestOk: boolean | null;
 }
 
+/**
+ * V1-760: raw per-queue counters as the API reports them. Structurally a
+ * `QueueSnapshot` (lib/queue-health.ts), which turns these into a verdict —
+ * kept separate so the transport shape and the judgement stay independent.
+ */
+export interface QueueMetrics {
+  name: string;
+  depth: number;
+  failed: number;
+  /** Age of the oldest pending job; 0 when idle. Separates a stalled queue from a busy one. */
+  oldestJobAgeSec: number;
+}
+
 export interface SystemMetrics {
   cpuLoad: number[];
   memory: { usedBytes: number; totalBytes: number };
   disk: { usedBytes: number; totalBytes: number };
   queueDepth: number;
+  /** V1-760: per-queue breakdown. `queueDepth` is the sum of every `depth`. */
+  queues: QueueMetrics[];
 }
 
 export type SystemControlAction = "clear-cache" | "run-backup";

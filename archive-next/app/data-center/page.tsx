@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type DrProbe, type SystemMetrics } from "@/lib/archive-api";
+import { assessQueues, type QueueStatus } from "@/lib/queue-health";
 
 type SummaryState =
   | { status: "loading" }
@@ -31,6 +32,37 @@ function formatDate(value: string | null): string {
 function percent(used: number, total: number) {
   if (total <= 0) return 0;
   return Math.min(100, Math.round((used / total) * 100));
+}
+
+// V1-760: queue depth alone cannot tell a busy queue from a stalled one, so
+// the tone follows the assessed verdict (which weighs oldest-job age and
+// failures) rather than the raw count.
+const QUEUE_TONE: Record<QueueStatus, "success" | "warning" | "danger" | "info"> = {
+  healthy: "success",
+  warning: "warning",
+  critical: "danger",
+  unknown: "info",
+};
+
+const QUEUE_STATUS_LABEL: Record<QueueStatus, string> = {
+  healthy: "سليم",
+  warning: "تحذير",
+  critical: "حرج",
+  unknown: "غير معروف",
+};
+
+const QUEUE_REASON_LABEL: Record<string, string> = {
+  depth: "تراكم عميق",
+  stalled: "متوقف",
+  failures: "مهام فاشلة",
+  unreadable: "قراءة غير متاحة",
+};
+
+function formatAge(seconds: number): string {
+  if (seconds <= 0) return "-";
+  if (seconds < 60) return `${seconds} ث`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} د`;
+  return `${Math.floor(seconds / 3600)} س`;
 }
 
 const HUB_LINKS = [
@@ -73,6 +105,12 @@ export default function DataCenterPage() {
 
   const memoryPercent = summary.status === "ready" ? percent(summary.metrics.memory.usedBytes, summary.metrics.memory.totalBytes) : 0;
   const diskPercent = summary.status === "ready" ? percent(summary.metrics.disk.usedBytes, summary.metrics.disk.totalBytes) : 0;
+  // An idle stack reports no queues at all; that is genuinely nothing pending,
+  // not a blind spot, so it stays healthy instead of the assessor's "unknown".
+  const queueHealth =
+    summary.status === "ready" && summary.metrics.queues.length > 0
+      ? assessQueues(summary.metrics.queues)
+      : { status: "healthy" as QueueStatus, queues: [] };
 
   return (
     <AppShell subtitle="مركز البيانات" navLabel="مركز البيانات" contentClassName="observability-content">
@@ -126,11 +164,11 @@ export default function DataCenterPage() {
               tone: diskPercent > 85 ? "warning" : "info"
             },
             {
-              label: "قائمة المهام",
+              label: "الطوابير الخلفية",
               value: summary.metrics.queueDepth,
-              description: "عمق المعالجة الحالي",
+              description: `${QUEUE_STATUS_LABEL[queueHealth.status]} — ${summary.metrics.queues.length} طابور نشط`,
               icon: <Workflow size={20} />,
-              tone: summary.metrics.queueDepth > 20 ? "warning" : "success"
+              tone: QUEUE_TONE[queueHealth.status]
             },
             {
               label: "آخر نسخة",
@@ -141,6 +179,50 @@ export default function DataCenterPage() {
             }
           ]}
         />
+      ) : null}
+
+      {summary.status === "ready" && summary.metrics.queues.length > 0 ? (
+        <section className="workspace-panel" aria-label="صحة الطوابير الخلفية">
+          <div className="panel-title-row">
+            <div>
+              <h2>صحة الطوابير الخلفية</h2>
+              <p>الاستيراد والوسائط والنسخ الاحتياطي. عمر أقدم مهمة يميّز الطابور المتوقف عن المزدحم.</p>
+            </div>
+            <span className="badge">{QUEUE_STATUS_LABEL[queueHealth.status]}</span>
+          </div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">الطابور</th>
+                <th scope="col">الحالة</th>
+                <th scope="col">قيد الانتظار</th>
+                <th scope="col">فاشلة</th>
+                <th scope="col">عمر أقدم مهمة</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.metrics.queues.map((queue) => {
+                const health = queueHealth.queues.find((entry) => entry.name === queue.name);
+                const status = health?.status ?? "unknown";
+                return (
+                  <tr key={queue.name}>
+                    <td>{queue.name}</td>
+                    <td>
+                      {/* Status is never colour-only: the label carries it for anyone who cannot see the tone. */}
+                      <span className={`badge badge-${QUEUE_TONE[status]}`}>{QUEUE_STATUS_LABEL[status]}</span>
+                      {health?.reasons.length ? (
+                        <span className="helper-text"> {health.reasons.map((reason) => QUEUE_REASON_LABEL[reason] ?? reason).join("، ")}</span>
+                      ) : null}
+                    </td>
+                    <td>{queue.depth}</td>
+                    <td>{queue.failed}</td>
+                    <td>{formatAge(queue.oldestJobAgeSec)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
       ) : null}
 
       <section className="workspace-panel data-center-hub" aria-label="أقسام مركز البيانات">
