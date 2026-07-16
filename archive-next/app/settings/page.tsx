@@ -2,7 +2,7 @@
 
 import "./settings.css";
 import { useEffect, useState } from "react";
-import { Activity, AlertTriangle, DatabaseZap, Eye, Fingerprint, KeyRound, LifeBuoy, RefreshCw, Settings, ShieldCheck, Users } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, DatabaseZap, Eye, Fingerprint, Info, KeyRound, LifeBuoy, MinusCircle, RefreshCw, Settings, ShieldCheck, Users, XCircle } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
@@ -89,8 +89,34 @@ const odbcTableLabels: Record<OdbcCoreTable, string> = {
 
 const getDefaultOdbcKeyColumn = (table: OdbcCoreTable) => (table === "settings" ? "key" : "id");
 
-function StatusBadge({ children }: Readonly<{ children: string }>) {
-  return <span className="badge">{children}</span>;
+export type StatusBadgeTone = "success" | "warning" | "danger" | "info" | "neutral";
+
+// ponytail: icons chosen for distinct outline shape (circle+check, triangle,
+// circle+x, circle+i, circle+dash) so tone never relies on color alone.
+const STATUS_BADGE_ICONS: Record<StatusBadgeTone, typeof CheckCircle2> = {
+  success: CheckCircle2,
+  warning: AlertTriangle,
+  danger: XCircle,
+  info: Info,
+  neutral: MinusCircle
+};
+
+const STATUS_BADGE_CLASS: Record<StatusBadgeTone, string> = {
+  success: "badge-success",
+  warning: "badge-warning",
+  danger: "badge-danger",
+  info: "badge-info",
+  neutral: ""
+};
+
+export function StatusBadge({ children, tone = "neutral" }: Readonly<{ children: string; tone?: StatusBadgeTone }>) {
+  const Icon = STATUS_BADGE_ICONS[tone];
+  return (
+    <span className={`badge status-badge ${STATUS_BADGE_CLASS[tone]}`.trim()} data-tone={tone}>
+      <Icon size={14} aria-hidden="true" />
+      {children}
+    </span>
+  );
 }
 
 function odbcStatusLabel(status: OdbcProbe["status"]) {
@@ -103,6 +129,18 @@ function odbcStatusLabel(status: OdbcProbe["status"]) {
   };
 
   return labels[status];
+}
+
+function odbcStatusTone(status: OdbcProbe["status"]): StatusBadgeTone {
+  const tones: Record<OdbcProbe["status"], StatusBadgeTone> = {
+    connected: "success",
+    disabled: "neutral",
+    "missing-dsn": "warning",
+    "driver-unavailable": "warning",
+    failed: "danger"
+  };
+
+  return tones[status];
 }
 
 // ponytail: fixed API messages map 1:1 to status; dynamic driver errors stay raw
@@ -479,7 +517,7 @@ export default function SettingsPage() {
               <h2>وضع الأمان</h2>
               <p>ملخص للقراءة فقط يوضح سياسة الوصول الحالية والعمل الأمني المؤجل لإصدارات لاحقة.</p>
             </div>
-            <StatusBadge>{error ? "يتطلب مراجعة" : "قراءة فقط"}</StatusBadge>
+            <StatusBadge tone={error ? "danger" : "neutral"}>{error ? "يتطلب مراجعة" : "قراءة فقط"}</StatusBadge>
           </div>
 
           <div className="stack">
@@ -525,7 +563,7 @@ export default function SettingsPage() {
                 <div key={item.title} className="section-divider">
                   <div className="helper-row">
                     <strong>{item.title}</strong>
-                    <StatusBadge>{item.status}</StatusBadge>
+                    <StatusBadge tone="info">{item.status}</StatusBadge>
                   </div>
                   <p className="helper-text mt-tight">
                     {item.note}
@@ -545,7 +583,7 @@ export default function SettingsPage() {
               <h2>ODBC للأنظمة القديمة</h2>
               <p>فحص الاتصال، معاينة قراءة محدودة، وكتابة صفوف مقيدة للجداول الأساسية المسموحة فقط.</p>
             </div>
-            {odbc && <StatusBadge>{odbcStatusLabel(odbc.status)}</StatusBadge>}
+            {odbc && <StatusBadge tone={odbcStatusTone(odbc.status)}>{odbcStatusLabel(odbc.status)}</StatusBadge>}
           </div>
 
           <div className="stack">
@@ -701,7 +739,7 @@ export default function SettingsPage() {
                   <div className="stack section-divider">
                     <div className="helper-row">
                       <strong>{odbcTableLabels[odbcPreview.table as OdbcCoreTable] || odbcPreview.table}</strong>
-                      <StatusBadge>{`${odbcPreview.count} صف`}</StatusBadge>
+                      <StatusBadge tone="neutral">{`${odbcPreview.count} صف`}</StatusBadge>
                     </div>
 
                     {odbcPreview.rows.length === 0 ? (
