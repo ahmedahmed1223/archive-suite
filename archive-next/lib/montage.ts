@@ -339,6 +339,138 @@ export function buildEdl(project: MontageProject): string {
   return lines.join("\n");
 }
 
+// ── NLE interchange: Premiere (xmeml) and FCPXML ─────────────────────────────
+// V1-715: both formats are frame-based, not second-based. Every timing crosses
+// through secondsToFrames so an NLE never receives a fractional frame.
+
+/** Seconds → whole frames at the sequence rate. Negative input clamps to 0. */
+export function secondsToFrames(seconds: number, fps = DEFAULT_FPS): number {
+  const rate = fps > 0 ? fps : DEFAULT_FPS;
+  return Math.round(toNum(seconds) * rate);
+}
+
+/** Escapes the five XML metacharacters. Arabic and other text pass through. */
+function escapeXml(value: unknown): string {
+  return String(value ?? "").replace(/[<>&'"]/g, (char) =>
+    ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[char] as string
+  );
+}
+
+function exportableClips(project: MontageProject, trackId: string): MontageClip[] {
+  return clipsByTrack(project, trackId).filter(isValidClip);
+}
+
+/**
+ * Final Cut Pro 7 XML (xmeml v5) — the format Premiere Pro imports.
+ * Clips whose in/out are invalid are dropped rather than emitted broken.
+ */
+export function buildPremiereXml(project: MontageProject): string {
+  const fps = project.fps || DEFAULT_FPS;
+  const rate = `<rate><timebase>${fps}</timebase><ntsc>FALSE</ntsc></rate>`;
+
+  const renderTrack = (trackId: string): string => {
+    const clips = exportableClips(project, trackId);
+    if (!clips.length) return "";
+    const items = clips.map((clip) => {
+      const start = secondsToFrames(clip.timelineStartSec, fps);
+      const frames = secondsToFrames(clipDuration(clip), fps);
+      return [
+        `          <clipitem id="${escapeXml(clip.id)}">`,
+        `            <name>${escapeXml(clip.title || clip.itemId)}</name>`,
+        `            <duration>${frames}</duration>`,
+        `            ${rate}`,
+        `            <start>${start}</start>`,
+        `            <end>${start + frames}</end>`,
+        `            <in>${secondsToFrames(clip.inSec, fps)}</in>`,
+        `            <out>${secondsToFrames(clip.outSec, fps)}</out>`,
+        `            <file id="file_${escapeXml(clip.itemId)}"><name>${escapeXml(clip.itemId)}</name></file>`,
+        `          </clipitem>`,
+      ].join("\n");
+    });
+    return [`        <track>`, ...items, `        </track>`].join("\n");
+  };
+
+  const tracksOfKind = (kinds: MontageTrack["type"][]): string =>
+    [...project.tracks]
+      .sort((a, b) => a.order - b.order)
+      .filter((track) => kinds.includes(track.type))
+      .map((track) => renderTrack(track.id))
+      .filter(Boolean)
+      .join("\n");
+
+  const video = tracksOfKind(["video", "overlay", "title"]);
+  const audio = tracksOfKind(["audio"]);
+  const media = [
+    video ? [`      <video>`, video, `      </video>`].join("\n") : "",
+    audio ? [`      <audio>`, audio, `      </audio>`].join("\n") : "",
+  ].filter(Boolean).join("\n");
+
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<!DOCTYPE xmeml>`,
+    `<xmeml version="5">`,
+    `  <sequence id="${escapeXml(project.id)}">`,
+    `    <name>${escapeXml(project.name || "Untitled")}</name>`,
+    `    <duration>${secondsToFrames(projectDuration(project), fps)}</duration>`,
+    `    ${rate}`,
+    `    <media>`,
+    media,
+    `    </media>`,
+    `  </sequence>`,
+    `</xmeml>`,
+  ].filter((line) => line !== "").join("\n");
+}
+
+/**
+ * FCPXML v1.9 (Final Cut Pro X). Times are rational frame-aligned seconds
+ * (`<frames>/<fps>s`); each distinct source record becomes one asset resource
+ * referenced by every clip that uses it.
+ */
+export function buildFcpXml(project: MontageProject): string {
+  const fps = project.fps || DEFAULT_FPS;
+  const t = (seconds: number): string => `${secondsToFrames(seconds, fps)}/${fps}s`;
+
+  const clips = allClipsOrdered(project).filter(isValidClip);
+
+  // One resource per distinct record, in first-use order — a record reused on
+  // several clips must not be declared twice.
+  const assetIds = new Map<string, string>();
+  for (const clip of clips) {
+    if (!assetIds.has(clip.itemId)) assetIds.set(clip.itemId, `r${assetIds.size + 1}`);
+  }
+
+  const assets = [...assetIds.entries()].map(
+    ([itemId, id]) => `    <asset id="${id}" name="${escapeXml(itemId)}" start="0s" hasVideo="1" hasAudio="1"/>`
+  );
+
+  const spineItems = clips.map((clip) =>
+    `          <asset-clip ref="${assetIds.get(clip.itemId)}" name="${escapeXml(clip.title || clip.itemId)}"` +
+    ` offset="${t(clip.timelineStartSec)}" start="${t(clip.inSec)}" duration="${t(clipDuration(clip))}"/>`
+  );
+  const spine = spineItems.length ? [`        <spine>`, ...spineItems, `        </spine>`].join("\n") : `        <spine></spine>`;
+
+  const name = escapeXml(project.name || "Untitled");
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<!DOCTYPE fcpxml>`,
+    `<fcpxml version="1.9">`,
+    `  <resources>`,
+    `    <format id="r0" name="FFVideoFormat${fps}p" frameDuration="1/${fps}s"/>`,
+    ...assets,
+    `  </resources>`,
+    `  <library>`,
+    `    <event name="${name}">`,
+    `      <project name="${name}">`,
+    `        <sequence format="r0" duration="${t(projectDuration(project))}">`,
+    spine,
+    `        </sequence>`,
+    `      </project>`,
+    `    </event>`,
+    `  </library>`,
+    `</fcpxml>`,
+  ].join("\n");
+}
+
 /** Safe filename fragment from a project name (mirrors legacy exportClient). */
 export function safeFileName(name: string, fallback = "export"): string {
   const clean = String(name || "").trim().replace(/[^\w؀-ۿ.-]+/g, "_").replace(/^_+|_+$/g, "");
