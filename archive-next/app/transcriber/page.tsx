@@ -162,7 +162,7 @@ export default function TranscriberPage() {
   }
 
   return (
-    <AppShell subtitle="التفريغ الصوتي" contentClassName={`stack ${styles.transcriberContent}`}>
+    <AppShell subtitle="التفريغ الصوتي" contentClassName={`stack ${styles.transcriberContent}`} tipsPage="transcriber">
       <PageToolbar
         title="التفريغ الصوتي"
         description="أنشئ مهمة تفريغ صوتي عبر مهام الوسائط وتابع تقدّمها حتى اكتمال النص بالطوابع الزمنية."

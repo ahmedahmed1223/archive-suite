@@ -330,7 +330,7 @@ export default function CollaborationPage() {
   };
 
   return (
-    <AppShell subtitle="التعاون الحي" navLabel="التعاون الحي" contentClassName="collaboration-content">
+    <AppShell subtitle="التعاون الحي" navLabel="التعاون الحي" contentClassName="collaboration-content" tipsPage="collaboration">
       <PageToolbar
         eyebrow={<span className="badge">{isSyncing ? "جار المزامنة" : "مزامنة نشطة"}</span>}
         title="التعاون الحي"

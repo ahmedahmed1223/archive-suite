@@ -461,7 +461,7 @@ export default function GraphPage() {
   };
 
   return (
-    <AppShell subtitle="خريطة العلاقات" navLabel="العلاقات">
+    <AppShell subtitle="خريطة العلاقات" navLabel="العلاقات" tipsPage="graph">
       <PageToolbar
         eyebrow={<span className="badge">GraphView parity</span>}
         title="خريطة العلاقات"

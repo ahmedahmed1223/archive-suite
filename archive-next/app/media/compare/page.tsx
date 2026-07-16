@@ -47,7 +47,7 @@ export default function ComparePage() {
   const isValidPaths = pathA.trim() && pathB.trim();
 
   return (
-    <AppShell subtitle="مقارنة الوسائط" contentClassName={styles.compareContent}>
+    <AppShell subtitle="مقارنة الوسائط" contentClassName={styles.compareContent} tipsPage="media-compare">
       <PageToolbar
         eyebrow={<span className="badge">Side-by-side</span>}
         title="مقارنة الوسائط"

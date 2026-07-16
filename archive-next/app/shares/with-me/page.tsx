@@ -124,7 +124,7 @@ export default function SharedWithMePage() {
   }
 
   return (
-    <AppShell subtitle="مشاركات واردة" navLabel="المشاركات الواردة" contentClassName="local-list-content">
+    <AppShell subtitle="مشاركات واردة" navLabel="المشاركات الواردة" contentClassName="local-list-content" tipsPage="shares-with-me">
       <PageToolbar
         eyebrow={<span className="badge">Shared with me</span>}
         title="المشاركات الواردة"

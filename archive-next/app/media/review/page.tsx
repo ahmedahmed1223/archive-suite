@@ -180,7 +180,7 @@ export default function ReviewPage() {
   };
 
   return (
-    <AppShell subtitle="المراجعة المرئية" contentClassName={styles.reviewContent}>
+    <AppShell subtitle="المراجعة المرئية" contentClassName={styles.reviewContent} tipsPage="media-review">
       <PageToolbar
         eyebrow={<span className="badge">Frame review</span>}
         title="مراجعة مرئية بتعليقات زمنية"

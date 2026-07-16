@@ -57,7 +57,7 @@ export default function SyncPage() {
   );
 
   return (
-    <AppShell subtitle="سجل المزامنة" navLabel="المزامنة" contentClassName="sync-content">
+    <AppShell subtitle="سجل المزامنة" navLabel="المزامنة" contentClassName="sync-content" tipsPage="sync">
       <PageToolbar
         icon={<GitCompareArrows size={24} />}
         eyebrow={<span className="badge">المزامنة</span>}

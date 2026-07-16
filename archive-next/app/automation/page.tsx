@@ -158,7 +158,7 @@ export default function AutomationPage() {
   }
 
   return (
-    <AppShell subtitle="الأتمتة" contentClassName="local-list-content">
+    <AppShell subtitle="الأتمتة" contentClassName="local-list-content" tipsPage="automation">
       <PageToolbar
         eyebrow={<span className="badge">Rules Engine</span>}
         title="محرّك القواعد"

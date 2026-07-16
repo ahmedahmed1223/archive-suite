@@ -180,7 +180,7 @@ export default function TimelinePage() {
   const recordCount = state.records.length;
 
   return (
-    <AppShell subtitle="الخط الزمني" navLabel="الخط الزمني" contentClassName="timeline-content">
+    <AppShell subtitle="الخط الزمني" navLabel="الخط الزمني" contentClassName="timeline-content" tipsPage="timeline">
       <PageToolbar
         eyebrow={<span className="badge">ترتيب زمني</span>}
         title="الخط الزمني"

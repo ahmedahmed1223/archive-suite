@@ -63,7 +63,7 @@ const supportLinks = [
 
 export default function HelpPage() {
   return (
-    <AppShell subtitle="مركز المساعدة" navLabel="المساعدة" contentClassName="help-content">
+    <AppShell subtitle="مركز المساعدة" navLabel="المساعدة" contentClassName="help-content" tipsPage="help">
       <PageToolbar
         eyebrow={<span className="badge">مرجع تشغيلي</span>}
         title="مركز المساعدة"

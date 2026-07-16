@@ -165,7 +165,7 @@ export default function UsersSettingsPage() {
   );
 
   return (
-    <AppShell subtitle="المستخدمون والأدوار" contentClassName="stack">
+    <AppShell subtitle="المستخدمون والأدوار" contentClassName="stack" tipsPage="settings-users">
       <PageToolbar
         title="المستخدمون والأدوار"
         description="إدارة أعضاء الفريق وأدوارهم، ودعوة أعضاء جدد بالبريد الإلكتروني. مقتصر على المدراء."

@@ -193,7 +193,7 @@ export default function RightsPage() {
   };
 
   return (
-    <AppShell subtitle="حقوق الاستخدام" navLabel="الحقوق" contentClassName="observability-content">
+    <AppShell subtitle="حقوق الاستخدام" navLabel="الحقوق" contentClassName="observability-content" tipsPage="rights">
       <PageToolbar
         eyebrow={<span className="badge">Rights Management</span>}
         title="حقوق الاستخدام والتراخيص"

@@ -147,7 +147,7 @@ export default function ErrorsPage() {
   };
 
   return (
-    <AppShell subtitle="سجل الأخطاء" navLabel="سجل الأخطاء" contentClassName="observability-content">
+    <AppShell subtitle="سجل الأخطاء" navLabel="سجل الأخطاء" contentClassName="observability-content" tipsPage="errors">
       <PageToolbar
         icon={<Bug size={24} />}
         eyebrow={<span className="badge">Runtime log</span>}

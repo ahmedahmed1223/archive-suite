@@ -136,7 +136,7 @@ export default function ReadingListsPage() {
   }
 
   return (
-    <AppShell subtitle="قوائم القراءة" navLabel="قوائم القراءة" contentClassName="local-list-content">
+    <AppShell subtitle="قوائم القراءة" navLabel="قوائم القراءة" contentClassName="local-list-content" tipsPage="reading-lists">
       <PageToolbar
         eyebrow={<span className="badge">Reading Lists</span>}
         title="قوائم القراءة"

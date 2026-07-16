@@ -184,7 +184,7 @@ export default function KanbanPage() {
   }
 
   return (
-    <AppShell subtitle="كانبان" contentClassName="local-list-content">
+    <AppShell subtitle="كانبان" contentClassName="local-list-content" tipsPage="kanban">
       <PageToolbar
         eyebrow={<span className="badge">Workflow</span>}
         title="لوحة كانبان"

@@ -8,7 +8,7 @@ import { UploadLinksPanel } from "./UploadLinksPanel";
 
 export default function UploadsPage() {
   return (
-    <AppShell subtitle="إضافة أرشيف" contentClassName="stack">
+    <AppShell subtitle="إضافة أرشيف" contentClassName="stack" tipsPage="uploads">
       <PageToolbar
         icon={<PlusCircle size={24} strokeWidth={2} />}
         eyebrow={<span className="badge">Add Workspace</span>}

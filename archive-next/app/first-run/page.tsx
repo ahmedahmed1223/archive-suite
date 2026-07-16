@@ -171,7 +171,7 @@ export default function FirstRunPage() {
   }
 
   return (
-    <AppShell subtitle="أول تشغيل" navLabel="مسار التهيئة" contentClassName="first-run-content">
+    <AppShell subtitle="أول تشغيل" navLabel="مسار التهيئة" contentClassName="first-run-content" tipsPage="first-run">
       <PageToolbar
         eyebrow={<span className="badge">First-run</span>}
         title={`تهيئة ${BRAND.arabicName}`}

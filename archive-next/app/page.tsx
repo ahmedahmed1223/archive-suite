@@ -67,7 +67,7 @@ export default function HomeDashboard() {
   }, [state]);
 
   return (
-    <AppShell subtitle="لوحة المتابعة">
+    <AppShell subtitle="لوحة المتابعة" tipsPage="dashboard">
       <PageToolbar
         icon={<Archive aria-hidden="true" />}
         eyebrow={<span className="badge">اللوحة الرئيسية</span>}

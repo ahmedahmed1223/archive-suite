@@ -113,7 +113,7 @@ export default function DataCenterPage() {
       : { status: "healthy" as QueueStatus, queues: [] };
 
   return (
-    <AppShell subtitle="مركز البيانات" navLabel="مركز البيانات" contentClassName="observability-content">
+    <AppShell subtitle="مركز البيانات" navLabel="مركز البيانات" contentClassName="observability-content" tipsPage="data-center">
       <PageToolbar
         icon={<Database size={24} />}
         eyebrow={<span className="badge">Data Center</span>}

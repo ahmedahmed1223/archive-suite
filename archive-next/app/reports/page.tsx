@@ -143,7 +143,7 @@ export default function ReportsPage() {
   const exportPreview = buildExportPreview({ total: summary?.total ?? 0, format: "CSV", limit: 10000 });
 
   return (
-    <AppShell subtitle="التقارير" navLabel="التقارير" contentClassName="observability-content">
+    <AppShell subtitle="التقارير" navLabel="التقارير" contentClassName="observability-content" tipsPage="reports">
       <PageToolbar
         icon={<FileBarChart size={24} />}
         eyebrow={<span className="badge">امتثال تشغيلي</span>}

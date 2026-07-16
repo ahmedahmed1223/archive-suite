@@ -5,7 +5,56 @@ export interface Tip {
   icon?: string;
 }
 
-export type PageKey = "search" | "archive" | "collections" | "settings" | "montage";
+export type PageKey =
+  | "search"
+  | "archive"
+  | "collections"
+  | "settings"
+  | "montage"
+  | "vocabulary"
+  | "graph"
+  | "sync"
+  | "analytics"
+  | "uploads"
+  | "activity"
+  | "first-run"
+  | "media-review"
+  | "files"
+  | "timeline"
+  | "types"
+  | "transcriber"
+  | "favorites"
+  | "reports"
+  | "media-play"
+  | "status"
+  | "trash"
+  | "errors"
+  | "kanban"
+  | "tags"
+  | "shares-with-me"
+  | "reading-lists"
+  | "duplicates"
+  | "dashboard"
+  | "shares"
+  | "media-jobs"
+  | "ingest"
+  | "projects"
+  | "settings-users"
+  | "media-compare"
+  | "system-control"
+  | "discover"
+  | "plugins"
+  | "broadcast"
+  | "inbox"
+  | "notifications"
+  | "help"
+  | "search-saved"
+  | "data-center"
+  | "copilot"
+  | "backup"
+  | "automation"
+  | "collaboration"
+  | "rights";
 
 export const pageTips: Record<PageKey, Tip[]> = {
   search: [
@@ -117,6 +166,182 @@ export const pageTips: Record<PageKey, Tip[]> = {
       title: "الأرشفة",
       description: "أرشف المجموعات القديمة للحفاظ على قائمة عملك نظيفة"
     }
+  ],
+  vocabulary: [
+    { title: "المفردات الموحدة", description: "أدر المصطلحات والمرادفات المستخدمة عبر تصنيف السجلات", icon: "BookOpen" },
+    { title: "الاستيراد والتصدير", description: "صدّر أو استورد المفردات بصيغة CSV أو JSON مع دمج المرادفات تلقائياً" }
+  ],
+  graph: [
+    { title: "خريطة العلاقات", description: "استكشف الروابط بين السجلات بصرياً من خلال العقد والخطوط", icon: "Share2" },
+    { title: "التصفية", description: "ركّز على نوع علاقة معين لتبسيط الرسم البياني" }
+  ],
+  sync: [
+    { title: "سجل المزامنة", description: "تابع حالة كل عملية مزامنة مع مزودي التخزين الخارجيين", icon: "RefreshCw" },
+    { title: "إعادة المحاولة", description: "أعد تشغيل العمليات الفاشلة مباشرة من هذا السجل" }
+  ],
+  analytics: [
+    { title: "تحليلات الأرشيف", description: "راقب اتجاهات النمو واستخدام التخزين عبر الزمن", icon: "BarChart2" },
+    { title: "تصدير التقارير", description: "صدّر الرسوم البيانية والبيانات لمشاركتها مع فريقك" }
+  ],
+  uploads: [
+    { title: "إضافة أرشيف", description: "اسحب وأفلت الملفات أو اخترها لبدء الاستيراد", icon: "Upload" },
+    { title: "المعالجة بالخلفية", description: "تتابع الملفات الكبيرة معالجتها في الخلفية دون حجب العمل" }
+  ],
+  activity: [
+    { title: "سجل النشاط", description: "راجع كل الإجراءات التي تمت على الأرشيف بالترتيب الزمني", icon: "Activity" },
+    { title: "التصفية حسب المستخدم", description: "صفِّ السجل حسب المستخدم أو نوع الحدث" }
+  ],
+  "first-run": [
+    { title: "مسار التهيئة", description: "أكمل خطوات الإعداد الأولى لتجهيز مساحة العمل", icon: "Rocket" },
+    { title: "التخطي لاحقاً", description: "يمكنك تخطي أي خطوة والعودة إليها لاحقاً من الإعدادات" }
+  ],
+  "media-review": [
+    { title: "المراجعة المرئية", description: "عاين الوسائط وأضف ملاحظات المراجعة قبل الاعتماد", icon: "Eye" },
+    { title: "القرارات السريعة", description: "استخدم أزرار القبول والرفض لتسريع دورة المراجعة" }
+  ],
+  files: [
+    { title: "مستعرض الملفات", description: "تصفح بنية الملفات والمجلدات المرتبطة بالأرشيف", icon: "Folder" },
+    { title: "المعاينة", description: "انقر على ملف لمعاينته دون تنزيله" }
+  ],
+  timeline: [
+    { title: "الخط الزمني", description: "اعرض السجلات مرتبة زمنياً لفهم تسلسل الأحداث", icon: "Clock" },
+    { title: "التكبير", description: "كبّر أو صغّر النطاق الزمني لتغيير مستوى التفاصيل" }
+  ],
+  types: [
+    { title: "الأنواع", description: "أدر أنواع وفئات السجلات المستخدمة في التصنيف", icon: "Tag" },
+    { title: "الحقول المخصصة", description: "أضف حقولاً مخصصة لكل نوع لتوثيق بيانات إضافية" }
+  ],
+  transcriber: [
+    { title: "التفريغ الصوتي", description: "حوّل الوسائط الصوتية والمرئية إلى نص قابل للبحث", icon: "Mic" },
+    { title: "التدقيق اليدوي", description: "راجع النص المفرّغ وعدّله قبل الاعتماد النهائي" }
+  ],
+  favorites: [
+    { title: "المفضلة", description: "احتفظ بالسجلات التي تعود إليها كثيراً في مكان واحد", icon: "Star" },
+    { title: "الإزالة السريعة", description: "انقر على أيقونة النجمة لإزالة عنصر من المفضلة" }
+  ],
+  reports: [
+    { title: "التقارير", description: "أنشئ تقارير امتثال ونمو تخزين جاهزة للمشاركة", icon: "FileBarChart" },
+    { title: "الجدولة", description: "جدول توليد التقارير بشكل دوري تلقائياً" }
+  ],
+  "media-play": [
+    { title: "مشغل الوسائط", description: "شغّل الملفات الصوتية والمرئية مباشرة داخل الأرشيف", icon: "Play" },
+    { title: "علامات الوقت", description: "أضف علامات زمنية أثناء التشغيل للرجوع إليها لاحقاً" }
+  ],
+  status: [
+    { title: "حالة النظام", description: "راقب صحة الخدمات والمهام التشغيلية في مكان واحد", icon: "Activity" },
+    { title: "التنبيهات", description: "تابع أي تحذيرات تحتاج إلى تدخل سريع" }
+  ],
+  trash: [
+    { title: "سلة المهملات", description: "استعد العناصر المحذوفة خلال فترة الاحتفاظ المحددة", icon: "Trash2" },
+    { title: "الحذف النهائي", description: "احذف نهائياً فقط عند التأكد من عدم الحاجة للعنصر" }
+  ],
+  errors: [
+    { title: "سجل الأخطاء", description: "راجع الأخطاء التي واجهها النظام لتشخيصها وحلها", icon: "AlertTriangle" },
+    { title: "التصفية", description: "صفِّ حسب الشدة أو المصدر لتضييق نطاق البحث" }
+  ],
+  kanban: [
+    { title: "كانبان", description: "نظم العمل في أعمدة حسب حالة كل سجل", icon: "Columns" },
+    { title: "السحب والإفلات", description: "اسحب البطاقات بين الأعمدة لتحديث حالتها فوراً" }
+  ],
+  tags: [
+    { title: "الوسوم", description: "أدر الوسوم المستخدمة لتصنيف السجلات عبر الأرشيف", icon: "Tag" },
+    { title: "الدمج", description: "ادمج الوسوم المتشابهة لتقليل التكرار" }
+  ],
+  "shares-with-me": [
+    { title: "مشاركات واردة", description: "استعرض العناصر التي شاركها معك الآخرون", icon: "Share2" },
+    { title: "الوصول", description: "افتح العنصر مباشرة من هنا حسب صلاحيتك" }
+  ],
+  "reading-lists": [
+    { title: "قوائم القراءة", description: "اجمع السجلات ذات الصلة في قوائم مخصصة للمراجعة لاحقاً", icon: "List" },
+    { title: "الترتيب", description: "أعد ترتيب العناصر داخل القائمة حسب الأولوية" }
+  ],
+  duplicates: [
+    { title: "المكررات", description: "اكتشف السجلات المتشابهة أو المكررة داخل الأرشيف", icon: "Copy" },
+    { title: "الدمج", description: "ادمج السجلات المكررة أو تجاهل التطابق حسب الحاجة" }
+  ],
+  dashboard: [
+    { title: "لوحة المتابعة", description: "نظرة سريعة على أحدث النشاط ومؤشرات الأرشيف", icon: "LayoutDashboard" },
+    { title: "الاختصارات", description: "استخدم البطاقات السريعة للانتقال إلى الأقسام الأكثر استخداماً" }
+  ],
+  shares: [
+    { title: "روابط المشاركة", description: "أنشئ روابط مشاركة محكومة الصلاحية والانتهاء", icon: "Share2" },
+    { title: "الإلغاء", description: "ألغِ أي رابط مشاركة في أي وقت لإيقاف الوصول فوراً" }
+  ],
+  "media-jobs": [
+    { title: "مسار الوسائط", description: "تابع مهام معالجة الوسائط قيد التنفيذ والمكتملة", icon: "ListChecks" },
+    { title: "إعادة المحاولة", description: "أعد تشغيل المهام الفاشلة دون إعادة الرفع" }
+  ],
+  ingest: [
+    { title: "استيراد المحتوى", description: "استورد دفعات من السجلات والملفات من مصادر خارجية", icon: "Import" },
+    { title: "التحقق قبل الاستيراد", description: "راجع نتائج التحقق قبل تأكيد عملية الاستيراد" }
+  ],
+  projects: [
+    { title: "المشاريع", description: "نظم السجلات ضمن مشاريع لها فرق وأهداف مستقلة", icon: "Briefcase" },
+    { title: "الأعضاء", description: "أدر أعضاء المشروع وصلاحياتهم من هذه الصفحة" }
+  ],
+  "settings-users": [
+    { title: "المستخدمون والأدوار", description: "أدر حسابات المستخدمين وأدوارهم داخل النظام", icon: "Users" },
+    { title: "الصلاحيات", description: "حدد صلاحيات كل دور بدقة حسب الحاجة" }
+  ],
+  "media-compare": [
+    { title: "مقارنة الوسائط", description: "قارن نسختين من ملف وسائط جنباً إلى جنب", icon: "Columns2" },
+    { title: "الفروقات", description: "أبرز الفروقات بين النسختين لتسهيل المراجعة" }
+  ],
+  "system-control": [
+    { title: "التحكم بالنظام", description: "أدر إعدادات النظام التشغيلية والخدمات المرتبطة", icon: "Settings2" },
+    { title: "الحذر مطلوب", description: "بعض الإجراءات هنا تؤثر على كامل النظام فور تنفيذها" }
+  ],
+  discover: [
+    { title: "الاكتشاف", description: "استكشف مسارات ومحتوى مقترح بناءً على اهتماماتك", icon: "Compass" },
+    { title: "الحفظ", description: "احفظ ما يعجبك للرجوع إليه من المفضلة" }
+  ],
+  plugins: [
+    { title: "الإضافات", description: "فعّل أو عطّل الإضافات التي توسع قدرات الأرشيف", icon: "Puzzle" },
+    { title: "الإعدادات المخصصة", description: "لكل إضافة إعدادات خاصة بها قابلة للتخصيص" }
+  ],
+  broadcast: [
+    { title: "محاكاة البث", description: "اختبر سيناريوهات البث قبل تطبيقها فعلياً", icon: "Radio" },
+    { title: "السجل", description: "راجع سجل المحاكاة السابقة لمقارنة النتائج" }
+  ],
+  inbox: [
+    { title: "صندوق الوارد", description: "استقبل العناصر والطلبات الجديدة الموجهة إليك", icon: "Inbox" },
+    { title: "الأرشفة السريعة", description: "أرشف العناصر المعالجة لإبقاء الصندوق نظيفاً" }
+  ],
+  notifications: [
+    { title: "الإشعارات", description: "تابع كل التنبيهات المتعلقة بنشاطك وفريقك", icon: "Bell" },
+    { title: "التفضيلات", description: "خصص أنواع الإشعارات التي تريد استلامها من الإعدادات" }
+  ],
+  help: [
+    { title: "مركز المساعدة", description: "ابحث عن إجابات وأدلة استخدام لجميع أقسام الأرشيف", icon: "HelpCircle" },
+    { title: "الدعم", description: "تواصل مع الدعم الفني إذا لم تجد ما تبحث عنه" }
+  ],
+  "search-saved": [
+    { title: "البحوث المحفوظة", description: "أعد تشغيل عمليات بحث سبق أن حفظتها بضغطة واحدة", icon: "BookmarkCheck" },
+    { title: "التنظيم", description: "احذف أو أعد تسمية البحوث المحفوظة القديمة" }
+  ],
+  "data-center": [
+    { title: "مركز البيانات", description: "راقب مساحة التخزين وتوزعها عبر مزودي الخدمة", icon: "Database" },
+    { title: "التنبؤ بالنمو", description: "اطّلع على توقعات نمو التخزين المستقبلية" }
+  ],
+  copilot: [
+    { title: "مساعد الأرشيف", description: "اطرح أسئلة عن سجلاتك واحصل على إجابات فورية بالذكاء الاصطناعي", icon: "Sparkles" },
+    { title: "الاقتراحات", description: "اقبل أو ارفض الاقتراحات المولدة تلقائياً حسب الحاجة" }
+  ],
+  backup: [
+    { title: "النسخ الاحتياطي", description: "أنشئ نسخاً احتياطية دورية من بيانات الأرشيف", icon: "HardDriveDownload" },
+    { title: "الاستعادة", description: "استعد نسخة سابقة عند حدوث خلل أو فقدان بيانات" }
+  ],
+  automation: [
+    { title: "الأتمتة", description: "أنشئ قواعد تلقائية تُنفذ إجراءات عند تحقق شروط معينة", icon: "Zap" },
+    { title: "الاختبار", description: "اختبر القاعدة قبل تفعيلها لتجنب نتائج غير متوقعة" }
+  ],
+  collaboration: [
+    { title: "التعاون الحي", description: "تابع من يعمل حالياً على نفس السجل معك في الوقت الفعلي", icon: "Users" },
+    { title: "التعليقات", description: "أضف تعليقات مباشرة لتنسيق العمل مع الفريق" }
+  ],
+  rights: [
+    { title: "حقوق الاستخدام", description: "حدد قيود الاستخدام والترخيص لكل سجل", icon: "Shield" },
+    { title: "الامتثال", description: "تتبع حالات انتهاء الحقوق لتفادي الاستخدام غير المصرح به" }
   ]
 };
 

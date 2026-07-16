@@ -426,7 +426,7 @@ export default function FilesPage() {
   );
 
   return (
-    <AppShell subtitle="مستعرض الملفات" contentClassName="files-content">
+    <AppShell subtitle="مستعرض الملفات" contentClassName="files-content" tipsPage="files">
       <PageToolbar
         icon={<Files size={24} />}
         eyebrow={<span className="badge">File Operations</span>}

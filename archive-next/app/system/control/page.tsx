@@ -119,7 +119,7 @@ export default function SystemControlPage() {
   };
 
   return (
-    <AppShell subtitle="التحكم بالنظام" navLabel="التحكم بالنظام" contentClassName="observability-content">
+    <AppShell subtitle="التحكم بالنظام" navLabel="التحكم بالنظام" contentClassName="observability-content" tipsPage="system-control">
       <PageToolbar
         icon={<ServerCog size={24} />}
         eyebrow={<span className="badge badge-danger">إجراء عالي الخطورة</span>}

@@ -103,7 +103,7 @@ export default function InboxPage() {
   }
 
   return (
-    <AppShell subtitle="صندوق الوارد" contentClassName="local-list-content">
+    <AppShell subtitle="صندوق الوارد" contentClassName="local-list-content" tipsPage="inbox">
       <PageToolbar
         eyebrow={<span className="badge">Capture</span>}
         title="صندوق الوارد"
