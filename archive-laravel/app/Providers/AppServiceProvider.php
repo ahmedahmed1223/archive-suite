@@ -23,10 +23,10 @@ use Google\Cloud\Storage\StorageClient;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
-use League\Flysystem\AzureBlobStorage\AzureBlobStorageAdapter;
+use AzureOss\Storage\Blob\BlobServiceClient;
+use AzureOss\Storage\BlobFlysystem\AzureBlobStorageAdapter;
 use League\Flysystem\Filesystem;
 use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
-use MicrosoftAzure\Storage\Blob\BlobRestProxy;
 use Spatie\Dropbox\Client as DropboxClient;
 use Spatie\FlysystemDropbox\DropboxAdapter;
 
@@ -126,9 +126,9 @@ class AppServiceProvider extends ServiceProvider
         // built lazily inside each closure so no network/credential work
         // happens at boot when a driver is unconfigured or unused.
         Storage::extend('azure', function ($app, array $config) {
-            $client = BlobRestProxy::createBlobService($config['connection_string'] ?? '');
-
-            $adapter = new AzureBlobStorageAdapter($client, $config['container'] ?? '', $config['prefix'] ?? '');
+            $client = BlobServiceClient::fromConnectionString($config['connection_string'] ?? '');
+            $container = $client->getContainerClient($config['container'] ?? '');
+            $adapter = new AzureBlobStorageAdapter($container, $config['prefix'] ?? '');
 
             return new FilesystemAdapter(new Filesystem($adapter, $config), $adapter, $config);
         });
