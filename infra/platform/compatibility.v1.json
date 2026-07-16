@@ -138,10 +138,10 @@
       "mode": "docker",
       "status": "conditional",
       "requirements": {
-        "node": ">=22.23.1 <23 on host; baseline 22.23.1",
+        "node": ">=24.18.0 <25 on host; baseline 24.18.0",
         "docker": "Docker Desktop with Docker Compose v2",
-        "php": "8.4.23 provided by the Laravel container",
-        "composer": "2.9.5 provided by the Laravel container",
+        "php": "8.5.8 provided by the Laravel container",
+        "composer": "2.10.2 provided by the Laravel container",
         "postgresql": "provided by the PostgreSQL container",
         "redis": "provided by the Redis container"
       },
@@ -156,10 +156,10 @@
       "mode": "docker",
       "status": "conditional",
       "requirements": {
-        "node": ">=22.23.1 <23 on host; baseline 22.23.1",
+        "node": ">=24.18.0 <25 on host; baseline 24.18.0",
         "docker": "Docker Engine with Docker Compose v2",
-        "php": "8.4.23 provided by the Laravel container",
-        "composer": "2.9.5 provided by the Laravel container",
+        "php": "8.5.8 provided by the Laravel container",
+        "composer": "2.10.2 provided by the Laravel container",
         "postgresql": "provided by the PostgreSQL container",
         "redis": "provided by the Redis container"
       },
@@ -174,7 +174,7 @@
       "mode": "native",
       "status": "planned",
       "requirements": {
-        "node": ">=22.23.1 <23",
+        "node": ">=24.18.0 <25",
         "docker": "not required for the planned native path",
         "php": "PHP 8.4.23 baseline; native support remains planned",
         "composer": "Composer 2.9.5 baseline; native support remains planned",
@@ -192,7 +192,7 @@
       "mode": "native",
       "status": "planned",
       "requirements": {
-        "node": ">=22.23.1 <23",
+        "node": ">=24.18.0 <25",
         "docker": "not required for the planned native path",
         "php": "PHP 8.4.23 baseline; native support remains planned",
         "composer": "Composer 2.9.5 baseline; native support remains planned",

@@ -39,7 +39,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.23.1"
+          node-version: "24.18.0"
           cache: pnpm
 
       - name: Install workspace dependencies
@@ -67,14 +67,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.23.1"
+          node-version: "24.18.0"
           cache: pnpm
 
       - name: Setup PHP and Composer
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
-          tools: composer:2.9.5
+          php-version: "8.5"
+          tools: composer:2.10.2
 
       - name: Install dependencies for license inventories
         run: |

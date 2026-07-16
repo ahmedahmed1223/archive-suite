@@ -14,11 +14,11 @@ test("canonical toolchain pins are declared and consumed without floating runtim
   const workflows = [read(".github/workflows/ci.yml"), read(".github/workflows/release.yml")];
 
   assert.equal(toolchain.schemaVersion, "1.0");
-  assert.match(toolchain.node, /^22\.\d+\.\d+$/);
+  assert.match(toolchain.node, /^24\.\d+\.\d+$/);
   assert.match(toolchain.pnpm, /^\d+\.\d+\.\d+$/);
-  assert.match(toolchain.php, /^8\.4\.\d+$/);
+  assert.match(toolchain.php, /^8\.5\.\d+$/);
   assert.match(toolchain.composer, /^2\.\d+\.\d+$/);
-  assert.equal(rootPackage.engines.node, `>=${toolchain.node} <23`);
+  assert.equal(rootPackage.engines.node, `>=${toolchain.node} <25`);
   assert.match(rootPackage.packageManager, new RegExp(`^pnpm@${toolchain.pnpm.replaceAll(".", "\\.")}\\+`));
   assert.match(nextDockerfile, new RegExp(`FROM node:${toolchain.node.replaceAll(".", "\\.")}-alpine@sha256:`));
   assert.match(nextDockerfile, /npm install --global corepack@0\.31\.0/);
@@ -31,7 +31,7 @@ test("canonical toolchain pins are declared and consumed without floating runtim
   }
   const dockerPlatforms = compatibility.platforms.filter(({ mode }) => mode === "docker");
   for (const platform of dockerPlatforms) {
-    assert.match(platform.requirements.node, new RegExp(`>=${toolchain.node.replaceAll(".", "\\.")} <23`));
+    assert.match(platform.requirements.node, new RegExp(`>=${toolchain.node.replaceAll(".", "\\.")} <25`));
     assert.match(platform.requirements.php, new RegExp(`^${toolchain.php.replaceAll(".", "\\.")} provided`));
     assert.match(platform.requirements.composer, new RegExp(`^${toolchain.composer.replaceAll(".", "\\.")} provided`));
   }

@@ -168,7 +168,7 @@ async function seedRoleData(
  * — provisioning there would fail every time. As a project dependency it runs
  * only when a spec that needs roles is actually selected.
  */
-setup('provision isolated role accounts and data', async () => {
+setup('provision isolated role accounts and data', async ({ browser }) => {
   setup.setTimeout(120_000); // real logins + seeding against a live API
 
   const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000';
@@ -197,8 +197,8 @@ setup('provision isolated role accounts and data', async () => {
 
     for (const role of ROLE_NAMES) {
       const account = ROLE_ACCOUNTS[role];
-      const context = await playwrightRequest.newContext({ baseURL });
-      const response = await context.post('/api/v1/auth/login', {
+      const context = await browser.newContext({ baseURL });
+      const response = await context.request.post('/api/v1/auth/login', {
         data: { email: account.email, password: account.password },
       });
       const payload = await readEnvelope(`session-login(${role})`, response);
@@ -209,6 +209,7 @@ setup('provision isolated role accounts and data', async () => {
 
       const state = await context.storageState();
       const refreshCookie = state.cookies.find((cookie) => cookie.name === 'va_refresh');
+      const sessionCookie = state.cookies.find((cookie) => cookie.name === 'va_session');
 
       if (!refreshCookie) {
         throw new Error(
@@ -218,8 +219,15 @@ setup('provision isolated role accounts and data', async () => {
         );
       }
 
+      if (!sessionCookie) {
+        throw new Error(
+          `session-login(${role}): no va_session cookie in storage state — the Next proxy ` +
+            'uses it to admit protected routes before the client can refresh its access token.',
+        );
+      }
+
       await context.storageState({ path: storageStatePath(role) });
-      await context.dispose();
+      await context.close();
     }
 
     // 3. Per-role isolated data. The editor writes record/rights rows for

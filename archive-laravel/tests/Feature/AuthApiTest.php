@@ -175,6 +175,34 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('ok', true);
     }
 
+    public function test_refresh_allows_a_loopback_origin_outside_production(): void
+    {
+        config()->set('app.env', 'testing');
+        config()->set('archive.security.cors_origins', []);
+
+        User::query()->create([
+            'name' => 'Archive Admin',
+            'email' => 'admin@example.test',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => 'admin@example.test',
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        $refreshCookie = $this->responseCookieValue($login, 'va_refresh');
+
+        $this->call('POST', '/api/v1/auth/refresh', [], [
+            'va_refresh' => $refreshCookie,
+        ], [], [
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_ORIGIN' => 'http://127.0.0.1:56318',
+        ])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+    }
+
     public function test_refresh_is_throttled_after_repeated_attempts(): void
     {
         User::query()->create([

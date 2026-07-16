@@ -4,7 +4,7 @@
 
 services:
   postgres:
-    image: pgvector/pgvector:pg17@sha256:815bf5378222044da3b34d98e6a5fdac37b15c428b67d09c7c2d90a038e597bf
+    image: pgvector/pgvector:0.8.5-pg18@sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0
     container_name: archive-ln-postgres
     restart: unless-stopped
     logging: &local-logging
@@ -17,7 +17,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-archive}
     volumes:
-      - laravel_next_postgres_data:/var/lib/postgresql
+      - laravel_next_postgres18_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-archive} -d ${POSTGRES_DB:-archive}"]
       interval: 10s
@@ -27,7 +27,7 @@ services:
       - archive
 
   redis:
-    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
+    image: redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005
     container_name: archive-ln-redis
     restart: unless-stopped
     logging: *local-logging
@@ -308,7 +308,7 @@ services:
       - archive
 
 volumes:
-  laravel_next_postgres_data:
+  laravel_next_postgres18_data:
   laravel_next_storage:
 
 networks:
