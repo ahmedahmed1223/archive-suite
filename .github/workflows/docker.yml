@@ -7,6 +7,12 @@ on:
       - ".github/workflows/docker.yml"
       - "archive-next/**"
       - "archive-laravel/**"
+      - "scripts/**"
+      - "infra/Dockerfile.whisper"
+      - "infra/ocr-service/**"
+      - "infra/platform/**"
+      - "infra/offline/**"
+      - "infra/k8s/**"
       - "infra/docker-compose.yml"
       - "infra/docker-compose.laravel-next.yml"
       - "infra/deploy/Caddyfile"
@@ -29,7 +35,6 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
 
 env:
   NEXT_IMAGE: ghcr.io/${{ github.repository }}/masar-next
@@ -56,6 +61,9 @@ jobs:
     timeout-minutes: 45
     needs: build
     if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4

@@ -149,10 +149,5 @@ jobs:
       - name: Run dependency audit
         run: pnpm run security:audit
 
-      # ponytail: continue-on-error because `composer audit` currently fails
-      # only on 2 abandoned-package advisories (league/flysystem-azure-blob-storage,
-      # microsoft/azure-storage-blob) -- zero vulnerability advisories, verified
-      # locally 2026-07-13. Flip to blocking once those packages are replaced.
       - name: Composer audit (Laravel)
-        continue-on-error: true
         run: node scripts/laravel-docker.mjs composer audit
