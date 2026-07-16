@@ -40,6 +40,7 @@ import { createReleaseUpdate } from "./control-center/update-release.mjs";
 import { createReleaseRollback } from "./control-center/rollback-release.mjs";
 import { createReconnectData, createUninstall } from "./control-center/uninstall.mjs";
 import { createRoleSmoke } from "./control-center/role-smoke.mjs";
+import { buildNativeRuntime, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -165,6 +166,9 @@ function setupInstallOrRepair(operation, configurationInput = null) {
     : setupConfiguration.importConfig(flagValue("config"));
   if (!imported.ok) return renderSetupResult(imported);
   const configuration = imported.details;
+  if (configuration.mode === "native") {
+    return nativeSetupInstallOrRepair(operation, configuration);
+  }
   if (configuration.mode !== "docker") {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Install and repair are currently available for Docker mode only.", { mode: configuration.mode }));
   }
@@ -207,6 +211,58 @@ function setupInstallOrRepair(operation, configurationInput = null) {
   } catch (error) {
     if (error?.controlCenterOperation === "compose") {
       return renderSetupResult({ ok: false, code: "INSTALL_FAILED", message: "Docker Compose did not complete the requested operation.", details: {}, nextActions: ["Review Docker Compose output and run repair after correcting the failure."] });
+    }
+    return renderSetupResult({ ok: false, code: "MANIFEST_WRITE_FAILED", message: "Installation state could not be recorded safely.", details: {}, nextActions: ["Correct the local filesystem issue and run repair."] });
+  }
+}
+
+// V1-210B/V1-211B: the Native host gate. Binaries are bundled, so no Docker
+// dependency — Linux still needs its service manager present; Windows `sc` is
+// always available.
+function nativeHostPreflightFor(configuration) {
+  const contract = loadPlatformContract();
+  const required = requiredDiskBytes(contract, { runtimeProfiles: configuration.runtimeProfiles, capabilities: configuration.capabilities });
+  const probes = createHostProbes({ dataPath: configuration.storage.path });
+  const requiredDependencies = nativePlatformFamily(configuration.platform) === "linux" ? ["systemctl"] : [];
+  const preflight = createInstallPreflight({ diskProbe: probes.diskProbe, dependencyProbe: probes.dependencyProbe, requiredDependencies });
+  return () => preflight.run({ requiredBytes: required });
+}
+
+// V1-210B/V1-211B: run a real Native install/repair through the same lifecycle
+// engine the tests exercise. Support is experimental (planned) until the
+// V1-210D/V1-211D clean-host matrix passes — the V1-212C gate blocks any
+// "supported" claim before then — so we say so and proceed.
+async function nativeSetupInstallOrRepair(operation, configuration) {
+  // Keep --json output a single clean object; the human transcript still warns.
+  if (!hasFlag("json")) output.warn?.("Native mode is experimental (planned): it is not yet backed by clean-host acceptance evidence (V1-210D/V1-211D).");
+  const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
+  const request = { path: INSTALLATION_MANIFEST_PATH, input: nativeManifestInput(configuration, { version }) };
+  const planned = resolveNativeSetupDataPlan(configuration);
+  if (!planned.ok) {
+    return renderSetupResult({ ok: false, code: planned.code, message: planned.message, details: planned.details, nextActions: planned.nextActions });
+  }
+  try {
+    const { adapter } = buildNativeRuntime({
+      configuration,
+      installRoot: process.env.ARCHIVE_NATIVE_INSTALL_ROOT || nativeInstallRoot(configuration.platform),
+      health: healthProbe,
+      manifestStore: installationManifest,
+      manifestRequest: request,
+      preflight: nativeHostPreflightFor(configuration),
+      dataPlan: planned.plan,
+    });
+    const result = operation === "install" ? await adapter.install(request) : await adapter.repair(request);
+    if (!result.ok) {
+      if (result.code) {
+        return renderSetupResult({ ok: false, code: result.code, message: result.message, details: result.details, nextActions: result.nextActions });
+      }
+      return renderSetupResult({ ok: false, code: "INSTALL_FAILED", message: "A Native install step did not complete.", details: { status: result.status }, nextActions: ["Review the setup log and run repair after correcting the failure."] });
+    }
+    const manifest = installationManifest.readInstallationManifest(INSTALLATION_MANIFEST_PATH);
+    return renderSetupResult({ ok: true, code: operation === "install" ? "INSTALL_RECORDED" : "REPAIR_RECORDED", message: `${operation === "install" ? "Installation" : "Repair"} completed and recorded safely.`, details: { manifest }, nextActions: ["Run setup health to verify the running services."] });
+  } catch (error) {
+    if (error?.controlCenterOperation) {
+      return renderSetupResult({ ok: false, code: "INSTALL_FAILED", message: `Native step "${error.controlCenterOperation}" terminated unexpectedly.`, details: {}, nextActions: ["Review the setup log and run repair after correcting the failure."] });
     }
     return renderSetupResult({ ok: false, code: "MANIFEST_WRITE_FAILED", message: "Installation state could not be recorded safely.", details: {}, nextActions: ["Correct the local filesystem issue and run repair."] });
   }
