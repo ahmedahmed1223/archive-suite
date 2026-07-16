@@ -24,8 +24,8 @@ class CloudStorageConfigTest extends TestCase
     public function test_azure_disk_is_configured_and_adapter_class_exists(): void
     {
         $this->assertSame('azure', config('filesystems.disks.azure.driver'));
-        $this->assertTrue(class_exists(\League\Flysystem\AzureBlobStorage\AzureBlobStorageAdapter::class));
-        $this->assertTrue(class_exists(\MicrosoftAzure\Storage\Blob\BlobRestProxy::class));
+        $this->assertTrue(class_exists(\AzureOss\Storage\BlobFlysystem\AzureBlobStorageAdapter::class));
+        $this->assertTrue(class_exists(\AzureOss\Storage\Blob\BlobServiceClient::class));
     }
 
     public function test_azure_disk_resolves_with_fake_development_connection_string(): void
