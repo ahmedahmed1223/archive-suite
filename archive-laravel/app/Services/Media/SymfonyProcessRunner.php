@@ -6,6 +6,10 @@ use Symfony\Component\Process\Process;
 
 class SymfonyProcessRunner implements ProcessRunner
 {
+    public function __construct(private readonly int $timeoutSeconds = 300)
+    {
+    }
+
     /**
      * Run a command using Symfony Process.
      *
@@ -14,7 +18,7 @@ class SymfonyProcessRunner implements ProcessRunner
     public function run(array $command, ?callable $onProgress = null): array
     {
         $process = new Process($command);
-        $process->setTimeout(300); // 5 min default; override per use case
+        $process->setTimeout($this->timeoutSeconds);
 
         $process->start();
 
