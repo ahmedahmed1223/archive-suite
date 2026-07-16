@@ -1,7 +1,10 @@
 <?php
 
 return [
-    'file_root' => env('ARCHIVE_FILE_ROOT', storage_path('app/archive-files')),
+    // Media workers must use the same local root as the default ingest disk.
+    // Otherwise uploaded files land in storage/app/private while ffmpeg looks
+    // in storage/app/archive-files and every derived-media job fails.
+    'file_root' => env('ARCHIVE_FILE_ROOT', storage_path('app/private')),
     'backup_path' => env('ARCHIVE_BACKUP_PATH', storage_path('app/backups')),
 
     // Highest-risk surface: host control actions (clear cache, trigger backup,
