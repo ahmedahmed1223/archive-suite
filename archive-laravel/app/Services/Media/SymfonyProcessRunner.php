@@ -22,7 +22,7 @@ class SymfonyProcessRunner implements ProcessRunner
 
         $process->start();
 
-        foreach ($process as $type => $data) {
+        foreach ($process->getIterator(Process::ITER_KEEP_OUTPUT) as $type => $data) {
             if ($type === Process::ERR && $onProgress) {
                 $onProgress($data);
             }
