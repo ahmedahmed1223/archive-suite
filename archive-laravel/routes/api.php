@@ -232,6 +232,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/vocabulary', [VocabularyController::class, 'index']);
         Route::post('/vocabulary', [VocabularyController::class, 'store']);
         Route::delete('/vocabulary/{id}', [VocabularyController::class, 'destroy']);
+        Route::get('/vocabulary/export', [VocabularyController::class, 'export']);
+        Route::post('/vocabulary/import', [VocabularyController::class, 'import']);
 
         Route::get('/tag-nodes', [TagNodesController::class, 'index']);
         Route::post('/tag-nodes', [TagNodesController::class, 'store']);

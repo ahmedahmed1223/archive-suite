@@ -1959,6 +1959,86 @@
         }
       }
     },
+    "/vocabulary/export": {
+      "get": {
+        "tags": ["Vocabulary"],
+        "summary": "Export vocabulary terms for the current user as CSV or JSON",
+        "operationId": "exportVocabularyTerms",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["csv", "json"], "default": "json" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vocabulary export",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VocabularyTermsResponse" }
+              },
+              "text/csv": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/vocabulary/import": {
+      "post": {
+        "tags": ["Vocabulary"],
+        "summary": "Import vocabulary terms from a CSV or JSON file, merging synonyms into existing terms",
+        "operationId": "importVocabularyTerms",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["csv", "json"] }
+          },
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "default": false }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import result (or diff, when dryRun=1)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VocabularyImportResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/tag-nodes": {
       "get": {
         "tags": ["Tags"],
@@ -5093,6 +5173,28 @@
             "required": ["term"],
             "properties": {
               "term": { "$ref": "#/components/schemas/VocabularyTerm" }
+            }
+          }
+        ]
+      },
+      "VocabularyImportResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["dryRun", "created", "merged", "diff"],
+            "properties": {
+              "dryRun": { "type": "boolean" },
+              "created": { "type": "integer" },
+              "merged": { "type": "integer" },
+              "diff": {
+                "type": "object",
+                "required": ["created", "merged"],
+                "properties": {
+                  "created": { "type": "array", "items": { "type": "string" } },
+                  "merged": { "type": "array", "items": { "type": "string" } }
+                }
+              }
             }
           }
         ]
