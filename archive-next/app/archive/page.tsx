@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { FormEvent } from "react";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Archive, Filter, FolderSearch, PanelRightOpen, Search, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
@@ -13,6 +13,8 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacets } from "@/lib/archive-api";
+import { useAuthSession } from "@/lib/auth-session";
+import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
 import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
@@ -211,6 +213,13 @@ function isSavedArchiveView(search: SavedSearch) {
   return savedFilter(search, "viewKind") === "archive-view";
 }
 
+const ARCHIVE_VIEW_STATE_PAGE = "/archive";
+
+interface ArchivePersistedViewState {
+  sortField?: ArchiveSortField;
+  sortDirection?: ArchiveSortDirection;
+}
+
 function savedArchiveViewFromSearch(search: SavedSearch): SavedArchiveView {
   return {
     id: search.id,
@@ -231,6 +240,9 @@ function ArchivePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const api = useMemo(() => createArchiveApiClient(), []);
+  const { user, status: authStatus } = useAuthSession();
+  const userId = user?.id ?? null;
+  const hasRestoredViewState = useRef(false);
 
   const [state, setState] = useState<ArchiveState>({ status: "loading" });
   const [query, setQuery] = useState(() => searchParams.get("q") || "");
@@ -267,6 +279,23 @@ function ArchivePageContent() {
     // Restore once; URL parameters remain the explicit shareable state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Per-user sort/filter/view persistence (V1-752). Runs once the auth
+  // session resolves so the storage key is scoped to the right user; URL
+  // params still win over anything restored here.
+  useEffect(() => {
+    if (authStatus === "loading" || hasRestoredViewState.current) return;
+    hasRestoredViewState.current = true;
+    if (searchParams.toString()) return;
+    const saved = readPersistedViewState<ArchivePersistedViewState>(userId, ARCHIVE_VIEW_STATE_PAGE);
+    if (saved.sortField && (Object.keys(sortLabels) as string[]).includes(saved.sortField)) setSortField(saved.sortField);
+    if (saved.sortDirection === "asc" || saved.sortDirection === "desc") setSortDirection(saved.sortDirection);
+  }, [authStatus, searchParams, userId]);
+
+  useEffect(() => {
+    if (authStatus === "loading") return;
+    writePersistedViewState<ArchivePersistedViewState>(userId, ARCHIVE_VIEW_STATE_PAGE, { sortField, sortDirection });
+  }, [authStatus, sortDirection, sortField, userId]);
 
   useEffect(() => {
     try {
