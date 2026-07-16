@@ -60,13 +60,10 @@ class SearchController extends Controller
             $query->where('store', $validated['store']);
         }
 
-        if ($queryText !== '' && ! $isAdvancedQuery) {
-            $query->where('data', 'like', '%'.$this->escapeLike($queryText).'%');
-        }
-
         $records = $query
             ->get()
             ->map(fn (stdClass $row): array => StorageRowPayload::format($row))
+            ->filter(fn (array $record): bool => $queryText === '' || $isAdvancedQuery || $this->matchesKeyword($record, $queryText))
             ->filter(fn (array $record): bool => $advancedQuery === null || $this->matchesAdvancedQuery($record, $advancedQuery))
             ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
             ->values();
@@ -143,9 +140,13 @@ class SearchController extends Controller
         ];
     }
 
-    private function escapeLike(string $value): string
+    /** @param array<string, mixed> $record */
+    private function matchesKeyword(array $record, string $queryText): bool
     {
-        return addcslashes($value, '%_\\');
+        $encodedRecord = json_encode($record, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return is_string($encodedRecord)
+            && str_contains($this->normalize($encodedRecord), $this->normalize($queryText));
     }
 
     /**

@@ -22,6 +22,24 @@ class SearchApiTest extends TestCase
             ->assertJsonPath('facets.mode', 'keyword');
     }
 
+    public function test_it_searches_arabic_text_stored_in_json_records(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [[
+                'uid' => 'audio-arabic-001',
+                'title' => 'اختبار قبول صوتي حي',
+                'type' => 'audio',
+                'tags' => ['اختبار'],
+            ]],
+        ], $this->authHeaders())->assertOk();
+
+        $this->getJson('/api/v1/search?store=archive-items&q='.rawurlencode('اختبار قبول صوتي') , $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(1, 'records')
+            ->assertJsonPath('records.0.uid', 'audio-arabic-001');
+    }
+
     public function test_it_supports_search_cursor_pagination(): void
     {
         $this->seedRecords();
