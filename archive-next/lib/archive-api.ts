@@ -655,6 +655,17 @@ export interface QueueMetrics {
   oldestJobAgeSec: number;
 }
 
+/**
+ * V1-756: one point in the storage history. Structurally the `StorageSample`
+ * that lib/storage-forecast.ts fits a trend to; `totalBytes` supplies the
+ * capacity the exhaustion date is measured against.
+ */
+export interface StorageSample {
+  at: string;
+  usedBytes: number;
+  totalBytes: number;
+}
+
 export interface SystemMetrics {
   cpuLoad: number[];
   memory: { usedBytes: number; totalBytes: number };
@@ -1075,6 +1086,7 @@ export interface ArchiveApiClient {
   runDrDrill(options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: DrDrillResult }>>;
   getDrDrillStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ status: DrDrillStatus }>>;
   systemStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ metrics: SystemMetrics; dr: DrProbe }>>;
+  systemMetricsHistory(params?: { days?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ samples: StorageSample[] }>>;
   drProbe(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dr: DrProbe }>>;
   runSystemControlAction(action: SystemControlAction, options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: SystemControlResult }>>;
   exportAccountData(options?: AuthRequestOptions): Promise<ApiEnvelope<{ export: AccountExport }>>;
@@ -1571,6 +1583,10 @@ export function createArchiveApiClient({
     getDrDrillStatus: (options?: AuthRequestOptions) =>
       get<{ status: DrDrillStatus }>("/system/backups/dr-status", options),
     systemStatus: (options?: AuthRequestOptions) => get<{ metrics: SystemMetrics; dr: DrProbe }>("/system/status", options),
+    systemMetricsHistory: (params?: { days?: number }, options?: AuthRequestOptions) => {
+      const query = params?.days ? `?days=${encodeURIComponent(String(params.days))}` : "";
+      return get<{ samples: StorageSample[] }>(`/system/metrics/history${query}`, options);
+    },
     drProbe: (options?: AuthRequestOptions) => get<{ dr: DrProbe }>("/system/dr-probe", options),
     runSystemControlAction: (action: SystemControlAction, options?: AuthRequestOptions) =>
       post<{ result: SystemControlResult }>(`/system/control/${encodeURIComponent(action)}`, undefined, options),

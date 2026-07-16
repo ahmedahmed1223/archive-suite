@@ -3344,6 +3344,35 @@
         }
       }
     },
+    "/system/metrics/history": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Read the storage usage series behind the growth forecast (admin only)",
+        "operationId": "systemMetricsHistory",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Window in days. Clamped to 1..365 — an unbounded window would let one request scan the whole history.",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 365, "default": 90 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Storage samples, oldest first",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SystemMetricsHistoryResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/system/dr-probe": {
       "get": {
         "tags": ["System"],
@@ -6111,6 +6140,31 @@
             }
           }
         }
+      },
+      "StorageSample": {
+        "type": "object",
+        "required": ["at", "usedBytes", "totalBytes"],
+        "properties": {
+          "at": { "type": "string", "format": "date-time" },
+          "usedBytes": { "type": "integer", "minimum": 0 },
+          "totalBytes": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "SystemMetricsHistoryResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["samples"],
+            "properties": {
+              "samples": {
+                "type": "array",
+                "description": "V1-756: storage measurements, oldest first. An unreadable disk is skipped at capture rather than stored as a zero, so the series never contains a fabricated collapse.",
+                "items": { "$ref": "#/components/schemas/StorageSample" }
+              }
+            }
+          }
+        ]
       },
       "SystemStatusResponse": {
         "allOf": [
