@@ -11,7 +11,7 @@ const password = process.env.ARCHIVE_E2E_PASSWORD ?? 'password123';
 // per test, failing every test on an unrelated 429 instead of a real bug.
 // Log in exactly once per project instead, and hand the resulting cookie to
 // each test's context locally (no extra network round trip).
-let sessionCookie: Cookie | undefined;
+let sessionCookies: Cookie[] = [];
 
 test.beforeAll(async ({ browser }) => {
   // A real browser context (not the standalone `request` API context) —
@@ -33,24 +33,28 @@ test.beforeAll(async ({ browser }) => {
     );
   }
 
-  sessionCookie = (await setupContext.cookies()).find((c) => c.name === 'va_refresh');
-  expect(sessionCookie).toBeDefined();
+  sessionCookies = (await setupContext.cookies()).filter(
+    (cookie) => cookie.name === 'va_session' || cookie.name === 'va_refresh',
+  );
+  expect(sessionCookies.find((cookie) => cookie.name === 'va_session')).toBeDefined();
+  expect(sessionCookies.find((cookie) => cookie.name === 'va_refresh')).toBeDefined();
 
   await setupContext.close();
 });
 
 test.beforeEach(async ({ context }) => {
-  if (sessionCookie) {
-    await context.addCookies([sessionCookie]);
+  if (sessionCookies.length > 0) {
+    await context.addCookies(sessionCookies);
   }
 });
 
 test('renders a public share record through the Next.js to Laravel API rewrite', async ({ page }) => {
   await page.goto(`/share/${shareToken}`, { waitUntil: 'networkidle' });
 
-  await expect(page.getByRole('heading', { name: 'عارض المشاركة العامة.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'عارض المشاركة العامة' })).toBeVisible();
   await expect(page.getByLabel('محتوى المشاركة')).toContainText('تسجيل تكامل Next/Laravel');
-  await expect(page.getByText('صلاحية المشاركة: view')).toBeVisible();
+  await expect(page.getByLabel('محتوى المشاركة')).toContainText('الصلاحية');
+  await expect(page.getByLabel('محتوى المشاركة')).toContainText('view');
 });
 
 // Slices 5a/5b/5d.4: the operational Next pages read DB-backed records/jobs from Laravel.

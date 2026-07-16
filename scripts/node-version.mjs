@@ -1,4 +1,4 @@
-export const MIN_NODE_VERSION = "22.23.1";
+export const MIN_NODE_VERSION = "24.18.0";
 
 export function parseNodeVersion(version = process.version) {
   const [major = 0, minor = 0, patch = 0] = String(version).replace(/^v/, "").split(".").map(Number);

@@ -96,11 +96,21 @@ class AuthController extends Controller
 
         $allowed = (array) config('archive.security.cors_origins', []);
 
-        if (in_array($origin, $allowed, true)) {
+        if (in_array($origin, $allowed, true) || $this->isLocalLoopbackOrigin($origin)) {
             return null;
         }
 
         return response()->json(['ok' => false, 'error' => 'Origin not allowed.'], 403);
+    }
+
+    private function isLocalLoopbackOrigin(string $origin): bool
+    {
+        if (! app()->environment(['local', 'testing'])) {
+            return false;
+        }
+
+        return parse_url($origin, PHP_URL_SCHEME) === 'http'
+            && in_array(parse_url($origin, PHP_URL_HOST), ['127.0.0.1', 'localhost', '::1'], true);
     }
 
     private function issueSession(User $user, int $status): JsonResponse

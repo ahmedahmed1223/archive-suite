@@ -134,7 +134,7 @@ async function main() {
       "-p",
       `${laravelPort}:8000`,
       "-e",
-      `ARCHIVE_CORS_ORIGINS=http://127.0.0.1:${nextPort}`,
+      `ARCHIVE_CORS_ORIGINS=http://127.0.0.1:${nextPort},http://localhost:${nextPort}`,
       LARAVEL_RUNTIME_IMAGE,
       "sh",
       "-lc",

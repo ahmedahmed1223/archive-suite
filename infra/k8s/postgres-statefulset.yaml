@@ -23,7 +23,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: postgres
-          image: postgres:17-alpine@sha256:af194ccf3e2d7fe367012c7b88ce8b816c5c889b18a5b316799a1f0d7eac746a
+          image: postgres:18.4-alpine@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
@@ -50,10 +50,10 @@ spec:
                   name: archive-secrets
                   key: POSTGRES_PASSWORD
             - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
+              value: /var/lib/postgresql/18/docker
           volumeMounts:
             - name: postgres-data
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
           livenessProbe:
             exec:
               command:
