@@ -136,7 +136,7 @@ export default function IngestPage() {
   };
 
   return (
-    <AppShell subtitle="استيراد المحتوى" navLabel="الاستيراد" contentClassName="observability-content">
+    <AppShell subtitle="استيراد المحتوى" navLabel="الاستيراد" contentClassName="observability-content" tipsPage="ingest">
       <PageToolbar
         icon={<RadioTower size={24} />}
         eyebrow={<span className="badge">Ingest Operations</span>}

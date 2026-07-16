@@ -7,7 +7,7 @@ import styles from "./jobs.module.css";
 
 export default function MediaJobsPage() {
   return (
-    <AppShell subtitle="مسار الوسائط" contentClassName={`stack ${styles.jobsContent}`}>
+    <AppShell subtitle="مسار الوسائط" contentClassName={`stack ${styles.jobsContent}`} tipsPage="media-jobs">
       <PageToolbar
         icon={<FileVideo size={24} />}
         title="مهام الوسائط"

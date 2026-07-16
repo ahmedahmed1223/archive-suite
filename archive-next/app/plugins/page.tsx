@@ -227,7 +227,7 @@ export default function PluginsPage() {
   const highRiskCount = permissionScopes.filter((scope) => scope.risk === "high").length;
 
   return (
-    <AppShell subtitle="الإضافات" navLabel="الإضافات" contentClassName="stack">
+    <AppShell subtitle="الإضافات" navLabel="الإضافات" contentClassName="stack" tipsPage="plugins">
       <PageToolbar
         eyebrow={<span className="badge">كتالوج آمن</span>}
         title="سوق الإضافات ومراجعة الصلاحيات"

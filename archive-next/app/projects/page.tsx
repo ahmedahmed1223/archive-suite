@@ -253,7 +253,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <AppShell subtitle="المشاريع" contentClassName="local-list-content">
+    <AppShell subtitle="المشاريع" contentClassName="local-list-content" tipsPage="projects">
       <PageToolbar
         eyebrow={<span className="badge">Montage</span>}
         title="المشاريع / المونتاج"

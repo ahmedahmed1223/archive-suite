@@ -144,7 +144,7 @@ export default function BackupPage() {
   const freshness = buildBackupFreshness(backups.map((backup) => backup.createdAt));
 
   return (
-    <AppShell subtitle="مركز البيانات" navLabel="النسخ الاحتياطي" contentClassName="observability-content">
+    <AppShell subtitle="مركز البيانات" navLabel="النسخ الاحتياطي" contentClassName="observability-content" tipsPage="backup">
       <PageToolbar
         eyebrow={<span className="badge">Data Center</span>}
         title="النسخ الاحتياطي والاستعادة"

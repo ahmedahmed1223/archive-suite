@@ -5,5 +5,5 @@ export default function NotificationsLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <AppShell subtitle="الإشعارات">{children}</AppShell>;
+  return <AppShell subtitle="الإشعارات" tipsPage="notifications">{children}</AppShell>;
 }

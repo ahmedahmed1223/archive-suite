@@ -213,7 +213,7 @@ export default function StatusPage() {
   const statusTone = isOnline ? "success" : state.status === "loading" ? "accent" : "danger";
 
   return (
-    <AppShell subtitle="حالة النظام" navLabel="حالة النظام" contentClassName="observability-content">
+    <AppShell subtitle="حالة النظام" navLabel="حالة النظام" contentClassName="observability-content" tipsPage="status">
       <PageToolbar
         eyebrow={<span className="badge">مراقبة تشغيلية</span>}
         title="حالة النظام"

@@ -97,7 +97,7 @@ export default function DiscoverPage() {
   }
 
   return (
-    <AppShell subtitle="الاكتشاف" navLabel="مسارات Masar">
+    <AppShell subtitle="الاكتشاف" navLabel="مسارات Masar" tipsPage="discover">
       <PageToolbar
         eyebrow={<span className="badge">مسارات الاكتشاف</span>}
         title="الاكتشاف"

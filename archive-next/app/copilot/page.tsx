@@ -126,7 +126,7 @@ export default function CopilotPage() {
         : "غير مهيأ";
 
   return (
-    <AppShell subtitle="مساعد الأرشيف" navLabel="مسارات مساعد الأرشيف" contentClassName="copilot-content">
+    <AppShell subtitle="مساعد الأرشيف" navLabel="مسارات مساعد الأرشيف" contentClassName="copilot-content" tipsPage="copilot">
       <PageToolbar
         icon={<BotMessageSquare size={24} strokeWidth={1.8} />}
         eyebrow={<span className="badge">مساحة آمنة</span>}

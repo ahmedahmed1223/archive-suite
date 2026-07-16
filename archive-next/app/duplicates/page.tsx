@@ -68,7 +68,7 @@ export default function DuplicatesPage() {
   }, [mode, records]);
 
   return (
-    <AppShell subtitle="المكررات" contentClassName="local-list-content">
+    <AppShell subtitle="المكررات" contentClassName="local-list-content" tipsPage="duplicates">
       <PageToolbar
         eyebrow={<span className="badge">Quality</span>}
         title="كشف المكررات"

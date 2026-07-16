@@ -64,7 +64,7 @@ export default function SharesPage() {
   };
 
   return (
-    <AppShell subtitle="روابط المشاركة" navLabel="المشاركات" contentClassName="local-list-content">
+    <AppShell subtitle="روابط المشاركة" navLabel="المشاركات" contentClassName="local-list-content" tipsPage="shares">
       <PageToolbar
         eyebrow={<span className="badge">محلي على الجهاز</span>}
         title="روابط المشاركة"

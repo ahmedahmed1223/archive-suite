@@ -127,7 +127,7 @@ export default function TypesPage() {
   }
 
   return (
-    <AppShell subtitle="الأنواع" contentClassName="types-content">
+    <AppShell subtitle="الأنواع" contentClassName="types-content" tipsPage="types">
       <PageToolbar
         eyebrow={<span className="badge">تنظيم البيانات</span>}
         title="الأنواع"

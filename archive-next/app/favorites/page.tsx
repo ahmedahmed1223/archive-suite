@@ -24,7 +24,7 @@ export default function FavoritesPage() {
   };
 
   return (
-    <AppShell subtitle="المفضلة" navLabel="المفضلة" contentClassName="local-list-content">
+    <AppShell subtitle="المفضلة" navLabel="المفضلة" contentClassName="local-list-content" tipsPage="favorites">
       <PageToolbar
         eyebrow={<span className="badge">محلي على الجهاز</span>}
         title="المفضلة"

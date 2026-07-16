@@ -203,7 +203,7 @@ export default function BroadcastSimulationPage() {
   };
 
   return (
-    <AppShell subtitle="محاكاة البث" navLabel="البث" contentClassName="broadcast-content">
+    <AppShell subtitle="محاكاة البث" navLabel="البث" contentClassName="broadcast-content" tipsPage="broadcast">
       <PageToolbar
         eyebrow={<span className="badge">محاكاة محلية</span>}
         title="غرفة بث ومراجعة تشغيلية"

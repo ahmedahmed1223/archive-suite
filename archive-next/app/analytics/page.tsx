@@ -178,7 +178,7 @@ export default function AnalyticsPage() {
   const isEmpty = analytics.totalCount === 0;
 
   return (
-    <AppShell subtitle="تحليلات الأرشيف" navLabel="التحليلات" contentClassName="observability-content">
+    <AppShell subtitle="تحليلات الأرشيف" navLabel="التحليلات" contentClassName="observability-content" tipsPage="analytics">
       <PageToolbar
         eyebrow={<span className="badge">تحليل تشغيلي</span>}
         title="تحليلات الأرشيف"

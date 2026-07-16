@@ -109,7 +109,7 @@ export default function MediaPlayPage() {
   }
 
   return (
-    <AppShell subtitle="مشغل الوسائط" contentClassName={styles.playContent}>
+    <AppShell subtitle="مشغل الوسائط" contentClassName={styles.playContent} tipsPage="media-play">
       <PageToolbar
         eyebrow={<span className="badge">HTTP Range</span>}
         title="تشغيل المادة"

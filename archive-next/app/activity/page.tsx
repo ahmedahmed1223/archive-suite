@@ -149,7 +149,7 @@ export default function ActivityPage() {
   }, [entries]);
 
   return (
-    <AppShell subtitle="النشاط" contentClassName="observability-content">
+    <AppShell subtitle="النشاط" contentClassName="observability-content" tipsPage="activity">
       <PageToolbar
         eyebrow={<span className="badge">Audit Activity</span>}
         title="النشاط والتاريخ"

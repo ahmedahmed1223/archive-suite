@@ -135,7 +135,7 @@ export default function TrashPage() {
   const pagination = state.status === "ready" ? state.pagination : undefined;
 
   return (
-    <AppShell subtitle="سلة المهملات">
+    <AppShell subtitle="سلة المهملات" tipsPage="trash">
       <PageToolbar
         eyebrow={<span className="badge">Trash</span>}
         title="سلة المهملات"

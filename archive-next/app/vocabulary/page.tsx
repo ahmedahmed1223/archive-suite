@@ -103,7 +103,7 @@ export default function VocabularyPage() {
   }
 
   return (
-    <AppShell subtitle="المفردات" contentClassName="local-list-content">
+    <AppShell subtitle="المفردات" contentClassName="local-list-content" tipsPage="vocabulary">
       <PageToolbar
         eyebrow={<span className="badge">Taxonomy</span>}
         title="المفردات"

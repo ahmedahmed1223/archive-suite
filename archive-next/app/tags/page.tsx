@@ -111,7 +111,7 @@ export default function TagsPage() {
   }
 
   return (
-    <AppShell subtitle="الوسوم" contentClassName="local-list-content">
+    <AppShell subtitle="الوسوم" contentClassName="local-list-content" tipsPage="tags">
       <PageToolbar
         eyebrow={<span className="badge">Tags</span>}
         title="الوسوم الهرمية"

@@ -67,7 +67,7 @@ export default function SavedSearchesPage() {
   }
 
   return (
-    <AppShell subtitle="البحوث المحفوظة" contentClassName="stack">
+    <AppShell subtitle="البحوث المحفوظة" contentClassName="stack" tipsPage="search-saved">
       <PageToolbar
         title="مدير البحوث والعروض المحفوظة"
         description="احفظ عمليات بحث أو عروض أرشيف متكررة وشغّلها لاحقًا دون إعادة كتابة الاستعلام والفلاتر."
