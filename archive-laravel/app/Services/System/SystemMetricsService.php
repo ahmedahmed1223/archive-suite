@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class SystemMetricsService
 {
     /**
-     * @return array{cpuLoad: list<float>, memory: array{usedBytes: int, totalBytes: int}, disk: array{usedBytes: int, totalBytes: int}, queueDepth: int}
+     * @return array{cpuLoad: list<float>, memory: array{usedBytes: int, totalBytes: int}, disk: array{usedBytes: int, totalBytes: int}, queueDepth: int, queues: list<array{name: string, depth: int, failed: int, oldestJobAgeSec: int}>}
      */
     public function snapshot(): array
     {
@@ -22,6 +22,7 @@ class SystemMetricsService
             'memory' => $this->memory(),
             'disk' => $this->disk(),
             'queueDepth' => $this->queueDepth(),
+            'queues' => $this->queues(),
         ];
     }
 
@@ -94,5 +95,47 @@ class SystemMetricsService
     private function queueDepth(): int
     {
         return (int) DB::table('jobs')->count();
+    }
+
+    /**
+     * V1-760: per-queue breakdown. `queueDepth` above cannot distinguish a
+     * stalled ingest queue from a busy media one, and `jobs` already carries a
+     * `queue` column, so this is two grouped reads and no new storage.
+     *
+     * A queue appears if it has pending OR failed work: dropping a queue whose
+     * `jobs` rows are gone but whose `failed_jobs` rows are piling up would
+     * hide exactly the queue that needs attention.
+     *
+     * @return list<array{name: string, depth: int, failed: int, oldestJobAgeSec: int}>
+     */
+    private function queues(): array
+    {
+        $pending = DB::table('jobs')
+            ->selectRaw('queue, COUNT(*) as depth, MIN(created_at) as oldest')
+            ->groupBy('queue')
+            ->get()
+            ->keyBy('queue');
+
+        $failed = DB::table('failed_jobs')
+            ->selectRaw('queue, COUNT(*) as failed')
+            ->groupBy('queue')
+            ->get()
+            ->keyBy('queue');
+
+        $now = time();
+        $names = $pending->keys()->merge($failed->keys())->unique()->sort()->values();
+
+        return $names->map(function (string $name) use ($pending, $failed, $now): array {
+            $row = $pending->get($name);
+
+            return [
+                'name' => $name,
+                'depth' => (int) ($row->depth ?? 0),
+                'failed' => (int) ($failed->get($name)->failed ?? 0),
+                // `jobs.created_at` is a unix timestamp, not a datetime. An idle
+                // queue reports 0 rather than an age measured from the epoch.
+                'oldestJobAgeSec' => $row === null ? 0 : max(0, $now - (int) $row->oldest),
+            ];
+        })->all();
     }
 }
