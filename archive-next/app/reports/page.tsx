@@ -9,10 +9,12 @@ import {
   createArchiveApiClient,
   type ComplianceReportEntry,
   type ComplianceReportFilters,
-  type ComplianceReportSummary
+  type ComplianceReportSummary,
+  type StorageSample
 } from "@/lib/archive-api";
 import { formatDate } from "@/lib/record-utils";
 import { buildExportPreview, redactAdminSecrets } from "@/lib/admin-action-summary";
+import { forecastStorageGrowth } from "@/lib/storage-forecast";
 import "./reports.css";
 
 const eventOptions = [
@@ -50,12 +52,34 @@ function outcomeLabel(outcome: ComplianceReportEntry["outcome"]) {
   return ({ success: "ناجح", rejected: "مرفوض", failed: "فاشل" } as const)[outcome];
 }
 
+// V1-756: why a forecast is unavailable is more useful than a blank panel —
+// each code maps to what the operator would actually do about it.
+const FORECAST_REASON: Record<string, string> = {
+  INSUFFICIENT_SAMPLES: "لا توجد قياسات كافية بعد. يلتقط النظام قياساً كل ساعة؛ عُد بعد بضع ساعات.",
+  NO_TIME_SPAN: "كل القياسات من لحظة واحدة، فلا يمكن حساب معدل يومي.",
+  SAMPLE_INVALID: "بعض القياسات تالفة. راجع سجل مهمة الالتقاط."
+};
+
+function formatStorageBytes(bytes: number): string {
+  if (bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  return `${Math.round((bytes / 1024 ** i) * 10) / 10} ${units[i]}`;
+}
+
+function formatForecastDate(iso: string | null): string {
+  if (!iso) return "-";
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString("ar-SA");
+}
+
 export default function ReportsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [filters, setFilters] = useState<ComplianceReportFilters>({ limit: 100 });
   const [appliedFilters, setAppliedFilters] = useState<ComplianceReportFilters>({ limit: 100 });
   const [state, setState] = useState<ReportState>({ status: "loading" });
   const [isExporting, setIsExporting] = useState(false);
+  const [storageSamples, setStorageSamples] = useState<StorageSample[] | null>(null);
 
   const loadReport = useCallback(async (nextFilters: ComplianceReportFilters) => {
     setState({ status: "loading" });
@@ -70,6 +94,27 @@ export default function ReportsPage() {
   useEffect(() => {
     void loadReport(appliedFilters);
   }, [appliedFilters, loadReport]);
+
+  // V1-756: the storage series is independent of the compliance filters, so it
+  // loads once rather than refetching on every filter change.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const response = await api.systemMetricsHistory({ days: 90 });
+      if (cancelled) return;
+      // A failed read leaves the series null, which the panel renders as
+      // "unavailable" — never as an empty series, which would read as
+      // "no growth" and is a different claim entirely.
+      setStorageSamples(response.ok ? response.samples : null);
+    })();
+    return () => { cancelled = true; };
+  }, [api]);
+
+  const storageForecast = useMemo(() => {
+    if (!storageSamples?.length) return null;
+    const capacityBytes = storageSamples[storageSamples.length - 1]?.totalBytes;
+    return forecastStorageGrowth(storageSamples, capacityBytes ? { capacityBytes } : {});
+  }, [storageSamples]);
 
   const submitFilters = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -121,6 +166,67 @@ export default function ReportsPage() {
           </>
         }
       />
+
+      <section className="workspace-panel" aria-label="تنبؤ نمو التخزين">
+        <div className="panel-title-row">
+          <div>
+            <h2>تنبؤ نمو التخزين</h2>
+            <p>اتجاه مبني على قياسات آخر 90 يوماً، تُلتقط كل ساعة.</p>
+          </div>
+          {storageForecast?.ok ? (
+            <span className={`badge badge-${storageForecast.confidence >= 0.7 ? "success" : "warning"}`}>
+              ثقة {Math.round(storageForecast.confidence * 100)}%
+            </span>
+          ) : null}
+        </div>
+
+        {storageSamples === null ? (
+          <p className="helper-text">تعذر تحميل قياسات التخزين.</p>
+        ) : storageForecast?.ok ? (
+          <>
+            {/* Confidence is shown next to every number, never behind it: a
+                trend fitted to noisy data must not read as a promise. */}
+            {storageForecast.confidence < 0.5 ? (
+              <p className="helper-text">
+                <TriangleAlert size={14} aria-hidden="true" /> القياسات متذبذبة، فهذا الاتجاه تقريبي ولا يصلح للتخطيط.
+              </p>
+            ) : null}
+            <dl className="report-summary-grid">
+              <div>
+                <dt>المستخدم حالياً</dt>
+                <dd>{formatStorageBytes(storageForecast.currentBytes)}</dd>
+              </div>
+              <div>
+                <dt>معدل النمو</dt>
+                <dd>
+                  {storageForecast.bytesPerDay > 0
+                    ? `${formatStorageBytes(storageForecast.bytesPerDay)} / يوم`
+                    : "مستقر أو متناقص"}
+                </dd>
+              </div>
+              <div>
+                <dt>المتوقع بعد 30 يوماً</dt>
+                <dd>{formatStorageBytes(storageForecast.projectedBytes(30))}</dd>
+              </div>
+              <div>
+                <dt>امتلاء السعة</dt>
+                {/* No growth means no exhaustion date. Inventing one would be
+                    a deadline the data does not support. */}
+                <dd>
+                  {storageForecast.daysUntilFull === null
+                    ? "غير متوقع"
+                    : `${Math.round(storageForecast.daysUntilFull)} يوماً (${formatForecastDate(storageForecast.exhaustionAt)})`}
+                </dd>
+              </div>
+            </dl>
+          </>
+        ) : (
+          <p className="helper-text">
+            {(storageForecast && !storageForecast.ok && FORECAST_REASON[storageForecast.code]) ||
+              "لا توجد قياسات كافية بعد. يلتقط النظام قياساً كل ساعة."}
+          </p>
+        )}
+      </section>
 
       <form className="report-filter-form panel panel-compact" onSubmit={submitFilters} aria-label="تخصيص تقرير الامتثال">
         <label>

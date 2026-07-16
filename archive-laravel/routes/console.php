@@ -15,6 +15,10 @@ Schedule::command('audit:prune')->daily();
 Schedule::command('media:prune-jobs')->daily();
 Schedule::command('backup:cleanup')->daily();
 Schedule::command('trash:prune')->daily();
+// V1-756: hourly is the resolution the storage forecast needs; the daily
+// prune is what keeps an append-only sampler from growing without bound.
+Schedule::command('metrics:capture')->hourly();
+Schedule::command('metrics:prune')->daily();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

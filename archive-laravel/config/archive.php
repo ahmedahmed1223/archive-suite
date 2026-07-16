@@ -43,6 +43,11 @@ return [
     // operational noise.
     'audit_log_retention_days' => (int) env('AUDIT_LOG_RETENTION_DAYS', 365),
 
+    // V1-756: storage sample retention. metrics:capture appends hourly, so
+    // metrics:prune is what bounds the table. 90 days is long enough to fit a
+    // seasonal growth trend and short enough to stay cheap (~2k rows).
+    'metric_sample_retention_days' => (int) env('METRIC_SAMPLE_RETENTION_DAYS', 90),
+
     // V1-731: trash retention. trash:prune permanently deletes trashed_records
     // entries older than this. 30 days is an undo window, not an archive — the
     // record is already out of storage_rows, and backups (not this table) are

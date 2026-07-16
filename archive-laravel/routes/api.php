@@ -292,6 +292,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/system/backups/dr-status', [BackupsController::class, 'drStatus']);
 
         Route::get('/system/status', [SystemStatusController::class, 'status']);
+        Route::get('/system/metrics/history', [SystemStatusController::class, 'metricsHistory']);
         Route::get('/system/dr-probe', [SystemStatusController::class, 'drProbe']);
         Route::post('/system/control/{action}', [SystemControlController::class, 'run']);
 
