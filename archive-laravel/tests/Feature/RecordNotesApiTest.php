@@ -97,7 +97,10 @@ class RecordNotesApiTest extends TestCase
 
         DB::table('storage_rows')->insert([
             'store' => 'archive-items',
-            'uid' => 'item-1',
+            // Keep the storage-row identity distinct from the public record
+            // identity so this exercises the JSON fallback used by imported
+            // records as well as directly-created ones.
+            'uid' => 'storage-item-1',
             'data' => json_encode([
                 'uid' => 'item-1',
                 'id' => 'item-1',
