@@ -11,6 +11,7 @@ const record: ArchiveRecord = { id: "rec-1", title: "سجل تجريبي" };
 function renderCard(overrides: Partial<React.ComponentProps<typeof ArchiveRecordCard>> = {}) {
   const onSelectClick = vi.fn();
   const onPreview = vi.fn();
+  const onRename = vi.fn();
   render(
     <ArchiveRecordCard
       record={record}
@@ -18,10 +19,11 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof ArchiveRecord
       isSelected={false}
       onSelectClick={onSelectClick}
       onPreview={onPreview}
+      onRename={onRename}
       {...overrides}
     />
   );
-  return { onSelectClick, onPreview };
+  return { onSelectClick, onPreview, onRename };
 }
 
 describe("ArchiveRecordCard right-click context menu", () => {
@@ -75,5 +77,50 @@ describe("ArchiveRecordCard right-click context menu", () => {
     fireEvent.keyDown(document, { key: "Escape" });
 
     expect(screen.queryByRole("menuitem", { name: "فتح" })).toBeNull();
+  });
+});
+
+describe("ArchiveRecordCard double-click inline rename", () => {
+  test("double-click on title shows an input pre-filled with the current title", () => {
+    renderCard();
+    fireEvent.doubleClick(screen.getByText("سجل تجريبي"));
+
+    const input = screen.getByRole("textbox", { name: /عنوان/ }) as HTMLInputElement;
+    expect(input.value).toBe("سجل تجريبي");
+  });
+
+  test("Enter saves the new title via onRename", () => {
+    const { onRename } = renderCard();
+    fireEvent.doubleClick(screen.getByText("سجل تجريبي"));
+
+    const input = screen.getByRole("textbox", { name: /عنوان/ });
+    fireEvent.change(input, { target: { value: "عنوان جديد" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(onRename).toHaveBeenCalledWith("rec-1", "عنوان جديد");
+    expect(screen.queryByRole("textbox", { name: /عنوان/ })).toBeNull();
+  });
+
+  test("Escape cancels the edit without calling onRename", () => {
+    const { onRename } = renderCard();
+    fireEvent.doubleClick(screen.getByText("سجل تجريبي"));
+
+    const input = screen.getByRole("textbox", { name: /عنوان/ });
+    fireEvent.change(input, { target: { value: "عنوان جديد" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+
+    expect(onRename).not.toHaveBeenCalled();
+    expect(screen.queryByRole("textbox", { name: /عنوان/ })).toBeNull();
+    expect(screen.getByText("سجل تجريبي")).toBeTruthy();
+  });
+
+  test("Enter with an unchanged or empty title does not call onRename", () => {
+    const { onRename } = renderCard();
+    fireEvent.doubleClick(screen.getByText("سجل تجريبي"));
+
+    const input = screen.getByRole("textbox", { name: /عنوان/ });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(onRename).not.toHaveBeenCalled();
   });
 });

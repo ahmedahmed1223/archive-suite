@@ -19,14 +19,34 @@ interface ArchiveRecordCardProps {
   isSelected: boolean;
   onSelectClick: (recordId: string, modifiers: SelectClickModifiers) => void;
   onPreview: (recordId: string) => void;
+  onRename: (recordId: string, newTitle: string) => void;
 }
 
-export function ArchiveRecordCard({ record, itemSize, isSelected, onSelectClick, onPreview }: ArchiveRecordCardProps) {
+export function ArchiveRecordCard({ record, itemSize, isSelected, onSelectClick, onPreview, onRename }: ArchiveRecordCardProps) {
   const titleLinkRef = useRef<HTMLAnchorElement>(null);
   const [menuPosition, setMenuPosition] = useState<ContextMenuPosition | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(record.title || "");
   const href = `/archive/${encodeURIComponent(record.id)}`;
 
   const closeMenu = () => setMenuPosition(null);
+
+  const startEditingTitle = () => {
+    setTitleDraft(record.title || "");
+    setIsEditingTitle(true);
+  };
+
+  const commitTitleEdit = () => {
+    setIsEditingTitle((wasEditing) => {
+      if (wasEditing) {
+        const trimmed = titleDraft.trim();
+        if (trimmed && trimmed !== record.title) {
+          onRename(record.id, trimmed);
+        }
+      }
+      return false;
+    });
+  };
 
   return (
     <article
@@ -56,9 +76,32 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, onSelectClick,
       <div className="record-card__body">
         <div className="panel-title-row">
           <h2>
-            <a ref={titleLinkRef} href={href} className="text-accent">
-              {record.title || "بدون عنوان"}
-            </a>
+            {isEditingTitle ? (
+              <input
+                className="record-card__title-input"
+                aria-label="عنوان السجل"
+                value={titleDraft}
+                autoFocus
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={commitTitleEdit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    commitTitleEdit();
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    setIsEditingTitle(false);
+                  }
+                }}
+              />
+            ) : (
+              <a ref={titleLinkRef} href={href} className="text-accent" onDoubleClick={(e) => {
+                e.preventDefault();
+                startEditingTitle();
+              }}>
+                {record.title || "بدون عنوان"}
+              </a>
+            )}
           </h2>
           <button type="button" className="badge" onClick={() => onPreview(record.id)}>
             معاينة
