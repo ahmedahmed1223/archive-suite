@@ -38,7 +38,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Process runner: real by default, fake in tests/offline mode
-        $this->app->bind(ProcessRunner::class, fn () => new SymfonyProcessRunner());
+        $this->app->bind(
+            ProcessRunner::class,
+            fn () => new SymfonyProcessRunner(config('media.process_timeout_seconds')),
+        );
 
         $this->app->bind(OdbcConnectionFactory::class, NativeOdbcConnectionFactory::class);
         $this->app->bind(

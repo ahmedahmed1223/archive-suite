@@ -12,6 +12,10 @@ return [
     // (disk hiccup, OCR service blip) — a deterministic failure (bad file,
     // missing binary) will fail identically on every attempt.
     'job_timeout_seconds' => (int) env('MEDIA_JOB_TIMEOUT_SECONDS', 900),
+    // External media tools must be allowed to run at least as long as the
+    // queue job itself; keeping this configurable avoids a hidden 5-minute
+    // cap inside the Symfony process wrapper.
+    'process_timeout_seconds' => (int) env('MEDIA_PROCESS_TIMEOUT_SECONDS', 900),
     'job_tries' => (int) env('MEDIA_JOB_TRIES', 3),
     'job_backoff_seconds' => [30, 120, 300],
     // How long a dispatched job's uniqueId lock is held (ShouldBeUnique) so a
