@@ -20,7 +20,7 @@ class NotificationsController extends Controller
 
         $limit = (int) ($validated['limit'] ?? 20);
         $page = (int) ($validated['page'] ?? 1);
-        $userId = $request->user()->id;
+        $userId = $this->archiveUserId($request);
 
         $notifications = Notification::where('user_id', $userId)
             ->orderBy('created_at', 'desc')
@@ -40,7 +40,7 @@ class NotificationsController extends Controller
 
     public function show(Request $request, int $id): JsonResponse
     {
-        $userId = $request->user()->id;
+        $userId = $this->archiveUserId($request);
         $notification = Notification::where('user_id', $userId)->find($id);
 
         if (!$notification) {
@@ -52,7 +52,7 @@ class NotificationsController extends Controller
 
     public function markRead(Request $request, int $id): JsonResponse
     {
-        $userId = $request->user()->id;
+        $userId = $this->archiveUserId($request);
         $notification = Notification::where('user_id', $userId)->find($id);
 
         if (!$notification) {
@@ -66,7 +66,7 @@ class NotificationsController extends Controller
 
     public function markUnread(Request $request, int $id): JsonResponse
     {
-        $userId = $request->user()->id;
+        $userId = $this->archiveUserId($request);
         $notification = Notification::where('user_id', $userId)->find($id);
 
         if (!$notification) {
@@ -80,7 +80,7 @@ class NotificationsController extends Controller
 
     public function markAllRead(Request $request): JsonResponse
     {
-        $userId = $request->user()->id;
+        $userId = $this->archiveUserId($request);
 
         Notification::where('user_id', $userId)
             ->where('is_read', false)
@@ -91,7 +91,7 @@ class NotificationsController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $userId = $request->user()->id;
+        $userId = $this->archiveUserId($request);
         $notification = Notification::where('user_id', $userId)->find($id);
 
         if (!$notification) {
@@ -101,5 +101,10 @@ class NotificationsController extends Controller
         $notification->delete();
 
         return response()->json(['ok' => true]);
+    }
+
+    private function archiveUserId(Request $request): int
+    {
+        return (int) $request->attributes->get('archive_user')->getKey();
     }
 }
