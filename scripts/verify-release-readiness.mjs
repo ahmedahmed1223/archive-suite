@@ -243,12 +243,12 @@ function checkNodeEngineCoherence() {
   const nextPkg = json("archive-next/package.json");
   assert.equal(
     rootPkg.engines?.node,
-    `>=${toolchain.node} <23`,
+    `>=${toolchain.node} <25`,
     "root package.json engines.node must track infra/platform/toolchain.v1.json (node)"
   );
   assert.equal(
     nextPkg.engines?.node,
-    `>=${toolchain.node}`,
+    `>=${toolchain.node} <25`,
     "archive-next/package.json engines.node must track infra/platform/toolchain.v1.json (node)"
   );
   assert.match(
