@@ -54,6 +54,47 @@ type ArchiveState =
   | { status: "ready"; records: ArchiveRecord[]; facets?: SearchFacets }
   | { status: "error"; message: string };
 
+export interface SelectClickModifiers {
+  shiftKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+}
+
+export interface GridSelectionResult {
+  selectedIds: string[];
+  anchorId: string;
+}
+
+// Pure selection logic for click/shift+click/ctrl+click on grid rows and
+// cards. Kept framework-free so it is directly unit-testable without
+// mounting the page.
+export function resolveGridSelectionClick(
+  visibleIds: string[],
+  currentSelected: string[],
+  anchorId: string | null,
+  targetId: string,
+  modifiers: SelectClickModifiers
+): GridSelectionResult {
+  if (modifiers.shiftKey && anchorId) {
+    const fromIndex = visibleIds.indexOf(anchorId);
+    const toIndex = visibleIds.indexOf(targetId);
+    if (fromIndex !== -1 && toIndex !== -1) {
+      const start = Math.min(fromIndex, toIndex);
+      const end = Math.max(fromIndex, toIndex);
+      return { selectedIds: visibleIds.slice(start, end + 1), anchorId };
+    }
+  }
+
+  if (modifiers.ctrlKey || modifiers.metaKey) {
+    const nextSelected = currentSelected.includes(targetId)
+      ? currentSelected.filter((id) => id !== targetId)
+      : [...currentSelected, targetId];
+    return { selectedIds: nextSelected, anchorId: targetId };
+  }
+
+  return { selectedIds: [targetId], anchorId: targetId };
+}
+
 type ArchiveViewMode = "grid" | "gallery" | "compact" | "list" | "details";
 type ArchiveItemSize = "compact" | "comfortable" | "large";
 type ArchiveSortField = "updatedAt" | "createdAt" | "title";
@@ -206,6 +247,7 @@ function ArchivePageContent() {
   const [sortField, setSortField] = useState<ArchiveSortField>(() => getInitialSortField(searchParams));
   const [sortDirection, setSortDirection] = useState<ArchiveSortDirection>(() => searchParams.get("dir") === "asc" ? "asc" : "desc");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [savedViews, setSavedViews] = useState<SavedArchiveView[]>([]);
   const [savedViewStatus, setSavedViewStatus] = useState("");
@@ -360,12 +402,20 @@ function ArchivePageContent() {
     await loadRecords(query, store, type, workflowStatus);
   };
 
-  const toggleSelection = (recordId: string) => {
-    setSelectedIds((current) =>
-      current.includes(recordId)
-        ? current.filter((id) => id !== recordId)
-        : [...current, recordId]
+  // Click sets a new anchor and selects only that record; shift+click selects
+  // the contiguous range (in current visual order) between the anchor and the
+  // clicked record; ctrl/cmd+click toggles the clicked record without
+  // disturbing the rest of the selection.
+  const handleSelectClick = (recordId: string, modifiers: SelectClickModifiers) => {
+    const { selectedIds: nextSelected, anchorId: nextAnchor } = resolveGridSelectionClick(
+      visibleRecords.map((record) => record.id),
+      selectedIds,
+      selectionAnchorId,
+      recordId,
+      modifiers
     );
+    setSelectedIds(nextSelected);
+    setSelectionAnchorId(nextAnchor);
   };
 
   const toggleSelectAllVisible = () => {
@@ -391,7 +441,11 @@ function ArchivePageContent() {
             type="checkbox"
             aria-label={`تحديد ${row.original.title || "السجل"}`}
             checked={selectedIdSet.has(row.original.id)}
-            onChange={() => toggleSelection(row.original.id)}
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelectClick(row.original.id, e);
+            }}
+            onChange={() => {}}
           />
         ),
         enableSorting: false
@@ -648,7 +702,11 @@ function ArchivePageContent() {
             type="checkbox"
             aria-label={`تحديد ${record.title || "السجل"}`}
             checked={isSelected}
-            onChange={() => toggleSelection(record.id)}
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelectClick(record.id, e);
+            }}
+            onChange={() => {}}
           />
         </div>
         <div className="record-card__body">
