@@ -709,6 +709,32 @@ function ArchivePageContent() {
     );
   };
 
+  const handleRenameRecord = async (recordId: string, newTitle: string) => {
+    if (state.status !== "ready") return;
+    const target = state.records.find((record) => record.id === recordId);
+    if (!target) return;
+    const previousRecords = state.records;
+    const updated: ArchiveRecord = { ...target, title: newTitle, updatedAt: new Date().toISOString() };
+
+    // Optimistic update; rolled back below on failure.
+    setState((current) => current.status === "ready"
+      ? { status: "ready", records: current.records.map((record) => (record.id === recordId ? updated : record)) }
+      : current);
+
+    try {
+      const response = await api.bulkRecords({ store: target.store || "archive-items", records: [updated] });
+      if (!response.ok) {
+        setState((current) => current.status === "ready" ? { status: "ready", records: previousRecords } : current);
+        toastError(response.error || "تعذر إعادة تسمية السجل");
+        return;
+      }
+      toastSuccess("تم حفظ العنوان الجديد");
+    } catch (error) {
+      setState((current) => current.status === "ready" ? { status: "ready", records: previousRecords } : current);
+      toastError(error instanceof Error ? error.message : "تعذر إعادة تسمية السجل");
+    }
+  };
+
   const renderRecordCard = (record: ArchiveRecord) => (
     <ArchiveRecordCard
       key={record.id}
@@ -717,6 +743,7 @@ function ArchivePageContent() {
       isSelected={selectedIdSet.has(record.id)}
       onSelectClick={handleSelectClick}
       onPreview={setPreviewId}
+      onRename={handleRenameRecord}
     />
   );
 
