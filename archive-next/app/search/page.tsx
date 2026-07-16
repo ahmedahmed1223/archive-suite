@@ -10,7 +10,9 @@ import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
+import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
+import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -54,6 +56,14 @@ function isSearchWorkbenchItem(search: SavedSearch) {
   return savedFilter(search, "viewKind") !== "archive-view";
 }
 
+const SEARCH_VIEW_STATE_PAGE = "/search";
+
+interface SearchPersistedViewState {
+  typeFilter?: string;
+  tagFilter?: string;
+  viewMode?: SearchViewMode;
+}
+
 function facetLabel(items: SearchFacetBucket[] | undefined, value: string) {
   return items?.find((item) => item.value === value || item.label === value)?.label || value;
 }
@@ -77,6 +87,8 @@ function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const api = useMemo(() => createArchiveApiClient(), []);
+  const { user, status: authStatus } = useAuthSession();
+  const userId = user?.id ?? null;
 
   const initialQuery = searchParams.get("q") || "";
   const initialStore = searchParams.get("store") || "";
@@ -99,6 +111,12 @@ function SearchPageContent() {
   const [savedStatus, setSavedStatus] = useState("");
   const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
   const hasCompletedWorkspacePreferenceRestore = useRef(false);
+
+  // Per-user filter/view persistence (V1-752); URL params still win on load.
+  useEffect(() => {
+    if (authStatus === "loading") return;
+    writePersistedViewState<SearchPersistedViewState>(userId, SEARCH_VIEW_STATE_PAGE, { typeFilter, tagFilter, viewMode });
+  }, [authStatus, tagFilter, typeFilter, userId, viewMode]);
 
   useEffect(() => {
     if (!searchParams.toString() && !hasCompletedWorkspacePreferenceRestore.current) return;
@@ -180,17 +198,21 @@ function SearchPageContent() {
   );
 
   useEffect(() => {
-    if (searchParams.toString() || hasCompletedWorkspacePreferenceRestore.current) return;
+    if (authStatus === "loading" || searchParams.toString() || hasCompletedWorkspacePreferenceRestore.current) return;
     try {
       const saved = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY)).routes["/search"];
-      if (!saved) return;
-      const restoredQuery = saved.filters?.q || "";
-      const restoredStore = saved.filters?.store || "";
-      const restoredType = saved.filters?.type || "all";
-      const restoredTag = saved.filters?.tag || "";
-      const restoredPage = Math.max(1, Number(saved.filters?.page) || 1);
-      if (saved.view === "cards" || saved.view === "list") setViewMode(saved.view);
-      if (saved.previewId) setPreviewId(saved.previewId);
+      // Per-user override (V1-752): a user-scoped type/tag/view choice takes
+      // precedence over the route-scoped (shared-browser) preference above.
+      const perUser = readPersistedViewState<SearchPersistedViewState>(userId, SEARCH_VIEW_STATE_PAGE);
+      if (!saved && !perUser.typeFilter && !perUser.tagFilter && !perUser.viewMode) return;
+      const restoredQuery = saved?.filters?.q || "";
+      const restoredStore = saved?.filters?.store || "";
+      const restoredType = perUser.typeFilter || saved?.filters?.type || "all";
+      const restoredTag = perUser.tagFilter || saved?.filters?.tag || "";
+      const restoredPage = Math.max(1, Number(saved?.filters?.page) || 1);
+      const restoredView = perUser.viewMode || saved?.view;
+      if (restoredView === "cards" || restoredView === "list") setViewMode(restoredView);
+      if (saved?.previewId) setPreviewId(saved.previewId);
       setQuery(restoredQuery);
       setStore(restoredStore);
       setTypeFilter(restoredType);
@@ -204,7 +226,7 @@ function SearchPageContent() {
     } finally {
       hasCompletedWorkspacePreferenceRestore.current = true;
     }
-  }, [search, searchParams]);
+  }, [authStatus, search, searchParams, userId]);
 
   useEffect(() => {
     void refreshSavedSearches();
