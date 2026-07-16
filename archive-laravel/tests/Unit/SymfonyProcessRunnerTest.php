@@ -18,4 +18,16 @@ class SymfonyProcessRunnerTest extends TestCase
             'sleep(2);',
         ]);
     }
+
+    public function test_it_preserves_stderr_after_streaming_process_output(): void
+    {
+        $result = (new SymfonyProcessRunner())->run([
+            PHP_BINARY,
+            '-r',
+            'fwrite(STDERR, "diagnostic error"); exit(1);',
+        ]);
+
+        $this->assertSame(1, $result['exitCode']);
+        $this->assertStringContainsString('diagnostic error', $result['stderr']);
+    }
 }
