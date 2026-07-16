@@ -164,7 +164,9 @@ class RecordCommentsApiTest extends TestCase
 
         DB::table('storage_rows')->insert([
             'store' => 'archive-items',
-            'uid' => 'item-1',
+            // Imported records can have a storage uid that differs from the
+            // public id, which must remain addressable by this endpoint.
+            'uid' => 'storage-item-1',
             'data' => json_encode([
                 'uid' => 'item-1',
                 'id' => 'item-1',

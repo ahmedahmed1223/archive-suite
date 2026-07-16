@@ -99,7 +99,9 @@ class RecordHistoryApiTest extends TestCase
 
         DB::table('storage_rows')->insert([
             'store' => 'archive-items',
-            'uid' => 'item-1',
+            // Exercise the JSON id fallback instead of matching the storage
+            // row's uid directly.
+            'uid' => 'storage-item-1',
             'data' => json_encode([
                 'uid' => 'item-1',
                 'id' => 'item-1',

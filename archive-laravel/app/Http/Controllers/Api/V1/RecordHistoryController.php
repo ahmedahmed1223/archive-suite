@@ -57,7 +57,7 @@ class RecordHistoryController extends Controller
             ->where('store', self::ARCHIVE_STORE)
             ->where(function ($query) use ($id): void {
                 $query->where('uid', $id)
-                    ->orWhere('data->>\'id\'', $id);
+                    ->orWhereRaw("data->>'id' = ?", [$id]);
             })
             ->exists();
     }
