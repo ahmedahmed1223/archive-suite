@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Archive, Filter, FolderSearch, PanelRightOpen, Search, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import { ArchiveRecordCard } from "./ArchiveRecordCard";
 import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
@@ -35,12 +36,6 @@ const workflowStatusLabels: Record<WorkflowStatus, string> = {
   published: "منشور",
   archived: "مؤرشف"
 };
-
-const descriptorCompletionLabels = {
-  green: { icon: "🟢", label: "مكتمل التوصيف" },
-  yellow: { icon: "🟡", label: "يحتاج استكمالًا" },
-  red: { icon: "🔴", label: "توصيف ناقص" },
-} as const;
 
 function getRecordWorkflowStatus(record: ArchiveRecord): WorkflowStatus {
   const value = record.workflowStatus;
@@ -96,7 +91,7 @@ export function resolveGridSelectionClick(
 }
 
 type ArchiveViewMode = "grid" | "gallery" | "compact" | "list" | "details";
-type ArchiveItemSize = "compact" | "comfortable" | "large";
+export type ArchiveItemSize = "compact" | "comfortable" | "large";
 type ArchiveSortField = "updatedAt" | "createdAt" | "title";
 type ArchiveSortDirection = "asc" | "desc";
 
@@ -160,7 +155,7 @@ function getRecordSearchText(record: ArchiveRecord) {
   ].join(" "));
 }
 
-function formatDate(value?: string) {
+export function formatDate(value?: string) {
   if (!value) return "غير محدد";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -685,79 +680,16 @@ function ArchivePageContent() {
     );
   };
 
-  const renderRecordCard = (record: ArchiveRecord) => {
-    const isSelected = selectedIdSet.has(record.id);
-
-    return (
-      <article
-        key={record.id}
-        className="record-card"
-        data-size={itemSize}
-        data-selected={isSelected ? "true" : "false"}
-        role="listitem"
-        onMouseEnter={() => setPreviewId(record.id)}
-      >
-        <div className="record-card__select">
-          <input
-            type="checkbox"
-            aria-label={`تحديد ${record.title || "السجل"}`}
-            checked={isSelected}
-            onClick={(e) => {
-              e.preventDefault();
-              handleSelectClick(record.id, e);
-            }}
-            onChange={() => {}}
-          />
-        </div>
-        <div className="record-card__body">
-          <div className="panel-title-row">
-            <h2>
-              <a href={`/archive/${encodeURIComponent(record.id)}`} className="text-accent">
-                {record.title || "بدون عنوان"}
-              </a>
-            </h2>
-            <button type="button" className="badge" onClick={() => setPreviewId(record.id)}>
-              معاينة
-            </button>
-          </div>
-          {record.description ? (
-            <p className="record-card__description">
-              {record.description.substring(0, itemSize === "large" ? 220 : 130)}
-              {record.description.length > (itemSize === "large" ? 220 : 130) ? "..." : ""}
-            </p>
-          ) : null}
-          <div className="record-meta">
-            {record.store ? <span className="badge">{record.store}</span> : null}
-            {record.type ? <span className="badge">{record.type}</span> : null}
-            {record.subtype ? <span className="badge">{record.subtype}</span> : null}
-            {record.descriptorCompletion ? (
-              <span
-                className="badge"
-                aria-label={`اكتمال التوصيف: ${descriptorCompletionLabels[record.descriptorCompletion.status].label}`}
-                title={`اكتمال التوصيف ${record.descriptorCompletion.complete} من ${record.descriptorCompletion.total}`}
-              >
-                {descriptorCompletionLabels[record.descriptorCompletion.status].icon}{" "}
-                {descriptorCompletionLabels[record.descriptorCompletion.status].label}
-              </span>
-            ) : null}
-            <time className="created-at">{formatDate(record.updatedAt || record.createdAt)}</time>
-          </div>
-          {record.tags && record.tags.length > 0 ? (
-            <div className="tags">
-              {record.tags.slice(0, itemSize === "large" ? 6 : 3).map((tag) => (
-                <span key={tag} className="tag">
-                  {tag}
-                </span>
-              ))}
-              {record.tags.length > (itemSize === "large" ? 6 : 3) ? (
-                <span className="tag muted">+{record.tags.length - (itemSize === "large" ? 6 : 3)}</span>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </article>
-    );
-  };
+  const renderRecordCard = (record: ArchiveRecord) => (
+    <ArchiveRecordCard
+      key={record.id}
+      record={record}
+      itemSize={itemSize}
+      isSelected={selectedIdSet.has(record.id)}
+      onSelectClick={handleSelectClick}
+      onPreview={setPreviewId}
+    />
+  );
 
   return (
     <AppShell subtitle="مركز السجلات" contentClassName="archive-content" tipsPage="archive">
