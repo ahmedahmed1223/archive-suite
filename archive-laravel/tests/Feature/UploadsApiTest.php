@@ -82,7 +82,7 @@ class UploadsApiTest extends TestCase
         $this->assertSame(1, DB::table('media_jobs')->count());
     }
 
-    public function test_it_uploads_wav_audio_and_enqueues_a_media_job(): void
+    public function test_it_uploads_wav_audio_without_an_invalid_thumbnail_job(): void
     {
         Queue::fake();
 
@@ -92,7 +92,7 @@ class UploadsApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('record.fileName', 'acceptance.wav');
 
-        $this->assertSame(1, DB::table('media_jobs')->count());
+        $this->assertSame(0, DB::table('media_jobs')->count());
     }
 
     public function test_it_does_not_enqueue_a_media_job_for_non_media_uploads(): void

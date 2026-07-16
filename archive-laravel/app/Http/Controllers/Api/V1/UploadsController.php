@@ -88,7 +88,7 @@ class UploadsController extends Controller
             'updated_at' => $now,
         ]);
 
-        if ($this->isMediaFile($fileName)) {
+        if ($this->isThumbnailCandidate($fileName)) {
             $this->enqueueMediaJob($recordId, $storedPath);
         }
 
@@ -162,12 +162,15 @@ class UploadsController extends Controller
         return null;
     }
 
-    private function isMediaFile(string $fileName): bool
+    private function isThumbnailCandidate(string $fileName): bool
     {
         $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        $mediaExtensions = config('ingest.media_extensions', []);
+        $thumbnailExtensions = [
+            'mp4', 'mov', 'mxf', 'avi', 'mkv', 'wmv', 'flv', 'webm', 'ts', 'm2ts', 'mts', 'dv',
+            'jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'webp',
+        ];
 
-        return in_array($extension, $mediaExtensions, true);
+        return in_array($extension, $thumbnailExtensions, true);
     }
 
     private function enqueueMediaJob(string $recordId, string $filePath): void
