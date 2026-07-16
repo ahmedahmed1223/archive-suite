@@ -478,6 +478,26 @@ textarea.search-input {
   line-height: var(--line-height-relaxed);
 }
 
+/* Sticks to the viewport bottom only once the form scrolls past it;
+   forms that fit within the viewport render this in normal flow. */
+.record-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 2;
+  padding-block: var(--space-3);
+  background: color-mix(in srgb, var(--color-bg-secondary) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-block-start: 1px solid var(--color-border-secondary);
+}
+
+.record-form-actions .form-status {
+  min-block-size: auto;
+}
+
 .search-form {
   display: flex;
   flex-wrap: wrap;
