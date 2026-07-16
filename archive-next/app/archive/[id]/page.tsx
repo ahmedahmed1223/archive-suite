@@ -863,10 +863,12 @@ function RecordDescribeForm({
           <option value="broadcast" />
           <option value="highlights" />
         </datalist>
-        <button type="submit" className="button button-primary" disabled={busy || !title.trim()}>
-          {busy ? "جار الحفظ..." : "حفظ التوصيف"}
-        </button>
-        {status ? <p className="form-status">{status}</p> : null}
+        <div className="record-form-actions">
+          <button type="submit" className="button button-primary" disabled={busy || !title.trim()}>
+            {busy ? "جار الحفظ..." : "حفظ التوصيف"}
+          </button>
+          {status ? <p className="form-status">{status}</p> : null}
+        </div>
       </form>
     </article>
   );
