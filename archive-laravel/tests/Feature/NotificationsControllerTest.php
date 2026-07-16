@@ -5,11 +5,12 @@ namespace Tests\Feature;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class NotificationsControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, AuthenticatesArchiveRequests;
 
     private User $user;
 
@@ -36,6 +37,17 @@ class NotificationsControllerTest extends TestCase
         $this->assertCount(10, $response->json('notifications'));
         $this->assertEquals(25, $response->json('pagination.total'));
         $this->assertTrue($response->json('pagination.hasMore'));
+    }
+
+    public function test_token_authenticated_requests_use_the_archive_user(): void
+    {
+        $headers = $this->authHeaders();
+        $archiveUser = User::query()->where('email', 'admin@example.test')->firstOrFail();
+        Notification::factory()->for($archiveUser)->create();
+
+        $this->getJson('/api/v1/notifications', $headers)
+            ->assertOk()
+            ->assertJsonCount(1, 'notifications');
     }
 
     public function test_can_view_single_notification(): void
