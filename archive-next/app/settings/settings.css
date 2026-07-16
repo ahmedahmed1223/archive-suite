@@ -1,3 +1,12 @@
+/* Status badges: icon + label so status never relies on color alone (V1-778). */
+.status-badge {
+  gap: var(--space-1, 0.35rem);
+}
+
+.status-badge svg {
+  flex-shrink: 0;
+}
+
 /* Keyboard shortcuts customization UI */
 
 .shortcuts-list {
