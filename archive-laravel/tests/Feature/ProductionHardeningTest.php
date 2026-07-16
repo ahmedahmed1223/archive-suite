@@ -167,6 +167,7 @@ class ProductionHardeningTest extends TestCase
     public function test_secure_cookie_guard_throws_in_production_when_insecure(): void
     {
         $this->app->detectEnvironment(fn () => 'production');
+        config(['app.url' => 'https://archive.example.com']);
         config(['archive.auth.secure_cookies' => false]);
 
         $this->expectException(RuntimeException::class);
