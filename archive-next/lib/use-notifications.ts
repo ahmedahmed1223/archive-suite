@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useAuthSession } from "@/lib/auth-session";
 
 export interface Notification {
   id: number;
@@ -23,7 +24,12 @@ export interface NotificationsResponse {
   };
 }
 
+export function notificationRequestHeaders(accessToken?: string): HeadersInit {
+  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+}
+
 export function useNotifications() {
+  const { accessToken } = useAuthSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +39,9 @@ export function useNotifications() {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetch(`/api/v1/notifications?page=${page}&limit=${limit}`);
+      const response = await fetch(`/api/v1/notifications?page=${page}&limit=${limit}`, {
+        headers: notificationRequestHeaders(accessToken),
+      });
       if (!response.ok) {
         throw new Error("تعذر تحميل الإشعارات.");
       }
@@ -50,12 +58,13 @@ export function useNotifications() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [accessToken]);
 
   const markAsRead = useCallback(async (id: number) => {
     try {
       const response = await fetch(`/api/v1/notifications/${id}/read`, {
         method: "POST",
+        headers: notificationRequestHeaders(accessToken),
       });
       const data = await response.json();
 
@@ -70,12 +79,13 @@ export function useNotifications() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذر تعليم الإشعار كمقروء.");
     }
-  }, []);
+  }, [accessToken]);
 
   const markAllAsRead = useCallback(async () => {
     try {
       const response = await fetch("/api/v1/notifications/mark-all-read", {
         method: "POST",
+        headers: notificationRequestHeaders(accessToken),
       });
       const data = await response.json();
 
@@ -88,12 +98,13 @@ export function useNotifications() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذر تعليم الإشعارات كمقروءة.");
     }
-  }, []);
+  }, [accessToken]);
 
   const deleteNotification = useCallback(async (id: number) => {
     try {
       const response = await fetch(`/api/v1/notifications/${id}`, {
         method: "DELETE",
+        headers: notificationRequestHeaders(accessToken),
       });
       const data = await response.json();
 
@@ -111,7 +122,7 @@ export function useNotifications() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذر حذف الإشعار.");
     }
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     fetchNotifications();
