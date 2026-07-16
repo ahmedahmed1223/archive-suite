@@ -143,7 +143,20 @@ class SearchController extends Controller
     /** @param array<string, mixed> $record */
     private function matchesKeyword(array $record, string $queryText): bool
     {
-        $encodedRecord = json_encode($record, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // Search content users see, rather than transport metadata such as the
+        // storage bucket. Otherwise every record in `archive-items` matches
+        // the word "archive", which makes cursor pagination return unrelated
+        // rows.
+        $searchableContent = [
+            $record['uid'] ?? null,
+            $record['title'] ?? null,
+            $record['description'] ?? null,
+            $record['type'] ?? null,
+            $record['subtype'] ?? null,
+            $record['workflowStatus'] ?? $record['status'] ?? null,
+            $record['tags'] ?? [],
+        ];
+        $encodedRecord = json_encode($searchableContent, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return is_string($encodedRecord)
             && str_contains($this->normalize($encodedRecord), $this->normalize($queryText));
