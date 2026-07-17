@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AccountExportController;
 use App\Http\Controllers\Api\V1\ActivityController;
+use App\Http\Controllers\Api\V1\ApiKeysController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BackupsController;
@@ -267,6 +268,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/users', [UsersController::class, 'store']);
         Route::patch('/users/{id}', [UsersController::class, 'update']);
         Route::delete('/users/{id}', [UsersController::class, 'destroy']);
+
+        Route::get('/api-keys', [ApiKeysController::class, 'index']);
+        Route::post('/api-keys', [ApiKeysController::class, 'store']);
+        Route::delete('/api-keys/{id}', [ApiKeysController::class, 'destroy']);
 
         Route::get('/onboarding/progress', [OnboardingProgressController::class, 'index']);
         Route::patch('/onboarding/progress/{stage}', [OnboardingProgressController::class, 'update']);

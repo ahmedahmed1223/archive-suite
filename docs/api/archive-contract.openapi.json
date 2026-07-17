@@ -3297,6 +3297,75 @@
         }
       }
     },
+    "/api-keys": {
+      "get": {
+        "tags": ["API Keys"],
+        "summary": "List API keys (admin only, tokens never included)",
+        "operationId": "listApiKeys",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "API keys",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiKeysResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["API Keys"],
+        "summary": "Create an API key (admin only; role capped at editor)",
+        "operationId": "createApiKey",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ApiKeyCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created API key; the raw token is only returned here",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiKeyCreateResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api-keys/{id}": {
+      "delete": {
+        "tags": ["API Keys"],
+        "summary": "Revoke an API key (admin only)",
+        "operationId": "deleteApiKey",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/invitations/{token}/accept": {
       "post": {
         "tags": ["Users"],
@@ -6071,6 +6140,60 @@
         "properties": {
           "role": { "type": "string", "enum": ["admin", "editor", "viewer"] }
         }
+      },
+      "ApiKey": {
+        "type": "object",
+        "required": ["id", "name", "role", "createdAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "role": {
+            "type": "string",
+            "enum": ["editor", "viewer"],
+            "description": "Effective role is always capped at editor; admin-capable keys are not allowed"
+          },
+          "lastUsedAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "ApiKeyCreateRequest": {
+        "type": "object",
+        "required": ["name", "role"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 200 },
+          "role": { "type": "string", "enum": ["editor", "viewer"] }
+        }
+      },
+      "ApiKeysResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["apiKeys"],
+            "properties": {
+              "apiKeys": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ApiKey" }
+              }
+            }
+          }
+        ]
+      },
+      "ApiKeyCreateResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["apiKey", "token"],
+            "properties": {
+              "apiKey": { "$ref": "#/components/schemas/ApiKey" },
+              "token": {
+                "type": "string",
+                "description": "Raw bearer token; only returned at creation time, stored hashed thereafter"
+              }
+            }
+          }
+        ]
       },
       "AcceptInvitationRequest": {
         "type": "object",
