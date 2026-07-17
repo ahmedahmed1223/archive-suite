@@ -13,6 +13,7 @@ import Breadcrumb, { type BreadcrumbItem } from "@/components/Breadcrumb";
 import DensityToggle from "@/components/DensityToggle";
 import FocusModeToggle from "@/components/FocusModeToggle";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
+import RecentFavoritesMenu from "@/components/RecentFavoritesMenu";
 import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
@@ -116,7 +117,10 @@ export default function AppHeader({
           <span>إضافة مادة</span>
         </Link>
         {auth.status === "authenticated" && (
-          <NotificationsPanel />
+          <>
+            <RecentFavoritesMenu />
+            <NotificationsPanel />
+          </>
         )}
         {auth.status === "authenticated" ? (
           <div className="session-chip" title={userLabel}>
