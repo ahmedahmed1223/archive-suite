@@ -1029,6 +1029,7 @@ function ArchivePageContent() {
                   getRowId={(record) => record.id}
                   tableClassName="archive-table"
                   virtualized={visibleRecords.length > 60}
+                  columnVisibilityStorageKey="archive"
                 />
               ) : (
                 visibleRecords.map(renderRecordCard)
