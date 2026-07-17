@@ -2,13 +2,17 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import TypesEditor from "./TypesEditor";
+import { loadDraft } from "@/lib/local-draft";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  window.localStorage.clear();
+});
 
 function renderEditor(overrides: Partial<React.ComponentProps<typeof TypesEditor>> = {}) {
   const onSave = vi.fn().mockResolvedValue(undefined);
   const onCancel = vi.fn();
-  render(
+  const result = render(
     <TypesEditor
       initialType={null}
       isSaving={false}
@@ -17,7 +21,7 @@ function renderEditor(overrides: Partial<React.ComponentProps<typeof TypesEditor
       {...overrides}
     />
   );
-  return { onSave, onCancel };
+  return { onSave, onCancel, ...result };
 }
 
 describe("TypesEditor instant field validation (V1-768)", () => {
@@ -86,5 +90,73 @@ describe("TypesEditor instant field validation (V1-768)", () => {
     expect(await screen.findByText("أدخل معرّف النوع.")).toBeTruthy();
     expect(screen.getByText("أدخل اسم النوع.")).toBeTruthy();
     expect(screen.getByText("أدخل اسمًا لهذا الحقل.")).toBeTruthy();
+  });
+});
+
+describe("TypesEditor autosave draft (V1-769)", () => {
+  test("does not show a restore banner when there is no saved draft", () => {
+    renderEditor();
+    expect(screen.queryByText(/يوجد نوع غير محفوظ/)).toBeNull();
+  });
+
+  test("autosaves a non-empty new-type draft and offers to restore it on next mount", () => {
+    const { unmount } = renderEditor();
+    fireEvent.change(screen.getByLabelText(/معرّف النوع/), { target: { value: "document" } });
+    unmount();
+
+    expect(loadDraft("types-editor-new")).not.toBeNull();
+
+    renderEditor();
+    expect(screen.getByText(/يوجد نوع غير محفوظ/)).toBeTruthy();
+  });
+
+  test("restoring the draft fills the form back in and dismisses the banner", () => {
+    const { unmount } = renderEditor();
+    fireEvent.change(screen.getByLabelText(/معرّف النوع/), { target: { value: "document" } });
+    unmount();
+
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "استعادة المسودة" }));
+
+    expect(screen.getByLabelText(/معرّف النوع/)).toHaveProperty("value", "document");
+    expect(screen.queryByText(/يوجد نوع غير محفوظ/)).toBeNull();
+  });
+
+  test("discarding the draft clears storage and does not restore it later", () => {
+    const { unmount } = renderEditor();
+    fireEvent.change(screen.getByLabelText(/معرّف النوع/), { target: { value: "document" } });
+    unmount();
+
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "تجاهل" }));
+    expect(loadDraft("types-editor-new")).toBeNull();
+
+    cleanup();
+    renderEditor();
+    expect(screen.queryByText(/يوجد نوع غير محفوظ/)).toBeNull();
+  });
+
+  test("does not autosave a draft while editing an existing type", () => {
+    const existing = {
+      id: "document",
+      name: "مستند",
+      fields: [{ name: "العنوان", type: "text" as const, fieldAcl: { view: [], edit: [] } }]
+    };
+    const { unmount } = renderEditor({ initialType: existing });
+    fireEvent.change(screen.getByLabelText(/اسم النوع/), { target: { value: "مستند معدّل" } });
+    unmount();
+
+    expect(loadDraft("types-editor-new")).toBeNull();
+  });
+
+  test("clears the draft after a successful save", async () => {
+    renderEditor();
+    fireEvent.change(screen.getByLabelText(/معرّف النوع/), { target: { value: "document" } });
+    fireEvent.change(screen.getByLabelText(/اسم النوع/), { target: { value: "مستند" } });
+    fireEvent.change(screen.getByLabelText("اسم الحقل"), { target: { value: "العنوان" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "حفظ النوع" }));
+
+    await vi.waitFor(() => expect(loadDraft("types-editor-new")).toBeNull());
   });
 });
