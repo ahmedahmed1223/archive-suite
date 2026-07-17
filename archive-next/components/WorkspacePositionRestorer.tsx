@@ -29,8 +29,24 @@ export default function WorkspacePositionRestorer() {
         const next = updateWorkspacePreferences(current, route, { workPosition: Math.round(window.scrollY) });
         window.localStorage.setItem(WORKSPACE_PREFERENCES_STORAGE_KEY, JSON.stringify(next));
       };
+
+      // ponytail: rAF-throttled so it keeps storage fresh as the user scrolls, instead of
+      // relying only on `pagehide` (which never fires on a Next.js client-side route change,
+      // only on a real unload/reload) — that's what let list -> detail -> back lose position.
+      let scrollScheduled = false;
+      const handleScroll = () => {
+        if (scrollScheduled) return;
+        scrollScheduled = true;
+        requestAnimationFrame(() => {
+          savePosition();
+          scrollScheduled = false;
+        });
+      };
+
+      window.addEventListener("scroll", handleScroll, { passive: true });
       window.addEventListener("pagehide", savePosition);
       return () => {
+        window.removeEventListener("scroll", handleScroll);
         window.removeEventListener("pagehide", savePosition);
       };
     } catch {
