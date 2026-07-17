@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { FieldError, FormHint } from "@/components/ui/Form";
 import type { ArchiveType, ArchiveTypeField, ArchiveTypeFieldKind } from "@/lib/archive-api";
@@ -40,19 +40,65 @@ function cloneFields(fields: ArchiveTypeField[]) {
   }));
 }
 
+function typeIdError(typeId: string): string {
+  return typeId.trim() ? "" : "أدخل معرّف النوع.";
+}
+
+function typeNameError(typeName: string): string {
+  return typeName.trim() ? "" : "أدخل اسم النوع.";
+}
+
+function fieldNameError(name: string): string {
+  return name.trim() ? "" : "أدخل اسمًا لهذا الحقل.";
+}
+
+function duplicateFieldIndexes(fields: ArchiveTypeField[]): Set<number> {
+  const seenAt = new Map<string, number>();
+  const duplicates = new Set<number>();
+  fields.forEach((field, index) => {
+    const name = field.name.trim();
+    if (!name) return;
+    const firstIndex = seenAt.get(name);
+    if (firstIndex === undefined) {
+      seenAt.set(name, index);
+    } else {
+      duplicates.add(firstIndex);
+      duplicates.add(index);
+    }
+  });
+  return duplicates;
+}
+
+function fieldConditionError(field: ArchiveTypeField): string {
+  if (!field.condition) return "";
+  const missingField = !field.condition.field.trim();
+  const missingEquals = typeof field.condition.equals === "string" && !field.condition.equals.trim();
+  return missingField || missingEquals ? "أدخل الحقل المصدر وقيمة المقارنة لهذا العرض المشروط." : "";
+}
+
 export default function TypesEditor({ initialType, isSaving, requestError, onSave, onCancel }: TypesEditorProps) {
   const formId = useId();
   const [typeId, setTypeId] = useState("");
   const [typeName, setTypeName] = useState("");
   const [fields, setFields] = useState<ArchiveTypeField[]>([EMPTY_FIELD]);
   const [formError, setFormError] = useState("");
+  const [touchedTypeId, setTouchedTypeId] = useState(false);
+  const [touchedTypeName, setTouchedTypeName] = useState(false);
+  const [touchedFieldNames, setTouchedFieldNames] = useState<Set<number>>(new Set());
+  const [touchedConditions, setTouchedConditions] = useState<Set<number>>(new Set());
   const isEditing = initialType !== null;
+
+  const duplicateIndexes = useMemo(() => duplicateFieldIndexes(fields), [fields]);
 
   useEffect(() => {
     setTypeId(initialType?.id ?? "");
     setTypeName(initialType?.name ?? "");
     setFields(initialType ? cloneFields(initialType.fields) : [{ ...EMPTY_FIELD, fieldAcl: { view: [], edit: [] } }]);
     setFormError("");
+    setTouchedTypeId(false);
+    setTouchedTypeName(false);
+    setTouchedFieldNames(new Set());
+    setTouchedConditions(new Set());
   }, [initialType]);
 
   function updateField(index: number, update: Partial<ArchiveTypeField>) {
@@ -97,21 +143,24 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
           }
         : {}),
     }));
-    const duplicateField = normalizedFields.find((field, index) => normalizedFields.findIndex((candidate) => candidate.name === field.name) !== index);
+    setTouchedTypeId(true);
+    setTouchedTypeName(true);
+    setTouchedFieldNames(new Set(normalizedFields.map((_, index) => index)));
+    setTouchedConditions(new Set(normalizedFields.map((_, index) => index).filter((index) => normalizedFields[index].condition)));
 
-    if (!typeId.trim() || !typeName.trim()) {
+    if (typeIdError(typeId) || typeNameError(typeName)) {
       setFormError("أدخل معرّف النوع واسمه قبل الحفظ.");
       return;
     }
-    if (normalizedFields.some((field) => !field.name)) {
+    if (normalizedFields.some((field) => fieldNameError(field.name))) {
       setFormError("أدخل اسمًا لكل حقل قبل الحفظ.");
       return;
     }
-    if (duplicateField) {
-      setFormError(`اسم الحقل «${duplicateField.name}» مكرر. استخدم اسمًا فريدًا لكل حقل.`);
+    if (duplicateFieldIndexes(normalizedFields).size > 0) {
+      setFormError("أسماء بعض الحقول مكررة. استخدم اسمًا فريدًا لكل حقل.");
       return;
     }
-    if (normalizedFields.some((field) => field.condition && (!field.condition.field || (typeof field.condition.equals === "string" && !field.condition.equals)))) {
+    if (normalizedFields.some((field) => fieldConditionError(field))) {
       setFormError("أدخل الحقل المصدر وقيمة المقارنة لكل عرض مشروط قبل الحفظ.");
       return;
     }
@@ -139,10 +188,12 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
             className="schema-field-control"
             value={typeId}
             onChange={(event) => setTypeId(event.target.value)}
+            onBlur={() => setTouchedTypeId(true)}
             disabled={isEditing || isSaving}
             aria-describedby={`${formId}-id-hint`}
             required
           />
+          {touchedTypeId ? <FieldError>{typeIdError(typeId)}</FieldError> : null}
           <FormHint className="schema-field-hint" >
             <span id={`${formId}-id-hint`}>{isEditing ? "لا يمكن تغيير المعرّف بعد الإنشاء." : "استخدم معرّفًا ثابتًا مثل document أو photo."}</span>
           </FormHint>
@@ -154,10 +205,12 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
             className="schema-field-control"
             value={typeName}
             onChange={(event) => setTypeName(event.target.value)}
+            onBlur={() => setTouchedTypeName(true)}
             disabled={isSaving}
             placeholder="مثال: مستند"
             required
           />
+          {touchedTypeName ? <FieldError>{typeNameError(typeName)}</FieldError> : null}
         </label>
 
         <fieldset className="schema-fields">
@@ -174,7 +227,20 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
                 <div className="schema-field-grid">
                   <label className="schema-form-field">
                     <span>اسم الحقل</span>
-                    <input className="schema-field-control" value={field.name} disabled={isSaving} onChange={(event) => updateField(index, { name: event.target.value })} placeholder="مثال: جهة الإصدار" required />
+                    <input
+                      className="schema-field-control"
+                      value={field.name}
+                      disabled={isSaving}
+                      onChange={(event) => updateField(index, { name: event.target.value })}
+                      onBlur={() => setTouchedFieldNames((current) => new Set(current).add(index))}
+                      placeholder="مثال: جهة الإصدار"
+                      required
+                    />
+                    {touchedFieldNames.has(index) ? (
+                      <FieldError>
+                        {fieldNameError(field.name) || (duplicateIndexes.has(index) ? `اسم الحقل «${field.name.trim()}» مكرر.` : "")}
+                      </FieldError>
+                    ) : null}
                   </label>
                   <label className="schema-form-field">
                     <span>نوع البيانات</span>
@@ -202,6 +268,7 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
                           value={field.condition.field}
                           disabled={isSaving}
                           onChange={(event) => updateField(index, { condition: { ...(field.condition ?? { field: "", equals: "" }), field: event.target.value } })}
+                          onBlur={() => setTouchedConditions((current) => new Set(current).add(index))}
                         >
                           <option value="">اختر الحقل المصدر</option>
                           {fields
@@ -216,9 +283,11 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
                           value={String(field.condition.equals)}
                           disabled={isSaving}
                           onChange={(event) => updateField(index, { condition: { ...(field.condition ?? { field: "", equals: "" }), equals: event.target.value } })}
+                          onBlur={() => setTouchedConditions((current) => new Set(current).add(index))}
                           required
                         />
                       </label>
+                      {touchedConditions.has(index) ? <FieldError>{fieldConditionError(field)}</FieldError> : null}
                     </div>
                   ) : null}
                 </fieldset>
