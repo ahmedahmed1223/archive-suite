@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { FieldError, FormHint } from "@/components/ui/Form";
 import type { ArchiveType, ArchiveTypeField, ArchiveTypeFieldKind } from "@/lib/archive-api";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/local-draft";
 
 type TypesEditorProps = {
   initialType: ArchiveType | null;
@@ -28,6 +29,21 @@ const EMPTY_FIELD: ArchiveTypeField = {
   type: "text",
   fieldAcl: { view: [], edit: [] },
 };
+
+// V1-769: autosave draft, scoped to creating a NEW type — editing an existing
+// type already has a stable source of truth (initialType), so restoring a
+// stale draft there risks mixing content from a different type.
+const NEW_TYPE_DRAFT_KEY = "types-editor-new";
+
+interface TypeDraftData {
+  typeId: string;
+  typeName: string;
+  fields: ArchiveTypeField[];
+}
+
+function isDraftWorthKeeping(draft: TypeDraftData): boolean {
+  return Boolean(draft.typeId.trim() || draft.typeName.trim() || draft.fields.some((field) => field.name.trim()));
+}
 
 function cloneFields(fields: ArchiveTypeField[]) {
   return fields.map((field) => ({
@@ -86,9 +102,38 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
   const [touchedTypeName, setTouchedTypeName] = useState(false);
   const [touchedFieldNames, setTouchedFieldNames] = useState<Set<number>>(new Set());
   const [touchedConditions, setTouchedConditions] = useState<Set<number>>(new Set());
+  const [pendingDraft, setPendingDraft] = useState<{ data: TypeDraftData; savedAt: string } | null>(null);
   const isEditing = initialType !== null;
 
   const duplicateIndexes = useMemo(() => duplicateFieldIndexes(fields), [fields]);
+
+  useEffect(() => {
+    if (isEditing) return;
+    const draft = loadDraft<TypeDraftData>(NEW_TYPE_DRAFT_KEY);
+    if (draft && isDraftWorthKeeping(draft.data)) setPendingDraft(draft);
+    // Runs once per mount into "new type" mode; re-checking on every field
+    // change would just re-show a banner the user already dismissed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (isEditing) return;
+    const draft: TypeDraftData = { typeId, typeName, fields };
+    if (isDraftWorthKeeping(draft)) saveDraft(NEW_TYPE_DRAFT_KEY, draft);
+  }, [isEditing, typeId, typeName, fields]);
+
+  function handleRestoreDraft() {
+    if (!pendingDraft) return;
+    setTypeId(pendingDraft.data.typeId);
+    setTypeName(pendingDraft.data.typeName);
+    setFields(pendingDraft.data.fields);
+    setPendingDraft(null);
+  }
+
+  function handleDiscardDraft() {
+    clearDraft(NEW_TYPE_DRAFT_KEY);
+    setPendingDraft(null);
+  }
 
   useEffect(() => {
     setTypeId(initialType?.id ?? "");
@@ -167,6 +212,7 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
 
     setFormError("");
     await onSave({ id: typeId.trim(), name: typeName.trim(), fields: normalizedFields });
+    if (!isEditing) clearDraft(NEW_TYPE_DRAFT_KEY);
   }
 
   return (
@@ -181,6 +227,18 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
 
       <form className="schema-editor__form" onSubmit={handleSubmit} noValidate>
         {(formError || requestError) ? <FieldError>{formError || requestError}</FieldError> : null}
+
+        {pendingDraft ? (
+          <div className="panel panel-compact draft-restore-banner" role="status">
+            <p className="form-status">
+              يوجد نوع غير محفوظ من {new Date(pendingDraft.savedAt).toLocaleString("ar")}. استعادته؟
+            </p>
+            <div className="button-row">
+              <Button type="button" size="sm" variant="secondary" onClick={handleRestoreDraft}>استعادة المسودة</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={handleDiscardDraft}>تجاهل</Button>
+            </div>
+          </div>
+        ) : null}
 
         <label className="schema-form-field">
           <span>معرّف النوع</span>
