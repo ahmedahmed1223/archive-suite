@@ -297,6 +297,22 @@
   line-height: var(--line-height-normal);
 }
 
+.ui-toast__action {
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.ui-toast__action:hover {
+  background: var(--color-surface-subtle);
+}
+
 .ui-toast__close {
   flex-shrink: 0;
   border: 0;

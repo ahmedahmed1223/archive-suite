@@ -4,10 +4,16 @@ import { useSyncExternalStore } from "react";
 
 export type ToastTone = "success" | "error" | "info";
 
+export type ToastAction = {
+  label: string;
+  onAction: () => void;
+};
+
 export type ToastItem = {
   id: number;
   message: string;
   tone: ToastTone;
+  action?: ToastAction;
 };
 
 let items: ToastItem[] = [];
@@ -30,15 +36,15 @@ function getSnapshot() {
 }
 
 /** Fire a toast from any client component or event handler. */
-export function toast(message: string, tone: ToastTone = "info") {
+export function toast(message: string, tone: ToastTone = "info", action?: ToastAction) {
   const id = nextId++;
-  items = [...items, { id, message, tone }];
+  items = [...items, { id, message, tone, action }];
   emit();
   return id;
 }
 
-export const toastSuccess = (message: string) => toast(message, "success");
-export const toastError = (message: string) => toast(message, "error");
+export const toastSuccess = (message: string, action?: ToastAction) => toast(message, "success", action);
+export const toastError = (message: string, action?: ToastAction) => toast(message, "error", action);
 
 export function dismissToast(id: number) {
   items = items.filter((item) => item.id !== id);
