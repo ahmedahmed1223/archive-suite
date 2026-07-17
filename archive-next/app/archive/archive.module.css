@@ -8,3 +8,28 @@
   opacity: 0.7;
   pointer-events: none;
 }
+
+/* V1-716: drop files anywhere on the archive page to upload them. */
+.archiveDropzone {
+  position: relative;
+}
+
+.dropOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  border: 3px dashed var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-surface-subtle) 82%, var(--color-brand-primary));
+}
+
+.dropOverlay span {
+  padding: 0.8rem 1.4rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--shadow-md);
+}

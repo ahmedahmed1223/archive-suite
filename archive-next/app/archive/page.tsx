@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { FormEvent } from "react";
+import type { DragEvent, FormEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Archive, Filter, FolderSearch, PanelRightOpen, Search, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -157,6 +157,16 @@ function getRecordSearchText(record: ArchiveRecord) {
   ].join(" "));
 }
 
+// Mirrors UploadForm.tsx's suggestedType() so files dropped directly on the
+// archive page get a sane default type without a metadata step.
+function inferRecordTypeFromFile(file: File) {
+  if (file.type.startsWith("video/")) return "video";
+  if (file.type.startsWith("audio/")) return "audio";
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.includes("pdf") || file.type.startsWith("text/")) return "document";
+  return "file";
+}
+
 export function formatDate(value?: string) {
   if (!value) return "غير محدد";
   const date = new Date(value);
@@ -240,7 +250,7 @@ function ArchivePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const api = useMemo(() => createArchiveApiClient(), []);
-  const { user, status: authStatus } = useAuthSession();
+  const { user, status: authStatus, accessToken } = useAuthSession();
   const userId = user?.id ?? null;
   const hasRestoredViewState = useRef(false);
 
@@ -260,6 +270,7 @@ function ArchivePageContent() {
   const [savedViewStatus, setSavedViewStatus] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkFeedback, setBulkFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   useEffect(() => {
     if (searchParams.toString()) return;
@@ -424,6 +435,75 @@ function ArchivePageContent() {
   const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     await loadRecords(query, store, type, workflowStatus);
+  };
+
+  // Uploads one dropped file and creates its archive record, mirroring
+  // UploadForm.tsx's uploadOne()/buildArchiveRecord() (quick-mode shape: no
+  // wizard metadata, title falls back to the uploaded file name).
+  const uploadDroppedFile = async (file: File) => {
+    const auth = accessToken ? { accessToken } : undefined;
+    const uploaded = await api.uploadFile(file, undefined, auth);
+    if (!uploaded.ok) {
+      return { status: "error" as const, fileName: file.name, message: uploaded.error };
+    }
+
+    const record: ArchiveRecord = {
+      ...uploaded.record,
+      uid: uploaded.record.uid || uploaded.record.id,
+      title: uploaded.record.fileName || file.name,
+      type: inferRecordTypeFromFile(file),
+      tags: [],
+      metadata: {
+        originalFileName: file.name,
+        mimeType: file.type || undefined,
+        fileSize: file.size,
+        checksum: uploaded.record.checksum,
+        filePath: uploaded.record.filePath,
+        source: "archive-drop"
+      },
+      updatedAt: new Date().toISOString()
+    };
+
+    const saved = await api.bulkRecords({ store: "archive-items", records: [record] }, auth);
+    if (!saved.ok) {
+      return { status: "error" as const, fileName: file.name, message: saved.error };
+    }
+
+    return { status: "success" as const, fileName: file.name };
+  };
+
+  // Lets an operator drop files anywhere on the archive page to add them,
+  // not just on /uploads (V1-716). Only reacts to OS file drags
+  // (dataTransfer.types includes "Files") so it never intercepts a future
+  // in-page drag interaction on the cards themselves.
+  const handleArchiveDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!event.dataTransfer.types.includes("Files")) return;
+    event.preventDefault();
+    setIsDraggingFile(true);
+  };
+
+  const handleArchiveDragLeave = () => setIsDraggingFile(false);
+
+  const handleArchiveDrop = async (event: DragEvent<HTMLDivElement>) => {
+    if (!event.dataTransfer.types.includes("Files")) return;
+    event.preventDefault();
+    setIsDraggingFile(false);
+    const files = Array.from(event.dataTransfer.files ?? []);
+    if (files.length === 0) return;
+
+    // ponytail: uploads run in parallel with no concurrency cap; add a
+    // batch limit if operators start dropping large batches of large files.
+    const results = await Promise.all(files.map(uploadDroppedFile));
+    const succeeded = results.filter((result) => result.status === "success").length;
+    const failed = results.filter((result) => result.status === "error");
+
+    if (succeeded > 0) {
+      toastSuccess(succeeded === 1 ? "تم رفع الملف وإضافته إلى الأرشيف" : `تم رفع ${succeeded} ملفات وإضافتها إلى الأرشيف`);
+      await loadRecords(query);
+    }
+    if (failed.length > 0) {
+      toastError(failed.map((result) => `${result.fileName}: ${result.message}`).join("، "));
+    }
   };
 
   // Click sets a new anchor and selects only that record; shift+click selects
@@ -749,6 +829,18 @@ function ArchivePageContent() {
 
   return (
     <AppShell subtitle="مركز السجلات" contentClassName="archive-content" tipsPage="archive">
+    <div
+      className={styles.archiveDropzone}
+      data-testid="archive-drop-zone"
+      onDragOver={handleArchiveDragOver}
+      onDragLeave={handleArchiveDragLeave}
+      onDrop={handleArchiveDrop}
+    >
+      {isDraggingFile && (
+        <div className={styles.dropOverlay}>
+          <span>أفلت الملفات هنا لإضافتها إلى الأرشيف</span>
+        </div>
+      )}
       <PageToolbar
         icon={<Archive size={24} strokeWidth={2} />}
         eyebrow={<span className="badge">Archive Workspace</span>}
@@ -975,6 +1067,7 @@ function ArchivePageContent() {
           </section>
         )
       ) : null}
+    </div>
     </AppShell>
   );
 }
