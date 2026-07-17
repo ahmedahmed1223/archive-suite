@@ -12,6 +12,12 @@
   gap: var(--space-4);
 }
 
+.help-content {
+  inline-size: min(100%, 74rem);
+  max-inline-size: min(100%, 74rem);
+  overflow-wrap: anywhere;
+}
+
 .local-list-card {
   display: grid;
   gap: var(--space-3);
