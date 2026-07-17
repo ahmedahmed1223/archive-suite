@@ -487,7 +487,8 @@
   }
 
   .topbar-actions .primary-action-link,
-  .topbar-actions .focus-mode-toggle {
+  .topbar-actions .focus-mode-toggle,
+  .topbar-actions .density-toggle {
     display: none;
   }
 
