@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\V1\UploadLinksController;
 use App\Http\Controllers\Api\V1\UploadsController;
 use App\Http\Controllers\Api\V1\UsersController;
 use App\Http\Controllers\Api\V1\VocabularyController;
+use App\Http\Controllers\Api\V1\WebhooksController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -272,6 +273,10 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/api-keys', [ApiKeysController::class, 'index']);
         Route::post('/api-keys', [ApiKeysController::class, 'store']);
         Route::delete('/api-keys/{id}', [ApiKeysController::class, 'destroy']);
+
+        Route::get('/webhooks', [WebhooksController::class, 'index']);
+        Route::post('/webhooks', [WebhooksController::class, 'store']);
+        Route::delete('/webhooks/{id}', [WebhooksController::class, 'destroy']);
 
         Route::get('/onboarding/progress', [OnboardingProgressController::class, 'index']);
         Route::patch('/onboarding/progress/{stage}', [OnboardingProgressController::class, 'update']);
