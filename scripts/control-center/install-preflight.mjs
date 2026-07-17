@@ -1,5 +1,6 @@
-import { statfsSync } from "node:fs";
+import { existsSync, statfsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { dirname } from "node:path";
 
 // V1-208L: host preconditions checked before an install writes anything —
 // free disk space and required dependencies. Probes are injected so callers
@@ -15,13 +16,22 @@ function result(ok, code, message, details = {}, nextActions = []) {
  * so tests never touch the real disk or spawn a real process; production
  * callers get the node:fs / node:child_process defaults.
  */
-export function createHostProbes({ dataPath, statfs = statfsSync, run = defaultRun } = {}) {
+export function createHostProbes({ dataPath, statfs = statfsSync, exists = existsSync, parentPath = dirname, run = defaultRun } = {}) {
   if (!dataPath) throw new Error("host probes require a dataPath to measure.");
   return {
     diskProbe() {
       // bavail, not bfree: bfree counts root-reserved blocks the installer
       // cannot write to, which would overstate free space on Linux.
-      const { bsize, bavail, blocks } = statfs(dataPath);
+      // A first-run storage directory is intentionally absent until Docker
+      // creates it. Measure its nearest existing ancestor instead; it is on
+      // the same filesystem but keeps the preflight read-only.
+      let probePath = dataPath;
+      while (!exists(probePath)) {
+        const parent = parentPath(probePath);
+        if (parent === probePath) throw new Error("no existing ancestor for data path");
+        probePath = parent;
+      }
+      const { bsize, bavail, blocks } = statfs(probePath);
       return { free: bsize * bavail, total: bsize * blocks };
     },
     dependencyProbe(name) {
@@ -72,14 +82,17 @@ export function createInstallPreflight({ diskProbe, dependencyProbe, requiredDep
     // Sync on purpose: every probe is a sync syscall and the whole install
     // path (compose(), the manifest store) is sync, so the adapter can gate on
     // this without turning install() into a promise its callers do not await.
-    run({ requiredBytes = 0 } = {}) {
+    run({ requiredBytes = 0, skipDiskCheck = false } = {}) {
       // Both probes always run, so one report lists every blocker instead of
       // making the operator fix them one retry at a time.
-      const disk = readDisk(diskProbe);
+      const disk = skipDiskCheck ? null : readDisk(diskProbe);
       const missing = missingDependencies(dependencyProbe, requiredDependencies);
-      const details = missing.length ? { missing } : {};
+      const details = {
+        ...(skipDiskCheck ? { diskCheck: "skipped-by-operator" } : {}),
+        ...(missing.length ? { missing } : {}),
+      };
 
-      if (disk === null) {
+      if (!skipDiskCheck && disk === null) {
         return result(
           false,
           "DISK_PROBE_FAILED",
@@ -88,7 +101,7 @@ export function createInstallPreflight({ diskProbe, dependencyProbe, requiredDep
           ["Verify the data path exists and is readable by the installer, then retry."],
         );
       }
-      if (disk.free <= 0) {
+      if (!skipDiskCheck && disk.free <= 0) {
         return result(
           false,
           "DISK_FULL",
@@ -97,7 +110,7 @@ export function createInstallPreflight({ diskProbe, dependencyProbe, requiredDep
           ["Free space on the target disk, then run install again."],
         );
       }
-      if (disk.free < requiredBytes) {
+      if (!skipDiskCheck && disk.free < requiredBytes) {
         return result(
           false,
           "INSUFFICIENT_DISK_SPACE",
@@ -118,11 +131,12 @@ export function createInstallPreflight({ diskProbe, dependencyProbe, requiredDep
           [`Install ${missing.join(" and ")} on this host, then run install again.`],
         );
       }
-      return result(true, "PREFLIGHT_PASSED", "Host preconditions are satisfied.", {
-        freeBytes: disk.free,
-        totalBytes: disk.total,
-        requiredBytes,
-      });
+      return result(
+        true,
+        "PREFLIGHT_PASSED",
+        skipDiskCheck ? "Host preconditions are satisfied; disk capacity check was skipped by explicit operator request." : "Host preconditions are satisfied.",
+        skipDiskCheck ? details : { freeBytes: disk.free, totalBytes: disk.total, requiredBytes, ...details },
+      );
     },
   };
 }

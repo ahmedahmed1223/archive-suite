@@ -118,7 +118,7 @@ function manifestInput(configuration, release) {
  * platform contract's declared resources for the selected profiles, never a
  * hardcoded number, so raising a profile's footprint there raises the gate.
  */
-function hostPreflightFor(configuration) {
+function hostPreflightFor(configuration, { skipDiskCheck = false } = {}) {
   const contract = loadPlatformContract();
   const required = requiredDiskBytes(contract, {
     runtimeProfiles: configuration.runtimeProfiles,
@@ -130,7 +130,7 @@ function hostPreflightFor(configuration) {
     dependencyProbe: probes.dependencyProbe,
     requiredDependencies: ["docker"],
   });
-  return () => preflight.run({ requiredBytes: required });
+  return () => preflight.run({ requiredBytes: required, skipDiskCheck });
 }
 
 function localManifestInput(configuration) {
@@ -148,6 +148,25 @@ function localManifestInput(configuration) {
     artifacts: [],
     services,
     dataPaths: { storage: configuration.storage.path },
+  };
+}
+
+function localSetupInput(env) {
+  const contract = loadPlatformContract();
+  const platform = env.ARCHIVE_PLATFORM || (process.platform === "win32" ? "windows-10-11-docker" : "linux-docker");
+  const selectedPlatform = contract.platforms.find((candidate) => candidate.id === platform);
+  const pathFamily = selectedPlatform?.dataPathFamily || (process.platform === "win32" ? "windows" : "linux");
+  return {
+    schemaVersion: "1.0",
+    mode: "docker",
+    platform,
+    source: "local",
+    intent: "fresh",
+    access: env.ACCESS_MODE || "local",
+    runtimeProfiles: ["core", ...String(env.ARCHIVE_COMPOSE_PROFILES || "").split(",").map((value) => value.trim()).filter(Boolean)],
+    capabilities: String(env.ARCHIVE_CAPABILITIES || "").split(",").map((value) => value.trim()).filter(Boolean),
+    dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
+    storage: { driver: "local", path: env.ARCHIVE_STORAGE_PATH || contract.dataPaths[pathFamily].storage },
   };
 }
 
@@ -172,6 +191,10 @@ function setupInstallOrRepair(operation, configurationInput = null) {
   if (configuration.mode !== "docker") {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Install and repair are currently available for Docker mode only.", { mode: configuration.mode }));
   }
+  const skipDiskCheck = hasFlag("skip-disk-check");
+  if (skipDiskCheck && !hasFlag("json")) {
+    warn("WARNING: Disk capacity check skipped by explicit operator request. Docker may still fail if the host runs out of space.");
+  }
   const localSource = configuration.source === "local";
   let release;
   if (!localSource) {
@@ -193,7 +216,7 @@ function setupInstallOrRepair(operation, configurationInput = null) {
         health: healthProbe,
         manifestStore: installationManifest,
         buildLocal: localSource,
-        preflight: hostPreflightFor(configuration),
+        preflight: hostPreflightFor(configuration, { skipDiskCheck }),
       });
       const result = operation === "install" ? runtime.install(request) : runtime.repair(request);
       if (!result.ok) {
@@ -519,14 +542,14 @@ async function releaseUninstall() {
 }
 async function releaseReconnectData() { return renderSetupResult(await reconnectDataOperation({ storagePath: flagValue("storage") })); }
 
-function lifecycle(operation, ...args) {
+async function lifecycle(operation, ...args) {
   try {
     if (process.env.ARCHIVE_DEVELOPMENT_MODE === "1") {
       const developmentOperations = { status: developmentServerStatus, start: developmentServerStart, stop: developmentServerStop, restart: developmentServerRestart, logs: developmentServerLogs, health: developmentHealthCheck, exec: dockerRuntime.exec };
-      const developmentResult = developmentOperations[operation](...args);
+      const developmentResult = await developmentOperations[operation](...args);
       return developmentResult.status ?? developmentResult;
     }
-    const result = releaseRuntimeForLifecycle()[operation](...args);
+    const result = await releaseRuntimeForLifecycle()[operation](...args);
     return result.status ?? 1;
   } catch (error) {
     err(error.message || "Release lifecycle could not be prepared.");
@@ -728,9 +751,9 @@ async function changeAdminPassword() {
 }
 // Database, backup, and maintenance commands are composed in operations.mjs.
 
-async function deployCanonical() {
+async function deployCanonical({ local = hasFlag("local") } = {}) {
   titleLine("Deploy — canonical Laravel + Next.js stack");
-  if (process.env.ARCHIVE_DEVELOPMENT_MODE !== "1") {
+  if (!local && process.env.ARCHIVE_DEVELOPMENT_MODE !== "1") {
     err("Source deployment is a development-only command. User installations must run 'setup install --config=<file>' with a signed release descriptor.");
     return 1;
   }
@@ -761,15 +784,14 @@ async function deployCanonical() {
   } else {
     ok("All required secrets already set — leaving .env unchanged.");
   }
-  const dockerSkipped = process.env.ARCHIVE_CONTROL_CENTER_SKIP_DOCKER === "1";
-  if (dockerSkipped) {
-    warn("Skipping docker compose because ARCHIVE_CONTROL_CENTER_SKIP_DOCKER=1.");
-  } else {
-    log("Building and starting the stack (docker compose up -d --build) — the first run takes a while...");
-    const status = compose(["up", "-d", "--build"]).status ?? 1;
-    if (status !== 0) { err(`docker compose up failed (exit ${status}).`); return status; }
-  }
   const e = readEnv();
+  const configuration = setupConfiguration.importInput(localSetupInput(e));
+  if (!configuration.ok) return renderSetupResult(configuration);
+  const dockerSkipped = process.env.ARCHIVE_CONTROL_CENTER_SKIP_DOCKER === "1";
+  if (dockerSkipped) warn("Skipping docker compose because ARCHIVE_CONTROL_CENTER_SKIP_DOCKER=1.");
+  else log("Building and starting the stack (docker compose up -d --build) — the first run takes a while...");
+  const installStatus = setupInstallOrRepair("install", configuration.details);
+  if (installStatus !== 0) return installStatus;
   ok(dockerSkipped ? "Provisioning complete. URLs after starting the stack:" : "Stack is up. URLs:");
   log(`  App (Next.js):      http://localhost:${e.NEXT_PUBLIC_PORT || "3000"}`);
   log(`  API health:         http://localhost:${e.NEXT_PUBLIC_PORT || "3000"}/api/v1/health (proxied to Laravel)`);
@@ -953,7 +975,7 @@ async function guidedSetup() {
 async function quickStart() {
   titleLine("Quick start — deploy → health check");
   log("Step 1/2: Deploy (builds and starts the stack)");
-  const deployStatus = await deployCanonical();
+  const deployStatus = await deployCanonical({ local: true });
   if (deployStatus !== 0) { err("Deploy failed. Aborting quick start."); return deployStatus || 1; }
   log("\nStep 2/2: Health check");
   const healthStatus = await healthCheck();
@@ -1083,7 +1105,7 @@ const MENU = [
   ["3", "First-run guide", firstRunGuide],
   ["4", "Doctor (pre-flight check)", runDoctor],
   ["sec", "— Deploy (Laravel + Next.js) —"],
-  ["5", "Development deploy / re-provision", deployCanonical],
+  ["5", "Development deploy / re-provision", () => deployCanonical({ local: true })],
   ["sec", "— Server —"],
   ["6", "Status", serverStatus],
   ["7", "Start", serverStart],
@@ -1174,7 +1196,7 @@ const COMMANDS = {
   rollback: releaseRollback,
   uninstall: releaseUninstall,
   "reconnect-data": releaseReconnectData,
-  deploy: deployCanonical,
+  deploy: () => deployCanonical(),
   help: () => {
     printBanner();
     console.log(`${C.b}  Quick-start examples:${C.x}`);
@@ -1205,7 +1227,7 @@ const COMMANDS = {
     console.log(`  ${C.c}plan --config=<file>${C.x}  Validate a setup config and print a read-only deterministic plan`);
     console.log(`  ${C.c}import-config --config=<file>${C.x}  Validate and print normalized setup configuration (no writes)`);
     console.log(`  ${C.c}export-config${C.x}    Export current non-secret setup choices from .env`);
-    console.log(`  ${C.c}install --config=<file>${C.x} Run the Docker install and write its safe resumable manifest`);
+    console.log(`  ${C.c}install --config=<file> [--skip-disk-check]${C.x} Run the Docker install and write its safe resumable manifest (the override warns and does not add disk space)`);
     console.log(`  ${C.c}repair --config=<file>${C.x} Resume or repair the Docker install using its manifest`);
     console.log(`  ${C.c}set-url${C.x}          Set APP_BASE_URL + PUBLIC_DOMAIN + DOMAIN`);
     console.log(`  ${C.c}generate-password${C.x}  Print a strong password without changing .env`);

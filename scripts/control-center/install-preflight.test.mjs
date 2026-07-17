@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createInstallPreflight, createHostProbes } from "./install-preflight.mjs";
 
 // V1-208L: the two host preconditions that had no implementation to test —
@@ -38,6 +41,14 @@ test("a full disk reports the dedicated code, not the generic shortfall", async 
   assert.ok(result.nextActions.length > 0);
 });
 
+test("an explicit disk override bypasses capacity only and reports the bypass", async () => {
+  const result = await preflight({ free: 0 }).run({ requiredBytes: 10 * GB, skipDiskCheck: true });
+  assert.equal(result.ok, true);
+  assert.equal(result.code, "PREFLIGHT_PASSED");
+  assert.equal(result.details.diskCheck, "skipped-by-operator");
+  assert.match(result.message, /disk capacity check was skipped/i);
+});
+
 test("a missing dependency fails with a stable code naming it", async () => {
   const result = await preflight({
     dependencies: { docker: { installed: false } },
@@ -66,6 +77,7 @@ test("an unreadable disk probe fails closed instead of assuming space", async ()
 test("host disk probe converts statfs blocks into available bytes", () => {
   const probes = createHostProbes({
     dataPath: "/data",
+    exists: () => true,
     statfs: (path) => {
       assert.equal(path, "/data");
       // bavail is space available to an unprivileged writer; bfree includes
@@ -75,6 +87,24 @@ test("host disk probe converts statfs blocks into available bytes", () => {
     run: () => ({ status: 0 }),
   });
   assert.deepEqual(probes.diskProbe(), { free: 4096 * 100, total: 4096 * 500 });
+});
+
+test("host disk probe measures the nearest existing ancestor when the storage folder is not created yet", () => {
+  const existing = mkdtempSync(join(tmpdir(), "archive-preflight-"));
+  const requested = join(existing, "data", "storage");
+  const calls = [];
+  const probes = createHostProbes({
+    dataPath: requested,
+    exists: (path) => path === existing,
+    statfs: (path) => {
+      calls.push(path);
+      return { bsize: 4096, bavail: 100, blocks: 500 };
+    },
+    run: () => ({ status: 0 }),
+  });
+
+  assert.deepEqual(probes.diskProbe(), { free: 4096 * 100, total: 4096 * 500 });
+  assert.deepEqual(calls, [existing]);
 });
 
 test("host dependency probe reports docker present only on a zero exit", () => {

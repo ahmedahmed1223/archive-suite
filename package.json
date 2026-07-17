@@ -48,8 +48,8 @@
     "offline:bundle": "node scripts/offline-bundle.mjs build",
     "offline:verify": "node scripts/offline-bundle.mjs verify",
     "offline:rehearse": "node scripts/offline-bundle.mjs rehearse",
-    "setup": "node scripts/control-center.mjs deploy",
-    "deploy": "node scripts/control-center.mjs deploy",
+    "setup": "node scripts/control-center.mjs deploy --local",
+    "deploy": "node scripts/control-center.mjs deploy --local",
     "control": "node scripts/control-center.mjs"
   },
   "devDependencies": {
