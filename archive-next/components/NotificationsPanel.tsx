@@ -1,7 +1,12 @@
 "use client";
 
-import { Bell, X, Trash2 } from "lucide-react";
-import { useNotifications, type Notification } from "@/lib/use-notifications";
+import { Bell, BellRing, X, Trash2 } from "lucide-react";
+import {
+  useNotifications,
+  requestTaskCompletionAlertPermission,
+  isTaskCompletionAlertPermissionGranted,
+  type Notification,
+} from "@/lib/use-notifications";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -65,9 +70,19 @@ function NotificationItem({ notification, onRead, onDelete }: {
 export function NotificationsPanel() {
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const [alertsGranted, setAlertsGranted] = useState(false);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setAlertsGranted(isTaskCompletionAlertPermissionGranted());
+  }, [isOpen]);
+
+  const handleEnableAlerts = useCallback(async () => {
+    await requestTaskCompletionAlertPermission();
+    setAlertsGranted(isTaskCompletionAlertPermissionGranted());
+  }, []);
 
   const closePanel = useCallback((returnFocus = true) => {
     setIsOpen(false);
@@ -139,6 +154,17 @@ export function NotificationsPanel() {
           </div>
 
           <div className="notifications-panel__toolbar">
+            {!alertsGranted && (
+              <button
+                type="button"
+                className="notifications-panel__mark-all-read notifications-panel__enable-alerts"
+                onClick={handleEnableAlerts}
+                style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}
+              >
+                <BellRing size={14} aria-hidden="true" />
+                تفعيل تنبيهات المتصفح
+              </button>
+            )}
             {unreadCount > 0 && (
               <button
                 type="button"
