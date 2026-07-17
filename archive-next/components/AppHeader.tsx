@@ -3,12 +3,13 @@
 import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BRAND } from "@/lib/brand";
-import { getDailyNavigation, isActivePath, primaryNav } from "@/lib/navigation";
+import { getDailyNavigation, isActivePath, navSectionLabels, primaryNav } from "@/lib/navigation";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import { useAuthSession } from "@/lib/auth-session";
+import Breadcrumb, { type BreadcrumbItem } from "@/components/Breadcrumb";
 import DensityToggle from "@/components/DensityToggle";
 import FocusModeToggle from "@/components/FocusModeToggle";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
@@ -19,10 +20,13 @@ const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
 
 export default function AppHeader({
   subtitle,
-  navLabel = "المسارات الرئيسية"
+  navLabel = "المسارات الرئيسية",
+  breadcrumbExtra = []
 }: Readonly<{
   subtitle: string;
   navLabel?: string;
+  /** عناصر إضافية تُلحق بمسار التنقل الأساسي (مثل اسم العنصر المفتوح حاليًا). */
+  breadcrumbExtra?: BreadcrumbItem[];
 }>) {
   const pathname = usePathname() || "/";
   const router = useRouter();
@@ -76,8 +80,13 @@ export default function AppHeader({
   }
 
   const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id;
-  const activeSection = primaryNav.find((link) => isActivePath(pathname, link.href))?.section;
+  const activeLink = primaryNav.find((link) => isActivePath(pathname, link.href));
+  const activeSection = activeLink?.section;
   const navigation = getDailyNavigation(activeSection, auth.user?.role ?? "viewer");
+  const breadcrumbItems: BreadcrumbItem[] = [{ label: "الرئيسية", href: "/" }];
+  if (activeSection) breadcrumbItems.push({ label: navSectionLabels[activeSection] });
+  if (activeLink && activeLink.href !== "/") breadcrumbItems.push({ label: activeLink.label, href: activeLink.href });
+  breadcrumbItems.push(...breadcrumbExtra);
 
   return (
     <header className="topbar" data-layout="app-header" data-nav-open={isMenuOpen ? "true" : "false"}>
@@ -179,6 +188,7 @@ export default function AppHeader({
           ))}
         </details>
       </nav>
+      <div className="app-breadcrumb"><Breadcrumb items={breadcrumbItems} /></div>
     </header>
   );
 }

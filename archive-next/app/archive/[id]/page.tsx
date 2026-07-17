@@ -30,6 +30,7 @@ import {
 } from "@/lib/archive-api";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 
 type DetailState =
   | { status: "loading" }
@@ -796,6 +797,17 @@ function RecordDescribeForm({
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const isDirty = useMemo(
+    () =>
+      title !== (record.title || "") ||
+      description !== (record.description || "") ||
+      type !== (record.type || "") ||
+      subtype !== (record.subtype || "") ||
+      tags !== (record.tags ?? []).join("، "),
+    [title, description, type, subtype, tags, record]
+  );
+  useUnsavedChangesGuard(isDirty);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || !title.trim()) return;
@@ -1160,7 +1172,12 @@ export default function ArchiveDetailPage() {
   }, [id, api]);
 
   return (
-    <AppShell subtitle="تفاصيل السجل" navLabel="تفاصيل السجل" contentClassName="archive-content">
+    <AppShell
+      subtitle="تفاصيل السجل"
+      navLabel="تفاصيل السجل"
+      contentClassName="archive-content"
+      breadcrumbExtra={[{ label: state.status === "ready" ? state.record.title || "بدون عنوان" : "تفاصيل السجل" }]}
+    >
       <PageToolbar
         eyebrow={<span className="badge">تفاصيل السجل</span>}
         title={state.status === "ready" ? state.record.title || "بدون عنوان" : "تفاصيل السجل"}
