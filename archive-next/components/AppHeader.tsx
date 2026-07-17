@@ -9,6 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import { useAuthSession } from "@/lib/auth-session";
+import DensityToggle from "@/components/DensityToggle";
 import FocusModeToggle from "@/components/FocusModeToggle";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
@@ -102,6 +103,7 @@ export default function AppHeader({
             <span>الدخول</span>
           </Link>
         )}
+        <DensityToggle />
         <FocusModeToggle />
         <button
           type="button"

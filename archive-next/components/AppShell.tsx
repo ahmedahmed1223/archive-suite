@@ -7,6 +7,7 @@ import OnboardingPrompt from "@/components/OnboardingPrompt";
 import MobilePrimaryNav from "@/components/MobilePrimaryNav";
 import WorkspaceCommandBar from "@/components/WorkspaceCommandBar";
 import { isFocusMode } from "@/lib/focus-mode";
+import { getDensity } from "@/lib/density";
 import type { PageKey } from "@/lib/contextual-tips";
 import ContextualTips from "@/components/ContextualTips";
 import WorkspacePositionRestorer from "@/components/WorkspacePositionRestorer";
@@ -25,6 +26,7 @@ export default function AppShell({
   tipsPage?: PageKey;
 }>) {
   const [isFocus, setIsFocus] = useState(false);
+  const [density, setDensityState] = useState(getDensity());
 
   useEffect(() => {
     setIsFocus(isFocusMode());
@@ -33,12 +35,19 @@ export default function AppShell({
       if (current !== isFocus) {
         setIsFocus(current);
       }
+      const currentDensity = getDensity();
+      setDensityState((prev) => (currentDensity === prev ? prev : currentDensity));
     }, 500);
     return () => clearInterval(interval);
   }, [isFocus]);
 
   return (
-    <div className="shell app-shell" data-layout="app-shell" data-focus-mode={isFocus ? "true" : "false"}>
+    <div
+      className="shell app-shell"
+      data-layout="app-shell"
+      data-focus-mode={isFocus ? "true" : "false"}
+      data-density={density}
+    >
       <a className="skip-link" href="#main-content">
         الانتقال إلى المحتوى الرئيسي
       </a>
