@@ -1,12 +1,20 @@
 [wsl2]
-# Disable DNS interception that causes IP scanner conflicts
-generatedResolvConf=false
-# Use isolated virtual switch for Docker
-# Prevent WSL from bridging host network to containers
-dnsTunneling=false
-firewall=true
-networkingMode=mirrored
+# Fixed DNS and network isolation
+GeneratedResolvConf=false
+DnsTunneling=false
+Firewall=true
+# Switch from mirrored (unstable) back to NAT-based routing
+NetworkingMode=NAT
+# Increase memory for Docker daemon stability
+Memory=4GB
+Swap=2GB
+# CPU allocation
+Processors=4
+# Fixed vNIC settings to prevent network drops
+Virtualization=hyperv
+PageReporting=true
+NestedVirtualization=true
 
 [interop]
-appendWindowsPath=false
-enabled=true
+AppendWindowsPath=false
+Enabled=true
