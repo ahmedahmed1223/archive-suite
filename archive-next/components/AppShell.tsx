@@ -11,19 +11,24 @@ import { getDensity } from "@/lib/density";
 import type { PageKey } from "@/lib/contextual-tips";
 import ContextualTips from "@/components/ContextualTips";
 import WorkspacePositionRestorer from "@/components/WorkspacePositionRestorer";
+import ShortcutsOverlay from "@/components/ShortcutsOverlay";
+import type { BreadcrumbItem } from "@/components/Breadcrumb";
 
 export default function AppShell({
   subtitle,
   navLabel,
   children,
   contentClassName = "",
-  tipsPage
+  tipsPage,
+  breadcrumbExtra
 }: Readonly<{
   subtitle: string;
   navLabel?: string;
   children: ReactNode;
   contentClassName?: string;
   tipsPage?: PageKey;
+  /** عناصر إضافية تُلحق بمسار التنقل الأساسي (مثل اسم العنصر المفتوح حاليًا). */
+  breadcrumbExtra?: BreadcrumbItem[];
 }>) {
   const [isFocus, setIsFocus] = useState(false);
   const [density, setDensityState] = useState(getDensity());
@@ -51,8 +56,9 @@ export default function AppShell({
       <a className="skip-link" href="#main-content">
         الانتقال إلى المحتوى الرئيسي
       </a>
-      <AppHeader subtitle={subtitle} navLabel={navLabel} />
+      <AppHeader subtitle={subtitle} navLabel={navLabel} breadcrumbExtra={breadcrumbExtra} />
       <WorkspacePositionRestorer />
+      <ShortcutsOverlay />
       <main id="main-content" tabIndex={-1} className={`content app-content ${contentClassName}`.trim()}>
         {tipsPage && <ContextualTips page={tipsPage} />}
         <WorkspaceCommandBar />

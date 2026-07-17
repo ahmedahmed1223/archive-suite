@@ -1,7 +1,7 @@
 // ponytail: simple localStorage shortcut store; no complex event systems
 // Upgrade path: subscribe to changes via window.dispatchEvent if multiple components need reactivity
 
-export type ShortcutKey = "commandPalette";
+export type ShortcutKey = "commandPalette" | "shortcutsHelp";
 
 interface ShortcutBinding {
   key: string;
@@ -13,12 +13,14 @@ interface ShortcutBinding {
 
 interface ShortcutsStore {
   commandPalette: ShortcutBinding;
+  shortcutsHelp: ShortcutBinding;
 }
 
 const STORAGE_KEY = "archive:keyboard-shortcuts";
 
 const defaultShortcuts: ShortcutsStore = {
-  commandPalette: { key: "k", ctrlKey: true, metaKey: true }
+  commandPalette: { key: "k", ctrlKey: true, metaKey: true },
+  shortcutsHelp: { key: "?", shiftKey: true }
 };
 
 function loadShortcuts(): ShortcutsStore {
@@ -57,7 +59,8 @@ export function resetShortcuts() {
 export function getAllShortcuts(): Record<ShortcutKey, { label: string; binding: ShortcutBinding }> {
   const shortcuts = loadShortcuts();
   return {
-    commandPalette: { label: "فتح لوحة الأوامر", binding: shortcuts.commandPalette }
+    commandPalette: { label: "فتح لوحة الأوامر", binding: shortcuts.commandPalette },
+    shortcutsHelp: { label: "عرض لوحة الاختصارات", binding: shortcuts.shortcutsHelp }
   };
 }
 
