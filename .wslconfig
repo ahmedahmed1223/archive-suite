@@ -1,0 +1,12 @@
+[wsl2]
+# Disable DNS interception that causes IP scanner conflicts
+generatedResolvConf=false
+# Use isolated virtual switch for Docker
+# Prevent WSL from bridging host network to containers
+dnsTunneling=false
+firewall=true
+networkingMode=mirrored
+
+[interop]
+appendWindowsPath=false
+enabled=true
