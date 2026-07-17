@@ -1,20 +1,24 @@
 [wsl2]
-# Fixed DNS and network isolation
-GeneratedResolvConf=false
-DnsTunneling=false
-Firewall=true
-# Switch from mirrored (unstable) back to NAT-based routing
+# Stable NAT mode - no mirrored network issues
 NetworkingMode=NAT
-# Increase memory for Docker daemon stability
-Memory=4GB
-Swap=2GB
-# CPU allocation
-Processors=4
-# Fixed vNIC settings to prevent network drops
-Virtualization=hyperv
-PageReporting=true
-NestedVirtualization=true
+# Disable problematic DNS tunneling
+DnsTunneling=false
+GeneratedResolvConf=false
+# Conservative resource allocation to prevent network stalling
+Memory=3GB
+Swap=1GB
+Processors=2
+# Disable advanced features that cause drops
+NestedVirtualization=false
+PageReporting=false
+# TCP tuning for stability
+TcpKeepAliveTime=60
+TcpKeepAliveInterval=10
+TcpMaxDataRetransmissions=5
 
 [interop]
 AppendWindowsPath=false
 Enabled=true
+
+[boot]
+systemd=false
