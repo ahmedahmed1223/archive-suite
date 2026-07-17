@@ -179,7 +179,7 @@ function localComposeFor(configuration) {
   });
 }
 
-function setupInstallOrRepair(operation, configurationInput = null) {
+function setupInstallOrRepair(operation, configurationInput = null, { skipDiskCheck: skipDiskCheckOverride } = {}) {
   const imported = configurationInput
     ? setupConfiguration.importInput(configurationInput)
     : setupConfiguration.importConfig(flagValue("config"));
@@ -191,7 +191,7 @@ function setupInstallOrRepair(operation, configurationInput = null) {
   if (configuration.mode !== "docker") {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Install and repair are currently available for Docker mode only.", { mode: configuration.mode }));
   }
-  const skipDiskCheck = hasFlag("skip-disk-check");
+  const skipDiskCheck = skipDiskCheckOverride ?? hasFlag("skip-disk-check");
   if (skipDiskCheck && !hasFlag("json")) {
     warn("WARNING: Disk capacity check skipped by explicit operator request. Docker may still fail if the host runs out of space.");
   }
@@ -906,6 +906,21 @@ async function guidedSetup() {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Native installation is planned and cannot be executed yet; no files or services were changed.", { mode: resolved.mode }));
   }
 
+  const guidedPreflight = hostPreflightFor(resolved)();
+  let skipDiskCheck = false;
+  if (!guidedPreflight.ok) {
+    const diskProblem = ["INSUFFICIENT_DISK_SPACE", "DISK_FULL", "DISK_PROBE_FAILED"].includes(guidedPreflight.code);
+    if (!diskProblem) return renderSetupResult(guidedPreflight);
+    warn(`WARNING: ${guidedPreflight.message}`);
+    const continueAnyway = await confirm("Continue anyway and skip only the disk capacity check?", false);
+    if (!continueAnyway) {
+      log("Install cancelled. Choose a larger data path or run again when enough space is available.");
+      return 1;
+    }
+    skipDiskCheck = true;
+    warn("WARNING: Disk capacity check skipped by explicit operator request. Docker may still fail if the host runs out of space.");
+  }
+
   // Step 3 — provision only after the common resolver accepted every choice.
   log(`\n${C.b}Step 3/5 — Provision configuration${C.x}`);
   if (!existsSync(ENV_PATH)) {
@@ -946,7 +961,7 @@ async function guidedSetup() {
   // Step 4 — selected deployment source. Local builds the checked-out source;
   // online/offline continue through the immutable release adapter.
   log(`\n${C.b}Step 4/5 — ${resolved.source === "local" ? "Build and start local source" : "Install signed release"}${C.x}`);
-  const deployStatus = setupInstallOrRepair("install", resolved);
+  const deployStatus = setupInstallOrRepair("install", resolved, { skipDiskCheck });
   if (deployStatus !== 0) { err("Install failed — see the messages above. Run setup repair after correcting it."); return deployStatus; }
   if (generatedPassword) {
     log("");
