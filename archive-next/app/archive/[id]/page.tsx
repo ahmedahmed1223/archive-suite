@@ -29,6 +29,7 @@ import {
   type SuggestionFeedbackValue
 } from "@/lib/archive-api";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
+import { recordView } from "@/lib/recent-items";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 
@@ -1073,6 +1074,7 @@ export default function ArchiveDetailPage() {
         historyError: null
       });
       setIsFav(isFavorited(id));
+      recordView(id, recordResponse.record.title, recordResponse.record.type);
 
       void api.suggestions({ context: "detail", recordId: id })
         .then((response) => {
