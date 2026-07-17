@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, Info, XCircle } from "lucide-react";
-import { Toast, ToastClose, ToastDescription } from "@/components/ui/Toast";
+import { Toast, ToastAction, ToastClose, ToastDescription } from "@/components/ui/Toast";
 import { dismissToast, useToasts, type ToastTone } from "@/lib/toast";
 
 const toneIcon = {
@@ -34,6 +34,18 @@ export default function ToastHub() {
             <ToneIcon tone={item.tone} />
           </span>
           <ToastDescription className="ui-toast__message">{item.message}</ToastDescription>
+          {item.action ? (
+            <ToastAction
+              className="ui-toast__action"
+              altText={item.action.label}
+              onClick={() => {
+                item.action?.onAction();
+                dismissToast(item.id);
+              }}
+            >
+              {item.action.label}
+            </ToastAction>
+          ) : null}
           <ToastClose className="ui-toast__close" aria-label="إغلاق">
             ×
           </ToastClose>

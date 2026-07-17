@@ -731,9 +731,9 @@ function ArchivePageContent() {
     if (selectedRecords.length === 0) return;
 
     const confirmed = await dialogs.confirm({
-      title: "حذف نهائي",
-      message: `تحذير: سيتم حذف ${selectedRecords.length} سجل نهائيًا من الأرشيف ولا يمكن التراجع عن هذا الإجراء. هل أنت متأكد من المتابعة؟`,
-      confirmLabel: "حذف نهائيًا",
+      title: "حذف السجلات",
+      message: `سيتم نقل ${selectedRecords.length} سجل إلى سلة المحذوفات. يمكنك التراجع فورًا من زر "تراجع" في الإشعار، أو استعادتها لاحقًا من صفحة المحذوفات. هل تريد المتابعة؟`,
+      confirmLabel: "حذف",
       destructive: true
     });
     if (!confirmed) return;
@@ -768,8 +768,22 @@ function ArchivePageContent() {
         setBulkFeedback({ kind: "error", message });
         toastError(message);
       } else {
-        setBulkFeedback({ kind: "success", message: `تم حذف ${deletedCount} سجل نهائيًا` });
-        toastSuccess(`تم حذف ${deletedCount} سجل نهائيًا.`);
+        setBulkFeedback({ kind: "success", message: `تم نقل ${deletedCount} سجل إلى سلة المحذوفات` });
+        const auth = accessToken ? { accessToken } : undefined;
+        toastSuccess(`تم نقل ${deletedCount} سجل إلى سلة المحذوفات.`, {
+          label: "تراجع",
+          onAction: async () => {
+            for (const [storeKey, storeIds] of idsByStore) {
+              const restored = await api.restoreTrash({ store: storeKey, ids: storeIds }, auth);
+              if (!restored.ok) {
+                toastError(restored.error || "تعذر التراجع عن الحذف");
+                return;
+              }
+            }
+            toastSuccess("تم استرجاع السجلات");
+            await loadRecords(query);
+          }
+        });
       }
 
       setSelectedIds([]);
