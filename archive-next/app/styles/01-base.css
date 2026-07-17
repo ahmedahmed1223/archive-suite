@@ -166,6 +166,11 @@ a:hover {
 }
 
 .route-links {
+  /* ponytail: .topbar is a 2-column grid (brand | actions); without this the
+     mid-range viewport (761-1119px, between the mobile and sidebar
+     breakpoints below) squeezes this row into column 1's auto width
+     instead of spanning the header, forcing needless horizontal scroll. */
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: nowrap;
   justify-content: flex-end;

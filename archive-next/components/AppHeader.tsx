@@ -15,6 +15,7 @@ import FocusModeToggle from "@/components/FocusModeToggle";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import RecentFavoritesMenu from "@/components/RecentFavoritesMenu";
 import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
+import { SIDEBAR_VIEWPORT_QUERY, useMediaQuery } from "@/lib/use-media-query";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
@@ -34,7 +35,20 @@ export default function AppHeader({
   const auth = useAuthSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigationTriggerRef = useRef<HTMLButtonElement>(null);
+  const navMoreRef = useRef<HTMLDetailsElement>(null);
   const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl / Cmd + K");
+  const isSidebarLayout = useMediaQuery(SIDEBAR_VIEWPORT_QUERY);
+
+  // Wide screens turn the header into a persistent sidebar with room to
+  // spare, so start "المزيد" expanded there instead of hiding most pages
+  // behind a click. Set imperatively (not via the `open` prop) so it only
+  // forces the state once per breakpoint crossing rather than fighting a
+  // user's manual collapse on every unrelated re-render (route change, etc).
+  useEffect(() => {
+    if (isSidebarLayout && navMoreRef.current) {
+      navMoreRef.current.open = true;
+    }
+  }, [isSidebarLayout]);
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -173,7 +187,7 @@ export default function AppHeader({
               );
           })}
         </div>
-        <details className="nav-more">
+        <details className="nav-more" ref={navMoreRef}>
           <summary>المزيد</summary>
           {navigation.more.map((group) => (
             <div className="nav-section" data-section={group.section} key={group.section}>

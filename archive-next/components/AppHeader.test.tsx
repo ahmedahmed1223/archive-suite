@@ -12,12 +12,26 @@ vi.mock("@/components/FocusModeToggle", () => ({ default: () => null }));
 vi.mock("@/components/NotificationsPanel", () => ({ NotificationsPanel: () => null }));
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
 
+function mockMatchMedia(matchingQuery: string) {
+  window.matchMedia = ((query: string) => ({
+    matches: query === matchingQuery,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    // Legacy API some libraries still probe for.
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false
+  })) as unknown as typeof window.matchMedia;
+}
+
 afterEach(() => {
   document.body.innerHTML = "";
 });
 
 describe("AppHeader navigation", () => {
   test("opens navigation and returns focus to its trigger on Escape", () => {
+    mockMatchMedia("");
     render(<AppHeader subtitle="الرئيسية" />);
 
     const trigger = screen.getByRole("button", { name: "فتح التنقل" });
@@ -28,5 +42,23 @@ describe("AppHeader navigation", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
     expect(document.activeElement).toBe(trigger);
+  });
+});
+
+describe("AppHeader wide-sidebar layout (V1-nav)", () => {
+  test("'المزيد' starts collapsed on narrow/mid viewports", () => {
+    mockMatchMedia("(max-width: 760px)");
+    render(<AppHeader subtitle="الرئيسية" />);
+
+    const details = document.querySelector(".nav-more") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+  });
+
+  test("'المزيد' starts expanded once the header becomes a persistent sidebar (>=1120px)", () => {
+    mockMatchMedia("(min-width: 1120px)");
+    render(<AppHeader subtitle="الرئيسية" />);
+
+    const details = document.querySelector(".nav-more") as HTMLDetailsElement;
+    expect(details.open).toBe(true);
   });
 });

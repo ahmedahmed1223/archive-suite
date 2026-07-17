@@ -4,6 +4,8 @@ import { useCallback, useSyncExternalStore } from "react";
 
 /** استعلام العرض المحمول الموحّد — يحدّد التبديل إلى العروض المضغوطة. */
 export const MOBILE_VIEWPORT_QUERY = "(max-width: 760px)";
+/** استعلام عرض الشريط الجانبي الثابت — يطابق نقطة التحوّل في 08-foundation.css. */
+export const SIDEBAR_VIEWPORT_QUERY = "(min-width: 1120px)";
 /** استعلام تفضيل تقليل الحركة. */
 export const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
