@@ -3366,6 +3366,75 @@
         }
       }
     },
+    "/webhooks": {
+      "get": {
+        "tags": ["Webhooks"],
+        "summary": "List webhook subscriptions (admin only, secrets never included)",
+        "operationId": "listWebhooks",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Webhook subscriptions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WebhooksResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Create a webhook subscription (admin only; URL is validated against SSRF)",
+        "operationId": "createWebhook",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WebhookCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created webhook subscription; the raw signing secret is only returned here",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WebhookCreateResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/webhooks/{id}": {
+      "delete": {
+        "tags": ["Webhooks"],
+        "summary": "Delete a webhook subscription (admin only)",
+        "operationId": "deleteWebhook",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/invitations/{token}/accept": {
       "post": {
         "tags": ["Users"],
@@ -6190,6 +6259,75 @@
               "token": {
                 "type": "string",
                 "description": "Raw bearer token; only returned at creation time, stored hashed thereafter"
+              }
+            }
+          }
+        ]
+      },
+      "WebhookEvent": {
+        "type": "string",
+        "enum": ["record.created", "record.updated", "record.deleted", "media_job.completed", "media_job.failed"]
+      },
+      "Webhook": {
+        "type": "object",
+        "required": ["id", "url", "events", "active", "consecutiveFailures", "createdAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "url": { "type": "string", "format": "uri" },
+          "events": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WebhookEvent" }
+          },
+          "active": { "type": "boolean" },
+          "consecutiveFailures": { "type": "integer" },
+          "lastDeliveredAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "WebhookCreateRequest": {
+        "type": "object",
+        "required": ["url", "events"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 200 },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Must be a public http(s) URL; loopback and private-range hosts are rejected"
+          },
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/WebhookEvent" }
+          }
+        }
+      },
+      "WebhooksResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["webhooks"],
+            "properties": {
+              "webhooks": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Webhook" }
+              }
+            }
+          }
+        ]
+      },
+      "WebhookCreateResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["webhook", "secret"],
+            "properties": {
+              "webhook": { "$ref": "#/components/schemas/Webhook" },
+              "secret": {
+                "type": "string",
+                "description": "Raw HMAC signing secret; only returned at creation time. Deliveries are signed as HMAC-SHA256(body, SHA256(secret)) in the X-Archive-Signature header"
               }
             }
           }
