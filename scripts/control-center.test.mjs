@@ -35,8 +35,8 @@ const validSetupConfig = (overrides = {}) => ({
 
 test("public setup and deployment guidance use only the canonical Control Center stack", () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
-  assert.equal(pkg.scripts.setup, "node scripts/control-center.mjs deploy");
-  assert.equal(pkg.scripts.deploy, "node scripts/control-center.mjs deploy");
+  assert.equal(pkg.scripts.setup, "node scripts/control-center.mjs deploy --local");
+  assert.equal(pkg.scripts.deploy, "node scripts/control-center.mjs deploy --local");
 
   const controlCenter = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
   assert.doesNotMatch(controlCenter, /docker-compose\.dev\.yml/);
@@ -318,7 +318,8 @@ test("Control Center entry point composes focused modules", () => {
 });
 
 test("server commands require a recorded release before Docker access", () => {
-  const r = run(["status"], { ARCHIVE_COMPOSE_PROFILES: "ocr", PATH: "", Path: "" });
+  const manifestPath = join(mkdtempSync(join(tmpdir(), "cc-status-missing-")), "installation-manifest.json");
+  const r = run(["status"], { ARCHIVE_COMPOSE_PROFILES: "ocr", ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestPath, PATH: "", Path: "" });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr + r.stdout, /No release installation manifest/i);
 });
@@ -942,7 +943,7 @@ test("health exits non-zero without a recorded release", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-"));
   const envFile = join(dir, ".env");
   writeFileSync(envFile, "HEALTH_URL=http://127.0.0.1:9/api/health\n");
-  const r = run(["health"], { ARCHIVE_ENV_PATH: envFile });
+  const r = run(["health"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_INSTALLATION_MANIFEST_PATH: join(dir, "installation-manifest.json") });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr + r.stdout, /No release installation manifest/i);
 });
@@ -978,6 +979,7 @@ test("doctor rejects an unknown platform without performing deployment", () => {
 test("deploy replaces every duplicate ADMIN_PASSWORD placeholder with the generated password", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-"));
   const envFile = join(dir, ".env");
+  const manifestPath = join(dir, "installation-manifest.json");
   writeFileSync(
     envFile,
     [
@@ -996,7 +998,7 @@ test("deploy replaces every duplicate ADMIN_PASSWORD placeholder with the genera
     ].join("\n")
   );
 
-  const r = run(["deploy"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1", ARCHIVE_DEVELOPMENT_MODE: "1" });
+  const r = run(["deploy"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestPath, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1", ARCHIVE_DEVELOPMENT_MODE: "1" });
   assert.equal(r.status, 0, r.stderr + r.stdout);
 
   const content = readFileSync(envFile, "utf8");
@@ -1004,6 +1006,64 @@ test("deploy replaces every duplicate ADMIN_PASSWORD placeholder with the genera
   assert.equal(matches.length, 2);
   assert.equal(new Set(matches).size, 1, "duplicate ADMIN_PASSWORD entries must stay in sync");
   assert.doesNotMatch(content, /CHANGE_ME_(ADMIN|STRONG)_PASSWORD/);
+});
+
+test("lifecycle awaits asynchronous health adapters", () => {
+  const entry = readFileSync(join(ROOT, "scripts", "control-center.mjs"), "utf8");
+
+  assert.match(entry, /async function lifecycle\(operation, \.\.\.args\)/);
+  assert.match(entry, /const result = await releaseRuntimeForLifecycle\(\)\[operation\]\(\.\.\.args\)/);
+});
+
+test("setup install visibly warns when the operator skips the disk capacity check", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-skip-disk-"));
+  const configFile = join(dir, "setup.json");
+  const manifestFile = join(dir, "installation-manifest.json");
+  writeFileSync(configFile, JSON.stringify(validSetupConfig({ source: "local" })));
+
+  const result = run(["install", `--config=${configFile}`, "--skip-disk-check"], {
+    ARCHIVE_ENV_PATH: join(dir, ".env"),
+    ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile,
+    ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1",
+  });
+
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /WARNING: Disk capacity check skipped by explicit operator request/i);
+});
+
+test("local deploy provisions the checked-out stack and records it for later start commands", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cc-local-deploy-"));
+  const envFile = join(dir, ".env");
+  const manifestPath = join(dir, "installation-manifest.json");
+  writeFileSync(
+    envFile,
+    [
+      "APP_BASE_URL=http://localhost:3000",
+      "ACCESS_MODE=local",
+      "POSTGRES_PASSWORD=CHANGE_ME_POSTGRES_PASSWORD",
+      "REDIS_PASSWORD=CHANGE_ME_REDIS_PASSWORD",
+      "REVERB_APP_ID=archive-collab",
+      "REVERB_APP_KEY=archive-collab-key",
+      "REVERB_APP_SECRET=CHANGE_ME_REVERB_SECRET_48_CHARS_MINIMUM",
+      "LARAVEL_APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "ADMIN_EMAIL=admin@example.com",
+      "ADMIN_PASSWORD=CHANGE_ME_ADMIN_PASSWORD",
+      "DATABASE_URL=postgresql://archive:CHANGE_ME_POSTGRES_PASSWORD@postgres:5432/archive",
+      "",
+    ].join("\n")
+  );
+
+  const r = run(["deploy", "--local"], {
+    ARCHIVE_ENV_PATH: envFile,
+    ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestPath,
+    ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1",
+  });
+
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.match(r.stdout, /Provisioning complete/);
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  assert.equal(manifest.source, "local");
+  assert.equal(manifest.operation.status, "succeeded");
 });
 
 test("generate-password prints a strong password without requiring .env", () => {
@@ -1061,6 +1121,7 @@ test("change-admin-password can generate and store a replacement password", () =
 test("wizard without a TTY falls back to deploy and still provisions secrets", () => {
   const dir = mkdtempSync(join(tmpdir(), "cc-"));
   const envFile = join(dir, ".env");
+  const manifestPath = join(dir, "installation-manifest.json");
   writeFileSync(
     envFile,
     [
@@ -1072,7 +1133,7 @@ test("wizard without a TTY falls back to deploy and still provisions secrets", (
     ].join("\n")
   );
 
-  const r = run(["wizard"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1", ARCHIVE_DEVELOPMENT_MODE: "1" });
+  const r = run(["wizard"], { ARCHIVE_ENV_PATH: envFile, ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestPath, ARCHIVE_CONTROL_CENTER_SKIP_DOCKER: "1", ARCHIVE_DEVELOPMENT_MODE: "1" });
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /No interactive terminal detected/);
 

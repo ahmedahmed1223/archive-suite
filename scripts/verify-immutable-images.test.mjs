@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-const dockerfiles = ["archive-next/Dockerfile", "archive-laravel/Dockerfile.worker"];
+const dockerfiles = ["archive-next/Dockerfile", "archive-laravel/Dockerfile.worker", "infra/ocr-service/Dockerfile"];
 const productionWorkflows = [".github/workflows/release.yml", ".github/workflows/docker.yml"];
 const productionCompose = ["infra/docker-compose.yml", "infra/docker-compose.laravel-next.yml"];
 
@@ -36,6 +36,13 @@ test("production Dockerfile base images use readable tags pinned by sha256 diges
       );
     }
   }
+});
+
+test("OCR image uses a Python version supported by its pinned NumPy dependency", () => {
+  assert.match(read("infra/ocr-service/Dockerfile"), /^FROM python:3\.12\.\d+-slim@sha256:[a-f0-9]{64}$/m);
+  const requirements = read("infra/ocr-service/requirements.txt");
+  assert.match(requirements, /^numpy==1\.26\.4$/m);
+  assert.match(requirements, /^setuptools==75\.8\.2$/m);
 });
 
 test("production image publishing never creates or consumes latest tags", () => {
