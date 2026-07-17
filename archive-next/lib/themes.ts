@@ -78,6 +78,19 @@ export const THEME_PRESETS: ThemePreset[] = [
       "color-accent-primary": "#D4943A",
       "color-status-success": "#27AE60"
     }
+  },
+  {
+    // ponytail: dark-only high-contrast preset (WCAG AAA text contrast); add a light variant if users request one
+    id: "high-contrast",
+    name: "تباين عالٍ",
+    tokens: {
+      "color-bg-primary": "#000000",
+      "color-bg-secondary": "#0D0D0D",
+      "color-bg-tertiary": "#1A1A1A",
+      "color-text-primary": "#FFFFFF",
+      "color-accent-primary": "#FFD60A",
+      "color-status-success": "#00E676"
+    }
   }
 ];
 
