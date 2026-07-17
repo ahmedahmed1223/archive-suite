@@ -69,6 +69,8 @@ class RouteScopeTest extends TestCase
         'PUT api/v1/records/{id}/broadcast-metadata' => self::EXPERIMENTAL,
         'POST api/v1/records/bulk' => self::V1,
         'POST api/v1/records/bulk-delete' => self::V1,
+        'GET api/v1/records/export' => self::V1,
+        'POST api/v1/records/import' => self::V1,
         'GET api/v1/trash' => self::V1,
         'POST api/v1/trash/restore' => self::V1,
         'POST api/v1/trash/purge' => self::V1,
@@ -251,6 +253,10 @@ class RouteScopeTest extends TestCase
         'PUT api/v1/records/{id}/broadcast-metadata' => self::ROLE_ANY,
         'POST api/v1/records/bulk' => self::ROLE_EDITOR,
         'POST api/v1/records/bulk-delete' => self::ROLE_EDITOR,
+        // V1-714: export is a read, like GET /records; import writes existing
+        // rows, same bar as records/bulk.
+        'GET api/v1/records/export' => self::ROLE_ANY,
+        'POST api/v1/records/import' => self::ROLE_EDITOR,
         // V1-731: browsing the trash is a read, like GET /records. Restore is
         // the editor's own undo; purge is the only irreversible step, so it
         // escalates to admin.

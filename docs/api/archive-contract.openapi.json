@@ -779,6 +779,84 @@
         }
       }
     },
+    "/records/export": {
+      "get": {
+        "tags": ["Records"],
+        "summary": "Stream a CSV export of top-level record fields for a store",
+        "operationId": "exportRecordsCsv",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "store",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV export (uid,title,description,type,subtype,status,tags)",
+            "content": {
+              "text/csv": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/import": {
+      "post": {
+        "tags": ["Records"],
+        "summary": "Import records from the same CSV shape as /records/export; update-only",
+        "description": "Updates only rows whose uid already exists in the given store. Never creates a new uid, and never touches fields absent from the CSV header. ?dryRun=1 reports the same per-row outcome without writing.",
+        "operationId": "importRecordsCsv",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "store",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "default": false }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-row import result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecordsImportCsvResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/trash": {
       "get": {
         "tags": ["Trash"],
@@ -5877,6 +5955,32 @@
                   "properties": {
                     "uid": { "type": "string" },
                     "deleted": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "RecordsImportCsvResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["dryRun", "accepted", "rejected", "results"],
+            "properties": {
+              "dryRun": { "type": "boolean" },
+              "accepted": { "type": "integer", "minimum": 0 },
+              "rejected": { "type": "integer", "minimum": 0 },
+              "results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["uid", "accepted"],
+                  "properties": {
+                    "uid": { "type": "string" },
+                    "accepted": { "type": "boolean" },
+                    "reason": { "type": "string" }
                   }
                 }
               }

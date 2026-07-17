@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\PluginMarketplaceController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
 use App\Http\Controllers\Api\V1\RecordHistoryController;
+use App\Http\Controllers\Api\V1\RecordsBulkCsvController;
 use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
@@ -149,6 +150,12 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
 
         Route::get('/records', [RecordsController::class, 'index']);
+        // V1-714: bulk record export/import via CSV. Kept off RecordsController
+        // (see RecordsBulkCsvController docblock) — separate controller so the
+        // CSV parsing/streaming concerns don't grow the main records file.
+        // export must be registered before the /records/{id} wildcard below,
+        // or Laravel matches "export" as {id} and returns a 404 record lookup.
+        Route::get('/records/export', [RecordsBulkCsvController::class, 'export']);
         Route::get('/records/{id}', [RecordsController::class, 'show']);
         Route::patch('/records/{id}/transcript', [RecordTranscriptController::class, 'update']);
         Route::get('/records/{id}/notes', [RecordNotesController::class, 'index']);
@@ -163,6 +170,7 @@ Route::prefix('v1')->group(function (): void {
         });
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::post('/records/bulk-delete', [RecordsController::class, 'bulkDelete']);
+        Route::post('/records/import', [RecordsBulkCsvController::class, 'import']);
         // V1-731: trash. restore is editor (undo of a write they could make);
         // purge is admin-only (the only irreversible step).
         Route::get('/trash', [TrashController::class, 'index']);
