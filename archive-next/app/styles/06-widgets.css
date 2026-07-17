@@ -515,7 +515,25 @@
   }
 
   .topbar[data-nav-open="true"] .route-links {
-    display: flex;
+    display: grid;
+    position: fixed;
+    inset-block: max(var(--space-2), env(safe-area-inset-top)) max(var(--space-2), env(safe-area-inset-bottom));
+    inset-inline-start: max(var(--space-2), env(safe-area-inset-left));
+    z-index: 60;
+    inline-size: min(22rem, calc(100vw - 2rem));
+    max-block-size: calc(100dvh - 1rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .navigation-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    min-block-size: 100dvh;
+    border: 0;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--color-text-primary) 42%, transparent);
   }
 
   .topbar[data-nav-open="true"] .nav-toggle {

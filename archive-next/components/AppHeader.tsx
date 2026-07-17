@@ -6,7 +6,7 @@ import { BRAND } from "@/lib/brand";
 import { getDailyNavigation, isActivePath, primaryNav } from "@/lib/navigation";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import { useAuthSession } from "@/lib/auth-session";
 import DensityToggle from "@/components/DensityToggle";
@@ -28,6 +28,7 @@ export default function AppHeader({
   const router = useRouter();
   const auth = useAuthSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigationTriggerRef = useRef<HTMLButtonElement>(null);
   const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl / Cmd + K");
 
   useEffect(() => {
@@ -41,6 +42,23 @@ export default function AppHeader({
     window.addEventListener("archive:shortcuts-changed", updateShortcutDisplay);
     return () => window.removeEventListener("archive:shortcuts-changed", updateShortcutDisplay);
   }, []);
+
+  function closeNavigation({ restoreFocus = true } = {}) {
+    setIsMenuOpen(false);
+    if (restoreFocus) requestAnimationFrame(() => navigationTriggerRef.current?.focus());
+  }
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeNavigation();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isMenuOpen]);
 
   useEffect(() => {
     const toggleNavigation = () => {
@@ -76,7 +94,9 @@ export default function AppHeader({
         className="nav-toggle"
         aria-controls="app-primary-nav"
         aria-expanded={isMenuOpen}
-        onClick={() => setIsMenuOpen((current) => !current)}
+        aria-label={isMenuOpen ? "إغلاق التنقل" : "فتح التنقل"}
+        ref={navigationTriggerRef}
+        onClick={() => isMenuOpen ? closeNavigation({ restoreFocus: false }) : setIsMenuOpen(true)}
       >
         {isMenuOpen ? <Icons.X aria-hidden="true" size={18} /> : <Icons.Menu aria-hidden="true" size={18} />}
         <span>المسارات</span>
@@ -118,6 +138,7 @@ export default function AppHeader({
           <kbd>{shortcutDisplay}</kbd>
         </button>
       </div>
+      {isMenuOpen ? <button type="button" className="navigation-backdrop" aria-label="إغلاق التنقل" onClick={() => closeNavigation()} /> : null}
       <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>
         <div className="nav-section" data-section={activeSection ?? "daily"}>
           <span className="nav-section-label">يوميًا</span>

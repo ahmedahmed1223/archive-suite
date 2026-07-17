@@ -8,6 +8,8 @@ const baseCss = readSource("app/styles/01-base.css");
 const layoutCss = readSource("app/styles/02-layout.css");
 const foundationCss = readSource("app/styles/08-foundation.css");
 const componentsCss = readSource("app/styles/03-components.css");
+const notificationsCss = readSource("app/notifications/notifications.css");
+const statusCss = readSource("app/styles/05-status.css");
 const appShell = readSource("components/AppShell.tsx");
 const appHeader = readSource("components/AppHeader.tsx");
 const commandBar = readSource("components/WorkspaceCommandBar.tsx");
@@ -43,5 +45,10 @@ describe("responsive RTL workspace source contract", () => {
     expect(appShell).toContain('data-layout="app-shell"');
     expect(appHeader).toContain('data-layout="app-header"');
     expect(commandBar).toContain('data-layout="workspace-commandbar"');
+  });
+
+  it("keeps notification and help surfaces within the visual viewport", () => {
+    expect(notificationsCss).toMatch(/100dvh/);
+    expect(statusCss).toMatch(/\.help-content\s*{[^}]*max-inline-size:\s*min\(100%,/s);
   });
 });
