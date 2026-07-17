@@ -1,0 +1,14 @@
+{
+  "dns": ["127.0.0.11"],
+  "userland-proxy": false,
+  "storage-driver": "overlay2",
+  "bridge": "none",
+  "icc": false,
+  "default-ulimits": {
+    "nofile": {
+      "Name": "nofile",
+      "Hard": 65535,
+      "Soft": 65535
+    }
+  }
+}

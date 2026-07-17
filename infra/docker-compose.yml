@@ -353,3 +353,10 @@ volumes:
 networks:
   archive:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br_archive
+      com.docker.driver.mtu: 1500
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+          gateway: 172.25.0.1
