@@ -176,6 +176,46 @@ a:hover {
   scrollbar-color: color-mix(in srgb, var(--color-brand-primary) 36%, transparent) transparent;
 }
 
+.app-breadcrumb {
+  grid-column: 1 / -1;
+}
+
+.breadcrumb__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.breadcrumb__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.breadcrumb__item a {
+  color: var(--color-text-tertiary);
+}
+
+.breadcrumb__item a:hover {
+  color: var(--color-text-primary);
+}
+
+.breadcrumb__item [aria-current="page"] {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.breadcrumb__separator {
+  color: var(--color-text-tertiary);
+  opacity: 0.6;
+}
+
 .route-links::-webkit-scrollbar {
   block-size: 6px;
 }
