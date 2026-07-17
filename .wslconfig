@@ -1,24 +1,117 @@
 [wsl2]
-# Stable NAT mode - no mirrored network issues
+# ============================================================================
+# WSL2 Production Configuration for Docker with Masar (مسار) Archive Platform
+# ============================================================================
+
+# === NETWORK CONFIGURATION ===
+# Use NAT mode for stability; avoid mirrored mode which causes vNIC drops
 NetworkingMode=NAT
-# Disable problematic DNS tunneling
-DnsTunneling=false
+
+# DNS: Use Google's public DNS to avoid Windows DNS interference
 GeneratedResolvConf=false
-# Conservative resource allocation to prevent network stalling
-Memory=3GB
+DnsTunneling=false
+
+# Keep Hyper-V firewall enabled for security but allow Docker traffic
+Firewall=true
+
+# ============================================================================
+# RESOURCE ALLOCATION (Conservative for WSL2 stability)
+# ============================================================================
+# Memory: 50% of host RAM (adjust based on host total)
+# Host has 16GB, allocate 4GB. For 8GB host, use 2GB; for 32GB host, use 8GB
+Memory=4GB
+
+# Swap: 1/4 of memory allocation for page file overflow
 Swap=1GB
-Processors=2
-# Disable advanced features that cause drops
+
+# CPU: Use 50% of available cores (conservative to prevent network stalls)
+# If host has 8 cores, use 4; if 16 cores, use 8
+Processors=4
+
+# ============================================================================
+# VIRTUALIZATION & PERFORMANCE TUNING
+# ============================================================================
+# Disable nested virtualization (causes network interruptions)
 NestedVirtualization=false
-PageReporting=false
-# TCP tuning for stability
-TcpKeepAliveTime=60
-TcpKeepAliveInterval=10
-TcpMaxDataRetransmissions=5
+
+# Enable page reporting for memory efficiency
+PageReporting=true
+
+# Use Hyper-V hypervisor (most stable for WSL2)
+Virtualization=hyperv
+
+# Disable guarded host (reduces overhead)
+GuardedHost=false
+
+# ============================================================================
+# NETWORK PERFORMANCE & RELIABILITY
+# ============================================================================
+# TCP Keep-Alive: Send probes every 30 seconds (balance between responsiveness & overhead)
+TcpKeepAliveTime=30
+
+# TCP Keep-Alive Interval: Check every 5 seconds if connection is alive
+TcpKeepAliveInterval=5
+
+# Max retransmission attempts: 4 (balance between reliability & quick failure detection)
+TcpMaxDataRetransmissions=4
+
+# Initial RTT estimate: 300ms (conservative for high-latency networks)
+TcpInitialRoundTripTime=300
+
+# ============================================================================
+# STORAGE & CACHING
+# ============================================================================
+# Disable swap interleaving (sequential swap is faster)
+SwapInterleaved=false
+
+# Enable VHDX compression to save disk space
+# KernelCommandLine=
+
+# ============================================================================
+# BOOT CONFIGURATION
+# ============================================================================
+# Disable systemd (faster boot, simpler process management for containers)
+systemd=false
+
+# Set custom DNS resolvers in /etc/resolv.conf (immutable)
+command=sh -c 'echo "nameserver 8.8.8.8" > /etc/resolv.conf && echo "nameserver 8.8.4.4" >> /etc/resolv.conf && echo "nameserver 1.1.1.1" >> /etc/resolv.conf'
+
+# ============================================================================
+# LOGGING & DEBUGGING
+# ============================================================================
+# Enable debug logging (set to true for troubleshooting)
+# DebugConsole=false
 
 [interop]
+# Don't add Windows PATH to WSL PATH (cleaner, faster)
 AppendWindowsPath=false
+
+# Enable interop calls (allow wsl command from PowerShell)
 Enabled=true
 
+# Automatically mount Windows drives (C:\ → /mnt/c)
+# DriveMount=true
+
 [boot]
+# Don't use systemd as init (simpler, faster, better for Docker)
 systemd=false
+
+# ============================================================================
+# RECOMMENDED WINDOWS HOST OPTIMIZATIONS (run as Administrator)
+# ============================================================================
+# 1. Disable Windows Defender real-time scanning for Docker directory:
+#    Add "D:\archiveaq\Arch_App" to Defender exclusions
+#
+# 2. Update Hyper-V network drivers:
+#    Get-NetAdapter | where Name -like "vEthernet*" | Restart-NetAdapter
+#
+# 3. Increase Hyper-V virtual switch buffer:
+#    Set-VMSwitch -VMSwitch "WSL (Hyper-V firewall)" -SwitchType Internal
+#
+# 4. Monitor WSL2 memory usage:
+#    Get-Process -Name "wsl" | Select-Object ProcessName, @{Name="MemoryMB"; Expression={[math]::Round($_.WorkingSet/1MB)}}
+#
+# 5. Check for Hyper-V resource contention:
+#    Get-VM | Select-Object Name, State, ProcessorCount, MemoryAssigned
+#
+# ============================================================================
