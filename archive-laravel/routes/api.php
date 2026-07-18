@@ -230,6 +230,8 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/saved-searches', [SavedSearchesController::class, 'index']);
         Route::post('/saved-searches', [SavedSearchesController::class, 'store']);
+        Route::patch('/saved-searches/{id}', [SavedSearchesController::class, 'update']);
+        Route::post('/saved-searches/{id}/copy', [SavedSearchesController::class, 'copy']);
         Route::delete('/saved-searches/{id}', [SavedSearchesController::class, 'destroy']);
 
         Route::get('/collections', [CollectionsController::class, 'index']);

@@ -282,6 +282,9 @@ export interface RecordNote {
   authorName: string;
   createdAt: string | null;
   updatedAt: string | null;
+  ownerId?: string;
+  shared?: boolean;
+  canManage?: boolean;
 }
 
 export interface CreateRecordNotePayload {
@@ -356,6 +359,9 @@ export interface SavedSearch {
   filters: Record<string, unknown> | null;
   createdAt: string | null;
   updatedAt: string | null;
+  ownerId?: string;
+  shared?: boolean;
+  canManage?: boolean;
 }
 
 export interface CreateSavedSearchPayload {
@@ -1161,6 +1167,8 @@ export interface ArchiveApiClient {
   savedSearches(options?: AuthRequestOptions): Promise<ApiEnvelope<{ searches: SavedSearch[] }>>;
   createSavedSearch(payload: CreateSavedSearchPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
   deleteSavedSearch(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  updateSavedSearch(id: string, payload: { shared: boolean }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
+  copySavedSearch(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
   collections(options?: AuthRequestOptions): Promise<ApiEnvelope<{ collections: Collection[] }>>;
   createCollection(payload: CreateCollectionPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ collection: Collection }>>;
   deleteCollection(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -1796,6 +1804,10 @@ export function createArchiveApiClient({
       post<{ search: SavedSearch }>("/saved-searches", payload, options),
     deleteSavedSearch: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/saved-searches/${encodeURIComponent(id)}`, undefined, options),
+    updateSavedSearch: (id: string, payload: { shared: boolean }, options?: AuthRequestOptions) =>
+      patch<{ search: SavedSearch }>(`/saved-searches/${encodeURIComponent(id)}`, payload, options),
+    copySavedSearch: (id: string, options?: AuthRequestOptions) =>
+      post<{ search: SavedSearch }>(`/saved-searches/${encodeURIComponent(id)}/copy`, undefined, options),
     collections: (options?: AuthRequestOptions) => get<{ collections: Collection[] }>("/collections", options),
     createCollection: (payload: CreateCollectionPayload, options?: AuthRequestOptions) =>
       post<{ collection: Collection }>("/collections", payload, options),

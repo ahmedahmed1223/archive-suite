@@ -49,6 +49,9 @@ export default function SavedSearchesPage() {
     if (response.ok) await refresh();
   }
 
+  async function handleShare(id: string, shared: boolean) { if ((await api.updateSavedSearch(id, { shared })).ok) await refresh(); }
+  async function handleCopy(id: string) { if ((await api.copySavedSearch(id)).ok) await refresh(); }
+
   function runUrl(search: SavedSearch): string {
     const params = new URLSearchParams();
     if (search.query) params.set("q", search.query);
@@ -111,15 +114,14 @@ export default function SavedSearchesPage() {
               <div className="panel-title-row">
                 <h2>{search.name}</h2>
                 <span className="badge">{search.filters?.viewKind === "archive-view" ? "عرض أرشيف" : "بحث"}</span>
+                <span className="badge">{search.shared ? "مشاركة مع الفريق" : "خاص"}</span>
               </div>
               {search.query ? <p className="helper-text">الاستعلام: {search.query}</p> : null}
               <div className="button-row">
                 <a className="button button-primary button-sm" href={runUrl(search)}>
                   تشغيل البحث
                 </a>
-                <button type="button" className="button button-secondary button-sm" onClick={() => void handleDelete(search.id)}>
-                  حذف
-                </button>
+                {search.canManage ? <><button type="button" className="button button-secondary button-sm" onClick={() => void handleShare(search.id, !search.shared)}>{search.shared ? "إيقاف المشاركة" : "مشاركة مع الفريق"}</button><button type="button" className="button button-secondary button-sm" onClick={() => void handleDelete(search.id)}>حذف</button></> : <button type="button" className="button button-secondary button-sm" onClick={() => void handleCopy(search.id)}>نسخ إلى بحوثي</button>}
               </div>
             </li>
           ))}
