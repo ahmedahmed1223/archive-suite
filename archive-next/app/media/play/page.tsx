@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
@@ -9,7 +9,8 @@ import MediaSourcePicker from "@/components/MediaSourcePicker";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
 import { parseSubtitles } from "@/lib/media/subtitles";
-import { createArchiveApiClient } from "@/lib/archive-api";
+import { createArchiveApiClient, type RecordNote } from "@/lib/archive-api";
+import { bookmarkNotes, formatBookmarkTime } from "@/lib/timestamp-bookmarks";
 import styles from "./play.module.css";
 import "../media.css";
 
@@ -26,6 +27,9 @@ export default function MediaPlayPage() {
   const [initialTime, setInitialTime] = useState<number | undefined>();
   const transcriptCueCount = parseSubtitles(transcriptText).length;
   const api = useMemo(() => createArchiveApiClient(), []);
+  const playerRef = useRef<HTMLMediaElement | null>(null);
+  const [bookmarks, setBookmarks] = useState<RecordNote[]>([]);
+  const [bookmarkStatus, setBookmarkStatus] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -49,6 +53,9 @@ export default function MediaPlayPage() {
     if (!recordIdParam) return;
 
     setRecordId(recordIdParam);
+    void api.recordNotes(recordIdParam).then((response) => {
+      if (response.ok) setBookmarks(bookmarkNotes(response.notes));
+    });
     setTranscriptStatus("جار تحميل التفريغ المحفوظ...");
     void api.record(recordIdParam)
       .then((response) => {
@@ -63,6 +70,19 @@ export default function MediaPlayPage() {
       })
       .catch(() => setTranscriptStatus("تعذر تحميل التفريغ المحفوظ."));
   }, [api]);
+
+  async function addBookmark() {
+    if (!recordId || !playerRef.current) return;
+    const body = window.prompt("وصف العلامة الزمنية", "علامة زمنية")?.trim();
+    if (!body) return;
+    const response = await api.createRecordNote(recordId, { body, timestampSeconds: playerRef.current.currentTime });
+    if (!response.ok) {
+      setBookmarkStatus(response.error || "تعذر حفظ العلامة.");
+      return;
+    }
+    setBookmarks((current) => bookmarkNotes([...current, response.note]));
+    setBookmarkStatus("تم حفظ العلامة للفريق.");
+  }
 
   async function handleTranscriptFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -171,7 +191,10 @@ export default function MediaPlayPage() {
               initialTime={initialTime}
               showTimeline
               transcriptText={transcriptText}
+              onReady={(element) => { playerRef.current = element; }}
             />
+            {recordId ? <div className="button-row"><button type="button" className="button button-secondary button-sm" onClick={() => void addBookmark()}>إضافة علامة عند الوقت الحالي</button>{bookmarkStatus ? <span className="form-status">{bookmarkStatus}</span> : null}</div> : null}
+            {bookmarks.length ? <div className="button-row" aria-label="العلامات الزمنية">{bookmarks.map((bookmark) => <button type="button" className="badge" key={bookmark.id} onClick={() => { if (playerRef.current && bookmark.timestampSeconds !== null) playerRef.current.currentTime = bookmark.timestampSeconds; }}>{formatBookmarkTime(bookmark.timestampSeconds ?? 0)} · {bookmark.body}</button>)}</div> : null}
           </article>
 
           <section className={`panel stack ${styles.transcriptPanel}`} aria-label="تفريغ متزامن">
