@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class CollaborationController extends Controller
 {
@@ -63,7 +64,7 @@ class CollaborationController extends Controller
         ]);
         $presence->save();
 
-        Event::dispatch(new CollaborationPresenceUpdated($roomKey, $this->formatPresence($presence)));
+        $this->dispatchRealtime(new CollaborationPresenceUpdated($roomKey, $this->formatPresence($presence)));
 
         return response()->json([
             'ok' => true,
@@ -234,7 +235,7 @@ class CollaborationController extends Controller
         $document->save();
 
         $formatted = $this->formatDocument($document);
-        Event::dispatch(new CollaborationDocumentUpdated($roomKey, $formatted));
+        $this->dispatchRealtime(new CollaborationDocumentUpdated($roomKey, $formatted));
 
         return response()->json([
             'ok' => true,
@@ -360,5 +361,14 @@ class CollaborationController extends Controller
             'expiresAt' => $lock->expires_at?->toISOString(),
             'updatedAt' => $lock->updated_at?->toISOString(),
         ];
+    }
+
+    private function dispatchRealtime(object $event): void
+    {
+        try {
+            Event::dispatch($event);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }

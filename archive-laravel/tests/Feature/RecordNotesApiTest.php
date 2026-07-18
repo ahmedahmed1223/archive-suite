@@ -93,6 +93,23 @@ class RecordNotesApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_notes_support_a_record_in_an_explicit_non_default_store(): void
+    {
+        DB::table('storage_rows')->insert([
+            'store' => 'archive',
+            'uid' => 'cross-store-record',
+            'data' => json_encode(['id' => 'cross-store-record', 'title' => 'Cross store'], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->postJson('/api/v1/records/cross-store-record/notes?store=archive', ['body' => 'Scoped note'], $this->authHeaders())
+            ->assertCreated();
+        $this->getJson('/api/v1/records/cross-store-record/notes?store=archive', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('notes.0.body', 'Scoped note');
+    }
+
     public function test_author_can_mutate_note_but_another_editor_sees_not_found(): void
     {
         $this->seedArchiveRecord();

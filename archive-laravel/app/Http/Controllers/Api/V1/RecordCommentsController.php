@@ -14,9 +14,10 @@ class RecordCommentsController extends Controller
 {
     private const ARCHIVE_STORE = 'archive-items';
 
-    public function index(string $recordId): JsonResponse
+    public function index(Request $request, string $recordId): JsonResponse
     {
-        if (! $this->recordExists($recordId)) {
+        $store = $this->recordStore($request);
+        if (! $this->recordExists($recordId, $store)) {
             return response()->json([
                 'ok' => false,
                 'error' => 'Record not found.',
@@ -26,6 +27,7 @@ class RecordCommentsController extends Controller
 
         $comments = DB::table('record_comments')
             ->where('item_id', $recordId)
+            ->where('record_store', $store)
             ->whereNull('deleted_at')
             ->orderBy('created_at')
             ->get()
@@ -37,7 +39,8 @@ class RecordCommentsController extends Controller
 
     public function store(Request $request, string $recordId): JsonResponse
     {
-        if (! $this->recordExists($recordId)) {
+        $store = $this->recordStore($request);
+        if (! $this->recordExists($recordId, $store)) {
             return response()->json([
                 'ok' => false,
                 'error' => 'Record not found.',
@@ -56,6 +59,7 @@ class RecordCommentsController extends Controller
         DB::table('record_comments')->insert([
             'id' => $id,
             'item_id' => $recordId,
+            'record_store' => $store,
             'body' => trim((string) $validated['body']),
             'author_id' => $user?->getKey(),
             'author_name' => $user?->name ?? $user?->email ?? 'مجهول',
@@ -103,10 +107,15 @@ class RecordCommentsController extends Controller
         ]);
     }
 
-    private function recordExists(string $id): bool
+    private function recordStore(Request $request): string
+    {
+        return $request->string('store')->trim()->toString() ?: self::ARCHIVE_STORE;
+    }
+
+    private function recordExists(string $id, string $store): bool
     {
         return DB::table('storage_rows')
-            ->where('store', self::ARCHIVE_STORE)
+            ->where('store', $store)
             ->where(function ($query) use ($id): void {
                 $query->where('uid', $id)
                     ->orWhereRaw("data->>'id' = ?", [$id]);

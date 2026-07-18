@@ -5,10 +5,12 @@ export type ConnectivityStatus = "online" | "offline" | "degraded";
 let currentStatus: ConnectivityStatus = "online";
 const listeners = new Set<(status: ConnectivityStatus) => void>();
 let probeInterval: NodeJS.Timeout | null = null;
+let consecutiveFailures = 0;
 
 const PROBE_INTERVAL_MS = 30_000; // Check every 30 seconds
 const HEALTH_ENDPOINT = "/api/v1/health";
 const PROBE_TIMEOUT_MS = 5000;
+const FAILURES_BEFORE_OFFLINE = 2;
 
 function emit(status: ConnectivityStatus) {
   currentStatus = status;
@@ -38,6 +40,17 @@ async function performHealthCheck(): Promise<boolean> {
   }
 }
 
+function applyHealthResult(isHealthy: boolean) {
+  if (isHealthy) {
+    consecutiveFailures = 0;
+    if (currentStatus !== "online") emit("online");
+    return;
+  }
+
+  consecutiveFailures += 1;
+  if (consecutiveFailures >= FAILURES_BEFORE_OFFLINE && currentStatus !== "offline") emit("offline");
+}
+
 /** Start continuous connectivity monitoring */
 export function startConnectivityProbe() {
   if (typeof window === "undefined") return;
@@ -46,14 +59,12 @@ export function startConnectivityProbe() {
   // Check on interval
   probeInterval = setInterval(async () => {
     const isHealthy = await performHealthCheck();
-    const newStatus: ConnectivityStatus = isHealthy ? "online" : "offline";
-    if (newStatus !== currentStatus) {
-      emit(newStatus);
-    }
+    applyHealthResult(isHealthy);
   }, PROBE_INTERVAL_MS);
 
   // Also listen to browser online/offline events (faster but less reliable)
   window.addEventListener("online", () => {
+    consecutiveFailures = 0;
     emit("online");
   });
 
@@ -63,7 +74,7 @@ export function startConnectivityProbe() {
 
   // Do initial check
   performHealthCheck().then((isHealthy) => {
-    emit(isHealthy ? "online" : "offline");
+    applyHealthResult(isHealthy);
   });
 }
 
@@ -73,6 +84,7 @@ export function stopConnectivityProbe() {
     clearInterval(probeInterval);
     probeInterval = null;
   }
+  consecutiveFailures = 0;
 }
 
 /** Get current connectivity status */

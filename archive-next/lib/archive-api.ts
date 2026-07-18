@@ -1051,17 +1051,17 @@ export interface ArchiveApiClient {
   createRelation(payload: CreateRelationPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relation: RecordRelation }>>;
   updateRelation(id: string, payload: UpdateRelationPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relation: RecordRelation }>>;
   deleteRelation(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
-  recordNotes(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ notes: RecordNote[] }>>;
-  createRecordNote(recordId: string, payload: CreateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
+  recordNotes(recordId: string, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ notes: RecordNote[] }>>;
+  createRecordNote(recordId: string, payload: CreateRecordNotePayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
-  recordComments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: RecordComment[] }>>;
-  createRecordComment(recordId: string, payload: CreateRecordCommentPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: RecordComment }>>;
+  recordComments(recordId: string, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: RecordComment[] }>>;
+  createRecordComment(recordId: string, payload: CreateRecordCommentPayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: RecordComment }>>;
   deleteRecordComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   activity(params?: ActivityFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; filters: ActivityFilters; pagination?: PaginationMeta }>>;
   complianceReport(params?: ComplianceReportFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: ComplianceReportEntry[]; filters: ComplianceReportFilters; summary: ComplianceReportSummary }>>;
   downloadComplianceReport(params?: ComplianceReportFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ blob: Blob; filename: string }>>;
-  recordHistory(recordId: string, params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; pagination?: PaginationMeta }>>;
+  recordHistory(recordId: string, params?: { limit?: number; page?: number; store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; pagination?: PaginationMeta }>>;
   sync(params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   createRecord(payload: CreateRecordPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
@@ -1454,18 +1454,18 @@ export function createArchiveApiClient({
       patch<{ relation: RecordRelation }>(`/relations/${encodeURIComponent(id)}`, payload, options),
     deleteRelation: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/relations/${encodeURIComponent(id)}`, undefined, options),
-    recordNotes: (recordId: string, options?: AuthRequestOptions) =>
-      get<{ notes: RecordNote[] }>(`/records/${encodeURIComponent(recordId)}/notes`, options),
-    createRecordNote: (recordId: string, payload: CreateRecordNotePayload, options?: AuthRequestOptions) =>
-      post<{ note: RecordNote }>(`/records/${encodeURIComponent(recordId)}/notes`, payload, options),
+    recordNotes: (recordId: string, store = "archive-items", options?: AuthRequestOptions) =>
+      get<{ notes: RecordNote[] }>(`/records/${encodeURIComponent(recordId)}/notes?${new URLSearchParams({ store })}`, options),
+    createRecordNote: (recordId: string, payload: CreateRecordNotePayload, store = "archive-items", options?: AuthRequestOptions) =>
+      post<{ note: RecordNote }>(`/records/${encodeURIComponent(recordId)}/notes?${new URLSearchParams({ store })}`, payload, options),
     updateRecordNote: (id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions) =>
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
-    recordComments: (recordId: string, options?: AuthRequestOptions) =>
-      get<{ comments: RecordComment[] }>(`/records/${encodeURIComponent(recordId)}/comments`, options),
-    createRecordComment: (recordId: string, payload: CreateRecordCommentPayload, options?: AuthRequestOptions) =>
-      post<{ comment: RecordComment }>(`/records/${encodeURIComponent(recordId)}/comments`, payload, options),
+    recordComments: (recordId: string, store = "archive-items", options?: AuthRequestOptions) =>
+      get<{ comments: RecordComment[] }>(`/records/${encodeURIComponent(recordId)}/comments?${new URLSearchParams({ store })}`, options),
+    createRecordComment: (recordId: string, payload: CreateRecordCommentPayload, store = "archive-items", options?: AuthRequestOptions) =>
+      post<{ comment: RecordComment }>(`/records/${encodeURIComponent(recordId)}/comments?${new URLSearchParams({ store })}`, payload, options),
     deleteRecordComment: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-comments/${encodeURIComponent(id)}`, undefined, options),
     activity: (params?: ActivityFilters, options?: AuthRequestOptions) => {
@@ -1516,10 +1516,11 @@ export function createArchiveApiClient({
         return { ok: false, error: "تعذر الاتصال بالخادم لتصدير التقرير." };
       }
     },
-    recordHistory: (recordId: string, params?: { limit?: number; page?: number }, options?: AuthRequestOptions) => {
+    recordHistory: (recordId: string, params?: { limit?: number; page?: number; store?: string }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.limit) queryParams.set("limit", String(params.limit));
       if (params?.page) queryParams.set("page", String(params.page));
+      if (params?.store) queryParams.set("store", params.store);
       const query = queryParams.toString();
       return get<{ entries: RecordHistoryEntry[]; pagination?: PaginationMeta }>(`/records/${encodeURIComponent(recordId)}/history${query ? `?${query}` : ""}`, options);
     },
