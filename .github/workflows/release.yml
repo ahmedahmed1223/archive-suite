@@ -39,7 +39,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24.18.0"
+          node-version: "25.9.0"
           cache: pnpm
 
       - name: Install workspace dependencies
@@ -67,7 +67,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24.18.0"
+          node-version: "25.9.0"
           cache: pnpm
 
       - name: Setup PHP and Composer

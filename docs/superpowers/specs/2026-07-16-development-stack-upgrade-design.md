@@ -6,10 +6,10 @@
 
 ## القرارات
 
-- يعتمد المشروع Node.js 24.18.0 وpnpm الحالي المتوافق معه في الـCI وDocker وقيود `engines` وعقد المنصة.
+- يعتمد المشروع Node.js 25.9.0 وpnpm الحالي المتوافق معه في الـCI وDocker وقيود `engines` وعقد المنصة.
 - يعتمد PostgreSQL 18 عبر `pgvector/pgvector:0.8.5-pg18`، وتزال مراجع PostgreSQL 17 من المسار القانوني.
 - ترقية بيانات التطوير تكون غير مدمرة: تؤخذ نسخة SQL، ويُشغّل PostgreSQL 18 على data directory جديد، ثم تستعاد النسخة وتتحقق healthchecks وامتداد `vector`. لا يحذف التنفيذ volume 17 تلقائيًا.
-- تحدّث صور التطوير/الاختبار إلى إصدارات محددة ومثبتة بالـdigest: Redis 8.8، Caddy 2.11.4، PHP 8.5، Composer 2.10، Python 3.13، وNode 24.18.
+- تحدّث صور التطوير/الاختبار إلى إصدارات محددة ومثبتة بالـdigest: Redis 8.8، Caddy 2.11.4، PHP 8.5، Composer 2.10، Python 3.13، وNode 25.9.
 - تحدّث حزم pnpm وComposer المباشرة إلى أحدث الإصدارات. تتضمن الترقية الكبرى TypeScript 7 وVitest 4 وAI SDK 7 وموفريه 4 وPHPUnit 13؛ يصلح الكود والاختبارات لأي breaking changes ناتجة.
 - يبقى Next.js 16.2.10 كما هو لأنه أحدث إصدار متاح وقت الجرد. تبقى React 19.2.7 وReact DOM 19.2.7 كما هما للسبب نفسه.
 - أي digest تستخدمه Compose أو Kubernetes أو release manifest يحدّث في كل مصدر حقيقة، لأن فحوص reproducibility تتطلب التطابق حتى لو لم يُستخدم مسار النشر حاليًا.
