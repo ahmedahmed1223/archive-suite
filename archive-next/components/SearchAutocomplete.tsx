@@ -21,8 +21,15 @@ export default function SearchAutocomplete({ value, onChange, onSelect, fetchSug
       setItems([]);
       return;
     }
-    void fetchSuggestions(value).then((next) => { if (alive) setItems(next); }).catch(() => { if (alive) setItems([]); });
-    return () => { alive = false; };
+    const timer = window.setTimeout(() => {
+      void fetchSuggestions(value).then((next) => {
+        if (alive) {
+          setItems(next);
+          setActive(-1);
+        }
+      }).catch(() => { if (alive) setItems([]); });
+    }, 180);
+    return () => { alive = false; window.clearTimeout(timer); };
   }, [fetchSuggestions, value]);
 
   return <div className="search-autocomplete">
