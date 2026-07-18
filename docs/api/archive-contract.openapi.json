@@ -167,6 +167,17 @@
           },
           "401": { "$ref": "#/components/responses/Error" }
         }
+      },
+      "post": {
+        "tags": ["Records"],
+        "summary": "Create a descriptive record without requiring a file",
+        "operationId": "createRecord",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordCreateRequest" } } } },
+        "responses": {
+          "201": { "description": "Created record", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["record"], "properties": { "record": { "$ref": "#/components/schemas/ArchiveRecord" } } }] } } } },
+          "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" }
+        }
       }
     },
     "/records/{id}": {
@@ -212,6 +223,26 @@
           "401": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/Error" }
         }
+      }
+    },
+    "/records/{id}/attachments": {
+      "get": {
+        "tags": ["Records"], "summary": "List durable record attachments", "operationId": "listRecordAttachments", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "store", "in": "query", "schema": { "type": "string", "default": "archive-items" } }],
+        "responses": { "200": { "description": "Attachments", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordAttachmentsResponse" } } } }, "404": { "$ref": "#/components/responses/Error" } }
+      },
+      "post": {
+        "tags": ["Records"], "summary": "Attach one or more files to a record", "operationId": "uploadRecordAttachments", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "required": ["files"], "properties": { "store": { "type": "string" }, "files": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "type": "string", "format": "binary" } } } } } } },
+        "responses": { "201": { "description": "Created attachments", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordAttachmentsResponse" } } } }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/records/{id}/attachments/{attachmentId}": {
+      "delete": {
+        "tags": ["Records"], "summary": "Delete a record attachment", "operationId": "deleteRecordAttachment", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "attachmentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }, { "name": "store", "in": "query", "schema": { "type": "string" } }],
+        "responses": { "200": { "$ref": "#/components/responses/Ok" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
       }
     },
     "/records/{id}/transcript": {
@@ -3955,6 +3986,18 @@
           "totpRecoveryCodesRemaining": { "type": "integer" }
         }
       },
+      "RecordCreateRequest": {
+        "type": "object", "required": ["title"],
+        "properties": { "title": { "type": "string", "minLength": 1, "maxLength": 500 }, "description": { "type": "string", "maxLength": 10000 }, "type": { "type": "string", "maxLength": 100 }, "tags": { "type": "array", "maxItems": 100, "items": { "type": "string", "maxLength": 100 } }, "store": { "type": "string", "default": "archive-items" }, "metadata": { "type": "object", "additionalProperties": true } },
+        "additionalProperties": false
+      },
+      "RecordAttachment": {
+        "type": "object", "required": ["id", "recordStore", "recordUid", "originalName", "sizeBytes", "checksumSha256", "isPrimary", "processingStatus"],
+        "properties": { "id": { "type": "string", "format": "uuid" }, "recordStore": { "type": "string" }, "recordUid": { "type": "string" }, "originalName": { "type": "string" }, "mimeType": { "type": ["string", "null"] }, "sizeBytes": { "type": "integer", "minimum": 0 }, "checksumSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "isPrimary": { "type": "boolean" }, "processingStatus": { "type": "string" }, "createdAt": { "type": ["string", "null"], "format": "date-time" } }
+      },
+      "RecordAttachmentsResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["attachments"], "properties": { "attachments": { "type": "array", "items": { "$ref": "#/components/schemas/RecordAttachment" } } } }]
+      },
       "ArchiveRecord": {
         "type": "object",
         "required": ["id", "title"],
@@ -3998,6 +4041,7 @@
           "isDeleted": { "type": "boolean", "default": false },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" },
+          "attachmentCount": { "type": "integer", "minimum": 0 },
           "syncVersion": { "type": "integer" }
         },
         "additionalProperties": true

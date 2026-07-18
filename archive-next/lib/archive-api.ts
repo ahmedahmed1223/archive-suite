@@ -54,7 +54,30 @@ export interface ArchiveRecord {
   descriptorCompletion?: DescriptorCompletion;
   createdAt?: string;
   updatedAt?: string;
+  attachmentCount?: number;
   [key: string]: unknown;
+}
+
+export interface RecordAttachment {
+  id: string;
+  recordStore: string;
+  recordUid: string;
+  originalName: string;
+  mimeType?: string | null;
+  sizeBytes: number;
+  checksumSha256: string;
+  isPrimary: boolean;
+  processingStatus: string;
+  createdAt?: string | null;
+}
+
+export interface CreateRecordPayload {
+  title: string;
+  description?: string;
+  type?: string;
+  tags?: string[];
+  store?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SearchSuggestion {
@@ -1079,6 +1102,10 @@ export interface ArchiveApiClient {
   recordHistory(recordId: string, params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; pagination?: PaginationMeta }>>;
   sync(params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
+  createRecord(payload: CreateRecordPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
+  recordAttachments(id: string, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ attachments: RecordAttachment[] }>>;
+  uploadRecordAttachments(id: string, files: File[], store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ attachments: RecordAttachment[] }>>;
+  deleteRecordAttachment(id: string, attachmentId: string, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   updateRecordTranscript(id: string, payload: { transcript: string; store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
   types(params?: { cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ types: ArchiveType[]; nextCursor?: string | null }>>;
@@ -1305,7 +1332,7 @@ export function createArchiveApiClient({
   ): Promise<ApiEnvelope<T>> {
     const headers = new Headers({ Accept: "application/json" });
 
-    if (body !== undefined) {
+    if (body !== undefined && !(body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
     }
 
@@ -1325,7 +1352,7 @@ export function createArchiveApiClient({
         method,
         headers,
         credentials: "include",
-        body: body === undefined ? undefined : JSON.stringify(body)
+        body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body)
       });
     } catch {
       return { ok: false, error: "تعذر الاتصال بالخادم. تحقق من الاتصال ثم أعد المحاولة." };
@@ -1542,6 +1569,25 @@ export function createArchiveApiClient({
       return get<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>(`/sync${query ? `?${query}` : ""}`, options);
     },
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
+    createRecord: (payload: CreateRecordPayload, options?: AuthRequestOptions) =>
+      post<{ record: ArchiveRecord }>("/records", payload, options),
+    recordAttachments: (id: string, store = "archive-items", options?: AuthRequestOptions) => {
+      const query = new URLSearchParams({ store });
+      return get<{ attachments: RecordAttachment[] }>(`/records/${encodeURIComponent(id)}/attachments?${query}`, options);
+    },
+    uploadRecordAttachments: (id: string, files: File[], store = "archive-items", options?: AuthRequestOptions) => {
+      const form = new FormData();
+      form.set("store", store);
+      files.forEach((file) => form.append("files[]", file));
+      return request<{ attachments: RecordAttachment[] }>(`/records/${encodeURIComponent(id)}/attachments`, {
+        method: "POST",
+        body: form,
+        accessToken: options?.accessToken,
+        extraHeaders: options?.headers
+      });
+    },
+    deleteRecordAttachment: (id: string, attachmentId: string, store = "archive-items", options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/records/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}?${new URLSearchParams({ store })}`, undefined, options),
     updateRecordTranscript: (id: string, payload: { transcript: string; store?: string }, options?: AuthRequestOptions) =>
       patch<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}/transcript`, payload, options),
     records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {

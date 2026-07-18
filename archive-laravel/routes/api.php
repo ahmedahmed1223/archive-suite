@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\OnboardingProgressController;
 use App\Http\Controllers\Api\V1\PluginMarketplaceController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
+use App\Http\Controllers\Api\V1\RecordAttachmentsController;
 use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordsBulkCsvController;
 use App\Http\Controllers\Api\V1\RecordsController;
@@ -159,7 +160,11 @@ Route::prefix('v1')->group(function (): void {
         // export must be registered before the /records/{id} wildcard below,
         // or Laravel matches "export" as {id} and returns a 404 record lookup.
         Route::get('/records/export', [RecordsBulkCsvController::class, 'export']);
+        Route::post('/records', [RecordsController::class, 'store']);
         Route::get('/records/{id}', [RecordsController::class, 'show']);
+        Route::get('/records/{id}/attachments', [RecordAttachmentsController::class, 'index']);
+        Route::post('/records/{id}/attachments', [RecordAttachmentsController::class, 'store']);
+        Route::delete('/records/{id}/attachments/{attachmentId}', [RecordAttachmentsController::class, 'destroy']);
         Route::patch('/records/{id}/transcript', [RecordTranscriptController::class, 'update']);
         Route::get('/records/{id}/notes', [RecordNotesController::class, 'index']);
         Route::post('/records/{id}/notes', [RecordNotesController::class, 'store']);

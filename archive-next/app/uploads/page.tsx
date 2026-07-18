@@ -5,6 +5,7 @@ import { ImportFromUrlForm } from "./ImportFromUrlForm";
 import { IntakeTemplatesPanel } from "./IntakeTemplatesPanel";
 import { UploadForm } from "./UploadForm";
 import { UploadLinksPanel } from "./UploadLinksPanel";
+import { FilelessRecordForm } from "./FilelessRecordForm";
 
 export default function UploadsPage() {
   return (
@@ -32,6 +33,7 @@ export default function UploadsPage() {
 
       <section className="add-workspace" aria-label="إضافة مادة للأرشيف">
         <div className="add-workspace__primary">
+          <FilelessRecordForm />
           <UploadForm />
         </div>
         <details className="add-workspace__support" aria-label="أدوات الإضافة المساندة">
