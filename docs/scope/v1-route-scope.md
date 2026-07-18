@@ -48,7 +48,8 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 |---|---|---|---|---|
 | GET | `/v1/auth/me` | v1 | — | |
 | POST | `/v1/auth/logout` | v1 | — | |
-| GET | `/v1/records`, `/v1/records/{id}` | v1 | — | |
+| GET/POST | `/v1/records`, `/v1/records/{id}` | v1 | — | POST creates a descriptive record; editor-gated |
+| GET/POST/DELETE | `/v1/records/{id}/attachments*` | v1 | — | durable multi-file attachments; writes editor-gated |
 | GET/POST | `/v1/records/{id}/notes` | v1 | — | |
 | GET/POST | `/v1/records/{id}/comments` | v1 | — | |
 | GET | `/v1/records/{id}/history` | v1 | — | |

@@ -33,6 +33,7 @@ import { recordView } from "@/lib/recent-items";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 import RecordPresence from "@/components/RecordPresence";
+import RecordAttachmentsPanel from "@/components/RecordAttachmentsPanel";
 
 type DetailState =
   | { status: "loading" }
@@ -1443,6 +1444,7 @@ export default function ArchiveDetailPage() {
               record={state.record}
               onRecordUpdate={(updated) => setState((current) => (current.status === "ready" ? { ...current, record: updated } : current))}
             />
+            <RecordAttachmentsPanel recordId={id} store={state.record.store || "archive-items"} />
             <MediaDerivativesTree record={state.record} />
             <RecordHistoryPanel
               entries={state.history}

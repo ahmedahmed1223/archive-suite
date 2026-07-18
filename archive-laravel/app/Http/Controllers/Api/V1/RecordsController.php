@@ -12,9 +12,28 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use JsonException;
 use stdClass;
+use Illuminate\Support\Str;
 
 class RecordsController extends Controller
 {
+    public function store(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        $validated = $request->validate([
+            'store' => ['nullable', 'string', 'max:100'], 'title' => ['required', 'string', 'max:500'],
+            'description' => ['nullable', 'string'], 'type' => ['nullable', 'string', 'max:100'],
+            'subtype' => ['nullable', 'string', 'max:100'], 'tags' => ['nullable', 'array'], 'tags.*' => ['string', 'max:100'],
+        ]);
+        $store = $validated['store'] ?? 'archive-items';
+        $id = (string) Str::uuid();
+        $now = now();
+        $record = ['id'=>$id,'uid'=>$id,'title'=>trim($validated['title']),'description'=>$validated['description'] ?? '',
+            'type'=>$validated['type'] ?? null,'subtype'=>$validated['subtype'] ?? null,'tags'=>$validated['tags'] ?? [],
+            'attachmentCount'=>0,'createdAt'=>$now->toIso8601String(),'updatedAt'=>$now->toIso8601String()];
+        DB::table('storage_rows')->insert(['store'=>$store,'uid'=>$id,'data'=>json_encode($record, JSON_THROW_ON_ERROR),'created_at'=>$now,'updated_at'=>$now]);
+        return response()->json(['ok'=>true,'record'=>$record], 201);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -77,6 +96,7 @@ class RecordsController extends Controller
         }
 
         $record = StorageRowPayload::format($row);
+        $record['attachmentCount'] = DB::table('record_attachments')->where(['record_store' => $row->store, 'record_uid' => $row->uid])->count();
 
         return response()->json([
             'ok' => true,

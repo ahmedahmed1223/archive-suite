@@ -48,7 +48,10 @@ class AuditArchiveApiRequest
         $resourceId = null;
 
         [$event, $resourceType] = match ([$method, $route]) {
+            ['POST', 'api/v1/records'] => ['records.create', 'record'],
             ['POST', 'api/v1/records/bulk'] => ['records.bulk_upsert', 'record'],
+            ['POST', 'api/v1/records/{id}/attachments'] => ['record_attachments.create', 'record_attachment'],
+            ['DELETE', 'api/v1/records/{id}/attachments/{attachmentId}'] => ['record_attachments.delete', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
             ['PATCH', 'api/v1/record-notes/{id}'] => ['record_notes.update', 'record_note'],
             ['DELETE', 'api/v1/record-notes/{id}'] => ['record_notes.delete', 'record_note'],
@@ -76,6 +79,14 @@ class AuditArchiveApiRequest
             if (is_array($records) && count($records) === 1 && is_array($records[0] ?? null)) {
                 $resourceId = $records[0]['uid'] ?? $records[0]['id'] ?? null;
             }
+        }
+
+        if ($route === 'api/v1/records') {
+            $resourceId = $response->isSuccessful() ? data_get(json_decode($response->getContent(), true), 'record.id') : null;
+        }
+
+        if (in_array($route, ['api/v1/records/{id}/attachments', 'api/v1/records/{id}/attachments/{attachmentId}'], true)) {
+            $resourceId = $request->route('attachmentId') ?: $request->route('id');
         }
 
         if ($route === 'api/v1/relations') {
