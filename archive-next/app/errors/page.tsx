@@ -17,6 +17,7 @@ import {
   type ClientErrorSeverity
 } from "@/lib/client-error-log";
 import { groupActionErrors, redactAdminSecrets } from "@/lib/admin-action-summary";
+import { getErrorWave } from "@/lib/error-rate-alert";
 
 const severityLabels: Record<ClientErrorSeverity, string> = {
   error: "خطأ",
@@ -119,6 +120,7 @@ export default function ErrorsPage() {
     [filteredErrors]
   );
   const groupedErrors = useMemo(() => groupActionErrors(filteredErrors), [filteredErrors]);
+  const errorWave = useMemo(() => getErrorWave(errors), [errors]);
 
   const createManualError = () => {
     recordClientError({
@@ -223,6 +225,17 @@ export default function ErrorsPage() {
           }
         ]}
       />
+      {errorWave.active ? (
+        <section className="state-banner state-banner-error" role="alert" aria-live="assertive">
+          <AlertTriangle aria-hidden="true" size={20} />
+          <div>
+            <strong>ارتفاع ملحوظ في معدل الأعطال</strong>
+            <p className="helper-text">
+              سُجلت {errorWave.count} حالة خطأ خلال آخر {errorWave.windowMinutes} دقائق. راجع الأحداث المتكررة وابدأ بخطوات الاسترداد أدناه.
+            </p>
+          </div>
+        </section>
+      ) : null}
       {groupedErrors.length ? <section className="panel panel-compact" aria-label="ملخص الاسترداد"><div className="panel-title-row"><div><h2>خطوات الاسترداد المقترحة</h2><p>تجميع محلي للأنماط المتكررة، وليس تشخيصاً من الخادم.</p></div></div><div className="analytics-chip-list">{groupedErrors.map((group) => <span className="badge" key={group.key}>{group.label}: {group.count} — {group.recovery}</span>)}</div></section> : null}
 
       {filteredErrors.length === 0 ? (
