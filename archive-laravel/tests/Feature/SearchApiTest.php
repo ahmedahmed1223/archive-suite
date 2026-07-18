@@ -62,6 +62,16 @@ class SearchApiTest extends TestCase
             ->assertJsonPath('records.0.match.timestampSeconds', 83);
     }
 
+    public function test_it_returns_bounded_search_suggestions(): void
+    {
+        $this->seedRecords();
+
+        $this->getJson('/api/v1/search/suggestions?q=riy&limit=8', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('suggestions.0.kind', 'record')
+            ->assertJsonPath('suggestions.0.value', 'Riyadh archive interview');
+    }
+
     public function test_it_supports_search_cursor_pagination(): void
     {
         $this->seedRecords();

@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V1\ReviewLinksController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SavedSearchesController;
 use App\Http\Controllers\Api\V1\SearchController;
+use App\Http\Controllers\Api\V1\SearchSuggestionsController;
 use App\Http\Controllers\Api\V1\SuggestionsController;
 use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\SyncController;
@@ -187,6 +188,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/reports/compliance/export', [ComplianceReportsController::class, 'export']);
         Route::get('/plugins', [PluginMarketplaceController::class, 'index']);
         Route::get('/search', [SearchController::class, 'index']);
+        Route::get('/search/suggestions', [SearchSuggestionsController::class, 'index']);
         Route::get('/discover', [DiscoverController::class, 'index']);
         Route::get('/suggestions', [SuggestionsController::class, 'index']);
         Route::put('/suggestions/{key}/feedback', [SuggestionsController::class, 'feedback']);
