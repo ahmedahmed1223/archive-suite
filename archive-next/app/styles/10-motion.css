@@ -1,0 +1,40 @@
+/* ── Motion & polish (Masar) ──
+   App-wide entrance + smoothing, applied at the shared shell/primitive layer so
+   every page inherits it. All motion is gated behind prefers-reduced-motion. */
+
+@keyframes masarFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Content column fades in on each route render. */
+.app-content {
+  animation: masarFadeIn var(--duration-normal) var(--easing-out) both;
+}
+
+/* Panels gain a soft elevation on hover for tactile depth. */
+.panel {
+  transition:
+    border-color var(--duration-fast) var(--easing-default),
+    box-shadow var(--duration-normal) var(--easing-out);
+}
+
+.panel:hover {
+  box-shadow: var(--shadow-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-content {
+    animation: none;
+  }
+
+  .panel {
+    transition: none;
+  }
+}
