@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -91,6 +93,34 @@ class RecordNotesApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_author_can_mutate_note_but_another_editor_sees_not_found(): void
+    {
+        $this->seedArchiveRecord();
+        $author = $this->headersFor('viewer', 'note-author@example.test');
+        $other = $this->headersFor('editor', 'note-other@example.test');
+        $id = $this->postJson('/api/v1/records/item-1/notes', ['body' => 'Private'], $author)
+            ->assertCreated()->json('note.id');
+
+        $this->patchJson('/api/v1/record-notes/'.$id, ['body' => 'No access'], $other)->assertNotFound();
+        $this->deleteJson('/api/v1/record-notes/'.$id, [], $other)->assertNotFound();
+        $this->patchJson('/api/v1/record-notes/'.$id, ['body' => 'Mine'], $author)->assertOk();
+        $this->deleteJson('/api/v1/record-notes/'.$id, [], $author)->assertOk();
+    }
+
+    public function test_admin_can_mutate_another_users_note_and_orphan_notes_are_admin_only(): void
+    {
+        $this->seedArchiveRecord();
+        $author = $this->headersFor('viewer', 'note-owner@example.test');
+        $admin = $this->headersFor('admin', 'note-admin@example.test');
+        $id = $this->postJson('/api/v1/records/item-1/notes', ['body' => 'Owned'], $author)->json('note.id');
+        $this->patchJson('/api/v1/record-notes/'.$id, ['body' => 'Moderated'], $admin)->assertOk();
+
+        $orphanId = '00000000-0000-4000-8000-000000000001';
+        DB::table('record_notes')->insert(['id' => $orphanId, 'item_id' => 'item-1', 'body' => 'Legacy', 'author_id' => null, 'author_name' => 'Legacy', 'created_at' => now(), 'updated_at' => now()]);
+        $this->patchJson('/api/v1/record-notes/'.$orphanId, ['body' => 'Claimed'], $author)->assertNotFound();
+        $this->deleteJson('/api/v1/record-notes/'.$orphanId, [], $admin)->assertOk();
+    }
+
     private function seedArchiveRecord(): void
     {
         $now = now();
@@ -111,5 +141,13 @@ class RecordNotesApiTest extends TestCase
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+    }
+
+    /** @return array<string, string> */
+    private function headersFor(string $role, string $email): array
+    {
+        User::query()->create(['name' => $role, 'email' => $email, 'password' => Hash::make('secret-password'), 'role' => $role]);
+        $token = $this->postJson('/api/v1/auth/login', ['email' => $email, 'password' => 'secret-password'])->assertOk()->json('accessToken');
+        return ['Authorization' => 'Bearer '.$token];
     }
 }

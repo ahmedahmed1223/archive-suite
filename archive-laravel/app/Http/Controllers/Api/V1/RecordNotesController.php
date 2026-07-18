@@ -80,12 +80,10 @@ class RecordNotesController extends Controller
         $note = DB::table('record_notes')->where('id', $id)->first();
 
         if (! $note instanceof stdClass) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Note not found.',
-                'code' => 'not_found',
-            ], 404);
+            return $this->notFound();
         }
+
+        if (! $this->canMutate($request, $note)) return $this->notFound();
 
         $validated = $request->validate($this->rules(requireBody: false));
         $updates = ['updated_at' => now()];
@@ -115,8 +113,11 @@ class RecordNotesController extends Controller
         ]);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
+        $note = DB::table('record_notes')->where('id', $id)->first();
+        if (! $note instanceof stdClass || ! $this->canMutate($request, $note)) return $this->notFound();
+
         $deleted = DB::table('record_notes')->where('id', $id)->delete();
 
         if ($deleted < 1) {
@@ -131,6 +132,17 @@ class RecordNotesController extends Controller
             'ok' => true,
             'deleted' => true,
         ]);
+    }
+
+    private function canMutate(Request $request, stdClass $note): bool
+    {
+        $user = $request->attributes->get('archive_user');
+        return $user?->role === 'admin' || ($note->author_id !== null && (string) $note->author_id === (string) $user?->getKey());
+    }
+
+    private function notFound(): JsonResponse
+    {
+        return response()->json(['ok' => false, 'error' => 'Note not found.', 'code' => 'not_found'], 404);
     }
 
     /**

@@ -119,6 +119,19 @@ class RoleMatrixApiTest extends TestCase
             ->assertJsonPath('count', 1);
     }
 
+    public function test_viewer_cannot_write_rights(): void
+    {
+        $this->postJson('/api/v1/rights', $this->rightsPayload('viewer-rights'), $this->viewerHeaders())
+            ->assertForbidden();
+    }
+
+    public function test_editor_can_write_rights(): void
+    {
+        $this->postJson('/api/v1/rights', $this->rightsPayload('editor-rights'), $this->editorHeaders())
+            ->assertCreated()
+            ->assertJsonPath('record.itemId', 'editor-rights');
+    }
+
     // -- montage projects (V1-102 gap: no ownership column, was open to every role) --
 
     public function test_viewer_cannot_create_a_montage_project(): void
@@ -647,6 +660,12 @@ class RoleMatrixApiTest extends TestCase
         ])->assertOk();
 
         return $login->json('accessToken');
+    }
+
+    /** @return array<string, string> */
+    private function rightsPayload(string $itemId): array
+    {
+        return ['itemId' => $itemId, 'rightsHolder' => 'Archive Team', 'licenseType' => 'OWNED'];
     }
 
     private function createTagNodeAsEditor(string $tag): string
