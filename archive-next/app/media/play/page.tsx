@@ -23,6 +23,7 @@ export default function MediaPlayPage() {
   const [transcriptStatus, setTranscriptStatus] = useState("");
   const [recordId, setRecordId] = useState("");
   const [recordStore, setRecordStore] = useState("");
+  const [initialTime, setInitialTime] = useState<number | undefined>();
   const transcriptCueCount = parseSubtitles(transcriptText).length;
   const api = useMemo(() => createArchiveApiClient(), []);
 
@@ -31,6 +32,7 @@ export default function MediaPlayPage() {
     const pathParam = params.get("path")?.trim() ?? "";
     const diskParam = params.get("disk")?.trim() ?? "";
     const recordIdParam = params.get("recordId")?.trim() ?? "";
+    const timeParam = Number(params.get("at"));
 
     if (pathParam) {
       setPathInput(pathParam);
@@ -41,6 +43,8 @@ export default function MediaPlayPage() {
       setDiskInput(diskParam);
       setDisk(diskParam);
     }
+
+    if (Number.isFinite(timeParam) && timeParam >= 0) setInitialTime(timeParam);
 
     if (!recordIdParam) return;
 
@@ -164,6 +168,7 @@ export default function MediaPlayPage() {
               path={path}
               disk={disk || undefined}
               title={disk ? `${disk}:${path}` : path}
+              initialTime={initialTime}
               showTimeline
               transcriptText={transcriptText}
             />

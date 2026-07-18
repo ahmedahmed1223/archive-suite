@@ -12,6 +12,7 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
+import { buildSearchPlaybackHref } from "@/lib/search";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -23,6 +24,7 @@ type SearchState =
   | { status: "error"; message: string };
 
 type SearchViewMode = "cards" | "list";
+type SearchMode = "keyword" | "semantic" | "transcript";
 
 const searchViewOptions: DataViewOption<SearchViewMode>[] = [
   { value: "cards", label: "بطاقات" },
@@ -34,6 +36,13 @@ function formatDate(value?: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("ar-SA");
+}
+
+function formatPlaybackTime(seconds: number) {
+  const rounded = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(rounded / 60);
+  const remaining = String(rounded % 60).padStart(2, "0");
+  return `${minutes}:${remaining}`;
 }
 
 function uniqueTypes(records: ArchiveRecord[]) {
@@ -96,11 +105,17 @@ function SearchPageContent() {
   const initialPageSize = parseInt(searchParams.get("limit") || "20", 10);
   const initialType = searchParams.get("type") || "all";
   const initialTag = searchParams.get("tag") || "";
+  const initialMode: SearchMode = searchParams.get("mode") === "semantic"
+    ? "semantic"
+    : searchParams.get("mode") === "transcript"
+      ? "transcript"
+      : "keyword";
 
   const [query, setQuery] = useState(initialQuery);
   const [store, setStore] = useState(initialStore);
   const [typeFilter, setTypeFilter] = useState(initialType);
   const [tagFilter, setTagFilter] = useState(initialTag);
+  const [searchMode, setSearchMode] = useState<SearchMode>(initialMode);
   const [viewMode, setViewMode] = useState<SearchViewMode>("cards");
   const [state, setState] = useState<SearchState>({ status: "idle" });
   const [pageSize] = useState(initialPageSize);
@@ -134,19 +149,20 @@ function SearchPageContent() {
   }, [currentPage, previewId, query, store, tagFilter, typeFilter, viewMode]);
 
   const updateParams = useCallback(
-    (q: string, s: string, page: number, type: string, tag: string) => {
+    (q: string, s: string, page: number, type: string, tag: string, mode: SearchMode = searchMode) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       if (s) params.set("store", s);
       if (type !== "all") params.set("type", type);
       if (tag) params.set("tag", tag);
+      if (mode !== "keyword") params.set("mode", mode);
       if (page > 1) params.set("page", String(page));
       if (pageSize !== 20) params.set("limit", String(pageSize));
 
       const queryString = params.toString();
       router.replace(queryString ? `/search?${queryString}` : "/search", { scroll: false });
     },
-    [router, pageSize]
+    [router, pageSize, searchMode]
   );
 
   const refreshSavedSearches = useCallback(async () => {
@@ -161,7 +177,7 @@ function SearchPageContent() {
   }, [api]);
 
   const search = useCallback(
-    async (q: string, s: string, page: number = 1, type: string = typeFilter, tag: string = tagFilter) => {
+    async (q: string, s: string, page: number = 1, type: string = typeFilter, tag: string = tagFilter, mode: SearchMode = searchMode) => {
       if (!q.trim() && !s && type === "all" && !tag && page === 1) {
         setState({ status: "idle" });
         setAllRecords([]);
@@ -174,7 +190,8 @@ function SearchPageContent() {
         store: s,
         type: type !== "all" ? type : undefined,
         tag,
-        limit: 100
+        limit: 100,
+        mode
       });
 
       if (!response.ok) {
@@ -192,9 +209,9 @@ function SearchPageContent() {
       });
       const suggestionsResponse = await api.suggestions({ context: "search" });
       setSuggestions(suggestionsResponse.ok ? suggestionsResponse.suggestions : []);
-      updateParams(q, s, page, type, tag);
+      updateParams(q, s, page, type, tag, mode);
     },
-    [api, tagFilter, typeFilter, updateParams]
+    [api, searchMode, tagFilter, typeFilter, updateParams]
   );
 
   useEffect(() => {
@@ -276,13 +293,13 @@ function SearchPageContent() {
   const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setCurrentPage(1);
-    await search(query, store, 1, typeFilter, tagFilter);
+    await search(query, store, 1, typeFilter, tagFilter, searchMode);
   };
 
   const handlePageChange = (newPage: number) => {
     const clamped = Math.max(1, Math.min(newPage, totalPages));
     setCurrentPage(clamped);
-    updateParams(query, store, clamped, typeFilter, tagFilter);
+    updateParams(query, store, clamped, typeFilter, tagFilter, searchMode);
   };
 
   const saveCurrentSearch = async () => {
@@ -325,7 +342,7 @@ function SearchPageContent() {
     setTypeFilter(nextType);
     setTagFilter(nextTag);
     setCurrentPage(1);
-    await search(nextQuery, nextStore, 1, nextType, nextTag);
+    await search(nextQuery, nextStore, 1, nextType, nextTag, searchMode);
   };
 
   const removeSavedSearch = async (id: string) => {
@@ -352,10 +369,17 @@ function SearchPageContent() {
     setPreviewId(null);
     setState({ status: "idle" });
     setAllRecords([]);
-    updateParams("", "", 1, "all", "");
+    setSearchMode("keyword");
+    updateParams("", "", 1, "all", "", "keyword");
   };
 
-  const renderRecord = (record: ArchiveRecord) => (
+  const renderRecord = (record: ArchiveRecord) => {
+    const timestamp = record.match?.timestampSeconds;
+    const playbackHref = record.match?.kind === "transcript" && typeof timestamp === "number"
+      ? buildSearchPlaybackHref(record, timestamp)
+      : null;
+
+    return (
     <article className="search-result-card" key={record.id} data-view={viewMode} onMouseEnter={() => setPreviewId(record.id)}>
       <div className="search-result-card__body">
         <div className="panel-title-row">
@@ -363,6 +387,7 @@ function SearchPageContent() {
           {record.type ? <span className="badge">{record.type}</span> : null}
         </div>
         {record.description ? <p className="helper-text">{record.description}</p> : null}
+        {record.match?.excerpt ? <p className="search-result-card__excerpt">{record.match.excerpt}</p> : null}
         <div className="record-meta">
           {record.store ? <span className="badge">{record.store}</span> : null}
           <span className="badge">{formatDate(record.updatedAt || record.createdAt)}</span>
@@ -370,15 +395,20 @@ function SearchPageContent() {
         </div>
       </div>
       <div className="button-row">
-        <a href={`/archive/${encodeURIComponent(record.id)}`} className="button button-primary button-sm">
-          فتح التفاصيل
-        </a>
+        {playbackHref ? (
+          <a href={playbackHref} className="button button-primary button-sm">
+            تشغيل من {formatPlaybackTime(timestamp ?? 0)}
+          </a>
+        ) : (
+          <a href={`/archive/${encodeURIComponent(record.id)}`} className="button button-primary button-sm">فتح التفاصيل</a>
+        )}
         <button type="button" className="button button-secondary button-sm" onClick={() => setPreviewId(record.id)}>
           معاينة
         </button>
       </div>
     </article>
-  );
+    );
+  };
 
   return (
     <AppShell subtitle="بحث متقدم" contentClassName="search-content" tipsPage="search">
@@ -446,10 +476,20 @@ function SearchPageContent() {
               {tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label} ({tag.count})</option>)}
             </select>
           </label>
+          <label>
+            <span>نمط البحث</span>
+            <select value={searchMode} onChange={(event) => setSearchMode(event.target.value as SearchMode)}>
+              <option value="keyword">عادي</option>
+              <option value="semantic">دلالي</option>
+              <option value="transcript">داخل التفريغات الزمنية</option>
+            </select>
+          </label>
           <div className="archive-toolbar-actions">
             <button type="submit" className="button button-primary">بحث</button>
           </div>
         </form>
+        {searchMode === "transcript" ? <p className="helper-text">يعرض هذا النمط المقاطع ذات التوقيت الموثوق فقط، ويتيح تشغيل الفيديو مباشرةً من لحظة التطابق.</p> : null}
+        {searchMode === "semantic" && facets?.mode === "keyword-fallback" ? <p className="form-status">تعذر تنفيذ البحث الدلالي حاليًا؛ عُرضت نتائج البحث العادي بدلًا منه.</p> : null}
         <div className="archive-toolbar-row">
           <DataViewSwitcher value={viewMode} options={searchViewOptions} onChange={setViewMode} label="طريقة عرض البحث" />
           {savedSearches.length > 0 ? (
