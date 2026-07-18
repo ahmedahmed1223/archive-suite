@@ -1,9 +1,9 @@
 /* Notifications page and components */
 
+/* Rendered as the AppShell content column, which supplies page padding. */
 .notifications-page {
   display: grid;
   gap: var(--space-4);
-  padding: var(--space-5);
   max-inline-size: 54rem;
 }
 
