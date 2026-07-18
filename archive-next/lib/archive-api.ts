@@ -359,9 +359,6 @@ export interface SavedSearch {
   filters: Record<string, unknown> | null;
   createdAt: string | null;
   updatedAt: string | null;
-  ownerId?: string;
-  shared?: boolean;
-  canManage?: boolean;
 }
 
 export interface CreateSavedSearchPayload {
