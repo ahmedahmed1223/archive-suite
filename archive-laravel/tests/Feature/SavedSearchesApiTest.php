@@ -62,6 +62,17 @@ class SavedSearchesApiTest extends TestCase
             ->assertJsonCount(0, 'searches');
     }
 
+    public function test_owner_can_share_a_search_read_only_with_another_user(): void
+    {
+        $created = $this->postJson('/api/v1/saved-searches', ['name' => 'فريق', 'query' => 'video'], $this->authHeaders())->assertCreated();
+        $id = $created->json('search.id');
+        $this->patchJson('/api/v1/saved-searches/'.$id, ['shared' => true], $this->authHeaders())->assertOk()->assertJsonPath('search.shared', true);
+
+        \App\Models\User::query()->firstOrCreate(['email' => 'reader@example.test'], ['name' => 'Reader', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password')]);
+        $token = $this->postJson('/api/v1/auth/login', ['email' => 'reader@example.test', 'password' => 'secret-password'])->json('accessToken');
+        $this->getJson('/api/v1/saved-searches', ['Authorization' => 'Bearer '.$token])->assertOk()->assertJsonCount(1, 'searches')->assertJsonPath('searches.0.shared', true)->assertJsonPath('searches.0.canManage', false);
+    }
+
     public function test_it_rejects_invalid_saved_search_payload(): void
     {
         $this->postJson('/api/v1/saved-searches', [
