@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "measurement": { "minimumWindowDays": 14, "minimumSampleSize": 1000, "acceptedEvidence": ["production", "production-like-benchmark"] },
+  "mediaWorker": {
+    "minimumIndicatorsRequired": 2,
+    "indicators": {
+      "queueLatency": { "metric": "queue_wait_p95", "operator": ">", "threshold": 120, "unit": "seconds" },
+      "dailyThroughput": { "metric": "media_jobs_daily", "operator": ">", "threshold": 1000, "unit": "jobs_per_day" },
+      "resourceUtilization": { "metric": "cpu_or_gpu_utilization", "operator": ">", "thresholdPercent": 75, "minimumHoursPerDay": 4, "minimumDaysInWindow": 3 },
+      "retryableFailureRate": { "metric": "retryable_failure_rate", "operator": ">", "thresholdPercent": 2, "unit": "percent" },
+      "independentScaling": { "metric": "independent_cpu_gpu_scaling_required", "operator": "=", "threshold": true, "unit": "boolean" }
+    },
+    "ownership": { "laravel": ["scheduling", "media_job_state", "audit", "public_api"], "worker": ["versioned_job_consumption", "idempotent_result_delivery"] }
+  },
+  "outbox": {
+    "minimumTriggersRequired": 1,
+    "triggers": {
+      "gameDayDeliveryGap": { "metric": "lost_or_duplicate_events", "operator": ">=", "threshold": 1, "unit": "events" },
+      "dailyEventVolume": { "metric": "integration_events_daily", "operator": ">", "threshold": 100000, "unit": "events_per_day", "requiresMultipleConsumers": true },
+      "contractualDelivery": { "metric": "at_least_once_contract_required", "operator": "=", "threshold": true, "unit": "boolean" }
+    },
+    "requiredControls": ["idempotency_key", "retention", "bounded_replay", "dead_letter", "age_metric", "attempt_metric", "failure_metric"],
+    "eventBusIsDefault": false
+  },
+  "review": { "requiredRoles": ["architecture", "operations", "product"], "allowedDecisions": ["remain-modular", "extract-worker", "adopt-outbox"], "rollbackReviewWithinDays": 14 }
+}

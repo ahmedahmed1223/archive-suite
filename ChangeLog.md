@@ -3750,3 +3750,10 @@
 - أضيف `pnpm api:generate` للتوليد و`pnpm verify:api-generated` لفحص drift داخل مجلد مؤقت دون تعديل workspace، وربط الفحص ببوابة `pnpm verify` قبل typecheck.
 - أصبحت أنواع `ArchiveRecord` و`RecordAttachment` و`CreateRecordPayload` العامة مشتقة من `components.schemas` المولدة مع الحفاظ على توافق عميل النقل الحالي؛ ضُبطت حقول `default` لتبقى اختيارية ما لم يضعها OpenAPI ضمن `required`.
 - تحقق TDD: فشل الاختبار أولاً لغياب المولد، ثم نجح اختبارا deterministic output وكشف drift دون mutation؛ نجحت عقود API وtypecheck و65 ملف Vitest/354 اختباراً.
+# 2026-07-18 — V1-787 عتبات استخراج الخدمات والأحداث الموثوقة
+
+- أضيف عقد معماري machine-readable بإصدار ثابت يحدد نافذة قياس 14 يوماً وعينة 1,000، وخمسة مؤشرات لفصل عامل الوسائط مع اشتراط تجاوز مؤشرين على الأقل في النافذة نفسها.
+- ثُبتت ملكية Laravel للجدولة و`media_jobs` والحالة والتدقيق والـAPI العامة، وحد العامل المحتمل بعقد وظيفة versioned وتسليم نتائج idempotent دون وصول مباشر لقاعدة المنتج.
+- حُددت triggers اعتماد transactional outbox وضوابط idempotency/retention/replay/dead-letter والمقاييس، مع منع اعتبار event bus مساراً افتراضياً.
+- أضيف دليل جمع الأدلة والمراجعة والتراجع خلال 14 يوماً، و`pnpm verify:service-thresholds` ضمن البوابة القانونية.
+- تحقق TDD: فشل الاختبار أولاً لغياب العقد والمحقق، ثم نجحت 6 حالات تغطي العقد القانوني والنوافذ والنسب وحجم العينة وعدد المؤشرات وoutbox triggers.
