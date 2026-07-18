@@ -20,6 +20,7 @@ import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query"
 import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import styles from "./archive.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { movePinnedFilter, orderPinnedFilters } from "@/lib/pinned-filters";
 
 // Workflow states mirrored from the legacy SPA's itemStatus state machine —
 // the server-authoritative state machine. The Laravel search/records endpoints
@@ -267,10 +268,30 @@ function ArchivePageContent() {
   const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [savedViews, setSavedViews] = useState<SavedArchiveView[]>([]);
+  const [pinnedViewOrder, setPinnedViewOrder] = useState<string[]>([]);
   const [savedViewStatus, setSavedViewStatus] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkFeedback, setBulkFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+  const pinnedOrderKey = `archive.pinned-filters.order:${userId ?? "anonymous"}`;
+  const orderedSavedViews = useMemo(() => orderPinnedFilters(savedViews, pinnedViewOrder), [pinnedViewOrder, savedViews]);
+
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(pinnedOrderKey) || "[]");
+      setPinnedViewOrder(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []);
+    } catch {
+      setPinnedViewOrder([]);
+    }
+  }, [pinnedOrderKey]);
+
+  const reorderPinnedView = (id: string, offset: -1 | 1) => {
+    const completeOrder = orderedSavedViews.map((view) => view.id);
+    const next = movePinnedFilter(completeOrder, id, offset);
+    setPinnedViewOrder(next);
+    window.localStorage.setItem(pinnedOrderKey, JSON.stringify(next));
+  };
 
   useEffect(() => {
     if (searchParams.toString()) return;
@@ -944,9 +965,11 @@ function ArchivePageContent() {
           <DataViewSwitcher value={itemSize} options={itemSizeOptions} onChange={setItemSize} label="كثافة العناصر" />
           {savedViews.length > 0 ? (
             <div className="saved-views-strip" aria-label="العروض المحفوظة">
-              {savedViews.map((view) => (
+              {orderedSavedViews.map((view, index) => (
                 <span key={view.id} className="saved-view-chip">
                   <button type="button" onClick={() => applySavedView(view)}>{view.name}</button>
+                  <button type="button" disabled={index === 0} aria-label={`نقل ${view.name} للأعلى`} onClick={() => reorderPinnedView(view.id, -1)}>↑</button>
+                  <button type="button" disabled={index === orderedSavedViews.length - 1} aria-label={`نقل ${view.name} للأسفل`} onClick={() => reorderPinnedView(view.id, 1)}>↓</button>
                   <button type="button" aria-label={`حذف ${view.name}`} onClick={() => void removeSavedView(view.id)}>×</button>
                 </span>
               ))}
