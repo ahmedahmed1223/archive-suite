@@ -9,6 +9,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
+import SearchFilterBuilder from "@/components/SearchFilterBuilder";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
@@ -493,6 +494,7 @@ function SearchPageContent() {
             <button type="submit" className="button button-primary">بحث</button>
           </div>
         </form>
+        <SearchFilterBuilder value={query} onChange={setQuery} />
         {searchMode === "transcript" ? <p className="helper-text">يعرض هذا النمط المقاطع ذات التوقيت الموثوق فقط، ويتيح تشغيل الفيديو مباشرةً من لحظة التطابق.</p> : null}
         {searchMode === "semantic" && facets?.mode === "keyword-fallback" ? <p className="form-status">تعذر تنفيذ البحث الدلالي حاليًا؛ عُرضت نتائج البحث العادي بدلًا منه.</p> : null}
         <div className="archive-toolbar-row">
