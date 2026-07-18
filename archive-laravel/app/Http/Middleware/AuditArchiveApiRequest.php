@@ -29,7 +29,7 @@ class AuditArchiveApiRequest
                 'actor_id' => $request->attributes->get('archive_user')?->getKey(),
                 'outcome' => $taxonomy['outcome'],
                 'status_code' => $response->getStatusCode(),
-                'metadata' => $this->metadata($request, $taxonomy, $recordBefore),
+                'metadata' => $this->metadata($request, $response, $taxonomy, $recordBefore),
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
@@ -63,6 +63,12 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/share'] => ['share.create', 'share_link'],
             ['POST', 'api/v1/media/jobs'] => ['media.workflow.queue', 'media_job'],
             ['POST', 'api/v1/auth/logout'] => ['auth.logout', 'api_session'],
+            ['POST', 'api/v1/collaboration/rooms/{roomKey}/locks'] => [
+                $response->getStatusCode() === 200 ? 'collaboration_locks.refresh' : 'collaboration_locks.acquire',
+                'collaboration_lock',
+            ],
+            ['POST', 'api/v1/collaboration/rooms/{roomKey}/locks/release'] => ['collaboration_locks.release', 'collaboration_lock'],
+            ['POST', 'api/v1/collaboration/rooms/{roomKey}/documents/{resourceId}'] => ['collaboration_documents.update', 'collaboration_document'],
             ['POST', 'api/v1/system/control/{action}'] => [
                 $response->getStatusCode() === 503 ? 'system_control.blocked' : ($response->isSuccessful() ? 'system_control.allowed' : 'system_control.rejected'),
                 'system_control_action',
@@ -114,6 +120,17 @@ class AuditArchiveApiRequest
             $resourceId = $request->route('action');
         }
 
+        if (in_array($route, [
+            'api/v1/collaboration/rooms/{roomKey}/locks',
+            'api/v1/collaboration/rooms/{roomKey}/locks/release',
+        ], true)) {
+            $resourceId = $request->string('resourceId')->toString() ?: null;
+        }
+
+        if ($route === 'api/v1/collaboration/rooms/{roomKey}/documents/{resourceId}') {
+            $resourceId = $request->route('resourceId');
+        }
+
         $outcome = $route === 'api/v1/system/control/{action}' && $response->getStatusCode() === 503
             ? 'rejected'
             : $this->outcome($response);
@@ -143,15 +160,23 @@ class AuditArchiveApiRequest
      * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
      * @return array<string, mixed>
      */
-    private function metadata(Request $request, array $taxonomy, ?array $recordBefore = null): array
+    private function metadata(Request $request, Response $response, array $taxonomy, ?array $recordBefore = null): array
     {
-        $payload = $this->redact($request->except(['password', 'password_confirmation']));
         $metadata = [
             'route' => $request->route()?->uri(),
             'query' => $this->redact($request->query()),
             'sessionId' => $request->attributes->get('archive_session')?->getKey(),
             'restoreDecision' => $this->restoreDecision($request, $taxonomy),
         ];
+
+        $collaboration = $this->collaborationMetadata($request, $response, $taxonomy);
+        if ($collaboration !== null) {
+            $metadata['collaboration'] = $collaboration;
+
+            return $metadata;
+        }
+
+        $payload = $this->redact($request->except(['password', 'password_confirmation']));
 
         if ($payload !== []) {
             $metadata['request'] = $payload;
@@ -168,6 +193,53 @@ class AuditArchiveApiRequest
         }
 
         return $metadata;
+    }
+
+    /**
+     * Return an allow-listed summary for collaboration writes. Raw document
+     * content and conflict snapshots must never enter the audit log.
+     *
+     * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
+     * @return array<string, mixed>|null
+     */
+    private function collaborationMetadata(Request $request, Response $response, array $taxonomy): ?array
+    {
+        if (! str_starts_with($taxonomy['event'], 'collaboration_')) {
+            return null;
+        }
+
+        $summary = [
+            'roomKey' => $request->route('roomKey'),
+            'resourceId' => $taxonomy['resource_id'],
+            'operation' => str($taxonomy['event'])->afterLast('.')->toString(),
+        ];
+
+        if ($taxonomy['resource_type'] === 'collaboration_lock') {
+            if ($request->has('ttlSeconds')) {
+                $summary['ttlSeconds'] = $request->integer('ttlSeconds');
+            }
+
+            if ($taxonomy['event'] === 'collaboration_locks.release') {
+                $summary['released'] = (bool) data_get($this->responseData($response), 'released', false);
+            }
+
+            return $summary;
+        }
+
+        $content = $request->input('content');
+        $summary['requestedVersion'] = $request->integer('version');
+        $summary['resultVersion'] = data_get($this->responseData($response), 'document.version');
+        $summary['contentBytes'] = is_string($content) ? strlen($content) : 0;
+
+        return $summary;
+    }
+
+    /** @return array<string, mixed> */
+    private function responseData(Response $response): array
+    {
+        $decoded = json_decode($response->getContent(), true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     /** @return array<string, mixed>|null */
