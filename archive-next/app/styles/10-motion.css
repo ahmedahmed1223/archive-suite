@@ -29,12 +29,75 @@
   box-shadow: var(--shadow-md);
 }
 
+/* Record cards: soft lift on hover, amber glow when selected. */
+.record-card {
+  transition:
+    border-color var(--duration-fast) var(--easing-default),
+    box-shadow var(--duration-normal) var(--easing-out),
+    transform var(--duration-normal) var(--easing-out);
+}
+
+.record-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.record-card[data-selected="true"] {
+  box-shadow: var(--shadow-focus);
+}
+
+/* Navigation links + badges + buttons: smooth state changes. */
+.app-nav-link,
+.badge,
+.tag,
+.ui-button,
+.button,
+.icon-action {
+  transition:
+    background var(--duration-fast) var(--easing-default),
+    border-color var(--duration-fast) var(--easing-default),
+    color var(--duration-fast) var(--easing-default),
+    box-shadow var(--duration-fast) var(--easing-default);
+}
+
+/* Primary CTA: subtle press feedback. */
+.ui-button-primary:active,
+.button-primary:active {
+  transform: translateY(1px);
+}
+
+/* Inputs: amber focus glow consistent with the brand accent. */
+.login-field:focus-within,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  box-shadow: var(--shadow-focus);
+  transition: box-shadow var(--duration-fast) var(--easing-out);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app-content {
     animation: none;
   }
 
-  .panel {
+  .panel,
+  .record-card,
+  .app-nav-link,
+  .badge,
+  .tag,
+  .ui-button,
+  .button,
+  .icon-action {
     transition: none;
+  }
+
+  .record-card:hover {
+    transform: none;
+  }
+
+  .ui-button-primary:active,
+  .button-primary:active {
+    transform: none;
   }
 }
