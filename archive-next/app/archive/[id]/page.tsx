@@ -32,6 +32,7 @@ import { isFavorited, toggleFavorite } from "@/lib/favorites";
 import { recordView } from "@/lib/recent-items";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
+import RecordPresence from "@/components/RecordPresence";
 
 type DetailState =
   | { status: "loading" }
@@ -1232,6 +1233,7 @@ export default function ArchiveDetailPage() {
           </>
         }
       />
+      {state.status === "ready" ? <RecordPresence recordId={id} /> : null}
 
       {state.status === "ready" && !deriveRecordSourcePath(state.record) && (
         <p className="helper-text">تعذّر تفعيل استخراج النص: لا يحتوي هذا السجل على مسار ملف قابل للاستخدام في metadata.</p>
