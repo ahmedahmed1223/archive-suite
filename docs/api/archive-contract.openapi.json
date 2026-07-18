@@ -1008,6 +1008,23 @@
         }
       }
     },
+    "/search/suggestions": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Return bounded authenticated search autocomplete suggestions",
+        "operationId": "searchSuggestions",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "q", "in": "query", "required": true, "schema": { "type": "string", "minLength": 2, "maxLength": 120 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 8, "default": 8 } }
+        ],
+        "responses": {
+          "200": { "description": "Suggestions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SearchSuggestionsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/discover": {
       "get": {
         "tags": ["Discover"],
@@ -4500,6 +4517,22 @@
           "label": { "type": "string" },
           "count": { "type": "integer" }
         }
+      },
+      "SearchSuggestion": {
+        "type": "object",
+        "required": ["kind", "label", "value"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["record", "tag", "type", "recent"] },
+          "label": { "type": "string" },
+          "value": { "type": "string" },
+          "recordId": { "type": "string" }
+        }
+      },
+      "SearchSuggestionsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          { "type": "object", "required": ["suggestions"], "properties": { "suggestions": { "type": "array", "maxItems": 8, "items": { "$ref": "#/components/schemas/SearchSuggestion" } } } }
+        ]
       },
       "SearchFacets": {
         "type": "object",
