@@ -157,74 +157,79 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --color-anthracite: #f8fafc;
-  --color-anthracite-light: #f1f5f9;
-  --color-anthracite-lighter: #e7edf5;
-  --color-anthracite-surface: #d9e2ec;
-  --color-anthracite-elevated: #c6d1de;
+  /* ── Masar warm light palette (design-authoritative, from the prototype handoff) ──
+     Cream/sand surfaces with warm neutrals. Brand accent + status hues are kept
+     constant across dark/light per the design tokens; only surfaces/text reflow. */
+  --color-anthracite: #f5f2ec;
+  --color-anthracite-light: #ffffff;
+  --color-anthracite-lighter: #f1eee6;
+  --color-anthracite-surface: #eae5d9;
+  --color-anthracite-elevated: #e3ded2;
 
-  --color-silver: #172033;
-  --color-silver-dim: #4b5b70;
-  --color-silver-muted: #66758a;
-  --color-silver-faint: #93a1b2;
+  --color-silver: #1e1b16;
+  --color-silver-dim: #5b564c;
+  --color-silver-muted: #8b8578;
+  --color-silver-faint: #a39c8b;
 
-  --color-amber: #9a5d0d;
-  --color-amber-light: #b86f12;
-  --color-amber-dim: #794605;
-  --color-amber-glow: rgb(154 93 13 / 14%);
+  --color-amber: #d4943a;
+  --color-amber-light: #e5ad5a;
+  --color-amber-dim: #b07a2e;
+  --color-amber-glow: rgb(212 148 58 / 14%);
 
-  --color-brand-primary: #9a5d0d;
-  --color-brand-primary-strong: #794605;
-  --color-brand-ink: #172033;
-  --color-brand-warm: #fff6e8;
-  --color-brand-sand: #fffaf2;
-  --color-brand-indigo: #3f5f92;
-  --color-brand-gold: #9a5d0d;
-  --color-shadow: #172033;
+  --color-brand-primary: #d4943a;
+  --color-brand-primary-strong: #e5ad5a;
+  --color-brand-ink: #1e1b16;
+  --color-brand-warm: #efe7d6;
+  --color-brand-sand: #fbf7ef;
+  --color-brand-indigo: #5b7baa;
+  --color-brand-gold: #d4943a;
+  --color-shadow: #1e1b16;
 
-  --color-bg-primary: #f8fafc;
+  --color-bg-primary: #f5f2ec;
   --color-bg-secondary: #ffffff;
-  --color-bg-tertiary: #f1f5f9;
-  --color-bg-inverse: #172033;
+  --color-bg-tertiary: #f1eee6;
+  --color-bg-inverse: #1e1b16;
   --color-surface-elevated: #ffffff;
-  --color-surface-subtle: #f1f5f9;
-  --color-surface-selected: rgb(154 93 13 / 12%);
+  --color-surface-subtle: #f1eee6;
+  --color-surface-selected: rgb(212 148 58 / 12%);
   --color-surface-primary: var(--color-bg-secondary);
   --color-brand-soft: var(--color-surface-selected);
 
-  --color-text-primary: #172033;
-  --color-text-secondary: #43526a;
-  --color-text-tertiary: #64748b;
+  --color-text-primary: #1e1b16;
+  --color-text-secondary: #5b564c;
+  --color-text-tertiary: #8b8578;
   --color-text-muted: var(--color-text-tertiary);
-  --color-text-inverse: #ffffff;
-  --color-text-link: #794605;
+  --color-text-inverse: #111318;
+  /* Link *text* uses a darker amber so it stays legible on cream (the flat
+     #d4943a accent is reserved for button/pill backgrounds with dark text). */
+  --color-text-link: #9a5d0d;
 
-  --color-border-primary: #cbd5e1;
-  --color-border-secondary: #dbe4ee;
-  --color-border-strong: #94a3b8;
-  --color-border-focus: #79500d;
+  --color-border-primary: #e3ded2;
+  --color-border-secondary: #ece7dc;
+  --color-border-strong: #d2cbba;
+  --color-border-focus: #d4943a;
 
-  --color-accent-primary: #9a5d0d;
-  --color-accent-primary-hover: #794605;
-  --color-accent-primary-active: #633b05;
-  --color-accent-secondary: #3f5f92;
-  --color-accent-tertiary: #9a5d0d;
-  --color-accent-rose: #b43e4b;
+  --color-accent-primary: #d4943a;
+  --color-accent-primary-hover: #e5ad5a;
+  --color-accent-primary-active: #b07a2e;
+  --color-accent-secondary: #5b7baa;
+  --color-accent-tertiary: #d4943a;
+  --color-accent-rose: #c45b5b;
 
-  --color-status-success: #1d7a46;
-  --color-status-warning: #9a5d0d;
-  --color-status-error: #b4233c;
+  --color-status-success: #3f9142;
+  --color-status-warning: #b07a2e;
+  --color-status-error: #c45b5b;
   --color-danger: var(--color-status-error);
-  --color-status-info: #2f609d;
-  --color-status-processing: #9a5d0d;
-  --color-surface-overlay: rgb(23 32 51 / 58%);
+  --color-status-info: #5b7baa;
+  --color-status-processing: #d4943a;
+  --color-surface-overlay: rgb(30 27 22 / 45%);
 
-  --shadow-sm: 0 1px 3px rgb(23 32 51 / 12%);
-  --shadow-xs: 0 1px 2px rgb(23 32 51 / 10%);
-  --shadow-md: 0 8px 24px rgb(23 32 51 / 14%);
-  --shadow-lg: 0 16px 48px rgb(23 32 51 / 18%);
-  --shadow-focus: 0 0 0 3px rgb(121 80 13 / 28%);
-  --shadow-glow: 0 0 20px rgb(154 93 13 / 14%);
+  --shadow-sm: 0 1px 3px rgb(30 27 22 / 10%);
+  --shadow-xs: 0 1px 2px rgb(30 27 22 / 8%);
+  --shadow-md: 0 8px 24px rgb(30 27 22 / 12%);
+  --shadow-lg: 0 16px 48px rgb(30 27 22 / 16%);
+  --shadow-focus: 0 0 0 3px rgb(212 148 58 / 32%);
+  --shadow-glow: 0 0 20px rgb(212 148 58 / 14%);
 }
 
 @media (prefers-reduced-motion: reduce) {
