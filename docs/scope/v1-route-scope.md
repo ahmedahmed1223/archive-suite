@@ -36,9 +36,8 @@ Coverage of this table is enforced by
 |---|---|---|---|---|
 | GET | `/v1/files/stream` | v1 | — | range-capable media stream |
 | GET/POST | `/v1/collaboration/rooms/{roomKey}/presence` | v1 | — | presence heartbeat |
-| GET/POST | `/v1/collaboration/rooms/{roomKey}/locks` | v1 | — | doc locking |
-| POST | `/v1/collaboration/rooms/{roomKey}/locks/release` | v1 | — | doc locking |
-| GET/POST | `/v1/collaboration/rooms/{roomKey}/documents/{resourceId}` | v1 | — | collab doc CRDT sync |
+| GET | `/v1/collaboration/rooms/{roomKey}/locks` | v1 | — | lock reads without audit noise |
+| GET | `/v1/collaboration/rooms/{roomKey}/documents/{resourceId}` | v1 | — | collaborative document read |
 
 ## Authenticated + audited (`archive.auth`, `archive.audit`)
 
@@ -48,6 +47,8 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 |---|---|---|---|---|
 | GET | `/v1/auth/me` | v1 | — | |
 | POST | `/v1/auth/logout` | v1 | — | |
+| POST | `/v1/collaboration/rooms/{roomKey}/locks`, `/locks/release` | v1 | — | acquire/refresh/release events; conflicts audited |
+| POST | `/v1/collaboration/rooms/{roomKey}/documents/{resourceId}` | v1 | — | version/byte-count summary only; content excluded |
 | GET/POST | `/v1/records`, `/v1/records/{id}` | v1 | — | POST creates a descriptive record; editor-gated |
 | GET/POST/DELETE | `/v1/records/{id}/attachments*` | v1 | — | durable multi-file attachments; writes editor-gated |
 | GET/POST | `/v1/records/{id}/notes` | v1 | — | |
