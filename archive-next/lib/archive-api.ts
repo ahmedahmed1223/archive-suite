@@ -57,6 +57,13 @@ export interface ArchiveRecord {
   [key: string]: unknown;
 }
 
+export interface SearchSuggestion {
+  kind: "record" | "tag" | "type" | "recent";
+  label: string;
+  value: string;
+  recordId?: string;
+}
+
 export interface PublicCatalogRecord {
   id: string;
   uid: string;
@@ -1046,6 +1053,7 @@ export interface ArchiveApiClient {
     params: { q?: string; store?: string; type?: string; subtype?: string; tag?: string; status?: string; cursor?: string; limit?: number; mode?: "keyword" | "semantic" | "transcript" },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[]; facets?: SearchFacets; nextCursor?: string | null }>>;
+  searchSuggestions(params: { q: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ suggestions: SearchSuggestion[] }>>;
   publicCatalog(params?: { q?: string; type?: string; tag?: string; cursor?: string; limit?: number }): Promise<ApiEnvelope<{ records: PublicCatalogRecord[]; nextCursor?: string | null }>>;
   plugins(params?: { status?: string; category?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ runtimePolicy: PluginRuntimePolicy; plugins: PluginCatalogItem[]; permissionScopes: PluginPermissionScopeSummary[] }>>;
   discover(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sections: DiscoverSection[] }>>;
@@ -1409,6 +1417,7 @@ export function createArchiveApiClient({
       params.set("limit", String(clampApiLimit(limit, 20, 100)));
       return get(`/search?${params.toString()}`, options);
     },
+    searchSuggestions: ({ q, limit = 8 }, options?: AuthRequestOptions) => get(`/search/suggestions?${new URLSearchParams({ q, limit: String(clampApiLimit(limit, 8, 8)) }).toString()}`, options),
     publicCatalog: ({ q = "", type = "", tag = "", cursor = "", limit = 24 } = {}) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);

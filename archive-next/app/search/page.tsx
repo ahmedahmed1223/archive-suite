@@ -8,6 +8,7 @@ import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwit
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
+import SearchAutocomplete from "@/components/SearchAutocomplete";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
@@ -96,6 +97,10 @@ function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const api = useMemo(() => createArchiveApiClient(), []);
+  const fetchSearchSuggestions = useCallback(async (term: string) => {
+    const response = await api.searchSuggestions({ q: term });
+    return response.ok ? response.suggestions : [];
+  }, [api]);
   const { user, status: authStatus } = useAuthSession();
   const userId = user?.id ?? null;
 
@@ -440,13 +445,13 @@ function SearchPageContent() {
         <form className="archive-toolbar-grid" onSubmit={handleSearch}>
           <label>
             <span>الكلمات المفتاحية</span>
-            <input
-              type="search"
-              placeholder={'العنوان، الوسوم، الوصف... أو type:video AND tag:"تاريخ شفهي"'}
+            <SearchAutocomplete
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={setQuery}
+              onSelect={(suggestion) => setQuery(suggestion.value)}
+              fetchSuggestions={fetchSearchSuggestions}
+              placeholder={'العنوان، الوسوم، الوصف... أو type:video AND tag:"تاريخ شفهي"'}
               className="search-input"
-              aria-describedby="advanced-search-hint"
             />
             <span id="advanced-search-hint" className="helper-text">
               للبحث المهيكل استخدم مثلاً: <code dir="ltr">type:video AND tag:"تاريخ شفهي"</code>
