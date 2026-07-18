@@ -310,3 +310,7 @@
 .whats-new-actions .button {
   min-height: 44px;
 }
+.local-list-card[data-triage-active="true"] {
+  outline: 3px solid var(--color-border-focus);
+  outline-offset: 3px;
+}

@@ -9,6 +9,7 @@ import { createArchiveApiClient, type InboxItem, type InboxStatus } from "@/lib/
 import { formatDate, normalizeText } from "@/lib/record-utils";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { triageCommand } from "@/lib/inbox-triage";
 
 const statusLabels: Record<InboxStatus, string> = {
   new: "وارد جديد",
@@ -31,6 +32,8 @@ export default function InboxPage() {
   const [source, setSource] = useState("");
   const [note, setNote] = useState("");
   const [filter, setFilter] = useState<InboxStatus | "all">("all");
+  const [triageMode, setTriageMode] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   async function refreshInbox() {
     setLoadState({ status: "loading" });
@@ -60,6 +63,35 @@ export default function InboxPage() {
       return acc;
     }, { new: 0, triage: 0, ready: 0, done: 0 });
   }, [items]);
+
+  useEffect(() => {
+    setActiveIndex((current) => Math.min(current, Math.max(0, visibleItems.length - 1)));
+  }, [visibleItems.length]);
+
+  useEffect(() => {
+    if (!triageMode) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const editing = Boolean(target?.closest("input, textarea, select, [contenteditable='true']"));
+      const command = triageCommand(event.key, editing);
+      if (!command || !visibleItems.length) return;
+      event.preventDefault();
+      if (command.type === "move") {
+        setActiveIndex((current) => Math.max(0, Math.min(visibleItems.length - 1, current + command.offset)));
+        return;
+      }
+      const item = visibleItems[activeIndex];
+      if (!item) return;
+      if (command.type === "status") {
+        void updateStatus(item.id, command.status);
+        return;
+      }
+      const href = item.status === "ready" ? "/uploads" : item.status === "done" ? "/archive" : `/search?q=${encodeURIComponent(normalizeText(item.title))}`;
+      window.location.assign(href);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeIndex, triageMode, visibleItems]);
 
   async function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -114,7 +146,7 @@ export default function InboxPage() {
             <span className="badge">{counts.ready} جاهز للأرشفة</span>
           </>
         )}
-        actions={<a className="button button-primary" href="/uploads">رفع ملف</a>}
+        actions={<><button className="button button-secondary" type="button" aria-pressed={triageMode} onClick={() => setTriageMode((value) => !value)}>{triageMode ? "إنهاء الفرز السريع" : "بدء الفرز السريع"}</button><a className="button button-primary" href="/uploads">رفع ملف</a></>}
       >
         <form className="archive-toolbar-grid" onSubmit={addItem}>
           <label>
@@ -144,6 +176,8 @@ export default function InboxPage() {
         </div>
       </PageToolbar>
 
+      {triageMode ? <div className="state-banner state-banner-info" role="status"><strong>الفرز السريع مفعّل</strong><span>J/K أو الأسهم للتنقل · 1 جديد · 2 قيد الفرز · 3 جاهز · 4 مكتمل · Enter للفتح</span></div> : null}
+
       {loadState.status === "loading" ? (
         <div className="panel panel-compact"><Skeleton label="جار تحميل عناصر الوارد..." /></div>
       ) : null}
@@ -160,8 +194,8 @@ export default function InboxPage() {
         <EmptyState title="لا توجد عناصر في هذا العرض." description="أضف عنصراً سريعاً أو غيّر فلتر الحالة." />
       ) : (
         <section className="dense-grid" aria-label="عناصر الوارد">
-          {visibleItems.map((item) => (
-            <article className="local-list-card" key={item.id}>
+          {visibleItems.map((item, index) => (
+            <article className="local-list-card" data-triage-active={triageMode && index === activeIndex} aria-current={triageMode && index === activeIndex ? "true" : undefined} key={item.id}>
               <div className="local-list-card__main">
                 <div>
                   <span className="badge">{statusLabels[item.status]}</span>
