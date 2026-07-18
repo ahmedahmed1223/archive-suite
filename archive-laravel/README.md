@@ -7,6 +7,14 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Archive Suite canonical backend
+
+This package is the API, persistence, queue, authorization, and audit source of
+truth for the canonical Laravel + Next.js product. The frontend lives in
+`archive-next/`, and the versioned API contract lives in
+`docs/api/archive-contract.openapi.json`. Legacy server packages are
+reference-only and do not receive new product behavior.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

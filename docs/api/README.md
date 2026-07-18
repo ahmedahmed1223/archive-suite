@@ -1,17 +1,17 @@
 # Archive API Contract
 
-This directory holds framework-neutral API contracts for the Laravel API and
-Next.js migration. The current Node server remains the reference implementation
-until Laravel reaches route parity.
+This directory holds the framework-neutral API contract for the canonical
+Laravel + Next.js architecture. Laravel owns API behavior and persistence;
+Next.js consumes the versioned contract. Legacy Node packages are reference-only.
 
 ## Files
 
 - `archive-contract.openapi.json` — baseline OpenAPI 3.1 contract for auth,
   archive records, search, files, folders, rights, and public share routes.
 
-## Migration Rules
+## Contract Rules
 
-- Contract changes happen before Laravel or Next.js implementation changes.
+- Contract changes happen with the Laravel and Next.js implementation changes in the same commit.
 - Next.js API clients should be generated or hand-written from this contract,
   not from ad hoc route assumptions.
 - Laravel controllers must preserve these response envelopes:
@@ -19,8 +19,7 @@ until Laravel reaches route parity.
   - failure: `{ "ok": false, "error": "..." }`
 - Auth must use HttpOnly cookies for refresh/session state. Bearer access tokens
   may exist for API clients, but browser persistence must not use localStorage.
-- Route parity can be implemented gradually; mark missing Laravel routes as
-  `501` only during parallel migration, never after a route is switched live.
+- New product routes are implemented only in the canonical Laravel API.
 
 ## First Route Groups
 

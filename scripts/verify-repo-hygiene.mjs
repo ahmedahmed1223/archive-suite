@@ -58,6 +58,11 @@ const requiredCompletedMarkers = [
   "تخزين Laravel دائم",
   "Automation backend",
 ];
+const canonicalArchitectureDocs = [
+  "AGENTS.md",
+  "docs/api/README.md",
+  "archive-laravel/README.md",
+];
 
 function rel(absolutePath) {
   return path.relative(ROOT, absolutePath).replaceAll(path.sep, "/");
@@ -151,6 +156,22 @@ for (const marker of requiredTaskLedgerMarkers) {
 const changeLog = readFileSync(path.join(ROOT, "ChangeLog.md"), "utf8");
 for (const marker of requiredCompletedMarkers) {
   assert.ok(changeLog.includes(marker), `ChangeLog.md should include completed marker: ${marker}`);
+}
+
+for (const file of canonicalArchitectureDocs) {
+  const contents = readFileSync(path.join(ROOT, file), "utf8");
+  assert.ok(
+    contents.includes("Laravel + Next.js"),
+    `${file} should identify Laravel + Next.js as the canonical architecture`,
+  );
+  assert.ok(
+    !contents.includes("archive-core"),
+    `${file} must not describe the removed archive-core package as canonical`,
+  );
+  assert.ok(
+    !contents.includes("Node server remains the reference implementation"),
+    `${file} must not describe the legacy Node server as the reference implementation`,
+  );
 }
 
 const trackedForbiddenPlanDocs = trackedFiles.filter((file) =>
