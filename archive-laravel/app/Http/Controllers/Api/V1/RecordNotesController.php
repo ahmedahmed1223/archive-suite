@@ -14,9 +14,10 @@ class RecordNotesController extends Controller
 {
     private const ARCHIVE_STORE = 'archive-items';
 
-    public function index(string $recordId): JsonResponse
+    public function index(Request $request, string $recordId): JsonResponse
     {
-        if (! $this->recordExists($recordId)) {
+        $store = $this->recordStore($request);
+        if (! $this->recordExists($recordId, $store)) {
             return response()->json([
                 'ok' => false,
                 'error' => 'Record not found.',
@@ -26,6 +27,7 @@ class RecordNotesController extends Controller
 
         $notes = DB::table('record_notes')
             ->where('item_id', $recordId)
+            ->where('record_store', $store)
             ->orderByRaw('timestamp_seconds is null')
             ->orderBy('timestamp_seconds')
             ->orderBy('created_at')
@@ -38,7 +40,8 @@ class RecordNotesController extends Controller
 
     public function store(Request $request, string $recordId): JsonResponse
     {
-        if (! $this->recordExists($recordId)) {
+        $store = $this->recordStore($request);
+        if (! $this->recordExists($recordId, $store)) {
             return response()->json([
                 'ok' => false,
                 'error' => 'Record not found.',
@@ -58,6 +61,7 @@ class RecordNotesController extends Controller
         DB::table('record_notes')->insert([
             'id' => $id,
             'item_id' => $recordId,
+            'record_store' => $store,
             'body' => $body,
             'timestamp_seconds' => $validated['timestampSeconds'] ?? null,
             'region' => isset($validated['region']) ? json_encode($validated['region'], JSON_THROW_ON_ERROR) : null,
@@ -161,10 +165,15 @@ class RecordNotesController extends Controller
         ];
     }
 
-    private function recordExists(string $id): bool
+    private function recordStore(Request $request): string
+    {
+        return $request->string('store')->trim()->toString() ?: self::ARCHIVE_STORE;
+    }
+
+    private function recordExists(string $id, string $store): bool
     {
         return DB::table('storage_rows')
-            ->where('store', self::ARCHIVE_STORE)
+            ->where('store', $store)
             ->where(function ($query) use ($id): void {
                 $query->where('uid', $id)
                     ->orWhereRaw("data->>'id' = ?", [$id]);

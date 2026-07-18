@@ -76,6 +76,23 @@ class RecordCommentsApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_comments_support_a_record_in_an_explicit_non_default_store(): void
+    {
+        DB::table('storage_rows')->insert([
+            'store' => 'archive',
+            'uid' => 'cross-store-record',
+            'data' => json_encode(['id' => 'cross-store-record', 'title' => 'Cross store'], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->postJson('/api/v1/records/cross-store-record/comments?store=archive', ['body' => 'Scoped comment'], $this->authHeaders())
+            ->assertCreated();
+        $this->getJson('/api/v1/records/cross-store-record/comments?store=archive', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('comments.0.body', 'Scoped comment');
+    }
+
     public function test_it_audits_comment_create_and_delete(): void
     {
         $this->seedArchiveRecord();

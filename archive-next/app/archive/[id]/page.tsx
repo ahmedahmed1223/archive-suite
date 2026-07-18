@@ -987,7 +987,7 @@ export default function ArchiveDetailPage() {
 
   async function handleCreateNote(payload: { body: string; timestampSeconds?: number | null }) {
     if (state.status !== "ready") return;
-    const response = await api.createRecordNote(id, payload);
+    const response = await api.createRecordNote(id, payload, state.record.store || "archive-items");
     if (!response.ok) {
       throw new Error(response.error || "تعذر حفظ الملاحظة.");
     }
@@ -1010,7 +1010,7 @@ export default function ArchiveDetailPage() {
 
   async function handleCreateComment(payload: { body: string }) {
     if (state.status !== "ready") return;
-    const response = await api.createRecordComment(id, payload);
+    const response = await api.createRecordComment(id, payload, state.record.store || "archive-items");
     if (!response.ok) {
       throw new Error(response.error || "تعذر نشر التعليق.");
     }
@@ -1099,7 +1099,9 @@ export default function ArchiveDetailPage() {
         })
         .catch(() => {});
 
-      void api.recordNotes(id)
+      const recordStore = recordResponse.record.store || "archive-items";
+
+      void api.recordNotes(id, recordStore)
         .then((response) => {
           if (!active) return;
           setState((current) => current.status === "ready"
@@ -1122,7 +1124,7 @@ export default function ArchiveDetailPage() {
             : current);
         });
 
-      void api.recordComments(id)
+      void api.recordComments(id, recordStore)
         .then((response) => {
           if (!active) return;
           setState((current) => current.status === "ready"
@@ -1145,7 +1147,7 @@ export default function ArchiveDetailPage() {
             : current);
         });
 
-      void api.recordHistory(id, { limit: 50 })
+      void api.recordHistory(id, { limit: 50, store: recordStore })
         .then((response) => {
           if (!active) return;
           setState((current) => current.status === "ready"

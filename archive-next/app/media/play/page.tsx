@@ -53,9 +53,6 @@ export default function MediaPlayPage() {
     if (!recordIdParam) return;
 
     setRecordId(recordIdParam);
-    void api.recordNotes(recordIdParam).then((response) => {
-      if (response.ok) setBookmarks(bookmarkNotes(response.notes));
-    });
     setTranscriptStatus("جار تحميل التفريغ المحفوظ...");
     void api.record(recordIdParam)
       .then((response) => {
@@ -65,7 +62,11 @@ export default function MediaPlayPage() {
         }
 
         setTranscriptText(response.record.transcript ?? "");
-        setRecordStore(response.record.store ?? "");
+        const loadedStore = response.record.store || "archive-items";
+        setRecordStore(loadedStore);
+        void api.recordNotes(recordIdParam, loadedStore).then((notesResponse) => {
+          if (notesResponse.ok) setBookmarks(bookmarkNotes(notesResponse.notes));
+        });
         setTranscriptStatus(response.record.transcript?.trim() ? "تم تحميل التفريغ المحفوظ." : "لا يوجد تفريغ محفوظ لهذا السجل.");
       })
       .catch(() => setTranscriptStatus("تعذر تحميل التفريغ المحفوظ."));
@@ -75,7 +76,7 @@ export default function MediaPlayPage() {
     if (!recordId || !playerRef.current) return;
     const body = window.prompt("وصف العلامة الزمنية", "علامة زمنية")?.trim();
     if (!body) return;
-    const response = await api.createRecordNote(recordId, { body, timestampSeconds: playerRef.current.currentTime });
+    const response = await api.createRecordNote(recordId, { body, timestampSeconds: playerRef.current.currentTime }, recordStore || "archive-items");
     if (!response.ok) {
       setBookmarkStatus(response.error || "تعذر حفظ العلامة.");
       return;

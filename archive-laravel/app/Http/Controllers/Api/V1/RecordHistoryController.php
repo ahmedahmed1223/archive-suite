@@ -14,7 +14,8 @@ class RecordHistoryController extends Controller
 
     public function index(Request $request, string $recordId): JsonResponse
     {
-        if (! $this->recordExists($recordId)) {
+        $store = $request->string('store')->trim()->toString() ?: self::ARCHIVE_STORE;
+        if (! $this->recordExists($recordId, $store)) {
             return response()->json([
                 'ok' => false,
                 'error' => 'Record not found.',
@@ -25,6 +26,7 @@ class RecordHistoryController extends Controller
         $validated = $request->validate([
             'limit' => ['nullable', 'integer', 'min:1', 'max:200'],
             'page' => ['nullable', 'integer', 'min:1'],
+            'store' => ['nullable', 'string', 'max:120'],
         ]);
 
         $limit = (int) ($validated['limit'] ?? 100);
@@ -51,10 +53,10 @@ class RecordHistoryController extends Controller
         ]);
     }
 
-    private function recordExists(string $id): bool
+    private function recordExists(string $id, string $store): bool
     {
         return DB::table('storage_rows')
-            ->where('store', self::ARCHIVE_STORE)
+            ->where('store', $store)
             ->where(function ($query) use ($id): void {
                 $query->where('uid', $id)
                     ->orWhereRaw("data->>'id' = ?", [$id]);

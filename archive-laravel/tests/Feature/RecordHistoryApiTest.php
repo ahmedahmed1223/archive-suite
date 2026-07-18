@@ -64,6 +64,21 @@ class RecordHistoryApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_history_supports_a_record_in_an_explicit_non_default_store(): void
+    {
+        DB::table('storage_rows')->insert([
+            'store' => 'archive',
+            'uid' => 'cross-store-record',
+            'data' => json_encode(['id' => 'cross-store-record', 'title' => 'Cross store'], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->getJson('/api/v1/records/cross-store-record/history?store=archive', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('entries', []);
+    }
+
     public function test_it_signals_more_history_exists_beyond_the_page_limit(): void
     {
         $this->seedArchiveRecord();

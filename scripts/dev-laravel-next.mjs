@@ -81,12 +81,15 @@ spawnLogged("laravel", "docker", [
   "/app/archive-laravel",
   "-p",
   `${laravelPort}:8000`,
-  "composer:latest",
+  "-p",
+  "8080:8080",
+  // Matches the Laravel test harness and includes pcntl for Reverb signals.
+  "archive-laravel-e2e-runtime:latest",
   "sh",
   "-lc",
   // Seeder: NextIntegrationSeeder (matches verify-next-laravel-live.mjs for consistency).
   // DatabaseSeeder only creates a bare test user and does NOT delegate to NextIntegrationSeeder.
-  "test -f .env || cp .env.example .env; test -d vendor || composer install --no-interaction; php artisan config:clear && php artisan migrate --force && php artisan db:seed --class=NextIntegrationSeeder --force && php artisan serve --host=0.0.0.0 --port=8000",
+  "test -f .env || cp .env.example .env; test -d vendor || composer install --no-interaction; php artisan config:clear && php artisan migrate --force && php artisan db:seed --class=NextIntegrationSeeder --force && (php artisan reverb:start --host=0.0.0.0 --port=8080 &) && exec php artisan serve --host=0.0.0.0 --port=8000",
 ]);
 
 // Wait for Laravel to finish migrate+seed before booting Next — early API calls

@@ -10,11 +10,27 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 use Tests\TestCase;
 
 class CollaborationPresenceApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_heartbeat_succeeds_when_optional_realtime_broadcasting_fails(): void
+    {
+        Event::listen(CollaborationPresenceUpdated::class, static function (): never {
+            throw new RuntimeException('Reverb unavailable');
+        });
+        $accessToken = $this->login('fallback@example.test');
+
+        $this->postJson('/api/v1/collaboration/rooms/review-1/presence', [
+            'status' => 'editing',
+            'resourceId' => 'record-1',
+        ], [
+            'Authorization' => 'Bearer '.$accessToken,
+        ])->assertOk()->assertJsonPath('participants.0.displayName', 'Archive Editor');
+    }
 
     private function login(string $email = 'editor@example.test'): string
     {
