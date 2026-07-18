@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Services\Search\EmbeddingService;
+use App\Services\Search\TranscriptSearchService;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,10 @@ class SearchController extends Controller
 {
     private const MAX_ADVANCED_QUERY_TOKENS = 128;
 
-    public function __construct(private readonly EmbeddingService $embeddings)
+    public function __construct(
+        private readonly EmbeddingService $embeddings,
+        private readonly TranscriptSearchService $transcripts,
+    )
     {
     }
 
@@ -36,11 +40,13 @@ class SearchController extends Controller
             // true/false/0/1/"0"/"1", so a real `?semantic=true` query string
             // would 422. $request->boolean() below handles "true"/"false" too.
             'semantic' => ['nullable', 'string'],
+            'mode' => ['nullable', 'string', 'in:keyword,semantic,transcript'],
         ]);
 
         $limit = (int) ($validated['limit'] ?? 20);
         $queryText = trim((string) ($validated['q'] ?? ''));
-        $wantsSemantic = $request->boolean('semantic');
+        $mode = (string) ($validated['mode'] ?? ($request->boolean('semantic') ? 'semantic' : 'keyword'));
+        $wantsSemantic = $mode === 'semantic';
         $advancedQuery = $this->parseAdvancedQuery($queryText);
         $isAdvancedQuery = $advancedQuery !== null;
 
@@ -62,13 +68,27 @@ class SearchController extends Controller
 
         $records = $query
             ->get()
-            ->map(fn (stdClass $row): array => StorageRowPayload::format($row))
-            ->filter(fn (array $record): bool => $queryText === '' || $isAdvancedQuery || $this->matchesKeyword($record, $queryText))
-            ->filter(fn (array $record): bool => $advancedQuery === null || $this->matchesAdvancedQuery($record, $advancedQuery))
+            ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
+
+        if ($mode === 'transcript') {
+            $records = $records
+                ->map(function (array $record) use ($queryText): ?array {
+                    $match = $this->transcripts->find((string) ($record['transcript'] ?? ''), $queryText);
+
+                    return $match === [] ? null : [...$record, 'match' => ['kind' => 'transcript', ...$match]];
+                })
+                ->filter(fn (?array $record): bool => $record !== null);
+        } else {
+            $records = $records
+                ->filter(fn (array $record): bool => $queryText === '' || $isAdvancedQuery || $this->matchesKeyword($record, $queryText))
+                ->filter(fn (array $record): bool => $advancedQuery === null || $this->matchesAdvancedQuery($record, $advancedQuery));
+        }
+
+        $records = $records
             ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
             ->values();
 
-        $facets = $this->buildFacets($records, $validated, $isAdvancedQuery ? 'advanced' : ($wantsSemantic ? 'keyword-fallback' : 'keyword'));
+        $facets = $this->buildFacets($records, $validated, $mode === 'transcript' ? 'transcript' : ($isAdvancedQuery ? 'advanced' : ($wantsSemantic ? 'keyword-fallback' : 'keyword')));
 
         $pageRecords = $records
             ->filter(fn (array $record): bool => $cursorUid === null || strcmp((string) ($record['uid'] ?? $record['id'] ?? ''), $cursorUid) > 0)

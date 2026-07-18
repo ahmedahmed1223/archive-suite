@@ -45,6 +45,11 @@ export interface ArchiveRecord {
   subtype?: string | null;
   tags?: string[];
   transcript?: string;
+  match?: {
+    kind: "metadata" | "semantic" | "transcript";
+    excerpt?: string;
+    timestampSeconds?: number;
+  };
   metadata?: Record<string, unknown>;
   descriptorCompletion?: DescriptorCompletion;
   createdAt?: string;
@@ -1038,7 +1043,7 @@ export interface ArchiveApiClient {
   refresh(): Promise<ApiEnvelope<AuthSession>>;
   logout(options?: AuthRequestOptions): Promise<ApiEnvelope>;
   search(
-    params: { q?: string; store?: string; type?: string; subtype?: string; tag?: string; status?: string; cursor?: string; limit?: number },
+    params: { q?: string; store?: string; type?: string; subtype?: string; tag?: string; status?: string; cursor?: string; limit?: number; mode?: "keyword" | "semantic" | "transcript" },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[]; facets?: SearchFacets; nextCursor?: string | null }>>;
   publicCatalog(params?: { q?: string; type?: string; tag?: string; cursor?: string; limit?: number }): Promise<ApiEnvelope<{ records: PublicCatalogRecord[]; nextCursor?: string | null }>>;
@@ -1391,7 +1396,7 @@ export function createArchiveApiClient({
       cachedAccessToken = undefined;
       return response;
     },
-    search: ({ q = "", store = "", type = "", subtype = "", tag = "", status = "", cursor = "", limit = 20 }, options?: AuthRequestOptions) => {
+    search: ({ q = "", store = "", type = "", subtype = "", tag = "", status = "", cursor = "", limit = 20, mode = "keyword" }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       if (store) params.set("store", store);
@@ -1400,6 +1405,7 @@ export function createArchiveApiClient({
       if (tag) params.set("tag", tag);
       if (status) params.set("status", status);
       if (cursor) params.set("cursor", cursor);
+      if (mode !== "keyword") params.set("mode", mode);
       params.set("limit", String(clampApiLimit(limit, 20, 100)));
       return get(`/search?${params.toString()}`, options);
     },
