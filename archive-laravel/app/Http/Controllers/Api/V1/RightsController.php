@@ -31,6 +31,10 @@ class RightsController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate($this->rules(requireItem: true));
 
         $record = RightsRecord::query()->firstOrNew(['item_id' => $validated['itemId']]);

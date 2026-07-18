@@ -67,7 +67,7 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 | GET/POST | `/v1/media/jobs`, `/v1/media/jobs/{id}`, `/v1/media/jobs/{id}/cancel` | v1 | — | ownership enforced (V1-111) |
 | GET/POST/PUT/DELETE | `/v1/montage-projects*` | v1 | — | role-gated (V1-102), used by `lib/montage.ts` |
 | POST | `/v1/share` | v1 | — | role-gated (V1-102) |
-| GET/POST | `/v1/rights*` | v1 | — | |
+| GET/POST | `/v1/rights*` | v1 | — | reads لأي مستخدم مصادق؛ الكتابة editor/admin فقط |
 | POST | `/v1/uploads` | v1 | — | |
 | GET/POST/DELETE | `/v1/intake-templates*` | v1 | — | |
 | POST | `/v1/import/preview` | v1 | — | |

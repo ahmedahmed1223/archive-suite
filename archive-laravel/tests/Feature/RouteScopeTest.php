@@ -312,7 +312,7 @@ class RouteScopeTest extends TestCase
         'GET api/v1/rights/expiring' => self::ROLE_ANY,
         'GET api/v1/rights/{itemId}/enforcement' => self::ROLE_ANY,
         'GET api/v1/rights' => self::ROLE_ANY,
-        'POST api/v1/rights' => self::ROLE_ANY,
+        'POST api/v1/rights' => self::ROLE_EDITOR,
         'POST api/v1/uploads' => self::ROLE_ANY,
         'GET api/v1/intake-templates' => self::ROLE_ANY,
         'POST api/v1/intake-templates' => self::ROLE_ANY,
