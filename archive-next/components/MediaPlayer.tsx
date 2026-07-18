@@ -92,6 +92,8 @@ export interface MediaPlayerProps {
   onReady?: (el: HTMLMediaElement) => void;
   onTimeUpdate?: (el: HTMLMediaElement) => void;
   onPlayPause?: (el: HTMLMediaElement) => void;
+  /** Optional deep-link position, applied once after media metadata is ready. */
+  initialTime?: number;
   showTimeline?: boolean;
   transcriptText?: string;
 }
@@ -103,6 +105,7 @@ export default function MediaPlayer({
   onReady,
   onTimeUpdate,
   onPlayPause,
+  initialTime,
   showTimeline = false,
   transcriptText,
 }: MediaPlayerProps) {
@@ -110,6 +113,7 @@ export default function MediaPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const mediaRef = useRef<HTMLMediaElement | null>(null);
+  const hasAppliedInitialTime = useRef(false);
   const src = useMemo(() => streamSrc(path, disk), [disk, path]);
   const audio = useMemo(() => isAudioPath(path), [path]);
   const cues = useMemo(() => parseSubtitles(transcriptText), [transcriptText]);
@@ -135,9 +139,21 @@ export default function MediaPlayer({
   }, []);
 
   const handleLoadedMetadata = useCallback((event: SyntheticEvent<HTMLMediaElement>) => {
-    const nextDuration = Number(event.currentTarget.duration);
+    const element = event.currentTarget;
+    const nextDuration = Number(element.duration);
     setDuration(Number.isFinite(nextDuration) ? nextDuration : 0);
-  }, []);
+
+    const seekTime = typeof initialTime === "number" && Number.isFinite(initialTime) && initialTime >= 0
+      ? initialTime
+      : null;
+
+    if (!hasAppliedInitialTime.current && seekTime !== null) {
+      hasAppliedInitialTime.current = true;
+      element.currentTime = seekTime;
+      setCurrentTime(seekTime);
+      element.focus({ preventScroll: true });
+    }
+  }, [initialTime]);
 
   const handleTimeUpdate = useCallback((event: SyntheticEvent<HTMLMediaElement>) => {
     const element = event.currentTarget;
@@ -182,6 +198,7 @@ export default function MediaPlayer({
           ref={setRef}
           src={src}
           controls
+          tabIndex={-1}
           preload="metadata"
           onError={handleError}
           onLoadedMetadata={handleLoadedMetadata}
@@ -194,6 +211,7 @@ export default function MediaPlayer({
           ref={setRef}
           src={src}
           controls
+          tabIndex={-1}
           playsInline
           preload="metadata"
           onError={handleError}
