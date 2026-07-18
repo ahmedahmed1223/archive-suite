@@ -3744,3 +3744,9 @@
 - أضيفت أحداث تدقيق مصنفة لإنشاء السجل ورفع/حذف المرفق، ووُسع OpenAPI وفحص العقود وعميل Next typed بالمداخل الجديدة.
 - تعرض صفحة الإضافة نموذجاً مستقلاً لإنشاء سجل بلا ملف، وتعرض صفحة التفاصيل حالة «سجل وصفي مستقل» مع إضافة عدة ملفات وإظهار الحجم والحالة وحذف المرفق.
 - غطت الاختبارات Laravel إنشاء السجل ودورة المرفقات المتعددة، وغطت Vitest تجربة الإنشاء بلا اختيار ملف وحالة المرفقات الفارغة ثم الرفع.
+# 2026-07-18 — V1-785 توليد أنواع TypeScript من OpenAPI
+
+- أصبح `docs/api/archive-contract.openapi.json` يولّد ملف الأنواع القانوني `archive-next/lib/generated/archive-api.ts` عبر `openapi-typescript@7.10.1` المثبت، دون dependency في runtime أو timestamps ومسارات مطلقة في الناتج.
+- أضيف `pnpm api:generate` للتوليد و`pnpm verify:api-generated` لفحص drift داخل مجلد مؤقت دون تعديل workspace، وربط الفحص ببوابة `pnpm verify` قبل typecheck.
+- أصبحت أنواع `ArchiveRecord` و`RecordAttachment` و`CreateRecordPayload` العامة مشتقة من `components.schemas` المولدة مع الحفاظ على توافق عميل النقل الحالي؛ ضُبطت حقول `default` لتبقى اختيارية ما لم يضعها OpenAPI ضمن `required`.
+- تحقق TDD: فشل الاختبار أولاً لغياب المولد، ثم نجح اختبارا deterministic output وكشف drift دون mutation؛ نجحت عقود API وtypecheck و65 ملف Vitest/354 اختباراً.

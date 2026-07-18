@@ -1,4 +1,5 @@
 import contract from "../../docs/api/archive-contract.openapi.json";
+import type { components as GeneratedApiComponents } from "./generated/archive-api";
 
 export const ARCHIVE_UNAUTHORIZED_EVENT = "archive-next:unauthorized";
 
@@ -35,50 +36,11 @@ export interface DescriptorCompletion {
   missing: Array<"title" | "description" | "type" | "tags">;
 }
 
-export interface ArchiveRecord {
-  id: string;
-  uid?: string;
-  title: string;
-  description?: string;
-  store?: string;
-  type?: string;
-  subtype?: string | null;
-  tags?: string[];
-  transcript?: string;
-  match?: {
-    kind: "metadata" | "semantic" | "transcript";
-    excerpt?: string;
-    timestampSeconds?: number;
-  };
-  metadata?: Record<string, unknown>;
-  descriptorCompletion?: DescriptorCompletion;
-  createdAt?: string;
-  updatedAt?: string;
-  attachmentCount?: number;
-  [key: string]: unknown;
-}
+type GeneratedSchemas = GeneratedApiComponents["schemas"];
 
-export interface RecordAttachment {
-  id: string;
-  recordStore: string;
-  recordUid: string;
-  originalName: string;
-  mimeType?: string | null;
-  sizeBytes: number;
-  checksumSha256: string;
-  isPrimary: boolean;
-  processingStatus: string;
-  createdAt?: string | null;
-}
-
-export interface CreateRecordPayload {
-  title: string;
-  description?: string;
-  type?: string;
-  tags?: string[];
-  store?: string;
-  metadata?: Record<string, unknown>;
-}
+export type ArchiveRecord = GeneratedSchemas["ArchiveRecord"];
+export type RecordAttachment = GeneratedSchemas["RecordAttachment"];
+export type CreateRecordPayload = Omit<GeneratedSchemas["RecordCreateRequest"], "store"> & { store?: string };
 
 export interface SearchSuggestion {
   kind: "record" | "tag" | "type" | "recent";

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +10,14 @@ function readJson(relativePath) {
 }
 
 const contract = readJson("docs/api/archive-contract.openapi.json");
+
+for (const generatedAsset of [
+  "scripts/generate-api-types.mjs",
+  "scripts/verify-generated-api.test.mjs",
+  "archive-next/lib/generated/archive-api.ts"
+]) {
+  assert.ok(existsSync(path.join(ROOT, generatedAsset)), `Generated API asset should exist: ${generatedAsset}`);
+}
 
 assert.equal(contract.openapi, "3.1.0", "API contract should use OpenAPI 3.1.0");
 assert.equal(contract.info?.title, "Archive Suite API Contract", "API contract title should be stable");

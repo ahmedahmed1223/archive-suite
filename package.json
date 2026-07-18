@@ -22,7 +22,7 @@
     "build": "pnpm run build:next",
     "build:next": "pnpm --filter @archive/next run build",
     "verify": "pnpm run verify:laravel-next",
-    "verify:laravel-next": "pnpm run verify:reproducibility && pnpm run verify:cutover && pnpm run verify:api-contracts && pnpm run typecheck && pnpm run test:next && pnpm run build:next && pnpm run verify:repo-hygiene && pnpm run verify:laravel",
+    "verify:laravel-next": "pnpm run verify:reproducibility && pnpm run verify:cutover && pnpm run verify:api-contracts && pnpm run verify:api-generated && pnpm run typecheck && pnpm run test:next && pnpm run build:next && pnpm run verify:repo-hygiene && pnpm run verify:laravel",
     "verify:reproducibility": "node --test scripts/verify-reproducibility.test.mjs scripts/verify-immutable-images.test.mjs scripts/verify-release-supply-chain.test.mjs scripts/release-license-policy.test.mjs scripts/offline-bundle.test.mjs",
     "verify:cutover": "node scripts/verify-cutover-defaults.mjs",
     "verify:laravel": "node scripts/laravel-docker.mjs test",
@@ -38,6 +38,8 @@
     "security:baseline": "node scripts/verify-security-baseline.mjs",
     "security:audit": "node scripts/verify-dependency-audit.mjs",
     "verify:api-contracts": "node scripts/verify-api-contracts.mjs",
+    "api:generate": "node scripts/generate-api-types.mjs generate",
+    "verify:api-generated": "node scripts/generate-api-types.mjs verify",
     "verify:infra": "node scripts/verify-infra-config.mjs",
     "verify:repo-hygiene": "node scripts/verify-repo-hygiene.mjs",
     "smoke:watermark": "node scripts/smoke-watermark-ffmpeg.mjs",
@@ -53,6 +55,7 @@
     "control": "node scripts/control-center.mjs"
   },
   "devDependencies": {
+    "openapi-typescript": "7.10.1",
     "typescript": "^6.0.3"
   }
 }
