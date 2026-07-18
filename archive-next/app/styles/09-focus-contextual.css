@@ -258,3 +258,55 @@
 }
 
 /* RTL support already handled by flexbox/grid */
+.whats-new-dialog {
+  width: min(92vw, 38rem);
+}
+
+.whats-new-list {
+  display: grid;
+  gap: 0;
+  margin-block: 1.25rem;
+  border-block: 1px solid var(--color-border-secondary);
+}
+
+.whats-new-item {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: 0.875rem;
+  padding-block: 1rem;
+}
+
+.whats-new-item + .whats-new-item {
+  border-block-start: 1px solid var(--color-border-secondary);
+}
+
+.whats-new-icon {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 30%, var(--color-border-secondary));
+  border-radius: 0.625rem;
+  color: var(--color-brand-primary);
+  background: color-mix(in srgb, var(--color-brand-primary) 7%, var(--color-bg-secondary));
+}
+
+.whats-new-item h3,
+.whats-new-item p {
+  margin: 0;
+}
+
+.whats-new-item p {
+  margin-block-start: 0.3rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.whats-new-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.whats-new-actions .button {
+  min-height: 44px;
+}
