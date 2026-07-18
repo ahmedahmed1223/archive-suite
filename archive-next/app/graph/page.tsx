@@ -16,6 +16,7 @@ import {
 } from "@/lib/archive-api";
 import "./graph.css";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { buildGraphLenses, GRAPH_LENS_STORAGE_KEY, resolveGraphLens } from "@/lib/graph-lenses";
 
 type GraphState =
   | { status: "loading" }
@@ -367,7 +368,7 @@ export default function GraphPage() {
   const [selectedId, setSelectedId] = useState("");
   const [focusId, setFocusId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [graphLens, setGraphLens] = useState("all");
   const [tagFilter, setTagFilter] = useState("");
   const [layoutMode, setLayoutMode] = useState("auto");
   const [limit, setLimit] = useState(120);
@@ -405,13 +406,16 @@ export default function GraphPage() {
   const allNodes = graph?.nodes ?? [];
   const allEdges = graph?.edges ?? [];
 
-  const typeOptions = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const node of allNodes) {
-      counts.set(node.type || "record", (counts.get(node.type || "record") || 0) + 1);
-    }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ar"));
-  }, [allNodes]);
+  const graphLenses = useMemo(() => buildGraphLenses(allNodes), [allNodes]);
+
+  useEffect(() => {
+    setGraphLens(resolveGraphLens(window.localStorage.getItem(GRAPH_LENS_STORAGE_KEY), graphLenses));
+  }, [graphLenses]);
+
+  const selectGraphLens = (lensId: string) => {
+    setGraphLens(lensId);
+    window.localStorage.setItem(GRAPH_LENS_STORAGE_KEY, lensId);
+  };
 
   const tagOptions = useMemo(() => {
     const counts = new Map<string, number>();
@@ -427,11 +431,11 @@ export default function GraphPage() {
 
   const visibleNodes = useMemo(() => {
     return allNodes.filter((node) => {
-      if (typeFilter !== "all" && node.type !== typeFilter) return false;
+      if (graphLens !== "all" && (node.type || "record") !== graphLens) return false;
       if (tagFilter && !node.tags.includes(tagFilter)) return false;
       return true;
     });
-  }, [allNodes, tagFilter, typeFilter]);
+  }, [allNodes, graphLens, tagFilter]);
 
   const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes]);
   const visibleEdges = useMemo(
@@ -493,15 +497,6 @@ export default function GraphPage() {
             />
           </label>
           <label>
-            <Filter aria-hidden="true" size={16} />
-            <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-              <option value="all">كل الأنواع</option>
-              {typeOptions.map(([type, count]) => (
-                <option key={type} value={type}>{type} ({count})</option>
-              ))}
-            </select>
-          </label>
-          <label>
             <Link2 aria-hidden="true" size={16} />
             <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
               <option value="">كل الوسوم</option>
@@ -521,6 +516,24 @@ export default function GraphPage() {
           </label>
         </div>
       </PageToolbar>
+
+      {graphLenses.length > 1 ? (
+        <div className="graph-lenses" role="group" aria-label="عدسات تجميع خريطة العلاقات حسب النوع">
+          <Filter aria-hidden="true" size={17} />
+          {graphLenses.map((lens) => (
+            <button
+              className="badge graph-lens"
+              data-active={graphLens === lens.id}
+              type="button"
+              aria-pressed={graphLens === lens.id}
+              key={lens.id}
+              onClick={() => selectGraphLens(lens.id)}
+            >
+              {lens.label} <span aria-label={`${lens.count} سجل`}>{lens.count}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {state.status === "loading" ? (
         <section className="page-section" role="status" aria-live="polite">
