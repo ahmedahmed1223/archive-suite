@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip, { type MetricStripItem } from "@/components/MetricStrip";
-import PageToolbar from "@/components/PageToolbar";
+import { useAuthSession } from "@/lib/auth-session";
 import { createArchiveApiClient, type ArchiveRecord, type SearchFacets } from "@/lib/archive-api";
 import { formatDate } from "@/lib/record-utils";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -26,8 +26,24 @@ const quickLinks = [
 
 const RECENT_LIMIT = 8;
 
+const roleLabels: Record<string, string> = {
+  admin: "مدير الأرشيف",
+  editor: "محرر إعلامي",
+  viewer: "مشاهد/باحث"
+};
+
+const roleGreetings: Record<string, string> = {
+  admin: "مرحباً بعودتك، أدر أرشيفك بثقة",
+  editor: "مرحباً بعودتك، هيا نكمل التوصيف",
+  viewer: "مرحباً بعودتك، اكتشف ما هو جديد"
+};
+
+const todayLabel = () =>
+  new Intl.DateTimeFormat("ar", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date());
+
 export default function HomeDashboard() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const auth = useAuthSession();
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
   useEffect(() => {
@@ -66,20 +82,22 @@ export default function HomeDashboard() {
     ];
   }, [state]);
 
+  const role = auth.user?.role ?? "viewer";
+  const greeting = roleGreetings[role] ?? roleGreetings.viewer;
+  const roleLabel = roleLabels[role] ?? roleLabels.viewer;
+
   return (
     <AppShell subtitle="لوحة المتابعة" tipsPage="dashboard">
-      <PageToolbar
-        icon={<Archive aria-hidden="true" />}
-        eyebrow={<span className="badge">اللوحة الرئيسية</span>}
-        title="لوحة المتابعة"
-        description="نظرة سريعة على الأرشيف: المؤشرات الحية، أحدث السجلات، والوصول المباشر لمهام العمل اليومي."
-        actions={(
-          <Link className="ui-button ui-button-primary" href="/uploads">
-            <UploadCloud aria-hidden="true" size={16} strokeWidth={2} />
-            <span>إضافة مادة</span>
-          </Link>
-        )}
-      />
+      <header className="dashboard-greeting">
+        <div className="dashboard-greeting__intro">
+          <h1>{greeting}</h1>
+          <p>{roleLabel} · {todayLabel()}</p>
+        </div>
+        <Link className="ui-button ui-button-primary" href="/uploads">
+          <UploadCloud aria-hidden="true" size={16} strokeWidth={2} />
+          <span>إضافة مادة جديدة</span>
+        </Link>
+      </header>
 
       {state.status === "loading" ? (
         <section className="panel">
@@ -117,11 +135,11 @@ export default function HomeDashboard() {
             })}
           </nav>
 
-          <section className="panel dashboard-recent" aria-label="أحدث السجلات">
+          <section className="panel dashboard-recent" aria-label="أُضيف حديثاً">
             <header className="dashboard-recent__header">
               <h2>
                 <Clock3 aria-hidden="true" size={18} strokeWidth={2} />
-                <span>أحدث السجلات</span>
+                <span>أُضيف حديثاً</span>
               </h2>
               <Link className="dashboard-recent__all" href="/archive">عرض الكل</Link>
             </header>
@@ -134,15 +152,13 @@ export default function HomeDashboard() {
                 actions={<Link className="ui-button ui-button-primary" href="/uploads">إضافة مادة</Link>}
               />
             ) : (
-              <ul className="dashboard-recent__list">
+              <ul className="dashboard-recent__grid">
                 {state.records.map((record) => (
                   <li key={record.id}>
-                    <Link className="dashboard-recent__item" href={`/archive/${encodeURIComponent(record.id)}`}>
-                      <span className="dashboard-recent__title">{record.title || "بدون عنوان"}</span>
-                      <span className="dashboard-recent__meta">
-                        {record.type ? <span className="badge">{record.type}</span> : null}
-                        {record.updatedAt ? <span className="muted">{formatDate(record.updatedAt)}</span> : null}
-                      </span>
+                    <Link className="dashboard-recent__card" href={`/archive/${encodeURIComponent(record.id)}`}>
+                      {record.type ? <span className="dashboard-recent__card-type">{record.type}</span> : null}
+                      <span className="dashboard-recent__card-title">{record.title || "بدون عنوان"}</span>
+                      {record.updatedAt ? <span className="dashboard-recent__card-date">{formatDate(record.updatedAt)}</span> : null}
                     </Link>
                   </li>
                 ))}
