@@ -1802,6 +1802,20 @@
       }
     },
     "/saved-searches/{id}": {
+      "patch": {
+        "tags": ["Saved Searches"],
+        "summary": "Change team sharing for an owned saved search",
+        "operationId": "updateSavedSearch",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SavedSearchUpdateRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated saved search", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SavedSearchResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
       "delete": {
         "tags": ["Saved Searches"],
         "summary": "Delete a saved search",
@@ -1817,6 +1831,20 @@
         ],
         "responses": {
           "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/saved-searches/{id}/copy": {
+      "post": {
+        "tags": ["Saved Searches"],
+        "summary": "Copy an accessible saved search into the current user's private searches",
+        "operationId": "copySavedSearch",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "201": { "description": "Private saved-search copy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SavedSearchResponse" } } } },
           "401": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/Error" }
         }
@@ -5228,14 +5256,17 @@
       },
       "SavedSearch": {
         "type": "object",
-        "required": ["id", "name", "query", "filters", "createdAt", "updatedAt"],
+        "required": ["id", "name", "query", "filters", "createdAt", "updatedAt", "ownerId", "shared", "canManage"],
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
           "query": { "type": ["string", "null"] },
           "filters": { "type": ["object", "null"] },
           "createdAt": { "type": ["string", "null"], "format": "date-time" },
-          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" },
+          "ownerId": { "type": "string" },
+          "shared": { "type": "boolean" },
+          "canManage": { "type": "boolean" }
         }
       },
       "SavedSearchCreateRequest": {
@@ -5246,6 +5277,12 @@
           "query": { "type": "string", "maxLength": 500 },
           "filters": { "type": "object" }
         }
+      },
+      "SavedSearchUpdateRequest": {
+        "type": "object",
+        "required": ["shared"],
+        "properties": { "shared": { "type": "boolean" } },
+        "additionalProperties": false
       },
       "SavedSearchesResponse": {
         "allOf": [
