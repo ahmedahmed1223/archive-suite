@@ -15,6 +15,7 @@ import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, typ
 import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
 import { buildSearchPlaybackHref } from "@/lib/search";
+import { listRecentSearches, recordRecentSearch } from "@/lib/recent-searches";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -99,8 +100,10 @@ function SearchPageContent() {
   const searchParams = useSearchParams();
   const api = useMemo(() => createArchiveApiClient(), []);
   const fetchSearchSuggestions = useCallback(async (term: string) => {
+    const recent = listRecentSearches(term);
     const response = await api.searchSuggestions({ q: term });
-    return response.ok ? response.suggestions : [];
+    const remote = response.ok ? response.suggestions : [];
+    return [...recent, ...remote.filter((item) => !recent.some((entry) => entry.value === item.value))].slice(0, 8);
   }, [api]);
   const { user, status: authStatus } = useAuthSession();
   const userId = user?.id ?? null;
@@ -206,6 +209,7 @@ function SearchPageContent() {
       }
 
       setAllRecords(response.records);
+      recordRecentSearch(q);
       setState({
         status: "ready",
         records: response.records,

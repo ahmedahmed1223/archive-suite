@@ -71,6 +71,15 @@ class SavedSearchesApiTest extends TestCase
         \App\Models\User::query()->firstOrCreate(['email' => 'reader@example.test'], ['name' => 'Reader', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password')]);
         $token = $this->postJson('/api/v1/auth/login', ['email' => 'reader@example.test', 'password' => 'secret-password'])->json('accessToken');
         $this->getJson('/api/v1/saved-searches', ['Authorization' => 'Bearer '.$token])->assertOk()->assertJsonCount(1, 'searches')->assertJsonPath('searches.0.shared', true)->assertJsonPath('searches.0.canManage', false);
+        $this->patchJson('/api/v1/saved-searches/'.$id, ['shared' => false], ['Authorization' => 'Bearer '.$token])->assertNotFound();
+        $this->deleteJson('/api/v1/saved-searches/'.$id, [], ['Authorization' => 'Bearer '.$token])->assertNotFound();
+
+        $copy = $this->postJson('/api/v1/saved-searches/'.$id.'/copy', [], ['Authorization' => 'Bearer '.$token])
+            ->assertCreated()
+            ->assertJsonPath('search.ownerId', (string) \App\Models\User::query()->where('email', 'reader@example.test')->firstOrFail()->getKey())
+            ->assertJsonPath('search.shared', false)
+            ->assertJsonPath('search.canManage', true);
+        $this->assertNotSame($id, $copy->json('search.id'));
     }
 
     public function test_it_rejects_invalid_saved_search_payload(): void

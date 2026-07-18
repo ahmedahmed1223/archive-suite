@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -66,6 +67,26 @@ function dockerArgs(command, extra = []) {
   ];
 }
 
+function laravelTestFiles(directory, relativeDirectory = "tests") {
+  return readdirSync(directory, { withFileTypes: true })
+    .flatMap((entry) => {
+      const absolute = path.join(directory, entry.name);
+      const relative = `${relativeDirectory}/${entry.name}`;
+      return entry.isDirectory() ? laravelTestFiles(absolute, relative) : [relative];
+    })
+    .filter((file) => file.endsWith("Test.php"))
+    .sort();
+}
+
+async function runLaravelTestBatches() {
+  const files = laravelTestFiles(path.join(ROOT, "archive-laravel", "tests"));
+  const batchSize = 30;
+  for (let index = 0; index < files.length; index += batchSize) {
+    const batch = files.slice(index, index + batchSize);
+    await run("docker", dockerArgs(["php", "artisan", "test", ...batch]));
+  }
+}
+
 const [mode, ...rest] = process.argv.slice(2);
 const servePort = process.env.LARAVEL_PORT || "8950";
 
@@ -93,7 +114,9 @@ if (!mode || !commands[mode]) {
 const extraDockerArgs = mode === "serve" ? ["-p", `${servePort}:8000`] : [];
 
 prepareLaravelRuntime()
-  .then(() => run("docker", dockerArgs(commands[mode], extraDockerArgs)))
+  .then(() => mode === "test" && rest.length === 0
+    ? runLaravelTestBatches()
+    : run("docker", dockerArgs(commands[mode], extraDockerArgs)))
   .catch((error) => {
   console.error(error.message);
   process.exit(1);

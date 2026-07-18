@@ -58,6 +58,7 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 | GET | `/v1/sync` | v1 | — | |
 | GET | `/v1/activity` | v1 | — | |
 | GET | `/v1/search` | v1 | — | |
+| GET | `/v1/search/suggestions` | v1 | — | Authenticated autocomplete suggestions |
 | GET | `/v1/discover` | v1 | — | mature, used by `app/discover/page.tsx` |
 | GET/PUT | `/v1/suggestions`, `/v1/suggestions/{key}/feedback` | v1 | — | mature, used by `SuggestionsPanel.tsx` |
 | GET/POST/PATCH/DELETE | `/v1/relations`, `/v1/relations/graph`, `/v1/relations/{id}` | v1 | — | |
