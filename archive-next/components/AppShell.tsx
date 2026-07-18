@@ -13,6 +13,7 @@ import ContextualTips from "@/components/ContextualTips";
 import WorkspacePositionRestorer from "@/components/WorkspacePositionRestorer";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay";
 import type { BreadcrumbItem } from "@/components/Breadcrumb";
+import WhatsNewDialog from "@/components/WhatsNewDialog";
 
 export default function AppShell({
   subtitle,
@@ -59,6 +60,7 @@ export default function AppShell({
       <AppHeader subtitle={subtitle} navLabel={navLabel} breadcrumbExtra={breadcrumbExtra} />
       <WorkspacePositionRestorer />
       <ShortcutsOverlay />
+      <WhatsNewDialog />
       <main id="main-content" tabIndex={-1} className={`content app-content ${contentClassName}`.trim()}>
         {tipsPage && <ContextualTips page={tipsPage} />}
         <WorkspaceCommandBar />
