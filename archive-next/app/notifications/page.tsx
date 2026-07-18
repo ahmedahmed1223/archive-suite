@@ -4,6 +4,7 @@ import { useNotifications, type Notification } from "@/lib/use-notifications";
 import { useState } from "react";
 import { Trash2, CheckCircle2, Info, Package } from "lucide-react";
 import Link from "next/link";
+import AppShell from "@/components/AppShell";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -83,7 +84,7 @@ export default function NotificationsPage() {
     : notifications;
 
   return (
-    <main className="notifications-page">
+    <AppShell subtitle="الإشعارات" contentClassName="notifications-page">
       <header className="notifications-page__header">
         <div>
           <h1>الإشعارات</h1>
@@ -157,6 +158,6 @@ export default function NotificationsPage() {
           </div>
         )}
       </div>
-    </main>
+    </AppShell>
   );
 }
