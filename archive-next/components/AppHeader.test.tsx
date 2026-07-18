@@ -11,6 +11,9 @@ vi.mock("@/components/DensityToggle", () => ({ default: () => null }));
 vi.mock("@/components/FocusModeToggle", () => ({ default: () => null }));
 vi.mock("@/components/NotificationsPanel", () => ({ NotificationsPanel: () => null }));
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
+vi.mock("@/components/ThemeProvider", () => ({
+  useTheme: () => ({ settings: { currentPreset: "cinematic-dark" }, setPreset: vi.fn() })
+}));
 
 function mockMatchMedia(matchingQuery: string) {
   window.matchMedia = ((query: string) => ({

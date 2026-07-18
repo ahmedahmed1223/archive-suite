@@ -16,9 +16,13 @@ import { NotificationsPanel } from "@/components/NotificationsPanel";
 import RecentFavoritesMenu from "@/components/RecentFavoritesMenu";
 import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
 import { SIDEBAR_VIEWPORT_QUERY, useMediaQuery } from "@/lib/use-media-query";
+import { useTheme } from "@/components/ThemeProvider";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
+
+const LIGHT_PRESET = "neutral-light";
+const DARK_PRESET = "cinematic-dark";
 
 export default function AppHeader({
   subtitle,
@@ -33,6 +37,8 @@ export default function AppHeader({
   const pathname = usePathname() || "/";
   const router = useRouter();
   const auth = useAuthSession();
+  const theme = useTheme();
+  const isLightTheme = theme.settings.currentPreset === LIGHT_PRESET;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigationTriggerRef = useRef<HTMLButtonElement>(null);
   const navMoreRef = useRef<HTMLDetailsElement>(null);
@@ -166,6 +172,18 @@ export default function AppHeader({
         </button>
       </div>
       {isMenuOpen ? <button type="button" className="navigation-backdrop" aria-label="إغلاق التنقل" onClick={() => closeNavigation()} /> : null}
+      <div className="shell-controls">
+        <button
+          type="button"
+          className="shell-theme-toggle"
+          onClick={() => theme.setPreset(isLightTheme ? DARK_PRESET : LIGHT_PRESET)}
+          aria-pressed={isLightTheme}
+          title={isLightTheme ? "التبديل إلى الوضع الداكن" : "التبديل إلى الوضع الفاتح"}
+        >
+          {isLightTheme ? <Icons.Moon aria-hidden="true" size={16} strokeWidth={2} /> : <Icons.Sun aria-hidden="true" size={16} strokeWidth={2} />}
+          <span>{isLightTheme ? "الوضع الداكن" : "الوضع الفاتح"}</span>
+        </button>
+      </div>
       <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>
         <div className="nav-section" data-section={activeSection ?? "daily"}>
           <span className="nav-section-label">يوميًا</span>

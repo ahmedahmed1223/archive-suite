@@ -64,12 +64,11 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
     return () => clearInterval(interval);
   }, [isMounted]);
 
-  if (!settings) {
-    return <>{children}</>;
-  }
-
+  // Always provide the context — even before the mount effect loads settings —
+  // so consumers rendered during SSR / first paint (e.g. AppHeader's theme
+  // toggle) don't throw. Falls back to SSR-safe DEFAULT_SETTINGS pre-mount.
   const value: ThemeContextValue = {
-    settings,
+    settings: settings ?? getAppearanceSettings(),
     setPreset: (presetId: string) => {
       const updated = updateAppearanceSettings({ currentPreset: presetId });
       setSettings(updated);
