@@ -40,6 +40,28 @@ class SearchApiTest extends TestCase
             ->assertJsonPath('records.0.uid', 'audio-arabic-001');
     }
 
+    public function test_transcript_mode_returns_only_matching_timed_cues(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [[
+                'uid' => 'oral-history-001',
+                'title' => 'مقابلة تاريخ شفهي',
+                'type' => 'video',
+                'transcript' => "WEBVTT\n\n00:01:23.000 --> 00:01:27.000\nذاكرة المدينة\n",
+            ]],
+        ], $this->authHeaders())->assertOk();
+
+        $this->getJson('/api/v1/search?mode=transcript&q='.rawurlencode('ذاكرة'), $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('facets.mode', 'transcript')
+            ->assertJsonCount(1, 'records')
+            ->assertJsonPath('records.0.uid', 'oral-history-001')
+            ->assertJsonPath('records.0.match.kind', 'transcript')
+            ->assertJsonPath('records.0.match.excerpt', 'ذاكرة المدينة')
+            ->assertJsonPath('records.0.match.timestampSeconds', 83);
+    }
+
     public function test_it_supports_search_cursor_pagination(): void
     {
         $this->seedRecords();

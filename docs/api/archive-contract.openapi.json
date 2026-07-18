@@ -991,7 +991,8 @@
             "in": "query",
             "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
           },
-          { "name": "semantic", "in": "query", "schema": { "type": "boolean", "default": false } }
+          { "name": "semantic", "in": "query", "schema": { "type": "boolean", "default": false } },
+          { "name": "mode", "in": "query", "schema": { "type": "string", "enum": ["keyword", "semantic", "transcript"], "default": "keyword" }, "description": "Explicit search mode. transcript returns only matches from time-coded VTT/SRT cues; semantic falls back to keyword when embeddings are unavailable." }
         ],
         "responses": {
           "200": {
@@ -3925,6 +3926,16 @@
           "tags": { "type": "array", "items": { "type": "string" } },
           "metadata": { "type": "object", "additionalProperties": true },
           "transcript": { "type": "string" },
+          "match": {
+            "type": "object",
+            "required": ["kind"],
+            "properties": {
+              "kind": { "type": "string", "enum": ["metadata", "semantic", "transcript"] },
+              "excerpt": { "type": "string" },
+              "timestampSeconds": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          },
           "descriptorCompletion": {
             "type": "object",
             "required": ["status", "complete", "total", "missing"],
@@ -4494,7 +4505,7 @@
         "type": "object",
         "required": ["mode", "total", "stores", "types", "subtypes", "tags", "statuses"],
         "properties": {
-          "mode": { "type": "string", "enum": ["keyword", "keyword-fallback", "semantic", "advanced"], "description": "'advanced' is returned for validated field-query DSL searches and never uses semantic/vector search. 'semantic' is returned only when a pgvector query actually ran; semantic requests degrade to 'keyword-fallback' when unavailable (non-Postgres, pgvector missing, no embedding key, or embed failure)." },
+          "mode": { "type": "string", "enum": ["keyword", "keyword-fallback", "semantic", "advanced", "transcript"], "description": "'advanced' is returned for validated field-query DSL searches and never uses semantic/vector search. 'semantic' is returned only when a pgvector query actually ran; semantic requests degrade to 'keyword-fallback' when unavailable (non-Postgres, pgvector missing, no embedding key, or embed failure). 'transcript' returns only time-coded VTT/SRT cue matches." },
           "store": { "type": ["string", "null"] },
           "total": { "type": "integer" },
           "stores": { "type": "array", "items": { "$ref": "#/components/schemas/SearchFacetBucket" } },
