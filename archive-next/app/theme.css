@@ -80,7 +80,8 @@
 
   --color-text-primary: #E4E7EC;
   --color-text-secondary: #B0B5BF;
-  --color-text-tertiary: #7A7F8A;
+  /* ≥4.5:1 on every dark surface up to #2D2A29 (WCAG AA, V1-303C axe gate). */
+  --color-text-tertiary: #9AA0AB;
   --color-text-muted: var(--color-text-tertiary);
   --color-text-inverse: #111318;
   --color-text-link: #D4943A;
@@ -99,9 +100,10 @@
 
   --color-status-success: #4CAF50;
   --color-status-warning: #D4943A;
-  --color-status-error: #C45B5B;
+  /* Brightened for ≥4.5:1 as text on dark surfaces (V1-303C axe gate). */
+  --color-status-error: #D97C7C;
   --color-danger: var(--color-status-error);
-  --color-status-info: #5B7BAA;
+  --color-status-info: #7D9CC8;
   --color-status-processing: #D4943A;
 
   --color-surface-overlay: rgba(17, 19, 24, 0.85);

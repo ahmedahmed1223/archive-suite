@@ -121,7 +121,7 @@ export default function UsersSettingsPage() {
         accessorKey: "role",
         header: "الدور",
         cell: ({ row }) => (
-          <select value={row.original.role} onChange={(event) => void handleRoleChange(row.original, event.target.value as ManagedUserRole)}>
+          <select aria-label={`دور ${row.original.email}`} value={row.original.role} onChange={(event) => void handleRoleChange(row.original, event.target.value as ManagedUserRole)}>
             {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
               <option key={role} value={role}>
                 {roleLabels[role]}
@@ -248,7 +248,7 @@ export default function UsersSettingsPage() {
                   </dl>
                   <label className="toolbar-field">
                     الدور
-                    <select value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
+                    <select aria-label={`دور ${user.email}`} value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
                       {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
                         <option key={role} value={role}>
                           {roleLabels[role]}

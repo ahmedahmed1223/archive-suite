@@ -527,7 +527,7 @@ export default function SettingsPage() {
               <p className="helper-text status-error">خطأ: {error}</p>
             ) : (
               <>
-                <div className="kv-grid" aria-label="Current security controls">
+                <div className="kv-grid" role="group" aria-label="ضوابط الأمان الحالية">
                   {postureRows.map((row) => (
                     <div className="kv-item" key={row.label}>
                       <strong>{row.label}</strong>

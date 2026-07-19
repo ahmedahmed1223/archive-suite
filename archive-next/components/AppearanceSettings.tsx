@@ -196,6 +196,7 @@ export default function AppearanceSettings() {
               placeholder="وقت الانتهاء"
             />
             <select
+              aria-label="وضع المظهر للقاعدة"
               value={newRuleMode}
               onChange={(e) => setNewRuleMode(e.target.value as "light" | "dark")}
             >
