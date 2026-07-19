@@ -15,6 +15,7 @@
   },
   "scripts": {
     "bootstrap": "pnpm install --frozen-lockfile",
+    "agent:doctor": "node scripts/agent-doctor.mjs",
     "dev": "node scripts/dev-laravel-next.mjs",
     "dev:next": "pnpm --filter @archive/next run dev",
     "dev:laravel": "node scripts/laravel-docker.mjs serve",
