@@ -7,6 +7,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { Button } from "@/components/ui/Button";
 import { createArchiveApiClient, type ArchiveType } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { selectMissingDefaults } from "@/lib/default-taxonomy";
 import TypesList from "./_components/TypesList";
 import TypesEditor from "./_components/TypesEditor";
 import "./types.css";
@@ -53,6 +54,32 @@ export default function TypesPage() {
 
   const selectedType = state.types.find((type) => type.id === selectedTypeId) ?? null;
   const isEditorOpen = editorType !== undefined;
+
+  async function importDefaults() {
+    if (isSaving) return;
+    setIsSaving(true);
+    setActionMessage("");
+    const missing = selectMissingDefaults(state.types.map((type) => type.id));
+    if (missing.length === 0) {
+      setActionMessage("كل التصنيفات الافتراضية موجودة بالفعل — لم يتغير شيء.");
+      setIsSaving(false);
+      return;
+    }
+    let imported = 0;
+    for (const type of missing) {
+      const response = await api.saveType(type);
+      if (!response.ok) {
+        setActionMessage(`استُورد ${imported} من ${missing.length}؛ توقف عند «${type.name}»: ${response.error}`);
+        setIsSaving(false);
+        await loadTypes();
+        return;
+      }
+      imported += 1;
+    }
+    setActionMessage(`استُوردت ${imported} تصنيفات افتراضية دون المساس بالأنواع الموجودة.`);
+    setIsSaving(false);
+    await loadTypes();
+  }
 
   function startCreate() {
     setEditorError("");
@@ -133,7 +160,12 @@ export default function TypesPage() {
         title="الأنواع"
         description="عرّف مخططات البيانات والحقول وصلاحيات كل دور قبل إدخال السجلات إلى الأرشيف."
         meta={<span className="badge">{state.types.length} نوع</span>}
-        actions={<Button type="button" variant="primary" onClick={startCreate}>نوع جديد</Button>}
+        actions={(
+          <>
+            <Button type="button" variant="secondary" disabled={isSaving} onClick={() => void importDefaults()}>استيراد التصنيفات الافتراضية</Button>
+            <Button type="button" variant="primary" onClick={startCreate}>نوع جديد</Button>
+          </>
+        )}
       />
 
       {actionMessage ? <p className="types-feedback" role="status">{actionMessage}</p> : null}
