@@ -9,6 +9,7 @@ import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord, type VocabularyTerm } from "@/lib/archive-api";
 import { buildChangeImpact, countAffectedRecords } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
+import { selectMissingVocabularyTags } from "@/lib/default-taxonomy";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 type Kind = VocabularyTerm["kind"];
@@ -28,6 +29,34 @@ export default function VocabularyPage() {
   const [aliases, setAliases] = useState("");
   const [note, setNote] = useState("");
   const [filter, setFilter] = useState("");
+  const [importMessage, setImportMessage] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+
+  async function importDefaultTags() {
+    if (isImporting) return;
+    setIsImporting(true);
+    setImportMessage("");
+    const missing = selectMissingVocabularyTags(terms.map((item) => item.term));
+    if (missing.length === 0) {
+      setImportMessage("كل الوسوم الافتراضية موجودة بالفعل — لم يتغير شيء.");
+      setIsImporting(false);
+      return;
+    }
+    let imported = 0;
+    for (const tag of missing) {
+      const response = await api.createVocabularyTerm({ term: tag, kind: "tag" });
+      if (!response.ok) {
+        setImportMessage(`استُورد ${imported} من ${missing.length}؛ توقف عند «${tag}»: ${response.error}`);
+        setIsImporting(false);
+        await refreshTerms();
+        return;
+      }
+      imported += 1;
+    }
+    setImportMessage(`استُورد ${imported} وسمًا افتراضيًا دون المساس بالمفردات الموجودة.`);
+    setIsImporting(false);
+    await refreshTerms();
+  }
 
   async function refreshTerms() {
     const response = await api.vocabularyTerms();
@@ -114,7 +143,12 @@ export default function VocabularyPage() {
             <span className="badge">{discovered.length} مصطلح مكتشف</span>
           </>
         )}
-        actions={<a className="button button-secondary" href="/tags">إدارة الوسوم</a>}
+        actions={(
+          <>
+            <button type="button" className="button button-secondary" disabled={isImporting} onClick={() => void importDefaultTags()}>استيراد الوسوم الافتراضية</button>
+            <a className="button button-secondary" href="/tags">إدارة الوسوم</a>
+          </>
+        )}
       >
         <form className="archive-toolbar-grid" onSubmit={addTerm}>
           <label>
@@ -162,6 +196,8 @@ export default function VocabularyPage() {
       {error && loadState.status === "ready" ? (
         <div className="state-banner state-banner-error" role="alert"><strong>تعذر حفظ تغيير المفردات</strong><span className="helper-text">{error}</span></div>
       ) : null}
+
+      {importMessage ? <p className="helper-text" role="status">{importMessage}</p> : null}
 
       {loadState.status === "ready" ? <section className="split-layout">
         <article className="panel">
