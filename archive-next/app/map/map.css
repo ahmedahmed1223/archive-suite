@@ -1,0 +1,48 @@
+.map-page-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.map-page-skeleton {
+  block-size: 480px;
+  border-radius: var(--radius-lg);
+}
+
+.map-page-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.geo-map {
+  block-size: 480px;
+  inline-size: 100%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-secondary);
+  overflow: hidden;
+}
+
+.map-page-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-page-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.map-page-list li > a:first-child {
+  flex: 1 1 auto;
+  font-weight: var(--font-weight-medium);
+}

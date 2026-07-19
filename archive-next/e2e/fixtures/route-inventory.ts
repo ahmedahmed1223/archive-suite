@@ -93,6 +93,7 @@ export const ROUTE_COVERAGE: readonly RouteCoverage[] = [
   { url: '/inbox', route: '/inbox', role: 'viewer', states: ALL_STATES },
   { url: '/ingest', route: '/ingest', role: 'editor', states: ALL_STATES },
   { url: '/kanban', route: '/kanban', role: 'viewer', states: ALL_STATES },
+  { url: '/map', route: '/map', role: 'viewer', states: ALL_STATES },
   { url: '/media/compare', route: '/media/compare', role: 'viewer', states: ALL_STATES },
   { url: '/media/jobs', route: '/media/jobs', role: 'viewer', states: ALL_STATES },
   { url: '/media/play', route: '/media/play', role: 'viewer', states: ALL_STATES },

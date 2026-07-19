@@ -4,6 +4,7 @@ import {
   buildOsmLinks,
   formatCoordinates,
   formatDistanceKm,
+  geoTaggedRecords,
   getRecordLocation,
   haversineDistanceKm,
   nearbyRecords,
@@ -167,5 +168,25 @@ describe("nearbyRecords", () => {
     const noLocation = record({ id: "no-location" });
     const results = nearbyRecords([noLocation], origin, 10000, 5);
     expect(results).toEqual([]);
+  });
+});
+
+describe("geoTaggedRecords", () => {
+  it("pairs each record carrying a valid location with that location", () => {
+    const located = record({ id: "r1", metadata: { location: { lat: 31.9539, lng: 35.9106, place: "عمّان" } } });
+    const unlocated = record({ id: "r2" });
+    expect(geoTaggedRecords([located, unlocated])).toEqual([
+      { record: located, location: { lat: 31.9539, lng: 35.9106, place: "عمّان" } }
+    ]);
+  });
+
+  it("returns an empty array when no record has a valid location", () => {
+    expect(geoTaggedRecords([record({ id: "r1" })])).toEqual([]);
+  });
+
+  it("preserves input order", () => {
+    const first = record({ id: "first", metadata: { location: { lat: 1, lng: 1 } } });
+    const second = record({ id: "second", metadata: { location: { lat: 2, lng: 2 } } });
+    expect(geoTaggedRecords([second, first]).map((entry) => entry.record.id)).toEqual(["second", "first"]);
   });
 });
