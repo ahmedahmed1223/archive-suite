@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import { createArchiveApiClient, type ArchiveRecord, type IntakeTemplate, type UploadedRecord } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
+import { uploadFileInChunks } from "@/lib/chunked-upload";
 import {
   deriveIntakeNextAction,
   findDuplicateFiles,
@@ -32,6 +33,11 @@ const steps: Array<{ key: WizardStep; label: string }> = [
   { key: "metadata", label: "البيانات" },
   { key: "review", label: "المراجعة" }
 ];
+
+/** V1-711: files at or above this size go through the resumable chunked
+ * upload path instead of a single multipart POST (which the server caps at
+ * 600MB and which cannot resume after a dropped connection). */
+const CHUNKED_UPLOAD_THRESHOLD_BYTES = 100 * 1024 * 1024;
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -285,7 +291,18 @@ export function UploadForm() {
 
   async function uploadOne(file: File): Promise<UploadResult> {
     const auth = accessToken ? { accessToken } : undefined;
-    const uploaded = await api.uploadFile(file, folder.trim() ? { folder: folder.trim() } : undefined, auth);
+    const effectiveFolder = folder.trim() || undefined;
+
+    const uploaded = file.size >= CHUNKED_UPLOAD_THRESHOLD_BYTES
+      ? await uploadFileInChunks(api, file, {
+          folder: effectiveFolder,
+          onProgress: ({ uploadedBytes, totalBytes }) => {
+            const progressPercent = totalBytes > 0 ? Math.round((uploadedBytes / totalBytes) * 100) : 0;
+            setFileProgress((current) => current.map((item) =>
+              item.fileName === file.name ? { ...item, progressPercent } : item));
+          }
+        })
+      : await api.uploadFile(file, effectiveFolder ? { folder: effectiveFolder } : undefined, auth);
 
     if (!uploaded.ok) {
       return { status: "error", fileName: file.name, message: uploaded.error };
@@ -415,6 +432,9 @@ export function UploadForm() {
                       <span className="helper-text">{suggestedType(file)} · {formatBytes(file.size)}</span>
                       <span className="helper-text" role="status">
                         {intakeStatusLabels[fileProgress.find((item) => item.fileName === file.name)?.status ?? "pending"]}
+                        {fileProgress.find((item) => item.fileName === file.name)?.progressPercent !== undefined
+                          ? ` (${fileProgress.find((item) => item.fileName === file.name)?.progressPercent}%)`
+                          : null}
                       </span>
                     </div>
                     <button type="button" className="button button-secondary button-sm" onClick={() => removeFile(file.name)}>

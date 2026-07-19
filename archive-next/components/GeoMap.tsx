@@ -68,7 +68,14 @@ export default function GeoMap({
 
     return () => {
       disposed = true;
-      map?.remove();
+      try {
+        map?.remove();
+      } catch {
+        // Leaflet's internal marker/icon teardown can throw when the
+        // container was already detached (fast re-render, React Strict
+        // Mode's double-invoke in dev, or page navigation) — the map
+        // instance is discarded either way, so this is safe to ignore.
+      }
     };
     // points identity changes each fetch; re-mounting the map per fetch is
     // acceptable here (an admin-facing view, not a hot path).

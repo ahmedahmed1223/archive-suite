@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\V1\TrashController;
 use App\Http\Controllers\Api\V1\TypesController;
 use App\Http\Controllers\Api\V1\UploadLinksController;
 use App\Http\Controllers\Api\V1\UploadsController;
+use App\Http\Controllers\Api\V1\UploadSessionsController;
 use App\Http\Controllers\Api\V1\UsersController;
 use App\Http\Controllers\Api\V1\VocabularyController;
 use App\Http\Controllers\Api\V1\WebhooksController;
@@ -226,6 +227,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/rights', [RightsController::class, 'store']);
 
         Route::post('/uploads', [UploadsController::class, 'store']);
+
+        // V1-711: resumable chunked upload for large files.
+        Route::post('/uploads/sessions', [UploadSessionsController::class, 'create']);
+        Route::get('/uploads/sessions/{sessionId}', [UploadSessionsController::class, 'show']);
+        Route::put('/uploads/sessions/{sessionId}/chunks/{index}', [UploadSessionsController::class, 'uploadChunk'])->whereNumber('index');
+        Route::post('/uploads/sessions/{sessionId}/complete', [UploadSessionsController::class, 'complete']);
+        Route::delete('/uploads/sessions/{sessionId}', [UploadSessionsController::class, 'destroy']);
 
         Route::get('/intake-templates', [IntakeTemplatesController::class, 'index']);
         Route::post('/intake-templates', [IntakeTemplatesController::class, 'store']);

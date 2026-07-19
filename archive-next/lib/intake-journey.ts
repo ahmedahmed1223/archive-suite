@@ -19,6 +19,8 @@ export type IntakeFileProgress = {
   fileName: string;
   status: "pending" | "uploading" | "success" | "error";
   message?: string;
+  /** V1-711: byte-level progress for large files uploaded via the chunked path. */
+  progressPercent?: number;
 };
 
 export const intakeStatusLabels = {

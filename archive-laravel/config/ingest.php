@@ -22,6 +22,16 @@ return [
         'jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'webp',
     ],
 
+    // V1-711: resumable chunked upload for large files. Chunk size is bounded
+    // both ways — too small and a multi-GB file needs an unreasonable number
+    // of requests; too large and a single chunk write approaches the same
+    // memory/timeout pressure chunking exists to avoid.
+    'chunk_upload' => [
+        'min_chunk_bytes' => (int) env('INGEST_MIN_CHUNK_BYTES', 256 * 1024),
+        'max_chunk_bytes' => (int) env('INGEST_MAX_CHUNK_BYTES', 50 * 1024 * 1024),
+        'session_ttl_hours' => (int) env('INGEST_UPLOAD_SESSION_TTL_HOURS', 24),
+    ],
+
     // Transport selection: fake (default), ftp, or smb
     'transport' => env('INGEST_TRANSPORT', 'fake'),
 
