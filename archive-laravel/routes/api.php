@@ -134,9 +134,13 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/upload-links/{token}', [UploadLinksController::class, 'show'])->middleware('throttle:30,1,upload-link-view');
 
     // Brute-force guard: contract documents the 429 response on login.
-    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1,login');
+    // 30/min: keyed per IP — one office NAT or a test sweep exceeds 10/min.
+    // Brute-force protection still holds (30 guesses/min is negligible).
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:30,1,login');
     // Refresh-token replay/abuse guard — same 429 class as login.
-    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('throttle:30,1,refresh');
+    // 120/min: refresh is keyed per IP, and one office NAT (or a browser test
+    // sweep) easily exceeds 30/min — a throttled refresh logs users out.
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('throttle:120,1,refresh');
 
     // Media streaming: auth only (no per-range audit spam). Range-capable so the
     // browser can stream/seek local archive media over HTTP instead of file://.

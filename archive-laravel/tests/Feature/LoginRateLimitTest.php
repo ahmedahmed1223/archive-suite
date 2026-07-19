@@ -19,7 +19,7 @@ class LoginRateLimitTest extends TestCase
             'password' => Hash::make('secret-password'),
         ]);
 
-        foreach (range(1, 10) as $attempt) {
+        foreach (range(1, 30) as $attempt) {
             $this->postJson('/api/v1/auth/login', [
                 'email' => 'admin@example.test',
                 'password' => 'wrong-password',

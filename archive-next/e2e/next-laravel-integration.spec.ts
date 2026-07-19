@@ -1,30 +1,18 @@
 import { expect, test } from '@playwright/test';
-import type { Cookie } from '@playwright/test';
+import { WHATS_NEW_RELEASE, WHATS_NEW_STORAGE_KEY } from '../lib/whats-new';
 
 const shareToken = process.env.ARCHIVE_E2E_SHARE_TOKEN ?? 'next-laravel-share';
 const email = process.env.ARCHIVE_E2E_EMAIL ?? 'it@archive.test';
 const password = process.env.ARCHIVE_E2E_PASSWORD ?? 'password123';
 
-// The operational pages (/archive, /archive/[id], /media/jobs) are guarded by the
-// cookie-session middleware. /auth/login is throttled (10/min, see V1-104) — 5
-// tests x 2 browser projects x CI retries would blow past that logging in once
-// per test, failing every test on an unrelated 429 instead of a real bug.
-// Log in exactly once per project instead, and hand the resulting cookie to
-// each test's context locally (no extra network round trip).
-let sessionCookies: Cookie[] = [];
-
-test.beforeAll(async ({ browser }) => {
-  // A real browser context (not the standalone `request` API context) —
-  // matches how the previous per-test page.request.post() successfully
-  // captured the cookie. A bare APIRequestContext's storageState() did not
-  // reliably surface the Set-Cookie from this rewritten response in CI;
-  // browser-context cookies() is the same mechanism the working per-test
-  // version relied on.
-  const setupContext = await browser.newContext({
-    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000',
-  });
-
-  const response = await setupContext.request.post('/api/v1/auth/login', {
+// The operational pages (/archive, /archive/[id], /media/jobs) are guarded by
+// the cookie-session middleware. The API ROTATES the refresh token on every
+// use (AuthController::refresh deletes the session and issues a new one), so
+// a cookie captured once in beforeAll is single-use — every later test that
+// replayed it got 401 → guest → /login. Log in fresh per test instead; the
+// login throttle (30/min per IP) comfortably covers 5 tests x 2 projects.
+test.beforeEach(async ({ context }) => {
+  const response = await context.request.post('/api/v1/auth/login', {
     data: { email, password },
   });
   if (!response.ok()) {
@@ -32,24 +20,14 @@ test.beforeAll(async ({ browser }) => {
       `login failed: ${response.status()} ${response.statusText()} — ${await response.text()}`
     );
   }
-
-  sessionCookies = (await setupContext.cookies()).filter(
-    (cookie) => cookie.name === 'va_session' || cookie.name === 'va_refresh',
-  );
-  expect(sessionCookies.find((cookie) => cookie.name === 'va_session')).toBeDefined();
-  expect(sessionCookies.find((cookie) => cookie.name === 'va_refresh')).toBeDefined();
-
-  await setupContext.close();
-});
-
-test.beforeEach(async ({ context }) => {
-  if (sessionCookies.length > 0) {
-    await context.addCookies(sessionCookies);
-  }
   // Suppress the modal whats-new dialog a fresh profile would open.
-  await context.addInitScript(() => {
-    window.localStorage.setItem('archive.whats-new.acknowledged-release', '9999.99.99');
-  });
+  // shouldShowWhatsNew is strict equality — store the real current release.
+  await context.addInitScript(
+    ([key, release]) => {
+      window.localStorage.setItem(key, release);
+    },
+    [WHATS_NEW_STORAGE_KEY, WHATS_NEW_RELEASE] as const,
+  );
 });
 
 test('renders a public share record through the Next.js to Laravel API rewrite', async ({ page }) => {
