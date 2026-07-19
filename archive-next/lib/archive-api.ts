@@ -817,6 +817,18 @@ export interface UploadedRecord {
   updatedAt?: string;
 }
 
+/** V1-711: resumable chunked upload session state. */
+export interface UploadSession {
+  id: string;
+  fileName: string;
+  totalSize: number;
+  chunkSize: number;
+  totalChunks: number;
+  receivedChunks: number[];
+  status: "pending" | "completed" | "aborted";
+  expiresAt: string;
+}
+
 export type ManagedUserRole = "admin" | "editor" | "viewer";
 
 export interface ManagedUser {
@@ -1106,6 +1118,19 @@ export interface ArchiveApiClient {
   updateBroadcastMetadata(recordId: string, payload: BroadcastMetadataPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   uploadFile(file: File, params?: { folder?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: UploadedRecord }>>;
+  createUploadSession(
+    payload: { fileName: string; totalSize: number; chunkSize: number; folder?: string; checksum?: string },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ session: UploadSession }>>;
+  uploadSessionChunk(
+    sessionId: string,
+    index: number,
+    chunk: Blob,
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ receivedChunks: number[]; totalChunks: number }>>;
+  uploadSessionStatus(sessionId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ session: UploadSession }>>;
+  completeUploadSession(sessionId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: UploadedRecord }>>;
+  abortUploadSession(sessionId: string, options?: AuthRequestOptions): Promise<ApiEnvelope>;
   share(token: string, password?: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
@@ -1707,6 +1732,44 @@ export function createArchiveApiClient({
 
       return payload;
     },
+    createUploadSession: (payload, options) =>
+      post<{ session: UploadSession }>("/uploads/sessions", payload, options),
+    uploadSessionChunk: async (sessionId, index, chunk, options) => {
+      const headers = new Headers({ Accept: "application/json", "Content-Type": "application/octet-stream" });
+      const effectiveAccessToken = options?.accessToken ?? cachedAccessToken;
+      if (effectiveAccessToken) {
+        headers.set("Authorization", `Bearer ${effectiveAccessToken}`);
+      }
+
+      let response: Response;
+
+      try {
+        response = await fetchImpl(`${baseUrl}/uploads/sessions/${encodeURIComponent(sessionId)}/chunks/${index}`, {
+          method: "PUT",
+          headers,
+          credentials: "include",
+          body: chunk
+        });
+      } catch {
+        return { ok: false, error: "تعذر الاتصال بالخادم أثناء رفع الجزء. تحقق من الاتصال ثم أعد المحاولة." } as ApiEnvelope<{ receivedChunks: number[]; totalChunks: number }>;
+      }
+
+      const responsePayload = (await response.json().catch(() => ({
+        ok: false,
+        error: "استجابة غير صالحة من الخادم أثناء رفع الجزء."
+      }))) as ApiEnvelope<{ receivedChunks: number[]; totalChunks: number }>;
+
+      if (!response.ok && responsePayload.ok !== false) {
+        return { ok: false, error: `فشل رفع الجزء (رمز ${response.status}). أعد المحاولة.` } as ApiEnvelope<{ receivedChunks: number[]; totalChunks: number }>;
+      }
+
+      return responsePayload;
+    },
+    uploadSessionStatus: (sessionId, options) =>
+      get<{ session: UploadSession }>(`/uploads/sessions/${encodeURIComponent(sessionId)}`, options),
+    completeUploadSession: (sessionId, options) =>
+      post<{ record: UploadedRecord }>(`/uploads/sessions/${encodeURIComponent(sessionId)}/complete`, undefined, options),
+    abortUploadSession: (sessionId, options) => del(`/uploads/sessions/${encodeURIComponent(sessionId)}`, undefined, options),
     share: (token: string, password?: string) =>
       get(`/share/${encodeURIComponent(token)}`, password ? { headers: { "X-Share-Password": password } } : undefined),
     files: (params?: { q?: string }, options?: AuthRequestOptions) => {

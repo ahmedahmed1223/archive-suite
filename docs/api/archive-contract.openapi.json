@@ -1594,6 +1594,137 @@
         }
       }
     },
+    "/uploads/sessions": {
+      "post": {
+        "tags": ["Uploads"],
+        "summary": "Create a resumable chunked upload session for a large file",
+        "operationId": "createUploadSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateUploadSessionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Upload session created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" },
+          "507": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/uploads/sessions/{sessionId}": {
+      "get": {
+        "tags": ["Uploads"],
+        "summary": "Read a chunked upload session's resume state",
+        "operationId": "getUploadSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload session state",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Uploads"],
+        "summary": "Abort a chunked upload session and delete its chunks",
+        "operationId": "abortUploadSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload session aborted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OkEnvelope" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/uploads/sessions/{sessionId}/chunks/{index}": {
+      "put": {
+        "tags": ["Uploads"],
+        "summary": "Upload one chunk of a resumable upload session",
+        "operationId": "uploadSessionChunk",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "index", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": { "schema": { "type": "string", "format": "binary" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chunk accepted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadChunkResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "410": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/uploads/sessions/{sessionId}/complete": {
+      "post": {
+        "tags": ["Uploads"],
+        "summary": "Assemble a completed chunked upload session into an archive record",
+        "operationId": "completeUploadSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "201": {
+            "description": "File assembled and archive record created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "410": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/intake-templates": {
       "get": {
         "tags": ["Intake Templates"],
@@ -5165,6 +5296,56 @@
             "required": ["record"],
             "properties": {
               "record": { "$ref": "#/components/schemas/UploadedRecord" }
+            }
+          }
+        ]
+      },
+      "CreateUploadSessionRequest": {
+        "type": "object",
+        "required": ["fileName", "totalSize", "chunkSize"],
+        "properties": {
+          "fileName": { "type": "string" },
+          "totalSize": { "type": "integer", "minimum": 1 },
+          "chunkSize": { "type": "integer", "minimum": 1 },
+          "folder": { "type": "string" },
+          "checksum": { "type": "string", "description": "Optional sha256 of the full file, verified after assembly." }
+        }
+      },
+      "UploadSession": {
+        "type": "object",
+        "required": ["id", "fileName", "totalSize", "chunkSize", "totalChunks", "receivedChunks", "status", "expiresAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "fileName": { "type": "string" },
+          "totalSize": { "type": "integer" },
+          "chunkSize": { "type": "integer" },
+          "totalChunks": { "type": "integer" },
+          "receivedChunks": { "type": "array", "items": { "type": "integer" } },
+          "status": { "type": "string", "enum": ["pending", "completed", "aborted"] },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UploadSessionResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["session"],
+            "properties": {
+              "session": { "$ref": "#/components/schemas/UploadSession" }
+            }
+          }
+        ]
+      },
+      "UploadChunkResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["receivedChunks", "totalChunks"],
+            "properties": {
+              "receivedChunks": { "type": "array", "items": { "type": "integer" } },
+              "totalChunks": { "type": "integer" }
             }
           }
         ]

@@ -1676,6 +1676,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a resumable chunked upload session for a large file */
+        post: operations["createUploadSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a chunked upload session's resume state */
+        get: operations["getUploadSession"];
+        put?: never;
+        post?: never;
+        /** Abort a chunked upload session and delete its chunks */
+        delete: operations["abortUploadSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/sessions/{sessionId}/chunks/{index}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upload one chunk of a resumable upload session */
+        put: operations["uploadSessionChunk"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/sessions/{sessionId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assemble a completed chunked upload session into an archive record */
+        post: operations["completeUploadSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -2242,6 +2311,14 @@ export interface components {
             path?: string;
             token: string;
             url: string;
+        };
+        CreateUploadSessionRequest: {
+            /** @description Optional sha256 of the full file, verified after assembly. */
+            checksum?: string;
+            chunkSize: number;
+            fileName: string;
+            folder?: string;
+            totalSize: number;
         };
         DiscoverResponse: components["schemas"]["OkEnvelope"] & {
             sections: components["schemas"]["DiscoverSection"][];
@@ -3199,6 +3276,10 @@ export interface components {
             /** @enum {string} */
             role: "admin" | "editor" | "viewer";
         };
+        UploadChunkResponse: components["schemas"]["OkEnvelope"] & {
+            receivedChunks: number[];
+            totalChunks: number;
+        };
         UploadedRecord: {
             checksum: string;
             /** Format: date-time */
@@ -3243,6 +3324,21 @@ export interface components {
         };
         UploadResponse: components["schemas"]["OkEnvelope"] & {
             record: components["schemas"]["UploadedRecord"];
+        };
+        UploadSession: {
+            chunkSize: number;
+            /** Format: date-time */
+            expiresAt: string;
+            fileName: string;
+            id: string;
+            receivedChunks: number[];
+            /** @enum {string} */
+            status: "pending" | "completed" | "aborted";
+            totalChunks: number;
+            totalSize: number;
+        };
+        UploadSessionResponse: components["schemas"]["OkEnvelope"] & {
+            session: components["schemas"]["UploadSession"];
         };
         User: {
             displayName?: string;
@@ -6556,6 +6652,139 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    createUploadSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUploadSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Upload session created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+            507: components["responses"]["Error"];
+        };
+    };
+    getUploadSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload session state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    abortUploadSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload session aborted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkEnvelope"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    uploadSessionChunk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                index: number;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Chunk accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadChunkResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            410: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    completeUploadSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File assembled and archive record created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            410: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };
