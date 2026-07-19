@@ -31,6 +31,9 @@
 - `pnpm security:baseline` — run repo security baseline checks
 
 ## Agent workflow guidance
+- Before implementing any new task, give the user a concise overview covering the intended outcome, scope, main files or systems affected, and notable risks or tradeoffs.
+- Wait for the user's explicit approval of that overview before making implementation changes or running commands that mutate project or external state. Read-only inspection and status reporting may proceed without this approval.
+- Approval applies only to the described task and scope. If the scope materially changes during implementation, present an updated overview and obtain approval again before continuing.
 - Prefer making changes inside the canonical `archive-next` / `archive-laravel` path.
 - Treat `docs/api/archive-contract.openapi.json` as the public API source of truth and prevent client/server drift.
 - For Laravel/backend work, use the existing Docker-helper scripts under `scripts/` and the `archive-laravel/` Docker setup.
