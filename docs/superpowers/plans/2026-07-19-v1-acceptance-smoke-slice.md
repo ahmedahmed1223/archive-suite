@@ -6,7 +6,7 @@
 
 **Architecture:** منسق Node صغير يقرأ registry ثابتًا، يختار السيناريوهات حسب الوسم أو المعرّف، ويفوض دورة البيئة إلى Docker provider. السيناريوهات التفاعلية تُنفذ عبر Playwright بجلسات دخول حية مستقلة، بينما تحفظ طبقة evidence نتائج موحدة بعد تمريرها على sanitizer وفحص تسرب إلزامي. هذه الخطة تنفذ الشريحة الأولى فقط؛ V1-806..814 تحتاج خططًا مستقلة بعد نجاحها.
 
-**Tech Stack:** Node.js 25.9.0، pnpm 11.9.0، Docker Compose، Next.js 16، Laravel، Playwright 1.61، واختبارات `node:test`.
+**Tech Stack:** Node.js 26.5.0، pnpm 11.9.0، Docker Compose، Next.js 16، Laravel، Playwright 1.61، واختبارات `node:test`.
 
 ## Global Constraints
 

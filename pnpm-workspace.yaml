@@ -2,6 +2,7 @@ packages:
   - "archive-next"
 allowBuilds:
   esbuild: true
+  node: true
   sharp: true
 minimumReleaseAgeExclude:
   - nodemailer@7.0.7
