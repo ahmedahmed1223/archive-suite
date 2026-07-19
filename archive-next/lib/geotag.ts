@@ -19,6 +19,11 @@ export interface NearbyRecordResult {
   distanceKm: number;
 }
 
+export interface GeoTaggedRecord {
+  record: ArchiveRecord;
+  location: GeoLocation;
+}
+
 const EARTH_RADIUS_KM = 6371;
 
 /**
@@ -116,4 +121,16 @@ export function nearbyRecords(
 
   results.sort((a, b) => a.distanceKm - b.distanceKm);
   return results.slice(0, limit);
+}
+
+/** V1-703: every record carrying a valid location, paired with it, input order preserved. */
+export function geoTaggedRecords(records: ArchiveRecord[]): GeoTaggedRecord[] {
+  const results: GeoTaggedRecord[] = [];
+
+  for (const record of records) {
+    const location = getRecordLocation(record);
+    if (location) results.push({ record, location });
+  }
+
+  return results;
 }

@@ -14,6 +14,7 @@ export const primaryNav = [
   { href: "/reading-lists", label: "قوائم القراءة", section: "library", icon: "BookOpen" },
   { href: "/timeline", label: "الخط الزمني", section: "library", icon: "Clock3" },
   { href: "/graph", label: "العلاقات", section: "library", icon: "GitBranch" },
+  { href: "/map", label: "الخريطة", section: "library", icon: "Map" },
   { href: "/files", label: "الملفات", section: "library", icon: "Files" },
   // ── التنظيم ──
   { href: "/collections", label: "المجموعات", section: "organize", icon: "FolderOpen" },
