@@ -97,6 +97,21 @@
   background: var(--color-accent-primary-hover);
 }
 
+/* When combined with .icon-action, that rule's surface background used to win
+   the cascade, leaving inverse (dark) text on a dark surface — 1.15 contrast
+   (V1-303C axe gate). Pin the brand pairing for the combined class. */
+.icon-action.primary-action-link {
+  color: var(--color-text-inverse);
+  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+}
+
+.icon-action.primary-action-link:hover {
+  color: var(--color-text-inverse);
+  background: var(--color-accent-primary-hover);
+  border-color: var(--color-accent-primary-hover);
+}
+
 .metric-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));

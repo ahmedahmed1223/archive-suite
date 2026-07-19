@@ -69,18 +69,19 @@
   padding: 0;
   background: none;
   border: none;
-  color: inherit;
+  /* Dim via color, not opacity: parent opacity multiplies onto the badge and
+     drops it below WCAG contrast (V1-303C axe gate). */
+  color: var(--color-text-secondary);
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .contextual-tips__trigger:hover {
-  opacity: 1;
+  color: var(--color-text-primary);
 }
 
 .contextual-tips__trigger[aria-pressed="true"] {
-  opacity: 1;
+  color: var(--color-text-primary);
 }
 
 .contextual-tips__trigger[data-dismissed="false"]::after {

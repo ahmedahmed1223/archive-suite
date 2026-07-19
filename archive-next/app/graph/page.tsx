@@ -498,7 +498,7 @@ export default function GraphPage() {
           </label>
           <label>
             <Link2 aria-hidden="true" size={16} />
-            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
+            <select aria-label="تصفية بالوسم" value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
               <option value="">كل الوسوم</option>
               {tagOptions.map(([tag, count]) => (
                 <option key={tag} value={tag}>{tag} ({count})</option>
@@ -507,7 +507,7 @@ export default function GraphPage() {
           </label>
           <label>
             <GitBranch aria-hidden="true" size={16} />
-            <select value={layoutMode} onChange={(event) => setLayoutMode(event.target.value)}>
+            <select aria-label="نمط التخطيط" value={layoutMode} onChange={(event) => setLayoutMode(event.target.value)}>
               <option value="auto">تلقائي</option>
               <option value="organic">عضوي</option>
               <option value="concentric">حلقات</option>

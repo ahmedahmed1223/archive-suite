@@ -443,6 +443,7 @@ export default function CollaborationPage() {
 
             <div className="stack">
               <textarea
+                aria-label="محتوى مسودة المورد"
                 value={documentContent}
                 onChange={(event) => setDocumentContent(event.target.value)}
                 rows={8}

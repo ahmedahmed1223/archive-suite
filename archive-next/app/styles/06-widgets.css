@@ -172,11 +172,13 @@
 }
 
 .badge-success {
-  color: var(--color-success, #1a7f37);
+  /* --color-success is undefined; the old #1a7f37 fallback failed WCAG on
+     dark surfaces (V1-303C axe gate). Use the real status token. */
+  color: var(--color-status-success);
 }
 
 .badge-error {
-  color: var(--color-danger, #c53030);
+  color: var(--color-danger);
 }
 
 @media (min-width: 1040px) {
@@ -877,6 +879,11 @@
   .app-shell > .topbar .icon-action {
     flex: 1 1 auto;
     min-inline-size: 0;
+  }
+
+  /* Keep the brand background of the primary action: this surface background
+     used to out-specify it, leaving dark-on-dark text (V1-303C axe gate). */
+  .app-shell > .topbar .icon-action:not(.primary-action-link) {
     background: var(--color-surface-subtle);
   }
 
