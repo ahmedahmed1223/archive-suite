@@ -15,11 +15,13 @@ test("canonical toolchain pins are declared and consumed without floating runtim
   const workflows = [read(".github/workflows/ci.yml"), read(".github/workflows/release.yml")];
 
   assert.equal(toolchain.schemaVersion, "1.0");
-  assert.match(toolchain.node, /^25\.\d+\.\d+$/);
+  assert.match(toolchain.node, /^26\.\d+\.\d+$/);
   assert.match(toolchain.pnpm, /^\d+\.\d+\.\d+$/);
   assert.match(toolchain.php, /^8\.5\.\d+$/);
   assert.match(toolchain.composer, /^2\.\d+\.\d+$/);
-  assert.equal(rootPackage.engines.node, `>=${toolchain.node} <26`);
+  assert.equal(rootPackage.engines.node, `>=${toolchain.node} <27`);
+  assert.equal(rootPackage.devDependencies.node, toolchain.node);
+  assert.match(rootPackage.scripts.dev, /^node /);
   assert.match(rootPackage.packageManager, new RegExp(`^pnpm@${toolchain.pnpm.replaceAll(".", "\\.")}\\+`));
   assert.match(nextDockerfile, new RegExp(`FROM node:${toolchain.node.replaceAll(".", "\\.")}-alpine@sha256:`));
   assert.match(nextDockerfile, /npm install --global corepack@0\.31\.0/);
@@ -32,7 +34,7 @@ test("canonical toolchain pins are declared and consumed without floating runtim
   }
   const dockerPlatforms = compatibility.platforms.filter(({ mode }) => mode === "docker");
   for (const platform of dockerPlatforms) {
-    assert.match(platform.requirements.node, new RegExp(`>=${toolchain.node.replaceAll(".", "\\.")} <26`));
+    assert.match(platform.requirements.node, new RegExp(`>=${toolchain.node.replaceAll(".", "\\.")} <27`));
     assert.match(platform.requirements.php, new RegExp(`^${toolchain.php.replaceAll(".", "\\.")} provided`));
     assert.match(platform.requirements.composer, new RegExp(`^${toolchain.composer.replaceAll(".", "\\.")} provided`));
   }
@@ -62,8 +64,8 @@ test("root frozen install and reproducibility verification are canonical gates",
   assert.match(ci, /pnpm run verify:reproducibility/);
 });
 
-test("the runtime gate accepts Node 25 and rejects other major versions", () => {
-  assert.equal(isSupportedNodeVersion("v25.9.0"), true);
-  assert.equal(isSupportedNodeVersion("v24.99.0"), false);
-  assert.equal(isSupportedNodeVersion("v26.0.0"), false);
+test("the runtime gate accepts Node 26 and rejects other major versions", () => {
+  assert.equal(isSupportedNodeVersion("v26.5.0"), true);
+  assert.equal(isSupportedNodeVersion("v25.99.0"), false);
+  assert.equal(isSupportedNodeVersion("v27.0.0"), false);
 });
