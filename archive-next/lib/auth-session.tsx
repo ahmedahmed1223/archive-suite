@@ -93,7 +93,15 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     let cancelled = false;
 
     async function bootstrap() {
-      const refreshed = await refreshBootstrap(api);
+      let refreshed = await refreshBootstrap(api);
+
+      // A throttled refresh (429) is transient — a burst of tabs or a test
+      // sweep must not log the user out. Retry briefly before going guest.
+      for (let attempt = 0; attempt < 2 && !cancelled && !refreshed.ok && refreshed.code === "http_429"; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        if (cancelled) return;
+        refreshed = await refreshBootstrap(api);
+      }
 
       if (cancelled) {
         return;

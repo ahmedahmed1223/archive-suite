@@ -51,7 +51,9 @@ export const ROLE_ACCOUNTS: Readonly<Record<RoleName, RoleAccount>> = {
     role: 'admin',
     email: SEEDED_ADMIN_EMAIL,
     password: SEEDED_ADMIN_PASSWORD,
-    name: 'E2E Admin',
+    // Must match NextIntegrationSeeder — the admin account pre-exists with
+    // this name; ensureAccount() never (re)creates it.
+    name: 'Integration User',
     namespace: 'e2e-admin',
   },
   editor: {

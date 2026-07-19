@@ -61,6 +61,12 @@ export const test = base.extend<RoleFixtures>({
       const context = await browser.newContext({ storageState: storageStatePath(role) });
       opened.push(context);
 
+      // Fresh contexts would otherwise trigger the modal whats-new dialog,
+      // which makes every background element invisible to role queries.
+      await context.addInitScript(() => {
+        window.localStorage.setItem('archive.whats-new.acknowledged-release', '9999.99.99');
+      });
+
       const page = await context.newPage();
 
       return {

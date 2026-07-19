@@ -1347,7 +1347,11 @@ export function createArchiveApiClient({
     }
 
     if (!response.ok && payload.ok !== false) {
-      return { ok: false, error: `فشل الطلب (رمز ${response.status}). أعد المحاولة أو تواصل مع مسؤول النظام.` };
+      return { ok: false, code: `http_${response.status}`, error: `فشل الطلب (رمز ${response.status}). أعد المحاولة أو تواصل مع مسؤول النظام.` };
+    }
+
+    if (payload.ok === false && payload.code === undefined && !response.ok) {
+      return { ...payload, code: `http_${response.status}`, error: translateKnownApiError(payload.error) };
     }
 
     if (payload.ok === false) {

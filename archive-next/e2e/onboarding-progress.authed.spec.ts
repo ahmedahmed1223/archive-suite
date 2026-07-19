@@ -11,6 +11,15 @@ test('admin onboarding progress waits for the server, retries, and persists the 
   await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await page.waitForURL(/\/first-run$/, { timeout: 30_000 });
 
+  // Idempotency: a reused DB carries the completed stages this test persists.
+  // Un-complete any stage before asserting the pristine journey.
+  await ui(page.getByRole('heading', { name: 'مراحل أول استخدام المؤسسة' })).toBeVisible();
+  const undoButtons = page.getByRole('button', { name: /^إلغاء إكمال / });
+  while ((await undoButtons.count()) > 0) {
+    await undoButtons.first().click();
+    await page.waitForTimeout(500);
+  }
+
   const organization = page.getByRole('button', { name: 'إكمال إعداد المؤسسة' });
   await ui(organization).toHaveAttribute('aria-pressed', 'false');
 

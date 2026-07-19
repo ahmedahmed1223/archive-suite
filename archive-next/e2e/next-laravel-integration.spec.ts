@@ -46,6 +46,10 @@ test.beforeEach(async ({ context }) => {
   if (sessionCookies.length > 0) {
     await context.addCookies(sessionCookies);
   }
+  // Suppress the modal whats-new dialog a fresh profile would open.
+  await context.addInitScript(() => {
+    window.localStorage.setItem('archive.whats-new.acknowledged-release', '9999.99.99');
+  });
 });
 
 test('renders a public share record through the Next.js to Laravel API rewrite', async ({ page }) => {
@@ -58,14 +62,19 @@ test('renders a public share record through the Next.js to Laravel API rewrite',
 });
 
 // Slices 5a/5b/5d.4: the operational Next pages read DB-backed records/jobs from Laravel.
+// `.first()` + 15s: the title renders in both the card and the auto-opened
+// preview/breadcrumb (strict-mode), and the dockerized Laravel API answers the
+// client-side refresh→fetch chain in ~3-5s per hop.
 test('lists the seeded archive record from Laravel on /archive', async ({ page }) => {
   await page.goto('/archive', { waitUntil: 'networkidle' });
-  await expect(page.getByText('تسجيل تكامل Next/Laravel')).toBeVisible();
+  await expect(page.getByText('تسجيل تكامل Next/Laravel').first()).toBeVisible({ timeout: 15_000 });
 });
 
 test('renders the seeded record detail on /archive/[id]', async ({ page }) => {
   await page.goto('/archive/next-laravel-record', { waitUntil: 'networkidle' });
-  await expect(page.getByText('تسجيل تكامل Next/Laravel')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'تسجيل تكامل Next/Laravel' }),
+  ).toBeVisible({ timeout: 15_000 });
 });
 
 test('lists the seeded media job from Laravel on /media/jobs', async ({ page }) => {
