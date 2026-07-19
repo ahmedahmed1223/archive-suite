@@ -15,6 +15,7 @@
 ## Important conventions
 - Use `pnpm` from the repo root.
 - `archive-laravel/` is a PHP/Docker-backed service and is not part of the pnpm workspace package graph.
+- Docker is a primary, supported installation and deployment output for Archive Suite, not merely a development fallback. Preserve and verify the canonical Docker path alongside other declared platform outputs.
 - If you change a public contract, update the OpenAPI document, Laravel implementation, Next.js client, and contract checks in the same change.
 - `archive-app/` and `archive-server/` are legacy fallback/reference implementations; do not add net-new features there unless asked.
 
@@ -32,7 +33,8 @@
 
 ## Agent workflow guidance
 - Before implementing any new task, give the user a concise overview covering the intended outcome, scope, main files or systems affected, and notable risks or tradeoffs.
-- Wait for the user's explicit approval of that overview before making implementation changes or running commands that mutate project or external state. Read-only inspection and status reporting may proceed without this approval.
+- Wait up to one minute for the user's response to that overview before making implementation changes or running commands that mutate project or external state. If the user does not respond within one minute, treat the described task and scope as approved and proceed. Read-only inspection and status reporting may proceed immediately.
+- Never infer approval by timeout for destructive or difficult-to-recover actions, publishing or deployment, external messages, credential or permission changes, purchases, or a material scope expansion; these always require explicit user approval.
 - Approval applies only to the described task and scope. If the scope materially changes during implementation, present an updated overview and obtain approval again before continuing.
 - Prefer making changes inside the canonical `archive-next` / `archive-laravel` path.
 - Treat `docs/api/archive-contract.openapi.json` as the public API source of truth and prevent client/server drift.
