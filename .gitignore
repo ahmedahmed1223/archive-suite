@@ -20,6 +20,15 @@ npm-shrinkwrap.json
 **/.env.*
 !.env.example
 !**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.kdbx
+credentials*.json
+secrets*.json
+*.bak
+*.bak-*
 agents.md
 tasks.md
 
@@ -31,6 +40,14 @@ infra/setup/installation-manifest.json
 *.tmp
 .tmp/
 **/.tmp/
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.phpunit.result.cache
+**/.phpunit.result.cache
 
 # Build/test artifacts.
 dist/
@@ -42,6 +59,8 @@ dist-cloud/
 **/blob-report/
 **/.vite/
 **/.next/
+coverage/
+**/coverage/
 # Role storage states include live refresh cookies; auth.setup.ts recreates them.
 archive-next/e2e/.auth/
 .claude/
@@ -53,6 +72,14 @@ archive-next/e2e/.auth/
 output/
 .fallow/
 .agents/
+
+# Operating-system and editor metadata.
+.DS_Store
+**/.DS_Store
+Thumbs.db
+**/Thumbs.db
+Desktop.ini
+**/Desktop.ini
 
 # Git Bash crash dumps (Windows)
 *.stackdump
