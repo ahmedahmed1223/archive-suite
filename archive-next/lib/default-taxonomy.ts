@@ -86,6 +86,34 @@ export const DEFAULT_ARCHIVE_TYPES: readonly ArchiveType[] = [
   },
 ];
 
+/** Common Arabic media-archive tags, importable from /vocabulary (kind: tag). */
+export const DEFAULT_VOCABULARY_TAGS: readonly string[] = [
+  "سياسة",
+  "اقتصاد",
+  "رياضة",
+  "ثقافة",
+  "صحة",
+  "تعليم",
+  "تكنولوجيا",
+  "بيئة",
+  "محلي",
+  "دولي",
+  "عاجل",
+  "حصري",
+  "أرشيفي",
+  "مباشر",
+];
+
+/** Returns only the default tags not already present (case/whitespace-insensitive). */
+export function selectMissingVocabularyTags(
+  existingTerms: Iterable<string>,
+  defaults: readonly string[] = DEFAULT_VOCABULARY_TAGS,
+): string[] {
+  const normalize = (value: string) => value.trim().toLowerCase();
+  const taken = new Set([...existingTerms].map(normalize));
+  return defaults.filter((term) => !taken.has(normalize(term)));
+}
+
 /** Returns only the defaults whose id is not already taken — never overwrites. */
 export function selectMissingDefaults(
   existingIds: Iterable<string>,

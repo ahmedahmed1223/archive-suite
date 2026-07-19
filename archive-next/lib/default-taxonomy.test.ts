@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_ARCHIVE_TYPES, selectMissingDefaults } from "./default-taxonomy";
+import {
+  DEFAULT_ARCHIVE_TYPES,
+  DEFAULT_VOCABULARY_TAGS,
+  selectMissingDefaults,
+  selectMissingVocabularyTags,
+} from "./default-taxonomy";
 
 describe("selectMissingDefaults", () => {
   it("returns every default when nothing exists yet", () => {
@@ -15,6 +20,14 @@ describe("selectMissingDefaults", () => {
 
   it("returns nothing when all defaults already exist", () => {
     expect(selectMissingDefaults(DEFAULT_ARCHIVE_TYPES.map((type) => type.id))).toEqual([]);
+  });
+
+  it("skips existing vocabulary tags case- and whitespace-insensitively", () => {
+    const result = selectMissingVocabularyTags([" سياسة ", "رياضة"]);
+    expect(result).not.toContain("سياسة");
+    expect(result).not.toContain("رياضة");
+    expect(result).toHaveLength(DEFAULT_VOCABULARY_TAGS.length - 2);
+    expect(selectMissingVocabularyTags(DEFAULT_VOCABULARY_TAGS)).toEqual([]);
   });
 
   it("ships unique ids and non-empty Arabic names with fields", () => {
