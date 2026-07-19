@@ -45,7 +45,7 @@
 
 ### V1-303 الوصولية والاستجابة
 
-- [ ] **V1-303B fixtures مصادقة حسب الدور** — admin/editor/viewer وبيانات records/rights/backups/jobs معزولة داخل live Playwright؛ لا تستخدم token مدير موحدًا.
+- [x] **V1-303B fixtures مصادقة حسب الدور** — admin/editor/viewer وبيانات records/rights/backups/jobs معزولة داخل live Playwright؛ لا تستخدم token مدير موحدًا. — منجز 2026-07-19 (a4e1732 البنية، 8e5e225 + 8a87360 التثبيت): fixtures أدوار مع تسجيل دخول حي لكل سياق (refresh token يُدوَّر عند كل استخدام فلا يُعاد تشغيله)، رفع throttle للدخول/التحديث لملاءمة IP مشترك، وحصانة العميل ضد فشل refresh العابر. البوابة الحية 64/64.
 - [ ] **V1-303C تغطية جميع المسارات المصنفة** — axe على المسارات المصادَق عليها والحالات loading/empty/error/ready عند 375/768/1280 وzoom 200%، وربط inventory بـRouteScope لمنع route بلا اختبار.
 - [ ] **V1-303D لوحة المفاتيح وقارئ الشاشة** — tab order، focus traps، Escape، skip link، announcements وعينة فعلية لقارئ شاشة على onboarding/archive/record/upload/search/admin.
 - [ ] **V1-303E مراجعة بصرية حية** — screenshots ثابتة للمسارات الأساسية عند نقاط العرض الثلاث، صفر overflow أفقي أو إجراء أساسي خارج الوصول، وتوثيق الاستثناءات المقبولة فقط.
