@@ -1,6 +1,6 @@
 # V1-712 Scheduled Upload Design
 
-**Status:** Approved design, pending implementation plan
+**Status:** Approved design; implementation plan available
 **Date:** 2026-07-19
 **Scope:** Canonical Laravel + Next.js path only
 
