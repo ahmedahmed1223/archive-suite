@@ -9,7 +9,7 @@
 ## الحالة
 
 - الحالة العامة **NO-GO**: أُغلقت مانعات P0 الأصلية، لكن لا يزال الإصدار محجوبًا بالمهام المفتوحة، القبول الحي، وبوابات RC/GA.
-- يوجد 64 بندًا مفتوحًا، منها 4 تحققات اختيارية معطلة افتراضيًا؛ بوابة V1-406 تتولى منع الإصدار عند بقاء أي مانع مفتوح.
+- يوجد 65 بندًا مفتوحًا، منها 4 تحققات اختيارية معطلة افتراضيًا؛ بوابة V1-406 تتولى منع الإصدار عند بقاء أي مانع مفتوح.
 - التصميم الحاكم: [`docs/superpowers/specs/2026-07-14-daily-use-dual-runtime-design.md`](docs/superpowers/specs/2026-07-14-daily-use-dual-runtime-design.md).
 - المسار القانوني للعمل الجديد هو `archive-next/` و`archive-laravel/`؛ أعمال التثبيت والتشغيل في `scripts/` و`infra/`.
 
@@ -81,7 +81,7 @@
 
 ### الشريحة الأولى — منسق Docker وSmoke
 
-- [ ] **V1-801 عقد السيناريو والمنسق الأساسي** — registry versioned، tags (`smoke/daily/nightly/rc/ga/external`)، حالات حاسمة (`passed/failed/blocked-capability`)، اختيار بالمعرّف أو الوسم، وحساب ميزانية login/refresh قبل التشغيل؛ الأمر القانوني `node scripts/acceptance run --tag smoke`.
+- [ ] **V1-801 عقد السيناريو والمنسق الأساسي** — registry versioned، tags (`smoke/daily/nightly/rc/ga/external`)، حالات حاسمة (`passed/failed/blocked-capability`)، اختيار بالمعرّف أو الوسم، وحساب ميزانية login/refresh قبل التشغيل؛ الأمر القانوني `node scripts/acceptance.mjs run --tag smoke`.
 - [ ] **V1-802 مخزن الأدلة والفحص ضد التسرب** — summary وrun manifest وlogs/screenshots/traces خارج شجرة المصدر، إعادة استخدام sanitizer الحالي، وفشل التشغيل إذا بقي token/password/API key/credential URL/مسار مستخدم في أي artifact؛ صلاحيات مالك فقط حيث يدعم النظام.
 - [ ] **V1-803 Docker provider آمن وقابل للتنظيف** — `prepare/install/start/exec/collect/reset/destroy` مع أهداف صريحة، منافذ ديناميكية، health/readiness، cleanup في `finally`، وإثبات عدم بقاء container/network/volume أنشأها run؛ لا يمس بيئة Docker لم يبدأها المنسق.
 - [ ] **V1-804 خمسة سيناريوهات Smoke تفاعلية** — `V1-IA-PLAT-001` إقلاع، `V1-IA-ARCH-001` دخول→بحث→فتح سجل، `V1-IA-ADMIN-001` صحة admin، `V1-IA-ADMIN-002` backup+verify، و`V1-IA-MULTI-001` جلستا دورين متزامنتان؛ تسجيل دخول حي لكل context وزرع إقرارات الحوارات من ثوابت الكود.
