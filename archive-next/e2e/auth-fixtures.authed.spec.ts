@@ -32,7 +32,8 @@ test('only the admin fixture can render the global backup surface', async ({ rol
     const session = await roleSession(role);
     await session.page.goto('/backup');
     await ui(
-      session.page.getByText('هذه الصفحة متاحة للمشرفين فقط.', { exact: true }),
+      // Substring match: the API error renders as "Forbidden. — هذه الصفحة...".
+      session.page.getByText('هذه الصفحة متاحة للمشرفين فقط.').first(),
       `${role} must receive the API's admin-only backup denial`,
     ).toBeVisible();
   }

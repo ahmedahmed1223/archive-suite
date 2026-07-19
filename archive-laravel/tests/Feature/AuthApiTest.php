@@ -211,7 +211,7 @@ class AuthApiTest extends TestCase
             'password' => Hash::make('secret-password'),
         ]);
 
-        for ($i = 0; $i < 30; $i++) {
+        for ($i = 0; $i < 120; $i++) {
             $this->call('POST', '/api/v1/auth/refresh', [], [
                 'va_refresh' => 'not-a-real-token',
             ], [], [

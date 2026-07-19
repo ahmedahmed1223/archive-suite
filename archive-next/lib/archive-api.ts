@@ -1254,6 +1254,11 @@ export function createArchiveApiClient({
     return pendingRefreshAccessToken;
   }
 
+  // True when the last refresh failed for a transient reason (network, 429,
+  // 5xx) rather than a definitive auth rejection — such failures must not
+  // log the user out.
+  let lastRefreshFailureTransient = false;
+
   async function refreshAccessTokenOnce(): Promise<string | null> {
     let response: Response;
 
@@ -1264,15 +1269,18 @@ export function createArchiveApiClient({
         credentials: "include"
       });
     } catch {
+      lastRefreshFailureTransient = true;
       return null;
     }
 
     const payload = (await response.json().catch(() => null)) as ApiEnvelope<AuthSession> | null;
 
     if (!response.ok || !payload?.ok) {
+      lastRefreshFailureTransient = response.status === 429 || response.status >= 500;
       return null;
     }
 
+    lastRefreshFailureTransient = false;
     return payload.accessToken;
   }
 
@@ -1343,7 +1351,9 @@ export function createArchiveApiClient({
         });
       }
 
-      handleUnauthorized();
+      if (!lastRefreshFailureTransient) {
+        handleUnauthorized();
+      }
     }
 
     if (!response.ok && payload.ok !== false) {
