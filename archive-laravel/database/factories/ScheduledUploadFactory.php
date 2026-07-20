@@ -1,0 +1,35 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\ScheduledUpload;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
+
+/**
+ * @extends Factory<ScheduledUpload>
+ */
+class ScheduledUploadFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'id' => (string) Str::uuid(),
+            'idempotency_key' => (string) Str::uuid(),
+            'disk' => 's3',
+            'file_name' => fake()->word() . '.' . fake()->fileExtension(),
+            'staged_path' => '/tmp/' . fake()->word() . '.' . fake()->fileExtension(),
+            'total_size' => fake()->randomNumber(8),
+            'checksum_sha256' => fake()->sha256(),
+            'time_zone' => 'UTC',
+            'status' => 'scheduled',
+            'scheduled_at' => now(),
+            'version' => 1,
+        ];
+    }
+}
