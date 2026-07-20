@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\ComplianceReportsController;
 use App\Http\Controllers\Api\V1\CollectionsController;
+use App\Http\Controllers\Api\V1\DelegatedAccessController;
 use App\Http\Controllers\Api\V1\DiscoverController;
 use App\Http\Controllers\Api\V1\FilesController;
 use App\Http\Controllers\Api\V1\ImportPreviewController;
@@ -268,6 +269,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/rights/{itemId}/enforcement', [RightsController::class, 'enforcement']);
         Route::get('/rights', [RightsController::class, 'show']);
         Route::post('/rights', [RightsController::class, 'store']);
+
+        // V1-726: temporary delegated access to a colleague, auto-expiring.
+        Route::post('/delegated-access', [DelegatedAccessController::class, 'store']);
+        Route::get('/delegated-access', [DelegatedAccessController::class, 'index']);
+        Route::delete('/delegated-access/{id}', [DelegatedAccessController::class, 'destroy']);
 
         Route::post('/uploads', [UploadsController::class, 'store']);
 
