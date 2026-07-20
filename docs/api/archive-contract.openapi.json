@@ -1725,6 +1725,171 @@
         }
       }
     },
+    "/uploads/schedules": {
+      "post": {
+        "tags": ["Uploads"],
+        "summary": "Stage a completed chunked-upload session as a scheduled upload",
+        "operationId": "createScheduledUpload",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateScheduledUploadRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing schedule returned for a duplicate idempotency key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScheduledUploadCreateResponse" }
+              }
+            }
+          },
+          "201": {
+            "description": "Scheduled upload created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScheduledUploadCreateResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "get": {
+        "tags": ["Uploads"],
+        "summary": "List scheduled uploads (cursor-paginated, scoped to the caller unless admin)",
+        "operationId": "listScheduledUploads",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scheduled uploads page",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScheduledUploadListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/uploads/schedules/{id}": {
+      "get": {
+        "tags": ["Uploads"],
+        "summary": "Read a single scheduled upload",
+        "operationId": "getScheduledUpload",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scheduled upload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScheduledUploadResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Uploads"],
+        "summary": "Reschedule a scheduled upload's time (scheduledAt/timeZone only)",
+        "operationId": "rescheduleScheduledUpload",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RescheduleUploadRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scheduled upload rescheduled",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScheduledUploadResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Uploads"],
+        "summary": "Cancel a scheduled upload (idempotent once already cancelled)",
+        "operationId": "cancelScheduledUpload",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scheduled upload cancelled",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScheduledUploadResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/uploads/schedules/{id}/retry": {
+      "post": {
+        "tags": ["Uploads"],
+        "summary": "Requeue a failed scheduled upload that failed for an infrastructure reason",
+        "operationId": "retryScheduledUpload",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scheduled upload requeued",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScheduledUploadResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/intake-templates": {
       "get": {
         "tags": ["Intake Templates"],
@@ -5346,6 +5511,120 @@
             "properties": {
               "receivedChunks": { "type": "array", "items": { "type": "integer" } },
               "totalChunks": { "type": "integer" }
+            }
+          }
+        ]
+      },
+      "ScheduledUploadStatus": {
+        "type": "string",
+        "enum": ["scheduled", "claimed", "processing", "completed", "cancelled", "failed"]
+      },
+      "ScheduledUploadRecordPayload": {
+        "type": "object",
+        "required": ["title", "type"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 255 },
+          "type": { "type": "string", "maxLength": 100 },
+          "subtype": { "type": ["string", "null"], "maxLength": 100 },
+          "tags": { "type": ["array", "null"], "items": { "type": "string" } },
+          "metadata": { "type": ["object", "null"], "additionalProperties": true }
+        }
+      },
+      "CreateScheduledUploadRequest": {
+        "type": "object",
+        "required": ["uploadSessionId", "scheduledAt", "timeZone", "idempotencyKey", "record"],
+        "properties": {
+          "uploadSessionId": { "type": "string" },
+          "scheduledAt": { "type": "string", "format": "date-time" },
+          "timeZone": { "type": "string", "description": "IANA time zone identifier." },
+          "idempotencyKey": { "type": "string", "minLength": 16, "maxLength": 128 },
+          "record": { "$ref": "#/components/schemas/ScheduledUploadRecordPayload" }
+        }
+      },
+      "RescheduleUploadRequest": {
+        "type": "object",
+        "required": ["scheduledAt", "timeZone", "version"],
+        "properties": {
+          "scheduledAt": { "type": "string", "format": "date-time" },
+          "timeZone": { "type": "string", "description": "IANA time zone identifier." },
+          "version": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "ScheduledUploadStaged": {
+        "type": "object",
+        "required": ["id", "status", "fileName", "totalSize", "scheduledAt", "timeZone", "record"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/ScheduledUploadStatus" },
+          "fileName": { "type": "string" },
+          "totalSize": { "type": "integer" },
+          "scheduledAt": { "type": "string", "format": "date-time" },
+          "timeZone": { "type": "string" },
+          "record": { "$ref": "#/components/schemas/ScheduledUploadRecordPayload" }
+        }
+      },
+      "ScheduledUploadCreateResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["schedule"],
+            "properties": {
+              "schedule": { "$ref": "#/components/schemas/ScheduledUploadStaged" }
+            }
+          }
+        ]
+      },
+      "ScheduledUpload": {
+        "type": "object",
+        "required": [
+          "id", "fileName", "title", "status", "scheduledAt", "timeZone", "attempts",
+          "failureCode", "failureMessage", "recordId", "version", "createdAt", "updatedAt",
+          "canReschedule", "canCancel", "canRetry"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "fileName": { "type": "string" },
+          "title": { "type": ["string", "null"] },
+          "status": { "$ref": "#/components/schemas/ScheduledUploadStatus" },
+          "scheduledAt": { "type": ["string", "null"], "format": "date-time" },
+          "timeZone": { "type": "string" },
+          "attempts": { "type": "integer", "minimum": 0 },
+          "failureCode": { "type": ["string", "null"] },
+          "failureMessage": { "type": ["string", "null"] },
+          "recordId": { "type": ["string", "null"] },
+          "version": { "type": "integer", "minimum": 1 },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" },
+          "canReschedule": { "type": "boolean" },
+          "canCancel": { "type": "boolean" },
+          "canRetry": { "type": "boolean" }
+        }
+      },
+      "ScheduledUploadResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["schedule"],
+            "properties": {
+              "schedule": { "$ref": "#/components/schemas/ScheduledUpload" }
+            }
+          }
+        ]
+      },
+      "ScheduledUploadListResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["schedules"],
+            "properties": {
+              "schedules": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ScheduledUpload" }
+              },
+              "nextCursor": { "type": ["string", "null"] }
             }
           }
         ]

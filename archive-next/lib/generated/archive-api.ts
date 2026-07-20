@@ -1676,6 +1676,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List scheduled uploads (cursor-paginated, scoped to the caller unless admin) */
+        get: operations["listScheduledUploads"];
+        put?: never;
+        /** Stage a completed chunked-upload session as a scheduled upload */
+        post: operations["createScheduledUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/schedules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a single scheduled upload */
+        get: operations["getScheduledUpload"];
+        put?: never;
+        post?: never;
+        /** Cancel a scheduled upload (idempotent once already cancelled) */
+        delete: operations["cancelScheduledUpload"];
+        options?: never;
+        head?: never;
+        /** Reschedule a scheduled upload's time (scheduledAt/timeZone only) */
+        patch: operations["rescheduleScheduledUpload"];
+        trace?: never;
+    };
+    "/uploads/schedules/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Requeue a failed scheduled upload that failed for an infrastructure reason */
+        post: operations["retryScheduledUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads/sessions": {
         parameters: {
             query?: never;
@@ -2288,6 +2342,15 @@ export interface components {
             permission: "view" | "comment";
             token: string;
             url: string;
+        };
+        CreateScheduledUploadRequest: {
+            idempotencyKey: string;
+            record: components["schemas"]["ScheduledUploadRecordPayload"];
+            /** Format: date-time */
+            scheduledAt: string;
+            /** @description IANA time zone identifier. */
+            timeZone: string;
+            uploadSessionId: string;
         };
         CreateShareRequest: {
             /** Format: date-time */
@@ -2904,6 +2967,13 @@ export interface components {
             key: components["schemas"]["RelationType"];
             label: string;
         };
+        RescheduleUploadRequest: {
+            /** Format: date-time */
+            scheduledAt: string;
+            /** @description IANA time zone identifier. */
+            timeZone: string;
+            version: number;
+        };
         ReviewComment: {
             annotation?: components["schemas"]["ReviewRect"][] | null;
             author: string;
@@ -2999,6 +3069,58 @@ export interface components {
         SavedSearchUpdateRequest: {
             shared: boolean;
         };
+        ScheduledUpload: {
+            attempts: number;
+            canCancel: boolean;
+            canReschedule: boolean;
+            canRetry: boolean;
+            /** Format: date-time */
+            createdAt: string | null;
+            failureCode: string | null;
+            failureMessage: string | null;
+            fileName: string;
+            id: string;
+            recordId: string | null;
+            /** Format: date-time */
+            scheduledAt: string | null;
+            status: components["schemas"]["ScheduledUploadStatus"];
+            timeZone: string;
+            title: string | null;
+            /** Format: date-time */
+            updatedAt: string | null;
+            version: number;
+        };
+        ScheduledUploadCreateResponse: components["schemas"]["OkEnvelope"] & {
+            schedule: components["schemas"]["ScheduledUploadStaged"];
+        };
+        ScheduledUploadListResponse: components["schemas"]["OkEnvelope"] & {
+            nextCursor?: string | null;
+            schedules: components["schemas"]["ScheduledUpload"][];
+        };
+        ScheduledUploadRecordPayload: {
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            subtype?: string | null;
+            tags?: string[] | null;
+            title: string;
+            type: string;
+        };
+        ScheduledUploadResponse: components["schemas"]["OkEnvelope"] & {
+            schedule: components["schemas"]["ScheduledUpload"];
+        };
+        ScheduledUploadStaged: {
+            fileName: string;
+            id: string;
+            record: components["schemas"]["ScheduledUploadRecordPayload"];
+            /** Format: date-time */
+            scheduledAt: string;
+            status: components["schemas"]["ScheduledUploadStatus"];
+            timeZone: string;
+            totalSize: number;
+        };
+        /** @enum {string} */
+        ScheduledUploadStatus: "scheduled" | "claimed" | "processing" | "completed" | "cancelled" | "failed";
         SearchFacetBucket: {
             count: number;
             label: string;
@@ -6653,6 +6775,177 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listScheduledUploads: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scheduled uploads page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledUploadListResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+        };
+    };
+    createScheduledUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateScheduledUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Existing schedule returned for a duplicate idempotency key */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledUploadCreateResponse"];
+                };
+            };
+            /** @description Scheduled upload created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledUploadCreateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    getScheduledUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scheduled upload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledUploadResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    cancelScheduledUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scheduled upload cancelled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledUploadResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    rescheduleScheduledUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RescheduleUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Scheduled upload rescheduled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledUploadResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    retryScheduledUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scheduled upload requeued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledUploadResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
     createUploadSession: {
