@@ -1,6 +1,7 @@
 export const primaryNav = [
   // ── الإدخال والمعالجة ──
   { href: "/uploads", label: "إضافة مادة", section: "capture", icon: "UploadCloud" },
+  { href: "/uploads/scheduled", label: "الرفعات المجدولة", section: "capture", icon: "CalendarClock" },
   { href: "/inbox", label: "الوارد", section: "capture", icon: "Inbox" },
   { href: "/ingest", label: "الاستيراد", section: "capture", icon: "FileInput" },
   { href: "/media/jobs", label: "الوسائط", section: "capture", icon: "Film" },

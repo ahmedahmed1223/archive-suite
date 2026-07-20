@@ -122,6 +122,7 @@ export const ROUTE_COVERAGE: readonly RouteCoverage[] = [
   { url: '/trash', route: '/trash', role: 'viewer', states: ALL_STATES },
   { url: '/types', route: '/types', role: 'viewer', states: ALL_STATES },
   { url: '/uploads', route: '/uploads', role: 'editor', states: ALL_STATES },
+  { url: '/uploads/scheduled', route: '/uploads/scheduled', role: 'editor', states: ALL_STATES },
   { url: '/vocabulary', route: '/vocabulary', role: 'editor', states: ALL_STATES },
 ];
 
