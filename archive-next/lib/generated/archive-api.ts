@@ -1835,6 +1835,23 @@ export interface paths {
         patch: operations["updateUserRole"];
         trace?: never;
     };
+    "/users/mentionable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List mentionable users for the @-mention picker (any authenticated role) */
+        get: operations["listMentionableUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vocabulary": {
         parameters: {
             query?: never;
@@ -2610,6 +2627,13 @@ export interface components {
         };
         /** @enum {string} */
         MediaOperation: "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
+        MentionableUser: {
+            id: string;
+            name: string;
+        };
+        MentionableUsersResponse: components["schemas"]["OkEnvelope"] & {
+            users: components["schemas"]["MentionableUser"][];
+        };
         MontageProject: {
             /** @description Timeline clips; item shape is client-defined and stored as-is. */
             clips: Record<string, never>[];
@@ -7176,6 +7200,27 @@ export interface operations {
             403: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listMentionableUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Minimal user directory (id and name only) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentionableUsersResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
         };
     };
     listVocabularyTerms: {

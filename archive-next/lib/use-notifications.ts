@@ -4,7 +4,7 @@ import { useAuthSession } from "@/lib/auth-session";
 export interface Notification {
   id: number;
   user_id: string;
-  type: "ingest_complete" | "backup_result" | "share_event" | "restore_result";
+  type: "ingest_complete" | "backup_result" | "share_event" | "restore_result" | "mention";
   title: string;
   message: string;
   metadata?: Record<string, unknown>;

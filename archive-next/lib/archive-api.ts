@@ -857,6 +857,11 @@ export interface ManagedUser {
   createdAt?: string;
 }
 
+export interface MentionableUser {
+  id: string;
+  name: string;
+}
+
 export interface PendingInvitation {
   id: string;
   email: string;
@@ -1185,6 +1190,7 @@ export interface ArchiveApiClient {
   collaborationDocument(roomKey: string, resourceId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ roomKey: string; document: CollaborationDocument }>>;
   updateCollaborationDocument(roomKey: string, resourceId: string, payload: { content: string; version: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ roomKey: string; document: CollaborationDocument }>>;
   listUsers(options?: AuthRequestOptions): Promise<ApiEnvelope<{ users: ManagedUser[]; invitations: PendingInvitation[] }>>;
+  mentionableUsers(options?: AuthRequestOptions): Promise<ApiEnvelope<{ users: MentionableUser[] }>>;
   inviteUser(payload: { email: string; role: ManagedUserRole }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ invitation: PendingInvitation; token: string }>>;
   updateUserRole(id: string, payload: { role: ManagedUserRole }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ user: ManagedUser }>>;
   deleteUser(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope>;
@@ -1857,6 +1863,8 @@ export function createArchiveApiClient({
       ),
     listUsers: (options?: AuthRequestOptions) =>
       get<{ users: ManagedUser[]; invitations: PendingInvitation[] }>("/users", options),
+    mentionableUsers: (options?: AuthRequestOptions) =>
+      get<{ users: MentionableUser[] }>("/users/mentionable", options),
     inviteUser: (payload: { email: string; role: ManagedUserRole }, options?: AuthRequestOptions) =>
       post<{ invitation: PendingInvitation; token: string }>("/users", payload, options),
     updateUserRole: (id: string, payload: { role: ManagedUserRole }, options?: AuthRequestOptions) =>

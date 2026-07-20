@@ -86,6 +86,25 @@ class NotificationService
         ]);
     }
 
+    public function createMentionNotification(User $mentioned, User $author, string $context, string $recordId, string $store, string $excerpt): Notification
+    {
+        $contextLabel = $context === 'comment' ? 'تعليق' : 'ملاحظة';
+
+        return Notification::create([
+            'user_id' => $mentioned->id,
+            'type' => 'mention',
+            'title' => sprintf('أشار إليك %s في %s', $author->name, $contextLabel),
+            'message' => $excerpt,
+            'metadata' => [
+                'authorId' => (string) $author->id,
+                'authorName' => $author->name,
+                'context' => $context,
+                'recordId' => $recordId,
+                'store' => $store,
+            ],
+        ]);
+    }
+
     public function getUnreadCount(User $user): int
     {
         return Notification::where('user_id', $user->id)

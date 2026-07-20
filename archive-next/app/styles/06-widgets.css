@@ -240,6 +240,47 @@
   max-inline-size: 32rem;
 }
 
+.mention-textarea {
+  position: relative;
+}
+
+.mention-suggestions {
+  position: absolute;
+  z-index: 20;
+  inset-inline-start: 0;
+  inset-block-start: 100%;
+  margin-block-start: var(--space-1);
+  min-inline-size: 12rem;
+  max-inline-size: 100%;
+  max-block-size: 12rem;
+  overflow: auto;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  box-shadow: var(--shadow-md, 0 4px 12px rgb(0 0 0 / 0.15));
+  padding: var(--space-1);
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.mention-suggestions button {
+  display: block;
+  inline-size: 100%;
+  text-align: start;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.mention-suggestions button:hover,
+.mention-suggestions button:focus-visible {
+  background: var(--color-bg-secondary);
+}
+
 /* At wide desktop widths lay rows out as a responsive table (name | status | schedule | actions)
    instead of the stacked card used down to tablet width. */
 @media (min-width: 1024px) {
