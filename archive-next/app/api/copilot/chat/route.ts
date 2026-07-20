@@ -76,10 +76,17 @@ export async function POST(request: NextRequest) {
     return errorResponse(422, validation.error, "invalid_request");
   }
 
+  // V1-722: the caller attaches the currently-open record's context explicitly
+  // (never inferred server-side) — folded into the system prompt so it never
+  // shows up as a chat bubble the way a regular message would.
+  const system = validation.context
+    ? `${COPILOT_SYSTEM_PROMPT}\n\nسياق السجل الحالي (أرفقه المستخدم صراحة):\n${validation.context}`
+    : COPILOT_SYSTEM_PROMPT;
+
   try {
     const { text } = await generateText({
       model: resolution.languageModel,
-      system: COPILOT_SYSTEM_PROMPT,
+      system,
       messages: trimMessagesToLimit(validation.messages),
       abortSignal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS)
     });

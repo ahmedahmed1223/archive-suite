@@ -1208,6 +1208,11 @@ export default function ArchiveDetailPage() {
             <Link href="/archive" className="button button-secondary">
               العودة إلى الأرشيف
             </Link>
+            {state.status === "ready" ? (
+              <Link href={`/copilot?recordId=${encodeURIComponent(id)}`} className="button button-secondary">
+                اسأل المساعد عن هذا السجل
+              </Link>
+            ) : null}
             {playerHref ? <Link href={playerHref} className="button button-secondary">تشغيل الوسائط</Link> : null}
             {state.status === "ready" ? (
               <button

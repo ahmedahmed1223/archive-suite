@@ -357,6 +357,27 @@
   line-height: var(--line-height-relaxed);
 }
 
+.copilot-context-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.copilot-context-banner > div {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.copilot-context-banner span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .copilot-workspace {
   display: grid;
   gap: var(--space-4);
