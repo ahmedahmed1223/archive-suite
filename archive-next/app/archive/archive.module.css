@@ -33,3 +33,14 @@
   font-weight: var(--font-weight-semibold);
   box-shadow: var(--shadow-md);
 }
+
+/* V1-745: rubber-band drag-select rectangle drawn over the grid/gallery/
+   compact/list card views while the user drags across empty space. */
+.dragSelectionRect {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  border: 1px solid var(--color-brand-primary);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+}
