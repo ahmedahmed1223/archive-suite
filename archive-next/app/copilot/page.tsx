@@ -1,14 +1,17 @@
 "use client";
 
-import { BotMessageSquare, CopyCheck, DatabaseZap, RefreshCw, Search, ShieldCheck, Tags } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { BotMessageSquare, CopyCheck, DatabaseZap, RefreshCw, Search, ShieldCheck, Tags, X } from "lucide-react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import type { CopilotStatus } from "@/lib/copilot-status";
+import { buildRecordContext } from "@/lib/copilot-chat";
+import { createArchiveApiClient } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 
 type StatusPhase = "loading" | "ready" | "error";
@@ -44,14 +47,48 @@ const safeStartingPoints = [
   }
 ] as const;
 
-export default function CopilotPage() {
+interface LinkedRecordContext {
+  title: string;
+  contextText: string;
+}
+
+function CopilotPageContent() {
   const [phase, setPhase] = useState<StatusPhase>("loading");
   const [status, setStatus] = useState<CopilotStatus | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [sendPhase, setSendPhase] = useState<SendPhase>("idle");
   const [sendError, setSendError] = useState<string | null>(null);
+  const [recordContext, setRecordContext] = useState<LinkedRecordContext | null>(null);
+  const [contextAttached, setContextAttached] = useState(true);
   const { accessToken } = useAuthSession();
+  const searchParams = useSearchParams();
+  const recordId = searchParams.get("recordId");
+
+  // V1-722: links this conversation to the record the user came from. Fetched
+  // once per recordId; the user can detach it before sending (never inferred
+  // or attached silently — matches this page's explicit-send safety posture).
+  useEffect(() => {
+    if (!recordId) {
+      setRecordContext(null);
+      return;
+    }
+
+    let cancelled = false;
+    const api = createArchiveApiClient();
+    api.record(recordId, { accessToken: accessToken ?? undefined }).then((response) => {
+      if (cancelled || !response.ok) return;
+      setRecordContext({
+        title: response.record.title,
+        contextText: buildRecordContext(response.record)
+      });
+      setContextAttached(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [recordId, accessToken]);
 
   const refreshStatus = useCallback(async () => {
     setPhase("loading");
@@ -83,7 +120,10 @@ export default function CopilotPage() {
       const response = await fetch("/api/copilot/chat", {
         method: "POST",
         headers,
-        body: JSON.stringify({ messages: nextMessages })
+        body: JSON.stringify({
+          messages: nextMessages,
+          context: contextAttached ? recordContext?.contextText : undefined
+        })
       });
 
       const payload = await response.json().catch(() => null) as { ok: true; reply: string } | { ok: false; error: string } | null;
@@ -99,7 +139,7 @@ export default function CopilotPage() {
     } finally {
       setSendPhase("idle");
     }
-  }, [accessToken]);
+  }, [accessToken, contextAttached, recordContext]);
 
   const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -261,6 +301,29 @@ export default function CopilotPage() {
             </div>
           ) : null}
 
+          {recordContext ? (
+            <div className="state-banner copilot-context-banner" role="status">
+              <div>
+                <strong>{contextAttached ? "سيُرفق سياق السجل" : "سياق السجل غير مرفق"}</strong>
+                <span className="helper-text">{recordContext.title}</span>
+              </div>
+              <button
+                type="button"
+                className="button button-secondary button-sm"
+                onClick={() => setContextAttached((attached) => !attached)}
+              >
+                {contextAttached ? (
+                  <>
+                    <X aria-hidden="true" size={16} strokeWidth={2} />
+                    إزالة السياق
+                  </>
+                ) : (
+                  "إرفاق السياق"
+                )}
+              </button>
+            </div>
+          ) : null}
+
           <form onSubmit={handleSubmit}>
             <fieldset
               className="copilot-composer"
@@ -310,5 +373,13 @@ export default function CopilotPage() {
         </aside>
       </section>
     </AppShell>
+  );
+}
+
+export default function CopilotPage() {
+  return (
+    <Suspense fallback={null}>
+      <CopilotPageContent />
+    </Suspense>
   );
 }

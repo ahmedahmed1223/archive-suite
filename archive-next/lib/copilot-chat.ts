@@ -7,6 +7,8 @@ export interface CopilotChatMessage {
 
 export const COPILOT_MAX_MESSAGES = 20;
 export const COPILOT_MAX_CONTENT_LENGTH = 4000;
+export const COPILOT_MAX_CONTEXT_LENGTH = 4000;
+const RECORD_CONTEXT_DESCRIPTION_LIMIT = 500;
 
 export const COPILOT_SYSTEM_PROMPT =
   "أنت مساعد أرشيف Archive Suite. مهمتك مساعدة المستخدمين المصادَق عليهم في " +
@@ -17,7 +19,7 @@ export const COPILOT_SYSTEM_PROMPT =
   "عمليات الأرشيف.";
 
 export type ChatValidationResult =
-  | { ok: true; messages: CopilotChatMessage[] }
+  | { ok: true; messages: CopilotChatMessage[]; context?: string }
   | { ok: false; error: string };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -66,7 +68,21 @@ export function validateChatMessages(body: unknown): ChatValidationResult {
     messages.push({ role: entry.role, content });
   }
 
-  return { ok: true, messages };
+  if (body.context === undefined) {
+    return { ok: true, messages };
+  }
+
+  if (typeof body.context !== "string") {
+    return { ok: false, error: "سياق السجل يجب أن يكون نصاً." };
+  }
+
+  const context = body.context.trim();
+
+  if (context.length > COPILOT_MAX_CONTEXT_LENGTH) {
+    return { ok: false, error: `طول سياق السجل يتجاوز الحد الأقصى (${COPILOT_MAX_CONTEXT_LENGTH} حرفاً).` };
+  }
+
+  return context.length === 0 ? { ok: true, messages } : { ok: true, messages, context };
 }
 
 /** Keeps only the most recent `limit` messages — defense in depth alongside validation. */
@@ -75,4 +91,40 @@ export function trimMessagesToLimit(
   limit: number = COPILOT_MAX_MESSAGES
 ): CopilotChatMessage[] {
   return messages.length > limit ? messages.slice(messages.length - limit) : messages;
+}
+
+export interface RecordContextInput {
+  title: string;
+  type?: string | null;
+  subtype?: string | null;
+  tags?: string[];
+  description?: string;
+}
+
+/**
+ * V1-722: formats the currently-open record's metadata into a short text
+ * block the copilot chat route appends to its system prompt (server-side
+ * only — never rendered as a chat bubble) so questions like "لخّص هذا السجل"
+ * work without the user re-typing the record's details.
+ */
+export function buildRecordContext(record: RecordContextInput): string {
+  const lines: string[] = [`العنوان: ${record.title}`];
+
+  if (record.type) {
+    lines.push(`النوع: ${record.subtype ? `${record.type}/${record.subtype}` : record.type}`);
+  }
+
+  if (record.tags && record.tags.length > 0) {
+    lines.push(`الوسوم: ${record.tags.join("، ")}`);
+  }
+
+  if (record.description && record.description.trim() !== "") {
+    const description = record.description.trim();
+    const truncated = description.length > RECORD_CONTEXT_DESCRIPTION_LIMIT
+      ? `${description.slice(0, RECORD_CONTEXT_DESCRIPTION_LIMIT)}…`
+      : description;
+    lines.push(`الوصف: ${truncated}`);
+  }
+
+  return lines.join("\n");
 }
