@@ -37,11 +37,11 @@ class ScheduledUploadState
     public function transition(string $id, string $from, string $to, int $version, array $changes = []): ScheduledUpload
     {
         if (! in_array($to, self::LEGAL[$from] ?? [], true)) {
-            throw new ScheduledUploadConflict('Illegal scheduled upload transition.');
+            throw ScheduledUploadConflict::illegalTransition($from, $to);
         }
         $changed = ScheduledUpload::query()->whereKey($id)->where('status', $from)->where('version', $version)
             ->update([...$changes, 'status' => $to, 'version' => $version + 1, 'updated_at' => now()]);
-        if ($changed !== 1) throw new ScheduledUploadConflict('Scheduled upload changed concurrently.');
+        if ($changed !== 1) throw ScheduledUploadConflict::staleVersion();
         return ScheduledUpload::query()->findOrFail($id);
     }
 }
