@@ -117,6 +117,13 @@ class RouteScopeTest extends TestCase
         'PUT api/v1/uploads/sessions/{sessionId}/chunks/{index}' => self::V1,
         'POST api/v1/uploads/sessions/{sessionId}/complete' => self::V1,
         'DELETE api/v1/uploads/sessions/{sessionId}' => self::V1,
+        // V1-712: durable scheduled uploads.
+        'POST api/v1/uploads/schedules' => self::V1,
+        'GET api/v1/uploads/schedules' => self::V1,
+        'GET api/v1/uploads/schedules/{id}' => self::V1,
+        'PATCH api/v1/uploads/schedules/{id}' => self::V1,
+        'DELETE api/v1/uploads/schedules/{id}' => self::V1,
+        'POST api/v1/uploads/schedules/{id}/retry' => self::V1,
         'GET api/v1/intake-templates' => self::V1,
         'POST api/v1/intake-templates' => self::V1,
         'DELETE api/v1/intake-templates/{id}' => self::V1,
@@ -324,6 +331,17 @@ class RouteScopeTest extends TestCase
         'PUT api/v1/uploads/sessions/{sessionId}/chunks/{index}' => self::ROLE_ANY,
         'POST api/v1/uploads/sessions/{sessionId}/complete' => self::ROLE_ANY,
         'DELETE api/v1/uploads/sessions/{sessionId}' => self::ROLE_ANY,
+        // V1-712: durable scheduled uploads — all require editor (or admin);
+        // viewer is forbidden. List/show/reschedule/cancel/retry are further
+        // scoped to the caller's own rows inside the controller (admin sees
+        // all) — that ownership scoping isn't expressible in this route-role
+        // fixture, so it's covered by ScheduledUploadApiTest instead.
+        'POST api/v1/uploads/schedules' => self::ROLE_EDITOR,
+        'GET api/v1/uploads/schedules' => self::ROLE_EDITOR,
+        'GET api/v1/uploads/schedules/{id}' => self::ROLE_EDITOR,
+        'PATCH api/v1/uploads/schedules/{id}' => self::ROLE_EDITOR,
+        'DELETE api/v1/uploads/schedules/{id}' => self::ROLE_EDITOR,
+        'POST api/v1/uploads/schedules/{id}/retry' => self::ROLE_EDITOR,
         'GET api/v1/intake-templates' => self::ROLE_ANY,
         'POST api/v1/intake-templates' => self::ROLE_ANY,
         'DELETE api/v1/intake-templates/{id}' => self::ROLE_ANY,

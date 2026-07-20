@@ -49,6 +49,53 @@ class ScheduledUploadApiTest extends TestCase
     }
 
     /**
+     * @return array{0: array<string, string>, 1: int}
+     */
+    private function secondEditorHeadersWithId(): array
+    {
+        $user = User::query()->firstOrCreate(
+            ['email' => 'editor2-schedules@example.test'],
+            ['name' => 'Editor Two', 'password' => Hash::make('secret-password'), 'role' => 'editor'],
+        );
+
+        $token = $this->postJson('/api/v1/auth/login', [
+            'email' => 'editor2-schedules@example.test',
+            'password' => 'secret-password',
+        ])->assertOk()->json('accessToken');
+
+        return [['Authorization' => 'Bearer '.$token], $user->id];
+    }
+
+    /**
+     * @return array{0: array<string, string>, 1: int}
+     */
+    private function adminHeadersWithId(): array
+    {
+        $user = User::query()->firstOrCreate(
+            ['email' => 'admin-schedules@example.test'],
+            ['name' => 'Admin', 'password' => Hash::make('secret-password'), 'role' => 'admin'],
+        );
+
+        $token = $this->postJson('/api/v1/auth/login', [
+            'email' => 'admin-schedules@example.test',
+            'password' => 'secret-password',
+        ])->assertOk()->json('accessToken');
+
+        return [['Authorization' => 'Bearer '.$token], $user->id];
+    }
+
+    private function editorUserId(): int
+    {
+        // authHeaders()/editorHeaders() logs in as this fixed user (see
+        // AuthenticatesArchiveRequests) — look it up rather than duplicating
+        // creation so ownership assertions use the same id the token maps to.
+        // Ensure the login (and therefore the firstOrCreate) has run first.
+        $this->editorHeaders();
+
+        return User::query()->where('email', 'admin@example.test')->firstOrFail()->id;
+    }
+
+    /**
      * Creates a fully-uploaded (all chunks received) session and returns its
      * id, ready to be staged.
      */
@@ -256,5 +303,174 @@ class ScheduledUploadApiTest extends TestCase
 
         $this->postJson("/api/v1/uploads/sessions/{$sessionId}/complete", [], $this->editorHeaders())
             ->assertStatus(410);
+    }
+
+    public function test_editor_sees_only_owned_schedules(): void
+    {
+        $editorId = $this->editorUserId();
+        [$otherHeaders, $otherId] = $this->secondEditorHeadersWithId();
+
+        $mine = \App\Models\ScheduledUpload::factory()->create(['created_by' => $editorId]);
+        \App\Models\ScheduledUpload::factory()->create(['created_by' => $otherId]);
+
+        $response = $this->getJson('/api/v1/uploads/schedules', $this->editorHeaders())->assertOk();
+
+        $ids = collect($response->json('schedules'))->pluck('id');
+        $this->assertTrue($ids->contains($mine->id));
+        $this->assertCount(1, $ids);
+        $this->assertNull($response->json('schedules.0.stagedPath'));
+    }
+
+    public function test_admin_sees_all_schedules(): void
+    {
+        $editorId = $this->editorUserId();
+        [, $otherId] = $this->secondEditorHeadersWithId();
+        [$adminHeaders] = $this->adminHeadersWithId();
+
+        \App\Models\ScheduledUpload::factory()->create(['created_by' => $editorId]);
+        \App\Models\ScheduledUpload::factory()->create(['created_by' => $otherId]);
+
+        $response = $this->getJson('/api/v1/uploads/schedules', $adminHeaders)->assertOk();
+
+        $this->assertGreaterThanOrEqual(2, count($response->json('schedules')));
+    }
+
+    public function test_viewer_is_forbidden_from_listing_schedules(): void
+    {
+        $this->getJson('/api/v1/uploads/schedules', $this->viewerHeaders())->assertStatus(403);
+    }
+
+    public function test_reschedule_with_stale_version_returns_409_with_current(): void
+    {
+        $editorId = $this->editorUserId();
+        $schedule = \App\Models\ScheduledUpload::factory()->create([
+            'created_by' => $editorId,
+            'status' => 'scheduled',
+            'version' => 1,
+        ]);
+
+        $response = $this->patchJson("/api/v1/uploads/schedules/{$schedule->id}", [
+            'scheduledAt' => now()->addHours(2)->toIso8601String(),
+            'timeZone' => 'Europe/Istanbul',
+            'version' => 99,
+        ], $this->editorHeaders())->assertStatus(409);
+
+        $this->assertSame(1, $response->json('current.version'));
+    }
+
+    public function test_reschedule_updates_scheduled_at_and_time_zone(): void
+    {
+        $editorId = $this->editorUserId();
+        $schedule = \App\Models\ScheduledUpload::factory()->create([
+            'created_by' => $editorId,
+            'status' => 'scheduled',
+            'version' => 1,
+        ]);
+
+        $newTime = now()->addHours(5)->toIso8601String();
+
+        $response = $this->patchJson("/api/v1/uploads/schedules/{$schedule->id}", [
+            'scheduledAt' => $newTime,
+            'timeZone' => 'Europe/Istanbul',
+            'version' => 1,
+        ], $this->editorHeaders())->assertOk();
+
+        $this->assertSame(2, $response->json('schedule.version'));
+        $this->assertSame('Europe/Istanbul', $response->json('schedule.timeZone'));
+    }
+
+    public function test_cancelling_claimed_schedule_conflicts(): void
+    {
+        $editorId = $this->editorUserId();
+        $schedule = \App\Models\ScheduledUpload::factory()->create([
+            'created_by' => $editorId,
+            'status' => 'claimed',
+            'version' => 1,
+        ]);
+
+        $this->deleteJson("/api/v1/uploads/schedules/{$schedule->id}", [], $this->editorHeaders())
+            ->assertStatus(409);
+    }
+
+    public function test_cancel_is_idempotent_for_already_cancelled_schedule(): void
+    {
+        $editorId = $this->editorUserId();
+        $schedule = \App\Models\ScheduledUpload::factory()->create([
+            'created_by' => $editorId,
+            'status' => 'cancelled',
+            'version' => 3,
+        ]);
+
+        $this->deleteJson("/api/v1/uploads/schedules/{$schedule->id}", [], $this->editorHeaders())
+            ->assertOk()
+            ->assertJsonPath('schedule.status', 'cancelled');
+    }
+
+    public function test_cancel_scheduled_upload_succeeds(): void
+    {
+        $editorId = $this->editorUserId();
+        $schedule = \App\Models\ScheduledUpload::factory()->create([
+            'created_by' => $editorId,
+            'status' => 'scheduled',
+            'version' => 1,
+        ]);
+
+        $this->deleteJson("/api/v1/uploads/schedules/{$schedule->id}", [], $this->editorHeaders())
+            ->assertOk()
+            ->assertJsonPath('schedule.status', 'cancelled');
+    }
+
+    public function test_retry_rejects_non_infrastructure_failure_code(): void
+    {
+        $editorId = $this->editorUserId();
+        $schedule = \App\Models\ScheduledUpload::factory()->create([
+            'created_by' => $editorId,
+            'status' => 'failed',
+            'failure_code' => 'validation_error',
+            'version' => 1,
+        ]);
+
+        $this->postJson("/api/v1/uploads/schedules/{$schedule->id}/retry", [], $this->editorHeaders())
+            ->assertStatus(409);
+    }
+
+    public function test_retry_requires_the_staged_artifact_to_still_exist(): void
+    {
+        $editorId = $this->editorUserId();
+        $schedule = \App\Models\ScheduledUpload::factory()->create([
+            'created_by' => $editorId,
+            'status' => 'failed',
+            'failure_code' => 'infrastructure_timeout',
+            'disk' => config('ingest.disk'),
+            'staged_path' => 'schedules/missing-artifact.mp4',
+            'version' => 1,
+        ]);
+
+        $this->postJson("/api/v1/uploads/schedules/{$schedule->id}/retry", [], $this->editorHeaders())
+            ->assertStatus(409);
+    }
+
+    public function test_retry_requeues_infrastructure_failure_with_existing_artifact(): void
+    {
+        $editorId = $this->editorUserId();
+        $disk = config('ingest.disk');
+        Storage::disk($disk)->put('schedules/present-artifact.mp4', 'x');
+
+        $schedule = \App\Models\ScheduledUpload::factory()->create([
+            'created_by' => $editorId,
+            'status' => 'failed',
+            'failure_code' => 'infrastructure_timeout',
+            'failure_message' => 'Timed out talking to storage.',
+            'disk' => $disk,
+            'staged_path' => 'schedules/present-artifact.mp4',
+            'version' => 1,
+        ]);
+
+        $response = $this->postJson("/api/v1/uploads/schedules/{$schedule->id}/retry", [], $this->editorHeaders())
+            ->assertOk();
+
+        $response->assertJsonPath('schedule.status', 'scheduled')
+            ->assertJsonPath('schedule.version', 2)
+            ->assertJsonPath('schedule.failureCode', null);
     }
 }

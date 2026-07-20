@@ -238,6 +238,11 @@ Route::prefix('v1')->group(function (): void {
 
         // V1-712: durable scheduled uploads — stage a completed session for later processing.
         Route::post('/uploads/schedules', [ScheduledUploadsController::class, 'create']);
+        Route::get('/uploads/schedules', [ScheduledUploadsController::class, 'index']);
+        Route::get('/uploads/schedules/{id}', [ScheduledUploadsController::class, 'show']);
+        Route::patch('/uploads/schedules/{id}', [ScheduledUploadsController::class, 'reschedule']);
+        Route::delete('/uploads/schedules/{id}', [ScheduledUploadsController::class, 'cancel']);
+        Route::post('/uploads/schedules/{id}/retry', [ScheduledUploadsController::class, 'retry']);
 
         Route::get('/intake-templates', [IntakeTemplatesController::class, 'index']);
         Route::post('/intake-templates', [IntakeTemplatesController::class, 'store']);
