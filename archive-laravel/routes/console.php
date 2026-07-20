@@ -20,6 +20,13 @@ Schedule::command('trash:prune')->daily();
 Schedule::command('metrics:capture')->hourly();
 Schedule::command('metrics:prune')->daily();
 
+// V1-712 Task 4: durable scheduled uploads -- dispatch claims due rows every
+// minute, recover releases claims whose lease expired without the worker
+// finishing, cleanup prunes terminal rows past their retention window.
+Schedule::command('uploads:dispatch-scheduled')->everyMinute()->withoutOverlapping();
+Schedule::command('uploads:recover-scheduled')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('uploads:cleanup-scheduled')->hourly()->withoutOverlapping();
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
