@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { DragEvent, FormEvent } from "react";
+import type { DragEvent, FormEvent, MouseEvent as ReactMouseEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Archive, Filter, FolderSearch, PanelRightOpen, Search, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -91,6 +91,35 @@ export function resolveGridSelectionClick(
   }
 
   return { selectedIds: [targetId], anchorId: targetId };
+}
+
+export interface RectLike {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+function rectsIntersect(a: RectLike, b: RectLike): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+// Pure geometry for rubber-band drag-select (V1-745): given the drag
+// rectangle and each visible card's bounding box, returns the ids under the
+// rectangle. Additive mode (shift/ctrl/cmd held at drag start) unions the
+// hits with the selection that existed before the drag began, instead of
+// replacing it. Framework-free so it is directly unit-testable.
+export function computeDragSelectedIds(
+  selectionRect: RectLike,
+  cardRects: Array<{ id: string; rect: RectLike }>,
+  baseSelectedIds: string[],
+  additive: boolean
+): string[] {
+  const hitIds = cardRects.filter((card) => rectsIntersect(selectionRect, card.rect)).map((card) => card.id);
+  if (!additive) return hitIds;
+  const merged = new Set(baseSelectedIds);
+  hitIds.forEach((id) => merged.add(id));
+  return Array.from(merged);
 }
 
 type ArchiveViewMode = "grid" | "gallery" | "compact" | "list" | "details";
@@ -273,6 +302,12 @@ function ArchivePageContent() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkFeedback, setBulkFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [isDragSelecting, setIsDragSelecting] = useState(false);
+  const [dragSelectRect, setDragSelectRect] = useState<RectLike | null>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const dragSelectStartRef = useRef<{ x: number; y: number } | null>(null);
+  const dragSelectBaseRef = useRef<string[]>([]);
+  const dragSelectAdditiveRef = useRef(false);
 
   const pinnedOrderKey = `archive.pinned-filters.order:${userId ?? "anonymous"}`;
   const orderedSavedViews = useMemo(() => orderPinnedFilters(savedViews, pinnedViewOrder), [pinnedViewOrder, savedViews]);
@@ -542,6 +577,66 @@ function ArchivePageContent() {
     setSelectedIds(nextSelected);
     setSelectionAnchorId(nextAnchor);
   };
+
+  // V1-745: rubber-band drag-select. Starts only on a mousedown over empty
+  // surface space (not on a card, so plain/shift/ctrl clicks on cards keep
+  // working via handleSelectClick above), and only in card-based views —
+  // "details" is a DataTable with its own row selection, out of scope here.
+  const DRAG_SELECT_THRESHOLD_PX = 4;
+
+  const handleSurfaceMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (viewMode === "details" || event.button !== 0) return;
+    if ((event.target as HTMLElement).closest("[data-record-id]")) return;
+    event.preventDefault();
+    dragSelectStartRef.current = { x: event.clientX, y: event.clientY };
+    dragSelectBaseRef.current = selectedIds;
+    dragSelectAdditiveRef.current = event.shiftKey || event.ctrlKey || event.metaKey;
+    setIsDragSelecting(true);
+  };
+
+  useEffect(() => {
+    if (!isDragSelecting) return;
+
+    const handleMouseMove = (event: globalThis.MouseEvent) => {
+      const start = dragSelectStartRef.current;
+      if (!start) return;
+      const rect: RectLike = {
+        left: Math.min(start.x, event.clientX),
+        top: Math.min(start.y, event.clientY),
+        right: Math.max(start.x, event.clientX),
+        bottom: Math.max(start.y, event.clientY)
+      };
+      setDragSelectRect(rect);
+
+      if (rect.right - rect.left < DRAG_SELECT_THRESHOLD_PX && rect.bottom - rect.top < DRAG_SELECT_THRESHOLD_PX) return;
+
+      const surface = surfaceRef.current;
+      if (!surface) return;
+      const cardRects = Array.from(surface.querySelectorAll<HTMLElement>("[data-record-id]")).map((el) => ({
+        id: el.dataset.recordId as string,
+        rect: el.getBoundingClientRect()
+      }));
+      setSelectedIds(computeDragSelectedIds(rect, cardRects, dragSelectBaseRef.current, dragSelectAdditiveRef.current));
+      setSelectionAnchorId(null);
+    };
+
+    const handleMouseUp = () => {
+      dragSelectStartRef.current = null;
+      setDragSelectRect(null);
+      setIsDragSelecting(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragSelecting]);
+
+  const showDragSelectRect = dragSelectRect
+    ? dragSelectRect.right - dragSelectRect.left >= DRAG_SELECT_THRESHOLD_PX || dragSelectRect.bottom - dragSelectRect.top >= DRAG_SELECT_THRESHOLD_PX
+    : false;
 
   const toggleSelectAllVisible = () => {
     setSelectedIds((current) => {
@@ -1042,7 +1137,25 @@ function ArchivePageContent() {
           />
         ) : (
           <section className="archive-workspace" data-view={viewMode} aria-label="نتائج الأرشيف">
-            <div className="records-surface" data-view={viewMode} data-size={itemSize} role={viewMode === "details" ? undefined : "list"}>
+            {showDragSelectRect && dragSelectRect ? (
+              <div
+                className={styles.dragSelectionRect}
+                style={{
+                  left: dragSelectRect.left,
+                  top: dragSelectRect.top,
+                  width: dragSelectRect.right - dragSelectRect.left,
+                  height: dragSelectRect.bottom - dragSelectRect.top
+                }}
+              />
+            ) : null}
+            <div
+              ref={surfaceRef}
+              className="records-surface"
+              data-view={viewMode}
+              data-size={itemSize}
+              role={viewMode === "details" ? undefined : "list"}
+              onMouseDown={handleSurfaceMouseDown}
+            >
               {viewMode === "details" ? (
                 <DataTable
                   ariaLabel="جدول نتائج الأرشيف"

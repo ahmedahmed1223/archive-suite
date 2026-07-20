@@ -54,6 +54,7 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, onSelectClick,
       className="record-card"
       data-size={itemSize}
       data-selected={isSelected ? "true" : "false"}
+      data-record-id={record.id}
       role="listitem"
       onMouseEnter={() => onPreview(record.id)}
       onContextMenu={(e) => {

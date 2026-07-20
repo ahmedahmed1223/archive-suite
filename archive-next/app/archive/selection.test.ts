@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { resolveGridSelectionClick } from "./page";
+import { computeDragSelectedIds, resolveGridSelectionClick, type RectLike } from "./page";
 
 const VISIBLE = ["a", "b", "c", "d", "e"];
 
@@ -62,5 +62,47 @@ describe("resolveGridSelectionClick", () => {
     });
 
     expect(result).toEqual({ selectedIds: ["a"], anchorId: "c" });
+  });
+});
+
+function rect(left: number, top: number, right: number, bottom: number): RectLike {
+  return { left, top, right, bottom };
+}
+
+describe("computeDragSelectedIds", () => {
+  const CARDS = [
+    { id: "a", rect: rect(0, 0, 100, 100) },
+    { id: "b", rect: rect(110, 0, 210, 100) },
+    { id: "c", rect: rect(0, 110, 100, 210) }
+  ];
+
+  test("selects only cards intersecting the drag rectangle", () => {
+    const result = computeDragSelectedIds(rect(50, 50, 150, 150), CARDS, [], false);
+    expect(result).toEqual(["a", "b", "c"]);
+  });
+
+  test("excludes cards fully outside the drag rectangle", () => {
+    const result = computeDragSelectedIds(rect(0, 0, 90, 90), CARDS, [], false);
+    expect(result).toEqual(["a"]);
+  });
+
+  test("a rectangle touching no card selects nothing", () => {
+    const result = computeDragSelectedIds(rect(300, 300, 400, 400), CARDS, [], false);
+    expect(result).toEqual([]);
+  });
+
+  test("non-additive drag replaces the prior selection entirely", () => {
+    const result = computeDragSelectedIds(rect(0, 0, 90, 90), CARDS, ["b", "c"], false);
+    expect(result).toEqual(["a"]);
+  });
+
+  test("additive drag (shift/ctrl held) unions hits with the pre-drag selection", () => {
+    const result = computeDragSelectedIds(rect(0, 0, 90, 90), CARDS, ["b"], true);
+    expect(result.sort()).toEqual(["a", "b"]);
+  });
+
+  test("additive drag does not duplicate a card already in the base selection", () => {
+    const result = computeDragSelectedIds(rect(0, 0, 90, 90), CARDS, ["a"], true);
+    expect(result).toEqual(["a"]);
   });
 });
