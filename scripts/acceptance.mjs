@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { createEvidenceStore } from "./acceptance/evidence.mjs";
 import { createDockerProvider } from "./acceptance/providers/docker.mjs";
-import { runAcceptance } from "./acceptance/runner.mjs";
+import { AcceptanceInputError, runAcceptance } from "./acceptance/runner.mjs";
 
 const MODULE_PATH = fileURLToPath(import.meta.url);
 const ROOT = resolve(dirname(MODULE_PATH), "..");
@@ -14,28 +14,29 @@ const DEFAULT_EVIDENCE_ROOT = join(tmpdir(), "archive-acceptance");
 
 export function parseAcceptanceArguments(argv) {
   const [command, ...args] = argv;
-  if (command !== "run") throw new Error("usage: acceptance.mjs run [--tag <tag>] [--id <scenario-id>] [--last-failed] [--keep-environment]");
+  if (command !== "run") throw new AcceptanceInputError("usage: acceptance.mjs run [--tag <tag>] [--id <scenario-id>] [--last-failed] [--keep-environment]");
 
-  const options = { command, tag: undefined, ids: [], lastFailed: false, keepEnvironment: false };
+  const options = { command, tag: undefined, ids: undefined, lastFailed: false, keepEnvironment: false };
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
     if (argument === "--tag" || argument === "--id") {
       const value = args[index + 1];
-      if (!value || value.startsWith("--")) throw new Error(`${argument} requires a value`);
+      if (!value || value.startsWith("--")) throw new AcceptanceInputError(`${argument} requires a value`);
       if (argument === "--tag") {
-        if (options.tag) throw new Error("--tag may be supplied only once");
+        if (options.tag) throw new AcceptanceInputError("--tag may be supplied only once");
         options.tag = value;
       } else {
+        options.ids ??= [];
         options.ids.push(value);
       }
       index += 1;
     } else if (argument === "--last-failed") {
-      if (options.lastFailed) throw new Error("--last-failed may be supplied only once");
+      if (options.lastFailed) throw new AcceptanceInputError("--last-failed may be supplied only once");
       options.lastFailed = true;
     } else if (argument === "--keep-environment") {
       options.keepEnvironment = true;
     } else {
-      throw new Error(`unknown acceptance option: ${argument}`);
+      throw new AcceptanceInputError(`unknown acceptance option: ${argument}`);
     }
   }
   return options;
@@ -99,7 +100,7 @@ export async function main(argv = process.argv.slice(2), {
     return result.exitCode;
   } catch (error) {
     process.stderr.write(`acceptance: ${error instanceof Error ? error.message : String(error)}\n`);
-    return 2;
+    return error instanceof AcceptanceInputError ? 2 : 1;
   }
 }
 
