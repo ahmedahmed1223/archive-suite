@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Notification\MentionNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,8 @@ use stdClass;
 class RecordCommentsController extends Controller
 {
     private const ARCHIVE_STORE = 'archive-items';
+
+    public function __construct(private readonly MentionNotifier $mentions) {}
 
     public function index(Request $request, string $recordId): JsonResponse
     {
@@ -68,6 +71,10 @@ class RecordCommentsController extends Controller
         ]);
 
         $comment = DB::table('record_comments')->where('id', $id)->first();
+
+        if ($user instanceof User) {
+            $this->mentions->notify((string) $validated['body'], $user, $recordId, $store, 'comment');
+        }
 
         return response()->json([
             'ok' => true,

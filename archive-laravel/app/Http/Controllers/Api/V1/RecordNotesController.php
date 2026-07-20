@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\Notification\MentionNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +15,8 @@ use stdClass;
 class RecordNotesController extends Controller
 {
     private const ARCHIVE_STORE = 'archive-items';
+
+    public function __construct(private readonly MentionNotifier $mentions) {}
 
     public function index(Request $request, string $recordId): JsonResponse
     {
@@ -72,6 +76,10 @@ class RecordNotesController extends Controller
         ]);
 
         $note = DB::table('record_notes')->where('id', $id)->first();
+
+        if ($user instanceof User) {
+            $this->mentions->notify($body, $user, $recordId, $store, 'note');
+        }
 
         return response()->json([
             'ok' => true,

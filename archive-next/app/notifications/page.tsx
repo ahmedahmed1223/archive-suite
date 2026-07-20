@@ -2,7 +2,7 @@
 
 import { useNotifications, type Notification } from "@/lib/use-notifications";
 import { useState } from "react";
-import { Trash2, CheckCircle2, Info, Package } from "lucide-react";
+import { Trash2, CheckCircle2, Info, Package, AtSign } from "lucide-react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
@@ -13,6 +13,7 @@ const typeIcons = {
   backup_result: CheckCircle2,
   share_event: Info,
   restore_result: CheckCircle2,
+  mention: AtSign,
 } as const;
 
 const typeLabels = {
@@ -20,6 +21,7 @@ const typeLabels = {
   backup_result: "النسخ الاحتياطي",
   share_event: "المشاركة",
   restore_result: "الاستعادة",
+  mention: "إشارة",
 } as const;
 
 function NotificationCard({ notification, onRead, onDelete }: {

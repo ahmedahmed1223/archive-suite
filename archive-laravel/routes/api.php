@@ -337,6 +337,8 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/automation/rules/{id}', [AutomationRulesController::class, 'destroy']);
         Route::post('/automation/rules/{id}/run', [AutomationRulesController::class, 'run']);
 
+        // V1-721: registered before /users so the literal path isn't shadowed.
+        Route::get('/users/mentionable', [UsersController::class, 'mentionable']);
         Route::get('/users', [UsersController::class, 'index']);
         Route::post('/users', [UsersController::class, 'store']);
         Route::patch('/users/{id}', [UsersController::class, 'update']);

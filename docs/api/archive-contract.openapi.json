@@ -3611,6 +3611,25 @@
         }
       }
     },
+    "/users/mentionable": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List mentionable users for the @-mention picker (any authenticated role)",
+        "operationId": "listMentionableUsers",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Minimal user directory (id and name only)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MentionableUsersResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/users/{id}": {
       "patch": {
         "tags": ["Users"],
@@ -6759,6 +6778,29 @@
               "invitations": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/UserInvitation" }
+              }
+            }
+          }
+        ]
+      },
+      "MentionableUser": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" }
+        }
+      },
+      "MentionableUsersResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["users"],
+            "properties": {
+              "users": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MentionableUser" }
               }
             }
           }

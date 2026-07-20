@@ -34,6 +34,21 @@ class UsersController extends Controller
         return response()->json(['ok' => true, 'users' => $users->values(), 'invitations' => $invitations->values()]);
     }
 
+    /**
+     * V1-721: lightweight directory for the @-mention picker in notes/comments.
+     * Deliberately open to every authenticated role (editor/viewer included) —
+     * mentioning a teammate isn't an admin action — and returns only
+     * {id, name}, no email/role, unlike the admin-only index() above.
+     */
+    public function mentionable(Request $request): JsonResponse
+    {
+        $users = User::query()->orderBy('name')->get(['id', 'name'])
+            ->map(fn (User $user): array => ['id' => (string) $user->id, 'name' => $user->name])
+            ->values();
+
+        return response()->json(['ok' => true, 'users' => $users]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) {

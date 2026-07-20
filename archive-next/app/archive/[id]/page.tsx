@@ -7,6 +7,7 @@ import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import BroadcastMetadataPanel from "@/components/BroadcastMetadataPanel";
 import EmptyState from "@/components/EmptyState";
+import MentionTextarea from "@/components/MentionTextarea";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -414,10 +415,10 @@ function RecordNotesPanel({
       <form className="auth-form record-note-form" onSubmit={handleSubmit}>
         <label>
           ملاحظة جديدة
-          <textarea
+          <MentionTextarea
             value={body}
-            onChange={(event) => setBody(event.target.value)}
-            placeholder="اكتب ملاحظة شخصية عن هذا السجل..."
+            onChange={setBody}
+            placeholder="اكتب ملاحظة شخصية عن هذا السجل... استخدم @ للإشارة لزميل"
             rows={4}
           />
         </label>
@@ -532,10 +533,10 @@ function RecordCommentsPanel({
       <form className="auth-form record-note-form" onSubmit={handleSubmit}>
         <label>
           تعليق جديد
-          <textarea
+          <MentionTextarea
             value={body}
-            onChange={(event) => setBody(event.target.value)}
-            placeholder="اكتب تعليقاً يراه بقية أعضاء الفريق..."
+            onChange={setBody}
+            placeholder="اكتب تعليقاً يراه بقية أعضاء الفريق... استخدم @ للإشارة لزميل"
             rows={3}
           />
         </label>
