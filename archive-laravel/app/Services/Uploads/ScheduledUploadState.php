@@ -17,7 +17,14 @@ class ScheduledUploadState
         // endpoint reuses this same atomic version-checked update to change
         // scheduled_at/time_zone without a status change.
         'scheduled' => ['scheduled', 'claimed', 'cancelled'],
-        'claimed' => ['processing', 'cancelled'],
+        // 'claimed' => 'scheduled' (Task 4): releases a claim back to the
+        // pool in two cases -- the dispatcher claimed a row but failed to
+        // push its job onto the queue (transient queue-connection failure),
+        // or the recovery watchdog finds a claim whose lease expired
+        // without the worker ever finishing (crashed/lost process). Both are
+        // "give this row back, someone will pick it up next cycle", not a
+        // processing outcome, so it belongs on 'claimed', not 'processing'.
+        'claimed' => ['processing', 'cancelled', 'scheduled'],
         'processing' => ['completed', 'failed'],
         'completed' => [],
         'cancelled' => [],
