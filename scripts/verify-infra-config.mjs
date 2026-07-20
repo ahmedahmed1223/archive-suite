@@ -107,10 +107,14 @@ for (const file of [
   assert.ok(existsSync(rel(file)), `missing deployment Dockerfile: ${file}`);
 }
 
-assertIncludes("infra/docker-compose.laravel-next.yml", "archive-ln-laravel");
-assertIncludes("infra/docker-compose.laravel-next.yml", "archive-ln-laravel-worker");
+assertIncludes("infra/docker-compose.laravel-next.yml", "  laravel:");
+assertIncludes("infra/docker-compose.laravel-next.yml", "  laravel-fpm:");
+assertIncludes("infra/docker-compose.laravel-next.yml", "  laravel-worker:");
+assertIncludes("infra/docker-compose.laravel-next.yml", "  laravel-reverb:");
+assertIncludes("infra/docker-compose.laravel-next.yml", "  next:");
 assertIncludes("infra/docker-compose.laravel-next.yml", "ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1");
 assertIncludes("infra/docker-compose.laravel-next.yml", "QUEUE_CONNECTION: redis");
+assertExcludes("infra/docker-compose.laravel-next.yml", "container_name:");
 assertIncludes("infra/docker-compose.yml", "archive-ln-laravel");
 assertIncludes("infra/docker-compose.yml", "archive-ln-next");
 assertIncludes("infra/docker-compose.yml", "dockerfile: archive-next/Dockerfile");
