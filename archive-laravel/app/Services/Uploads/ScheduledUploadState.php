@@ -13,12 +13,17 @@ class ScheduledUploadState
      * @var array<string, list<string>>
      */
     public const LEGAL = [
-        'scheduled' => ['claimed', 'cancelled'],
+        // 'scheduled' => 'scheduled' is a self-loop: Task 3's reschedule
+        // endpoint reuses this same atomic version-checked update to change
+        // scheduled_at/time_zone without a status change.
+        'scheduled' => ['scheduled', 'claimed', 'cancelled'],
         'claimed' => ['processing', 'cancelled'],
         'processing' => ['completed', 'failed'],
         'completed' => [],
         'cancelled' => [],
-        'failed' => [],
+        // 'failed' => 'scheduled' lets Task 3's retry endpoint requeue an
+        // infrastructure-failure row through the same atomic transition.
+        'failed' => ['scheduled'],
     ];
 
     /**
