@@ -16,17 +16,23 @@ FROM composer:2.10.2@sha256:5946476338742b200bb9ff88f8be56275ddae4b3949c72305cb0
 
 FROM php:8.5.8-fpm@sha256:0dc450d0a0e81ba501973b8e303f5d45af2ed989e08730f597d8fc07fb289efd
 
-# Install system dependencies including ffmpeg + python3/pip for whisper-ctranslate2
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    python3 \
-    python3-pip \
-    libcurl4-openssl-dev \
-    libonig-dev \
-    libpq-dev \
-    libzip-dev \
-    nginx \
-    procps \
+# Install system dependencies including ffmpeg + python3/pip for whisper-ctranslate2.
+# CI's apt mirror intermittently drops mid-fetch (observed as a silent, no-output
+# `exit code: 1` from this RUN layer on GitHub Actions) — retry the update+install
+# a few times before giving up, same as any flaky-network CI step.
+RUN for i in 1 2 3; do \
+      apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        python3 \
+        python3-pip \
+        libcurl4-openssl-dev \
+        libonig-dev \
+        libpq-dev \
+        libzip-dev \
+        nginx \
+        procps \
+      && break || { echo "apt-get attempt $i failed, retrying..."; sleep 5; }; \
+    done \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && docker-php-ext-install curl ftp mbstring zip pdo pdo_pgsql pcntl \
