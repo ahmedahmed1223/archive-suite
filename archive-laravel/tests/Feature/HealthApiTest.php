@@ -69,6 +69,8 @@ class HealthApiTest extends TestCase
         Cache::shouldReceive('put')
             ->once()
             ->andThrow(new \RuntimeException('redis unavailable'));
+        // V1-712: the health endpoint also reads the dispatcher heartbeat via Cache::get().
+        Cache::shouldReceive('get')->andReturn(null);
 
         $this->getJson('/api/v1/health')
             ->assertStatus(503)

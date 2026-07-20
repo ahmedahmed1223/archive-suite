@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Console\Commands\DispatchScheduledUploads;
 use App\Jobs\FinalizeScheduledUpload;
 use App\Models\ScheduledUpload;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use RuntimeException;
 use Tests\TestCase;
@@ -131,5 +133,68 @@ class ScheduledUploadDispatchTest extends TestCase
         $this->assertSame('scheduled', $expired->refresh()->status);
         $this->assertNull($expired->lease_expires_at);
         $this->assertSame('claimed', $notYetExpired->refresh()->status);
+    }
+
+    public function test_dispatch_writes_a_heartbeat_the_health_endpoint_can_read(): void
+    {
+        Queue::fake();
+        $this->assertNull(Cache::get(DispatchScheduledUploads::HEARTBEAT_CACHE_KEY));
+
+        Artisan::call('uploads:dispatch-scheduled');
+
+        $this->assertNotNull(Cache::get(DispatchScheduledUploads::HEARTBEAT_CACHE_KEY));
+    }
+
+    public function test_health_endpoint_reports_scheduler_fresh_after_a_recent_dispatch(): void
+    {
+        Queue::fake();
+        Artisan::call('uploads:dispatch-scheduled');
+
+        $response = $this->getJson('/api/v1/health');
+
+        $response->assertOk();
+        $response->assertJsonPath('scheduledUploads.schedulerFresh', true);
+        $response->assertJsonPath('degraded', false);
+    }
+
+    public function test_health_endpoint_degrades_when_the_dispatcher_heartbeat_is_stale(): void
+    {
+        Cache::put(
+            DispatchScheduledUploads::HEARTBEAT_CACHE_KEY,
+            now()->subMinutes(5)->toIso8601String(),
+            now()->addMinutes(10),
+        );
+
+        $response = $this->getJson('/api/v1/health');
+
+        $response->assertOk();
+        $response->assertJsonPath('scheduledUploads.schedulerFresh', false);
+        $response->assertJsonPath('degraded', true);
+    }
+
+    public function test_health_endpoint_degrades_when_the_oldest_due_upload_exceeds_the_threshold(): void
+    {
+        Cache::put(DispatchScheduledUploads::HEARTBEAT_CACHE_KEY, now()->toIso8601String(), now()->addMinutes(10));
+        config(['scheduled-uploads.health_oldest_due_threshold_seconds' => 60]);
+        $this->dueSchedule(['scheduled_at' => now()->subMinutes(10)]);
+
+        $response = $this->getJson('/api/v1/health');
+
+        $response->assertOk();
+        $response->assertJsonPath('scheduledUploads.schedulerFresh', true);
+        $response->assertJsonPath('degraded', true);
+        $this->assertGreaterThanOrEqual(590, $response->json('scheduledUploads.oldestDueSeconds'));
+    }
+
+    public function test_health_endpoint_reports_in_flight_queue_depth(): void
+    {
+        Cache::put(DispatchScheduledUploads::HEARTBEAT_CACHE_KEY, now()->toIso8601String(), now()->addMinutes(10));
+        ScheduledUpload::factory()->count(2)->create(['status' => 'claimed', 'version' => 1]);
+        ScheduledUpload::factory()->create(['status' => 'processing', 'version' => 1]);
+        ScheduledUpload::factory()->create(['status' => 'completed', 'version' => 1]);
+
+        $response = $this->getJson('/api/v1/health');
+
+        $response->assertJsonPath('scheduledUploads.queueDepth', 3);
     }
 }

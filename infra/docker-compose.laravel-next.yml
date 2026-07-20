@@ -141,7 +141,8 @@ services:
       dockerfile: Dockerfile.worker
     restart: unless-stopped
     logging: *local-logging
-    command: ["php", "artisan", "queue:work", "--queue=default", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]
+    # V1-712: scheduled-uploads first so durable scheduled work isn't starved behind default jobs.
+    command: ["php", "artisan", "queue:work", "--queue=scheduled-uploads,default", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
@@ -184,6 +185,56 @@ services:
       # Inspect PID 1 directly: the exec-form command makes the real queue
       # worker PID 1, while [q] prevents the probe text matching itself.
       test: ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    networks:
+      - archive
+
+  # V1-712 Task 8: runs Laravel's own cron loop (uploads:dispatch-scheduled everyMinute,
+  # uploads:recover-scheduled everyFiveMinutes, uploads:cleanup-scheduled hourly — see
+  # archive-laravel/routes/console.php) so scheduled uploads actually get claimed and
+  # finalized without a host-level crontab. laravel-worker only consumes jobs already on
+  # the queue; this is what puts them there.
+  laravel-scheduler:
+    build:
+      context: ../archive-laravel
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    logging: *local-logging
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr_json
+      APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
+      ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: ${POSTGRES_DB:-archive}
+      DB_USERNAME: ${POSTGRES_USER:-archive}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: database
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      REDIS_PORT: "6379"
+    volumes:
+      - laravel_next_storage:/app/storage/app
+    depends_on:
+      laravel-fpm:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # Same PID-1-cmdline approach as laravel-worker's healthcheck above.
+      test: ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[s]chedule:work'"]
       interval: 30s
       timeout: 10s
       retries: 5
