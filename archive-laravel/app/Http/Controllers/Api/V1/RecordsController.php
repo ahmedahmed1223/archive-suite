@@ -110,10 +110,6 @@ class RecordsController extends Controller
      */
     public function bulk(Request $request): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) {
-            return $denied;
-        }
-
         $validator = Validator::make($request->all(), [
             'store' => ['required', 'string'],
             'records' => ['required', 'array', 'max:10000'],
@@ -134,6 +130,17 @@ class RecordsController extends Controller
 
         $validated = $validator->validate();
         $records = (array) $request->input('records', []);
+
+        // V1-726: a viewer with an active editor delegation scoped to every
+        // uid/id in this batch may proceed instead of always requiring the
+        // global editor/admin role.
+        $requestedIds = array_map(
+            fn (array $record): string => (string) ($record['uid'] ?? $record['id']),
+            $records,
+        );
+        if ($denied = $this->requireEditorOrDelegatedAccess($request, $requestedIds)) {
+            return $denied;
+        }
         $now = now();
         $count = 0;
 
@@ -163,15 +170,16 @@ class RecordsController extends Controller
      */
     public function bulkDelete(Request $request): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) {
-            return $denied;
-        }
-
         $validated = $request->validate([
             'store' => ['required', 'string'],
             'ids' => ['required', 'array', 'min:1', 'max:10000'],
             'ids.*' => ['required', 'string'],
         ]);
+
+        // V1-726: same delegated-access allowance as bulk() above.
+        if ($denied = $this->requireEditorOrDelegatedAccess($request, $validated['ids'])) {
+            return $denied;
+        }
 
         $results = [];
         $count = 0;

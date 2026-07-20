@@ -862,6 +862,23 @@ export interface MentionableUser {
   name: string;
 }
 
+export interface DelegatedAccessParty {
+  id: number;
+  name?: string;
+  email?: string;
+}
+
+export interface DelegatedAccess {
+  id: string;
+  grantor: DelegatedAccessParty;
+  grantee: DelegatedAccessParty;
+  scope: { itemIds?: string[] };
+  permission: string;
+  expiresAt?: string;
+  revokedAt?: string | null;
+  status: "active" | "expired" | "revoked";
+}
+
 export interface PendingInvitation {
   id: string;
   email: string;
@@ -1191,6 +1208,9 @@ export interface ArchiveApiClient {
   updateCollaborationDocument(roomKey: string, resourceId: string, payload: { content: string; version: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ roomKey: string; document: CollaborationDocument }>>;
   listUsers(options?: AuthRequestOptions): Promise<ApiEnvelope<{ users: ManagedUser[]; invitations: PendingInvitation[] }>>;
   mentionableUsers(options?: AuthRequestOptions): Promise<ApiEnvelope<{ users: MentionableUser[] }>>;
+  createDelegatedAccess(payload: { granteeId: number; itemIds: string[]; expiresAt: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ delegation: DelegatedAccess }>>;
+  delegatedAccessList(direction: "granted" | "received", options?: AuthRequestOptions): Promise<ApiEnvelope<{ delegations: DelegatedAccess[] }>>;
+  revokeDelegatedAccess(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ delegation: DelegatedAccess }>>;
   inviteUser(payload: { email: string; role: ManagedUserRole }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ invitation: PendingInvitation; token: string }>>;
   updateUserRole(id: string, payload: { role: ManagedUserRole }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ user: ManagedUser }>>;
   deleteUser(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope>;
@@ -1865,6 +1885,12 @@ export function createArchiveApiClient({
       get<{ users: ManagedUser[]; invitations: PendingInvitation[] }>("/users", options),
     mentionableUsers: (options?: AuthRequestOptions) =>
       get<{ users: MentionableUser[] }>("/users/mentionable", options),
+    createDelegatedAccess: (payload: { granteeId: number; itemIds: string[]; expiresAt: string }, options?: AuthRequestOptions) =>
+      post<{ delegation: DelegatedAccess }>("/delegated-access", { granteeId: payload.granteeId, scope: { itemIds: payload.itemIds }, expiresAt: payload.expiresAt }, options),
+    delegatedAccessList: (direction: "granted" | "received", options?: AuthRequestOptions) =>
+      get<{ delegations: DelegatedAccess[] }>(`/delegated-access?direction=${direction}`, options),
+    revokeDelegatedAccess: (id: string, options?: AuthRequestOptions) =>
+      del<{ delegation: DelegatedAccess }>(`/delegated-access/${encodeURIComponent(id)}`, undefined, options),
     inviteUser: (payload: { email: string; role: ManagedUserRole }, options?: AuthRequestOptions) =>
       post<{ invitation: PendingInvitation; token: string }>("/users", payload, options),
     updateUserRole: (id: string, payload: { role: ManagedUserRole }, options?: AuthRequestOptions) =>

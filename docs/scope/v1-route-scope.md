@@ -87,6 +87,9 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 | GET | `/v1/account/export` | v1 | — | self-service export, not admin-gated |
 | GET/POST/DELETE | `/v1/notifications*` | v1 | — | |
 | GET | `/v1/users/mentionable` | v1 | — | any authenticated role; {id,name} only, not admin's full user directory — V1-721 @-mention picker |
+| POST | `/v1/delegated-access` | v1 | — | editor/admin only (grantor); creates a time-boxed editor delegation for a colleague — V1-726 |
+| GET | `/v1/delegated-access` | v1 | — | any authenticated role; lists only the caller's own granted/received delegations |
+| DELETE | `/v1/delegated-access/{id}` | v1 | — | any authenticated role; controller enforces grantor-or-admin, not a blanket role gate — V1-726 |
 
 ## Admin-only (`requireAdmin()` / gate `manage-system`)
 
