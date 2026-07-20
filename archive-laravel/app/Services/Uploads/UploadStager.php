@@ -80,11 +80,13 @@ class UploadStager
     /**
      * Chunk indices still missing for a session, e.g. [1] when 0 and 2 have
      * already arrived. Shared by the immediate complete() 409 check and the
-     * scheduled create() 409 check so both report identically.
+     * scheduled create() 409 check so both report identically. Static: pure
+     * calculation over the session row, no file I/O, no need to instantiate
+     * the stager just to call it.
      *
      * @return list<int>
      */
-    public function missingChunks(object $session): array
+    public static function missingChunks(object $session): array
     {
         $received = json_decode((string) $session->received_chunks, true) ?: [];
 

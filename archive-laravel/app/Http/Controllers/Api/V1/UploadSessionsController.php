@@ -8,6 +8,7 @@ use App\Http\Requests\CreateUploadSessionRequest;
 use App\Models\User;
 use App\Services\Uploads\UploadCapacityGuard;
 use App\Services\Uploads\UploadFinalizer;
+use App\Services\Uploads\UploadStager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -152,8 +153,7 @@ class UploadSessionsController extends Controller
             return $blocked;
         }
 
-        $received = json_decode((string) $session->received_chunks, true) ?: [];
-        $missing = array_values(array_diff(range(0, $session->total_chunks - 1), $received));
+        $missing = UploadStager::missingChunks($session);
         if ($missing !== []) {
             return response()->json([
                 'ok' => false,

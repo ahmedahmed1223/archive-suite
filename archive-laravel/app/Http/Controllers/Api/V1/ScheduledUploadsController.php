@@ -45,24 +45,27 @@ class ScheduledUploadsController extends Controller
         if (! $session) {
             return response()->json(['ok' => false, 'error' => 'Upload session not found.', 'code' => 'session_not_found'], 404);
         }
-        if ($session->status !== 'pending') {
-            return response()->json(['ok' => false, 'error' => 'This upload session is no longer active.', 'code' => 'session_inactive'], 409);
-        }
-        $missing = $this->stager->missingChunks($session);
-        if ($missing !== []) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Not all chunks have been received.',
-                'code' => 'incomplete_upload',
-                'missingChunks' => $missing,
-            ], 409);
+        // Fast-path only: not authoritative. A concurrent request can change
+        // the session's status between this check and the lock acquired
+        // below, so the check is repeated under the lock — that one gates
+        // staging.
+        if ($conflict = $this->sessionConflict($session)) {
+            return $conflict;
         }
 
         $staged = null;
+        $conflict = null;
 
         try {
-            $schedule = DB::transaction(function () use ($request, $sessionId, $idempotencyKey, &$staged): ScheduledUpload {
+            $schedule = DB::transaction(function () use ($request, $sessionId, $idempotencyKey, &$staged, &$conflict): ?ScheduledUpload {
                 $session = DB::table('upload_sessions')->where('id', $sessionId)->lockForUpdate()->firstOrFail();
+
+                // Authoritative recheck: another request may have staged or
+                // consumed this session while we waited on the lock.
+                if ($conflict = $this->sessionConflict($session)) {
+                    return null;
+                }
+
                 $staged = $this->stager->stage($session);
 
                 $schedule = ScheduledUpload::query()->create([
@@ -101,7 +104,35 @@ class ScheduledUploadsController extends Controller
             throw $exception;
         }
 
+        if ($schedule === null) {
+            return $conflict;
+        }
+
         return response()->json(['ok' => true, 'schedule' => $this->present($schedule)], 201);
+    }
+
+    /**
+     * Returns the 409 conflict response if the session isn't stageable
+     * (already consumed) or isn't complete yet, null if it's fine to stage.
+     * Called both before the lock (fast path) and after (authoritative).
+     */
+    private function sessionConflict(object $session): ?JsonResponse
+    {
+        if ($session->status !== 'pending') {
+            return response()->json(['ok' => false, 'error' => 'This upload session is no longer active.', 'code' => 'session_inactive'], 409);
+        }
+
+        $missing = UploadStager::missingChunks($session);
+        if ($missing !== []) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Not all chunks have been received.',
+                'code' => 'incomplete_upload',
+                'missingChunks' => $missing,
+            ], 409);
+        }
+
+        return null;
     }
 
     /**
