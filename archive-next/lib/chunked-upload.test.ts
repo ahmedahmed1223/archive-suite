@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { createArchiveApiClient, UploadedRecord, UploadSession } from "./archive-api";
-import { abortChunkedUpload, uploadFileInChunks } from "./chunked-upload";
+import { abortChunkedUpload, uploadFileForSchedule, uploadFileInChunks } from "./chunked-upload";
 
 type ArchiveApi = ReturnType<typeof createArchiveApiClient>;
 
@@ -133,6 +133,47 @@ describe("uploadFileInChunks", () => {
     expect(result).toEqual({ ok: true, record: fakeRecord });
     expect(uploadSessionStatus).toHaveBeenCalledWith("stale-session");
     expect(createUploadSession).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("uploadFileForSchedule", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("stages the session and uploads every chunk without completing it", async () => {
+    const uploadedIndexes: number[] = [];
+    const completeUploadSession = vi.fn();
+    const api = {
+      createUploadSession: vi.fn().mockResolvedValue({ ok: true, session: baseSession() }),
+      uploadSessionChunk: vi.fn().mockImplementation((_id: string, index: number) => {
+        uploadedIndexes.push(index);
+        return Promise.resolve({ ok: true, receivedChunks: [index], totalChunks: 2 });
+      }),
+      completeUploadSession,
+      uploadSessionStatus: vi.fn(),
+      abortUploadSession: vi.fn()
+    } as unknown as ArchiveApi;
+
+    const result = await uploadFileForSchedule(api, makeFile("a".repeat(10) + "b".repeat(10)));
+
+    expect(result).toEqual({ ok: true, sessionId: "session-1" });
+    expect(uploadedIndexes).toEqual([0, 1]);
+    expect(completeUploadSession).not.toHaveBeenCalled();
+  });
+
+  it("propagates a chunk upload failure instead of staging a broken session", async () => {
+    const api = {
+      createUploadSession: vi.fn().mockResolvedValue({ ok: true, session: baseSession() }),
+      uploadSessionChunk: vi.fn().mockResolvedValue({ ok: false, error: "network drop" }),
+      completeUploadSession: vi.fn(),
+      uploadSessionStatus: vi.fn(),
+      abortUploadSession: vi.fn()
+    } as unknown as ArchiveApi;
+
+    const result = await uploadFileForSchedule(api, makeFile("a".repeat(10) + "b".repeat(10)));
+
+    expect(result).toEqual({ ok: false, error: "network drop" });
   });
 });
 

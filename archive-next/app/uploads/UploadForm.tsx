@@ -5,7 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import { createArchiveApiClient, type ArchiveRecord, type IntakeTemplate, type UploadedRecord } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
-import { uploadFileInChunks } from "@/lib/chunked-upload";
+import { clearScheduledUploadResumeEntry, uploadFileForSchedule, uploadFileInChunks } from "@/lib/chunked-upload";
+import { scheduleSummary, scheduledUploadProgress, validateScheduleTime, type ScheduledUploadStage } from "@/lib/scheduled-upload";
 import {
   deriveIntakeNextAction,
   findDuplicateFiles,
@@ -18,14 +19,16 @@ import {
 
 type WizardStep = "files" | "metadata" | "review";
 type IntakeMode = "guided" | "quick";
+type ProcessingMode = "now" | "scheduled";
 
 type UploadResult =
   | { status: "success"; fileName: string; record: UploadedRecord }
+  | { status: "scheduled"; fileName: string }
   | { status: "error"; fileName: string; message: string };
 
 type UploadState =
   | { status: "idle" }
-  | { status: "uploading"; current: string }
+  | { status: "uploading"; current: string; stage?: ScheduledUploadStage }
   | { status: "complete"; results: UploadResult[] };
 
 const steps: Array<{ key: WizardStep; label: string }> = [
@@ -93,6 +96,8 @@ export function UploadForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [step, setStep] = useState<WizardStep>("files");
   const [mode, setMode] = useState<IntakeMode>("guided");
+  const [processingMode, setProcessingMode] = useState<ProcessingMode>("now");
+  const [scheduleLocalValue, setScheduleLocalValue] = useState("");
   const [folder, setFolder] = useState("");
   const [titlePrefix, setTitlePrefix] = useState("");
   const [type, setType] = useState("");
@@ -159,7 +164,13 @@ export function UploadForm() {
     failedFiles: progressSummary.failed,
     completed: state.status === "complete" && progressSummary.failed === 0,
   });
+  const hasScheduledResults = state.status === "complete" && state.results.some((result) => result.status === "scheduled");
   const hasVideo = files.some((file) => suggestedType(file) === "video") || effectiveType === "video";
+  const detectedZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
+  const scheduleValidation = useMemo(
+    () => (processingMode === "scheduled" ? validateScheduleTime(scheduleLocalValue, detectedZone, new Date()) : null),
+    [processingMode, scheduleLocalValue, detectedZone]
+  );
 
   function applyTemplate(id: string) {
     setTemplateId(id);
@@ -230,6 +241,8 @@ export function UploadForm() {
   function resetWizard() {
     setFiles([]);
     setStep("files");
+    setProcessingMode("now");
+    setScheduleLocalValue("");
     setFolder("");
     setTitlePrefix("");
     setType("");
@@ -289,6 +302,47 @@ export function UploadForm() {
     };
   }
 
+  /**
+   * V1-712: builds the record payload for the "schedule processing" path.
+   * Deliberately separate from buildArchiveRecord — there is no UploadedRecord
+   * yet (the upload session isn't completed), so no checksum/filePath/uid.
+   */
+  function buildScheduleRecord(file: File): Pick<ArchiveRecord, "title" | "type" | "subtype" | "tags" | "metadata"> {
+    const title = titlePrefix.trim()
+      ? files.length > 1
+        ? `${titlePrefix.trim()} - ${fileBaseName(file.name)}`
+        : titlePrefix.trim()
+      : fileBaseName(file.name);
+
+    const metadata: Record<string, unknown> = {
+      ...(summary.trim() ? { summary: summary.trim() } : {}),
+      originalFileName: file.name,
+      folder: folder.trim() || undefined,
+      mimeType: file.type || undefined,
+      fileSize: file.size,
+      intakeMode: mode,
+      templateId: templateId || undefined,
+      source: "upload-wizard-scheduled"
+    };
+
+    if (suggestedType(file) === "video" || effectiveType === "video") {
+      metadata.video = {
+        language: videoLanguage.trim() || "ar",
+        durationSeconds: videoDuration.trim() ? Number(videoDuration) : undefined,
+        resolution: videoResolution.trim() || undefined,
+        frameRate: videoFrameRate.trim() || undefined
+      };
+    }
+
+    return {
+      title,
+      type: effectiveType,
+      subtype: subtype.trim() || null,
+      tags: tagList,
+      metadata
+    };
+  }
+
   async function uploadOne(file: File): Promise<UploadResult> {
     const auth = accessToken ? { accessToken } : undefined;
     const effectiveFolder = folder.trim() || undefined;
@@ -322,11 +376,84 @@ export function UploadForm() {
     return { status: "success", fileName: file.name, record: uploaded.record };
   }
 
+  /**
+   * V1-712: stages the file through the upload-session API (never a direct
+   * multipart upload — the schedule worker completes it later) and creates
+   * the schedule. Never links a record before that worker completes it.
+   */
+  async function scheduleOne(file: File, scheduledAtUtc: string, zone: string): Promise<UploadResult> {
+    const auth = accessToken ? { accessToken } : undefined;
+    const effectiveFolder = folder.trim() || undefined;
+
+    setState({ status: "uploading", current: file.name, stage: "uploading" });
+    const staged = await uploadFileForSchedule(api, file, {
+      folder: effectiveFolder,
+      onProgress: ({ uploadedBytes, totalBytes }) => {
+        const progressPercent = totalBytes > 0 ? Math.round((uploadedBytes / totalBytes) * 100) : 0;
+        setFileProgress((current) => current.map((item) =>
+          item.fileName === file.name ? { ...item, progressPercent } : item));
+      }
+    });
+
+    if (!staged.ok) {
+      return { status: "error", fileName: file.name, message: staged.error };
+    }
+
+    setState({ status: "uploading", current: file.name, stage: "staging" });
+    const created = await api.createScheduledUpload(
+      {
+        uploadSessionId: staged.sessionId,
+        scheduledAt: scheduledAtUtc,
+        timeZone: zone,
+        idempotencyKey: staged.sessionId,
+        record: buildScheduleRecord(file)
+      },
+      auth
+    );
+
+    if (!created.ok) {
+      return { status: "error", fileName: file.name, message: `تم رفع الملف لكن تعذر إنشاء الجدولة: ${created.error}` };
+    }
+
+    clearScheduledUploadResumeEntry(file, effectiveFolder);
+    setState({ status: "uploading", current: file.name, stage: "scheduled" });
+    return { status: "scheduled", fileName: file.name };
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (files.length === 0 || state.status === "uploading") return;
 
+    if (processingMode === "scheduled") {
+      const validation = validateScheduleTime(scheduleLocalValue, detectedZone, new Date());
+      if (!validation.valid) return;
+      await runScheduledUploads(files, validation.utc, detectedZone);
+      return;
+    }
+
     await runUploads(files);
+  }
+
+  async function runScheduledUploads(targetFiles: File[], scheduledAtUtc: string, zone: string) {
+    const previousResults = state.status === "complete"
+      ? state.results.filter((result) => !targetFiles.some((file) => file.name === result.fileName))
+      : [];
+
+    const results: UploadResult[] = [...previousResults];
+    for (const file of targetFiles) {
+      setFileProgress((current) => current.map((item) => item.fileName === file.name ? { ...item, status: "uploading", message: undefined } : item));
+      const result = await scheduleOne(file, scheduledAtUtc, zone);
+      results.push(result);
+      setFileProgress((current) => current.map((item) => item.fileName === file.name
+        ? {
+            fileName: file.name,
+            status: result.status === "error" ? "error" as const : "success" as const,
+            ...(result.status === "error" ? { message: result.message } : {})
+          }
+        : item));
+    }
+
+    setState({ status: "complete", results });
   }
 
   async function runUploads(targetFiles: File[]) {
@@ -341,7 +468,11 @@ export function UploadForm() {
       const result = await uploadOne(file);
       results.push(result);
       setFileProgress((current) => current.map((item) => item.fileName === file.name
-        ? { fileName: file.name, status: result.status, ...(result.status === "error" ? { message: result.message } : {}) }
+        ? {
+            fileName: file.name,
+            status: result.status === "error" ? "error" as const : "success" as const,
+            ...(result.status === "error" ? { message: result.message } : {})
+          }
         : item));
     }
 
@@ -350,7 +481,16 @@ export function UploadForm() {
 
   function retryFailedFiles() {
     const failed = new Set(fileProgress.filter((item) => item.status === "error").map((item) => item.fileName));
-    void runUploads(files.filter((file) => failed.has(file.name)));
+    const targets = files.filter((file) => failed.has(file.name));
+
+    if (processingMode === "scheduled") {
+      const validation = validateScheduleTime(scheduleLocalValue, detectedZone, new Date());
+      if (!validation.valid) return;
+      void runScheduledUploads(targets, validation.utc, detectedZone);
+      return;
+    }
+
+    void runUploads(targets);
   }
 
   return (
@@ -548,6 +688,51 @@ export function UploadForm() {
 
         {step === "review" ? (
           <section className="wizard-pane" aria-label="مراجعة الإضافة">
+            <fieldset className="schedule-choice">
+              <legend>وقت المعالجة</legend>
+              {(["now", "scheduled"] as const).map((value) => (
+                <label key={value} className="schedule-choice-card">
+                  <input
+                    type="radio"
+                    name="processingMode"
+                    value={value}
+                    checked={processingMode === value}
+                    onChange={() => setProcessingMode(value)}
+                    disabled={state.status === "uploading"}
+                  />
+                  <strong>{value === "now" ? "المعالجة الآن" : "جدولة المعالجة"}</strong>
+                </label>
+              ))}
+            </fieldset>
+
+            {processingMode === "scheduled" ? (
+              <div className="field-row">
+                <label>
+                  موعد المعالجة
+                  <input
+                    type="datetime-local"
+                    value={scheduleLocalValue}
+                    onChange={(event) => setScheduleLocalValue(event.target.value)}
+                    disabled={state.status === "uploading"}
+                  />
+                </label>
+                <div className="kv-item">
+                  <strong>المنطقة الزمنية المكتشفة</strong>
+                  <span dir="ltr">{detectedZone}</span>
+                </div>
+              </div>
+            ) : null}
+
+            {processingMode === "scheduled" && scheduleLocalValue ? (
+              scheduleValidation?.valid ? (
+                <p className="helper-text" role="status">{scheduleSummary(scheduleLocalValue, detectedZone, "ar-SA")}</p>
+              ) : (
+                <div className="state-banner state-banner-warning" role="alert">
+                  <strong>{scheduleValidation && !scheduleValidation.valid ? scheduleValidation.message : ""}</strong>
+                </div>
+              )
+            ) : null}
+
             <div className="kv-grid">
               <div className="kv-item">
                 <strong>عدد الملفات</strong>
@@ -584,8 +769,22 @@ export function UploadForm() {
               التالي
             </button>
           ) : (
-            <button type="submit" className="button button-primary" disabled={files.length === 0 || state.status === "uploading"}>
-              {state.status === "uploading" ? `جار رفع ${state.current}...` : "إنشاء السجلات"}
+            <button
+              type="submit"
+              className="button button-primary"
+              disabled={
+                files.length === 0 ||
+                state.status === "uploading" ||
+                (processingMode === "scheduled" && scheduleValidation?.valid !== true)
+              }
+            >
+              {state.status === "uploading"
+                ? state.stage
+                  ? `${scheduledUploadProgress(state.stage)}: ${state.current}`
+                  : `جار رفع ${state.current}...`
+                : processingMode === "scheduled"
+                  ? "رفع وجدولة"
+                  : "إنشاء السجلات"}
             </button>
           )}
           <button type="button" className="button button-secondary" onClick={resetWizard} disabled={state.status === "uploading"}>
@@ -595,8 +794,17 @@ export function UploadForm() {
 
         {state.status === "complete" ? (
           <div className={progressSummary.failed ? "state-banner state-banner-warning" : "state-banner state-banner-success"}>
-            <strong>{progressSummary.failed ? "اكتملت الإضافة جزئياً" : "اكتملت عملية الإضافة"}</strong>
-            <span className="helper-text">نجح {progressSummary.succeeded} من {progressSummary.total}. الخطوة التالية: {nextAction.label}.</span>
+            <strong>
+              {progressSummary.failed
+                ? "اكتملت الإضافة جزئياً"
+                : hasScheduledResults
+                  ? "تمت جدولة المعالجة"
+                  : "اكتملت عملية الإضافة"}
+            </strong>
+            <span className="helper-text">
+              نجح {progressSummary.succeeded} من {progressSummary.total}.
+              {hasScheduledResults ? null : ` الخطوة التالية: ${nextAction.label}.`}
+            </span>
             <ul className="compact-list">
               {state.results.map((result) => (
                 <li key={result.fileName}>
@@ -605,6 +813,8 @@ export function UploadForm() {
                       <a className="text-accent" href={`/archive/${encodeURIComponent(result.record.id)}`}>{result.fileName}</a>
                       <span className="helper-text"> - سجل {result.record.id}</span>
                     </>
+                  ) : result.status === "scheduled" ? (
+                    <span>{result.fileName} - تمت الجدولة</span>
                   ) : (
                     <span className="status-error">{result.fileName}: {result.message}</span>
                   )}
@@ -613,7 +823,11 @@ export function UploadForm() {
             </ul>
             <div className="button-row">
               {progressSummary.failed ? <button type="button" className="button button-primary" onClick={retryFailedFiles}>إعادة محاولة المتعثر</button> : null}
-              {"href" in nextAction ? <a className="button button-primary" href={nextAction.href}>{nextAction.label}</a> : null}
+              {hasScheduledResults ? (
+                <a className="button button-primary" href="/uploads/scheduled">عرض الرفعات المجدولة</a>
+              ) : "href" in nextAction ? (
+                <a className="button button-primary" href={nextAction.href}>{nextAction.label}</a>
+              ) : null}
             </div>
           </div>
         ) : null}
