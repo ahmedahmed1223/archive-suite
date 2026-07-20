@@ -145,7 +145,7 @@
 
 ## برنامج القبول التفاعلي متعدد المنصات
 
-> التصميم الحاكم: [`docs/superpowers/specs/2026-07-19-v1-interactive-acceptance-matrix-design.md`](docs/superpowers/specs/2026-07-19-v1-interactive-acceptance-matrix-design.md). يبدأ التنفيذ بالشريحة Docker smoke في V1-801..805؛ لا يبدأ provider جديد قبل خروج الأمر الواحد أخضر خلال أقل من 15 دقيقة. كل سيناريو يحمل معرّف `V1-IA-<المجال>-<الرقم>` وينتج manifest وأدلة منزوعة الأسرار.
+> التصميم الحاكم: [`docs/superpowers/specs/2026-07-19-v1-interactive-acceptance-matrix-design.md`](docs/superpowers/specs/2026-07-19-v1-interactive-acceptance-matrix-design.md). خطة تنفيذ الشريحة الأولى للوكيل: [`docs/agents/v1-acceptance-smoke-slice-implementation.md`](docs/agents/v1-acceptance-smoke-slice-implementation.md). يبدأ التنفيذ بالشريحة Docker smoke في V1-801..805؛ لا يبدأ provider جديد قبل خروج الأمر الواحد أخضر خلال أقل من 15 دقيقة. كل سيناريو يحمل معرّف `V1-IA-<المجال>-<الرقم>` وينتج manifest وأدلة منزوعة الأسرار.
 
 ### الشريحة الأولى — منسق Docker وSmoke
 
