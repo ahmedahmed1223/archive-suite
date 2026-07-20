@@ -10,6 +10,7 @@ use App\Models\ScheduledUpload;
 use App\Services\Uploads\ScheduledUploadState;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -36,8 +37,15 @@ class DispatchScheduledUploads extends Command
 
     protected $description = 'Claim due scheduled uploads in bounded batches and dispatch the finalize job for each.';
 
+    /** Read by /api/v1/health to report scheduledUploads.schedulerFresh (V1-712 Task 8). */
+    public const HEARTBEAT_CACHE_KEY = 'scheduled-uploads:dispatcher:heartbeat';
+
     public function handle(ScheduledUploadState $state, BusDispatcher $bus): int
     {
+        // Written unconditionally (before the ceiling check) so freshness reflects that the
+        // scheduler is running, independent of whether there was anything to claim.
+        Cache::put(self::HEARTBEAT_CACHE_KEY, now()->toIso8601String(), now()->addMinutes(10));
+
         $ceiling = (int) config('scheduled-uploads.dispatch_queue_depth_ceiling', 5000);
         $inFlight = ScheduledUpload::query()->whereIn('status', ['claimed', 'processing'])->count();
 

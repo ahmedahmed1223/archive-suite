@@ -21,4 +21,12 @@ return [
 
     // Ceiling on the queue depth: if this many uploads are queued, defer new dispatches.
     'dispatch_queue_depth_ceiling' => (int) env('SCHEDULED_UPLOADS_QUEUE_DEPTH_CEILING', 5000),
+
+    // V1-712 Task 8: /api/v1/health reports the scheduler as stale once its
+    // last heartbeat is older than this (the plan's "two minutes").
+    'health_fresh_after_seconds' => (int) env('SCHEDULED_UPLOADS_HEALTH_FRESH_SECONDS', 120),
+
+    // V1-712 Task 8: /api/v1/health reports degraded once the oldest overdue
+    // scheduled upload has been waiting longer than this.
+    'health_oldest_due_threshold_seconds' => (int) env('SCHEDULED_UPLOADS_HEALTH_OLDEST_DUE_SECONDS', 300),
 ];

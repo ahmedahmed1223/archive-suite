@@ -115,6 +115,26 @@ assertIncludes("infra/docker-compose.laravel-next.yml", "  next:");
 assertIncludes("infra/docker-compose.laravel-next.yml", "ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1");
 assertIncludes("infra/docker-compose.laravel-next.yml", "QUEUE_CONNECTION: redis");
 assertExcludes("infra/docker-compose.laravel-next.yml", "container_name:");
+
+// V1-712 Task 8: durable scheduled uploads need a scheduler container running Laravel's
+// own cron loop (uploads:dispatch-scheduled/recover-scheduled/cleanup-scheduled — see
+// archive-laravel/routes/console.php) plus a worker that actually drains that queue.
+assertIncludes("infra/docker-compose.laravel-next.yml", "  laravel-scheduler:");
+assertIncludes("infra/docker-compose.laravel-next.yml", '"schedule:work"');
+assertIncludes("infra/docker-compose.laravel-next.yml", "--queue=scheduled-uploads,default");
+for (const key of [
+  "SCHEDULED_UPLOADS_QUEUE",
+  "SCHEDULED_UPLOADS_BATCH",
+  "SCHEDULED_UPLOADS_LEASE_SECONDS",
+  "SCHEDULED_UPLOADS_TRIES",
+  "SCHEDULED_UPLOADS_CANCELLED_RETENTION_HOURS",
+  "SCHEDULED_UPLOADS_FAILED_RETENTION_HOURS",
+  "SCHEDULED_UPLOADS_QUEUE_DEPTH_CEILING",
+  "SCHEDULED_UPLOADS_HEALTH_FRESH_SECONDS",
+  "SCHEDULED_UPLOADS_HEALTH_OLDEST_DUE_SECONDS",
+]) {
+  assertIncludes("infra/.env.example", `${key}=`);
+}
 assertIncludes("infra/docker-compose.yml", "archive-ln-laravel");
 assertIncludes("infra/docker-compose.yml", "archive-ln-next");
 assertIncludes("infra/docker-compose.yml", "dockerfile: archive-next/Dockerfile");
@@ -209,6 +229,27 @@ for (const variant of composeVariants) {
     "service_healthy",
     `${label}: Reverb must wait for migrations/seed and healthy PHP-FPM`
   );
+
+  // V1-712: only docker-compose.laravel-next.yml carries the scheduler service (see the
+  // plan's File Map) — the other variants predate the scheduled-uploads feature.
+  if (variant.includes("docker-compose.laravel-next.yml")) {
+    const scheduler = config.services?.["laravel-scheduler"];
+    assert.deepEqual(
+      scheduler?.command,
+      ["php", "artisan", "schedule:work"],
+      `${label}: laravel-scheduler must run schedule:work`
+    );
+    assert.equal(
+      scheduler?.depends_on?.["laravel-fpm"]?.condition,
+      "service_healthy",
+      `${label}: scheduler must wait for migrations/seed and healthy PHP-FPM`
+    );
+    assert.deepEqual(
+      worker?.command,
+      ["php", "artisan", "queue:work", "--queue=scheduled-uploads,default", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"],
+      `${label}: worker must drain scheduled-uploads ahead of default`
+    );
+  }
 }
 
 const kubectlCheck = spawnSync("kubectl", ["version", "--client"], {

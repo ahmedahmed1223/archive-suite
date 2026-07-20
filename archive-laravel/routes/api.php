@@ -98,14 +98,56 @@ Route::prefix('v1')->group(function (): void {
 
         $ok = ! in_array(false, $checks, true);
 
+        // V1-712 Task 8: scheduler/queue-depth signal for the durable scheduled-upload
+        // feature. Reported alongside `ok` as its own `degraded` flag rather than folded
+        // into `ok`/the HTTP status — this endpoint's 200/503 gates Docker
+        // `depends_on: condition: service_healthy` for the worker/reverb/next services,
+        // and a slow scheduler shouldn't cascade into taking the whole stack down.
+        // Plain unix-timestamp subtraction, not Carbon::diffInSeconds(): that method's
+        // sign/absolute-value default has flipped across Carbon versions, which silently
+        // inverted these "seconds elapsed since X" comparisons (fresh became stale, stale
+        // read as fresh) when using it directly against a past timestamp.
+        $heartbeatAt = Cache::get(\App\Console\Commands\DispatchScheduledUploads::HEARTBEAT_CACHE_KEY);
+        $schedulerFresh = $heartbeatAt !== null
+            && (now()->getTimestamp() - \Illuminate\Support\Carbon::parse($heartbeatAt)->getTimestamp()) <= (int) config('scheduled-uploads.health_fresh_after_seconds', 120);
+
+        // Wrapped like the db/redis/storage checks above: a test or environment without the
+        // scheduled_uploads table (e.g. contract-shape tests with no RefreshDatabase) must
+        // not turn this endpoint into a 500 — it degrades the signal instead.
+        $oldestDueSeconds = 0;
+        $queueDepth = 0;
+
+        try {
+            $oldestDueAt = \App\Models\ScheduledUpload::query()
+                ->where('status', 'scheduled')
+                ->where('scheduled_at', '<=', now())
+                ->min('scheduled_at');
+            $oldestDueSeconds = $oldestDueAt !== null
+                ? max(0, now()->getTimestamp() - \Illuminate\Support\Carbon::parse($oldestDueAt)->getTimestamp())
+                : 0;
+
+            $queueDepth = \App\Models\ScheduledUpload::query()->whereIn('status', ['claimed', 'processing'])->count();
+        } catch (\Throwable) {
+            // left at defaults
+        }
+
+        $scheduledUploadsDegraded = ! $schedulerFresh
+            || $oldestDueSeconds > (int) config('scheduled-uploads.health_oldest_due_threshold_seconds', 300);
+
         return response()->json([
             'ok' => $ok,
+            'degraded' => $scheduledUploadsDegraded,
             'backend' => 'laravel',
             'engine' => config('database.default'),
             'uptimeSec' => max(0, (int) floor(microtime(true) - $bootedAt)),
             'version' => config('app.version', '0.1.0'),
             'authRequired' => true,
             'checks' => $checks,
+            'scheduledUploads' => [
+                'schedulerFresh' => $schedulerFresh,
+                'oldestDueSeconds' => $oldestDueSeconds,
+                'queueDepth' => $queueDepth,
+            ],
         ], $ok ? 200 : 503);
     });
 

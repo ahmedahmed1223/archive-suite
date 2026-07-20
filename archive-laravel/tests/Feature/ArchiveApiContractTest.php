@@ -19,6 +19,8 @@ class ArchiveApiContractTest extends TestCase
                 ->has('version')
                 ->has('authRequired')
                 ->has('checks') // V1-202: deep db/redis/storage health checks
+                ->has('degraded') // V1-712: scheduled-uploads scheduler/queue-depth signal
+                ->has('scheduledUploads')
             );
     }
 
