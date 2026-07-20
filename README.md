@@ -96,6 +96,18 @@ pnpm setup
 # أو: pnpm deploy
 ```
 
+### الرفع المجدول (V1-712)
+
+حزمة `infra/docker-compose.laravel-next.yml` تشغّل `laravel-scheduler` (حلقة
+`schedule:work` لأوامر `uploads:dispatch-scheduled`/`recover-scheduled`/
+`cleanup-scheduled`) إلى جانب `laravel-worker` الذي يستهلك قائمة
+`scheduled-uploads` قبل `default`. إعدادات الدُفعة/الإيجار/المحاولات/الاستبقاء
+موثّقة في `infra/.env.example` (قسم "Scheduled uploads") وتُقرأ من
+`archive-laravel/config/scheduled-uploads.php`. صحة الجدولة (`schedulerFresh`،
+`oldestDueSeconds`، `queueDepth`) ظاهرة في حقل `scheduledUploads` من
+`/api/v1/health`، منفصلة عن حالة `ok`/رمز HTTP حتى لا يُسقط بطء المجدول الحزمة
+كلها.
+
 ## CI/CD والمراقبة
 
 اعتمد المشروع **GitHub Actions** كمسار CI/CD الافتراضي:

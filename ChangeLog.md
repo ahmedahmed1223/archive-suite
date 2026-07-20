@@ -7,6 +7,15 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 18 يوليو 2026.
 
+## V1-712 رفع مجدول دائم وعالي التحمل — 2026-07-20
+
+- رفع الملف الآن إلى quarantine آمنة ثم معالجته في الموعد عبر جدول دائم (`scheduled_uploads`) + dispatcher ذري بدُفعات (100 افتراضيًا) + queue `scheduled-uploads` مخصصة وعمال idempotent؛ يدعم الإلغاء وإعادة الجدولة وretry مقيدًا بأكواد فشل البنية التحتية فقط، ومراقبة watchdog للـleases المنتهية وretention للحالات الطرفية.
+- صفحة عربية `/uploads/scheduled` (RTL، 375–1280px، zoom 200%): تبويبات حالة، بحث بالملف/العنوان، وإجراءات تظهر فقط حين يسمح بها الـAPI فعليًا (لا افتراضات في الواجهة).
+- `infra/docker-compose.laravel-next.yml`: خدمة `laravel-scheduler` جديدة (`schedule:work`) و`laravel-worker` يستهلك `scheduled-uploads` قبل `default`؛ `/api/v1/health` يضيف `scheduledUploads.{schedulerFresh,oldestDueSeconds,queueDepth}` وعلم `degraded` منفصل عن `ok` حتى لا يُسقط بطء المجدول الحزمة كلها عبر `depends_on: service_healthy`.
+- **بوابة الإغلاق (كلها أخضر):** `verify:api-contracts`، 748 اختبار Laravel، `ScheduledUploadLoadTest` (5,000 صف مجدول، عشر دفعات claim بلا تكرار أو تجاوز الحجم، 25 صفاً منتهياً بمعرّف سجل فريد)، `verify:infra`، و`pnpm verify:laravel-next:live` (66/66 يشمل مساري reschedule/cancel وdue→completed عبر scheduler/worker حقيقيين).
+- اكتُشف وأُصلح أثناء الإغلاق: خطأ إشارة في `Carbon::diffInSeconds` كان يقلب طزاجة/تقادم نبضة المجدول في `/api/v1/health`؛ وخطأ توقيت في اختبار Playwright الحي (`toISOString()` بدل التوقيت المحلي لحقل `datetime-local`) كان يُبقي زر «رفع وجدولة» معطلاً دائمًا.
+- Commits: `c52ed56`..`794f0c7` (المهام 1-9) + إغلاق التوثيق في هذا commit.
+
 ## اعتماد Node.js 26 — 2026-07-19
 
 - استُبدل Node.js 25 المنتهي الدعم بـNode.js `26.5.0`، وثُبت العقد القانوني على `>=26.5.0 <27` في الحزم والمنصة وCI ومسار الإصدار.

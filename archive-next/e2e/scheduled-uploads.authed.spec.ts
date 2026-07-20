@@ -2,6 +2,17 @@ import { test, expect } from './fixtures/auth';
 
 const ui = expect.configure({ timeout: 30_000 });
 
+/**
+ * datetime-local inputs (and this app's validateScheduleTime) treat the value
+ * as browser-local wall-clock time, not UTC — `date.toISOString()` returns
+ * UTC and silently reads as "in the past" (button stays disabled) whenever
+ * the host isn't running in the UTC timezone. Use local getters instead.
+ */
+function toDatetimeLocalValue(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 async function login(page: import('@playwright/test').Page, account: { email: string; password: string }, next: string) {
   await page.goto(`/login?next=${encodeURIComponent(next)}`);
   await page.getByLabel('البريد الإلكتروني').fill(account.email);
@@ -34,7 +45,7 @@ test.describe('scheduled uploads — live acceptance', () => {
     await page.getByRole('button', { name: 'التالي' }).click(); // metadata -> review
 
     await page.getByRole('radio', { name: 'جدولة المعالجة' }).check();
-    const scheduledAt = new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16);
+    const scheduledAt = toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000));
     await page.getByLabel('موعد المعالجة').fill(scheduledAt);
     await ui(page.getByRole('button', { name: 'رفع وجدولة' })).toBeEnabled();
     await page.getByRole('button', { name: 'رفع وجدولة' }).click();
@@ -48,7 +59,7 @@ test.describe('scheduled uploads — live acceptance', () => {
     await ui(row.getByText('مجدولة')).toBeVisible();
 
     await row.getByRole('button', { name: 'إعادة الجدولة' }).click();
-    const newValue = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16);
+    const newValue = toDatetimeLocalValue(new Date(Date.now() + 2 * 60 * 60 * 1000));
     await page.getByLabel('موعد المعالجة الجديد').fill(newValue);
     await page.getByRole('button', { name: 'حفظ الموعد الجديد' }).click();
     await ui(page.getByLabel('موعد المعالجة الجديد')).toBeHidden();
@@ -74,9 +85,10 @@ test.describe('scheduled uploads — live acceptance', () => {
     await page.getByRole('button', { name: 'التالي' }).click();
 
     await page.getByRole('radio', { name: 'جدولة المعالجة' }).check();
-    // One minute out: due almost immediately, but still after schedule creation
-    // completes, matching the API's >= now()-30s validation window.
-    const dueNow = new Date(Date.now() + 60 * 1000).toISOString().slice(0, 16);
+    // Two minutes out: due almost immediately, but with enough margin that the
+    // upload/staging round trip before the schedule is actually created can't
+    // push it past the API's >= now()-30s validation window.
+    const dueNow = toDatetimeLocalValue(new Date(Date.now() + 2 * 60 * 1000));
     await page.getByLabel('موعد المعالجة').fill(dueNow);
     await page.getByRole('button', { name: 'رفع وجدولة' }).click();
     await ui(page.getByText('تمت جدولة المعالجة')).toBeVisible();
