@@ -5,7 +5,6 @@
 services:
   postgres:
     image: pgvector/pgvector:0.8.5-pg18@sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0
-    container_name: archive-ln-postgres
     restart: unless-stopped
     logging: &local-logging
       driver: "local"
@@ -28,7 +27,6 @@ services:
 
   redis:
     image: redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005
-    container_name: archive-ln-redis
     restart: unless-stopped
     logging: *local-logging
     command: ["sh", "-c", "exec redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save \"\" --requirepass \"$${REDIS_PASSWORD}\""]
@@ -52,7 +50,6 @@ services:
     build:
       context: ../archive-laravel
       dockerfile: Dockerfile.worker
-    container_name: archive-ln-laravel
     restart: unless-stopped
     logging: *local-logging
     command: ["nginx", "-g", "daemon off;"]
@@ -76,7 +73,6 @@ services:
     build:
       context: ../archive-laravel
       dockerfile: Dockerfile.worker
-    container_name: archive-ln-laravel-fpm
     restart: unless-stopped
     logging: *local-logging
     # V1-203: archive:migrate-safe wraps migrate --force with a preflight
@@ -143,7 +139,6 @@ services:
     build:
       context: ../archive-laravel
       dockerfile: Dockerfile.worker
-    container_name: archive-ln-laravel-worker
     restart: unless-stopped
     logging: *local-logging
     command: ["php", "artisan", "queue:work", "--queue=default", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]
@@ -202,7 +197,6 @@ services:
     profiles: ["media"]
     build:
       context: ./ocr-service
-    container_name: archive-ln-ocr
     restart: unless-stopped
     logging: *local-logging
     environment:
@@ -223,7 +217,6 @@ services:
     build:
       context: ../archive-laravel
       dockerfile: Dockerfile.worker
-    container_name: archive-ln-laravel-reverb
     restart: unless-stopped
     logging: *local-logging
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
@@ -285,7 +278,6 @@ services:
         NEXT_PUBLIC_REVERB_HOST: ${REVERB_HOST:-localhost}
         NEXT_PUBLIC_REVERB_PORT: ${REVERB_PORT:-8080}
         NEXT_PUBLIC_REVERB_SCHEME: ${REVERB_SCHEME:-http}
-    container_name: archive-ln-next
     restart: unless-stopped
     logging: *local-logging
     environment:

@@ -5,10 +5,11 @@ const PROJECT_NAME_PATTERN = /^archive-acceptance-[a-z0-9-]+$/;
 const COMPOSE_ENV_FILE = "infra/.env.example";
 const COMPOSE_FILE = "infra/docker-compose.laravel-next.yml";
 
-function defaultRun(command, args, { root } = {}) {
+function defaultRun(command, args, { root, env } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: root,
+      env,
       shell: false,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
@@ -42,22 +43,35 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
   }
   if (typeof getFreePort !== "function") throw new Error("getFreePort is required");
 
-  const execute = run ?? ((command, args) => defaultRun(command, args, { root }));
+  const execute = run ?? ((command, args, options) => defaultRun(command, args, options));
   const composeArgs = () => [
     "compose",
     "--project-name", projectName,
     "--env-file", COMPOSE_ENV_FILE,
     "--file", COMPOSE_FILE,
   ];
-  const invoke = async (args, action) => assertSucceeded(await execute("docker", args), action);
   let ports;
+  const ensurePorts = async () => {
+    ports ??= Object.freeze({ next: await getFreePort(), reverb: await getFreePort() });
+    return ports;
+  };
+  const invoke = async (args, action) => {
+    const allocated = await ensurePorts();
+    const env = {
+      ...process.env,
+      NEXT_PUBLIC_PORT: String(allocated.next),
+      REVERB_SERVER_PUBLISHED_PORT: String(allocated.reverb),
+      REVERB_PORT: String(allocated.reverb),
+    };
+    return assertSucceeded(await execute("docker", args, { root, env, shell: false }), action);
+  };
 
   const provider = {
     capabilities: Object.freeze(["docker"]),
     projectName,
 
     async prepare() {
-      ports ??= Object.freeze({ next: await getFreePort(), laravel: await getFreePort() });
+      await ensurePorts();
       await invoke([...composeArgs(), "config"], "Docker Compose configuration validation");
       return { projectName, ports };
     },
