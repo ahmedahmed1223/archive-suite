@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SavedSearchesController;
+use App\Http\Controllers\Api\V1\ScheduledUploadsController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SearchSuggestionsController;
 use App\Http\Controllers\Api\V1\SuggestionsController;
@@ -234,6 +235,9 @@ Route::prefix('v1')->group(function (): void {
         Route::put('/uploads/sessions/{sessionId}/chunks/{index}', [UploadSessionsController::class, 'uploadChunk'])->whereNumber('index');
         Route::post('/uploads/sessions/{sessionId}/complete', [UploadSessionsController::class, 'complete']);
         Route::delete('/uploads/sessions/{sessionId}', [UploadSessionsController::class, 'destroy']);
+
+        // V1-712: durable scheduled uploads — stage a completed session for later processing.
+        Route::post('/uploads/schedules', [ScheduledUploadsController::class, 'create']);
 
         Route::get('/intake-templates', [IntakeTemplatesController::class, 'index']);
         Route::post('/intake-templates', [IntakeTemplatesController::class, 'store']);
