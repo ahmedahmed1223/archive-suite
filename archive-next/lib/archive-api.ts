@@ -42,6 +42,24 @@ export type ArchiveRecord = GeneratedSchemas["ArchiveRecord"];
 export type RecordAttachment = GeneratedSchemas["RecordAttachment"];
 export type CreateRecordPayload = Omit<GeneratedSchemas["RecordCreateRequest"], "store"> & { store?: string };
 
+export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
+export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
+export type ScheduledUploadStaged = GeneratedSchemas["ScheduledUploadStaged"];
+
+export interface CreateScheduledUploadPayload {
+  uploadSessionId: string;
+  scheduledAt: string;
+  timeZone: string;
+  idempotencyKey: string;
+  record: Pick<ArchiveRecord, "title" | "type" | "subtype" | "tags" | "metadata">;
+}
+
+export interface RescheduleUploadRequest {
+  scheduledAt: string;
+  timeZone: string;
+  version: number;
+}
+
 export interface SearchSuggestion {
   kind: "record" | "tag" | "type" | "recent";
   label: string;
@@ -1131,6 +1149,12 @@ export interface ArchiveApiClient {
   uploadSessionStatus(sessionId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ session: UploadSession }>>;
   completeUploadSession(sessionId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: UploadedRecord }>>;
   abortUploadSession(sessionId: string, options?: AuthRequestOptions): Promise<ApiEnvelope>;
+  scheduledUploads(params?: { cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ schedules: ScheduledUpload[]; nextCursor?: string | null }>>;
+  scheduledUpload(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ schedule: ScheduledUpload }>>;
+  createScheduledUpload(payload: CreateScheduledUploadPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ schedule: ScheduledUploadStaged }>>;
+  rescheduleScheduledUpload(id: string, payload: RescheduleUploadRequest, options?: AuthRequestOptions): Promise<ApiEnvelope<{ schedule: ScheduledUpload }>>;
+  cancelScheduledUpload(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ schedule: ScheduledUpload }>>;
+  retryScheduledUpload(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ schedule: ScheduledUpload }>>;
   share(token: string, password?: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
@@ -1770,6 +1794,23 @@ export function createArchiveApiClient({
     completeUploadSession: (sessionId, options) =>
       post<{ record: UploadedRecord }>(`/uploads/sessions/${encodeURIComponent(sessionId)}/complete`, undefined, options),
     abortUploadSession: (sessionId, options) => del(`/uploads/sessions/${encodeURIComponent(sessionId)}`, undefined, options),
+    scheduledUploads: (params?: { cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.cursor) queryParams.set("cursor", params.cursor);
+      if (params?.limit) queryParams.set("limit", String(clampApiLimit(params.limit, 50, 200)));
+      const query = queryParams.toString();
+      return get<{ schedules: ScheduledUpload[]; nextCursor?: string | null }>(`/uploads/schedules${query ? `?${query}` : ""}`, options);
+    },
+    scheduledUpload: (id: string, options?: AuthRequestOptions) =>
+      get<{ schedule: ScheduledUpload }>(`/uploads/schedules/${encodeURIComponent(id)}`, options),
+    createScheduledUpload: (payload: CreateScheduledUploadPayload, options?: AuthRequestOptions) =>
+      post<{ schedule: ScheduledUploadStaged }>("/uploads/schedules", payload, options),
+    rescheduleScheduledUpload: (id: string, payload: RescheduleUploadRequest, options?: AuthRequestOptions) =>
+      patch<{ schedule: ScheduledUpload }>(`/uploads/schedules/${encodeURIComponent(id)}`, payload, options),
+    cancelScheduledUpload: (id: string, options?: AuthRequestOptions) =>
+      del<{ schedule: ScheduledUpload }>(`/uploads/schedules/${encodeURIComponent(id)}`, undefined, options),
+    retryScheduledUpload: (id: string, options?: AuthRequestOptions) =>
+      post<{ schedule: ScheduledUpload }>(`/uploads/schedules/${encodeURIComponent(id)}/retry`, undefined, options),
     share: (token: string, password?: string) =>
       get(`/share/${encodeURIComponent(token)}`, password ? { headers: { "X-Share-Password": password } } : undefined),
     files: (params?: { q?: string }, options?: AuthRequestOptions) => {
