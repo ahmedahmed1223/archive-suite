@@ -83,18 +83,22 @@ async function createSession(
   return { ok: true, session: response.session };
 }
 
+export type StageSessionResult =
+  | { ok: true; sessionId: string }
+  | { ok: false; error: string };
+
 /**
- * V1-711: orchestrates a resumable chunked upload against the
- * /uploads/sessions API. Resumable across page reloads — the session id is
- * keyed in localStorage by file name+size+lastModified, so calling this
- * again for "the same" file resumes from the server's receivedChunks
- * instead of re-uploading from byte zero.
+ * V1-711/V1-712: creates (or resumes) an upload session and uploads every
+ * chunk, but does not call completeUploadSession. Shared by the immediate
+ * upload path (`uploadFileInChunks`, which completes it) and the scheduled
+ * upload path (which stages the session then calls createScheduledUpload
+ * instead of completing it here).
  */
-export async function uploadFileInChunks(
+async function stageUploadSession(
   api: ArchiveApi,
   file: File,
   options: ChunkedUploadOptions = {}
-): Promise<ChunkedUploadResult> {
+): Promise<StageSessionResult> {
   const chunkBytes = options.chunkBytes ?? DEFAULT_CHUNK_BYTES;
   const fingerprint = fileFingerprint(file, options.folder);
   const existing = readResumeMap()[fingerprint];
@@ -149,13 +153,50 @@ export async function uploadFileInChunks(
     options.onProgress?.({ uploadedBytes, totalBytes, resuming });
   }
 
-  const completeResponse = await api.completeUploadSession(session.id);
+  return { ok: true, sessionId: session.id };
+}
+
+/**
+ * V1-711: orchestrates a resumable chunked upload against the
+ * /uploads/sessions API. Resumable across page reloads — the session id is
+ * keyed in localStorage by file name+size+lastModified, so calling this
+ * again for "the same" file resumes from the server's receivedChunks
+ * instead of re-uploading from byte zero.
+ */
+export async function uploadFileInChunks(
+  api: ArchiveApi,
+  file: File,
+  options: ChunkedUploadOptions = {}
+): Promise<ChunkedUploadResult> {
+  const staged = await stageUploadSession(api, file, options);
+  if (!staged.ok) return staged;
+
+  const completeResponse = await api.completeUploadSession(staged.sessionId);
   if (!completeResponse.ok) {
     return { ok: false, error: completeResponse.error };
   }
 
-  clearResumeEntry(fingerprint);
+  clearResumeEntry(fileFingerprint(file, options.folder));
   return { ok: true, record: completeResponse.record };
+}
+
+/**
+ * V1-712: stages a file through the upload-session/chunk API without
+ * completing it, for the "schedule processing" wizard path — the session id
+ * is handed to createScheduledUpload instead, and the resume entry stays
+ * intact until the schedule is created so an interrupted staging can resume.
+ */
+export async function uploadFileForSchedule(
+  api: ArchiveApi,
+  file: File,
+  options: ChunkedUploadOptions = {}
+): Promise<StageSessionResult> {
+  return stageUploadSession(api, file, options);
+}
+
+/** Clears the resume entry for a file once its scheduled upload session has been consumed. */
+export function clearScheduledUploadResumeEntry(file: File, folder?: string): void {
+  clearResumeEntry(fileFingerprint(file, folder));
 }
 
 /** Cancels an in-progress chunked upload and forgets its resume state. */
