@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseAcceptanceArguments } from "../acceptance.mjs";
+import { main, parseAcceptanceArguments } from "../acceptance.mjs";
 import { calculateAuthBudget, runAcceptance } from "./runner.mjs";
 
 const scenario = Object.freeze({
@@ -146,11 +146,87 @@ test("unavailable capabilities are blocked and have deterministic exit code two"
   assert.deepEqual(result.results, [{ scenarioId: scenario.id, status: "blocked-capability", attempts: 0 }]);
 });
 
+test("tag-only CLI selection executes every matching registry scenario", async () => {
+  const options = parseAcceptanceArguments(["run", "--tag", "smoke"]);
+  const executed = [];
+  const result = await runAcceptance({
+    ...options,
+    provider: providerFake(),
+    executeScenario: async ({ scenario: current }) => {
+      executed.push(current.id);
+      return { scenarioId: current.id, status: "passed" };
+    },
+  });
+  assert.equal(result.selected.length, 5);
+  assert.equal(executed.length, 5);
+  assert.equal(result.exitCode, 0);
+});
+
+test("runner rejects an empty selection instead of reporting a passing run", async () => {
+  await assert.rejects(
+    () => runAcceptance({ scenarios: [], provider: providerFake() }),
+    /no acceptance scenarios selected/i,
+  );
+});
+
+test("evidence failures try to finalize an error manifest without masking the original error", async () => {
+  const finalized = [];
+  await assert.rejects(
+    () => runAcceptance({
+      scenarios: [scenario],
+      provider: providerFake(),
+      evidenceStore: {
+        writeArtifact: () => { throw new Error("cleanup artifact unavailable"); },
+        finalize: (value) => finalized.push(value),
+      },
+      executeScenario: async () => ({ scenarioId: scenario.id, status: "passed" }),
+    }),
+    /cleanup artifact unavailable/,
+  );
+  assert.equal(finalized.length, 1);
+  assert.equal(finalized[0].status, "failed");
+  assert.equal(finalized[0].exitCode, 1);
+});
+
+test("manifest finalization failure records fallback error evidence and preserves that failure", async () => {
+  const artifacts = [];
+  await assert.rejects(
+    () => runAcceptance({
+      scenarios: [scenario],
+      provider: providerFake(),
+      evidenceStore: {
+        writeArtifact: (name, value) => artifacts.push([name, value]),
+        finalize: () => { throw new Error("manifest unavailable"); },
+      },
+      executeScenario: async () => ({ scenarioId: scenario.id, status: "passed" }),
+    }),
+    /manifest unavailable/,
+  );
+  assert.deepEqual(artifacts.map(([name]) => name), ["cleanup.json", "runner-error.json"]);
+});
+
+test("CLI reserves exit two for invalid input and returns one for runtime or evidence failures", async () => {
+  assert.equal(await main(["run", "--unknown"]), 2);
+
+  const runtimeExit = await main(["run", "--tag", "smoke"], {
+    createProvider: () => providerFake({ prepare: async () => { throw new Error("Docker unavailable"); } }),
+    createStore: () => ({ writeArtifact: () => {}, finalize: () => {} }),
+  });
+  assert.equal(runtimeExit, 1);
+
+  const evidenceExit = await main(["run", "--tag", "smoke"], {
+    createProvider: () => providerFake(),
+    createStore: () => ({ writeArtifact: () => {}, finalize: () => { throw new Error("evidence unavailable"); } }),
+    executeScenario: async ({ scenario: current }) => ({ scenarioId: current.id, status: "passed" }),
+  });
+  assert.equal(evidenceExit, 1);
+});
+
 test("CLI accepts tag, repeated ids, and last-failed selection without ambiguous input", () => {
   assert.deepEqual(parseAcceptanceArguments(["run", "--tag", "smoke"]), {
     command: "run",
     tag: "smoke",
-    ids: [],
+    ids: undefined,
     lastFailed: false,
     keepEnvironment: false,
   });

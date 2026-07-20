@@ -3,6 +3,13 @@ import { ACCEPTANCE_SCENARIOS, selectScenarios } from "./registry.mjs";
 
 export const AUTH_BUDGET = Object.freeze({ loginsPerMinute: 30, refreshesPerMinute: 120 });
 
+export class AcceptanceInputError extends Error {
+  constructor(message, options) {
+    super(message, options);
+    this.name = "AcceptanceInputError";
+  }
+}
+
 export function calculateAuthBudget(scenarios) {
   const logins = scenarios.reduce((total, scenario) => total + (scenario.loginSessions ?? 0), 0);
   return Object.freeze({ logins, refreshes: logins });
@@ -89,6 +96,29 @@ function summarize(results, cleanup) {
   return { status, exitCode, results, cleanup };
 }
 
+async function persistEvidence(evidenceStore, summary) {
+  if (!evidenceStore) return;
+  let originalError;
+  let manifest = summary;
+  try {
+    await evidenceStore.writeArtifact?.("cleanup.json", summary.cleanup);
+  } catch (error) {
+    originalError = error;
+    manifest = { ...summary, status: "failed", exitCode: 1, evidence: { status: "failed" } };
+  }
+  try {
+    await evidenceStore.finalize?.(manifest);
+  } catch (error) {
+    originalError ??= error;
+    try {
+      await evidenceStore.writeArtifact?.("runner-error.json", { phase: "manifest-finalization", status: "failed" });
+    } catch {
+      // The original persistence failure is more useful than a failed fallback.
+    }
+  }
+  if (originalError) throw originalError;
+}
+
 /**
  * Runs a selected acceptance slice in one deliberate sequence. A flake gets
  * exactly one retry; all other outcomes are evidence, not retries.
@@ -107,11 +137,17 @@ export async function runAcceptance({
   if (!provider) throw new Error("acceptance provider is required");
   if (typeof executeScenario !== "function") throw new Error("executeScenario must be a function");
 
-  const previousFailedIds = await resolveLastFailed(lastFailed, readLastFailed);
-  const requestedIds = previousFailedIds ?? ids;
-  const selected = scenarios === ACCEPTANCE_SCENARIOS && !previousFailedIds
-    ? selectScenarios({ tag, ids: requestedIds })
-    : selectFromScenarios(scenarios, { tag, ids: requestedIds });
+  let selected;
+  try {
+    const previousFailedIds = await resolveLastFailed(lastFailed, readLastFailed);
+    const requestedIds = previousFailedIds ?? (ids?.length ? ids : undefined);
+    selected = scenarios === ACCEPTANCE_SCENARIOS && !previousFailedIds
+      ? selectScenarios({ tag, ids: requestedIds })
+      : selectFromScenarios(scenarios, { tag, ids: requestedIds });
+    if (!selected.length) throw new Error("no acceptance scenarios selected");
+  } catch (error) {
+    throw new AcceptanceInputError(error instanceof Error ? error.message : String(error), { cause: error });
+  }
   const budget = assertAuthBudget(selected);
   const results = [];
   let cleanup = { keptForDiagnostics: Boolean(keepEnvironment), proved: false };
@@ -152,7 +188,6 @@ export async function runAcceptance({
   }
 
   const summary = summarize(results, cleanup);
-  if (evidenceStore?.writeArtifact) evidenceStore.writeArtifact("cleanup.json", cleanup);
-  if (evidenceStore?.finalize) evidenceStore.finalize(summary);
+  await persistEvidence(evidenceStore, summary);
   return { ...summary, budget, selected: selected.map(({ id }) => id) };
 }
