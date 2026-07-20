@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\AuthenticatesArchiveRequests;
@@ -175,6 +176,40 @@ class ScheduledUploadApiTest extends TestCase
         ), $this->editorHeaders())
             ->assertStatus(409)
             ->assertJsonPath('code', 'incomplete_upload');
+    }
+
+    /**
+     * TOCTOU regression: the pre-transaction pending/complete check is only a
+     * fast path. Simulates a concurrent request that stages the same session
+     * in the window between that outer check and the lockForUpdate() select
+     * inside the transaction, by hooking the outer select via DB::listen and
+     * flipping the row's status right after it fires (before the code that
+     * ran it sees the mutation — its result was already fetched). The
+     * lockForUpdate() re-select inside the transaction runs after that
+     * mutation and must be the one that actually gates staging.
+     */
+    public function test_recheck_under_lock_catches_status_changed_after_outer_check(): void
+    {
+        $sessionId = $this->completedSession();
+
+        $raced = false;
+        DB::listen(function ($query) use ($sessionId, &$raced) {
+            if ($raced || ! str_contains($query->sql, 'upload_sessions') || ! str_starts_with(trim($query->sql), 'select')) {
+                return;
+            }
+
+            $raced = true;
+            DB::table('upload_sessions')->where('id', $sessionId)->update(['status' => 'staged']);
+        });
+
+        $this->postJson('/api/v1/uploads/schedules', array_merge(
+            ['uploadSessionId' => $sessionId],
+            $this->schedulePayload(['idempotencyKey' => 'schedule-fixture-race']),
+        ), $this->editorHeaders())
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'session_inactive');
+
+        $this->assertDatabaseMissing('scheduled_uploads', ['idempotency_key' => 'schedule-fixture-race']);
     }
 
     public function test_duplicate_idempotency_key_returns_the_existing_schedule(): void
