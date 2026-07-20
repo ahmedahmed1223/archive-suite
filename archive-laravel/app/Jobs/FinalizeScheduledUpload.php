@@ -96,7 +96,15 @@ class FinalizeScheduledUpload implements ShouldQueue, ShouldBeUnique
         }
 
         if ($schedule->status === 'claimed') {
-            $schedule = $state->transition($schedule->id, 'claimed', 'processing', $schedule->version);
+            try {
+                $schedule = $state->transition($schedule->id, 'claimed', 'processing', $schedule->version);
+            } catch (ScheduledUploadConflict) {
+                // Lost the row to a concurrent state change (e.g. cancelled,
+                // or recycled by the watchdog) between the read above and
+                // this transition -- nothing to do. A genuine (non-conflict)
+                // throwable here still propagates to trigger a retry.
+                return;
+            }
         } elseif ($schedule->status !== 'processing') {
             // Not claimable anymore (e.g. cancelled between claim and job
             // pickup, or already recovered by the watchdog) -- nothing to do.
@@ -221,9 +229,22 @@ class FinalizeScheduledUpload implements ShouldQueue, ShouldBeUnique
                 'failure_code' => 'infrastructure_finalize_failed',
                 'failure_message' => $this->sanitizeError($exception),
             ]);
-        } catch (ScheduledUploadConflict) {
-            // Already moved on concurrently (e.g. recovered by the watchdog, or
-            // the transition is illegal from wherever it ended up) -- nothing to do.
+        } catch (ScheduledUploadConflict $conflict) {
+            if ($conflict->reason === 'illegal_transition') {
+                // The row is stuck in a status 'failed' can't legally follow
+                // (e.g. still 'claimed' because the claimed->processing
+                // transition never went through). The failure_code/message
+                // above never got persisted, so this is the only remaining
+                // trail -- log it rather than swallowing it like the benign
+                // stale-version race below.
+                Log::warning('FinalizeScheduledUpload::failed could not record the failure -- schedule is stuck in a status the state machine cannot mark failed from.', [
+                    'scheduleId' => $this->scheduleId,
+                    'status' => $schedule->status,
+                    'jobException' => $this->sanitizeError($exception),
+                ]);
+            }
+            // Otherwise (stale_version): already moved on concurrently
+            // (e.g. recovered by the watchdog) -- nothing to do.
         }
     }
 

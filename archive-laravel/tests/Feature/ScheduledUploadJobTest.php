@@ -7,8 +7,10 @@ use App\Models\ScheduledUpload;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -97,5 +99,34 @@ class ScheduledUploadJobTest extends TestCase
         $this->assertSame('failed', $schedule->status);
         $this->assertSame('checksum_mismatch', $schedule->failure_code);
         $this->assertSame(0, DB::table('storage_rows')->count());
+    }
+
+    /**
+     * Simulates exhausted retries for a genuine (non-benign) failure: the
+     * claimed->processing transition never went through, so the schedule is
+     * still 'claimed' when failed() runs. failed()'s own transition to
+     * 'failed' is illegal from 'claimed' (LEGAL['claimed'] doesn't include
+     * it), so the failure_code/message never get persisted -- this must not
+     * be swallowed silently, it must be logged.
+     */
+    public function test_failed_logs_a_warning_when_the_schedule_is_stuck_in_an_unfailable_status(): void
+    {
+        $schedule = $this->stagedSchedule(['status' => 'claimed']);
+
+        Log::shouldReceive('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context) use ($schedule): bool {
+                return str_contains($message, 'could not record the failure')
+                    && $context['scheduleId'] === $schedule->id
+                    && $context['status'] === 'claimed';
+            });
+
+        $job = new FinalizeScheduledUpload($schedule->id);
+        $job->failed(new RuntimeException('Storage adapter unavailable.'));
+
+        // The row is left exactly as it was -- illegal-transition conflict
+        // means failed() could not persist anything onto it.
+        $this->assertSame('claimed', $schedule->refresh()->status);
+        $this->assertNull($schedule->failure_code);
     }
 }
