@@ -256,6 +256,14 @@ class AutomationRulesController extends Controller
             'type' => ['nullable', 'string', 'max:100'],
             'tag' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'string', 'max:100'],
+            // V1-758: comma-separated extensions (e.g. "pdf,docx"), matched
+            // against the imported file's name - set by UploadFinalizer/
+            // IngestScanner on every record created from an uploaded/ingested
+            // file. Not full content inspection (no OCR/text-extraction
+            // pipeline feeds automation matching yet) and there is no
+            // event-driven auto-trigger on import either - rules still only
+            // execute via the existing manual/scheduled run() endpoint.
+            'fileExtension' => ['nullable', 'string', 'max:200'],
             'action' => [$requireName ? 'required' : 'sometimes', 'string', Rule::in(self::ACTIONS)],
             'enabled' => ['nullable', 'boolean'],
         ];
@@ -268,7 +276,7 @@ class AutomationRulesController extends Controller
     private function conditions(array $validated, bool $includeMissing = true): array
     {
         $conditions = [];
-        foreach (['query', 'type', 'tag', 'status'] as $field) {
+        foreach (['query', 'type', 'tag', 'status', 'fileExtension'] as $field) {
             if (array_key_exists($field, $validated)) {
                 $conditions[$field] = trim((string) ($validated[$field] ?? ''));
             } elseif ($includeMissing) {
@@ -331,6 +339,15 @@ class AutomationRulesController extends Controller
         if ($tag !== '' && $tag !== 'all') {
             $tags = array_map(fn (mixed $value): string => $this->normalize((string) $value), (array) ($record['tags'] ?? []));
             if (! in_array($tag, $tags, true)) {
+                return false;
+            }
+        }
+
+        $fileExtensionCondition = $this->normalize((string) ($conditions['fileExtension'] ?? ''));
+        if ($fileExtensionCondition !== '') {
+            $allowed = array_filter(array_map('trim', explode(',', $fileExtensionCondition)));
+            $recordExtension = $this->normalize((string) pathinfo((string) ($record['fileName'] ?? ''), PATHINFO_EXTENSION));
+            if ($recordExtension === '' || ! in_array($recordExtension, $allowed, true)) {
                 return false;
             }
         }
@@ -440,6 +457,7 @@ class AutomationRulesController extends Controller
             'type' => $conditions['type'] ?? '',
             'tag' => $conditions['tag'] ?? '',
             'status' => $conditions['status'] ?? '',
+            'fileExtension' => $conditions['fileExtension'] ?? '',
             'action' => $row->action,
             'enabled' => (bool) $row->enabled,
             'lastRunAt' => $row->last_run_at,

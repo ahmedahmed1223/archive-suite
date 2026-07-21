@@ -100,6 +100,81 @@ class AutomationRulesApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    /**
+     * V1-758: fileExtension condition matches records whose fileName (set by
+     * upload/ingest) ends in one of a comma-separated extension list, case-
+     * insensitively, and leaves non-matching extensions and extensionless
+     * records unmatched.
+     */
+    public function test_file_extension_condition_matches_only_imported_files_with_that_extension(): void
+    {
+        $this->seedFileRecords();
+
+        $created = $this->postJson('/api/v1/automation/rules', [
+            'name' => 'Tag imported PDFs',
+            'trigger' => 'record.created',
+            'fileExtension' => 'pdf,DOCX',
+            'action' => 'add-tag',
+        ], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('rule.fileExtension', 'pdf,DOCX');
+
+        $ruleId = $created->json('rule.id');
+
+        $this->postJson('/api/v1/automation/rules/'.$ruleId.'/run', ['dryRun' => true], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('run.matchedCount', 2);
+
+        $run = $this->postJson('/api/v1/automation/rules/'.$ruleId.'/run', ['dryRun' => false], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('run.matchedCount', 2)
+            ->assertJsonPath('run.executedCount', 2);
+
+        $matchedIds = collect($run->json('run.sampleRecords'))->pluck('id')->all();
+        $this->assertContains('file-pdf', $matchedIds);
+        $this->assertContains('file-docx', $matchedIds);
+        $this->assertNotContains('file-mp4', $matchedIds);
+        $this->assertNotContains('file-none', $matchedIds);
+    }
+
+    public function test_file_extension_condition_combines_with_other_conditions(): void
+    {
+        $this->seedFileRecords();
+
+        $created = $this->postJson('/api/v1/automation/rules', [
+            'name' => 'Video files only',
+            'trigger' => 'record.created',
+            'type' => 'video',
+            'fileExtension' => 'pdf',
+            'action' => 'add-tag',
+        ], $this->authHeaders())->assertCreated();
+
+        $ruleId = $created->json('rule.id');
+
+        // file-pdf is type "document", not "video" - the type condition
+        // excludes it even though the extension matches.
+        $this->postJson('/api/v1/automation/rules/'.$ruleId.'/run', ['dryRun' => true], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('run.matchedCount', 0);
+    }
+
+    public function test_no_file_extension_condition_matches_records_regardless_of_file_name(): void
+    {
+        $this->seedFileRecords();
+
+        $created = $this->postJson('/api/v1/automation/rules', [
+            'name' => 'All imported files',
+            'trigger' => 'record.created',
+            'action' => 'add-tag',
+        ], $this->authHeaders())->assertCreated();
+
+        $ruleId = $created->json('rule.id');
+
+        $this->postJson('/api/v1/automation/rules/'.$ruleId.'/run', ['dryRun' => true], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('run.matchedCount', 4);
+    }
+
     private function seedRecords(): void
     {
         $this->postJson('/api/v1/records/bulk', [
@@ -121,6 +196,19 @@ class AutomationRulesApiTest extends TestCase
                     'tags' => ['city'],
                     'workflowStatus' => 'draft',
                 ],
+            ],
+        ], $this->authHeaders())->assertOk();
+    }
+
+    private function seedFileRecords(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [
+                ['uid' => 'file-pdf', 'id' => 'file-pdf', 'title' => 'Report', 'type' => 'document', 'fileName' => 'annual-report.PDF'],
+                ['uid' => 'file-docx', 'id' => 'file-docx', 'title' => 'Notes', 'type' => 'document', 'fileName' => 'meeting-notes.docx'],
+                ['uid' => 'file-mp4', 'id' => 'file-mp4', 'title' => 'Clip', 'type' => 'video', 'fileName' => 'clip.mp4'],
+                ['uid' => 'file-none', 'id' => 'file-none', 'title' => 'No file record'],
             ],
         ], $this->authHeaders())->assertOk();
     }
