@@ -6,11 +6,12 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
-import { createArchiveApiClient, type ArchiveRecord, type Collection } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type Collection, type CreateCollectionPayload } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 type LoadState =
@@ -34,6 +35,7 @@ export default function CollectionsPage() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
   const [tag, setTag] = useState("all");
+  const [deleteStack, setDeleteStack] = useState<UndoStack<CreateCollectionPayload>>(emptyUndoStack);
 
   async function refreshCollections() {
     setCollectionsState({ status: "loading" });
@@ -110,8 +112,48 @@ export default function CollectionsPage() {
     )
       return;
     const response = await api.deleteCollection(id);
-    if (!response.ok) setStatusMessage(response.error || "تعذر حذف المجموعة.");
-    else setStatusMessage("تم حذف المجموعة.");
+    if (!response.ok) {
+      setStatusMessage(response.error || "تعذر حذف المجموعة.");
+      await refreshCollections();
+      return;
+    }
+    setStatusMessage("تم حذف المجموعة.");
+    if (collection) {
+      setDeleteStack((stack) =>
+        pushUndo(stack, { name: collection.name, query: collection.query || undefined, type: collection.type, tag: collection.tag })
+      );
+    }
+    await refreshCollections();
+  }
+
+  async function handleUndoRemoveCollection() {
+    const result = undo(deleteStack);
+    if (!result) return;
+    const response = await api.createCollection(result.entry);
+    if (!response.ok) {
+      setStatusMessage(response.error || "تعذر التراجع عن حذف المجموعة.");
+      return;
+    }
+    setStatusMessage("تم استرجاع المجموعة.");
+    setDeleteStack(result.stack);
+    await refreshCollections();
+  }
+
+  async function handleRedoRemoveCollection() {
+    const result = redo(deleteStack);
+    if (!result) return;
+    const current = collections.find((item) => item.name === result.entry.name);
+    if (!current) {
+      setStatusMessage(`تعذرت إعادة الحذف: المجموعة "${result.entry.name}" غير موجودة حالياً.`);
+      return;
+    }
+    const response = await api.deleteCollection(current.id);
+    if (!response.ok) {
+      setStatusMessage(response.error || "تعذرت إعادة الحذف.");
+      return;
+    }
+    setStatusMessage("أُعيد حذف المجموعة.");
+    setDeleteStack(result.stack);
     await refreshCollections();
   }
 
@@ -162,6 +204,27 @@ export default function CollectionsPage() {
         </form>
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
+
+      {canUndo(deleteStack) || canRedo(deleteStack) ? (
+        <div className="button-row">
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canUndo(deleteStack)}
+            onClick={() => void handleUndoRemoveCollection()}
+          >
+            تراجع عن الحذف{deleteStack.past.length > 0 ? ` (${deleteStack.past.length})` : ""}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canRedo(deleteStack)}
+            onClick={() => void handleRedoRemoveCollection()}
+          >
+            إعادة الحذف{deleteStack.future.length > 0 ? ` (${deleteStack.future.length})` : ""}
+          </button>
+        </div>
+      ) : null}
 
       {state.status === "loading" ? <div className="panel panel-compact"><Skeleton label="جار تحميل السجلات..." /></div> : null}
       {state.status === "error" ? (
