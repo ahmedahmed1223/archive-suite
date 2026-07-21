@@ -7,6 +7,15 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 18 يوليو 2026.
 
+## V1-758B النظام الحدثي (event-driven) لتشغيل قواعد الأتمتة — 2026-07-21
+
+- استُخرج منطق المطابقة/التنفيذ من `AutomationRulesController` إلى خدمة قابلة لإعادة الاستخدام `app/Services/Automation/AutomationRuleRunner.php` (نُقلت `matchingRecords`/`recordMatches`/`executeAction`/`actionMessage` بلا تكرار — أُزيلت من الضابط والدوال الخاصة، و`run()` يفوّض للخدمة الآن). أُضيف غلاف `runAgainstRecords(rule, records, dryRun)`.
+- حدث `app/Events/RecordChanged.php` (store/uid/record/wasCreated) يُطلق من `RecordsController::bulk()` **فقط** بعد فحص وجود مسبق لتمييز الإنشاء عن التحديث، ولمتجر `archive-items` وحده.
+- مستمع `app/Listeners/RunMatchingAutomationRules.php` يشغّل كل قاعدة مفعّلة يطابق مُطلِقها `record.created`/`record.updated` على السجل المتغيّر، ويسجّل صف `automation_rule_runs` للتدقيق ويحدّث `last_run_at`. قرار متعدد المستأجرين موثّق: القواعد المفعّلة تعمل على مستوى النظام لأن الأرشيف مورد مشترك (بخلاف `run()` اليدوي المقصور على مستخدم الطلب).
+- **منع الحلقة اللانهائية**: الخدمة تكتب مباشرة في `storage_rows` ولا تُطلق `RecordChanged` أبداً؛ الحدث يُطلق حصراً من مسار HTTP في الضابط، فإجراء `add-tag`/`set-review` لا يُعيد إطلاق نفسه.
+- علم `config('automation.event_driven_enabled')` (`config/automation.php`، افتراضي `true` عبر `env`) للتعطيل بلا تغيير كود. اختبارات `tests/Feature/EventDrivenAutomationTest.php` (إنشاء يُشغّل قاعدة مطابقة، قاعدة معطّلة لا تعمل، سجل غير مطابق لا يتأثر، تحديث يُطلق `record.updated`، العلم المعطّل يمنع التشغيل).
+- **نُفِّذ عبر وكيل Sonnet مُدار (المنسّق Opus راجع الكود ودمجه)؛ لم يُتحقق حيًا — لا PHP محلي ولا Docker؛ يحتاج `pnpm verify:laravel` حيًا، وتحديداً تأكيد اكتشاف المستمع تلقائيًا (لا يوجد `EventServiceProvider`، فالاعتماد على auto-discovery الافتراضي في Laravel 11+/13).**
+
 ## V1-703 خريطة موحدة لكل السجلات الموقّعة جغرافياً — 2026-07-19
 
 - صفحة `/map` جديدة (قسم المكتبة) تجمع كل السجلات عبر كل المخازن (بحث مُرقَّم بحد أمان 25 صفحة).

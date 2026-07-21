@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Support\StorageRowPayload;
+use App\Services\Automation\AutomationRuleRunner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,8 +14,6 @@ use stdClass;
 
 class AutomationRulesController extends Controller
 {
-    private const ARCHIVE_STORE = 'archive-items';
-
     private const TRIGGERS = [
         'record.created',
         'record.updated',
@@ -29,6 +27,10 @@ class AutomationRulesController extends Controller
         'notify-admin',
         'create-inbox-item',
     ];
+
+    public function __construct(private readonly AutomationRuleRunner $runner)
+    {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -204,13 +206,12 @@ class AutomationRulesController extends Controller
             ], 409);
         }
 
-        $records = $this->matchingRecords($this->decodeJsonObject($rule->conditions));
-        $executedCount = $dryRun ? 0 : $this->executeAction($rule, $records);
+        $records = $this->runner->matchingRecords($this->decodeJsonObject($rule->conditions));
+        $result = $this->runner->runAgainstRecords($rule, $records, $dryRun);
+        $executedCount = $result['executedCount'];
         $runId = (string) Str::uuid();
         $now = now();
-        $message = $dryRun
-            ? 'Dry-run completed without mutating records.'
-            : $this->actionMessage((string) $rule->action, $executedCount);
+        $message = $result['message'];
 
         DB::table('automation_rule_runs')->insert([
             'id' => $runId,
@@ -288,157 +289,6 @@ class AutomationRulesController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $conditions
-     * @return array<int, array<string, mixed>>
-     */
-    private function matchingRecords(array $conditions): array
-    {
-        return DB::table('storage_rows')
-            ->where('store', self::ARCHIVE_STORE)
-            ->orderByDesc('updated_at')
-            ->get()
-            ->map(fn (stdClass $row): array => StorageRowPayload::format($row))
-            ->filter(fn (array $record): bool => $this->recordMatches($record, $conditions))
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @param array<string, mixed> $record
-     * @param array<string, mixed> $conditions
-     */
-    private function recordMatches(array $record, array $conditions): bool
-    {
-        $query = $this->normalize((string) ($conditions['query'] ?? ''));
-        if ($query !== '') {
-            $text = $this->normalize(implode(' ', [
-                $record['title'] ?? '',
-                $record['description'] ?? '',
-                $record['type'] ?? '',
-                $record['subtype'] ?? '',
-                implode(' ', (array) ($record['tags'] ?? [])),
-            ]));
-
-            if (! str_contains($text, $query)) {
-                return false;
-            }
-        }
-
-        foreach (['type', 'status'] as $field) {
-            $value = trim((string) ($conditions[$field] ?? ''));
-            $recordValue = $field === 'status'
-                ? (string) ($record['workflowStatus'] ?? $record['status'] ?? 'draft')
-                : (string) ($record[$field] ?? '');
-
-            if ($value !== '' && $value !== 'all' && $recordValue !== $value) {
-                return false;
-            }
-        }
-
-        $tag = $this->normalize((string) ($conditions['tag'] ?? ''));
-        if ($tag !== '' && $tag !== 'all') {
-            $tags = array_map(fn (mixed $value): string => $this->normalize((string) $value), (array) ($record['tags'] ?? []));
-            if (! in_array($tag, $tags, true)) {
-                return false;
-            }
-        }
-
-        $fileExtensionCondition = $this->normalize((string) ($conditions['fileExtension'] ?? ''));
-        if ($fileExtensionCondition !== '') {
-            $allowed = array_filter(array_map('trim', explode(',', $fileExtensionCondition)));
-            $recordExtension = $this->normalize((string) pathinfo((string) ($record['fileName'] ?? ''), PATHINFO_EXTENSION));
-            if ($recordExtension === '' || ! in_array($recordExtension, $allowed, true)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $records
-     *
-     * @throws JsonException
-     */
-    private function executeAction(stdClass $rule, array $records): int
-    {
-        $count = 0;
-
-        foreach ($records as $record) {
-            $uid = (string) ($record['uid'] ?? $record['id'] ?? '');
-            if ($uid === '') {
-                continue;
-            }
-
-            if ($rule->action === 'set-review') {
-                $record['workflowStatus'] = 'review';
-                $this->upsertRecord($uid, $record);
-                $count++;
-                continue;
-            }
-
-            if ($rule->action === 'add-tag') {
-                $record['tags'] = array_values(array_unique([...(array) ($record['tags'] ?? []), 'automation']));
-                $this->upsertRecord($uid, $record);
-                $count++;
-                continue;
-            }
-
-            if ($rule->action === 'create-inbox-item') {
-                DB::table('storage_rows')->updateOrInsert(
-                    ['store' => 'inbox-items', 'uid' => 'automation-'.$rule->id.'-'.$uid],
-                    [
-                        'data' => json_encode([
-                            'uid' => 'automation-'.$rule->id.'-'.$uid,
-                            'id' => 'automation-'.$rule->id.'-'.$uid,
-                            'title' => 'Automation follow-up: '.(string) ($record['title'] ?? $uid),
-                            'sourceRecordId' => $uid,
-                            'ruleId' => $rule->id,
-                            'status' => 'open',
-                        ], JSON_THROW_ON_ERROR),
-                        'updated_at' => now(),
-                        'created_at' => now(),
-                    ],
-                );
-                $count++;
-                continue;
-            }
-
-            if ($rule->action === 'notify-admin') {
-                $count++;
-            }
-        }
-
-        return $count;
-    }
-
-    /**
-     * @param array<string, mixed> $record
-     *
-     * @throws JsonException
-     */
-    private function upsertRecord(string $uid, array $record): void
-    {
-        DB::table('storage_rows')->updateOrInsert(
-            ['store' => self::ARCHIVE_STORE, 'uid' => $uid],
-            [
-                'data' => json_encode(['uid' => $uid] + $record, JSON_THROW_ON_ERROR),
-                'updated_at' => now(),
-            ],
-        );
-    }
-
-    private function actionMessage(string $action, int $count): string
-    {
-        return match ($action) {
-            'add-tag' => "Added automation tag to {$count} records.",
-            'set-review' => "Moved {$count} records to review.",
-            'create-inbox-item' => "Created {$count} inbox follow-up items.",
-            default => "Queued {$count} admin notifications in the execution log.",
-        };
-    }
-
-    /**
      * @return array<string, mixed>
      */
     private function formatRule(?stdClass $row): array
@@ -513,11 +363,6 @@ class AutomationRulesController extends Controller
         $user = $request->attributes->get('archive_user');
 
         return (string) $user?->getKey();
-    }
-
-    private function normalize(string $value): string
-    {
-        return mb_strtolower(trim($value));
     }
 
     private function notFound(): JsonResponse
