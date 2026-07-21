@@ -16,11 +16,20 @@ import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type Sear
 import { useAuthSession } from "@/lib/auth-session";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
 import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import styles from "./archive.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { movePinnedFilter, orderPinnedFilters } from "@/lib/pinned-filters";
+
+// V1-732B: one entry per bulk-delete batch, so several consecutive deletes
+// are each independently undoable/redoable via lib/undo-stack.ts, not just
+// the single most recent one.
+interface DeleteBatch {
+  idsByStore: Map<string, string[]>;
+  count: number;
+}
 
 // Workflow states mirrored from the legacy SPA's itemStatus state machine —
 // the server-authoritative state machine. The Laravel search/records endpoints
@@ -301,6 +310,7 @@ function ArchivePageContent() {
   const [savedViewStatus, setSavedViewStatus] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkFeedback, setBulkFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [deleteStack, setDeleteStack] = useState<UndoStack<DeleteBatch>>(emptyUndoStack);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [isDragSelecting, setIsDragSelecting] = useState(false);
   const [dragSelectRect, setDragSelectRect] = useState<RectLike | null>(null);
@@ -841,6 +851,54 @@ function ArchivePageContent() {
     );
   };
 
+  // V1-732B: a toast's onAction closure is created once and outlives the
+  // render that created it, so reading `deleteStack` directly inside it
+  // would see a stale value once another batch is pushed/undone in the
+  // meantime (see hooks.md's stale-closure trap) - a ref kept in sync always
+  // reads the latest stack instead.
+  const deleteStackRef = useRef(deleteStack);
+  useEffect(() => {
+    deleteStackRef.current = deleteStack;
+  }, [deleteStack]);
+
+  async function restoreDeleteBatch(idsByStore: Map<string, string[]>): Promise<boolean> {
+    const auth = accessToken ? { accessToken } : undefined;
+    for (const [storeKey, storeIds] of idsByStore) {
+      const restored = await api.restoreTrash({ store: storeKey, ids: storeIds }, auth);
+      if (!restored.ok) {
+        toastError(restored.error || "تعذر التراجع عن الحذف");
+        return false;
+      }
+    }
+    return true;
+  }
+
+  async function handleUndoDelete() {
+    const result = undo(deleteStackRef.current);
+    if (!result) return;
+    const ok = await restoreDeleteBatch(result.entry.idsByStore);
+    if (ok) {
+      toastSuccess("تم استرجاع السجلات");
+      setDeleteStack(result.stack);
+      await loadRecords(query);
+    }
+  }
+
+  async function handleRedoDelete() {
+    const result = redo(deleteStackRef.current);
+    if (!result) return;
+    for (const [storeKey, storeIds] of result.entry.idsByStore) {
+      const response = await api.bulkDeleteRecords({ store: storeKey, ids: storeIds });
+      if (!response.ok) {
+        toastError(response.error || "تعذر إعادة الحذف");
+        return;
+      }
+    }
+    toastSuccess(`تم نقل ${result.entry.count} سجل إلى سلة المحذوفات مجدداً`);
+    setDeleteStack(result.stack);
+    await loadRecords(query);
+  }
+
   const bulkDelete = async () => {
     if (selectedIds.length === 0 || bulkBusy) return;
     const selectedRecords = records.filter((record) => selectedIdSet.has(record.id));
@@ -885,20 +943,13 @@ function ArchivePageContent() {
         toastError(message);
       } else {
         setBulkFeedback({ kind: "success", message: `تم نقل ${deletedCount} سجل إلى سلة المحذوفات` });
-        const auth = accessToken ? { accessToken } : undefined;
+        // V1-732B: push onto the real undo stack instead of only wiring a
+        // one-shot toast action, so several consecutive delete batches stay
+        // independently undoable/redoable (undo-stack.ts, same as kanban).
+        setDeleteStack((stack) => pushUndo(stack, { idsByStore, count: deletedCount }));
         toastSuccess(`تم نقل ${deletedCount} سجل إلى سلة المحذوفات.`, {
           label: "تراجع",
-          onAction: async () => {
-            for (const [storeKey, storeIds] of idsByStore) {
-              const restored = await api.restoreTrash({ store: storeKey, ids: storeIds }, auth);
-              if (!restored.ok) {
-                toastError(restored.error || "تعذر التراجع عن الحذف");
-                return;
-              }
-            }
-            toastSuccess("تم استرجاع السجلات");
-            await loadRecords(query);
-          }
+          onAction: () => void handleUndoDelete()
         });
       }
 
@@ -1111,6 +1162,27 @@ function ArchivePageContent() {
         <div className={`state-banner ${bulkFeedback.kind === "success" ? "state-banner-success" : "state-banner-error"}`} role="status">
           <strong>{bulkFeedback.kind === "success" ? "تم تنفيذ الإجراء الجماعي" : "تعذر تنفيذ الإجراء الجماعي"}</strong>
           <span className="helper-text">{bulkFeedback.message}</span>
+        </div>
+      ) : null}
+
+      {canUndo(deleteStack) || canRedo(deleteStack) ? (
+        <div className="button-row">
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canUndo(deleteStack) || bulkBusy}
+            onClick={() => void handleUndoDelete()}
+          >
+            تراجع عن الحذف{deleteStack.past.length > 0 ? ` (${deleteStack.past.length})` : ""}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canRedo(deleteStack) || bulkBusy}
+            onClick={() => void handleRedoDelete()}
+          >
+            إعادة الحذف{deleteStack.future.length > 0 ? ` (${deleteStack.future.length})` : ""}
+          </button>
         </div>
       ) : null}
 
