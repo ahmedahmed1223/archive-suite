@@ -57,6 +57,9 @@ services:
     container_name: archive-ln-laravel
     restart: unless-stopped
     logging: *local-logging
+    # See infra/docker-compose.laravel-next.yml's laravel service for why
+    # this runs as www-data (33:33) instead of root.
+    user: "33:33"
     command: ["nginx", "-g", "daemon off;"]
     volumes:
       - laravel_next_storage:/app/storage/app

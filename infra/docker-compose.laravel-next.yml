@@ -52,6 +52,12 @@ services:
       dockerfile: Dockerfile.worker
     restart: unless-stopped
     logging: *local-logging
+    # Runs as www-data (33:33), not root: laravel.conf listens on the
+    # unprivileged :8000, and Debian's nginx package already owns
+    # /var/lib/nginx + /var/log/nginx by www-data, so the master process
+    # needs no root privilege here (unlike laravel-fpm's command below,
+    # which still needs root for its startup chown).
+    user: "33:33"
     command: ["nginx", "-g", "daemon off;"]
     volumes:
       - laravel_next_storage:/app/storage/app
