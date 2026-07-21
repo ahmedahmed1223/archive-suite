@@ -10,6 +10,7 @@ import { createArchiveApiClient, type ArchiveRecord, type VocabularyTerm } from 
 import { buildChangeImpact, countAffectedRecords } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
 import { selectMissingVocabularyTags } from "@/lib/default-taxonomy";
+import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 type Kind = VocabularyTerm["kind"];
@@ -17,6 +18,15 @@ type VocabularyLoadState =
   | { status: "loading" }
   | { status: "ready" }
   | { status: "error"; message: string };
+
+// V1-732D: enough to recreate a deleted term - the recreated row gets a new
+// id, so redo looks the term back up by name rather than reusing an id.
+interface TermDeletion {
+  term: string;
+  kind: Kind;
+  aliases: string;
+  note: string;
+}
 
 export default function VocabularyPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -31,6 +41,7 @@ export default function VocabularyPage() {
   const [filter, setFilter] = useState("");
   const [importMessage, setImportMessage] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [deleteStack, setDeleteStack] = useState<UndoStack<TermDeletion>>(emptyUndoStack);
 
   async function importDefaultTags() {
     if (isImporting) return;
@@ -126,8 +137,52 @@ export default function VocabularyPage() {
   }
 
   async function removeTerm(id: string) {
+    const target = terms.find((item) => item.id === id);
     const response = await api.deleteVocabularyTerm(id);
-    if (!response.ok) setError(response.error || "تعذر حذف المصطلح.");
+    if (!response.ok) {
+      setError(response.error || "تعذر حذف المصطلح.");
+      await refreshTerms();
+      return;
+    }
+    if (target) {
+      setDeleteStack((stack) =>
+        pushUndo(stack, { term: target.term, kind: target.kind, aliases: target.aliases || "", note: target.note || "" })
+      );
+    }
+    await refreshTerms();
+  }
+
+  async function handleUndoRemove() {
+    const result = undo(deleteStack);
+    if (!result) return;
+    const response = await api.createVocabularyTerm({
+      term: result.entry.term,
+      kind: result.entry.kind,
+      aliases: result.entry.aliases,
+      note: result.entry.note
+    });
+    if (!response.ok) {
+      setError(response.error || "تعذر التراجع عن الحذف.");
+      return;
+    }
+    setDeleteStack(result.stack);
+    await refreshTerms();
+  }
+
+  async function handleRedoRemove() {
+    const result = redo(deleteStack);
+    if (!result) return;
+    const current = terms.find((item) => normalizeText(item.term) === normalizeText(result.entry.term));
+    if (!current) {
+      setError(`تعذرت إعادة الحذف: المصطلح "${result.entry.term}" غير موجود حالياً.`);
+      return;
+    }
+    const response = await api.deleteVocabularyTerm(current.id);
+    if (!response.ok) {
+      setError(response.error || "تعذرت إعادة الحذف.");
+      return;
+    }
+    setDeleteStack(result.stack);
     await refreshTerms();
   }
 
@@ -198,6 +253,27 @@ export default function VocabularyPage() {
       ) : null}
 
       {importMessage ? <p className="helper-text" role="status">{importMessage}</p> : null}
+
+      {canUndo(deleteStack) || canRedo(deleteStack) ? (
+        <div className="button-row">
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canUndo(deleteStack)}
+            onClick={() => void handleUndoRemove()}
+          >
+            تراجع عن الحذف{deleteStack.past.length > 0 ? ` (${deleteStack.past.length})` : ""}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canRedo(deleteStack)}
+            onClick={() => void handleRedoRemove()}
+          >
+            إعادة الحذف{deleteStack.future.length > 0 ? ` (${deleteStack.future.length})` : ""}
+          </button>
+        </div>
+      ) : null}
 
       {loadState.status === "ready" ? <section className="split-layout">
         <article className="panel">
