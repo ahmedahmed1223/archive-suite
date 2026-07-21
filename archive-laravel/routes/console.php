@@ -12,6 +12,12 @@ use Illuminate\Support\Facades\Schedule;
 // jobs, the most-recent backup regardless of age).
 Schedule::command('sessions:prune')->daily();
 Schedule::command('audit:prune')->daily();
+// V1-734: catches tampering with the audit trail (edited/deleted rows) even
+// if nobody happens to run the check by hand.
+Schedule::command('audit:verify-chain')->daily();
+// V1-733: catches silent file corruption/deletion outside the app by
+// re-checksumming stored attachments against what was recorded at upload.
+Schedule::command('files:verify-integrity')->daily();
 Schedule::command('media:prune-jobs')->daily();
 Schedule::command('backup:cleanup')->daily();
 Schedule::command('trash:prune')->daily();
