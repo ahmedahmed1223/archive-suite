@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\RecordChanged;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Automation\AutomationRuleRunner;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -148,6 +150,13 @@ class RecordsController extends Controller
             $uid = (string) ($record['uid'] ?? $record['id']);
             $normalized = ['uid' => $uid] + $record;
 
+            // V1-758B: existence check happens BEFORE the write so we know
+            // whether this was a create or an update once RecordChanged
+            // fires below.
+            $existed = DB::table('storage_rows')
+                ->where(['store' => $validated['store'], 'uid' => $uid])
+                ->exists();
+
             DB::table('storage_rows')->updateOrInsert(
                 ['store' => $validated['store'], 'uid' => $uid],
                 [
@@ -158,6 +167,13 @@ class RecordsController extends Controller
                     'created_at' => $now,
                 ],
             );
+
+            // V1-758B: automation only reacts to the archive store, and only
+            // from this HTTP write path - see AutomationRuleRunner's
+            // docblock for why the service itself never dispatches this.
+            if ($validated['store'] === AutomationRuleRunner::ARCHIVE_STORE) {
+                RecordChanged::dispatch($validated['store'], $uid, $normalized, ! $existed);
+            }
 
             $count++;
         }
