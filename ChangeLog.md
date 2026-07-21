@@ -7,6 +7,15 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 18 يوليو 2026.
 
+## V1-776 عرض مقسّم (Split View) لتفاصيل السجل — 2026-07-21
+
+- وضع عرض جديد `"split"` في `app/archive/page.tsx` (مضاف لاتحاد `ArchiveViewMode` ولـ`viewOptions` بعنوان «مقسّم»): جزء أيسر بقائمة سجلات مضغوطة قابلة للنقر، وجزء أيمن يعرض تفاصيل السجل المحدد بثبات جنبًا إلى جنب — بدل معاينة hover العابرة.
+- استُخرج محتوى لوحة المعاينة (`renderPreviewDetailContent()`) ليُشارَك بين لوحة التفاصيل في العرض المقسّم والـ`record-preview-rail` الجانبي في العروض الأخرى دون تكرار منطق؛ صفّ قائمة خفيف `renderSplitListRow` يستدعي `setPreviewId` عند النقر ويُعلَّم `data-active` للمحدد. حُرست اللوحة الجانبية الأصلية بـ`viewMode !== "split"` فلا تُرسَم مرتين.
+- استُثني `split` من تحديد السحب (rubber-band) ومن `role="list"` أسوة بعرض «تفاصيل».
+- `lib/workspace-preferences.ts`: أُضيف `"split"` إلى `WorkspaceView` و`validViews` (لازم لأن الصفحة تحفظ `viewMode` في هذا المخزن المشترك، وإلا فشل tsc وما بقي الاختيار بعد التحديث).
+- أنماط `app/styles/04-tables.css`: `.records-surface[data-view="split"]` (عمود واحد <768px، عمودان `minmax(14rem,22rem) minmax(0,1fr)` ≥768px)، `.split-detail-pane` لاصق، `.split-list-pane`/`.split-list-row` قابلة للتمرير مع hover/active — كلها من رموز التصميم القائمة وخصائص متوافقة مع المُركِّب.
+- **نُفِّذ عبر وكيل Sonnet مُدار (دمج/مراجعة Opus)**: `pnpm tsc` نظيف، `pnpm test` 79 ملف/441 اختبار أخضر، و`next build` ناجح (56 صفحة تشمل `/archive`). **لم يُتحقق بصريًا في متصفح** — توازن الأعمدة وترتيب RTL عند 768px وراحة ارتفاع 70vh تحتاج فحصًا بصريًا لاحقًا.
+
 ## V1-758B النظام الحدثي (event-driven) لتشغيل قواعد الأتمتة — 2026-07-21
 
 - استُخرج منطق المطابقة/التنفيذ من `AutomationRulesController` إلى خدمة قابلة لإعادة الاستخدام `app/Services/Automation/AutomationRuleRunner.php` (نُقلت `matchingRecords`/`recordMatches`/`executeAction`/`actionMessage` بلا تكرار — أُزيلت من الضابط والدوال الخاصة، و`run()` يفوّض للخدمة الآن). أُضيف غلاف `runAgainstRecords(rule, records, dryRun)`.

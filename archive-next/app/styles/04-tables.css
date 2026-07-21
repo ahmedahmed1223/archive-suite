@@ -290,6 +290,83 @@
   grid-template-columns: 1fr;
 }
 
+/* V1-776: split view — compact record list beside a persistent detail pane,
+   both nested inside the same records-surface so the two-pane layout stays
+   contained even when the outer .archive-workspace/.record-preview-rail
+   sibling grid (05-status.css, >=920px) isn't active yet. */
+.records-surface[data-view="split"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .records-surface[data-view="split"] {
+    grid-template-columns: minmax(14rem, 22rem) minmax(0, 1fr);
+  }
+
+  .split-detail-pane {
+    position: sticky;
+    inset-block-start: 6rem;
+  }
+}
+
+.split-list-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-block-size: 70vh;
+  overflow-y: auto;
+  min-inline-size: 0;
+}
+
+.split-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--easing-default),
+    background-color var(--duration-fast) var(--easing-default);
+}
+
+.split-list-row:hover {
+  background: var(--color-surface-subtle);
+}
+
+.split-list-row[data-active="true"] {
+  border-color: var(--color-brand-primary);
+  background: var(--color-surface-selected);
+}
+
+.split-list-row__title {
+  overflow: hidden;
+  min-inline-size: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.split-list-row__meta {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
 .record-card {
   position: relative;
   display: grid;

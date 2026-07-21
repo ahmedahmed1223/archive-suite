@@ -131,7 +131,7 @@ export function computeDragSelectedIds(
   return Array.from(merged);
 }
 
-type ArchiveViewMode = "grid" | "gallery" | "compact" | "list" | "details";
+type ArchiveViewMode = "grid" | "gallery" | "compact" | "list" | "details" | "split";
 export type ArchiveItemSize = "compact" | "comfortable" | "large";
 type ArchiveSortField = "updatedAt" | "createdAt" | "title";
 type ArchiveSortDirection = "asc" | "desc";
@@ -154,7 +154,8 @@ const viewOptions: DataViewOption<ArchiveViewMode>[] = [
   { value: "gallery", label: "معرض", shortLabel: "معرض" },
   { value: "compact", label: "مضغوط", shortLabel: "مضغوط" },
   { value: "list", label: "قائمة", shortLabel: "قائمة" },
-  { value: "details", label: "تفاصيل", shortLabel: "جدول" }
+  { value: "details", label: "تفاصيل", shortLabel: "جدول" },
+  { value: "split", label: "مقسّم", shortLabel: "مقسّم" }
 ];
 
 const itemSizeOptions: DataViewOption<ArchiveItemSize>[] = [
@@ -595,7 +596,7 @@ function ArchivePageContent() {
   const DRAG_SELECT_THRESHOLD_PX = 4;
 
   const handleSurfaceMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (viewMode === "details" || event.button !== 0) return;
+    if (viewMode === "details" || viewMode === "split" || event.button !== 0) return;
     if ((event.target as HTMLElement).closest("[data-record-id]")) return;
     event.preventDefault();
     dragSelectStartRef.current = { x: event.clientX, y: event.clientY };
@@ -1008,6 +1009,75 @@ function ArchivePageContent() {
     />
   );
 
+  // V1-776: the detail content is identical whether it renders in the
+  // always-present sibling `.record-preview-rail` (grid/gallery/compact/list
+  // views) or nested inside the split view's own two-pane layout below —
+  // extracted once so neither path can drift from the other.
+  const renderPreviewDetailContent = () => (
+    previewRecord ? (
+      <>
+        <div className="panel-section-header">
+          <span className="badge"><PanelRightOpen aria-hidden="true" size={14} /> معاينة</span>
+          <h2>{previewRecord.title || "بدون عنوان"}</h2>
+        </div>
+        <p>{previewRecord.description || "لا يوجد وصف محفوظ لهذا السجل بعد."}</p>
+        <div className="kv-grid">
+          <div className="kv-item">
+            <strong>المخزن</strong>
+            <span>{previewRecord.store || "غير محدد"}</span>
+          </div>
+          <div className="kv-item">
+            <strong>النوع</strong>
+            <span>{previewRecord.type || "غير محدد"}</span>
+          </div>
+          <div className="kv-item">
+            <strong>الإنشاء</strong>
+            <span>{formatDate(previewRecord.createdAt)}</span>
+          </div>
+          <div className="kv-item">
+            <strong>التحديث</strong>
+            <span>{formatDate(previewRecord.updatedAt)}</span>
+          </div>
+        </div>
+        {previewRecord.tags && previewRecord.tags.length > 0 ? (
+          <div className="tags">
+            {previewRecord.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
+          </div>
+        ) : null}
+        {previewRecord.metadata && Object.keys(previewRecord.metadata).length > 0 ? (
+          <pre className="token-preview">{JSON.stringify(previewRecord.metadata, null, 2)}</pre>
+        ) : null}
+        <div className="button-row">
+          <a className="button button-primary" href={`/archive/${encodeURIComponent(previewRecord.id)}`}>فتح التفاصيل</a>
+          <a className="button button-secondary" href={`/search?q=${encodeURIComponent(previewRecord.title || "")}`}>بحث مشابه</a>
+        </div>
+      </>
+    ) : (
+      <EmptyState title="لا توجد معاينة." description="اختر سجلاً من النتائج لعرض تفاصيله السريعة هنا." />
+    )
+  );
+
+  // V1-776: compact clickable row for the split view's list pane — lighter
+  // than ArchiveRecordCard (no per-card selection checkbox/context menu),
+  // just enough to pick which record the persistent detail pane shows.
+  const renderSplitListRow = (record: ArchiveRecord) => (
+    <button
+      key={record.id}
+      type="button"
+      className="split-list-row"
+      data-active={previewRecord?.id === record.id ? "true" : "false"}
+      data-record-id={record.id}
+      onClick={() => setPreviewId(record.id)}
+    >
+      <span className="split-list-row__title">{record.title || "بدون عنوان"}</span>
+      <span className="split-list-row__meta">
+        {record.store ? <span className="badge">{record.store}</span> : null}
+        {record.type ? <span className="badge">{record.type}</span> : null}
+        <time className="created-at">{formatDate(record.updatedAt || record.createdAt)}</time>
+      </span>
+    </button>
+  );
+
   return (
     <AppShell subtitle="مركز السجلات" contentClassName="archive-content" tipsPage="archive">
     <div
@@ -1225,7 +1295,7 @@ function ArchivePageContent() {
               className="records-surface"
               data-view={viewMode}
               data-size={itemSize}
-              role={viewMode === "details" ? undefined : "list"}
+              role={viewMode === "details" || viewMode === "split" ? undefined : "list"}
               onMouseDown={handleSurfaceMouseDown}
             >
               {viewMode === "details" ? (
@@ -1239,54 +1309,25 @@ function ArchivePageContent() {
                   virtualized={visibleRecords.length > 60}
                   columnVisibilityStorageKey="archive"
                 />
+              ) : viewMode === "split" ? (
+                <>
+                  <div className="split-list-pane" role="list" aria-label="قائمة السجلات">
+                    {visibleRecords.map(renderSplitListRow)}
+                  </div>
+                  <aside className="record-preview-rail split-detail-pane" aria-label="تفاصيل السجل">
+                    {renderPreviewDetailContent()}
+                  </aside>
+                </>
               ) : (
                 visibleRecords.map(renderRecordCard)
               )}
             </div>
 
-            <aside className="record-preview-rail" aria-label="معاينة السجل">
-              {previewRecord ? (
-                <>
-                  <div className="panel-section-header">
-                    <span className="badge"><PanelRightOpen aria-hidden="true" size={14} /> معاينة</span>
-                    <h2>{previewRecord.title || "بدون عنوان"}</h2>
-                  </div>
-                  <p>{previewRecord.description || "لا يوجد وصف محفوظ لهذا السجل بعد."}</p>
-                  <div className="kv-grid">
-                    <div className="kv-item">
-                      <strong>المخزن</strong>
-                      <span>{previewRecord.store || "غير محدد"}</span>
-                    </div>
-                    <div className="kv-item">
-                      <strong>النوع</strong>
-                      <span>{previewRecord.type || "غير محدد"}</span>
-                    </div>
-                    <div className="kv-item">
-                      <strong>الإنشاء</strong>
-                      <span>{formatDate(previewRecord.createdAt)}</span>
-                    </div>
-                    <div className="kv-item">
-                      <strong>التحديث</strong>
-                      <span>{formatDate(previewRecord.updatedAt)}</span>
-                    </div>
-                  </div>
-                  {previewRecord.tags && previewRecord.tags.length > 0 ? (
-                    <div className="tags">
-                      {previewRecord.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
-                    </div>
-                  ) : null}
-                  {previewRecord.metadata && Object.keys(previewRecord.metadata).length > 0 ? (
-                    <pre className="token-preview">{JSON.stringify(previewRecord.metadata, null, 2)}</pre>
-                  ) : null}
-                  <div className="button-row">
-                    <a className="button button-primary" href={`/archive/${encodeURIComponent(previewRecord.id)}`}>فتح التفاصيل</a>
-                    <a className="button button-secondary" href={`/search?q=${encodeURIComponent(previewRecord.title || "")}`}>بحث مشابه</a>
-                  </div>
-                </>
-              ) : (
-                <EmptyState title="لا توجد معاينة." description="اختر سجلاً من النتائج لعرض تفاصيله السريعة هنا." />
-              )}
-            </aside>
+            {viewMode !== "split" ? (
+              <aside className="record-preview-rail" aria-label="معاينة السجل">
+                {renderPreviewDetailContent()}
+              </aside>
+            ) : null}
           </section>
         )
       ) : null}
