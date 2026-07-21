@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -32,6 +32,7 @@ import {
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
 import { recordView } from "@/lib/recent-items";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 import RecordPresence from "@/components/RecordPresence";
 import RecordAttachmentsPanel from "@/components/RecordAttachmentsPanel";
@@ -778,7 +779,7 @@ function RecordHistoryPanel({
   );
 }
 
-type RecordDescribePatch = {
+export type RecordDescribePatch = {
   title: string;
   description: string;
   type: string;
@@ -786,20 +787,99 @@ type RecordDescribePatch = {
   tags: string[];
 };
 
-function RecordDescribeForm({
+// V1-732C: a real undo/redo stack for the describe form, checkpointed on
+// field blur (not per keystroke - that would push hundreds of entries for
+// one sentence). Each entry is a {previous, next} pair of full-form
+// snapshots, the same shape as KanbanMove/ParentChange elsewhere in this
+// undo-stack.ts rollout, so undo/redo just replays the whole form state.
+interface FormSnapshot {
+  title: string;
+  description: string;
+  type: string;
+  subtype: string;
+  tags: string;
+}
+
+interface FormChange {
+  previous: FormSnapshot;
+  next: FormSnapshot;
+}
+
+function snapshotsEqual(a: FormSnapshot, b: FormSnapshot): boolean {
+  return a.title === b.title && a.description === b.description && a.type === b.type && a.subtype === b.subtype && a.tags === b.tags;
+}
+
+export function RecordDescribeForm({
   record,
   onSave
 }: Readonly<{
   record: ArchiveRecord;
   onSave: (patch: RecordDescribePatch) => Promise<void>;
 }>) {
-  const [title, setTitle] = useState(record.title || "");
-  const [description, setDescription] = useState(record.description || "");
-  const [type, setType] = useState(record.type || "");
-  const [subtype, setSubtype] = useState(record.subtype || "");
-  const [tags, setTags] = useState((record.tags ?? []).join("، "));
+  const initialSnapshot: FormSnapshot = {
+    title: record.title || "",
+    description: record.description || "",
+    type: record.type || "",
+    subtype: record.subtype || "",
+    tags: (record.tags ?? []).join("، ")
+  };
+  const [title, setTitle] = useState(initialSnapshot.title);
+  const [description, setDescription] = useState(initialSnapshot.description);
+  const [type, setType] = useState(initialSnapshot.type);
+  const [subtype, setSubtype] = useState(initialSnapshot.subtype);
+  const [tags, setTags] = useState(initialSnapshot.tags);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState<UndoStack<FormChange>>(emptyUndoStack);
+  const lastCommittedRef = useRef<FormSnapshot>(initialSnapshot);
+  // commitCheckpoint()'s setHistory() doesn't land until the next render, so
+  // a caller that reads `history` in the same synchronous call (handleUndo
+  // does, right after calling commitCheckpoint) would see the pre-commit
+  // value. historyRef mirrors `history` but updates immediately, sidestepping
+  // that - same stale-closure shape as the toast-undo fix elsewhere in this
+  // rollout, just triggered by a same-call sequencing instead of a toast.
+  const historyRef = useRef(history);
+
+  function currentSnapshot(): FormSnapshot {
+    return { title, description, type, subtype, tags };
+  }
+
+  function applySnapshot(snapshot: FormSnapshot) {
+    setTitle(snapshot.title);
+    setDescription(snapshot.description);
+    setType(snapshot.type);
+    setSubtype(snapshot.subtype);
+    setTags(snapshot.tags);
+  }
+
+  function updateHistory(next: UndoStack<FormChange>) {
+    historyRef.current = next;
+    setHistory(next);
+  }
+
+  function commitCheckpoint() {
+    const current = currentSnapshot();
+    if (snapshotsEqual(current, lastCommittedRef.current)) return;
+    updateHistory(pushUndo(historyRef.current, { previous: lastCommittedRef.current, next: current }));
+    lastCommittedRef.current = current;
+  }
+
+  function handleUndo() {
+    commitCheckpoint();
+    const result = undo(historyRef.current);
+    if (!result) return;
+    applySnapshot(result.entry.previous);
+    lastCommittedRef.current = result.entry.previous;
+    updateHistory(result.stack);
+  }
+
+  function handleRedo() {
+    const result = redo(historyRef.current);
+    if (!result) return;
+    applySnapshot(result.entry.next);
+    lastCommittedRef.current = result.entry.next;
+    updateHistory(result.stack);
+  }
 
   const isDirty = useMemo(
     () =>
@@ -845,25 +925,31 @@ function RecordDescribeForm({
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
           العنوان
-          <input value={title} onChange={(event) => setTitle(event.target.value)} />
+          <input value={title} onChange={(event) => setTitle(event.target.value)} onBlur={commitCheckpoint} />
         </label>
         <label>
           الوصف
-          <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} placeholder="وصف موجز للمادة يظهر في التفاصيل والبحث." />
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            onBlur={commitCheckpoint}
+            rows={4}
+            placeholder="وصف موجز للمادة يظهر في التفاصيل والبحث."
+          />
         </label>
         <div className="field-row">
           <label>
             النوع
-            <input value={type} onChange={(event) => setType(event.target.value)} dir="ltr" placeholder="video" list="record-type-options" />
+            <input value={type} onChange={(event) => setType(event.target.value)} onBlur={commitCheckpoint} dir="ltr" placeholder="video" list="record-type-options" />
           </label>
           <label>
             الفرع
-            <input value={subtype} onChange={(event) => setSubtype(event.target.value)} dir="ltr" placeholder="interview / raw" list="record-subtype-options" />
+            <input value={subtype} onChange={(event) => setSubtype(event.target.value)} onBlur={commitCheckpoint} dir="ltr" placeholder="interview / raw" list="record-subtype-options" />
           </label>
         </div>
         <label>
           الوسوم
-          <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="أرشيف، مقابلات، 2026" />
+          <input value={tags} onChange={(event) => setTags(event.target.value)} onBlur={commitCheckpoint} placeholder="أرشيف، مقابلات، 2026" />
         </label>
         <datalist id="record-type-options">
           <option value="video" />
@@ -882,6 +968,22 @@ function RecordDescribeForm({
         <div className="record-form-actions">
           <button type="submit" className="button button-primary" disabled={busy || !title.trim()}>
             {busy ? "جار الحفظ..." : "حفظ التوصيف"}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canUndo(history) && snapshotsEqual(currentSnapshot(), lastCommittedRef.current)}
+            onClick={handleUndo}
+          >
+            تراجع{history.past.length > 0 ? ` (${history.past.length})` : ""}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canRedo(history)}
+            onClick={handleRedo}
+          >
+            إعادة{history.future.length > 0 ? ` (${history.future.length})` : ""}
           </button>
           {status ? <p className="form-status">{status}</p> : null}
         </div>
