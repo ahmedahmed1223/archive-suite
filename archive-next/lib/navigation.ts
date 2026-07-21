@@ -8,6 +8,7 @@ export const primaryNav = [
   { href: "/transcriber", label: "التفريغ", section: "capture", icon: "Mic2" },
   // ── المكتبة (البحث والتصفح) ──
   { href: "/", label: "اللوحة", section: "library", icon: "Home" },
+  { href: "/daily", label: "يومي", section: "library", icon: "Sunrise" },
   { href: "/archive", label: "الأرشيف", section: "library", icon: "Archive" },
   { href: "/search", label: "البحث", section: "library", icon: "Search" },
   { href: "/discover", label: "الاكتشاف", section: "library", icon: "Compass" },
