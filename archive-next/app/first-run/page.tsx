@@ -354,6 +354,21 @@ export default function FirstRunPage() {
         </article>
       </section>
 
+      {isAdmin ? (
+        <section className="page-section" aria-labelledby="defaults-heading">
+          <article className="panel">
+            <div className="panel-section-header">
+              <h2 id="defaults-heading">تصنيفات ووسوم افتراضية جاهزة</h2>
+              <p>استيراد اختياري وإضافي فقط — لا يكتب فوق أي نوع أو وسم موجود مسبقاً.</p>
+            </div>
+            <div className="first-run-command">
+              <a className="button button-secondary" href="/types">استيراد التصنيفات الافتراضية</a>
+              <a className="button button-secondary" href="/vocabulary">استيراد الوسوم الافتراضية</a>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
       <section className="page-section" aria-labelledby="security-heading">
         <article className="panel">
           <div className="panel-section-header">
