@@ -4,6 +4,7 @@ import { CheckCircle2, Circle, ExternalLink, RefreshCw, Server, ShieldCheck } fr
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
+import FirstRunTour from "@/components/FirstRunTour";
 import { BRAND } from "@/lib/brand";
 import { createArchiveApiClient, type OnboardingProgress, type OnboardingStageId } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
@@ -190,6 +191,7 @@ export default function FirstRunPage() {
               <RefreshCw aria-hidden="true" size={16} />
               فحص الصحة
             </button>
+            <FirstRunTour />
             <a className="button button-secondary" href="/help">المساعدة</a>
             <a className="button button-primary" href="/login">تسجيل الدخول</a>
           </>
