@@ -8,7 +8,14 @@ import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord, type TagNode } from "@/lib/archive-api";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
+import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
+
+interface ParentChange {
+  tag: string;
+  previousParent: string;
+  nextParent: string;
+}
 
 type TagsLoadState =
   | { status: "loading" }
@@ -22,6 +29,7 @@ export default function TagsPage() {
   const [error, setError] = useState("");
   const [nodes, setNodes] = useState<TagNode[]>([]);
   const [filter, setFilter] = useState("");
+  const [parentStack, setParentStack] = useState<UndoStack<ParentChange>>(emptyUndoStack);
 
   async function refreshNodes() {
     const response = await api.tagNodes();
@@ -76,8 +84,11 @@ export default function TagsPage() {
     return Array.from(groups.values()).filter((items) => items.length > 1);
   }, [tagRows]);
 
-  async function updateParent(tag: string, parent: string) {
+  // V1-732D: recordUndo=false is used only by the undo/redo replay below, so
+  // reverting a change doesn't itself push a new undo entry.
+  async function updateParent(tag: string, parent: string, recordUndo = true) {
     const existing = nodeByTag.get(tag);
+    const previousParent = existing?.parent || "";
     let response;
     if (parent) {
       response = existing
@@ -88,8 +99,29 @@ export default function TagsPage() {
     } else {
       return;
     }
-    if (!response.ok) setError(response.error || "تعذر حفظ الوسم.");
+    if (!response.ok) {
+      setError(response.error || "تعذر حفظ الوسم.");
+      await refreshNodes();
+      return;
+    }
+    if (recordUndo && previousParent !== parent) {
+      setParentStack((stack) => pushUndo(stack, { tag, previousParent, nextParent: parent }));
+    }
     await refreshNodes();
+  }
+
+  async function handleUndoParent() {
+    const result = undo(parentStack);
+    if (!result) return;
+    await updateParent(result.entry.tag, result.entry.previousParent, false);
+    setParentStack(result.stack);
+  }
+
+  async function handleRedoParent() {
+    const result = redo(parentStack);
+    if (!result) return;
+    await updateParent(result.entry.tag, result.entry.nextParent, false);
+    setParentStack(result.stack);
   }
 
   async function updateColor(tagId: string, color: string | null) {
@@ -148,6 +180,27 @@ export default function TagsPage() {
         <div className="state-banner state-banner-error" role="alert"><strong>تعذر حفظ تغيير الوسم</strong><span className="helper-text">{error}</span></div>
       ) : null}
 
+      {canUndo(parentStack) || canRedo(parentStack) ? (
+        <div className="button-row">
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canUndo(parentStack)}
+            onClick={() => void handleUndoParent()}
+          >
+            تراجع عن تغيير الأب{parentStack.past.length > 0 ? ` (${parentStack.past.length})` : ""}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canRedo(parentStack)}
+            onClick={() => void handleRedoParent()}
+          >
+            إعادة تغيير الأب{parentStack.future.length > 0 ? ` (${parentStack.future.length})` : ""}
+          </button>
+        </div>
+      ) : null}
+
       {loadState.status === "ready" && tagRows.length === 0 ? (
         <EmptyState title="لا توجد وسوم بعد." description="أضف وسوماً إلى السجلات من الأرشيف لتظهر هنا." />
       ) : (
@@ -180,7 +233,7 @@ export default function TagsPage() {
                     </select>
                     <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(row.tag)}`}>بحث</a>
                   </div>
-                  <p className="helper-text">تغيير الأب هيكلي فقط ولا يعدّل أي سجل؛ لا يتوفر تراجع تلقائي لهذا التحديث.</p>
+                  <p className="helper-text">تغيير الأب هيكلي فقط ولا يعدّل أي سجل؛ يمكن التراجع عنه من الزر أعلاه.</p>
                 </div>
               );
             })}
