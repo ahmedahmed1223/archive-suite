@@ -17,12 +17,13 @@ interface ArchiveRecordCardProps {
   record: ArchiveRecord;
   itemSize: ArchiveItemSize;
   isSelected: boolean;
+  canEdit: boolean;
   onSelectClick: (recordId: string, modifiers: SelectClickModifiers) => void;
   onPreview: (recordId: string) => void;
   onRename: (recordId: string, newTitle: string) => void;
 }
 
-export function ArchiveRecordCard({ record, itemSize, isSelected, onSelectClick, onPreview, onRename }: ArchiveRecordCardProps) {
+export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSelectClick, onPreview, onRename }: ArchiveRecordCardProps) {
   const titleLinkRef = useRef<HTMLAnchorElement>(null);
   const [menuPosition, setMenuPosition] = useState<ContextMenuPosition | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -96,10 +97,15 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, onSelectClick,
                 }}
               />
             ) : (
-              <a ref={titleLinkRef} href={href} className="text-accent" onDoubleClick={(e) => {
-                e.preventDefault();
-                startEditingTitle();
-              }}>
+              <a
+                ref={titleLinkRef}
+                href={href}
+                className="text-accent"
+                onDoubleClick={canEdit ? (e) => {
+                  e.preventDefault();
+                  startEditingTitle();
+                } : undefined}
+              >
                 {record.title || "بدون عنوان"}
               </a>
             )}

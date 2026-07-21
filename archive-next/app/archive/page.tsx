@@ -548,6 +548,7 @@ function ArchivePageContent() {
   // (dataTransfer.types includes "Files") so it never intercepts a future
   // in-page drag interaction on the cards themselves.
   const handleArchiveDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!canCreateRecords) return;
     if (!event.dataTransfer.types.includes("Files")) return;
     event.preventDefault();
     setIsDraggingFile(true);
@@ -556,6 +557,7 @@ function ArchivePageContent() {
   const handleArchiveDragLeave = () => setIsDraggingFile(false);
 
   const handleArchiveDrop = async (event: DragEvent<HTMLDivElement>) => {
+    if (!canCreateRecords) return;
     if (!event.dataTransfer.types.includes("Files")) return;
     event.preventDefault();
     setIsDraggingFile(false);
@@ -1007,6 +1009,7 @@ function ArchivePageContent() {
       record={record}
       itemSize={itemSize}
       isSelected={selectedIdSet.has(record.id)}
+      canEdit={canEditRecords}
       onSelectClick={handleSelectClick}
       onPreview={setPreviewId}
       onRename={handleRenameRecord}
