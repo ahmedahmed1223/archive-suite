@@ -1,8 +1,13 @@
 "use client";
 
+import * as Icons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import EmptyState from "@/components/EmptyState";
 import type { ArchiveType } from "@/lib/archive-api";
+import { getTypeIcon } from "@/lib/type-icons";
+
+const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 
 type TypesListProps = {
   types: ArchiveType[];
@@ -38,6 +43,8 @@ export default function TypesList({
       {types.map((type) => {
         const isSelected = selectedTypeId === type.id;
         const isDeleting = deletingTypeId === type.id;
+        const iconName = getTypeIcon(type.id);
+        const Icon = iconName ? iconRegistry[iconName] : undefined;
 
         return (
           <li className="type-list-item" data-selected={isSelected ? "true" : "false"} key={type.id}>
@@ -47,7 +54,9 @@ export default function TypesList({
               aria-pressed={isSelected}
               onClick={() => onSelectType(type.id)}
             >
-              <span className="type-list-item__mark" aria-hidden="true">{type.name.slice(0, 1)}</span>
+              <span className="type-list-item__mark" aria-hidden="true">
+                {Icon ? <Icon size={20} strokeWidth={2} /> : type.name.slice(0, 1)}
+              </span>
               <span className="type-list-item__body">
                 <strong>{type.name}</strong>
                 <span className="type-list-item__id" dir="ltr">{type.id}</span>
