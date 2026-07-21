@@ -15,7 +15,7 @@ export const workspaceRoutes = [
 ] as const;
 
 export type WorkspaceRoute = (typeof workspaceRoutes)[number];
-export type WorkspaceView = "grid" | "gallery" | "compact" | "list" | "details" | "cards" | "table";
+export type WorkspaceView = "grid" | "gallery" | "compact" | "list" | "details" | "cards" | "table" | "split";
 export type WorkspaceDensity = "compact" | "comfortable" | "large";
 
 export interface WorkspaceRoutePreferences {
@@ -38,7 +38,7 @@ export interface WorkspaceResultCount {
   label: string;
 }
 
-const validViews: WorkspaceView[] = ["grid", "gallery", "compact", "list", "details", "cards", "table"];
+const validViews: WorkspaceView[] = ["grid", "gallery", "compact", "list", "details", "cards", "table", "split"];
 const validDensities: WorkspaceDensity[] = ["compact", "comfortable", "large"];
 
 function isRoute(value: unknown): value is WorkspaceRoute {
