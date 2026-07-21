@@ -11,6 +11,7 @@ import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import { useCapability } from "@/components/RoleGate";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacets } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
@@ -292,6 +293,9 @@ function ArchivePageContent() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const { user, status: authStatus, accessToken } = useAuthSession();
   const userId = user?.id ?? null;
+  const canCreateRecords = useCapability("records.create");
+  const canEditRecords = useCapability("records.edit");
+  const canBulkDelete = useCapability("records.bulkDelete");
   const hasRestoredViewState = useRef(false);
 
   const [state, setState] = useState<ArchiveState>({ status: "loading" });
@@ -1106,8 +1110,12 @@ function ArchivePageContent() {
         )}
         actions={(
           <>
-            <a className="button button-primary" href="/uploads">إضافة للأرشيف</a>
-            <a className="button button-secondary" href="/files">استيراد ملفات</a>
+            {canCreateRecords ? (
+              <>
+                <a className="button button-primary" href="/uploads">إضافة للأرشيف</a>
+                <a className="button button-secondary" href="/files">استيراد ملفات</a>
+              </>
+            ) : null}
             <button type="button" className="button button-secondary" onClick={() => void saveCurrentView()}>حفظ العرض</button>
           </>
         )}
@@ -1200,30 +1208,36 @@ function ArchivePageContent() {
           <strong>{selectedIds.length} سجل محدد</strong>
           <div className="button-row">
             <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>تحديد الظاهر</button>
-            <button type="button" className="button button-secondary" onClick={bulkAddTag} disabled={bulkBusy}>إضافة وسم</button>
-            <button type="button" className="button button-secondary" onClick={bulkSetType} disabled={bulkBusy}>تعيين النوع</button>
-            <label className="archive-toolbar-actions" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-              <span className="helper-text">تعيين الحالة</span>
-              <select
-                disabled={bulkBusy}
-                defaultValue=""
-                onChange={(e) => {
-                  const nextStatus = e.target.value as WorkflowStatus;
-                  e.target.value = "";
-                  if (nextStatus) void bulkSetStatus(nextStatus);
-                }}
-              >
-                <option value="" disabled>اختر حالة...</option>
-                {WORKFLOW_STATES.map((s) => (
-                  <option key={s} value={s}>{workflowStatusLabels[s]}</option>
-                ))}
-              </select>
-            </label>
+            {canEditRecords ? (
+              <>
+                <button type="button" className="button button-secondary" onClick={bulkAddTag} disabled={bulkBusy}>إضافة وسم</button>
+                <button type="button" className="button button-secondary" onClick={bulkSetType} disabled={bulkBusy}>تعيين النوع</button>
+                <label className="archive-toolbar-actions" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                  <span className="helper-text">تعيين الحالة</span>
+                  <select
+                    disabled={bulkBusy}
+                    defaultValue=""
+                    onChange={(e) => {
+                      const nextStatus = e.target.value as WorkflowStatus;
+                      e.target.value = "";
+                      if (nextStatus) void bulkSetStatus(nextStatus);
+                    }}
+                  >
+                    <option value="" disabled>اختر حالة...</option>
+                    {WORKFLOW_STATES.map((s) => (
+                      <option key={s} value={s}>{workflowStatusLabels[s]}</option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            ) : null}
             <a className="button button-secondary" href={`/archive/${encodeURIComponent(selectedIds[0])}`}>فتح الأول</a>
             <button type="button" className="button button-secondary" onClick={() => setSelectedIds([])}>إلغاء التحديد</button>
-            <button type="button" className="button button-danger" onClick={() => void bulkDelete()} disabled={bulkBusy}>
-              حذف المحدد ({selectedIds.length})
-            </button>
+            {canBulkDelete ? (
+              <button type="button" className="button button-danger" onClick={() => void bulkDelete()} disabled={bulkBusy}>
+                حذف المحدد ({selectedIds.length})
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
