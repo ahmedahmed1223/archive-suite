@@ -732,12 +732,19 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  min-block-size: 2.25rem;
   border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-md);
-  padding: 0.25rem 0.45rem;
+  padding: 0.4rem 0.65rem;
   color: var(--color-text-tertiary);
   background: var(--color-surface-subtle);
   cursor: grab;
+  /* V1-772: without this, touch-scrolling the board can fight dnd-kit's
+     pointer handling on the handle (dnd-kit's own touch guidance). Larger
+     padding/min-block-size than a desktop-only button needs, since this is
+     the sole touch target for drag — the "نقل" select below is the fully
+     accessible non-drag alternative, not this handle. */
+  touch-action: none;
 }
 
 .kanban-card__handle:active {
