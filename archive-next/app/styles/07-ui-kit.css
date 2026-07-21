@@ -73,6 +73,16 @@
   background: var(--color-surface-overlay);
 }
 
+.ui-dialog-overlay[data-state="open"],
+.command-overlay[data-state="open"] {
+  animation: ui-overlay-in var(--duration-fast) var(--easing-default);
+}
+
+.ui-dialog-overlay[data-state="closed"],
+.command-overlay[data-state="closed"] {
+  animation: ui-overlay-out var(--duration-fast) var(--easing-default);
+}
+
 .ui-dialog-content,
 .ui-drawer-content,
 .command-dialog {
@@ -81,6 +91,77 @@
   border: 1px solid var(--color-border-secondary);
   background: var(--color-bg-secondary);
   box-shadow: var(--shadow-lg);
+}
+
+.ui-dialog-content[data-state="open"],
+.ui-drawer-content[data-state="open"],
+.command-dialog[data-state="open"] {
+  animation: ui-dialog-content-in var(--duration-normal) var(--easing-default);
+}
+
+.ui-dialog-content[data-state="closed"],
+.ui-drawer-content[data-state="closed"],
+.command-dialog[data-state="closed"] {
+  animation: ui-dialog-content-out var(--duration-fast) var(--easing-default);
+}
+
+@keyframes ui-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ui-overlay-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-dialog-content-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes ui-dialog-content-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.97) translateY(0.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-dialog-overlay[data-state="open"],
+  .ui-dialog-overlay[data-state="closed"],
+  .command-overlay[data-state="open"],
+  .command-overlay[data-state="closed"],
+  .ui-dialog-content[data-state="open"],
+  .ui-dialog-content[data-state="closed"],
+  .ui-drawer-content[data-state="open"],
+  .ui-drawer-content[data-state="closed"],
+  .command-dialog[data-state="open"],
+  .command-dialog[data-state="closed"] {
+    animation: none;
+  }
 }
 
 .ui-dialog-content,
@@ -420,6 +501,10 @@
   animation: ui-toast-in var(--duration-normal) var(--easing-default);
 }
 
+.ui-toast[data-state="closed"] {
+  animation: ui-toast-out var(--duration-fast) var(--easing-default);
+}
+
 @keyframes ui-toast-in {
   from {
     opacity: 0;
@@ -432,8 +517,21 @@
   }
 }
 
+@keyframes ui-toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ui-toast[data-state="open"] {
+  .ui-toast[data-state="open"],
+  .ui-toast[data-state="closed"] {
     animation: none;
   }
 }
