@@ -17,6 +17,7 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof ArchiveRecord
       record={record}
       itemSize="compact"
       isSelected={false}
+      canEdit
       onSelectClick={onSelectClick}
       onPreview={onPreview}
       onRename={onRename}

@@ -22,7 +22,7 @@ vi.mock("@/lib/archive-api", async () => {
 });
 
 vi.mock("@/lib/auth-session", () => ({
-  useAuthSession: () => ({ user: { id: "user-1" }, status: "authenticated", accessToken: "token-abc" })
+  useAuthSession: () => ({ user: { id: "user-1", role: "admin" }, status: "authenticated", accessToken: "token-abc" })
 }));
 
 // A stable searchParams instance matters here: the page has an effect keyed
