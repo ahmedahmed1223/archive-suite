@@ -8,6 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { createArchiveApiClient, type PaginationMeta, type TrashEntry, type TrashFilters } from "@/lib/archive-api";
+import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 
 const PAGE_SIZE = 25;
 
@@ -37,6 +38,10 @@ export default function TrashPage() {
   const [appliedFilters, setAppliedFilters] = useState<TrashFilters>({});
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  // V1-732D: only restore() is undoable here - purge() is genuinely
+  // irreversible (its own confirm dialog says so), so it stays outside the
+  // stack rather than pretending to support an undo that doesn't exist.
+  const [restoreStack, setRestoreStack] = useState<UndoStack<TrashEntry>>(emptyUndoStack);
 
   const loadTrash = useCallback(
     async (filters: TrashFilters) => {
@@ -104,6 +109,43 @@ export default function TrashPage() {
     }
 
     setNotice(`تمت استعادة ${recordTitle(entry)}.`);
+    setRestoreStack((stack) => pushUndo(stack, entry));
+    void loadTrash(appliedFilters);
+  }
+
+  async function handleUndoRestore() {
+    const result = undo(restoreStack);
+    if (!result) return;
+    setNotice("");
+    setBusy(true);
+    const response = await api.bulkDeleteRecords({ store: result.entry.store, ids: [result.entry.uid] });
+    setBusy(false);
+
+    if (!response.ok) {
+      setNotice(response.error || "تعذر التراجع عن الاستعادة.");
+      return;
+    }
+
+    setNotice(`أُرجع ${recordTitle(result.entry)} إلى السلة.`);
+    setRestoreStack(result.stack);
+    void loadTrash(appliedFilters);
+  }
+
+  async function handleRedoRestore() {
+    const result = redo(restoreStack);
+    if (!result) return;
+    setNotice("");
+    setBusy(true);
+    const response = await api.restoreTrash({ store: result.entry.store, ids: [result.entry.uid] });
+    setBusy(false);
+
+    if (!response.ok || !response.results[0]?.restored) {
+      setNotice(response.ok ? "تعذرت إعادة الاستعادة." : response.error || "تعذرت إعادة الاستعادة.");
+      return;
+    }
+
+    setNotice(`أُعيدت استعادة ${recordTitle(result.entry)}.`);
+    setRestoreStack(result.stack);
     void loadTrash(appliedFilters);
   }
 
@@ -171,6 +213,27 @@ export default function TrashPage() {
       {notice ? (
         <div className="state-banner" role="status">
           <span className="helper-text">{notice}</span>
+        </div>
+      ) : null}
+
+      {canUndo(restoreStack) || canRedo(restoreStack) ? (
+        <div className="button-row">
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canUndo(restoreStack) || busy}
+            onClick={() => void handleUndoRestore()}
+          >
+            تراجع عن الاستعادة{restoreStack.past.length > 0 ? ` (${restoreStack.past.length})` : ""}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canRedo(restoreStack) || busy}
+            onClick={() => void handleRedoRestore()}
+          >
+            إعادة الاستعادة{restoreStack.future.length > 0 ? ` (${restoreStack.future.length})` : ""}
+          </button>
         </div>
       ) : null}
 
