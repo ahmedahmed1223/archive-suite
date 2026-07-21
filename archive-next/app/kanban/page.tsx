@@ -26,7 +26,14 @@ import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { formatDate, getRecordWorkflowStatus, WORKFLOW_STATES, workflowStatusLabels, type WorkflowStatus } from "@/lib/record-utils";
+import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
+
+interface KanbanMove {
+  record: ArchiveRecord;
+  fromStatus: WorkflowStatus;
+  toStatus: WorkflowStatus;
+}
 
 type LoadState =
   | { status: "loading" }
@@ -122,7 +129,7 @@ export default function KanbanPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [busyId, setBusyId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
-  const [lastMove, setLastMove] = useState<{ record: ArchiveRecord; previousStatus: WorkflowStatus } | null>(null);
+  const [moveStack, setMoveStack] = useState<UndoStack<KanbanMove>>(emptyUndoStack);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -155,7 +162,7 @@ export default function KanbanPage() {
     return map;
   }, [records]);
 
-  async function moveRecord(record: ArchiveRecord, status: WorkflowStatus, trackUndo = true) {
+  async function applyMove(record: ArchiveRecord, status: WorkflowStatus): Promise<boolean> {
     setBusyId(record.id);
     setFeedback("");
     const response = await api.bulkRecords({
@@ -164,12 +171,37 @@ export default function KanbanPage() {
     });
     if (response.ok) {
       setFeedback(`تم نقل "${record.title || record.id}" إلى ${workflowStatusLabels[status]}`);
-      setLastMove(trackUndo ? { record, previousStatus: getRecordWorkflowStatus(record) } : null);
       await load();
     } else {
       setFeedback(response.error);
     }
     setBusyId(null);
+    return response.ok;
+  }
+
+  async function moveRecord(record: ArchiveRecord, status: WorkflowStatus) {
+    const fromStatus = getRecordWorkflowStatus(record);
+    if (fromStatus === status) return;
+    const ok = await applyMove(record, status);
+    if (ok) {
+      setMoveStack((stack) => pushUndo(stack, { record, fromStatus, toStatus: status }));
+    }
+  }
+
+  // V1-732: a real multi-level undo/redo stack (lib/undo-stack.ts), not a
+  // single-slot "undo the last move only" confirmation.
+  async function handleUndo() {
+    const result = undo(moveStack);
+    if (!result) return;
+    const ok = await applyMove(result.entry.record, result.entry.fromStatus);
+    if (ok) setMoveStack(result.stack);
+  }
+
+  async function handleRedo() {
+    const result = redo(moveStack);
+    if (!result) return;
+    const ok = await applyMove(result.entry.record, result.entry.toStatus);
+    if (ok) setMoveStack(result.stack);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -207,7 +239,26 @@ export default function KanbanPage() {
       <ChangeImpactPreview impact={buildChangeImpact({ action: "move", entity: "بطاقة كانبان", affectedCount: 1, reversible: true })} />
       <p className="helper-text">يمكن استخدام قائمة «نقل» داخل كل بطاقة كبديل كامل قابل للوصول للسحب والإفلات.</p>
       <p className="helper-text">جميع البطاقات متاحة عبر قائمة النقل، بما فيها البطاقات خارج مساحة العرض الأولى.</p>
-      {lastMove ? <button type="button" className="button button-secondary button-sm" disabled={busyId === lastMove.record.id} onClick={() => void moveRecord(lastMove.record, lastMove.previousStatus, false)}>تراجع عن آخر نقل</button> : null}
+      {canUndo(moveStack) || canRedo(moveStack) ? (
+        <div className="button-row">
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canUndo(moveStack) || busyId !== null}
+            onClick={() => void handleUndo()}
+          >
+            تراجع{moveStack.past.length > 0 ? ` (${moveStack.past.length})` : ""}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={!canRedo(moveStack) || busyId !== null}
+            onClick={() => void handleRedo()}
+          >
+            إعادة{moveStack.future.length > 0 ? ` (${moveStack.future.length})` : ""}
+          </button>
+        </div>
+      ) : null}
 
       {state.status === "loading" ? <div className="panel panel-compact"><Skeleton label="جار تحميل اللوحة..." /></div> : null}
       {state.status === "error" ? (
