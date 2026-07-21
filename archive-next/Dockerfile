@@ -1,4 +1,4 @@
-FROM node:26.5.0-alpine@sha256:e88a35be04478413b7c71c455cd9865de9b9360e1f43456be5951032d7ac1a66 AS deps
+FROM node:26.5.0-slim@sha256:715e55e4b84e4bb0ff48e49b398a848f08e55daed8eb6a0ea1839ae53bc57583 AS deps
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ COPY archive-next ./archive-next
 
 RUN pnpm --filter @archive/next run build
 
-FROM node:26.5.0-alpine@sha256:e88a35be04478413b7c71c455cd9865de9b9360e1f43456be5951032d7ac1a66 AS runner
+FROM node:26.5.0-slim@sha256:715e55e4b84e4bb0ff48e49b398a848f08e55daed8eb6a0ea1839ae53bc57583 AS runner
 
 WORKDIR /app
 
@@ -38,14 +38,21 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-COPY --from=builder /app/archive-next/.next/standalone ./
-COPY --from=builder /app/archive-next/.next/static ./archive-next/.next/static
-COPY --from=builder /app/archive-next/public ./archive-next/public
-COPY --from=builder /app/archive-next/package.json ./archive-next/package.json
+RUN groupadd --system --gid 1001 nodejs \
+  && useradd --system --uid 1001 --gid nodejs nextjs
+
+COPY --from=builder --chown=nextjs:nodejs /app/archive-next/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/archive-next/.next/static ./archive-next/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/archive-next/public ./archive-next/public
+COPY --from=builder --chown=nextjs:nodejs /app/archive-next/package.json ./archive-next/package.json
+
+USER nextjs
 
 EXPOSE 3000
 
+# Debian slim ships neither wget nor curl by default (unlike Alpine's busybox
+# wget); use node itself so the healthcheck needs no extra apt-get install.
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/ || exit 1
+  CMD node -e "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
 
 CMD ["node", "archive-next/server.js"]

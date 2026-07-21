@@ -23,7 +23,7 @@ test("canonical toolchain pins are declared and consumed without floating runtim
   assert.equal(rootPackage.devDependencies.node, toolchain.node);
   assert.match(rootPackage.scripts.dev, /^node /);
   assert.match(rootPackage.packageManager, new RegExp(`^pnpm@${toolchain.pnpm.replaceAll(".", "\\.")}\\+`));
-  assert.match(nextDockerfile, new RegExp(`FROM node:${toolchain.node.replaceAll(".", "\\.")}-alpine@sha256:`));
+  assert.match(nextDockerfile, new RegExp(`FROM node:${toolchain.node.replaceAll(".", "\\.")}-slim@sha256:`));
   assert.match(nextDockerfile, /npm install --global corepack@0\.31\.0/);
   assert.match(nextDockerfile, new RegExp(`corepack prepare pnpm@${toolchain.pnpm.replaceAll(".", "\\.")} --activate`));
   assert.match(laravelDockerfile, new RegExp(`FROM php:${toolchain.php.replaceAll(".", "\\.")}-fpm@sha256:`));

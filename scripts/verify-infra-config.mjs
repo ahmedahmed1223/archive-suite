@@ -145,7 +145,7 @@ assertExcludes("infra/docker-compose.yml", "archive-app");
 assertIncludes("archive-next/next.config.mjs", 'output: "standalone"');
 assertIncludes("archive-next/Dockerfile", "COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./");
 assertIncludes("archive-next/Dockerfile", "ARG ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1");
-assertIncludes("archive-next/Dockerfile", "COPY --from=builder /app/archive-next/public ./archive-next/public");
+assertIncludes("archive-next/Dockerfile", "COPY --from=builder --chown=nextjs:nodejs /app/archive-next/public ./archive-next/public");
 assertIncludes("archive-laravel/Dockerfile.worker", "docker-php-ext-enable redis");
 for (const extension of ["curl", "mbstring", "zip", "pdo", "pdo_pgsql", "ftp"]) {
   assertWorkerInstallsExtension("archive-laravel/Dockerfile.worker", extension);
