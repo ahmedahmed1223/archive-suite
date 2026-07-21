@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import TypesEditor from "./TypesEditor";
 import { loadDraft } from "@/lib/local-draft";
+import { getTypeIcon } from "@/lib/type-icons";
 
 afterEach(() => {
   cleanup();
@@ -158,5 +159,37 @@ describe("TypesEditor autosave draft (V1-769)", () => {
     fireEvent.click(screen.getByRole("button", { name: "حفظ النوع" }));
 
     await vi.waitFor(() => expect(loadDraft("types-editor-new")).toBeNull());
+  });
+});
+
+describe("TypesEditor icon picker (V1-794)", () => {
+  test("shows no icon selected by default for a new type", () => {
+    renderEditor();
+    expect(screen.getByRole("button", { name: "FileText" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("preselects the icon previously saved for an existing type", () => {
+    const existing = {
+      id: "document",
+      name: "مستند",
+      fields: [{ name: "العنوان", type: "text" as const, fieldAcl: { view: [], edit: [] } }]
+    };
+    window.localStorage.setItem("masar.type-icons", JSON.stringify({ document: "FileText" }));
+
+    renderEditor({ initialType: existing });
+
+    expect(screen.getByRole("button", { name: "FileText" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("persists the chosen icon under the saved type id on submit", async () => {
+    renderEditor();
+    fireEvent.change(screen.getByLabelText(/معرّف النوع/), { target: { value: "document" } });
+    fireEvent.change(screen.getByLabelText(/اسم النوع/), { target: { value: "مستند" } });
+    fireEvent.change(screen.getByLabelText("اسم الحقل"), { target: { value: "العنوان" } });
+    fireEvent.click(screen.getByRole("button", { name: "FileText" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "حفظ النوع" }));
+
+    await vi.waitFor(() => expect(getTypeIcon("document")).toBe("FileText"));
   });
 });

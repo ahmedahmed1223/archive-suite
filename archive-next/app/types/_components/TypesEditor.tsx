@@ -3,8 +3,10 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { FieldError, FormHint } from "@/components/ui/Form";
+import IconPicker from "@/components/IconPicker";
 import type { ArchiveType, ArchiveTypeField, ArchiveTypeFieldKind } from "@/lib/archive-api";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/local-draft";
+import { getTypeIcon, setTypeIcon } from "@/lib/type-icons";
 
 type TypesEditorProps = {
   initialType: ArchiveType | null;
@@ -96,6 +98,7 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
   const formId = useId();
   const [typeId, setTypeId] = useState("");
   const [typeName, setTypeName] = useState("");
+  const [icon, setIcon] = useState("");
   const [fields, setFields] = useState<ArchiveTypeField[]>([EMPTY_FIELD]);
   const [formError, setFormError] = useState("");
   const [touchedTypeId, setTouchedTypeId] = useState(false);
@@ -138,6 +141,7 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
   useEffect(() => {
     setTypeId(initialType?.id ?? "");
     setTypeName(initialType?.name ?? "");
+    setIcon((initialType ? getTypeIcon(initialType.id) : undefined) ?? "");
     setFields(initialType ? cloneFields(initialType.fields) : [{ ...EMPTY_FIELD, fieldAcl: { view: [], edit: [] } }]);
     setFormError("");
     setTouchedTypeId(false);
@@ -211,7 +215,9 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
     }
 
     setFormError("");
-    await onSave({ id: typeId.trim(), name: typeName.trim(), fields: normalizedFields });
+    const savedId = typeId.trim();
+    await onSave({ id: savedId, name: typeName.trim(), fields: normalizedFields });
+    if (icon) setTypeIcon(savedId, icon);
     if (!isEditing) clearDraft(NEW_TYPE_DRAFT_KEY);
   }
 
@@ -270,6 +276,11 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
           />
           {touchedTypeName ? <FieldError>{typeNameError(typeName)}</FieldError> : null}
         </label>
+
+        <div className="schema-form-field">
+          <span>أيقونة النوع</span>
+          <IconPicker value={icon} onChange={setIcon} label="اختر أيقونة النوع" />
+        </div>
 
         <fieldset className="schema-fields">
           <legend>الحقول</legend>
