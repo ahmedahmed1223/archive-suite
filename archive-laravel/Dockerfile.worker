@@ -8,10 +8,13 @@
 # gets a real multi-process web SAPI instead of the single-threaded `php -S`
 # dev server. nginx is layered on top of the same image so one image serves
 # four roles (nginx front, php-fpm, queue worker, reverb) via `command:`
-# overrides in compose — simplest arrangement that avoids a process
-# supervisor (s6/supervisord) since each compose service is already its own
-# single-process container. curl and bash ship in the base image already
-# (used by healthchecks below); nginx/procps are the only additions.
+# overrides in compose — simplest arrangement, and the canonical compose
+# stack still runs each role as its own single-process container. `supervisor`
+# is installed and configured (docker/supervisor/all-in-one.conf) purely as an
+# OPT-IN path for deployments that only accept one process per container —
+# see that file for how to invoke it. curl and bash ship in the base image
+# already (used by healthchecks below); nginx/procps/supervisor are the only
+# additions.
 FROM composer:2.10.2@sha256:5946476338742b200bb9ff88f8be56275ddae4b3949c72305cb0dbf10cfcb760 AS composer
 
 FROM php:8.5.8-fpm@sha256:0dc450d0a0e81ba501973b8e303f5d45af2ed989e08730f597d8fc07fb289efd
@@ -31,6 +34,7 @@ RUN for i in 1 2 3; do \
         libzip-dev \
         nginx \
         procps \
+        supervisor \
       && break || { echo "apt-get attempt $i failed, retrying..."; sleep 5; }; \
     done \
     && pecl install redis \
@@ -41,6 +45,10 @@ RUN for i in 1 2 3; do \
 
 # nginx front config for the laravel-fpm split (see V1-202 note above).
 COPY docker/nginx/laravel.conf /etc/nginx/conf.d/laravel.conf
+
+# Opt-in single-container supervisor config (see V1-202 note above and the
+# file itself) — unused by the canonical compose stack's `command:` overrides.
+COPY docker/supervisor/all-in-one.conf /etc/supervisor/conf.d/all-in-one.conf
 
 # CPU-only whisper CLI (WHISPER_BINARY default); matches the flags
 # WhisperTranscriber builds (--model/--language/--output_format/--output_dir/
