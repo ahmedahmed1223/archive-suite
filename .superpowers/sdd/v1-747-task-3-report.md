@@ -14,6 +14,15 @@ pnpm typecheck
 PASS
 ```
 
+## E2E stable-target follow-up
+
+The live workflow now retains the editor fixture record through `تحديد سجل editor المعزول` for its check, deselect, and reselect actions, instead of relying on a list-order-sensitive `.first()` locator.
+
+```text
+pnpm typecheck
+PASS
+```
+
 ## E2E history mock follow-up
 
 The live route stub now returns the typed `{ ok: true, runs: [] }` run-history envelope before its generic macro-list GET branch, matching the recorder's post-save history request.
