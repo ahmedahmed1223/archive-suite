@@ -5,7 +5,7 @@ import TypesList from "./TypesList";
 
 afterEach(() => {
   cleanup();
-  window.localStorage.clear();
+  window.localStorage?.clear?.();
 });
 
 const TYPES = [
@@ -46,5 +46,6 @@ describe("TypesList icon rendering (V1-794)", () => {
       />
     );
     expect(screen.queryByText("م")).toBeNull();
+    expect(document.querySelector("svg.lucide-file-text")).not.toBeNull();
   });
 });

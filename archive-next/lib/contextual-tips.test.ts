@@ -14,6 +14,10 @@ describe("role-aware contextual tips (V1-306C)", () => {
     expect(titles).not.toContain("وضع القراءة");
   });
 
+  test("admin guidance includes archive editing instructions", () => {
+    expect(getPageTips("archive", "admin").map((tip) => tip.title)).toContain("تعديل السجلات");
+  });
+
   test("shared guidance remains visible to every role", () => {
     expect(getPageTips("archive", "viewer").map((tip) => tip.title)).toContain("السجلات");
     expect(getPageTips("archive", "admin").map((tip) => tip.title)).toContain("السجلات");

@@ -4271,10 +4271,10 @@
           "type": { "type": "string", "enum": ["text", "number", "date", "select", "multi", "boolean"] },
           "condition": { "$ref": "#/components/schemas/TypeFieldCondition" },
           "fieldAcl": {
-            "type": "object",
+            "type": ["object", "null"],
             "properties": {
-              "view": { "type": "array", "items": { "type": "string" } },
-              "edit": { "type": "array", "items": { "type": "string" } }
+              "view": { "type": ["array", "null"], "items": { "type": "string" } },
+              "edit": { "type": ["array", "null"], "items": { "type": "string" } }
             }
           }
         }
@@ -4304,7 +4304,7 @@
         "type": "object",
         "required": ["field", "equals"],
         "properties": {
-          "field": { "type": "string", "minLength": 1 },
+          "field": { "type": "string", "minLength": 1, "maxLength": 255 },
           "equals": {
             "oneOf": [
               { "type": "string" },

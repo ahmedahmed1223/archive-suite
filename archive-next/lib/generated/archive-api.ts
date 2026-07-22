@@ -3412,9 +3412,9 @@ export interface components {
         TypeDefinitionField: {
             condition?: components["schemas"]["TypeFieldCondition"];
             fieldAcl?: {
-                edit?: string[];
-                view?: string[];
-            };
+                edit?: string[] | null;
+                view?: string[] | null;
+            } | null;
             name: string;
             /** @enum {string} */
             type: "text" | "number" | "date" | "select" | "multi" | "boolean";
