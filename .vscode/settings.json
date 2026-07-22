@@ -1,0 +1,18 @@
+{
+  "intelephense.environment.phpVersion": "8.3",
+  "[php]": {
+    "editor.defaultFormatter": "open-southeners.laravel-pint",
+    "editor.formatOnSave": true
+  },
+  "files.associations": {
+    "*.blade.php": "blade"
+  },
+  "files.exclude": {
+    "**/vendor": true,
+    "**/node_modules": true
+  },
+  "search.exclude": {
+    "**/vendor": true,
+    "**/node_modules": true
+  }
+}
