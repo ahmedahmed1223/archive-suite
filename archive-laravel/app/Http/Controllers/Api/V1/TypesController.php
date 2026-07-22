@@ -97,7 +97,7 @@ class TypesController extends Controller
             'id' => ['required', 'string', 'min:1', 'max:255'],
             'name' => ['required', 'string', 'min:1', 'max:255'],
             'icon' => ['sometimes', 'string', 'min:1', 'max:100'],
-            'fields' => ['required', 'array'],
+            'fields' => ['present', 'array'],
             'fields.*.name' => ['required', 'string', 'min:1', 'max:255'],
             'fields.*.type' => ['required', 'string', 'in:text,number,date,select,multi,boolean'],
             'fields.*.condition' => ['sometimes', 'array:field,equals'],
