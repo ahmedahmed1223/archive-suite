@@ -3,7 +3,8 @@
 import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { pageTips, type PageKey, type Tip } from "@/lib/contextual-tips";
+import { getPageTips, type PageKey, type Tip } from "@/lib/contextual-tips";
+import { useAuthSession } from "@/lib/auth-session";
 import { useContextualTips } from "@/lib/use-contextual-tips";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
@@ -11,6 +12,7 @@ const getTipIcon = (name?: string) => iconRegistry[name || "Lightbulb"] || Icons
 
 export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
   const { isDismissed, handleDismiss, isHydrated } = useContextualTips(page);
+  const { user } = useAuthSession();
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -50,7 +52,7 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
   // Server-side render guard
   if (!isHydrated) return null;
 
-  const tips = pageTips[page] || [];
+  const tips = getPageTips(page, user?.role);
   if (tips.length === 0) return null;
 
   return (
