@@ -1,8 +1,11 @@
+import type { NavigationRole } from "@/lib/navigation";
+
 // ponytail: contextual tips per page, persisted in localStorage
 export interface Tip {
   title: string;
   description: string;
   icon?: string;
+  roles?: readonly NavigationRole[];
 }
 
 export type PageKey =
@@ -90,7 +93,14 @@ export const pageTips: Record<PageKey, Tip[]> = {
     {
       title: "تعديل السجلات",
       description: "انقر على سجل لعرض التفاصيل الكاملة والتعديل على البيانات الوصفية",
-      icon: "Edit"
+      icon: "Edit",
+      roles: ["editor", "admin"]
+    },
+    {
+      title: "وضع القراءة",
+      description: "يمكنك فتح السجلات والملفات المرتبطة بها دون ظهور إجراءات التعديل أو الحذف",
+      icon: "Eye",
+      roles: ["viewer"]
     },
     {
       title: "الملفات المرتبطة",
@@ -344,6 +354,10 @@ export const pageTips: Record<PageKey, Tip[]> = {
     { title: "الامتثال", description: "تتبع حالات انتهاء الحقوق لتفادي الاستخدام غير المصرح به" }
   ]
 };
+
+export function getPageTips(page: PageKey, role?: NavigationRole): Tip[] {
+  return pageTips[page].filter((tip) => !tip.roles || (role ? tip.roles.includes(role) : false));
+}
 
 const TIPS_DISMISSED_KEY = "masar.tipsDismissed";
 
