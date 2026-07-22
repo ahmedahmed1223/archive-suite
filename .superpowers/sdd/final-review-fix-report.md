@@ -28,3 +28,11 @@
 
 - Accepted pre-release cutover decision: do not migrate browser-stored type icons from the old client-side store. Type icons now persist through the API; pre-release local values are intentionally not migrated.
 - Follow-up: optional `StorageRowPayload` metadata remains outside this fix. OpenAPI allows additional properties by default, and the handwritten client already consumes timestamps. Response metadata schemas are intentionally not expanded here.
+
+## Final re-review follow-up
+
+- Pagination fixture refinement: only the icon-bearing type now includes an `icon` key. The first paginated response asserts `FileText`; the next response explicitly asserts that `icon` is absent, preserving the distinction between absent legacy data and an invalid `null` icon.
+- Condition-length isolation: the 256-character condition reference now names a real field with the same value. That field intentionally also violates the field-name limit, but the test directly inspects `errors['fields.1.condition.field'][0]` for `255`; without the condition maximum rule, that condition-path error would be absent.
+- RED/GREEN: the first direct-message assertion incorrectly used JSON dot notation for an error-map key containing dots and failed with a null haystack. Reading the direct map key corrected the test; the rerun passed.
+- `node scripts/laravel-docker.mjs test tests/Feature/TypesControllerTest.php` — passed: 19 tests, 73 assertions.
+- `git diff --check -- archive-laravel/tests/Feature/TypesControllerTest.php` — passed.

@@ -261,21 +261,26 @@ class TypesControllerTest extends TestCase
 
     public function test_create_type_rejects_condition_field_longer_than_255_characters(): void
     {
-        $this->actingAs($this->adminUser)
+        $longFieldName = str_repeat('a', 256);
+
+        $response = $this->actingAs($this->adminUser)
             ->postJson('/api/v1/types', [
                 'id' => 'long-condition-field-type',
                 'name' => 'Long Condition Field',
                 'fields' => [
-                    ['name' => 'source', 'type' => 'boolean'],
+                    ['name' => $longFieldName, 'type' => 'boolean'],
                     [
                         'name' => 'dependent',
                         'type' => 'text',
-                        'condition' => ['field' => str_repeat('a', 256), 'equals' => true],
+                        'condition' => ['field' => $longFieldName, 'equals' => true],
                     ],
                 ],
-            ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['fields.1.condition.field']);
+            ]);
+
+        // The reference exists; without the condition max rule only fields.0.name would fail.
+        $response->assertUnprocessable()->assertJsonValidationErrors(['fields.1.condition.field']);
+        $errors = $response->json('errors');
+        $this->assertStringContainsString('255', $errors['fields.1.condition.field'][0]);
     }
 
     public function test_create_type_rejects_condition_referencing_unknown_field(): void
@@ -422,7 +427,7 @@ class TypesControllerTest extends TestCase
                 'data' => json_encode([
                     'id' => "type-$i",
                     'name' => "Type $i",
-                    'icon' => $i === 1 ? 'FileText' : null,
+                    ...($i === 1 ? ['icon' => 'FileText'] : []),
                     'fields' => [],
                 ]),
                 'created_at' => now(),
@@ -435,6 +440,7 @@ class TypesControllerTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonPath('ok', true);
         $response->assertJsonPath('types.0.icon', 'FileText');
+        $response->assertJsonMissingPath('types.1.icon');
         $this->assertCount(2, $response->json('types'));
         $this->assertNotNull($response->json('nextCursor'));
     }
