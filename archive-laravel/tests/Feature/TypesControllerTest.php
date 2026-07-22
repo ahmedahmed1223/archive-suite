@@ -73,7 +73,7 @@ class TypesControllerTest extends TestCase
             'id' => 'photo-type',
             'name' => 'Photo',
             'icon' => 'Image',
-            'fields' => [],
+            'fields' => [['name' => 'title', 'type' => 'text']],
         ];
 
         $response = $this->actingAs($this->adminUser)->postJson('/api/v1/types', $payload);
@@ -91,14 +91,14 @@ class TypesControllerTest extends TestCase
             'id' => 'photo-type',
             'name' => 'Photo',
             'icon' => 'Image',
-            'fields' => [],
+            'fields' => [['name' => 'title', 'type' => 'text']],
         ])->assertCreated();
 
         $this->actingAs($this->adminUser)->postJson('/api/v1/types', [
             'id' => 'photo-type',
             'name' => 'Photo',
             'icon' => 'Camera',
-            'fields' => [],
+            'fields' => [['name' => 'title', 'type' => 'text']],
         ])->assertOk()->assertJsonPath('type.icon', 'Camera');
 
         $this->actingAs($this->viewerUser)
@@ -150,7 +150,7 @@ class TypesControllerTest extends TestCase
             'id' => 'bad-icon-type',
             'name' => 'Bad Icon',
             'icon' => str_repeat('x', 101),
-            'fields' => [],
+            'fields' => [['name' => 'title', 'type' => 'text']],
         ];
 
         $this->actingAs($this->adminUser)
@@ -166,7 +166,7 @@ class TypesControllerTest extends TestCase
                 'id' => 'null-icon-type',
                 'name' => 'Null Icon',
                 'icon' => null,
-                'fields' => [],
+                'fields' => [['name' => 'title', 'type' => 'text']],
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['icon']);
@@ -178,7 +178,7 @@ class TypesControllerTest extends TestCase
             ->postJson('/api/v1/types', [
                 'id' => '',
                 'name' => 'Valid Name',
-                'fields' => [],
+                'fields' => [['name' => 'title', 'type' => 'text']],
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['id']);
@@ -190,7 +190,7 @@ class TypesControllerTest extends TestCase
             ->postJson('/api/v1/types', [
                 'id' => 'empty-name-type',
                 'name' => '',
-                'fields' => [],
+                'fields' => [['name' => 'title', 'type' => 'text']],
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['name']);
