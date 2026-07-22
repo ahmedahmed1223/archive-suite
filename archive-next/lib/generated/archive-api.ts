@@ -2432,7 +2432,7 @@ export interface components {
             before?: unknown;
             index: number;
             /** @enum {string} */
-            reason?: "deleted" | "mutation_failed";
+            reason?: "deleted" | "mutation_failed" | "target_failed";
             reversible?: boolean;
             /** @enum {string} */
             status: "would_apply" | "completed" | "skipped" | "failed";
@@ -2447,7 +2447,7 @@ export interface components {
         BulkMacroTargetResult: {
             id: string;
             /** @enum {string} */
-            reason?: "target_failed";
+            reason?: "target_failed" | "event_dispatch_failed";
             /** @enum {string} */
             status: "ready" | "missing" | "completed" | "partial" | "failed";
             steps: components["schemas"]["BulkMacroStepOutcome"][];

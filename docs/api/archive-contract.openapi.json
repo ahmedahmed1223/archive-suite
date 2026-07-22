@@ -6285,12 +6285,12 @@
       "BulkMacroStepOutcome": {
         "type": "object", "required": ["index", "type", "status"], "properties": {
           "index": { "type": "integer", "minimum": 0 }, "type": { "$ref": "#/components/schemas/BulkMacroStepType" },
-          "status": { "type": "string", "enum": ["would_apply", "completed", "skipped", "failed"] }, "before": {}, "after": {}, "reversible": { "type": "boolean" }, "reason": { "type": "string", "enum": ["deleted", "mutation_failed"] }
+          "status": { "type": "string", "enum": ["would_apply", "completed", "skipped", "failed"] }, "before": {}, "after": {}, "reversible": { "type": "boolean" }, "reason": { "type": "string", "enum": ["deleted", "mutation_failed", "target_failed"] }
         }
       },
       "BulkMacroTargetResult": {
         "type": "object", "required": ["store", "id", "status", "steps"], "properties": {
-          "store": { "type": "string" }, "id": { "type": "string" }, "status": { "type": "string", "enum": ["ready", "missing", "completed", "partial", "failed"] }, "reason": { "type": "string", "enum": ["target_failed"] },
+          "store": { "type": "string" }, "id": { "type": "string" }, "status": { "type": "string", "enum": ["ready", "missing", "completed", "partial", "failed"] }, "reason": { "type": "string", "enum": ["target_failed", "event_dispatch_failed"] },
           "steps": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroStepOutcome" } }
         }
       },

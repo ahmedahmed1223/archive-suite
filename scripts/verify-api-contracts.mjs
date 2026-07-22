@@ -376,9 +376,9 @@ assert.deepEqual(bulkMacroSchemas.BulkMacroPreviewError.allOf[1].properties.code
 assert.equal(bulkMacroSchemas.BulkMacroValidationError.allOf[1].properties.code.const, "validation_failed");
 assert.equal(bulkMacroSchemas.BulkMacroNotFoundError.allOf[1].properties.code.const, "not_found");
 assert.deepEqual(bulkMacroSchemas.BulkMacroStepOutcome.properties.status.enum, ["would_apply", "completed", "skipped", "failed"]);
-assert.deepEqual(bulkMacroSchemas.BulkMacroStepOutcome.properties.reason.enum, ["deleted", "mutation_failed"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroStepOutcome.properties.reason.enum, ["deleted", "mutation_failed", "target_failed"]);
 assert.deepEqual(bulkMacroSchemas.BulkMacroTargetResult.properties.status.enum, ["ready", "missing", "completed", "partial", "failed"]);
-assert.deepEqual(bulkMacroSchemas.BulkMacroTargetResult.properties.reason.enum, ["target_failed"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroTargetResult.properties.reason.enum, ["target_failed", "event_dispatch_failed"]);
 
 assert.ok(contract.components?.securitySchemes?.bearerAuth, "API contract should define bearer auth");
 assert.ok(contract.components?.securitySchemes?.cookieAuth, "API contract should define cookie auth");
