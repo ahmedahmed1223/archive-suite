@@ -5,7 +5,6 @@ import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import EmptyState from "@/components/EmptyState";
 import type { ArchiveType } from "@/lib/archive-api";
-import { getTypeIcon } from "@/lib/type-icons";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 
@@ -43,7 +42,7 @@ export default function TypesList({
       {types.map((type) => {
         const isSelected = selectedTypeId === type.id;
         const isDeleting = deletingTypeId === type.id;
-        const iconName = getTypeIcon(type.id);
+        const iconName = type.icon;
         const Icon = iconName ? iconRegistry[iconName] : undefined;
 
         return (

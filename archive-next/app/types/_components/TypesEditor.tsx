@@ -6,7 +6,6 @@ import { FieldError, FormHint } from "@/components/ui/Form";
 import IconPicker from "@/components/IconPicker";
 import type { ArchiveType, ArchiveTypeField, ArchiveTypeFieldKind } from "@/lib/archive-api";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/local-draft";
-import { getTypeIcon, setTypeIcon } from "@/lib/type-icons";
 
 type TypesEditorProps = {
   initialType: ArchiveType | null;
@@ -141,7 +140,7 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
   useEffect(() => {
     setTypeId(initialType?.id ?? "");
     setTypeName(initialType?.name ?? "");
-    setIcon((initialType ? getTypeIcon(initialType.id) : undefined) ?? "");
+    setIcon(initialType?.icon ?? "");
     setFields(initialType ? cloneFields(initialType.fields) : [{ ...EMPTY_FIELD, fieldAcl: { view: [], edit: [] } }]);
     setFormError("");
     setTouchedTypeId(false);
@@ -216,8 +215,12 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
 
     setFormError("");
     const savedId = typeId.trim();
-    await onSave({ id: savedId, name: typeName.trim(), fields: normalizedFields });
-    if (icon) setTypeIcon(savedId, icon);
+    await onSave({
+      id: savedId,
+      name: typeName.trim(),
+      ...(icon ? { icon } : {}),
+      fields: normalizedFields,
+    });
     if (!isEditing) clearDraft(NEW_TYPE_DRAFT_KEY);
   }
 
