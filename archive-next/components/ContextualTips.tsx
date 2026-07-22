@@ -69,7 +69,6 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
         ref={triggerRef}
       >
         <Icons.HelpCircle aria-hidden="true" size={18} strokeWidth={2} />
-        <span className="contextual-tips__badge">جديد</span>
       </button>
 
       {isOpen && (

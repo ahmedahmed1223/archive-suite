@@ -100,26 +100,13 @@
   }
 }
 
-.contextual-tips__badge {
-  position: absolute;
-  inset: -4px -4px auto auto;
-  min-width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-brand-primary);
-  color: var(--color-bg-primary);
-  border-radius: 50%;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-}
-
+/* Anchored to .contextual-tips (position:relative) instead of a fixed
+   guessed offset, so it always sits directly under the trigger no matter
+   where that trigger lives in the page. */
 .contextual-tips__popover {
-  position: fixed;
-  inset-inline-end: var(--space-4);
-  inset-block-start: 80px;
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
   z-index: 1000;
   min-width: 320px;
   max-width: 380px;
