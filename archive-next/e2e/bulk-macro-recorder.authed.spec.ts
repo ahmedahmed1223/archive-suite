@@ -6,7 +6,8 @@ test("editor must preview a saved macro before it can run, and selection changes
   await page.route("**/api/v1/bulk-macros**", async (route) => {
     const url = route.request().url();
     const method = route.request().method();
-    const body = method === "GET" ? { ok: true, macros: [] }
+    const body = url.endsWith("/runs") && method === "GET" ? { ok: true, runs: [] }
+      : method === "GET" ? { ok: true, macros: [] }
       : url.endsWith("/preview") ? { ok: true, previewToken: "signed", expiresAt: "2026-07-22T16:00:00Z", summary: { affectedCount: 1, missingCount: 0, targetCount: 1 }, results: [{ store: "main", id: "record-1", status: "ready", steps: [{ index: 0, type: "add-tag", status: "would_apply", reversible: true }, { index: 1, type: "delete", status: "would_apply", reversible: true }] }] }
       : url.endsWith("/run") ? (runs += 1, { ok: true, run: { id: "r1", macroId: "m1", macroVersion: 1, targetCount: 1, completedCount: 1, failedCount: 0, targets: [], results: [], createdAt: null } })
       : { ok: true, macro: { id: "m1", name: "وسم مهم", version: 1, steps: [{ type: "add-tag", tag: "مهم" }], createdAt: null, updatedAt: null } };
