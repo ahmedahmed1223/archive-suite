@@ -1,15 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import * as Icons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
+import IconPicker from "@/components/IconPicker";
 import { createArchiveApiClient, type ArchiveRecord, type TagNode } from "@/lib/archive-api";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
+import { getTagIcon, setTagIcon } from "@/lib/tag-icons";
 import { Skeleton } from "@/components/ui/Skeleton";
+
+const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 
 interface ParentChange {
   tag: string;
@@ -30,6 +36,18 @@ export default function TagsPage() {
   const [nodes, setNodes] = useState<TagNode[]>([]);
   const [filter, setFilter] = useState("");
   const [parentStack, setParentStack] = useState<UndoStack<ParentChange>>(emptyUndoStack);
+  const [iconOverrides, setIconOverrides] = useState<Record<string, string>>({});
+  const [iconEditingTag, setIconEditingTag] = useState<string | null>(null);
+
+  function iconFor(tag: string): string | undefined {
+    return iconOverrides[tag] ?? getTagIcon(tag);
+  }
+
+  function handleSetIcon(tag: string, iconName: string) {
+    setTagIcon(tag, iconName);
+    setIconOverrides((current) => ({ ...current, [tag]: iconName }));
+    setIconEditingTag(null);
+  }
 
   async function refreshNodes() {
     const response = await api.tagNodes();
@@ -208,6 +226,8 @@ export default function TagsPage() {
           <div className="analytics-tag-list">
             {tagRows.map((row) => {
               const node = nodeByTag.get(row.tag);
+              const rowIcon = iconFor(row.tag);
+              const RowIcon = rowIcon ? iconRegistry[rowIcon] || Icons.Circle : null;
               return (
                 <div className="analytics-tag-row" key={row.tag} style={node?.color ? { borderLeft: `4px solid ${node.color}` } : {}}>
                   <span>
@@ -216,6 +236,15 @@ export default function TagsPage() {
                   </span>
                   <div className="button-row">
                     <strong>{row.count}</strong>
+                    <button
+                      type="button"
+                      className="button button-secondary button-sm"
+                      aria-label={`أيقونة الوسم ${row.tag}`}
+                      aria-pressed={iconEditingTag === row.tag}
+                      onClick={() => setIconEditingTag(iconEditingTag === row.tag ? null : row.tag)}
+                    >
+                      {RowIcon ? <RowIcon aria-hidden="true" size={16} strokeWidth={2} /> : "أيقونة"}
+                    </button>
                     {node && (
                       <input
                         type="color"
@@ -234,6 +263,9 @@ export default function TagsPage() {
                     <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(row.tag)}`}>بحث</a>
                   </div>
                   <p className="helper-text">تغيير الأب هيكلي فقط ولا يعدّل أي سجل؛ يمكن التراجع عنه من الزر أعلاه.</p>
+                  {iconEditingTag === row.tag ? (
+                    <IconPicker value={rowIcon} onChange={(iconName) => handleSetIcon(row.tag, iconName)} label={`اختر أيقونة الوسم ${row.tag}`} />
+                  ) : null}
                 </div>
               );
             })}

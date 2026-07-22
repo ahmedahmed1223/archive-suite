@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import TypesEditor from "./TypesEditor";
 import { loadDraft } from "@/lib/local-draft";
-import { getTypeIcon } from "@/lib/type-icons";
+import { getTypeIcon, setTypeIcon } from "@/lib/type-icons";
 
 afterEach(() => {
   cleanup();
@@ -174,7 +174,7 @@ describe("TypesEditor icon picker (V1-794)", () => {
       name: "مستند",
       fields: [{ name: "العنوان", type: "text" as const, fieldAcl: { view: [], edit: [] } }]
     };
-    window.localStorage.setItem("masar.type-icons", JSON.stringify({ document: "FileText" }));
+    setTypeIcon("document", "FileText");
 
     renderEditor({ initialType: existing });
 
