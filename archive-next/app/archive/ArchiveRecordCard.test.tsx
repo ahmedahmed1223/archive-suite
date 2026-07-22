@@ -33,7 +33,7 @@ test("native checkbox activation changes checked state once while forwarding sel
   function StatefulCard() {
     const [selected, setSelected] = useState(false);
     return <ArchiveRecordCard record={record} itemSize="compact" isSelected={selected} canEdit onPreview={() => {}} onRename={() => {}}
-      onSelectClick={(id, event) => { onSelectClick(id, event); setSelected((value) => !value); }} />;
+      onSelectClick={(id, event) => { onSelectClick(id, event); setSelected((value) => value ? !event.ctrlKey : true); }} />;
   }
   render(<StatefulCard />);
   const checkbox = screen.getByRole("checkbox", { name: "تحديد سجل تجريبي" });
@@ -42,6 +42,10 @@ test("native checkbox activation changes checked state once while forwarding sel
   expect(checkbox).toBeChecked();
   expect(onSelectClick).toHaveBeenCalledTimes(1);
   expect(onSelectClick).toHaveBeenCalledWith("rec-1", expect.objectContaining({ shiftKey: false, ctrlKey: false, metaKey: false }));
+  fireEvent.click(checkbox);
+  expect(checkbox).not.toBeChecked();
+  expect(onSelectClick).toHaveBeenCalledTimes(2);
+  expect(onSelectClick).toHaveBeenLastCalledWith("rec-1", expect.objectContaining({ ctrlKey: true, shiftKey: false, metaKey: false }));
 });
 
 describe("ArchiveRecordCard right-click context menu", () => {

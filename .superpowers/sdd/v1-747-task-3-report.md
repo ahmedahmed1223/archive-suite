@@ -14,6 +14,18 @@ pnpm typecheck
 PASS
 ```
 
+## Checkbox toggle follow-up
+
+Card and table checkbox adapters now turn a plain click on an already-selected record into the existing additive-toggle selection mode, while retaining shift/ctrl/meta behavior unchanged. The stateful card test verifies both native check and uncheck activation.
+
+```text
+pnpm --filter @archive/next exec vitest run app/archive/selection.test.ts app/archive/ArchiveRecordCard.test.tsx app/archive/_components/bulk-macro-helpers.test.ts app/archive/_components/BulkMacroRecorder.test.tsx
+PASS (4 files, 24 tests)
+
+pnpm typecheck
+PASS
+```
+
 ## E2E stable-target follow-up
 
 The live workflow now retains the editor fixture record through `تحديد سجل editor المعزول` for its check, deselect, and reselect actions, instead of relying on a list-order-sensitive `.first()` locator.

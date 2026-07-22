@@ -69,7 +69,11 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
           aria-label={`تحديد ${record.title || "السجل"}`}
           checked={isSelected}
           onClick={(e) => {
-            onSelectClick(record.id, e);
+            onSelectClick(record.id, {
+              shiftKey: e.shiftKey,
+              ctrlKey: e.ctrlKey || (isSelected && !e.shiftKey && !e.metaKey),
+              metaKey: e.metaKey
+            });
           }}
           onChange={() => {}}
         />
