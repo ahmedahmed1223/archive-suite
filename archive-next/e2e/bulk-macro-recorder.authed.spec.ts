@@ -14,7 +14,8 @@ test("editor must preview a saved macro before it can run, and selection changes
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
   });
   await page.goto("/archive");
-  await page.getByRole("checkbox", { name: /تحديد/ }).first().check();
+  const selectedRecord = page.getByRole("checkbox", { name: "تحديد سجل editor المعزول" });
+  await selectedRecord.check();
   let recorder = page.getByRole("region", { name: "مسجل الإجراءات الجماعية" });
   await expect(recorder.getByRole("heading", { name: "مسجل الإجراءات الجماعية" })).toBeVisible();
   await recorder.getByRole("textbox", { name: "اسم الماكرو" }).fill("وسم مهم");
@@ -32,9 +33,9 @@ test("editor must preview a saved macro before it can run, and selection changes
   await expect(recorder.getByText("معاينة موقعة")).toBeVisible();
   await expect(recorder.getByText("قابل للتراجع").first()).toBeVisible();
   await expect(recorder.getByRole("button", { name: "تنفيذ الماكرو" })).toBeEnabled();
-  await page.getByRole("checkbox", { name: /تحديد/ }).first().uncheck();
+  await selectedRecord.uncheck();
   await expect(recorder).toHaveCount(0);
-  await page.getByRole("checkbox", { name: /تحديد/ }).first().check();
+  await selectedRecord.check();
   recorder = page.getByRole("region", { name: "مسجل الإجراءات الجماعية" });
   await expect(recorder.getByRole("button", { name: "تنفيذ الماكرو" })).toBeDisabled();
   await recorder.getByRole("button", { name: "معاينة التنفيذ" }).click();
