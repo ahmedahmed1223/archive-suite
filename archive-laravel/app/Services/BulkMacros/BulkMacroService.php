@@ -57,7 +57,7 @@ class BulkMacroService
             try {
                 return $this->processTarget($macro, $target, $user);
             } catch (Throwable) {
-                return ['store' => $target['store'], 'id' => $target['id'], 'status' => 'failed', 'reason' => 'target_failed', 'steps' => []];
+                return $this->failedTarget($macro, $target);
             }
         }, $targets);
         $completed = count(array_filter($results, fn (array $result): bool => $result['status'] === 'completed'));
@@ -99,11 +99,13 @@ class BulkMacroService
         $record = $this->decode($row->data);
         $steps = [];
         $deleted = false;
+        $mutated = false;
         foreach ($macro->steps as $index => $step) {
             if ($deleted) {
                 $steps[] = ['index' => $index, 'type' => $step['type'], 'status' => 'skipped', 'reason' => 'deleted'];
                 continue;
             }
+            $recordBeforeStep = $record;
             $outcome = $this->simulate($record, $step, $index);
             if (! $executing) {
                 $steps[] = $outcome;
@@ -111,7 +113,6 @@ class BulkMacroService
                 continue;
             }
 
-            $recordBeforeStep = $record;
             try {
                 if ($step['type'] === 'delete') {
                     DB::transaction(function () use ($row, $user): void {
@@ -127,10 +128,8 @@ class BulkMacroService
                             'updated_at' => now(),
                         ]);
                         if ($affected !== 1) throw new RuntimeException('Bulk macro mutation did not affect exactly one row.');
-                        if ($row->store === AutomationRuleRunner::ARCHIVE_STORE) {
-                            RecordChanged::dispatch((string) $row->store, (string) $row->uid, $record, false);
-                        }
                     });
+                    $mutated = true;
                 }
                 $outcome['status'] = 'completed';
                 $steps[] = $outcome;
@@ -140,11 +139,48 @@ class BulkMacroService
             }
         }
 
-        $status = $executing
-            ? (in_array('failed', array_column($steps, 'status'), true) ? 'partial' : 'completed')
-            : 'ready';
+        $eventFailed = false;
+        if ($executing && $mutated && ! $deleted && $row->store === AutomationRuleRunner::ARCHIVE_STORE) {
+            try {
+                RecordChanged::dispatch(
+                    (string) $row->store,
+                    (string) $row->uid,
+                    ['uid' => (string) $row->uid] + $record,
+                    false,
+                );
+            } catch (Throwable) {
+                $eventFailed = true;
+            }
+        }
 
-        return ['store' => $target['store'], 'id' => $target['id'], 'status' => $status, 'steps' => $steps];
+        $stepFailed = in_array('failed', array_column($steps, 'status'), true);
+        $status = ! $executing ? 'ready' : ($stepFailed ? 'partial' : ($eventFailed ? 'failed' : 'completed'));
+
+        return array_filter([
+            'store' => $target['store'],
+            'id' => $target['id'],
+            'status' => $status,
+            'reason' => $eventFailed ? 'event_dispatch_failed' : null,
+            'steps' => $steps,
+        ], fn (mixed $value): bool => $value !== null);
+    }
+
+    /** @param array{store: string, id: string} $target */
+    private function failedTarget(BulkMacro $macro, array $target): array
+    {
+        $steps = [];
+        foreach (array_values((array) $macro->steps) as $index => $step) {
+            $candidate = is_array($step) ? ($step['type'] ?? null) : null;
+            $type = in_array($candidate, ['add-tag', 'set-workflow-status', 'delete'], true) ? $candidate : 'delete';
+            $steps[] = [
+                'index' => $index,
+                'type' => $type,
+                'status' => $index === 0 ? 'failed' : 'skipped',
+                'reason' => 'target_failed',
+            ];
+        }
+
+        return ['store' => $target['store'], 'id' => $target['id'], 'status' => 'failed', 'reason' => 'target_failed', 'steps' => $steps];
     }
 
     /** @param array<string, mixed> $record @param array<string, mixed> $step @return array<string, mixed> */
