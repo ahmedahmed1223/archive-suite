@@ -59,7 +59,7 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
     <div className="contextual-tips">
       <button
         type="button"
-        className="contextual-tips__trigger"
+        className="contextual-tips__trigger icon-action"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label={`نصائح حول ${page}`}
         aria-expanded={isOpen}
