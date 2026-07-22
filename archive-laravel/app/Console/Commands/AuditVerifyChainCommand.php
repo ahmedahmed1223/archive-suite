@@ -29,11 +29,11 @@ class AuditVerifyChainCommand extends Command
             $checked++;
 
             if ($log->prev_hash !== $previousHash) {
-                return $this->fail($json, (int) $log->id, "prev_hash does not match the previous row's hash.", $checked);
+                return $this->reportBrokenChain($json, (int) $log->id, "prev_hash does not match the previous row's hash.", $checked);
             }
 
             if ($log->hash !== $log->computeHash()) {
-                return $this->fail($json, (int) $log->id, 'stored hash does not match recomputed hash - row was altered.', $checked);
+                return $this->reportBrokenChain($json, (int) $log->id, 'stored hash does not match recomputed hash - row was altered.', $checked);
             }
 
             $previousHash = $log->hash;
@@ -50,7 +50,7 @@ class AuditVerifyChainCommand extends Command
         return 0;
     }
 
-    private function fail(bool $json, int $id, string $reason, int $checked): int
+    private function reportBrokenChain(bool $json, int $id, string $reason, int $checked): int
     {
         $message = "Audit log chain broken at id={$id} after checking {$checked} entr(y/ies): {$reason}";
 
