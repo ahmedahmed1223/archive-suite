@@ -1132,6 +1132,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/safety-preview/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a destructive-operation preview against synthetic data
+         * @description Executes only deterministic in-memory fixtures. It never reads, changes, restores, or deletes archive data.
+         */
+        post: operations["runSafetyPreview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/safety-preview/scenarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List deterministic synthetic safety-preview scenarios */
+        get: operations["safetyPreviewScenarios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/saved-searches": {
         parameters: {
             query?: never;
@@ -3101,6 +3138,46 @@ export interface components {
         };
         RightsRecordResponse: components["schemas"]["OkEnvelope"] & {
             record: components["schemas"]["RightsRecord"];
+        };
+        SafetyPreviewCounts: {
+            live: number;
+            trash: number;
+        };
+        /** @enum {string} */
+        SafetyPreviewOperation: "delete" | "restore";
+        SafetyPreviewResult: {
+            deleted: boolean;
+            id: string;
+            /** @enum {string} */
+            reason?: "not_found";
+        } | {
+            id: string;
+            /** @enum {string} */
+            reason?: "not_found" | "conflict";
+            restored: boolean;
+        };
+        SafetyPreviewRunRequest: {
+            ids: string[];
+            operation: components["schemas"]["SafetyPreviewOperation"];
+            scenario: components["schemas"]["SafetyPreviewScenario"];
+        };
+        SafetyPreviewRunResponse: {
+            after: components["schemas"]["SafetyPreviewCounts"];
+            before: components["schemas"]["SafetyPreviewCounts"];
+            /** Format: date-time */
+            expiresAt: string;
+            operation: components["schemas"]["SafetyPreviewOperation"];
+            results: components["schemas"]["SafetyPreviewResult"][];
+            scenario: components["schemas"]["SafetyPreviewScenario"];
+            /** @constant */
+            synthetic: true;
+        };
+        /** @enum {string} */
+        SafetyPreviewScenario: "bulk-delete-basic" | "restore-conflict";
+        SafetyPreviewScenariosResponse: {
+            scenarios: components["schemas"]["SafetyPreviewScenario"][];
+            /** @constant */
+            synthetic: true;
         };
         SavedSearch: {
             canManage: boolean;
@@ -5864,6 +5941,55 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+        };
+    };
+    runSafetyPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SafetyPreviewRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Synthetic preview result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafetyPreviewRunResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    safetyPreviewScenarios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Synthetic scenario identifiers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafetyPreviewScenariosResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
         };
     };
     listSavedSearches: {

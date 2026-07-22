@@ -45,6 +45,10 @@ export type CreateRecordPayload = Omit<GeneratedSchemas["RecordCreateRequest"], 
 export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
 export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
 export type ScheduledUploadStaged = GeneratedSchemas["ScheduledUploadStaged"];
+export type SafetyPreviewScenario = GeneratedSchemas["SafetyPreviewScenario"];
+export type SafetyPreviewOperation = GeneratedSchemas["SafetyPreviewOperation"];
+export type SafetyPreviewRun = GeneratedSchemas["SafetyPreviewRunResponse"];
+export type SafetyPreviewRunPayload = GeneratedSchemas["SafetyPreviewRunRequest"];
 
 export interface CreateScheduledUploadPayload {
   uploadSessionId: string;
@@ -1129,6 +1133,8 @@ export interface ArchiveApiClient {
   deleteType(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted?: boolean }>>;
   bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
   bulkDeleteRecords(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: BulkDeleteResultItem[] }>>;
+  safetyPreviewScenarios(options?: AuthRequestOptions): Promise<ApiEnvelope<GeneratedSchemas["SafetyPreviewScenariosResponse"]>>;
+  runSafetyPreview(payload: SafetyPreviewRunPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<SafetyPreviewRun>>;
   trash(params?: TrashFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ items: TrashEntry[]; pagination?: PaginationMeta }>>;
   restoreTrash(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: TrashRestoreResultItem[] }>>;
   purgeTrash(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: TrashPurgeResultItem[] }>>;
@@ -1665,6 +1671,10 @@ export function createArchiveApiClient({
       post<{ count: number }>("/records/bulk", payload, options),
     bulkDeleteRecords: (payload: { store: string; ids: string[] }, options?: AuthRequestOptions) =>
       post<{ count: number; results: BulkDeleteResultItem[] }>("/records/bulk-delete", payload, options),
+    safetyPreviewScenarios: (options?: AuthRequestOptions) =>
+      get<GeneratedSchemas["SafetyPreviewScenariosResponse"]>("/safety-preview/scenarios", options),
+    runSafetyPreview: (payload: SafetyPreviewRunPayload, options?: AuthRequestOptions) =>
+      post<SafetyPreviewRun>("/safety-preview/run", payload, options),
     trash: (params?: TrashFilters, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.store) queryParams.set("store", params.store);
