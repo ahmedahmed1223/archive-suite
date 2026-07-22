@@ -91,4 +91,17 @@ describe("BulkMacroRecorder", () => {
     expect(screen.getByRole("article", { name: "تشغيل محفوظ 1" })).toHaveTextContent("قابل للتراجع");
     expect(screen.getByRole("option", { name: "قيد المراجعة" })).toHaveValue("review");
   });
+
+  test("renders a localized target_failed reason in persisted history details", async () => {
+    const api = apiFixture();
+    const failedRun = { ...detailedRun, id: "failed-run", failedCount: 1, completedCount: 0, results: [{ ...detailedResult, status: "failed", reason: "target_failed", steps: [] }] };
+    api.bulkMacros.mockResolvedValue({ ok: true, macros: [{ id: "m1", name: "فشل محفوظ", version: 1, steps: [{ type: "delete" }], createdAt: null, updatedAt: null }] });
+    api.bulkMacroRuns.mockResolvedValue({ ok: true, runs: [failedRun] });
+    render(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
+    await waitFor(() => expect(screen.getByRole("option", { name: "فشل محفوظ" })).toBeTruthy());
+    fireEvent.change(screen.getByRole("combobox", { name: "الماكرو المحفوظ" }), { target: { value: "m1" } });
+    const historyResult = await screen.findByRole("article", { name: "تشغيل محفوظ 1" });
+    expect(historyResult).toHaveTextContent("سبب نتيجة السجل: تعذرت معالجة السجل");
+    expect(historyResult).not.toHaveTextContent("target_failed");
+  });
 });
