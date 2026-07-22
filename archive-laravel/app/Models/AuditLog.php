@@ -35,6 +35,10 @@ class AuditLog extends Model
     {
         static::creating(function (AuditLog $log): void {
             $log->prev_hash = static::query()->latest('id')->value('hash');
+            // creating() fires before Eloquent's own updateTimestamps(), so
+            // created_at is otherwise still null here; set it explicitly so
+            // the hash is computed against the same value that gets persisted.
+            $log->created_at ??= now();
             $log->hash = $log->computeHash();
         });
     }
@@ -50,7 +54,7 @@ class AuditLog extends Model
             'outcome' => $this->outcome,
             'status_code' => $this->status_code,
             'metadata' => $this->metadata,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'prev_hash' => $this->prev_hash,
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
 
