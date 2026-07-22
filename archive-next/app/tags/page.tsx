@@ -12,7 +12,6 @@ import { createArchiveApiClient, type ArchiveRecord, type TagNode } from "@/lib/
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
-import { getTagIcon, setTagIcon } from "@/lib/tag-icons";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
@@ -36,17 +35,19 @@ export default function TagsPage() {
   const [nodes, setNodes] = useState<TagNode[]>([]);
   const [filter, setFilter] = useState("");
   const [parentStack, setParentStack] = useState<UndoStack<ParentChange>>(emptyUndoStack);
-  const [iconOverrides, setIconOverrides] = useState<Record<string, string>>({});
   const [iconEditingTag, setIconEditingTag] = useState<string | null>(null);
 
-  function iconFor(tag: string): string | undefined {
-    return iconOverrides[tag] ?? getTagIcon(tag);
-  }
-
-  function handleSetIcon(tag: string, iconName: string) {
-    setTagIcon(tag, iconName);
-    setIconOverrides((current) => ({ ...current, [tag]: iconName }));
+  async function handleSetIcon(tag: string, iconName: string) {
+    const existing = nodeByTag.get(tag);
+    const response = existing
+      ? await api.updateTagNode(existing.id, { icon: iconName })
+      : await api.createTagNode({ tag, parent: "", icon: iconName });
+    if (!response.ok) {
+      setError(response.error || "تعذر حفظ أيقونة الوسم.");
+      return;
+    }
     setIconEditingTag(null);
+    await refreshNodes();
   }
 
   async function refreshNodes() {
@@ -226,7 +227,7 @@ export default function TagsPage() {
           <div className="analytics-tag-list">
             {tagRows.map((row) => {
               const node = nodeByTag.get(row.tag);
-              const rowIcon = iconFor(row.tag);
+              const rowIcon = node?.icon ?? undefined;
               const RowIcon = rowIcon ? iconRegistry[rowIcon] || Icons.Circle : null;
               return (
                 <div className="analytics-tag-row" key={row.tag} style={node?.color ? { borderLeft: `4px solid ${node.color}` } : {}}>

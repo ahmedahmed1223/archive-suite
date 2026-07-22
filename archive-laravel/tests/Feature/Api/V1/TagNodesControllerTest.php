@@ -181,6 +181,42 @@ class TagNodesControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
+    public function test_can_create_tag_node_with_icon(): void
+    {
+        $response = $this->postJson('/api/v1/tag-nodes', [
+            'tag' => 'important',
+            'parent' => '',
+            'icon' => 'Star',
+        ]);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('ok', true);
+        $response->assertJsonPath('node.icon', 'Star');
+    }
+
+    public function test_can_update_tag_icon(): void
+    {
+        $id = $this->createTagNode('tag', '');
+
+        $response = $this->patchJson("/api/v1/tag-nodes/{$id}", [
+            'icon' => 'Flag',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('node.icon', 'Flag');
+    }
+
+    public function test_can_clear_tag_icon(): void
+    {
+        $id = $this->createTagNode('tag', '');
+        $this->patchJson("/api/v1/tag-nodes/{$id}", ['icon' => 'Flag']);
+
+        $response = $this->patchJson("/api/v1/tag-nodes/{$id}", ['icon' => null]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('node.icon', null);
+    }
+
     private function createTagNode(string $tag, string $parent = ''): string
     {
         $id = (string) \Illuminate\Support\Str::uuid();
