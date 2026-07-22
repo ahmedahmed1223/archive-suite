@@ -1,29 +1,14 @@
-// ponytail: client-only icon assignment for archive types — the `/types` API
-// (backend-owned JSON blob, see TypesController) has no `icon` column yet, so
-// the picked icon is scoped to this browser until that contract gains one.
-const STORAGE_KEY = "masar.type-icons";
+// ponytail: the `/types` API (backend-owned JSON blob, see TypesController)
+// has no `icon` column yet, so the picked icon is scoped to this browser
+// until that contract gains one. See entity-icons.ts for the shared store.
+import { getEntityIcon, setEntityIcon } from "./entity-icons";
 
-function readMap(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, string>) : {};
-  } catch {
-    return {};
-  }
-}
+const NAMESPACE = "type";
 
 export function getTypeIcon(typeId: string): string | undefined {
-  return readMap()[typeId];
+  return getEntityIcon(NAMESPACE, typeId);
 }
 
 export function setTypeIcon(typeId: string, iconName: string): void {
-  if (typeof window === "undefined" || !typeId) return;
-  try {
-    const map = readMap();
-    map[typeId] = iconName;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // Silent fail on storage quota exceeded or other errors
-  }
+  setEntityIcon(NAMESPACE, typeId, iconName);
 }
