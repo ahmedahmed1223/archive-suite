@@ -35,11 +35,11 @@
 - Preview produces `previewToken`, `expiresAt`, summary, and per-target ordered step outcomes.
 - Run consumes `targets` plus `previewToken` and produces persisted run/result data.
 
-- [ ] Write failing tests for roles/ownership, CRUD validation, step order, preview non-mutation, token mismatch/expiry/stale version, tag/status writes, recoverable delete, partial results, and history.
-- [ ] Run focused Docker PHPUnit and confirm failures are caused by absent schema/routes.
-- [ ] Implement migration, focused value/service classes, controller, routes, scope fixtures, and route documentation.
-- [ ] Run `BulkMacrosApiTest.php` and `RouteScopeTest.php` to green; run migration refresh through the tests.
-- [ ] Commit only Task 1 files as `feat(macros): add persisted bulk macro engine` and write `.superpowers/sdd/v1-747-task-1-report.md`.
+- [x] Write failing tests for roles/ownership, CRUD validation, step order, preview non-mutation, token mismatch/expiry/stale version, tag/status writes, recoverable delete, partial results, and history.
+- [x] Run focused Docker PHPUnit and confirm failures are caused by absent schema/routes.
+- [x] Implement migration, focused value/service classes, controller, routes, scope fixtures, and route documentation.
+- [x] Run `BulkMacrosApiTest.php` and `RouteScopeTest.php` to green; run migration refresh through the tests.
+- [x] Commit only Task 1 files as `feat(macros): add persisted bulk macro engine` and write `.superpowers/sdd/v1-747-task-1-report.md`.
 
 ### Task 2: OpenAPI and typed Next client
 
@@ -50,11 +50,11 @@
 - Consumes Task 1 route/envelope shapes.
 - Produces `BulkMacro`, `BulkMacroStep`, `BulkMacroTarget`, `BulkMacroPreview`, `BulkMacroRun` and typed CRUD/preview/run/history methods.
 
-- [ ] Add failing contract/client assertions for every route, enum, bound, required field, role/error response, and exact path.
-- [ ] Run contract/generated/focused client checks and confirm RED.
-- [ ] Update OpenAPI, regenerate bindings, and wire only the new typed client methods.
-- [ ] Run `pnpm verify:api-contracts`, `pnpm verify:api-generated`, focused client tests, and `pnpm typecheck` to green.
-- [ ] Commit only Task 2 files as `feat(api): contract bulk macro recorder` and write `.superpowers/sdd/v1-747-task-2-report.md`.
+- [x] Add failing contract/client assertions for every route, enum, bound, required field, role/error response, and exact path.
+- [x] Run contract/generated/focused client checks and confirm RED.
+- [x] Update OpenAPI, regenerate bindings, and wire only the new typed client methods.
+- [x] Run `pnpm verify:api-contracts`, `pnpm verify:api-generated`, focused client tests, and `pnpm typecheck` to green.
+- [x] Commit only Task 2 files as `feat(api): contract bulk macro recorder` and write `.superpowers/sdd/v1-747-task-2-report.md`.
 
 ### Task 3: Archive macro recorder and mandatory preview UI
 
@@ -67,15 +67,23 @@
 - Consumes Task 2 macro client methods and current `selectedIds`/record store data.
 - Produces recording, step order editing, save/list, preview, execution, expiry/error, and history-result UI.
 
-- [ ] Write failing Vitest and Playwright tests for recording steps, reorder/remove, save, selection targets, no-run-before-preview, altered selection invalidation, preview details, execution, and Arabic accessible feedback.
-- [ ] Run focused tests and confirm RED from absent recorder behavior.
-- [ ] Implement focused helpers/components and minimal archive-page wiring with no production endpoint fallback.
-- [ ] Run focused Vitest, `pnpm typecheck`, and focused Playwright with a supported server to green.
-- [ ] Commit only Task 3 files as `feat(next): add bulk macro recorder` and write `.superpowers/sdd/v1-747-task-3-report.md`.
+- [x] Write failing Vitest and Playwright tests for recording steps, reorder/remove, save, selection targets, no-run-before-preview, altered selection invalidation, preview details, execution, and Arabic accessible feedback.
+- [x] Run focused tests and confirm RED from absent recorder behavior.
+- [x] Implement focused helpers/components and minimal archive-page wiring with no production endpoint fallback.
+- [x] Run focused Vitest, `pnpm typecheck`, and focused Playwright with a supported server to green.
+- [x] Commit only Task 3 files as `feat(next): add bulk macro recorder` and write `.superpowers/sdd/v1-747-task-3-report.md`.
 
 ### Task 4: Full verification, one review, and closure
 
-- [ ] Run contract/generated/typecheck, full Next tests/build, focused Laravel macro/route suites, and Chromium/mobile Playwright.
-- [ ] Generate bounded diff packages and dispatch one comprehensive reviewer across all layers.
-- [ ] Fix all Critical/Important findings in one pass and re-review with the same reviewer.
-- [ ] Remove V1-747 from `TASKS.md`, recalculate the exact open count, archive evidence in `ChangeLog.md`, and commit `docs: close bulk macro recorder task`.
+- [x] Run contract/generated/typecheck, full Next tests/build, focused Laravel macro/route suites, and authenticated live Playwright.
+- [x] Generate bounded diff packages and dispatch one comprehensive reviewer across all layers.
+- [x] Fix all Critical/Important findings and re-review with the same reviewer.
+- [x] Remove V1-747 from `TASKS.md`, recalculate the exact open count, archive evidence in `ChangeLog.md`, and commit `docs: close bulk macro recorder task`.
+
+## Completion evidence — 2026-07-22
+
+- API contract and generated binding verification passed; Next typecheck passed independently after the production build.
+- Full Next suite passed: 89 files and 482 tests; production build generated 57 pages.
+- Focused Laravel macro and route suites passed: 20 tests and 188 assertions.
+- Authenticated live Laravel+Next Playwright workflow passed after the final backend and UI fixes.
+- The single comprehensive reviewer verified all Critical/Important findings after remediation and returned `Ready to merge: Yes`.
