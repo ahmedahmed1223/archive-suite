@@ -36,7 +36,8 @@
     { "name": "Import" },
     { "name": "Upload Links" },
     { "name": "Saved Searches" },
-    { "name": "Trash" }
+    { "name": "Trash" },
+    { "name": "Types" }
   ],
   "paths": {
     "/health": {
@@ -4111,6 +4112,75 @@
         }
       }
     },
+    "/types": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "List type definitions",
+        "operationId": "listTypes",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 200 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Type definitions",
+            "content": { "application/json": { "schema": {
+              "type": "object",
+              "required": ["ok", "types", "nextCursor"],
+              "properties": {
+                "ok": { "const": true },
+                "types": { "type": "array", "items": { "$ref": "#/components/schemas/TypeDefinition" } },
+                "nextCursor": { "type": ["string", "null"] }
+              }
+            } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Types"],
+        "summary": "Create or update a type definition",
+        "operationId": "storeType",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TypeDefinition" } } } },
+        "responses": {
+          "200": { "description": "Updated type definition", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TypeResponse" } } } },
+          "201": { "description": "Created type definition", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TypeResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/types/{id}": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Get a type definition",
+        "operationId": "getType",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Type definition", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TypeResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Types"],
+        "summary": "Delete a type definition",
+        "operationId": "deleteType",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/account/export": {
       "get": {
         "tags": ["Account"],
@@ -4207,6 +4277,27 @@
               "edit": { "type": "array", "items": { "type": "string" } }
             }
           }
+        }
+      },
+      "TypeDefinition": {
+        "type": "object",
+        "required": ["id", "name", "fields"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "icon": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "fields": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TypeDefinitionField" }
+          }
+        }
+      },
+      "TypeResponse": {
+        "type": "object",
+        "required": ["ok", "type"],
+        "properties": {
+          "ok": { "const": true },
+          "type": { "$ref": "#/components/schemas/TypeDefinition" }
         }
       },
       "TypeFieldCondition": {

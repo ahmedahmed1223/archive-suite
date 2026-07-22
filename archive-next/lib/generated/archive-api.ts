@@ -1607,6 +1607,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List type definitions */
+        get: operations["listTypes"];
+        put?: never;
+        /** Create or update a type definition */
+        post: operations["storeType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/types/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a type definition */
+        get: operations["getType"];
+        put?: never;
+        post?: never;
+        /** Delete a type definition */
+        delete: operations["deleteType"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/upload-links": {
         parameters: {
             query?: never;
@@ -3367,6 +3403,12 @@ export interface components {
             ids: string[];
             store: string;
         };
+        TypeDefinition: {
+            fields: components["schemas"]["TypeDefinitionField"][];
+            icon?: string;
+            id: string;
+            name: string;
+        };
         TypeDefinitionField: {
             condition?: components["schemas"]["TypeFieldCondition"];
             fieldAcl?: {
@@ -3380,6 +3422,11 @@ export interface components {
         TypeFieldCondition: {
             equals: string | number | boolean;
             field: string;
+        };
+        TypeResponse: {
+            /** @constant */
+            ok: true;
+            type: components["schemas"]["TypeDefinition"];
         };
         UpdateAutomationRuleRequest: {
             action?: components["schemas"]["AutomationRuleAction"];
@@ -6679,6 +6726,113 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listTypes: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Type definitions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        nextCursor: string | null;
+                        /** @constant */
+                        ok: true;
+                        types: components["schemas"]["TypeDefinition"][];
+                    };
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    storeType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TypeDefinition"];
+            };
+        };
+        responses: {
+            /** @description Updated type definition */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TypeResponse"];
+                };
+            };
+            /** @description Created type definition */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TypeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    getType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Type definition */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TypeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    deleteType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     listUploadLinks: {

@@ -67,6 +67,39 @@ class TypesControllerTest extends TestCase
         $this->assertCount(2, $data['fields']);
     }
 
+    public function test_create_type_persists_icon_identifier(): void
+    {
+        $payload = [
+            'id' => 'photo-type',
+            'name' => 'Photo',
+            'icon' => 'Image',
+            'fields' => [],
+        ];
+
+        $response = $this->actingAs($this->adminUser)->postJson('/api/v1/types', $payload);
+
+        $response->assertCreated()->assertJsonPath('type.icon', 'Image');
+        $this->actingAs($this->viewerUser)
+            ->getJson('/api/v1/types/photo-type')
+            ->assertOk()
+            ->assertJsonPath('type.icon', 'Image');
+    }
+
+    public function test_create_type_rejects_invalid_icon_identifier(): void
+    {
+        $payload = [
+            'id' => 'bad-icon-type',
+            'name' => 'Bad Icon',
+            'icon' => str_repeat('x', 101),
+            'fields' => [],
+        ];
+
+        $this->actingAs($this->adminUser)
+            ->postJson('/api/v1/types', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['icon']);
+    }
+
     public function test_create_type_with_conditional_field(): void
     {
         $payload = [
