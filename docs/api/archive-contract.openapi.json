@@ -839,6 +839,56 @@
         }
       }
     },
+    "/safety-preview/scenarios": {
+      "get": {
+        "tags": ["Safety Preview"],
+        "summary": "List deterministic synthetic safety-preview scenarios",
+        "operationId": "safetyPreviewScenarios",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Synthetic scenario identifiers",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SafetyPreviewScenariosResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/safety-preview/run": {
+      "post": {
+        "tags": ["Safety Preview"],
+        "summary": "Run a destructive-operation preview against synthetic data",
+        "description": "Executes only deterministic in-memory fixtures. It never reads, changes, restores, or deletes archive data.",
+        "operationId": "runSafetyPreview",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SafetyPreviewRunRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Synthetic preview result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SafetyPreviewRunResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/import": {
       "post": {
         "tags": ["Records"],
@@ -6794,6 +6844,85 @@
             }
           }
         ]
+      },
+      "SafetyPreviewScenario": {
+        "type": "string",
+        "enum": ["bulk-delete-basic", "restore-conflict"]
+      },
+      "SafetyPreviewOperation": {
+        "type": "string",
+        "enum": ["delete", "restore"]
+      },
+      "SafetyPreviewCounts": {
+        "type": "object",
+        "required": ["live", "trash"],
+        "properties": {
+          "live": { "type": "integer", "minimum": 0 },
+          "trash": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "SafetyPreviewResult": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["id", "deleted"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "deleted": { "type": "boolean" },
+              "reason": { "type": "string", "enum": ["not_found"] }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["id", "restored"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "restored": { "type": "boolean" },
+              "reason": { "type": "string", "enum": ["not_found", "conflict"] }
+            }
+          }
+        ]
+      },
+      "SafetyPreviewScenariosResponse": {
+        "type": "object",
+        "required": ["synthetic", "scenarios"],
+        "properties": {
+          "synthetic": { "const": true },
+          "scenarios": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SafetyPreviewScenario" }
+          }
+        }
+      },
+      "SafetyPreviewRunRequest": {
+        "type": "object",
+        "required": ["scenario", "operation", "ids"],
+        "properties": {
+          "scenario": { "$ref": "#/components/schemas/SafetyPreviewScenario" },
+          "operation": { "$ref": "#/components/schemas/SafetyPreviewOperation" },
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10000,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "SafetyPreviewRunResponse": {
+        "type": "object",
+        "required": ["synthetic", "scenario", "operation", "expiresAt", "before", "after", "results"],
+        "properties": {
+          "synthetic": { "const": true },
+          "scenario": { "$ref": "#/components/schemas/SafetyPreviewScenario" },
+          "operation": { "$ref": "#/components/schemas/SafetyPreviewOperation" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "before": { "$ref": "#/components/schemas/SafetyPreviewCounts" },
+          "after": { "$ref": "#/components/schemas/SafetyPreviewCounts" },
+          "results": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SafetyPreviewResult" }
+          }
+        }
       },
       "RecordsImportCsvResponse": {
         "allOf": [

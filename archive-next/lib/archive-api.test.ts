@@ -24,3 +24,23 @@ describe("archive API uploads", () => {
     expect(new Headers(uploadRequest.headers).get("Authorization")).toBe("Bearer live-access-token");
   });
 });
+
+describe("safety preview API client", () => {
+  it("uses only synthetic preview endpoints", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ synthetic: true, scenarios: ["bulk-delete-basic", "restore-conflict"] }), { status: 200 })
+    );
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    await api.safetyPreviewScenarios();
+    await api.runSafetyPreview({ scenario: "bulk-delete-basic", operation: "delete", ids: ["alpha"] });
+
+    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([
+      "/api/v1/safety-preview/scenarios",
+      "/api/v1/safety-preview/run"
+    ]);
+    expect(fetchImpl.mock.calls.map(([, init]) => init?.method)).toEqual(["GET", "POST"]);
+    expect(fetchImpl.mock.calls.map(([url]) => url)).not.toContain("/api/v1/records/bulk-delete");
+    expect(fetchImpl.mock.calls.map(([url]) => url)).not.toContain("/api/v1/trash/restore");
+  });
+});

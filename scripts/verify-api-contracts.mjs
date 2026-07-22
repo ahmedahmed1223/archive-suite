@@ -69,6 +69,8 @@ for (const pathName of [
   "/share",
   "/share/{token}",
   "/records/bulk-delete",
+  "/safety-preview/scenarios",
+  "/safety-preview/run",
   "/users",
   "/users/{id}",
   "/invitations/{token}/accept",
@@ -186,6 +188,13 @@ for (const schemaName of [
   "SharePayloadResponse",
   "BulkDeleteRecordsRequest",
   "BulkDeleteRecordsResponse",
+  "SafetyPreviewScenario",
+  "SafetyPreviewOperation",
+  "SafetyPreviewCounts",
+  "SafetyPreviewResult",
+  "SafetyPreviewScenariosResponse",
+  "SafetyPreviewRunRequest",
+  "SafetyPreviewRunResponse",
   "UserAccount",
   "UserInvitation",
   "InviteUserRequest",
@@ -257,6 +266,28 @@ for (const schemaName of [
 ]) {
   assert.ok(contract.components?.schemas?.[schemaName], `API contract should define ${schemaName}`);
 }
+
+const previewScenarios = contract.paths?.["/safety-preview/scenarios"]?.get;
+assert.equal(previewScenarios?.operationId, "safetyPreviewScenarios");
+assert.deepEqual(previewScenarios?.security, [{ bearerAuth: [] }, { cookieAuth: [] }]);
+assert.equal(previewScenarios?.responses?.["200"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/SafetyPreviewScenariosResponse");
+assert.ok(previewScenarios?.responses?.["403"], "Safety preview scenarios should document editor authorization");
+
+const previewRun = contract.paths?.["/safety-preview/run"]?.post;
+assert.equal(previewRun?.operationId, "runSafetyPreview");
+assert.deepEqual(previewRun?.security, [{ bearerAuth: [] }, { cookieAuth: [] }]);
+assert.equal(previewRun?.requestBody?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/SafetyPreviewRunRequest");
+assert.equal(previewRun?.responses?.["200"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/SafetyPreviewRunResponse");
+assert.ok(previewRun?.responses?.["403"], "Safety preview run should document editor authorization");
+
+const previewSchemas = contract.components.schemas;
+assert.deepEqual(previewSchemas.SafetyPreviewScenario.enum, ["bulk-delete-basic", "restore-conflict"]);
+assert.deepEqual(previewSchemas.SafetyPreviewOperation.enum, ["delete", "restore"]);
+assert.deepEqual(previewSchemas.SafetyPreviewRunRequest.required, ["scenario", "operation", "ids"]);
+assert.equal(previewSchemas.SafetyPreviewRunRequest.properties.ids.minItems, 1);
+assert.equal(previewSchemas.SafetyPreviewRunRequest.properties.ids.maxItems, 10000);
+assert.equal(previewSchemas.SafetyPreviewRunResponse.properties.synthetic.const, true);
+assert.equal(previewSchemas.SafetyPreviewRunResponse.properties.expiresAt.format, "date-time");
 
 assert.ok(contract.components?.securitySchemes?.bearerAuth, "API contract should define bearer auth");
 assert.ok(contract.components?.securitySchemes?.cookieAuth, "API contract should define cookie auth");
