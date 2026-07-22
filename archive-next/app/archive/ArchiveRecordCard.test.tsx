@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { ArchiveRecord } from "@/lib/archive-api";
 import { ArchiveRecordCard } from "./ArchiveRecordCard";
@@ -26,6 +27,22 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof ArchiveRecord
   );
   return { onSelectClick, onPreview, onRename };
 }
+
+test("native checkbox activation changes checked state once while forwarding selection modifiers", () => {
+  const onSelectClick = vi.fn();
+  function StatefulCard() {
+    const [selected, setSelected] = useState(false);
+    return <ArchiveRecordCard record={record} itemSize="compact" isSelected={selected} canEdit onPreview={() => {}} onRename={() => {}}
+      onSelectClick={(id, event) => { onSelectClick(id, event); setSelected((value) => !value); }} />;
+  }
+  render(<StatefulCard />);
+  const checkbox = screen.getByRole("checkbox", { name: "تحديد سجل تجريبي" });
+  expect(checkbox).not.toBeChecked();
+  fireEvent.click(checkbox);
+  expect(checkbox).toBeChecked();
+  expect(onSelectClick).toHaveBeenCalledTimes(1);
+  expect(onSelectClick).toHaveBeenCalledWith("rec-1", expect.objectContaining({ shiftKey: false, ctrlKey: false, metaKey: false }));
+});
 
 describe("ArchiveRecordCard right-click context menu", () => {
   test("right-click opens a menu with فتح، فتح في تبويب جديد، تحديد only", async () => {

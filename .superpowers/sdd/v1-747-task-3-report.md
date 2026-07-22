@@ -36,3 +36,15 @@ PASS
 $env:ARCHIVE_E2E_SPECS='e2e/bulk-macro-recorder.authed.spec.ts'; pnpm verify:laravel-next:live
 EXIT 1 after 89s; the manager-owned Docker/live harness returned no diagnostic output.
 ```
+
+## Checkbox follow-up
+
+The live trace identified native checkbox cancellation in both archive-card and table selection handlers. Those handlers now forward modifier-aware selection without cancelling browser activation, so Playwright's accessible `.check()` interaction updates the controlled selection normally.
+
+```text
+pnpm --filter @archive/next exec vitest run app/archive/ArchiveRecordCard.test.tsx app/archive/_components/bulk-macro-helpers.test.ts app/archive/_components/BulkMacroRecorder.test.tsx
+PASS (3 files, 12 tests)
+
+pnpm typecheck
+PASS
+```
