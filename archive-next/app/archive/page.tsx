@@ -682,7 +682,6 @@ function ArchivePageContent() {
             aria-label={`تحديد ${row.original.title || "السجل"}`}
             checked={selectedIdSet.has(row.original.id)}
             onClick={(e) => {
-              e.preventDefault();
               handleSelectClick(row.original.id, e);
             }}
             onChange={() => {}}
