@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { BulkMacroRecorder } from "./BulkMacroRecorder";
 
@@ -62,15 +62,24 @@ describe("BulkMacroRecorder", () => {
   });
 
   test("automatically disables execution when a preview reaches its expiry", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-01-01T00:00:00Z"));
     const api = apiFixture();
-    api.previewBulkMacro.mockResolvedValue({ ok: true, previewToken: "short-lived", expiresAt: new Date(Date.now() + 200).toISOString(), summary: { affectedCount: 1, missingCount: 0, targetCount: 1 }, results: [] });
-    render(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
-    fireEvent.change(screen.getByRole("textbox", { name: "اسم الماكرو" }), { target: { value: "وسم" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "الوسم الجديد" }), { target: { value: "مهم" } }); fireEvent.click(screen.getByRole("button", { name: "إضافة وسم" })); fireEvent.click(screen.getByRole("button", { name: "حفظ الماكرو" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "معاينة التنفيذ" })).toBeEnabled()); fireEvent.click(screen.getByRole("button", { name: "معاينة التنفيذ" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "تنفيذ الماكرو" })).toBeEnabled());
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("انتهت صلاحية المعاينة"), { timeout: 1_000 });
-    expect(screen.getByRole("button", { name: "تنفيذ الماكرو" })).toBeDisabled();
+    api.bulkMacros.mockResolvedValue({ ok: true, macros: [{ id: "m1", name: "وسم", version: 1, steps: [{ type: "add-tag", tag: "مهم" }], createdAt: null, updatedAt: null }] });
+    api.previewBulkMacro.mockResolvedValue({ ok: true, previewToken: "short-lived", expiresAt: new Date(Date.now() + 60_000).toISOString(), summary: { affectedCount: 1, missingCount: 0, targetCount: 1 }, results: [] });
+    try {
+      render(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
+      await act(async () => { await Promise.resolve(); });
+      fireEvent.change(screen.getByRole("combobox", { name: "الماكرو المحفوظ" }), { target: { value: "m1" } });
+      fireEvent.click(screen.getByRole("button", { name: "معاينة التنفيذ" }));
+      await act(async () => { await Promise.resolve(); });
+      expect(screen.getByRole("button", { name: "تنفيذ الماكرو" })).toBeEnabled();
+      await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+      expect(screen.getByRole("alert")).toHaveTextContent("انتهت صلاحية المعاينة");
+      expect(screen.getByRole("button", { name: "تنفيذ الماكرو" })).toBeDisabled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("guards duplicate preview and run submissions and renders detailed immediate/history results", async () => {
