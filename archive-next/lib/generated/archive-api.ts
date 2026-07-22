@@ -2353,9 +2353,24 @@ export interface components {
             updatedAt: string | null;
             version: number;
         };
+        BulkMacroAddTagStep: {
+            tag: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "add-tag";
+        };
         BulkMacroDeleteResponse: components["schemas"]["OkEnvelope"] & {
             /** @constant */
             deleted: true;
+        };
+        BulkMacroDeleteStep: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "delete";
         };
         BulkMacroNotFoundError: components["schemas"]["ErrorEnvelope"] & {
             /** @constant */
@@ -2400,22 +2415,27 @@ export interface components {
         BulkMacroRunsResponse: components["schemas"]["OkEnvelope"] & {
             runs: components["schemas"]["BulkMacroRun"][];
         };
+        BulkMacroSetWorkflowStatusStep: {
+            status: components["schemas"]["BulkMacroWorkflowStatus"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "set-workflow-status";
+        };
         BulkMacrosResponse: components["schemas"]["OkEnvelope"] & {
             macros: components["schemas"]["BulkMacro"][];
         };
-        BulkMacroStep: {
-            status?: components["schemas"]["BulkMacroWorkflowStatus"];
-            tag?: string;
-            type: components["schemas"]["BulkMacroStepType"];
-        };
+        BulkMacroStep: components["schemas"]["BulkMacroAddTagStep"] | components["schemas"]["BulkMacroSetWorkflowStatusStep"] | components["schemas"]["BulkMacroDeleteStep"];
         BulkMacroStepOutcome: {
             after?: unknown;
             before?: unknown;
             index: number;
-            reason?: string;
+            /** @enum {string} */
+            reason?: "deleted" | "mutation_failed";
             reversible?: boolean;
             /** @enum {string} */
-            status: "would_apply" | "completed" | "skipped";
+            status: "would_apply" | "completed" | "skipped" | "failed";
             type: components["schemas"]["BulkMacroStepType"];
         };
         /** @enum {string} */
@@ -2427,12 +2447,18 @@ export interface components {
         BulkMacroTargetResult: {
             id: string;
             /** @enum {string} */
-            status: "ready" | "missing" | "completed" | "partial";
+            reason?: "target_failed";
+            /** @enum {string} */
+            status: "ready" | "missing" | "completed" | "partial" | "failed";
             steps: components["schemas"]["BulkMacroStepOutcome"][];
             store: string;
         };
         BulkMacroTargetsRequest: {
             targets: components["schemas"]["BulkMacroTarget"][];
+        };
+        BulkMacroValidationError: components["schemas"]["ErrorEnvelope"] & {
+            /** @constant */
+            code: "validation_failed";
         };
         /** @enum {string} */
         BulkMacroWorkflowStatus: "draft" | "editing" | "review" | "approved" | "published" | "archived";
@@ -3939,13 +3965,13 @@ export interface components {
                 "application/json": components["schemas"]["BulkMacroNotFoundError"];
             };
         };
-        /** @description Preview confirmation is invalid, expired, or stale */
-        BulkMacroPreviewError: {
+        /** @description Preview confirmation or request validation error */
+        BulkMacroRunError: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["BulkMacroPreviewError"];
+                "application/json": components["schemas"]["BulkMacroPreviewError"] | components["schemas"]["BulkMacroValidationError"];
             };
         };
         /** @description Error response */
@@ -4493,7 +4519,7 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             404: components["responses"]["BulkMacroNotFound"];
-            422: components["responses"]["BulkMacroPreviewError"];
+            422: components["responses"]["BulkMacroRunError"];
         };
     };
     listBulkMacroRuns: {
