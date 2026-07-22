@@ -1,7 +1,5 @@
-// ponytail: client-only icon assignment shared by types/tags/etc — none of
-// their backend contracts carry an `icon` field yet, so the picked icon is
-// scoped to this browser until each contract gains one. Namespaced by entity
-// kind so different entities never collide under the same id.
+// Client-only icon assignment for tags and other non-contracted entities.
+// Namespaced by entity kind so different entities never collide under the same id.
 const STORAGE_PREFIX = "masar.entity-icons";
 
 function readMap(namespace: string): Record<string, string> {

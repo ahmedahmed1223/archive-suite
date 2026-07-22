@@ -940,9 +940,9 @@ export interface ArchiveTypeField {
   type: ArchiveTypeFieldKind;
   condition?: ArchiveTypeFieldCondition;
   fieldAcl?: {
-    view?: string[];
-    edit?: string[];
-  };
+    view?: string[] | null;
+    edit?: string[] | null;
+  } | null;
 }
 
 /** A configurable schema stored by the Laravel types endpoint. */

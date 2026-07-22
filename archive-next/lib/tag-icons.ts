@@ -1,4 +1,4 @@
-// ponytail: same client-only limitation as type-icons.ts — see entity-icons.ts.
+// Tags have no icon contract, so their icon choices remain client-only.
 import { getEntityIcon, setEntityIcon } from "./entity-icons";
 
 const NAMESPACE = "tag";

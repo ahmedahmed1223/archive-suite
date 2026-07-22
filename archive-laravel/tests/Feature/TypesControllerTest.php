@@ -85,6 +85,65 @@ class TypesControllerTest extends TestCase
             ->assertJsonPath('type.icon', 'Image');
     }
 
+    public function test_updating_type_persists_icon_identifier(): void
+    {
+        $this->actingAs($this->adminUser)->postJson('/api/v1/types', [
+            'id' => 'photo-type',
+            'name' => 'Photo',
+            'icon' => 'Image',
+            'fields' => [],
+        ])->assertCreated();
+
+        $this->actingAs($this->adminUser)->postJson('/api/v1/types', [
+            'id' => 'photo-type',
+            'name' => 'Photo',
+            'icon' => 'Camera',
+            'fields' => [],
+        ])->assertOk()->assertJsonPath('type.icon', 'Camera');
+
+        $this->actingAs($this->viewerUser)
+            ->getJson('/api/v1/types/photo-type')
+            ->assertOk()
+            ->assertJsonPath('type.icon', 'Camera');
+    }
+
+    public function test_create_type_preserves_null_field_acl(): void
+    {
+        $response = $this->actingAs($this->adminUser)->postJson('/api/v1/types', [
+            'id' => 'nullable-acl-type',
+            'name' => 'Nullable ACL',
+            'fields' => [['name' => 'title', 'type' => 'text', 'fieldAcl' => null]],
+        ]);
+
+        $response->assertCreated()->assertJsonPath('type.fields.0.fieldAcl', null);
+        $this->actingAs($this->viewerUser)
+            ->getJson('/api/v1/types/nullable-acl-type')
+            ->assertOk()
+            ->assertJsonPath('type.fields.0.fieldAcl', null);
+    }
+
+    public function test_create_type_preserves_null_field_acl_permissions(): void
+    {
+        $response = $this->actingAs($this->adminUser)->postJson('/api/v1/types', [
+            'id' => 'nullable-acl-permissions-type',
+            'name' => 'Nullable ACL Permissions',
+            'fields' => [[
+                'name' => 'title',
+                'type' => 'text',
+                'fieldAcl' => ['view' => null, 'edit' => null],
+            ]],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('type.fields.0.fieldAcl.view', null)
+            ->assertJsonPath('type.fields.0.fieldAcl.edit', null);
+        $this->actingAs($this->viewerUser)
+            ->getJson('/api/v1/types/nullable-acl-permissions-type')
+            ->assertOk()
+            ->assertJsonPath('type.fields.0.fieldAcl.view', null)
+            ->assertJsonPath('type.fields.0.fieldAcl.edit', null);
+    }
+
     public function test_create_type_rejects_invalid_icon_identifier(): void
     {
         $payload = [
@@ -198,6 +257,25 @@ class TypesControllerTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['fields.0.condition.field']);
+    }
+
+    public function test_create_type_rejects_condition_field_longer_than_255_characters(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->postJson('/api/v1/types', [
+                'id' => 'long-condition-field-type',
+                'name' => 'Long Condition Field',
+                'fields' => [
+                    ['name' => 'source', 'type' => 'boolean'],
+                    [
+                        'name' => 'dependent',
+                        'type' => 'text',
+                        'condition' => ['field' => str_repeat('a', 256), 'equals' => true],
+                    ],
+                ],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['fields.1.condition.field']);
     }
 
     public function test_create_type_rejects_condition_referencing_unknown_field(): void
@@ -344,6 +422,7 @@ class TypesControllerTest extends TestCase
                 'data' => json_encode([
                     'id' => "type-$i",
                     'name' => "Type $i",
+                    'icon' => $i === 1 ? 'FileText' : null,
                     'fields' => [],
                 ]),
                 'created_at' => now(),
@@ -355,6 +434,7 @@ class TypesControllerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('ok', true);
+        $response->assertJsonPath('types.0.icon', 'FileText');
         $this->assertCount(2, $response->json('types'));
         $this->assertNotNull($response->json('nextCursor'));
     }
