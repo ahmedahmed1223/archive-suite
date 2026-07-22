@@ -38,6 +38,7 @@ Coverage of this table is enforced by
 | GET/POST | `/v1/collaboration/rooms/{roomKey}/presence` | v1 | — | presence heartbeat |
 | GET | `/v1/collaboration/rooms/{roomKey}/locks` | v1 | — | lock reads without audit noise |
 | GET | `/v1/collaboration/rooms/{roomKey}/documents/{resourceId}` | v1 | — | collaborative document read |
+| GET/POST | `/v1/safety-preview/scenarios`, `/v1/safety-preview/run` | v1 | — | editor/admin-only synthetic preview; intentionally excluded from audit logging so it never persists production state |
 
 ## Authenticated + audited (`archive.auth`, `archive.audit`)
 

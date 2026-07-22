@@ -147,6 +147,18 @@ class SafetyPreviewApiTest extends TestCase
         $this->assertSame($beforeTrash, DB::table('trashed_records')->orderBy('uid')->get()->map(fn ($row) => (array) $row)->all());
     }
 
+    public function test_preview_run_does_not_write_an_audit_log(): void
+    {
+        $headers = $this->editorHeaders();
+        $before = DB::table('audit_logs')->count();
+
+        $this->postJson('/api/v1/safety-preview/run', [
+            'scenario' => 'bulk-delete-basic', 'operation' => 'delete', 'ids' => ['alpha'],
+        ], $headers)->assertOk();
+
+        $this->assertSame($before, DB::table('audit_logs')->count());
+    }
+
     private function editorHeaders(): array
     {
         return $this->headersFor('editor', 'editor-preview@example.test');
