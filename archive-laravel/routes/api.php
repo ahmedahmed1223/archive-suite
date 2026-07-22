@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AccountExportController;
 use App\Http\Controllers\Api\V1\ActivityController;
 use App\Http\Controllers\Api\V1\ApiKeysController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
+use App\Http\Controllers\Api\V1\BulkMacrosController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
@@ -347,6 +348,15 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/automation/rules/{id}', [AutomationRulesController::class, 'update']);
         Route::delete('/automation/rules/{id}', [AutomationRulesController::class, 'destroy']);
         Route::post('/automation/rules/{id}/run', [AutomationRulesController::class, 'run']);
+
+        Route::get('/bulk-macros', [BulkMacrosController::class, 'index']);
+        Route::post('/bulk-macros', [BulkMacrosController::class, 'store']);
+        Route::get('/bulk-macros/{id}', [BulkMacrosController::class, 'show']);
+        Route::patch('/bulk-macros/{id}', [BulkMacrosController::class, 'update']);
+        Route::delete('/bulk-macros/{id}', [BulkMacrosController::class, 'destroy']);
+        Route::post('/bulk-macros/{id}/preview', [BulkMacrosController::class, 'preview']);
+        Route::post('/bulk-macros/{id}/run', [BulkMacrosController::class, 'run']);
+        Route::get('/bulk-macros/{id}/runs', [BulkMacrosController::class, 'runs']);
 
         // V1-721: registered before /users so the literal path isn't shadowed.
         Route::get('/users/mentionable', [UsersController::class, 'mentionable']);

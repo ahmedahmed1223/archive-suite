@@ -81,6 +81,7 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 | GET/POST/PATCH/DELETE | `/v1/tag-nodes*` (incl. `reorder`, `merge`, `move`) | v1 | — | |
 | GET/POST/DELETE | `/v1/types*`, `/v1/types/{id}/check-field-acl` | v1 | — | |
 | GET/POST/PATCH/DELETE | `/v1/automation/rules*` | v1 | — | |
+| GET/POST/PATCH/DELETE | `/v1/bulk-macros*` (including `preview`, `run`, and `runs`) | v1 | — | editor/admin only; saved macros and runs are owner-scoped |
 | POST | `/v1/ingest/scan`, `/v1/ingest/ftp/pull`, `/v1/ingest/smb/pull` | v1 | — | mature, tested (`IngestApiTest`), used by `archive-api.ts` |
 | GET/POST/PATCH | `/v1/media/{mediaUid}/review-comments*`, `/v1/media/{mediaUid}/review-links`, `/v1/review-comments/{id}` | v1 | — | |
 | GET | `/v1/records/{id}/broadcast-metadata` | **experimental** | `broadcast_metadata` | niche MOS/MXF broadcast-industry integration; already degrades to `configured:false` without env config, but the surface itself is flagged off by default in production per the V1-001 judgement guide |
