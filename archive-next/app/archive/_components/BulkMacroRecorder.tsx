@@ -10,6 +10,7 @@ const statuses = ["draft", "editing", "review", "approved", "published", "archiv
 function ResultDetails({ results }: { results: BulkMacroRun["results"] | BulkMacroPreview["results"] }) {
   return <ul>{results.map((result) => <li key={`${result.store}:${result.id}`}>
     <strong>{result.store}/{result.id}: {bulkMacroStatusLabel(result.status)}</strong>
+    {result.reason ? <p>سبب نتيجة السجل: {bulkMacroReasonLabel(result.reason)}</p> : null}
     <ol>{result.steps.map((outcome) => <li key={outcome.index}>
       {outcome.index + 1}. {bulkMacroStepTypeLabel(outcome.type)}: {bulkMacroStatusLabel(outcome.status)}
       {" — "}{outcome.reversible ? "قابل للتراجع" : "غير قابل للتراجع"}
