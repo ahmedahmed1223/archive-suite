@@ -100,6 +100,55 @@ class TypesControllerTest extends TestCase
             ->assertJsonValidationErrors(['icon']);
     }
 
+    public function test_create_type_rejects_null_icon_identifier(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->postJson('/api/v1/types', [
+                'id' => 'null-icon-type',
+                'name' => 'Null Icon',
+                'icon' => null,
+                'fields' => [],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['icon']);
+    }
+
+    public function test_create_type_rejects_empty_identifier(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->postJson('/api/v1/types', [
+                'id' => '',
+                'name' => 'Valid Name',
+                'fields' => [],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['id']);
+    }
+
+    public function test_create_type_rejects_empty_name(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->postJson('/api/v1/types', [
+                'id' => 'empty-name-type',
+                'name' => '',
+                'fields' => [],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_create_type_rejects_empty_field_name(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->postJson('/api/v1/types', [
+                'id' => 'empty-field-name-type',
+                'name' => 'Empty Field Name',
+                'fields' => [['name' => '', 'type' => 'text']],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['fields.0.name']);
+    }
+
     public function test_create_type_with_conditional_field(): void
     {
         $payload = [
