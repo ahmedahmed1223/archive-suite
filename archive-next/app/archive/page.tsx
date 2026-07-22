@@ -7,6 +7,8 @@ import { Archive, Filter, FolderSearch, PanelRightOpen, Search, SlidersHorizonta
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { ArchiveRecordCard } from "./ArchiveRecordCard";
+import { BulkMacroRecorder } from "./_components/BulkMacroRecorder";
+import { selectedBulkMacroTargets } from "./_components/bulk-macro-helpers";
 import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
@@ -486,6 +488,7 @@ function ArchivePageContent() {
   }, [query, records, sortDirection, sortField, store, type, workflowStatus]);
 
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const selectedMacroTargets = useMemo(() => selectedBulkMacroTargets(records, selectedIds), [records, selectedIds]);
   const previewRecord = useMemo(() => {
     if (previewId) {
       return visibleRecords.find((record) => record.id === previewId) || visibleRecords[0] || null;
@@ -1207,6 +1210,7 @@ function ArchivePageContent() {
       </PageToolbar>
 
       {selectedIds.length > 0 ? (
+        <>
         <div className={`bulk-action-bar ${bulkBusy ? styles.bulkBarBusy : ""}`} role="status">
           <strong>{selectedIds.length} سجل محدد</strong>
           <div className="button-row">
@@ -1243,6 +1247,8 @@ function ArchivePageContent() {
             ) : null}
           </div>
         </div>
+        {canEditRecords ? <BulkMacroRecorder api={api} targets={selectedMacroTargets} accessToken={accessToken ?? undefined} /> : null}
+        </>
       ) : null}
 
       {bulkFeedback ? (
