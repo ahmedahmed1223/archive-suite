@@ -272,6 +272,9 @@ assert.equal(previewScenarios?.operationId, "safetyPreviewScenarios");
 assert.deepEqual(previewScenarios?.security, [{ bearerAuth: [] }, { cookieAuth: [] }]);
 assert.equal(previewScenarios?.responses?.["200"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/SafetyPreviewScenariosResponse");
 assert.ok(previewScenarios?.responses?.["403"], "Safety preview scenarios should document editor authorization");
+for (const status of ["401", "403"]) {
+  assert.equal(previewScenarios?.responses?.[status]?.$ref, "#/components/responses/SafetyPreviewError");
+}
 
 const previewRun = contract.paths?.["/safety-preview/run"]?.post;
 assert.equal(previewRun?.operationId, "runSafetyPreview");
@@ -279,6 +282,9 @@ assert.deepEqual(previewRun?.security, [{ bearerAuth: [] }, { cookieAuth: [] }])
 assert.equal(previewRun?.requestBody?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/SafetyPreviewRunRequest");
 assert.equal(previewRun?.responses?.["200"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/SafetyPreviewRunResponse");
 assert.ok(previewRun?.responses?.["403"], "Safety preview run should document editor authorization");
+for (const status of ["401", "403", "422"]) {
+  assert.equal(previewRun?.responses?.[status]?.$ref, "#/components/responses/SafetyPreviewError");
+}
 
 const previewSchemas = contract.components.schemas;
 assert.deepEqual(previewSchemas.SafetyPreviewScenario.enum, ["bulk-delete-basic", "restore-conflict"]);
@@ -286,8 +292,14 @@ assert.deepEqual(previewSchemas.SafetyPreviewOperation.enum, ["delete", "restore
 assert.deepEqual(previewSchemas.SafetyPreviewRunRequest.required, ["scenario", "operation", "ids"]);
 assert.equal(previewSchemas.SafetyPreviewRunRequest.properties.ids.minItems, 1);
 assert.equal(previewSchemas.SafetyPreviewRunRequest.properties.ids.maxItems, 10000);
-assert.equal(previewSchemas.SafetyPreviewRunResponse.properties.synthetic.const, true);
-assert.equal(previewSchemas.SafetyPreviewRunResponse.properties.expiresAt.format, "date-time");
+assert.equal(previewSchemas.SafetyPreviewScenarioDescriptor.properties.description.type, "string");
+assert.equal(previewSchemas.SafetyPreviewScenariosResponse.allOf[0].$ref, "#/components/schemas/OkEnvelope");
+assert.equal(previewSchemas.SafetyPreviewScenariosResponse.allOf[1].properties.synthetic.const, true);
+assert.equal(previewSchemas.SafetyPreviewRunResponse.allOf[0].$ref, "#/components/schemas/OkEnvelope");
+assert.equal(previewSchemas.SafetyPreviewRunResponse.allOf[1].properties.synthetic.const, true);
+assert.equal(previewSchemas.SafetyPreviewRunResponse.allOf[1].properties.expiresAt.format, "date-time");
+assert.equal(previewSchemas.SafetyPreviewError.allOf[0].$ref, "#/components/schemas/ErrorEnvelope");
+assert.equal(previewSchemas.SafetyPreviewError.allOf[1].properties.synthetic.const, true);
 
 assert.ok(contract.components?.securitySchemes?.bearerAuth, "API contract should define bearer auth");
 assert.ok(contract.components?.securitySchemes?.cookieAuth, "API contract should define cookie auth");

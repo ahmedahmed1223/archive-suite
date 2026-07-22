@@ -8,10 +8,19 @@ use Illuminate\Support\Carbon;
 
 class SafetyPreviewService
 {
-    /** @return array<int, string> */
+    /** @return array<int, array{id: string, description: string}> */
     public function scenarios(): array
     {
-        return ['bulk-delete-basic', 'restore-conflict'];
+        return [
+            ['id' => 'bulk-delete-basic', 'description' => 'حذف جماعي تجريبي لسجلات اصطناعية'],
+            ['id' => 'restore-conflict', 'description' => 'استعادة تجريبية تعرض تعارضاً وعنصراً قابلاً للاستعادة'],
+        ];
+    }
+
+    /** @return array<int, string> */
+    public function scenarioIds(): array
+    {
+        return array_column($this->scenarios(), 'id');
     }
 
     /**
@@ -54,7 +63,6 @@ class SafetyPreviewService
         }
 
         return [
-            'synthetic' => true,
             'scenario' => $scenario,
             'operation' => $operation,
             'expiresAt' => Carbon::now()->addMinutes(15)->toIso8601String(),

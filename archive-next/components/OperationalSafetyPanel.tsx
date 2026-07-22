@@ -25,7 +25,7 @@ export default function OperationalSafetyPanel({ className = "", onConfirm, ...i
             {safety.confirmationLabel}
           </button>
         ) : null}
-        <a className="button button-secondary button-sm" href={safety.auditHref}>{safety.auditLabel}</a>
+        {safety.showAuditLink ? <a className="button button-secondary button-sm" href={safety.auditHref}>{safety.auditLabel}</a> : null}
       </div>
     </aside>
   );

@@ -6,20 +6,15 @@ import MetricStrip from "@/components/MetricStrip";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
 import { useAuthSession } from "@/lib/auth-session";
-import { createArchiveApiClient, type SafetyPreviewOperation, type SafetyPreviewRun, type SafetyPreviewScenario } from "@/lib/archive-api";
-
-const scenarioLabels: Record<SafetyPreviewScenario, string> = {
-  "bulk-delete-basic": "حذف جماعي تجريبي",
-  "restore-conflict": "استعادة مع تعارض"
-};
+import { createArchiveApiClient, type SafetyPreviewOperation, type SafetyPreviewRun, type SafetyPreviewScenario, type SafetyPreviewScenarioDescriptor } from "@/lib/archive-api";
 
 const operationLabels: Record<SafetyPreviewOperation, string> = { delete: "حذف تجريبي", restore: "استعادة تجريبية" };
 const defaultIds: Record<SafetyPreviewScenario, string> = {
-  "bulk-delete-basic": "alpha, beta, missing",
-  "restore-conflict": "restore-ok, restore-conflict, missing"
+  "bulk-delete-basic": "alpha, bravo, charlie",
+  "restore-conflict": "conflict, recoverable, missing"
 };
 
-type ScenarioState = { status: "loading" } | { status: "ready"; scenarios: SafetyPreviewScenario[] } | { status: "error"; message: string };
+type ScenarioState = { status: "loading" } | { status: "ready"; scenarios: SafetyPreviewScenarioDescriptor[] } | { status: "error"; message: string };
 type RunState = { status: "idle" } | { status: "running" } | { status: "ready"; preview: SafetyPreviewRun } | { status: "error"; message: string };
 
 function formatExpiry(value: string) {
@@ -32,6 +27,12 @@ function resultLabel(result: SafetyPreviewRun["results"][number]) {
   if (result.reason === "not_found") return "غير موجود";
   const completed = "restored" in result ? result.restored : result.deleted;
   return completed ? "تمت المحاكاة" : "دون تغيير";
+}
+
+function resultDetail(result: SafetyPreviewRun["results"][number]) {
+  if (result.reason === "conflict") return "لا يمكن استعادة المعرف لأن نسخة حية منه موجودة في البيئة الاصطناعية.";
+  if (result.reason === "not_found") return "المعرف غير موجود في بيانات المحاكاة الاصطناعية.";
+  return "تمت المحاكاة دون أي أثر على الإنتاج.";
 }
 
 export default function SafetyPreviewPage() {
@@ -53,7 +54,7 @@ export default function SafetyPreviewPage() {
         return;
       }
       setScenarioState({ status: "ready", scenarios: response.scenarios });
-      if (response.scenarios[0]) setScenario(response.scenarios[0]);
+      if (response.scenarios[0]) setScenario(response.scenarios[0].id);
     } catch (error) {
       setScenarioState({ status: "error", message: error instanceof Error ? error.message : "تعذر تحميل سيناريوهات المحاكاة." });
     }
@@ -101,7 +102,7 @@ export default function SafetyPreviewPage() {
         actions={<button type="button" className="button button-secondary" onClick={() => void loadScenarios()} disabled={scenarioState.status === "loading"}>تحديث السيناريوهات</button>}
       />
 
-      <OperationalSafetyPanel action="تشغيل محاكاة حذف أو استعادة" dryRun confidence={100} auditHref="/activity" />
+      <OperationalSafetyPanel action="تشغيل محاكاة حذف أو استعادة" dryRun confidence={100} simulationOnly />
 
       <section className="panel" aria-label="ضوابط محاكاة السلامة">
         <div className="panel-title-row"><div><h2>ضوابط المحاكاة</h2><p>كل المعرفات والنتائج داخل بيئة اصطناعية مؤقتة.</p></div></div>
@@ -109,7 +110,7 @@ export default function SafetyPreviewPage() {
         {scenarioState.status === "error" ? <div className="state-banner state-banner-error" role="alert">{scenarioState.message}</div> : null}
         <div className="archive-toolbar-grid">
           <label><span>السيناريو</span><select aria-label="السيناريو" value={scenario} onChange={(event) => changeScenario(event.target.value as SafetyPreviewScenario)} disabled={scenarioState.status !== "ready" || !canRun}>
-            {scenarioState.status === "ready" ? scenarioState.scenarios.map((item) => <option key={item} value={item}>{scenarioLabels[item]}</option>) : <option>جار التحميل...</option>}
+            {scenarioState.status === "ready" ? scenarioState.scenarios.map((item) => <option key={item.id} value={item.id}>{item.description}</option>) : <option>جار التحميل...</option>}
           </select></label>
           <label><span>العملية</span><select aria-label="العملية" value={operation} onChange={(event) => setOperation(event.target.value as SafetyPreviewOperation)} disabled={!canRun}>
             <option value="delete">{operationLabels.delete}</option><option value="restore">{operationLabels.restore}</option>
@@ -129,7 +130,7 @@ export default function SafetyPreviewPage() {
           <section className="panel" aria-label="نتائج المحاكاة الاصطناعية">
             <div className="panel-title-row"><div><h2>نتائج المحاكاة</h2><p>synthetic: true · {operationLabels[preview.operation]} · تنتهي المعاينة في {formatExpiry(preview.expiresAt)}</p></div></div>
             <div className="scroll-x"><table className="data-table" aria-label="نتائج عناصر المحاكاة"><thead><tr><th>المعرف</th><th>النتيجة</th><th>التفاصيل</th></tr></thead><tbody>
-              {preview.results.map((result) => <tr key={result.id}><td dir="ltr">{result.id}</td><td><span className={`badge ${result.reason ? "badge-danger" : ""}`}>{resultLabel(result)}</span></td><td>{result.reason || "تمت المحاكاة دون أي أثر على الإنتاج"}</td></tr>)}
+              {preview.results.map((result) => <tr key={result.id}><td dir="ltr">{result.id}</td><td><span className={`badge ${result.reason ? "badge-danger" : ""}`}>{resultLabel(result)}</span></td><td>{resultDetail(result)}</td></tr>)}
             </tbody></table></div>
           </section>
         </> : null}

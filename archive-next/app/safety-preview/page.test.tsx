@@ -29,15 +29,18 @@ const preview = {
   before: { live: 8, trash: 3 },
   after: { live: 9, trash: 2 },
   results: [
-    { id: "restore-ok", deleted: false, restored: true },
-    { id: "restore-conflict", deleted: false, restored: false, reason: "conflict" },
+    { id: "conflict", deleted: false, restored: false, reason: "conflict" },
+    { id: "recoverable", deleted: false, restored: true },
     { id: "missing", deleted: false, restored: false, reason: "not_found" }
   ]
 };
 
 beforeEach(() => {
   role = "editor";
-  scenariosMock.mockResolvedValue({ ok: true, synthetic: true, scenarios: ["bulk-delete-basic", "restore-conflict"] });
+  scenariosMock.mockResolvedValue({ ok: true, synthetic: true, scenarios: [
+    { id: "bulk-delete-basic", description: "حذف جماعي تجريبي لسجلات اصطناعية" },
+    { id: "restore-conflict", description: "استعادة تجريبية تعرض تعارضاً وعنصراً قابلاً للاستعادة" }
+  ] });
   runMock.mockResolvedValue(preview);
 });
 
@@ -46,14 +49,13 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 describe("safety preview workspace", () => {
   test("runs only the synthetic preview and renders counts, expiry, and item outcomes", async () => {
     render(<SafetyPreviewPage />);
-    await screen.findByRole("option", { name: "استعادة مع تعارض" });
+    await screen.findByRole("option", { name: "استعادة تجريبية تعرض تعارضاً وعنصراً قابلاً للاستعادة" });
     fireEvent.change(screen.getByLabelText("السيناريو"), { target: { value: "restore-conflict" } });
-    fireEvent.change(screen.getByLabelText("المعرفات التجريبية"), { target: { value: "restore-ok, restore-conflict, missing" } });
     fireEvent.click(screen.getByRole("button", { name: "تشغيل المحاكاة" }));
 
-    await screen.findByText("restore-conflict");
+    await screen.findByText("recoverable");
     expect(runMock).toHaveBeenCalledWith(
-      { scenario: "restore-conflict", operation: "restore", ids: ["restore-ok", "restore-conflict", "missing"] },
+      { scenario: "restore-conflict", operation: "restore", ids: ["conflict", "recoverable", "missing"] },
       { accessToken: "token-abc" }
     );
     expect(screen.getByText("synthetic: true")).toBeTruthy();
@@ -64,6 +66,8 @@ describe("safety preview workspace", () => {
     expect(screen.getByText("تعارض")).toBeTruthy();
     expect(screen.getByText("غير موجود")).toBeTruthy();
     expect(screen.getByText(/تنتهي المعاينة في/)).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "عرض سجل التدقيق" })).toBeNull();
+    expect(screen.queryByText(/نفّذ الإجراء عند الجاهزية/)).toBeNull();
   });
 
   test("shows a safe denial for viewers without calling the run endpoint", async () => {

@@ -38,6 +38,15 @@ describe("operational safety", () => {
     expect(safety.auditLabel).toContain("سجل");
   });
 
+  it("describes a synthetic-only simulation without an audit or execution follow-up", () => {
+    const safety = buildOperationalSafety({ action: "تشغيل محاكاة", dryRun: true, simulationOnly: true });
+
+    expect(safety.modeLabel).toBe("محاكاة اصطناعية");
+    expect(safety.showAuditLink).toBe(false);
+    expect(safety.nextStep).not.toContain("نفّذ");
+    expect(safety.summary).toContain("اصطناعية");
+  });
+
   it("keeps unverified rights as a server-enforced review state", () => {
     const safety = buildOperationalSafety({ action: "إرسال طلب إلى المساعد", rights: "review" });
 

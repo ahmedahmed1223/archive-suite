@@ -12,11 +12,14 @@ test("runs the Arabic synthetic safety preview without requesting live destructi
       return;
     }
     if (url.endsWith("/safety-preview/scenarios")) {
-      await route.fulfill({ json: { ok: true, synthetic: true, scenarios: ["bulk-delete-basic", "restore-conflict"] } });
+      await route.fulfill({ json: { ok: true, synthetic: true, scenarios: [
+        { id: "bulk-delete-basic", description: "حذف جماعي تجريبي لسجلات اصطناعية" },
+        { id: "restore-conflict", description: "استعادة تجريبية تعرض تعارضاً وعنصراً قابلاً للاستعادة" }
+      ] } });
       return;
     }
     if (url.endsWith("/safety-preview/run")) {
-      await route.fulfill({ json: { ok: true, synthetic: true, scenario: "restore-conflict", operation: "restore", expiresAt: "2026-07-22T13:00:00.000Z", before: { live: 8, trash: 3 }, after: { live: 9, trash: 2 }, results: [{ id: "restore-ok", deleted: false, restored: true }, { id: "restore-conflict", deleted: false, restored: false, reason: "conflict" }, { id: "missing", deleted: false, restored: false, reason: "not_found" }] } });
+      await route.fulfill({ json: { ok: true, synthetic: true, scenario: "restore-conflict", operation: "restore", expiresAt: "2026-07-22T13:00:00.000Z", before: { live: 1, trash: 2 }, after: { live: 2, trash: 1 }, results: [{ id: "conflict", deleted: false, restored: false, reason: "conflict" }, { id: "recoverable", deleted: false, restored: true }, { id: "missing", deleted: false, restored: false, reason: "not_found" }] } });
       return;
     }
     await route.fulfill({ status: 404, json: { ok: false, error: "طلب غير متوقع" } });

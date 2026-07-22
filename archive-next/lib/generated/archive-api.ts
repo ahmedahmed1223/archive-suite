@@ -3143,6 +3143,10 @@ export interface components {
             live: number;
             trash: number;
         };
+        SafetyPreviewError: components["schemas"]["ErrorEnvelope"] & {
+            /** @constant */
+            synthetic: true;
+        };
         /** @enum {string} */
         SafetyPreviewOperation: "delete" | "restore";
         SafetyPreviewResult: {
@@ -3161,7 +3165,7 @@ export interface components {
             operation: components["schemas"]["SafetyPreviewOperation"];
             scenario: components["schemas"]["SafetyPreviewScenario"];
         };
-        SafetyPreviewRunResponse: {
+        SafetyPreviewRunResponse: components["schemas"]["OkEnvelope"] & {
             after: components["schemas"]["SafetyPreviewCounts"];
             before: components["schemas"]["SafetyPreviewCounts"];
             /** Format: date-time */
@@ -3174,8 +3178,13 @@ export interface components {
         };
         /** @enum {string} */
         SafetyPreviewScenario: "bulk-delete-basic" | "restore-conflict";
-        SafetyPreviewScenariosResponse: {
-            scenarios: components["schemas"]["SafetyPreviewScenario"][];
+        SafetyPreviewScenarioDescriptor: {
+            /** @description Arabic description supplied by the Laravel preview service. */
+            description: string;
+            id: components["schemas"]["SafetyPreviewScenario"];
+        };
+        SafetyPreviewScenariosResponse: components["schemas"]["OkEnvelope"] & {
+            scenarios: components["schemas"]["SafetyPreviewScenarioDescriptor"][];
             /** @constant */
             synthetic: true;
         };
@@ -3753,6 +3762,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["OkEnvelope"];
+            };
+        };
+        /** @description Synthetic safety-preview error response */
+        SafetyPreviewError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SafetyPreviewError"];
             };
         };
     };
@@ -5965,9 +5983,9 @@ export interface operations {
                     "application/json": components["schemas"]["SafetyPreviewRunResponse"];
                 };
             };
-            401: components["responses"]["Error"];
-            403: components["responses"]["Error"];
-            422: components["responses"]["Error"];
+            401: components["responses"]["SafetyPreviewError"];
+            403: components["responses"]["SafetyPreviewError"];
+            422: components["responses"]["SafetyPreviewError"];
         };
     };
     safetyPreviewScenarios: {
@@ -5988,8 +6006,8 @@ export interface operations {
                     "application/json": components["schemas"]["SafetyPreviewScenariosResponse"];
                 };
             };
-            401: components["responses"]["Error"];
-            403: components["responses"]["Error"];
+            401: components["responses"]["SafetyPreviewError"];
+            403: components["responses"]["SafetyPreviewError"];
         };
     };
     listSavedSearches: {
