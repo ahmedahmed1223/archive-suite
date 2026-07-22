@@ -101,6 +101,11 @@ for (const pathName of [
   "/automation/rules",
   "/automation/rules/{id}",
   "/automation/rules/{id}/run",
+  "/bulk-macros",
+  "/bulk-macros/{id}",
+  "/bulk-macros/{id}/preview",
+  "/bulk-macros/{id}/run",
+  "/bulk-macros/{id}/runs",
   "/system/status",
   "/system/dr-probe",
   "/system/control/{action}",
@@ -256,6 +261,22 @@ for (const schemaName of [
   "AutomationRulesResponse",
   "AutomationRuleResponse",
   "AutomationRuleRunResponse",
+  "BulkMacroStepType",
+  "BulkMacroWorkflowStatus",
+  "BulkMacroStep",
+  "BulkMacroTarget",
+  "BulkMacro",
+  "CreateBulkMacroRequest",
+  "UpdateBulkMacroRequest",
+  "BulkMacroTargetsRequest",
+  "RunBulkMacroRequest",
+  "BulkMacroPreview",
+  "BulkMacroRun",
+  "BulkMacrosResponse",
+  "BulkMacroResponse",
+  "BulkMacroPreviewResponse",
+  "BulkMacroRunResponse",
+  "BulkMacroRunsResponse",
   "DrProbe",
   "DrProbeResponse",
   "SystemMetrics",
@@ -300,6 +321,38 @@ assert.equal(previewSchemas.SafetyPreviewRunResponse.allOf[1].properties.synthet
 assert.equal(previewSchemas.SafetyPreviewRunResponse.allOf[1].properties.expiresAt.format, "date-time");
 assert.equal(previewSchemas.SafetyPreviewError.allOf[0].$ref, "#/components/schemas/ErrorEnvelope");
 assert.equal(previewSchemas.SafetyPreviewError.allOf[1].properties.synthetic.const, true);
+
+const bulkMacroPaths = contract.paths;
+const bulkMacroSchemas = contract.components.schemas;
+for (const operation of [
+  bulkMacroPaths["/bulk-macros"]?.get,
+  bulkMacroPaths["/bulk-macros"]?.post,
+  bulkMacroPaths["/bulk-macros/{id}"]?.get,
+  bulkMacroPaths["/bulk-macros/{id}"]?.patch,
+  bulkMacroPaths["/bulk-macros/{id}"]?.delete,
+  bulkMacroPaths["/bulk-macros/{id}/preview"]?.post,
+  bulkMacroPaths["/bulk-macros/{id}/run"]?.post,
+  bulkMacroPaths["/bulk-macros/{id}/runs"]?.get
+]) {
+  assert.deepEqual(operation?.security, [{ bearerAuth: [] }, { cookieAuth: [] }]);
+  assert.ok(operation?.responses?.["401"], "Bulk macro endpoints should document authentication");
+  assert.ok(operation?.responses?.["403"], "Bulk macro endpoints should document editor authorization");
+}
+assert.equal(bulkMacroPaths["/bulk-macros"]?.post?.responses?.["201"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/BulkMacroResponse");
+assert.equal(bulkMacroPaths["/bulk-macros/{id}/preview"]?.post?.responses?.["200"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/BulkMacroPreviewResponse");
+assert.equal(bulkMacroPaths["/bulk-macros/{id}/run"]?.post?.responses?.["201"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/BulkMacroRunResponse");
+assert.equal(bulkMacroPaths["/bulk-macros/{id}/runs"]?.get?.responses?.["200"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/BulkMacroRunsResponse");
+assert.equal(bulkMacroPaths["/bulk-macros/{id}/run"]?.post?.responses?.["422"]?.$ref, "#/components/responses/BulkMacroPreviewError");
+assert.deepEqual(bulkMacroSchemas.BulkMacroStepType.enum, ["add-tag", "set-workflow-status", "delete"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroWorkflowStatus.enum, ["draft", "editing", "review", "approved", "published", "archived"]);
+assert.deepEqual(bulkMacroSchemas.CreateBulkMacroRequest.required, ["name", "steps"]);
+assert.equal(bulkMacroSchemas.CreateBulkMacroRequest.properties.name.maxLength, 200);
+assert.equal(bulkMacroSchemas.CreateBulkMacroRequest.properties.steps.minItems, 1);
+assert.equal(bulkMacroSchemas.CreateBulkMacroRequest.properties.steps.maxItems, 10);
+assert.equal(bulkMacroSchemas.BulkMacroTargetsRequest.properties.targets.minItems, 1);
+assert.equal(bulkMacroSchemas.BulkMacroTargetsRequest.properties.targets.maxItems, 1000);
+assert.deepEqual(bulkMacroSchemas.BulkMacroPreviewError.allOf[1].properties.code.enum, ["invalid_preview", "expired_preview", "stale_preview"]);
+assert.equal(bulkMacroSchemas.BulkMacroNotFoundError.allOf[1].properties.code.const, "not_found");
 
 assert.ok(contract.components?.securitySchemes?.bearerAuth, "API contract should define bearer auth");
 assert.ok(contract.components?.securitySchemes?.cookieAuth, "API contract should define cookie auth");

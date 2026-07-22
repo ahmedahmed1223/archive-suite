@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createArchiveApiClient, type ApiEnvelope, type SafetyPreviewRun } from "./archive-api";
+import { createArchiveApiClient, type ApiEnvelope, type BulkMacroStep, type SafetyPreviewRun } from "./archive-api";
 
 describe("archive API uploads", () => {
   it("uses the access token issued by login for multipart uploads", async () => {
@@ -65,5 +65,35 @@ describe("safety preview API client", () => {
     expect(fetchImpl.mock.calls.map(([, init]) => init?.method)).toEqual(["GET", "POST"]);
     expect(fetchImpl.mock.calls.map(([url]) => url)).not.toContain("/api/v1/records/bulk-delete");
     expect(fetchImpl.mock.calls.map(([url]) => url)).not.toContain("/api/v1/trash/restore");
+  });
+});
+
+describe("bulk macro API client", () => {
+  it("uses the typed CRUD, preview, run, and history routes", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+    const steps: BulkMacroStep[] = [{ type: "add-tag", tag: "مهم" }];
+    const targets = { targets: [{ store: "archive-items", id: "record-1" }] };
+
+    await api.bulkMacros();
+    await api.createBulkMacro({ name: "وسم مهم", steps });
+    await api.bulkMacro("macro/1");
+    await api.updateBulkMacro("macro/1", { steps });
+    await api.previewBulkMacro("macro/1", targets);
+    await api.runBulkMacro("macro/1", { ...targets, previewToken: "signed" });
+    await api.bulkMacroRuns("macro/1");
+    await api.deleteBulkMacro("macro/1");
+
+    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([
+      "/api/v1/bulk-macros",
+      "/api/v1/bulk-macros",
+      "/api/v1/bulk-macros/macro%2F1",
+      "/api/v1/bulk-macros/macro%2F1",
+      "/api/v1/bulk-macros/macro%2F1/preview",
+      "/api/v1/bulk-macros/macro%2F1/run",
+      "/api/v1/bulk-macros/macro%2F1/runs",
+      "/api/v1/bulk-macros/macro%2F1"
+    ]);
+    expect(fetchImpl.mock.calls.map(([, init]) => init?.method)).toEqual(["GET", "POST", "GET", "PATCH", "POST", "POST", "GET", "DELETE"]);
   });
 });

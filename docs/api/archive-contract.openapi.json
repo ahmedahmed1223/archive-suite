@@ -2642,6 +2642,24 @@
         }
       }
     },
+    "/bulk-macros": {
+      "get": { "tags": ["Bulk Macros"], "summary": "List the current editor's bulk macros", "operationId": "listBulkMacros", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "responses": { "200": { "description": "Bulk macros", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacrosResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" } } },
+      "post": { "tags": ["Bulk Macros"], "summary": "Create a reusable ordered bulk macro", "operationId": "createBulkMacro", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateBulkMacroRequest" } } } }, "responses": { "201": { "description": "Created bulk macro", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/bulk-macros/{id}": {
+      "get": { "tags": ["Bulk Macros"], "summary": "Read an owned bulk macro", "operationId": "getBulkMacro", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Bulk macro", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" } } },
+      "patch": { "tags": ["Bulk Macros"], "summary": "Update an owned bulk macro and increment its version", "operationId": "updateBulkMacro", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateBulkMacroRequest" } } } }, "responses": { "200": { "description": "Updated bulk macro", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" }, "422": { "$ref": "#/components/responses/Error" } } },
+      "delete": { "tags": ["Bulk Macros"], "summary": "Delete an owned bulk macro", "operationId": "deleteBulkMacro", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Deleted bulk macro", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroDeleteResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" } } }
+    },
+    "/bulk-macros/{id}/preview": {
+      "post": { "tags": ["Bulk Macros"], "summary": "Preview a macro without changing records", "operationId": "previewBulkMacro", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroTargetsRequest" } } } }, "responses": { "200": { "description": "Signed non-mutating preview", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroPreviewResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/bulk-macros/{id}/run": {
+      "post": { "tags": ["Bulk Macros"], "summary": "Execute a macro with its signed preview confirmation", "operationId": "runBulkMacro", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RunBulkMacroRequest" } } } }, "responses": { "201": { "description": "Persisted bulk macro run", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroRunResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" }, "422": { "$ref": "#/components/responses/BulkMacroPreviewError" } } }
+    },
+    "/bulk-macros/{id}/runs": {
+      "get": { "tags": ["Bulk Macros"], "summary": "List persisted runs for an owned bulk macro", "operationId": "listBulkMacroRuns", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Bulk macro runs", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroRunsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" } } }
+    },
     "/automation/rules": {
       "get": {
         "tags": ["Automation"],
@@ -4289,7 +4307,15 @@
           }
         }
       },
-      "SafetyPreviewError": {
+    "BulkMacroNotFound": {
+      "description": "Bulk macro not found or not owned by the current user",
+      "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroNotFoundError" } } }
+    },
+    "BulkMacroPreviewError": {
+      "description": "Preview confirmation is invalid, expired, or stale",
+      "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroPreviewError" } } }
+    },
+    "SafetyPreviewError": {
         "description": "Synthetic safety-preview error response",
         "content": {
           "application/json": {
@@ -6221,6 +6247,75 @@
           }
         ]
       },
+      "BulkMacroStepType": { "type": "string", "enum": ["add-tag", "set-workflow-status", "delete"] },
+      "BulkMacroWorkflowStatus": { "type": "string", "enum": ["draft", "editing", "review", "approved", "published", "archived"] },
+      "BulkMacroStep": {
+        "type": "object", "required": ["type"], "properties": {
+          "type": { "$ref": "#/components/schemas/BulkMacroStepType" },
+          "tag": { "type": "string", "maxLength": 100 },
+          "status": { "$ref": "#/components/schemas/BulkMacroWorkflowStatus" }
+        }
+      },
+      "BulkMacroTarget": {
+        "type": "object", "required": ["store", "id"], "properties": {
+          "store": { "type": "string", "maxLength": 100 }, "id": { "type": "string", "maxLength": 255 }
+        }
+      },
+      "BulkMacro": {
+        "type": "object", "required": ["id", "name", "version", "steps", "createdAt", "updatedAt"], "properties": {
+          "id": { "type": "string", "format": "uuid" }, "name": { "type": "string", "maxLength": 200 }, "version": { "type": "integer", "minimum": 1 },
+          "steps": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/components/schemas/BulkMacroStep" } },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }, "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CreateBulkMacroRequest": {
+        "type": "object", "required": ["name", "steps"], "properties": {
+          "name": { "type": "string", "maxLength": 200 }, "steps": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/components/schemas/BulkMacroStep" } }
+        }
+      },
+      "UpdateBulkMacroRequest": {
+        "type": "object", "minProperties": 1, "properties": {
+          "name": { "type": "string", "maxLength": 200 }, "steps": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/components/schemas/BulkMacroStep" } }
+        }
+      },
+      "BulkMacroTargetsRequest": { "type": "object", "required": ["targets"], "properties": { "targets": { "type": "array", "minItems": 1, "maxItems": 1000, "items": { "$ref": "#/components/schemas/BulkMacroTarget" } } } },
+      "RunBulkMacroRequest": {
+        "allOf": [{ "$ref": "#/components/schemas/BulkMacroTargetsRequest" }, { "type": "object", "required": ["previewToken"], "properties": { "previewToken": { "type": "string" } } }]
+      },
+      "BulkMacroStepOutcome": {
+        "type": "object", "required": ["index", "type", "status"], "properties": {
+          "index": { "type": "integer", "minimum": 0 }, "type": { "$ref": "#/components/schemas/BulkMacroStepType" },
+          "status": { "type": "string", "enum": ["would_apply", "completed", "skipped"] }, "before": {}, "after": {}, "reversible": { "type": "boolean" }, "reason": { "type": "string" }
+        }
+      },
+      "BulkMacroTargetResult": {
+        "type": "object", "required": ["store", "id", "status", "steps"], "properties": {
+          "store": { "type": "string" }, "id": { "type": "string" }, "status": { "type": "string", "enum": ["ready", "missing", "completed", "partial"] },
+          "steps": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroStepOutcome" } }
+        }
+      },
+      "BulkMacroPreview": {
+        "type": "object", "required": ["previewToken", "expiresAt", "summary", "results"], "properties": {
+          "previewToken": { "type": "string" }, "expiresAt": { "type": "string", "format": "date-time" },
+          "summary": { "type": "object", "required": ["targetCount", "affectedCount", "missingCount"], "properties": { "targetCount": { "type": "integer", "minimum": 1 }, "affectedCount": { "type": "integer", "minimum": 0 }, "missingCount": { "type": "integer", "minimum": 0 } } },
+          "results": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroTargetResult" } }
+        }
+      },
+      "BulkMacroRun": {
+        "type": "object", "required": ["id", "macroId", "macroVersion", "targets", "results", "targetCount", "completedCount", "failedCount", "createdAt"], "properties": {
+          "id": { "type": "string", "format": "uuid" }, "macroId": { "type": "string", "format": "uuid" }, "macroVersion": { "type": "integer", "minimum": 1 },
+          "targets": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroTarget" } }, "results": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroTargetResult" } },
+          "targetCount": { "type": "integer", "minimum": 1 }, "completedCount": { "type": "integer", "minimum": 0 }, "failedCount": { "type": "integer", "minimum": 0 }, "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "BulkMacrosResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["macros"], "properties": { "macros": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacro" } } } }] },
+      "BulkMacroResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["macro"], "properties": { "macro": { "$ref": "#/components/schemas/BulkMacro" } } }] },
+      "BulkMacroDeleteResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["deleted"], "properties": { "deleted": { "const": true } } }] },
+      "BulkMacroPreviewResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "$ref": "#/components/schemas/BulkMacroPreview" }] },
+      "BulkMacroRunResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["run"], "properties": { "run": { "$ref": "#/components/schemas/BulkMacroRun" } } }] },
+      "BulkMacroRunsResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["runs"], "properties": { "runs": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroRun" } } } }] },
+      "BulkMacroNotFoundError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "const": "not_found" } } }] },
+      "BulkMacroPreviewError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "type": "string", "enum": ["invalid_preview", "expired_preview", "stale_preview"] } } }] },
       "AutomationRuleTrigger": {
         "type": "string",
         "enum": ["record.created", "record.updated", "media.failed", "schedule.daily"]
