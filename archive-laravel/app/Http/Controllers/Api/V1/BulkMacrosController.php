@@ -109,8 +109,19 @@ class BulkMacrosController extends Controller
             }
             foreach ((array) $request->input('steps', []) as $index => $step) {
                 if (! is_array($step)) continue;
-                if (($step['type'] ?? null) === 'add-tag' && trim((string) ($step['tag'] ?? '')) === '') $validator->errors()->add("steps.$index.tag", 'A tag is required.');
-                if (($step['type'] ?? null) === 'set-workflow-status' && ! in_array($step['status'] ?? null, BulkMacroService::STATUSES, true)) $validator->errors()->add("steps.$index.status", 'A valid workflow status is required.');
+                $type = $step['type'] ?? null;
+                if ($type === 'add-tag' && trim((string) ($step['tag'] ?? '')) === '') $validator->errors()->add("steps.$index.tag", 'A tag is required.');
+                if ($type === 'set-workflow-status' && ! in_array($step['status'] ?? null, BulkMacroService::STATUSES, true)) $validator->errors()->add("steps.$index.status", 'A valid workflow status is required.');
+
+                $allowed = match ($type) {
+                    'add-tag' => ['type', 'tag'],
+                    'set-workflow-status' => ['type', 'status'],
+                    'delete' => ['type'],
+                    default => array_keys($step),
+                };
+                foreach (array_diff(array_keys($step), $allowed) as $field) {
+                    $validator->errors()->add("steps.$index.$field", 'This field is not allowed for the selected step type.');
+                }
             }
         });
         return $validator->validate();

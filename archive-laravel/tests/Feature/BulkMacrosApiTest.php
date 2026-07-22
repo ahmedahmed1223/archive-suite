@@ -3,14 +3,13 @@
 namespace Tests\Feature;
 
 use App\Events\RecordChanged;
-use App\Models\User;
 use App\Models\BulkMacro;
+use App\Models\User;
 use App\Services\BulkMacros\BulkMacroService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use RuntimeException;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -66,6 +65,20 @@ class BulkMacrosApiTest extends TestCase
         $this->getJson("/api/v1/bulk-macros/{$id}", $this->authHeaders())
             ->assertOk()
             ->assertJsonPath('macro.version', 1);
+    }
+
+    public function test_step_variants_reject_fields_owned_by_other_variants(): void
+    {
+        foreach ([
+            ['type' => 'add-tag', 'tag' => 'valid', 'status' => 'approved'],
+            ['type' => 'set-workflow-status', 'status' => 'approved', 'tag' => 'invalid'],
+            ['type' => 'delete', 'tag' => 'invalid'],
+            ['type' => 'delete', 'status' => 'approved'],
+            ['type' => 'delete', 'unexpected' => true],
+        ] as $step) {
+            $this->postJson('/api/v1/bulk-macros', ['name' => 'invalid variant', 'steps' => [$step]], $this->authHeaders())
+                ->assertUnprocessable();
+        }
     }
 
     public function test_viewers_and_other_owners_cannot_manage_a_macro(): void
@@ -209,31 +222,27 @@ class BulkMacrosApiTest extends TestCase
     {
         $this->seedRecord('macro-failure');
         $id = $this->createMacro($this->authHeaders(), [
+            ['type' => 'add-tag', 'tag' => 'preserved'],
             ['type' => 'add-tag', 'tag' => 'rolled-back'],
             ['type' => 'set-workflow-status', 'status' => 'approved'],
         ]);
         $targets = [['store' => 'archive-items', 'id' => 'macro-failure']];
         $token = $this->postJson("/api/v1/bulk-macros/{$id}/preview", ['targets' => $targets], $this->authHeaders())->assertOk()->json('previewToken');
-        $throwOnce = true;
-        Event::listen(RecordChanged::class, function () use (&$throwOnce): void {
-            if ($throwOnce) {
-                $throwOnce = false;
-                throw new RuntimeException('synthetic listener failure');
-            }
-        });
+        DB::statement("CREATE TRIGGER fail_rolled_back_tag BEFORE UPDATE OF data ON storage_rows WHEN NEW.data LIKE '%rolled-back%' BEGIN SELECT RAISE(ABORT, 'synthetic mutation failure'); END");
 
         $run = $this->postJson("/api/v1/bulk-macros/{$id}/run", ['targets' => $targets, 'previewToken' => $token], $this->authHeaders())
             ->assertCreated()
             ->assertJsonPath('run.completedCount', 0)
             ->assertJsonPath('run.failedCount', 1)
             ->assertJsonPath('run.results.0.status', 'partial')
-            ->assertJsonPath('run.results.0.steps.0.status', 'failed')
-            ->assertJsonPath('run.results.0.steps.0.reason', 'mutation_failed')
-            ->assertJsonPath('run.results.0.steps.1.status', 'completed');
+            ->assertJsonPath('run.results.0.steps.0.status', 'completed')
+            ->assertJsonPath('run.results.0.steps.1.status', 'failed')
+            ->assertJsonPath('run.results.0.steps.1.reason', 'mutation_failed')
+            ->assertJsonPath('run.results.0.steps.2.status', 'completed');
 
         $this->getJson('/api/v1/records/macro-failure?store=archive-items', $this->authHeaders())
             ->assertOk()
-            ->assertJsonPath('record.tags.0', 'existing')
+            ->assertJsonPath('record.tags', ['existing', 'preserved'])
             ->assertJsonPath('record.workflowStatus', 'approved');
         $this->getJson("/api/v1/bulk-macros/{$id}/runs", $this->authHeaders())
             ->assertOk()
@@ -256,11 +265,38 @@ class BulkMacrosApiTest extends TestCase
         $this->postJson("/api/v1/bulk-macros/{$id}/run", ['targets' => $targets, 'previewToken' => $token], $this->authHeaders())
             ->assertCreated();
 
-        Event::assertDispatchedTimes(RecordChanged::class, 2);
+        Event::assertDispatchedTimes(RecordChanged::class, 1);
         Event::assertDispatched(RecordChanged::class, fn (RecordChanged $event): bool => $event->store === 'archive-items'
             && $event->uid === 'macro-events'
             && $event->wasCreated === false
             && ($event->record['workflowStatus'] ?? null) === 'approved');
+    }
+
+    public function test_synchronous_record_changed_mutation_is_not_overwritten_by_later_macro_steps(): void
+    {
+        $this->seedRecord('macro-automation');
+        $id = $this->createMacro($this->authHeaders(), [
+            ['type' => 'add-tag', 'tag' => 'featured'],
+            ['type' => 'set-workflow-status', 'status' => 'approved'],
+        ]);
+        $targets = [['store' => 'archive-items', 'id' => 'macro-automation']];
+        $token = $this->postJson("/api/v1/bulk-macros/{$id}/preview", ['targets' => $targets], $this->authHeaders())->assertOk()->json('previewToken');
+        Event::listen(RecordChanged::class, function (RecordChanged $event): void {
+            $row = DB::table('storage_rows')->where('store', $event->store)->where('uid', $event->uid)->first();
+            $record = json_decode((string) $row->data, true, flags: JSON_THROW_ON_ERROR);
+            $record['automationTouched'] = true;
+            DB::table('storage_rows')->where('store', $event->store)->where('uid', $event->uid)->update([
+                'data' => json_encode($record, JSON_THROW_ON_ERROR),
+            ]);
+        });
+
+        $this->postJson("/api/v1/bulk-macros/{$id}/run", ['targets' => $targets, 'previewToken' => $token], $this->authHeaders())
+            ->assertCreated();
+
+        $this->getJson('/api/v1/records/macro-automation?store=archive-items', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('record.workflowStatus', 'approved')
+            ->assertJsonPath('record.automationTouched', true);
     }
 
     public function test_zero_row_mutation_is_failed_without_losing_run_history(): void
@@ -272,9 +308,7 @@ class BulkMacrosApiTest extends TestCase
         ]);
         $targets = [['store' => 'archive-items', 'id' => 'macro-zero-row']];
         $token = $this->postJson("/api/v1/bulk-macros/{$id}/preview", ['targets' => $targets], $this->authHeaders())->assertOk()->json('previewToken');
-        Event::listen(RecordChanged::class, function (RecordChanged $event): void {
-            DB::table('storage_rows')->where('store', $event->store)->where('uid', $event->uid)->delete();
-        });
+        DB::statement("CREATE TRIGGER remove_before_status_update BEFORE UPDATE OF data ON storage_rows WHEN NEW.data LIKE '%approved%' BEGIN DELETE FROM storage_rows WHERE store = OLD.store AND uid = OLD.uid; SELECT RAISE(IGNORE); END");
 
         $run = $this->postJson("/api/v1/bulk-macros/{$id}/run", ['targets' => $targets, 'previewToken' => $token], $this->authHeaders())
             ->assertCreated()
@@ -287,6 +321,27 @@ class BulkMacrosApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('runs.0.id', $run->json('run.id'))
             ->assertJsonPath('runs.0.results.0.steps.1.status', 'failed');
+    }
+
+    public function test_unexpected_target_failure_still_records_each_macro_step(): void
+    {
+        $this->seedRecord('macro-target-failure');
+        $id = $this->createMacro($this->authHeaders(), [['type' => 'delete']]);
+        $macro = BulkMacro::query()->findOrFail($id);
+        $macro->steps = ['malformed-step', ['type' => 'delete']];
+
+        $run = app(BulkMacroService::class)->execute(
+            $macro,
+            User::query()->where('email', 'admin@example.test')->firstOrFail(),
+            [['store' => 'archive-items', 'id' => 'macro-target-failure']],
+        );
+
+        $this->assertSame('failed', $run->results[0]['status']);
+        $this->assertSame('target_failed', $run->results[0]['reason']);
+        $this->assertSame('failed', $run->results[0]['steps'][0]['status']);
+        $this->assertSame('target_failed', $run->results[0]['steps'][0]['reason']);
+        $this->assertSame('skipped', $run->results[0]['steps'][1]['status']);
+        $this->assertSame('target_failed', $run->results[0]['steps'][1]['reason']);
     }
 
     /** @param array<int, array<string, string>> $steps */
