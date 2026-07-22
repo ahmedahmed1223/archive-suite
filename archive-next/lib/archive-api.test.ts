@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createArchiveApiClient } from "./archive-api";
+import { createArchiveApiClient, type ApiEnvelope, type SafetyPreviewRun } from "./archive-api";
 
 describe("archive API uploads", () => {
   it("uses the access token issued by login for multipart uploads", async () => {
@@ -26,6 +26,26 @@ describe("archive API uploads", () => {
 });
 
 describe("safety preview API client", () => {
+  it("exposes the required synthetic marker on preview errors without changing generic errors", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ok: false,
+      synthetic: true,
+      error: "Forbidden.",
+      code: "FORBIDDEN"
+    }), { status: 403 }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    const response = await api.runSafetyPreview({ scenario: "restore-conflict", operation: "restore", ids: ["conflict"] });
+    if (response.ok) throw new Error("Expected a synthetic preview error");
+
+    const marker: true = response.synthetic;
+    expect(marker).toBe(true);
+    expect(response.code).toBe("FORBIDDEN");
+
+    const genericError: Extract<ApiEnvelope<SafetyPreviewRun>, { ok: false }> = { ok: false, error: "Generic error" };
+    expect("synthetic" in genericError).toBe(false);
+  });
+
   it("uses only synthetic preview endpoints", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true, synthetic: true, scenarios: [
