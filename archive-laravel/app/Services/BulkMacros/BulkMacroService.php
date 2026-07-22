@@ -2,13 +2,17 @@
 
 namespace App\Services\BulkMacros;
 
+use App\Events\RecordChanged;
 use App\Http\Controllers\Api\V1\TrashController;
 use App\Models\BulkMacro;
 use App\Models\BulkMacroRun;
 use App\Models\User;
+use App\Services\Automation\AutomationRuleRunner;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 use stdClass;
+use Throwable;
 
 class BulkMacroService
 {
@@ -39,7 +43,7 @@ class BulkMacroService
         $claims = $this->claims($token);
         if (! is_array($claims)) return 'invalid_preview';
         if (($claims['userId'] ?? null) !== (string) $user->id || ($claims['macroId'] ?? null) !== $macro->id || ($claims['targets'] ?? null) !== $this->normalizeTargets($targets)) return 'invalid_preview';
-        if (! is_int($claims['expiresAt'] ?? null) || $claims['expiresAt'] < now()->getTimestamp()) return 'expired_preview';
+        if (! is_int($claims['expiresAt'] ?? null) || $claims['expiresAt'] <= now()->getTimestamp()) return 'expired_preview';
         if (($claims['version'] ?? null) !== $macro->version) return 'stale_preview';
 
         return null;
@@ -49,7 +53,13 @@ class BulkMacroService
     public function execute(BulkMacro $macro, User $user, array $targets): BulkMacroRun
     {
         $targets = $this->normalizeTargets($targets);
-        $results = array_map(fn (array $target): array => $this->executeTarget($macro, $target, $user), $targets);
+        $results = array_map(function (array $target) use ($macro, $user): array {
+            try {
+                return $this->processTarget($macro, $target, $user);
+            } catch (Throwable) {
+                return ['store' => $target['store'], 'id' => $target['id'], 'status' => 'failed', 'reason' => 'target_failed', 'steps' => []];
+            }
+        }, $targets);
         $completed = count(array_filter($results, fn (array $result): bool => $result['status'] === 'completed'));
 
         return BulkMacroRun::query()->create([
@@ -76,22 +86,16 @@ class BulkMacroService
     /** @param array{store: string, id: string} $target */
     private function previewTarget(BulkMacro $macro, array $target): array
     {
-        $row = $this->findRow($target);
-        if (! $row instanceof stdClass) return ['store' => $target['store'], 'id' => $target['id'], 'status' => 'missing', 'steps' => []];
-
-        $record = $this->decode($row->data);
-        $steps = [];
-        foreach ($macro->steps as $index => $step) $steps[] = $this->simulate($record, $step, $index);
-
-        return ['store' => $target['store'], 'id' => $target['id'], 'status' => 'ready', 'steps' => $steps];
+        return $this->processTarget($macro, $target);
     }
 
     /** @param array{store: string, id: string} $target */
-    private function executeTarget(BulkMacro $macro, array $target, User $user): array
+    private function processTarget(BulkMacro $macro, array $target, ?User $user = null): array
     {
         $row = $this->findRow($target);
         if (! $row instanceof stdClass) return ['store' => $target['store'], 'id' => $target['id'], 'status' => 'missing', 'steps' => []];
 
+        $executing = $user instanceof User;
         $record = $this->decode($row->data);
         $steps = [];
         $deleted = false;
@@ -100,23 +104,47 @@ class BulkMacroService
                 $steps[] = ['index' => $index, 'type' => $step['type'], 'status' => 'skipped', 'reason' => 'deleted'];
                 continue;
             }
-            $type = $step['type'];
-            if ($type === 'delete') {
-                DB::transaction(function () use ($row, $user): void {
-                    TrashController::trashRow($row, $user);
-                    DB::table('storage_rows')->where('store', $row->store)->where('uid', $row->uid)->delete();
-                });
-                $steps[] = ['index' => $index, 'type' => $type, 'status' => 'completed', 'reversible' => true];
-                $deleted = true;
+            $outcome = $this->simulate($record, $step, $index);
+            if (! $executing) {
+                $steps[] = $outcome;
+                if ($step['type'] === 'delete') $deleted = true;
                 continue;
             }
-            $outcome = $this->simulate($record, $step, $index);
-            DB::table('storage_rows')->where('store', $row->store)->where('uid', $row->uid)->update(['data' => json_encode($record, JSON_THROW_ON_ERROR), 'updated_at' => now()]);
-            $outcome['status'] = 'completed';
-            $steps[] = $outcome;
+
+            $recordBeforeStep = $record;
+            try {
+                if ($step['type'] === 'delete') {
+                    DB::transaction(function () use ($row, $user): void {
+                        TrashController::trashRow($row, $user);
+                        $affected = DB::table('storage_rows')->where('store', $row->store)->where('uid', $row->uid)->delete();
+                        if ($affected !== 1) throw new RuntimeException('Bulk macro delete did not affect exactly one row.');
+                    });
+                    $deleted = true;
+                } else {
+                    DB::transaction(function () use ($row, $record): void {
+                        $affected = DB::table('storage_rows')->where('store', $row->store)->where('uid', $row->uid)->update([
+                            'data' => json_encode($record, JSON_THROW_ON_ERROR),
+                            'updated_at' => now(),
+                        ]);
+                        if ($affected !== 1) throw new RuntimeException('Bulk macro mutation did not affect exactly one row.');
+                        if ($row->store === AutomationRuleRunner::ARCHIVE_STORE) {
+                            RecordChanged::dispatch((string) $row->store, (string) $row->uid, $record, false);
+                        }
+                    });
+                }
+                $outcome['status'] = 'completed';
+                $steps[] = $outcome;
+            } catch (Throwable) {
+                $record = $recordBeforeStep;
+                $steps[] = ['index' => $index, 'type' => $step['type'], 'status' => 'failed', 'reason' => 'mutation_failed'];
+            }
         }
 
-        return ['store' => $target['store'], 'id' => $target['id'], 'status' => $deleted || ! in_array('skipped', array_column($steps, 'status'), true) ? 'completed' : 'partial', 'steps' => $steps];
+        $status = $executing
+            ? (in_array('failed', array_column($steps, 'status'), true) ? 'partial' : 'completed')
+            : 'ready';
+
+        return ['store' => $target['store'], 'id' => $target['id'], 'status' => $status, 'steps' => $steps];
     }
 
     /** @param array<string, mixed> $record @param array<string, mixed> $step @return array<string, mixed> */
