@@ -3,9 +3,16 @@ import type { components as GeneratedApiComponents } from "./generated/archive-a
 
 export const ARCHIVE_UNAUTHORIZED_EVENT = "archive-next:unauthorized";
 
-export type ApiEnvelope<T extends object = Record<string, unknown>> =
-  | ({ ok: true } & T)
-  | { ok: false; error: string; code?: string; details?: unknown };
+export type ApiSuccess<T extends object = Record<string, unknown>> = { ok: true } & T;
+
+export type ApiError = { ok: false; error: string; code?: string; details?: unknown };
+
+export type ApiEnvelope<T extends object = Record<string, unknown>> = ApiSuccess<T> | ApiError;
+
+/** Errors returned from the synthetic preview endpoints always carry the marker too. */
+export type SafetyPreviewError = ApiError & { synthetic: true };
+
+export type SafetyPreviewEnvelope<T extends object> = ApiSuccess<T> | SafetyPreviewError;
 
 export interface ArchiveUser {
   id: string;
@@ -1134,8 +1141,8 @@ export interface ArchiveApiClient {
   deleteType(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted?: boolean }>>;
   bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
   bulkDeleteRecords(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: BulkDeleteResultItem[] }>>;
-  safetyPreviewScenarios(options?: AuthRequestOptions): Promise<ApiEnvelope<GeneratedSchemas["SafetyPreviewScenariosResponse"]>>;
-  runSafetyPreview(payload: SafetyPreviewRunPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<SafetyPreviewRun>>;
+  safetyPreviewScenarios(options?: AuthRequestOptions): Promise<SafetyPreviewEnvelope<GeneratedSchemas["SafetyPreviewScenariosResponse"]>>;
+  runSafetyPreview(payload: SafetyPreviewRunPayload, options?: AuthRequestOptions): Promise<SafetyPreviewEnvelope<SafetyPreviewRun>>;
   trash(params?: TrashFilters, options?: AuthRequestOptions): Promise<ApiEnvelope<{ items: TrashEntry[]; pagination?: PaginationMeta }>>;
   restoreTrash(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: TrashRestoreResultItem[] }>>;
   purgeTrash(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: TrashPurgeResultItem[] }>>;
@@ -1469,6 +1476,15 @@ export function createArchiveApiClient({
   const del = <T extends object>(path: string, body?: unknown, options?: AuthRequestOptions) =>
     request<T>(path, { method: "DELETE", body, accessToken: options?.accessToken });
 
+  const asSafetyPreviewEnvelope = <T extends object>(response: ApiEnvelope<T>): SafetyPreviewEnvelope<T> =>
+    response.ok ? response : { ...response, synthetic: true };
+
+  const getSafetyPreview = async <T extends object>(path: string, options?: AuthRequestOptions): Promise<SafetyPreviewEnvelope<T>> =>
+    asSafetyPreviewEnvelope(await get<T>(path, options));
+
+  const postSafetyPreview = async <T extends object>(path: string, body: unknown, options?: AuthRequestOptions): Promise<SafetyPreviewEnvelope<T>> =>
+    asSafetyPreviewEnvelope(await post<T>(path, body, options));
+
   return {
     health: () => get("/health"),
     login: async (payload: LoginRequest): Promise<ApiEnvelope<AuthSession>> => {
@@ -1673,9 +1689,9 @@ export function createArchiveApiClient({
     bulkDeleteRecords: (payload: { store: string; ids: string[] }, options?: AuthRequestOptions) =>
       post<{ count: number; results: BulkDeleteResultItem[] }>("/records/bulk-delete", payload, options),
     safetyPreviewScenarios: (options?: AuthRequestOptions) =>
-      get<GeneratedSchemas["SafetyPreviewScenariosResponse"]>("/safety-preview/scenarios", options),
+      getSafetyPreview<GeneratedSchemas["SafetyPreviewScenariosResponse"]>("/safety-preview/scenarios", options),
     runSafetyPreview: (payload: SafetyPreviewRunPayload, options?: AuthRequestOptions) =>
-      post<SafetyPreviewRun>("/safety-preview/run", payload, options),
+      postSafetyPreview<SafetyPreviewRun>("/safety-preview/run", payload, options),
     trash: (params?: TrashFilters, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.store) queryParams.set("store", params.store);

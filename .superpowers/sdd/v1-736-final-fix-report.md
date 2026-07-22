@@ -19,3 +19,9 @@ Commit hash: `HEAD` (the scoped V1-736 final-fix commit; recorded in the task ha
 - Added a route-scoped response marker middleware ahead of preview auth. Validation is caught only by the preview controller so global error contracts remain unchanged.
 - Success responses now use the `ok: true` envelope, while all preview error responses carry `synthetic: true`.
 - Laravel supplies Arabic scenario descriptions; the UI renders them, uses real fixture defaults, localizes result reasons, and labels this page as a simulation without audit/execution messaging.
+
+## Follow-up: preview error typing
+
+- RED: the focused type assertion failed because `ApiEnvelope` omitted `synthetic` from its generic error branch.
+- GREEN: `SafetyPreviewEnvelope` and `SafetyPreviewError` now require `synthetic: true` only for the two preview methods. Generic API errors remain unchanged.
+- Verified with focused API-client Vitest (3 tests), API contract/generated-binding checks, and Next typecheck.
