@@ -30,7 +30,7 @@ test("editor must preview a saved macro before it can run, and selection changes
   await expect(recorder.getByRole("button", { name: "تنفيذ الماكرو" })).toBeDisabled();
   expect(runs).toBe(0);
   await recorder.getByRole("button", { name: "معاينة التنفيذ" }).click();
-  await expect(recorder.getByText("معاينة موقعة")).toBeVisible();
+  await expect(recorder.getByText("معاينة موقعة", { exact: true })).toBeVisible();
   await expect(recorder.getByText("قابل للتراجع").first()).toBeVisible();
   await expect(recorder.getByRole("button", { name: "تنفيذ الماكرو" })).toBeEnabled();
   await selectedRecord.uncheck();

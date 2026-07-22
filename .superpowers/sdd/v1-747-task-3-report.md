@@ -14,6 +14,15 @@ pnpm typecheck
 PASS
 ```
 
+## E2E preview-heading follow-up
+
+The recorder-scoped preview assertion now uses exact text for the `معاينة موقعة` heading, avoiding the helper sentence that also contains that phrase.
+
+```text
+pnpm typecheck
+PASS
+```
+
 ## Checkbox toggle follow-up
 
 Card and table checkbox adapters now turn a plain click on an already-selected record into the existing additive-toggle selection mode, while retaining shift/ctrl/meta behavior unchanged. The stateful card test verifies both native check and uncheck activation.
