@@ -3,6 +3,7 @@
 use App\Http\Middleware\AuditArchiveApiRequest;
 use App\Http\Middleware\AuthenticateArchiveApiRequest;
 use App\Http\Middleware\FeatureGate;
+use App\Http\Middleware\MarkSafetyPreviewResponse;
 use App\Http\Middleware\CorrelateRequest;
 use App\Support\ApiError;
 use Illuminate\Foundation\Application;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'archive.audit' => AuditArchiveApiRequest::class,
             'archive.auth' => AuthenticateArchiveApiRequest::class,
             'archive.feature' => FeatureGate::class,
+            'safety-preview.response' => MarkSafetyPreviewResponse::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

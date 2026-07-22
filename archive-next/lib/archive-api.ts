@@ -46,6 +46,7 @@ export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
 export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
 export type ScheduledUploadStaged = GeneratedSchemas["ScheduledUploadStaged"];
 export type SafetyPreviewScenario = GeneratedSchemas["SafetyPreviewScenario"];
+export type SafetyPreviewScenarioDescriptor = GeneratedSchemas["SafetyPreviewScenarioDescriptor"];
 export type SafetyPreviewOperation = GeneratedSchemas["SafetyPreviewOperation"];
 export type SafetyPreviewRun = GeneratedSchemas["SafetyPreviewRunResponse"];
 export type SafetyPreviewRunPayload = GeneratedSchemas["SafetyPreviewRunRequest"];

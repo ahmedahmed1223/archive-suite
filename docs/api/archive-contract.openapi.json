@@ -854,8 +854,8 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
+          "401": { "$ref": "#/components/responses/SafetyPreviewError" },
+          "403": { "$ref": "#/components/responses/SafetyPreviewError" }
         }
       }
     },
@@ -883,9 +883,9 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" },
-          "422": { "$ref": "#/components/responses/Error" }
+          "401": { "$ref": "#/components/responses/SafetyPreviewError" },
+          "403": { "$ref": "#/components/responses/SafetyPreviewError" },
+          "422": { "$ref": "#/components/responses/SafetyPreviewError" }
         }
       }
     },
@@ -4289,6 +4289,14 @@
           }
         }
       },
+      "SafetyPreviewError": {
+        "description": "Synthetic safety-preview error response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/SafetyPreviewError" }
+          }
+        }
+      },
       "AuthSuccess": {
         "description": "Authenticated session",
         "headers": {
@@ -6849,6 +6857,14 @@
         "type": "string",
         "enum": ["bulk-delete-basic", "restore-conflict"]
       },
+      "SafetyPreviewScenarioDescriptor": {
+        "type": "object",
+        "required": ["id", "description"],
+        "properties": {
+          "id": { "$ref": "#/components/schemas/SafetyPreviewScenario" },
+          "description": { "type": "string", "description": "Arabic description supplied by the Laravel preview service." }
+        }
+      },
       "SafetyPreviewOperation": {
         "type": "string",
         "enum": ["delete", "restore"]
@@ -6884,15 +6900,20 @@
         ]
       },
       "SafetyPreviewScenariosResponse": {
-        "type": "object",
-        "required": ["synthetic", "scenarios"],
-        "properties": {
-          "synthetic": { "const": true },
-          "scenarios": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/SafetyPreviewScenario" }
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["synthetic", "scenarios"],
+            "properties": {
+              "synthetic": { "const": true },
+              "scenarios": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/SafetyPreviewScenarioDescriptor" }
+              }
+            }
           }
-        }
+        ]
       },
       "SafetyPreviewRunRequest": {
         "type": "object",
@@ -6909,20 +6930,35 @@
         }
       },
       "SafetyPreviewRunResponse": {
-        "type": "object",
-        "required": ["synthetic", "scenario", "operation", "expiresAt", "before", "after", "results"],
-        "properties": {
-          "synthetic": { "const": true },
-          "scenario": { "$ref": "#/components/schemas/SafetyPreviewScenario" },
-          "operation": { "$ref": "#/components/schemas/SafetyPreviewOperation" },
-          "expiresAt": { "type": "string", "format": "date-time" },
-          "before": { "$ref": "#/components/schemas/SafetyPreviewCounts" },
-          "after": { "$ref": "#/components/schemas/SafetyPreviewCounts" },
-          "results": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/SafetyPreviewResult" }
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["synthetic", "scenario", "operation", "expiresAt", "before", "after", "results"],
+            "properties": {
+              "synthetic": { "const": true },
+              "scenario": { "$ref": "#/components/schemas/SafetyPreviewScenario" },
+              "operation": { "$ref": "#/components/schemas/SafetyPreviewOperation" },
+              "expiresAt": { "type": "string", "format": "date-time" },
+              "before": { "$ref": "#/components/schemas/SafetyPreviewCounts" },
+              "after": { "$ref": "#/components/schemas/SafetyPreviewCounts" },
+              "results": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/SafetyPreviewResult" }
+              }
+            }
           }
-        }
+        ]
+      },
+      "SafetyPreviewError": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ErrorEnvelope" },
+          {
+            "type": "object",
+            "required": ["synthetic"],
+            "properties": { "synthetic": { "const": true } }
+          }
+        ]
       },
       "RecordsImportCsvResponse": {
         "allOf": [

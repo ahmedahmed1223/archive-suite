@@ -200,8 +200,8 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware(['archive.auth', 'archive.audit'])->post('/collaboration/rooms/{roomKey}/documents/{resourceId}', [CollaborationController::class, 'updateDocument']);
     // V1-736: a preview must remain entirely synthetic, including no audit-log writes.
     // Authorization is enforced by SafetyPreviewController::requireEditor().
-    Route::middleware('archive.auth')->get('/safety-preview/scenarios', [SafetyPreviewController::class, 'scenarios']);
-    Route::middleware('archive.auth')->post('/safety-preview/run', [SafetyPreviewController::class, 'run']);
+    Route::middleware(['safety-preview.response', 'archive.auth'])->get('/safety-preview/scenarios', [SafetyPreviewController::class, 'scenarios']);
+    Route::middleware(['safety-preview.response', 'archive.auth'])->post('/safety-preview/run', [SafetyPreviewController::class, 'run']);
 
     Route::middleware(['archive.auth', 'archive.audit'])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);

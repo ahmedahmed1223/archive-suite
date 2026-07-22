@@ -8,6 +8,7 @@ export type OperationalSafetyInput = {
   dryRun?: boolean;
   impact?: OperationalImpact;
   rights?: OperationalRights;
+  simulationOnly?: boolean;
 };
 
 export type OperationalSafety = {
@@ -21,6 +22,7 @@ export type OperationalSafety = {
   modeLabel: string;
   nextStep: string;
   requiresConfirmation: boolean;
+  showAuditLink: boolean;
   summary: string;
 };
 
@@ -30,12 +32,13 @@ export function buildOperationalSafety({
   confidence,
   dryRun = false,
   impact = "low",
-  rights = "allowed"
+  rights = "allowed",
+  simulationOnly = false
 }: OperationalSafetyInput): OperationalSafety {
   const isBlocked = rights === "blocked";
   const requiresRightsReview = rights === "review";
   const requiresConfirmation = impact === "high" && !dryRun && !isBlocked;
-  const modeLabel = dryRun ? "معاينة جافة" : "تنفيذ تشغيلي";
+  const modeLabel = simulationOnly ? "محاكاة اصطناعية" : dryRun ? "معاينة جافة" : "تنفيذ تشغيلي";
 
   return {
     auditHref,
@@ -45,18 +48,23 @@ export function buildOperationalSafety({
     confirmationLabel: requiresConfirmation ? `تأكيد ${action}` : undefined,
     isBlocked,
     modeLabel,
-    nextStep: isBlocked
-      ? "الخطوة التالية: راجع الحقوق أو اطلب تفويضاً مناسباً."
-      : requiresRightsReview
-        ? "الخطوة التالية: يطبق الخادم سياسات الحقوق والصلاحيات عند تنفيذ الطلب."
-      : dryRun
-        ? "الخطوة التالية: راجع النتائج ثم نفّذ الإجراء عند الجاهزية."
-        : requiresConfirmation
-          ? "الخطوة التالية: أكّد الإجراء عالي التأثير قبل المتابعة."
-          : "الخطوة التالية: راجع السجل بعد اكتمال الإجراء.",
     requiresConfirmation,
     rightsReviewLabel: requiresRightsReview ? "الحقوق غير متحققة محلياً؛ القرار النهائي للخادم." : undefined,
-    summary: dryRun
+    showAuditLink: !simulationOnly,
+    nextStep: simulationOnly
+      ? "الخطوة التالية: غيّر المعرفات أو السيناريو ثم شغّل محاكاة اصطناعية مستقلة."
+      : isBlocked
+        ? "الخطوة التالية: راجع الحقوق أو اطلب تفويضاً مناسباً."
+        : requiresRightsReview
+          ? "الخطوة التالية: يطبق الخادم سياسات الحقوق والصلاحيات عند تنفيذ الطلب."
+          : dryRun
+            ? "الخطوة التالية: راجع النتائج ثم نفّذ الإجراء عند الجاهزية."
+            : requiresConfirmation
+              ? "الخطوة التالية: أكّد الإجراء عالي التأثير قبل المتابعة."
+              : "الخطوة التالية: راجع السجل بعد اكتمال الإجراء.",
+    summary: simulationOnly
+      ? `${action}: محاكاة اصطناعية فقط ولا ينتج عنها أي تغيير أو تنفيذ.`
+      : dryRun
       ? `معاينة ${action}: لن تُنفذ أي تغييرات.`
       : isBlocked
         ? `${action} متوقف: لا تسمح الحقوق الحالية بهذا الإجراء.`

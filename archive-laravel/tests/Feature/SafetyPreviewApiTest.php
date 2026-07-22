@@ -19,10 +19,15 @@ class SafetyPreviewApiTest extends TestCase
     {
         $this->getJson('/api/v1/safety-preview/scenarios', $this->headersFor('editor', 'editor@example.test'))
             ->assertOk()
+            ->assertJsonPath('ok', true)
             ->assertJsonPath('synthetic', true)
             ->assertExactJson([
+                'ok' => true,
                 'synthetic' => true,
-                'scenarios' => ['bulk-delete-basic', 'restore-conflict'],
+                'scenarios' => [
+                    ['id' => 'bulk-delete-basic', 'description' => 'حذف جماعي تجريبي لسجلات اصطناعية'],
+                    ['id' => 'restore-conflict', 'description' => 'استعادة تجريبية تعرض تعارضاً وعنصراً قابلاً للاستعادة'],
+                ],
             ]);
     }
 
@@ -34,27 +39,44 @@ class SafetyPreviewApiTest extends TestCase
             'ids' => ['alpha'],
         ], $this->headersFor('admin', 'admin@example.test'))
             ->assertOk()
+            ->assertJsonPath('ok', true)
             ->assertJsonPath('synthetic', true)
             ->assertJsonPath('results.0.id', 'alpha')
             ->assertJsonPath('results.0.deleted', true);
     }
 
-    public function test_unauthenticated_requests_are_denied(): void
+    public function test_every_preview_response_includes_the_synthetic_marker(): void
     {
-        $this->getJson('/api/v1/safety-preview/scenarios')->assertUnauthorized();
+        $this->getJson('/api/v1/safety-preview/scenarios')
+            ->assertUnauthorized()
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('synthetic', true);
         $this->postJson('/api/v1/safety-preview/run', [
             'scenario' => 'bulk-delete-basic', 'operation' => 'delete', 'ids' => ['alpha'],
-        ])->assertUnauthorized();
+        ])->assertUnauthorized()
+            ->assertJsonPath('synthetic', true);
+
+        $headers = $this->headersFor('viewer', 'preview-viewer@example.test');
+        $this->getJson('/api/v1/safety-preview/scenarios', $headers)
+            ->assertForbidden()
+            ->assertJsonPath('synthetic', true);
+
+        $this->postJson('/api/v1/safety-preview/run', [
+            'scenario' => 'unknown', 'operation' => 'purge', 'ids' => ['', 42],
+        ], $this->editorHeaders())
+            ->assertUnprocessable()
+            ->assertJsonPath('synthetic', true)
+            ->assertJsonValidationErrors(['scenario', 'operation', 'ids.0', 'ids.1']);
     }
 
     public function test_viewer_requests_are_forbidden(): void
     {
         $headers = $this->headersFor('viewer', 'viewer@example.test');
 
-        $this->getJson('/api/v1/safety-preview/scenarios', $headers)->assertForbidden();
+        $this->getJson('/api/v1/safety-preview/scenarios', $headers)->assertForbidden()->assertJsonPath('synthetic', true);
         $this->postJson('/api/v1/safety-preview/run', [
             'scenario' => 'bulk-delete-basic', 'operation' => 'delete', 'ids' => ['alpha'],
-        ], $headers)->assertForbidden();
+        ], $headers)->assertForbidden()->assertJsonPath('synthetic', true);
     }
 
     public function test_delete_preview_is_deterministic_and_deduplicates_ids_in_request_order(): void
@@ -112,15 +134,6 @@ class SafetyPreviewApiTest extends TestCase
         } finally {
             Carbon::setTestNow();
         }
-    }
-
-    public function test_run_validates_its_request_payload(): void
-    {
-        $this->postJson('/api/v1/safety-preview/run', [
-            'scenario' => 'unknown', 'operation' => 'purge', 'ids' => ['', 42],
-        ], $this->editorHeaders())
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['scenario', 'operation', 'ids.0', 'ids.1']);
     }
 
     public function test_preview_runs_leave_live_and_trashed_database_records_unchanged(): void

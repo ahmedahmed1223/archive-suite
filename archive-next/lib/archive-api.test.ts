@@ -28,7 +28,10 @@ describe("archive API uploads", () => {
 describe("safety preview API client", () => {
   it("uses only synthetic preview endpoints", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ synthetic: true, scenarios: ["bulk-delete-basic", "restore-conflict"] }), { status: 200 })
+      new Response(JSON.stringify({ ok: true, synthetic: true, scenarios: [
+        { id: "bulk-delete-basic", description: "حذف جماعي تجريبي لسجلات اصطناعية" },
+        { id: "restore-conflict", description: "استعادة تجريبية تعرض تعارضاً وعنصراً قابلاً للاستعادة" }
+      ] }), { status: 200 })
     );
     const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
 
