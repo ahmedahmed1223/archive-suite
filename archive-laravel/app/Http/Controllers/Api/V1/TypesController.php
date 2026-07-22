@@ -96,6 +96,7 @@ class TypesController extends Controller
         $validator = Validator::make($request->all(), [
             'id' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
+            'icon' => ['sometimes', 'nullable', 'string', 'min:1', 'max:100'],
             'fields' => ['required', 'array'],
             'fields.*.name' => ['required', 'string', 'max:255'],
             'fields.*.type' => ['required', 'string', 'in:text,number,date,select,multi,boolean'],
@@ -144,6 +145,7 @@ class TypesController extends Controller
         $data = [
             'id' => $validated['id'],
             'name' => $validated['name'],
+            ...(array_key_exists('icon', $validated) ? ['icon' => $validated['icon']] : []),
             'fields' => $validated['fields'],
         ];
 

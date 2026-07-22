@@ -949,6 +949,7 @@ export interface ArchiveTypeField {
 export interface ArchiveType {
   id: string;
   name: string;
+  icon?: string;
   fields: ArchiveTypeField[];
   createdAt?: string;
   updatedAt?: string;
