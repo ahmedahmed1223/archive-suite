@@ -459,6 +459,7 @@ export interface TagNode {
   parent: string;
   color?: string | null;
   order?: number;
+  icon?: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -468,6 +469,7 @@ export interface CreateTagNodePayload {
   parent: string;
   color?: string;
   order_index?: number;
+  icon?: string;
 }
 
 export interface UpdateTagNodePayload {
@@ -475,6 +477,7 @@ export interface UpdateTagNodePayload {
   parent?: string;
   color?: string | null;
   order_index?: number;
+  icon?: string | null;
 }
 
 export type AutomationRuleTrigger = "record.created" | "record.updated" | "media.failed" | "schedule.daily";

@@ -3636,6 +3636,7 @@ export interface components {
         TagNode: {
             /** Format: date-time */
             createdAt: string | null;
+            icon?: string | null;
             id: string;
             parent: string;
             tag: string;
@@ -3643,6 +3644,7 @@ export interface components {
             updatedAt: string | null;
         };
         TagNodeCreateRequest: {
+            icon?: string;
             parent: string;
             tag: string;
         };
@@ -3653,6 +3655,7 @@ export interface components {
             nodes: components["schemas"]["TagNode"][];
         };
         TagNodeUpdateRequest: {
+            icon?: string | null;
             parent?: string;
             tag?: string;
         };

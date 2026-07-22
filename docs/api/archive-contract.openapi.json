@@ -6201,6 +6201,7 @@
           "id": { "type": "string" },
           "tag": { "type": "string" },
           "parent": { "type": "string" },
+          "icon": { "type": ["string", "null"], "maxLength": 100 },
           "createdAt": { "type": ["string", "null"], "format": "date-time" },
           "updatedAt": { "type": ["string", "null"], "format": "date-time" }
         }
@@ -6210,14 +6211,16 @@
         "required": ["tag", "parent"],
         "properties": {
           "tag": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "parent": { "type": "string", "minLength": 1, "maxLength": 200 }
+          "parent": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "icon": { "type": "string", "minLength": 1, "maxLength": 100 }
         }
       },
       "TagNodeUpdateRequest": {
         "type": "object",
         "properties": {
           "tag": { "type": "string", "maxLength": 200 },
-          "parent": { "type": "string", "maxLength": 200 }
+          "parent": { "type": "string", "maxLength": 200 },
+          "icon": { "type": ["string", "null"], "maxLength": 100 }
         }
       },
       "TagNodesResponse": {

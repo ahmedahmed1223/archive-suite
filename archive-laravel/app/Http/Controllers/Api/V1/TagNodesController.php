@@ -40,6 +40,7 @@ class TagNodesController extends Controller
             'parent' => ['nullable', 'string', 'max:200'],
             'color' => ['sometimes', 'string', 'max:7', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'order_index' => ['sometimes', 'integer', 'min:0'],
+            'icon' => ['sometimes', 'nullable', 'string', 'max:100'],
         ]);
 
         // Ensure parent defaults to empty string if null
@@ -56,6 +57,7 @@ class TagNodesController extends Controller
             'parent' => trim((string) $validated['parent']),
             'color' => $validated['color'] ?? null,
             'order_index' => $validated['order_index'] ?? 0,
+            'icon' => $validated['icon'] ?? null,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -77,6 +79,7 @@ class TagNodesController extends Controller
             'parent' => ['sometimes', 'string', 'max:200'],
             'color' => ['sometimes', 'nullable', 'string', 'max:7', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'order_index' => ['sometimes', 'integer', 'min:0'],
+            'icon' => ['sometimes', 'nullable', 'string', 'max:100'],
         ]);
 
         $userId = $this->userId($request);
@@ -86,7 +89,7 @@ class TagNodesController extends Controller
             return response()->json(['ok' => false, 'error' => 'Tag node not found.', 'code' => 'not_found'], 404);
         }
 
-        $changes = array_intersect_key($validated, array_flip(['tag', 'parent', 'color', 'order_index']));
+        $changes = array_intersect_key($validated, array_flip(['tag', 'parent', 'color', 'order_index', 'icon']));
         if ($changes !== []) {
             $changes['updated_at'] = now();
             DB::table('tag_nodes')->where('id', $id)->where('user_id', $userId)->update($changes);
@@ -288,6 +291,7 @@ class TagNodesController extends Controller
             'parent' => $row->parent,
             'color' => $row->color,
             'order' => $row->order_index,
+            'icon' => $row->icon,
             'createdAt' => $row->created_at,
             'updatedAt' => $row->updated_at,
         ];
