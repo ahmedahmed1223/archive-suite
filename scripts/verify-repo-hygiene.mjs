@@ -183,13 +183,21 @@ assert.deepEqual(
   `Merged plan/audit documents must not remain tracked; consolidate into ${taskLedgerRelativePath}:\n${trackedForbiddenPlanDocs.join("\n")}`
 );
 
-const trackedSuperpowersPlans = trackedFiles.filter((file) =>
-  file.startsWith("docs/superpowers/plans/") && existsSync(path.join(ROOT, file))
-);
+// A plan doc still tracking unchecked `- [ ]` steps represents work in
+// progress and is allowed to stay; only a plan whose steps are all checked
+// (or that never had any) should have been consolidated and untracked.
+const trackedSuperpowersPlans = trackedFiles.filter((file) => {
+  if (!file.startsWith("docs/superpowers/plans/") || !existsSync(path.join(ROOT, file))) {
+    return false;
+  }
+
+  const contents = readFileSync(path.join(ROOT, file), "utf8");
+  return !contents.includes("- [ ]");
+});
 assert.deepEqual(
   trackedSuperpowersPlans,
   [],
-  `Subtask plan documents must not remain tracked; consolidate into ${taskLedgerRelativePath}:\n${trackedSuperpowersPlans.join("\n")}`
+  `Completed plan documents must not remain tracked; consolidate into ${taskLedgerRelativePath}:\n${trackedSuperpowersPlans.join("\n")}`
 );
 
 console.log("Repo hygiene verification complete.");
