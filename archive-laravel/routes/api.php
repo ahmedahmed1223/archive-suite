@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\V1\ReviewLinksController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SavedSearchesController;
 use App\Http\Controllers\Api\V1\ScheduledUploadsController;
+use App\Http\Controllers\Api\V1\SafetyPreviewController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SearchSuggestionsController;
 use App\Http\Controllers\Api\V1\SuggestionsController;
@@ -233,6 +234,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/trash', [TrashController::class, 'index']);
         Route::post('/trash/restore', [TrashController::class, 'restore']);
         Route::post('/trash/purge', [TrashController::class, 'purge']);
+        Route::get('/safety-preview/scenarios', [SafetyPreviewController::class, 'scenarios']);
+        Route::post('/safety-preview/run', [SafetyPreviewController::class, 'run']);
         Route::patch('/record-notes/{id}', [RecordNotesController::class, 'update']);
         Route::delete('/record-notes/{id}', [RecordNotesController::class, 'destroy']);
         Route::delete('/record-comments/{id}', [RecordCommentsController::class, 'destroy']);
