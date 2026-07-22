@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "bmewburn.vscode-intelephense-client",
+    "xdebug.php-debug",
+    "open-southeners.laravel-pint"
+  ]
+}
