@@ -57,6 +57,15 @@ export type SafetyPreviewScenarioDescriptor = GeneratedSchemas["SafetyPreviewSce
 export type SafetyPreviewOperation = GeneratedSchemas["SafetyPreviewOperation"];
 export type SafetyPreviewRun = GeneratedSchemas["SafetyPreviewRunResponse"];
 export type SafetyPreviewRunPayload = GeneratedSchemas["SafetyPreviewRunRequest"];
+export type BulkMacroStep = GeneratedSchemas["BulkMacroStep"];
+export type BulkMacroTarget = GeneratedSchemas["BulkMacroTarget"];
+export type BulkMacro = GeneratedSchemas["BulkMacro"];
+export type BulkMacroPreview = GeneratedSchemas["BulkMacroPreview"];
+export type BulkMacroRun = GeneratedSchemas["BulkMacroRun"];
+export type CreateBulkMacroPayload = GeneratedSchemas["CreateBulkMacroRequest"];
+export type UpdateBulkMacroPayload = GeneratedSchemas["UpdateBulkMacroRequest"];
+export type BulkMacroTargetsPayload = GeneratedSchemas["BulkMacroTargetsRequest"];
+export type RunBulkMacroPayload = GeneratedSchemas["RunBulkMacroRequest"];
 
 export interface CreateScheduledUploadPayload {
   uploadSessionId: string;
@@ -1267,6 +1276,14 @@ export interface ArchiveApiClient {
   updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   deleteAutomationRule(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   runAutomationRule(id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: AutomationRuleRun }>>;
+  bulkMacros(options?: AuthRequestOptions): Promise<ApiEnvelope<{ macros: BulkMacro[] }>>;
+  bulkMacro(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ macro: BulkMacro }>>;
+  createBulkMacro(payload: CreateBulkMacroPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ macro: BulkMacro }>>;
+  updateBulkMacro(id: string, payload: UpdateBulkMacroPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ macro: BulkMacro }>>;
+  deleteBulkMacro(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: true }>>;
+  previewBulkMacro(id: string, payload: BulkMacroTargetsPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<BulkMacroPreview>>;
+  runBulkMacro(id: string, payload: RunBulkMacroPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: BulkMacroRun }>>;
+  bulkMacroRuns(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ runs: BulkMacroRun[] }>>;
 }
 
 export interface AuthRequestOptions {
@@ -2038,6 +2055,21 @@ export function createArchiveApiClient({
     deleteAutomationRule: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/automation/rules/${encodeURIComponent(id)}`, undefined, options),
     runAutomationRule: (id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions) =>
-      post<{ run: AutomationRuleRun }>(`/automation/rules/${encodeURIComponent(id)}/run`, payload, options)
+      post<{ run: AutomationRuleRun }>(`/automation/rules/${encodeURIComponent(id)}/run`, payload, options),
+    bulkMacros: (options?: AuthRequestOptions) => get<{ macros: BulkMacro[] }>("/bulk-macros", options),
+    bulkMacro: (id: string, options?: AuthRequestOptions) =>
+      get<{ macro: BulkMacro }>(`/bulk-macros/${encodeURIComponent(id)}`, options),
+    createBulkMacro: (payload: CreateBulkMacroPayload, options?: AuthRequestOptions) =>
+      post<{ macro: BulkMacro }>("/bulk-macros", payload, options),
+    updateBulkMacro: (id: string, payload: UpdateBulkMacroPayload, options?: AuthRequestOptions) =>
+      patch<{ macro: BulkMacro }>(`/bulk-macros/${encodeURIComponent(id)}`, payload, options),
+    deleteBulkMacro: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: true }>(`/bulk-macros/${encodeURIComponent(id)}`, undefined, options),
+    previewBulkMacro: (id: string, payload: BulkMacroTargetsPayload, options?: AuthRequestOptions) =>
+      post<BulkMacroPreview>(`/bulk-macros/${encodeURIComponent(id)}/preview`, payload, options),
+    runBulkMacro: (id: string, payload: RunBulkMacroPayload, options?: AuthRequestOptions) =>
+      post<{ run: BulkMacroRun }>(`/bulk-macros/${encodeURIComponent(id)}/run`, payload, options),
+    bulkMacroRuns: (id: string, options?: AuthRequestOptions) =>
+      get<{ runs: BulkMacroRun[] }>(`/bulk-macros/${encodeURIComponent(id)}/runs`, options)
   };
 }

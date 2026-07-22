@@ -190,6 +190,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bulk-macros": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current editor's bulk macros */
+        get: operations["listBulkMacros"];
+        put?: never;
+        /** Create a reusable ordered bulk macro */
+        post: operations["createBulkMacro"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bulk-macros/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read an owned bulk macro */
+        get: operations["getBulkMacro"];
+        put?: never;
+        post?: never;
+        /** Delete an owned bulk macro */
+        delete: operations["deleteBulkMacro"];
+        options?: never;
+        head?: never;
+        /** Update an owned bulk macro and increment its version */
+        patch: operations["updateBulkMacro"];
+        trace?: never;
+    };
+    "/bulk-macros/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview a macro without changing records */
+        post: operations["previewBulkMacro"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bulk-macros/{id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Execute a macro with its signed preview confirmation */
+        post: operations["runBulkMacro"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bulk-macros/{id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List persisted runs for an owned bulk macro */
+        get: operations["listBulkMacroRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/collaboration/rooms/{roomKey}/documents/{resourceId}": {
         parameters: {
             query?: never;
@@ -2254,6 +2342,100 @@ export interface components {
                 uid: string;
             }[];
         };
+        BulkMacro: {
+            /** Format: date-time */
+            createdAt: string | null;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            steps: components["schemas"]["BulkMacroStep"][];
+            /** Format: date-time */
+            updatedAt: string | null;
+            version: number;
+        };
+        BulkMacroDeleteResponse: components["schemas"]["OkEnvelope"] & {
+            /** @constant */
+            deleted: true;
+        };
+        BulkMacroNotFoundError: components["schemas"]["ErrorEnvelope"] & {
+            /** @constant */
+            code: "not_found";
+        };
+        BulkMacroPreview: {
+            /** Format: date-time */
+            expiresAt: string;
+            previewToken: string;
+            results: components["schemas"]["BulkMacroTargetResult"][];
+            summary: {
+                affectedCount: number;
+                missingCount: number;
+                targetCount: number;
+            };
+        };
+        BulkMacroPreviewError: components["schemas"]["ErrorEnvelope"] & {
+            /** @enum {string} */
+            code: "invalid_preview" | "expired_preview" | "stale_preview";
+        };
+        BulkMacroPreviewResponse: components["schemas"]["OkEnvelope"] & components["schemas"]["BulkMacroPreview"];
+        BulkMacroResponse: components["schemas"]["OkEnvelope"] & {
+            macro: components["schemas"]["BulkMacro"];
+        };
+        BulkMacroRun: {
+            completedCount: number;
+            /** Format: date-time */
+            createdAt: string | null;
+            failedCount: number;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            macroId: string;
+            macroVersion: number;
+            results: components["schemas"]["BulkMacroTargetResult"][];
+            targetCount: number;
+            targets: components["schemas"]["BulkMacroTarget"][];
+        };
+        BulkMacroRunResponse: components["schemas"]["OkEnvelope"] & {
+            run: components["schemas"]["BulkMacroRun"];
+        };
+        BulkMacroRunsResponse: components["schemas"]["OkEnvelope"] & {
+            runs: components["schemas"]["BulkMacroRun"][];
+        };
+        BulkMacrosResponse: components["schemas"]["OkEnvelope"] & {
+            macros: components["schemas"]["BulkMacro"][];
+        };
+        BulkMacroStep: {
+            status?: components["schemas"]["BulkMacroWorkflowStatus"];
+            tag?: string;
+            type: components["schemas"]["BulkMacroStepType"];
+        };
+        BulkMacroStepOutcome: {
+            after?: unknown;
+            before?: unknown;
+            index: number;
+            reason?: string;
+            reversible?: boolean;
+            /** @enum {string} */
+            status: "would_apply" | "completed" | "skipped";
+            type: components["schemas"]["BulkMacroStepType"];
+        };
+        /** @enum {string} */
+        BulkMacroStepType: "add-tag" | "set-workflow-status" | "delete";
+        BulkMacroTarget: {
+            id: string;
+            store: string;
+        };
+        BulkMacroTargetResult: {
+            id: string;
+            /** @enum {string} */
+            status: "ready" | "missing" | "completed" | "partial";
+            steps: components["schemas"]["BulkMacroStepOutcome"][];
+            store: string;
+        };
+        BulkMacroTargetsRequest: {
+            targets: components["schemas"]["BulkMacroTarget"][];
+        };
+        /** @enum {string} */
+        BulkMacroWorkflowStatus: "draft" | "editing" | "review" | "approved" | "published" | "archived";
         BulkRecordsRequest: {
             records: components["schemas"]["ArchiveRecord"][];
             store: string;
@@ -2396,6 +2578,10 @@ export interface components {
             tag?: string;
             trigger: components["schemas"]["AutomationRuleTrigger"];
             type?: string;
+        };
+        CreateBulkMacroRequest: {
+            name: string;
+            steps: components["schemas"]["BulkMacroStep"][];
         };
         /** @description New projects are always created with status 'draft'; unknown extra fields are ignored by the server. */
         CreateMontageProjectRequest: {
@@ -3139,6 +3325,9 @@ export interface components {
         RightsRecordResponse: components["schemas"]["OkEnvelope"] & {
             record: components["schemas"]["RightsRecord"];
         };
+        RunBulkMacroRequest: components["schemas"]["BulkMacroTargetsRequest"] & {
+            previewToken: string;
+        };
         SafetyPreviewCounts: {
             live: number;
             trash: number;
@@ -3524,6 +3713,10 @@ export interface components {
             trigger?: components["schemas"]["AutomationRuleTrigger"];
             type?: string;
         };
+        UpdateBulkMacroRequest: {
+            name?: string;
+            steps?: components["schemas"]["BulkMacroStep"][];
+        };
         /** @description Fields sent as null are ignored (not cleared); unknown extra fields are ignored by the server. */
         UpdateMontageProjectRequest: {
             clips?: Record<string, never>[] | null;
@@ -3735,6 +3928,24 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["AuthResponse"];
+            };
+        };
+        /** @description Bulk macro not found or not owned by the current user */
+        BulkMacroNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["BulkMacroNotFoundError"];
+            };
+        };
+        /** @description Preview confirmation is invalid, expired, or stale */
+        BulkMacroPreviewError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["BulkMacroPreviewError"];
             };
         };
         /** @description Error response */
@@ -4094,6 +4305,220 @@ export interface operations {
             404: components["responses"]["Error"];
             409: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listBulkMacros: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bulk macros */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacrosResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+        };
+    };
+    createBulkMacro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBulkMacroRequest"];
+            };
+        };
+        responses: {
+            /** @description Created bulk macro */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    getBulkMacro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bulk macro */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["BulkMacroNotFound"];
+        };
+    };
+    deleteBulkMacro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted bulk macro */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroDeleteResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["BulkMacroNotFound"];
+        };
+    };
+    updateBulkMacro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBulkMacroRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated bulk macro */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["BulkMacroNotFound"];
+            422: components["responses"]["Error"];
+        };
+    };
+    previewBulkMacro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkMacroTargetsRequest"];
+            };
+        };
+        responses: {
+            /** @description Signed non-mutating preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroPreviewResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["BulkMacroNotFound"];
+            422: components["responses"]["Error"];
+        };
+    };
+    runBulkMacro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunBulkMacroRequest"];
+            };
+        };
+        responses: {
+            /** @description Persisted bulk macro run */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroRunResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["BulkMacroNotFound"];
+            422: components["responses"]["BulkMacroPreviewError"];
+        };
+    };
+    listBulkMacroRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bulk macro runs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroRunsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["BulkMacroNotFound"];
         };
     };
     getCollaborationDocument: {
