@@ -13,7 +13,7 @@
 - انتقلت أيقونات أنواع الأرشيف من localStorage إلى مصدر الحقيقة: Laravel يخزن `icon` الاختياري غير null، وOpenAPI يوثق `/types` مع bindings مولدة ومحدثة (`67f5999`, `36da83d`)، وواجهة Next تحفظ وتعرض `ArchiveType.icon` (`9ad32e4`).
 - صارت نصائح `/archive` تراعي الدور عبر `Tip.roles` و`getPageTips`: viewer يرى إرشاد القراءة ولا يرى إرشاد التعديل، وeditor/admin يريان إرشاد التعديل (`70ea7ab`).
 - أُضيف مسرد عربي حاكم وحارس نصي حتمي يمنع «السيرفر» و«اللوج» في مصادر Next التشغيلية مع الحفاظ على الفرق بين «سجل» و«مادة» (`b4a0624`, `92b86c0`).
-- التحقق: `pnpm verify:api-contracts` و`pnpm verify:api-generated` و`pnpm typecheck` خضراء؛ وصلت حزمة Next إلى 466 اختبارًا أخضر، ونجح `pnpm build:next` لاحقًا في بناء 56 صفحة. بقي اختبار Laravel الموجّه محجوبًا قبل PHPUnit بسبب صلاحيات إعداد Docker.
+- التحقق: `pnpm verify:api-contracts` و`pnpm verify:api-generated` و`pnpm typecheck` خضراء؛ نجح `pnpm test:next` في 466 اختبارًا، ونجح `pnpm build:next` لاحقًا في بناء 56 صفحة. بقي `node scripts/laravel-docker.mjs test --filter TypesControllerTest` محجوبًا قبل PHPUnit بسبب صلاحيات إعداد Docker.
 - كل البنود الثلاثة بقيت مفتوحة لأن الخطوط المستضافة ذاتيًا وتعميم الأيقونات، تعميم دليل الأدوار، والتدقيق العربي البشري الشامل لم تكتمل بعد.
 
 ## V1-776 عرض مقسّم (Split View) لتفاصيل السجل — 2026-07-21
