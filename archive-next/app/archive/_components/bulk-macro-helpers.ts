@@ -29,7 +29,7 @@ export function bulkMacroStatusLabel(status: string): string {
 }
 
 export function bulkMacroReasonLabel(reason: string): string {
-  return ({ deleted: "السجل محذوف", mutation_failed: "تعذر تطبيق التغيير", target_failed: "تعذرت معالجة السجل" } as Record<string, string>)[reason] ?? reason;
+  return ({ deleted: "السجل محذوف", mutation_failed: "تعذر تطبيق التغيير", target_failed: "تعذرت معالجة السجل", event_dispatch_failed: "تعذر إرسال حدث التغيير" } as Record<string, string>)[reason] ?? reason;
 }
 
 export function bulkMacroValueLabel(value: unknown): string {
