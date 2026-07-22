@@ -53,6 +53,8 @@ class RouteScopeTest extends TestCase
         'POST api/v1/collaboration/rooms/{roomKey}/documents/{resourceId}' => self::V1,
         'GET api/v1/broadcasting/auth' => self::V1,
         'POST api/v1/broadcasting/auth' => self::V1,
+        'GET api/v1/safety-preview/scenarios' => self::V1,
+        'POST api/v1/safety-preview/run' => self::V1,
 
         // -- authenticated + audited: core v1 contract --
         'GET api/v1/auth/me' => self::V1,
@@ -268,6 +270,8 @@ class RouteScopeTest extends TestCase
         'POST api/v1/collaboration/rooms/{roomKey}/documents/{resourceId}' => self::ROLE_ANY,
         'GET api/v1/broadcasting/auth' => self::ROLE_ANY,
         'POST api/v1/broadcasting/auth' => self::ROLE_ANY,
+        'GET api/v1/safety-preview/scenarios' => self::ROLE_EDITOR,
+        'POST api/v1/safety-preview/run' => self::ROLE_EDITOR,
         'GET api/v1/auth/me' => self::ROLE_ANY,
         'POST api/v1/auth/logout' => self::ROLE_ANY,
         'GET api/v1/records' => self::ROLE_ANY,
