@@ -1,30 +1,15 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { CORE_ROUTES, VIEWPORTS } from './fixtures/visual-routes';
 
 // V1-303/V1-401: automated axe-core gate for the canonical routes, at the
-// project's required breakpoints (375/768/1280). Routes below don't require
-// a live Laravel backend or auth cookie (see next-migration-shell.spec.ts).
-const ROUTES = [
-  '/',
-  '/login',
-  '/help',
-  '/reports',
-  '/settings',
-  '/archive',
-  '/share/demo-token',
-  '/media/jobs',
-];
-const VIEWPORTS = [
-  { name: 'mobile-375', width: 375, height: 812 },
-  { name: 'tablet-768', width: 768, height: 1024 },
-  { name: 'desktop-1280', width: 1280, height: 800 },
-];
+// project's required breakpoints (375/768/1280).
 
 for (const viewport of VIEWPORTS) {
   test.describe(`a11y @ ${viewport.name}`, () => {
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
-    for (const route of ROUTES) {
+    for (const route of CORE_ROUTES) {
       test(`${route} has no serious/critical axe violations`, async ({ page }) => {
         await page.goto(route, { waitUntil: 'networkidle' });
 

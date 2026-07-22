@@ -57,6 +57,7 @@ dist-cloud/
 **/test-results/
 **/playwright-report/
 **/blob-report/
+**/visual-evidence/
 **/.vite/
 **/.next/
 coverage/

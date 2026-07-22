@@ -31,6 +31,7 @@
     "e2e:next": "pnpm --filter @archive/next exec playwright test e2e/next-migration-shell.spec.ts",
     "e2e:next:integration": "pnpm --filter @archive/next exec playwright test e2e/next-laravel-integration.spec.ts",
     "e2e:next:a11y": "pnpm --filter @archive/next exec playwright test e2e/accessibility.spec.ts",
+    "e2e:next:visual": "pnpm --filter @archive/next exec playwright test e2e/visual-regression.spec.ts",
     "typecheck": "pnpm --filter @archive/next run typecheck",
     "typecheck:next": "pnpm --filter @archive/next run typecheck",
     "test:next": "pnpm --filter @archive/next run test",
