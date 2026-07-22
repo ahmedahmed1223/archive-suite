@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createArchiveApiClient, type ApiEnvelope, type BulkMacroStep, type SafetyPreviewRun } from "./archive-api";
+import { createArchiveApiClient, type ApiEnvelope, type BulkMacroRun, type BulkMacroStep, type SafetyPreviewRun } from "./archive-api";
 
 describe("archive API uploads", () => {
   it("uses the access token issued by login for multipart uploads", async () => {
@@ -69,6 +69,24 @@ describe("safety preview API client", () => {
 });
 
 describe("bulk macro API client", () => {
+  it("exposes a discriminated step union and failed run outcomes", () => {
+    const steps: BulkMacroStep[] = [
+      { type: "add-tag", tag: "مهم" },
+      { type: "set-workflow-status", status: "review" },
+      { type: "delete" }
+    ];
+    const failedTargetStatus: BulkMacroRun["results"][number]["status"] = "failed";
+
+    // @ts-expect-error add-tag steps require the tag payload.
+    const missingTag: BulkMacroStep = { type: "add-tag" };
+    // @ts-expect-error delete steps cannot carry another subtype's payload.
+    const invalidDelete: BulkMacroStep = { type: "delete", status: "review" };
+
+    expect(steps.map((step) => step.type)).toEqual(["add-tag", "set-workflow-status", "delete"]);
+    expect(failedTargetStatus).toBe("failed");
+    expect([missingTag, invalidDelete]).toHaveLength(2);
+  });
+
   it("uses the typed CRUD, preview, run, and history routes", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });

@@ -263,6 +263,9 @@ for (const schemaName of [
   "AutomationRuleRunResponse",
   "BulkMacroStepType",
   "BulkMacroWorkflowStatus",
+  "BulkMacroAddTagStep",
+  "BulkMacroSetWorkflowStatusStep",
+  "BulkMacroDeleteStep",
   "BulkMacroStep",
   "BulkMacroTarget",
   "BulkMacro",
@@ -277,6 +280,7 @@ for (const schemaName of [
   "BulkMacroPreviewResponse",
   "BulkMacroRunResponse",
   "BulkMacroRunsResponse",
+  "BulkMacroValidationError",
   "DrProbe",
   "DrProbeResponse",
   "SystemMetrics",
@@ -342,17 +346,39 @@ assert.equal(bulkMacroPaths["/bulk-macros"]?.post?.responses?.["201"]?.content?.
 assert.equal(bulkMacroPaths["/bulk-macros/{id}/preview"]?.post?.responses?.["200"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/BulkMacroPreviewResponse");
 assert.equal(bulkMacroPaths["/bulk-macros/{id}/run"]?.post?.responses?.["201"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/BulkMacroRunResponse");
 assert.equal(bulkMacroPaths["/bulk-macros/{id}/runs"]?.get?.responses?.["200"]?.content?.["application/json"]?.schema?.$ref, "#/components/schemas/BulkMacroRunsResponse");
-assert.equal(bulkMacroPaths["/bulk-macros/{id}/run"]?.post?.responses?.["422"]?.$ref, "#/components/responses/BulkMacroPreviewError");
+assert.equal(bulkMacroPaths["/bulk-macros/{id}/run"]?.post?.responses?.["422"]?.$ref, "#/components/responses/BulkMacroRunError");
+assert.deepEqual(contract.components.responses.BulkMacroRunError.content["application/json"].schema.oneOf, [
+  { $ref: "#/components/schemas/BulkMacroPreviewError" },
+  { $ref: "#/components/schemas/BulkMacroValidationError" }
+]);
 assert.deepEqual(bulkMacroSchemas.BulkMacroStepType.enum, ["add-tag", "set-workflow-status", "delete"]);
 assert.deepEqual(bulkMacroSchemas.BulkMacroWorkflowStatus.enum, ["draft", "editing", "review", "approved", "published", "archived"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroStep.oneOf, [
+  { $ref: "#/components/schemas/BulkMacroAddTagStep" },
+  { $ref: "#/components/schemas/BulkMacroSetWorkflowStatusStep" },
+  { $ref: "#/components/schemas/BulkMacroDeleteStep" }
+]);
+assert.equal(bulkMacroSchemas.BulkMacroStep.discriminator.propertyName, "type");
+assert.deepEqual(bulkMacroSchemas.BulkMacroAddTagStep.required, ["type", "tag"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroSetWorkflowStatusStep.required, ["type", "status"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroDeleteStep.required, ["type"]);
+assert.equal(bulkMacroSchemas.BulkMacroAddTagStep.additionalProperties, false);
+assert.equal(bulkMacroSchemas.BulkMacroSetWorkflowStatusStep.additionalProperties, false);
+assert.equal(bulkMacroSchemas.BulkMacroDeleteStep.additionalProperties, false);
 assert.deepEqual(bulkMacroSchemas.CreateBulkMacroRequest.required, ["name", "steps"]);
 assert.equal(bulkMacroSchemas.CreateBulkMacroRequest.properties.name.maxLength, 200);
 assert.equal(bulkMacroSchemas.CreateBulkMacroRequest.properties.steps.minItems, 1);
 assert.equal(bulkMacroSchemas.CreateBulkMacroRequest.properties.steps.maxItems, 10);
+assert.equal(bulkMacroSchemas.UpdateBulkMacroRequest.minProperties, 1);
 assert.equal(bulkMacroSchemas.BulkMacroTargetsRequest.properties.targets.minItems, 1);
 assert.equal(bulkMacroSchemas.BulkMacroTargetsRequest.properties.targets.maxItems, 1000);
 assert.deepEqual(bulkMacroSchemas.BulkMacroPreviewError.allOf[1].properties.code.enum, ["invalid_preview", "expired_preview", "stale_preview"]);
+assert.equal(bulkMacroSchemas.BulkMacroValidationError.allOf[1].properties.code.const, "validation_failed");
 assert.equal(bulkMacroSchemas.BulkMacroNotFoundError.allOf[1].properties.code.const, "not_found");
+assert.deepEqual(bulkMacroSchemas.BulkMacroStepOutcome.properties.status.enum, ["would_apply", "completed", "skipped", "failed"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroStepOutcome.properties.reason.enum, ["deleted", "mutation_failed"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroTargetResult.properties.status.enum, ["ready", "missing", "completed", "partial", "failed"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroTargetResult.properties.reason.enum, ["target_failed"]);
 
 assert.ok(contract.components?.securitySchemes?.bearerAuth, "API contract should define bearer auth");
 assert.ok(contract.components?.securitySchemes?.cookieAuth, "API contract should define cookie auth");

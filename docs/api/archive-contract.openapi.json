@@ -2655,7 +2655,7 @@
       "post": { "tags": ["Bulk Macros"], "summary": "Preview a macro without changing records", "operationId": "previewBulkMacro", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroTargetsRequest" } } } }, "responses": { "200": { "description": "Signed non-mutating preview", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroPreviewResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" }, "422": { "$ref": "#/components/responses/Error" } } }
     },
     "/bulk-macros/{id}/run": {
-      "post": { "tags": ["Bulk Macros"], "summary": "Execute a macro with its signed preview confirmation", "operationId": "runBulkMacro", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RunBulkMacroRequest" } } } }, "responses": { "201": { "description": "Persisted bulk macro run", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroRunResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" }, "422": { "$ref": "#/components/responses/BulkMacroPreviewError" } } }
+      "post": { "tags": ["Bulk Macros"], "summary": "Execute a macro with its signed preview confirmation", "operationId": "runBulkMacro", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RunBulkMacroRequest" } } } }, "responses": { "201": { "description": "Persisted bulk macro run", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroRunResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" }, "422": { "$ref": "#/components/responses/BulkMacroRunError" } } }
     },
     "/bulk-macros/{id}/runs": {
       "get": { "tags": ["Bulk Macros"], "summary": "List persisted runs for an owned bulk macro", "operationId": "listBulkMacroRuns", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Bulk macro runs", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroRunsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" } } }
@@ -4311,9 +4311,9 @@
       "description": "Bulk macro not found or not owned by the current user",
       "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroNotFoundError" } } }
     },
-    "BulkMacroPreviewError": {
-      "description": "Preview confirmation is invalid, expired, or stale",
-      "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroPreviewError" } } }
+    "BulkMacroRunError": {
+      "description": "Preview confirmation or request validation error",
+      "content": { "application/json": { "schema": { "oneOf": [{ "$ref": "#/components/schemas/BulkMacroPreviewError" }, { "$ref": "#/components/schemas/BulkMacroValidationError" }] } } }
     },
     "SafetyPreviewError": {
         "description": "Synthetic safety-preview error response",
@@ -6249,12 +6249,12 @@
       },
       "BulkMacroStepType": { "type": "string", "enum": ["add-tag", "set-workflow-status", "delete"] },
       "BulkMacroWorkflowStatus": { "type": "string", "enum": ["draft", "editing", "review", "approved", "published", "archived"] },
+      "BulkMacroAddTagStep": { "type": "object", "additionalProperties": false, "required": ["type", "tag"], "properties": { "type": { "const": "add-tag" }, "tag": { "type": "string", "minLength": 1, "maxLength": 100 } } },
+      "BulkMacroSetWorkflowStatusStep": { "type": "object", "additionalProperties": false, "required": ["type", "status"], "properties": { "type": { "const": "set-workflow-status" }, "status": { "$ref": "#/components/schemas/BulkMacroWorkflowStatus" } } },
+      "BulkMacroDeleteStep": { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "delete" } } },
       "BulkMacroStep": {
-        "type": "object", "required": ["type"], "properties": {
-          "type": { "$ref": "#/components/schemas/BulkMacroStepType" },
-          "tag": { "type": "string", "maxLength": 100 },
-          "status": { "$ref": "#/components/schemas/BulkMacroWorkflowStatus" }
-        }
+        "oneOf": [{ "$ref": "#/components/schemas/BulkMacroAddTagStep" }, { "$ref": "#/components/schemas/BulkMacroSetWorkflowStatusStep" }, { "$ref": "#/components/schemas/BulkMacroDeleteStep" }],
+        "discriminator": { "propertyName": "type", "mapping": { "add-tag": "#/components/schemas/BulkMacroAddTagStep", "set-workflow-status": "#/components/schemas/BulkMacroSetWorkflowStatusStep", "delete": "#/components/schemas/BulkMacroDeleteStep" } }
       },
       "BulkMacroTarget": {
         "type": "object", "required": ["store", "id"], "properties": {
@@ -6285,12 +6285,12 @@
       "BulkMacroStepOutcome": {
         "type": "object", "required": ["index", "type", "status"], "properties": {
           "index": { "type": "integer", "minimum": 0 }, "type": { "$ref": "#/components/schemas/BulkMacroStepType" },
-          "status": { "type": "string", "enum": ["would_apply", "completed", "skipped"] }, "before": {}, "after": {}, "reversible": { "type": "boolean" }, "reason": { "type": "string" }
+          "status": { "type": "string", "enum": ["would_apply", "completed", "skipped", "failed"] }, "before": {}, "after": {}, "reversible": { "type": "boolean" }, "reason": { "type": "string", "enum": ["deleted", "mutation_failed"] }
         }
       },
       "BulkMacroTargetResult": {
         "type": "object", "required": ["store", "id", "status", "steps"], "properties": {
-          "store": { "type": "string" }, "id": { "type": "string" }, "status": { "type": "string", "enum": ["ready", "missing", "completed", "partial"] },
+          "store": { "type": "string" }, "id": { "type": "string" }, "status": { "type": "string", "enum": ["ready", "missing", "completed", "partial", "failed"] }, "reason": { "type": "string", "enum": ["target_failed"] },
           "steps": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroStepOutcome" } }
         }
       },
@@ -6316,6 +6316,7 @@
       "BulkMacroRunsResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["runs"], "properties": { "runs": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroRun" } } } }] },
       "BulkMacroNotFoundError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "const": "not_found" } } }] },
       "BulkMacroPreviewError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "type": "string", "enum": ["invalid_preview", "expired_preview", "stale_preview"] } } }] },
+      "BulkMacroValidationError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "const": "validation_failed" } } }] },
       "AutomationRuleTrigger": {
         "type": "string",
         "enum": ["record.created", "record.updated", "media.failed", "schedule.daily"]
