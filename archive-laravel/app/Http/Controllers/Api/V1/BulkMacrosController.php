@@ -104,6 +104,9 @@ class BulkMacrosController extends Controller
             'steps.*.status' => ['nullable', 'string', Rule::in(BulkMacroService::STATUSES)],
         ]);
         $validator->after(function ($validator) use ($request): void {
+            if (! $request->exists('name') && ! $request->exists('steps')) {
+                $validator->errors()->add('macro', 'At least one macro field is required.');
+            }
             foreach ((array) $request->input('steps', []) as $index => $step) {
                 if (! is_array($step)) continue;
                 if (($step['type'] ?? null) === 'add-tag' && trim((string) ($step['tag'] ?? '')) === '') $validator->errors()->add("steps.$index.tag", 'A tag is required.');
