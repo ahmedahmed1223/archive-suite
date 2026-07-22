@@ -7,7 +7,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
 
 /**
  * V1-307A: deterministic synthetic dataset for perf benchmarking (V1-307B..D,
@@ -39,7 +39,7 @@ class GenerateBenchmarkDatasetCommand extends Command
 
     private const CLASSIFICATIONS = ['عام', 'أرشيف تاريخي', 'حصري', 'مقيّد', 'قيد المراجعة'];
 
-    /** Fixed namespace for deterministic attachment UUIDs (Str::uuid5). */
+    /** Fixed namespace for deterministic attachment UUIDs (Uuid::uuid5). */
     private const UUID_NAMESPACE = '6f9b1e2a-2f0a-4d8a-9d1b-7e0c7c5e6a10';
 
     protected $signature = 'archive:generate-benchmark-dataset
@@ -177,7 +177,7 @@ class GenerateBenchmarkDatasetCommand extends Command
             $bytesWritten += $size;
 
             $batch[] = [
-                'id' => (string) Str::uuid5(self::UUID_NAMESPACE, $seed.':'.$index),
+                'id' => Uuid::uuid5(self::UUID_NAMESPACE, $seed.':'.$index)->toString(),
                 'record_store' => self::STORE,
                 'record_uid' => $recordUid,
                 'disk' => $disk,
