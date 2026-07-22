@@ -36,3 +36,10 @@
 - RED/GREEN: the first direct-message assertion incorrectly used JSON dot notation for an error-map key containing dots and failed with a null haystack. Reading the direct map key corrected the test; the rerun passed.
 - `node scripts/laravel-docker.mjs test tests/Feature/TypesControllerTest.php` — passed: 19 tests, 73 assertions.
 - `git diff --check -- archive-laravel/tests/Feature/TypesControllerTest.php` — passed.
+
+## Manager contamination fix
+
+- Replaced every newly added API POST test's empty `fields` payload with one minimal valid field. This removes reliance on the unrelated unstaged controller change from `required` to `present` and keeps the tests valid against committed HEAD (`required|array`).
+- The direct database pagination fixture remains intentionally empty because it does not exercise request validation.
+- `node scripts/laravel-docker.mjs test tests/Feature/TypesControllerTest.php` — passed: 19 tests, 73 assertions.
+- `git diff --check -- archive-laravel/tests/Feature/TypesControllerTest.php` — passed.
