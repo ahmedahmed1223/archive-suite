@@ -228,6 +228,9 @@
 }
 
 .contextual-tips__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-3);
   border-top: 1px solid var(--color-border-secondary);
 }
@@ -243,6 +246,11 @@
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s ease;
+}
+
+.contextual-tips__dismiss--secondary {
+  background: transparent;
+  color: var(--color-text-secondary);
 }
 
 .contextual-tips__dismiss:hover {

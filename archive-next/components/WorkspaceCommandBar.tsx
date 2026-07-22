@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
+import ContextualTips from "@/components/ContextualTips";
+import type { PageKey } from "@/lib/contextual-tips";
 import { useAuthSession } from "@/lib/auth-session";
 import { isActivePath, navSectionLabels, primaryNav } from "@/lib/navigation";
 import { getShortcut, formatShortcutDisplay } from "@/lib/keyboard-shortcuts";
@@ -15,7 +17,7 @@ const quickActions = [
   { href: "/status", label: "الصحة", icon: Gauge }
 ] as const;
 
-export default function WorkspaceCommandBar() {
+export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: PageKey }>) {
   const auth = useAuthSession();
   const pathname = usePathname() || "/";
   const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id ?? "مستخدم";
@@ -75,6 +77,7 @@ export default function WorkspaceCommandBar() {
         })}
       </nav>
       <div className="workspace-commandbar__tools">
+        {tipsPage && <ContextualTips page={tipsPage} />}
         <button type="button" className="icon-action" aria-label="التنبيهات">
           <Bell size={18} aria-hidden="true" />
           <span className="workspace-commandbar__dot" aria-hidden="true" />

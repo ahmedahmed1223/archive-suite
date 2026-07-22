@@ -9,7 +9,6 @@ import WorkspaceCommandBar from "@/components/WorkspaceCommandBar";
 import { isFocusMode } from "@/lib/focus-mode";
 import { getDensity } from "@/lib/density";
 import type { PageKey } from "@/lib/contextual-tips";
-import ContextualTips from "@/components/ContextualTips";
 import WorkspacePositionRestorer from "@/components/WorkspacePositionRestorer";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay";
 import type { BreadcrumbItem } from "@/components/Breadcrumb";
@@ -62,8 +61,7 @@ export default function AppShell({
       <ShortcutsOverlay />
       <WhatsNewDialog />
       <main id="main-content" tabIndex={-1} className={`content app-content ${contentClassName}`.trim()}>
-        {tipsPage && <ContextualTips page={tipsPage} />}
-        <WorkspaceCommandBar />
+        <WorkspaceCommandBar tipsPage={tipsPage} />
         <OnboardingPrompt />
         {children}
       </main>
