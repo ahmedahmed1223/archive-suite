@@ -11,7 +11,7 @@ const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 const getTipIcon = (name?: string) => iconRegistry[name || "Lightbulb"] || Icons.Lightbulb;
 
 export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
-  const { isDismissed, handleDismiss, isHydrated } = useContextualTips(page);
+  const { isDismissed, isEnabled, handleDismiss, handleDismissSession, isHydrated } = useContextualTips(page);
   const { user } = useAuthSession();
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -49,8 +49,8 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
     };
   }, [closePopover, isOpen]);
 
-  // Server-side render guard
-  if (!isHydrated) return null;
+  // Server-side render guard; a dismissed or globally-disabled tip renders nothing.
+  if (!isHydrated || !isEnabled || isDismissed) return null;
 
   const tips = getPageTips(page, user?.role);
   if (tips.length === 0) return null;
@@ -64,12 +64,12 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
         aria-label={`نصائح حول ${page}`}
         aria-expanded={isOpen}
         aria-controls={popoverId}
-        title={isDismissed ? "إظهار النصائح" : "نصائح اضغط لإظهار"}
-        data-dismissed={isDismissed ? "true" : "false"}
+        title="نصائح اضغط لإظهار"
+        data-dismissed="false"
         ref={triggerRef}
       >
         <Icons.HelpCircle aria-hidden="true" size={18} strokeWidth={2} />
-        {!isDismissed && <span className="contextual-tips__badge">جديد</span>}
+        <span className="contextual-tips__badge">جديد</span>
       </button>
 
       {isOpen && (
@@ -102,8 +102,18 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
               type="button"
               className="contextual-tips__dismiss"
               onClick={() => {
+                handleDismissSession();
+                closePopover(false);
+              }}
+            >
+              إخفاء لهذه الجلسة (تظهر بعد التحديث)
+            </button>
+            <button
+              type="button"
+              className="contextual-tips__dismiss contextual-tips__dismiss--secondary"
+              onClick={() => {
                 handleDismiss();
-                closePopover();
+                closePopover(false);
               }}
             >
               عدم إظهار مرة أخرى

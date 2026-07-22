@@ -9,6 +9,7 @@ import PageToolbar from "@/components/PageToolbar";
 import ShortcutsSettings from "@/components/ShortcutsSettings";
 import AppearanceSettings from "@/components/AppearanceSettings";
 import { BRAND } from "@/lib/brand";
+import { isTipsEnabledGlobally, setTipsEnabledGlobally } from "@/lib/contextual-tips";
 import {
   createArchiveApiClient,
   type DatabaseConnectionResult,
@@ -177,6 +178,7 @@ export default function SettingsPage() {
   const [odbcPreview, setOdbcPreview] = useState<OdbcTablePreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [tipsEnabled, setTipsEnabled] = useState(true);
   const [odbcWriteOperation, setOdbcWriteOperation] = useState<OdbcWriteOperation>("insert");
   const [odbcKeyColumn, setOdbcKeyColumn] = useState("id");
   const [odbcKeyValue, setOdbcKeyValue] = useState("");
@@ -192,6 +194,10 @@ export default function SettingsPage() {
     username: "",
     password: ""
   });
+
+  useEffect(() => {
+    setTipsEnabled(isTipsEnabledGlobally());
+  }, []);
 
   useEffect(() => {
     const fetchSecuritySettings = async () => {
@@ -576,6 +582,30 @@ export default function SettingsPage() {
 
         <ShortcutsSettings />
         <AppearanceSettings />
+
+        <article className="workspace-panel" aria-label="نصائح السياق">
+          <div className="workspace-panel__header">
+            <div>
+              <h2>نصائح السياق</h2>
+              <p>زر المساعدة "؟" الذي يظهر في شريط أدوات كل صفحة، مع اقتراحات سريعة خاصة بها.</p>
+            </div>
+          </div>
+          <label>
+            <input
+              type="checkbox"
+              checked={tipsEnabled}
+              onChange={(event) => {
+                const enabled = event.target.checked;
+                setTipsEnabledGlobally(enabled);
+                setTipsEnabled(enabled);
+              }}
+            />
+            {" "}إظهار نصائح السياق في كل الصفحات
+          </label>
+          <p className="helper-text mt-tight">
+            إعادة التفعيل تُظهر من جديد كل نصيحة أُخفيت سابقًا لهذه الجلسة أو نهائيًا.
+          </p>
+        </article>
 
         <article className="workspace-panel" aria-label="ODBC bridge">
           <div className="workspace-panel__header">

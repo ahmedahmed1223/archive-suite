@@ -360,6 +360,8 @@ export function getPageTips(page: PageKey, role?: NavigationRole): Tip[] {
 }
 
 const TIPS_DISMISSED_KEY = "masar.tipsDismissed";
+const TIPS_SESSION_DISMISSED_KEY = "masar.tipsDismissedSession";
+const TIPS_ENABLED_KEY = "masar.contextualTipsEnabled";
 
 function getDismissedTips(): Set<PageKey> {
   if (typeof window === "undefined") return new Set();
@@ -394,4 +396,65 @@ export function showTipsForPage(page: PageKey): void {
   const dismissed = getDismissedTips();
   dismissed.delete(page);
   setDismissedTips(dismissed);
+}
+
+function getSessionDismissedTips(): Set<PageKey> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const stored = sessionStorage.getItem(TIPS_SESSION_DISMISSED_KEY);
+    return new Set((stored ? JSON.parse(stored) : []) as PageKey[]);
+  } catch {
+    return new Set();
+  }
+}
+
+function setSessionDismissedTips(dismissed: Set<PageKey>): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(TIPS_SESSION_DISMISSED_KEY, JSON.stringify([...dismissed]));
+  } catch {
+    // Silent fail on storage errors
+  }
+}
+
+/** Hidden for the current tab session only — reappears after a page refresh/new session. */
+export function isTipsDismissedForSession(page: PageKey): boolean {
+  return getSessionDismissedTips().has(page);
+}
+
+export function dismissTipsForSession(page: PageKey): void {
+  const dismissed = getSessionDismissedTips();
+  dismissed.add(page);
+  setSessionDismissedTips(dismissed);
+}
+
+/** Global kill switch surfaced in Settings — overrides per-page dismiss state either way. */
+export function isTipsEnabledGlobally(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return localStorage.getItem(TIPS_ENABLED_KEY) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+export function setTipsEnabledGlobally(enabled: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(TIPS_ENABLED_KEY, enabled ? "true" : "false");
+    if (enabled) resetAllDismissedTips();
+  } catch {
+    // Silent fail on storage errors
+  }
+}
+
+/** Clears every permanent and session dismissal — used when re-enabling tips from Settings. */
+export function resetAllDismissedTips(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(TIPS_DISMISSED_KEY);
+    sessionStorage.removeItem(TIPS_SESSION_DISMISSED_KEY);
+  } catch {
+    // Silent fail on storage errors
+  }
 }
