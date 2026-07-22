@@ -94,11 +94,11 @@ class TypesController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'id' => ['required', 'string', 'max:255'],
-            'name' => ['required', 'string', 'max:255'],
-            'icon' => ['sometimes', 'nullable', 'string', 'min:1', 'max:100'],
+            'id' => ['required', 'string', 'min:1', 'max:255'],
+            'name' => ['required', 'string', 'min:1', 'max:255'],
+            'icon' => ['sometimes', 'string', 'min:1', 'max:100'],
             'fields' => ['required', 'array'],
-            'fields.*.name' => ['required', 'string', 'max:255'],
+            'fields.*.name' => ['required', 'string', 'min:1', 'max:255'],
             'fields.*.type' => ['required', 'string', 'in:text,number,date,select,multi,boolean'],
             'fields.*.condition' => ['sometimes', 'array:field,equals'],
             'fields.*.condition.field' => ['required_with:fields.*.condition', 'string', 'min:1', 'max:255'],
