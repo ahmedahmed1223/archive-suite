@@ -35,6 +35,7 @@ export const primaryNav = [
   { href: "/automation", label: "الأتمتة", section: "collaborate", icon: "Bot" },
   { href: "/copilot", label: "مساعد الأرشيف", section: "collaborate", icon: "BotMessageSquare" },
   { href: "/rights", label: "الحقوق", section: "collaborate", icon: "ShieldCheck" },
+  { href: "/safety-preview", label: "معاينة السلامة", section: "collaborate", icon: "ShieldCheck" },
   // ── المؤشرات والمراقبة ──
   { href: "/activity", label: "النشاط", section: "insights", icon: "Activity" },
   { href: "/analytics", label: "التحليلات", section: "insights", icon: "BarChart3" },
