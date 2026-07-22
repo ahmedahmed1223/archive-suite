@@ -106,7 +106,7 @@
 
 ### Linux Native
 
-- [ ] **V1-211D قبول Linux نظيف — تحقق خارجي** — توزيعة Linux المدعومة في عقد المنصات: online/offline، local/intranet/public TLS، reboot، backup/restore، update/rollback، uninstall/reconnect مع أدلة منزوعة الأسرار. **لا يمكن تنفيذه مباشرة على هذا الجهاز (Windows)** — البديل المحلي هو WSL2، لكن التصميم الحاكم (V1-806) ينص صراحة أن WSL2 قبول دوري لا يُغني عن دليل clean-host Linux النهائي. **يحتاج توضيحًا:** هل تتوفر آلة Linux فعلية أو VM مخصصة، أم يُعتمد WSL2 كطبقة تنفيذ دورية مؤقتًا؟
+- [ ] **V1-211D قبول Linux نظيف — تحقق خارجي** — توزيعة Linux المدعومة في عقد المنصات: online/offline، local/intranet/public TLS، reboot، backup/restore، update/rollback، uninstall/reconnect مع أدلة منزوعة الأسرار. **لا يمكن تنفيذه مباشرة على هذا الجهاز (Windows)** — البديل المحلي هو WSL2، لكن التصميم الحاكم (V1-806) ينص صراحة أن WSL2 قبول دوري لا يُغني عن دليل clean-host Linux النهائي. **قرار 2026-07-22:** لا Hyper-V VM على هذا الجهاز؛ التطوير/الاختبار اليومي لسلوك Linux يعتمد حاويات Docker بتوزيعة واقعية كاملة (صور Debian الرسمية مثل `php:8.5-fpm`، لا Alpine) عبر `pnpm run verify:laravel` الحالي — يغطي هذا سلوك الحزم/الاعتماديات على توزيعة حقيقية لكنه **لا يغلق هذا البند**؛ القبول النهائي لا يزال يتطلب دليل clean-host (تثبيت/reboot/update/uninstall فعلي) على آلة أو VM Linux مخصصة غير متوفرة حاليًا.
 
 ## برنامج القبول التفاعلي متعدد المنصات
 
