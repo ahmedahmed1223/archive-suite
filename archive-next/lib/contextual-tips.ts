@@ -282,16 +282,18 @@ export const pageTips: Record<PageKey, Tip[]> = {
     { title: "إعادة المحاولة", description: "أعد تشغيل المهام الفاشلة دون إعادة الرفع" }
   ],
   ingest: [
-    { title: "استيراد المحتوى", description: "استورد دفعات من السجلات والملفات من مصادر خارجية", icon: "Import" },
-    { title: "التحقق قبل الاستيراد", description: "راجع نتائج التحقق قبل تأكيد عملية الاستيراد" }
+    { title: "استيراد المحتوى", description: "استورد دفعات من السجلات والملفات من مصادر خارجية", icon: "Import", roles: ["editor", "admin"] },
+    { title: "التحقق قبل الاستيراد", description: "راجع نتائج التحقق قبل تأكيد عملية الاستيراد", roles: ["editor", "admin"] },
+    { title: "وضع القراءة", description: "يمكنك مراجعة نتائج الاستيراد دون تشغيل عمليات فحص أو سحب جديدة", icon: "Eye", roles: ["viewer"] }
   ],
   projects: [
     { title: "المشاريع", description: "نظم السجلات ضمن مشاريع لها فرق وأهداف مستقلة", icon: "Briefcase" },
     { title: "الأعضاء", description: "أدر أعضاء المشروع وصلاحياتهم من هذه الصفحة" }
   ],
   "settings-users": [
-    { title: "المستخدمون والأدوار", description: "أدر حسابات المستخدمين وأدوارهم داخل النظام", icon: "Users" },
-    { title: "الصلاحيات", description: "حدد صلاحيات كل دور بدقة حسب الحاجة" }
+    { title: "المستخدمون والأدوار", description: "أدر حسابات المستخدمين وأدوارهم داخل النظام", icon: "Users", roles: ["admin"] },
+    { title: "الصلاحيات", description: "حدد صلاحيات كل دور بدقة حسب الحاجة", roles: ["admin"] },
+    { title: "وضع القراءة", description: "هذه الصفحة مقتصرة على المدراء؛ لا يمكنك دعوة أعضاء أو تعديل الأدوار", icon: "Eye", roles: ["editor", "viewer"] }
   ],
   "media-compare": [
     { title: "مقارنة الوسائط", description: "قارن نسختين من ملف وسائط جنباً إلى جنب", icon: "Columns2" },

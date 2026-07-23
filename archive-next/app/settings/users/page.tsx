@@ -8,6 +8,7 @@ import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import DataTable from "@/components/ui/DataTable";
 import { FieldError } from "@/components/ui/Form";
+import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ManagedUser, type ManagedUserRole, type PendingInvitation } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -39,6 +40,7 @@ type InviteFormValues = z.input<typeof inviteSchema>;
 
 export default function UsersSettingsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const canManageUsers = useCapability("users.manage");
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
   const inviteForm = useForm<InviteFormValues>({
@@ -120,28 +122,32 @@ export default function UsersSettingsPage() {
       {
         accessorKey: "role",
         header: "الدور",
-        cell: ({ row }) => (
-          <select aria-label={`دور ${row.original.email}`} value={row.original.role} onChange={(event) => void handleRoleChange(row.original, event.target.value as ManagedUserRole)}>
-            {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
-              <option key={role} value={role}>
-                {roleLabels[role]}
-              </option>
-            ))}
-          </select>
-        )
+        cell: ({ row }) =>
+          canManageUsers ? (
+            <select aria-label={`دور ${row.original.email}`} value={row.original.role} onChange={(event) => void handleRoleChange(row.original, event.target.value as ManagedUserRole)}>
+              {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
+                <option key={role} value={role}>
+                  {roleLabels[role]}
+                </option>
+              ))}
+            </select>
+          ) : (
+            roleLabels[row.original.role]
+          )
       },
       {
         id: "actions",
         header: "إجراءات",
-        cell: ({ row }) => (
-          <button type="button" className="button button-secondary" onClick={() => void handleDelete(row.original)}>
-            إزالة
-          </button>
-        ),
+        cell: ({ row }) =>
+          canManageUsers ? (
+            <button type="button" className="button button-secondary" onClick={() => void handleDelete(row.original)}>
+              إزالة
+            </button>
+          ) : null,
         enableSorting: false
       }
     ],
-    []
+    [canManageUsers]
   );
   const invitationColumns = useMemo<Array<ColumnDef<PendingInvitation, unknown>>>(
     () => [
@@ -185,37 +191,41 @@ export default function UsersSettingsPage() {
           </div>
         </div>
 
-        <form className="auth-form" onSubmit={handleInvite}>
-          <label>
-            البريد الإلكتروني
-            <input
-              type="email"
-              dir="ltr"
-              {...inviteForm.register("email")}
-            />
-            <FieldError>{inviteErrors.email?.message}</FieldError>
-          </label>
+        {canManageUsers ? (
+          <form className="auth-form" onSubmit={handleInvite}>
+            <label>
+              البريد الإلكتروني
+              <input
+                type="email"
+                dir="ltr"
+                {...inviteForm.register("email")}
+              />
+              <FieldError>{inviteErrors.email?.message}</FieldError>
+            </label>
 
-          <label>
-            الدور
-            <select {...inviteForm.register("role")}>
-              {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
-                <option key={role} value={role}>
-                  {roleLabels[role]}
-                </option>
-              ))}
-            </select>
-            <FieldError>{inviteErrors.role?.message}</FieldError>
-          </label>
+            <label>
+              الدور
+              <select {...inviteForm.register("role")}>
+                {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
+                  <option key={role} value={role}>
+                    {roleLabels[role]}
+                  </option>
+                ))}
+              </select>
+              <FieldError>{inviteErrors.role?.message}</FieldError>
+            </label>
 
-          <button type="submit" className="button button-primary">
-            إرسال الدعوة
-          </button>
+            <button type="submit" className="button button-primary">
+              إرسال الدعوة
+            </button>
 
-          <p className="form-status" role={actionState.status === "error" ? "alert" : "status"}>
-            {actionState.status === "idle" ? "" : actionState.message}
-          </p>
-        </form>
+            <p className="form-status" role={actionState.status === "error" ? "alert" : "status"}>
+              {actionState.status === "idle" ? "" : actionState.message}
+            </p>
+          </form>
+        ) : (
+          <p className="helper-text">هذه الصفحة مقتصرة على المدراء؛ لا يمكنك دعوة أعضاء جدد.</p>
+        )}
       </article>
 
       <article className="panel">
@@ -246,19 +256,25 @@ export default function UsersSettingsPage() {
                       <dd dir="ltr">{user.id}</dd>
                     </div>
                   </dl>
-                  <label className="toolbar-field">
-                    الدور
-                    <select aria-label={`دور ${user.email}`} value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
-                      {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
-                        <option key={role} value={role}>
-                          {roleLabels[role]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button type="button" className="button button-danger button-sm" onClick={() => void handleDelete(user)}>
-                    إزالة
-                  </button>
+                  {canManageUsers ? (
+                    <>
+                      <label className="toolbar-field">
+                        الدور
+                        <select aria-label={`دور ${user.email}`} value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
+                          {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
+                            <option key={role} value={role}>
+                              {roleLabels[role]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button type="button" className="button button-danger button-sm" onClick={() => void handleDelete(user)}>
+                        إزالة
+                      </button>
+                    </>
+                  ) : (
+                    <span className="badge">{roleLabels[user.role]}</span>
+                  )}
                 </article>
               ))}
             </div>

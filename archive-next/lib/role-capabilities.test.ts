@@ -9,7 +9,8 @@ const allCapabilities: readonly Capability[] = [
   "system.control",
   "automation.manage",
   "backup.manage",
-  "rights.manage"
+  "rights.manage",
+  "ingest.manage"
 ];
 
 describe("role-capabilities", () => {
@@ -19,8 +20,9 @@ describe("role-capabilities", () => {
     }
   });
 
-  test("editor is allowed records.edit but denied users.manage and system.control", () => {
+  test("editor is allowed records.edit and ingest.manage but denied users.manage and system.control", () => {
     expect(can("editor", "records.edit")).toBe(true);
+    expect(can("editor", "ingest.manage")).toBe(true);
     expect(can("editor", "users.manage")).toBe(false);
     expect(can("editor", "system.control")).toBe(false);
   });

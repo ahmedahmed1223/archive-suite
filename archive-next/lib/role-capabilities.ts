@@ -8,7 +8,8 @@ export type Capability =
   | "system.control"
   | "automation.manage"
   | "backup.manage"
-  | "rights.manage";
+  | "rights.manage"
+  | "ingest.manage";
 
 const allCapabilities: readonly Capability[] = [
   "records.create",
@@ -18,12 +19,13 @@ const allCapabilities: readonly Capability[] = [
   "system.control",
   "automation.manage",
   "backup.manage",
-  "rights.manage"
+  "rights.manage",
+  "ingest.manage"
 ];
 
 export const ROLE_CAPABILITIES: Record<NavigationRole, readonly Capability[]> = {
   admin: allCapabilities,
-  editor: ["records.create", "records.edit", "records.bulkDelete", "automation.manage", "rights.manage"],
+  editor: ["records.create", "records.edit", "records.bulkDelete", "automation.manage", "rights.manage", "ingest.manage"],
   viewer: []
 };
 
