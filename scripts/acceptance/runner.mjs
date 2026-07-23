@@ -12,7 +12,8 @@ export class AcceptanceInputError extends Error {
 
 export function calculateAuthBudget(scenarios) {
   const logins = scenarios.reduce((total, scenario) => total + (scenario.loginSessions ?? 0), 0);
-  return Object.freeze({ logins, refreshes: logins });
+  const refreshes = scenarios.reduce((total, scenario) => total + (scenario.refreshSessions ?? scenario.loginSessions ?? 0), 0);
+  return Object.freeze({ logins, refreshes });
 }
 
 function assertAuthBudget(scenarios) {
@@ -59,17 +60,19 @@ function missingCapabilities(scenario, provider) {
   return scenario.capabilities.filter((capability) => !available.has(capability));
 }
 
-function resultForExecutionError(scenario, attempt) {
+function resultForExecutionError(scenario, attempt, classification = "environment") {
   return {
     scenarioId: scenario.id,
     status: "failed",
-    classification: "product",
+    classification,
     attempts: attempt,
+    attemptResults: attempt ? [{ attempt, status: "failed", classification }] : [],
   };
 }
 
 async function executeWithOneFlakeRetry({ scenario, provider, evidenceStore, executeScenario }) {
   let result;
+  const attemptResults = [];
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       result = await executeScenario({ scenario, provider, evidenceStore, attempt });
@@ -79,6 +82,8 @@ async function executeWithOneFlakeRetry({ scenario, provider, evidenceStore, exe
     } catch {
       result = resultForExecutionError(scenario, attempt);
     }
+    attemptResults.push({ attempt, status: result.status, ...(result.classification ? { classification: result.classification } : {}) });
+    result = { ...result, attemptResults: [...attemptResults] };
     if (!(result.status === "failed" && result.classification === "flake" && attempt === 1)) return result;
   }
   return result;
@@ -167,13 +172,12 @@ export async function runAcceptance({
       results.push(await executeWithOneFlakeRetry({ scenario, provider, evidenceStore, executeScenario }));
     }
   } catch (error) {
-    const unfinished = selected.find((scenario) => !results.some((result) => result.scenarioId === scenario.id));
-    if (unfinished) {
-      results.push(resultForExecutionError(unfinished, 1));
-      for (const scenario of selected) {
-        if (!results.some((result) => result.scenarioId === scenario.id)) {
-          results.push({ scenarioId: scenario.id, status: "skipped", attempts: 0 });
-        }
+    for (const scenario of selected) {
+      if (results.some((result) => result.scenarioId === scenario.id)) continue;
+      if (missingCapabilities(scenario, provider).length) {
+        results.push({ scenarioId: scenario.id, status: "blocked-capability", attempts: 0, attemptResults: [] });
+      } else {
+        results.push(resultForExecutionError(scenario, 0, "platform"));
       }
     }
   } finally {

@@ -42,6 +42,13 @@ test("auth budget counts one refresh for each requested live login", () => {
   });
 });
 
+test("auth budget honors each scenario's declared refresh demand", () => {
+  assert.deepEqual(calculateAuthBudget([{ loginSessions: 2, refreshSessions: 5 }]), {
+    logins: 2,
+    refreshes: 5,
+  });
+});
+
 test("runner executes scenarios sequentially and retries only a flake once", async () => {
   const calls = [];
   let flakyAttempts = 0;
@@ -71,6 +78,10 @@ test("runner executes scenarios sequentially and retries only a flake once", asy
   assert.equal(result.status, "passed");
   assert.equal(result.exitCode, 0);
   assert.equal(result.results[0].attempts, 2);
+  assert.deepEqual(result.results[0].attemptResults, [
+    { attempt: 1, status: "failed", classification: "flake" },
+    { attempt: 2, status: "passed", classification: "product" },
+  ]);
 });
 
 test("runner destroys its environment after a product failure without retrying it", async () => {
@@ -119,7 +130,7 @@ test("an unproved required cleanup fails an otherwise passing run", async () => 
   assert.deepEqual(result.cleanup, { keptForDiagnostics: false, proved: false });
 });
 
-test("a provider startup failure records remaining selected scenarios as skipped", async () => {
+test("a provider startup failure records every runnable scenario as a decisive platform failure", async () => {
   const secondScenario = { ...scenario, id: "V1-IA-ADMIN-001" };
   const result = await runAcceptance({
     scenarios: [scenario, secondScenario],
@@ -130,9 +141,28 @@ test("a provider startup failure records remaining selected scenarios as skipped
   });
   assert.equal(result.status, "failed");
   assert.deepEqual(result.results, [
-    { scenarioId: scenario.id, status: "failed", classification: "product", attempts: 1 },
-    { scenarioId: secondScenario.id, status: "skipped", attempts: 0 },
+    { scenarioId: scenario.id, status: "failed", classification: "platform", attempts: 0, attemptResults: [] },
+    { scenarioId: secondScenario.id, status: "failed", classification: "platform", attempts: 0, attemptResults: [] },
   ]);
+});
+
+test("runner keeps the taxonomy classification for product, platform, data, and environment failures", async () => {
+  const classifications = ["product", "platform", "data", "environment"];
+  const scenarios = classifications.map((classification, index) => ({
+    ...scenario,
+    id: `V1-IA-ARCH-00${index + 1}`,
+  }));
+  const result = await runAcceptance({
+    scenarios,
+    provider: providerFake(),
+    executeScenario: async ({ scenario: current }) => ({
+      scenarioId: current.id,
+      status: "failed",
+      classification: classifications[scenarios.indexOf(current)],
+    }),
+  });
+  assert.deepEqual(result.results.map((item) => item.classification), classifications);
+  assert.ok(result.results.every((item) => item.attempts === 1));
 });
 
 test("unavailable capabilities are blocked and have deterministic exit code two", async () => {
@@ -160,6 +190,25 @@ test("tag-only CLI selection executes every matching registry scenario", async (
   assert.equal(result.selected.length, 5);
   assert.equal(executed.length, 5);
   assert.equal(result.exitCode, 0);
+});
+
+test("last-failed reruns only failed scenario ids from the previous manifest", async () => {
+  const secondScenario = { ...scenario, id: "V1-IA-ADMIN-001" };
+  const executed = [];
+  const result = await runAcceptance({
+    scenarios: [scenario, secondScenario],
+    lastFailed: { results: [
+      { scenarioId: scenario.id, status: "passed" },
+      { scenarioId: secondScenario.id, status: "failed", classification: "data" },
+    ] },
+    provider: providerFake(),
+    executeScenario: async ({ scenario: current }) => {
+      executed.push(current.id);
+      return { scenarioId: current.id, status: "passed" };
+    },
+  });
+  assert.deepEqual(executed, [secondScenario.id]);
+  assert.deepEqual(result.selected, [secondScenario.id]);
 });
 
 test("runner rejects an empty selection instead of reporting a passing run", async () => {

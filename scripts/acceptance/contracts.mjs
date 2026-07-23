@@ -2,7 +2,14 @@ export const SCENARIO_STATUSES = Object.freeze([
   "passed",
   "failed",
   "blocked-capability",
-  "skipped",
+]);
+
+export const FAILURE_CLASSIFICATIONS = Object.freeze([
+  "product",
+  "platform",
+  "data",
+  "environment",
+  "flake",
 ]);
 
 export const SCENARIO_TAGS = Object.freeze([
@@ -26,6 +33,9 @@ export function validateScenario(input) {
   if (!Number.isInteger(input.loginSessions) || input.loginSessions < 0) {
     throw new Error("scenario loginSessions is invalid");
   }
+  if (input.refreshSessions !== undefined && (!Number.isInteger(input.refreshSessions) || input.refreshSessions < 0)) {
+    throw new Error("scenario refreshSessions is invalid");
+  }
   return Object.freeze({
     ...input,
     tags: Object.freeze([...input.tags]),
@@ -36,5 +46,8 @@ export function validateScenario(input) {
 export function validateResult(input) {
   if (!SCENARIO_STATUSES.includes(input?.status)) throw new Error("result status is invalid");
   if (!SCENARIO_ID.test(input?.scenarioId ?? "")) throw new Error("result scenarioId is invalid");
+  if (input.status === "failed" && !FAILURE_CLASSIFICATIONS.includes(input.classification)) {
+    throw new Error("result classification is invalid");
+  }
   return input;
 }
