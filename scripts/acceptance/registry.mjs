@@ -1,12 +1,15 @@
-import { validateScenario } from "./contracts.mjs";
+import { SCENARIO_TAGS, validateScenario } from "./contracts.mjs";
 
-const tags = ["smoke", "daily", "rc", "ga"];
+export const ACCEPTANCE_REGISTRY_VERSION = "1.0.0";
+
+const tags = ["smoke", "daily", "nightly", "rc", "ga"];
 const scenario = (id, title, loginSessions) => validateScenario({
   id,
   title,
   tags,
   capabilities: ["docker"],
   loginSessions,
+  refreshSessions: loginSessions,
 });
 
 export const ACCEPTANCE_SCENARIOS = Object.freeze([
@@ -18,7 +21,7 @@ export const ACCEPTANCE_SCENARIOS = Object.freeze([
 ]);
 
 export function selectScenarios({ tag, ids } = {}) {
-  if (tag && !ACCEPTANCE_SCENARIOS.some((item) => item.tags.includes(tag))) {
+  if (tag && !SCENARIO_TAGS.includes(tag)) {
     throw new Error(`unknown scenario tag: ${tag}`);
   }
   const requested = ids ? new Set(ids) : null;

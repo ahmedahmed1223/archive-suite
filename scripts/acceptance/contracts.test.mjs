@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validateResult, validateScenario } from "./contracts.mjs";
-import { ACCEPTANCE_SCENARIOS, selectScenarios } from "./registry.mjs";
+import { FAILURE_CLASSIFICATIONS, SCENARIO_TAGS, validateResult, validateScenario } from "./contracts.mjs";
+import { ACCEPTANCE_REGISTRY_VERSION, ACCEPTANCE_SCENARIOS, selectScenarios } from "./registry.mjs";
 
 test("registry exposes the five mandatory smoke scenarios", () => {
+  assert.match(ACCEPTANCE_REGISTRY_VERSION, /^\d+\.\d+\.\d+$/);
   assert.deepEqual(ACCEPTANCE_SCENARIOS.map(({ id }) => id), [
     "V1-IA-PLAT-001",
     "V1-IA-ARCH-001",
@@ -14,6 +15,7 @@ test("registry exposes the five mandatory smoke scenarios", () => {
   ]);
   assert.ok(ACCEPTANCE_SCENARIOS.every((item) => validateScenario(item).id === item.id));
   assert.equal(selectScenarios({ tag: "smoke" }).length, 5);
+  assert.deepEqual(SCENARIO_TAGS, ["smoke", "daily", "nightly", "rc", "ga", "external"]);
 });
 
 test("contracts reject invented states and unknown tags", () => {
@@ -24,6 +26,16 @@ test("contracts reject invented states and unknown tags", () => {
   );
 });
 
+test("failed results require one of the diagnosis taxonomy classifications", () => {
+  assert.deepEqual(FAILURE_CLASSIFICATIONS, ["product", "platform", "data", "environment", "flake"]);
+  assert.throws(() => validateResult({ scenarioId: "V1-IA-PLAT-001", status: "failed" }), /classification/);
+  assert.throws(() => validateResult({ scenarioId: "V1-IA-PLAT-001", status: "failed", classification: "unknown" }), /classification/);
+});
+
 test("selection rejects unknown scenario identifiers", () => {
   assert.throws(() => selectScenarios({ ids: ["V1-IA-NOPE-999"] }), /unknown scenario/i);
+});
+
+test("selection accepts a registered tag even before a scenario is assigned to it", () => {
+  assert.deepEqual(selectScenarios({ tag: "external" }), []);
 });
