@@ -9,7 +9,11 @@ vi.mock("@/lib/auth-session", () => ({
   useAuthSession: () => mockUseAuthSession()
 }));
 
-function CapabilityProbe({ capability }: { capability: "records.edit" | "users.manage" }) {
+function CapabilityProbe({
+  capability
+}: {
+  capability: "records.edit" | "users.manage" | "system.control" | "backup.manage";
+}) {
   const allowed = useCapability(capability);
   return <span>{allowed ? "allowed" : "denied"}</span>;
 }
@@ -69,5 +73,42 @@ describe("RoleGate", () => {
 
     render(<CapabilityProbe capability="users.manage" />);
     expect(screen.getByText("denied")).toBeTruthy();
+  });
+
+  test("admin renders admin-only content gated by users.manage", () => {
+    mockUseAuthSession.mockReturnValue({ user: { role: "admin" } });
+
+    render(
+      <RoleGate capability="users.manage">
+        <span>user administration</span>
+      </RoleGate>
+    );
+
+    expect(screen.getByText("user administration")).toBeTruthy();
+  });
+
+  test("editor is denied admin-only capabilities not granted to editor", () => {
+    mockUseAuthSession.mockReturnValue({ user: { role: "editor" } });
+
+    render(
+      <RoleGate capability="system.control" fallback={<span>no access</span>}>
+        <span>system controls</span>
+      </RoleGate>
+    );
+
+    expect(screen.queryByText("system controls")).toBeNull();
+    expect(screen.getByText("no access")).toBeTruthy();
+  });
+
+  test("useCapability grants admin every capability, including system.control and backup.manage", () => {
+    mockUseAuthSession.mockReturnValue({ user: { role: "admin" } });
+
+    render(<CapabilityProbe capability="system.control" />);
+    expect(screen.getByText("allowed")).toBeTruthy();
+
+    cleanup();
+    mockUseAuthSession.mockReturnValue({ user: { role: "admin" } });
+    render(<CapabilityProbe capability="backup.manage" />);
+    expect(screen.getByText("allowed")).toBeTruthy();
   });
 });
