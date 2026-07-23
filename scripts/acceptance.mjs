@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { createEvidenceStore } from "./acceptance/evidence.mjs";
 import { createDockerProvider } from "./acceptance/providers/docker.mjs";
 import { AcceptanceInputError, runAcceptance } from "./acceptance/runner.mjs";
+import { createSmokeScenarioExecutor } from "./acceptance/scenarios.mjs";
 
 const MODULE_PATH = fileURLToPath(import.meta.url);
 const ROOT = resolve(dirname(MODULE_PATH), "..");
@@ -81,6 +82,7 @@ export async function main(argv = process.argv.slice(2), {
   evidenceRoot = DEFAULT_EVIDENCE_ROOT,
   createProvider = createDockerProvider,
   createStore = createEvidenceStore,
+  createScenarioExecutor = createSmokeScenarioExecutor,
   executeScenario,
   now = () => new Date(),
 } = {}) {
@@ -93,7 +95,7 @@ export async function main(argv = process.argv.slice(2), {
       ...options,
       provider,
       evidenceStore,
-      executeScenario,
+      executeScenario: executeScenario ?? createScenarioExecutor(),
       readLastFailed: () => findLastFailedManifest(evidenceRoot),
     });
     process.stdout.write(`${JSON.stringify({ status: result.status, exitCode: result.exitCode, selected: result.selected, evidenceDirectory: evidenceStore.directory })}\n`);

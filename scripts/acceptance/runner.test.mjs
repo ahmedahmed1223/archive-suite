@@ -192,6 +192,20 @@ test("tag-only CLI selection executes every matching registry scenario", async (
   assert.equal(result.exitCode, 0);
 });
 
+test("legal smoke CLI uses the registered scenario executor when none is injected", async () => {
+  const executed = [];
+  const exitCode = await main(["run", "--tag", "smoke"], {
+    createProvider: () => providerFake(),
+    createStore: () => ({ directory: "test-evidence", writeArtifact: () => {}, finalize: () => {} }),
+    createScenarioExecutor: () => async ({ scenario: current }) => {
+      executed.push(current.id);
+      return { scenarioId: current.id, status: "passed" };
+    },
+  });
+  assert.equal(exitCode, 0);
+  assert.equal(executed.length, 5);
+});
+
 test("last-failed reruns only failed scenario ids from the previous manifest", async () => {
   const secondScenario = { ...scenario, id: "V1-IA-ADMIN-001" };
   const executed = [];
