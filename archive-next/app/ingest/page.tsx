@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { FolderSearch, KeyRound, Network, RadioTower, Server, ShieldCheck } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
+import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient } from "@/lib/archive-api";
 import "./ingest.css";
 
@@ -62,6 +63,7 @@ function ResultBanner({ label, state }: Readonly<{ label: string; state: Operati
 
 export default function IngestPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const canManageIngest = useCapability("ingest.manage");
 
   const [scanState, setScanState] = useState<OperationState>({ status: "idle" });
   const [activeSource, setActiveSource] = useState<IngestSource>("scan");
@@ -205,10 +207,13 @@ export default function IngestPage() {
             <h2>فحص مجلد الاستيراد</h2>
             <p>يفحص مجلد الاستيراد على الخادم ويُنشئ سجلات أرشيف للملفات الجديدة.</p>
           </div>
-          <button type="button" className="button button-primary" onClick={handleScan} disabled={scanState.status === "running"}>
-            {scanState.status === "running" ? "جار الفحص..." : "بدء الفحص"}
-          </button>
+          {canManageIngest && (
+            <button type="button" className="button button-primary" onClick={handleScan} disabled={scanState.status === "running"}>
+              {scanState.status === "running" ? "جار الفحص..." : "بدء الفحص"}
+            </button>
+          )}
         </div>
+        {!canManageIngest && <p className="helper-text">لا تملك صلاحية تشغيل الاستيراد؛ يمكنك مراجعة النتائج فقط.</p>}
         <ResultBanner label="فحص مجلد الاستيراد" state={scanState} />
       </section>
 
@@ -221,39 +226,43 @@ export default function IngestPage() {
             </div>
             <span className="badge"><ShieldCheck size={14} aria-hidden="true" /> مؤقت</span>
           </div>
-          <form onSubmit={handleFtpPull}>
-            <div className="archive-toolbar-grid">
-              <label>
-                <span>الخادم (Host) *</span>
-                <input type="text" dir="ltr" value={ftpHost} onChange={(e) => setFtpHost(e.target.value)} required autoComplete="off" />
-              </label>
-              <label>
-                <span>المنفذ</span>
-                <input type="number" dir="ltr" min={1} max={65535} value={ftpPort} onChange={(e) => setFtpPort(e.target.value)} placeholder="21" />
-              </label>
-              <label>
-                <span>المستخدم *</span>
-                <input type="text" dir="ltr" value={ftpUser} onChange={(e) => setFtpUser(e.target.value)} required autoComplete="off" />
-              </label>
-              <label>
-                <span>كلمة المرور *</span>
-                <input type="password" dir="ltr" value={ftpPassword} onChange={(e) => setFtpPassword(e.target.value)} required autoComplete="new-password" />
-              </label>
-              <label>
-                <span>المسار البعيد</span>
-                <input type="text" dir="ltr" value={ftpRemotePath} onChange={(e) => setFtpRemotePath(e.target.value)} placeholder="/" />
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                <input type="checkbox" checked={ftpSecure} onChange={(e) => setFtpSecure(e.target.checked)} />
-                <span>اتصال آمن (FTPS)</span>
-              </label>
-            </div>
-            <div className="button-row">
-              <button type="submit" className="button button-primary" disabled={ftpState.status === "running"}>
-                {ftpState.status === "running" ? "جار السحب..." : "سحب من FTP"}
-              </button>
-            </div>
-          </form>
+          {canManageIngest ? (
+            <form onSubmit={handleFtpPull}>
+              <div className="archive-toolbar-grid">
+                <label>
+                  <span>الخادم (Host) *</span>
+                  <input type="text" dir="ltr" value={ftpHost} onChange={(e) => setFtpHost(e.target.value)} required autoComplete="off" />
+                </label>
+                <label>
+                  <span>المنفذ</span>
+                  <input type="number" dir="ltr" min={1} max={65535} value={ftpPort} onChange={(e) => setFtpPort(e.target.value)} placeholder="21" />
+                </label>
+                <label>
+                  <span>المستخدم *</span>
+                  <input type="text" dir="ltr" value={ftpUser} onChange={(e) => setFtpUser(e.target.value)} required autoComplete="off" />
+                </label>
+                <label>
+                  <span>كلمة المرور *</span>
+                  <input type="password" dir="ltr" value={ftpPassword} onChange={(e) => setFtpPassword(e.target.value)} required autoComplete="new-password" />
+                </label>
+                <label>
+                  <span>المسار البعيد</span>
+                  <input type="text" dir="ltr" value={ftpRemotePath} onChange={(e) => setFtpRemotePath(e.target.value)} placeholder="/" />
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <input type="checkbox" checked={ftpSecure} onChange={(e) => setFtpSecure(e.target.checked)} />
+                  <span>اتصال آمن (FTPS)</span>
+                </label>
+              </div>
+              <div className="button-row">
+                <button type="submit" className="button button-primary" disabled={ftpState.status === "running"}>
+                  {ftpState.status === "running" ? "جار السحب..." : "سحب من FTP"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className="helper-text">لا تملك صلاحية السحب من FTP.</p>
+          )}
           <ResultBanner label="السحب من FTP" state={ftpState} />
         </section>
 
@@ -265,35 +274,39 @@ export default function IngestPage() {
             </div>
             <span className="badge"><KeyRound size={14} aria-hidden="true" /> وصول مقيد</span>
           </div>
-          <form onSubmit={handleSmbPull}>
-            <div className="archive-toolbar-grid">
-              <label>
-                <span>المشاركة (Share) *</span>
-                <input type="text" dir="ltr" value={smbShare} onChange={(e) => setSmbShare(e.target.value)} required autoComplete="off" placeholder="\\server\share" />
-              </label>
-              <label>
-                <span>المسار داخل المشاركة</span>
-                <input type="text" dir="ltr" value={smbPath} onChange={(e) => setSmbPath(e.target.value)} />
-              </label>
-              <label>
-                <span>المستخدم *</span>
-                <input type="text" dir="ltr" value={smbUser} onChange={(e) => setSmbUser(e.target.value)} required autoComplete="off" />
-              </label>
-              <label>
-                <span>كلمة المرور *</span>
-                <input type="password" dir="ltr" value={smbPassword} onChange={(e) => setSmbPassword(e.target.value)} required autoComplete="new-password" />
-              </label>
-              <label>
-                <span>النطاق (Domain)</span>
-                <input type="text" dir="ltr" value={smbDomain} onChange={(e) => setSmbDomain(e.target.value)} />
-              </label>
-            </div>
-            <div className="button-row">
-              <button type="submit" className="button button-primary" disabled={smbState.status === "running"}>
-                {smbState.status === "running" ? "جار السحب..." : "سحب من SMB"}
-              </button>
-            </div>
-          </form>
+          {canManageIngest ? (
+            <form onSubmit={handleSmbPull}>
+              <div className="archive-toolbar-grid">
+                <label>
+                  <span>المشاركة (Share) *</span>
+                  <input type="text" dir="ltr" value={smbShare} onChange={(e) => setSmbShare(e.target.value)} required autoComplete="off" placeholder="\\server\share" />
+                </label>
+                <label>
+                  <span>المسار داخل المشاركة</span>
+                  <input type="text" dir="ltr" value={smbPath} onChange={(e) => setSmbPath(e.target.value)} />
+                </label>
+                <label>
+                  <span>المستخدم *</span>
+                  <input type="text" dir="ltr" value={smbUser} onChange={(e) => setSmbUser(e.target.value)} required autoComplete="off" />
+                </label>
+                <label>
+                  <span>كلمة المرور *</span>
+                  <input type="password" dir="ltr" value={smbPassword} onChange={(e) => setSmbPassword(e.target.value)} required autoComplete="new-password" />
+                </label>
+                <label>
+                  <span>النطاق (Domain)</span>
+                  <input type="text" dir="ltr" value={smbDomain} onChange={(e) => setSmbDomain(e.target.value)} />
+                </label>
+              </div>
+              <div className="button-row">
+                <button type="submit" className="button button-primary" disabled={smbState.status === "running"}>
+                  {smbState.status === "running" ? "جار السحب..." : "سحب من SMB"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className="helper-text">لا تملك صلاحية السحب من SMB.</p>
+          )}
           <ResultBanner label="السحب من SMB" state={smbState} />
         </section>
       </div>
