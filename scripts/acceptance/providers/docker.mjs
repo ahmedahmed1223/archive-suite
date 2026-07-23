@@ -101,13 +101,17 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
 
     async destroy() {
       await invoke([...composeArgs(), "down", "--volumes", "--remove-orphans"], "Docker Compose cleanup");
-      const leftovers = await invoke([
-        "ps", "--all",
-        "--filter", `label=com.docker.compose.project=${projectName}`,
-        "--format", "{{.ID}}",
-      ], "Docker scoped cleanup verification");
-      if (String(leftovers.stdout ?? "").trim()) {
-        throw new Error(`Docker cleanup left leftover containers for project ${projectName}`);
+      const ownershipFilter = `label=com.docker.compose.project=${projectName}`;
+      const resourceChecks = await Promise.all([
+        invoke(["ps", "--all", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker container cleanup verification"),
+        invoke(["network", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker network cleanup verification"),
+        invoke(["volume", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker volume cleanup verification"),
+      ]);
+      const leftoverTypes = ["containers", "networks", "volumes"].filter(
+        (_, index) => String(resourceChecks[index].stdout ?? "").trim(),
+      );
+      if (leftoverTypes.length) {
+        throw new Error(`Docker cleanup left leftover ${leftoverTypes.join(", ")} for project ${projectName}`);
       }
       return { projectName, proved: true };
     },

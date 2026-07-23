@@ -49,6 +49,42 @@ test("destroy fails when leftover containers remain for the project", async () =
   await assert.rejects(() => provider.destroy(), /leftover/i);
 });
 
+test("destroy verifies no project-owned containers, networks, or volumes remain", async () => {
+  const calls = [];
+  const provider = createDockerProvider({
+    root: "D:/repo",
+    runId: "run-003",
+    run: runFake(calls),
+    getFreePort: async () => 43124,
+  });
+
+  await provider.destroy();
+
+  const ownershipChecks = calls
+    .filter(([, args]) => args[0] !== "compose")
+    .map(([, args]) => args);
+  assert.deepEqual(ownershipChecks, [
+    ["ps", "--all", "--filter", "label=com.docker.compose.project=archive-acceptance-run-003", "--format", "{{.ID}}"],
+    ["network", "ls", "--filter", "label=com.docker.compose.project=archive-acceptance-run-003", "--format", "{{.ID}}"],
+    ["volume", "ls", "--filter", "label=com.docker.compose.project=archive-acceptance-run-003", "--format", "{{.ID}}"],
+  ]);
+});
+
+test("destroy fails when project-owned networks or volumes remain", async () => {
+  const provider = createDockerProvider({
+    root: "D:/repo",
+    runId: "run-004",
+    run: async (cmd, args) => ({
+      status: 0,
+      stdout: args[0] === "network" || args[0] === "volume" ? "leftover\n" : "",
+      stderr: "",
+    }),
+    getFreePort: async () => 43124,
+  });
+
+  await assert.rejects(() => provider.destroy(), /networks, volumes/i);
+});
+
 test("rejects a project name that does not match the ownership pattern", () => {
   assert.throws(
     () => createDockerProvider({ root: "D:/repo", runId: "not valid!", run: async () => {}, getFreePort: async () => 1 }),
