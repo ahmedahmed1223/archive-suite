@@ -30,6 +30,10 @@ test("failed results require one of the diagnosis taxonomy classifications", () 
   assert.deepEqual(FAILURE_CLASSIFICATIONS, ["product", "platform", "data", "environment", "flake"]);
   assert.throws(() => validateResult({ scenarioId: "V1-IA-PLAT-001", status: "failed" }), /classification/);
   assert.throws(() => validateResult({ scenarioId: "V1-IA-PLAT-001", status: "failed", classification: "unknown" }), /classification/);
+  assert.throws(
+    () => validateResult({ scenarioId: "V1-IA-PLAT-001", status: "failed", classification: "product" }),
+    /reason/,
+  );
 });
 
 test("selection rejects unknown scenario identifiers", () => {

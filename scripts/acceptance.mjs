@@ -1,5 +1,6 @@
-import { createServer } from "node:net";
+import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +13,19 @@ import { createSmokeScenarioExecutor } from "./acceptance/scenarios.mjs";
 const MODULE_PATH = fileURLToPath(import.meta.url);
 const ROOT = resolve(dirname(MODULE_PATH), "..");
 const DEFAULT_EVIDENCE_ROOT = join(tmpdir(), "archive-acceptance");
+
+export function resolveRunMetadata(root = ROOT, env = process.env, run = spawnSync) {
+  const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  const fromEnvironment = env.GITHUB_SHA || env.CI_COMMIT_SHA || env.SOURCE_COMMIT;
+  const resolved = fromEnvironment || String(run(
+    "git",
+    ["-c", `safe.directory=${root.replaceAll("\\", "/")}`, "rev-parse", "HEAD"],
+    { cwd: root, encoding: "utf8", windowsHide: true },
+  ).stdout || "").trim();
+  if (!/^[a-f0-9]{40}$/i.test(resolved)) throw new Error("acceptance source commit could not be resolved");
+  if (typeof packageJson.version !== "string" || !packageJson.version) throw new Error("acceptance app version could not be resolved");
+  return { sourceCommit: resolved.toLowerCase(), appVersion: packageJson.version };
+}
 
 export function parseAcceptanceArguments(argv) {
   const [command, ...args] = argv;
@@ -84,11 +98,14 @@ export async function main(argv = process.argv.slice(2), {
   createStore = createEvidenceStore,
   createScenarioExecutor = createSmokeScenarioExecutor,
   executeScenario,
+  runMetadata,
+  createRunMetadata = resolveRunMetadata,
   now = () => new Date(),
 } = {}) {
   try {
     const options = parseAcceptanceArguments(argv);
     const runId = `run-${now().toISOString().replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "").toLowerCase()}`;
+    const metadata = runMetadata ?? createRunMetadata(root);
     const evidenceStore = createStore({ root: evidenceRoot, runId, now: now() });
     const provider = createProvider({ root, runId, getFreePort });
     const result = await runAcceptance({
@@ -97,6 +114,8 @@ export async function main(argv = process.argv.slice(2), {
       evidenceStore,
       executeScenario: executeScenario ?? createScenarioExecutor(),
       readLastFailed: () => findLastFailedManifest(evidenceRoot),
+      runMetadata: metadata,
+      now,
     });
     process.stdout.write(`${JSON.stringify({ status: result.status, exitCode: result.exitCode, selected: result.selected, evidenceDirectory: evidenceStore.directory })}\n`);
     return result.exitCode;

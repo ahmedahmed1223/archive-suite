@@ -28,7 +28,7 @@ function createRunEnvironment(runId) {
   return { directory, path, credentials: Object.freeze({ email: values.ADMIN_EMAIL, password }) };
 }
 
-function defaultRun(command, args, { root, env } = {}) {
+function defaultRun(command, args, { root, env, signal } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: root,
@@ -36,6 +36,7 @@ function defaultRun(command, args, { root, env } = {}) {
       shell: false,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
+      signal,
     });
     let stdout = "";
     let stderr = "";
@@ -79,7 +80,7 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
     ports ??= Object.freeze({ next: await getFreePort(), reverb: await getFreePort() });
     return ports;
   };
-  const invoke = async (args, action) => {
+  const invoke = async (args, action, { signal } = {}) => {
     const allocated = await ensurePorts();
     const env = {
       ...process.env,
@@ -87,10 +88,11 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
       REVERB_SERVER_PUBLISHED_PORT: String(allocated.reverb),
       REVERB_PORT: String(allocated.reverb),
     };
-    return assertSucceeded(await execute("docker", args, { root, env, shell: false }), action);
+    return assertSucceeded(await execute("docker", args, { root, env, shell: false, signal }), action);
   };
 
   const provider = {
+    name: "docker",
     capabilities: Object.freeze(["docker"]),
     projectName,
     credentials: runEnvironment.credentials,
@@ -99,24 +101,36 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
       return Object.freeze({ next: `http://127.0.0.1:${ports.next}`, api: `http://127.0.0.1:${ports.next}/api/v1` });
     },
 
-    async prepare() {
+    describe() {
+      const allocated = ports ? { ...ports } : {};
+      return {
+        name: "docker",
+        capabilities: ["docker"],
+        project: projectName,
+        resources: { publishedPorts: allocated },
+        endpoints: ports ? provider.endpoints : {},
+        imageDigests: [],
+      };
+    },
+
+    async prepare({ signal } = {}) {
       await ensurePorts();
-      await invoke([...composeArgs(), "config"], "Docker Compose configuration validation");
+      await invoke([...composeArgs(), "config"], "Docker Compose configuration validation", { signal });
       return { projectName, ports };
     },
 
-    async install() {
-      return invoke([...composeArgs(), "pull"], "Docker Compose image pull");
+    async install({ signal } = {}) {
+      return invoke([...composeArgs(), "pull"], "Docker Compose image pull", { signal });
     },
 
-    async start() {
-      return invoke([...composeArgs(), "up", "--detach", "--wait"], "Docker Compose startup");
+    async start({ signal } = {}) {
+      return invoke([...composeArgs(), "up", "--detach", "--wait"], "Docker Compose startup", { signal });
     },
 
-    async exec(service, args = []) {
+    async exec(service, args = [], { signal } = {}) {
       if (!/^[a-z0-9][a-z0-9-]*$/i.test(service)) throw new Error("Docker Compose service is invalid");
       if (!Array.isArray(args) || args.some((arg) => typeof arg !== "string")) throw new Error("Docker exec arguments are invalid");
-      return invoke([...composeArgs(), "exec", "-T", service, ...args], `Docker Compose exec for ${service}`);
+      return invoke([...composeArgs(), "exec", "-T", service, ...args], `Docker Compose exec for ${service}`, { signal });
     },
 
     async collect() {

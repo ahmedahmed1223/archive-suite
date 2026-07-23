@@ -76,14 +76,15 @@ export function createEvidenceStore({ root, runId, sourceRoot = process.cwd(), n
   }
 
   function finalize({ status, results, ...summary }) {
-    const manifest = {
-      ...sanitize(summary),
+    const safeResults = results.map((result) => sanitize(validateResult(result)));
+    const manifest = sanitize({
+      ...summary,
       schemaVersion: 1,
       runId,
       generatedAt: now.toISOString(),
       status,
-      results: results.map((result) => validateResult(result)),
-    };
+      results: safeResults,
+    });
     ensureDirectory();
     scanDirectory(directory);
     writeArtifact("summary.json", manifest);

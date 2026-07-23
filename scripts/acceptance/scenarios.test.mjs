@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import { PassThrough } from "node:stream";
 import test from "node:test";
 
 import {
@@ -24,25 +26,27 @@ test("V1-804 exposes exactly the five stable smoke scenario IDs", () => {
 
 test("platform boot requires API health plus worker and Reverb readiness", async () => {
   const calls = [];
+  const controller = new AbortController();
   const execute = createSmokeScenarioExecutor({
     browserJourney: async () => ({ status: 0 }),
   });
   const result = await execute({
     scenario: scenario("V1-IA-PLAT-001"),
     provider: {
-      exec: async (service, args) => {
-        calls.push([service, args]);
+      exec: async (service, args, options) => {
+        calls.push([service, args, options]);
         if (service === "laravel") return { status: 0, stdout: '{"status":"ok"}', stderr: "" };
         return { status: 0, stdout: "running\nrunning\n", stderr: "" };
       },
     },
+    signal: controller.signal,
   });
 
   assert.equal(result.status, "passed");
   assert.deepEqual(calls, [
-    ["laravel", ["curl", "--fail", "--silent", "--show-error", "http://localhost:8000/api/v1/health"]],
-    ["laravel-worker", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"]],
-    ["laravel-reverb", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[r]everb:start'"]],
+    ["laravel", ["curl", "--fail", "--silent", "--show-error", "http://localhost:8000/api/v1/health"], { signal: controller.signal }],
+    ["laravel-worker", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"], { signal: controller.signal }],
+    ["laravel-reverb", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[r]everb:start'"], { signal: controller.signal }],
   ]);
 });
 
@@ -93,5 +97,52 @@ test("failed operational or browser checks produce deterministic product evidenc
     status: "failed",
     classification: "product",
     evidence: { kind: "playwright", scenarioId: "V1-IA-ARCH-001", refs: ["playwright/", "playwright-results.json"] },
+    reason: "browser-exit",
+    detail: "failed",
   });
+});
+
+test("browser execution receives the runner signal and classifies concrete exit failures", async () => {
+  const controller = new AbortController();
+  const seen = [];
+  const execute = createSmokeScenarioExecutor({
+    browserJourney: async (input) => {
+      seen.push(input.signal);
+      return { status: 1, stderr: "fixture record not found" };
+    },
+  });
+  const result = await execute({
+    scenario: scenario("V1-IA-ARCH-001"),
+    provider: { endpoints: { next: "http://127.0.0.1:1", api: "http://127.0.0.1:1/api/v1" }, credentials: { email: "a", password: "b" } },
+    evidenceStore: { directory: "C:/temp/evidence" },
+    signal: controller.signal,
+  });
+  assert.equal(seen[0], controller.signal);
+  assert.equal(result.classification, "data");
+  assert.equal(result.reason, "browser-exit");
+});
+
+test("default browser execution terminates its child when the runner aborts", async () => {
+  const controller = new AbortController();
+  const child = new EventEmitter();
+  child.stdout = new PassThrough();
+  child.stderr = new PassThrough();
+  const killed = [];
+  child.kill = (signal) => {
+    killed.push(signal);
+    queueMicrotask(() => child.emit("close", null, signal));
+    return true;
+  };
+  const execute = createSmokeScenarioExecutor({ spawnProcess: () => child });
+  const execution = execute({
+    scenario: scenario("V1-IA-ARCH-001"),
+    provider: { endpoints: { next: "http://127.0.0.1:1", api: "http://127.0.0.1:1/api/v1" }, credentials: { email: "a", password: "b" } },
+    evidenceStore: { directory: "C:/temp/evidence" },
+    signal: controller.signal,
+  });
+  controller.abort();
+  const result = await execution;
+  assert.deepEqual(killed, ["SIGTERM"]);
+  assert.equal(result.classification, "platform");
+  assert.equal(result.reason, "browser-signal");
 });

@@ -44,6 +44,14 @@ test("docker provider scopes every lifecycle command and passes isolated port en
   assert.equal(provider.credentials.email, "acceptance-run-001@archive.test");
   assert.match(provider.credentials.password, /^Aa1!/);
   assert.deepEqual(provider.endpoints, { next: "http://127.0.0.1:43123", api: "http://127.0.0.1:43123/api/v1" });
+  assert.deepEqual(provider.describe(), {
+    name: "docker",
+    capabilities: ["docker"],
+    project: "archive-acceptance-run-001",
+    resources: { publishedPorts: { next: 43123, reverb: 43124 } },
+    endpoints: { next: "http://127.0.0.1:43123", api: "http://127.0.0.1:43123/api/v1" },
+    imageDigests: [],
+  });
 });
 
 test("destroy fails when leftover containers remain for the project", async () => {
@@ -100,4 +108,20 @@ test("rejects a project name that does not match the ownership pattern", () => {
     () => createDockerProvider({ root: "D:/repo", runId: "not valid!", run: async () => {}, getFreePort: async () => 1 }),
     /project name/i,
   );
+});
+
+test("provider forwards runner abort signals to spawned Docker work", async () => {
+  const calls = [];
+  const controller = new AbortController();
+  const provider = createDockerProvider({
+    root: "D:/repo",
+    runId: "run-005",
+    run: runFake(calls),
+    getFreePort: async () => 43125,
+  });
+  await provider.prepare({ signal: controller.signal });
+  assert.equal(calls[0][2].signal, controller.signal);
+  await provider.exec("laravel", ["php", "artisan", "about"], { signal: controller.signal });
+  assert.equal(calls[1][2].signal, controller.signal);
+  await provider.destroy();
 });

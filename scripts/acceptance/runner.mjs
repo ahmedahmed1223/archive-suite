@@ -1,7 +1,14 @@
-import { validateResult } from "./contracts.mjs";
+import { sanitize } from "../observability.mjs";
+import {
+  boundedDiagnosticDetail,
+  FAILURE_CLASSIFICATIONS,
+  FAILURE_REASONS,
+  validateResult,
+} from "./contracts.mjs";
 import { ACCEPTANCE_SCENARIOS, selectScenarios } from "./registry.mjs";
 
 export const AUTH_BUDGET = Object.freeze({ loginsPerMinute: 30, refreshesPerMinute: 120 });
+export const RUN_DEADLINE_MS = 15 * 60_000;
 
 export class AcceptanceInputError extends Error {
   constructor(message, options) {
@@ -60,29 +67,110 @@ function missingCapabilities(scenario, provider) {
   return scenario.capabilities.filter((capability) => !available.has(capability));
 }
 
-function resultForExecutionError(scenario, attempt, classification = "environment") {
+function classifyError(error, fallback = "environment") {
+  if (FAILURE_CLASSIFICATIONS.includes(error?.classification)) return error.classification;
+  if (["ENOENT", "EACCES", "EPERM"].includes(error?.code)) return "platform";
+  const detail = String(error?.message ?? error ?? "");
+  if (/fixture|seed|test data|record not found/i.test(detail)) return "data";
+  if (/ECONNRESET|EPIPE|socket hang up|flak/i.test(detail)) return "flake";
+  if (/docker|compose|provider|spawn|executable|command not found/i.test(detail)) return "platform";
+  return fallback;
+}
+
+function reasonForError(error, fallback = "executor-error") {
+  return FAILURE_REASONS.includes(error?.reason) ? error.reason : fallback;
+}
+
+function resultForExecutionError(scenario, attempt, classification = "environment", error, reason = "executor-error") {
+  const detail = boundedDiagnosticDetail(error?.message ?? error ?? "");
   return {
     scenarioId: scenario.id,
     status: "failed",
-    classification,
+    classification: classifyError(error, classification),
+    reason: reasonForError(error, reason),
+    ...(detail ? { detail } : {}),
     attempts: attempt,
-    attemptResults: attempt ? [{ attempt, status: "failed", classification }] : [],
+    attemptResults: [],
   };
 }
 
-async function executeWithOneFlakeRetry({ scenario, provider, evidenceStore, executeScenario }) {
+function attemptSnapshot(result, attempt) {
+  return sanitize({
+    attempt,
+    status: result.status,
+    ...(result.classification ? { classification: result.classification } : {}),
+    ...(result.reason ? { reason: result.reason } : {}),
+    ...(result.detail ? { detail: result.detail } : {}),
+    ...(result.evidence ? { evidence: result.evidence } : {}),
+  });
+}
+
+function normalizeResult(input, scenario, attempt) {
+  const result = {
+    ...sanitize(input),
+    scenarioId: input?.scenarioId,
+    attempts: attempt,
+  };
+  if (result.status === "failed") {
+    result.classification = FAILURE_CLASSIFICATIONS.includes(result.classification) ? result.classification : "environment";
+    result.reason = FAILURE_REASONS.includes(result.reason) ? result.reason : "scenario-failed";
+    if (result.detail !== undefined) result.detail = boundedDiagnosticDetail(result.detail);
+  }
+  validateResult(result);
+  if (result.scenarioId !== scenario.id) throw new Error("scenario executor returned a result for a different scenario");
+  return result;
+}
+
+function timeoutError(reason, milliseconds) {
+  const error = new Error(`${reason === "run-timeout" ? "acceptance run" : "acceptance scenario"} exceeded ${milliseconds}ms`);
+  error.name = "AcceptanceTimeoutError";
+  error.classification = "environment";
+  error.reason = reason;
+  return error;
+}
+
+function abortPromise(signal) {
+  if (signal.aborted) return Promise.reject(signal.reason);
+  return new Promise((resolve, reject) => {
+    signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+  });
+}
+
+async function executeWithOneFlakeRetry({
+  scenario,
+  provider,
+  evidenceStore,
+  executeScenario,
+  runSignal,
+  setTimer,
+  clearTimer,
+}) {
   let result;
   const attemptResults = [];
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    try {
-      result = await executeScenario({ scenario, provider, evidenceStore, attempt });
-      validateResult(result);
-      if (result.scenarioId !== scenario.id) throw new Error("scenario executor returned a result for a different scenario");
-      result = { ...result, attempts: attempt };
-    } catch {
-      result = resultForExecutionError(scenario, attempt);
+    if (runSignal.aborted) {
+      result = resultForExecutionError(scenario, attempt - 1, "environment", runSignal.reason, "run-timeout");
+      result.attemptResults = [...attemptResults];
+      return result;
     }
-    attemptResults.push({ attempt, status: result.status, ...(result.classification ? { classification: result.classification } : {}) });
+    const scenarioController = new AbortController();
+    const signal = AbortSignal.any([runSignal, scenarioController.signal]);
+    const timeout = setTimer(
+      () => scenarioController.abort(timeoutError("scenario-timeout", scenario.timeoutMs)),
+      scenario.timeoutMs,
+    );
+    try {
+      const aborted = abortPromise(signal);
+      const execution = Promise.resolve().then(
+        () => executeScenario({ scenario, provider, evidenceStore, attempt, signal }),
+      );
+      result = normalizeResult(await Promise.race([execution, aborted]), scenario, attempt);
+    } catch (error) {
+      result = resultForExecutionError(scenario, attempt, "environment", error);
+    } finally {
+      clearTimer(timeout);
+    }
+    attemptResults.push(attemptSnapshot(result, attempt));
     result = { ...result, attemptResults: [...attemptResults] };
     if (!(result.status === "failed" && result.classification === "flake" && attempt === 1)) return result;
   }
@@ -124,6 +212,26 @@ async function persistEvidence(evidenceStore, summary) {
   if (originalError) throw originalError;
 }
 
+function dateFrom(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error("acceptance clock returned an invalid date");
+  return date;
+}
+
+function providerSummary(provider) {
+  if (typeof provider.describe === "function") return sanitize(provider.describe());
+  let endpoints;
+  try { endpoints = provider.endpoints; } catch { endpoints = undefined; }
+  return sanitize({
+    name: provider.name ?? provider.capabilities?.[0] ?? "unknown",
+    capabilities: [...(provider.capabilities ?? [])],
+    ...(provider.projectName ? { project: provider.projectName } : {}),
+    ...(provider.resources ? { resources: provider.resources } : {}),
+    ...(endpoints ? { endpoints } : {}),
+    ...(provider.imageDigests ? { imageDigests: provider.imageDigests } : {}),
+  });
+}
+
 /**
  * Runs a selected acceptance slice in one deliberate sequence. A flake gets
  * exactly one retry; all other outcomes are evidence, not retries.
@@ -138,6 +246,11 @@ export async function runAcceptance({
   evidenceStore,
   executeScenario = async ({ scenario }) => resultForExecutionError(scenario, 1),
   readLastFailed,
+  runMetadata = {},
+  now = () => new Date(),
+  setTimer = setTimeout,
+  clearTimer = clearTimeout,
+  runDeadlineMs = RUN_DEADLINE_MS,
 } = {}) {
   if (!provider) throw new Error("acceptance provider is required");
   if (typeof executeScenario !== "function") throw new Error("executeScenario must be a function");
@@ -153,23 +266,42 @@ export async function runAcceptance({
   } catch (error) {
     throw new AcceptanceInputError(error instanceof Error ? error.message : String(error), { cause: error });
   }
+  const started = dateFrom(now());
   const budget = assertAuthBudget(selected);
   const results = [];
   let cleanup = { keptForDiagnostics: Boolean(keepEnvironment), proved: false };
+  const runController = new AbortController();
+  const deadline = setTimer(
+    () => runController.abort(timeoutError("run-timeout", runDeadlineMs)),
+    runDeadlineMs,
+  );
 
   try {
     const runnable = selected.filter((scenario) => missingCapabilities(scenario, provider).length === 0);
     if (runnable.length) {
-      await provider.prepare?.();
-      await provider.install?.();
-      await provider.start?.();
+      await Promise.race([
+        (async () => {
+          await provider.prepare?.({ signal: runController.signal });
+          await provider.install?.({ signal: runController.signal });
+          await provider.start?.({ signal: runController.signal });
+        })(),
+        abortPromise(runController.signal),
+      ]);
     }
     for (const scenario of selected) {
       if (missingCapabilities(scenario, provider).length) {
         results.push({ scenarioId: scenario.id, status: "blocked-capability", attempts: 0 });
         continue;
       }
-      results.push(await executeWithOneFlakeRetry({ scenario, provider, evidenceStore, executeScenario }));
+      results.push(await executeWithOneFlakeRetry({
+        scenario,
+        provider,
+        evidenceStore,
+        executeScenario,
+        runSignal: runController.signal,
+        setTimer,
+        clearTimer,
+      }));
     }
   } catch (error) {
     for (const scenario of selected) {
@@ -177,7 +309,13 @@ export async function runAcceptance({
       if (missingCapabilities(scenario, provider).length) {
         results.push({ scenarioId: scenario.id, status: "blocked-capability", attempts: 0, attemptResults: [] });
       } else {
-        results.push(resultForExecutionError(scenario, 0, "platform"));
+        results.push(resultForExecutionError(
+          scenario,
+          0,
+          "platform",
+          error,
+          runController.signal.aborted ? "run-timeout" : "provider-failure",
+        ));
       }
     }
   } finally {
@@ -191,7 +329,19 @@ export async function runAcceptance({
     }
   }
 
+  clearTimer(deadline);
+  const finished = dateFrom(now());
   const summary = summarize(results, cleanup);
-  await persistEvidence(evidenceStore, summary);
-  return { ...summary, budget, selected: selected.map(({ id }) => id) };
+  const finalResult = {
+    ...summary,
+    ...sanitize(runMetadata),
+    startedAt: started.toISOString(),
+    finishedAt: finished.toISOString(),
+    durationMs: Math.max(0, finished.getTime() - started.getTime()),
+    budget,
+    selected: selected.map(({ id }) => id),
+    provider: providerSummary(provider),
+  };
+  await persistEvidence(evidenceStore, finalResult);
+  return finalResult;
 }

@@ -57,6 +57,13 @@ test("finalization writes deterministic summary and manifest evidence with owner
   const input = {
     status: "passed",
     exitCode: 0,
+    sourceCommit: "a".repeat(40),
+    appVersion: "1.0.0-rc.1",
+    startedAt: "2026-07-19T00:00:00.000Z",
+    finishedAt: "2026-07-19T00:00:01.000Z",
+    durationMs: 1_000,
+    budget: { logins: 1, refreshes: 1 },
+    provider: { name: "docker", project: "archive-acceptance-run-004", endpoints: { next: "http://127.0.0.1:43123" } },
     results: [{ scenarioId: "V1-IA-ARCH-001", status: "passed", attempts: 1 }],
   };
   const manifest = store.finalize(input);

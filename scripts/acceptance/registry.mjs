@@ -1,8 +1,10 @@
 import { SCENARIO_TAGS, validateScenario } from "./contracts.mjs";
+import { SMOKE_SCENARIOS } from "./scenarios.mjs";
 
 export const ACCEPTANCE_REGISTRY_VERSION = "1.0.0";
 
 const tags = ["smoke", "daily", "nightly", "rc", "ga"];
+const timeoutById = new Map(SMOKE_SCENARIOS.map(({ id, timeoutMs }) => [id, timeoutMs]));
 const scenario = (id, title, loginSessions) => validateScenario({
   id,
   title,
@@ -10,6 +12,7 @@ const scenario = (id, title, loginSessions) => validateScenario({
   capabilities: ["docker"],
   loginSessions,
   refreshSessions: loginSessions,
+  timeoutMs: timeoutById.get(id),
 });
 
 export const ACCEPTANCE_SCENARIOS = Object.freeze([
