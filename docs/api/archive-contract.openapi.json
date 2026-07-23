@@ -6018,6 +6018,7 @@
           "query": { "type": ["string", "null"] },
           "type": { "type": "string" },
           "tag": { "type": "string" },
+          "icon": { "type": ["string", "null"], "maxLength": 100 },
           "createdAt": { "type": ["string", "null"], "format": "date-time" },
           "updatedAt": { "type": ["string", "null"], "format": "date-time" }
         }
@@ -6029,7 +6030,8 @@
           "name": { "type": "string", "minLength": 1, "maxLength": 200 },
           "query": { "type": "string", "maxLength": 500 },
           "type": { "type": "string", "maxLength": 200 },
-          "tag": { "type": "string", "maxLength": 200 }
+          "tag": { "type": "string", "maxLength": 200 },
+          "icon": { "type": "string", "minLength": 1, "maxLength": 100 }
         }
       },
       "CollectionsResponse": {

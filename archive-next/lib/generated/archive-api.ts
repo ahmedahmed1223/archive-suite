@@ -2542,6 +2542,7 @@ export interface components {
         Collection: {
             /** Format: date-time */
             createdAt: string | null;
+            icon?: string | null;
             id: string;
             name: string;
             query: string | null;
@@ -2551,6 +2552,7 @@ export interface components {
             updatedAt: string | null;
         };
         CollectionCreateRequest: {
+            icon?: string;
             name: string;
             query?: string;
             tag?: string;

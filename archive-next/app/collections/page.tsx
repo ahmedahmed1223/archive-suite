@@ -5,7 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import * as Icons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
+import IconPicker from "@/components/IconPicker";
 import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ArchiveRecord, type Collection, type CreateCollectionPayload } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -25,6 +28,8 @@ type CollectionsLoadState =
   | { status: "ready" }
   | { status: "error"; message: string };
 
+const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
+
 export default function CollectionsPage() {
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
@@ -37,6 +42,7 @@ export default function CollectionsPage() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
   const [tag, setTag] = useState("all");
+  const [icon, setIcon] = useState<string | undefined>(undefined);
   const [deleteStack, setDeleteStack] = useState<UndoStack<CreateCollectionPayload>>(emptyUndoStack);
 
   async function refreshCollections() {
@@ -73,7 +79,7 @@ export default function CollectionsPage() {
     ].slice(0, 6);
   }, [records]);
 
-  async function createCollection(payload: { name: string; query?: string; type?: string; tag?: string }) {
+  async function createCollection(payload: { name: string; query?: string; type?: string; tag?: string; icon?: string }) {
     setStatusMessage("جار حفظ المجموعة...");
     const response = await api.createCollection(payload);
     if (!response.ok) {
@@ -90,11 +96,12 @@ export default function CollectionsPage() {
   async function addCollection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!name.trim()) return;
-    await createCollection({ name: name.trim(), query: query.trim(), type, tag });
+    await createCollection({ name: name.trim(), query: query.trim(), type, tag, icon });
     setName("");
     setQuery("");
     setType("all");
     setTag("all");
+    setIcon(undefined);
   }
 
   async function removeCollection(id: string) {
@@ -122,7 +129,7 @@ export default function CollectionsPage() {
     setStatusMessage("تم حذف المجموعة.");
     if (collection) {
       setDeleteStack((stack) =>
-        pushUndo(stack, { name: collection.name, query: collection.query || undefined, type: collection.type, tag: collection.tag })
+        pushUndo(stack, { name: collection.name, query: collection.query || undefined, type: collection.type, tag: collection.tag, icon: collection.icon || undefined })
       );
     }
     await refreshCollections();
@@ -201,6 +208,9 @@ export default function CollectionsPage() {
                 {tags.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
+            <div className="full-span">
+              <IconPicker value={icon} onChange={setIcon} label="أيقونة المجموعة (اختياري)" />
+            </div>
             <div className="archive-toolbar-actions">
               <button className="button button-primary" type="submit" disabled={!name.trim()}>حفظ المجموعة</button>
             </div>
@@ -260,11 +270,15 @@ export default function CollectionsPage() {
             const matches = state.status === "ready" ? records.filter((record) => recordMatches(record, collection)) : [];
             const searchTerm = collection.query || (collection.tag !== "all" ? collection.tag : collection.name);
             const searchHref = `/search?q=${encodeURIComponent(searchTerm)}${collection.type !== "all" ? `&type=${encodeURIComponent(collection.type)}` : ""}`;
+            const CollectionIcon = collection.icon ? iconRegistry[collection.icon] : null;
             return (
               <article className="local-list-card" key={collection.id}>
                 <div className="local-list-card__main">
                   <div>
-                    <span className="badge">مجموعة</span>
+                    <span className="badge">
+                      {CollectionIcon && <CollectionIcon aria-hidden="true" size={14} strokeWidth={2} />}
+                      مجموعة
+                    </span>
                     <h3>{collection.name}</h3>
                   </div>
                   <strong className="metric-value">{matches.length}</strong>
