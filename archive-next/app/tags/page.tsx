@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import IconPicker from "@/components/IconPicker";
+import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ArchiveRecord, type TagNode } from "@/lib/archive-api";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
@@ -29,6 +30,7 @@ type TagsLoadState =
 
 export default function TagsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const canManageTags = useCapability("tags.manage");
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
   const [loadState, setLoadState] = useState<TagsLoadState>({ status: "loading" });
   const [error, setError] = useState("");
@@ -199,7 +201,7 @@ export default function TagsPage() {
         <div className="state-banner state-banner-error" role="alert"><strong>تعذر حفظ تغيير الوسم</strong><span className="helper-text">{error}</span></div>
       ) : null}
 
-      {canUndo(parentStack) || canRedo(parentStack) ? (
+      {canManageTags && (canUndo(parentStack) || canRedo(parentStack)) ? (
         <div className="button-row">
           <button
             type="button"
@@ -237,16 +239,20 @@ export default function TagsPage() {
                   </span>
                   <div className="button-row">
                     <strong>{row.count}</strong>
-                    <button
-                      type="button"
-                      className="button button-secondary button-sm"
-                      aria-label={`أيقونة الوسم ${row.tag}`}
-                      aria-pressed={iconEditingTag === row.tag}
-                      onClick={() => setIconEditingTag(iconEditingTag === row.tag ? null : row.tag)}
-                    >
-                      {RowIcon ? <RowIcon aria-hidden="true" size={16} strokeWidth={2} /> : "أيقونة"}
-                    </button>
-                    {node && (
+                    {canManageTags ? (
+                      <button
+                        type="button"
+                        className="button button-secondary button-sm"
+                        aria-label={`أيقونة الوسم ${row.tag}`}
+                        aria-pressed={iconEditingTag === row.tag}
+                        onClick={() => setIconEditingTag(iconEditingTag === row.tag ? null : row.tag)}
+                      >
+                        {RowIcon ? <RowIcon aria-hidden="true" size={16} strokeWidth={2} /> : "أيقونة"}
+                      </button>
+                    ) : (
+                      RowIcon && <RowIcon aria-hidden="true" size={16} strokeWidth={2} />
+                    )}
+                    {node && canManageTags && (
                       <input
                         type="color"
                         value={node.color || "#808080"}
@@ -255,16 +261,20 @@ export default function TagsPage() {
                         style={{ width: "2.5rem", height: "2.5rem", cursor: "pointer" }}
                       />
                     )}
-                    <select value={row.parent} onChange={(event) => void updateParent(row.tag, event.target.value)} aria-label={`أب الوسم ${row.tag}`}>
-                      <option value="">بلا أب</option>
-                      {tagRows.filter((item) => item.tag !== row.tag).map((item) => (
-                        <option key={item.tag} value={item.tag}>{item.tag}</option>
-                      ))}
-                    </select>
+                    {canManageTags ? (
+                      <select value={row.parent} onChange={(event) => void updateParent(row.tag, event.target.value)} aria-label={`أب الوسم ${row.tag}`}>
+                        <option value="">بلا أب</option>
+                        {tagRows.filter((item) => item.tag !== row.tag).map((item) => (
+                          <option key={item.tag} value={item.tag}>{item.tag}</option>
+                        ))}
+                      </select>
+                    ) : row.parent ? null : (
+                      <span className="badge">بلا أب</span>
+                    )}
                     <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(row.tag)}`}>بحث</a>
                   </div>
-                  <p className="helper-text">تغيير الأب هيكلي فقط ولا يعدّل أي سجل؛ يمكن التراجع عنه من الزر أعلاه.</p>
-                  {iconEditingTag === row.tag ? (
+                  {canManageTags && <p className="helper-text">تغيير الأب هيكلي فقط ولا يعدّل أي سجل؛ يمكن التراجع عنه من الزر أعلاه.</p>}
+                  {canManageTags && iconEditingTag === row.tag ? (
                     <IconPicker value={rowIcon} onChange={(iconName) => handleSetIcon(row.tag, iconName)} label={`اختر أيقونة الوسم ${row.tag}`} />
                   ) : null}
                 </div>

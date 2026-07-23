@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useCapability } from "@/components/RoleGate";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { createArchiveApiClient, type PaginationMeta, type TrashEntry, type TrashFilters } from "@/lib/archive-api";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
@@ -32,6 +33,8 @@ function formatDate(value: string | null): string {
 export default function TrashPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialog = useConfirmDialog();
+  const canRestore = useCapability("trash.restore");
+  const canPurge = useCapability("trash.purge");
   const [state, setState] = useState<TrashState>({ status: "loading" });
   const [store, setStore] = useState("");
   const [search, setSearch] = useState("");
@@ -216,7 +219,7 @@ export default function TrashPage() {
         </div>
       ) : null}
 
-      {canUndo(restoreStack) || canRedo(restoreStack) ? (
+      {canRestore && (canUndo(restoreStack) || canRedo(restoreStack)) ? (
         <div className="button-row">
           <button
             type="button"
@@ -268,22 +271,27 @@ export default function TrashPage() {
                   <td>{formatDate(entry.deletedAt)}</td>
                   <td>
                     <div className="button-row">
-                      <button
-                        type="button"
-                        className="button button-secondary"
-                        disabled={busy}
-                        onClick={() => void restore(entry)}
-                      >
-                        استعادة
-                      </button>
-                      <button
-                        type="button"
-                        className="button button-danger"
-                        disabled={busy}
-                        onClick={() => void purge(entry)}
-                      >
-                        حذف نهائي
-                      </button>
+                      {canRestore && (
+                        <button
+                          type="button"
+                          className="button button-secondary"
+                          disabled={busy}
+                          onClick={() => void restore(entry)}
+                        >
+                          استعادة
+                        </button>
+                      )}
+                      {canPurge && (
+                        <button
+                          type="button"
+                          className="button button-danger"
+                          disabled={busy}
+                          onClick={() => void purge(entry)}
+                        >
+                          حذف نهائي
+                        </button>
+                      )}
+                      {!canRestore && !canPurge && <span className="helper-text">-</span>}
                     </div>
                   </td>
                 </tr>

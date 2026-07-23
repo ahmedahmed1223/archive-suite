@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useCapability } from "@/components/RoleGate";
 import {
   createArchiveApiClient,
   type DelegatedAccess,
@@ -36,6 +37,7 @@ function formatDate(value?: string | null) {
 export default function DelegationsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
+  const canManageDelegations = useCapability("delegations.manage");
 
   const [direction, setDirection] = useState<Direction>("granted");
   const [state, setState] = useState<ListState>({ status: "loading" });
@@ -154,40 +156,44 @@ export default function DelegationsPage() {
               <p>يحصل الزميل على صلاحية تعديل هذه المواد فقط، حتى موعد الانتهاء المحدد.</p>
             </div>
           </div>
-          <form className="form-grid" onSubmit={handleCreate}>
-            <label>
-              الزميل
-              <select value={granteeId} onChange={(event) => setGranteeId(event.target.value)} required>
-                <option value="">اختر زميلاً</option>
-                {colleagues.map((user) => (
-                  <option key={user.id} value={user.id}>{user.name}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              معرّفات المواد (مفصولة بفواصل)
-              <input
-                type="text"
-                value={itemIds}
-                onChange={(event) => setItemIds(event.target.value)}
-                placeholder="item-1, item-2"
-                required
-              />
-            </label>
-            <label>
-              تاريخ ووقت الانتهاء
-              <input
-                type="datetime-local"
-                value={expiresAt}
-                onChange={(event) => setExpiresAt(event.target.value)}
-                required
-              />
-            </label>
-            {formState.status === "error" ? <p className="form-error">{formState.message}</p> : null}
-            <button type="submit" className="button" disabled={formState.status === "saving"}>
-              {formState.status === "saving" ? "جارٍ المنح..." : "منح التفويض"}
-            </button>
-          </form>
+          {canManageDelegations ? (
+            <form className="form-grid" onSubmit={handleCreate}>
+              <label>
+                الزميل
+                <select value={granteeId} onChange={(event) => setGranteeId(event.target.value)} required>
+                  <option value="">اختر زميلاً</option>
+                  {colleagues.map((user) => (
+                    <option key={user.id} value={user.id}>{user.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                معرّفات المواد (مفصولة بفواصل)
+                <input
+                  type="text"
+                  value={itemIds}
+                  onChange={(event) => setItemIds(event.target.value)}
+                  placeholder="item-1, item-2"
+                  required
+                />
+              </label>
+              <label>
+                تاريخ ووقت الانتهاء
+                <input
+                  type="datetime-local"
+                  value={expiresAt}
+                  onChange={(event) => setExpiresAt(event.target.value)}
+                  required
+                />
+              </label>
+              {formState.status === "error" ? <p className="form-error">{formState.message}</p> : null}
+              <button type="submit" className="button" disabled={formState.status === "saving"}>
+                {formState.status === "saving" ? "جارٍ المنح..." : "منح التفويض"}
+              </button>
+            </form>
+          ) : (
+            <p className="helper-text">لا تملك صلاحية منح تفويضات وصول جديدة.</p>
+          )}
         </section>
       ) : null}
 

@@ -166,7 +166,8 @@ export const pageTips: Record<PageKey, Tip[]> = {
     },
     {
       title: "إنشاء مجموعة جديدة",
-      description: "انقر على 'مجموعة جديدة' لإنشاء مساحة تنظيم منفصلة"
+      description: "انقر على 'مجموعة جديدة' لإنشاء مساحة تنظيم منفصلة",
+      roles: ["editor", "admin"]
     },
     {
       title: "المشاركة بين الفريق",
@@ -174,16 +175,26 @@ export const pageTips: Record<PageKey, Tip[]> = {
     },
     {
       title: "الأرشفة",
-      description: "أرشف المجموعات القديمة للحفاظ على قائمة عملك نظيفة"
+      description: "أرشف المجموعات القديمة للحفاظ على قائمة عملك نظيفة",
+      roles: ["editor", "admin"]
+    },
+    {
+      title: "وضع القراءة",
+      description: "يمكنك عرض المجموعات المحفوظة دون إنشاء أو حذف مجموعات",
+      icon: "Eye",
+      roles: ["viewer"]
     }
   ],
   vocabulary: [
-    { title: "المفردات الموحدة", description: "أدر المصطلحات والمرادفات المستخدمة عبر تصنيف السجلات", icon: "BookOpen" },
-    { title: "الاستيراد والتصدير", description: "صدّر أو استورد المفردات بصيغة CSV أو JSON مع دمج المرادفات تلقائياً" }
+    { title: "المفردات الموحدة", description: "أدر المصطلحات والمرادفات المستخدمة عبر تصنيف السجلات", icon: "BookOpen", roles: ["editor", "admin"] },
+    { title: "الاستيراد والتصدير", description: "صدّر أو استورد المفردات بصيغة CSV أو JSON مع دمج المرادفات تلقائياً", roles: ["editor", "admin"] },
+    { title: "وضع القراءة", description: "يمكنك تصفح المفردات المحفوظة دون إضافة أو حذف مصطلحات", icon: "Eye", roles: ["viewer"] }
   ],
   graph: [
     { title: "خريطة العلاقات", description: "استكشف الروابط بين السجلات بصرياً من خلال العقد والخطوط", icon: "Share2" },
-    { title: "التصفية", description: "ركّز على نوع علاقة معين لتبسيط الرسم البياني" }
+    { title: "التصفية", description: "ركّز على نوع علاقة معين لتبسيط الرسم البياني" },
+    { title: "إضافة علاقات", description: "أنشئ أو احذف علاقات يدوية بين السجلات من لوحة العقدة المحددة", roles: ["editor", "admin"] },
+    { title: "وضع القراءة", description: "يمكنك استكشاف العلاقات القائمة دون إنشاء أو حذف علاقات جديدة", icon: "Eye", roles: ["viewer"] }
   ],
   sync: [
     { title: "سجل المزامنة", description: "تابع حالة كل عملية مزامنة مع مزودي التخزين الخارجيين", icon: "RefreshCw" },
@@ -211,7 +222,9 @@ export const pageTips: Record<PageKey, Tip[]> = {
   ],
   files: [
     { title: "مستعرض الملفات", description: "تصفح بنية الملفات والمجلدات المرتبطة بالأرشيف", icon: "Folder" },
-    { title: "المعاينة", description: "انقر على ملف لمعاينته دون تنزيله" }
+    { title: "المعاينة", description: "انقر على ملف لمعاينته دون تنزيله" },
+    { title: "فحص التخزين والمشاركة", description: "أعد فحص التخزين أو أنشئ روابط مشاركة للملفات المحددة", roles: ["editor", "admin"] },
+    { title: "وضع القراءة", description: "يمكنك تصفح الملفات ومعاينتها دون فحص التخزين أو إنشاء مشاركات", icon: "Eye", roles: ["viewer"] }
   ],
   timeline: [
     { title: "الخط الزمني", description: "اعرض السجلات مرتبة زمنياً لفهم تسلسل الأحداث", icon: "Clock" },
@@ -242,20 +255,23 @@ export const pageTips: Record<PageKey, Tip[]> = {
     { title: "التنبيهات", description: "تابع أي تحذيرات تحتاج إلى تدخل سريع" }
   ],
   trash: [
-    { title: "سلة المهملات", description: "استعد العناصر المحذوفة خلال فترة الاحتفاظ المحددة", icon: "Trash2" },
-    { title: "الحذف النهائي", description: "احذف نهائياً فقط عند التأكد من عدم الحاجة للعنصر" }
+    { title: "سلة المهملات", description: "استعد العناصر المحذوفة خلال فترة الاحتفاظ المحددة", icon: "Trash2", roles: ["editor", "admin"] },
+    { title: "الحذف النهائي", description: "احذف نهائياً فقط عند التأكد من عدم الحاجة للعنصر — مقتصر على المدراء", roles: ["admin"] },
+    { title: "وضع القراءة", description: "يمكنك مراجعة العناصر المحذوفة دون استعادتها أو حذفها نهائياً", icon: "Eye", roles: ["viewer"] }
   ],
   errors: [
     { title: "سجل الأخطاء", description: "راجع الأخطاء التي واجهها النظام لتشخيصها وحلها", icon: "AlertTriangle" },
     { title: "التصفية", description: "صفِّ حسب الشدة أو المصدر لتضييق نطاق البحث" }
   ],
   kanban: [
-    { title: "كانبان", description: "نظم العمل في أعمدة حسب حالة كل سجل", icon: "Columns" },
-    { title: "السحب والإفلات", description: "اسحب البطاقات بين الأعمدة لتحديث حالتها فوراً" }
+    { title: "كانبان", description: "نظم العمل في أعمدة حسب حالة كل سجل", icon: "Columns", roles: ["editor", "admin"] },
+    { title: "السحب والإفلات", description: "اسحب البطاقات بين الأعمدة لتحديث حالتها فوراً", roles: ["editor", "admin"] },
+    { title: "وضع القراءة", description: "يمكنك عرض حالة كل سجل ضمن سير العمل دون نقله بين الأعمدة", icon: "Eye", roles: ["viewer"] }
   ],
   tags: [
-    { title: "الوسوم", description: "أدر الوسوم المستخدمة لتصنيف السجلات عبر الأرشيف", icon: "Tag" },
-    { title: "الدمج", description: "ادمج الوسوم المتشابهة لتقليل التكرار" }
+    { title: "الوسوم", description: "أدر الوسوم المستخدمة لتصنيف السجلات عبر الأرشيف", icon: "Tag", roles: ["editor", "admin"] },
+    { title: "الدمج", description: "ادمج الوسوم المتشابهة لتقليل التكرار", roles: ["editor", "admin"] },
+    { title: "وضع القراءة", description: "يمكنك تصفح الوسوم وتكراراتها دون تعديل الأيقونة أو اللون أو الأب", icon: "Eye", roles: ["viewer"] }
   ],
   "shares-with-me": [
     { title: "مشاركات واردة", description: "استعرض العناصر التي شاركها معك الآخرون", icon: "Share2" },
