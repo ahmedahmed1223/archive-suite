@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures/auth';
 import { DYNAMIC_ROUTE_PARAMS, ROUTE_COVERAGE } from './fixtures/route-inventory';
-import { VIEWPORTS } from './fixtures/visual-routes';
+import { assertNoClippedInteractiveElements, VIEWPORTS } from './fixtures/visual-routes';
 
 /**
  * V1-303E (authenticated half): same zero-horizontal-overflow gate as
@@ -40,6 +40,8 @@ for (const viewport of VIEWPORTS) {
           `${url} [${coverage.role}] @ ${viewport.name}: content scrolls horizontally ` +
             `(scrollWidth ${scrollWidth}px > clientWidth ${clientWidth}px)`,
         ).toBeLessThanOrEqual(clientWidth);
+
+        await assertNoClippedInteractiveElements(page, viewport.width, `${url} [${coverage.role}] @ ${viewport.name}`);
 
         const safeName = coverage.route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'home';
         await page.screenshot({
