@@ -10,7 +10,14 @@ const allCapabilities: readonly Capability[] = [
   "automation.manage",
   "backup.manage",
   "rights.manage",
-  "ingest.manage"
+  "ingest.manage",
+  "collections.manage",
+  "tags.manage",
+  "vocabulary.manage",
+  "delegations.manage",
+  "shares.manage",
+  "trash.restore",
+  "trash.purge"
 ];
 
 describe("role-capabilities", () => {
@@ -25,6 +32,16 @@ describe("role-capabilities", () => {
     expect(can("editor", "ingest.manage")).toBe(true);
     expect(can("editor", "users.manage")).toBe(false);
     expect(can("editor", "system.control")).toBe(false);
+  });
+
+  test("editor is allowed the new entity-management capabilities but denied trash.purge (admin-only)", () => {
+    expect(can("editor", "collections.manage")).toBe(true);
+    expect(can("editor", "tags.manage")).toBe(true);
+    expect(can("editor", "vocabulary.manage")).toBe(true);
+    expect(can("editor", "delegations.manage")).toBe(true);
+    expect(can("editor", "shares.manage")).toBe(true);
+    expect(can("editor", "trash.restore")).toBe(true);
+    expect(can("editor", "trash.purge")).toBe(false);
   });
 
   test("viewer is denied records.bulkDelete", () => {

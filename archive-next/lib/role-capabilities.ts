@@ -9,7 +9,14 @@ export type Capability =
   | "automation.manage"
   | "backup.manage"
   | "rights.manage"
-  | "ingest.manage";
+  | "ingest.manage"
+  | "collections.manage"
+  | "tags.manage"
+  | "vocabulary.manage"
+  | "delegations.manage"
+  | "shares.manage"
+  | "trash.restore"
+  | "trash.purge";
 
 const allCapabilities: readonly Capability[] = [
   "records.create",
@@ -20,12 +27,32 @@ const allCapabilities: readonly Capability[] = [
   "automation.manage",
   "backup.manage",
   "rights.manage",
-  "ingest.manage"
+  "ingest.manage",
+  "collections.manage",
+  "tags.manage",
+  "vocabulary.manage",
+  "delegations.manage",
+  "shares.manage",
+  "trash.restore",
+  "trash.purge"
 ];
 
 export const ROLE_CAPABILITIES: Record<NavigationRole, readonly Capability[]> = {
   admin: allCapabilities,
-  editor: ["records.create", "records.edit", "records.bulkDelete", "automation.manage", "rights.manage", "ingest.manage"],
+  editor: [
+    "records.create",
+    "records.edit",
+    "records.bulkDelete",
+    "automation.manage",
+    "rights.manage",
+    "ingest.manage",
+    "collections.manage",
+    "tags.manage",
+    "vocabulary.manage",
+    "delegations.manage",
+    "shares.manage",
+    "trash.restore"
+  ],
   viewer: []
 };
 

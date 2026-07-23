@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Eye, FileArchive, FileQuestion, Files, FolderOpen, HardDrive, Play, RefreshCw, ScanSearch, Share2, UploadCloud } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { useCapability } from "@/components/RoleGate";
 import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
@@ -144,6 +145,8 @@ function getInitialFileViewMode(): FileViewMode {
 
 export default function FilesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const canIngest = useCapability("ingest.manage");
+  const canShare = useCapability("shares.manage");
   const [state, setState] = useState<FileState>({ status: "loading" });
   const [query, setQuery] = useState("");
   const [storeFilter, setStoreFilter] = useState("all");
@@ -446,10 +449,12 @@ export default function FilesPage() {
               <UploadCloud size={16} aria-hidden="true" />
               رفع ملف
             </a>
-            <button type="button" className="button button-primary" onClick={() => void handleScan()} disabled={scanState.status === "running"}>
-              <ScanSearch size={16} aria-hidden="true" />
-              {scanState.status === "running" ? "جار الفحص" : "فحص التخزين"}
-            </button>
+            {canIngest && (
+              <button type="button" className="button button-primary" onClick={() => void handleScan()} disabled={scanState.status === "running"}>
+                <ScanSearch size={16} aria-hidden="true" />
+                {scanState.status === "running" ? "جار الفحص" : "فحص التخزين"}
+              </button>
+            )}
             <a className="button button-secondary" href="/media/jobs">
               <Play size={16} aria-hidden="true" />
               مهام الوسائط
@@ -560,14 +565,16 @@ export default function FilesPage() {
           <strong>{selectedKeys.length} ملف محدد</strong>
           <span className="helper-text">قبل أي نقل أو إعادة تسمية من مصدر خارجي، راجع روابط السجلات والمشاركات؛ هذه الواجهة لا تغيّر المسارات دون عملية مدعومة من الخادم.</span>
           <div className="button-row">
-            <button
-              onClick={handleCreateShare}
-              disabled={shareState.status === "creating"}
-              className="button button-primary"
-            >
-              <Share2 size={16} aria-hidden="true" />
-              {shareState.status === "creating" ? "جار الإنشاء..." : "إنشاء رابط مشاركة"}
-            </button>
+            {canShare && (
+              <button
+                onClick={handleCreateShare}
+                disabled={shareState.status === "creating"}
+                className="button button-primary"
+              >
+                <Share2 size={16} aria-hidden="true" />
+                {shareState.status === "creating" ? "جار الإنشاء..." : "إنشاء رابط مشاركة"}
+              </button>
+            )}
             <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>تحديد الظاهر</button>
             <button type="button" className="button button-secondary" onClick={() => setSelectedKeys([])}>مسح التحديد</button>
           </div>
@@ -674,12 +681,12 @@ export default function FilesPage() {
             icon={<FileQuestion size={22} />}
             title="لم يتم العثور على ملفات."
             description="جرّب بحثاً أوسع أو غيّر الفلاتر، ثم أعد فحص التخزين عند الحاجة."
-            actions={(
+            actions={canIngest ? (
               <button type="button" className="button button-secondary" onClick={() => void handleScan()}>
                 <ScanSearch size={16} aria-hidden="true" />
                 فحص التخزين
               </button>
-            )}
+            ) : undefined}
           />
         ) : (
           <section className="files-workspace" aria-label="واجهة الملفات">

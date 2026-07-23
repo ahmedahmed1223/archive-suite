@@ -23,6 +23,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
+import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { formatDate, getRecordWorkflowStatus, WORKFLOW_STATES, workflowStatusLabels, type WorkflowStatus } from "@/lib/record-utils";
@@ -76,16 +77,19 @@ function SortableKanbanCard({
   busyId,
   moveRecord,
   record,
-  status
+  status,
+  canEdit
 }: Readonly<{
   busyId: string | null;
   moveRecord: (record: ArchiveRecord, status: WorkflowStatus) => void;
   record: ArchiveRecord;
   status: WorkflowStatus;
+  canEdit: boolean;
 }>) {
   const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({
     id: record.id,
-    data: { record }
+    data: { record },
+    disabled: !canEdit
   });
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
@@ -94,31 +98,37 @@ function SortableKanbanCard({
 
   return (
     <motion.div ref={setNodeRef} className="kanban-card" data-dragging={isDragging ? "true" : "false"} layout style={style}>
-      <div className="helper-row">
-        <button
-          ref={setActivatorNodeRef}
-          type="button"
-          className="kanban-card__handle"
-          aria-label={`سحب ${record.title || record.id}`}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical aria-hidden="true" size={14} />
-          نقل
-        </button>
-      </div>
+      {canEdit && (
+        <div className="helper-row">
+          <button
+            ref={setActivatorNodeRef}
+            type="button"
+            className="kanban-card__handle"
+            aria-label={`سحب ${record.title || record.id}`}
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical aria-hidden="true" size={14} />
+            نقل
+          </button>
+        </div>
+      )}
       <strong>{record.title || record.id}</strong>
       <span className="helper-text">{record.type || "غير محدد"} · {formatDate(record.updatedAt || record.createdAt)}</span>
       <div className="button-row">
         <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(record.id)}`}>فتح</a>
-        <select
-          value={status}
-          disabled={busyId === record.id}
-          onChange={(event) => moveRecord(record, event.target.value as WorkflowStatus)}
-          aria-label={`نقل ${record.title || record.id}`}
-        >
-          {WORKFLOW_STATES.map((next) => <option key={next} value={next}>{workflowStatusLabels[next]}</option>)}
-        </select>
+        {canEdit ? (
+          <select
+            value={status}
+            disabled={busyId === record.id}
+            onChange={(event) => moveRecord(record, event.target.value as WorkflowStatus)}
+            aria-label={`نقل ${record.title || record.id}`}
+          >
+            {WORKFLOW_STATES.map((next) => <option key={next} value={next}>{workflowStatusLabels[next]}</option>)}
+          </select>
+        ) : (
+          <span className="badge">{workflowStatusLabels[status]}</span>
+        )}
       </div>
     </motion.div>
   );
@@ -126,6 +136,7 @@ function SortableKanbanCard({
 
 export default function KanbanPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const canEditRecords = useCapability("records.edit");
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [busyId, setBusyId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
@@ -236,10 +247,16 @@ export default function KanbanPage() {
           <span className="helper-text">{feedback}</span>
         </div>
       ) : null}
-      <ChangeImpactPreview impact={buildChangeImpact({ action: "move", entity: "بطاقة كانبان", affectedCount: 1, reversible: true })} />
-      <p className="helper-text">يمكن استخدام قائمة «نقل» داخل كل بطاقة كبديل كامل قابل للوصول للسحب والإفلات.</p>
-      <p className="helper-text">جميع البطاقات متاحة عبر قائمة النقل، بما فيها البطاقات خارج مساحة العرض الأولى.</p>
-      {canUndo(moveStack) || canRedo(moveStack) ? (
+      {canEditRecords ? (
+        <>
+          <ChangeImpactPreview impact={buildChangeImpact({ action: "move", entity: "بطاقة كانبان", affectedCount: 1, reversible: true })} />
+          <p className="helper-text">يمكن استخدام قائمة «نقل» داخل كل بطاقة كبديل كامل قابل للوصول للسحب والإفلات.</p>
+          <p className="helper-text">جميع البطاقات متاحة عبر قائمة النقل، بما فيها البطاقات خارج مساحة العرض الأولى.</p>
+        </>
+      ) : (
+        <p className="helper-text">وضع القراءة: يمكنك عرض حالة كل سجل ضمن سير العمل دون نقله بين الحالات.</p>
+      )}
+      {canEditRecords && (canUndo(moveStack) || canRedo(moveStack)) ? (
         <div className="button-row">
           <button
             type="button"
@@ -293,6 +310,7 @@ export default function KanbanPage() {
                         moveRecord={(item, nextStatus) => void moveRecord(item, nextStatus)}
                         record={record}
                         status={status}
+                        canEdit={canEditRecords}
                       />
                     ))
                   )}

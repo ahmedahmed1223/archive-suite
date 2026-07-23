@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import { useCapability } from "@/components/RoleGate";
 import BroadcastMetadataPanel from "@/components/BroadcastMetadataPanel";
 import EmptyState from "@/components/EmptyState";
 import MentionTextarea from "@/components/MentionTextarea";
@@ -92,13 +93,15 @@ function RelationPreviewPanel({
   recordId,
   onCreate,
   onUpdate,
-  onDelete
+  onDelete,
+  canEdit
 }: Readonly<{
   graph: RelationGraphPayload | null;
   recordId: string;
   onCreate: (payload: CreateRelationPayload) => Promise<void>;
   onUpdate: (id: string, payload: UpdateRelationPayload) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  canEdit: boolean;
 }>) {
   const dialogs = useConfirmDialog();
   const relationTypes = graph?.relationTypes?.length
@@ -233,34 +236,36 @@ function RelationPreviewPanel({
         فتح خريطة العلاقات
       </a>
 
-      <form className="auth-form relation-inline-form" onSubmit={handleCreate}>
-        <div className="panel-section-header">
-          <h3>إضافة علاقة من هنا</h3>
-        </div>
-        <div className="field-row">
+      {canEdit && (
+        <form className="auth-form relation-inline-form" onSubmit={handleCreate}>
+          <div className="panel-section-header">
+            <h3>إضافة علاقة من هنا</h3>
+          </div>
+          <div className="field-row">
+            <label>
+              السجل الهدف
+              <input value={targetId} onChange={(event) => setTargetId(event.target.value)} placeholder="UID أو ID" dir="ltr" />
+            </label>
+            <label>
+              نوع العلاقة
+              <select value={type} onChange={(event) => setType(event.target.value as RelationTypeKey)}>
+                {relationTypes.map((option) => (
+                  <option key={option.key} value={option.key}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
           <label>
-            السجل الهدف
-            <input value={targetId} onChange={(event) => setTargetId(event.target.value)} placeholder="UID أو ID" dir="ltr" />
+            ملاحظة
+            <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="سبب الربط أو سياقه" />
           </label>
-          <label>
-            نوع العلاقة
-            <select value={type} onChange={(event) => setType(event.target.value as RelationTypeKey)}>
-              {relationTypes.map((option) => (
-                <option key={option.key} value={option.key}>{option.label}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <label>
-          ملاحظة
-          <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="سبب الربط أو سياقه" />
-        </label>
-        <button type="submit" className="button button-secondary" disabled={busy || !targetId.trim()}>
-          إضافة علاقة
-        </button>
-      </form>
+          <button type="submit" className="button button-secondary" disabled={busy || !targetId.trim()}>
+            إضافة علاقة
+          </button>
+        </form>
+      )}
 
-      {manualEdges.length ? (
+      {canEdit && manualEdges.length ? (
         <div className="relation-editor-list">
           <div className="panel-section-header">
             <h3>تعديل العلاقات اليدوية</h3>
@@ -997,6 +1002,7 @@ export default function ArchiveDetailPage() {
   const id = typeof params.id === "string" ? params.id : "";
 
   const api = useMemo(() => createArchiveApiClient(), []);
+  const canEditRecords = useCapability("records.edit");
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [isFav, setIsFav] = useState(false);
   const [ocrState, setOcrState] = useState<OcrState>({ status: "idle" });
@@ -1452,7 +1458,7 @@ export default function ArchiveDetailPage() {
               ) : null}
             </article>
             <SuggestionsPanel suggestions={suggestions} title="تحسينات مقترحة لهذا السجل" onFeedback={handleSuggestionFeedback} />
-            <RecordDescribeForm record={state.record} onSave={handleSaveRecord} />
+            {canEditRecords && <RecordDescribeForm record={state.record} onSave={handleSaveRecord} />}
             <RecordNotesPanel
               notes={state.notes}
               loading={state.notesLoading}
@@ -1549,6 +1555,7 @@ export default function ArchiveDetailPage() {
               onCreate={handleCreateRelation}
               onUpdate={handleUpdateRelation}
               onDelete={handleDeleteRelation}
+              canEdit={canEditRecords}
             />
             <GeotagPanel
               record={state.record}

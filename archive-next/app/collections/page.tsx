@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
+import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ArchiveRecord, type Collection, type CreateCollectionPayload } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { buildChangeImpact } from "@/lib/change-impact";
@@ -26,6 +27,7 @@ type CollectionsLoadState =
 
 export default function CollectionsPage() {
   const dialogs = useConfirmDialog();
+  const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -175,37 +177,41 @@ export default function CollectionsPage() {
         )}
         actions={<a className="button button-secondary" href="/archive">فتح الأرشيف</a>}
       >
-        <form className="archive-toolbar-grid" onSubmit={addCollection}>
-          <label>
-            <span>اسم المجموعة</span>
-            <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="مثال: مواد تحتاج مراجعة" />
-          </label>
-          <label>
-            <span>بحث داخلي</span>
-            <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="كلمة أو وصف" />
-          </label>
-          <label>
-            <span>النوع</span>
-            <select value={type} onChange={(event) => setType(event.target.value)}>
-              <option value="all">كل الأنواع</option>
-              {types.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>وسم</span>
-            <select value={tag} onChange={(event) => setTag(event.target.value)}>
-              <option value="all">كل الوسوم</option>
-              {tags.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          <div className="archive-toolbar-actions">
-            <button className="button button-primary" type="submit" disabled={!name.trim()}>حفظ المجموعة</button>
-          </div>
-        </form>
+        {canManageCollections ? (
+          <form className="archive-toolbar-grid" onSubmit={addCollection}>
+            <label>
+              <span>اسم المجموعة</span>
+              <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="مثال: مواد تحتاج مراجعة" />
+            </label>
+            <label>
+              <span>بحث داخلي</span>
+              <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="كلمة أو وصف" />
+            </label>
+            <label>
+              <span>النوع</span>
+              <select value={type} onChange={(event) => setType(event.target.value)}>
+                <option value="all">كل الأنواع</option>
+                {types.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>وسم</span>
+              <select value={tag} onChange={(event) => setTag(event.target.value)}>
+                <option value="all">كل الوسوم</option>
+                {tags.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <div className="archive-toolbar-actions">
+              <button className="button button-primary" type="submit" disabled={!name.trim()}>حفظ المجموعة</button>
+            </div>
+          </form>
+        ) : (
+          <p className="helper-text">لا تملك صلاحية إنشاء مجموعات جديدة.</p>
+        )}
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
 
-      {canUndo(deleteStack) || canRedo(deleteStack) ? (
+      {canManageCollections && (canUndo(deleteStack) || canRedo(deleteStack)) ? (
         <div className="button-row">
           <button
             type="button"
@@ -272,7 +278,9 @@ export default function CollectionsPage() {
                 <p className="helper-text">{state.status === "ready" ? `المعاينة الحالية تشمل ${matches.length} سجل؛ حذف المجموعة لا يغيّر هذه السجلات.` : "تعذر تأكيد عدد السجلات قبل اكتمال التحميل."}</p>
                 <div className="button-row">
                   <a className="button button-primary button-sm" href={searchHref}>عرض النتائج</a>
-                  <button className="button button-danger button-sm" type="button" disabled={state.status !== "ready"} onClick={() => void removeCollection(collection.id)}>حذف</button>
+                  {canManageCollections && (
+                    <button className="button button-danger button-sm" type="button" disabled={state.status !== "ready"} onClick={() => void removeCollection(collection.id)}>حذف</button>
+                  )}
                 </div>
               </article>
             );
@@ -280,7 +288,7 @@ export default function CollectionsPage() {
         </section>
       ) : null}
 
-      {smartSuggestions.length > 0 ? (
+      {canManageCollections && smartSuggestions.length > 0 ? (
         <section className="page-section" aria-labelledby="smart-collections-heading">
           <div className="toolbar-row toolbar-start">
             <h2 id="smart-collections-heading" className="section-heading">اقتراحات ذكية</h2>

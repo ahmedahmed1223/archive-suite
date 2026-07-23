@@ -6,6 +6,7 @@ import { Filter, GitBranch, Link2, Plus, RefreshCw, Search, Trash2 } from "lucid
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import { useCapability } from "@/components/RoleGate";
 import {
   createArchiveApiClient,
   type RelationGraphEdge,
@@ -203,11 +204,13 @@ function GraphCanvas({
 function NodePanel({
   node,
   relatedEdges,
-  onDelete
+  onDelete,
+  canEdit
 }: Readonly<{
   node: RelationGraphNode | null;
   relatedEdges: RelationGraphEdge[];
   onDelete: (edge: RelationGraphEdge) => void;
+  canEdit: boolean;
 }>) {
   if (!node) {
     return (
@@ -257,7 +260,7 @@ function NodePanel({
                   <b>{edge.label}</b>
                   <small>{edgeSummary(edge)}</small>
                 </span>
-                {edge.kind === "manual" && edge.relationId ? (
+                {canEdit && edge.kind === "manual" && edge.relationId ? (
                   <button type="button" className="icon-action" aria-label="حذف العلاقة" onClick={() => onDelete(edge)}>
                     <Trash2 aria-hidden="true" size={16} />
                   </button>
@@ -364,6 +367,7 @@ function RelationForm({
 
 export default function GraphPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const canEditRelations = useCapability("records.edit");
   const [state, setState] = useState<GraphState>({ status: "loading" });
   const [selectedId, setSelectedId] = useState("");
   const [focusId, setFocusId] = useState("");
@@ -597,13 +601,17 @@ export default function GraphPage() {
           </div>
 
           <aside className="graph-sidebar">
-            <NodePanel node={selectedNode} relatedEdges={relatedEdges} onDelete={deleteRelation} />
-            <RelationForm
-              nodes={allNodes}
-              relationTypes={graph.relationTypes}
-              selectedId={selectedId}
-              onCreate={createRelation}
-            />
+            <NodePanel node={selectedNode} relatedEdges={relatedEdges} onDelete={deleteRelation} canEdit={canEditRelations} />
+            {canEditRelations ? (
+              <RelationForm
+                nodes={allNodes}
+                relationTypes={graph.relationTypes}
+                selectedId={selectedId}
+                onCreate={createRelation}
+              />
+            ) : (
+              <p className="helper-text">لا تملك صلاحية إنشاء علاقات جديدة بين السجلات.</p>
+            )}
           </aside>
         </section>
       ) : null}

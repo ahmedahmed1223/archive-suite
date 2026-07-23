@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
+import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ArchiveRecord, type VocabularyTerm } from "@/lib/archive-api";
 import { buildChangeImpact, countAffectedRecords } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
@@ -30,6 +31,7 @@ interface TermDeletion {
 
 export default function VocabularyPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
+  const canManageVocabulary = useCapability("vocabulary.manage");
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
   const [loadState, setLoadState] = useState<VocabularyLoadState>({ status: "loading" });
   const [error, setError] = useState("");
@@ -200,40 +202,51 @@ export default function VocabularyPage() {
         )}
         actions={(
           <>
-            <button type="button" className="button button-secondary" disabled={isImporting} onClick={() => void importDefaultTags()}>استيراد الوسوم الافتراضية</button>
+            {canManageVocabulary && (
+              <button type="button" className="button button-secondary" disabled={isImporting} onClick={() => void importDefaultTags()}>استيراد الوسوم الافتراضية</button>
+            )}
             <a className="button button-secondary" href="/tags">إدارة الوسوم</a>
           </>
         )}
       >
-        <form className="archive-toolbar-grid" onSubmit={addTerm}>
-          <label>
-            <span>المصطلح</span>
-            <input className="search-input" value={term} onChange={(event) => setTerm(event.target.value)} />
-          </label>
-          <label>
-            <span>النوع</span>
-            <select value={kind} onChange={(event) => setKind(event.target.value as Kind)}>
-              <option value="custom">مخصص</option>
-              <option value="type">نوع محتوى</option>
-              <option value="tag">وسم</option>
-            </select>
-          </label>
-          <label>
-            <span>مرادفات</span>
-            <input className="search-input" value={aliases} onChange={(event) => setAliases(event.target.value)} placeholder="افصل بينها بفواصل" />
-          </label>
-          <label>
-            <span>بحث داخل القاموس</span>
-            <input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="مصطلح، وسم، مرادف..." />
-          </label>
-          <label className="full-span">
-            <span>ملاحظة</span>
-            <textarea className="search-input" value={note} onChange={(event) => setNote(event.target.value)} rows={3} />
-          </label>
-          <div className="archive-toolbar-actions">
-            <button className="button button-primary" type="submit" disabled={!term.trim()}>حفظ المصطلح</button>
+        {canManageVocabulary ? (
+          <form className="archive-toolbar-grid" onSubmit={addTerm}>
+            <label>
+              <span>المصطلح</span>
+              <input className="search-input" value={term} onChange={(event) => setTerm(event.target.value)} />
+            </label>
+            <label>
+              <span>النوع</span>
+              <select value={kind} onChange={(event) => setKind(event.target.value as Kind)}>
+                <option value="custom">مخصص</option>
+                <option value="type">نوع محتوى</option>
+                <option value="tag">وسم</option>
+              </select>
+            </label>
+            <label>
+              <span>مرادفات</span>
+              <input className="search-input" value={aliases} onChange={(event) => setAliases(event.target.value)} placeholder="افصل بينها بفواصل" />
+            </label>
+            <label>
+              <span>بحث داخل القاموس</span>
+              <input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="مصطلح، وسم، مرادف..." />
+            </label>
+            <label className="full-span">
+              <span>ملاحظة</span>
+              <textarea className="search-input" value={note} onChange={(event) => setNote(event.target.value)} rows={3} />
+            </label>
+            <div className="archive-toolbar-actions">
+              <button className="button button-primary" type="submit" disabled={!term.trim()}>حفظ المصطلح</button>
+            </div>
+          </form>
+        ) : (
+          <div className="archive-toolbar-grid">
+            <label>
+              <span>بحث داخل القاموس</span>
+              <input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="مصطلح، وسم، مرادف..." />
+            </label>
           </div>
-        </form>
+        )}
       </PageToolbar>
 
       {loadState.status === "loading" ? (
@@ -254,7 +267,7 @@ export default function VocabularyPage() {
 
       {importMessage ? <p className="helper-text" role="status">{importMessage}</p> : null}
 
-      {canUndo(deleteStack) || canRedo(deleteStack) ? (
+      {canManageVocabulary && (canUndo(deleteStack) || canRedo(deleteStack)) ? (
         <div className="button-row">
           <button
             type="button"
@@ -297,7 +310,9 @@ export default function VocabularyPage() {
                   </span>
                   <div className="button-row">
                     <span className="badge">{item.kind}</span>
-                    <button type="button" className="button button-danger button-sm" onClick={() => void removeTerm(item.id)}>حذف</button>
+                    {canManageVocabulary && (
+                      <button type="button" className="button button-danger button-sm" onClick={() => void removeTerm(item.id)}>حذف</button>
+                    )}
                   </div>
                   <span className="helper-text">معاينة: {countAffectedRecords(records, (record) => record.type === item.term || (record.tags || []).includes(item.term))} سجل يستخدم هذا المصطلح؛ حذفه من القاموس لا يعدّل السجلات.</span>
                 </div>
