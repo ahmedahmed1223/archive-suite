@@ -23,17 +23,32 @@ class BackupCommandsTest extends TestCase
 
     private string $backupDir;
 
+    private string $fileRoot;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->backupDir = storage_path('framework/testing/backup-commands-'.uniqid());
         config(['archive.backup_path' => $this->backupDir]);
+
+        // V1-121's dumpFiles() walks the real archive.file_root recursively
+        // and loads every file's full content into memory. Left pointed at
+        // the shared storage_path('app/private') — which every upload/media/
+        // ingest test writes into and none of them clean up — a long test
+        // session accumulates enough real files there to exhaust PHP's
+        // memory_limit on an unrelated backup-mechanics test. This class
+        // never asserts on file/manifest content, only table backup/restore,
+        // so an isolated empty directory is both correct and immune to
+        // whatever the rest of the suite has left lying around.
+        $this->fileRoot = storage_path('framework/testing/backup-commands-files-'.uniqid());
+        config(['archive.file_root' => $this->fileRoot]);
     }
 
     protected function tearDown(): void
     {
         File::deleteDirectory($this->backupDir);
+        File::deleteDirectory($this->fileRoot);
 
         parent::tearDown();
     }

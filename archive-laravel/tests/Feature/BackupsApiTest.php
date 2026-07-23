@@ -15,17 +15,27 @@ class BackupsApiTest extends TestCase
 
     private string $backupDir;
 
+    private string $fileRoot;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->backupDir = storage_path('framework/testing/backups-'.uniqid());
         config(['archive.backup_path' => $this->backupDir]);
+
+        // Same isolation as BackupCommandsTest: dumpFiles() walks the real
+        // archive.file_root and loads every file into memory, so leaving it
+        // pointed at the shared storage_path('app/private') risks OOM once
+        // enough unrelated tests have left files there over a long session.
+        $this->fileRoot = storage_path('framework/testing/backups-files-'.uniqid());
+        config(['archive.file_root' => $this->fileRoot]);
     }
 
     protected function tearDown(): void
     {
         File::deleteDirectory($this->backupDir);
+        File::deleteDirectory($this->fileRoot);
 
         parent::tearDown();
     }
