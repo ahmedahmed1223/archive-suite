@@ -2,8 +2,13 @@ import { expect, test } from './fixtures/auth';
 import { WHATS_NEW_RELEASE, WHATS_NEW_STORAGE_KEY } from '../lib/whats-new';
 
 const ui = expect.configure({ timeout: 15_000 });
-const requested = process.env.ARCHIVE_ACCEPTANCE_SCENARIO_ID;
-const enabled = (id: string) => !requested || requested === id;
+const requested = new Set(
+  (process.env.ARCHIVE_ACCEPTANCE_SCENARIO_IDS ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean),
+);
+const enabled = (id: string) => requested.size === 0 || requested.has(id);
 
 function canonicalAcknowledgementIsAvailable(): void {
   if (!WHATS_NEW_STORAGE_KEY || !WHATS_NEW_RELEASE) throw new Error('canonical Whats New acknowledgement constants are required');

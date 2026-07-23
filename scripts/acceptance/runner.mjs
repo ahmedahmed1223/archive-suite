@@ -9,6 +9,7 @@ import { ACCEPTANCE_SCENARIOS, selectScenarios } from "./registry.mjs";
 
 export const AUTH_BUDGET = Object.freeze({ loginsPerMinute: 30, refreshesPerMinute: 120 });
 export const RUN_DEADLINE_MS = 15 * 60_000;
+export const CLEANUP_DEADLINE_MS = 60_000;
 
 export class AcceptanceInputError extends Error {
   constructor(message, options) {
@@ -144,6 +145,7 @@ async function executeWithOneFlakeRetry({
   runSignal,
   setTimer,
   clearTimer,
+  selectedScenarioIds,
 }) {
   let result;
   const attemptResults = [];
@@ -162,7 +164,7 @@ async function executeWithOneFlakeRetry({
     try {
       const aborted = abortPromise(signal);
       const execution = Promise.resolve().then(
-        () => executeScenario({ scenario, provider, evidenceStore, attempt, signal }),
+        () => executeScenario({ scenario, provider, evidenceStore, attempt, signal, selectedScenarioIds }),
       );
       result = normalizeResult(await Promise.race([execution, aborted]), scenario, attempt);
     } catch (error) {
@@ -177,16 +179,28 @@ async function executeWithOneFlakeRetry({
   return result;
 }
 
-function summarize(results, cleanup) {
+function summarize(results, cleanup, orchestrationFailure) {
   const outcomesPassed = results.every((result) => result.status === "passed");
   const cleanupFailed = !cleanup.keptForDiagnostics && !cleanup.proved;
-  const status = outcomesPassed && !cleanupFailed
+  const status = outcomesPassed && !cleanupFailed && !orchestrationFailure
     ? "passed"
     : !cleanupFailed && results.every((result) => result.status === "blocked-capability")
       ? "blocked-capability"
       : "failed";
   const exitCode = status === "passed" ? 0 : status === "blocked-capability" ? 2 : 1;
-  return { status, exitCode, results, cleanup };
+  return {
+    status,
+    exitCode,
+    results,
+    cleanup,
+    ...(orchestrationFailure ? {
+      orchestrationFailure: {
+        classification: classifyError(orchestrationFailure, "platform"),
+        reason: reasonForError(orchestrationFailure, "provider-failure"),
+        detail: boundedDiagnosticDetail(orchestrationFailure?.message ?? orchestrationFailure),
+      },
+    } : {}),
+  };
 }
 
 async function persistEvidence(evidenceStore, summary) {
@@ -251,6 +265,7 @@ export async function runAcceptance({
   setTimer = setTimeout,
   clearTimer = clearTimeout,
   runDeadlineMs = RUN_DEADLINE_MS,
+  cleanupDeadlineMs = CLEANUP_DEADLINE_MS,
 } = {}) {
   if (!provider) throw new Error("acceptance provider is required");
   if (typeof executeScenario !== "function") throw new Error("executeScenario must be a function");
@@ -269,6 +284,8 @@ export async function runAcceptance({
   const started = dateFrom(now());
   const budget = assertAuthBudget(selected);
   const results = [];
+  let orchestrationFailure;
+  const selectedScenarioIds = selected.map(({ id }) => id);
   let cleanup = { keptForDiagnostics: Boolean(keepEnvironment), proved: false };
   const runController = new AbortController();
   const deadline = setTimer(
@@ -301,9 +318,12 @@ export async function runAcceptance({
         runSignal: runController.signal,
         setTimer,
         clearTimer,
+        selectedScenarioIds,
       }));
     }
+    await provider.collect?.({ signal: runController.signal });
   } catch (error) {
+    orchestrationFailure = error;
     for (const scenario of selected) {
       if (results.some((result) => result.scenarioId === scenario.id)) continue;
       if (missingCapabilities(scenario, provider).length) {
@@ -319,19 +339,39 @@ export async function runAcceptance({
       }
     }
   } finally {
+    try {
+      await executeScenario.cleanup?.();
+    } catch (error) {
+      orchestrationFailure ??= error;
+      cleanup = { keptForDiagnostics: false, proved: false };
+    }
     if (!keepEnvironment) {
+      const cleanupController = new AbortController();
+      const cleanupTimeout = setTimer(
+        () => cleanupController.abort(timeoutError("scenario-timeout", cleanupDeadlineMs)),
+        cleanupDeadlineMs,
+      );
       try {
-        const destroyed = await provider.destroy?.();
+        const destroyed = await Promise.race([
+          Promise.resolve().then(() => provider.destroy?.({ signal: cleanupController.signal })),
+          abortPromise(cleanupController.signal),
+        ]);
         cleanup = { keptForDiagnostics: false, proved: destroyed?.proved === true };
-      } catch {
-        cleanup = { keptForDiagnostics: false, proved: false };
+      } catch (error) {
+        cleanup = {
+          keptForDiagnostics: false,
+          proved: false,
+          ...(cleanupController.signal.aborted ? { timedOut: true } : {}),
+        };
+      } finally {
+        clearTimer(cleanupTimeout);
       }
     }
   }
 
   clearTimer(deadline);
   const finished = dateFrom(now());
-  const summary = summarize(results, cleanup);
+  const summary = summarize(results, cleanup, orchestrationFailure);
   const finalResult = {
     ...summary,
     ...sanitize(runMetadata),
@@ -339,7 +379,7 @@ export async function runAcceptance({
     finishedAt: finished.toISOString(),
     durationMs: Math.max(0, finished.getTime() - started.getTime()),
     budget,
-    selected: selected.map(({ id }) => id),
+    selected: selectedScenarioIds,
     provider: providerSummary(provider),
   };
   await persistEvidence(evidenceStore, finalResult);

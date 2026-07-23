@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { PassThrough } from "node:stream";
 import test from "node:test";
 
@@ -12,6 +15,17 @@ const scenario = (id) => ({ id, title: id, tags: ["smoke"], capabilities: ["dock
 
 function commandResult(payload) {
   return { status: 0, stdout: `${JSON.stringify(payload)}\n`, stderr: "" };
+}
+
+function reportFor(outcomes) {
+  return {
+    suites: [{
+      specs: Object.entries(outcomes).map(([id, status]) => ({
+        title: `${id} journey`,
+        tests: [{ status: status === "passed" ? "expected" : "unexpected", results: [{ status }] }],
+      })),
+    }],
+  };
 }
 
 test("V1-804 exposes exactly the five stable smoke scenario IDs", () => {
@@ -75,10 +89,17 @@ test("backup smoke verifies only the basename emitted by the real backup command
 test("all browser journeys share one direct authenticated Playwright invocation against the provider stack", async () => {
   const calls = [];
   const execute = createSmokeScenarioExecutor({
-    browserJourney: async (input) => { calls.push(input); return { status: 0, stdout: "", stderr: "" }; },
+    browserJourney: async (input) => {
+      calls.push(input);
+      return { status: 0, stdout: "", stderr: "", report: reportFor({
+        "V1-IA-ARCH-001": "passed",
+        "V1-IA-ADMIN-001": "passed",
+        "V1-IA-MULTI-001": "passed",
+      }) };
+    },
   });
   for (const id of ["V1-IA-ARCH-001", "V1-IA-ADMIN-001", "V1-IA-MULTI-001"]) {
-    const result = await execute({ scenario: scenario(id), provider: { endpoints: { next: "http://127.0.0.1:43123", api: "http://127.0.0.1:43123/api/v1" }, credentials: { email: "admin@test", password: "not-in-evidence" } }, evidenceStore: { directory: "C:/temp/evidence" } });
+    const result = await execute({ scenario: scenario(id), selectedScenarioIds: ["V1-IA-ARCH-001", "V1-IA-ADMIN-001", "V1-IA-MULTI-001"], attempt: 1, provider: { endpoints: { next: "http://127.0.0.1:43123", api: "http://127.0.0.1:43123/api/v1" }, credentials: { email: "admin@test", password: "not-in-evidence" } }, evidenceStore: { directory: "C:/temp/evidence" } });
     assert.equal(result.status, "passed");
   }
   assert.equal(calls.length, 1);
@@ -87,19 +108,108 @@ test("all browser journeys share one direct authenticated Playwright invocation 
   ]);
   assert.equal(calls[0].env.E2E_BASE_URL, "http://127.0.0.1:43123");
   assert.equal(calls[0].env.ARCHIVE_E2E_EMAIL, "admin@test");
+  assert.equal(calls[0].env.ARCHIVE_ACCEPTANCE_SCENARIO_IDS, "V1-IA-ARCH-001,V1-IA-ADMIN-001,V1-IA-MULTI-001");
+});
+
+test("batched browser JSON maps mixed outcomes independently per scenario", async () => {
+  const execute = createSmokeScenarioExecutor({
+    browserJourney: async () => ({
+      status: 1,
+      stdout: "",
+      stderr: "one test failed",
+      report: reportFor({
+        "V1-IA-ARCH-001": "passed",
+        "V1-IA-ADMIN-001": "failed",
+      }),
+    }),
+  });
+  const context = {
+    selectedScenarioIds: ["V1-IA-ARCH-001", "V1-IA-ADMIN-001"],
+    attempt: 1,
+    provider: { endpoints: { next: "http://127.0.0.1:1", api: "http://127.0.0.1:1/api/v1" }, credentials: { email: "a", password: "b" } },
+    evidenceStore: { directory: join(tmpdir(), "acceptance-mixed") },
+  };
+  const passed = await execute({ ...context, scenario: scenario("V1-IA-ARCH-001") });
+  const failed = await execute({ ...context, scenario: scenario("V1-IA-ADMIN-001") });
+  assert.equal(passed.status, "passed");
+  assert.equal(failed.status, "failed");
+});
+
+test("one-id selection targets only that browser journey", async () => {
+  const calls = [];
+  const execute = createSmokeScenarioExecutor({
+    browserJourney: async (input) => {
+      calls.push(input);
+      return { status: 0, report: reportFor({ "V1-IA-ADMIN-001": "passed" }) };
+    },
+  });
+  const result = await execute({
+    scenario: scenario("V1-IA-ADMIN-001"),
+    selectedScenarioIds: ["V1-IA-ADMIN-001"],
+    attempt: 1,
+    provider: { endpoints: { next: "http://127.0.0.1:1", api: "http://127.0.0.1:1/api/v1" }, credentials: { email: "a", password: "b" } },
+    evidenceStore: { directory: join(tmpdir(), "acceptance-single") },
+  });
+  assert.equal(result.status, "passed");
+  assert.equal(calls[0].env.ARCHIVE_ACCEPTANCE_SCENARIO_IDS, "V1-IA-ADMIN-001");
+});
+
+test("flake retry starts a new child targeted only to the flaky scenario", async () => {
+  const calls = [];
+  const execute = createSmokeScenarioExecutor({
+    browserJourney: async (input) => {
+      calls.push(input);
+      return calls.length === 1
+        ? { status: 1, stderr: "socket hang up", report: reportFor({ "V1-IA-ARCH-001": "failed" }) }
+        : { status: 0, report: reportFor({ "V1-IA-ARCH-001": "passed" }) };
+    },
+  });
+  const base = {
+    scenario: scenario("V1-IA-ARCH-001"),
+    selectedScenarioIds: ["V1-IA-ARCH-001", "V1-IA-ADMIN-001"],
+    provider: { endpoints: { next: "http://127.0.0.1:1", api: "http://127.0.0.1:1/api/v1" }, credentials: { email: "a", password: "b" } },
+    evidenceStore: { directory: join(tmpdir(), "acceptance-retry") },
+  };
+  const first = await execute({ ...base, attempt: 1 });
+  const second = await execute({ ...base, attempt: 2 });
+  assert.equal(first.classification, "flake");
+  assert.equal(second.status, "passed");
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].env.ARCHIVE_ACCEPTANCE_SCENARIO_IDS, "V1-IA-ARCH-001");
+});
+
+test("acceptance auth state is run-scoped and removed after Playwright completes", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "acceptance-auth-cleanup-"));
+  let authDirectory;
+  const execute = createSmokeScenarioExecutor({
+    browserJourney: async (input) => {
+      authDirectory = input.env.ARCHIVE_E2E_AUTH_DIR;
+      mkdirSync(authDirectory, { recursive: true });
+      writeFileSync(join(authDirectory, "editor.json"), "va_refresh=live-cookie");
+      return { status: 0, report: reportFor({ "V1-IA-ARCH-001": "passed" }) };
+    },
+  });
+  await execute({
+    scenario: scenario("V1-IA-ARCH-001"),
+    selectedScenarioIds: ["V1-IA-ARCH-001"],
+    attempt: 1,
+    provider: { endpoints: { next: "http://127.0.0.1:1", api: "http://127.0.0.1:1/api/v1" }, credentials: { email: "a", password: "b" } },
+    evidenceStore: { directory },
+  });
+  assert.ok(authDirectory.startsWith(directory));
+  assert.equal(existsSync(authDirectory), false);
+  assert.equal(existsSync(join(process.cwd(), "archive-next", "e2e", ".auth")), false);
 });
 
 test("failed operational or browser checks produce deterministic product evidence", async () => {
   const execute = createSmokeScenarioExecutor({ browserJourney: async () => ({ status: 1, stderr: "failed" }) });
   const result = await execute({ scenario: scenario("V1-IA-ARCH-001"), provider: { endpoints: { next: "http://127.0.0.1:1", api: "http://127.0.0.1:1/api/v1" }, credentials: { email: "a", password: "b" } }, evidenceStore: { directory: "C:/temp/evidence" } });
-  assert.deepEqual(result, {
-    scenarioId: "V1-IA-ARCH-001",
-    status: "failed",
-    classification: "product",
-    evidence: { kind: "playwright", scenarioId: "V1-IA-ARCH-001", refs: ["playwright/", "playwright-results.json"] },
-    reason: "browser-exit",
-    detail: "failed",
-  });
+  assert.equal(result.scenarioId, "V1-IA-ARCH-001");
+  assert.equal(result.status, "failed");
+  assert.equal(result.classification, "product");
+  assert.equal(result.reason, "browser-exit");
+  assert.equal(result.detail, "failed");
+  assert.ok(result.evidence.refs.some((ref) => ref.includes("playwright-results-arch-001-attempt-1.json")));
 });
 
 test("browser execution receives the runner signal and classifies concrete exit failures", async () => {

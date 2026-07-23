@@ -32,7 +32,7 @@ test("docker provider scopes every lifecycle command and passes isolated port en
   assert.equal(existsSync(envFile), false);
   assert.ok(calls.every(([cmd]) => cmd === "docker"));
   const composeCalls = calls.filter(([, args]) => args[0] === "compose");
-  assert.equal(composeCalls.length, 8);
+  assert.equal(composeCalls.length, 9);
   for (const [, args] of composeCalls) {
     assert.deepEqual(args.slice(0, 5), ["compose", "--project-name", "archive-acceptance-run-001", "--env-file", args[4]]);
     assert.match(args[4], /archive-acceptance-run-001-.*compose\.env$/i);
@@ -123,5 +123,30 @@ test("provider forwards runner abort signals to spawned Docker work", async () =
   assert.equal(calls[0][2].signal, controller.signal);
   await provider.exec("laravel", ["php", "artisan", "about"], { signal: controller.signal });
   assert.equal(calls[1][2].signal, controller.signal);
+  await provider.destroy();
+});
+
+test("provider collects non-empty service image digest provenance", async () => {
+  const digest = `sha256:${"a".repeat(64)}`;
+  const provider = createDockerProvider({
+    root: "D:/repo",
+    runId: "run-006",
+    run: async (cmd, args) => {
+      if (args.includes("images")) {
+        return { status: 0, stdout: `${JSON.stringify({ Service: "next", Repository: "archive-next", Tag: "rc", ID: digest })}\n`, stderr: "" };
+      }
+      if (args[0] === "compose" && args.includes("ps")) return { status: 0, stdout: JSON.stringify([{ Service: "next", State: "running" }]), stderr: "" };
+      return { status: 0, stdout: args[0] === "compose" ? "[]" : "", stderr: "" };
+    },
+    getFreePort: async () => 43126,
+  });
+  await provider.prepare();
+  await provider.start();
+  await provider.collect();
+  assert.deepEqual(provider.describe().imageDigests, [{
+    service: "next",
+    image: "archive-next:rc",
+    digest,
+  }]);
   await provider.destroy();
 });

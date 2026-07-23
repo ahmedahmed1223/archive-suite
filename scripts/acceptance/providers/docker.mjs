@@ -76,6 +76,7 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
     "--file", COMPOSE_FILE,
   ];
   let ports;
+  let imageDigests = [];
   const ensurePorts = async () => {
     ports ??= Object.freeze({ next: await getFreePort(), reverb: await getFreePort() });
     return ports;
@@ -109,7 +110,7 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
         project: projectName,
         resources: { publishedPorts: allocated },
         endpoints: ports ? provider.endpoints : {},
-        imageDigests: [],
+        imageDigests: [...imageDigests],
       };
     },
 
@@ -133,8 +134,35 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
       return invoke([...composeArgs(), "exec", "-T", service, ...args], `Docker Compose exec for ${service}`, { signal });
     },
 
-    async collect() {
-      return invoke([...composeArgs(), "ps", "--all", "--format", "json"], "Docker Compose status collection");
+    async collect({ signal } = {}) {
+      const status = await invoke([...composeArgs(), "ps", "--all", "--format", "json"], "Docker Compose status collection", { signal });
+      const images = await invoke([...composeArgs(), "images", "--format", "json"], "Docker Compose image provenance collection", { signal });
+      const raw = String(images.stdout ?? "").trim();
+      let records = [];
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          records = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          records = raw.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+        }
+      }
+      imageDigests = records.flatMap((record) => {
+        const digest = record.ID ?? record.Id ?? record.Digest;
+        const repository = record.Repository ?? record.Image;
+        if (typeof digest !== "string" || !/^sha256:[a-f0-9]{64}$/i.test(digest)) return [];
+        return [{
+          ...(record.Service ? { service: String(record.Service) } : {}),
+          image: record.Tag && repository ? `${repository}:${record.Tag}` : String(repository ?? digest),
+          digest: digest.toLowerCase(),
+        }];
+      });
+      const statusText = String(status.stdout ?? "").trim();
+      const hasServices = statusText !== "" && statusText !== "[]";
+      if (hasServices && imageDigests.length === 0) {
+        throw new Error("Docker Compose image provenance was empty for running services");
+      }
+      return { status, imageDigests: [...imageDigests] };
     },
 
     async reset() {
@@ -142,14 +170,14 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
       return provider.start();
     },
 
-    async destroy() {
+    async destroy({ signal } = {}) {
       try {
-        await invoke([...composeArgs(), "down", "--volumes", "--remove-orphans"], "Docker Compose cleanup");
+        await invoke([...composeArgs(), "down", "--volumes", "--remove-orphans"], "Docker Compose cleanup", { signal });
         const ownershipFilter = `label=com.docker.compose.project=${projectName}`;
         const resourceChecks = await Promise.all([
-          invoke(["ps", "--all", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker container cleanup verification"),
-          invoke(["network", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker network cleanup verification"),
-          invoke(["volume", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker volume cleanup verification"),
+          invoke(["ps", "--all", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker container cleanup verification", { signal }),
+          invoke(["network", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker network cleanup verification", { signal }),
+          invoke(["volume", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker volume cleanup verification", { signal }),
         ]);
         const leftoverTypes = ["containers", "networks", "volumes"].filter((_, index) => String(resourceChecks[index].stdout ?? "").trim());
         if (leftoverTypes.length) throw new Error(`Docker cleanup left leftover ${leftoverTypes.join(", ")} for project ${projectName}`);

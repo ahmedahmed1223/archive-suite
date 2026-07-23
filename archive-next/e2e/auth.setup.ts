@@ -1,9 +1,10 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { request as playwrightRequest, test as setup } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
 import {
   PROVISION_MANIFEST_PATH,
+  AUTH_DIRECTORY,
   ROLE_ACCOUNTS,
   ROLE_NAMES,
   type ProvisionManifest,
@@ -24,8 +25,6 @@ import {
  * 429 — the exact trap next-laravel-integration.spec.ts already documents.
  * Logging in once per role for the whole run costs 3 of the 10.
  */
-
-const AUTH_DIR = 'e2e/.auth';
 
 interface Envelope {
   ok?: boolean;
@@ -173,7 +172,7 @@ setup('provision isolated role accounts and data', async ({ browser }) => {
 
   const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000';
 
-  await mkdir(AUTH_DIR, { recursive: true });
+  await mkdir(AUTH_DIRECTORY, { recursive: true, mode: 0o700 });
 
   const api = await playwrightRequest.newContext({ baseURL });
 
@@ -227,6 +226,7 @@ setup('provision isolated role accounts and data', async ({ browser }) => {
       }
 
       await context.storageState({ path: storageStatePath(role) });
+      await chmod(storageStatePath(role), 0o600);
       await context.close();
     }
 
@@ -245,7 +245,7 @@ setup('provision isolated role accounts and data', async ({ browser }) => {
     await writeFile(
       path.resolve(PROVISION_MANIFEST_PATH),
       `${JSON.stringify(manifest, null, 2)}\n`,
-      'utf8',
+      { encoding: 'utf8', mode: 0o600 },
     );
   } finally {
     await api.dispose();

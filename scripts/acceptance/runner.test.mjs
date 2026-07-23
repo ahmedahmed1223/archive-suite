@@ -264,6 +264,23 @@ test("tag-only CLI selection executes every matching registry scenario", async (
   assert.equal(result.exitCode, 0);
 });
 
+test("runner passes the complete selected scenario id set to every execution attempt", async () => {
+  const secondScenario = { ...scenario, id: "V1-IA-ADMIN-001" };
+  const selections = [];
+  await runAcceptance({
+    scenarios: [scenario, secondScenario],
+    provider: providerFake(),
+    executeScenario: async ({ scenario: current, selectedScenarioIds }) => {
+      selections.push([current.id, selectedScenarioIds]);
+      return { scenarioId: current.id, status: "passed" };
+    },
+  });
+  assert.deepEqual(selections, [
+    [scenario.id, [scenario.id, secondScenario.id]],
+    [secondScenario.id, [scenario.id, secondScenario.id]],
+  ]);
+});
+
 test("legal smoke CLI uses the registered scenario executor when none is injected", async () => {
   const executed = [];
   const exitCode = await main(["run", "--tag", "smoke"], {
@@ -452,4 +469,27 @@ test("CLI resolves run metadata before creating a provider with temporary creden
   });
   assert.equal(exitCode, 1);
   assert.equal(providerCreated, false);
+});
+
+test("runner bounds destroy independently and reports cleanup unproved on timeout", async () => {
+  const timers = [];
+  const resultPromise = runAcceptance({
+    scenarios: [scenario],
+    provider: providerFake({ destroy: async () => new Promise(() => {}) }),
+    executeScenario: async () => ({ scenarioId: scenario.id, status: "passed" }),
+    setTimer: (callback, milliseconds) => {
+      const timer = { callback, milliseconds };
+      timers.push(timer);
+      return timer;
+    },
+    clearTimer: () => {},
+    cleanupDeadlineMs: 250,
+  });
+  while (!timers.some(({ milliseconds }) => milliseconds === 250)) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  timers.find(({ milliseconds }) => milliseconds === 250).callback();
+  const result = await resultPromise;
+  assert.deepEqual(result.cleanup, { keptForDiagnostics: false, proved: false, timedOut: true });
+  assert.equal(result.exitCode, 1);
 });

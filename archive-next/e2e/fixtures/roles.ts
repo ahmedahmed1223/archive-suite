@@ -74,11 +74,12 @@ export const ROLE_ACCOUNTS: Readonly<Record<RoleName, RoleAccount>> = {
 
 /** Storage-state file per role, written by global-setup.ts. */
 export function storageStatePath(role: RoleName): string {
-  return `e2e/.auth/${role}.json`;
+  return path.join(AUTH_DIRECTORY, `${role}.json`);
 }
 
 /** Manifest of what global-setup actually provisioned, read back by specs. */
-export const PROVISION_MANIFEST_PATH = 'e2e/.auth/manifest.json';
+export const AUTH_DIRECTORY = process.env.ARCHIVE_E2E_AUTH_DIR ?? 'e2e/.auth';
+export const PROVISION_MANIFEST_PATH = path.join(AUTH_DIRECTORY, 'manifest.json');
 
 export interface RoleData {
   readonly recordUid: string;
@@ -100,3 +101,4 @@ export function roleDataFor(account: RoleAccount): Omit<RoleData, 'mediaJobId'> 
     rightsItemId: `${account.namespace}-record-1`,
   };
 }
+import path from 'node:path';
