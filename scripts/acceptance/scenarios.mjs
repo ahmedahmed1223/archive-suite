@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { join } from "node:path";
 
 export const SMOKE_SCENARIO_IDS = Object.freeze([
   "V1-IA-PLAT-001",
@@ -48,6 +49,12 @@ function result(scenarioId, status, classification, evidence) {
   return { scenarioId, status, classification, evidence };
 }
 
+async function saveEvidence(store, name, value) {
+  if (!store?.writeArtifact) return [];
+  await store.writeArtifact(name, value);
+  return [name];
+}
+
 function commandSucceeded(commandResult) {
   return commandResult?.status === 0;
 }
@@ -66,46 +73,52 @@ function isSafeBackupName(name) {
   return typeof name === "string" && name.length > 0 && !/[\\/]/.test(name) && name === name.split(/[\\/]/).pop();
 }
 
-async function platformBoot({ scenario, provider }) {
+async function platformBoot({ scenario, provider, evidenceStore, attempt = 1 }) {
   const health = await provider.exec("laravel", ["curl", "--fail", "--silent", "--show-error", "http://localhost:8000/api/v1/health"]);
   const worker = await provider.exec("laravel-worker", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"]);
   const reverb = await provider.exec("laravel-reverb", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[r]everb:start'"]);
-  const evidence = { kind: "readiness", scenarioId: scenario.id, checks: ["api-health", "worker", "reverb"] };
+  const refs = await saveEvidence(evidenceStore, `${scenario.id}-attempt-${attempt}-readiness.json`, { health, worker, reverb });
+  const evidence = { kind: "readiness", scenarioId: scenario.id, checks: ["api-health", "worker", "reverb"], refs };
   return commandSucceeded(health) && commandSucceeded(worker) && commandSucceeded(reverb)
     ? result(scenario.id, "passed", "product", evidence)
     : result(scenario.id, "failed", "product", evidence);
 }
 
-async function backupAndVerify({ scenario, provider }) {
+async function backupAndVerify({ scenario, provider, evidenceStore, attempt = 1 }) {
   const backup = await provider.exec("laravel-fpm", ["php", "artisan", "archive:backup-run", "--json"]);
   const created = parseCommandJson(backup);
   const name = created?.ok === true ? created?.details?.backup?.name : null;
-  const evidence = { kind: "backup", scenarioId: scenario.id, checks: ["backup-created", "backup-verified"] };
+  const refs = await saveEvidence(evidenceStore, `${scenario.id}-attempt-${attempt}-backup.json`, { backup: created });
+  const evidence = { kind: "backup", scenarioId: scenario.id, checks: ["backup-created", "backup-verified"], refs };
   if (!commandSucceeded(backup) || !isSafeBackupName(name)) return result(scenario.id, "failed", "product", evidence);
 
   const verified = await provider.exec("laravel-fpm", ["php", "artisan", "archive:backup-verify", name, "--json"]);
   const verification = parseCommandJson(verified);
+  refs.push(...await saveEvidence(evidenceStore, `${scenario.id}-attempt-${attempt}-backup-verify.json`, { verification }));
   return commandSucceeded(verified) && verification?.ok === true
     ? result(scenario.id, "passed", "product", evidence)
     : result(scenario.id, "failed", "product", evidence);
 }
 
-function browserCommand(scenarioId) {
+function browserCommand(provider, evidenceStore) {
   return {
     command: "pnpm",
-    args: ["verify:laravel-next:live"],
+    args: ["--filter", "@archive/next", "exec", "playwright", "test", "e2e/acceptance-smoke.authed.spec.ts", "--project", "authenticated"],
     env: {
-      // The owning spec imports acknowledgement keys/releases from the app's
-      // real constants and calls roleSession once per browser context.
-      ARCHIVE_E2E_SPECS: "e2e/acceptance-smoke.spec.ts",
-      ARCHIVE_ACCEPTANCE_SCENARIO_ID: scenarioId,
+      E2E_BASE_URL: provider.endpoints.next,
+      ARCHIVE_API_BASE_URL: provider.endpoints.api,
+      ARCHIVE_E2E_EMAIL: provider.credentials.email,
+      ARCHIVE_E2E_PASSWORD: provider.credentials.password,
+      PLAYWRIGHT_OUTPUT_DIR: join(evidenceStore.directory, "playwright"),
+      ARCHIVE_ACCEPTANCE_RESULT_PATH: join(evidenceStore.directory, "playwright-results.json"),
     },
   };
 }
 
-async function browserSmoke({ scenario, browserJourney }) {
-  const run = await browserJourney(browserCommand(scenario.id));
-  const evidence = { kind: "playwright", scenarioId: scenario.id };
+async function browserSmoke({ scenario, provider, evidenceStore, browserJourney, browserRun }) {
+  const run = await browserRun.run(() => browserJourney(browserCommand(provider, evidenceStore)));
+  const refs = await saveEvidence(evidenceStore, `${scenario.id}-playwright.json`, { status: run.status, stdout: run.stdout, stderr: run.stderr, output: "playwright/", result: "playwright-results.json" });
+  const evidence = { kind: "playwright", scenarioId: scenario.id, refs: [...refs, "playwright/", "playwright-results.json"] };
   return commandSucceeded(run)
     ? result(scenario.id, "passed", "product", evidence)
     : result(scenario.id, "failed", "product", evidence);
@@ -114,12 +127,14 @@ async function browserSmoke({ scenario, browserJourney }) {
 /** Creates the `runner.mjs` executeScenario callback without owning runner wiring. */
 export function createSmokeScenarioExecutor({ browserJourney = defaultBrowserJourney } = {}) {
   if (typeof browserJourney !== "function") throw new Error("browserJourney must be a function");
+  let cachedBrowserRun;
+  const browserRun = { run: (start) => cachedBrowserRun ??= start() };
   return async function executeSmokeScenario(context) {
     const scenarioId = context?.scenario?.id;
     if (!SMOKE_SCENARIO_IDS.includes(scenarioId)) throw new Error(`unknown V1-804 scenario: ${scenarioId}`);
     if (scenarioId === "V1-IA-PLAT-001") return platformBoot(context);
     if (scenarioId === "V1-IA-ADMIN-002") return backupAndVerify(context);
-    if (BROWSER_SCENARIOS.has(scenarioId)) return browserSmoke({ ...context, browserJourney });
+    if (BROWSER_SCENARIOS.has(scenarioId)) return browserSmoke({ ...context, browserJourney, browserRun });
     throw new Error(`no V1-804 handler for ${scenarioId}`);
   };
 }

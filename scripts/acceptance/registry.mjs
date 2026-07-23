@@ -14,10 +14,13 @@ const scenario = (id, title, loginSessions) => validateScenario({
 
 export const ACCEPTANCE_SCENARIOS = Object.freeze([
   scenario("V1-IA-PLAT-001", "Docker platform boot and readiness", 0),
-  scenario("V1-IA-ARCH-001", "Archivist login, search, and record open", 1),
-  scenario("V1-IA-ADMIN-001", "Administrator system health", 1),
-  scenario("V1-IA-ADMIN-002", "Administrator backup and verification", 1),
-  scenario("V1-IA-MULTI-001", "Concurrent isolated role sessions", 2),
+  // One authenticated Playwright invocation provisions three roles (4 login
+  // calls including bootstrap) then opens four fresh role contexts. It runs
+  // all browser journeys once and is charged here, not three times.
+  scenario("V1-IA-ARCH-001", "Archivist login, search, and record open", 8),
+  scenario("V1-IA-ADMIN-001", "Administrator system health", 0),
+  scenario("V1-IA-ADMIN-002", "Administrator backup and verification", 0),
+  scenario("V1-IA-MULTI-001", "Concurrent isolated role sessions", 0),
 ]);
 
 export function selectScenarios({ tag, ids } = {}) {

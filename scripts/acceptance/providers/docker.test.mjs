@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import test from "node:test";
 
 import { createDockerProvider } from "./docker.mjs";
@@ -20,20 +21,29 @@ test("docker provider scopes every lifecycle command and passes isolated port en
     getFreePort: async () => ports.shift(),
   });
   await provider.prepare();
+  const envFile = calls[0][1][4];
+  assert.equal(existsSync(envFile), true);
   await provider.install();
   await provider.start();
   await provider.exec("laravel", ["php", "artisan", "about"]);
   await provider.collect();
   await provider.reset();
   await provider.destroy();
+  assert.equal(existsSync(envFile), false);
   assert.ok(calls.every(([cmd]) => cmd === "docker"));
   const composeCalls = calls.filter(([, args]) => args[0] === "compose");
   assert.equal(composeCalls.length, 8);
-  const commonPrefix = ["compose", "--project-name", "archive-acceptance-run-001", "--env-file", "infra/.env.example", "--file", "infra/docker-compose.laravel-next.yml"];
-  for (const [, args] of composeCalls) assert.deepEqual(args.slice(0, commonPrefix.length), commonPrefix);
+  for (const [, args] of composeCalls) {
+    assert.deepEqual(args.slice(0, 5), ["compose", "--project-name", "archive-acceptance-run-001", "--env-file", args[4]]);
+    assert.match(args[4], /archive-acceptance-run-001-.*compose\.env$/i);
+    assert.deepEqual(args.slice(5, 7), ["--file", "infra/docker-compose.laravel-next.yml"]);
+  }
   assert.ok(composeCalls.some(([, args]) => args.includes("down") && args.includes("--remove-orphans")));
   assert.ok(calls.every(([, , options]) => options.env.NEXT_PUBLIC_PORT === "43123" && options.env.REVERB_SERVER_PUBLISHED_PORT === "43124" && options.env.REVERB_PORT === "43124"));
   assert.ok(calls.every(([, , options]) => options.env !== process.env));
+  assert.equal(provider.credentials.email, "acceptance-run-001@archive.test");
+  assert.match(provider.credentials.password, /^Aa1!/);
+  assert.deepEqual(provider.endpoints, { next: "http://127.0.0.1:43123", api: "http://127.0.0.1:43123/api/v1" });
 });
 
 test("destroy fails when leftover containers remain for the project", async () => {

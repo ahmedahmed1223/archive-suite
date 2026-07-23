@@ -68,30 +68,30 @@ test("backup smoke verifies only the basename emitted by the real backup command
   ]);
 });
 
-test("all browser journeys use the supported live Playwright invocation with a fresh-login spec", async () => {
+test("all browser journeys share one direct authenticated Playwright invocation against the provider stack", async () => {
   const calls = [];
   const execute = createSmokeScenarioExecutor({
     browserJourney: async (input) => { calls.push(input); return { status: 0, stdout: "", stderr: "" }; },
   });
   for (const id of ["V1-IA-ARCH-001", "V1-IA-ADMIN-001", "V1-IA-MULTI-001"]) {
-    const result = await execute({ scenario: scenario(id), provider: {} });
+    const result = await execute({ scenario: scenario(id), provider: { endpoints: { next: "http://127.0.0.1:43123", api: "http://127.0.0.1:43123/api/v1" }, credentials: { email: "admin@test", password: "not-in-evidence" } }, evidenceStore: { directory: "C:/temp/evidence" } });
     assert.equal(result.status, "passed");
   }
-  assert.deepEqual(calls.map(({ command, args, env }) => ({ command, args, spec: env.ARCHIVE_E2E_SPECS })), [
-    { command: "pnpm", args: ["verify:laravel-next:live"], spec: "e2e/acceptance-smoke.spec.ts" },
-    { command: "pnpm", args: ["verify:laravel-next:live"], spec: "e2e/acceptance-smoke.spec.ts" },
-    { command: "pnpm", args: ["verify:laravel-next:live"], spec: "e2e/acceptance-smoke.spec.ts" },
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls.map(({ command, args }) => ({ command, args })), [
+    { command: "pnpm", args: ["--filter", "@archive/next", "exec", "playwright", "test", "e2e/acceptance-smoke.authed.spec.ts", "--project", "authenticated"] },
   ]);
-  assert.ok(calls.every(({ env }) => env.ARCHIVE_ACCEPTANCE_SCENARIO_ID));
+  assert.equal(calls[0].env.E2E_BASE_URL, "http://127.0.0.1:43123");
+  assert.equal(calls[0].env.ARCHIVE_E2E_EMAIL, "admin@test");
 });
 
 test("failed operational or browser checks produce deterministic product evidence", async () => {
   const execute = createSmokeScenarioExecutor({ browserJourney: async () => ({ status: 1, stderr: "failed" }) });
-  const result = await execute({ scenario: scenario("V1-IA-ARCH-001"), provider: {} });
+  const result = await execute({ scenario: scenario("V1-IA-ARCH-001"), provider: { endpoints: { next: "http://127.0.0.1:1", api: "http://127.0.0.1:1/api/v1" }, credentials: { email: "a", password: "b" } }, evidenceStore: { directory: "C:/temp/evidence" } });
   assert.deepEqual(result, {
     scenarioId: "V1-IA-ARCH-001",
     status: "failed",
     classification: "product",
-    evidence: { kind: "playwright", scenarioId: "V1-IA-ARCH-001" },
+    evidence: { kind: "playwright", scenarioId: "V1-IA-ARCH-001", refs: ["playwright/", "playwright-results.json"] },
   });
 });

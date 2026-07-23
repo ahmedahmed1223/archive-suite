@@ -1,4 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
+import type { ReporterDescription } from '@playwright/test';
+
+const acceptanceResultPath = process.env.ARCHIVE_ACCEPTANCE_RESULT_PATH;
+const reporters: ReporterDescription[] = acceptanceResultPath
+  ? [['list'], ['json', { outputFile: acceptanceResultPath }]]
+  : [['list'], ['html', { open: 'never' }]];
 
 /**
  * Playwright configuration for the canonical Next.js shell.
@@ -16,7 +22,8 @@ export default defineConfig({
   workers: 1,
   timeout: 30_000,
 
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: reporters,
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR,
 
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000',

@@ -1,9 +1,32 @@
 import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const PROJECT_PREFIX = "archive-acceptance-";
 const PROJECT_NAME_PATTERN = /^archive-acceptance-[a-z0-9-]+$/;
-const COMPOSE_ENV_FILE = "infra/.env.example";
 const COMPOSE_FILE = "infra/docker-compose.laravel-next.yml";
+
+function secret(bytes = 32) { return randomBytes(bytes).toString("base64url"); }
+
+function createRunEnvironment(runId) {
+  const directory = mkdtempSync(join(tmpdir(), `archive-acceptance-${runId}-`));
+  const path = join(directory, "compose.env");
+  const password = `Aa1!${secret(24)}`;
+  const values = {
+    APP_KEY: `base64:${secret(32)}`,
+    ARCHIVE_SECURE_COOKIES: "false",
+    ADMIN_EMAIL: `acceptance-${runId}@archive.test`,
+    ADMIN_NAME: "Acceptance Admin",
+    ADMIN_PASSWORD: password,
+    POSTGRES_PASSWORD: secret(), REDIS_PASSWORD: secret(),
+    REVERB_APP_ID: `acceptance-${runId}`, REVERB_APP_KEY: secret(18), REVERB_APP_SECRET: secret(),
+    JWT_AUTH_SECRET: secret(),
+  };
+  writeFileSync(path, `${Object.entries(values).map(([key, value]) => `${key}=${value}`).join("\n")}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
+  return { directory, path, credentials: Object.freeze({ email: values.ADMIN_EMAIL, password }) };
+}
 
 function defaultRun(command, args, { root, env } = {}) {
   return new Promise((resolve, reject) => {
@@ -44,10 +67,11 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
   if (typeof getFreePort !== "function") throw new Error("getFreePort is required");
 
   const execute = run ?? ((command, args, options) => defaultRun(command, args, options));
+  const runEnvironment = createRunEnvironment(runId);
   const composeArgs = () => [
     "compose",
     "--project-name", projectName,
-    "--env-file", COMPOSE_ENV_FILE,
+    "--env-file", runEnvironment.path,
     "--file", COMPOSE_FILE,
   ];
   let ports;
@@ -69,6 +93,11 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
   const provider = {
     capabilities: Object.freeze(["docker"]),
     projectName,
+    credentials: runEnvironment.credentials,
+    get endpoints() {
+      if (!ports) throw new Error("Docker endpoints are unavailable before prepare");
+      return Object.freeze({ next: `http://127.0.0.1:${ports.next}`, api: `http://127.0.0.1:${ports.next}/api/v1` });
+    },
 
     async prepare() {
       await ensurePorts();
@@ -100,18 +129,18 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
     },
 
     async destroy() {
-      await invoke([...composeArgs(), "down", "--volumes", "--remove-orphans"], "Docker Compose cleanup");
-      const ownershipFilter = `label=com.docker.compose.project=${projectName}`;
-      const resourceChecks = await Promise.all([
-        invoke(["ps", "--all", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker container cleanup verification"),
-        invoke(["network", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker network cleanup verification"),
-        invoke(["volume", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker volume cleanup verification"),
-      ]);
-      const leftoverTypes = ["containers", "networks", "volumes"].filter(
-        (_, index) => String(resourceChecks[index].stdout ?? "").trim(),
-      );
-      if (leftoverTypes.length) {
-        throw new Error(`Docker cleanup left leftover ${leftoverTypes.join(", ")} for project ${projectName}`);
+      try {
+        await invoke([...composeArgs(), "down", "--volumes", "--remove-orphans"], "Docker Compose cleanup");
+        const ownershipFilter = `label=com.docker.compose.project=${projectName}`;
+        const resourceChecks = await Promise.all([
+          invoke(["ps", "--all", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker container cleanup verification"),
+          invoke(["network", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker network cleanup verification"),
+          invoke(["volume", "ls", "--filter", ownershipFilter, "--format", "{{.ID}}"], "Docker volume cleanup verification"),
+        ]);
+        const leftoverTypes = ["containers", "networks", "volumes"].filter((_, index) => String(resourceChecks[index].stdout ?? "").trim());
+        if (leftoverTypes.length) throw new Error(`Docker cleanup left leftover ${leftoverTypes.join(", ")} for project ${projectName}`);
+      } finally {
+        rmSync(runEnvironment.directory, { recursive: true, force: true });
       }
       return { projectName, proved: true };
     },
