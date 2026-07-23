@@ -7,6 +7,7 @@ import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwit
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
+import { useCapability } from "@/components/RoleGate";
 import {
   createArchiveApiClient,
   type RightsRecord,
@@ -75,6 +76,7 @@ export default function RightsPage() {
   const [formLicense, setFormLicense] = useState<LicenseType>("OWNED");
   const [formExpiresAt, setFormExpiresAt] = useState("");
   const [formNotes, setFormNotes] = useState("");
+  const canManageRights = useCapability("rights.manage");
 
   const loadRights = useCallback(async (windowDays: string) => {
     setState({ status: "loading" });
@@ -208,9 +210,11 @@ export default function RightsPage() {
         )}
         actions={(
           <>
-            <button type="button" className="button button-primary" onClick={() => setIsFormOpen((open) => !open)}>
-              {isFormOpen ? "إغلاق النموذج" : "تسجيل حقوق"}
-            </button>
+            {canManageRights ? (
+              <button type="button" className="button button-primary" onClick={() => setIsFormOpen((open) => !open)}>
+                {isFormOpen ? "إغلاق النموذج" : "تسجيل حقوق"}
+              </button>
+            ) : null}
             <button type="button" className="button button-secondary" onClick={() => void loadRights(days)} disabled={state.status === "loading"}>
               تحديث
             </button>
@@ -300,7 +304,11 @@ export default function RightsPage() {
           <EmptyState
             title="لا سجلات حقوق ضمن هذه النافذة."
             description="وسّع نافذة الانتهاء أو سجّل حقوقًا جديدة لعناصر الأرشيف."
-            actions={<button type="button" className="button button-secondary" onClick={() => setIsFormOpen(true)}>تسجيل حقوق</button>}
+            actions={
+              canManageRights ? (
+                <button type="button" className="button button-secondary" onClick={() => setIsFormOpen(true)}>تسجيل حقوق</button>
+              ) : null
+            }
           />
         ) : (
           <section className="panel" aria-label="سجلات الحقوق">

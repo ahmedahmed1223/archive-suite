@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import { useCapability } from "@/components/RoleGate";
 import {
   createArchiveApiClient,
   type BackupInfo,
@@ -60,6 +61,7 @@ export default function BackupPage() {
   const [restoreState, setRestoreState] = useState<RestoreState>({ status: "idle" });
   const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
   const [restoreConfirmName, setRestoreConfirmName] = useState("");
+  const canManageBackup = useCapability("backup.manage");
 
   const loadBackups = useCallback(async () => {
     setListState({ status: "loading" });
@@ -158,14 +160,16 @@ export default function BackupPage() {
         )}
         actions={(
           <>
-            <button
-              type="button"
-              className="button button-primary"
-              onClick={() => void handleRunBackup()}
-              disabled={runState.status === "running"}
-            >
-              {runState.status === "running" ? "جار إنشاء النسخة..." : "إنشاء نسخة احتياطية الآن"}
-            </button>
+            {canManageBackup ? (
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => void handleRunBackup()}
+                disabled={runState.status === "running"}
+              >
+                {runState.status === "running" ? "جار إنشاء النسخة..." : "إنشاء نسخة احتياطية الآن"}
+              </button>
+            ) : null}
             <button type="button" className="button button-secondary" onClick={() => void loadBackups()} disabled={listState.status === "loading"}>
               تحديث
             </button>
@@ -316,11 +320,13 @@ export default function BackupPage() {
           <EmptyState
             title="لا توجد نسخ احتياطية بعد."
             description="أنشئ أول نسخة احتياطية الآن لتأمين مخازن السجلات."
-            actions={(
-              <button type="button" className="button button-primary" onClick={() => void handleRunBackup()} disabled={runState.status === "running"}>
-                إنشاء نسخة احتياطية
-              </button>
-            )}
+            actions={
+              canManageBackup ? (
+                <button type="button" className="button button-primary" onClick={() => void handleRunBackup()} disabled={runState.status === "running"}>
+                  إنشاء نسخة احتياطية
+                </button>
+              ) : null
+            }
           />
         ) : (
           <section className="panel" aria-label="قائمة النسخ الاحتياطية">
@@ -351,9 +357,11 @@ export default function BackupPage() {
                           <button type="button" className="button button-secondary button-sm" onClick={() => void handlePreview(backup.name)}>
                             معاينة
                           </button>
-                          <button type="button" className="button button-secondary button-sm" onClick={() => openRestoreDialog(backup.name)}>
-                            استعادة
-                          </button>
+                          {canManageBackup ? (
+                            <button type="button" className="button button-secondary button-sm" onClick={() => openRestoreDialog(backup.name)}>
+                              استعادة
+                            </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>

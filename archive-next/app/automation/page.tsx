@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
+import { useCapability } from "@/components/RoleGate";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   createArchiveApiClient,
@@ -56,6 +57,7 @@ export default function AutomationPage() {
   const [tag, setTag] = useState("all");
   const [status, setStatus] = useState("all");
   const [action, setAction] = useState<AutomationRuleAction>("notify-admin");
+  const canManageAutomation = useCapability("automation.manage");
 
   async function refreshAutomation() {
     setLoading(true);
@@ -172,52 +174,54 @@ export default function AutomationPage() {
         )}
         actions={<a className="button button-secondary" href="/activity">سجل النشاط</a>}
       >
-        <form className="archive-toolbar-grid" onSubmit={addRule}>
-          <label>
-            <span>اسم القاعدة</span>
-            <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} />
-          </label>
-          <label>
-            <span>المشغّل</span>
-            <select value={trigger} onChange={(event) => setTrigger(event.target.value as AutomationRuleTrigger)}>
-              {(Object.keys(triggerLabels) as AutomationRuleTrigger[]).map((item) => <option key={item} value={item}>{triggerLabels[item]}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>بحث</span>
-            <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="شرط نصي اختياري" />
-          </label>
-          <label>
-            <span>نوع</span>
-            <select value={type} onChange={(event) => setType(event.target.value)}>
-              <option value="all">كل الأنواع</option>
-              {types.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>وسم</span>
-            <select value={tag} onChange={(event) => setTag(event.target.value)}>
-              <option value="all">كل الوسوم</option>
-              {tags.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>حالة</span>
-            <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              <option value="all">كل الحالات</option>
-              {statuses.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>الإجراء</span>
-            <select value={action} onChange={(event) => setAction(event.target.value as AutomationRuleAction)}>
-              {(Object.keys(actionLabels) as AutomationRuleAction[]).map((item) => <option key={item} value={item}>{actionLabels[item]}</option>)}
-            </select>
-          </label>
-          <div className="archive-toolbar-actions">
-            <button type="submit" className="button button-primary" disabled={!name.trim()}>حفظ القاعدة</button>
-          </div>
-        </form>
+        {canManageAutomation ? (
+          <form className="archive-toolbar-grid" onSubmit={addRule}>
+            <label>
+              <span>اسم القاعدة</span>
+              <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} />
+            </label>
+            <label>
+              <span>المشغّل</span>
+              <select value={trigger} onChange={(event) => setTrigger(event.target.value as AutomationRuleTrigger)}>
+                {(Object.keys(triggerLabels) as AutomationRuleTrigger[]).map((item) => <option key={item} value={item}>{triggerLabels[item]}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>بحث</span>
+              <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="شرط نصي اختياري" />
+            </label>
+            <label>
+              <span>نوع</span>
+              <select value={type} onChange={(event) => setType(event.target.value)}>
+                <option value="all">كل الأنواع</option>
+                {types.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>وسم</span>
+              <select value={tag} onChange={(event) => setTag(event.target.value)}>
+                <option value="all">كل الوسوم</option>
+                {tags.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>حالة</span>
+              <select value={status} onChange={(event) => setStatus(event.target.value)}>
+                <option value="all">كل الحالات</option>
+                {statuses.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>الإجراء</span>
+              <select value={action} onChange={(event) => setAction(event.target.value as AutomationRuleAction)}>
+                {(Object.keys(actionLabels) as AutomationRuleAction[]).map((item) => <option key={item} value={item}>{actionLabels[item]}</option>)}
+              </select>
+            </label>
+            <div className="archive-toolbar-actions">
+              <button type="submit" className="button button-primary" disabled={!name.trim()}>حفظ القاعدة</button>
+            </div>
+          </form>
+        ) : null}
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
 
@@ -259,13 +263,17 @@ export default function AutomationPage() {
                 <button className="button button-secondary button-sm" type="button" onClick={() => void runRule(rule, true)} disabled={busyId === rule.id}>
                   Dry-run
                 </button>
-                <button className="button button-primary button-sm" type="button" onClick={() => void runRule(rule, false)} disabled={busyId === rule.id || !rule.enabled}>
-                  تشغيل فعلي
-                </button>
-                <button className="button button-secondary button-sm" type="button" onClick={() => void toggleRule(rule)} disabled={busyId === rule.id}>
-                  {rule.enabled ? "إيقاف" : "تفعيل"}
-                </button>
-                <button className="button button-danger button-sm" type="button" onClick={() => void deleteRule(rule)} disabled={busyId === rule.id}>حذف</button>
+                {canManageAutomation ? (
+                  <>
+                    <button className="button button-primary button-sm" type="button" onClick={() => void runRule(rule, false)} disabled={busyId === rule.id || !rule.enabled}>
+                      تشغيل فعلي
+                    </button>
+                    <button className="button button-secondary button-sm" type="button" onClick={() => void toggleRule(rule)} disabled={busyId === rule.id}>
+                      {rule.enabled ? "إيقاف" : "تفعيل"}
+                    </button>
+                    <button className="button button-danger button-sm" type="button" onClick={() => void deleteRule(rule)} disabled={busyId === rule.id}>حذف</button>
+                  </>
+                ) : null}
               </div>
             </article>
           ))}

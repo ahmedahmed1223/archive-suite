@@ -338,20 +338,23 @@ export const pageTips: Record<PageKey, Tip[]> = {
     { title: "الاقتراحات", description: "اقبل أو ارفض الاقتراحات المولدة تلقائياً حسب الحاجة" }
   ],
   backup: [
-    { title: "النسخ الاحتياطي", description: "أنشئ نسخاً احتياطية دورية من بيانات الأرشيف", icon: "HardDriveDownload" },
-    { title: "الاستعادة", description: "استعد نسخة سابقة عند حدوث خلل أو فقدان بيانات" }
+    { title: "النسخ الاحتياطي", description: "أنشئ نسخاً احتياطية دورية من بيانات الأرشيف", icon: "HardDriveDownload", roles: ["admin"] },
+    { title: "الاستعادة", description: "استعد نسخة سابقة عند حدوث خلل أو فقدان بيانات", roles: ["admin"] },
+    { title: "وضع القراءة", description: "هذه الصفحة متاحة للمشرفين فقط؛ لا يمكنك إنشاء أو استعادة نسخ احتياطية", icon: "Eye", roles: ["editor", "viewer"] }
   ],
   automation: [
-    { title: "الأتمتة", description: "أنشئ قواعد تلقائية تُنفذ إجراءات عند تحقق شروط معينة", icon: "Zap" },
-    { title: "الاختبار", description: "اختبر القاعدة قبل تفعيلها لتجنب نتائج غير متوقعة" }
+    { title: "الأتمتة", description: "أنشئ قواعد تلقائية تُنفذ إجراءات عند تحقق شروط معينة", icon: "Zap", roles: ["editor", "admin"] },
+    { title: "الاختبار", description: "اختبر القاعدة قبل تفعيلها لتجنب نتائج غير متوقعة", roles: ["editor", "admin"] },
+    { title: "وضع القراءة", description: "يمكنك مراجعة القواعد وسجل التشغيل دون إنشاء أو تعديل أو حذف قواعد", icon: "Eye", roles: ["viewer"] }
   ],
   collaboration: [
     { title: "التعاون الحي", description: "تابع من يعمل حالياً على نفس السجل معك في الوقت الفعلي", icon: "Users" },
     { title: "التعليقات", description: "أضف تعليقات مباشرة لتنسيق العمل مع الفريق" }
   ],
   rights: [
-    { title: "حقوق الاستخدام", description: "حدد قيود الاستخدام والترخيص لكل سجل", icon: "Shield" },
-    { title: "الامتثال", description: "تتبع حالات انتهاء الحقوق لتفادي الاستخدام غير المصرح به" }
+    { title: "حقوق الاستخدام", description: "حدد قيود الاستخدام والترخيص لكل سجل", icon: "Shield", roles: ["editor", "admin"] },
+    { title: "الامتثال", description: "تتبع حالات انتهاء الحقوق لتفادي الاستخدام غير المصرح به" },
+    { title: "وضع القراءة", description: "يمكنك مراجعة سجلات الحقوق وحالة الإنفاذ دون تسجيل حقوق جديدة", icon: "Eye", roles: ["viewer"] }
   ]
 };
 
