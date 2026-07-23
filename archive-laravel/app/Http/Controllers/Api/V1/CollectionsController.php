@@ -36,6 +36,7 @@ class CollectionsController extends Controller
             'query' => ['nullable', 'string', 'max:500'],
             'type' => ['nullable', 'string', 'max:200'],
             'tag' => ['nullable', 'string', 'max:200'],
+            'icon' => ['sometimes', 'nullable', 'string', 'max:100'],
         ]);
 
         $userId = $this->userId($request);
@@ -49,6 +50,7 @@ class CollectionsController extends Controller
             'query' => $validated['query'] ?? null,
             'type' => $validated['type'] ?? 'all',
             'tag' => $validated['tag'] ?? 'all',
+            'icon' => $validated['icon'] ?? null,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -107,6 +109,7 @@ class CollectionsController extends Controller
             'query' => $row->query,
             'type' => $row->type,
             'tag' => $row->tag,
+            'icon' => $row->icon,
             'createdAt' => $row->created_at,
             'updatedAt' => $row->updated_at,
         ];

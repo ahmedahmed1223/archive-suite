@@ -397,6 +397,7 @@ export interface Collection {
   query: string | null;
   type: string;
   tag: string;
+  icon?: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -406,6 +407,7 @@ export interface CreateCollectionPayload {
   query?: string;
   type?: string;
   tag?: string;
+  icon?: string;
 }
 
 export type InboxStatus = "new" | "triage" | "ready" | "done";

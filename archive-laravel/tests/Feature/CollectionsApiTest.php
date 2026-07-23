@@ -17,13 +17,15 @@ class CollectionsApiTest extends TestCase
             'query' => 'draft',
             'type' => 'video',
             'tag' => 'unlabeled',
+            'icon' => 'FolderKanban',
         ], $this->authHeaders())
             ->assertCreated()
             ->assertJsonPath('ok', true)
             ->assertJsonPath('collection.name', 'Needs review')
             ->assertJsonPath('collection.query', 'draft')
             ->assertJsonPath('collection.type', 'video')
-            ->assertJsonPath('collection.tag', 'unlabeled');
+            ->assertJsonPath('collection.tag', 'unlabeled')
+            ->assertJsonPath('collection.icon', 'FolderKanban');
 
         $id = $created->json('collection.id');
         $this->assertIsString($id);
@@ -49,7 +51,8 @@ class CollectionsApiTest extends TestCase
         ], $this->authHeaders())
             ->assertCreated()
             ->assertJsonPath('collection.type', 'all')
-            ->assertJsonPath('collection.tag', 'all');
+            ->assertJsonPath('collection.tag', 'all')
+            ->assertJsonPath('collection.icon', null);
     }
 
     public function test_it_scopes_collections_to_the_owning_user(): void
