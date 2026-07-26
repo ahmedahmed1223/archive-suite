@@ -57,9 +57,10 @@ export interface RoleFixtures {
 export const test = base.extend<RoleFixtures>({
   roleSession: async ({ browser }, use) => {
     const opened: BrowserContext[] = [];
+    const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000';
 
     await use(async (role: RoleName) => {
-      const context = await browser.newContext({ storageState: storageStatePath(role) });
+      const context = await browser.newContext({ baseURL, storageState: storageStatePath(role) });
       opened.push(context);
 
       // The API ROTATES the refresh token on every use (AuthController::refresh
@@ -72,6 +73,10 @@ export const test = base.extend<RoleFixtures>({
       });
       if (!login.ok()) {
         throw new Error(`roleSession(${role}): fresh login failed with ${login.status()}`);
+      }
+      const cookies = await context.cookies(baseURL);
+      if (!cookies.some((cookie) => cookie.name === 'va_session')) {
+        throw new Error(`roleSession(${role}): fresh login did not persist va_session for ${baseURL}`);
       }
 
       // Fresh contexts would otherwise trigger the modal whats-new dialog,

@@ -25,6 +25,15 @@ test("acceptance Playwright configuration disables trace and video artifacts", (
   }
 });
 
+test("acceptance role contexts keep the provider origin and verify their session cookie", () => {
+  const fixture = readFileSync(new URL("../../archive-next/e2e/fixtures/auth.ts", import.meta.url), "utf8");
+
+  assert.match(fixture, /const baseURL = process\.env\.E2E_BASE_URL/);
+  assert.match(fixture, /browser\.newContext\(\{ baseURL, storageState: storageStatePath\(role\) \}\)/);
+  assert.match(fixture, /context\.cookies\(baseURL\)/);
+  assert.match(fixture, /cookie\.name === 'va_session'/);
+});
+
 function commandResult(payload) {
   return { status: 0, stdout: `${JSON.stringify(payload)}\n`, stderr: "" };
 }
