@@ -23,8 +23,11 @@ test('V1-IA-ARCH-001 editor logs in live, searches, and opens its provisioned re
   await ui(searchBox).toBeVisible();
   await searchBox.fill(data.recordTitle);
   await page.getByRole('button', { name: 'بحث', exact: true }).click();
-  await ui(page.getByRole('heading', { name: data.recordTitle })).toBeVisible();
-  await page.getByRole('link', { name: 'فتح التفاصيل' }).click();
+  const resultCard = page.getByRole('article').filter({
+    has: page.getByRole('heading', { name: data.recordTitle }),
+  });
+  await ui(resultCard.getByRole('heading', { name: data.recordTitle })).toBeVisible();
+  await resultCard.getByRole('link', { name: 'فتح التفاصيل' }).click();
   await ui(page).toHaveURL(new RegExp(`/archive/${encodeURIComponent(data.recordUid)}$`));
   await ui(page.locator('.workspace-commandbar__user')).toContainText(account.name);
   await page.screenshot({ path: testInfo.outputPath('archive-search-open.png'), fullPage: true });
@@ -36,7 +39,7 @@ test('V1-IA-ADMIN-001 admin reads a live healthy system status surface', async (
   const { account, page } = await roleSession('admin');
   await page.goto('/status', { waitUntil: 'networkidle' });
   await ui(page.getByRole('heading', { name: 'حالة النظام' })).toBeVisible();
-  await ui(page.getByRole('status')).toContainText('الاتصال بالخادم مستقر');
+  await ui(page.getByRole('status')).toContainText('اتصال الخادم سليم');
   await ui(page.locator('.workspace-commandbar__user')).toContainText(account.name);
   await page.screenshot({ path: testInfo.outputPath('admin-health.png'), fullPage: true });
 });
