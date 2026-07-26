@@ -6,6 +6,7 @@ import {
   ROUTE_COVERAGE,
   type RouteState,
 } from './fixtures/route-inventory';
+import type { RoleName } from './fixtures/roles';
 
 /**
  * V1-303C: axe over the authenticated classified routes.
@@ -24,6 +25,17 @@ const VIEWPORTS = [
   { name: 'mobile-375', width: 375, height: 812 },
   { name: 'tablet-768', width: 768, height: 1024 },
   { name: 'desktop-1280', width: 1280, height: 800 },
+] as const;
+
+const RTL_AUDIT_ROUTES: readonly { url: string; role: RoleName }[] = [
+  { url: '/data-center', role: 'admin' },
+  { url: '/plugins', role: 'admin' },
+  { url: '/system/control', role: 'admin' },
+  { url: '/settings', role: 'viewer' },
+  { url: '/search', role: 'viewer' },
+  { url: '/media/review', role: 'viewer' },
+  { url: '/kanban', role: 'viewer' },
+  { url: '/reading-lists', role: 'viewer' },
 ] as const;
 
 /** Collection keys the API returns; emptied to force a real empty state. */
@@ -147,4 +159,26 @@ test.describe('authenticated a11y @ desktop-1280 zoom-200%', () => {
       await auditAxe(page, `${url} [${coverage.role}/ready] @ 200% zoom`);
     });
   }
+});
+
+test.describe('Arabic RTL audit (V1-791)', () => {
+  for (const route of RTL_AUDIT_ROUTES) {
+    test(`${route.url} keeps the Arabic document direction`, async ({ roleSession }) => {
+      const { page } = await roleSession(route.role);
+
+      await visit(page, route.url, 'ready');
+
+      await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    });
+  }
+
+  test('documents technical identifiers as LTR exceptions', async ({ roleSession }) => {
+    const { page } = await roleSession('viewer');
+
+    await visit(page, '/search', 'ready');
+    await expect(page.locator('code[dir="ltr"]')).toContainText('type:video');
+
+    await visit(page, '/media/review', 'ready');
+    await expect(page.locator('input[placeholder="media/file.mp4"]')).toHaveAttribute('dir', 'ltr');
+  });
 });

@@ -66,12 +66,12 @@ function formatAge(seconds: number): string {
 }
 
 const HUB_LINKS = [
-  { href: "/uploads", title: "الرفع والاستيراد اليدوي", description: "رفع ملفات جديدة، قوالب الإدخال، روابط الرفع الخارجية.", meta: "Intake", icon: UploadCloud },
-  { href: "/ingest", title: "الاستيراد الآلي", description: "مسح المجلدات، السحب عبر FTP/SMB، متابعة الدفعات الواردة.", meta: "Pipelines", icon: Workflow },
-  { href: "/backup", title: "النسخ الاحتياطي والاستعادة", description: "إنشاء نسخة فورية، معاينة المحتوى، أو الاستعادة الكاملة.", meta: "DR", icon: HardDriveDownload },
-  { href: "/status", title: "حالة النظام", description: "صحة الاتصال، مقاييس الخادم الحية، وجاهزية التعافي من الكوارث.", meta: "Health", icon: Gauge },
-  { href: "/settings", title: "الإعدادات", description: "إعدادات الأمان، المستخدمون، وسياسات الوصول.", meta: "Policy", icon: Settings },
-  { href: "/system/control", title: "التحكم بالنظام", description: "إجراءات مضيف حساسة (معطّلة افتراضيًا، للمشرفين فقط).", meta: "Admin", icon: ServerCog }
+  { href: "/uploads", title: "الرفع والاستيراد اليدوي", description: "رفع ملفات جديدة، قوالب الإدخال، روابط الرفع الخارجية.", meta: "الاستقبال", icon: UploadCloud },
+  { href: "/ingest", title: "الاستيراد الآلي", description: "مسح المجلدات، السحب عبر FTP/SMB، متابعة الدفعات الواردة.", meta: "مسارات المعالجة", icon: Workflow },
+  { href: "/backup", title: "النسخ الاحتياطي والاستعادة", description: "إنشاء نسخة فورية، معاينة المحتوى، أو الاستعادة الكاملة.", meta: "التعافي من الكوارث", icon: HardDriveDownload },
+  { href: "/status", title: "حالة النظام", description: "صحة الاتصال، مقاييس الخادم الحية، وجاهزية التعافي من الكوارث.", meta: "الصحة", icon: Gauge },
+  { href: "/settings", title: "الإعدادات", description: "إعدادات الأمان، المستخدمون، وسياسات الوصول.", meta: "السياسات", icon: Settings },
+  { href: "/system/control", title: "التحكم بالنظام", description: "إجراءات مضيف حساسة (معطّلة افتراضيًا، للمشرفين فقط).", meta: "الإدارة", icon: ServerCog }
 ] as const;
 
 export default function DataCenterPage() {

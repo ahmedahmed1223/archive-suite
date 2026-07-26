@@ -184,7 +184,7 @@ export default function ReviewPage() {
       <PageToolbar
         eyebrow={<span className="badge">مراجعة اللقطات</span>}
         title="مراجعة مرئية بتعليقات زمنية"
-        description="شغّل المادة، اقفز إلى timecode محدد، وارسم مستطيلاً فوق الإطار عند الحاجة لتوثيق الملاحظة بدقة."
+        description="شغّل المادة، واقفز إلى ترميز زمني محدد، وارسم مستطيلاً فوق الإطار عند الحاجة لتوثيق الملاحظة بدقة."
         meta={(
           <>
             <span className="badge">{comments.length} تعليق</span>
@@ -214,6 +214,7 @@ export default function ReviewPage() {
                   value={mediaUid}
                   onChange={(event) => setMediaUid(event.target.value)}
                   placeholder="media/file.mp4"
+                  dir="ltr"
                   aria-label="مسار المادة أو معرف جلسة المراجعة"
                 />
                 <p className="helper-text">يستخدم نفس الحقل لتشغيل المادة وربط تعليقات المراجعة.</p>

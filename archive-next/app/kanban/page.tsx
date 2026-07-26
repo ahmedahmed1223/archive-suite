@@ -231,7 +231,7 @@ export default function KanbanPage() {
       <PageToolbar
         eyebrow={<span className="badge">سير العمل</span>}
         title="لوحة كانبان"
-        description="عرض سير عمل السجلات حسب الحالة مع نقل سريع عبر endpoint records/bulk الحالي."
+        description="عرض سير عمل السجلات حسب الحالة مع نقل سريع عبر نقطة النهاية الحالية records/bulk."
         meta={(
           <>
             <span className="badge">{records.length} سجل</span>

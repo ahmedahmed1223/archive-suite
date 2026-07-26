@@ -140,7 +140,7 @@ export default function ReadingListsPage() {
       <PageToolbar
         eyebrow={<span className="badge">قوائم القراءة</span>}
         title="قوائم القراءة"
-        description="مساحة تشغيلية لتجميع سجلات تحتاج مراجعة أو قراءة لاحقة، مستقلة عن Collections حتى لا تختلط مع التصنيف الرسمي."
+        description="مساحة تشغيلية لتجميع سجلات تحتاج مراجعة أو قراءة لاحقة، مستقلة عن المجموعات حتى لا تختلط مع التصنيف الرسمي."
         meta={(
           <>
             <span className="badge">{lists.length} قائمة</span>
@@ -235,7 +235,7 @@ export default function ReadingListsPage() {
                               <span className="badge">{item.done ? "مكتمل" : "متبقّي"}</span>
                               <h3>{record?.title || item.recordId}</h3>
                             </div>
-                            <span className="badge">{record?.type || "record"}</span>
+                            <span className="badge">{record?.type || "سجل"}</span>
                           </div>
                           {record?.description ? <p className="helper-text">{record.description}</p> : null}
                           <p className="helper-text">أضيف في {formatDate(item.addedAt)}</p>

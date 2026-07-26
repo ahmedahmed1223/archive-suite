@@ -128,7 +128,7 @@ export default function SystemControlPage() {
         meta={
           <>
             <span className={gate.status === "enabled" ? "badge badge-success" : "badge badge-warning"}>{gateLabel(gate.status)}</span>
-            <span className="badge">Audit enforced</span>
+            <span className="badge">التدقيق مفروض</span>
           </>
         }
         actions={

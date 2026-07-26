@@ -29,7 +29,7 @@ const categoryCards = [
   {
     title: "التخزين",
     summary: "مؤشرات التخزين تشرح مكان البيانات وحدودها من دون أدوات تحرير.",
-    items: ["المخزن الرئيسي: Object storage", "النسخ الاحتياطي: مجدول", "الحصة: تحت المراقبة"]
+    items: ["المخزن الرئيسي: تخزين كائني", "النسخ الاحتياطي: مجدول", "الحصة: تحت المراقبة"]
   },
   {
     title: "واجهة API",
@@ -982,7 +982,7 @@ export default function SettingsPage() {
           </div>
         </article>
 
-        <article className="workspace-panel" aria-label="Settings hub navigation">
+        <article className="workspace-panel" aria-label="تنقل مركز الإعدادات">
           <div className="workspace-panel__header">
             <div>
               <h2>الأقسام ذات الصلة</h2>

@@ -425,7 +425,7 @@ function SearchPageContent() {
       <PageToolbar
         eyebrow={<span className="badge">مساحة البحث</span>}
         title="البحث المتقدم"
-        description="بحث موحد في السجلات مع facets من الخادم، حفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة."
+        description="بحث موحد في السجلات مع تصنيفات من الخادم، وحفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة."
         meta={(
           <>
             <span className="badge">{filteredRecords.length} نتيجة</span>
@@ -515,7 +515,7 @@ function SearchPageContent() {
           ) : null}
         </div>
         {facets ? (
-          <div className="facet-strip" aria-label="ملخص facets">
+              <div className="facet-strip" aria-label="ملخص التصنيفات">
             {facets.types?.slice(0, 5).map((item) => (
               <button key={item.value} type="button" className="facet-chip" onClick={() => setTypeFilter(item.value)}>
                 {item.label} · {item.count}
@@ -576,7 +576,7 @@ function SearchPageContent() {
               <section className="panel stack" aria-label="إثراء محلي للبحث">
                 <div className="panel-title-row">
                   <div>
-                    <span className="badge">Local semantic fallback</span>
+                    <span className="badge">بديل دلالي محلي</span>
                     <h2>وسوم وكيانات مقترحة محلياً</h2>
                     <p className="helper-text">
                       قواعد محلية آمنة فوق النتائج الحالية؛ لا ترسل البيانات لأي مزود خارجي ولا تعدّل السجلات تلقائياً.

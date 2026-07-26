@@ -107,7 +107,7 @@ function PermissionScopes({ scopes }: Readonly<{ scopes: PluginPermissionScopeSu
       <div className="panel-title-row">
         <div>
           <h2>الصلاحيات المطلوبة</h2>
-          <p>تجميع scopes التي تطلبها الإضافات حتى تظهر المخاطر قبل أي اعتماد.</p>
+          <p>تجميع نطاقات الصلاحيات التي تطلبها الإضافات حتى تظهر المخاطر قبل أي اعتماد.</p>
         </div>
       </div>
       {scopes.length ? (
@@ -234,7 +234,7 @@ export default function PluginsPage() {
         description="استعراض إضافات مراجعة فقط مع سياسة تمنع التثبيت البعيد وتنفيذ الكود داخل هذا التشغيل المحلي."
         meta={
           <>
-            <span className="badge">Catalog only</span>
+            <span className="badge">كتالوج للقراءة فقط</span>
             <span className="badge">لا تنفيذ كود</span>
             <span className="badge">مراجعة مسؤول</span>
           </>
@@ -246,7 +246,7 @@ export default function PluginsPage() {
           { label: "الإضافات المعروضة", value: plugins.length },
           { label: "مراجعة ومقبولة", value: reviewedCount },
           { label: "محظورة", value: blockedCount },
-          { label: "Scopes عالية المخاطر", value: highRiskCount }
+          { label: "نطاقات الصلاحيات عالية المخاطر", value: highRiskCount }
         ]}
       />
 

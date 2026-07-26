@@ -2,7 +2,11 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
-import { findDeprecatedUiTerms } from "@/lib/arabic-terminology";
+import {
+  findDeprecatedUiTerms,
+  findForbiddenOperationalTerms,
+  findForbiddenOperationalTermFindings,
+} from "@/lib/arabic-terminology";
 
 const repoRoot = fileURLToPath(new URL("../", import.meta.url));
 const SOURCE_ROOTS = ["app", "components", "lib"];
@@ -31,6 +35,18 @@ describe("Arabic UI terminology baseline (V1-791)", () => {
   test("does not match a deprecated term inside a longer Arabic word", () => {
     expect(findDeprecatedUiTerms("تكنولوجيا الخوادم")).toEqual([]);
   });
+
+  test("flags known English operational literals before they reach the Arabic UI", () => {
+    const source = '<span className="badge">Audit enforced</span>';
+
+    expect(findForbiddenOperationalTerms(source)).toContain("Audit enforced");
+  });
+
+  test("reports the source path with every forbidden operational literal", () => {
+    expect(findForbiddenOperationalTermFindings("app/system/control/page.tsx", "Audit enforced")).toEqual([
+      { path: "app/system/control/page.tsx", literal: "Audit enforced" },
+    ]);
+  });
 });
 
 describe("Arabic UI terminology guard (V1-791)", () => {
@@ -38,8 +54,11 @@ describe("Arabic UI terminology guard (V1-791)", () => {
     const offenders: string[] = [];
     for (const root of SOURCE_ROOTS) {
       for (const filePath of listSourceFiles(root)) {
-        const hits = findDeprecatedUiTerms(readFileSync(filePath, "utf8"));
-        if (hits.length > 0) offenders.push(`${filePath}: ${hits.join(", ")}`);
+        const source = readFileSync(filePath, "utf8");
+        const deprecatedHits = findDeprecatedUiTerms(source);
+        const forbiddenFindings = findForbiddenOperationalTermFindings(filePath, source);
+        if (deprecatedHits.length > 0) offenders.push(`${filePath}: ${deprecatedHits.join(", ")}`);
+        offenders.push(...forbiddenFindings.map(({ path, literal }) => `${path}: ${literal}`));
       }
     }
     expect(offenders).toEqual([]);
