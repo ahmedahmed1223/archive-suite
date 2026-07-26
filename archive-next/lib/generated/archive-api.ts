@@ -627,6 +627,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/integrations/dropbox/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verify Dropbox webhook endpoint */
+        get: operations["verifyDropboxWebhook"];
+        put?: never;
+        /** Receive signed Dropbox change notification */
+        post: operations["receiveDropboxWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/invitations/{token}/accept": {
         parameters: {
             query?: never;
@@ -1525,6 +1543,75 @@ export interface paths {
         get: operations["systemDrProbe"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system/dropbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Dropbox connection status (admin only) */
+        get: operations["getDropboxConnection"];
+        put?: never;
+        post?: never;
+        /** Disconnect Dropbox (admin only) */
+        delete: operations["disconnectDropbox"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system/dropbox/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Dropbox OAuth PKCE authorization (admin only) */
+        post: operations["authorizeDropbox"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system/dropbox/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Persist an OAuth callback token result (admin only) */
+        post: operations["connectDropbox"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system/dropbox/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Selectively import Dropbox folder changes using the saved cursor (admin only) */
+        post: operations["syncDropbox"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2698,6 +2785,37 @@ export interface components {
             label: string;
             records: components["schemas"]["ArchiveRecord"][];
         };
+        DropboxAuthorizationResponse: components["schemas"]["OkEnvelope"] & {
+            /** Format: uri */
+            authorizationUrl: string;
+        };
+        DropboxConnection: {
+            configured: boolean;
+            folderPath: string | null;
+            /** @enum {string} */
+            status: "disabled" | "disconnected" | "connected";
+        };
+        DropboxConnectionResponse: components["schemas"]["OkEnvelope"] & {
+            dropbox: components["schemas"]["DropboxConnection"];
+        };
+        DropboxConnectRequest: {
+            accessToken: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            folderPath?: string;
+            refreshToken?: string;
+        };
+        DropboxSyncResponse: components["schemas"]["OkEnvelope"] & {
+            sync: {
+                cursor: string | null;
+                entries: {
+                    id: string | null;
+                    path: string;
+                    size: number | null;
+                }[];
+                hasMore: boolean;
+            };
+        };
         DrProbe: {
             /** Format: date-time */
             lastBackupAt: string | null;
@@ -2883,7 +3001,11 @@ export interface components {
         MediaJob: {
             /** Format: date-time */
             completedAt?: string | null;
+            /** @description Version of the persisted media job and result envelope. */
+            contractVersion?: number;
             error?: string | null;
+            /** @description Versioned compute executor selected by Laravel when the job was queued. */
+            executor?: string;
             id: string;
             operation: components["schemas"]["MediaOperation"];
             options?: {
@@ -5230,6 +5352,43 @@ export interface operations {
             404: components["responses"]["Error"];
         };
     };
+    verifyDropboxWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dropbox challenge */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveDropboxWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted or duplicate event */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Error"];
+        };
+    };
     acceptInvitation: {
         parameters: {
             query?: never;
@@ -6921,6 +7080,121 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
+        };
+    };
+    getDropboxConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dropbox connection state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DropboxConnectionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+        };
+    };
+    disconnectDropbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disconnected */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DropboxConnectionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+        };
+    };
+    authorizeDropbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorization URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DropboxAuthorizationResponse"];
+                };
+            };
+            409: components["responses"]["Error"];
+        };
+    };
+    connectDropbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DropboxConnectRequest"];
+            };
+        };
+        responses: {
+            /** @description Connected */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DropboxConnectionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    syncDropbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dropbox folder delta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DropboxSyncResponse"];
+                };
+            };
+            409: components["responses"]["Error"];
+            502: components["responses"]["Error"];
         };
     };
     systemMetricsHistory: {

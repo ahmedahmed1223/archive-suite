@@ -49,6 +49,13 @@
     "verify:infra": "node scripts/verify-infra-config.mjs",
     "verify:repo-hygiene": "node scripts/verify-repo-hygiene.mjs",
     "smoke:watermark": "node scripts/smoke-watermark-ffmpeg.mjs",
+    "acceptance:plan": "node -e \"import('./scripts/acceptance/gates.mjs').then(({gatePlan}) => console.log(JSON.stringify(gatePlan(), null, 2)))\"",
+    "acceptance:test": "node --test scripts/acceptance/*.test.mjs scripts/acceptance/providers/*.test.mjs",
+    "acceptance:smoke": "node scripts/acceptance.mjs run --tag smoke",
+    "acceptance:daily": "node scripts/acceptance.mjs run --tag daily",
+    "acceptance:nightly": "node scripts/acceptance.mjs run --tag nightly",
+    "acceptance:rc": "node scripts/acceptance.mjs run --tag rc",
+    "acceptance:ga": "node scripts/acceptance.mjs run --tag ga",
     "docker:config": "docker compose --env-file infra/.env.example -f infra/docker-compose.yml config",
     "docker:config:laravel-next": "docker compose --env-file infra/.env.example -f infra/docker-compose.laravel-next.yml config",
     "release:verify": "pnpm run verify:laravel-next && pnpm run security:baseline && pnpm run security:audit && node scripts/verify-release-readiness.mjs",
@@ -58,7 +65,8 @@
     "offline:rehearse": "node scripts/offline-bundle.mjs rehearse",
     "setup": "node scripts/control-center.mjs deploy --local",
     "deploy": "node scripts/control-center.mjs deploy --local",
-    "control": "node scripts/control-center.mjs"
+    "control": "node scripts/control-center.mjs",
+    "acceptance:report": "node scripts/acceptance-report.mjs"
   },
   "devDependencies": {
     "node": "26.5.0",
