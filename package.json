@@ -56,6 +56,7 @@
     "acceptance:nightly": "node scripts/acceptance.mjs run --tag nightly",
     "acceptance:rc": "node scripts/acceptance.mjs run --tag rc",
     "acceptance:ga": "node scripts/acceptance.mjs run --tag ga",
+    "acceptance:extended:preflight": "node scripts/extended-capabilities.mjs",
     "docker:config": "docker compose --env-file infra/.env.example -f infra/docker-compose.yml config",
     "docker:config:laravel-next": "docker compose --env-file infra/.env.example -f infra/docker-compose.laravel-next.yml config",
     "release:verify": "pnpm run verify:laravel-next && pnpm run security:baseline && pnpm run security:audit && node scripts/verify-release-readiness.mjs",
