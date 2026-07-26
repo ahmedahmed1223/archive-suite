@@ -15,7 +15,7 @@ function createRunEnvironment(runId) {
   const path = join(directory, "compose.env");
   const password = `Aa1!${secret(24)}`;
   const values = {
-    APP_KEY: `base64:${secret(32)}`,
+    LARAVEL_APP_KEY: `base64:${secret(32)}`,
     ARCHIVE_SECURE_COOKIES: "false",
     ADMIN_EMAIL: `acceptance-${runId}@archive.test`,
     ADMIN_NAME: "Acceptance Admin",

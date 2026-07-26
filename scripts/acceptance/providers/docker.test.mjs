@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { createDockerProvider } from "./docker.mjs";
+
+const COMPOSE_FILE = new URL("../../../infra/docker-compose.laravel-next.yml", import.meta.url);
 
 function runFake(calls, result = { status: 0, stdout: "", stderr: "" }) {
   return async (cmd, args, options) => {
@@ -52,6 +54,30 @@ test("docker provider scopes every lifecycle command and passes isolated port en
     endpoints: { next: "http://127.0.0.1:43123", api: "http://127.0.0.1:43123/api/v1" },
     imageDigests: [],
   });
+});
+
+test("run environment defines every variable the compose file refuses to default", async () => {
+  const calls = [];
+  const provider = createDockerProvider({
+    root: "D:/repo",
+    runId: "run-007",
+    run: runFake(calls),
+    getFreePort: async () => 43127,
+  });
+  await provider.prepare();
+  const envFile = calls[0][1][4];
+  const defined = new Set(
+    readFileSync(envFile, "utf8").split(/\r?\n/).filter(Boolean).map((line) => line.slice(0, line.indexOf("="))),
+  );
+  // `${VAR:?message}` is Compose's "fail if unset" form — every one of those is
+  // a hard requirement of the acceptance stack, so the generated env file must
+  // cover them all. Derived from the compose file rather than hardcoded so a
+  // newly required variable fails here instead of mid-run against Docker.
+  const required = [...readFileSync(COMPOSE_FILE, "utf8").matchAll(/\$\{([A-Z0-9_]+):\?/g)].map((match) => match[1]);
+  assert.ok(required.length > 0, "compose file exposes no required variables — the pattern went stale");
+  const missing = [...new Set(required)].filter((name) => !defined.has(name));
+  assert.deepEqual(missing, [], `compose env file is missing required variables: ${missing.join(", ")}`);
+  await provider.destroy();
 });
 
 test("destroy fails when leftover containers remain for the project", async () => {
