@@ -4,6 +4,7 @@ namespace App\Services\Uploads;
 
 use App\Exceptions\UploadContentMismatchException;
 use App\Jobs\ProcessMediaWorkflow;
+use App\Repositories\StorageRowRepository;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +23,10 @@ class UploadFinalizer
     /** Bytes sampled from the start of the file for magic-byte sniffing. */
     private const SNIFF_SAMPLE_BYTES = 8192;
 
-    public function __construct(private readonly UploadFileValidator $validator) {}
+    public function __construct(
+        private readonly UploadFileValidator $validator,
+        private readonly StorageRowRepository $storageRows,
+    ) {}
 
     /**
      * @return array{recordId: string, record: array<string, mixed>}
@@ -60,9 +64,7 @@ class UploadFinalizer
             'updatedAt' => $now->toIso8601String(),
         ];
 
-        DB::table('storage_rows')->insert([
-            'store' => 'archive-items',
-            'uid' => $recordId,
+        $this->storageRows->insert('archive-items', $recordId, [
             'data' => json_encode($recordData, JSON_THROW_ON_ERROR),
             'created_at' => $now,
             'updated_at' => $now,

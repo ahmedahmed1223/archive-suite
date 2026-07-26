@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\StorageRowRepository;
 use App\Services\Search\EmbeddingService;
 use App\Services\Search\TranscriptSearchService;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use stdClass;
@@ -20,6 +20,7 @@ class SearchController extends Controller
     public function __construct(
         private readonly EmbeddingService $embeddings,
         private readonly TranscriptSearchService $transcripts,
+        private readonly StorageRowRepository $storageRows,
     )
     {
     }
@@ -59,7 +60,7 @@ class SearchController extends Controller
 
         $cursorUid = isset($validated['cursor']) ? StorageRowPayload::decodeCursor($validated['cursor']) : null;
 
-        $query = DB::table('storage_rows')
+        $query = $this->storageRows->query()
             ->orderBy('uid');
 
         if (isset($validated['store'])) {
@@ -122,20 +123,16 @@ class SearchController extends Controller
     private function semanticSearch(string $queryText, ?string $store, int $limit, array $validated): ?array
     {
         $poolSize = max($limit * 5, 100);
-        $orderedUids = $this->embeddings->search($queryText, $store, $poolSize);
+        $orderedKeys = $this->embeddings->search($queryText, $store, $poolSize);
 
-        if ($orderedUids === null) {
+        if ($orderedKeys === null) {
             return null;
         }
 
-        $rowsByUid = DB::table('storage_rows')
-            ->whereIn('uid', $orderedUids)
-            ->when($store !== null, fn ($query) => $query->where('store', $store))
-            ->get()
-            ->keyBy('uid');
+        $rowsByKey = $this->storageRows->findManyByKeys($orderedKeys);
 
-        $records = collect($orderedUids)
-            ->map(fn (string $uid): mixed => $rowsByUid->get($uid))
+        $records = collect($orderedKeys)
+            ->map(fn (array $key): mixed => $rowsByKey->get($this->storageRows->key($key['store'], $key['uid'])))
             ->filter(fn (mixed $row): bool => $row instanceof stdClass)
             ->map(fn (stdClass $row): array => StorageRowPayload::format($row))
             ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))

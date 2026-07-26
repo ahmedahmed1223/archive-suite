@@ -110,14 +110,14 @@ class EmbeddingService
     }
 
     /**
-     * Ordered nearest-first uid list, or null when semantic search can't run
+     * Ordered nearest-first composite storage keys, or null when semantic search can't run
      * (disabled, or the query itself failed to embed) — callers fall back to
      * keyword search on null.
      *
      * ponytail: single ANN pass via cosine distance, no re-ranking/hybrid
      * scoring. Add a re-rank stage if pure-vector recall proves insufficient.
      *
-     * @return list<string>|null
+     * @return list<array{store: string, uid: string}>|null
      */
     public function search(string $queryText, ?string $store, int $limit): ?array
     {
@@ -140,11 +140,11 @@ class EmbeddingService
         }
 
         $rows = DB::select(
-            "SELECT uid FROM record_embeddings {$storeSql} ORDER BY embedding <=> :vec::vector LIMIT {$limit}",
+            "SELECT store, uid FROM record_embeddings {$storeSql} ORDER BY embedding <=> :vec::vector LIMIT {$limit}",
             $bindings
         );
 
-        return array_map(static fn (object $row): string => (string) $row->uid, $rows);
+        return array_map(static fn (object $row): array => ['store' => (string) $row->store, 'uid' => (string) $row->uid], $rows);
     }
 
     private function contentHash(string $text): string

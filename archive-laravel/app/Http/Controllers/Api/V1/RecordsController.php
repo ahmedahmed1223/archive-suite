@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Events\RecordChanged;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Repositories\StorageRowRepository;
 use App\Services\Automation\AutomationRuleRunner;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +19,8 @@ use Illuminate\Support\Str;
 
 class RecordsController extends Controller
 {
+    public function __construct(private readonly StorageRowRepository $storageRows) {}
+
     public function store(Request $request): JsonResponse
     {
         if ($denied = $this->requireEditor($request)) return $denied;
@@ -32,7 +35,7 @@ class RecordsController extends Controller
         $record = ['id'=>$id,'uid'=>$id,'title'=>trim($validated['title']),'description'=>$validated['description'] ?? '',
             'type'=>$validated['type'] ?? null,'subtype'=>$validated['subtype'] ?? null,'tags'=>$validated['tags'] ?? [],
             'attachmentCount'=>0,'createdAt'=>$now->toIso8601String(),'updatedAt'=>$now->toIso8601String()];
-        DB::table('storage_rows')->insert(['store'=>$store,'uid'=>$id,'data'=>json_encode($record, JSON_THROW_ON_ERROR),'created_at'=>$now,'updated_at'=>$now]);
+        $this->storageRows->insert($store, $id, ['data'=>json_encode($record, JSON_THROW_ON_ERROR),'created_at'=>$now,'updated_at'=>$now]);
         return response()->json(['ok'=>true,'record'=>$record], 201);
     }
 
@@ -47,8 +50,7 @@ class RecordsController extends Controller
         $limit = (int) ($validated['limit'] ?? 50);
         $cursorUid = isset($validated['cursor']) ? StorageRowPayload::decodeCursor($validated['cursor']) : null;
 
-        $query = DB::table('storage_rows')
-            ->where('store', $validated['store'])
+        $query = $this->storageRows->forStore($validated['store'])
             ->orderBy('uid')
             ->limit($limit + 1);
 
@@ -81,13 +83,7 @@ class RecordsController extends Controller
 
         $store = $request->input('store');
 
-        $row = DB::table('storage_rows')
-            ->when($store !== null, fn ($query) => $query->where('store', $store))
-            ->where(function ($query) use ($id): void {
-                $query->where('uid', $id)
-                    ->orWhereRaw("data->>'id' = ?", [$id]);
-            })
-            ->first();
+        $row = $this->storageRows->findByUidOrRecordId($id, $store);
 
         if (! $row instanceof stdClass) {
             return response()->json([
@@ -153,20 +149,15 @@ class RecordsController extends Controller
             // V1-758B: existence check happens BEFORE the write so we know
             // whether this was a create or an update once RecordChanged
             // fires below.
-            $existed = DB::table('storage_rows')
-                ->where(['store' => $validated['store'], 'uid' => $uid])
-                ->exists();
+            $existed = $this->storageRows->find($validated['store'], $uid) !== null;
 
-            DB::table('storage_rows')->updateOrInsert(
-                ['store' => $validated['store'], 'uid' => $uid],
-                [
+            $this->storageRows->upsert($validated['store'], $uid, [
                     'data' => json_encode($normalized, JSON_THROW_ON_ERROR),
                     'sync_version' => $record['syncVersion'] ?? null,
                     'last_modified_by' => json_encode($record['lastModifiedBy'] ?? null, JSON_THROW_ON_ERROR),
                     'updated_at' => $now,
                     'created_at' => $now,
-                ],
-            );
+            ]);
 
             // V1-758B: automation only reacts to the archive store, and only
             // from this HTTP write path - see AutomationRuleRunner's
@@ -221,10 +212,7 @@ class RecordsController extends Controller
                 DB::transaction(function () use ($row, $actor): void {
                     TrashController::trashRow($row, $actor instanceof User ? $actor : null);
 
-                    DB::table('storage_rows')
-                        ->where('store', $row->store)
-                        ->where('uid', $row->uid)
-                        ->delete();
+                    $this->storageRows->delete($row->store, $row->uid);
                 });
 
                 $deleted++;
