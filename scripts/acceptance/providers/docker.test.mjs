@@ -41,7 +41,12 @@ test("docker provider scopes every lifecycle command and passes isolated port en
     assert.deepEqual(args.slice(5, 7), ["--file", "infra/docker-compose.laravel-next.yml"]);
   }
   assert.ok(composeCalls.some(([, args]) => args.includes("down") && args.includes("--remove-orphans")));
-  assert.ok(calls.every(([, , options]) => options.env.NEXT_PUBLIC_PORT === "43123" && options.env.REVERB_SERVER_PUBLISHED_PORT === "43124" && options.env.REVERB_PORT === "43124"));
+  assert.ok(calls.every(([, , options]) =>
+    options.env.NEXT_PUBLIC_PORT === "43123"
+    && options.env.REVERB_SERVER_PUBLISHED_PORT === "43124"
+    && options.env.REVERB_PORT === "43124"
+    && options.env.ARCHIVE_CORS_ORIGINS === "http://127.0.0.1:43123"
+  ));
   assert.ok(calls.every(([, , options]) => options.env !== process.env));
   assert.equal(provider.credentials.email, "acceptance-run-001@archive.test");
   assert.match(provider.credentials.password, /^Aa1!/);

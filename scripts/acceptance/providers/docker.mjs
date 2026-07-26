@@ -88,6 +88,7 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
       NEXT_PUBLIC_PORT: String(allocated.next),
       REVERB_SERVER_PUBLISHED_PORT: String(allocated.reverb),
       REVERB_PORT: String(allocated.reverb),
+      ARCHIVE_CORS_ORIGINS: `http://127.0.0.1:${allocated.next}`,
     };
     return assertSucceeded(await execute("docker", args, { root, env, shell: false, signal }), action);
   };

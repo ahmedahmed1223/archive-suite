@@ -94,6 +94,12 @@ test("the Laravel image excludes local runtime storage from its build context", 
   assert.match(dockerignore, /^storage\/app$/m);
 });
 
+test("the canonical FPM service consumes the deploy-time CORS origin", () => {
+  const compose = read("infra/docker-compose.laravel-next.yml");
+
+  assert.match(compose, /ARCHIVE_CORS_ORIGINS: \$\{ARCHIVE_CORS_ORIGINS:-http:\/\/localhost:3000,http:\/\/localhost:5173\}/);
+});
+
 test("the runtime gate accepts Node 26 and rejects other major versions", () => {
   assert.equal(isSupportedNodeVersion("v26.5.0"), true);
   assert.equal(isSupportedNodeVersion("v25.99.0"), false);
