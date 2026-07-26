@@ -74,6 +74,76 @@ class DropboxIntegrationApiTest extends TestCase
         $this->call('POST', '/api/v1/integrations/dropbox/webhook', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_X_DROPBOX_SIGNATURE' => $signature], $body)->assertOk()->assertJsonPath('accepted', false);
     }
 
+    public function test_sync_refreshes_an_expired_access_token_before_calling_dropbox(): void
+    {
+        config()->set('services.dropbox.client_id', 'test-client');
+        config()->set('services.dropbox.client_secret', 'test-secret');
+        $token = $this->loginAsAdmin();
+
+        $this->postJson('/api/v1/system/dropbox/connect', [
+            'accessToken' => 'stale-access-token',
+            'refreshToken' => 'refresh-token',
+            'folderPath' => '/Archive',
+            'expiresAt' => now()->subMinute()->toIso8601String(),
+        ], ['Authorization' => 'Bearer '.$token])->assertCreated();
+
+        Http::fake([
+            'api.dropboxapi.com/oauth2/token' => Http::response(['access_token' => 'fresh-access-token', 'expires_in' => 14400]),
+            'api.dropboxapi.com/2/files/list_folder' => Http::response(['entries' => [], 'cursor' => 'cursor-1', 'has_more' => false]),
+        ]);
+
+        $this->postJson('/api/v1/system/dropbox/sync', [], ['Authorization' => 'Bearer '.$token])->assertOk()->assertJsonPath('ok', true);
+
+        $row = \DB::table('dropbox_connections')->first();
+        $this->assertStringNotContainsString('stale-access-token', $row->encrypted_access_token);
+        Http::assertSent(fn ($request) => $request->url() === 'https://api.dropboxapi.com/2/files/list_folder' && $request->header('Authorization')[0] === 'Bearer fresh-access-token');
+    }
+
+    public function test_sync_retries_a_rate_limited_list_folder_call(): void
+    {
+        config()->set('services.dropbox.client_id', 'test-client');
+        config()->set('services.dropbox.client_secret', 'test-secret');
+        $token = $this->loginAsAdmin();
+
+        $this->postJson('/api/v1/system/dropbox/connect', [
+            'accessToken' => 'access-token',
+            'folderPath' => '/Archive',
+        ], ['Authorization' => 'Bearer '.$token])->assertCreated();
+
+        Http::fake([
+            'api.dropboxapi.com/2/files/list_folder' => Http::sequence()
+                ->push(['error_summary' => 'too_many_requests'], 429)
+                ->push(['entries' => [], 'cursor' => 'cursor-1', 'has_more' => false], 200),
+        ]);
+
+        $this->postJson('/api/v1/system/dropbox/sync', [], ['Authorization' => 'Bearer '.$token])
+            ->assertOk()->assertJsonPath('ok', true)->assertJsonPath('sync.cursor', 'cursor-1');
+    }
+
+    public function test_accepted_webhook_dispatches_sync_and_dead_letters_on_failure(): void
+    {
+        config()->set('services.dropbox.client_id', 'test-client');
+        config()->set('services.dropbox.client_secret', 'test-secret');
+        config()->set('services.dropbox.webhook_secret', 'webhook-secret');
+        $token = $this->loginAsAdmin();
+
+        $this->postJson('/api/v1/system/dropbox/connect', [
+            'accessToken' => 'access-token',
+            'folderPath' => '/Archive',
+        ], ['Authorization' => 'Bearer '.$token])->assertCreated();
+
+        Http::fake(['api.dropboxapi.com/2/files/list_folder' => Http::response(['error_summary' => 'internal'], 500)]);
+
+        $body = json_encode(['list_folder' => ['accounts' => ['dbid:account']]]);
+        $signature = hash_hmac('sha256', $body, 'webhook-secret');
+        $this->call('POST', '/api/v1/integrations/dropbox/webhook', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_X_DROPBOX_SIGNATURE' => $signature], $body)
+            ->assertOk()->assertJsonPath('accepted', true);
+
+        $deadLetter = \DB::table('dropbox_dead_letters')->first();
+        $this->assertNotNull($deadLetter);
+        $this->assertSame(hash('sha256', $body), $deadLetter->event_id);
+    }
+
     private function loginAsAdmin(): string
     {
         return $this->postJson('/api/v1/auth/login', ['email' => 'dropbox-admin@example.test', 'password' => 'password'])->json('accessToken');

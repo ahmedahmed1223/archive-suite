@@ -62,7 +62,7 @@ class DropboxController extends Controller
     public function sync(Request $request, DropboxSyncService $sync): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) return $denied;
-        try { return response()->json(['ok' => true, 'sync' => $sync->import($request->user())]); }
+        try { return response()->json(['ok' => true, 'sync' => $sync->import($request->attributes->get('archive_user'))]); }
         catch (\LogicException $e) { return response()->json(['ok' => false, 'error' => $e->getMessage()], 409); }
         catch (\Throwable) { return response()->json(['ok' => false, 'error' => 'Dropbox sync failed.'], 502); }
     }

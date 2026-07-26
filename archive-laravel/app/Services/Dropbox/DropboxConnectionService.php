@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class DropboxConnectionService
 {
+    public function __construct(private DropboxGateway $gateway) {}
+
     public function configured(): bool
     {
         return filled(config('services.dropbox.client_id')) && filled(config('services.dropbox.client_secret'));
@@ -45,9 +47,30 @@ class DropboxConnectionService
         return DB::table('dropbox_connections')->where('user_id', $user->id)->first();
     }
 
+    /** Returns a usable access token, transparently refreshing it first when it has expired (V1-762 token renewal). */
     public function accessToken(object $connection): string
     {
+        if ($this->isExpired($connection) && $connection->encrypted_refresh_token) {
+            return $this->refresh($connection);
+        }
         return Crypt::decryptString($connection->encrypted_access_token);
+    }
+
+    private function isExpired(object $connection): bool
+    {
+        return $connection->token_expires_at !== null && now()->greaterThanOrEqualTo($connection->token_expires_at);
+    }
+
+    private function refresh(object $connection): string
+    {
+        $token = $this->gateway->refreshAccessToken(Crypt::decryptString($connection->encrypted_refresh_token));
+        $expiresAt = isset($token['expires_in']) ? now()->addSeconds((int) $token['expires_in']) : null;
+        DB::table('dropbox_connections')->where('id', $connection->id)->update([
+            'encrypted_access_token' => Crypt::encryptString($token['access_token']),
+            'token_expires_at' => $expiresAt,
+            'updated_at' => now(),
+        ]);
+        return $token['access_token'];
     }
 
     private function normalizeFolder(string $folder): string
