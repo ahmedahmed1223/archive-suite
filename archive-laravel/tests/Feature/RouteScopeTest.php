@@ -240,6 +240,8 @@ class RouteScopeTest extends TestCase
      * @var array<int, string>
      */
     private const PUBLIC_ROUTES = [
+        'GET api/v1/integrations/dropbox/webhook',
+        'POST api/v1/integrations/dropbox/webhook',
         'GET api/v1/health',
         'GET api/v1/public/openapi.json',
         'GET api/v1/public/catalog',
@@ -268,6 +270,12 @@ class RouteScopeTest extends TestCase
      * @var array<string, string> "METHOD uri" => admin|editor|any
      */
     private const ROLE_FIXTURE = [
+        'GET api/v1/system/dropbox' => 'admin',
+        'POST api/v1/system/dropbox/authorize' => 'admin',
+        'POST api/v1/system/dropbox/callback' => 'admin',
+        'POST api/v1/system/dropbox/sync' => 'admin',
+        'POST api/v1/system/dropbox/connect' => 'admin',
+        'DELETE api/v1/system/dropbox' => 'admin',
         'GET api/v1/files/stream' => self::ROLE_ANY,
         'GET api/v1/collaboration/rooms/{roomKey}/presence' => self::ROLE_ANY,
         'POST api/v1/collaboration/rooms/{roomKey}/presence' => self::ROLE_ANY,
