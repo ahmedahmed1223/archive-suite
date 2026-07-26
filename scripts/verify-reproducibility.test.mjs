@@ -80,6 +80,14 @@ test("record attachment ownership uses the canonical users key type", () => {
   assert.doesNotMatch(migration, /foreignUuid\('created_by'\)/);
 });
 
+test("the unprivileged nginx image owns its runtime directories", () => {
+  const dockerfile = read("archive-laravel/Dockerfile.worker");
+
+  assert.match(dockerfile, /mkdir -p \/var\/lib\/nginx\/body \/var\/lib\/nginx\/fastcgi \/var\/lib\/nginx\/proxy/);
+  assert.match(dockerfile, /chown -R www-data:www-data \/var\/lib\/nginx \/var\/log\/nginx/);
+  assert.match(dockerfile, /sed -i 's#pid \/run\/nginx\.pid;#pid \/tmp\/nginx\.pid;#' \/etc\/nginx\/nginx\.conf/);
+});
+
 test("the runtime gate accepts Node 26 and rejects other major versions", () => {
   assert.equal(isSupportedNodeVersion("v26.5.0"), true);
   assert.equal(isSupportedNodeVersion("v25.99.0"), false);

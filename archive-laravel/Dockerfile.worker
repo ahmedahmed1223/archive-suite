@@ -41,6 +41,9 @@ RUN for i in 1 2 3; do \
     && docker-php-ext-enable redis \
     && docker-php-ext-install curl ftp mbstring zip pdo pdo_pgsql pcntl \
     && rm -f /etc/nginx/sites-enabled/default \
+    && mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy \
+    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx \
+    && sed -i 's#pid /run/nginx.pid;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # nginx front config for the laravel-fpm split (see V1-202 note above).
