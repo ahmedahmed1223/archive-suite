@@ -41,6 +41,8 @@ class RouteScopeTest extends TestCase
         'GET api/v1/upload-links/{token}' => self::V1,
         'POST api/v1/auth/login' => self::V1,
         'POST api/v1/auth/refresh' => self::V1,
+        'GET api/v1/integrations/dropbox/webhook' => self::V1,
+        'POST api/v1/integrations/dropbox/webhook' => self::V1,
 
         // -- authenticated, no audit --
         'GET api/v1/files/stream' => self::V1,
@@ -99,6 +101,12 @@ class RouteScopeTest extends TestCase
         'DELETE api/v1/relations/{id}' => self::V1,
         'GET api/v1/files' => self::V1,
         'GET api/v1/files/browser' => self::V1,
+        'GET api/v1/system/dropbox' => self::ADMIN,
+        'POST api/v1/system/dropbox/authorize' => self::ADMIN,
+        'POST api/v1/system/dropbox/callback' => self::ADMIN,
+        'POST api/v1/system/dropbox/sync' => self::ADMIN,
+        'POST api/v1/system/dropbox/connect' => self::ADMIN,
+        'DELETE api/v1/system/dropbox' => self::ADMIN,
         'GET api/v1/media/jobs' => self::V1,
         'POST api/v1/media/jobs' => self::V1,
         'GET api/v1/media/jobs/{id}' => self::V1,
