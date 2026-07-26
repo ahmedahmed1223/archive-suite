@@ -70,7 +70,7 @@ export default function DuplicatesPage() {
   return (
     <AppShell subtitle="المكررات" contentClassName="local-list-content" tipsPage="duplicates">
       <PageToolbar
-        eyebrow={<span className="badge">Quality</span>}
+        eyebrow={<span className="badge">الجودة</span>}
         title="كشف المكررات"
         description="كشف مبدئي للمكررات اعتماداً على checksum عند توفره أو تشابه العنوان. الدمج والحذف يبقيان قراراً يدوياً حتى يتوفر endpoint مخصص."
         meta={(

@@ -423,7 +423,7 @@ function SearchPageContent() {
   return (
     <AppShell subtitle="بحث متقدم" contentClassName="search-content" tipsPage="search">
       <PageToolbar
-        eyebrow={<span className="badge">Search Workbench</span>}
+        eyebrow={<span className="badge">مساحة البحث</span>}
         title="البحث المتقدم"
         description="بحث موحد في السجلات مع facets من الخادم، حفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة."
         meta={(

@@ -229,7 +229,7 @@ export default function KanbanPage() {
   return (
     <AppShell subtitle="كانبان" contentClassName="local-list-content" tipsPage="kanban">
       <PageToolbar
-        eyebrow={<span className="badge">Workflow</span>}
+        eyebrow={<span className="badge">سير العمل</span>}
         title="لوحة كانبان"
         description="عرض سير عمل السجلات حسب الحالة مع نقل سريع عبر endpoint records/bulk الحالي."
         meta={(

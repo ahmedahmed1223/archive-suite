@@ -182,7 +182,7 @@ export default function ReviewPage() {
   return (
     <AppShell subtitle="المراجعة المرئية" contentClassName={styles.reviewContent} tipsPage="media-review">
       <PageToolbar
-        eyebrow={<span className="badge">Frame review</span>}
+        eyebrow={<span className="badge">مراجعة اللقطات</span>}
         title="مراجعة مرئية بتعليقات زمنية"
         description="شغّل المادة، اقفز إلى timecode محدد، وارسم مستطيلاً فوق الإطار عند الحاجة لتوثيق الملاحظة بدقة."
         meta={(

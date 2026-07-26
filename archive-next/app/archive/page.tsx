@@ -1107,7 +1107,7 @@ function ArchivePageContent() {
       )}
       <PageToolbar
         icon={<Archive size={24} strokeWidth={2} />}
-        eyebrow={<span className="badge">Archive Workspace</span>}
+        eyebrow={<span className="badge">مساحة الأرشيف</span>}
         title="الأرشيف"
         description="سطح عمل موحد للبحث والتصفية والمعاينة والإجراءات الجماعية على السجلات."
         meta={(

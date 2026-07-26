@@ -174,7 +174,7 @@ export default function FirstRunPage() {
   return (
     <AppShell subtitle="أول تشغيل" navLabel="مسار التهيئة" contentClassName="first-run-content" tipsPage="first-run">
       <PageToolbar
-        eyebrow={<span className="badge">First-run</span>}
+        eyebrow={<span className="badge">أول تشغيل</span>}
         title={`تهيئة ${BRAND.arabicName}`}
         description="مسار عملي لأول تشغيل: اختر تهيئة سريعة أو متقدمة، نفذ أوامر Control Center بأمان، ثم تحقق من صحة الخادم والواجهة قبل بدء الاستخدام اليومي."
         meta={(

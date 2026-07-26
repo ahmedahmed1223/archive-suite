@@ -12,7 +12,7 @@ export default function UploadsPage() {
     <AppShell subtitle="إضافة أرشيف" contentClassName="stack" tipsPage="uploads">
       <PageToolbar
         icon={<PlusCircle size={24} strokeWidth={2} />}
-        eyebrow={<span className="badge">Add Workspace</span>}
+        eyebrow={<span className="badge">مساحة الإضافة</span>}
         title="إضافة مادة"
         description="مسار واضح لإنشاء مادة أرشيف: ملفات، بيانات وصفية، وسوم، مراجعة، ثم إنشاء بدون فقدان أدوات الاستيراد والقوالب."
         meta={

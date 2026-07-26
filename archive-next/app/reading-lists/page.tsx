@@ -138,7 +138,7 @@ export default function ReadingListsPage() {
   return (
     <AppShell subtitle="قوائم القراءة" navLabel="قوائم القراءة" contentClassName="local-list-content" tipsPage="reading-lists">
       <PageToolbar
-        eyebrow={<span className="badge">Reading Lists</span>}
+        eyebrow={<span className="badge">قوائم القراءة</span>}
         title="قوائم القراءة"
         description="مساحة تشغيلية لتجميع سجلات تحتاج مراجعة أو قراءة لاحقة، مستقلة عن Collections حتى لا تختلط مع التصنيف الرسمي."
         meta={(

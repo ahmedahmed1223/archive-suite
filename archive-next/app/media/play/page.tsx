@@ -136,7 +136,7 @@ export default function MediaPlayPage() {
   return (
     <AppShell subtitle="مشغل الوسائط" contentClassName={styles.playContent} tipsPage="media-play">
       <PageToolbar
-        eyebrow={<span className="badge">HTTP Range</span>}
+        eyebrow={<span className="badge">تشغيل الوسائط</span>}
         title="تشغيل المادة"
         description="يُبث الملف عبر الخادم بدلاً من فتحه محلياً، فيعمل السحب داخل الفيديو والصوت عبر المتصفح مع مصادقة النظام."
         meta={<span className="badge">{path ? "قيد التشغيل" : "بانتظار مسار"}</span>}

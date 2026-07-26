@@ -116,7 +116,7 @@ export default function DataCenterPage() {
     <AppShell subtitle="مركز البيانات" navLabel="مركز البيانات" contentClassName="observability-content" tipsPage="data-center">
       <PageToolbar
         icon={<Database size={24} />}
-        eyebrow={<span className="badge">Data Center</span>}
+        eyebrow={<span className="badge">مركز البيانات</span>}
         title="مركز البيانات"
         description="نقطة تجميع لعمليات الرفع، الاستيراد، النسخ الاحتياطي، الحالة، والإعدادات — كل الروابط والملخصات المهمة في مكان واحد."
         meta={

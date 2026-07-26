@@ -182,7 +182,7 @@ export default function TrashPage() {
   return (
     <AppShell subtitle="سلة المهملات" tipsPage="trash">
       <PageToolbar
-        eyebrow={<span className="badge">Trash</span>}
+        eyebrow={<span className="badge">سلة المهملات</span>}
         title="سلة المهملات"
         description="السجلات المحذوفة تبقى هنا قابلة للاستعادة حتى انتهاء مدة الاحتفاظ، ثم تُحذف نهائياً تلقائياً. الاستعادة تُعيد السجل بحالته السابقة."
         meta={<span className="badge">{pagination ? `${items.length} من ${pagination.total}` : items.length} عنصر</span>}

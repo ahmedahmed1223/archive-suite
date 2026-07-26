@@ -141,7 +141,7 @@ export default function IngestPage() {
     <AppShell subtitle="استيراد المحتوى" navLabel="الاستيراد" contentClassName="observability-content" tipsPage="ingest">
       <PageToolbar
         icon={<RadioTower size={24} />}
-        eyebrow={<span className="badge">Ingest Operations</span>}
+        eyebrow={<span className="badge">عمليات الاستيراد</span>}
         title="استيراد المحتوى للأرشيف"
         description="فحص مجلد الاستيراد المحلي، أو سحب ملفات من مصادر FTP وSMB مباشرة إلى مخازن الأرشيف."
         meta={(

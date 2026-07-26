@@ -49,7 +49,7 @@ export default function ComparePage() {
   return (
     <AppShell subtitle="مقارنة الوسائط" contentClassName={styles.compareContent} tipsPage="media-compare">
       <PageToolbar
-        eyebrow={<span className="badge">Side-by-side</span>}
+        eyebrow={<span className="badge">مقارنة جنبًا إلى جنب</span>}
         title="مقارنة الوسائط"
         description="ضع نسختين من المادة جنباً إلى جنب، ثم فعّل المزامنة لمطابقة التشغيل والإيقاف والانتقال الزمني أثناء المراجعة."
         meta={(

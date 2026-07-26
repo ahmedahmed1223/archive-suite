@@ -166,7 +166,7 @@ export default function TagsPage() {
   return (
     <AppShell subtitle="الوسوم" contentClassName="local-list-content" tipsPage="tags">
       <PageToolbar
-        eyebrow={<span className="badge">Tags</span>}
+        eyebrow={<span className="badge">الوسوم</span>}
         title="الوسوم الهرمية"
         description="إدارة يومية للوسوم: counts، آباء هرمية، ومؤشرات تكرار عربية. آباء الوسوم محفوظة في الخادم لكل مستخدم."
         meta={(

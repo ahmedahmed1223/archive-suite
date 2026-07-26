@@ -120,7 +120,7 @@ export default function DelegationsPage() {
   return (
     <AppShell subtitle="تفويض الوصول المؤقت" navLabel="التفويضات" contentClassName="observability-content">
       <PageToolbar
-        eyebrow={<span className="badge">V1-726</span>}
+        eyebrow={<span className="badge">تفويض مؤقت</span>}
         title="تفويض وصول مؤقت لزميل"
         description="امنح زميلاً صلاحية تعديل مؤقتة على مواد محددة، تنتهي تلقائياً في الموعد الذي تحدده دون تغيير دوره العام."
         meta={

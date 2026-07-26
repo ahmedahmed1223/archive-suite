@@ -191,7 +191,7 @@ export default function VocabularyPage() {
   return (
     <AppShell subtitle="المفردات" contentClassName="local-list-content" tipsPage="vocabulary">
       <PageToolbar
-        eyebrow={<span className="badge">Taxonomy</span>}
+        eyebrow={<span className="badge">التصنيف الهرمي</span>}
         title="المفردات"
         description="قاموس تشغيل يربط الأنواع والوسوم والمرادفات. يستخدم بيانات الأرشيف الحالية ويحفظ المصطلحات في الخادم لكل مستخدم."
         meta={(

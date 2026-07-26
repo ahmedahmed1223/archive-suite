@@ -64,7 +64,7 @@ export default function MapPage() {
   return (
     <AppShell subtitle="المكتبة" navLabel="الخريطة" contentClassName="map-page-content">
       <PageToolbar
-        eyebrow={<span className="badge">Library</span>}
+        eyebrow={<span className="badge">المكتبة</span>}
         title="الخريطة"
         description="كل السجلات ذات الموقع الجغرافي المسجَّل على خريطة واحدة."
         meta={state.status === "ready" ? <span className="badge">{state.points.length} سجل موقَّع</span> : null}

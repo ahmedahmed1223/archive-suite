@@ -148,7 +148,7 @@ export default function BackupPage() {
   return (
     <AppShell subtitle="مركز البيانات" navLabel="النسخ الاحتياطي" contentClassName="observability-content" tipsPage="backup">
       <PageToolbar
-        eyebrow={<span className="badge">Data Center</span>}
+        eyebrow={<span className="badge">مركز البيانات</span>}
         title="النسخ الاحتياطي والاستعادة"
         description="إدارة النسخ الاحتياطية لمخازن السجلات: إنشاء نسخة فورية، معاينة المحتوى، أو الاستعادة الكاملة (للمشرفين فقط)."
         meta={(

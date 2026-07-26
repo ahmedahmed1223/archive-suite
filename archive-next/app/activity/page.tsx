@@ -151,7 +151,7 @@ export default function ActivityPage() {
   return (
     <AppShell subtitle="النشاط" contentClassName="observability-content" tipsPage="activity">
       <PageToolbar
-        eyebrow={<span className="badge">Audit Activity</span>}
+        eyebrow={<span className="badge">سجل النشاط</span>}
         title="النشاط والتاريخ"
         description="سجل نشاط مصادق ومسنود من سجل التدقيق في الخادم، مع فلاتر حسب الحدث والنتيجة والمورد وقرارات استعادة عند توفر metadata كافية."
         meta={(

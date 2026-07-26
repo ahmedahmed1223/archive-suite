@@ -432,7 +432,7 @@ export default function FilesPage() {
     <AppShell subtitle="مستعرض الملفات" contentClassName="files-content" tipsPage="files">
       <PageToolbar
         icon={<Files size={24} />}
-        eyebrow={<span className="badge">File Operations</span>}
+        eyebrow={<span className="badge">عمليات الملفات</span>}
         title="الملفات"
         description="استعرض ملفات التخزين، شغّل الوسائط، اختر عناصر للمشاركة، أو أطلق فحص ingest من واجهة واحدة."
         meta={(

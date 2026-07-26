@@ -137,7 +137,7 @@ export default function InboxPage() {
   return (
     <AppShell subtitle="صندوق الوارد" contentClassName="local-list-content" tipsPage="inbox">
       <PageToolbar
-        eyebrow={<span className="badge">Capture</span>}
+        eyebrow={<span className="badge">التقاط سريع</span>}
         title="صندوق الوارد"
         description="التقاط سريع للمواد أو الأفكار قبل الأرشفة، محفوظ في الخادم لكل مستخدم."
         meta={(

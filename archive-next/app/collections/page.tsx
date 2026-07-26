@@ -44,6 +44,7 @@ export default function CollectionsPage() {
   const [tag, setTag] = useState("all");
   const [icon, setIcon] = useState<string | undefined>(undefined);
   const [deleteStack, setDeleteStack] = useState<UndoStack<CreateCollectionPayload>>(emptyUndoStack);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   async function refreshCollections() {
     setCollectionsState({ status: "loading" });
@@ -102,6 +103,7 @@ export default function CollectionsPage() {
     setType("all");
     setTag("all");
     setIcon(undefined);
+    setShowCreateForm(false);
   }
 
   async function removeCollection(id: string) {
@@ -173,7 +175,7 @@ export default function CollectionsPage() {
   return (
     <AppShell subtitle="المجموعات" contentClassName="local-list-content" tipsPage="collections">
       <PageToolbar
-        eyebrow={<span className="badge">Organize</span>}
+        eyebrow={<span className="badge">تنظيم</span>}
         title="المجموعات"
         description="تجميعات يدوية وذكية خفيفة فوق السجلات الحالية، محفوظة في الخادم لكل مستخدم."
         meta={(
@@ -185,36 +187,43 @@ export default function CollectionsPage() {
         actions={<a className="button button-secondary" href="/archive">فتح الأرشيف</a>}
       >
         {canManageCollections ? (
-          <form className="archive-toolbar-grid" onSubmit={addCollection}>
-            <label>
-              <span>اسم المجموعة</span>
-              <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="مثال: مواد تحتاج مراجعة" />
-            </label>
-            <label>
-              <span>بحث داخلي</span>
-              <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="كلمة أو وصف" />
-            </label>
-            <label>
-              <span>النوع</span>
-              <select value={type} onChange={(event) => setType(event.target.value)}>
-                <option value="all">كل الأنواع</option>
-                {types.map((item) => <option key={item} value={item}>{item}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>وسم</span>
-              <select value={tag} onChange={(event) => setTag(event.target.value)}>
-                <option value="all">كل الوسوم</option>
-                {tags.map((item) => <option key={item} value={item}>{item}</option>)}
-              </select>
-            </label>
-            <div className="full-span">
-              <IconPicker value={icon} onChange={setIcon} label="أيقونة المجموعة (اختياري)" />
-            </div>
+          showCreateForm ? (
+            <form className="archive-toolbar-grid" onSubmit={addCollection}>
+              <label>
+                <span>اسم المجموعة</span>
+                <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="مثال: مواد تحتاج مراجعة" />
+              </label>
+              <label>
+                <span>بحث داخلي</span>
+                <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="كلمة أو وصف" />
+              </label>
+              <label>
+                <span>النوع</span>
+                <select value={type} onChange={(event) => setType(event.target.value)}>
+                  <option value="all">كل الأنواع</option>
+                  {types.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>وسم</span>
+                <select value={tag} onChange={(event) => setTag(event.target.value)}>
+                  <option value="all">كل الوسوم</option>
+                  {tags.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <div className="full-span">
+                <IconPicker value={icon} onChange={setIcon} label="أيقونة المجموعة (اختياري)" />
+              </div>
+              <div className="archive-toolbar-actions">
+                <button className="button button-primary" type="submit" disabled={!name.trim()}>حفظ المجموعة</button>
+                <button className="button button-secondary" type="button" onClick={() => setShowCreateForm(false)}>إلغاء</button>
+              </div>
+            </form>
+          ) : (
             <div className="archive-toolbar-actions">
-              <button className="button button-primary" type="submit" disabled={!name.trim()}>حفظ المجموعة</button>
+              <button className="button button-primary" type="button" onClick={() => setShowCreateForm(true)}>+ مجموعة جديدة</button>
             </div>
-          </form>
+          )
         ) : (
           <p className="helper-text">لا تملك صلاحية إنشاء مجموعات جديدة.</p>
         )}

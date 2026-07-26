@@ -162,7 +162,7 @@ export default function AutomationPage() {
   return (
     <AppShell subtitle="الأتمتة" contentClassName="local-list-content" tipsPage="automation">
       <PageToolbar
-        eyebrow={<span className="badge">Rules Engine</span>}
+        eyebrow={<span className="badge">محرك القواعد</span>}
         title="محرّك القواعد"
         description="قواعد محفوظة في الخادم مع dry-run، تشغيل فعلي محدود، وسجل تنفيذ قابل للمراجعة."
         meta={(

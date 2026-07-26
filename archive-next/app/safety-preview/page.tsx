@@ -95,7 +95,7 @@ export default function SafetyPreviewPage() {
   return (
     <AppShell subtitle="معاينة السلامة" navLabel="معاينة السلامة" contentClassName="observability-content">
       <PageToolbar
-        eyebrow={<span className="badge">Synthetic simulation</span>}
+        eyebrow={<span className="badge">محاكاة تجريبية</span>}
         title="مساحة معاينة السلامة"
         description="محاكاة محمية تستخدم بيانات اصطناعية فقط؛ لا تُحذف أو تُستعاد أي بيانات إنتاجية."
         meta={<span className="badge">synthetic: true</span>}

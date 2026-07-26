@@ -471,7 +471,7 @@ export default function GraphPage() {
   return (
     <AppShell subtitle="خريطة العلاقات" navLabel="العلاقات" tipsPage="graph">
       <PageToolbar
-        eyebrow={<span className="badge">GraphView parity</span>}
+        eyebrow={<span className="badge">خريطة العلاقات</span>}
         title="خريطة العلاقات"
         description="اربط مواد الأرشيف يدوياً، واستكشف الروابط المستنتجة من الوسوم والأنواع في مساحة واحدة."
         meta={graph ? (

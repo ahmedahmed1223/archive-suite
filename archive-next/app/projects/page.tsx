@@ -255,7 +255,7 @@ export default function ProjectsPage() {
   return (
     <AppShell subtitle="المشاريع" contentClassName="local-list-content" tipsPage="projects">
       <PageToolbar
-        eyebrow={<span className="badge">Montage</span>}
+        eyebrow={<span className="badge">المونتاج</span>}
         title="المشاريع / المونتاج"
         description="تجميع قصاصات من مواد الأرشيف على خط زمني، مع ترتيب ونقاط دخول/خروج وتصدير JSON أو EDL."
         meta={(
