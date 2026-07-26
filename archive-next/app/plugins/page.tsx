@@ -113,7 +113,7 @@ function PermissionScopes({ scopes }: Readonly<{ scopes: PluginPermissionScopeSu
       {scopes.length ? (
         <div className="record-grid">
           {scopes.map((scope) => (
-            <article className="mini-card" key={scope.scope}>
+            <article className="mini-card" data-testid="plugin-permission-scope" key={scope.scope}>
               <strong dir="ltr">{scope.scope}</strong>
               <span className="tag-list">
                 <span className="badge" data-tone={riskTone(scope.risk)}>

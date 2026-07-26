@@ -173,12 +173,17 @@ test.describe('Arabic RTL audit (V1-791)', () => {
   }
 
   test('documents technical identifiers as LTR exceptions', async ({ roleSession }) => {
-    const { page } = await roleSession('viewer');
+    const { page } = await roleSession('admin');
 
     await visit(page, '/search', 'ready');
     await expect(page.locator('code[dir="ltr"]')).toContainText('type:video');
 
     await visit(page, '/media/review', 'ready');
     await expect(page.locator('input[placeholder="media/file.mp4"]')).toHaveAttribute('dir', 'ltr');
+
+    await visit(page, '/plugins', 'ready');
+    const permissionScope = page.getByTestId('plugin-permission-scope').first();
+    await expect(permissionScope).toBeVisible();
+    await expect(permissionScope.locator('strong')).toHaveAttribute('dir', 'ltr');
   });
 });
