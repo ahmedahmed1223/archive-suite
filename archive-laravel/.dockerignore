@@ -12,6 +12,7 @@ vendor
 node_modules
 .git
 storage/logs
+storage/app
 storage/framework/cache
 storage/framework/sessions
 storage/framework/views

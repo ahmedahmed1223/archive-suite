@@ -88,6 +88,12 @@ test("the unprivileged nginx image owns its runtime directories", () => {
   assert.match(dockerfile, /sed -i 's#pid \/run\/nginx\.pid;#pid \/tmp\/nginx\.pid;#' \/etc\/nginx\/nginx\.conf/);
 });
 
+test("the Laravel image excludes local runtime storage from its build context", () => {
+  const dockerignore = read("archive-laravel/.dockerignore");
+
+  assert.match(dockerignore, /^storage\/app$/m);
+});
+
 test("the runtime gate accepts Node 26 and rejects other major versions", () => {
   assert.equal(isSupportedNodeVersion("v26.5.0"), true);
   assert.equal(isSupportedNodeVersion("v25.99.0"), false);

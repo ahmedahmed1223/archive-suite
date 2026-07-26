@@ -105,8 +105,7 @@ async function platformBoot({ scenario, provider, evidenceStore, attempt = 1, si
 }
 
 async function backupAndVerify({ scenario, provider, evidenceStore, attempt = 1, signal }) {
-  const php = ["php", "-d", "memory_limit=512M"];
-  const backup = await provider.exec("laravel-fpm", [...php, "artisan", "archive:backup-run", "--json"], { signal });
+  const backup = await provider.exec("laravel-fpm", ["php", "artisan", "archive:backup-run", "--json"], { signal });
   const created = parseCommandJson(backup);
   const name = created?.ok === true ? created?.details?.backup?.name : null;
   const refs = await saveEvidence(evidenceStore, `${scenario.id}-attempt-${attempt}-backup.json`, { backup: created });
@@ -114,7 +113,7 @@ async function backupAndVerify({ scenario, provider, evidenceStore, attempt = 1,
   if (!commandSucceeded(backup)) return result(scenario.id, "failed", "product", evidence, "scenario-failed", backup?.stderr);
   if (!isSafeBackupName(name)) return result(scenario.id, "failed", "data", evidence, "invalid-data", "backup command returned an invalid backup name");
 
-  const verified = await provider.exec("laravel-fpm", [...php, "artisan", "archive:backup-verify", name, "--json"], { signal });
+  const verified = await provider.exec("laravel-fpm", ["php", "artisan", "archive:backup-verify", name, "--json"], { signal });
   const verification = parseCommandJson(verified);
   refs.push(...await saveEvidence(evidenceStore, `${scenario.id}-attempt-${attempt}-backup-verify.json`, { verification }));
   return commandSucceeded(verified) && verification?.ok === true
@@ -129,9 +128,10 @@ function browserCommand(provider, evidenceStore, scenarioIds, attempt) {
   const outputRef = `playwright-${slug}-attempt-${attempt}`;
   const resultPath = join(evidenceStore.directory, resultRef);
   const outputDirectory = join(evidenceStore.directory, outputRef);
+  const pnpmArgs = ["--filter", "@archive/next", "exec", "playwright", "test", "e2e/acceptance-smoke.authed.spec.ts", "--project", "authenticated"];
   return {
-    command: process.platform === "win32" ? "pnpm.cmd" : "pnpm",
-    args: ["--filter", "@archive/next", "exec", "playwright", "test", "e2e/acceptance-smoke.authed.spec.ts", "--project", "authenticated"],
+    command: process.platform === "win32" ? (process.env.ComSpec ?? "cmd.exe") : "pnpm",
+    args: process.platform === "win32" ? ["/d", "/s", "/c", "pnpm", ...pnpmArgs] : pnpmArgs,
     env: {
       E2E_BASE_URL: provider.endpoints.next,
       ARCHIVE_API_BASE_URL: provider.endpoints.api,
