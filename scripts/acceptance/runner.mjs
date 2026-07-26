@@ -63,6 +63,26 @@ async function resolveLastFailed(lastFailed, readLastFailed) {
   return failedIds(await readLastFailed());
 }
 
+export async function resolveAcceptanceSelection({
+  tag,
+  ids,
+  lastFailed = false,
+  scenarios = ACCEPTANCE_SCENARIOS,
+  readLastFailed,
+} = {}) {
+  try {
+    const previousFailedIds = await resolveLastFailed(lastFailed, readLastFailed);
+    const requestedIds = previousFailedIds ?? (ids?.length ? ids : undefined);
+    const selected = scenarios === ACCEPTANCE_SCENARIOS && !previousFailedIds
+      ? selectScenarios({ tag, ids: requestedIds })
+      : selectFromScenarios(scenarios, { tag, ids: requestedIds });
+    if (!selected.length) throw new Error("no acceptance scenarios selected");
+    return selected;
+  } catch (error) {
+    throw new AcceptanceInputError(error instanceof Error ? error.message : String(error), { cause: error });
+  }
+}
+
 function missingCapabilities(scenario, provider) {
   const available = new Set(provider?.capabilities ?? []);
   return scenario.capabilities.filter((capability) => !available.has(capability));
@@ -270,17 +290,7 @@ export async function runAcceptance({
   if (!provider) throw new Error("acceptance provider is required");
   if (typeof executeScenario !== "function") throw new Error("executeScenario must be a function");
 
-  let selected;
-  try {
-    const previousFailedIds = await resolveLastFailed(lastFailed, readLastFailed);
-    const requestedIds = previousFailedIds ?? (ids?.length ? ids : undefined);
-    selected = scenarios === ACCEPTANCE_SCENARIOS && !previousFailedIds
-      ? selectScenarios({ tag, ids: requestedIds })
-      : selectFromScenarios(scenarios, { tag, ids: requestedIds });
-    if (!selected.length) throw new Error("no acceptance scenarios selected");
-  } catch (error) {
-    throw new AcceptanceInputError(error instanceof Error ? error.message : String(error), { cause: error });
-  }
+  const selected = await resolveAcceptanceSelection({ tag, ids, lastFailed, scenarios, readLastFailed });
   const started = dateFrom(now());
   const budget = assertAuthBudget(selected);
   const results = [];

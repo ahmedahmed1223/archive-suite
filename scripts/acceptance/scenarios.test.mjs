@@ -61,7 +61,7 @@ test("V1-804 exposes exactly the five stable smoke scenario IDs", () => {
   ]);
 });
 
-test("platform boot requires API health plus worker and Reverb readiness", async () => {
+test("platform boot requires non-degraded API health plus worker, scheduler, and Reverb readiness", async () => {
   const calls = [];
   const controller = new AbortController();
   const execute = createSmokeScenarioExecutor({
@@ -72,7 +72,7 @@ test("platform boot requires API health plus worker and Reverb readiness", async
     provider: {
       exec: async (service, args, options) => {
         calls.push([service, args, options]);
-        if (service === "laravel") return { status: 0, stdout: '{"status":"ok"}', stderr: "" };
+        if (service === "laravel") return { status: 0, stdout: '{"ok":true,"degraded":false,"scheduledUploads":{"schedulerFresh":true}}', stderr: "" };
         return { status: 0, stdout: "running\nrunning\n", stderr: "" };
       },
     },
@@ -83,10 +83,23 @@ test("platform boot requires API health plus worker and Reverb readiness", async
   assert.deepEqual(calls, [
     ["laravel", ["curl", "--fail", "--silent", "--show-error", "http://localhost:8000/api/v1/health"], { signal: controller.signal }],
     ["laravel-worker", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"], { signal: controller.signal }],
+    ["laravel-scheduler", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[s]chedule:work'"], { signal: controller.signal }],
     ["laravel-reverb", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[r]everb:start'"], { signal: controller.signal }],
   ]);
 });
 
+test("platform boot rejects a degraded health payload even when curl exits zero", async () => {
+  const execute = createSmokeScenarioExecutor({ browserJourney: async () => ({ status: 0 }) });
+  const result = await execute({
+    scenario: scenario("V1-IA-PLAT-001"),
+    provider: {
+      exec: async (service) => service === "laravel"
+        ? { status: 0, stdout: '{"ok":true,"degraded":true,"scheduledUploads":{"schedulerFresh":false}}', stderr: "" }
+        : { status: 0, stdout: "", stderr: "" },
+    },
+  });
+  assert.equal(result.status, "failed");
+});
 test("backup smoke verifies only the basename emitted by the real backup command", async () => {
   const calls = [];
   const execute = createSmokeScenarioExecutor({ browserJourney: async () => ({ status: 0 }) });

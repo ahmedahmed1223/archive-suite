@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { createEvidenceStore } from "./acceptance/evidence.mjs";
 import { createDockerProvider } from "./acceptance/providers/docker.mjs";
-import { AcceptanceInputError, runAcceptance } from "./acceptance/runner.mjs";
+import { AcceptanceInputError, resolveAcceptanceSelection, runAcceptance } from "./acceptance/runner.mjs";
 import { createSmokeScenarioExecutor } from "./acceptance/scenarios.mjs";
 
 const MODULE_PATH = fileURLToPath(import.meta.url);
@@ -104,16 +104,18 @@ export async function main(argv = process.argv.slice(2), {
 } = {}) {
   try {
     const options = parseAcceptanceArguments(argv);
+    const readLastFailed = () => findLastFailedManifest(evidenceRoot);
+    const selectedScenarios = await resolveAcceptanceSelection({ ...options, readLastFailed });
     const runId = `run-${now().toISOString().replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "").toLowerCase()}`;
     const metadata = runMetadata ?? createRunMetadata(root);
-    const evidenceStore = createStore({ root: evidenceRoot, runId, now: now() });
+    const evidenceStore = createStore({ root: evidenceRoot, runId, now });
     const provider = createProvider({ root, runId, getFreePort });
     const result = await runAcceptance({
-      ...options,
+      keepEnvironment: options.keepEnvironment,
+      scenarios: selectedScenarios,
       provider,
       evidenceStore,
       executeScenario: executeScenario ?? createScenarioExecutor(),
-      readLastFailed: () => findLastFailedManifest(evidenceRoot),
       runMetadata: metadata,
       now,
     });

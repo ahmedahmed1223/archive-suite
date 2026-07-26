@@ -96,12 +96,17 @@ function isSafeBackupName(name) {
 async function platformBoot({ scenario, provider, evidenceStore, attempt = 1, signal }) {
   const health = await provider.exec("laravel", ["curl", "--fail", "--silent", "--show-error", "http://localhost:8000/api/v1/health"], { signal });
   const worker = await provider.exec("laravel-worker", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"], { signal });
+  const scheduler = await provider.exec("laravel-scheduler", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[s]chedule:work'"], { signal });
   const reverb = await provider.exec("laravel-reverb", ["sh", "-lc", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[r]everb:start'"], { signal });
-  const refs = await saveEvidence(evidenceStore, `${scenario.id}-attempt-${attempt}-readiness.json`, { health, worker, reverb });
-  const evidence = { kind: "readiness", scenarioId: scenario.id, checks: ["api-health", "worker", "reverb"], refs };
-  return commandSucceeded(health) && commandSucceeded(worker) && commandSucceeded(reverb)
+  const healthPayload = parseCommandJson(health);
+  const healthy = healthPayload?.ok === true
+    && healthPayload?.degraded === false
+    && healthPayload?.scheduledUploads?.schedulerFresh === true;
+  const refs = await saveEvidence(evidenceStore, `${scenario.id}-attempt-${attempt}-readiness.json`, { health, worker, scheduler, reverb });
+  const evidence = { kind: "readiness", scenarioId: scenario.id, checks: ["api-health", "worker", "scheduler", "reverb"], refs };
+  return commandSucceeded(health) && healthy && commandSucceeded(worker) && commandSucceeded(scheduler) && commandSucceeded(reverb)
     ? result(scenario.id, "passed", "product", evidence)
-    : result(scenario.id, "failed", "product", evidence, "scenario-failed", health?.stderr || worker?.stderr || reverb?.stderr);
+    : result(scenario.id, "failed", "product", evidence, "scenario-failed", health?.stderr || worker?.stderr || scheduler?.stderr || reverb?.stderr || health?.stdout);
 }
 
 async function backupAndVerify({ scenario, provider, evidenceStore, attempt = 1, signal }) {

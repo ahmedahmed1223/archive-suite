@@ -64,6 +64,7 @@ export function createEvidenceStore({ root, runId, sourceRoot = process.cwd(), n
   if (isInside(resolve(sourceRoot), evidenceRoot)) throw new Error("evidence root must be outside the source tree");
   if (!/^[a-z0-9][a-z0-9_-]*$/i.test(runId)) throw new Error("run id is invalid");
   const directory = join(evidenceRoot, runId);
+  const clock = typeof now === "function" ? now : () => now;
 
   function ensureDirectory() {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -89,7 +90,7 @@ export function createEvidenceStore({ root, runId, sourceRoot = process.cwd(), n
       ...summary,
       schemaVersion: 1,
       runId,
-      generatedAt: now.toISOString(),
+      generatedAt: clock().toISOString(),
       status,
       results: safeResults,
     });

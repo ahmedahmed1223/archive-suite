@@ -210,7 +210,7 @@ services:
       dockerfile: Dockerfile.worker
     restart: unless-stopped
     logging: *local-logging
-    command: ["php", "artisan", "schedule:work"]
+    command: ["sh", "-c", "php artisan uploads:dispatch-scheduled && exec php artisan schedule:work"]
     environment:
       APP_ENV: production
       APP_DEBUG: "false"

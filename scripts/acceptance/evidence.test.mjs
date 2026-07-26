@@ -77,6 +77,22 @@ test("finalization writes deterministic summary and manifest evidence with owner
   }
 });
 
+test("manifest generatedAt is captured when evidence is finalized", () => {
+  const root = mkdtempSync(join(tmpdir(), "archive-acceptance-"));
+  const times = [
+    new Date("2026-07-19T00:00:00Z"),
+    new Date("2026-07-19T00:00:05Z"),
+  ];
+  const store = createEvidenceStore({
+    root,
+    runId: "run-clock",
+    now: () => times.shift(),
+    secure: () => {}, secureDirectory: () => {},
+  });
+  const manifest = store.finalize({ status: "passed", results: [] });
+  assert.equal(manifest.generatedAt, "2026-07-19T00:00:00.000Z");
+});
+
 test("finalization fails when a pre-existing log artifact retains a credential URL or user path", () => {
   const root = mkdtempSync(join(tmpdir(), "archive-acceptance-"));
   const store = createEvidenceStore({ root, runId: "run-005", secure: () => {}, secureDirectory: () => {} });

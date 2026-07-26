@@ -132,7 +132,9 @@ test("runner enforces the collective fifteen-minute deadline with an injected cl
     },
     clearTimer: () => {},
   });
-  await Promise.resolve();
+  while (!timers.some(({ milliseconds }) => milliseconds === 15 * 60_000)) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
   timers.find(({ milliseconds }) => milliseconds === 15 * 60_000).callback();
   const result = await run;
   assert.equal(destroyed, true);
@@ -469,6 +471,18 @@ test("CLI resolves run metadata before creating a provider with temporary creden
   });
   assert.equal(exitCode, 1);
   assert.equal(providerCreated, false);
+});
+
+test("CLI validates scenario selection before creating provider credentials or evidence", async () => {
+  let providerCreated = false;
+  let storeCreated = false;
+  const exitCode = await main(["run", "--id", "V1-IA-BOGUS-999"], {
+    createProvider: () => { providerCreated = true; return providerFake(); },
+    createStore: () => { storeCreated = true; return { directory: "test-evidence", writeArtifact: () => {}, finalize: () => {} }; },
+  });
+  assert.equal(exitCode, 2);
+  assert.equal(providerCreated, false);
+  assert.equal(storeCreated, false);
 });
 
 test("runner bounds destroy independently and reports cleanup unproved on timeout", async () => {

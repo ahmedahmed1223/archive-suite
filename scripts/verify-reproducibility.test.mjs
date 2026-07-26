@@ -100,6 +100,12 @@ test("the canonical FPM service consumes the deploy-time CORS origin", () => {
   assert.match(compose, /ARCHIVE_CORS_ORIGINS: \$\{ARCHIVE_CORS_ORIGINS:-http:\/\/localhost:3000,http:\/\/localhost:5173\}/);
 });
 
+test("the scheduler establishes its health heartbeat before entering its loop", () => {
+  const compose = read("infra/docker-compose.laravel-next.yml");
+
+  assert.match(compose, /php artisan uploads:dispatch-scheduled && exec php artisan schedule:work/);
+});
+
 test("the runtime gate accepts Node 26 and rejects other major versions", () => {
   assert.equal(isSupportedNodeVersion("v26.5.0"), true);
   assert.equal(isSupportedNodeVersion("v25.99.0"), false);
