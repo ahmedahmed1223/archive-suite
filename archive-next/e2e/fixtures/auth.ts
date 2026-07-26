@@ -74,6 +74,11 @@ export const test = base.extend<RoleFixtures>({
       if (!login.ok()) {
         throw new Error(`roleSession(${role}): fresh login failed with ${login.status()}`);
       }
+      const loginPayload = await login.json() as { user?: { name?: unknown } };
+      const sessionAccount: RoleAccount = {
+        ...account,
+        ...(typeof loginPayload.user?.name === 'string' ? { name: loginPayload.user.name } : {}),
+      };
       const cookies = await context.cookies(baseURL);
       if (!cookies.some((cookie) => cookie.name === 'va_session')) {
         throw new Error(`roleSession(${role}): fresh login did not persist va_session for ${baseURL}`);
@@ -93,7 +98,7 @@ export const test = base.extend<RoleFixtures>({
       const page = await context.newPage();
 
       return {
-        account: ROLE_ACCOUNTS[role],
+        account: sessionAccount,
         data: manifest().roles[role],
         page,
         context,

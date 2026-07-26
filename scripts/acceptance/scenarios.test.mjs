@@ -32,6 +32,8 @@ test("acceptance role contexts keep the provider origin and verify their session
   assert.match(fixture, /browser\.newContext\(\{ baseURL, storageState: storageStatePath\(role\) \}\)/);
   assert.match(fixture, /context\.cookies\(baseURL\)/);
   assert.match(fixture, /cookie\.name === 'va_session'/);
+  assert.match(fixture, /const loginPayload = await login\.json\(\)/);
+  assert.match(fixture, /account: sessionAccount/);
 });
 
 function commandResult(payload) {
