@@ -93,8 +93,8 @@ test("backup smoke verifies only the basename emitted by the real backup command
 
   assert.equal(result.status, "passed");
   assert.deepEqual(calls, [
-    ["laravel-fpm", ["php", "artisan", "archive:backup-run", "--json"]],
-    ["laravel-fpm", ["php", "artisan", "archive:backup-verify", "acceptance.json.gz", "--json"]],
+    ["laravel-fpm", ["php", "-d", "memory_limit=512M", "artisan", "archive:backup-run", "--json"]],
+    ["laravel-fpm", ["php", "-d", "memory_limit=512M", "artisan", "archive:backup-verify", "acceptance.json.gz", "--json"]],
   ]);
 });
 
@@ -116,7 +116,7 @@ test("all browser journeys share one direct authenticated Playwright invocation 
   }
   assert.equal(calls.length, 1);
   assert.deepEqual(calls.map(({ command, args }) => ({ command, args })), [
-    { command: "pnpm", args: ["--filter", "@archive/next", "exec", "playwright", "test", "e2e/acceptance-smoke.authed.spec.ts", "--project", "authenticated"] },
+    { command: process.platform === "win32" ? "pnpm.cmd" : "pnpm", args: ["--filter", "@archive/next", "exec", "playwright", "test", "e2e/acceptance-smoke.authed.spec.ts", "--project", "authenticated"] },
   ]);
   assert.equal(calls[0].env.E2E_BASE_URL, "http://127.0.0.1:43123");
   assert.equal(calls[0].env.ARCHIVE_E2E_EMAIL, "admin@test");
