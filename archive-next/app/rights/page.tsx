@@ -14,6 +14,7 @@ import {
   type RightsEnforcementStatus
 } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { formatArabicDate } from "@/lib/arabic-format";
 
 type RightsState =
   | { status: "loading" }
@@ -51,10 +52,7 @@ const licenseLabels: Record<LicenseType, string> = {
 };
 
 function formatDate(value?: string | null) {
-  if (!value) return "غير محدد";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("ar-SA");
+  return formatArabicDate(value, "غير محدد");
 }
 
 function daysUntil(value?: string | null): number | null {

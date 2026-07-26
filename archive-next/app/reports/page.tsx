@@ -13,6 +13,7 @@ import {
   type StorageSample
 } from "@/lib/archive-api";
 import { formatDate } from "@/lib/record-utils";
+import { formatArabicDate } from "@/lib/arabic-format";
 import { buildExportPreview, redactAdminSecrets } from "@/lib/admin-action-summary";
 import { forecastStorageGrowth } from "@/lib/storage-forecast";
 import "./reports.css";
@@ -68,9 +69,7 @@ function formatStorageBytes(bytes: number): string {
 }
 
 function formatForecastDate(iso: string | null): string {
-  if (!iso) return "-";
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString("ar-SA");
+  return formatArabicDate(iso, "-");
 }
 
 export default function ReportsPage() {

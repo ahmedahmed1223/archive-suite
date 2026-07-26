@@ -9,6 +9,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SyncLogEntry, type SyncSummary } from "@/lib/archive-api";
 import "./sync.css";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { formatArabicDateTime } from "@/lib/arabic-format";
 
 type SyncState =
   | { status: "loading" }
@@ -174,7 +175,7 @@ export default function SyncPage() {
                           </td>
                           <td>{entry.syncVersion ?? "—"}</td>
                           <td>
-                            {entry.updatedAt ? new Date(entry.updatedAt).toLocaleString("ar-SA") : "—"}
+                            {formatArabicDateTime(entry.updatedAt, "—")}
                           </td>
                         </tr>
                       );
@@ -201,7 +202,7 @@ export default function SyncPage() {
                     </div>
                     <div className="kv-item">
                       <strong>آخر تحديث</strong>
-                      <span>{selectedEntry.updatedAt ? new Date(selectedEntry.updatedAt).toLocaleString("ar-SA") : "—"}</span>
+                      <span>{formatArabicDateTime(selectedEntry.updatedAt, "—")}</span>
                     </div>
                   </div>
                   <div className="button-row">
