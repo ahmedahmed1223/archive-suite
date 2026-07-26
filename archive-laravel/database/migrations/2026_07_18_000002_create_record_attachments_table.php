@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->string('checksum_sha256', 64);
             $table->boolean('is_primary')->default(false);
             $table->string('processing_status')->default('ready');
-            $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->index(['record_store', 'record_uid']);
             $table->index('checksum_sha256');

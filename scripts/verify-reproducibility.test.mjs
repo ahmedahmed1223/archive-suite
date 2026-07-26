@@ -70,6 +70,16 @@ test("the root Docker context excludes generated Next build output", () => {
   assert.match(dockerignore, /^\*\*\/\.next(?:\/)?$/m);
 });
 
+test("record attachment ownership uses the canonical users key type", () => {
+  const migration = read("archive-laravel/database/migrations/2026_07_18_000002_create_record_attachments_table.php");
+
+  assert.match(
+    migration,
+    /\$table->foreignId\('created_by'\)->nullable\(\)->constrained\('users'\)->nullOnDelete\(\);/
+  );
+  assert.doesNotMatch(migration, /foreignUuid\('created_by'\)/);
+});
+
 test("the runtime gate accepts Node 26 and rejects other major versions", () => {
   assert.equal(isSupportedNodeVersion("v26.5.0"), true);
   assert.equal(isSupportedNodeVersion("v25.99.0"), false);
