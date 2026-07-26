@@ -17,6 +17,7 @@ import RecentFavoritesMenu from "@/components/RecentFavoritesMenu";
 import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
 import { SIDEBAR_VIEWPORT_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { useTheme } from "@/components/ThemeProvider";
+import { getGuideChapterForPath } from "@/lib/in-app-guide";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
@@ -105,6 +106,11 @@ export default function AppHeader({
   const activeSection = activeLink?.section;
   const navigation = getDailyNavigation(activeSection, auth.user?.role ?? "viewer");
   const breadcrumbItems: BreadcrumbItem[] = [{ label: "الرئيسية", href: "/" }];
+  const contextualGuide = getGuideChapterForPath(pathname, [
+    { id: "viewer-search", title: "", audience: ["viewer", "editor", "admin"] as const, body: "", href: "/search" },
+    { id: "editor-upload", title: "", audience: ["editor", "admin"] as const, body: "", href: "/uploads" },
+    { id: "admin-operations", title: "", audience: ["admin"] as const, body: "", href: "/settings/users" },
+  ]);
   if (activeSection) breadcrumbItems.push({ label: navSectionLabels[activeSection] });
   if (activeLink && activeLink.href !== "/") breadcrumbItems.push({ label: activeLink.label, href: activeLink.href });
   breadcrumbItems.push(...breadcrumbExtra);
@@ -132,6 +138,12 @@ export default function AppHeader({
         <span>المسارات</span>
       </button>
       <div className="topbar-actions" aria-label="أدوات الواجهة">
+        {contextualGuide ? (
+          <Link className="icon-action" href={`/help?chapter=${contextualGuide.id}`} title="كيف تعمل هذه الصفحة؟">
+            <Icons.CircleHelp aria-hidden="true" size={18} strokeWidth={2} />
+            <span>كيف تعمل هذه الصفحة؟</span>
+          </Link>
+        ) : null}
         <Link className="icon-action primary-action-link" href="/uploads" title="إضافة مادة">
           <Icons.UploadCloud aria-hidden="true" size={18} strokeWidth={2} />
           <span>إضافة مادة</span>

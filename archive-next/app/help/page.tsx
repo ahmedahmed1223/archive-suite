@@ -1,5 +1,7 @@
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
+import GuideBrowser from "@/components/GuideBrowser";
+import { getGuideChapters } from "@/lib/guide-content";
 
 const gettingStartedChecklist = [
   "افتح /first-run واختر مسار التهيئة السريع أو المتقدم حسب بيئتك.",
@@ -134,6 +136,8 @@ export default function HelpPage() {
           ))}
         </ul>
       </article>
+
+      <GuideBrowser chapters={getGuideChapters()} />
     </AppShell>
   );
 }

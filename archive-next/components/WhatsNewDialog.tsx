@@ -2,6 +2,7 @@
 
 import { Search, Sparkles, Users } from "lucide-react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import {
   shouldShowWhatsNew,
@@ -63,6 +64,9 @@ export default function WhatsNewDialog() {
           ))}
         </div>
         <div className="whats-new-actions">
+          <Link className="button button-secondary" href="/help?chapter=whats-new" onClick={acknowledge}>
+            اقرأ تفاصيل الإصدار
+          </Link>
           <button className="button button-primary" type="button" onClick={acknowledge}>
             ابدأ العمل
           </button>
