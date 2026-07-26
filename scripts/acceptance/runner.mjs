@@ -6,6 +6,7 @@ import {
   validateResult,
 } from "./contracts.mjs";
 import { ACCEPTANCE_SCENARIOS, selectScenarios } from "./registry.mjs";
+import { snapshotForScenario } from "./platform.mjs";
 
 export const AUTH_BUDGET = Object.freeze({ loginsPerMinute: 30, refreshesPerMinute: 120 });
 export const RUN_DEADLINE_MS = 15 * 60_000;
@@ -317,10 +318,11 @@ export async function runAcceptance({
     }
     for (const scenario of selected) {
       if (missingCapabilities(scenario, provider).length) {
-        results.push({ scenarioId: scenario.id, status: "blocked-capability", attempts: 0 });
+        results.push({ scenarioId: scenario.id, status: "blocked-capability", blockedCapabilities: missingCapabilities(scenario, provider), attempts: 0 });
         continue;
       }
-      results.push(await executeWithOneFlakeRetry({
+      const snapshot = await snapshotForScenario(provider, scenario, { signal: runController.signal });
+      const executed = await executeWithOneFlakeRetry({
         scenario,
         provider,
         evidenceStore,
@@ -329,7 +331,8 @@ export async function runAcceptance({
         setTimer,
         clearTimer,
         selectedScenarioIds,
-      }));
+      });
+      results.push(snapshot ? { ...executed, snapshot } : executed);
     }
     await provider.collect?.({ signal: runController.signal });
   } catch (error) {
@@ -337,7 +340,7 @@ export async function runAcceptance({
     for (const scenario of selected) {
       if (results.some((result) => result.scenarioId === scenario.id)) continue;
       if (missingCapabilities(scenario, provider).length) {
-        results.push({ scenarioId: scenario.id, status: "blocked-capability", attempts: 0, attemptResults: [] });
+        results.push({ scenarioId: scenario.id, status: "blocked-capability", blockedCapabilities: missingCapabilities(scenario, provider), attempts: 0, attemptResults: [] });
       } else {
         results.push(resultForExecutionError(
           scenario,
