@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { chmodSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
+import { extname, join, relative, resolve, sep } from "node:path";
 
 import { sanitize, secureBundleFile } from "../observability.mjs";
 import { validateResult } from "./contracts.mjs";
@@ -34,13 +34,21 @@ function secureEvidenceDirectory(path) {
   if ((statSync(path).mode & 0o777) !== 0o700) throw new Error("Evidence directory permissions are not 0700");
 }
 
+const INSPECTABLE_ARTIFACT_EXTENSIONS = new Set([".json", ".log", ".md", ".txt"]);
+const EXPLICIT_SCREENSHOT_EXTENSION = ".png";
+
 function scanDirectory(path) {
   for (const entry of readdirSync(path, { withFileTypes: true })) {
     const artifact = join(path, entry.name);
     if (entry.isDirectory()) {
       scanDirectory(artifact);
     } else if (entry.isFile()) {
-      assertNoSensitiveEvidence(readFileSync(artifact));
+      const extension = extname(entry.name).toLowerCase();
+      if (INSPECTABLE_ARTIFACT_EXTENSIONS.has(extension)) {
+        assertNoSensitiveEvidence(readFileSync(artifact, "utf8"));
+      } else if (extension !== EXPLICIT_SCREENSHOT_EXTENSION) {
+        throw new Error(`uninspectable artifact type: ${entry.name}`);
+      }
     }
   }
 }

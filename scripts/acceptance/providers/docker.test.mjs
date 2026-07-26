@@ -159,7 +159,9 @@ test("provider collects non-empty service image digest provenance", async () => 
     runId: "run-006",
     run: async (cmd, args) => {
       if (args.includes("images")) {
-        return { status: 0, stdout: `${JSON.stringify({ Service: "next", Repository: "archive-next", Tag: "rc", ID: digest })}\n`, stderr: "" };
+        // `docker compose images --format json` emits ImageID, not the
+        // `docker image ls`-style ID field.
+        return { status: 0, stdout: `${JSON.stringify({ Service: "next", Repository: "archive-next", Tag: "rc", ImageID: digest })}\n`, stderr: "" };
       }
       if (args[0] === "compose" && args.includes("ps")) return { status: 0, stdout: JSON.stringify([{ Service: "next", State: "running" }]), stderr: "" };
       return { status: 0, stdout: args[0] === "compose" ? "[]" : "", stderr: "" };

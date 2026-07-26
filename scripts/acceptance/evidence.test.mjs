@@ -88,3 +88,15 @@ test("finalization fails when a pre-existing log artifact retains a credential U
     /sensitive evidence/i,
   );
 });
+
+test("finalization rejects compressed or otherwise uninspectable artifacts", () => {
+  const root = mkdtempSync(join(tmpdir(), "archive-acceptance-"));
+  const store = createEvidenceStore({ root, runId: "run-006", secure: () => {}, secureDirectory: () => {} });
+  const artifacts = join(root, "run-006", "playwright-output");
+  mkdirSync(artifacts, { recursive: true });
+  writeFileSync(join(artifacts, "trace.zip"), Buffer.from("PK\x03\x04"));
+  assert.throws(
+    () => store.finalize({ status: "failed", results: [] }),
+    /uninspectable artifact/i,
+  );
+});

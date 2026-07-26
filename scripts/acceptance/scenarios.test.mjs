@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
@@ -9,9 +9,21 @@ import test from "node:test";
 import {
   createSmokeScenarioExecutor,
   SMOKE_SCENARIO_IDS,
+  SMOKE_SCENARIOS,
 } from "./scenarios.mjs";
 
 const scenario = (id) => ({ id, title: id, tags: ["smoke"], capabilities: ["docker"] });
+
+test("acceptance Playwright configuration disables trace and video artifacts", () => {
+  const config = readFileSync(new URL("../../archive-next/playwright.config.ts", import.meta.url), "utf8");
+  assert.match(config, /ARCHIVE_ACCEPTANCE_SCENARIO_IDS/);
+  assert.match(config, /screenshot:\s*isAcceptanceRun\s*\?\s*['"]off['"]\s*:/);
+  assert.match(config, /video:\s*isAcceptanceRun\s*\?\s*['"]off['"]\s*:/);
+  assert.match(config, /trace:\s*isAcceptanceRun\s*\?\s*['"]off['"]\s*:/);
+  for (const scenario of SMOKE_SCENARIOS) {
+    assert.ok(!scenario.evidence.includes("trace.zip"), `${scenario.id} must not declare trace evidence`);
+  }
+});
 
 function commandResult(payload) {
   return { status: 0, stdout: `${JSON.stringify(payload)}\n`, stderr: "" };

@@ -25,10 +25,10 @@ const BROWSER_SCENARIOS = new Set([
  */
 export const SMOKE_SCENARIOS = Object.freeze([
   Object.freeze({ id: "V1-IA-PLAT-001", timeoutMs: 90_000, evidence: ["health.json", "compose-status.json"], cleanup: "provider-destroy" }),
-  Object.freeze({ id: "V1-IA-ARCH-001", timeoutMs: 240_000, evidence: ["playwright.json", "trace.zip", "screenshot.png"], cleanup: "close-fresh-contexts" }),
-  Object.freeze({ id: "V1-IA-ADMIN-001", timeoutMs: 240_000, evidence: ["playwright.json", "trace.zip", "screenshot.png"], cleanup: "close-fresh-contexts" }),
+  Object.freeze({ id: "V1-IA-ARCH-001", timeoutMs: 240_000, evidence: ["playwright.json", "screenshot.png"], cleanup: "close-fresh-contexts" }),
+  Object.freeze({ id: "V1-IA-ADMIN-001", timeoutMs: 240_000, evidence: ["playwright.json", "screenshot.png"], cleanup: "close-fresh-contexts" }),
   Object.freeze({ id: "V1-IA-ADMIN-002", timeoutMs: 180_000, evidence: ["backup.json", "backup-verify.json"], cleanup: "provider-destroy" }),
-  Object.freeze({ id: "V1-IA-MULTI-001", timeoutMs: 240_000, evidence: ["playwright.json", "trace.zip", "screenshot.png"], cleanup: "close-fresh-contexts" }),
+  Object.freeze({ id: "V1-IA-MULTI-001", timeoutMs: 240_000, evidence: ["playwright.json", "screenshot.png"], cleanup: "close-fresh-contexts" }),
 ]);
 
 function createDefaultBrowserJourney(spawnProcess = spawn) {

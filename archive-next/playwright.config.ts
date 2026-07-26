@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import type { ReporterDescription } from '@playwright/test';
 
 const acceptanceResultPath = process.env.ARCHIVE_ACCEPTANCE_RESULT_PATH;
+const isAcceptanceRun = Boolean(process.env.ARCHIVE_ACCEPTANCE_SCENARIO_IDS);
 const reporters: ReporterDescription[] = acceptanceResultPath
   ? [['list'], ['json', { outputFile: acceptanceResultPath }]]
   : [['list'], ['html', { open: 'never' }]];
@@ -31,10 +32,12 @@ export default defineConfig({
     // RTL Arabic app — set locale so Intl / date formatting is consistent
     locale: 'ar-SA',
 
-    // Capture artifacts on failure
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    trace: 'retain-on-failure',
+    // Acceptance evidence is finalized by a strict plaintext scanner. Keep
+    // only the screenshots explicitly created by its specs; traces, videos,
+    // and automatic failure screenshots can include uninspectable payloads.
+    screenshot: isAcceptanceRun ? 'off' : 'only-on-failure',
+    video: isAcceptanceRun ? 'off' : 'retain-on-failure',
+    trace: isAcceptanceRun ? 'off' : 'retain-on-failure',
   },
 
   projects: [

@@ -148,7 +148,9 @@ export function createDockerProvider({ root, runId, run, getFreePort }) {
         }
       }
       imageDigests = records.flatMap((record) => {
-        const digest = record.ID ?? record.Id ?? record.Digest;
+        // Compose's JSON schema names this field ImageID. Keep the legacy
+        // spellings only for older Docker implementations.
+        const digest = record.ImageID ?? record.ID ?? record.Id ?? record.Digest;
         const repository = record.Repository ?? record.Image;
         if (typeof digest !== "string" || !/^sha256:[a-f0-9]{64}$/i.test(digest)) return [];
         return [{
