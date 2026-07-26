@@ -122,6 +122,7 @@ final class SystemMetricsHistoryTest extends TestCase
     public function test_history_endpoint_clamps_an_absurd_window_rather_than_scanning_everything(): void
     {
         // An unbounded days= would let any admin table-scan the whole history.
+        SystemMetricSample::query()->delete();
         SystemMetricSample::query()->create(['captured_at' => now()->subDays(1), 'disk_used_bytes' => 1, 'disk_total_bytes' => 10]);
         $headers = $this->adminHeaders();
 
