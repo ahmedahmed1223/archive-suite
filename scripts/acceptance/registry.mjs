@@ -15,6 +15,7 @@ const scenario = (id, title, loginSessions, scenarioTags = tags) => validateScen
   refreshSessions: loginSessions,
   timeoutMs: timeoutById.get(id),
 });
+const capabilityScenario = (input) => validateScenario(input);
 
 export const ACCEPTANCE_SCENARIOS = Object.freeze([
   scenario("V1-IA-PLAT-001", "Docker platform boot and readiness", 0),
@@ -28,6 +29,9 @@ export const ACCEPTANCE_SCENARIOS = Object.freeze([
   scenario("V1-IA-ADMIN-003", "System administrator complete local journey", 3, ["daily", "nightly", "rc", "ga"]),
   scenario("V1-IA-ARCH-002", "Archivist complete local journey", 6, ["daily", "nightly", "rc", "ga"]),
   scenario("V1-IA-MULTI-002", "Concurrent users and permissions local journey", 9, ["daily", "nightly", "rc", "ga"]),
+  capabilityScenario({ id: "V1-IA-MEDIA-001", title: "Media montage, review, export, and failure recovery", tags: ["nightly", "rc", "ga"], capabilities: ["docker", "media-worker", "ffmpeg"], loginSessions: 4, refreshSessions: 4, timeoutMs: 20 * 60_000, evidence: ["media-journey.json", "media-job-log.json", "export-checksum.json"], blockedCapability: "media-worker-and-ffmpeg" }),
+  capabilityScenario({ id: "V1-IA-LOAD-001", title: "Reproducible benchmark dataset and concurrent load", tags: ["nightly", "rc", "ga"], capabilities: ["docker", "load-baseline"], loginSessions: 0, refreshSessions: 0, timeoutMs: 90 * 60_000, evidence: ["dataset-manifest.json", "load-metrics.json", "queue-metrics.json", "integrity.json"], dataset: "docs/acceptance/datasets/v1-812.dataset.json", blockedCapability: "rc-load-baseline" }),
+  capabilityScenario({ id: "V1-IA-GATE-001", title: "Daily, nightly, RC, and GA gate provenance", tags: ["daily", "nightly", "rc", "ga"], capabilities: ["automation"], loginSessions: 0, refreshSessions: 0, timeoutMs: 5 * 60_000, evidence: ["gate-plan.json", "artifact-provenance.json"], blockedCapability: "automation-provider" }),
   ...LIFECYCLE_SCENARIOS.map((item) => validateScenario({ ...item, loginSessions: 0, refreshSessions: 0, timeoutMs: 300_000 })),
 ]);
 
