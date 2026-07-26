@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\V1\TagNodesController;
 use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
 use App\Http\Controllers\Api\V1\DropboxController;
+use App\Http\Controllers\Api\V1\DropboxWebhookController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
 use App\Http\Controllers\Api\V1\TrashController;
 use App\Http\Controllers\Api\V1\TypesController;
@@ -64,6 +65,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 Route::prefix('v1')->group(function (): void {
+    Route::get('/integrations/dropbox/webhook', [DropboxWebhookController::class, 'verify']);
+    Route::post('/integrations/dropbox/webhook', [DropboxWebhookController::class, 'receive']);
     Route::get('/health', function (): JsonResponse {
         // Keep uptime independent of Redis so an unavailable cache can still be
         // reported as a structured 503 instead of aborting the health request.
@@ -396,6 +399,9 @@ Route::prefix('v1')->group(function (): void {
         });
         Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
         Route::get('/system/dropbox', [DropboxController::class, 'show']);
+        Route::post('/system/dropbox/authorize', [DropboxController::class, 'authorize']);
+        Route::post('/system/dropbox/callback', [DropboxController::class, 'callback']);
+        Route::post('/system/dropbox/sync', [DropboxController::class, 'sync']);
         Route::post('/system/dropbox/connect', [DropboxController::class, 'connect']);
         Route::delete('/system/dropbox', [DropboxController::class, 'disconnect']);
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);

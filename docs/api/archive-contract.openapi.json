@@ -3948,6 +3948,16 @@
         "responses": { "201": { "description": "Connected", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DropboxConnectionResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
       }
     },
+    "/system/dropbox/authorize": {
+      "post": { "tags": ["System"], "summary": "Start Dropbox OAuth PKCE authorization (admin only)", "operationId": "authorizeDropbox", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "responses": { "200": { "description": "Authorization URL", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DropboxAuthorizationResponse" } } } }, "409": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/system/dropbox/sync": {
+      "post": { "tags": ["System"], "summary": "Selectively import Dropbox folder changes using the saved cursor (admin only)", "operationId": "syncDropbox", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "responses": { "200": { "description": "Dropbox folder delta", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DropboxSyncResponse" } } } }, "409": { "$ref": "#/components/responses/Error" }, "502": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/integrations/dropbox/webhook": {
+      "get": { "tags": ["Integrations"], "summary": "Verify Dropbox webhook endpoint", "operationId": "verifyDropboxWebhook", "responses": { "200": { "description": "Dropbox challenge" } } },
+      "post": { "tags": ["Integrations"], "summary": "Receive signed Dropbox change notification", "operationId": "receiveDropboxWebhook", "responses": { "200": { "description": "Accepted or duplicate event" }, "401": { "$ref": "#/components/responses/Error" } } }
+    },
     "/system/security-settings": {
       "get": {
         "tags": ["System"],
@@ -7395,6 +7405,12 @@
       },
       "DropboxConnectRequest": {
         "type": "object", "required": ["accessToken"], "properties": { "accessToken": { "type": "string", "writeOnly": true }, "refreshToken": { "type": "string", "writeOnly": true }, "folderPath": { "type": "string" }, "expiresAt": { "type": "string", "format": "date-time" } }
+      },
+      "DropboxAuthorizationResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["authorizationUrl"], "properties": { "authorizationUrl": { "type": "string", "format": "uri" } } }]
+      },
+      "DropboxSyncResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["sync"], "properties": { "sync": { "type": "object", "required": ["entries", "cursor", "hasMore"], "properties": { "entries": { "type": "array", "items": { "type": "object", "required": ["path", "id", "size"], "properties": { "path": { "type": "string" }, "id": { "type": ["string", "null"] }, "size": { "type": ["integer", "null"] } } } }, "cursor": { "type": ["string", "null"] }, "hasMore": { "type": "boolean" } } } } }]
       },
       "SecuritySettings": {
         "type": "object",

@@ -40,6 +40,16 @@ class DropboxConnectionService
         return $this->status($user);
     }
 
+    public function connection(User $user): ?object
+    {
+        return DB::table('dropbox_connections')->where('user_id', $user->id)->first();
+    }
+
+    public function accessToken(object $connection): string
+    {
+        return Crypt::decryptString($connection->encrypted_access_token);
+    }
+
     private function normalizeFolder(string $folder): string
     {
         $folder = trim($folder);

@@ -1220,6 +1220,8 @@ export interface ArchiveApiClient {
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
   dropboxConnection(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
   connectDropbox(payload: { accessToken: string; refreshToken?: string; folderPath?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
+  authorizeDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ authorizationUrl: string }>>;
+  syncDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ sync: { entries: Array<{ path: string; id: string | null; size: number | null }>; cursor: string | null; hasMore: boolean } }>>;
   disconnectDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
   testStorageConnection(
     payload: { driver: "local" | "s3"; name: string; config: Record<string, unknown> },
@@ -1914,6 +1916,10 @@ export function createArchiveApiClient({
       get<{ dropbox: DropboxConnection }>("/system/dropbox", options),
     connectDropbox: (payload: { accessToken: string; refreshToken?: string; folderPath?: string; expiresAt?: string }, options?: AuthRequestOptions) =>
       post<{ dropbox: DropboxConnection }>("/system/dropbox/connect", payload, options),
+    authorizeDropbox: (options?: AuthRequestOptions) =>
+      post<{ authorizationUrl: string }>("/system/dropbox/authorize", undefined, options),
+    syncDropbox: (options?: AuthRequestOptions) =>
+      post<{ sync: { entries: Array<{ path: string; id: string | null; size: number | null }>; cursor: string | null; hasMore: boolean } }>("/system/dropbox/sync", undefined, options),
     disconnectDropbox: (options?: AuthRequestOptions) =>
       del<{ dropbox: DropboxConnection }>("/system/dropbox", undefined, options),
     testStorageConnection: (payload: { driver: "local" | "s3"; name: string; config: Record<string, unknown> }, options?: AuthRequestOptions) =>

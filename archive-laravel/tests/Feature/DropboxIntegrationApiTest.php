@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class DropboxIntegrationApiTest extends TestCase
@@ -51,6 +52,26 @@ class DropboxIntegrationApiTest extends TestCase
         $this->deleteJson('/api/v1/system/dropbox', [], ['Authorization' => 'Bearer '.$token])
             ->assertOk()
             ->assertJsonPath('dropbox.status', 'disconnected');
+    }
+
+    public function test_authorize_returns_pkce_url_without_exposing_verifier(): void
+    {
+        config()->set('services.dropbox.client_id', 'test-client');
+        config()->set('services.dropbox.client_secret', 'test-secret');
+        config()->set('services.dropbox.redirect_uri', 'https://archive.example.test/callback');
+        $response = $this->postJson('/api/v1/system/dropbox/authorize', [], ['Authorization' => 'Bearer '.$this->loginAsAdmin()]);
+        $response->assertOk()->assertJsonPath('ok', true);
+        $this->assertStringContainsString('code_challenge_method=S256', $response->json('authorizationUrl'));
+        $this->assertStringNotContainsString('code_verifier', $response->json('authorizationUrl'));
+    }
+
+    public function test_signed_webhook_is_idempotent(): void
+    {
+        config()->set('services.dropbox.webhook_secret', 'webhook-secret');
+        $body = json_encode(['list_folder' => ['accounts' => ['dbid:account']]]);
+        $signature = hash_hmac('sha256', $body, 'webhook-secret');
+        $this->call('POST', '/api/v1/integrations/dropbox/webhook', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_X_DROPBOX_SIGNATURE' => $signature], $body)->assertOk()->assertJsonPath('accepted', true);
+        $this->call('POST', '/api/v1/integrations/dropbox/webhook', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_X_DROPBOX_SIGNATURE' => $signature], $body)->assertOk()->assertJsonPath('accepted', false);
     }
 
     private function loginAsAdmin(): string
