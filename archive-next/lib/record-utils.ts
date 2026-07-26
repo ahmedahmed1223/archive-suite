@@ -1,4 +1,5 @@
 import type { ArchiveRecord } from "@/lib/archive-api";
+import { formatArabicDate } from "@/lib/arabic-format";
 
 export type WorkflowStatus = "draft" | "editing" | "review" | "approved" | "published" | "archived";
 
@@ -25,10 +26,7 @@ export function normalizeText(value: unknown) {
 }
 
 export function formatDate(value?: string) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("ar-SA");
+  return formatArabicDate(value, "-");
 }
 
 export function getRecordWorkflowStatus(record: ArchiveRecord): WorkflowStatus {

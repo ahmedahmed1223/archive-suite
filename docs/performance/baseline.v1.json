@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "v1",
+  "resourceProfile": {
+    "id": "rc-baseline-linux-x64",
+    "os": "Ubuntu 24.04 LTS x64",
+    "cpu": "4 vCPU",
+    "memoryGiB": 8,
+    "network": "wired 100 Mbps / 20 ms RTT",
+    "browser": "Chromium stable",
+    "viewportWidths": [375, 768, 1280]
+  },
+  "dataset": {
+    "manifest": "docs/acceptance/datasets/v1-307a.manifest.json",
+    "records": 100000,
+    "files": 10000,
+    "sampleBytes": 1073741824
+  },
+  "budgets": {
+    "frontend": { "lcpP75Ms": 2500, "clsP75": 0.1, "inpP75Ms": 200 },
+    "api": { "searchP95Ms": 1500, "recordOpenP95Ms": 1000, "uploadSessionStartP95Ms": 2000 }
+  },
+  "requiredRoutes": ["/", "/archive", "/archive/:id", "/search", "/uploads"],
+  "requiredApiOperations": ["search", "record-open", "upload-session-start"],
+  "measurement": {
+    "minimumSamples": 20,
+    "frontendCollector": "web-vitals JSON emitted by Playwright trace harness",
+    "apiCollector": "HTTP timing JSON emitted by deterministic load harness",
+    "environments": ["docker", "native"]
+  }
+}
