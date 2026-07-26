@@ -20,7 +20,9 @@ class DropboxController extends Controller
         if ($denied = $this->requireAdmin($request)) return $denied;
         if (! $dropbox->configured()) return response()->json(['ok' => false, 'error' => 'Dropbox OAuth is not configured.'], 409);
         $state = Str::random(64); $verifier = Str::random(96); $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-        Cache::put('dropbox.oauth.'.$state, ['user_id' => $request->user()->id, 'verifier' => $verifier], now()->addMinutes(10));
+        /** @var \App\Models\User $user */
+        $user = $request->attributes->get('archive_user');
+        Cache::put('dropbox.oauth.'.$state, ['user_id' => $user->id, 'verifier' => $verifier], now()->addMinutes(10));
         $query = http_build_query(['client_id' => config('services.dropbox.client_id'), 'response_type' => 'code', 'redirect_uri' => config('services.dropbox.redirect_uri'), 'state' => $state, 'code_challenge' => $challenge, 'code_challenge_method' => 'S256']);
         return response()->json(['ok' => true, 'authorizationUrl' => 'https://www.dropbox.com/oauth2/authorize?'.$query]);
     }
@@ -41,20 +43,20 @@ class DropboxController extends Controller
     public function show(Request $request, DropboxConnectionService $dropbox): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) return $denied;
-        return response()->json(['ok' => true, 'dropbox' => $dropbox->status($request->user())]);
+        return response()->json(['ok' => true, 'dropbox' => $dropbox->status($request->attributes->get('archive_user'))]);
     }
     public function connect(Request $request, DropboxConnectionService $dropbox): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) return $denied;
         $data = $request->validate(['accessToken' => ['required', 'string', 'max:4096'], 'refreshToken' => ['nullable', 'string', 'max:4096'], 'folderPath' => ['nullable', 'string', 'max:1024'], 'expiresAt' => ['nullable', 'date']]);
         try {
-            return response()->json(['ok' => true, 'dropbox' => $dropbox->connect($request->user(), $data['accessToken'], $data['refreshToken'] ?? null, $data['folderPath'] ?? '/', $data['expiresAt'] ?? null)], 201);
+            return response()->json(['ok' => true, 'dropbox' => $dropbox->connect($request->attributes->get('archive_user'), $data['accessToken'], $data['refreshToken'] ?? null, $data['folderPath'] ?? '/', $data['expiresAt'] ?? null)], 201);
         } catch (\LogicException $e) { return response()->json(['ok' => false, 'error' => $e->getMessage()], 409); }
     }
     public function disconnect(Request $request, DropboxConnectionService $dropbox): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) return $denied;
-        return response()->json(['ok' => true, 'dropbox' => $dropbox->disconnect($request->user())]);
+        return response()->json(['ok' => true, 'dropbox' => $dropbox->disconnect($request->attributes->get('archive_user'))]);
     }
 
     public function sync(Request $request, DropboxSyncService $sync): JsonResponse
