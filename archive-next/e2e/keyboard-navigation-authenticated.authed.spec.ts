@@ -77,5 +77,17 @@ for (const routeKey of TARGET_ROUTES) {
       const stuck = seen.some((signature, index) => index > 0 && signature !== 'body' && signature === seen[index - 1]);
       expect(stuck, `${url} [${coverage.role}]: focus got stuck during Tab traversal: ${JSON.stringify(seen)}`).toBe(false);
     });
+
+    test(`${coverage.route} [${coverage.role}]: announces the route to screen readers`, async ({ roleSession }) => {
+      const { page, data } = await roleSession(coverage.role);
+      const resolve = DYNAMIC_ROUTE_PARAMS[coverage.route];
+      const url = resolve ? resolve({ recordUid: data.recordUid }) : coverage.url;
+
+      await page.goto(url, { waitUntil: 'networkidle' });
+      const announcement = page.getByTestId('route-announcer');
+      await expect(announcement).toHaveAttribute('aria-live', 'polite');
+      await expect(announcement).toHaveAttribute('aria-atomic', 'true');
+      await expect(announcement).not.toBeEmpty();
+    });
   });
 }

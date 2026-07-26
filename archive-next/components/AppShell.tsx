@@ -13,6 +13,7 @@ import WorkspacePositionRestorer from "@/components/WorkspacePositionRestorer";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay";
 import type { BreadcrumbItem } from "@/components/Breadcrumb";
 import WhatsNewDialog from "@/components/WhatsNewDialog";
+import RouteAnnouncer from "@/components/RouteAnnouncer";
 
 export default function AppShell({
   subtitle,
@@ -57,6 +58,7 @@ export default function AppShell({
         الانتقال إلى المحتوى الرئيسي
       </a>
       <AppHeader subtitle={subtitle} navLabel={navLabel} breadcrumbExtra={breadcrumbExtra} />
+      <RouteAnnouncer />
       <WorkspacePositionRestorer />
       <ShortcutsOverlay />
       <WhatsNewDialog />

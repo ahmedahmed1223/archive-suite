@@ -539,7 +539,7 @@ function SearchPageContent() {
       ) : null}
 
       {state.status === "loading" ? (
-        <div className="panel panel-compact" aria-live="polite" role="status">
+        <div className="panel panel-compact" aria-live="polite" aria-atomic="true" role="status">
           <p className="form-status">جار البحث...</p>
         </div>
       ) : null}

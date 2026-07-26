@@ -527,7 +527,7 @@ export function UploadForm() {
 
       <form className="auth-form" onSubmit={handleSubmit}>
         {draftRecovered ? (
-          <div className="state-banner state-banner-info" role="status">
+          <div className="state-banner state-banner-info" role="status" aria-live="polite" aria-atomic="true">
             <strong>تمت استعادة مسودة الإضافة</strong>
             <span className="helper-text">أعد اختيار الملفات فقط؛ بيانات الأرشفة والخطوة السابقة محفوظتان على هذا الجهاز.</span>
             <button type="button" className="button button-secondary button-sm" onClick={() => setDraftRecovered(false)}>حسناً</button>
@@ -570,7 +570,7 @@ export function UploadForm() {
                     <div>
                       <strong>{file.name}</strong>
                       <span className="helper-text">{suggestedType(file)} · {formatBytes(file.size)}</span>
-                      <span className="helper-text" role="status">
+                      <span className="helper-text" role="status" aria-live="polite" aria-atomic="true">
                         {intakeStatusLabels[fileProgress.find((item) => item.fileName === file.name)?.status ?? "pending"]}
                         {fileProgress.find((item) => item.fileName === file.name)?.progressPercent !== undefined
                           ? ` (${fileProgress.find((item) => item.fileName === file.name)?.progressPercent}%)`
@@ -725,7 +725,7 @@ export function UploadForm() {
 
             {processingMode === "scheduled" && scheduleLocalValue ? (
               scheduleValidation?.valid ? (
-                <p className="helper-text" role="status">{scheduleSummary(scheduleLocalValue, detectedZone, "ar-SA")}</p>
+                <p className="helper-text" role="status" aria-live="polite" aria-atomic="true">{scheduleSummary(scheduleLocalValue, detectedZone, "ar-SA")}</p>
               ) : (
                 <div className="state-banner state-banner-warning" role="alert">
                   <strong>{scheduleValidation && !scheduleValidation.valid ? scheduleValidation.message : ""}</strong>

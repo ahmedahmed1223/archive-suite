@@ -90,5 +90,25 @@ test.describe('keyboard navigation: skip link + no dead-end tabbing', () => {
       const stuck = seen.some((signature, index) => index > 0 && signature !== 'body' && signature === seen[index - 1]);
       expect(stuck, `${route}: focus got stuck during Tab traversal: ${JSON.stringify(seen)}`).toBe(false);
     });
+
+    test(`${route}: command dialog traps focus and Escape returns it to its trigger`, async ({ page }) => {
+      await page.goto(route, { waitUntil: 'networkidle' });
+      const trigger = page.getByRole('button', { name: 'فتح لوحة الأوامر' });
+      await trigger.click();
+
+      const dialog = page.getByRole('dialog', { name: 'لوحة أوامر مسار' });
+      await expect(dialog).toBeVisible();
+      await page.keyboard.press('Tab');
+      await expect(dialog).toContainText('إجراءات سريعة');
+      const focusIsInsideDialog = await page.evaluate(() => {
+        const dialogElement = document.querySelector<HTMLElement>('[role="dialog"]');
+        return Boolean(dialogElement?.contains(document.activeElement));
+      });
+      expect(focusIsInsideDialog).toBe(true);
+
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+      await expect(trigger).toBeFocused();
+    });
   }
 });
