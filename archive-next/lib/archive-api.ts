@@ -813,6 +813,8 @@ export interface MediaJob {
   recordId: string;
   operation: MediaOperation;
   status: MediaJobStatus;
+  executor?: string;
+  contractVersion?: number;
   sourcePath?: string | null;
   options?: Record<string, unknown>;
   result?: Record<string, unknown> | null;
@@ -1017,6 +1019,12 @@ export interface StorageConnectionResult {
   testedAt: string;
 }
 
+export interface DropboxConnection {
+  status: "disabled" | "disconnected" | "connected";
+  configured: boolean;
+  folderPath: string | null;
+}
+
 export interface DatabaseConnectionResult {
   status: "connected" | "disconnected";
   driver: "mysql" | "pgsql" | "sqlite";
@@ -1210,6 +1218,9 @@ export interface ArchiveApiClient {
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
+  dropboxConnection(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
+  connectDropbox(payload: { accessToken: string; refreshToken?: string; folderPath?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
+  disconnectDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
   testStorageConnection(
     payload: { driver: "local" | "s3"; name: string; config: Record<string, unknown> },
     options?: AuthRequestOptions
@@ -1899,6 +1910,12 @@ export function createArchiveApiClient({
       post<{ token: string; url?: string }>("/share", { scope: { itemIds: payload.itemIds }, permission: payload.permission, expiresAt: payload.expiresAt }, options),
     getSecuritySettings: (options?: AuthRequestOptions) =>
       get<{ settings: SecuritySettings }>("/system/security-settings", options),
+    dropboxConnection: (options?: AuthRequestOptions) =>
+      get<{ dropbox: DropboxConnection }>("/system/dropbox", options),
+    connectDropbox: (payload: { accessToken: string; refreshToken?: string; folderPath?: string; expiresAt?: string }, options?: AuthRequestOptions) =>
+      post<{ dropbox: DropboxConnection }>("/system/dropbox/connect", payload, options),
+    disconnectDropbox: (options?: AuthRequestOptions) =>
+      del<{ dropbox: DropboxConnection }>("/system/dropbox", undefined, options),
     testStorageConnection: (payload: { driver: "local" | "s3"; name: string; config: Record<string, unknown> }, options?: AuthRequestOptions) =>
       post<{ connection: StorageConnectionResult }>("/system/test-storage", payload, options),
     testDatabaseConnection: (payload: { driver: "mysql" | "pgsql" | "sqlite"; host?: string; port?: number; database: string; username?: string; password?: string }, options?: AuthRequestOptions) =>

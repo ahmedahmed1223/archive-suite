@@ -47,6 +47,7 @@ use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\TagNodesController;
 use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
+use App\Http\Controllers\Api\V1\DropboxController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
 use App\Http\Controllers\Api\V1\TrashController;
 use App\Http\Controllers\Api\V1\TypesController;
@@ -394,6 +395,9 @@ Route::prefix('v1')->group(function (): void {
             Route::delete('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcDeleteRow']);
         });
         Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
+        Route::get('/system/dropbox', [DropboxController::class, 'show']);
+        Route::post('/system/dropbox/connect', [DropboxController::class, 'connect']);
+        Route::delete('/system/dropbox', [DropboxController::class, 'disconnect']);
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
         Route::post('/system/test-storage', [SystemController::class, 'testStorageConnection']);
         Route::post('/system/test-database', [SystemController::class, 'testDatabaseConnection']);

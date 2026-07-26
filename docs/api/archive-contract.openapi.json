@@ -3931,6 +3931,23 @@
         }
       }
     },
+    "/system/dropbox": {
+      "get": {
+        "tags": ["System"], "summary": "Read Dropbox connection status (admin only)", "operationId": "getDropboxConnection", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": { "200": { "description": "Dropbox connection state", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DropboxConnectionResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" } }
+      },
+      "delete": {
+        "tags": ["System"], "summary": "Disconnect Dropbox (admin only)", "operationId": "disconnectDropbox", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": { "200": { "description": "Disconnected", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DropboxConnectionResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/system/dropbox/connect": {
+      "post": {
+        "tags": ["System"], "summary": "Persist an OAuth callback token result (admin only)", "operationId": "connectDropbox", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DropboxConnectRequest" } } } },
+        "responses": { "201": { "description": "Connected", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DropboxConnectionResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+      }
+    },
     "/system/security-settings": {
       "get": {
         "tags": ["System"],
@@ -5554,6 +5571,8 @@
           "recordId": { "type": "string" },
           "operation": { "$ref": "#/components/schemas/MediaOperation" },
           "status": { "type": "string", "enum": ["queued", "processing", "completed", "failed"] },
+          "executor": { "type": "string", "description": "Versioned compute executor selected by Laravel when the job was queued." },
+          "contractVersion": { "type": "integer", "minimum": 1, "description": "Version of the persisted media job and result envelope." },
           "sourcePath": { "type": ["string", "null"] },
           "options": { "type": "object", "additionalProperties": true },
           "result": { "type": ["object", "null"], "additionalProperties": true },
@@ -7366,6 +7385,16 @@
         "properties": {
           "status": { "type": "string", "enum": ["pending", "completed"] }
         }
+      },
+      "DropboxConnection": {
+        "type": "object", "required": ["status", "configured", "folderPath"],
+        "properties": { "status": { "type": "string", "enum": ["disabled", "disconnected", "connected"] }, "configured": { "type": "boolean" }, "folderPath": { "type": ["string", "null"] } }
+      },
+      "DropboxConnectionResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["dropbox"], "properties": { "dropbox": { "$ref": "#/components/schemas/DropboxConnection" } } }]
+      },
+      "DropboxConnectRequest": {
+        "type": "object", "required": ["accessToken"], "properties": { "accessToken": { "type": "string", "writeOnly": true }, "refreshToken": { "type": "string", "writeOnly": true }, "folderPath": { "type": "string" }, "expiresAt": { "type": "string", "format": "date-time" } }
       },
       "SecuritySettings": {
         "type": "object",

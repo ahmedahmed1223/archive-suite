@@ -13,6 +13,7 @@ import { isTipsEnabledGlobally, setTipsEnabledGlobally } from "@/lib/contextual-
 import {
   createArchiveApiClient,
   type DatabaseConnectionResult,
+  type DropboxConnection,
   type OdbcProbe,
   type OdbcTablePreview,
   type OdbcWriteOperation,
@@ -185,6 +186,7 @@ export default function SettingsPage() {
   const [odbcValuesText, setOdbcValuesText] = useState('{\n  "name": "New item"\n}');
   const [odbcWriteState, setOdbcWriteState] = useState<OdbcWriteState>({ status: "idle" });
   const [storageTestState, setStorageTestState] = useState<ConnectionTestState<StorageConnectionResult>>({ status: "idle" });
+  const [dropbox, setDropbox] = useState<DropboxConnection | null>(null);
   const [databaseTestState, setDatabaseTestState] = useState<ConnectionTestState<DatabaseConnectionResult>>({ status: "idle" });
   const [databaseTestForm, setDatabaseTestForm] = useState<DatabaseTestForm>({
     driver: "sqlite",
@@ -197,6 +199,18 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setTipsEnabled(isTipsEnabledGlobally());
+  }, []);
+
+  useEffect(() => {
+    const fetchDropboxStatus = async () => {
+      try {
+        const response = await createArchiveApiClient().dropboxConnection();
+        if (response.ok) setDropbox(response.dropbox);
+      } catch {
+        // Integration availability is supplementary to the settings page.
+      }
+    };
+    void fetchDropboxStatus();
   }, []);
 
   useEffect(() => {
@@ -815,6 +829,24 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="stack">
+            <section className="section-divider stack" aria-labelledby="dropbox-connection-title">
+              <div className="helper-row">
+                <div>
+                  <strong id="dropbox-connection-title">تكامل Dropbox</strong>
+                  <p className="helper-text mt-tight">
+                    {dropbox?.status === "connected"
+                      ? `متصل بالمجلد ${dropbox.folderPath || "/"}. تحفظ رموز الوصول مشفرة على الخادم.`
+                      : dropbox?.status === "disabled"
+                        ? "غير مهيأ في بيئة الخادم. أضف إعدادات OAuth إلى الأسرار ثم أعد تحميل الحالة."
+                        : "غير متصل. يتطلب الربط بيانات OAuth معتمدة من مسؤول النظام."}
+                  </p>
+                </div>
+                <StatusBadge tone={dropbox?.status === "connected" ? "success" : dropbox?.status === "disabled" ? "warning" : "neutral"}>
+                  {dropbox?.status === "connected" ? "متصل" : dropbox?.status === "disabled" ? "غير مهيأ" : "غير متصل"}
+                </StatusBadge>
+              </div>
+              <p className="helper-text">لا تُدخل رموز Dropbox في المتصفح. يبدأ تدفق التفويض من بيئة الخادم بعد توفير بيانات الاعتماد.</p>
+            </section>
             <section className="section-divider stack" aria-labelledby="storage-connection-test-title">
               <div className="helper-row">
                 <div>
