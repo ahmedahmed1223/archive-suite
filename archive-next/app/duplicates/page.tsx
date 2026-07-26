@@ -72,7 +72,7 @@ export default function DuplicatesPage() {
       <PageToolbar
         eyebrow={<span className="badge">الجودة</span>}
         title="كشف المكررات"
-        description="كشف مبدئي للمكررات اعتماداً على checksum عند توفره أو تشابه العنوان. الدمج والحذف يبقيان قراراً يدوياً حتى يتوفر endpoint مخصص."
+        description="كشف مبدئي للمكررات اعتماداً على checksum عند توفره أو تشابه العنوان. الدمج والحذف يبقيان قراراً يدوياً حتى تتوفر نقطة نهاية API مخصصة."
         meta={(
           <>
             <span className="badge">{groups.length} مجموعة</span>

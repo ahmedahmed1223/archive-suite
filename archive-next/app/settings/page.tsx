@@ -83,10 +83,10 @@ type DatabaseTestForm = {
 };
 
 const odbcTableLabels: Record<OdbcCoreTable, string> = {
-  items: "Items",
-  users: "Users",
-  settings: "Settings",
-  audit: "Audit"
+  items: "المواد",
+  users: "المستخدمون",
+  settings: "الإعدادات",
+  audit: "التدقيق"
 };
 
 const getDefaultOdbcKeyColumn = (table: OdbcCoreTable) => (table === "settings" ? "key" : "id");
@@ -425,7 +425,7 @@ export default function SettingsPage() {
         icon={<Settings size={24} />}
         eyebrow={<span className="badge">مركز الإعدادات</span>}
         title={`إعدادات ${BRAND.arabicName}`}
-        description="مركز واحد للهوية، الأمان، التخزين، ODBC، API، والمظهر، مع تمييز ما هو مطبق فعلاً وما ينتظر صلاحيات تحرير أو backend إضافي."
+        description="مركز واحد للهوية، الأمان، التخزين، ODBC، API، والمظهر، مع تمييز ما هو مطبق فعلاً وما ينتظر صلاحيات تحرير أو دعم خلفي إضافي."
         meta={(
           <>
             <span className="badge">هوية النظام</span>
