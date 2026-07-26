@@ -61,7 +61,7 @@ class UsersController extends Controller
         ]);
 
         if (User::query()->where('email', $validated['email'])->exists()) {
-            return response()->json(['ok' => false, 'error' => 'A user with this email already exists.'], 422);
+            return response()->json(ApiError::envelope('A user with this email already exists.', 422), 422);
         }
 
         $token = ApiToken::create();
@@ -94,7 +94,7 @@ class UsersController extends Controller
         $user = User::query()->find($id);
 
         if (! $user) {
-            return response()->json(['ok' => false, 'error' => 'User not found.'], 404);
+            return response()->json(ApiError::envelope('User not found.', 404), 404);
         }
 
         if ($user->role === 'admin' && $validated['role'] !== 'admin' && $this->countAdmins() <= 1) {
@@ -119,7 +119,7 @@ class UsersController extends Controller
         $user = User::query()->find($id);
 
         if (! $user) {
-            return response()->json(['ok' => false, 'error' => 'User not found.'], 404);
+            return response()->json(ApiError::envelope('User not found.', 404), 404);
         }
 
         if ($user->role === 'admin' && $this->countAdmins() <= 1) {
@@ -130,7 +130,7 @@ class UsersController extends Controller
         }
 
         if ($actingUser instanceof User && $actingUser->id === $user->id) {
-            return response()->json(['ok' => false, 'error' => 'You cannot remove your own account.'], 422);
+            return response()->json(ApiError::envelope('You cannot remove your own account.', 422), 422);
         }
 
         $user->delete();

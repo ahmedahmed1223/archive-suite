@@ -23,6 +23,8 @@ final class ApiError
 
     public const FORBIDDEN = 'FORBIDDEN';
 
+    public const BAD_REQUEST = 'BAD_REQUEST';
+
     public const NOT_FOUND = 'NOT_FOUND';
 
     public const VALIDATION_FAILED = 'VALIDATION_FAILED';
@@ -52,6 +54,7 @@ final class ApiError
     public static function defaultCodeForStatus(int $status): string
     {
         return match ($status) {
+            400 => self::BAD_REQUEST,
             401 => self::UNAUTHENTICATED,
             403 => self::FORBIDDEN,
             404 => self::NOT_FOUND,

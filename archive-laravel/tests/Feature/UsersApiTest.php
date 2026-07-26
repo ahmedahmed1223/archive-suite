@@ -98,7 +98,8 @@ class UsersApiTest extends TestCase
             'email' => 'admin@example.test',
             'role' => 'editor',
         ], $this->adminHeaders())
-            ->assertUnprocessable();
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 'VALIDATION_FAILED');
     }
 
     public function test_admin_can_update_a_users_role(): void
@@ -132,7 +133,9 @@ class UsersApiTest extends TestCase
         $this->deleteJson("/api/v1/users/{$target->id}", [], $headers)->assertOk();
         $this->assertDatabaseMissing('users', ['id' => $target->id]);
 
-        $this->deleteJson("/api/v1/users/{$adminId}", [], $headers)->assertUnprocessable();
+        $this->deleteJson("/api/v1/users/{$adminId}", [], $headers)
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 'LAST_ADMIN_PROTECTED');
     }
 
     public function test_cannot_delete_the_last_admin(): void

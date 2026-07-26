@@ -56,7 +56,8 @@ class FilesApiTest extends TestCase
     {
         $this->getJson('/api/v1/files/browser?path=../', $this->authHeaders())
             ->assertStatus(400)
-            ->assertJsonPath('ok', false);
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'BAD_REQUEST');
     }
 
     public function test_it_rejects_unauthenticated_file_requests(): void
@@ -101,14 +102,16 @@ class FilesApiTest extends TestCase
         // so both non-existent and escaping paths return 400 (invalid media path).
         $this->getJson('/api/v1/files/stream?path=video/missing.mp4', $this->authHeaders())
             ->assertStatus(400)
-            ->assertJsonPath('ok', false);
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'BAD_REQUEST');
     }
 
     public function test_it_rejects_stream_path_traversal(): void
     {
         $this->getJson('/api/v1/files/stream?path=../secrets', $this->authHeaders())
             ->assertStatus(400)
-            ->assertJsonPath('ok', false);
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'BAD_REQUEST');
     }
 
     public function test_it_rejects_unauthenticated_stream(): void
@@ -217,6 +220,7 @@ class FilesApiTest extends TestCase
         $this->getJson('/api/v1/files/stream?path=video/clip.txt&disk=nonexistent', $this->authHeaders())
             ->assertStatus(400)
             ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'BAD_REQUEST')
             ->assertJsonPath('error', fn (string $msg): bool => str_contains($msg, 'disk'));
     }
 
@@ -236,7 +240,8 @@ class FilesApiTest extends TestCase
         // Try to traverse up with .. segment
         $this->getJson('/api/v1/files/stream?path=..%2Fsecrets&disk=local', $this->authHeaders())
             ->assertStatus(400)
-            ->assertJsonPath('ok', false);
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'BAD_REQUEST');
 
         File::deleteDirectory(storage_path('framework/testing/archive-disk-local'));
     }

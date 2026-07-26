@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Support\ApiError;
 use FilesystemIterator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,11 +52,11 @@ class FilesController extends Controller
         $path = $this->resolvePath($root, (string) ($validated['path'] ?? ''));
 
         if ($path === null) {
-            return response()->json(['ok' => false, 'error' => 'Invalid file browser path.'], 400);
+            return response()->json(ApiError::envelope('Invalid file browser path.', 400), 400);
         }
 
         if (! is_dir($path)) {
-            return response()->json(['ok' => false, 'error' => 'Directory not found.'], 404);
+            return response()->json(ApiError::envelope('Directory not found.', 404), 404);
         }
 
         $query = mb_strtolower((string) ($validated['query'] ?? ''));
@@ -101,11 +102,11 @@ class FilesController extends Controller
         $path = $this->resolvePath($root, (string) $validated['path']);
 
         if ($path === null) {
-            return response()->json(['ok' => false, 'error' => 'Invalid media path.'], 400);
+            return response()->json(ApiError::envelope('Invalid media path.', 400), 400);
         }
 
         if (! is_file($path)) {
-            return response()->json(['ok' => false, 'error' => 'Media not found.'], 404);
+            return response()->json(ApiError::envelope('Media not found.', 404), 404);
         }
 
         $mime = mime_content_type($path) ?: 'application/octet-stream';
@@ -124,19 +125,19 @@ class FilesController extends Controller
         $allowedDisks = array_keys((array) config('filesystems.disks', []));
 
         if (! in_array($diskName, $allowedDisks, true)) {
-            return response()->json(['ok' => false, 'error' => 'Invalid disk.'], 400);
+            return response()->json(ApiError::envelope('Invalid disk.', 400), 400);
         }
 
         // Security: reject path traversal (no .. segments or leading slash)
         if (str_contains($path, '..') || str_starts_with($path, '/')) {
-            return response()->json(['ok' => false, 'error' => 'Invalid file path.'], 400);
+            return response()->json(ApiError::envelope('Invalid file path.', 400), 400);
         }
 
         $disk = \Illuminate\Support\Facades\Storage::disk($diskName);
 
         // Check file exists
         if (! $disk->exists($path)) {
-            return response()->json(['ok' => false, 'error' => 'Media not found.'], 404);
+            return response()->json(ApiError::envelope('Media not found.', 404), 404);
         }
 
         $localPath = $this->localDiskPath($diskName, $path);
