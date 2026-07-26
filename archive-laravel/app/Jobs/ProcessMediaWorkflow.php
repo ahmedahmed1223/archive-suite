@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Exceptions\JobCanceledException;
 use App\Models\MediaJob;
-use App\Services\Media\MediaProcessor;
+use App\Services\Media\MediaJobExecutor;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -69,7 +69,7 @@ class ProcessMediaWorkflow implements ShouldQueue, ShouldBeUnique
         return (array) config('media.job_backoff_seconds', [30, 120, 300]);
     }
 
-    public function handle(MediaProcessor $processor): void
+    public function handle(MediaJobExecutor $executor): void
     {
         $mediaJob = MediaJob::query()->find($this->mediaJobId);
 
@@ -88,11 +88,12 @@ class ProcessMediaWorkflow implements ShouldQueue, ShouldBeUnique
         ])->save();
 
         try {
-            $artifacts = $processor->process($mediaJob);
+            $artifacts = $executor->execute($mediaJob);
 
             $mediaJob->forceFill([
                 'status' => 'completed',
                 'result' => [
+                    'contractVersion' => $mediaJob->contract_version,
                     'operation' => $mediaJob->operation,
                     'recordId' => $mediaJob->record_id,
                     'artifacts' => $artifacts,

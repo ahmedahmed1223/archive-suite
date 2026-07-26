@@ -19,6 +19,8 @@ class MediaJob extends Model
         'created_by',
         'operation',
         'status',
+        'executor',
+        'contract_version',
         'source_path',
         'options',
         'result',
@@ -38,6 +40,7 @@ class MediaJob extends Model
         return [
             'options' => 'array',
             'result' => 'array',
+            'contract_version' => 'integer',
             'queued_at' => 'datetime',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',

@@ -7,6 +7,7 @@ use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
 use App\Models\User;
 use App\Services\Media\MediaPathGuard;
+use App\Services\Media\MediaJobExecutor;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,12 +35,16 @@ class MediaJobsController extends Controller
             'options.watermark.path' => ['nullable', 'string', 'max:2048', $safePathRule],
         ]);
 
+        $executor = app(MediaJobExecutor::class);
+
         $mediaJob = MediaJob::query()->create([
             'id' => (string) Str::uuid(),
             'record_id' => $validated['recordId'],
             'created_by' => $this->userId($request),
             'operation' => $validated['operation'],
             'status' => 'queued',
+            'executor' => $executor->name(),
+            'contract_version' => (int) config('media.job_contract_version', 1),
             'source_path' => $validated['sourcePath'] ?? null,
             'options' => $validated['options'] ?? [],
             'queued_at' => now(),
@@ -166,6 +171,8 @@ class MediaJobsController extends Controller
             'recordId' => $mediaJob->record_id,
             'operation' => $mediaJob->operation,
             'status' => $mediaJob->status,
+            'executor' => $mediaJob->executor,
+            'contractVersion' => $mediaJob->contract_version,
             'sourcePath' => $mediaJob->source_path,
             'options' => $mediaJob->options ?? [],
             'result' => $mediaJob->result,

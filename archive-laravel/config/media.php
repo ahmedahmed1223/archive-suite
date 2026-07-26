@@ -5,6 +5,10 @@ return [
     'ffprobe_path' => env('FFPROBE_PATH', 'ffprobe'),
     'transcription_binary' => env('TRANSCRIPTION_BINARY', 'transcribe'),
     'processor' => env('MEDIA_PROCESSOR', 'fake'), // 'fake' or 'real'
+    // V1-786: Laravel keeps the job lifecycle; this identifies the isolated
+    // compute executor. local-v1 is the backwards-compatible initial adapter.
+    'executor' => env('MEDIA_EXECUTOR', 'local-v1'),
+    'job_contract_version' => 1,
 
     // ProcessMediaWorkflow queue behaviour (V1-113). Timeout is generous
     // because transcription of long recordings can legitimately take

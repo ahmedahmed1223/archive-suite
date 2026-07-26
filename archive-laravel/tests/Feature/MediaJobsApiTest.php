@@ -32,7 +32,13 @@ class MediaJobsApiTest extends TestCase
             'record_id' => 'media-record-1',
             'operation' => 'thumbnail',
             'status' => 'queued',
+            'executor' => 'local-v1',
+            'contract_version' => 1,
         ]);
+
+        $response
+            ->assertJsonPath('job.executor', 'local-v1')
+            ->assertJsonPath('job.contractVersion', 1);
 
         Queue::assertPushed(ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $jobId);
     }
@@ -67,7 +73,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaProcessor::class)
+            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
         );
 
         $this->assertDatabaseHas('media_jobs', [
@@ -235,7 +241,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaProcessor::class)
+            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -256,7 +262,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaProcessor::class)
+            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -330,7 +336,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaProcessor::class)
+            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -351,7 +357,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaProcessor::class)
+            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();

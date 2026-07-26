@@ -11,6 +11,8 @@ use App\Services\Ingest\SmbIngestTransport;
 use App\Services\Media\FakeMediaProcessor;
 use App\Services\Media\FakeProcessRunner;
 use App\Services\Media\MediaProcessor;
+use App\Services\Media\MediaJobExecutor;
+use App\Services\Media\LocalMediaJobExecutor;
 use App\Services\Media\OcrClient;
 use App\Services\Media\ProcessRunner;
 use App\Services\Media\RealMediaProcessor;
@@ -91,6 +93,17 @@ class AppServiceProvider extends ServiceProvider
         } else {
             $this->app->bind(MediaProcessor::class, FakeMediaProcessor::class);
         }
+
+        // This binding is the process boundary seam for V1-786. Production
+        // deployments can replace it with a remote CPU/GPU executor while
+        // ProcessMediaWorkflow remains the sole owner of job state and audit.
+        $this->app->bind(
+            MediaJobExecutor::class,
+            fn ($app) => new LocalMediaJobExecutor(
+                $app->make(MediaProcessor::class),
+                config('media.executor', 'local-v1'),
+            ),
+        );
 
         // Ingest transport: selection via env INGEST_TRANSPORT (fake|ftp|smb)
         // Default remains fake to preserve existing tests and offline mode

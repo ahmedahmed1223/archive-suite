@@ -91,7 +91,7 @@ class MediaJobsReliabilityTest extends TestCase
         });
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])
-            ->handle($this->app->make(MediaProcessor::class));
+            ->handle($this->app->make(\App\Services\Media\MediaJobExecutor::class));
 
         $this->assertSame('canceled', $mediaJob->refresh()->status);
     }
@@ -198,7 +198,7 @@ class MediaJobsReliabilityTest extends TestCase
         });
 
         $job = $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id]);
-        $job->handle($this->app->make(MediaProcessor::class));
+        $job->handle($this->app->make(\App\Services\Media\MediaJobExecutor::class));
 
         $this->assertSame('canceled', $mediaJob->refresh()->status);
         $this->assertNull($mediaJob->error);
@@ -225,7 +225,7 @@ class MediaJobsReliabilityTest extends TestCase
         $job = $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id]);
 
         try {
-            $job->handle($this->app->make(MediaProcessor::class));
+            $job->handle($this->app->make(\App\Services\Media\MediaJobExecutor::class));
             $this->fail('Expected the underlying exception to propagate for queue retry.');
         } catch (RuntimeException) {
             // expected — handle() rethrows so Laravel's retry/backoff can act.
