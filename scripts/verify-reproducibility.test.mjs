@@ -64,6 +64,12 @@ test("root frozen install and reproducibility verification are canonical gates",
   assert.match(ci, /pnpm run verify:reproducibility/);
 });
 
+test("the root Docker context excludes generated Next build output", () => {
+  const dockerignore = read(".dockerignore");
+
+  assert.match(dockerignore, /^\*\*\/\.next(?:\/)?$/m);
+});
+
 test("the runtime gate accepts Node 26 and rejects other major versions", () => {
   assert.equal(isSupportedNodeVersion("v26.5.0"), true);
   assert.equal(isSupportedNodeVersion("v25.99.0"), false);
