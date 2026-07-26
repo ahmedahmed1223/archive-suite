@@ -12,10 +12,45 @@ export const SMOKE_SCENARIO_IDS = Object.freeze([
   "V1-IA-MULTI-001",
 ]);
 
+// V1-808 / V1-809 / V1-811 are deliberately separate from the five-minute
+// smoke slice.  They use the same isolated-role driver and evidence store, so
+// a local Docker run remains repeatable while the RC matrix can select them by
+// their daily/nightly tags.
+export const JOURNEY_SCENARIO_IDS = Object.freeze([
+  "V1-IA-ADMIN-003",
+  "V1-IA-ARCH-002",
+  "V1-IA-MULTI-002",
+]);
+
+export const JOURNEY_SCENARIOS = Object.freeze([
+  Object.freeze({
+    id: "V1-IA-ADMIN-003",
+    timeoutMs: 600_000,
+    evidence: ["playwright.json", "screenshots", "journey-checklist.json"],
+    cleanup: "close-fresh-contexts",
+    checks: ["first-run-and-settings", "roles-and-audit", "health-and-queues", "backup-and-restore-preview", "support-package"],
+  }),
+  Object.freeze({
+    id: "V1-IA-ARCH-002",
+    timeoutMs: 600_000,
+    evidence: ["playwright.json", "screenshots", "journey-checklist.json"],
+    cleanup: "close-fresh-contexts",
+    checks: ["intake-and-metadata", "arabic-search-and-saved-search", "collections-sharing-export", "trash-undo-restore", "role-permissions"],
+  }),
+  Object.freeze({
+    id: "V1-IA-MULTI-002",
+    timeoutMs: 600_000,
+    evidence: ["playwright.json", "screenshots", "journey-checklist.json"],
+    cleanup: "close-fresh-contexts",
+    checks: ["independent-sessions", "presence-and-lock-cleanup", "stale-version-conflict", "delegation-and-deep-link", "field-acl-and-private-notes"],
+  }),
+]);
+
 const BROWSER_SCENARIOS = new Set([
   "V1-IA-ARCH-001",
   "V1-IA-ADMIN-001",
   "V1-IA-MULTI-001",
+  ...JOURNEY_SCENARIO_IDS,
 ]);
 
 /**
@@ -30,6 +65,8 @@ export const SMOKE_SCENARIOS = Object.freeze([
   Object.freeze({ id: "V1-IA-ADMIN-002", timeoutMs: 180_000, evidence: ["backup.json", "backup-verify.json"], cleanup: "provider-destroy" }),
   Object.freeze({ id: "V1-IA-MULTI-001", timeoutMs: 240_000, evidence: ["playwright.json", "screenshot.png"], cleanup: "close-fresh-contexts" }),
 ]);
+
+const JOURNEY_SCENARIO_BY_ID = new Map(JOURNEY_SCENARIOS.map((scenario) => [scenario.id, scenario]));
 
 function createDefaultBrowserJourney(spawnProcess = spawn) {
   return function defaultBrowserJourney({ command, args, env, signal }) {
@@ -214,6 +251,15 @@ async function runBrowserBatch({ provider, evidenceStore, browserJourney, signal
       }),
       ...(report ? await saveEvidence(evidenceStore, command.resultRef, report) : []),
     ];
+    for (const scenarioId of scenarioIds) {
+      const journey = JOURNEY_SCENARIO_BY_ID.get(scenarioId);
+      if (journey) {
+        refs.push(...await saveEvidence(evidenceStore, `${scenarioId}-attempt-${attempt}-journey-checklist.json`, {
+          scenarioId,
+          checks: journey.checks.map((check) => ({ id: check, status: "driven-by-playwright" })),
+        }));
+      }
+    }
     const mapped = new Map();
     for (const scenarioId of scenarioIds) {
       const evidence = { kind: "playwright", scenarioId, refs: [...new Set([...refs, command.resultRef, command.outputRef])] };
@@ -242,7 +288,7 @@ export function createSmokeScenarioExecutor({ browserJourney, spawnProcess = spa
   const authDirectories = new Set();
   const executeSmokeScenario = async function executeSmokeScenario(context) {
     const scenarioId = context?.scenario?.id;
-    if (!SMOKE_SCENARIO_IDS.includes(scenarioId)) throw new Error(`unknown V1-804 scenario: ${scenarioId}`);
+    if (![...SMOKE_SCENARIO_IDS, ...JOURNEY_SCENARIO_IDS].includes(scenarioId)) throw new Error(`unknown acceptance scenario: ${scenarioId}`);
     if (scenarioId === "V1-IA-PLAT-001") return platformBoot(context);
     if (scenarioId === "V1-IA-ADMIN-002") return backupAndVerify(context);
     if (BROWSER_SCENARIOS.has(scenarioId)) {

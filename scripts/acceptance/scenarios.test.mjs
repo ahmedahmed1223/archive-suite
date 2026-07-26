@@ -8,6 +8,8 @@ import test from "node:test";
 
 import {
   createSmokeScenarioExecutor,
+  JOURNEY_SCENARIO_IDS,
+  JOURNEY_SCENARIOS,
   SMOKE_SCENARIO_IDS,
   SMOKE_SCENARIOS,
 } from "./scenarios.mjs";
@@ -59,6 +61,19 @@ test("V1-804 exposes exactly the five stable smoke scenario IDs", () => {
     "V1-IA-ADMIN-002",
     "V1-IA-MULTI-001",
   ]);
+});
+
+test("V1-808, V1-809, and V1-811 declare local Docker journeys with durable evidence hooks", () => {
+  assert.deepEqual(JOURNEY_SCENARIO_IDS, [
+    "V1-IA-ADMIN-003",
+    "V1-IA-ARCH-002",
+    "V1-IA-MULTI-002",
+  ]);
+  for (const journey of JOURNEY_SCENARIOS) {
+    assert.equal(journey.timeoutMs, 600_000);
+    assert.deepEqual(journey.evidence, ["playwright.json", "screenshots", "journey-checklist.json"]);
+    assert.ok(journey.checks.length >= 4, `${journey.id} needs an executable journey checklist`);
+  }
 });
 
 test("platform boot requires non-degraded API health plus worker, scheduler, and Reverb readiness", async () => {

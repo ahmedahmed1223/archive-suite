@@ -1,14 +1,15 @@
 import { SCENARIO_TAGS, validateScenario } from "./contracts.mjs";
-import { SMOKE_SCENARIOS } from "./scenarios.mjs";
+import { LIFECYCLE_SCENARIOS } from "./platform.mjs";
+import { JOURNEY_SCENARIOS, SMOKE_SCENARIOS } from "./scenarios.mjs";
 
 export const ACCEPTANCE_REGISTRY_VERSION = "1.0.0";
 
 const tags = ["smoke", "daily", "nightly", "rc", "ga"];
-const timeoutById = new Map(SMOKE_SCENARIOS.map(({ id, timeoutMs }) => [id, timeoutMs]));
-const scenario = (id, title, loginSessions) => validateScenario({
+const timeoutById = new Map([...SMOKE_SCENARIOS, ...JOURNEY_SCENARIOS].map(({ id, timeoutMs }) => [id, timeoutMs]));
+const scenario = (id, title, loginSessions, scenarioTags = tags) => validateScenario({
   id,
   title,
-  tags,
+  tags: scenarioTags,
   capabilities: ["docker"],
   loginSessions,
   refreshSessions: loginSessions,
@@ -24,6 +25,10 @@ export const ACCEPTANCE_SCENARIOS = Object.freeze([
   scenario("V1-IA-ADMIN-001", "Administrator system health", 0),
   scenario("V1-IA-ADMIN-002", "Administrator backup and verification", 0),
   scenario("V1-IA-MULTI-001", "Concurrent isolated role sessions", 0),
+  scenario("V1-IA-ADMIN-003", "System administrator complete local journey", 3, ["daily", "nightly", "rc", "ga"]),
+  scenario("V1-IA-ARCH-002", "Archivist complete local journey", 6, ["daily", "nightly", "rc", "ga"]),
+  scenario("V1-IA-MULTI-002", "Concurrent users and permissions local journey", 9, ["daily", "nightly", "rc", "ga"]),
+  ...LIFECYCLE_SCENARIOS.map((item) => validateScenario({ ...item, loginSessions: 0, refreshSessions: 0, timeoutMs: 300_000 })),
 ]);
 
 export function selectScenarios({ tag, ids } = {}) {
