@@ -32,7 +32,17 @@ export default function GuideBrowser({ chapters }: Readonly<{ chapters: GuideCha
       <div className="dense-grid" style={{ marginTop: "1rem" }}>
         <nav aria-label="فصول الدليل">
           <ul className="stack-list">
-            {visible.map((chapter) => <li key={chapter.id}><a className="text-accent" href={`/help?chapter=${chapter.id}`}>{chapter.title}</a></li>)}
+            {visible.map((chapter) => (
+              <li key={chapter.id}>
+                <a
+                  className="text-accent"
+                  href={`/help?chapter=${encodeURIComponent(chapter.id)}`}
+                  aria-current={chapter.id === selected?.id ? "page" : undefined}
+                >
+                  {chapter.title}
+                </a>
+              </li>
+            ))}
           </ul>
         </nav>
         <article aria-live="polite">
