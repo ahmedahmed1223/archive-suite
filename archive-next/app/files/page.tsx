@@ -15,6 +15,8 @@ import { createArchiveApiClient, type ArchiveFile, type FileBrowserEntry } from 
 import { addMintedLink } from "@/lib/minted-shares";
 import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
 import { Skeleton } from "@/components/ui/Skeleton";
+import StorageBrowser, { type StorageCapability, type StorageEntry, type StorageProvider } from "@/components/StorageBrowser";
+import StorageOperationPanel, { type StorageOperationView } from "@/components/StorageOperationPanel";
 
 type FileState =
   | { status: "loading" }
@@ -63,6 +65,13 @@ const PLAYABLE_EXTENSIONS = new Set([
   "webm",
   "ogv"
 ]);
+
+// مؤقتًا تبقى هذه البيانات محلية حتى يربط منسق العقود endpoint كتالوج التخزين.
+const workspaceProviders: StorageProvider[] = [
+  { id: "local", label: "التخزين المحلي", type: "local", status: "ready", capabilities: ["browse", "download", "upload", "create-folder", "move", "copy", "rename", "delete"] },
+  { id: "s3", label: "S3", type: "s3", status: "ready", capabilities: ["browse", "download", "upload", "create-folder", "move", "copy", "rename", "delete"] },
+  { id: "dropbox", label: "Dropbox", type: "dropbox", status: "ready", capabilities: ["browse", "download", "upload", "create-folder"] }
+];
 
 function getFileExtension(file: ArchiveFile) {
   return file.key.split(".").pop()?.toLowerCase() ?? "";
@@ -158,6 +167,8 @@ export default function FilesPage() {
   const [scanState, setScanState] = useState<ScanState>({ status: "idle" });
   const [browserPath, setBrowserPath] = useState("");
   const [browserState, setBrowserState] = useState<BrowserState>({ status: "loading" });
+  const [workspaceProviderId, setWorkspaceProviderId] = useState("local");
+  const [workspaceOperation, setWorkspaceOperation] = useState<StorageOperationView | undefined>();
 
   const loadFiles = useCallback(async (q: string) => {
     setState({ status: "loading" });
@@ -207,6 +218,18 @@ export default function FilesPage() {
         : [],
     [browserState]
   );
+  const storageEntries = useMemo<StorageEntry[]>(() => browserEntries.map((entry) => ({
+    id: entry.key,
+    name: entry.name,
+    path: entry.path || (browserPath ? `${browserPath}/${entry.name}` : entry.name),
+    kind: entry.kind,
+    size: entry.size,
+    modifiedAt: entry.modifiedAt
+  })), [browserEntries, browserPath]);
+
+  const startWorkspacePreview = (action: StorageCapability) => {
+    setWorkspaceOperation({ id: `local-${Date.now()}`, type: action === "move" ? "نقل" : action === "upload" ? "رفع" : "إنشاء مجلد", status: "preview", completedItems: 0, totalItems: selectedKeys.length || 1, message: "راجع العملية قبل تنفيذها. لا تُنفذ أي عملية مدمرة دون تأكيد الخادم." });
+  };
   const visibleFiles = useMemo(() => {
     return files.filter((file) => {
       if (storeFilter !== "all" && file.store !== storeFilter) return false;
@@ -633,6 +656,28 @@ export default function FilesPage() {
               );
             })}
           </nav>
+
+          <StorageBrowser
+            providers={workspaceProviders}
+            providerId={workspaceProviderId}
+            path={browserPath}
+            entries={storageEntries}
+            isLoading={browserState.status === "loading"}
+            error={browserState.status === "error" ? browserState.message : undefined}
+            onProviderChange={(providerId) => {
+              setWorkspaceProviderId(providerId);
+              setBrowserPath("");
+            }}
+            onNavigate={setBrowserPath}
+            onDownload={(entry) => setPreviewKey(entry.path)}
+            onAction={startWorkspacePreview}
+          />
+          <StorageOperationPanel
+            operation={workspaceOperation}
+            onConfirm={() => setWorkspaceOperation((current) => current ? { ...current, status: "running", message: "أُرسلت العملية إلى الخادم؛ ستظهر النتيجة عند ربط API." } : current)}
+            onCancel={() => setWorkspaceOperation((current) => current ? { ...current, status: "cancelled", message: "أُلغي الطلب قبل تنفيذ العملية." } : current)}
+            onRetry={() => setWorkspaceOperation((current) => current ? { ...current, status: "running", message: "تجري إعادة المحاولة." } : current)}
+          />
 
           {browserState.status === "loading" ? (
             <Skeleton label="جار تحميل محتوى المجلد..." />
