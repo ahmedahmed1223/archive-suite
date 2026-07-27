@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserInvitation;
+use App\Support\ApiError;
 use App\Support\ApiToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,7 +27,7 @@ class InvitationsController extends Controller
             ->first();
 
         if (! $invitation) {
-            return response()->json(['ok' => false, 'error' => 'Invalid or expired invitation.'], 404);
+            return response()->json(ApiError::envelope('Invalid or expired invitation.', 404), 404);
         }
 
         $user = User::query()->create([

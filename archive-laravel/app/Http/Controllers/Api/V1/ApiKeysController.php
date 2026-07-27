@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Support\ApiError;
 use App\Support\ApiToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -82,7 +83,7 @@ class ApiKeysController extends Controller
         $deleted = DB::table('api_keys')->where('id', $id)->delete();
 
         if ($deleted === 0) {
-            return response()->json(['ok' => false, 'error' => 'API key not found.'], 404);
+            return response()->json(ApiError::envelope('API key not found.', 404), 404);
         }
 
         return response()->json(['ok' => true]);

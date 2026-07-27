@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\MontageProject;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -39,7 +40,7 @@ class MontageProjectsController extends Controller
         $project = MontageProject::query()->find($id);
 
         if (! $project) {
-            return response()->json(['ok' => false, 'error' => 'Montage project not found.'], 404);
+            return response()->json(ApiError::envelope('Montage project not found.', 404), 404);
         }
 
         return response()->json([
@@ -93,7 +94,7 @@ class MontageProjectsController extends Controller
         $project = MontageProject::query()->find($id);
 
         if (! $project) {
-            return response()->json(['ok' => false, 'error' => 'Montage project not found.'], 404);
+            return response()->json(ApiError::envelope('Montage project not found.', 404), 404);
         }
 
         $validated = $request->validate([
@@ -125,7 +126,7 @@ class MontageProjectsController extends Controller
         $project = MontageProject::query()->find($id);
 
         if (! $project) {
-            return response()->json(['ok' => false, 'error' => 'Montage project not found.'], 404);
+            return response()->json(ApiError::envelope('Montage project not found.', 404), 404);
         }
 
         $project->delete();

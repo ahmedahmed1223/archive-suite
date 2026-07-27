@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessDropboxWebhook;
 use App\Services\Dropbox\DropboxWebhookProcessor;
+use App\Support\ApiError;
 use Illuminate\Http\Request;
 
 class DropboxWebhookController extends Controller
@@ -16,7 +17,7 @@ class DropboxWebhookController extends Controller
     {
         $secret = (string) config('services.dropbox.webhook_secret');
         $raw = $request->getContent(); $signature = (string) $request->header('X-Dropbox-Signature');
-        if ($secret === '' || ! hash_equals(hash_hmac('sha256', $raw, $secret), $signature)) return response()->json(['ok' => false, 'error' => 'Invalid Dropbox signature.'], 401);
+        if ($secret === '' || ! hash_equals(hash_hmac('sha256', $raw, $secret), $signature)) return response()->json(ApiError::envelope('Invalid Dropbox signature.', 401), 401);
         $payload = $request->json()->all();
         $eventId = hash('sha256', $raw);
         $accepted = $processor->accept($eventId, $payload);

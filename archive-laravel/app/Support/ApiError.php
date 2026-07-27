@@ -35,6 +35,8 @@ final class ApiError
 
     public const SYSTEM_CONTROL_DISABLED = 'SYSTEM_CONTROL_DISABLED';
 
+    public const CONFLICT = 'CONFLICT';
+
     public const SERVER_ERROR = 'SERVER_ERROR';
 
     public const LAST_ADMIN_PROTECTED = 'LAST_ADMIN_PROTECTED';
@@ -58,6 +60,7 @@ final class ApiError
             401 => self::UNAUTHENTICATED,
             403 => self::FORBIDDEN,
             404 => self::NOT_FOUND,
+            409 => self::CONFLICT,
             422 => self::VALIDATION_FAILED,
             429 => self::RATE_LIMITED,
             503 => self::FEATURE_DISABLED,

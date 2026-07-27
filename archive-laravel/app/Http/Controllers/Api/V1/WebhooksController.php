@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Support\ApiError;
 use App\Support\SsrfGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,10 +57,10 @@ class WebhooksController extends Controller
         ]);
 
         if (! SsrfGuard::isPublicHttpUrl($validated['url'])) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Webhook URL must be a public http(s) address, not a loopback or private-range host.',
-            ], 422);
+            return response()->json(
+                ApiError::envelope('Webhook URL must be a public http(s) address, not a loopback or private-range host.', 422),
+                422
+            );
         }
 
         $admin = $request->attributes->get('archive_user');
@@ -99,7 +100,7 @@ class WebhooksController extends Controller
         $deleted = DB::table('webhook_subscriptions')->where('id', $id)->delete();
 
         if ($deleted === 0) {
-            return response()->json(['ok' => false, 'error' => 'Webhook subscription not found.'], 404);
+            return response()->json(ApiError::envelope('Webhook subscription not found.', 404), 404);
         }
 
         return response()->json(['ok' => true]);

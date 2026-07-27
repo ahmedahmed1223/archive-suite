@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ApiError;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,10 +21,7 @@ class FeatureGate
     public function handle(Request $request, Closure $next, string $flag): Response|JsonResponse
     {
         if (! (bool) config("archive.features.{$flag}")) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Not found.',
-            ], 404);
+            return response()->json(ApiError::envelope('Not found.', 404), 404);
         }
 
         return $next($request);

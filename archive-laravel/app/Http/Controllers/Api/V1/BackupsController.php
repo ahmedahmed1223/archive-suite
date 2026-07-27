@@ -9,6 +9,7 @@ use App\Services\Backup\BackupException;
 use App\Services\Backup\BackupService;
 use App\Services\Backup\DrReadinessService;
 use App\Services\Notification\NotificationService;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -157,6 +158,6 @@ class BackupsController extends Controller
 
     private function backupError(BackupException $e): JsonResponse
     {
-        return response()->json(['ok' => false, 'error' => $e->getMessage()], $e->status);
+        return response()->json(ApiError::envelope($e->getMessage(), $e->status), $e->status);
     }
 }

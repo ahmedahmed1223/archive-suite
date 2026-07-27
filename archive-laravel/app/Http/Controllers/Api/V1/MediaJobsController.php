@@ -8,6 +8,7 @@ use App\Models\MediaJob;
 use App\Models\User;
 use App\Services\Media\MediaPathGuard;
 use App\Services\Media\MediaJobExecutor;
+use App\Support\ApiError;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -101,7 +102,7 @@ class MediaJobsController extends Controller
         $mediaJob = MediaJob::query()->find($id);
 
         if (! $mediaJob || ! $this->canAccess($request, $mediaJob)) {
-            return response()->json(['ok' => false, 'error' => 'Media job not found.'], 404);
+            return response()->json(ApiError::envelope('Media job not found.', 404), 404);
         }
 
         return response()->json([
@@ -115,11 +116,11 @@ class MediaJobsController extends Controller
         $mediaJob = MediaJob::query()->find($id);
 
         if (! $mediaJob || ! $this->canAccess($request, $mediaJob)) {
-            return response()->json(['ok' => false, 'error' => 'Media job not found.'], 404);
+            return response()->json(ApiError::envelope('Media job not found.', 404), 404);
         }
 
         if ($mediaJob->status === 'completed' || $mediaJob->status === 'failed' || $mediaJob->status === 'canceled') {
-            return response()->json(['ok' => false, 'error' => "Cannot cancel job with status: {$mediaJob->status}"], 400);
+            return response()->json(ApiError::envelope("Cannot cancel job with status: {$mediaJob->status}", 400), 400);
         }
 
         $mediaJob->update([

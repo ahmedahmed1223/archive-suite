@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,7 @@ class TagNodesController extends Controller
         }
 
         if (! $request->has('parent')) {
-            return response()->json(['ok' => false, 'error' => 'The parent field is required.'], 422);
+            return response()->json(ApiError::envelope('The parent field is required.', 422), 422);
         }
 
         $validated = $request->validate([
@@ -202,7 +203,7 @@ class TagNodesController extends Controller
         }
 
         if (! $request->has('parent')) {
-            return response()->json(['ok' => false, 'error' => 'Parent field is required.'], 422);
+            return response()->json(ApiError::envelope('Parent field is required.', 422), 422);
         }
 
         $validated = $request->validate([

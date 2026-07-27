@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\ShareLink;
+use App\Support\ApiError;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,7 @@ class ShareController extends Controller
         $share = ShareLink::query()->where('token', $token)->first();
 
         if (! $share || ($share->expires_at && $share->expires_at->isPast())) {
-            return response()->json(['ok' => false, 'error' => 'Share link not found.'], 404);
+            return response()->json(ApiError::envelope('Share link not found.', 404), 404);
         }
 
         if ($share->password_hash) {
@@ -63,7 +64,7 @@ class ShareController extends Controller
             $password = $request->header('X-Share-Password') ?? $request->query('password');
 
             if (! Hash::check((string) $password, $share->password_hash)) {
-                return response()->json(['ok' => false, 'error' => 'Share password is required.'], 401);
+                return response()->json(ApiError::envelope('Share password is required.', 401), 401);
             }
         }
 

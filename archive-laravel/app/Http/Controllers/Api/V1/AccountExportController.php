@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Account\AccountExportService;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,7 +18,7 @@ class AccountExportController extends Controller
         $user = $request->attributes->get('archive_user');
 
         if (! $user instanceof User) {
-            return response()->json(['ok' => false, 'error' => 'Unauthenticated.'], 401);
+            return response()->json(ApiError::envelope('Unauthenticated.', 401), 401);
         }
 
         return response()->json([

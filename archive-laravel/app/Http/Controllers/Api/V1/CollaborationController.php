@@ -11,6 +11,7 @@ use App\Models\CollaborationDocument;
 use App\Models\CollaborationLock;
 use App\Models\CollaborationPresence;
 use App\Models\User;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -43,7 +44,7 @@ class CollaborationController extends Controller
 
         $user = $request->attributes->get('archive_user');
         if (! $user instanceof User) {
-            return response()->json(['ok' => false, 'error' => 'Unauthorized.'], 401);
+            return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
         }
 
         $presence = CollaborationPresence::query()->firstOrNew([
@@ -94,7 +95,7 @@ class CollaborationController extends Controller
 
         $user = $request->attributes->get('archive_user');
         if (! $user instanceof User) {
-            return response()->json(['ok' => false, 'error' => 'Unauthorized.'], 401);
+            return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
         }
 
         $resourceId = $validated['resourceId'];
@@ -147,7 +148,7 @@ class CollaborationController extends Controller
 
         $user = $request->attributes->get('archive_user');
         if (! $user instanceof User) {
-            return response()->json(['ok' => false, 'error' => 'Unauthorized.'], 401);
+            return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
         }
 
         $deleted = CollaborationLock::query()
@@ -184,7 +185,7 @@ class CollaborationController extends Controller
 
         $user = $request->attributes->get('archive_user');
         if (! $user instanceof User) {
-            return response()->json(['ok' => false, 'error' => 'Unauthorized.'], 401);
+            return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
         }
 
         $this->deleteExpiredLocks($roomKey);

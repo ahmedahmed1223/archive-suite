@@ -10,6 +10,7 @@ use App\Services\Odbc\OdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionProbe;
 use App\Services\Odbc\OdbcReadRepository;
 use App\Services\Security\SecuritySettingsService;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -47,10 +48,7 @@ class SystemController extends Controller
 
         // Check allowlist
         if (! in_array($table, $repository->getAllowedCoreTables(), true)) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Table access denied.',
-            ], 403);
+            return response()->json(ApiError::envelope('Table access denied.', 403), 403);
         }
 
         $limit = (int) $request->query('limit', config('odbc.table_limit', 25));
@@ -184,10 +182,7 @@ class SystemController extends Controller
                 'settings' => $service->getSettings(),
             ]);
         } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'ok' => false,
-                'error' => $e->getMessage(),
-            ], 422);
+            return response()->json(ApiError::envelope($e->getMessage(), 422), 422);
         }
     }
 
@@ -220,8 +215,7 @@ class SystemController extends Controller
             ]);
         } catch (\Throwable $e) {
             return response()->json([
-                'ok' => false,
-                'error' => 'Connection test failed.',
+                ...ApiError::envelope('Connection test failed.', 422),
                 'details' => $e->getMessage(),
             ], 422);
         }
@@ -251,8 +245,7 @@ class SystemController extends Controller
             ]);
         } catch (\Throwable $e) {
             return response()->json([
-                'ok' => false,
-                'error' => 'Database connection test failed.',
+                ...ApiError::envelope('Database connection test failed.', 422),
                 'details' => $e->getMessage(),
             ], 422);
         }
@@ -409,10 +402,7 @@ class SystemController extends Controller
         );
 
         if (! in_array($table, $repository->getAllowedCoreTables(), true)) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Table access denied.',
-            ], 403);
+            return response()->json(ApiError::envelope('Table access denied.', 403), 403);
         }
 
         try {
@@ -425,10 +415,7 @@ class SystemController extends Controller
                 'affected' => $result['affected'],
             ], $status);
         } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'ok' => false,
-                'error' => $e->getMessage(),
-            ], 422);
+            return response()->json(ApiError::envelope($e->getMessage(), 422), 422);
         }
     }
 }

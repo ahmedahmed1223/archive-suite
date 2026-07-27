@@ -7,6 +7,10 @@
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 18 يوليو 2026.
 
+## V1-815 تغطية رموز أخطاء API القابلة للترجمة — 2026-07-27
+
+- **V1-815 إغلاق** — الفحص الأولي (نشأ من تدقيق V1-791) بيّن أن `FilesController`/`UsersController` كانا قد وُحِّدا مسبقًا على `ApiError::envelope()`؛ الفحص الفعلي عبر كل `app/` كشف 40 استجابة يدوية `{ok:false,error}` بلا `code` عبر 21 متحكمًا/middleware (`AuthController`، `CollaborationController`، `DropboxController`، `SystemController`، إلخ) — أوسع من الوصف الأصلي. وُحِّدت جميعها على `ApiError::envelope()`، مع إضافة ثابت `ApiError::CONFLICT` وربط الحالة 409 به في `defaultCodeForStatus()` (لم يكن موجودًا). أُضيف `tests/Unit/ApiErrorCodeGuardTest.php` — فحص ساكن يمسح `app/` (باستثناء `Console/` غير API) ويفشل إن ظهرت استجابة `{ok:false}` يدوية بلا `code`، فيمنع الانتكاس مستقبلًا دون تدقيق يدوي متكرر (يماثل نمط `lib/mojibake-guard.ts` في archive-next). عقد OpenAPI (`ErrorEnvelope.code`) ونوع `ApiError` في `archive-next/lib/archive-api.ts` كانا يدعمان `code` اختياريًا مسبقًا فلم يحتاجا تعديلًا. **خارج النطاق عمدًا:** ترجمة رسائل الواجهة حسب `code` (نص ApiError.php الحاكم صريح أن هذا يأتي لاحقًا بعد توفر الرموز، لا في هذا البند)، وتضييق `code` بمخطط `const` لكل endpoint في العقد (قيمة هامشية مقابل ~40 تعديل عقد إضافي — الحقل النصي العام كافٍ للغرض المذكور).
+
 ## ترجمة شارات eyebrow وإصلاح /collections — 2026-07-26
 
 - **إصلاح (V1-791)** — تُرجمت شارة "eyebrow" الإنجليزية أعلى 29 صفحة (`Archive Workspace`، `Rules Engine`، `Data Center`، `Rights Management`، إلخ، ومعرّف تذكرة داخلي مسرّب `V1-726` على `/delegations`) إلى العربية حسب `docs/arabic-ui-glossary.md`. اكتُشفت عبر grep منهجي أثناء تدقيق V1-795/V1-791 (commit `da985cfd`).

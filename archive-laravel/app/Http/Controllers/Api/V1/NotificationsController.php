@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -44,7 +45,7 @@ class NotificationsController extends Controller
         $notification = Notification::where('user_id', $userId)->find($id);
 
         if (!$notification) {
-            return response()->json(['ok' => false, 'error' => 'Notification not found'], 404);
+            return response()->json(ApiError::envelope('Notification not found', 404), 404);
         }
 
         return response()->json(['ok' => true, 'notification' => $notification]);
@@ -56,7 +57,7 @@ class NotificationsController extends Controller
         $notification = Notification::where('user_id', $userId)->find($id);
 
         if (!$notification) {
-            return response()->json(['ok' => false, 'error' => 'Notification not found'], 404);
+            return response()->json(ApiError::envelope('Notification not found', 404), 404);
         }
 
         $notification->update(['is_read' => true]);
@@ -70,7 +71,7 @@ class NotificationsController extends Controller
         $notification = Notification::where('user_id', $userId)->find($id);
 
         if (!$notification) {
-            return response()->json(['ok' => false, 'error' => 'Notification not found'], 404);
+            return response()->json(ApiError::envelope('Notification not found', 404), 404);
         }
 
         $notification->update(['is_read' => false]);
@@ -95,7 +96,7 @@ class NotificationsController extends Controller
         $notification = Notification::where('user_id', $userId)->find($id);
 
         if (!$notification) {
-            return response()->json(['ok' => false, 'error' => 'Notification not found'], 404);
+            return response()->json(ApiError::envelope('Notification not found', 404), 404);
         }
 
         $notification->delete();

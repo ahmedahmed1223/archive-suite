@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\RightsRecord;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -23,7 +24,7 @@ class RightsController extends Controller
         $record = RightsRecord::query()->where('item_id', $validated['itemId'])->first();
 
         if (! $record) {
-            return response()->json(['ok' => false, 'error' => 'No rights record found for this item.'], 404);
+            return response()->json(ApiError::envelope('No rights record found for this item.', 404), 404);
         }
 
         return response()->json(['ok' => true, 'record' => $this->formatRecord($record)]);

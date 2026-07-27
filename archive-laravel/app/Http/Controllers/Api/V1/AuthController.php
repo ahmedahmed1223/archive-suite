@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\ApiSession;
 use App\Models\User;
+use App\Support\ApiError;
 use App\Support\ApiToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class AuthController extends Controller
         $user = User::query()->where('email', $validated['email'])->first();
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
-            return response()->json(['ok' => false, 'error' => 'Invalid credentials.'], 401);
+            return response()->json(ApiError::envelope('Invalid credentials.', 401), 401);
         }
 
         return $this->issueSession($user, 200);
@@ -40,7 +41,7 @@ class AuthController extends Controller
         $user = $request->attributes->get('archive_user');
 
         if (! $user instanceof User) {
-            return response()->json(['ok' => false, 'error' => 'Unauthorized.'], 401);
+            return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
         }
 
         return response()->json(['ok' => true, 'user' => $this->formatUser($user)]);
@@ -55,7 +56,7 @@ class AuthController extends Controller
         $session = $this->sessionFromRefreshCookie($request);
 
         if (! $session) {
-            return response()->json(['ok' => false, 'error' => 'Unauthorized.'], 401);
+            return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
         }
 
         $user = $session->user;
@@ -100,7 +101,7 @@ class AuthController extends Controller
             return null;
         }
 
-        return response()->json(['ok' => false, 'error' => 'Origin not allowed.'], 403);
+        return response()->json(ApiError::envelope('Origin not allowed.', 403), 403);
     }
 
     private function isLocalLoopbackOrigin(string $origin): bool

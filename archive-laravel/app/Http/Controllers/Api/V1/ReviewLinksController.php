@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreReviewLinkRequest;
 use App\Models\ReviewComment;
 use App\Models\ReviewLink;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 
@@ -41,7 +42,7 @@ class ReviewLinksController extends Controller
         $reviewLink = ReviewLink::query()->where('token', $token)->first();
 
         if (! $reviewLink || ($reviewLink->expires_at && $reviewLink->expires_at->isPast())) {
-            return response()->json(['ok' => false, 'error' => 'Review link not found.'], 404);
+            return response()->json(ApiError::envelope('Review link not found.', 404), 404);
         }
 
         $comments = ReviewComment::query()
