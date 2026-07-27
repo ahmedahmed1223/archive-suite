@@ -7,6 +7,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SETUP_PREFIX = "test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction --no-progress --quiet";
 const LARAVEL_RUNTIME_IMAGE = "archive-laravel-runtime-test";
 const LARAVEL_RUNTIME_DOCKERFILE = "archive-laravel/Dockerfile.worker";
+// The repo is bind-mounted from a Windows drive, which reaches the container over
+// 9p/drvfs — scanning vendor's ~12.5k files costs ~5.8s there versus well under a
+// second on a container-native filesystem, and Laravel autoloads from it on every
+// request. Keeping vendor on a named volume takes it off 9p entirely.
+// After changing composer.json/lock, reset it: docker volume rm archive-laravel-vendor
+const LARAVEL_VENDOR_VOLUME = "archive-laravel-vendor";
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -58,6 +64,8 @@ function dockerArgs(command, extra = []) {
     ...extra,
     "-v",
     `${ROOT}:/app`,
+    "-v",
+    `${LARAVEL_VENDOR_VOLUME}:/app/archive-laravel/vendor`,
     "-w",
     "/app/archive-laravel",
     LARAVEL_RUNTIME_IMAGE,
