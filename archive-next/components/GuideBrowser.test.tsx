@@ -78,4 +78,17 @@ describe("GuideBrowser", () => {
     expect(screen.getByRole("link", { name: "افتح الصفحة المرتبطة" })).toHaveAttribute("href", "/uploads");
     expect(screen.queryByText("إدارة المستخدمين")).toBeNull();
   });
+
+  test("renders Markdown instruction lists with semantic list elements", () => {
+    setRole("viewer");
+    setChapter("viewer-search");
+    render(<GuideBrowser chapters={[{
+      ...chapters[0],
+      body: "## خطوات\n1. افتح البحث\n2. راجع النتائج\n\n- صفِّ النتائج\n- احفظ البحث",
+    }]} />);
+
+    const instructionLists = screen.getAllByRole("list", { name: "خطوات" });
+    expect(instructionLists[0]).toHaveTextContent("افتح البحث");
+    expect(instructionLists.flatMap((list) => Array.from(list.querySelectorAll("li")))).toHaveLength(4);
+  });
 });

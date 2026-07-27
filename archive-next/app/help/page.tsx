@@ -137,7 +137,7 @@ export default function HelpPage() {
         </ul>
       </article>
 
-      <GuideBrowser chapters={getGuideChapters()} />
+      <GuideBrowser chapters={getGuideChapters("viewer")} />
     </AppShell>
   );
 }

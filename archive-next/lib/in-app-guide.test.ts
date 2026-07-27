@@ -27,6 +27,13 @@ describe("in-app guide", () => {
     expect(filterGuideChapters(chapters, "editor", "").map((chapter) => chapter.id)).toEqual(["viewer-search", "editor-upload"]);
   });
 
+  it("does not load restricted chapter bodies into a viewer guide payload", () => {
+    const viewerPayload = getGuideChapters("viewer");
+
+    expect(viewerPayload.map((chapter) => chapter.id)).toEqual(["viewer-search", "whats-new"]);
+    expect(viewerPayload.some((chapter) => chapter.body.includes("إدارة النظام"))).toBe(false);
+  });
+
   it("searches Arabic chapter titles and Markdown body without exposing restricted chapters", () => {
     expect(filterGuideChapters(chapters, "editor", "الوصف").map((chapter) => chapter.id)).toEqual(["editor-upload"]);
     expect(filterGuideChapters(chapters, "viewer", "المستخدمين")).toEqual([]);

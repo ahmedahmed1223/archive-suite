@@ -17,7 +17,7 @@ import RecentFavoritesMenu from "@/components/RecentFavoritesMenu";
 import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
 import { SIDEBAR_VIEWPORT_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { useTheme } from "@/components/ThemeProvider";
-import { getGuideChapterForPath } from "@/lib/in-app-guide";
+import { filterGuideChapters, getGuideChapterForPath } from "@/lib/in-app-guide";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
@@ -105,12 +105,13 @@ export default function AppHeader({
   const activeLink = primaryNav.find((link) => isActivePath(pathname, link.href));
   const activeSection = activeLink?.section;
   const navigation = getDailyNavigation(activeSection, auth.user?.role ?? "viewer");
+  const role = auth.user?.role ?? "viewer";
   const breadcrumbItems: BreadcrumbItem[] = [{ label: "الرئيسية", href: "/" }];
-  const contextualGuide = getGuideChapterForPath(pathname, [
+  const contextualGuide = getGuideChapterForPath(pathname, filterGuideChapters([
     { id: "viewer-search", title: "", audience: ["viewer", "editor", "admin"] as const, body: "", href: "/search" },
     { id: "editor-upload", title: "", audience: ["editor", "admin"] as const, body: "", href: "/uploads" },
     { id: "admin-operations", title: "", audience: ["admin"] as const, body: "", href: "/settings/users" },
-  ]);
+  ], role, ""));
   if (activeSection) breadcrumbItems.push({ label: navSectionLabels[activeSection] });
   if (activeLink && activeLink.href !== "/") breadcrumbItems.push({ label: activeLink.label, href: activeLink.href });
   breadcrumbItems.push(...breadcrumbExtra);

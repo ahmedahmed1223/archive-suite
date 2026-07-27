@@ -6,10 +6,42 @@ import { useAuthSession } from "@/lib/auth-session";
 import { filterGuideChapters, type GuideChapter, type GuideRole } from "@/lib/in-app-guide";
 
 function markdownToSections(body: string) {
-  return body.split("\n").filter((line) => line.trim()).map((line, index) => {
-    if (line.startsWith("## ")) return <h3 key={index}>{line.slice(3)}</h3>;
-    return <p key={index}>{line.replace(/^# /, "")}</p>;
+  const sections: React.ReactNode[] = [];
+  let lines: string[] = [];
+  let heading = "";
+
+  function flushLines() {
+    if (!lines.length) return;
+
+    const ordered = lines.every((line) => /^\d+\.\s+/.test(line));
+    const unordered = lines.every((line) => /^[-*]\s+/.test(line));
+    if (ordered || unordered) {
+      const List = ordered ? "ol" : "ul";
+      const marker = ordered ? /^\d+\.\s+/ : /^[-*]\s+/;
+      sections.push(
+        <List key={sections.length} aria-label={heading || undefined}>
+          {lines.map((line) => <li key={line}>{line.replace(marker, "")}</li>)}
+        </List>,
+      );
+    } else {
+      lines.forEach((line) => sections.push(<p key={sections.length}>{line.replace(/^# /, "")}</p>));
+    }
+    lines = [];
+  }
+
+  body.split("\n").forEach((line) => {
+    if (!line.trim()) {
+      flushLines();
+    } else if (line.startsWith("## ")) {
+      flushLines();
+      heading = line.slice(3);
+      sections.push(<h3 key={sections.length}>{heading}</h3>);
+    } else {
+      lines.push(line);
+    }
   });
+  flushLines();
+  return sections;
 }
 
 export default function GuideBrowser({ chapters }: Readonly<{ chapters: GuideChapter[] }>) {

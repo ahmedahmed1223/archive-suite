@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { GuideChapter, GuideRole } from "@/lib/in-app-guide";
+import { filterGuideChapters, type GuideChapter, type GuideRole } from "@/lib/in-app-guide";
 
 type GuideManifestEntry = Omit<GuideChapter, "body"> & { source: string };
 
@@ -11,11 +11,13 @@ const manifest: readonly GuideManifestEntry[] = [
   { id: "whats-new", title: "ما الجديد في الإصدار", audience: ["viewer", "editor", "admin"], href: "/help", source: "whats-new.md" },
 ];
 
-export function getGuideChapters(): GuideChapter[] {
-  return manifest.map(({ source, ...chapter }) => ({
+export function getGuideChapters(role?: GuideRole): GuideChapter[] {
+  const chapters = manifest.map(({ source, ...chapter }) => ({
     ...chapter,
     body: readFileSync(join(process.cwd(), "content", "guide", source), "utf8"),
   }));
+
+  return role ? filterGuideChapters(chapters, role, "") : chapters;
 }
 
 export const guideRoles: readonly { value: GuideRole; label: string }[] = [
