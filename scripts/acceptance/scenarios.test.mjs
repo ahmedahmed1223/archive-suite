@@ -233,6 +233,8 @@ test("flake retry starts a new child targeted only to the flaky scenario", async
 
 test("acceptance auth state is run-scoped and removed after Playwright completes", async () => {
   const directory = mkdtempSync(join(tmpdir(), "acceptance-auth-cleanup-"));
+  const sharedAuthPath = join(process.cwd(), "archive-next", "e2e", ".auth");
+  const sharedAuthExistedBefore = existsSync(sharedAuthPath);
   let authDirectory;
   const execute = createSmokeScenarioExecutor({
     browserJourney: async (input) => {
@@ -251,7 +253,17 @@ test("acceptance auth state is run-scoped and removed after Playwright completes
   });
   assert.ok(authDirectory.startsWith(directory));
   assert.equal(existsSync(authDirectory), false);
-  assert.equal(existsSync(join(process.cwd(), "archive-next", "e2e", ".auth")), false);
+  // The repo-local .auth path belongs to the ORDINARY Playwright suite
+  // (auth.setup.ts writes admin/editor state there, and .gitignore covers it),
+  // so it may legitimately exist before this test runs. Asserting it is absent
+  // made the suite fail after any normal `pnpm verify:laravel-next:live`.
+  // What actually matters is that the acceptance executor never touches it:
+  // compare before/after instead of pinning absolute emptiness.
+  assert.equal(
+    existsSync(sharedAuthPath),
+    sharedAuthExistedBefore,
+    "acceptance executor must not create or delete the shared e2e .auth directory",
+  );
 });
 
 test("failed operational or browser checks produce deterministic product evidence", async () => {

@@ -247,7 +247,16 @@ test("unavailable capabilities are blocked and have deterministic exit code two"
   });
   assert.equal(result.status, "blocked-capability");
   assert.equal(result.exitCode, 2);
-  assert.deepEqual(result.results, [{ scenarioId: scenario.id, status: "blocked-capability", attempts: 0 }]);
+  // The runner also reports WHICH capabilities were missing, so the blocked
+  // result stays actionable — assert that payload rather than dropping it.
+  assert.deepEqual(result.results, [
+    {
+      scenarioId: scenario.id,
+      status: "blocked-capability",
+      attempts: 0,
+      blockedCapabilities: scenario.capabilities,
+    },
+  ]);
 });
 
 test("tag-only CLI selection executes every matching registry scenario", async () => {
