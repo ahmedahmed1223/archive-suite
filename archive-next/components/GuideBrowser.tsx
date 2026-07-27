@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuthSession } from "@/lib/auth-session";
 import { filterGuideChapters, type GuideChapter, type GuideRole } from "@/lib/in-app-guide";
@@ -44,14 +44,36 @@ function markdownToSections(body: string) {
   return sections;
 }
 
-export default function GuideBrowser({ chapters }: Readonly<{ chapters: GuideChapter[] }>) {
+export default function GuideBrowser({ chapters: initialChapters = [] }: Readonly<{ chapters?: GuideChapter[] }>) {
   const auth = useAuthSession();
   const searchParams = useSearchParams();
   const role = (auth.user?.role ?? "viewer") as GuideRole;
+  const [chapters, setChapters] = useState(initialChapters);
   const [query, setQuery] = useState("");
   const requestedChapter = searchParams.get("chapter");
   const visible = useMemo(() => filterGuideChapters(chapters, role, query), [chapters, role, query]);
   const selected = visible.find((chapter) => chapter.id === requestedChapter) ?? visible[0];
+
+  useEffect(() => {
+    if (auth.status !== "authenticated" || !auth.accessToken) return;
+
+    let cancelled = false;
+    fetch("/api/guide", {
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${auth.accessToken}` },
+    })
+      .then(async (response) => response.ok ? response.json() : null)
+      .then((payload: { ok?: boolean; chapters?: GuideChapter[] } | null) => {
+        if (!cancelled && payload?.ok === true && Array.isArray(payload.chapters)) {
+          setChapters(payload.chapters);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.accessToken, auth.status]);
 
   return (
     <section className="panel" aria-label="دليل الاستخدام">

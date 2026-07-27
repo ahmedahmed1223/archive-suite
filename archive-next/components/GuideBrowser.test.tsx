@@ -40,7 +40,7 @@ const chapters: GuideChapter[] = [
 ];
 
 function setRole(role: "admin" | "editor" | "viewer") {
-  mockUseAuthSession.mockReturnValue({ user: { role } });
+  mockUseAuthSession.mockReturnValue({ status: "guest", user: { role } });
 }
 
 function setChapter(chapter: string | null) {
@@ -90,5 +90,23 @@ describe("GuideBrowser", () => {
     const instructionLists = screen.getAllByRole("list", { name: "خطوات" });
     expect(instructionLists[0]).toHaveTextContent("افتح البحث");
     expect(instructionLists.flatMap((list) => Array.from(list.querySelectorAll("li")))).toHaveLength(4);
+  });
+
+  test("loads the requested authorized chapter from the secured guide endpoint", async () => {
+    mockUseAuthSession.mockReturnValue({ status: "authenticated", user: { role: "editor" }, accessToken: "editor-token" });
+    setChapter("editor-upload");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ok: true,
+      chapters: [chapters[0], chapters[1]],
+    }))));
+
+    render(<GuideBrowser chapters={[]} />);
+
+    expect(await screen.findByRole("heading", { name: "رفع الملفات" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "افتح الصفحة المرتبطة" })).toHaveAttribute("href", "/uploads");
+    expect(fetch).toHaveBeenCalledWith("/api/guide", expect.objectContaining({
+      cache: "no-store",
+      headers: { Authorization: "Bearer editor-token" },
+    }));
   });
 });
