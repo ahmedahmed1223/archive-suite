@@ -77,6 +77,10 @@ spawnLogged("laravel", "docker", [
   containerName,
   "-v",
   `${ROOT}:/app`,
+  // Keeps vendor off the 9p/drvfs Windows bind mount, which Laravel would
+  // otherwise autoload from on every request. See scripts/laravel-docker.mjs.
+  "-v",
+  "archive-laravel-vendor:/app/archive-laravel/vendor",
   "-w",
   "/app/archive-laravel",
   "-p",
@@ -89,7 +93,9 @@ spawnLogged("laravel", "docker", [
   "-lc",
   // Seeder: NextIntegrationSeeder (matches verify-next-laravel-live.mjs for consistency).
   // DatabaseSeeder only creates a bare test user and does NOT delegate to NextIntegrationSeeder.
-  "test -f .env || cp .env.example .env; test -d vendor || composer install --no-interaction; php artisan config:clear && php artisan migrate --force && php artisan db:seed --class=NextIntegrationSeeder --force && (php artisan reverb:start --host=0.0.0.0 --port=8080 &) && exec php artisan serve --host=0.0.0.0 --port=8000",
+  // vendor is a named volume, so the directory always exists but starts empty —
+  // probe autoload.php rather than the directory, or the install gets skipped.
+  "test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction; php artisan config:clear && php artisan migrate --force && php artisan db:seed --class=NextIntegrationSeeder --force && (php artisan reverb:start --host=0.0.0.0 --port=8080 &) && exec php artisan serve --host=0.0.0.0 --port=8000",
 ]);
 
 // Wait for Laravel to finish migrate+seed before booting Next — early API calls
