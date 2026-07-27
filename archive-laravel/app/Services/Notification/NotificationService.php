@@ -70,7 +70,7 @@ class NotificationService
     {
         $title = $success ? 'اكتملت استعادة النسخة الاحتياطية' : 'فشلت استعادة النسخة الاحتياطية';
         $message = $success
-            ? sprintf('تم استعادة النسخة الاحتياطية بنجاح: %s', $backupName ?? 'نسخة احتياطية')
+            ? sprintf('تمت استعادة النسخة الاحتياطية بنجاح: %s', $backupName ?? 'نسخة احتياطية')
             : sprintf('فشلت استعادة النسخة الاحتياطية: %s', $error ?? 'خطأ غير معروف');
 
         return Notification::create([

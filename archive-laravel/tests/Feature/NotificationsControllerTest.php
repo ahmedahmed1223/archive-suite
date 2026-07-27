@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\Notification\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
@@ -166,5 +167,12 @@ class NotificationsControllerTest extends TestCase
     {
         $response = $this->getJson('/api/v1/notifications');
         $response->assertStatus(401);
+    }
+
+    public function test_restore_notification_uses_feminine_verb_for_backup_copy(): void
+    {
+        $notification = app(NotificationService::class)->createRestoreNotification($this->user, true, 'daily-backup');
+
+        $this->assertSame('تمت استعادة النسخة الاحتياطية بنجاح: daily-backup', $notification->message);
     }
 }
