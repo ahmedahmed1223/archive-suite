@@ -30,7 +30,6 @@ function run(label, command, args) {
 const runtimeDockerfile = read("archive-laravel/Dockerfile.worker");
 const harness = read("scripts/laravel-docker.mjs");
 const infraVerifier = read("scripts/verify-infra-config.mjs");
-const releaseVerifier = read("scripts/verify-release-readiness.mjs");
 const requiredWorkerExtensions = ["curl", "mbstring", "zip", "pdo", "pdo_pgsql", "ftp"];
 const workerExtensionContract = /for \(const extension of \["curl", "mbstring", "zip", "pdo", "pdo_pgsql", "ftp"\]\) \{\s+assertWorkerInstallsExtension\("archive-laravel\/Dockerfile\.worker", extension\);\s+\}/;
 
@@ -54,16 +53,16 @@ assert.match(
   /test -f vendor\/autoload\.php \|\| composer install --no-interaction/,
   "the Laravel harness must repair incomplete Composer installs before running tests"
 );
-for (const [name, verifier] of [
-  ["infrastructure", infraVerifier],
-  ["release", releaseVerifier],
-]) {
-  assert.match(
-    verifier,
-    workerExtensionContract,
-    `the ${name} verifier must require PHP extensions ${requiredWorkerExtensions.join(", ")}`
-  );
-}
+// Only the infrastructure verifier owns this contract. verify-release-readiness.mjs
+// was rewritten to carry release-readiness content plus a small set of cross-file
+// wiring invariants, and deliberately dropped the PHP-extension duplication — the
+// extensions stay covered here (the ext-ftp assertion above and the --live check
+// below) and in verify-infra-config.mjs.
+assert.match(
+  infraVerifier,
+  workerExtensionContract,
+  `the infrastructure verifier must require PHP extensions ${requiredWorkerExtensions.join(", ")}`
+);
 if (process.argv.includes("--live")) {
   run("Laravel runtime image build", "docker", [
     "build",

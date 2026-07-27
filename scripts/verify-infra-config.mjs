@@ -120,7 +120,9 @@ assertExcludes("infra/docker-compose.laravel-next.yml", "container_name:");
 // own cron loop (uploads:dispatch-scheduled/recover-scheduled/cleanup-scheduled — see
 // archive-laravel/routes/console.php) plus a worker that actually drains that queue.
 assertIncludes("infra/docker-compose.laravel-next.yml", "  laravel-scheduler:");
-assertIncludes("infra/docker-compose.laravel-next.yml", '"schedule:work"');
+// Matched unquoted: the scheduler command is wrapped in `sh -c "... && exec php
+// artisan schedule:work"`, so the token is no longer its own quoted array element.
+assertIncludes("infra/docker-compose.laravel-next.yml", "schedule:work");
 assertIncludes("infra/docker-compose.laravel-next.yml", "--queue=scheduled-uploads,default");
 for (const key of [
   "SCHEDULED_UPLOADS_QUEUE",
@@ -234,10 +236,17 @@ for (const variant of composeVariants) {
   // plan's File Map) — the other variants predate the scheduled-uploads feature.
   if (variant.includes("docker-compose.laravel-next.yml")) {
     const scheduler = config.services?.["laravel-scheduler"];
-    assert.deepEqual(
-      scheduler?.command,
-      ["php", "artisan", "schedule:work"],
-      `${label}: laravel-scheduler must run schedule:work`
+    // Wrapped in `sh -c` so a one-shot catch-up dispatch can run before the cron
+    // loop. Pin the invariant that actually matters — schedule:work is the
+    // long-running process, exec'd so it becomes PID 1 and Docker supervises and
+    // signals it — rather than exact argv, which the wrapper legitimately changes.
+    const schedulerCommand = Array.isArray(scheduler?.command)
+      ? scheduler.command.join(" ")
+      : String(scheduler?.command ?? "");
+    assert.match(
+      schedulerCommand,
+      /exec php artisan schedule:work/,
+      `${label}: laravel-scheduler must exec schedule:work as its long-running process`
     );
     assert.equal(
       scheduler?.depends_on?.["laravel-fpm"]?.condition,
