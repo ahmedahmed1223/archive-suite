@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { assertNoClippedInteractiveElements, CORE_ROUTES, VIEWPORTS } from './fixtures/visual-routes';
+import {
+  assertNoClippedInteractiveElements,
+  CORE_ROUTES,
+  gotoPublicRoute,
+  VIEWPORTS,
+} from './fixtures/visual-routes';
 
 /**
  * V1-303E: live visual review for the core routes at the three required
@@ -38,7 +43,7 @@ test.describe('visual regression: zero horizontal overflow + screenshot evidence
 
       for (const route of CORE_ROUTES) {
         test(`${route} has no horizontal overflow`, async ({ page }) => {
-          await page.goto(route, { waitUntil: 'networkidle' });
+          await gotoPublicRoute(page, route);
 
           const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
           const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);

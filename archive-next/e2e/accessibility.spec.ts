@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { CORE_ROUTES, VIEWPORTS } from './fixtures/visual-routes';
+import { CORE_ROUTES, gotoPublicRoute, VIEWPORTS } from './fixtures/visual-routes';
 
 // V1-303/V1-401: automated axe-core gate for the canonical routes, at the
 // project's required breakpoints (375/768/1280).
@@ -11,7 +11,7 @@ for (const viewport of VIEWPORTS) {
 
     for (const route of CORE_ROUTES) {
       test(`${route} has no serious/critical axe violations`, async ({ page }) => {
-        await page.goto(route, { waitUntil: 'networkidle' });
+        await gotoPublicRoute(page, route);
 
         const results = await new AxeBuilder({ page })
           .withTags(['wcag2a', 'wcag2aa'])

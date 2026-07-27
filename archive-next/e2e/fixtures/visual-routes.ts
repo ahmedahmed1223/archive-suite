@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import { isPublicPath } from '../../proxy';
 
 /**
  * V1-303A/E: the project's required breakpoints and the core routes exercised
@@ -10,18 +11,44 @@ import { expect } from '@playwright/test';
  * Routes below don't require a live Laravel backend or auth cookie (see
  * next-migration-shell.spec.ts) — that is what keeps them usable as the
  * baseline "core routes" set for gates that run without a backend.
+ *
+ * V1-817: this list used to also carry '/', '/help', '/reports', '/settings',
+ * '/archive' and '/media/jobs'. None of those is public — proxy.ts redirects
+ * every path outside `publicPathPrefixes` to /login when the session cookie is
+ * absent, so the unauthenticated gates were measuring overflow, clipped
+ * controls and axe violations on the login page while reporting a pass per
+ * route. All six are already covered with a real session, at these same three
+ * viewports, by ROUTE_COVERAGE in fixtures/route-inventory.ts. The import-time
+ * check below keeps the two lists from drifting apart again.
  */
 
-export const CORE_ROUTES = [
-  '/',
-  '/login',
-  '/help',
-  '/reports',
-  '/settings',
-  '/archive',
-  '/share/demo-token',
-  '/media/jobs',
-];
+export const CORE_ROUTES = ['/login', '/share/demo-token'];
+
+for (const route of CORE_ROUTES) {
+  if (!isPublicPath(route)) {
+    throw new Error(
+      `CORE_ROUTES contains "${route}", which proxy.ts redirects to /login without a session. ` +
+        'Unauthenticated gates would silently assert against the login page — cover it in ' +
+        'ROUTE_COVERAGE (fixtures/route-inventory.ts) instead.',
+    );
+  }
+}
+
+/**
+ * Navigates and proves the route rendered itself rather than a redirect target.
+ * The import-time check above catches a bad CORE_ROUTES entry; this catches the
+ * other direction — an app-side redirect (auth, feature flag, rewrite) that
+ * makes a genuinely public route stop being one.
+ */
+export async function gotoPublicRoute(page: Page, route: string): Promise<void> {
+  await page.goto(route, { waitUntil: 'networkidle' });
+
+  const pathname = new URL(page.url()).pathname;
+
+  expect(pathname, `${route}: navigation landed on ${pathname} — the gate would assert against the wrong page`).toBe(
+    route,
+  );
+}
 
 export const VIEWPORTS = [
   { name: 'mobile-375', width: 375, height: 812 },

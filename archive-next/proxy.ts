@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const sessionCookieName = process.env.ARCHIVE_SESSION_COOKIE ?? "va_session";
 const publicPathPrefixes = ["/login", "/first-run", "/catalog", "/share/", "/review/"];
 
-function isPublicPath(pathname: string) {
+export function isPublicPath(pathname: string) {
   return publicPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
 }
 
