@@ -66,6 +66,7 @@ describe("GuideBrowser", () => {
     fireEvent.change(screen.getByLabelText("ابحث في الدليل"), { target: { value: "صلاحيات" } });
 
     expect(screen.getByText("لا توجد نتيجة مطابقة في الدليل المتاح لدورك.")).toBeTruthy();
+    expect(screen.getByRole("status")).toHaveTextContent("0 نتائج مطابقة في الدليل.");
     expect(screen.queryByText("إدارة المستخدمين")).toBeNull();
   });
 

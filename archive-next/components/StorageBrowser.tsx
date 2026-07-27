@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, Download, File, Folder, FolderPlus, MoveRight, Search, Upload } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type StorageCapability = "browse" | "download" | "upload" | "create-folder" | "move" | "copy" | "rename" | "delete";
 export type StorageProvider = { id: string; label: string; type: string; status: "ready" | "offline" | "syncing"; capabilities: StorageCapability[] };
@@ -34,6 +34,9 @@ function parentPath(path: string) {
 export default function StorageBrowser({ providers, providerId, path, entries, isLoading = false, error, onProviderChange, onNavigate, onDownload, onAction }: Props) {
   const [activeProviderId, setActiveProviderId] = useState(providerId);
   const [query, setQuery] = useState("");
+  useEffect(() => {
+    setActiveProviderId(providerId);
+  }, [providerId]);
   const provider = providers.find((candidate) => candidate.id === activeProviderId) ?? providers[0];
   const visibleEntries = useMemo(() => entries.filter((entry) => entry.name.toLocaleLowerCase("ar").includes(query.toLocaleLowerCase("ar"))), [entries, query]);
   const supports = (capability: StorageCapability) => Boolean(provider?.capabilities.includes(capability));
@@ -61,7 +64,7 @@ export default function StorageBrowser({ providers, providerId, path, entries, i
       </div>
       <nav className="record-meta" aria-label="مسار وحدة التخزين">
         <button type="button" className="badge" onClick={() => onNavigate("")} disabled={!path}>الجذر</button>
-        {path.split("/").filter(Boolean).map((segment, index, all) => <button key={`${index}-${segment}`} type="button" className="badge" onClick={() => onNavigate(all.slice(0, index + 1).join("/"))}>{segment}</button>)}
+        {path.split("/").filter(Boolean).map((segment, index, all) => <button key={`${index}-${segment}`} type="button" className="badge" onClick={() => onNavigate(all.slice(0, index + 1).join("/"))} aria-current={index === all.length - 1 ? "location" : undefined}>{segment}</button>)}
       </nav>
       <label className="field-label" htmlFor="storage-browser-search">بحث داخل المجلد</label>
       <div className="input-with-icon"><Search size={16} aria-hidden="true" /><input id="storage-browser-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ابحث باسم الملف أو المجلد" /></div>

@@ -53,6 +53,11 @@ export default function GuideBrowser({ chapters: initialChapters = [] }: Readonl
   const requestedChapter = searchParams.get("chapter");
   const visible = useMemo(() => filterGuideChapters(chapters, role, query), [chapters, role, query]);
   const selected = visible.find((chapter) => chapter.id === requestedChapter) ?? visible[0];
+  const searchResultAnnouncement = query
+    ? visible.length === 1
+      ? "نتيجة واحدة مطابقة في الدليل."
+      : `${visible.length} نتائج مطابقة في الدليل.`
+    : "";
 
   useEffect(() => {
     if (auth.status !== "authenticated" || !auth.accessToken) return;
@@ -83,6 +88,7 @@ export default function GuideBrowser({ chapters: initialChapters = [] }: Readonl
       </div>
       <label className="field-label" htmlFor="guide-search">ابحث في الدليل</label>
       <input id="guide-search" className="text-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="مثال: رفع، بحث، صلاحيات" />
+      <p className="sr-only" role="status">{searchResultAnnouncement}</p>
       <div className="dense-grid" style={{ marginTop: "1rem" }}>
         <nav aria-label="فصول الدليل">
           <ul className="stack-list">
