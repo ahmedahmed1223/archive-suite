@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getGuideChapters } from "./guide-content";
 import { filterGuideChapters, getGuideChapterForPath } from "./in-app-guide";
 
 const chapters = [
@@ -8,6 +9,19 @@ const chapters = [
 ] as const;
 
 describe("in-app guide", () => {
+  it("publishes stable role-aware chapter entries with routable links", () => {
+    const manifestChapters = getGuideChapters();
+
+    expect(manifestChapters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "viewer-search", audience: ["viewer", "editor", "admin"], href: "/search" }),
+        expect.objectContaining({ id: "editor-upload", audience: ["editor", "admin"], href: "/uploads" }),
+        expect.objectContaining({ id: "admin-operations", audience: ["admin"], href: "/settings/users" }),
+      ]),
+    );
+    expect(manifestChapters.every((chapter) => chapter.href.startsWith("/") && chapter.body.trim().length > 0)).toBe(true);
+  });
+
   it("limits chapters to the authenticated role", () => {
     expect(filterGuideChapters(chapters, "viewer", "").map((chapter) => chapter.id)).toEqual(["viewer-search"]);
     expect(filterGuideChapters(chapters, "editor", "").map((chapter) => chapter.id)).toEqual(["viewer-search", "editor-upload"]);
