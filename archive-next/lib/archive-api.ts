@@ -1025,6 +1025,11 @@ export interface DropboxConnection {
   folderPath: string | null;
 }
 
+export type StorageWorkspaceCapability = "browse" | "download" | "upload" | "create_folder" | "rename" | "copy" | "move" | "delete" | "restore" | "checksum";
+export interface StorageWorkspaceProvider { id: string; type: string; label: string; capabilities: StorageWorkspaceCapability[]; status: "available" | "not_configured"; }
+export interface StorageWorkspaceEntry { id: string; name: string; path: string; kind: "file" | "folder"; size?: number | null; modifiedAt?: string | null; }
+export interface StorageWorkspaceOperation { id: string; action: string; status: "queued" | "running" | "paused" | "completed" | "failed" | "cancelled"; sourceProviderId: string; destinationProviderId?: string | null; resumeState?: { nextItem?: number; offset?: number } | null; items: Array<{ id: number; sourcePath?: string | null; destinationPath?: string | null; status: string; errorCode?: string | null }>; }
+
 export interface DatabaseConnectionResult {
   status: "connected" | "disconnected";
   driver: "mysql" | "pgsql" | "sqlite";
@@ -1223,6 +1228,12 @@ export interface ArchiveApiClient {
   authorizeDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ authorizationUrl: string }>>;
   syncDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ sync: { entries: Array<{ path: string; id: string | null; size: number | null }>; cursor: string | null; hasMore: boolean } }>>;
   disconnectDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
+  storageWorkspace(options?: AuthRequestOptions): Promise<ApiEnvelope<{ storages: StorageWorkspaceProvider[] }>>;
+  browseStorageWorkspace(storage: string, params?: { path?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ path: string; items: StorageWorkspaceEntry[] }>>;
+  previewStorageOperation(payload: { action: string; sourceProviderId: string; destinationProviderId?: string; items: Array<{ sourcePath?: string; destinationPath?: string; expectedChecksum?: string }> }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: { previewToken: string; expiresAt: string; action: string; items: Array<Record<string, unknown>> } }>>;
+  startStorageOperation(payload: { previewToken: string; idempotencyKey: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ operation: StorageWorkspaceOperation }>>;
+  storageOperation(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ operation: StorageWorkspaceOperation }>>;
+  cancelStorageOperation(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ operation: StorageWorkspaceOperation }>>;
   testStorageConnection(
     payload: { driver: "local" | "s3"; name: string; config: Record<string, unknown> },
     options?: AuthRequestOptions
@@ -1922,6 +1933,16 @@ export function createArchiveApiClient({
       post<{ sync: { entries: Array<{ path: string; id: string | null; size: number | null }>; cursor: string | null; hasMore: boolean } }>("/system/dropbox/sync", undefined, options),
     disconnectDropbox: (options?: AuthRequestOptions) =>
       del<{ dropbox: DropboxConnection }>("/system/dropbox", undefined, options),
+    storageWorkspace: (options?: AuthRequestOptions) => get<{ storages: StorageWorkspaceProvider[] }>("/system/storages", options),
+    browseStorageWorkspace: (storage: string, params?: { path?: string }, options?: AuthRequestOptions) => {
+      const query = params?.path ? `?path=${encodeURIComponent(params.path)}` : "";
+      return get<{ path: string; items: StorageWorkspaceEntry[] }>(`/system/storages/${encodeURIComponent(storage)}/folders${query}`, options);
+    },
+    previewStorageOperation: (payload, options?: AuthRequestOptions) =>
+      post<{ preview: { previewToken: string; expiresAt: string; action: string; items: Array<Record<string, unknown>> } }>("/system/storage-operations/preview", payload, options),
+    startStorageOperation: (payload, options?: AuthRequestOptions) => post<{ operation: StorageWorkspaceOperation }>("/system/storage-operations", payload, options),
+    storageOperation: (id: string, options?: AuthRequestOptions) => get<{ operation: StorageWorkspaceOperation }>(`/system/storage-operations/${encodeURIComponent(id)}`, options),
+    cancelStorageOperation: (id: string, options?: AuthRequestOptions) => post<{ operation: StorageWorkspaceOperation }>(`/system/storage-operations/${encodeURIComponent(id)}/cancel`, undefined, options),
     testStorageConnection: (payload: { driver: "local" | "s3"; name: string; config: Record<string, unknown> }, options?: AuthRequestOptions) =>
       post<{ connection: StorageConnectionResult }>("/system/test-storage", payload, options),
     testDatabaseConnection: (payload: { driver: "mysql" | "pgsql" | "sqlite"; host?: string; port?: number; database: string; username?: string; password?: string }, options?: AuthRequestOptions) =>

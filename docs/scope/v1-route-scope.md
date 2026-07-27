@@ -102,6 +102,8 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 | GET | `/v1/plugins` | admin | — | plugin marketplace management |
 | GET/PATCH | `/v1/system/security-settings` | admin | — | |
 | POST | `/v1/system/test-storage`, `/v1/system/test-database` | admin | — | |
+| GET | `/v1/system/storages`, `/v1/system/storages/{storage}/folders` | admin | — | provider catalog and confined folder browsing |
+| GET/POST | `/v1/system/storage-operations*` (preview, start, status, cancel) | admin | — | signed, idempotent multi-storage operations |
 | GET/POST | `/v1/system/backups*` (incl. `run`, `preview`, `restore`, `verify`, `dr-drill`, `dr-status`) | admin | — | |
 | GET | `/v1/system/status`, `/v1/system/dr-probe` | admin | — | |
 | POST | `/v1/system/control/{action}` | admin | — | double-gated: `archive.system_control_enabled` config + admin role |

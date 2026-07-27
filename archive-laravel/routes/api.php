@@ -50,6 +50,7 @@ use App\Http\Controllers\Api\V1\SystemController;
 use App\Http\Controllers\Api\V1\DropboxController;
 use App\Http\Controllers\Api\V1\DropboxWebhookController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
+use App\Http\Controllers\Api\V1\StorageWorkspaceController;
 use App\Http\Controllers\Api\V1\TrashController;
 use App\Http\Controllers\Api\V1\TypesController;
 use App\Http\Controllers\Api\V1\UploadLinksController;
@@ -407,6 +408,12 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
         Route::post('/system/test-storage', [SystemController::class, 'testStorageConnection']);
         Route::post('/system/test-database', [SystemController::class, 'testDatabaseConnection']);
+        Route::get('/system/storages', [StorageWorkspaceController::class, 'index']);
+        Route::get('/system/storages/{storage}/folders', [StorageWorkspaceController::class, 'browse']);
+        Route::post('/system/storage-operations/preview', [StorageWorkspaceController::class, 'preview']);
+        Route::post('/system/storage-operations', [StorageWorkspaceController::class, 'start']);
+        Route::get('/system/storage-operations/{operation}', [StorageWorkspaceController::class, 'show']);
+        Route::post('/system/storage-operations/{operation}/cancel', [StorageWorkspaceController::class, 'cancel']);
 
         Route::get('/system/backups', [BackupsController::class, 'index']);
         Route::post('/system/backups/run', [BackupsController::class, 'run']);

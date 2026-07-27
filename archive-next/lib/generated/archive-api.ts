@@ -1723,6 +1723,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system/storage-operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start an idempotent storage operation (admin only) */
+        post: operations["startStorageOperation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system/storage-operations/{operation}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a storage operation (admin only) */
+        get: operations["getStorageOperation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system/storage-operations/{operation}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a storage operation (admin only) */
+        post: operations["cancelStorageOperation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system/storage-operations/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a signed storage-operation preview (admin only) */
+        post: operations["previewStorageOperation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system/storages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List configured storage providers and capabilities (admin only) */
+        get: operations["listStorageWorkspace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system/storages/{storage}/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browse a configured storage provider (admin only) */
+        get: operations["browseStorageWorkspace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tag-nodes": {
         parameters: {
             query?: never;
@@ -3672,6 +3774,43 @@ export interface components {
             path?: string;
             share: string;
             user: string;
+        };
+        StorageBrowseResponse: components["schemas"]["OkEnvelope"] & {
+            items: {
+                id: string;
+                /** @enum {string} */
+                kind: "file" | "folder";
+                /** Format: date-time */
+                modifiedAt?: string | null;
+                name: string;
+                path: string;
+                size?: number | null;
+            }[];
+            path: string;
+        };
+        StorageCatalogResponse: components["schemas"]["OkEnvelope"] & {
+            storages: components["schemas"]["StorageProvider"][];
+        };
+        StorageOperationPreviewRequest: {
+            action: string;
+            destinationProviderId?: string;
+            items: Record<string, never>[];
+            sourceProviderId: string;
+        };
+        StorageOperationPreviewResponse: components["schemas"]["OkEnvelope"] & {
+            preview: Record<string, never>;
+        };
+        StorageOperationResponse: components["schemas"]["OkEnvelope"] & {
+            operation: Record<string, never>;
+        };
+        StorageProvider: {
+            capabilities: string[];
+            id: string;
+            label: string;
+            /** @enum {string} */
+            status: "available" | "not_configured";
+            /** @enum {string} */
+            type: "local" | "s3" | "dropbox";
         };
         StorageSample: {
             /** Format: date-time */
@@ -7425,6 +7564,142 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
+        };
+    };
+    startStorageOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Queued operation */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageOperationResponse"];
+                };
+            };
+        };
+    };
+    getStorageOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageOperationResponse"];
+                };
+            };
+        };
+    };
+    cancelStorageOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageOperationResponse"];
+                };
+            };
+        };
+    };
+    previewStorageOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageOperationPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Signed preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageOperationPreviewResponse"];
+                };
+            };
+            422: components["responses"]["Error"];
+        };
+    };
+    listStorageWorkspace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Storage catalog */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageCatalogResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+        };
+    };
+    browseStorageWorkspace: {
+        parameters: {
+            query?: {
+                path?: string;
+            };
+            header?: never;
+            path: {
+                storage: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Folder contents */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBrowseResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
         };
     };
     listTagNodes: {

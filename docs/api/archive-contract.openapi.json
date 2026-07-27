@@ -3958,6 +3958,24 @@
       "get": { "tags": ["Integrations"], "summary": "Verify Dropbox webhook endpoint", "operationId": "verifyDropboxWebhook", "responses": { "200": { "description": "Dropbox challenge" } } },
       "post": { "tags": ["Integrations"], "summary": "Receive signed Dropbox change notification", "operationId": "receiveDropboxWebhook", "responses": { "200": { "description": "Accepted or duplicate event" }, "401": { "$ref": "#/components/responses/Error" } } }
     },
+    "/system/storages": {
+      "get": { "tags": ["System"], "summary": "List configured storage providers and capabilities (admin only)", "operationId": "listStorageWorkspace", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "responses": { "200": { "description": "Storage catalog", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StorageCatalogResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/system/storages/{storage}/folders": {
+      "get": { "tags": ["System"], "summary": "Browse a configured storage provider (admin only)", "operationId": "browseStorageWorkspace", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "storage", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "path", "in": "query", "schema": { "type": "string" } }], "responses": { "200": { "description": "Folder contents", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StorageBrowseResponse" } } } }, "404": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/system/storage-operations/preview": {
+      "post": { "tags": ["System"], "summary": "Create a signed storage-operation preview (admin only)", "operationId": "previewStorageOperation", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StorageOperationPreviewRequest" } } } }, "responses": { "200": { "description": "Signed preview", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StorageOperationPreviewResponse" } } } }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/system/storage-operations": {
+      "post": { "tags": ["System"], "summary": "Start an idempotent storage operation (admin only)", "operationId": "startStorageOperation", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "responses": { "201": { "description": "Queued operation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StorageOperationResponse" } } } } } }
+    },
+    "/system/storage-operations/{operation}": {
+      "get": { "tags": ["System"], "summary": "Read a storage operation (admin only)", "operationId": "getStorageOperation", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "operation", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Operation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StorageOperationResponse" } } } } } }
+    },
+    "/system/storage-operations/{operation}/cancel": {
+      "post": { "tags": ["System"], "summary": "Cancel a storage operation (admin only)", "operationId": "cancelStorageOperation", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "operation", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Cancelled operation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StorageOperationResponse" } } } } } }
+    },
     "/system/security-settings": {
       "get": {
         "tags": ["System"],
@@ -7412,6 +7430,12 @@
       "DropboxSyncResponse": {
         "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["sync"], "properties": { "sync": { "type": "object", "required": ["entries", "cursor", "hasMore"], "properties": { "entries": { "type": "array", "items": { "type": "object", "required": ["path", "id", "size"], "properties": { "path": { "type": "string" }, "id": { "type": ["string", "null"] }, "size": { "type": ["integer", "null"] } } } }, "cursor": { "type": ["string", "null"] }, "hasMore": { "type": "boolean" } } } } }]
       },
+      "StorageProvider": { "type": "object", "required": ["id", "type", "label", "capabilities", "status"], "properties": { "id": { "type": "string" }, "type": { "type": "string", "enum": ["local", "s3", "dropbox"] }, "label": { "type": "string" }, "capabilities": { "type": "array", "items": { "type": "string" } }, "status": { "type": "string", "enum": ["available", "not_configured"] } } },
+      "StorageCatalogResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["storages"], "properties": { "storages": { "type": "array", "items": { "$ref": "#/components/schemas/StorageProvider" } } } }] },
+      "StorageBrowseResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["path", "items"], "properties": { "path": { "type": "string" }, "items": { "type": "array", "items": { "type": "object", "required": ["id", "name", "path", "kind"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "path": { "type": "string" }, "kind": { "type": "string", "enum": ["file", "folder"] }, "size": { "type": ["integer", "null"] }, "modifiedAt": { "type": ["string", "null"], "format": "date-time" } } } } } }] },
+      "StorageOperationPreviewRequest": { "type": "object", "required": ["action", "sourceProviderId", "items"], "properties": { "action": { "type": "string" }, "sourceProviderId": { "type": "string" }, "destinationProviderId": { "type": "string" }, "items": { "type": "array", "minItems": 1, "items": { "type": "object" } } } },
+      "StorageOperationPreviewResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["preview"], "properties": { "preview": { "type": "object" } } }] },
+      "StorageOperationResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["operation"], "properties": { "operation": { "type": "object" } } }] },
       "SecuritySettings": {
         "type": "object",
         "required": [

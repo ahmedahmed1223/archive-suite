@@ -11,7 +11,7 @@ import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwit
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveFile, type FileBrowserEntry } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveFile, type FileBrowserEntry, type StorageWorkspaceOperation, type StorageWorkspaceProvider } from "@/lib/archive-api";
 import { addMintedLink } from "@/lib/minted-shares";
 import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -66,12 +66,9 @@ const PLAYABLE_EXTENSIONS = new Set([
   "ogv"
 ]);
 
-// مؤقتًا تبقى هذه البيانات محلية حتى يربط منسق العقود endpoint كتالوج التخزين.
-const workspaceProviders: StorageProvider[] = [
-  { id: "local", label: "التخزين المحلي", type: "local", status: "ready", capabilities: ["browse", "download", "upload", "create-folder", "move", "copy", "rename", "delete"] },
-  { id: "s3", label: "S3", type: "s3", status: "ready", capabilities: ["browse", "download", "upload", "create-folder", "move", "copy", "rename", "delete"] },
-  { id: "dropbox", label: "Dropbox", type: "dropbox", status: "ready", capabilities: ["browse", "download", "upload", "create-folder"] }
-];
+const capabilityMap: Record<string, StorageCapability> = { create_folder: "create-folder", browse: "browse", download: "download", upload: "upload", move: "move", copy: "copy", rename: "rename", delete: "delete" };
+function mapProvider(provider: StorageWorkspaceProvider): StorageProvider { return { ...provider, status: provider.status === "available" ? "ready" : "offline", capabilities: provider.capabilities.map((item) => capabilityMap[item]).filter((item): item is StorageCapability => Boolean(item)) }; }
+function mapOperation(operation: StorageWorkspaceOperation): StorageOperationView { const completed = operation.items.filter((item) => item.status === "completed" || item.status === "skipped").length; return { id: operation.id, type: operation.action, status: operation.status === "queued" || operation.status === "paused" ? "running" : operation.status, completedItems: completed, totalItems: operation.items.length, message: operation.items.find((item) => item.errorCode) ?.errorCode ?? undefined, retryable: operation.status === "failed" }; }
 
 function getFileExtension(file: ArchiveFile) {
   return file.key.split(".").pop()?.toLowerCase() ?? "";
@@ -168,6 +165,7 @@ export default function FilesPage() {
   const [browserPath, setBrowserPath] = useState("");
   const [browserState, setBrowserState] = useState<BrowserState>({ status: "loading" });
   const [workspaceProviderId, setWorkspaceProviderId] = useState("local");
+  const [workspaceProviders, setWorkspaceProviders] = useState<StorageProvider[]>([]);
   const [workspaceOperation, setWorkspaceOperation] = useState<StorageOperationView | undefined>();
 
   const loadFiles = useCallback(async (q: string) => {
@@ -189,25 +187,34 @@ export default function FilesPage() {
     void loadFiles("");
   }, [loadFiles]);
 
+  const loadWorkspace = useCallback(async () => {
+    const response = await api.storageWorkspace();
+    if (response.ok) {
+      const providers = response.storages.map(mapProvider);
+      setWorkspaceProviders(providers);
+      setWorkspaceProviderId((current) => providers.some((provider) => provider.id === current) ? current : (providers[0]?.id ?? ""));
+    }
+  }, [api]);
+  useEffect(() => { void loadWorkspace(); }, [loadWorkspace]);
   const loadBrowser = useCallback(async (path: string) => {
     setBrowserState({ status: "loading" });
     try {
-      const response = await api.browseFiles(path ? { path } : undefined);
+      const response = await api.browseStorageWorkspace(workspaceProviderId, path ? { path } : undefined);
       if (response.ok) {
-        setBrowserState({ status: "ready", path: response.path, entries: response.entries });
+        setBrowserState({ status: "ready", path: response.path, entries: response.items.map((item) => ({ key: item.id, name: item.name, path: item.path, kind: item.kind, size: item.size ?? undefined, modifiedAt: item.modifiedAt ?? undefined })) });
       } else {
         setBrowserState({ status: "error", message: response.error || "تعذر تصفح المجلد." });
       }
     } catch (error) {
       setBrowserState({ status: "error", message: error instanceof Error ? error.message : "تعذر تصفح المجلد." });
     }
-  }, [api]);
+  }, [api, workspaceProviderId]);
 
   useEffect(() => {
     if (viewMode === "browser") {
       void loadBrowser(browserPath);
     }
-  }, [viewMode, browserPath, loadBrowser]);
+  }, [viewMode, browserPath, workspaceProviderId, loadBrowser]);
 
   const files = state.status === "ready" ? state.files : [];
   const stores = useMemo(() => getUniqueStores(files), [files]);
@@ -227,8 +234,21 @@ export default function FilesPage() {
     modifiedAt: entry.modifiedAt
   })), [browserEntries, browserPath]);
 
-  const startWorkspacePreview = (action: StorageCapability) => {
-    setWorkspaceOperation({ id: `local-${Date.now()}`, type: action === "move" ? "نقل" : action === "upload" ? "رفع" : "إنشاء مجلد", status: "preview", completedItems: 0, totalItems: selectedKeys.length || 1, message: "راجع العملية قبل تنفيذها. لا تُنفذ أي عملية مدمرة دون تأكيد الخادم." });
+  const startWorkspacePreview = async (action: StorageCapability) => {
+    const apiAction = action === "create-folder" ? "create_folder" : action;
+    const response = await api.previewStorageOperation({ action: apiAction, sourceProviderId: workspaceProviderId, items: (selectedKeys.length ? selectedKeys : [browserPath]).map((sourcePath) => ({ sourcePath })) });
+    if (!response.ok) { setWorkspaceOperation({ id: "preview", type: apiAction, status: "failed", completedItems: 0, totalItems: selectedKeys.length || 1, message: response.error, retryable: true }); return; }
+    setWorkspaceOperation({ id: response.preview.previewToken, type: apiAction, status: "preview", completedItems: 0, totalItems: response.preview.items.length, message: "راجع العملية قبل تنفيذها. لا تُنفذ أي عملية مدمرة دون تأكيد الخادم." });
+  };
+  const confirmWorkspaceOperation = async () => {
+    if (!workspaceOperation) return;
+    const response = await api.startStorageOperation({ previewToken: workspaceOperation.id, idempotencyKey: crypto.randomUUID() });
+    if (response.ok) setWorkspaceOperation(mapOperation(response.operation)); else setWorkspaceOperation((current) => current ? { ...current, status: "failed", message: response.error, retryable: true } : current);
+  };
+  const cancelWorkspaceOperation = async () => {
+    if (!workspaceOperation || workspaceOperation.status === "preview") { setWorkspaceOperation(undefined); return; }
+    const response = await api.cancelStorageOperation(workspaceOperation.id);
+    if (response.ok) setWorkspaceOperation(mapOperation(response.operation));
   };
   const visibleFiles = useMemo(() => {
     return files.filter((file) => {
@@ -670,13 +690,13 @@ export default function FilesPage() {
             }}
             onNavigate={setBrowserPath}
             onDownload={(entry) => setPreviewKey(entry.path)}
-            onAction={startWorkspacePreview}
+            onAction={(action) => void startWorkspacePreview(action)}
           />
           <StorageOperationPanel
             operation={workspaceOperation}
-            onConfirm={() => setWorkspaceOperation((current) => current ? { ...current, status: "running", message: "أُرسلت العملية إلى الخادم؛ ستظهر النتيجة عند ربط API." } : current)}
-            onCancel={() => setWorkspaceOperation((current) => current ? { ...current, status: "cancelled", message: "أُلغي الطلب قبل تنفيذ العملية." } : current)}
-            onRetry={() => setWorkspaceOperation((current) => current ? { ...current, status: "running", message: "تجري إعادة المحاولة." } : current)}
+            onConfirm={() => void confirmWorkspaceOperation()}
+            onCancel={() => void cancelWorkspaceOperation()}
+            onRetry={() => void startWorkspacePreview("move")}
           />
 
           {browserState.status === "loading" ? (
