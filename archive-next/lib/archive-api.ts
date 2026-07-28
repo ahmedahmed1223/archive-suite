@@ -1350,7 +1350,55 @@ function localizeLoginError(error: string): string {
 // ponytail: only exact-matches known backend strings ("Unauthorized.", "Invalid
 // credentials.") so sentinel checks elsewhere (e.g. response.error === "Forbidden.")
 // keep working; a full raw-message translation layer needs backend error codes first.
-function translateKnownApiError(error: string): string {
+const API_ERROR_MESSAGES_AR: Record<string, string> = {
+  // Envelope-level codes (app/Support/ApiError.php).
+  UNAUTHENTICATED: "انتهت الجلسة. سجّل الدخول مرة أخرى.",
+  FORBIDDEN: "لا تملك صلاحية لتنفيذ هذا الإجراء.",
+  NOT_FOUND: "العنصر غير موجود.",
+  CONFLICT: "تعارض مع الحالة الحالية. حدّث الصفحة وأعد المحاولة.",
+  VALIDATION_FAILED: "تحقق من الحقول المدخلة ثم أعد المحاولة.",
+  RATE_LIMITED: "تجاوزت عدد المحاولات المسموح. انتظر قليلاً ثم أعد المحاولة.",
+  FEATURE_DISABLED: "هذه الميزة غير مفعّلة.",
+  SERVER_ERROR: "خطأ في الخادم. حاول لاحقاً أو تواصل مع مسؤول النظام.",
+  // Controller-level codes.
+  not_found: "العنصر غير موجود.",
+  record_not_found: "المادة غير موجودة.",
+  forbidden: "لا تملك صلاحية لتنفيذ هذا الإجراء.",
+  expired: "انتهت الصلاحية.",
+  revoked: "تم إلغاء هذا الرابط.",
+  unreachable: "تعذر الوصول إلى الرابط المحدد.",
+  lock_conflict: "العنصر مقفل من متعاون آخر.",
+  document_version_conflict: "تغيّر المستند منذ فتحه. أعد التحميل ثم احفظ.",
+  relation_conflict: "توجد علاقة مطابقة بالفعل.",
+  circular_hierarchy: "لا يمكن نقل العنصر إلى أحد فروعه.",
+  illegal_transition: "انتقال غير مسموح من الحالة الحالية.",
+  invalid_operation: "عملية غير صالحة.",
+  rule_disabled: "القواعد المعطّلة تقبل التشغيل التجريبي فقط.",
+  config_required: "التكامل غير مهيأ بعد.",
+  record_id_required: "معرّف المادة مطلوب.",
+  suggestion_key_required: "مفتاح الاقتراح مطلوب.",
+  not_retryable: "لا يمكن إعادة محاولة هذه العملية.",
+  session_not_found: "جلسة الرفع غير موجودة.",
+  session_inactive: "جلسة الرفع لم تعد نشطة.",
+  incomplete_upload: "لم تصل جميع الأجزاء بعد.",
+  invalid_chunk_index: "رقم الجزء غير صالح.",
+  chunk_size_mismatch: "حجم الجزء غير مطابق.",
+  checksum_mismatch: "بصمة الملف غير مطابقة. أعد الرفع.",
+  artifact_missing: "الملف المؤقت لهذه العملية لم يعد متاحاً.",
+  unsafe_file_content: "محتوى الملف غير آمن ولا يمكن قبوله.",
+  storage_quota_exceeded: "تجاوزت حصة التخزين المتاحة.",
+  insufficient_disk_space: "لا توجد مساحة كافية على القرص.",
+};
+
+// V1-818: prefer the machine `code` over the English sentence. V1-815 made the
+// code mandatory on every {ok:false} envelope and guards it with a static scan
+// (archive-laravel ApiErrorCodeGuardTest), so this covers the API surface without
+// matching prose — which is what the previous note here said was still missing.
+// Sentinel checks stay safe: all four (data-center, status, system/control x2)
+// test `response.code` first and use the English string only as an `||` fallback.
+function translateKnownApiError(error: string, code?: string): string {
+  if (code && API_ERROR_MESSAGES_AR[code]) return API_ERROR_MESSAGES_AR[code];
+
   return AUTH_ERROR_MESSAGES_AR[error] ?? error;
 }
 
@@ -1497,11 +1545,12 @@ export function createArchiveApiClient({
     }
 
     if (payload.ok === false && payload.code === undefined && !response.ok) {
+      // No code to key on — this branch is entered only when payload.code is undefined.
       return { ...payload, code: `http_${response.status}`, error: translateKnownApiError(payload.error) };
     }
 
     if (payload.ok === false) {
-      return { ...payload, error: translateKnownApiError(payload.error) };
+      return { ...payload, error: translateKnownApiError(payload.error, payload.code) };
     }
 
     return payload;

@@ -115,3 +115,36 @@ describe("bulk macro API client", () => {
     expect(fetchImpl.mock.calls.map(([, init]) => init?.method)).toEqual(["GET", "POST", "GET", "PATCH", "POST", "POST", "GET", "DELETE"]);
   });
 });
+
+// V1-818: Arabic error text is keyed on the machine `code`, not the English
+// sentence. V1-815 guarantees every {ok:false} envelope carries one.
+describe("Arabic API error localization", () => {
+  const errorFor = async (body: Record<string, unknown>, status: number) => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+    const response = await api.runSafetyPreview({ scenario: "restore-conflict", operation: "restore", ids: ["x"] });
+    if (response.ok) throw new Error("Expected an error envelope");
+    return response;
+  };
+
+  it("translates a known code into Arabic instead of passing the English text through", async () => {
+    const response = await errorFor({ ok: false, error: "Record not found.", code: "not_found" }, 404);
+
+    expect(response.error).toBe("العنصر غير موجود.");
+    expect(response.error).not.toMatch(/[A-Za-z]/);
+  });
+
+  it("keeps the code intact so sentinel branches still work", async () => {
+    const response = await errorFor({ ok: false, error: "Forbidden.", code: "FORBIDDEN" }, 403);
+
+    // The four sentinel sites test `response.code` first; that must survive translation.
+    expect(response.code).toBe("FORBIDDEN");
+    expect(response.error).toBe("لا تملك صلاحية لتنفيذ هذا الإجراء.");
+  });
+
+  it("passes unmapped codes through untouched rather than inventing a message", async () => {
+    const response = await errorFor({ ok: false, error: "Some new backend error.", code: "brand_new_code" }, 400);
+
+    expect(response.error).toBe("Some new backend error.");
+  });
+});
