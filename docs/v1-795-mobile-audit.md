@@ -88,3 +88,112 @@ produced, so P2 and P3 stay open.** Anyone resuming should run the command above
 and confirm Laravel comes up before assuming the suite is running; the artifacts
 land in `visual-evidence/authed--files--viewer--tablet-768.png` and the matching
 `help` file.
+
+## Live run completed (2026-07-28)
+
+### Why the earlier attempts produced nothing
+
+Two separate causes, both now resolved:
+
+1. Docker was unavailable in the previous session. It is up here (29.6.1) and
+   the stack came up on the first try.
+2. More seriously, the suite was collecting **zero tests**. `4b24182e` added an
+   import-time guard to `e2e/fixtures/visual-routes.ts` that imports
+   `isPublicPath` from `proxy.ts`, and `proxy.ts` imports `next/server`, which
+   Playwright's loader cannot resolve. Playwright reports an unresolvable
+   import as "No tests found" rather than as an error, so
+   `visual-regression`, `visual-regression-authenticated`, `accessibility` and
+   `keyboard-navigation` all silently ran nothing. Fixed in `ba07b380` by
+   moving the prefix list to `lib/public-paths.ts`; collection went from 0 to
+   181 tests.
+
+So the "green visual result" this audit distrusted in P1 was worse than
+described: for the four affected specs there was no result at all.
+
+### Result: 95 passed, 56 failed (17.2m)
+
+| Viewport | Pass | Fail |
+|---|---|---|
+| mobile-375 | 42 | 5 |
+| tablet-768 | 0 | **50** |
+| desktop-1280 | 49 | 0 |
+
+Every failure is the `assertNoClippedInteractiveElements` half of the gate, not
+the document `scrollWidth` half — meaning a container clips these controls
+without the page ever reporting horizontal overflow. That is precisely the case
+that assertion was written for, and it is why the page-level checks looked
+clean.
+
+Screenshots are taken after the assertions, so failing routes produced no
+artifact: `authed--*--tablet-768.png` does not exist for any route. P2/P3's
+evidence gap is therefore still open, but for a new reason — the pages fail the
+gate rather than the run failing to start.
+
+### N1 — P1 — The 761–1119px band has no navigation layout at all
+
+All 50 authenticated routes fail at 768px, and the offending elements are the
+same on every one: the route links and topbar actions — «يومي», «الرفعات
+المجدولة», «التفريغ», «الوسائط», «الوارد», «الاستيراد», «إضافة مادة»,
+«اللوحة», «الأرشيف», «البحث» — sitting at negative `left` (−33px to −97px) with
+a shared `right` of 38.5px. In an RTL layout that is the nav running off the
+inline-start edge.
+
+The cause is a gap between two breakpoints, not a per-page defect:
+
+- **≤760px** (`06-widgets.css:559`): mobile treatment — `.topbar` becomes a
+  two-column grid, the route links collapse behind the «المسارات» toggle, and
+  `.primary-action-link` / `.focus-mode-toggle` / `.density-toggle` are hidden.
+- **≥1120px** (`06-widgets.css:938`): sidebar shell — `.topbar` becomes a
+  full-height vertical rail with `.topbar-actions` stretched to `inline-size:
+  100%`.
+- **761–1119px**: neither applies. `.topbar` falls back to
+  `grid-template-columns: auto auto minmax(0, 1fr)` (`06-widgets.css:822`) with
+  `.topbar-actions { display: inline-flex; justify-self: start }` — an
+  unwrappable max-content row in a cell that cannot hold it.
+
+Impact: on a 768px-wide tablet in portrait — the single most common tablet
+width — every navigation link and every header action on every authenticated
+page is off-screen and unreachable. Desktop (1280) and phone (375) are both
+fine, which is exactly why this survived: the two widths anyone tests by hand
+are the two that work.
+
+Recommended follow-up (**V1-819**): give `.topbar-actions` and `.route-links` a
+layout for the band, most cheaply by letting them wrap and shrink
+(`flex-wrap: wrap; max-inline-size: 100%`) rather than by adding a third
+bespoke breakpoint. Not applied here: it is a shell-wide change that needs its
+own before/after evidence at 768, 900 and 1119, which is a full 17-minute live
+run per iteration.
+
+### N2 — P1 — The nav toggle is unreachable at 375px on five routes
+
+`/search`, `/search/saved`, `/settings/users`, `/uploads` and
+`/uploads/scheduled` place the «المسارات» toggle at `left=321 right=423` — 48px
+past the 375px viewport. Since the toggle is the only way to reach navigation
+at mobile width, these five pages strand the user with no way out except the
+browser's back button. Every other 375px route passes, so this is
+content-driven: something on these pages widens the topbar's grid track without
+growing `document.scrollWidth`.
+
+Recommended follow-up (**V1-820**).
+
+### N3 — P2 — `/rights` renders three copies of a control fully off-screen
+
+`/rights` at 375px reports «فحص الإنفاذ» three times at `left=-314
+right=-223` — entirely outside the viewport, roughly one full screen-width to
+the inline-start. The triplication suggests a per-row action rendered by a
+collapsed or mispositioned container rather than a wrapping problem.
+
+Recommended follow-up (**V1-821**).
+
+### Status of the original findings
+
+- **P1** — fixed in `4b24182e`, and the deeper cause behind its symptom fixed in
+  `ba07b380`.
+- **P2** — the coverage half was already correct (see above). The evidence half
+  is still open: `/files` fails at 768px under N1, so no artifact is written.
+- **P3** — `/help` likewise fails at 768px under N1. The static help layout is
+  still source-level safe; what blocks it is the shell, not the page.
+
+Both P2 and P3 resolve for free once N1 is fixed — that run will write the
+missing `authed--files--viewer--tablet-768.png` and
+`authed--help--viewer--tablet-768.png`.
