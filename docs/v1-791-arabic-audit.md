@@ -129,3 +129,28 @@ behavioral one across every page's error path, which belongs in its own task
 with its own tests rather than inside an audit. A4's single finding is a
 one-token swap and is left for whoever picks up V1-818 so the RTL change ships
 with a test like the one `d49580c4` added.
+
+## V1-823 (2026-07-28): backend half completed
+
+A2's recommended follow-up is done. `lang/ar/validation.php` was added, scoped
+to the validation rules actually used across `app/Http/Controllers/Api/V1` and
+`app/Http/Requests` (confirmed by a repo-wide grep, not translated
+speculatively): `required`, `string`, `array`, `integer`, `numeric`, `boolean`,
+`email`, `url`, `file`, `image`, `date`, `date_format`, `after`, `different`,
+`json`, `in`, `regex`, plus the sized variants of `max`/`min`/`size`/`gt`. Rules
+not in the app's actual usage (`unique`, `exists`, `confirmed`, `uuid`, `alpha`,
+...) are intentionally left untranslated -- `APP_FALLBACK_LOCALE` stays `en`,
+so any of those degrade to English instead of a broken translation key.
+
+`APP_LOCALE` default changed from `en` to `ar` in both `.env.example` and
+`config/app.php`'s `env()` fallback. Checked first whether this was safe:
+grepped `tests/` for assertions on Laravel's own framework validation text
+(`'The ... field'`) and found none -- the two matches were both
+controller-built strings (`SystemConnectionTestTest`, `SystemControlApiTest`),
+not framework output, so no existing test pins the English wording.
+
+A1 (the ~50 API error strings) remains addressed only on the Next.js side
+(V1-818, `105619af`) -- this piece was specifically the framework validation
+messages, which are a different code path (`ValidationException` -> the
+central `ApiError::renderException` fallback) from the manually-built
+`{ok:false}` envelopes A1 covers.

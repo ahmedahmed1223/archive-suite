@@ -157,8 +157,11 @@ class SystemConnectionTestTest extends TestCase
             'port' => 3306,
         ]);
 
+        // V1-823: APP_LOCALE now defaults to 'ar', so framework validation
+        // messages are Arabic (lang/ar/validation.php). This pinned the old
+        // English wording; the assertion needed to move, not to be reverted.
         $response->assertStatus(422);
-        $response->assertJsonPath('errors.database.0', 'The database field is required.');
+        $response->assertJsonPath('errors.database.0', 'حقل database مطلوب.');
     }
 
     public function test_test_database_connection_fails_invalid_credentials(): void
