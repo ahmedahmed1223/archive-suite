@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, Download, File, Folder, FolderPlus, MoveRight, Search, Upload } from "lucide-react";
+import { ChevronRight, Download, File, Folder, FolderPlus, MoveRight, Search, Upload } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 export type StorageCapability = "browse" | "download" | "upload" | "create-folder" | "move" | "copy" | "rename" | "delete";
@@ -71,7 +71,7 @@ export default function StorageBrowser({ providers, providerId, path, entries, i
       {error ? <div className="state-banner state-banner-error" role="alert"><strong>تعذر فتح وحدة التخزين</strong><span>{error}</span></div> : null}
       {isLoading ? <p role="status">جار تحميل الملفات…</p> : null}
       {!isLoading && !error ? <ul className="stack-list" aria-label="محتوى وحدة التخزين">
-        {path ? <li><button type="button" className="text-accent" onClick={() => onNavigate(parentPath(path))}><ChevronLeft size={16} aria-hidden="true" />المجلد السابق</button></li> : null}
+        {path ? <li><button type="button" className="text-accent" onClick={() => onNavigate(parentPath(path))}><ChevronRight size={16} aria-hidden="true" />المجلد السابق</button></li> : null}
         {visibleEntries.map((entry) => <li key={entry.id} className="panel-title-row"><span>{entry.kind === "folder" ? <Folder size={18} aria-hidden="true" /> : <File size={18} aria-hidden="true" />}{entry.name}</span>{entry.kind === "folder" ? <button type="button" className="button button-secondary button-sm" onClick={() => onNavigate(entry.path)}>فتح</button> : <button type="button" className="button button-secondary button-sm" disabled={!supports("download")} onClick={() => onDownload?.(entry)}><Download size={16} aria-hidden="true" />تنزيل</button>}</li>)}
         {visibleEntries.length === 0 ? <li className="helper-text">لا توجد عناصر مطابقة في هذا المجلد.</li> : null}
       </ul> : null}

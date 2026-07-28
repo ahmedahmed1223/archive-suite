@@ -31,4 +31,19 @@ describe("StorageBrowser", () => {
 
     expect(screen.getByLabelText("وحدة التخزين")).toHaveValue("dropbox");
   });
+
+  // V1-306B: the UI is RTL, so "back one level" points right. A left-pointing
+  // chevron here reads as "forward" to an Arabic user. lucide renders the icon
+  // name into `class`, which is what lets this assert direction without a
+  // screenshot.
+  it("points the parent-folder affordance rightwards for RTL", () => {
+    const { container } = render(
+      <StorageBrowser providers={providers} providerId="local" path="reports/2026" entries={[]} onProviderChange={vi.fn()} onNavigate={vi.fn()} />,
+    );
+
+    const parentButton = screen.getByRole("button", { name: /المجلد السابق/ });
+
+    expect(parentButton.querySelector(".lucide-chevron-right")).not.toBeNull();
+    expect(container.querySelector(".lucide-chevron-left")).toBeNull();
+  });
 });
