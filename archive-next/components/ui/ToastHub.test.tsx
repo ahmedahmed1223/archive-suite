@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { ToastProvider, ToastViewport } from "@/components/ui/Toast";
 import ToastHub from "@/components/ui/ToastHub";
-import { toastSuccess } from "@/lib/toast";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 function renderHub() {
   return render(
@@ -34,5 +34,40 @@ describe("ToastHub action button (V1-737)", () => {
     fireEvent.click(undoButton);
 
     expect(onAction).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * V1-303D: Radix already routes every toast through a live region, so the gap
+ * was never "silent" — it was urgency. `foreground` (Radix's default) renders
+ * aria-live="assertive", interrupting whatever the screen reader is mid-way
+ * through. A save confirmation does not deserve to cut someone off; a failure
+ * does. These assert the live region's politeness per tone, which is the part
+ * a user actually experiences.
+ */
+describe("ToastHub screen-reader urgency (V1-303D)", () => {
+  function liveRegionPoliteness(baseElement: HTMLElement): string[] {
+    return Array.from(baseElement.querySelectorAll("[aria-live]")).map(
+      (element) => element.getAttribute("aria-live") ?? "",
+    );
+  }
+
+  test("announces a success politely so it never interrupts", async () => {
+    const { baseElement } = renderHub();
+    toastSuccess("تم حفظ السجل");
+
+    await screen.findByText("تم حفظ السجل");
+
+    expect(liveRegionPoliteness(baseElement)).toContain("polite");
+    expect(liveRegionPoliteness(baseElement)).not.toContain("assertive");
+  });
+
+  test("announces an error assertively so it interrupts", async () => {
+    const { baseElement } = renderHub();
+    toastError("تعذر حفظ السجل");
+
+    await screen.findByText("تعذر حفظ السجل");
+
+    expect(liveRegionPoliteness(baseElement)).toContain("assertive");
   });
 });

@@ -25,6 +25,12 @@ export default function ToastHub() {
           key={item.id}
           className="ui-toast"
           data-tone={item.tone}
+          // V1-303D: Radix announces every toast through a live region, but its
+          // default `foreground` maps to aria-live="assertive" — which cuts off
+          // whatever the screen reader is currently saying. Only errors earn
+          // that interruption; success/info wait their turn via `background`
+          // (aria-live="polite").
+          type={item.tone === "error" ? "foreground" : "background"}
           duration={5000}
           onOpenChange={(open) => {
             if (!open) dismissToast(item.id);
