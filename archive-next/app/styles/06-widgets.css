@@ -590,11 +590,6 @@
     justify-self: end;
   }
 
-  .topbar-actions {
-    grid-column: auto;
-    gap: var(--space-1);
-  }
-
   .topbar-actions .primary-action-link,
   .topbar-actions .focus-mode-toggle,
   .topbar-actions .density-toggle {
@@ -823,11 +818,28 @@
   grid-template-columns: auto auto minmax(0, 1fr);
 }
 
+/* V1-820/V1-822: below 1120px .topbar-actions used to share a row with
+   .nav-toggle in an implicit "auto" grid column with no width ceiling
+   (07-ui-kit.css's max-width:760 override / the 761-1119 unconditional
+   3-column .topbar below). It grew to fit whatever it was given, and
+   .nav-toggle — the only way to reach navigation at that width — got pushed
+   past the viewport edge whenever one more child rendered (the contextual
+   guide link on /search, /uploads, /settings/users; a longer session-chip
+   name; the command-trigger kbd hint at 768px). Spanning the full row here
+   — the same `grid-column: 1 / -1` already used by .route-links and
+   .app-breadcrumb below — decouples it from .nav-toggle's column entirely,
+   so no amount of topbar-actions content can push anything else off-screen.
+   `overflow-x: auto` is the same fallback .route-links already relies on,
+   for the (currently unreached) case where content still doesn't fit. */
 .topbar-actions {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   justify-self: start;
+  grid-column: 1 / -1;
+  inline-size: 100%;
+  min-inline-size: 0;
+  overflow-x: auto;
 }
 
 .session-chip {

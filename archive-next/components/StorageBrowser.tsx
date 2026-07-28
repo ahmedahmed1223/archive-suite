@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Download, File, Folder, FolderPlus, MoveRight, Search, Upload } from "lucide-react";
+import { ChevronRight, Download, File, Folder, FolderPlus, MoveLeft, Search, Upload } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 export type StorageCapability = "browse" | "download" | "upload" | "create-folder" | "move" | "copy" | "rename" | "delete";
@@ -23,7 +23,7 @@ type Props = Readonly<{
 const actionLabels: Array<{ capability: StorageCapability; label: string; icon: typeof Upload }> = [
   { capability: "upload", label: "رفع", icon: Upload },
   { capability: "create-folder", label: "مجلد جديد", icon: FolderPlus },
-  { capability: "move", label: "نقل", icon: MoveRight },
+  { capability: "move", label: "نقل", icon: MoveLeft },
 ];
 
 function parentPath(path: string) {
