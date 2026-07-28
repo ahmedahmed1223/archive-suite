@@ -138,6 +138,11 @@ same on every one: the route links and topbar actions — «يومي», «الر
 a shared `right` of 38.5px. In an RTL layout that is the nav running off the
 inline-start edge.
 
+> **Mechanism corrected 2026-07-28 (later).** The paragraph below originally
+> blamed `.topbar-actions` being an unwrappable max-content row. A live probe at
+> 768px disproved that; see [Probe results](#probe-results-768px) at the end.
+> The band diagnosis holds, the mechanism does not.
+
 The cause is a gap between two breakpoints, not a per-page defect:
 
 - **≤760px** (`06-widgets.css:559`): mobile treatment — `.topbar` becomes a
@@ -197,3 +202,45 @@ Recommended follow-up (**V1-821**).
 Both P2 and P3 resolve for free once N1 is fixed — that run will write the
 missing `authed--files--viewer--tablet-768.png` and
 `authed--help--viewer--tablet-768.png`.
+
+## Probe results (768px)
+
+A throwaway spec loaded `/files` at 768px with a viewer session and reported
+layout facts instead of asserting. Results:
+
+```
+dir: rtl        docScroll: 768   docClient: 768   shellCols: 768px
+topbarDisplay: grid              topbarNavOpen: "false"
+offenders: "إضافة مادة" left=-64 right=39 parent=nav-section scroller=NONE
+           "الرفعات المجدولة" left=-97 right=39 parent=nav-section scroller=NONE
+           … 8 more, all parent=nav-section, all right=39
+```
+
+Four facts, and they change the diagnosis:
+
+1. `docScroll === docClient === 768` — the page genuinely does not overflow.
+   The controls are clipped, exactly what the assertion exists to catch.
+2. `scroller: NONE` — the probe walked each element's ancestors looking for one
+   with `overflow-x: auto|scroll` **and** actual horizontal overflow, and found
+   none. So these are **not** scrolled-out items in the `.route-links` rail, and
+   the assertion is **not** a false positive here. They are unreachable.
+3. The parent is `.nav-section`, not `.topbar-actions`. My earlier claim that
+   `.topbar-actions` was the unwrappable row is **wrong** — that element is not
+   involved.
+4. `topbarNavOpen: "false"` with the links still laid out and merely pushed
+   off-screen. At ≤760px the closed drawer is removed from layout (which is why
+   375 passes) and at ≥1120px the sidebar is permanently open (why 1280 passes).
+   In the 761–1119 band it is neither hidden nor open.
+
+So the defect is that **the closed navigation drawer stays in the layout and in
+the focus order between 761 and 1119px**, positioned off-screen. That makes it a
+keyboard/screen-reader defect as well as a visual one: a keyboard user tabs
+through a dozen invisible links. The fix belongs in the drawer's closed state
+(removing it from layout in the band, or giving the band the sidebar treatment),
+**not** in `.topbar-actions` flex-wrap as V1-819 originally suggested.
+
+One thing the probe did not explain: all ten offenders share `right=39` while
+`.route-links` is `display: flex; flex-wrap: nowrap`, which should lay them out
+in a row with differing right edges. Something is overriding that to a vertical
+stack in this state. Whoever takes V1-819 should resolve that before choosing a
+fix — it likely names the real culprit rule.
