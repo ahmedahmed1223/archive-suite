@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ARCHIVE_UNAUTHORIZED_EVENT, createArchiveApiClient, type ArchiveUser } from "@/lib/archive-api";
+import { isPublicPath } from "@/lib/public-paths";
 
 type AuthStatus = "loading" | "authenticated" | "guest";
 
@@ -23,12 +24,6 @@ interface AuthSessionContextValue extends AuthSessionState {
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 let pendingBootstrapRefresh: ReturnType<ReturnType<typeof createArchiveApiClient>["refresh"]> | null = null;
-
-const publicPathPrefixes = ["/login", "/first-run", "/catalog", "/share/", "/review/"];
-
-function isPublicPath(pathname: string) {
-  return publicPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
-}
 
 function loginPathFor(pathname: string) {
   const next = pathname && pathname !== "/" ? `?next=${encodeURIComponent(pathname)}` : "";

@@ -1,11 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const sessionCookieName = process.env.ARCHIVE_SESSION_COOKIE ?? "va_session";
-const publicPathPrefixes = ["/login", "/first-run", "/catalog", "/share/", "/review/"];
+import { isPublicPath } from "./lib/public-paths";
 
-export function isPublicPath(pathname: string) {
-  return publicPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
-}
+const sessionCookieName = process.env.ARCHIVE_SESSION_COOKIE ?? "va_session";
+
+export { isPublicPath };
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

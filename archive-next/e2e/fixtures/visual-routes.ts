@@ -1,6 +1,9 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-import { isPublicPath } from '../../proxy';
+// Import the shared list, never proxy.ts: proxy.ts pulls in `next/server`,
+// which Playwright's loader cannot resolve, and an unresolvable import makes
+// every spec importing this fixture collect zero tests without failing.
+import { isPublicPath } from '../../lib/public-paths';
 
 /**
  * V1-303A/E: the project's required breakpoints and the core routes exercised
