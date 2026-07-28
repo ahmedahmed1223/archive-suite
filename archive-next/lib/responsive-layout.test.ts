@@ -47,6 +47,16 @@ describe("responsive RTL workspace source contract", () => {
     expect(commandBar).toContain('data-layout="workspace-commandbar"');
   });
 
+  // V1-819: the overflow nav links live in `<details class="nav-more">`, and
+  // `.nav-section { display: contents }` lets them escape the closed disclosure
+  // — they stayed laid out and focusable off-screen at 761-1119px, failing the
+  // 768px clipped-control gate on every route. An isolated Chromium test showed
+  // `display: grid` does NOT hide them; only an explicit rule does, so assert
+  // that specific shape rather than "has some display".
+  it("hides the more-menu nav sections while the disclosure is closed", () => {
+    expect(baseCss).toMatch(/\.nav-more:not\(\[open\]\)\s+\.nav-section\s*{[^}]*display:\s*none/s);
+  });
+
   it("keeps notification and help surfaces within the visual viewport", () => {
     expect(notificationsCss).toMatch(/100dvh/);
     expect(statusCss).toMatch(/\.help-content\s*{[^}]*max-inline-size:\s*min\(100%,/s);

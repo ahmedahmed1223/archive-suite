@@ -278,6 +278,17 @@ a:hover {
   display: contents;
 }
 
+/* V1-819: these sections sit inside `<details class="nav-more">`, and a box that
+   is `display: contents` escapes the closed disclosure — the links stayed laid
+   out and focusable off the inline-start edge, failing the 768px clipped-control
+   gate on every route. Only >=1120px was spared, because the sidebar rules give
+   .nav-section a real box. Measured in an isolated Chromium test: with
+   `display: contents` the link renders 41x39 while closed, and `display: grid`
+   does NOT help (46x40) — only hiding it explicitly does. */
+.nav-more:not([open]) .nav-section {
+  display: none;
+}
+
 .nav-section-label {
   display: none;
 }

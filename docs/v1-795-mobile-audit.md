@@ -244,3 +244,41 @@ One thing the probe did not explain: all ten offenders share `right=39` while
 in a row with differing right edges. Something is overriding that to a vertical
 stack in this state. Whoever takes V1-819 should resolve that before choosing a
 fix — it likely names the real culprit rule.
+
+## N1 fixed (2026-07-28)
+
+Root cause, measured rather than guessed: the overflow nav links live in
+`<details class="nav-more">`, and `.nav-section { display: contents }` lets a
+`display: contents` box escape the closed disclosure. The links stayed laid out
+and in the focus order, painted off the inline-start edge. `>=1120px` was spared
+only because the sidebar rules give `.nav-section` a real box.
+
+An isolated Chromium test settled which rule actually fixes it — the first
+attempt (`display: grid`) shipped and changed nothing, which is what prompted
+measuring instead of reasoning:
+
+| wrapper, `<details>` closed | link box |
+|---|---|
+| `display: contents` (before) | 41x39 — renders |
+| `display: grid` (failed attempt) | 46x40 — still renders |
+| `:not([open]) { display: none }` | 0x0 — hidden |
+
+Fix: `.nav-more:not([open]) .nav-section { display: none }` in `01-base.css`,
+with a regression assertion in `lib/responsive-layout.test.ts` pinned to that
+exact shape (asserting "has some display" would have passed the broken version).
+
+Live result: **134 passed / 17 failed**, from 95/56.
+
+| Viewport | Before | After |
+|---|---|---|
+| mobile-375 | 42 / 5 | 44 / 6 |
+| tablet-768 | 0 / 50 | **39 / 11** |
+| desktop-1280 | 49 / 0 | 49 / 0 |
+
+**P2 and P3 of the original audit are now closed**: this run wrote
+`visual-evidence/authed--files--viewer--tablet-768.png` and
+`authed--help--viewer--tablet-768.png`, the artifacts they were blocked on.
+
+The 11 remaining 768px failures are a separate, much narrower defect — the
+command-palette hint "Ctrl / Cmd + K" at `left=-21`, plus one adjacent nav label
+on some routes. Filed as V1-822.
