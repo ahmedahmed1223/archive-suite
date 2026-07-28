@@ -595,6 +595,7 @@ textarea.search-input {
 .scroll-x {
   overflow-x: auto;
   max-inline-size: 100%;
+  min-inline-size: 0;
 }
 
 .mobile-card-list {
