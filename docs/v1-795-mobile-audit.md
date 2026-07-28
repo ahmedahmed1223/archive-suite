@@ -282,3 +282,39 @@ Live result: **134 passed / 17 failed**, from 95/56.
 The 11 remaining 768px failures are a separate, much narrower defect — the
 command-palette hint "Ctrl / Cmd + K" at `left=-21`, plus one adjacent nav label
 on some routes. Filed as V1-822.
+
+## V1-820/V1-822 fixed (2026-07-28, later)
+
+Same root cause as N1/V1-819 but a distinct symptom: below 1120px,
+`.topbar-actions` shared an implicit `auto` grid column with `.nav-toggle`,
+with no width ceiling. It grew to fit whatever content it held —
+the contextual guide link on `/search`, `/uploads`, `/settings/users`; a
+longer session-chip name; the `Ctrl / Cmd + K` command-trigger hint at
+768px — and pushed `.nav-toggle`, the only way to reach navigation at that
+width, off the viewport edge.
+
+Fix: `grid-column: 1 / -1; overflow-x: auto` on `.topbar-actions`, the same
+pattern `.route-links` and `.app-breadcrumb` already use. Verified first with
+a targeted 8-route probe (5 previously-broken + 3 control routes, both
+viewports) before trusting it, then with the full live gate.
+
+**Full gate result: 150 passed / 1 failed**, up from 134/17 after V1-819
+alone.
+
+| Viewport | After V1-819 | After V1-820/822 |
+|---|---|---|
+| mobile-375 | 44 / 6 | 49 / **1** |
+| tablet-768 | 39 / 11 | **48 / 0** |
+| desktop-1280 | 49 / 0 | **50 / 0** |
+
+The one remaining failure across all 151 tests is `/rights` at mobile-375 —
+V1-821, unchanged and untouched by this fix, since it's a different
+mechanism entirely: three copies of an enforcement-check button render at
+`left=-314` inside a `<table class="data-table">` sitting in a
+`div.scroll-x` with `overflow-x: auto`. The table itself is 672px wide in a
+317px-wide scroll region, which is the documented, intentional exception —
+but the button renders off-screen from the very first paint, not merely
+scrolled out by user action. Worth checking on pickup: whether an RTL page's
+horizontally-scrollable container defaults its `scrollLeft` to the wrong end
+on load, which would explain content appearing pre-scrolled to a
+[-355, 0] range instead of starting at `scrollLeft: 0`.
