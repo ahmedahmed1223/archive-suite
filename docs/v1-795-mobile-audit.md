@@ -356,3 +356,31 @@ files, a sticky cell needs an explicit background (none is set today, so
 scrolled rows would show through), and validating no regression across every
 table using the class needs its own live-verified pass. Scoped correctly,
 this is a bigger, better-isolated task than a one-line CSS fix.
+
+## V1-821 closed for real (2026-07-29, later)
+
+The sticky-column fix identified above was implemented, scoped to `/rights`
+only (not a blanket `.data-table :last-child` rule -- checked all 15 files
+using `.data-table` first: roughly half end on a genuine action column
+[backup, delegations, favorites, shares, trash, rights], half end on plain
+data [data-center, settings, reports, safety-preview, sync], where freezing
+an arbitrary last column would be a new regression rather than a fix).
+
+Added `.data-table-sticky-end` as an opt-in class
+(`position: sticky; inset-inline-end: 0`, explicit background matching
+`.panel` so scrolled rows don't show through), applied to the header/cell
+pair for `/rights`' enforcement column specifically.
+
+Verified in two steps before committing:
+
+1. An isolated probe confirmed the button sits at `left=41, right=131`
+   (fully inside `[0, 375]`) both on initial load and after forcing the
+   scroll container to its maximum scroll position -- proving it is
+   genuinely pinned, not coincidentally positioned.
+2. The full live gate: **151 passed / 0 failed.** Every route at every
+   viewport now passes -- up from 150/1 before this fix, and up from 95/56
+   at the start of this audit's live-verification pass.
+
+The other five tables with a genuine trailing action column (backup,
+delegations, favorites, shares, trash) are candidates for the same class,
+not applied here -- out of scope for this item specifically.
