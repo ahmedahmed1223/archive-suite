@@ -318,3 +318,41 @@ scrolled out by user action. Worth checking on pickup: whether an RTL page's
 horizontally-scrollable container defaults its `scrollLeft` to the wrong end
 on load, which would explain content appearing pre-scrolled to a
 [-355, 0] range instead of starting at `scrollLeft: 0`.
+
+## V1-821 reopened (2026-07-29) — the earlier close was premature
+
+`861390b8` closed this with `.scroll-x { min-inline-size: 0 }` and verified
+`document.documentElement.scrollWidth` no longer exceeds `innerWidth` at
+375/768. That check is real and the fix is genuinely correct **for what it
+measures** -- but it measures page-level overflow, not the
+`assertNoClippedInteractiveElements` gate this item was actually opened
+against. Re-running the full live gate after merging the fix reproduced the
+exact same failure, coordinates included: `"فحص الإنفاذ" left=-314
+right=-224`, unchanged from the original finding.
+
+**Why the two checks disagree:** `.scroll-x` can legitimately contain content
+wider than the viewport -- that's the documented exception this audit itself
+carved out for `/files`' DataTable. Bounding the *container* to the viewport
+(what `min-inline-size: 0` does) says nothing about which part of its
+*scrolled content* is visible without the user dragging it. The container is
+correctly sized; the button is still off-screen inside it.
+
+**Root cause, confirmed by reading the source:** the enforcement column is
+the last of six `<th>`/`<td>` in DOM order (`app/rights/page.tsx:323-328`:
+item, holder, license, expiry, remaining, enforcement) -- an entirely normal
+place for an action column. In an RTL table, the last DOM column renders
+visually leftmost, and a freshly-loaded `overflow-x: auto` container under
+`direction: rtl` rests at the reading-start (right) by default, so whatever
+column falls beyond the container's width is the one cut off on first paint
+-- here, that's the action column specifically. `.data-table` also carries an
+intentional `min-inline-size: 42rem` (04-tables.css:9), so the table cannot
+shrink its way out of this.
+
+**Fix identified, not applied:** pin the last column with `position: sticky;
+inset-inline-end: 0` scoped to `.scroll-x`'s own scroll box, so it stays
+visible regardless of scroll position -- the standard frozen-action-column
+pattern. Not applied in this session: `.data-table` is shared across 15
+files, a sticky cell needs an explicit background (none is set today, so
+scrolled rows would show through), and validating no regression across every
+table using the class needs its own live-verified pass. Scoped correctly,
+this is a bigger, better-isolated task than a one-line CSS fix.
