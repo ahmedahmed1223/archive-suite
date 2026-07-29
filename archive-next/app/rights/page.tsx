@@ -325,7 +325,7 @@ export default function RightsPage() {
                     <th>الترخيص</th>
                     <th>ينتهي في</th>
                     <th>المتبقي</th>
-                    <th>الإنفاذ</th>
+                    <th className="data-table-sticky-end">الإنفاذ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -351,7 +351,7 @@ export default function RightsPage() {
                             </span>
                           )}
                         </td>
-                        <td>{renderEnforcement(record.itemId)}</td>
+                        <td className="data-table-sticky-end">{renderEnforcement(record.itemId)}</td>
                       </tr>
                     );
                   })}

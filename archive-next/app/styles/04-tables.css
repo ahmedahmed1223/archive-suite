@@ -44,6 +44,26 @@
   overflow-wrap: anywhere;
 }
 
+/* V1-821: opt-in, not a blanket `:last-child` rule -- roughly half the pages
+   using .data-table put a real action column last (backup, delegations,
+   favorites, shares, trash, rights); the rest (data-center, settings,
+   reports, safety-preview, sync) end on plain data, where freezing an
+   arbitrary column would be a regression, not a fix. Apply this class only
+   to the header/cell pair that is genuinely an action column.
+
+   Root cause this fixes: in an RTL table, the last DOM column renders
+   visually leftmost, and a freshly-loaded overflow-x:auto container under
+   direction:rtl rests at the reading-start (right) by default -- so an
+   action column placed last (the normal spot for one) is the one that
+   starts off-screen on every load, not just when scrolled. Background must
+   be explicit and match the panel behind .scroll-x, or scrolled rows show
+   through the sticky cell. */
+.data-table-sticky-end {
+  position: sticky;
+  inset-inline-end: 0;
+  background: color-mix(in srgb, var(--color-bg-secondary) 96%, var(--color-brand-warm));
+}
+
 .empty-state {
   border: 1px dashed var(--color-border-primary);
   border-radius: var(--radius-lg);
