@@ -4,6 +4,7 @@ import "./settings.css";
 import { useEffect, useState } from "react";
 import { Activity, AlertTriangle, CheckCircle2, DatabaseZap, Eye, Fingerprint, Info, KeyRound, LifeBuoy, MinusCircle, RefreshCw, Settings, ShieldCheck, Users, XCircle } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import DropboxFolderPicker from "@/components/DropboxFolderPicker";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import ShortcutsSettings from "@/components/ShortcutsSettings";
@@ -845,6 +846,12 @@ export default function SettingsPage() {
                   {dropbox?.status === "connected" ? "متصل" : dropbox?.status === "disabled" ? "غير مهيأ" : "غير متصل"}
                 </StatusBadge>
               </div>
+              {dropbox?.status === "connected" ? (
+                <DropboxFolderPicker
+                  currentFolderPath={dropbox.folderPath}
+                  onSelected={(folderPath) => setDropbox((current) => (current ? { ...current, folderPath } : current))}
+                />
+              ) : null}
               <p className="helper-text">لا تُدخل رموز Dropbox في المتصفح. يبدأ تدفق التفويض من بيئة الخادم بعد توفير بيانات الاعتماد.</p>
             </section>
             <section className="section-divider stack" aria-labelledby="storage-connection-test-title">

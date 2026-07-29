@@ -144,6 +144,69 @@ class DropboxIntegrationApiTest extends TestCase
         $this->assertSame(hash('sha256', $body), $deadLetter->event_id);
     }
 
+    public function test_browse_folders_lists_only_folders_at_the_given_path(): void
+    {
+        config()->set('services.dropbox.client_id', 'test-client');
+        config()->set('services.dropbox.client_secret', 'test-secret');
+        $token = $this->loginAsAdmin();
+
+        $this->postJson('/api/v1/system/dropbox/connect', [
+            'accessToken' => 'access-token',
+            'folderPath' => '/Archive',
+        ], ['Authorization' => 'Bearer '.$token])->assertCreated();
+
+        Http::fake(['api.dropboxapi.com/2/files/list_folder' => Http::response(['entries' => [
+            ['.tag' => 'folder', 'name' => '2026', 'path_display' => '/Archive/2026', 'path_lower' => '/archive/2026'],
+            ['.tag' => 'file', 'name' => 'notes.txt', 'path_display' => '/Archive/notes.txt', 'path_lower' => '/archive/notes.txt'],
+        ], 'cursor' => 'cursor-1', 'has_more' => false])]);
+
+        $this->getJson('/api/v1/system/dropbox/folders?path=/Archive', ['Authorization' => 'Bearer '.$token])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonCount(1, 'folders')
+            ->assertJsonPath('folders.0.name', '2026')
+            ->assertJsonPath('folders.0.path', '/Archive/2026');
+    }
+
+    public function test_browse_folders_requires_an_active_connection(): void
+    {
+        config()->set('services.dropbox.client_id', 'test-client');
+        config()->set('services.dropbox.client_secret', 'test-secret');
+        $token = $this->loginAsAdmin();
+
+        $this->getJson('/api/v1/system/dropbox/folders', ['Authorization' => 'Bearer '.$token])
+            ->assertStatus(409);
+    }
+
+    public function test_set_folder_updates_only_the_folder_path(): void
+    {
+        config()->set('services.dropbox.client_id', 'test-client');
+        config()->set('services.dropbox.client_secret', 'test-secret');
+        $token = $this->loginAsAdmin();
+
+        $this->postJson('/api/v1/system/dropbox/connect', [
+            'accessToken' => 'access-token',
+            'folderPath' => '/Archive',
+        ], ['Authorization' => 'Bearer '.$token])->assertCreated();
+
+        $this->patchJson('/api/v1/system/dropbox/folder', ['folderPath' => '/Archive/2026'], ['Authorization' => 'Bearer '.$token])
+            ->assertOk()
+            ->assertJsonPath('dropbox.folderPath', '/Archive/2026');
+
+        $row = \DB::table('dropbox_connections')->first();
+        $this->assertNotNull($row->encrypted_access_token);
+    }
+
+    public function test_set_folder_requires_an_active_connection(): void
+    {
+        config()->set('services.dropbox.client_id', 'test-client');
+        config()->set('services.dropbox.client_secret', 'test-secret');
+        $token = $this->loginAsAdmin();
+
+        $this->patchJson('/api/v1/system/dropbox/folder', ['folderPath' => '/Archive'], ['Authorization' => 'Bearer '.$token])
+            ->assertStatus(409);
+    }
+
     private function loginAsAdmin(): string
     {
         return $this->postJson('/api/v1/auth/login', ['email' => 'dropbox-admin@example.test', 'password' => 'password'])->json('accessToken');

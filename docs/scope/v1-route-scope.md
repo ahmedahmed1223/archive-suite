@@ -103,6 +103,8 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 | GET/PATCH | `/v1/system/security-settings` | admin | — | |
 | POST | `/v1/system/test-storage`, `/v1/system/test-database` | admin | — | |
 | GET | `/v1/system/storages`, `/v1/system/storages/{storage}/folders` | admin | — | provider catalog and confined folder browsing |
+| GET | `/v1/system/dropbox/folders` | admin | — | V1-762: lists subfolders at a path so the settings UI can offer a real folder picker |
+| PATCH | `/v1/system/dropbox/folder` | admin | — | V1-762: updates only the connection's folder path, without re-supplying OAuth tokens |
 | GET/POST | `/v1/system/storage-operations*` (preview, start, status, cancel) | admin | — | signed, idempotent multi-storage operations |
 | GET/POST | `/v1/system/backups*` (incl. `run`, `preview`, `restore`, `verify`, `dr-drill`, `dr-status`) | admin | — | |
 | GET | `/v1/system/status`, `/v1/system/dr-probe` | admin | — | |

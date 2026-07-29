@@ -60,6 +60,25 @@ class DropboxController extends Controller
         return response()->json(['ok' => true, 'dropbox' => $dropbox->disconnect($request->attributes->get('archive_user'))]);
     }
 
+    public function browseFolders(Request $request, DropboxConnectionService $dropbox): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) return $denied;
+        $data = $request->validate(['path' => ['nullable', 'string', 'max:1024']]);
+        try {
+            return response()->json(['ok' => true, 'folders' => $dropbox->browseFolders($request->attributes->get('archive_user'), $data['path'] ?? '/')]);
+        } catch (\LogicException $e) { return response()->json(ApiError::envelope($e->getMessage(), 409), 409); }
+        catch (\Throwable) { return response()->json(ApiError::envelope('Could not reach Dropbox.', 502), 502); }
+    }
+
+    public function setFolder(Request $request, DropboxConnectionService $dropbox): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) return $denied;
+        $data = $request->validate(['folderPath' => ['required', 'string', 'max:1024']]);
+        try {
+            return response()->json(['ok' => true, 'dropbox' => $dropbox->setFolder($request->attributes->get('archive_user'), $data['folderPath'])]);
+        } catch (\LogicException $e) { return response()->json(ApiError::envelope($e->getMessage(), 409), 409); }
+    }
+
     public function sync(Request $request, DropboxSyncService $sync): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) return $denied;

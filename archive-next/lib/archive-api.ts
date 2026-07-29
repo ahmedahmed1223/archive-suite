@@ -1228,6 +1228,8 @@ export interface ArchiveApiClient {
   authorizeDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ authorizationUrl: string }>>;
   syncDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ sync: { entries: Array<{ path: string; id: string | null; size: number | null }>; cursor: string | null; hasMore: boolean } }>>;
   disconnectDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
+  browseDropboxFolders(path?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ folders: Array<{ name: string; path: string }> }>>;
+  setDropboxFolder(folderPath: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
   storageWorkspace(options?: AuthRequestOptions): Promise<ApiEnvelope<{ storages: StorageWorkspaceProvider[] }>>;
   browseStorageWorkspace(storage: string, params?: { path?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ path: string; items: StorageWorkspaceEntry[] }>>;
   previewStorageOperation(payload: { action: string; sourceProviderId: string; destinationProviderId?: string; items: Array<{ sourcePath?: string; destinationPath?: string; expectedChecksum?: string }> }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: { previewToken: string; expiresAt: string; action: string; items: Array<Record<string, unknown>> } }>>;
@@ -1982,6 +1984,10 @@ export function createArchiveApiClient({
       post<{ sync: { entries: Array<{ path: string; id: string | null; size: number | null }>; cursor: string | null; hasMore: boolean } }>("/system/dropbox/sync", undefined, options),
     disconnectDropbox: (options?: AuthRequestOptions) =>
       del<{ dropbox: DropboxConnection }>("/system/dropbox", undefined, options),
+    browseDropboxFolders: (path?: string, options?: AuthRequestOptions) =>
+      get<{ folders: Array<{ name: string; path: string }> }>(`/system/dropbox/folders${path ? `?path=${encodeURIComponent(path)}` : ""}`, options),
+    setDropboxFolder: (folderPath: string, options?: AuthRequestOptions) =>
+      patch<{ dropbox: DropboxConnection }>("/system/dropbox/folder", { folderPath }, options),
     storageWorkspace: (options?: AuthRequestOptions) => get<{ storages: StorageWorkspaceProvider[] }>("/system/storages", options),
     browseStorageWorkspace: (storage: string, params?: { path?: string }, options?: AuthRequestOptions) => {
       const query = params?.path ? `?path=${encodeURIComponent(params.path)}` : "";

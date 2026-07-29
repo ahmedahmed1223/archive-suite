@@ -36,6 +36,37 @@ class DropboxConnectionService
         return $this->status($user);
     }
 
+    /** V1-762: lists the immediate subfolders at $path so the settings UI can offer a real
+     *  folder picker instead of a free-text path. Files are excluded -- Dropbox's list_folder
+     *  entries carry a ".tag" of "folder" or "file", and only folders are pickable targets. */
+    public function browseFolders(User $user, string $path = '/'): array
+    {
+        $connection = $this->connection($user);
+        if (! $connection || $connection->status !== 'connected') {
+            throw new \LogicException('Dropbox is not connected.');
+        }
+        $token = $this->accessToken($connection);
+        $normalizedPath = $path === '/' ? '' : $this->normalizeFolder($path);
+        $result = $this->gateway->listFolder($token, $normalizedPath);
+        $folders = array_values(array_filter($result['entries'] ?? [], fn (array $entry): bool => ($entry['.tag'] ?? null) === 'folder'));
+        return array_map(fn (array $entry): array => ['name' => $entry['name'], 'path' => $entry['path_display'] ?? $entry['path_lower']], $folders);
+    }
+
+    /** V1-762: updates only the folder path of an existing connection -- unlike connect(), it
+     *  never needs the OAuth tokens re-supplied, so the folder picker can call it directly. */
+    public function setFolder(User $user, string $folderPath): array
+    {
+        $connection = $this->connection($user);
+        if (! $connection || $connection->status !== 'connected') {
+            throw new \LogicException('Dropbox is not connected.');
+        }
+        DB::table('dropbox_connections')->where('id', $connection->id)->update([
+            'folder_path' => $this->normalizeFolder($folderPath),
+            'updated_at' => now(),
+        ]);
+        return $this->status($user);
+    }
+
     public function disconnect(User $user): array
     {
         DB::table('dropbox_connections')->where('user_id', $user->id)->delete();

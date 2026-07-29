@@ -404,6 +404,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/system/dropbox/callback', [DropboxController::class, 'callback']);
         Route::post('/system/dropbox/sync', [DropboxController::class, 'sync']);
         Route::post('/system/dropbox/connect', [DropboxController::class, 'connect']);
+        Route::get('/system/dropbox/folders', [DropboxController::class, 'browseFolders']);
+        Route::patch('/system/dropbox/folder', [DropboxController::class, 'setFolder']);
         Route::delete('/system/dropbox', [DropboxController::class, 'disconnect']);
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
         Route::post('/system/test-storage', [SystemController::class, 'testStorageConnection']);
