@@ -32,6 +32,7 @@ import {
 } from "@/lib/archive-api";
 import { clearEditDraftPosition, getEditDraftPosition, saveEditDraftPosition } from "@/lib/edit-draft-position";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
+import { deferRecord, getLaterEntry, removeLater, type LaterEntry } from "@/lib/later-list";
 import { deriveRecordStatus, missingDescribeFields } from "@/lib/record-status";
 import { getShortcut, isTypingTarget, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
 import { recordView } from "@/lib/recent-items";
@@ -1174,6 +1175,10 @@ export default function ArchiveDetailPage() {
   const canEditRecords = useCapability("records.edit");
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [isFav, setIsFav] = useState(false);
+  const [laterEntry, setLaterEntry] = useState<LaterEntry | null>(null);
+  const [laterFormOpen, setLaterFormOpen] = useState(false);
+  const [laterReason, setLaterReason] = useState("");
+  const [laterReviewDate, setLaterReviewDate] = useState("");
   const [ocrState, setOcrState] = useState<OcrState>({ status: "idle" });
   const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
 
@@ -1396,6 +1401,7 @@ export default function ArchiveDetailPage() {
         historyError: null
       });
       setIsFav(isFavorited(id));
+      setLaterEntry(getLaterEntry(id));
       recordView(id, recordResponse.record.title, recordResponse.record.type);
 
       void api.suggestions({ context: "detail", recordId: id })
@@ -1550,6 +1556,27 @@ export default function ArchiveDetailPage() {
             {state.status === "ready" ? (
               <button
                 type="button"
+                onClick={() => {
+                  if (laterEntry) {
+                    removeLater(id);
+                    setLaterEntry(null);
+                    setLaterFormOpen(false);
+                  } else {
+                    setLaterReason("");
+                    setLaterReviewDate("");
+                    setLaterFormOpen((open) => !open);
+                  }
+                }}
+                className={`button ${laterEntry ? "button-primary" : "button-secondary"}`}
+                aria-pressed={Boolean(laterEntry)}
+                title={laterEntry ? "إلغاء التأجيل" : "تأجيل هذا السجل لوقت لاحق"}
+              >
+                {laterEntry ? "إلغاء التأجيل" : "لاحقًا"}
+              </button>
+            ) : null}
+            {state.status === "ready" ? (
+              <button
+                type="button"
                 onClick={handleOcr}
                 disabled={!deriveRecordSourcePath(state.record) || ocrState.status === "creating"}
                 className="button button-secondary"
@@ -1597,6 +1624,55 @@ export default function ArchiveDetailPage() {
       {state.status === "ready" && (
         <div className="split-layout archive-detail-layout" aria-label="تفاصيل السجل">
           <div className="page-section">
+            {laterEntry ? (
+              <div className="panel panel-compact" role="status">
+                <p>
+                  <strong>مؤجَّلة:</strong> {laterEntry.reason}
+                  {laterEntry.reviewDate ? ` — موعد المراجعة: ${laterEntry.reviewDate}` : ""}
+                </p>
+              </div>
+            ) : laterFormOpen ? (
+              <form
+                className="panel panel-compact stack"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!laterReason.trim()) return;
+                  deferRecord(id, {
+                    title: state.record.title,
+                    type: state.record.type,
+                    reason: laterReason.trim(),
+                    reviewDate: laterReviewDate || null
+                  });
+                  setLaterEntry(getLaterEntry(id));
+                  setLaterFormOpen(false);
+                }}
+              >
+                <label className="form-field">
+                  <span>سبب التأجيل</span>
+                  <input
+                    type="text"
+                    value={laterReason}
+                    onChange={(event) => setLaterReason(event.target.value)}
+                    required
+                    autoFocus
+                  />
+                </label>
+                <label className="form-field">
+                  <span>موعد المراجعة (اختياري)</span>
+                  <input
+                    type="date"
+                    value={laterReviewDate}
+                    onChange={(event) => setLaterReviewDate(event.target.value)}
+                  />
+                </label>
+                <div className="button-row">
+                  <button type="submit" className="button button-primary">تأجيل</button>
+                  <button type="button" className="button button-secondary" onClick={() => setLaterFormOpen(false)}>
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            ) : null}
             <RecordReadinessPanel
               record={state.record}
               rights={state.rights}

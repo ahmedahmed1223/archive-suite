@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Clock3, Inbox as InboxIcon, ListChecks, Star } from "lucide-react";
+import { Bell, Clock3, Hourglass, Inbox as InboxIcon, ListChecks, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
@@ -10,6 +10,7 @@ import { createArchiveApiClient, type InboxItem } from "@/lib/archive-api";
 import { useNotifications } from "@/lib/use-notifications";
 import { listFavorites, type Favorite } from "@/lib/favorites";
 import { clearRecent, listRecent, type RecentItem } from "@/lib/recent-items";
+import { listDueLater, removeLater, type LaterEntry } from "@/lib/later-list";
 import { clearRecentSearches } from "@/lib/recent-searches";
 import { isContextRecordingEnabled, setContextRecording } from "@/lib/personal-context";
 import { formatDate } from "@/lib/record-utils";
@@ -29,6 +30,7 @@ export default function DailyPage() {
   const [inboxLoading, setInboxLoading] = useState(true);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [recent, setRecent] = useState<RecentItem[]>([]);
+  const [dueLater, setDueLater] = useState<LaterEntry[]>([]);
   const [recording, setRecording] = useState(true);
   const [contextStatus, setContextStatus] = useState("");
   // ponytail: عدّاد الحقوق فقط — نقطة `records` مقسّمة بمؤشر بلا إجمالي،
@@ -63,8 +65,14 @@ export default function DailyPage() {
   useEffect(() => {
     setFavorites(listFavorites());
     setRecent(listRecent());
+    setDueLater(listDueLater());
     setRecording(isContextRecordingEnabled());
   }, []);
+
+  function handleRemoveLater(id: string) {
+    removeLater(id);
+    setDueLater(listDueLater());
+  }
 
   function handleRecordingChange(enabled: boolean) {
     setContextRecording(enabled);
@@ -194,6 +202,32 @@ export default function DailyPage() {
                   <Link className="dashboard-recent__item" href={`/archive/${encodeURIComponent(favorite.id)}`}>
                     <span className="dashboard-recent__title">{favorite.title || favorite.id}</span>
                   </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="panel" aria-label="لاحقًا">
+          <header className="dashboard-recent__header">
+            <h2>
+              <Hourglass aria-hidden="true" size={18} strokeWidth={2} />
+              <span>لاحقًا</span>
+            </h2>
+          </header>
+          {dueLater.length === 0 ? (
+            <EmptyState icon={<Hourglass aria-hidden="true" />} title="لا مواد مؤجَّلة مستحقة" description="المواد المؤجَّلة تظهر هنا عند بلوغ موعد مراجعتها." />
+          ) : (
+            <ul className="dashboard-recent__list">
+              {dueLater.slice(0, PANEL_ITEM_LIMIT).map((entry) => (
+                <li key={entry.id}>
+                  <Link className="dashboard-recent__item" href={`/archive/${encodeURIComponent(entry.id)}`}>
+                    <span className="dashboard-recent__title">{entry.title || entry.id}</span>
+                    <span className="dashboard-recent__meta">{entry.reason}</span>
+                  </Link>
+                  <button type="button" className="button button-secondary button-sm" onClick={() => handleRemoveLater(entry.id)}>
+                    إزالة
+                  </button>
                 </li>
               ))}
             </ul>
