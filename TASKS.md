@@ -15,11 +15,19 @@
 
 ## الأولوية التالية — قابلة للتنفيذ محليًا
 
-- [ ] **V1-762 تكامل Dropbox** — تم متصفح اختيار مجلد فعلي (`browseFolders`/
-  `setFolder` + `DropboxFolderPicker`)؛ تحقق حي 151/151 بلا أي تراجع. تم أيضًا
-  اختبار Playwright للواجهة (`e2e/dropbox-folder-picker.authed.spec.ts`) يحاكي
-  اتصال Dropbox عبر route mocking (تصفح مجلد فرعي، رجوع، اختيار) — تحقق حي
-  6/6 ناجحة عبر `verify:laravel-next:live`. المتبقي: نقل كبير قابل للاستئناف.
+- [x] **V1-762 تكامل Dropbox** — تم بالكامل محليًا. متصفح اختيار مجلد فعلي
+  (`browseFolders`/`setFolder` + `DropboxFolderPicker`) واختبار Playwright
+  للواجهة (`e2e/dropbox-folder-picker.authed.spec.ts`، 6/6 ناجحة). النقل الكبير
+  القابل للاستئناف: `DropboxIngestTransport` (نفس عقد `IngestTransport` مثل
+  FTP/SMB) يسحب من المجلد المتصل عبر مسار `POST /ingest/dropbox/pull`، بتنزيلات
+  Range مجزأة (`ingest.chunk_upload.max_chunk_bytes`، معاد استخدامه من آلية رفع
+  V1-711 بدل مفتاح جديد) وجدول `dropbox_download_progress` يحفظ التقدم لكل
+  (اتصال، مسار) — انقطاع منتصف ملف كبير يستأنف من آخر بايت وصل بدل إعادة البدء
+  أو التجاوز الصامت. عقد OpenAPI وعميل Next.js المُولَّد محدَّثان
+  (`pnpm api:generate` + `verify:api-contracts`/`verify:api-generated` كلاهما
+  ناجح). تحقق حي: مجموعة PHPUnit كاملة 850 تحقق ناجح/0 فاشل (تشمل 5 اختبارات
+  جديدة للنقل تُثبت التجزئة والاستئناف والتخطي عند الاكتمال)، ومجموعة الواجهة
+  524 ناجحة، وبوابة `verify:laravel-next:live` الكاملة 151/151 دون أي تراجع.
   التحقق الحي للاتصال الفعلي بحساب Dropbox يبقى ضمن V1-X01.
 - [x] **V1-791 تدقيق العربية** — تم؛ النتائج في `docs/v1-791-arabic-audit.md`.
   الإشعارات عربية بالكامل، واتجاه الأيقونات سليم عدا موضع واحد. المتبقي انتقل

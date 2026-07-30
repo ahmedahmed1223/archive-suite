@@ -384,6 +384,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/ingest/scan', [IngestController::class, 'scan']);
         Route::post('/ingest/ftp/pull', [IngestController::class, 'ftpPull']);
         Route::post('/ingest/smb/pull', [IngestController::class, 'smbPull']);
+        Route::post('/ingest/dropbox/pull', [IngestController::class, 'dropboxPull']);
 
         Route::get('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'index']);
         Route::post('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'store']);

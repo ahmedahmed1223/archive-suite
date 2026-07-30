@@ -109,4 +109,36 @@ class IngestController extends Controller
             'skipped' => $result['skipped'],
         ]);
     }
+
+    /** V1-762: unlike ftpPull/smbPull there are no per-request credentials --
+     *  the authenticated user's stored Dropbox connection (folder_path, OAuth
+     *  tokens) drives the pull. */
+    public function dropboxPull(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
+        try {
+            $this->transport->pull(['user' => $request->attributes->get('archive_user')]);
+        } catch (\RuntimeException $e) {
+            return response()->json(\App\Support\ApiError::envelope($e->getMessage(), 409), 409);
+        }
+
+        $result = $this->scanner->scan();
+
+        if ($request->user() && ($result['ingested'] > 0 || $result['skipped'] > 0)) {
+            $this->notificationService->createIngestNotification(
+                $request->user(),
+                $result['ingested'],
+                $result['skipped']
+            );
+        }
+
+        return response()->json([
+            'ok' => true,
+            'ingested' => $result['ingested'],
+            'skipped' => $result['skipped'],
+        ]);
+    }
 }

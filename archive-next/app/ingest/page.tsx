@@ -2,7 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { FolderSearch, KeyRound, Network, RadioTower, Server, ShieldCheck } from "lucide-react";
+import { Cloud, FolderSearch, KeyRound, Network, RadioTower, Server, ShieldCheck } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
@@ -17,12 +17,13 @@ type OperationState =
   | { status: "success"; result: PullResult }
   | { status: "error"; message: string };
 
-type IngestSource = "scan" | "ftp" | "smb";
+type IngestSource = "scan" | "ftp" | "smb" | "dropbox";
 
 const sourceLabels: Record<IngestSource, string> = {
   scan: "مجلد الخادم",
   ftp: "FTP/FTPS",
-  smb: "SMB"
+  smb: "SMB",
+  dropbox: "Dropbox"
 };
 
 function operationStatusLabel(state: OperationState) {
@@ -84,6 +85,8 @@ export default function IngestPage() {
   const [smbPassword, setSmbPassword] = useState("");
   const [smbDomain, setSmbDomain] = useState("");
 
+  const [dropboxState, setDropboxState] = useState<OperationState>({ status: "idle" });
+
   const runOperation = async (
     setState: (state: OperationState) => void,
     operation: () => Promise<{ ok: true; ingested: unknown[]; skipped: number } | { ok: false; error: string }>
@@ -130,11 +133,14 @@ export default function IngestPage() {
     );
   };
 
-  const isAnyRunning = scanState.status === "running" || ftpState.status === "running" || smbState.status === "running";
+  const handleDropboxPull = () => void runOperation(setDropboxState, () => api.ingestDropboxPull());
+
+  const isAnyRunning = scanState.status === "running" || ftpState.status === "running" || smbState.status === "running" || dropboxState.status === "running";
   const sourceStates: Record<IngestSource, OperationState> = {
     scan: scanState,
     ftp: ftpState,
-    smb: smbState
+    smb: smbState,
+    dropbox: dropboxState
   };
 
   return (
@@ -192,6 +198,14 @@ export default function IngestPage() {
             <span>SMB</span>
             <strong>{operationStatusLabel(smbState)}</strong>
             <small>سحب من مشاركة داخلية</small>
+          </div>
+        </article>
+        <article className="health-metric" data-tone={operationTone(dropboxState)}>
+          <span className="health-metric__icon" aria-hidden="true"><Cloud size={20} /></span>
+          <div className="health-metric__body">
+            <span>Dropbox</span>
+            <strong>{operationStatusLabel(dropboxState)}</strong>
+            <small>سحب قابل للاستئناف من المجلد المتصل</small>
           </div>
         </article>
       </section>
@@ -308,6 +322,26 @@ export default function IngestPage() {
             <p className="helper-text">لا تملك صلاحية السحب من SMB.</p>
           )}
           <ResultBanner label="السحب من SMB" state={smbState} />
+        </section>
+
+        <section className="panel ingest-operation-panel" data-active={activeSource === "dropbox" ? "true" : "false"} aria-label="سحب من Dropbox">
+          <div className="panel-title-row">
+            <div>
+              <h2>سحب من Dropbox</h2>
+              <p>يسحب الملفات الجديدة من المجلد المتصل في الإعدادات. الملفات الكبيرة تُنزَّل على دفعات، وتستأنف من آخر جزء وصل بدل إعادة البدء عند انقطاع الاتصال.</p>
+            </div>
+          </div>
+          {canManageIngest ? (
+            <div className="button-row">
+              <button type="button" className="button button-primary" onClick={handleDropboxPull} disabled={dropboxState.status === "running"}>
+                {dropboxState.status === "running" ? "جار السحب..." : "سحب من Dropbox"}
+              </button>
+              <a className="button button-secondary" href="/settings">إعدادات الاتصال</a>
+            </div>
+          ) : (
+            <p className="helper-text">لا تملك صلاحية السحب من Dropbox.</p>
+          )}
+          <ResultBanner label="السحب من Dropbox" state={dropboxState} />
         </section>
       </div>
     </AppShell>

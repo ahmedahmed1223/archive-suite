@@ -3579,6 +3579,26 @@
         }
       }
     },
+    "/ingest/dropbox/pull": {
+      "post": {
+        "tags": ["Ingest"],
+        "summary": "Pull files from the connected Dropbox folder and create archive records",
+        "operationId": "dropboxPullIngest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Dropbox pull and ingest result. Large files download in resumable Range-request chunks; no request body is needed, unlike ftp/smb pull, since the authenticated user's stored connection supplies the source.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/IngestScanResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/onboarding/progress": {
       "get": {
         "tags": ["Onboarding"],

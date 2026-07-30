@@ -105,7 +105,7 @@ class AppServiceProvider extends ServiceProvider
             ),
         );
 
-        // Ingest transport: selection via env INGEST_TRANSPORT (fake|ftp|smb)
+        // Ingest transport: selection via env INGEST_TRANSPORT (fake|ftp|smb|dropbox)
         // Default remains fake to preserve existing tests and offline mode
         $transportType = config('ingest.transport', 'fake');
 
@@ -117,6 +117,13 @@ class AppServiceProvider extends ServiceProvider
             'smb' => $this->app->bind(
                 IngestTransport::class,
                 fn ($app) => new SmbIngestTransport($app->make(ProcessRunner::class))
+            ),
+            'dropbox' => $this->app->bind(
+                IngestTransport::class,
+                fn ($app) => new \App\Services\Dropbox\DropboxIngestTransport(
+                    $app->make(\App\Services\Dropbox\DropboxConnectionService::class),
+                    $app->make(\App\Services\Dropbox\DropboxGateway::class),
+                )
             ),
             default => $this->app->bind(IngestTransport::class, FakeIngestTransport::class),
         };

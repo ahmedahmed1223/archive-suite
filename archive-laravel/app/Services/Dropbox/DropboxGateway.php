@@ -36,6 +36,18 @@ class DropboxGateway
         $arg = json_encode(['path' => $path]);
         return $this->withRetry(fn (): Response => $this->api($token)->withHeaders(['Dropbox-API-Arg' => $arg])->post('https://content.dropboxapi.com/2/files/download'));
     }
+    /** V1-762: HTTP Range download for resumable large-file ingest. Dropbox's
+     *  content-download endpoints honor a standard Range header (unlike upload,
+     *  which needs its own chunked upload_session/* API); this reuses that
+     *  instead of adding upload-side chunking semantics to a download. */
+    public function downloadRange(string $token, string $path, int $offset, int $length): Response
+    {
+        $arg = json_encode(['path' => $path]);
+        $end = $offset + $length - 1;
+        return $this->withRetry(fn (): Response => $this->api($token)
+            ->withHeaders(['Dropbox-API-Arg' => $arg, 'Range' => "bytes={$offset}-{$end}"])
+            ->post('https://content.dropboxapi.com/2/files/download'));
+    }
     public function refreshAccessToken(string $refreshToken): array
     {
         return $this->oauth()->asForm()->post('https://api.dropboxapi.com/oauth2/token', ['grant_type' => 'refresh_token', 'refresh_token' => $refreshToken, 'client_id' => config('services.dropbox.client_id'), 'client_secret' => config('services.dropbox.client_secret')])->throw()->json();

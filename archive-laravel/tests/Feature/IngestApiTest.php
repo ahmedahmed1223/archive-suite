@@ -141,6 +141,20 @@ class IngestApiTest extends TestCase
         $this->assertIsArray($response->json('ingested'));
     }
 
+    public function test_dropbox_pull_uses_transport_then_scans(): void
+    {
+        Queue::fake();
+
+        $response = $this->postJson('/api/v1/ingest/dropbox/pull', [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        // Transport is fake (default in tests), returns empty, so scan finds 0.
+        // Verifies the endpoint requires no per-request credentials, unlike
+        // ftp/smb -- there is nothing to validate() here.
+        $this->assertIsArray($response->json('ingested'));
+    }
+
     public function test_ftp_pull_validates_required_params(): void
     {
         $this->postJson('/api/v1/ingest/ftp/pull', [
@@ -179,6 +193,9 @@ class IngestApiTest extends TestCase
             'user' => 'user',
             'password' => 'pass',
         ])
+            ->assertUnauthorized();
+
+        $this->postJson('/api/v1/ingest/dropbox/pull')
             ->assertUnauthorized();
     }
 

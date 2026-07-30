@@ -1192,6 +1192,7 @@ export interface ArchiveApiClient {
   browseFiles(params?: { path?: string; query?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ path: string; entries: FileBrowserEntry[] }>>;
   ingestFtpPull(payload: FtpPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   ingestSmbPull(payload: SmbPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
+  ingestDropboxPull(options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[]; pagination?: PaginationMeta }>>;
   createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
@@ -1845,6 +1846,8 @@ export function createArchiveApiClient({
       post<{ ingested: unknown[]; skipped: number }>("/ingest/ftp/pull", payload, options),
     ingestSmbPull: (payload: SmbPullPayload, options?: AuthRequestOptions) =>
       post<{ ingested: unknown[]; skipped: number }>("/ingest/smb/pull", payload, options),
+    ingestDropboxPull: (options?: AuthRequestOptions) =>
+      post<{ ingested: unknown[]; skipped: number }>("/ingest/dropbox/pull", undefined, options),
     mediaJob: (id: string, options?: AuthRequestOptions) => get<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}`, options),
     mediaJobs: (params?: { status?: MediaJobStatus; recordId?: string; limit?: number; page?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();

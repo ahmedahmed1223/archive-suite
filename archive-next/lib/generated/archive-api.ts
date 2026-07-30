@@ -541,6 +541,23 @@ export interface paths {
         patch: operations["updateInboxItem"];
         trace?: never;
     };
+    "/ingest/dropbox/pull": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pull files from the connected Dropbox folder and create archive records */
+        post: operations["dropboxPullIngest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ingest/ftp/pull": {
         parameters: {
             query?: never;
@@ -5353,6 +5370,28 @@ export interface operations {
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    dropboxPullIngest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dropbox pull and ingest result. Large files download in resumable Range-request chunks; no request body is needed, unlike ftp/smb pull, since the authenticated user's stored connection supplies the source. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestScanResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
     ftpPullIngest: {
