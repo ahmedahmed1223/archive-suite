@@ -343,7 +343,7 @@ export default function BackupPage() {
                     <th>الاسم</th>
                     <th>الحجم</th>
                     <th>تاريخ الإنشاء</th>
-                    <th>الإجراءات</th>
+                    <th className="data-table-sticky-end">الإجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -352,7 +352,7 @@ export default function BackupPage() {
                       <td className="mono-text wrap-anywhere" dir="ltr">{backup.name}</td>
                       <td className="mono-text text-sm">{formatBytes(backup.sizeBytes)}</td>
                       <td className="text-sm">{formatDate(backup.createdAt)}</td>
-                      <td>
+                      <td className="data-table-sticky-end">
                         <div className="button-row">
                           <button type="button" className="button button-secondary button-sm" onClick={() => void handlePreview(backup.name)}>
                             معاينة

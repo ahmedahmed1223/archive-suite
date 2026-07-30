@@ -214,7 +214,7 @@ export default function DelegationsPage() {
                   <th>المواد</th>
                   <th>الحالة</th>
                   <th>الانتهاء</th>
-                  {direction === "granted" ? <th>الإجراءات</th> : null}
+                  {direction === "granted" ? <th className="data-table-sticky-end">الإجراءات</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -225,7 +225,7 @@ export default function DelegationsPage() {
                     <td><span className={`badge ${delegation.status === "active" ? "" : "badge-danger"}`}>{statusLabel(delegation.status)}</span></td>
                     <td className="mono-text">{formatDate(delegation.expiresAt)}</td>
                     {direction === "granted" ? (
-                      <td>
+                      <td className="data-table-sticky-end">
                         {delegation.status === "active" ? (
                           <button type="button" className="button button-danger button-sm" onClick={() => void handleRevoke(delegation)}>
                             إلغاء

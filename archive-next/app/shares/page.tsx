@@ -161,7 +161,7 @@ export default function SharesPage() {
                   <th>الرابط</th>
                   <th>الإنشاء</th>
                   <th>الانتهاء</th>
-                  <th>الإجراءات</th>
+                  <th className="data-table-sticky-end">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,7 +179,7 @@ export default function SharesPage() {
                     <td className="mono-text">
                       {formatLocalDate(link.expiresAt)}
                     </td>
-                    <td>
+                    <td className="data-table-sticky-end">
                       <div className="button-row">
                         <button
                           type="button"

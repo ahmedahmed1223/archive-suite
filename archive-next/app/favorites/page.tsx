@@ -104,7 +104,7 @@ export default function FavoritesPage() {
                   <th>العنوان</th>
                   <th>النوع</th>
                   <th>تاريخ الإضافة</th>
-                  <th>الإجراءات</th>
+                  <th className="data-table-sticky-end">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,7 +117,7 @@ export default function FavoritesPage() {
                     <td className="mono-text">
                       {formatLocalDate(favorite.addedAt)}
                     </td>
-                    <td>
+                    <td className="data-table-sticky-end">
                       <div className="button-row">
                         <a
                           className="button button-secondary button-sm"

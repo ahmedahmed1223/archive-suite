@@ -256,7 +256,7 @@ export default function TrashPage() {
                 <th scope="col">السجل</th>
                 <th scope="col">المخزن</th>
                 <th scope="col">تاريخ الحذف</th>
-                <th scope="col">إجراءات</th>
+                <th scope="col" className="data-table-sticky-end">إجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -269,7 +269,7 @@ export default function TrashPage() {
                   </td>
                   <td>{entry.store}</td>
                   <td>{formatDate(entry.deletedAt)}</td>
-                  <td>
+                  <td className="data-table-sticky-end">
                     <div className="button-row">
                       {canRestore && (
                         <button
