@@ -123,7 +123,7 @@ export default function SyncPage() {
             {
               label: "تعارضات",
               value: state.summary.conflicts,
-              description: "تحتاج قرارا",
+              description: "تحتاج قراراً",
               icon: <Split size={20} />,
               tone: state.summary.conflicts > 0 ? "warning" : "success"
             }

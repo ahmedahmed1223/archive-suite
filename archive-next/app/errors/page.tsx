@@ -241,7 +241,7 @@ export default function ErrorsPage() {
       {filteredErrors.length === 0 ? (
         <EmptyState
           icon={<Clock3 size={22} />}
-          title="لا توجد أخطاء مطابقة حاليا."
+          title="لا توجد أخطاء مطابقة حالياً."
           description="غيّر درجة الخطورة أو استخدم اختبار التسجيل للتأكد من أن السجل يعمل."
         />
       ) : (

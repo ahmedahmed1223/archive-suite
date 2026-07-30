@@ -416,7 +416,7 @@ export default function CollaborationPage() {
 
               {participants.length === 0 ? (
                 <EmptyState
-                  title="لا يوجد مشاركون نشطون حاليا."
+                  title="لا يوجد مشاركون نشطون حالياً."
                   description="ستظهر هنا آخر نبضات الحضور عند دخول مشاركين إلى الغرفة."
                 />
               ) : (

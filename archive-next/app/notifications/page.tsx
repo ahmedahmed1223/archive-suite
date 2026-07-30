@@ -102,7 +102,7 @@ export default function NotificationsPage() {
             className="notifications-page__mark-all-read"
             onClick={markAllAsRead}
           >
-            وضّح الكل كمقروء
+            تحديد الكل كمقروء
           </button>
         )}
       </header>

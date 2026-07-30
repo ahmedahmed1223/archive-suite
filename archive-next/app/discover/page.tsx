@@ -156,7 +156,7 @@ export default function DiscoverPage() {
 
           {section.records.length === 0 ? (
             <div className="panel panel-compact">
-              <p className="helper-text">لا توجد عناصر ظاهرة في هذا المسار حاليا.</p>
+              <p className="helper-text">لا توجد عناصر ظاهرة في هذا المسار حالياً.</p>
             </div>
           ) : (
             <div className="records-surface" data-view="grid">
