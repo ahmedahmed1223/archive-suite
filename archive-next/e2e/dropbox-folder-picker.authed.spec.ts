@@ -2,14 +2,6 @@ import { test, expect } from './fixtures/auth';
 
 const ui = expect.configure({ timeout: 30_000 });
 
-async function login(page: import('@playwright/test').Page, account: { email: string; password: string }, next: string) {
-  await page.goto(`/login?next=${encodeURIComponent(next)}`);
-  await page.getByLabel('البريد الإلكتروني').fill(account.email);
-  await page.getByRole('textbox', { name: 'كلمة المرور' }).fill(account.password);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await page.waitForURL(new RegExp(next.replace(/\//g, '\\/') + '$'), { timeout: 30_000 });
-}
-
 /**
  * V1-762: the folder picker itself only needs a "connected" Dropbox account,
  * which only exists with a live external credential (tracked separately as
@@ -19,7 +11,7 @@ async function login(page: import('@playwright/test').Page, account: { email: st
  */
 test.describe('Dropbox folder picker — mocked connection', () => {
   test('browses subfolders and selects one', async ({ roleSession }) => {
-    const { page, account } = await roleSession('admin');
+    const { page } = await roleSession('admin');
 
     let currentFolder = '/incoming';
     await page.route('**/api/v1/system/dropbox', async (route) => {
@@ -45,7 +37,7 @@ test.describe('Dropbox folder picker — mocked connection', () => {
       });
     });
 
-    await login(page, account, '/settings');
+    await page.goto('/settings');
 
     await ui(page.getByText('متصل بالمجلد /incoming')).toBeVisible();
     await page.getByRole('button', { name: 'اختيار مجلد' }).click();

@@ -4,12 +4,8 @@ const ui = expect.configure({ timeout: 30_000 });
 
 test('admin onboarding progress waits for the server, retries, and persists the complete journey', async ({ roleSession }) => {
   test.setTimeout(120_000);
-  const { page, account } = await roleSession('admin');
-  await page.goto('/login?next=%2Ffirst-run');
-  await page.getByLabel('البريد الإلكتروني').fill(account.email);
-  await page.getByRole('textbox', { name: 'كلمة المرور' }).fill(account.password);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await page.waitForURL(/\/first-run$/, { timeout: 30_000 });
+  const { page } = await roleSession('admin');
+  await page.goto('/first-run');
 
   // Idempotency: a reused DB carries the completed stages this test persists.
   // Un-complete any stage before asserting the pristine journey.
@@ -47,11 +43,6 @@ test('admin onboarding progress waits for the server, retries, and persists the 
   }
 
   await page.reload();
-  await page.goto('/login?next=%2Ffirst-run');
-  await page.getByLabel('البريد الإلكتروني').fill(account.email);
-  await page.getByRole('textbox', { name: 'كلمة المرور' }).fill(account.password);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await page.waitForURL(/\/first-run$/, { timeout: 30_000 });
   for (const title of ['إعداد المؤسسة', 'تأكيد التخزين', 'دعوة الفريق', 'إضافة أول مادة', 'إجراء أول بحث']) {
     await ui(page.getByRole('button', { name: `إلغاء إكمال ${title}` })).toHaveAttribute('aria-pressed', 'true');
   }

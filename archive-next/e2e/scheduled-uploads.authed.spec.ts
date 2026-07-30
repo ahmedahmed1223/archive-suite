@@ -13,14 +13,6 @@ function toDatetimeLocalValue(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-async function login(page: import('@playwright/test').Page, account: { email: string; password: string }, next: string) {
-  await page.goto(`/login?next=${encodeURIComponent(next)}`);
-  await page.getByLabel('البريد الإلكتروني').fill(account.email);
-  await page.getByRole('textbox', { name: 'كلمة المرور' }).fill(account.password);
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
-  await page.waitForURL(new RegExp(next.replace(/\//g, '\\/') + '$'), { timeout: 30_000 });
-}
-
 /**
  * V1-712 Task 9: live acceptance for the durable scheduled-upload feature —
  * schedule/list/reschedule/cancel through the real UI+API, and a due-now
@@ -31,8 +23,8 @@ async function login(page: import('@playwright/test').Page, account: { email: st
 test.describe('scheduled uploads — live acceptance', () => {
   test('schedule a file, see it listed, reschedule it, then cancel it', async ({ roleSession }) => {
     test.setTimeout(120_000);
-    const { page, account } = await roleSession('editor');
-    await login(page, account, '/uploads');
+    const { page } = await roleSession('editor');
+    await page.goto('/uploads');
 
     await page.setInputFiles('input[type="file"]', {
       name: `e2e-scheduled-${Date.now()}.txt`,
@@ -71,8 +63,8 @@ test.describe('scheduled uploads — live acceptance', () => {
 
   test('a due-now schedule reaches completed via the live scheduler and worker', async ({ roleSession }) => {
     test.setTimeout(180_000);
-    const { page, account } = await roleSession('editor');
-    await login(page, account, '/uploads');
+    const { page } = await roleSession('editor');
+    await page.goto('/uploads');
 
     const fileName = `e2e-due-now-${Date.now()}.txt`;
     await page.setInputFiles('input[type="file"]', {
