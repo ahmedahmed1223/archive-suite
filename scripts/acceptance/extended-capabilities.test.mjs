@@ -7,6 +7,10 @@ test("extended capability discovery is blocked without external prerequisites an
   assert.equal(discovery.length, 4);
   assert.ok(discovery.every((item) => item.status === "blocked-capability"));
   assert.doesNotMatch(JSON.stringify(discovery), /secret-value/);
+  // a set variable drops out of missingVariables; an unset one stays named and readable
+  const odbc = discovery.find((item) => item.id === "V1-X02");
+  assert.ok(!odbc.missingVariables.includes("ODBC_PASSWORD"));
+  assert.ok(odbc.missingVariables.includes("ODBC_DSN"));
 });
 
 test("evidence template begins not-executed even if discovery is ready", () => {

@@ -34,7 +34,10 @@ export function discoverExtendedCapabilities(env = process.env, { platform = pro
       if (String(env.WHISPER_LANGUAGE ?? "").toLowerCase() !== "ar") blockers.push("WHISPER_LANGUAGE=ar is required");
     }
     if (item.id === "V1-X04" && missing.length) blockers.push("live AI/vision provider credential, Postgres pgvector index, and isolated test tenant are required");
-    return sanitize({ id: item.id, capability: item.capability, status: blockers.length ? "blocked-capability" : "ready-for-live-validation", blockers, requiredEvidence: item.evidence, configuredVariables: Object.fromEntries(item.env.map((name) => [name, configured(name, env)])) });
+    // ponytail: list the names still unset instead of a per-variable boolean map --
+    // `sanitize` redacts by key name, so a boolean stored under AWS_SECRET_ACCESS_KEY
+    // came out "[REDACTED]" and hid the one fact an operator needs.
+    return sanitize({ id: item.id, capability: item.capability, status: blockers.length ? "blocked-capability" : "ready-for-live-validation", blockers, requiredEvidence: item.evidence, missingVariables: missing });
   });
 }
 
