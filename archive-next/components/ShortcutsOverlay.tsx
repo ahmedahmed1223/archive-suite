@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
-import { formatShortcutDisplay, getAllShortcuts, getShortcut, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-}
+import { formatShortcutDisplay, getAllShortcuts, getShortcut, isTypingTarget, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
 
 export default function ShortcutsOverlay() {
   const [open, setOpen] = useState(false);

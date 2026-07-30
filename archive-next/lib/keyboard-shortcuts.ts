@@ -1,7 +1,31 @@
 // ponytail: simple localStorage shortcut store; no complex event systems
 // Upgrade path: subscribe to changes via window.dispatchEvent if multiple components need reactivity
 
-export type ShortcutKey = "commandPalette" | "shortcutsHelp";
+export type ShortcutKey =
+  | "commandPalette"
+  | "shortcutsHelp"
+  | "focusSearch"
+  | "newRecord"
+  | "saveRecord"
+  | "focusComments"
+  | "focusTags";
+
+/**
+ * V1-832: single-key shortcuts must never fire while the user is typing.
+ * ponytail: shared here rather than copied per component -- it used to live
+ * privately in ShortcutsOverlay, so every new shortcut would have shipped
+ * unguarded and swallowed a keystroke mid-sentence.
+ */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return true;
+  // isContentEditable is the browser's answer but is not implemented
+  // everywhere (jsdom returns undefined), so fall back to the attribute --
+  // an editable region must never be treated as a safe place to fire a key.
+  if (target.isContentEditable) return true;
+  const attribute = target.getAttribute("contenteditable");
+  return attribute !== null && attribute !== "false";
+}
 
 interface ShortcutBinding {
   key: string;
@@ -11,16 +35,21 @@ interface ShortcutBinding {
   altKey?: boolean;
 }
 
-interface ShortcutsStore {
-  commandPalette: ShortcutBinding;
-  shortcutsHelp: ShortcutBinding;
-}
+type ShortcutsStore = Record<ShortcutKey, ShortcutBinding>;
 
 const STORAGE_KEY = "archive:keyboard-shortcuts";
 
+// Ctrl+S, Ctrl+N and friends are deliberately absent: V1-832 requires the
+// shortcuts not to intercept browser shortcuts, so the single-key bindings
+// carry the work and saving uses Ctrl+Enter, which no browser claims.
 const defaultShortcuts: ShortcutsStore = {
   commandPalette: { key: "k", ctrlKey: true, metaKey: true },
-  shortcutsHelp: { key: "?", shiftKey: true }
+  shortcutsHelp: { key: "?", shiftKey: true },
+  focusSearch: { key: "/" },
+  newRecord: { key: "n" },
+  saveRecord: { key: "Enter", ctrlKey: true, metaKey: true },
+  focusComments: { key: "c" },
+  focusTags: { key: "t" }
 };
 
 function loadShortcuts(): ShortcutsStore {
@@ -60,7 +89,12 @@ export function getAllShortcuts(): Record<ShortcutKey, { label: string; binding:
   const shortcuts = loadShortcuts();
   return {
     commandPalette: { label: "فتح لوحة الأوامر", binding: shortcuts.commandPalette },
-    shortcutsHelp: { label: "عرض لوحة الاختصارات", binding: shortcuts.shortcutsHelp }
+    shortcutsHelp: { label: "عرض لوحة الاختصارات", binding: shortcuts.shortcutsHelp },
+    focusSearch: { label: "الانتقال إلى البحث", binding: shortcuts.focusSearch },
+    newRecord: { label: "إنشاء مادة جديدة", binding: shortcuts.newRecord },
+    saveRecord: { label: "حفظ التوصيف", binding: shortcuts.saveRecord },
+    focusComments: { label: "الانتقال إلى التعليقات", binding: shortcuts.focusComments },
+    focusTags: { label: "الانتقال إلى الوسوم", binding: shortcuts.focusTags }
   };
 }
 

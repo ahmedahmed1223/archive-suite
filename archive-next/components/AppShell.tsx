@@ -11,6 +11,7 @@ import { getDensity } from "@/lib/density";
 import type { PageKey } from "@/lib/contextual-tips";
 import WorkspacePositionRestorer from "@/components/WorkspacePositionRestorer";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay";
+import GlobalShortcuts from "@/components/GlobalShortcuts";
 import type { BreadcrumbItem } from "@/components/Breadcrumb";
 import WhatsNewDialog from "@/components/WhatsNewDialog";
 import RouteAnnouncer from "@/components/RouteAnnouncer";
@@ -61,6 +62,7 @@ export default function AppShell({
       <RouteAnnouncer />
       <WorkspacePositionRestorer />
       <ShortcutsOverlay />
+      <GlobalShortcuts />
       <WhatsNewDialog />
       <main id="main-content" tabIndex={-1} className={`content app-content ${contentClassName}`.trim()}>
         <WorkspaceCommandBar tipsPage={tipsPage} />

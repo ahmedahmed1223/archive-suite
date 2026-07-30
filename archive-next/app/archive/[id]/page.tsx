@@ -33,6 +33,7 @@ import {
 import { clearEditDraftPosition, getEditDraftPosition, saveEditDraftPosition } from "@/lib/edit-draft-position";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
 import { deriveRecordStatus, missingDescribeFields } from "@/lib/record-status";
+import { getShortcut, isTypingTarget, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
 import { recordView } from "@/lib/recent-items";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
@@ -538,7 +539,7 @@ function RecordCommentsPanel({
         </div>
       ) : null}
 
-      <form className="auth-form record-note-form" onSubmit={handleSubmit}>
+      <form id="record-comment-form" className="auth-form record-note-form" onSubmit={handleSubmit}>
         <label>
           تعليق جديد
           <MentionTextarea
@@ -1061,7 +1062,7 @@ export function RecordDescribeForm({
           ) : null}
         </div>
       </div>
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form id="record-describe-form" className="auth-form" onSubmit={handleSubmit}>
         <label>
           العنوان
           <input
@@ -1115,6 +1116,7 @@ export function RecordDescribeForm({
         <label>
           الوسوم
           <input
+            id="record-tags-input"
             ref={(node) => { fieldRefs.current.tags = node; }}
             value={tags}
             onChange={(event) => setTags(event.target.value)}
@@ -1174,6 +1176,48 @@ export default function ArchiveDetailPage() {
   const [isFav, setIsFav] = useState(false);
   const [ocrState, setOcrState] = useState<OcrState>({ status: "idle" });
   const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
+
+  // V1-832: the record-scoped shortcuts. Ctrl/Cmd+Enter deliberately still
+  // fires inside a field -- saving from within the form is the whole point --
+  // while the single-key jumps stay out of the way while typing.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.isComposing) return;
+
+      if (matchesKeyEvent(event, getShortcut("saveRecord"))) {
+        const form = document.getElementById("record-describe-form");
+        if (form instanceof HTMLFormElement) {
+          event.preventDefault();
+          form.requestSubmit();
+        }
+        return;
+      }
+
+      if (isTypingTarget(event.target)) return;
+
+      if (matchesKeyEvent(event, getShortcut("focusComments"))) {
+        const comment = document.querySelector<HTMLTextAreaElement>("#record-comment-form textarea");
+        if (comment) {
+          event.preventDefault();
+          comment.focus();
+          comment.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        return;
+      }
+
+      if (matchesKeyEvent(event, getShortcut("focusTags"))) {
+        const tagsInput = document.getElementById("record-tags-input");
+        if (tagsInput instanceof HTMLInputElement) {
+          event.preventDefault();
+          tagsInput.focus();
+          tagsInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   async function handleOcr() {
     if (state.status !== "ready") return;
