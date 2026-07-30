@@ -784,6 +784,97 @@ function RecordHistoryPanel({
   );
 }
 
+// V1-824: derived-only readiness signal (file/title/description/tags/rights/
+// review), no new API and no gate on save - "review" is approximated as "the
+// team has left at least one comment", since there's no dedicated review-
+// status field on the record.
+interface ReadinessItem {
+  key: string;
+  label: string;
+  done: boolean;
+  hint: string;
+}
+
+export function buildReadinessItems(
+  record: ArchiveRecord,
+  rights: RightsRecord | null,
+  hasTeamComments: boolean
+): ReadinessItem[] {
+  return [
+    {
+      key: "file",
+      label: "ملف المصدر",
+      done: Boolean(deriveRecordSourcePath(record)),
+      hint: "أضف مسار ملف صالح في البيانات الوصفية ليمكن تشغيله واستخراج نصه."
+    },
+    {
+      key: "title",
+      label: "العنوان",
+      done: Boolean(record.title?.trim()),
+      hint: "أضف عنوانًا واضحًا للسجل."
+    },
+    {
+      key: "description",
+      label: "الوصف",
+      done: Boolean(record.description?.trim()),
+      hint: "أضف وصفًا موجزًا يسهّل البحث والفهم."
+    },
+    {
+      key: "tags",
+      label: "الوسوم",
+      done: (record.tags?.length ?? 0) > 0,
+      hint: "أضف وسمًا واحدًا على الأقل لتصنيف السجل."
+    },
+    {
+      key: "rights",
+      label: "الحقوق",
+      done: rights !== null,
+      hint: "سجّل بيانات الحقوق لهذا السجل."
+    },
+    {
+      key: "review",
+      label: "المراجعة",
+      done: hasTeamComments,
+      hint: "اطلب مراجعة الفريق عبر إضافة تعليق."
+    }
+  ];
+}
+
+function RecordReadinessPanel({
+  record,
+  rights,
+  hasTeamComments
+}: Readonly<{ record: ArchiveRecord; rights: RightsRecord | null; hasTeamComments: boolean }>) {
+  const items = buildReadinessItems(record, rights, hasTeamComments);
+  const doneCount = items.filter((item) => item.done).length;
+  const nextAction = items.find((item) => !item.done);
+
+  return (
+    <article className="panel record-readiness-panel" aria-label="جاهزية المادة">
+      <div className="panel-section-header panel-title-row">
+        <div>
+          <h2>جاهزية المادة</h2>
+          <p className="helper-text">حالة مشتقة من بيانات السجل الحالية، ولا تمنع الحفظ أو تفرض دورة اعتماد.</p>
+        </div>
+        <span className="badge">{doneCount} من {items.length}</span>
+      </div>
+      <ul className="readiness-list">
+        {items.map((item) => (
+          <li key={item.key} className={item.done ? "readiness-item is-done" : "readiness-item"}>
+            <span aria-hidden="true">{item.done ? "✓" : "○"}</span>
+            <span>{item.label}</span>
+          </li>
+        ))}
+      </ul>
+      {nextAction ? (
+        <p className="helper-text">الإجراء التالي: {nextAction.hint}</p>
+      ) : (
+        <p className="helper-text">المادة مكتملة الجاهزية حسب البيانات المتاحة.</p>
+      )}
+    </article>
+  );
+}
+
 export type RecordDescribePatch = {
   title: string;
   description: string;
@@ -1386,6 +1477,11 @@ export default function ArchiveDetailPage() {
       {state.status === "ready" && (
         <div className="split-layout archive-detail-layout" aria-label="تفاصيل السجل">
           <div className="page-section">
+            <RecordReadinessPanel
+              record={state.record}
+              rights={state.rights}
+              hasTeamComments={state.comments.length > 0}
+            />
             <article className="panel">
               <div className="panel-section-header">
                 <h2>معلومات السجل</h2>

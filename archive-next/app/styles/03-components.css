@@ -588,6 +588,31 @@ textarea.search-input {
   font-size: var(--font-size-sm);
 }
 
+.readiness-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, var(--space-3));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.readiness-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2, var(--space-3));
+  border-radius: var(--radius-full, 999px);
+  border: 1px solid var(--color-border-subtle, var(--color-border));
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.readiness-item.is-done {
+  color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+}
+
 .wrap-anywhere {
   overflow-wrap: anywhere;
 }
