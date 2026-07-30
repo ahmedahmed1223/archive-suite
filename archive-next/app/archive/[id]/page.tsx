@@ -32,7 +32,7 @@ import {
 } from "@/lib/archive-api";
 import { clearEditDraftPosition, getEditDraftPosition, saveEditDraftPosition } from "@/lib/edit-draft-position";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
-import { deriveRecordStatus } from "@/lib/record-status";
+import { deriveRecordStatus, missingDescribeFields } from "@/lib/record-status";
 import { recordView } from "@/lib/recent-items";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
@@ -1014,19 +1014,33 @@ export function RecordDescribeForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || !title.trim()) return;
+    if (busy) return;
+    // V1-843: the title is the one mandatory rule this form already enforced --
+    // it just returned silently, so the button looked broken. Keep the block,
+    // say why. Every other gap is reported after the save, never blocking it.
+    if (!title.trim()) {
+      setStatus("العنوان حقل إلزامي: أضف عنوانًا قبل الحفظ.");
+      return;
+    }
 
     setBusy(true);
     setStatus("");
+    const parsedTags = tags.split(/[،,]/).map((tag) => tag.trim()).filter(Boolean);
     try {
       await onSave({
         title: title.trim(),
         description: description.trim(),
         type: type.trim(),
         subtype: subtype.trim() ? subtype.trim() : null,
-        tags: tags.split(/[،,]/).map((tag) => tag.trim()).filter(Boolean)
+        tags: parsedTags
       });
-      setStatus("تم حفظ التوصيف.");
+      const missing = missingDescribeFields({
+        title: title.trim(),
+        description: description.trim(),
+        type: type.trim(),
+        tags: parsedTags
+      });
+      setStatus(missing.length ? `تم حفظ التوصيف. ما زال ينقصه: ${missing.join("، ")}.` : "تم حفظ التوصيف.");
       clearEditDraftPosition();
       setRestoredField(null);
     } catch (error) {

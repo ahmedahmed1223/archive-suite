@@ -27,6 +27,27 @@ function missingFieldsText(record: ArchiveRecord): string {
   return missing.map((field) => missingFieldLabels[field] ?? field).join("، ");
 }
 
+export interface DescribeDraft {
+  title: string;
+  description: string;
+  type: string;
+  tags: string[];
+}
+
+/**
+ * V1-843: the same four fields the API scores in descriptorCompletion, judged
+ * against the unsaved draft so the form and the badge never disagree.
+ * ponytail: returns labels, not keys -- every caller only ever renders them.
+ */
+export function missingDescribeFields(draft: DescribeDraft): string[] {
+  const missing: string[] = [];
+  if (!draft.title.trim()) missing.push(missingFieldLabels.title);
+  if (!draft.description.trim()) missing.push(missingFieldLabels.description);
+  if (!draft.type.trim()) missing.push(missingFieldLabels.type);
+  if (draft.tags.length === 0) missing.push(missingFieldLabels.tags);
+  return missing;
+}
+
 export function deriveRecordStatus(record: ArchiveRecord): RecordStatus {
   const workflowStatus = getRecordWorkflowStatus(record);
 

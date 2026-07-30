@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { ArchiveRecord } from "./archive-api";
-import { deriveRecordStatus } from "./record-status";
+import { deriveRecordStatus, missingDescribeFields } from "./record-status";
 
 function record(overrides: Partial<ArchiveRecord> = {}): ArchiveRecord {
   return { id: "r1", title: "مادة", ...overrides } as ArchiveRecord;
@@ -33,6 +33,15 @@ describe("deriveRecordStatus (V1-851)", () => {
   test("a complete draft reads as draft, a complete approved record as ready", () => {
     expect(deriveRecordStatus(record({ workflowStatus: "draft", descriptorCompletion: complete })).kind).toBe("draft");
     expect(deriveRecordStatus(record({ workflowStatus: "approved", descriptorCompletion: complete })).kind).toBe("ready");
+  });
+
+  test("missingDescribeFields names each empty field and nothing else (V1-843)", () => {
+    expect(missingDescribeFields({ title: "عنوان", description: "وصف", type: "فيديو", tags: ["وسم"] })).toEqual([]);
+    expect(missingDescribeFields({ title: "عنوان", description: "  ", type: "", tags: [] })).toEqual([
+      "الوصف",
+      "النوع",
+      "الوسوم"
+    ]);
   });
 
   test("every status carries a non-empty reason", () => {
