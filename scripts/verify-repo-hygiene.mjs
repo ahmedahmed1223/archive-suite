@@ -200,4 +200,15 @@ assert.deepEqual(
   `Completed plan documents must not remain tracked; consolidate into ${taskLedgerRelativePath}:\n${trackedSuperpowersPlans.join("\n")}`
 );
 
+// The status table drifted from the real checkbox count three times before this
+// assertion existed, each time understating how much was left. ponytail: assert
+// the total only -- the local/blocked split is derived from it in the same file.
+const openTaskCount = (taskLedger.match(/^- \[ \]/gm) ?? []).length;
+const declaredOpenTotal = Number(taskLedger.match(/\|\s*\*\*المجموع المفتوح\*\*\s*\|\s*\*\*(\d+)\*\*\s*\|/)?.[1]);
+assert.equal(
+  declaredOpenTotal,
+  openTaskCount,
+  `${taskLedgerRelativePath} status table declares ${declaredOpenTotal} open items but the file has ${openTaskCount} '- [ ]' entries; update the table.`
+);
+
 console.log("Repo hygiene verification complete.");
