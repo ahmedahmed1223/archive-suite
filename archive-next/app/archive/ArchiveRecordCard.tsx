@@ -3,13 +3,8 @@
 import { useRef, useState } from "react";
 import { ContextMenu, type ContextMenuPosition } from "@/components/ui/ContextMenu";
 import type { ArchiveRecord } from "@/lib/archive-api";
+import { deriveRecordStatus } from "@/lib/record-status";
 import { formatDate, type ArchiveItemSize, type SelectClickModifiers } from "./page";
-
-const descriptorCompletionLabels = {
-  green: { icon: "🟢", label: "مكتمل التوصيف" },
-  yellow: { icon: "🟡", label: "يحتاج استكمالًا" },
-  red: { icon: "🔴", label: "توصيف ناقص" }
-} as const;
 
 const PLAIN_CLICK_MODIFIERS: SelectClickModifiers = { shiftKey: false, ctrlKey: false, metaKey: false };
 
@@ -29,6 +24,7 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(record.title || "");
   const href = `/archive/${encodeURIComponent(record.id)}`;
+  const status = deriveRecordStatus(record);
 
   const closeMenu = () => setMenuPosition(null);
 
@@ -127,16 +123,9 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
           {record.store ? <span className="badge">{record.store}</span> : null}
           {record.type ? <span className="badge">{record.type}</span> : null}
           {record.subtype ? <span className="badge">{record.subtype}</span> : null}
-          {record.descriptorCompletion ? (
-            <span
-              className="badge"
-              aria-label={`اكتمال التوصيف: ${descriptorCompletionLabels[record.descriptorCompletion.status].label}`}
-              title={`اكتمال التوصيف ${record.descriptorCompletion.complete} من ${record.descriptorCompletion.total}`}
-            >
-              {descriptorCompletionLabels[record.descriptorCompletion.status].icon}{" "}
-              {descriptorCompletionLabels[record.descriptorCompletion.status].label}
-            </span>
-          ) : null}
+          <span className="badge" data-record-status={status.kind} aria-label={`${status.label}: ${status.reason}`} title={status.reason}>
+            {status.label}
+          </span>
           <time className="created-at">{formatDate(record.updatedAt || record.createdAt)}</time>
         </div>
         {record.tags && record.tags.length > 0 ? (

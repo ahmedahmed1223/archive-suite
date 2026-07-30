@@ -32,6 +32,7 @@ import {
 } from "@/lib/archive-api";
 import { clearEditDraftPosition, getEditDraftPosition, saveEditDraftPosition } from "@/lib/edit-draft-position";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
+import { deriveRecordStatus } from "@/lib/record-status";
 import { recordView } from "@/lib/recent-items";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
@@ -847,6 +848,7 @@ function RecordReadinessPanel({
   hasTeamComments
 }: Readonly<{ record: ArchiveRecord; rights: RightsRecord | null; hasTeamComments: boolean }>) {
   const items = buildReadinessItems(record, rights, hasTeamComments);
+  const status = deriveRecordStatus(record);
   const doneCount = items.filter((item) => item.done).length;
   const nextAction = items.find((item) => !item.done);
 
@@ -856,7 +858,9 @@ function RecordReadinessPanel({
         <div>
           <h2>جاهزية المادة</h2>
           <p className="helper-text">حالة مشتقة من بيانات السجل الحالية، ولا تمنع الحفظ أو تفرض دورة اعتماد.</p>
+          <p className="helper-text">{status.reason}</p>
         </div>
+        <span className="badge" data-record-status={status.kind}>{status.label}</span>
         <span className="badge">{doneCount} من {items.length}</span>
       </div>
       <ul className="readiness-list">
