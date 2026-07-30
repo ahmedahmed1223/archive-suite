@@ -19,7 +19,7 @@ export default function UploadsPage() {
           <>
             <span className="badge">معالج خطوة بخطوة</span>
             <span className="badge">رفع متعدد</span>
-            <span className="badge">Metadata</span>
+            <span className="badge">بيانات وصفية</span>
             <span className="badge">حتى 600MB</span>
           </>
         }

@@ -46,7 +46,7 @@ export default function BroadcastSimulationPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [rundown, setRundown] = useState("");
   const [rundownVersion, setRundownVersion] = useState(0);
-  const [rundownMessage, setRundownMessage] = useState("لم يتم تحميل rundown بعد");
+  const [rundownMessage, setRundownMessage] = useState("لم يتم تحميل الراندون بعد");
   const [noteBody, setNoteBody] = useState("");
   const [comments, setComments] = useState<ReviewComment[]>([]);
   const [message, setMessage] = useState("جاهز");
@@ -308,7 +308,7 @@ export default function BroadcastSimulationPage() {
           <section className="panel stack">
             <div className="panel-title-row">
               <div>
-                <h2>Rundown</h2>
+                <h2>الراندون</h2>
                 <p>{rundownMessage}</p>
               </div>
               <span className="badge">v{rundownVersion}</span>
