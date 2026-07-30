@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Clock3, Inbox as InboxIcon, Star } from "lucide-react";
+import { Bell, Clock3, Inbox as InboxIcon, ListChecks, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
@@ -11,6 +11,7 @@ import { useNotifications } from "@/lib/use-notifications";
 import { listFavorites, type Favorite } from "@/lib/favorites";
 import { listRecent, type RecentItem } from "@/lib/recent-items";
 import { formatDate } from "@/lib/record-utils";
+import { RIGHTS_WARNING_WINDOW_DAYS, WORK_LISTS } from "@/lib/work-lists";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 const PANEL_ITEM_LIMIT = 6;
@@ -26,6 +27,9 @@ export default function DailyPage() {
   const [inboxLoading, setInboxLoading] = useState(true);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [recent, setRecent] = useState<RecentItem[]>([]);
+  // ponytail: عدّاد الحقوق فقط — نقطة `records` مقسّمة بمؤشر بلا إجمالي،
+  // فعدّ قوائم الأرشيف يتطلب المرور على كل الصفحات؛ تُعرض الأعداد في /archive نفسها.
+  const [expiringRightsCount, setExpiringRightsCount] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +39,18 @@ export default function DailyPage() {
       if (!cancelled) setInboxLoading(false);
     }
     void loadInbox();
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadExpiringRights() {
+      const response = await api.expiringRights({ days: RIGHTS_WARNING_WINDOW_DAYS });
+      if (!cancelled && response.ok) setExpiringRightsCount(response.records.length);
+    }
+    void loadExpiringRights();
     return () => {
       cancelled = true;
     };
@@ -63,6 +79,30 @@ export default function DailyPage() {
       </header>
 
       <div className="record-grid">
+        <section className="panel" aria-label="قوائم العمل">
+          <header className="dashboard-recent__header">
+            <h2>
+              <ListChecks aria-hidden="true" size={18} strokeWidth={2} />
+              <span>قوائم العمل</span>
+            </h2>
+          </header>
+          <ul className="dashboard-recent__list">
+            {WORK_LISTS.map((workList) => (
+              <li key={workList.id}>
+                <Link className="dashboard-recent__item" href={workList.href}>
+                  <span className="dashboard-recent__title">
+                    {workList.label}
+                    {workList.id === "expiring-rights" && expiringRightsCount !== null ? (
+                      <span className="badge">{expiringRightsCount}</span>
+                    ) : null}
+                  </span>
+                  <span className="dashboard-recent__meta">{workList.description}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <section className="panel" aria-label="بحاجة لانتباه">
           <header className="dashboard-recent__header">
             <h2>

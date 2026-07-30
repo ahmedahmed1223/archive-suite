@@ -21,6 +21,7 @@ import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted
 import { toastError, toastSuccess } from "@/lib/toast";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
+import { isIncompleteRecord } from "@/lib/work-lists";
 import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import styles from "./archive.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -257,6 +258,10 @@ function getInitialStatus(params: URLSearchParams): WorkflowStatus | "all" {
   return value && (WORKFLOW_STATES as string[]).includes(value) ? (value as WorkflowStatus) : "all";
 }
 
+function getInitialCompletion(params: URLSearchParams): boolean {
+  return params.get("completion") === "incomplete";
+}
+
 function savedFilter(search: SavedSearch, key: string) {
   const value = search.filters?.[key];
   return typeof value === "string" ? value : "";
@@ -305,6 +310,7 @@ function ArchivePageContent() {
   const [store, setStore] = useState(() => searchParams.get("store") || "all");
   const [type, setType] = useState(() => searchParams.get("type") || "all");
   const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | "all">(() => getInitialStatus(searchParams));
+  const [incompleteOnly, setIncompleteOnly] = useState(() => getInitialCompletion(searchParams));
   const [viewMode, setViewMode] = useState<ArchiveViewMode>(() => getInitialViewMode(searchParams));
   const [itemSize, setItemSize] = useState<ArchiveItemSize>(() => getInitialItemSize(searchParams));
   const [sortField, setSortField] = useState<ArchiveSortField>(() => getInitialSortField(searchParams));
@@ -445,6 +451,7 @@ function ArchivePageContent() {
     if (store !== "all") params.set("store", store);
     if (type !== "all") params.set("type", type);
     if (workflowStatus !== "all") params.set("status", workflowStatus);
+    if (incompleteOnly) params.set("completion", "incomplete");
     if (viewMode !== "grid") params.set("view", viewMode);
     if (itemSize !== "compact") params.set("size", itemSize);
     if (sortField !== "updatedAt") params.set("sort", sortField);
@@ -452,7 +459,7 @@ function ArchivePageContent() {
 
     const next = params.toString();
     router.replace(next ? `/archive?${next}` : "/archive", { scroll: false });
-  }, [itemSize, query, router, sortDirection, sortField, store, type, viewMode, workflowStatus]);
+  }, [incompleteOnly, itemSize, query, router, sortDirection, sortField, store, type, viewMode, workflowStatus]);
 
   const records = state.status === "ready" ? state.records : [];
   const facets = state.status === "ready" ? state.facets : undefined;
@@ -473,6 +480,7 @@ function ArchivePageContent() {
       if (store !== "all" && record.store !== store) return false;
       if (type !== "all" && record.type !== type) return false;
       if (workflowStatus !== "all" && getRecordWorkflowStatus(record) !== workflowStatus) return false;
+      if (incompleteOnly && !isIncompleteRecord(record)) return false;
       if (!normalizedQuery) return true;
       return getRecordSearchText(record).includes(normalizedQuery);
     });
@@ -485,7 +493,9 @@ function ArchivePageContent() {
 
       return (getRecordTime(a, sortField) - getRecordTime(b, sortField)) * multiplier;
     });
-  }, [query, records, sortDirection, sortField, store, type, workflowStatus]);
+  }, [incompleteOnly, query, records, sortDirection, sortField, store, type, workflowStatus]);
+
+  const incompleteCount = useMemo(() => records.filter(isIncompleteRecord).length, [records]);
 
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const selectedMacroTargets = useMemo(() => selectedBulkMacroTargets(records, selectedIds), [records, selectedIds]);
@@ -502,6 +512,7 @@ function ArchivePageContent() {
     store !== "all",
     type !== "all",
     workflowStatus !== "all",
+    incompleteOnly,
     sortField !== "updatedAt",
     sortDirection !== "desc"
   ].filter(Boolean).length;
@@ -741,6 +752,7 @@ function ArchivePageContent() {
     setStore("all");
     setType("all");
     setWorkflowStatus("all");
+    setIncompleteOnly(false);
     setSortField("updatedAt");
     setSortDirection("desc");
     setSelectedIds([]);
@@ -1192,6 +1204,17 @@ function ArchivePageContent() {
               {workflowStatusLabels[s]} · {statusCounts[s]}
             </button>
           ))}
+          {incompleteCount > 0 || incompleteOnly ? (
+            <button
+              type="button"
+              className={`badge ${styles.filterChip}`}
+              data-active={incompleteOnly ? "true" : "false"}
+              aria-pressed={incompleteOnly}
+              onClick={() => setIncompleteOnly(!incompleteOnly)}
+            >
+              توصيف ناقص · {incompleteCount}
+            </button>
+          ) : null}
         </div>
         <div className="archive-toolbar-row">
           <DataViewSwitcher value={viewMode} options={viewOptions} onChange={setViewMode} />
