@@ -13,6 +13,7 @@ import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveFile, type FileBrowserEntry, type StorageWorkspaceOperation, type StorageWorkspaceProvider } from "@/lib/archive-api";
 import { addMintedLink } from "@/lib/minted-shares";
+import { defaultShareExpiryLocalValue, validateShareExpiry } from "@/lib/share-checklist";
 import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
 import { Skeleton } from "@/components/ui/Skeleton";
 import StorageBrowser, { type StorageCapability, type StorageEntry, type StorageProvider } from "@/components/StorageBrowser";
@@ -33,6 +34,23 @@ type ShareState =
   | { status: "creating" }
   | { status: "success"; token: string; url?: string }
   | { status: "error"; message: string };
+
+/** V1-836: a lightweight pre-share checklist - final decision stays with the user, this only prompts them to confirm. */
+type ShareChecklistState = {
+  open: boolean;
+  expiryLocalValue: string;
+  rightsConfirmed: boolean;
+  sensitiveDataConfirmed: boolean;
+  expiryError: string;
+};
+
+const CLOSED_SHARE_CHECKLIST: ShareChecklistState = {
+  open: false,
+  expiryLocalValue: "",
+  rightsConfirmed: false,
+  sensitiveDataConfirmed: false,
+  expiryError: ""
+};
 
 type ScanState =
   | { status: "idle" }
@@ -161,6 +179,7 @@ export default function FilesPage() {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
   const [shareState, setShareState] = useState<ShareState>({ status: "idle" });
+  const [shareChecklist, setShareChecklist] = useState<ShareChecklistState>(CLOSED_SHARE_CHECKLIST);
   const [scanState, setScanState] = useState<ScanState>({ status: "idle" });
   const [browserPath, setBrowserPath] = useState("");
   const [browserState, setBrowserState] = useState<BrowserState>({ status: "loading" });
@@ -287,12 +306,34 @@ export default function FilesPage() {
     });
   };
 
-  const handleCreateShare = async () => {
+  const handleOpenShareChecklist = () => {
     if (selectedKeys.length === 0) return;
+    setShareChecklist({
+      open: true,
+      expiryLocalValue: defaultShareExpiryLocalValue(new Date()),
+      rightsConfirmed: false,
+      sensitiveDataConfirmed: false,
+      expiryError: ""
+    });
+  };
+
+  const handleCancelShareChecklist = () => {
+    setShareChecklist(CLOSED_SHARE_CHECKLIST);
+  };
+
+  const handleConfirmShare = async () => {
+    if (selectedKeys.length === 0) return;
+    const validation = validateShareExpiry(shareChecklist.expiryLocalValue, new Date());
+    if (!validation.valid) {
+      setShareChecklist((current) => ({ ...current, expiryError: validation.message }));
+      return;
+    }
+    if (!shareChecklist.rightsConfirmed || !shareChecklist.sensitiveDataConfirmed) return;
 
     setShareState({ status: "creating" });
     const response = await api.createShare({
-      itemIds: selectedKeys
+      itemIds: selectedKeys,
+      expiresAt: validation.iso
     });
 
     if (!response.ok) {
@@ -312,6 +353,7 @@ export default function FilesPage() {
       token: response.token,
       url: response.url
     });
+    setShareChecklist(CLOSED_SHARE_CHECKLIST);
   };
 
   const handleScan = async () => {
@@ -610,7 +652,7 @@ export default function FilesPage() {
           <div className="button-row">
             {canShare && (
               <button
-                onClick={handleCreateShare}
+                onClick={handleOpenShareChecklist}
                 disabled={shareState.status === "creating"}
                 className="button button-primary"
               >
@@ -620,6 +662,63 @@ export default function FilesPage() {
             )}
             <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>تحديد الظاهر</button>
             <button type="button" className="button button-secondary" onClick={() => setSelectedKeys([])}>مسح التحديد</button>
+          </div>
+        </div>
+      ) : null}
+
+      {shareChecklist.open ? (
+        <div className="panel" role="dialog" aria-label="فحص قبل المشاركة">
+          <div className="panel-section-header">
+            <h2>فحص قبل المشاركة</h2>
+            <p className="helper-text">راجع القائمة قبل إنشاء الرابط. القرار النهائي لك.</p>
+          </div>
+          <label>
+            تاريخ انتهاء الرابط
+            <input
+              type="datetime-local"
+              value={shareChecklist.expiryLocalValue}
+              onChange={(event) =>
+                setShareChecklist((current) => ({ ...current, expiryLocalValue: event.target.value, expiryError: "" }))
+              }
+            />
+          </label>
+          {shareChecklist.expiryError ? <p className="form-status">{shareChecklist.expiryError}</p> : null}
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={shareChecklist.rightsConfirmed}
+              onChange={(event) =>
+                setShareChecklist((current) => ({ ...current, rightsConfirmed: event.target.checked }))
+              }
+            />
+            الحقوق سارية لهذه الملفات ولا يوجد حظر أو انتهاء نشط عليها.
+          </label>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={shareChecklist.sensitiveDataConfirmed}
+              onChange={(event) =>
+                setShareChecklist((current) => ({ ...current, sensitiveDataConfirmed: event.target.checked }))
+              }
+            />
+            راجعت الملفات ولا تحتوي بيانات حساسة لا يجب مشاركتها خارجيًا.
+          </label>
+          <div className="button-row">
+            <button
+              type="button"
+              className="button button-primary"
+              disabled={
+                !shareChecklist.rightsConfirmed ||
+                !shareChecklist.sensitiveDataConfirmed ||
+                shareState.status === "creating"
+              }
+              onClick={() => void handleConfirmShare()}
+            >
+              {shareState.status === "creating" ? "جار الإنشاء..." : "تأكيد ومشاركة"}
+            </button>
+            <button type="button" className="button button-secondary" onClick={handleCancelShareChecklist}>
+              إلغاء
+            </button>
           </div>
         </div>
       ) : null}
