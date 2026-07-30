@@ -30,6 +30,7 @@ import {
   type RightsRecord,
   type SuggestionFeedbackValue
 } from "@/lib/archive-api";
+import { clearEditDraftPosition, getEditDraftPosition, saveEditDraftPosition } from "@/lib/edit-draft-position";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
 import { recordView } from "@/lib/recent-items";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -927,7 +928,26 @@ export function RecordDescribeForm({
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<UndoStack<FormChange>>(emptyUndoStack);
+  const [restoredField, setRestoredField] = useState<string | null>(null);
   const lastCommittedRef = useRef<FormSnapshot>(initialSnapshot);
+  // V1-826: restore the user's last-edited field on return, without touching
+  // form content - a pure focus/scroll nudge, never an auto-applied value.
+  const fieldRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({});
+
+  useEffect(() => {
+    const position = getEditDraftPosition();
+    if (!position || position.recordId !== record.id) return;
+    const target = fieldRefs.current[position.field];
+    if (!target) return;
+    target.focus();
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    setRestoredField(position.field);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [record.id]);
+
+  function handleFieldFocus(field: string) {
+    saveEditDraftPosition(record.id, field);
+  }
   // commitCheckpoint()'s setHistory() doesn't land until the next render, so
   // a caller that reads `history` in the same synchronous call (handleUndo
   // does, right after calling commitCheckpoint) would see the pre-commit
@@ -1003,6 +1023,8 @@ export function RecordDescribeForm({
         tags: tags.split(/[،,]/).map((tag) => tag.trim()).filter(Boolean)
       });
       setStatus("تم حفظ التوصيف.");
+      clearEditDraftPosition();
+      setRestoredField(null);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "تعذر حفظ التوصيف.");
     } finally {
@@ -1016,18 +1038,29 @@ export function RecordDescribeForm({
         <div>
           <h2>تحرير التوصيف</h2>
           <p className="helper-text">عدّل العنوان والوصف والنوع والوسوم واحفظها في الأرشيف مباشرة.</p>
+          {restoredField ? (
+            <p className="helper-text">استؤنف التحرير من آخر حقل تركته دون تغيير أي محتوى.</p>
+          ) : null}
         </div>
       </div>
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
           العنوان
-          <input value={title} onChange={(event) => setTitle(event.target.value)} onBlur={commitCheckpoint} />
+          <input
+            ref={(node) => { fieldRefs.current.title = node; }}
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            onFocus={() => handleFieldFocus("title")}
+            onBlur={commitCheckpoint}
+          />
         </label>
         <label>
           الوصف
           <textarea
+            ref={(node) => { fieldRefs.current.description = node; }}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
+            onFocus={() => handleFieldFocus("description")}
             onBlur={commitCheckpoint}
             rows={4}
             placeholder="وصف موجز للمادة يظهر في التفاصيل والبحث."
@@ -1036,16 +1069,41 @@ export function RecordDescribeForm({
         <div className="field-row">
           <label>
             النوع
-            <input value={type} onChange={(event) => setType(event.target.value)} onBlur={commitCheckpoint} dir="ltr" placeholder="video" list="record-type-options" />
+            <input
+              ref={(node) => { fieldRefs.current.type = node; }}
+              value={type}
+              onChange={(event) => setType(event.target.value)}
+              onFocus={() => handleFieldFocus("type")}
+              onBlur={commitCheckpoint}
+              dir="ltr"
+              placeholder="video"
+              list="record-type-options"
+            />
           </label>
           <label>
             الفرع
-            <input value={subtype} onChange={(event) => setSubtype(event.target.value)} onBlur={commitCheckpoint} dir="ltr" placeholder="interview / raw" list="record-subtype-options" />
+            <input
+              ref={(node) => { fieldRefs.current.subtype = node; }}
+              value={subtype}
+              onChange={(event) => setSubtype(event.target.value)}
+              onFocus={() => handleFieldFocus("subtype")}
+              onBlur={commitCheckpoint}
+              dir="ltr"
+              placeholder="interview / raw"
+              list="record-subtype-options"
+            />
           </label>
         </div>
         <label>
           الوسوم
-          <input value={tags} onChange={(event) => setTags(event.target.value)} onBlur={commitCheckpoint} placeholder="أرشيف، مقابلات، 2026" />
+          <input
+            ref={(node) => { fieldRefs.current.tags = node; }}
+            value={tags}
+            onChange={(event) => setTags(event.target.value)}
+            onFocus={() => handleFieldFocus("tags")}
+            onBlur={commitCheckpoint}
+            placeholder="أرشيف، مقابلات، 2026"
+          />
         </label>
         <datalist id="record-type-options">
           <option value="video" />
@@ -1554,7 +1612,7 @@ export default function ArchiveDetailPage() {
               ) : null}
             </article>
             <SuggestionsPanel suggestions={suggestions} title="تحسينات مقترحة لهذا السجل" onFeedback={handleSuggestionFeedback} />
-            {canEditRecords && <RecordDescribeForm record={state.record} onSave={handleSaveRecord} />}
+            {canEditRecords && <RecordDescribeForm key={id} record={state.record} onSave={handleSaveRecord} />}
             <RecordNotesPanel
               notes={state.notes}
               loading={state.notesLoading}
