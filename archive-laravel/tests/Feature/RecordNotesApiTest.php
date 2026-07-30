@@ -124,6 +124,30 @@ class RecordNotesApiTest extends TestCase
         $this->deleteJson('/api/v1/record-notes/'.$id, [], $author)->assertOk();
     }
 
+    public function test_notes_are_private_to_their_author_but_visible_to_admin(): void
+    {
+        $this->seedArchiveRecord();
+        $author = $this->headersFor('viewer', 'note-private-owner@example.test');
+        $other = $this->headersFor('editor', 'note-private-other@example.test');
+        $admin = $this->headersFor('admin', 'note-private-admin@example.test');
+
+        $this->postJson('/api/v1/records/item-1/notes', ['body' => 'Only mine'], $author)
+            ->assertCreated();
+
+        $this->getJson('/api/v1/records/item-1/notes', $author)
+            ->assertOk()
+            ->assertJsonCount(1, 'notes')
+            ->assertJsonPath('notes.0.body', 'Only mine');
+
+        $this->getJson('/api/v1/records/item-1/notes', $other)
+            ->assertOk()
+            ->assertJsonCount(0, 'notes');
+
+        $this->getJson('/api/v1/records/item-1/notes', $admin)
+            ->assertOk()
+            ->assertJsonCount(1, 'notes');
+    }
+
     public function test_admin_can_mutate_another_users_note_and_orphan_notes_are_admin_only(): void
     {
         $this->seedArchiveRecord();

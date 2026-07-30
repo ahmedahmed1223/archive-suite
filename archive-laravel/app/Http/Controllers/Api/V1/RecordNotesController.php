@@ -29,9 +29,14 @@ class RecordNotesController extends Controller
             ], 404);
         }
 
+        $user = $request->attributes->get('archive_user');
         $notes = DB::table('record_notes')
             ->where('item_id', $recordId)
             ->where('record_store', $store)
+            ->when(
+                $user?->role !== 'admin',
+                fn ($query) => $query->where('author_id', $user?->getKey())
+            )
             ->orderByRaw('timestamp_seconds is null')
             ->orderBy('timestamp_seconds')
             ->orderBy('created_at')
