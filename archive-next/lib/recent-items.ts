@@ -1,4 +1,6 @@
 // ponytail: mirrors favorites.ts's tiny localStorage store shape exactly.
+import { isContextRecordingEnabled } from "@/lib/personal-context";
+
 export interface RecentItem {
   id: string;
   title?: string;
@@ -34,6 +36,7 @@ export function listRecent(): RecentItem[] {
 
 /** Records a view, moving the item to the front and capping the list at MAX_ITEMS. */
 export function recordView(id: string, title?: string, type?: string): void {
+  if (!isContextRecordingEnabled()) return;
   const items = getStorage().filter((item) => item.id !== id);
   items.unshift({ id, title, type, viewedAt: new Date().toISOString() });
   setStorage(items.slice(0, MAX_ITEMS));

@@ -9,7 +9,9 @@ import { useAuthSession } from "@/lib/auth-session";
 import { createArchiveApiClient, type InboxItem } from "@/lib/archive-api";
 import { useNotifications } from "@/lib/use-notifications";
 import { listFavorites, type Favorite } from "@/lib/favorites";
-import { listRecent, type RecentItem } from "@/lib/recent-items";
+import { clearRecent, listRecent, type RecentItem } from "@/lib/recent-items";
+import { clearRecentSearches } from "@/lib/recent-searches";
+import { isContextRecordingEnabled, setContextRecording } from "@/lib/personal-context";
 import { formatDate } from "@/lib/record-utils";
 import { RIGHTS_WARNING_WINDOW_DAYS, WORK_LISTS } from "@/lib/work-lists";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -27,6 +29,8 @@ export default function DailyPage() {
   const [inboxLoading, setInboxLoading] = useState(true);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [recent, setRecent] = useState<RecentItem[]>([]);
+  const [recording, setRecording] = useState(true);
+  const [contextStatus, setContextStatus] = useState("");
   // ponytail: عدّاد الحقوق فقط — نقطة `records` مقسّمة بمؤشر بلا إجمالي،
   // فعدّ قوائم الأرشيف يتطلب المرور على كل الصفحات؛ تُعرض الأعداد في /archive نفسها.
   const [expiringRightsCount, setExpiringRightsCount] = useState<number | null>(null);
@@ -59,7 +63,25 @@ export default function DailyPage() {
   useEffect(() => {
     setFavorites(listFavorites());
     setRecent(listRecent());
+    setRecording(isContextRecordingEnabled());
   }, []);
+
+  function handleRecordingChange(enabled: boolean) {
+    setContextRecording(enabled);
+    setRecording(enabled);
+    setContextStatus(enabled ? "سيُسجَّل السياق الشخصي على هذا المتصفح." : "توقّف تسجيل السياق الشخصي على هذا المتصفح.");
+  }
+
+  function handleClearRecent() {
+    clearRecent();
+    setRecent([]);
+    setContextStatus("مُسح سجل آخر ما شاهدت.");
+  }
+
+  function handleClearSearches() {
+    clearRecentSearches();
+    setContextStatus("مُسحت عمليات البحث الأخيرة.");
+  }
 
   const pendingInbox = useMemo(
     () => inboxItems.filter((item) => item.status === "new" || item.status === "triage"),
@@ -184,6 +206,11 @@ export default function DailyPage() {
               <Clock3 aria-hidden="true" size={18} strokeWidth={2} />
               <span>آخر ما شاهدت</span>
             </h2>
+            {recent.length > 0 ? (
+              <button type="button" className="button button-secondary button-sm" onClick={handleClearRecent}>
+                مسح السجل
+              </button>
+            ) : null}
           </header>
           {recent.length === 0 ? (
             <EmptyState icon={<Clock3 aria-hidden="true" />} title="لم تشاهد شيئاً بعد" description="ستظهر هنا آخر السجلات التي فتحتها." />
@@ -198,6 +225,27 @@ export default function DailyPage() {
               ))}
             </ul>
           )}
+          <div className="stack section-divider">
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={recording}
+                onChange={(event) => handleRecordingChange(event.target.checked)}
+              />
+              <span>تسجيل السياق الشخصي (آخر ما شاهدت وعمليات البحث الأخيرة)</span>
+            </label>
+            <p className="helper-text">
+              يُحفظ هذا السياق في هذا المتصفح وحده ولا يُشارك مع بقية المستخدمين.
+            </p>
+            <div className="button-row">
+              <button type="button" className="button button-secondary button-sm" onClick={handleClearSearches}>
+                مسح عمليات البحث الأخيرة
+              </button>
+            </div>
+            <p className="form-status" role="status">
+              {contextStatus}
+            </p>
+          </div>
         </section>
       </div>
     </AppShell>

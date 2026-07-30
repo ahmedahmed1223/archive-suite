@@ -1,4 +1,5 @@
 import type { SearchSuggestion } from "@/lib/archive-api";
+import { isContextRecordingEnabled } from "@/lib/personal-context";
 
 const STORAGE_KEY = "archive.recent-searches";
 const MAX_RECENT_SEARCHES = 8;
@@ -19,8 +20,18 @@ export function listRecentSearches(query = ""): SearchSuggestion[] {
   }
 }
 
+export function clearRecentSearches(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage unavailable: nothing was stored to clear.
+  }
+}
+
 export function recordRecentSearch(query: string): void {
   if (typeof window === "undefined") return;
+  if (!isContextRecordingEnabled()) return;
   const value = query.trim();
   if (value.length < 2) return;
   const existing = listRecentSearches().map((item) => item.value);
