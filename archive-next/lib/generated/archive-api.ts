@@ -679,6 +679,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/link-audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List record relations pointing at a record that no longer exists */
+        get: operations["listBrokenLinks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media/{mediaUid}/review-links": {
         parameters: {
             query?: never;
@@ -2731,6 +2748,13 @@ export interface components {
                 };
             };
         };
+        BrokenLink: {
+            missingSource: boolean;
+            missingTarget: boolean;
+            relationId: string;
+            sourceRecordId: string;
+            targetRecordId: string;
+        };
         BulkDeleteRecordsRequest: {
             ids: string[];
             store: string;
@@ -3304,6 +3328,9 @@ export interface components {
         };
         /** @enum {string} */
         LicenseType: "OWNED" | "LICENSED" | "PUBLIC_DOMAIN" | "FAIR_USE" | "UNKNOWN";
+        LinkAuditResponse: components["schemas"]["OkEnvelope"] & {
+            brokenLinks: components["schemas"]["BrokenLink"][];
+        };
         LoginRequest: {
             password: string;
             /** @default false */
@@ -5893,6 +5920,27 @@ export interface operations {
             };
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listBrokenLinks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Broken relation links */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkAuditResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
         };
     };
     createReviewLink: {

@@ -326,6 +326,15 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-841: read-only scan for record relations pointing at a record that no longer exists.
+export interface BrokenLink {
+  relationId: string;
+  sourceRecordId: string;
+  targetRecordId: string;
+  missingSource: boolean;
+  missingTarget: boolean;
+}
+
 // V1-827: per-type metadata templates; applying one to a draft is client-side only.
 export interface MetadataTemplate {
   id: string;
@@ -1201,6 +1210,7 @@ export interface ArchiveApiClient {
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  linkAudit(options?: AuthRequestOptions): Promise<ApiEnvelope<{ brokenLinks: BrokenLink[] }>>;
   metadataTemplates(typeId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: MetadataTemplate[] }>>;
   createMetadataTemplate(payload: MetadataTemplateInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
   updateMetadataTemplate(id: string, payload: MetadataTemplateInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
@@ -1745,6 +1755,7 @@ export function createArchiveApiClient({
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
+    linkAudit: (options?: AuthRequestOptions) => get<{ brokenLinks: BrokenLink[] }>("/link-audit", options),
     metadataTemplates: (typeId?: string, options?: AuthRequestOptions) =>
       get<{ templates: MetadataTemplate[] }>(`/metadata-templates${typeId ? `?${new URLSearchParams({ typeId })}` : ""}`, options),
     createMetadataTemplate: (payload: MetadataTemplateInput, options?: AuthRequestOptions) =>

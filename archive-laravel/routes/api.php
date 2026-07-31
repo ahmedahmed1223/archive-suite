@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordsBulkCsvController;
 use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
+use App\Http\Controllers\Api\V1\LinkAuditController;
 use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\ProjectsController;
@@ -250,6 +251,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/trash/purge', [TrashController::class, 'purge']);
         Route::patch('/record-notes/{id}', [RecordNotesController::class, 'update']);
         Route::delete('/record-notes/{id}', [RecordNotesController::class, 'destroy']);
+        Route::get('/link-audit', [LinkAuditController::class, 'index']);
         Route::get('/metadata-templates', [MetadataTemplatesController::class, 'index']);
         Route::post('/metadata-templates', [MetadataTemplatesController::class, 'store']);
         Route::patch('/metadata-templates/{id}', [MetadataTemplatesController::class, 'update']);

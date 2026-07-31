@@ -4333,6 +4333,21 @@
         }
       }
     },
+    "/link-audit": {
+      "get": {
+        "tags": ["Link Audit"],
+        "summary": "List record relations pointing at a record that no longer exists",
+        "operationId": "listBrokenLinks",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Broken relation links",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LinkAuditResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/metadata-templates": {
       "get": {
         "tags": ["Metadata Templates"],
@@ -8071,6 +8086,29 @@
             "required": ["export"],
             "properties": {
               "export": { "$ref": "#/components/schemas/AccountExport" }
+            }
+          }
+        ]
+      },
+      "BrokenLink": {
+        "type": "object",
+        "required": ["relationId", "sourceRecordId", "targetRecordId", "missingSource", "missingTarget"],
+        "properties": {
+          "relationId": { "type": "string" },
+          "sourceRecordId": { "type": "string" },
+          "targetRecordId": { "type": "string" },
+          "missingSource": { "type": "boolean" },
+          "missingTarget": { "type": "boolean" }
+        }
+      },
+      "LinkAuditResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["brokenLinks"],
+            "properties": {
+              "brokenLinks": { "type": "array", "items": { "$ref": "#/components/schemas/BrokenLink" } }
             }
           }
         ]
