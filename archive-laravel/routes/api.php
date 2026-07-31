@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
 use App\Http\Controllers\Api\V1\RecordEditClaimController;
+use App\Http\Controllers\Api\V1\FileHealthController;
 use App\Http\Controllers\Api\V1\RecordFreezeController;
 use App\Http\Controllers\Api\V1\UnusedFilesController;
 use App\Http\Controllers\Api\V1\VocabularyRelinkController;
@@ -310,6 +311,8 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/relations/{id}', [RelationsController::class, 'destroy']);
         Route::get('/files', [FilesController::class, 'index']);
         Route::get('/files/unused', [UnusedFilesController::class, 'index']);
+        Route::get('/attachments/{attachmentId}/health', [FileHealthController::class, 'index']);
+        Route::post('/attachments/{attachmentId}/health/check', [FileHealthController::class, 'check']);
         Route::get('/files/browser', [FilesController::class, 'browser']);
         Route::get('/media/jobs', [MediaJobsController::class, 'index']);
         Route::post('/media/jobs', [MediaJobsController::class, 'store']);

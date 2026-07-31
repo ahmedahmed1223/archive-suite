@@ -326,6 +326,15 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-860: on-demand checksum verification history per attachment.
+export interface FileHealthCheck {
+  id: string;
+  attachmentId: string;
+  status: "match" | "mismatch" | "missing" | "error";
+  checksumSha256: string | null;
+  checkedAt: string;
+}
+
 // V1-853: files with no record_attachments reference — read-only review candidates.
 export interface UnusedFile {
   key: string;
@@ -1282,6 +1291,8 @@ export interface ArchiveApiClient {
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   unusedFiles(options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: UnusedFile[] }>>;
+  fileHealthChecks(attachmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ checks: FileHealthCheck[] }>>;
+  runFileHealthCheck(attachmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ check: FileHealthCheck }>>;
   previewVocabularyRelink(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<VocabularyRelinkPreview>>;
   relinkVocabularyTerm(id: string, replacement?: string | null, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relinked: string[]; replacement: string | null }>>;
   recordFreeze(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ freeze: RecordFreeze | null }>>;
@@ -1845,6 +1856,10 @@ export function createArchiveApiClient({
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
     unusedFiles: (options?: AuthRequestOptions) => get<{ files: UnusedFile[] }>("/files/unused", options),
+    fileHealthChecks: (attachmentId: string, options?: AuthRequestOptions) =>
+      get<{ checks: FileHealthCheck[] }>(`/attachments/${encodeURIComponent(attachmentId)}/health`, options),
+    runFileHealthCheck: (attachmentId: string, options?: AuthRequestOptions) =>
+      post<{ check: FileHealthCheck }>(`/attachments/${encodeURIComponent(attachmentId)}/health/check`, undefined, options),
     previewVocabularyRelink: (id: string, options?: AuthRequestOptions) =>
       get<VocabularyRelinkPreview>(`/vocabulary/${encodeURIComponent(id)}/relink-preview`, options),
     relinkVocabularyTerm: (id: string, replacement?: string | null, options?: AuthRequestOptions) =>

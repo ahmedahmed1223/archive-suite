@@ -69,6 +69,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/attachments/{attachmentId}/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List checksum verification history for an attachment */
+        get: operations["listFileHealthChecks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/attachments/{attachmentId}/health/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run a fresh checksum verification for an attachment */
+        post: operations["runFileHealthCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -3413,6 +3447,22 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        FileHealthCheck: {
+            /** Format: uuid */
+            attachmentId: string;
+            /** Format: date-time */
+            checkedAt: string;
+            checksumSha256: string | null;
+            id: string;
+            /** @enum {string} */
+            status: "match" | "mismatch" | "missing" | "error";
+        };
+        FileHealthCheckResponse: components["schemas"]["OkEnvelope"] & {
+            check: components["schemas"]["FileHealthCheck"];
+        };
+        FileHealthChecksResponse: components["schemas"]["OkEnvelope"] & {
+            checks: components["schemas"]["FileHealthCheck"][];
+        };
         FileListResponse: components["schemas"]["OkEnvelope"] & {
             files: components["schemas"]["FileEntry"][];
         };
@@ -5070,6 +5120,54 @@ export interface operations {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    listFileHealthChecks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Health check history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileHealthChecksResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    runFileHealthCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description New health check result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileHealthCheckResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
             404: components["responses"]["Error"];
         };
     };

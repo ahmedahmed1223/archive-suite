@@ -1327,6 +1327,40 @@
         }
       }
     },
+    "/attachments/{attachmentId}/health": {
+      "get": {
+        "tags": ["File Health"],
+        "summary": "List checksum verification history for an attachment",
+        "operationId": "listFileHealthChecks",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "attachmentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": {
+            "description": "Health check history",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FileHealthChecksResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/attachments/{attachmentId}/health/check": {
+      "post": {
+        "tags": ["File Health"],
+        "summary": "Run a fresh checksum verification for an attachment",
+        "operationId": "runFileHealthCheck",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "attachmentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": {
+            "description": "New health check result",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FileHealthCheckResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/files/browser": {
       "get": {
         "tags": ["Files"],
@@ -8612,6 +8646,41 @@
             "required": ["claim"],
             "properties": {
               "claim": { "anyOf": [{ "$ref": "#/components/schemas/RecordEditClaim" }, { "type": "null" }] }
+            }
+          }
+        ]
+      },
+      "FileHealthCheck": {
+        "type": "object",
+        "required": ["id", "attachmentId", "status", "checksumSha256", "checkedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "attachmentId": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["match", "mismatch", "missing", "error"] },
+          "checksumSha256": { "type": "string", "nullable": true },
+          "checkedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "FileHealthChecksResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["checks"],
+            "properties": {
+              "checks": { "type": "array", "items": { "$ref": "#/components/schemas/FileHealthCheck" } }
+            }
+          }
+        ]
+      },
+      "FileHealthCheckResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["check"],
+            "properties": {
+              "check": { "$ref": "#/components/schemas/FileHealthCheck" }
             }
           }
         ]
