@@ -41,6 +41,7 @@ import { recordView } from "@/lib/recent-items";
 import { Skeleton } from "@/components/ui/Skeleton";
 import RecordPresence from "@/components/RecordPresence";
 import RecordAttachmentsPanel from "@/components/RecordAttachmentsPanel";
+import RecordSourceReplacementPanel from "@/components/RecordSourceReplacementPanel";
 
 export { RecordDescribeForm, type RecordDescribePatch };
 
@@ -1601,6 +1602,7 @@ export default function ArchiveDetailPage() {
               onRecordUpdate={(updated) => setState((current) => (current.status === "ready" ? { ...current, record: updated } : current))}
             />
             <RecordAttachmentsPanel recordId={id} store={state.record.store || "archive-items"} />
+            <RecordSourceReplacementPanel recordId={id} canEdit={canEditRecords} />
             <MediaDerivativesTree record={state.record} />
             <RecordHistoryPanel
               entries={state.history}

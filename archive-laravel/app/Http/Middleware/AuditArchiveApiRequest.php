@@ -54,6 +54,8 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/ingest/watched/scan'] => ['watched_ingest.preview', 'watched_ingest_batch'],
             ['POST', 'api/v1/ingest/watched/batches/{batchId}/apply'] => ['watched_ingest.apply', 'watched_ingest_batch'],
             ['POST', 'api/v1/records/{id}/attachments'] => ['record_attachments.create', 'record_attachment'],
+            ['POST', 'api/v1/records/{id}/source-replacements'] => ['record_source.replace', 'record_source'],
+            ['POST', 'api/v1/records/{id}/source-versions/{versionId}/restore'] => ['record_source.restore', 'record_source'],
             ['DELETE', 'api/v1/records/{id}/attachments/{attachmentId}'] => ['record_attachments.delete', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
             ['PATCH', 'api/v1/record-notes/{id}'] => ['record_notes.update', 'record_note'],
@@ -108,6 +110,10 @@ class AuditArchiveApiRequest
 
         if (in_array($route, ['api/v1/records/{id}/attachments', 'api/v1/records/{id}/attachments/{attachmentId}'], true)) {
             $resourceId = $request->route('attachmentId') ?: $request->route('id');
+        }
+
+        if (in_array($route, ['api/v1/records/{id}/source-replacements', 'api/v1/records/{id}/source-versions/{versionId}/restore'], true)) {
+            $resourceId = $request->route('id');
         }
 
         if ($route === 'api/v1/relations') {

@@ -44,6 +44,7 @@ use App\Http\Controllers\Api\V1\UnusedFilesController;
 use App\Http\Controllers\Api\V1\VocabularyRelinkController;
 use App\Http\Controllers\Api\V1\RecordMergeController;
 use App\Http\Controllers\Api\V1\RecordSegmentsController;
+use App\Http\Controllers\Api\V1\RecordSourceReplacementController;
 use App\Http\Controllers\Api\V1\RecordSnapshotsController;
 use App\Http\Controllers\Api\V1\RecordTriageFlagController;
 use App\Http\Controllers\Api\V1\RecordTranscriptController;
@@ -238,6 +239,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/records/export', [RecordsBulkCsvController::class, 'export']);
         Route::post('/records', [RecordsController::class, 'store']);
         Route::get('/records/{id}', [RecordsController::class, 'show']);
+        Route::post('/records/{id}/source-replacements', [RecordSourceReplacementController::class, 'replace']);
+        Route::get('/records/{id}/source-versions', [RecordSourceReplacementController::class, 'index']);
+        Route::post('/records/{id}/source-versions/{versionId}/restore', [RecordSourceReplacementController::class, 'restore']);
         Route::get('/records/{id}/attachments', [RecordAttachmentsController::class, 'index']);
         Route::post('/records/{id}/attachments', [RecordAttachmentsController::class, 'store']);
         Route::delete('/records/{id}/attachments/{attachmentId}', [RecordAttachmentsController::class, 'destroy']);

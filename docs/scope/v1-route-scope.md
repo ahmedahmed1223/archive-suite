@@ -52,6 +52,7 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 | POST | `/v1/collaboration/rooms/{roomKey}/documents/{resourceId}` | v1 | — | version/byte-count summary only; content excluded |
 | GET/POST | `/v1/records`, `/v1/records/{id}` | v1 | — | POST creates a descriptive record; editor-gated |
 | GET/POST/DELETE | `/v1/records/{id}/attachments*` | v1 | — | durable multi-file attachments; writes editor-gated |
+| POST | `/v1/records/{id}/source-replacements`, `/v1/records/{id}/source-versions/{versionId}/restore` | v1 | — | editor/admin only; source version is snapshotted and restorable while record identity and related data remain intact |
 | GET/POST | `/v1/records/{id}/notes` | v1 | — | |
 | GET/POST | `/v1/records/{id}/comments` | v1 | — | |
 | GET | `/v1/records/{id}/history` | v1 | — | |

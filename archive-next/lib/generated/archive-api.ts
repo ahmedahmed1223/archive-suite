@@ -1606,6 +1606,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/source-replacements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace a record source while preserving its identity */
+        post: operations["replaceRecordSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/source-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List previous record sources */
+        get: operations["listRecordSourceVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/source-versions/{versionId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore a previous record source */
+        post: operations["restoreRecordSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/transcript": {
         parameters: {
             query?: never;
@@ -4307,6 +4358,9 @@ export interface components {
         RecordRelationResponse: components["schemas"]["OkEnvelope"] & {
             relation: components["schemas"]["RecordRelation"];
         };
+        RecordResponse: components["schemas"]["OkEnvelope"] & {
+            record: components["schemas"]["ArchiveRecord"];
+        };
         RecordSegment: {
             /** Format: date-time */
             createdAt: string;
@@ -4374,6 +4428,13 @@ export interface components {
         };
         RecordSnapshotsResponse: components["schemas"]["OkEnvelope"] & {
             snapshots: components["schemas"]["RecordSnapshot"][];
+        };
+        RecordSourceVersionsResponse: components["schemas"]["OkEnvelope"] & {
+            versions: {
+                createdAt: string;
+                fileName: string;
+                id: string;
+            }[];
         };
         RecordTriageFlag: {
             /** Format: date-time */
@@ -8463,6 +8524,83 @@ export interface operations {
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    replaceRecordSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Replaced record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    listRecordSourceVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Source versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordSourceVersionsResponse"];
+                };
+            };
+        };
+    };
+    restoreRecordSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                versionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Restored record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
         };
     };
     updateRecordTranscript: {

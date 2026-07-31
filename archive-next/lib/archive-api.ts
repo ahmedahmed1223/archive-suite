@@ -1388,6 +1388,9 @@ export interface ArchiveApiClient {
   recordHistory(recordId: string, params?: { limit?: number; page?: number; store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; pagination?: PaginationMeta }>>;
   sync(params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
+  replaceRecordSource(id: string, file: File, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
+  recordSourceVersions(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ versions: { id: string; createdAt: string; fileName: string }[] }>>;
+  restoreRecordSource(id: string, versionId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   createRecord(payload: CreateRecordPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   recordAttachments(id: string, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ attachments: RecordAttachment[] }>>;
   uploadRecordAttachments(id: string, files: File[], store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ attachments: RecordAttachment[] }>>;
@@ -2070,6 +2073,13 @@ export function createArchiveApiClient({
       return get<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>(`/sync${query ? `?${query}` : ""}`, options);
     },
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
+    replaceRecordSource: async (id: string, file: File, options?: AuthRequestOptions) => {
+      const body = new FormData(); body.append("file", file);
+      return request<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}/source-replacements`, { method: "POST", body, accessToken: options?.accessToken });
+    },
+    recordSourceVersions: (id: string, options?: AuthRequestOptions) => get<{ versions: { id: string; createdAt: string; fileName: string }[] }>(`/records/${encodeURIComponent(id)}/source-versions`, options),
+    restoreRecordSource: (id: string, versionId: string, options?: AuthRequestOptions) =>
+      post<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}/source-versions/${encodeURIComponent(versionId)}/restore`, undefined, options),
     createRecord: (payload: CreateRecordPayload, options?: AuthRequestOptions) =>
       post<{ record: ArchiveRecord }>("/records", payload, options),
     recordAttachments: (id: string, store = "archive-items", options?: AuthRequestOptions) => {

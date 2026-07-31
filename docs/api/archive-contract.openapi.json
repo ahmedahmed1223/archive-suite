@@ -3662,6 +3662,24 @@
         }
       }
     },
+    "/records/{id}/source-replacements": {
+      "post": {
+        "tags": ["Records"], "summary": "Replace a record source while preserving its identity", "operationId": "replaceRecordSource", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "required": ["file"], "properties": { "file": { "type": "string", "format": "binary" } } } } } },
+        "responses": { "200": { "description": "Replaced record", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordResponse" } } } }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/records/{id}/source-versions/{versionId}/restore": {
+      "post": {
+        "tags": ["Records"], "summary": "Restore a previous record source", "operationId": "restoreRecordSource", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "versionId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Restored record", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordResponse" } } } }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/records/{id}/source-versions": {
+      "get": { "tags": ["Records"], "summary": "List previous record sources", "operationId": "listRecordSourceVersions", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Source versions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSourceVersionsResponse" } } } } } }
+    },
     "/ingest/watched/scan": {
       "post": {
         "tags": ["Ingest"],
@@ -7863,6 +7881,13 @@
           "checksum": { "type": "string" }
         }
       },
+      "RecordResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          { "type": "object", "required": ["record"], "properties": { "record": { "$ref": "#/components/schemas/ArchiveRecord" } } }
+        ]
+      },
+      "RecordSourceVersionsResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["versions"], "properties": { "versions": { "type": "array", "items": { "type": "object", "required": ["id", "createdAt", "fileName"], "properties": { "id": { "type": "string" }, "createdAt": { "type": "string" }, "fileName": { "type": "string" } } } } } }] },
       "IngestScanResponse": {
         "allOf": [
           { "$ref": "#/components/schemas/OkEnvelope" },
