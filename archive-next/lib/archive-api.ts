@@ -326,6 +326,24 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-827: per-type metadata templates; applying one to a draft is client-side only.
+export interface MetadataTemplate {
+  id: string;
+  typeId: string | null;
+  name: string;
+  fields: Record<string, unknown>;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MetadataTemplateInput {
+  name?: string;
+  typeId?: string | null;
+  fields?: Record<string, unknown>;
+  tags?: string[];
+}
+
 // ponytail: shared DB-backed filename prefix rules (V1-858) — key is a project or type id.
 export interface NamingRule {
   key: string;
@@ -1183,6 +1201,10 @@ export interface ArchiveApiClient {
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  metadataTemplates(typeId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: MetadataTemplate[] }>>;
+  createMetadataTemplate(payload: MetadataTemplateInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
+  updateMetadataTemplate(id: string, payload: MetadataTemplateInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
+  deleteMetadataTemplate(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   namingRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: NamingRule[] }>>;
   upsertNamingRule(key: string, prefix: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: NamingRule }>>;
   deleteNamingRule(key: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -1723,6 +1745,14 @@ export function createArchiveApiClient({
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
+    metadataTemplates: (typeId?: string, options?: AuthRequestOptions) =>
+      get<{ templates: MetadataTemplate[] }>(`/metadata-templates${typeId ? `?${new URLSearchParams({ typeId })}` : ""}`, options),
+    createMetadataTemplate: (payload: MetadataTemplateInput, options?: AuthRequestOptions) =>
+      post<{ template: MetadataTemplate }>("/metadata-templates", payload, options),
+    updateMetadataTemplate: (id: string, payload: MetadataTemplateInput, options?: AuthRequestOptions) =>
+      patch<{ template: MetadataTemplate }>(`/metadata-templates/${encodeURIComponent(id)}`, payload, options),
+    deleteMetadataTemplate: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/metadata-templates/${encodeURIComponent(id)}`, undefined, options),
     namingRules: (options?: AuthRequestOptions) => get<{ rules: NamingRule[] }>("/naming-rules", options),
     upsertNamingRule: (key: string, prefix: string, options?: AuthRequestOptions) =>
       put<{ rule: NamingRule }>(`/naming-rules/${encodeURIComponent(key)}`, { prefix }, options),

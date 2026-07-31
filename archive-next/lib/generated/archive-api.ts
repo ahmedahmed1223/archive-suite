@@ -731,6 +731,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/metadata-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List metadata templates, optionally filtered by type */
+        get: operations["listMetadataTemplates"];
+        put?: never;
+        /** Create a metadata template */
+        post: operations["createMetadataTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/metadata-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a metadata template */
+        delete: operations["deleteMetadataTemplate"];
+        options?: never;
+        head?: never;
+        /** Update a metadata template */
+        patch: operations["updateMetadataTemplate"];
+        trace?: never;
+    };
     "/montage-projects": {
         parameters: {
             query?: never;
@@ -3319,6 +3355,41 @@ export interface components {
         };
         MentionableUsersResponse: components["schemas"]["OkEnvelope"] & {
             users: components["schemas"]["MentionableUser"][];
+        };
+        MetadataTemplate: {
+            /** Format: date-time */
+            createdAt: string;
+            fields: {
+                [key: string]: unknown;
+            };
+            id: string;
+            name: string;
+            tags: string[];
+            typeId: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        MetadataTemplateCreateRequest: {
+            fields?: {
+                [key: string]: unknown;
+            };
+            name: string;
+            tags?: string[];
+            typeId?: string | null;
+        };
+        MetadataTemplateResponse: components["schemas"]["OkEnvelope"] & {
+            template: components["schemas"]["MetadataTemplate"];
+        };
+        MetadataTemplatesResponse: components["schemas"]["OkEnvelope"] & {
+            templates: components["schemas"]["MetadataTemplate"][];
+        };
+        MetadataTemplateUpdateRequest: {
+            fields?: {
+                [key: string]: unknown;
+            };
+            name?: string;
+            tags?: string[];
+            typeId?: string | null;
         };
         MontageProject: {
             /** @description Timeline clips; item shape is client-defined and stored as-is. */
@@ -5929,6 +6000,100 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    listMetadataTemplates: {
+        parameters: {
+            query?: {
+                typeId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Metadata templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataTemplatesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createMetadataTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MetadataTemplateCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created template */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteMetadataTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateMetadataTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MetadataTemplateUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listMontageProjects: {

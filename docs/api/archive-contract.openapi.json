@@ -4333,6 +4333,74 @@
         }
       }
     },
+    "/metadata-templates": {
+      "get": {
+        "tags": ["Metadata Templates"],
+        "summary": "List metadata templates, optionally filtered by type",
+        "operationId": "listMetadataTemplates",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "typeId", "in": "query", "required": false, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Metadata templates",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MetadataTemplatesResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Metadata Templates"],
+        "summary": "Create a metadata template",
+        "operationId": "createMetadataTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MetadataTemplateCreateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created template",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MetadataTemplateResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/metadata-templates/{id}": {
+      "patch": {
+        "tags": ["Metadata Templates"],
+        "summary": "Update a metadata template",
+        "operationId": "updateMetadataTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MetadataTemplateUpdateRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated template",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MetadataTemplateResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Metadata Templates"],
+        "summary": "Delete a metadata template",
+        "operationId": "deleteMetadataTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/naming-rules": {
       "get": {
         "tags": ["Naming Rules"],
@@ -8003,6 +8071,63 @@
             "required": ["export"],
             "properties": {
               "export": { "$ref": "#/components/schemas/AccountExport" }
+            }
+          }
+        ]
+      },
+      "MetadataTemplate": {
+        "type": "object",
+        "required": ["id", "typeId", "name", "fields", "tags", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "typeId": { "type": "string", "nullable": true },
+          "name": { "type": "string" },
+          "fields": { "type": "object", "additionalProperties": true },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "MetadataTemplateCreateRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "typeId": { "type": "string", "nullable": true },
+          "fields": { "type": "object", "additionalProperties": true },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "MetadataTemplateUpdateRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "typeId": { "type": "string", "nullable": true },
+          "fields": { "type": "object", "additionalProperties": true },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "MetadataTemplatesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["templates"],
+            "properties": {
+              "templates": { "type": "array", "items": { "$ref": "#/components/schemas/MetadataTemplate" } }
+            }
+          }
+        ]
+      },
+      "MetadataTemplateResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["template"],
+            "properties": {
+              "template": { "$ref": "#/components/schemas/MetadataTemplate" }
             }
           }
         ]
