@@ -107,6 +107,22 @@ class SearchApiTest extends TestCase
         $this->assertSame(1, $response->json('facets.types.0.count'));
     }
 
+    public function test_it_filters_by_record_date_and_description_completeness(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [
+                ['uid' => 'dated-complete', 'title' => 'Complete', 'description' => 'Has a real description', 'eventDate' => '2026-07-01', 'type' => 'video'],
+                ['uid' => 'dated-incomplete', 'title' => 'Incomplete', 'eventDate' => '2026-07-15', 'type' => 'video'],
+            ],
+        ], $this->authHeaders())->assertOk();
+
+        $this->getJson('/api/v1/search?store=archive-items&dateFrom=2026-07-10&dateTo=2026-07-31&descriptionState=incomplete', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(1, 'records')
+            ->assertJsonPath('records.0.uid', 'dated-incomplete');
+    }
+
     public function test_it_supports_advanced_field_clauses_and_quoted_values(): void
     {
         $this->seedRecords();

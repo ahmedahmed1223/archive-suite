@@ -35,6 +35,9 @@ class SearchController extends Controller
             'tag' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
             'workflowStatus' => ['nullable', 'string'],
+            'dateFrom' => ['nullable', 'date_format:Y-m-d'],
+            'dateTo' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:dateFrom'],
+            'descriptionState' => ['nullable', 'string', 'in:complete,incomplete'],
             'cursor' => ['nullable', 'string'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
             // ponytail: not validated as `boolean` — that rule only accepts
@@ -396,6 +399,21 @@ class SearchController extends Controller
 
         $status = trim((string) ($filters['workflowStatus'] ?? $filters['status'] ?? ''));
         if ($status !== '' && $this->workflowStatus($record) !== $status) {
+            return false;
+        }
+
+        $recordDate = substr((string) ($record['eventDate'] ?? $record['date'] ?? $record['createdAt'] ?? $record['updatedAt'] ?? ''), 0, 10);
+        $dateFrom = (string) ($filters['dateFrom'] ?? '');
+        $dateTo = (string) ($filters['dateTo'] ?? '');
+        if (($dateFrom !== '' && ($recordDate === '' || $recordDate < $dateFrom)) || ($dateTo !== '' && ($recordDate === '' || $recordDate > $dateTo))) {
+            return false;
+        }
+
+        $descriptionState = (string) ($filters['descriptionState'] ?? '');
+        $hasDescription = trim((string) ($record['description'] ?? '')) !== '';
+        $descriptorStatus = (string) (($record['descriptorCompletion']['status'] ?? '') ?: '');
+        $complete = $descriptorStatus !== '' ? $descriptorStatus === 'green' : $hasDescription;
+        if (($descriptionState === 'complete' && ! $complete) || ($descriptionState === 'incomplete' && $complete)) {
             return false;
         }
 

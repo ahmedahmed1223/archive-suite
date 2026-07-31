@@ -76,10 +76,10 @@
 
 **Files:** `SearchApiTest.php`, `SemanticSearchTest.php`, `SavedSearchesApiTest.php`, `archive-next/app/search/page.tsx`.
 
-- [ ] Run the three Laravel search suites.
-- [ ] Verify text search plus type, taxonomy, tag, date, and descriptor-completion filtering, including saved searches.
-- [ ] Add a failing API test before any filter gap fix, then close AS-07.
-- [ ] Commit `docs(tasks): close AS-07 advanced search`.
+- [x] Run the three Laravel search suites.
+- [x] Verify text search plus type, taxonomy, tag, date, and descriptor-completion filtering, including saved searches.
+- [x] Add date-range and completeness filters to the canonical API and search UI, with a focused failing test first.
+- [x] Commit `feat(search): complete AS-07 advanced search`.
 
 ### Task 8: AS-08 Record detail and collaboration
 

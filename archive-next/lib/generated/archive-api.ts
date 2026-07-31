@@ -10218,6 +10218,12 @@ export interface operations {
         parameters: {
             query?: {
                 cursor?: string;
+                /** @description Include records dated on or after this archive/event date. */
+                dateFrom?: string;
+                /** @description Include records dated on or before this archive/event date. */
+                dateTo?: string;
+                /** @description Filter by descriptor completeness. */
+                descriptionState?: "complete" | "incomplete";
                 limit?: number;
                 /** @description Explicit search mode. transcript returns only matches from time-coded VTT/SRT cues; semantic falls back to keyword when embeddings are unavailable. */
                 mode?: "keyword" | "semantic" | "transcript";

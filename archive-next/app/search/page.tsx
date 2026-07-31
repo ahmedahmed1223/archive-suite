@@ -124,6 +124,9 @@ function SearchPageContent() {
   const [store, setStore] = useState(initialStore);
   const [typeFilter, setTypeFilter] = useState(initialType);
   const [tagFilter, setTagFilter] = useState(initialTag);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [descriptionState, setDescriptionState] = useState<"" | "complete" | "incomplete">("");
   const [searchMode, setSearchMode] = useState<SearchMode>(initialMode);
   const [viewMode, setViewMode] = useState<SearchViewMode>("cards");
   const [state, setState] = useState<SearchState>({ status: "idle" });
@@ -199,6 +202,9 @@ function SearchPageContent() {
         store: s,
         type: type !== "all" ? type : undefined,
         tag,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        descriptionState: descriptionState || undefined,
         limit: 100,
         mode
       });
@@ -221,7 +227,7 @@ function SearchPageContent() {
       setSuggestions(suggestionsResponse.ok ? suggestionsResponse.suggestions : []);
       updateParams(q, s, page, type, tag, mode);
     },
-    [api, searchMode, tagFilter, typeFilter, updateParams]
+    [api, dateFrom, dateTo, descriptionState, searchMode, tagFilter, typeFilter, updateParams]
   );
 
   useEffect(() => {
@@ -375,6 +381,9 @@ function SearchPageContent() {
     setStore("");
     setTypeFilter("all");
     setTagFilter("");
+    setDateFrom("");
+    setDateTo("");
+    setDescriptionState("");
     setCurrentPage(1);
     setPreviewId(null);
     setState({ status: "idle" });
@@ -484,6 +493,14 @@ function SearchPageContent() {
             <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
               <option value="">كل الوسوم</option>
               {tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label} ({tag.count})</option>)}
+            </select>
+          </label>
+          <label><span>من التاريخ</span><input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
+          <label><span>إلى التاريخ</span><input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
+          <label>
+            <span>اكتمال التوصيف</span>
+            <select value={descriptionState} onChange={(event) => setDescriptionState(event.target.value as "" | "complete" | "incomplete")}>
+              <option value="">كل المواد</option><option value="complete">مكتمل</option><option value="incomplete">ناقص</option>
             </select>
           </label>
           <label>

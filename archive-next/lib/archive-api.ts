@@ -1391,7 +1391,7 @@ export interface ArchiveApiClient {
   refresh(): Promise<ApiEnvelope<AuthSession>>;
   logout(options?: AuthRequestOptions): Promise<ApiEnvelope>;
   search(
-    params: { q?: string; store?: string; type?: string; subtype?: string; tag?: string; status?: string; cursor?: string; limit?: number; mode?: "keyword" | "semantic" | "transcript" },
+    params: { q?: string; store?: string; type?: string; subtype?: string; tag?: string; status?: string; dateFrom?: string; dateTo?: string; descriptionState?: "complete" | "incomplete"; cursor?: string; limit?: number; mode?: "keyword" | "semantic" | "transcript" },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ records: ArchiveRecord[]; facets?: SearchFacets; nextCursor?: string | null }>>;
   searchSuggestions(params: { q: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ suggestions: SearchSuggestion[] }>>;
@@ -1949,7 +1949,7 @@ export function createArchiveApiClient({
       cachedAccessToken = undefined;
       return response;
     },
-    search: ({ q = "", store = "", type = "", subtype = "", tag = "", status = "", cursor = "", limit = 20, mode = "keyword" }, options?: AuthRequestOptions) => {
+    search: ({ q = "", store = "", type = "", subtype = "", tag = "", status = "", dateFrom = "", dateTo = "", descriptionState = undefined, cursor = "", limit = 20, mode = "keyword" }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       if (store) params.set("store", store);
@@ -1957,6 +1957,9 @@ export function createArchiveApiClient({
       if (subtype) params.set("subtype", subtype);
       if (tag) params.set("tag", tag);
       if (status) params.set("status", status);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
+      if (descriptionState) params.set("descriptionState", descriptionState);
       if (cursor) params.set("cursor", cursor);
       if (mode !== "keyword") params.set("mode", mode);
       params.set("limit", String(clampApiLimit(limit, 20, 100)));
