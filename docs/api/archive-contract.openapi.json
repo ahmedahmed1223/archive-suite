@@ -4653,6 +4653,45 @@
         }
       }
     },
+    "/vocabulary/{id}/relink-preview": {
+      "get": {
+        "tags": ["Vocabulary Relink"],
+        "summary": "Preview records affected by deleting/renaming a vocabulary term",
+        "operationId": "previewVocabularyRelink",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Affected records",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VocabularyRelinkPreviewResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/vocabulary/{id}/relink": {
+      "post": {
+        "tags": ["Vocabulary Relink"],
+        "summary": "Relink (replace or remove) a vocabulary term across every affected record, then delete the term",
+        "operationId": "relinkVocabularyTerm",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": false,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VocabularyRelinkRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Relink result",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VocabularyRelinkResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/freeze": {
       "get": {
         "tags": ["Record Freeze"],
@@ -8558,6 +8597,46 @@
             "required": ["claim"],
             "properties": {
               "claim": { "anyOf": [{ "$ref": "#/components/schemas/RecordEditClaim" }, { "type": "null" }] }
+            }
+          }
+        ]
+      },
+      "VocabularyRelinkPreviewResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["term", "affectedCount", "records"],
+            "properties": {
+              "term": { "type": "string" },
+              "affectedCount": { "type": "integer", "minimum": 0 },
+              "records": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "title"],
+                  "properties": { "id": { "type": "string" }, "title": { "type": "string" } }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "VocabularyRelinkRequest": {
+        "type": "object",
+        "properties": {
+          "replacement": { "type": "string", "nullable": true, "maxLength": 200 }
+        }
+      },
+      "VocabularyRelinkResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["relinked", "replacement"],
+            "properties": {
+              "relinked": { "type": "array", "items": { "type": "string" } },
+              "replacement": { "type": "string", "nullable": true }
             }
           }
         ]

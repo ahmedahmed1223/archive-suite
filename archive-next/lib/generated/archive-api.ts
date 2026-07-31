@@ -2624,6 +2624,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vocabulary/{id}/relink": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Relink (replace or remove) a vocabulary term across every affected record, then delete the term */
+        post: operations["relinkVocabularyTerm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vocabulary/{id}/relink-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview records affected by deleting/renaming a vocabulary term */
+        get: operations["previewVocabularyRelink"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vocabulary/export": {
         parameters: {
             query?: never;
@@ -4745,6 +4779,21 @@ export interface components {
             };
             dryRun: boolean;
             merged: number;
+        };
+        VocabularyRelinkPreviewResponse: components["schemas"]["OkEnvelope"] & {
+            affectedCount: number;
+            records: {
+                id: string;
+                title: string;
+            }[];
+            term: string;
+        };
+        VocabularyRelinkRequest: {
+            replacement?: string | null;
+        };
+        VocabularyRelinkResponse: components["schemas"]["OkEnvelope"] & {
+            relinked: string[];
+            replacement: string | null;
         };
         VocabularyTerm: {
             aliases: string | null;
@@ -9979,6 +10028,59 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    relinkVocabularyTerm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["VocabularyRelinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Relink result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRelinkResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    previewVocabularyRelink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Affected records */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRelinkPreviewResponse"];
+                };
+            };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
         };

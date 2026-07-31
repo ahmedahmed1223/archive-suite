@@ -326,6 +326,13 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-850: preview + relink records affected by a deleted/changed vocabulary term.
+export interface VocabularyRelinkPreview {
+  term: string;
+  affectedCount: number;
+  records: Array<{ id: string; title: string }>;
+}
+
 // V1-866: enforced at the API level in RecordsController::bulk — admins can override.
 export interface RecordFreeze {
   recordId: string;
@@ -1265,6 +1272,8 @@ export interface ArchiveApiClient {
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  previewVocabularyRelink(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<VocabularyRelinkPreview>>;
+  relinkVocabularyTerm(id: string, replacement?: string | null, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relinked: string[]; replacement: string | null }>>;
   recordFreeze(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ freeze: RecordFreeze | null }>>;
   freezeRecord(recordId: string, reason: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ freeze: RecordFreeze }>>;
   unfreezeRecord(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -1825,6 +1834,10 @@ export function createArchiveApiClient({
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
+    previewVocabularyRelink: (id: string, options?: AuthRequestOptions) =>
+      get<VocabularyRelinkPreview>(`/vocabulary/${encodeURIComponent(id)}/relink-preview`, options),
+    relinkVocabularyTerm: (id: string, replacement?: string | null, options?: AuthRequestOptions) =>
+      post<{ relinked: string[]; replacement: string | null }>(`/vocabulary/${encodeURIComponent(id)}/relink`, { replacement }, options),
     recordFreeze: (recordId: string, options?: AuthRequestOptions) =>
       get<{ freeze: RecordFreeze | null }>(`/records/${encodeURIComponent(recordId)}/freeze`, options),
     freezeRecord: (recordId: string, reason: string, options?: AuthRequestOptions) =>
