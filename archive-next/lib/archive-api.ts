@@ -1398,6 +1398,7 @@ export interface ArchiveApiClient {
   previewBulkMacro(id: string, payload: BulkMacroTargetsPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<BulkMacroPreview>>;
   runBulkMacro(id: string, payload: RunBulkMacroPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: BulkMacroRun }>>;
   bulkMacroRuns(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ runs: BulkMacroRun[] }>>;
+  retryBulkMacroFailedTargets(id: string, runId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: BulkMacroRun }>>;
 }
 
 export interface AuthRequestOptions {
@@ -2294,6 +2295,8 @@ export function createArchiveApiClient({
     runBulkMacro: (id: string, payload: RunBulkMacroPayload, options?: AuthRequestOptions) =>
       post<{ run: BulkMacroRun }>(`/bulk-macros/${encodeURIComponent(id)}/run`, payload, options),
     bulkMacroRuns: (id: string, options?: AuthRequestOptions) =>
-      get<{ runs: BulkMacroRun[] }>(`/bulk-macros/${encodeURIComponent(id)}/runs`, options)
+      get<{ runs: BulkMacroRun[] }>(`/bulk-macros/${encodeURIComponent(id)}/runs`, options),
+    retryBulkMacroFailedTargets: (id: string, runId: string, options?: AuthRequestOptions) =>
+      post<{ run: BulkMacroRun }>(`/bulk-macros/${encodeURIComponent(id)}/runs/${encodeURIComponent(runId)}/retry-failed`, undefined, options)
   };
 }

@@ -69,6 +69,34 @@ class BulkMacroService
         ]);
     }
 
+    // V1-835: retries only the targets that failed in $run, re-checking permissions
+    // (controller requires editor) and current state (processTarget re-fetches each
+    // row fresh, so an already-deleted/changed record is reflected, not assumed).
+    public function retryFailed(BulkMacro $macro, BulkMacroRun $run, User $user): BulkMacroRun
+    {
+        $failedTargets = collect($run->results)
+            ->filter(fn (array $result): bool => in_array($result['status'] ?? null, ['failed', 'partial'], true))
+            ->map(fn (array $result): array => ['store' => $result['store'], 'id' => $result['id']])
+            ->values()
+            ->all();
+
+        $targets = $this->normalizeTargets($failedTargets);
+        $results = array_map(function (array $target) use ($macro, $user): array {
+            try {
+                return $this->processTarget($macro, $target, $user);
+            } catch (Throwable) {
+                return $this->failedTarget($macro, $target);
+            }
+        }, $targets);
+        $completed = count(array_filter($results, fn (array $result): bool => $result['status'] === 'completed'));
+
+        return BulkMacroRun::query()->create([
+            'id' => (string) Str::uuid(), 'macro_id' => $macro->id, 'user_id' => $user->id, 'macro_version' => $macro->version,
+            'retried_from_run_id' => $run->id, 'targets' => $targets, 'results' => $results, 'target_count' => count($targets),
+            'completed_count' => $completed, 'failed_count' => count($targets) - $completed,
+        ]);
+    }
+
     /** @param array<int, array<string, mixed>> $targets @return array<int, array{store: string, id: string}> */
     public function normalizeTargets(array $targets): array
     {

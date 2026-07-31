@@ -2660,6 +2660,27 @@
     "/bulk-macros/{id}/runs": {
       "get": { "tags": ["Bulk Macros"], "summary": "List persisted runs for an owned bulk macro", "operationId": "listBulkMacroRuns", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Bulk macro runs", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroRunsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/BulkMacroNotFound" } } }
     },
+    "/bulk-macros/{id}/runs/{runId}/retry-failed": {
+      "post": {
+        "tags": ["Bulk Macros"],
+        "summary": "Retry only the failed/partial targets of a prior run, re-checking permissions and current state",
+        "operationId": "retryBulkMacroFailedTargets",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "runId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "201": {
+            "description": "New run containing only the retried targets",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroRunResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/BulkMacroNotFound" }
+        }
+      }
+    },
     "/automation/rules": {
       "get": {
         "tags": ["Automation"],
@@ -6703,6 +6724,7 @@
       "BulkMacroRun": {
         "type": "object", "required": ["id", "macroId", "macroVersion", "targets", "results", "targetCount", "completedCount", "failedCount", "createdAt"], "properties": {
           "id": { "type": "string", "format": "uuid" }, "macroId": { "type": "string", "format": "uuid" }, "macroVersion": { "type": "integer", "minimum": 1 },
+          "retriedFromRunId": { "type": ["string", "null"], "format": "uuid" },
           "targets": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroTarget" } }, "results": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroTargetResult" } },
           "targetCount": { "type": "integer", "minimum": 1 }, "completedCount": { "type": "integer", "minimum": 0 }, "failedCount": { "type": "integer", "minimum": 0 }, "createdAt": { "type": ["string", "null"], "format": "date-time" }
         }

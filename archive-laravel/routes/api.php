@@ -386,6 +386,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/bulk-macros/{id}/preview', [BulkMacrosController::class, 'preview']);
         Route::post('/bulk-macros/{id}/run', [BulkMacrosController::class, 'run']);
         Route::get('/bulk-macros/{id}/runs', [BulkMacrosController::class, 'runs']);
+        Route::post('/bulk-macros/{id}/runs/{runId}/retry-failed', [BulkMacrosController::class, 'retryFailed']);
 
         // V1-721: registered before /users so the literal path isn't shadowed.
         Route::get('/users/mentionable', [UsersController::class, 'mentionable']);

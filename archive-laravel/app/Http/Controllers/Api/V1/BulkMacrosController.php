@@ -92,6 +92,19 @@ class BulkMacrosController extends Controller
         return response()->json(['ok' => true, 'runs' => $macro->runs()->latest()->get()->map(fn (BulkMacroRun $run) => $this->runResource($run))->values()]);
     }
 
+    // V1-835: retry only the failed/partial targets of a prior run.
+    public function retryFailed(Request $request, string $id, string $runId): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        $macro = $this->owned($request, $id);
+        if (! $macro) return $this->notFound();
+        $run = $macro->runs()->where('id', $runId)->first();
+        if (! $run) return $this->notFound();
+
+        $retryRun = $this->service->retryFailed($macro, $run, $this->user($request));
+        return response()->json(['ok' => true, 'run' => $this->runResource($retryRun)], 201);
+    }
+
     /** @return array<string, mixed> */
     private function validateMacro(Request $request, bool $creating): array
     {
@@ -155,7 +168,7 @@ class BulkMacrosController extends Controller
     /** @return array<string, mixed> */
     private function runResource(BulkMacroRun $run): array
     {
-        return ['id' => $run->id, 'macroId' => $run->macro_id, 'macroVersion' => $run->macro_version, 'targets' => $run->targets, 'results' => $run->results, 'targetCount' => $run->target_count, 'completedCount' => $run->completed_count, 'failedCount' => $run->failed_count, 'createdAt' => $run->created_at?->toIso8601String()];
+        return ['id' => $run->id, 'macroId' => $run->macro_id, 'macroVersion' => $run->macro_version, 'retriedFromRunId' => $run->retried_from_run_id, 'targets' => $run->targets, 'results' => $run->results, 'targetCount' => $run->target_count, 'completedCount' => $run->completed_count, 'failedCount' => $run->failed_count, 'createdAt' => $run->created_at?->toIso8601String()];
     }
 
     private function notFound(): JsonResponse

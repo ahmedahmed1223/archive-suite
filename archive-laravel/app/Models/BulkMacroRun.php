@@ -12,7 +12,7 @@ class BulkMacroRun extends Model
 
     protected $keyType = 'string';
     public $incrementing = false;
-    protected $fillable = ['id', 'macro_id', 'user_id', 'macro_version', 'targets', 'results', 'target_count', 'completed_count', 'failed_count'];
+    protected $fillable = ['id', 'macro_id', 'user_id', 'macro_version', 'retried_from_run_id', 'targets', 'results', 'target_count', 'completed_count', 'failed_count'];
 
     protected function casts(): array
     {

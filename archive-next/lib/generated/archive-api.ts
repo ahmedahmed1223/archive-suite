@@ -278,6 +278,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bulk-macros/{id}/runs/{runId}/retry-failed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry only the failed/partial targets of a prior run, re-checking permissions and current state */
+        post: operations["retryBulkMacroFailedTargets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/collaboration/rooms/{roomKey}/documents/{resourceId}": {
         parameters: {
             query?: never;
@@ -2830,6 +2847,8 @@ export interface components {
             macroId: string;
             macroVersion: number;
             results: components["schemas"]["BulkMacroTargetResult"][];
+            /** Format: uuid */
+            retriedFromRunId?: string | null;
             targetCount: number;
             targets: components["schemas"]["BulkMacroTarget"][];
         };
@@ -5150,6 +5169,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkMacroRunsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["BulkMacroNotFound"];
+        };
+    };
+    retryBulkMacroFailedTargets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description New run containing only the retried targets */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroRunResponse"];
                 };
             };
             401: components["responses"]["Error"];
