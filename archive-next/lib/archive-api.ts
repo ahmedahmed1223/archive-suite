@@ -580,6 +580,9 @@ export interface SavedSearch {
   createdAt: string | null;
   updatedAt: string | null;
   ownerId?: string;
+  departmentId?: string | null;
+  accessRole?: "owner" | "editor" | "viewer";
+  members?: Array<{ userId: string; role: "editor" | "viewer" }>;
   shared?: boolean;
   canManage?: boolean;
 }
@@ -588,6 +591,7 @@ export interface CreateSavedSearchPayload {
   name: string;
   query?: string;
   filters?: Record<string, unknown>;
+  departmentId?: string;
 }
 
 export interface Collection {
@@ -1574,7 +1578,7 @@ export interface ArchiveApiClient {
   savedSearches(options?: AuthRequestOptions): Promise<ApiEnvelope<{ searches: SavedSearch[] }>>;
   createSavedSearch(payload: CreateSavedSearchPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
   deleteSavedSearch(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
-  updateSavedSearch(id: string, payload: { shared: boolean }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
+  replaceSavedSearchAccess(id: string, payload: { departmentId?: string; members: Array<{ userId: string; role: "editor" | "viewer" }> }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
   copySavedSearch(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ search: SavedSearch }>>;
   collections(options?: AuthRequestOptions): Promise<ApiEnvelope<{ collections: Collection[] }>>;
   createCollection(payload: CreateCollectionPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ collection: Collection }>>;
@@ -2527,8 +2531,8 @@ export function createArchiveApiClient({
       post<{ search: SavedSearch }>("/saved-searches", payload, options),
     deleteSavedSearch: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/saved-searches/${encodeURIComponent(id)}`, undefined, options),
-    updateSavedSearch: (id: string, payload: { shared: boolean }, options?: AuthRequestOptions) =>
-      patch<{ search: SavedSearch }>(`/saved-searches/${encodeURIComponent(id)}`, payload, options),
+    replaceSavedSearchAccess: (id: string, payload: { departmentId?: string; members: Array<{ userId: string; role: "editor" | "viewer" }> }, options?: AuthRequestOptions) =>
+      put<{ search: SavedSearch }>(`/saved-searches/${encodeURIComponent(id)}/access`, payload, options),
     copySavedSearch: (id: string, options?: AuthRequestOptions) =>
       post<{ search: SavedSearch }>(`/saved-searches/${encodeURIComponent(id)}/copy`, undefined, options),
     collections: (options?: AuthRequestOptions) => get<{ collections: Collection[] }>("/collections", options),

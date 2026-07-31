@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use stdClass;
 
 class SavedSearchesController extends Controller
@@ -14,12 +15,15 @@ class SavedSearchesController extends Controller
     public function index(Request $request): JsonResponse
     {
         $userId = $this->userId($request);
-
         $searches = DB::table('saved_searches')
-            ->where(fn ($query) => $query->where('user_id', $userId)->orWhereNotNull('shared_at'))
-            ->orderByDesc('created_at')
+            ->leftJoin('saved_search_access as access', function ($join) use ($userId): void {
+                $join->on('access.saved_search_id', '=', 'saved_searches.id')->where('access.user_id', '=', $userId);
+            })
+            ->where(fn ($query) => $query->where('saved_searches.user_id', $userId)->orWhereNotNull('access.id'))
+            ->select('saved_searches.*', 'access.role as access_role')
+            ->orderByDesc('saved_searches.created_at')
             ->get()
-            ->map(fn (stdClass $row): array => $this->formatSearch($row, $request))
+            ->map(fn (stdClass $row): array => $this->formatSearch($row, $userId))
             ->values();
 
         return response()->json(['ok' => true, 'searches' => $searches]);
@@ -31,8 +35,8 @@ class SavedSearchesController extends Controller
             'name' => ['required', 'string', 'max:200'],
             'query' => ['nullable', 'string', 'max:500'],
             'filters' => ['nullable', 'array'],
+            'departmentId' => ['nullable', 'string', 'max:100'],
         ]);
-
         $userId = $this->userId($request);
         $now = now();
         $id = (string) Str::uuid();
@@ -43,72 +47,101 @@ class SavedSearchesController extends Controller
             'name' => trim((string) $validated['name']),
             'query' => $validated['query'] ?? null,
             'filters' => isset($validated['filters']) ? json_encode($validated['filters'], JSON_THROW_ON_ERROR) : null,
+            'department_id' => $validated['departmentId'] ?? null,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
 
-        $search = DB::table('saved_searches')->where('id', $id)->first();
+        return response()->json(['ok' => true, 'search' => $this->formatSearch($this->owned($id, $userId), $userId)], 201);
+    }
 
-        return response()->json([
-            'ok' => true,
-            'search' => $this->formatSearch($search, $request),
-        ], 201);
+    public function replaceAccess(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'departmentId' => ['nullable', 'string', 'max:100'],
+            'members' => ['present', 'array', 'max:100'],
+            'members.*.userId' => ['required', 'string', 'max:100', 'distinct'],
+            'members.*.role' => ['required', 'string', Rule::in(['editor', 'viewer'])],
+        ]);
+        $userId = $this->userId($request);
+        $search = $this->accessible($id, $userId);
+        if (! $search || ! $this->canManage($search, $userId)) return $this->notFound();
+
+        DB::transaction(function () use ($validated, $id): void {
+            DB::table('saved_search_access')->where('saved_search_id', $id)->delete();
+            $now = now();
+            $rows = array_map(fn (array $member): array => [
+                'id' => (string) Str::uuid(),
+                'saved_search_id' => $id,
+                'user_id' => $member['userId'],
+                'role' => $member['role'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], $validated['members']);
+            if ($rows !== []) DB::table('saved_search_access')->insert($rows);
+            DB::table('saved_searches')->where('id', $id)->update([
+                'department_id' => $validated['departmentId'] ?? null,
+                'shared_at' => $rows === [] ? null : $now,
+                'updated_at' => $now,
+            ]);
+        });
+
+        return response()->json(['ok' => true, 'search' => $this->formatSearch($this->accessible($id, $userId), $userId)]);
     }
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $userId = $this->userId($request);
-
-        $deleted = DB::table('saved_searches')->where('id', $id)
-            ->when(! $this->isAdmin($request), fn ($query) => $query->where('user_id', $userId))
-            ->delete();
-
-        if ($deleted < 1) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Saved search not found.',
-                'code' => 'not_found',
-            ], 404);
-        }
+        $deleted = DB::table('saved_searches')->where('id', $id)->where('user_id', $this->userId($request))->delete();
+        if ($deleted < 1) return $this->notFound();
 
         return response()->json(['ok' => true, 'deleted' => true]);
     }
 
-    public function update(Request $request, string $id): JsonResponse
-    {
-        $validated = $request->validate(['shared' => ['required', 'boolean']]);
-        $userId = $this->userId($request);
-        $updated = DB::table('saved_searches')->where('id', $id)->when(! $this->isAdmin($request), fn ($query) => $query->where('user_id', $userId))->update(['shared_at' => $validated['shared'] ? now() : null, 'updated_at' => now()]);
-        if ($updated < 1) return response()->json(['ok' => false, 'error' => 'Saved search not found.', 'code' => 'not_found'], 404);
-        return response()->json(['ok' => true, 'search' => $this->formatSearch(DB::table('saved_searches')->where('id', $id)->first(), $request)]);
-    }
-
     public function copy(Request $request, string $id): JsonResponse
     {
-        $source = DB::table('saved_searches')->where('id', $id)->where(fn ($query) => $query->where('user_id', $this->userId($request))->orWhereNotNull('shared_at'))->first();
-        if (! $source instanceof stdClass) return response()->json(['ok' => false, 'error' => 'Saved search not found.', 'code' => 'not_found'], 404);
-        $id = (string) Str::uuid(); $now = now();
-        DB::table('saved_searches')->insert(['id' => $id, 'user_id' => $this->userId($request), 'name' => $source->name, 'query' => $source->query, 'filters' => $source->filters, 'created_at' => $now, 'updated_at' => $now]);
-        return response()->json(['ok' => true, 'search' => $this->formatSearch(DB::table('saved_searches')->where('id', $id)->first(), $request)], 201);
+        $userId = $this->userId($request);
+        $source = $this->accessible($id, $userId);
+        if (! $source) return $this->notFound();
+
+        $copyId = (string) Str::uuid();
+        $now = now();
+        DB::table('saved_searches')->insert([
+            'id' => $copyId,
+            'user_id' => $userId,
+            'name' => $source->name,
+            'query' => $source->query,
+            'filters' => $source->filters,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        return response()->json(['ok' => true, 'search' => $this->formatSearch($this->owned($copyId, $userId), $userId)], 201);
     }
 
-    private function userId(Request $request): string
+    private function accessible(string $id, string $userId): ?stdClass
     {
-        $user = $request->attributes->get('archive_user');
-
-        return (string) $user?->getKey();
+        return DB::table('saved_searches')
+            ->leftJoin('saved_search_access as access', function ($join) use ($userId): void {
+                $join->on('access.saved_search_id', '=', 'saved_searches.id')->where('access.user_id', '=', $userId);
+            })
+            ->where('saved_searches.id', $id)
+            ->where(fn ($query) => $query->where('saved_searches.user_id', $userId)->orWhereNotNull('access.id'))
+            ->select('saved_searches.*', 'access.role as access_role')
+            ->first();
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function isAdmin(Request $request): bool { return ($request->attributes->get('archive_user')?->role ?? null) === 'admin'; }
+    private function owned(string $id, string $userId): ?stdClass { return DB::table('saved_searches')->where('id', $id)->where('user_id', $userId)->first(); }
+    private function userId(Request $request): string { return (string) $request->attributes->get('archive_user')?->getKey(); }
+    private function canManage(stdClass $search, string $userId): bool { return $search->user_id === $userId || ($search->access_role ?? null) === 'editor'; }
 
-    private function formatSearch(?stdClass $row, Request $request): array
+    /** @return array<string, mixed> */
+    private function formatSearch(?stdClass $row, string $userId): array
     {
-        if (! $row) {
-            return [];
-        }
+        if (! $row) return [];
+        $role = $row->user_id === $userId ? 'owner' : $row->access_role;
+        $canManage = in_array($role, ['owner', 'editor'], true);
+        $hasMembers = DB::table('saved_search_access')->where('saved_search_id', $row->id)->exists();
+        $members = $canManage ? DB::table('saved_search_access')->where('saved_search_id', $row->id)->orderBy('created_at')->get(['user_id', 'role'])->map(fn (stdClass $member): array => ['userId' => $member->user_id, 'role' => $member->role])->values()->all() : [];
 
         return [
             'id' => $row->id,
@@ -118,8 +151,13 @@ class SavedSearchesController extends Controller
             'createdAt' => $row->created_at,
             'updatedAt' => $row->updated_at,
             'ownerId' => $row->user_id,
-            'shared' => $row->shared_at !== null,
-            'canManage' => $row->user_id === $this->userId($request) || $this->isAdmin($request),
+            'departmentId' => $row->department_id,
+            'accessRole' => $role,
+            'members' => $members,
+            'shared' => $hasMembers,
+            'canManage' => $canManage,
         ];
     }
+
+    private function notFound(): JsonResponse { return response()->json(['ok' => false, 'error' => 'Saved search not found.', 'code' => 'not_found'], 404); }
 }

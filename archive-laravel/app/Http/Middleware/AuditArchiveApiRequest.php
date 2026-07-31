@@ -65,6 +65,7 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/department-quality-rules/preview'] => ['department_quality_rules.preview', 'department_quality_rule'],
             ['POST', 'api/v1/inbox/{id}/department-routing/preview'] => ['inbox_department_routing.preview', 'inbox_item'],
             ['POST', 'api/v1/inbox/{id}/department-routing'] => ['inbox_department_routing.apply', 'inbox_item'],
+            ['PUT', 'api/v1/saved-searches/{id}/access'] => ['saved_search_access.replace', 'saved_search'],
             ['POST', 'api/v1/records/{id}/source-versions/{versionId}/restore'] => ['record_source.restore', 'record_source'],
             ['DELETE', 'api/v1/records/{id}/attachments/{attachmentId}'] => ['record_attachments.delete', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
@@ -115,6 +116,10 @@ class AuditArchiveApiRequest
         }
 
         if (in_array($route, ['api/v1/inbox/{id}/department-routing/preview', 'api/v1/inbox/{id}/department-routing'], true)) {
+            $resourceId = $request->route('id');
+        }
+
+        if ($route === 'api/v1/saved-searches/{id}/access') {
             $resourceId = $request->route('id');
         }
 

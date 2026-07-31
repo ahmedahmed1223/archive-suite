@@ -62,16 +62,18 @@ class SavedSearchesApiTest extends TestCase
             ->assertJsonCount(0, 'searches');
     }
 
-    public function test_owner_can_share_a_search_read_only_with_another_user(): void
+    public function test_owner_can_share_a_search_explicitly_with_another_user(): void
     {
         $created = $this->postJson('/api/v1/saved-searches', ['name' => 'فريق', 'query' => 'video'], $this->authHeaders())->assertCreated();
         $id = $created->json('search.id');
-        $this->patchJson('/api/v1/saved-searches/'.$id, ['shared' => true], $this->authHeaders())->assertOk()->assertJsonPath('search.shared', true);
 
-        \App\Models\User::query()->firstOrCreate(['email' => 'reader@example.test'], ['name' => 'Reader', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password')]);
+        $reader = \App\Models\User::query()->firstOrCreate(['email' => 'reader@example.test'], ['name' => 'Reader', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password')]);
+        $this->putJson('/api/v1/saved-searches/'.$id.'/access', ['departmentId' => 'newsroom', 'members' => [['userId' => (string) $reader->getKey(), 'role' => 'viewer']]], $this->authHeaders())
+            ->assertOk()->assertJsonPath('search.departmentId', 'newsroom')->assertJsonPath('search.members.0.role', 'viewer');
+        $this->assertDatabaseHas('audit_logs', ['event' => 'saved_search_access.replace', 'resource_id' => $id]);
         $token = $this->postJson('/api/v1/auth/login', ['email' => 'reader@example.test', 'password' => 'secret-password'])->json('accessToken');
-        $this->getJson('/api/v1/saved-searches', ['Authorization' => 'Bearer '.$token])->assertOk()->assertJsonCount(1, 'searches')->assertJsonPath('searches.0.shared', true)->assertJsonPath('searches.0.canManage', false);
-        $this->patchJson('/api/v1/saved-searches/'.$id, ['shared' => false], ['Authorization' => 'Bearer '.$token])->assertNotFound();
+        $this->getJson('/api/v1/saved-searches', ['Authorization' => 'Bearer '.$token])->assertOk()->assertJsonCount(1, 'searches')->assertJsonPath('searches.0.shared', true)->assertJsonPath('searches.0.accessRole', 'viewer')->assertJsonPath('searches.0.canManage', false);
+        $this->putJson('/api/v1/saved-searches/'.$id.'/access', ['members' => []], ['Authorization' => 'Bearer '.$token])->assertNotFound();
         $this->deleteJson('/api/v1/saved-searches/'.$id, [], ['Authorization' => 'Bearer '.$token])->assertNotFound();
 
         $copy = $this->postJson('/api/v1/saved-searches/'.$id.'/copy', [], ['Authorization' => 'Bearer '.$token])
@@ -80,6 +82,19 @@ class SavedSearchesApiTest extends TestCase
             ->assertJsonPath('search.shared', false)
             ->assertJsonPath('search.canManage', true);
         $this->assertNotSame($id, $copy->json('search.id'));
+    }
+
+    public function test_editor_can_manage_members_without_revealing_a_personal_search(): void
+    {
+        $created = $this->postJson('/api/v1/saved-searches', ['name' => 'خاص', 'query' => 'video'], $this->authHeaders())->assertCreated();
+        $id = $created->json('search.id');
+        $editor = \App\Models\User::query()->create(['email' => 'editor@example.test', 'name' => 'Editor', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password')]);
+        $viewer = \App\Models\User::query()->create(['email' => 'viewer@example.test', 'name' => 'Viewer', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password')]);
+        $this->putJson('/api/v1/saved-searches/'.$id.'/access', ['members' => [['userId' => (string) $editor->getKey(), 'role' => 'editor']]], $this->authHeaders())->assertOk();
+        $editorToken = $this->postJson('/api/v1/auth/login', ['email' => 'editor@example.test', 'password' => 'secret-password'])->json('accessToken');
+        $this->putJson('/api/v1/saved-searches/'.$id.'/access', ['members' => [['userId' => (string) $editor->getKey(), 'role' => 'editor'], ['userId' => (string) $viewer->getKey(), 'role' => 'viewer']]], ['Authorization' => 'Bearer '.$editorToken])->assertOk()->assertJsonPath('search.members.1.role', 'viewer');
+        $viewerToken = $this->postJson('/api/v1/auth/login', ['email' => 'viewer@example.test', 'password' => 'secret-password'])->json('accessToken');
+        $this->getJson('/api/v1/saved-searches', ['Authorization' => 'Bearer '.$viewerToken])->assertOk()->assertJsonCount(1, 'searches');
     }
 
     public function test_it_rejects_invalid_saved_search_payload(): void

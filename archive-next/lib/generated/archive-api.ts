@@ -2125,8 +2125,24 @@ export interface paths {
         delete: operations["deleteSavedSearch"];
         options?: never;
         head?: never;
-        /** Change team sharing for an owned saved search */
-        patch: operations["updateSavedSearch"];
+        patch?: never;
+        trace?: never;
+    };
+    "/saved-searches/{id}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace explicit department access for an owned or editable saved search */
+        put: operations["replaceSavedSearchAccess"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/saved-searches/{id}/copy": {
@@ -4846,11 +4862,15 @@ export interface components {
             synthetic: true;
         };
         SavedSearch: {
+            /** @enum {string} */
+            accessRole: "owner" | "editor" | "viewer";
             canManage: boolean;
             /** Format: date-time */
             createdAt: string | null;
+            departmentId: string | null;
             filters: Record<string, never> | null;
             id: string;
+            members: components["schemas"]["SavedSearchMember"][];
             name: string;
             ownerId: string;
             query: string | null;
@@ -4858,7 +4878,12 @@ export interface components {
             /** Format: date-time */
             updatedAt: string | null;
         };
+        SavedSearchAccessRequest: {
+            departmentId?: string;
+            members: components["schemas"]["SavedSearchMember"][];
+        };
         SavedSearchCreateRequest: {
+            departmentId?: string;
             filters?: Record<string, never>;
             name: string;
             query?: string;
@@ -4866,11 +4891,13 @@ export interface components {
         SavedSearchesResponse: components["schemas"]["OkEnvelope"] & {
             searches: components["schemas"]["SavedSearch"][];
         };
+        SavedSearchMember: {
+            /** @enum {string} */
+            role: "editor" | "viewer";
+            userId: string;
+        };
         SavedSearchResponse: components["schemas"]["OkEnvelope"] & {
             search: components["schemas"]["SavedSearch"];
-        };
-        SavedSearchUpdateRequest: {
-            shared: boolean;
         };
         ScheduledUpload: {
             attempts: number;
@@ -9661,7 +9688,7 @@ export interface operations {
             404: components["responses"]["Error"];
         };
     };
-    updateSavedSearch: {
+    replaceSavedSearchAccess: {
         parameters: {
             query?: never;
             header?: never;
@@ -9672,7 +9699,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SavedSearchUpdateRequest"];
+                "application/json": components["schemas"]["SavedSearchAccessRequest"];
             };
         };
         responses: {
