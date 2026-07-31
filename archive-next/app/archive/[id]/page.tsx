@@ -22,6 +22,7 @@ import {
   type ArchiveSuggestion,
   type CreateRelationPayload,
   type RecordComment,
+  type RecordFieldRequest,
   type RecordHistoryEntry,
   type RecordNote,
   type RelationGraphEdge,
@@ -58,6 +59,9 @@ type DetailState =
       comments: RecordComment[];
       commentsLoading: boolean;
       commentsError: string | null;
+      fieldRequests: RecordFieldRequest[];
+      fieldRequestsLoading: boolean;
+      fieldRequestsError: string | null;
       history: RecordHistoryEntry[];
       historyLoading: boolean;
       historyError: string | null;
@@ -593,6 +597,134 @@ function RecordCommentsPanel({
   );
 }
 
+export function RecordFieldRequestsPanel({
+  requests,
+  loading,
+  error,
+  onCreate,
+  onResolve,
+  canEdit
+}: Readonly<{
+  requests: RecordFieldRequest[];
+  loading: boolean;
+  error: string | null;
+  onCreate: (payload: { field: string; message: string; assignee?: string; dueDate?: string }) => Promise<void>;
+  onResolve: (id: string) => Promise<void>;
+  canEdit: boolean;
+}>) {
+  const [field, setField] = useState("");
+  const [message, setMessage] = useState("");
+  const [assignee, setAssignee] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+  const openRequests = requests.filter((request) => !request.resolvedAt);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!field.trim() || !message.trim() || busy) return;
+
+    setBusy(true);
+    setStatus("");
+    try {
+      await onCreate({
+        field: field.trim(),
+        message: message.trim(),
+        ...(assignee.trim() ? { assignee: assignee.trim() } : {}),
+        ...(dueDate ? { dueDate } : {})
+      });
+      setField("");
+      setMessage("");
+      setAssignee("");
+      setDueDate("");
+      setStatus("تم إسناد طلب الاستكمال.");
+    } catch (submitError) {
+      setStatus(submitError instanceof Error ? submitError.message : "تعذر إسناد الطلب.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleResolve(id: string) {
+    if (busy) return;
+    setBusy(true);
+    setStatus("");
+    try {
+      await onResolve(id);
+      setStatus("تم اعتماد إغلاق الطلب.");
+    } catch (resolveError) {
+      setStatus(resolveError instanceof Error ? resolveError.message : "تعذر حل الطلب.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <article className="panel">
+      <div className="panel-section-header panel-title-row">
+        <div>
+          <h2>طلبات استكمال البيانات</h2>
+          <p className="helper-text">إسناد عنصر ناقص إلى زميل أو مالك الحقل مع موعد متابعة اختياري.</p>
+        </div>
+        <span className="badge">{openRequests.length} مفتوحة</span>
+      </div>
+
+      {loading ? <Skeleton label="جار تحميل طلبات الاستكمال..." /> : null}
+      {error ? <p className="form-status" role="alert">{error}</p> : null}
+
+      {canEdit ? (
+        <form className="auth-form record-note-form" onSubmit={handleSubmit}>
+          <label>الحقل الناقص
+            <input value={field} onChange={(event) => setField(event.target.value)} placeholder="مثال: تاريخ الإنتاج" required />
+          </label>
+          <label>المطلوب
+            <textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={2} placeholder="ما الذي نحتاج إليه ولماذا؟" required />
+          </label>
+          <div className="form-grid">
+            <label>المكلّف (اختياري)
+              <input value={assignee} onChange={(event) => setAssignee(event.target.value)} placeholder="الاسم أو البريد" />
+            </label>
+            <label>موعد المتابعة (اختياري)
+              <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+            </label>
+          </div>
+          <button type="submit" className="button button-secondary" disabled={busy || !field.trim() || !message.trim()}>
+            {busy ? "جار الإسناد..." : "إسناد طلب"}
+          </button>
+          {status ? <p className="form-status">{status}</p> : null}
+        </form>
+      ) : null}
+
+      {!loading && requests.length ? (
+        <ul className="record-note-list">
+          {requests.map((request) => (
+            <li key={request.id}>
+              <div>
+                <div className="helper-row">
+                  <strong>{request.field}</strong>
+                  <span className="badge">{request.resolvedAt ? "مغلق" : "مفتوح"}</span>
+                </div>
+                <p>{request.message}</p>
+                <small className="helper-text">
+                  {request.assignee ? `المكلّف: ${request.assignee}` : "من دون مكلّف"}
+                  {request.dueDate ? ` · المتابعة: ${request.dueDate}` : ""}
+                </small>
+              </div>
+              {canEdit && !request.resolvedAt ? (
+                <button type="button" className="button button-secondary button-sm" onClick={() => void handleResolve(request.id)} disabled={busy}>
+                  تم الاستكمال
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : !loading ? (
+        <EmptyState title="لا توجد طلبات استكمال" description="أنشئ طلباً عندما تحتاج بيانات من عضو آخر قبل اعتماد المادة." />
+      ) : null}
+    </article>
+  );
+}
+
 function historyEventLabel(entry: RecordHistoryEntry) {
   const labels: Record<string, string> = {
     "record_notes.create": "إضافة ملاحظة خاصة",
@@ -1076,6 +1208,23 @@ export default function ArchiveDetailPage() {
       : current);
   }
 
+  async function handleCreateFieldRequest(payload: { field: string; message: string; assignee?: string; dueDate?: string }) {
+    if (state.status !== "ready") return;
+    const response = await api.createRecordFieldRequest(id, payload);
+    if (!response.ok) throw new Error(response.error || "تعذر إنشاء طلب الاستكمال.");
+    setState((current) => current.status === "ready"
+      ? { ...current, fieldRequests: [...current.fieldRequests, response.request] }
+      : current);
+  }
+
+  async function handleResolveFieldRequest(requestId: string) {
+    const response = await api.resolveFieldRequest(requestId);
+    if (!response.ok) throw new Error(response.error || "تعذر حل طلب الاستكمال.");
+    setState((current) => current.status === "ready"
+      ? { ...current, fieldRequests: current.fieldRequests.map((request) => request.id === requestId ? response.request : request) }
+      : current);
+  }
+
   const detailDescription =
     state.status === "ready"
       ? state.record.description || "تفاصيل السجل وحقوقه في عرض تشغيلي مركز."
@@ -1116,6 +1265,9 @@ export default function ArchiveDetailPage() {
         comments: [],
         commentsLoading: true,
         commentsError: null,
+        fieldRequests: [],
+        fieldRequestsLoading: true,
+        fieldRequestsError: null,
         history: [],
         historyLoading: true,
         historyError: null
@@ -1193,6 +1345,29 @@ export default function ArchiveDetailPage() {
                 ...current,
                 commentsLoading: false,
                 commentsError: error instanceof Error ? error.message : "تعذر تحميل التعليقات."
+              }
+            : current);
+        });
+
+      void api.recordFieldRequests(id)
+        .then((response) => {
+          if (!active) return;
+          setState((current) => current.status === "ready"
+            ? {
+                ...current,
+                fieldRequests: response.ok ? response.requests : [],
+                fieldRequestsLoading: false,
+                fieldRequestsError: response.ok ? null : response.error || "تعذر تحميل طلبات الاستكمال."
+              }
+            : current);
+        })
+        .catch((error) => {
+          if (!active) return;
+          setState((current) => current.status === "ready"
+            ? {
+                ...current,
+                fieldRequestsLoading: false,
+                fieldRequestsError: error instanceof Error ? error.message : "تعذر تحميل طلبات الاستكمال."
               }
             : current);
         });
@@ -1519,6 +1694,14 @@ export default function ArchiveDetailPage() {
               error={state.commentsError}
               onCreate={handleCreateComment}
               onDelete={handleDeleteComment}
+            />
+            <RecordFieldRequestsPanel
+              requests={state.fieldRequests}
+              loading={state.fieldRequestsLoading}
+              error={state.fieldRequestsError}
+              onCreate={handleCreateFieldRequest}
+              onResolve={handleResolveFieldRequest}
+              canEdit={canEditRecords}
             />
           </div>
 

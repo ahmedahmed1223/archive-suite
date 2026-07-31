@@ -87,8 +87,10 @@
 
 - [ ] Run the four Laravel collaboration suites.
 - [ ] Verify preview/detail, safe description editing, comments, and linked follow-up assignment/claims.
-- [ ] Add a failing test before any collaboration gap fix, then close AS-08.
-- [ ] Commit `docs(tasks): close AS-08 record collaboration`.
+- [x] Added coverage for the field-completion assignment panel and connected
+  it to the existing authenticated Laravel API; verified note/comment/claim
+  suites (23 tests/181 assertions), the UI test, and typecheck.
+- [x] Commit `feat(records): complete AS-08 record collaboration`.
 
 ### Task 9: AS-09 Assisted AI services
 
