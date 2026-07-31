@@ -1550,6 +1550,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/department-handoffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a department handoff without changing record ownership */
+        post: operations["createDepartmentHandoff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/edit-claim": {
         parameters: {
             query?: never;
@@ -3823,6 +3840,25 @@ export interface components {
         };
         DepartmentFieldOwnersResponse: components["schemas"]["OkEnvelope"] & {
             owners: components["schemas"]["DepartmentFieldOwner"][];
+        };
+        DepartmentHandoff: {
+            fromDepartmentId?: string;
+            id?: string;
+            receivedBy?: string | null;
+            recordId?: string;
+            sentBy?: string;
+            summary?: {
+                [key: string]: unknown;
+            };
+            toDepartmentId?: string;
+        };
+        DepartmentHandoffRequest: {
+            fromDepartmentId: string;
+            receivedBy?: string;
+            toDepartmentId: string;
+        };
+        DepartmentHandoffResponse: components["schemas"]["OkEnvelope"] & {
+            handoff?: components["schemas"]["DepartmentHandoff"];
         };
         DepartmentQualityPreviewRequest: {
             departmentId: string;
@@ -8651,6 +8687,32 @@ export interface operations {
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    createDepartmentHandoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentHandoffRequest"];
+            };
+        };
+        responses: {
+            /** @description Handoff */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentHandoffResponse"];
+                };
+            };
         };
     };
     getRecordEditClaim: {

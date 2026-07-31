@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\DepartmentQualityRulesController;
 use App\Http\Controllers\Api\V1\DepartmentFieldOwnersController;
 use App\Http\Controllers\Api\V1\DepartmentTemplateMetricsController;
+use App\Http\Controllers\Api\V1\DepartmentHandoffController;
 use App\Http\Controllers\Api\V1\DepartmentRoutingController;
 use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\ProjectsController;
@@ -286,6 +287,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/department-field-owners', [DepartmentFieldOwnersController::class, 'index']);
         Route::put('/department-field-owners', [DepartmentFieldOwnersController::class, 'replace']);
         Route::get('/department-template-metrics', [DepartmentTemplateMetricsController::class, 'index']);
+        Route::post('/records/{id}/department-handoffs', [DepartmentHandoffController::class, 'store']);
         Route::post('/inbox/{id}/department-routing/preview', [DepartmentRoutingController::class, 'preview']);
         Route::post('/inbox/{id}/department-routing', [DepartmentRoutingController::class, 'apply']);
         Route::get('/naming-rules', [NamingRulesController::class, 'index']);

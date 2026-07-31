@@ -351,6 +351,7 @@ export interface RecordFieldRequestInput {
 
 export interface DepartmentFieldOwner { id: string; departmentId: string; field: string; owner: string; }
 export interface DepartmentTemplateMetrics { departmentId: string; templateCount: number; publishedTemplateCount: number; qualityRuleCount: number; recordCount: number; missingFieldCounts: Record<string, number>; }
+export interface DepartmentHandoff { id: string; recordId: string; fromDepartmentId: string; toDepartmentId: string; sentBy: string; receivedBy: string | null; summary: { openFieldRequests: number; hasRights: boolean; openComments: number }; }
 
 // V1-868: last recorded source per metadata field, opt-in via bulkRecords' fieldSources.
 export interface RecordFieldSource {
@@ -1392,6 +1393,7 @@ export interface ArchiveApiClient {
   departmentFieldOwners(departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ owners: DepartmentFieldOwner[] }>>;
   replaceDepartmentFieldOwners(departmentId: string, owners: Array<{ field: string; owner: string }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ owners: DepartmentFieldOwner[] }>>;
   departmentTemplateMetrics(departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ metrics: DepartmentTemplateMetrics }>>;
+  createDepartmentHandoff(recordId: string, payload: { fromDepartmentId: string; toDepartmentId: string; receivedBy?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ handoff: DepartmentHandoff }>>;
   recordFieldRequests(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ requests: RecordFieldRequest[] }>>;
   createRecordFieldRequest(recordId: string, payload: RecordFieldRequestInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: RecordFieldRequest }>>;
   resolveFieldRequest(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: RecordFieldRequest }>>;
@@ -1989,6 +1991,7 @@ export function createArchiveApiClient({
     departmentFieldOwners: (departmentId: string, options?: AuthRequestOptions) => get<{ owners: DepartmentFieldOwner[] }>(`/department-field-owners?${new URLSearchParams({ departmentId })}`, options),
     replaceDepartmentFieldOwners: (departmentId: string, owners: Array<{ field: string; owner: string }>, options?: AuthRequestOptions) => put<{ owners: DepartmentFieldOwner[] }>("/department-field-owners", { departmentId, owners }, options),
     departmentTemplateMetrics: (departmentId: string, options?: AuthRequestOptions) => get<{ metrics: DepartmentTemplateMetrics }>(`/department-template-metrics?${new URLSearchParams({ departmentId })}`, options),
+    createDepartmentHandoff: (recordId: string, payload: { fromDepartmentId: string; toDepartmentId: string; receivedBy?: string }, options?: AuthRequestOptions) => post<{ handoff: DepartmentHandoff }>(`/records/${encodeURIComponent(recordId)}/department-handoffs`, payload, options),
     recordFieldRequests: (recordId: string, options?: AuthRequestOptions) =>
       get<{ requests: RecordFieldRequest[] }>(`/records/${encodeURIComponent(recordId)}/field-requests`, options),
     createRecordFieldRequest: (recordId: string, payload: RecordFieldRequestInput, options?: AuthRequestOptions) =>
