@@ -2399,7 +2399,8 @@ export interface paths {
         get: operations["getShare"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Immediately revoke a share link */
+        delete: operations["revokeShare"];
         options?: never;
         head?: never;
         patch?: never;
@@ -10633,6 +10634,23 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    revokeShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             404: components["responses"]["Error"];
         };
     };

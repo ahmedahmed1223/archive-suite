@@ -1569,6 +1569,7 @@ export interface ArchiveApiClient {
   cancelScheduledUpload(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ schedule: ScheduledUpload }>>;
   retryScheduledUpload(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ schedule: ScheduledUpload }>>;
   share(token: string, password?: string): Promise<ApiEnvelope<{ records: ArchiveRecord[]; scope: Record<string, unknown>; permission?: string }>>;
+  revokeShare(token: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
@@ -2466,6 +2467,7 @@ export function createArchiveApiClient({
       post<{ schedule: ScheduledUpload }>(`/uploads/schedules/${encodeURIComponent(id)}/retry`, undefined, options),
     share: (token: string, password?: string) =>
       get(`/share/${encodeURIComponent(token)}`, password ? { headers: { "X-Share-Password": password } } : undefined),
+    revokeShare: (token: string, options?: AuthRequestOptions) => del<{ deleted: boolean }>(`/share/${encodeURIComponent(token)}`, undefined, options),
     files: (params?: { q?: string }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.q) queryParams.set("q", params.q);

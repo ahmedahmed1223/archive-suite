@@ -77,6 +77,14 @@ class ShareController extends Controller
         ]);
     }
 
+    public function destroy(Request $request, string $token): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        $deleted = ShareLink::query()->where('token', $token)->delete();
+        if ($deleted < 1) return response()->json(ApiError::envelope('Share link not found.', 404), 404);
+        return response()->json(['ok' => true, 'deleted' => true]);
+    }
+
     /**
      * @param array<string, mixed> $scope
      * @return array<int, array<string, mixed>>

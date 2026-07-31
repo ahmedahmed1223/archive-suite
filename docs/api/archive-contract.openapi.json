@@ -3722,6 +3722,12 @@
       }
     },
     "/share/{token}": {
+      "delete": {
+        "tags": ["Share"], "summary": "Immediately revoke a share link", "operationId": "revokeShare",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "token", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "$ref": "#/components/responses/Ok" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
+      },
       "get": {
         "tags": ["Share"],
         "summary": "Read a public share payload",

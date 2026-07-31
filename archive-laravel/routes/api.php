@@ -373,6 +373,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/montage-projects/{id}', [MontageProjectsController::class, 'destroy']);
 
         Route::post('/share', [ShareController::class, 'store']);
+        Route::delete('/share/{token}', [ShareController::class, 'destroy']);
 
         Route::get('/rights/expiring', [RightsController::class, 'expiring']);
         Route::get('/rights/{itemId}/enforcement', [RightsController::class, 'enforcement']);

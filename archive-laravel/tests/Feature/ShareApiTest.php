@@ -10,6 +10,13 @@ class ShareApiTest extends TestCase
 {
     use RefreshDatabase, AuthenticatesArchiveRequests;
 
+    public function test_editor_can_revoke_a_share_immediately(): void
+    {
+        $created = $this->postJson('/api/v1/share', ['scope' => ['itemIds' => []]], $this->authHeaders())->assertCreated()->json();
+        $this->deleteJson('/api/v1/share/'.$created['token'], [], $this->authHeaders())->assertOk()->assertJsonPath('deleted', true);
+        $this->getJson('/api/v1/share/'.$created['token'])->assertNotFound();
+    }
+
     public function test_it_creates_and_reads_a_public_share_payload(): void
     {
         $this->postJson('/api/v1/records/bulk', [

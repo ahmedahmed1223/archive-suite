@@ -138,10 +138,11 @@
 
 **Files:** `ShareApiTest.php`, `ReviewLinksApiTest.php`, `archive-next/app/shares/page.tsx`, `archive-next/app/review/[token]/ReviewLinkViewer.tsx`.
 
-- [ ] Run the two Laravel sharing suites.
-- [ ] Verify expiry, permission scope, revocation, and token-safe review links.
-- [ ] Add a failing test before any sharing safeguard fix, then close AS-13.
-- [ ] Commit `docs(tasks): close AS-13 project sharing`.
+- [x] Sharing/review suites pass (12 tests/100 assertions), including expiry,
+  scoped permission, password handling, rate limiting, and review links.
+- [x] Added and tested immediate editor revocation; the revoked token is hidden.
+- [x] Contract generation/verification and Next typecheck pass.
+- [x] Commit `feat(share): complete AS-13 project sharing`.
 
 ### Task 14: AS-14 Relationship graph
 
