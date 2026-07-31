@@ -12,6 +12,9 @@ const TEMPLATE = {
   enabled: true,
   usageRoles: ["editor"],
   currentVersion: 1,
+  publishedVersion: 1,
+  publishedById: null,
+  publishedAt: "2026-01-01T00:00:00Z",
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z"
 } as MetadataTemplate;

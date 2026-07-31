@@ -4595,6 +4595,12 @@
         }
       }
     },
+    "/metadata-templates/{id}/publish": {
+      "post": { "tags": ["Metadata Templates"], "summary": "Publish the current department template draft", "operationId": "publishMetadataTemplate", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Published template", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MetadataTemplateResponse" } } } }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/metadata-templates/{id}/published-version/{version}/restore": {
+      "post": { "tags": ["Metadata Templates"], "summary": "Restore a previously published template version", "operationId": "restorePublishedMetadataTemplate", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "version", "in": "path", "required": true, "schema": { "type": "integer", "minimum": 1 } }], "responses": { "200": { "description": "Restored published template", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MetadataTemplateResponse" } } } }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } } }
+    },
     "/metadata-templates/{id}/versions": {
       "get": {
         "tags": ["Metadata Templates"],
@@ -8807,6 +8813,9 @@
           "currentVersion": { "type": "integer", "minimum": 1 },
           "createdById": { "type": "string", "nullable": true },
           "updatedById": { "type": "string", "nullable": true },
+          "publishedVersion": { "type": "integer", "nullable": true, "minimum": 1 },
+          "publishedById": { "type": "string", "nullable": true },
+          "publishedAt": { "type": "string", "nullable": true, "format": "date-time" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         }

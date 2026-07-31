@@ -455,6 +455,9 @@ export interface MetadataTemplate {
   currentVersion: number;
   createdById?: string | null;
   updatedById?: string | null;
+  publishedVersion: number | null;
+  publishedById: string | null;
+  publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1391,6 +1394,8 @@ export interface ArchiveApiClient {
   updateMetadataTemplate(id: string, payload: MetadataTemplateInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
   deleteMetadataTemplate(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   metadataTemplateVersions(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ versions: MetadataTemplateVersion[] }>>;
+  publishMetadataTemplate(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
+  restorePublishedMetadataTemplate(id: string, version: number, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
   namingRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: NamingRule[] }>>;
   upsertNamingRule(key: string, prefix: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: NamingRule }>>;
   deleteNamingRule(key: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -2011,6 +2016,10 @@ export function createArchiveApiClient({
       del<{ deleted: boolean }>(`/metadata-templates/${encodeURIComponent(id)}`, undefined, options),
     metadataTemplateVersions: (id: string, options?: AuthRequestOptions) =>
       get<{ versions: MetadataTemplateVersion[] }>(`/metadata-templates/${encodeURIComponent(id)}/versions`, options),
+    publishMetadataTemplate: (id: string, options?: AuthRequestOptions) =>
+      post<{ template: MetadataTemplate }>(`/metadata-templates/${encodeURIComponent(id)}/publish`, undefined, options),
+    restorePublishedMetadataTemplate: (id: string, version: number, options?: AuthRequestOptions) =>
+      post<{ template: MetadataTemplate }>(`/metadata-templates/${encodeURIComponent(id)}/published-version/${version}/restore`, undefined, options),
     namingRules: (options?: AuthRequestOptions) => get<{ rules: NamingRule[] }>("/naming-rules", options),
     upsertNamingRule: (key: string, prefix: string, options?: AuthRequestOptions) =>
       put<{ rule: NamingRule }>(`/naming-rules/${encodeURIComponent(key)}`, { prefix }, options),

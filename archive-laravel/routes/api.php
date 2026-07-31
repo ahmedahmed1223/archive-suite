@@ -272,6 +272,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/metadata-templates', [MetadataTemplatesController::class, 'index']);
         Route::post('/metadata-templates', [MetadataTemplatesController::class, 'store']);
         Route::get('/metadata-templates/{id}/versions', [MetadataTemplatesController::class, 'versions']);
+        Route::post('/metadata-templates/{id}/publish', [MetadataTemplatesController::class, 'publish']);
+        Route::post('/metadata-templates/{id}/published-version/{version}/restore', [MetadataTemplatesController::class, 'restorePublished']);
         Route::patch('/metadata-templates/{id}', [MetadataTemplatesController::class, 'update']);
         Route::delete('/metadata-templates/{id}', [MetadataTemplatesController::class, 'destroy']);
         Route::get('/naming-rules', [NamingRulesController::class, 'index']);

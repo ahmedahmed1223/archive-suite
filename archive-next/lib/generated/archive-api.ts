@@ -1009,6 +1009,40 @@ export interface paths {
         patch: operations["updateMetadataTemplate"];
         trace?: never;
     };
+    "/metadata-templates/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish the current department template draft */
+        post: operations["publishMetadataTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/metadata-templates/{id}/published-version/{version}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore a previously published template version */
+        post: operations["restorePublishedMetadataTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/metadata-templates/{id}/versions": {
         parameters: {
             query?: never;
@@ -3952,6 +3986,10 @@ export interface components {
             };
             id: string;
             name: string;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            publishedById?: string | null;
+            publishedVersion?: number | null;
             tags: string[];
             typeId: string | null;
             /** Format: date-time */
@@ -7317,6 +7355,55 @@ export interface operations {
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    publishMetadataTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataTemplateResponse"];
+                };
+            };
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    restorePublishedMetadataTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Restored published template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataTemplateResponse"];
+                };
+            };
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     listMetadataTemplateVersions: {

@@ -59,6 +59,8 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/metadata-templates'] => ['metadata_templates.create', 'metadata_template'],
             ['PATCH', 'api/v1/metadata-templates/{id}'] => ['metadata_templates.update', 'metadata_template'],
             ['DELETE', 'api/v1/metadata-templates/{id}'] => ['metadata_templates.delete', 'metadata_template'],
+            ['POST', 'api/v1/metadata-templates/{id}/publish'] => ['metadata_templates.publish', 'metadata_template'],
+            ['POST', 'api/v1/metadata-templates/{id}/published-version/{version}/restore'] => ['metadata_templates.restore_published', 'metadata_template'],
             ['POST', 'api/v1/records/{id}/source-versions/{versionId}/restore'] => ['record_source.restore', 'record_source'],
             ['DELETE', 'api/v1/records/{id}/attachments/{attachmentId}'] => ['record_attachments.delete', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
@@ -104,7 +106,7 @@ class AuditArchiveApiRequest
             $resourceId = $request->string('store')->toString() ?: null;
         }
 
-        if (in_array($route, ['api/v1/metadata-templates/{id}', 'api/v1/metadata-templates/{id}/versions'], true)) {
+        if (in_array($route, ['api/v1/metadata-templates/{id}', 'api/v1/metadata-templates/{id}/versions', 'api/v1/metadata-templates/{id}/publish', 'api/v1/metadata-templates/{id}/published-version/{version}/restore'], true)) {
             $resourceId = $request->route('id');
         }
 

@@ -27,10 +27,11 @@ class MetadataTemplatesController extends Controller
             ->when($typeId !== '', fn ($query) => $query->where('type_id', $typeId))
             ->when($departmentId !== '', fn ($query) => $query->where('department_id', $departmentId))
             ->when(! $includeDisabled, fn ($query) => $query->where('enabled', true))
+            ->when(! $includeDisabled, fn ($query) => $query->whereNotNull('published_version'))
             ->orderBy('name')
             ->get()
             ->filter(fn (stdClass $template): bool => $includeDisabled || $this->canUse($template, $request))
-            ->map(fn (stdClass $template): array => $this->formatTemplate($template))
+            ->map(fn (stdClass $template): array => $includeDisabled ? $this->formatTemplate($template) : $this->formatPublishedTemplate($template))
             ->values();
 
         return response()->json(['ok' => true, 'templates' => $templates]);
@@ -127,6 +128,39 @@ class MetadataTemplatesController extends Controller
         return response()->json(['ok' => true, 'versions' => $versions]);
     }
 
+    public function publish(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) return $denied;
+        $template = DB::table('metadata_templates')->where('id', $id)->first();
+        if (! $template instanceof stdClass) return $this->notFound();
+
+        DB::table('metadata_templates')->where('id', $id)->update([
+            'published_version' => $template->current_version,
+            'published_by_id' => $request->attributes->get('archive_user')?->getKey(),
+            'published_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['ok' => true, 'template' => $this->formatTemplate(DB::table('metadata_templates')->where('id', $id)->first())]);
+    }
+
+    public function restorePublished(Request $request, string $id, int $version): JsonResponse
+    {
+        if ($denied = $this->requireAdmin($request)) return $denied;
+        $template = DB::table('metadata_templates')->where('id', $id)->first();
+        $snapshot = DB::table('metadata_template_versions')->where('template_id', $id)->where('version', $version)->exists();
+        if (! $template instanceof stdClass || ! $snapshot) return $this->notFound();
+
+        DB::table('metadata_templates')->where('id', $id)->update([
+            'published_version' => $version,
+            'published_by_id' => $request->attributes->get('archive_user')?->getKey(),
+            'published_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['ok' => true, 'template' => $this->formatTemplate(DB::table('metadata_templates')->where('id', $id)->first())]);
+    }
+
     public function destroy(Request $request, string $id): JsonResponse
     {
         if ($denied = $this->requireEditor($request)) {
@@ -191,6 +225,15 @@ class MetadataTemplatesController extends Controller
         ]);
     }
 
+    /** Return the last approved snapshot rather than a newer private draft. */
+    private function formatPublishedTemplate(stdClass $template): array
+    {
+        $version = DB::table('metadata_template_versions')->where('template_id', $template->id)->where('version', $template->published_version)->first();
+        $snapshot = $version?->snapshot ? json_decode((string) $version->snapshot, true) : null;
+
+        return is_array($snapshot) ? [...$this->formatTemplate($template), ...$snapshot, 'publishedVersion' => (int) $template->published_version, 'publishedById' => $template->published_by_id, 'publishedAt' => $template->published_at] : $this->formatTemplate($template);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -208,6 +251,9 @@ class MetadataTemplatesController extends Controller
             'currentVersion' => (int) $template->current_version,
             'createdById' => $template->created_by_id,
             'updatedById' => $template->updated_by_id,
+            'publishedVersion' => $template->published_version === null ? null : (int) $template->published_version,
+            'publishedById' => $template->published_by_id,
+            'publishedAt' => $template->published_at,
             'createdAt' => $template->created_at,
             'updatedAt' => $template->updated_at,
         ];

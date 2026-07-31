@@ -19,6 +19,7 @@ function fieldsText(template?: MetadataTemplate): string {
 export default function MetadataTemplatesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageTemplates = useCapability("templates.manage");
+  const canPublishTemplates = useCapability("users.manage");
   const [templates, setTemplates] = useState<MetadataTemplate[]>([]);
   const [departmentId, setDepartmentId] = useState("");
   const [name, setName] = useState("");
@@ -77,6 +78,19 @@ export default function MetadataTemplatesPage() {
     await load();
   }
 
+  async function publish(template: MetadataTemplate) {
+    const response = await api.publishMetadataTemplate(template.id);
+    if (!response.ok) { setError(response.error || "تعذر نشر القالب."); return; }
+    await load();
+  }
+
+  async function restorePublished(version: MetadataTemplateVersion) {
+    if (!editing) return;
+    const response = await api.restorePublishedMetadataTemplate(editing.id, version.version);
+    if (!response.ok) { setError(response.error || "تعذر استعادة الإصدار المنشور."); return; }
+    await load();
+  }
+
   const preview = editing ? previewTemplateApplication({ description: "", type: "", tags: [], metadata: {} }, editing) : null;
 
   return (
@@ -105,12 +119,12 @@ export default function MetadataTemplatesPage() {
         <article className="panel">
           <div className="panel-title-row"><div><h2>القوالب المتاحة</h2><p>يعرض المستخدم فقط القوالب التي يسمح بها دوره؛ يرى المحرر أيضًا المعطّلة لإدارتها.</p></div><span className="badge">{templates.length}</span></div>
           {templates.length === 0 ? <EmptyState title="لا توجد قوالب لهذا القسم." description="غيّر التصفية أو أضف أول قالب للقسم." /> : <div className="analytics-tag-list">{templates.map((template) => (
-            <div className="analytics-tag-row" key={template.id}><span><strong>{template.name}</strong><small className="helper-text"> · القسم: {template.departmentId || "عام"} · الإصدار {template.currentVersion}</small><small className="helper-text"> · {template.tags.join("، ") || "بلا وسوم"}</small></span><div className="button-row"><span className={`badge ${template.enabled ? "badge-success" : "badge-warning"}`}>{template.enabled ? "مفعل" : "معطل"}</span><button className="button button-secondary button-sm" type="button" onClick={() => void showVersions(template)}>الإصدارات</button>{canManageTemplates ? <><button className="button button-secondary button-sm" type="button" onClick={() => beginEdit(template)}>تعديل</button><button className="button button-secondary button-sm" type="button" onClick={() => void toggle(template)}>{template.enabled ? "تعطيل" : "تفعيل"}</button></> : null}</div></div>
+            <div className="analytics-tag-row" key={template.id}><span><strong>{template.name}</strong><small className="helper-text"> · القسم: {template.departmentId || "عام"} · المسودة {template.currentVersion} · المنشور {template.publishedVersion ?? "—"}</small><small className="helper-text"> · {template.tags.join("، ") || "بلا وسوم"}</small></span><div className="button-row"><span className={`badge ${template.enabled ? "badge-success" : "badge-warning"}`}>{template.enabled ? "مفعل" : "معطل"}</span><button className="button button-secondary button-sm" type="button" onClick={() => void showVersions(template)}>الإصدارات</button>{canPublishTemplates ? <button className="button button-primary button-sm" type="button" onClick={() => void publish(template)}>نشر المسودة</button> : null}{canManageTemplates ? <><button className="button button-secondary button-sm" type="button" onClick={() => beginEdit(template)}>تعديل</button><button className="button button-secondary button-sm" type="button" onClick={() => void toggle(template)}>{template.enabled ? "تعطيل" : "تفعيل"}</button></> : null}</div></div>
           ))}</div>}
         </article>
         <article className="panel"><div className="panel-title-row"><div><h2>معاينة القيم والإصدارات</h2><p>المعاينة للقراءة فقط؛ لا تكتب أي بيانات في مادة قبل قرار المستخدم.</p></div></div>
           {preview ? <pre className="code-block">{JSON.stringify(preview, null, 2)}</pre> : <p className="helper-text">اختر «تعديل» لمعاينة قيم القالب الحالية.</p>}
-          {versions.length ? <ol className="helper-text">{versions.map((version) => <li key={version.id}>الإصدار {version.version} — {new Date(version.createdAt).toLocaleString("ar")} — {version.snapshot.name}</li>)}</ol> : null}
+          {versions.length ? <ol className="helper-text">{versions.map((version) => <li key={version.id}>الإصدار {version.version} — {new Date(version.createdAt).toLocaleString("ar")} — {version.snapshot.name} {canPublishTemplates ? <button className="button button-secondary button-sm" type="button" onClick={() => void restorePublished(version)}>استعادة كنشر</button> : null}</li>)}</ol> : null}
         </article>
       </section>
     </AppShell>
