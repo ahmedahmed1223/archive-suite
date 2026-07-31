@@ -432,6 +432,42 @@ export interface paths {
         delete: operations["deleteCollection"];
         options?: never;
         head?: never;
+        /** Rename or update the criteria of an existing saved collection */
+        patch: operations["updateCollection"];
+        trace?: never;
+    };
+    "/collections/{id}/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List explicit member record ids of a collection */
+        get: operations["listCollectionRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/collections/{id}/records/{recordId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a record to a collection's explicit membership */
+        post: operations["addCollectionRecord"];
+        /** Remove a record from a collection's explicit membership */
+        delete: operations["removeCollectionRecord"];
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -3322,11 +3358,21 @@ export interface components {
             tag?: string;
             type?: string;
         };
+        CollectionRecordsResponse: components["schemas"]["OkEnvelope"] & {
+            recordIds: string[];
+        };
         CollectionResponse: components["schemas"]["OkEnvelope"] & {
             collection: components["schemas"]["Collection"];
         };
         CollectionsResponse: components["schemas"]["OkEnvelope"] & {
             collections: components["schemas"]["Collection"][];
+        };
+        CollectionUpdateRequest: {
+            icon?: string | null;
+            name?: string;
+            query?: string | null;
+            tag?: string | null;
+            type?: string | null;
         };
         ComplianceReportEntry: {
             action: string;
@@ -5978,6 +6024,93 @@ export interface operations {
             header?: never;
             path: {
                 id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated collection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    listCollectionRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member record ids */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionRecordsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    addCollectionRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    removeCollectionRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                recordId: string;
             };
             cookie?: never;
         };

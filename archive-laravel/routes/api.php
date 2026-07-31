@@ -381,6 +381,10 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/collections', [CollectionsController::class, 'index']);
         Route::post('/collections', [CollectionsController::class, 'store']);
         Route::delete('/collections/{id}', [CollectionsController::class, 'destroy']);
+        Route::patch('/collections/{id}', [CollectionsController::class, 'update']);
+        Route::get('/collections/{id}/records', [CollectionsController::class, 'records']);
+        Route::post('/collections/{id}/records/{recordId}', [CollectionsController::class, 'addRecord']);
+        Route::delete('/collections/{id}/records/{recordId}', [CollectionsController::class, 'removeRecord']);
 
         Route::get('/inbox', [InboxController::class, 'index']);
         Route::post('/inbox', [InboxController::class, 'store']);

@@ -1503,6 +1503,10 @@ export interface ArchiveApiClient {
   collections(options?: AuthRequestOptions): Promise<ApiEnvelope<{ collections: Collection[] }>>;
   createCollection(payload: CreateCollectionPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ collection: Collection }>>;
   deleteCollection(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  updateCollection(id: string, payload: Partial<CreateCollectionPayload>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ collection: Collection }>>;
+  collectionRecords(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
+  addCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
+  removeCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   inboxItems(options?: AuthRequestOptions): Promise<ApiEnvelope<{ items: InboxItem[] }>>;
   createInboxItem(payload: CreateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
   updateInboxItem(id: string, payload: UpdateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
@@ -2422,6 +2426,14 @@ export function createArchiveApiClient({
       post<{ collection: Collection }>("/collections", payload, options),
     deleteCollection: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/collections/${encodeURIComponent(id)}`, undefined, options),
+    updateCollection: (id: string, payload: Partial<CreateCollectionPayload>, options?: AuthRequestOptions) =>
+      patch<{ collection: Collection }>(`/collections/${encodeURIComponent(id)}`, payload, options),
+    collectionRecords: (id: string, options?: AuthRequestOptions) =>
+      get<{ recordIds: string[] }>(`/collections/${encodeURIComponent(id)}/records`, options),
+    addCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) =>
+      post<Record<string, never>>(`/collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
+    removeCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) =>
+      del<Record<string, never>>(`/collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     inboxItems: (options?: AuthRequestOptions) => get<{ items: InboxItem[] }>("/inbox", options),
     createInboxItem: (payload: CreateInboxItemPayload, options?: AuthRequestOptions) =>
       post<{ item: InboxItem }>("/inbox", payload, options),

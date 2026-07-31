@@ -2341,6 +2341,75 @@
           "401": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/Error" }
         }
+      },
+      "patch": {
+        "tags": ["Collections"],
+        "summary": "Rename or update the criteria of an existing saved collection",
+        "operationId": "updateCollection",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CollectionUpdateRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated collection",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CollectionResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/collections/{id}/records": {
+      "get": {
+        "tags": ["Collections"],
+        "summary": "List explicit member record ids of a collection",
+        "operationId": "listCollectionRecords",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Member record ids",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CollectionRecordsResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/collections/{id}/records/{recordId}": {
+      "post": {
+        "tags": ["Collections"],
+        "summary": "Add a record to a collection's explicit membership",
+        "operationId": "addCollectionRecord",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "recordId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Collections"],
+        "summary": "Remove a record from a collection's explicit membership",
+        "operationId": "removeCollectionRecord",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "recordId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
       }
     },
     "/inbox": {
@@ -6876,6 +6945,29 @@
           "tag": { "type": "string", "maxLength": 200 },
           "icon": { "type": "string", "minLength": 1, "maxLength": 100 }
         }
+      },
+      "CollectionUpdateRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "query": { "type": "string", "nullable": true, "maxLength": 500 },
+          "type": { "type": "string", "nullable": true, "maxLength": 200 },
+          "tag": { "type": "string", "nullable": true, "maxLength": 200 },
+          "icon": { "type": "string", "nullable": true, "maxLength": 100 }
+        }
+      },
+      "CollectionRecordsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["recordIds"],
+            "properties": {
+              "recordIds": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        ]
       },
       "CollectionsResponse": {
         "allOf": [
