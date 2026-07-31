@@ -4564,6 +4564,8 @@
     "/department-quality-rules/preview": {
       "post": { "tags": ["Department Quality"], "summary": "Preview department quality readiness", "operationId": "previewDepartmentQuality", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentQualityPreviewRequest" } } } }, "responses": { "200": { "description": "Readiness result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentQualityPreviewResponse" } } } } } }
     },
+    "/inbox/{id}/department-routing/preview": { "post": { "tags": ["Inbox Routing"], "summary": "Preview routing an inbox item to a department", "operationId": "previewInboxDepartmentRouting", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentRoutingRequest" } } } }, "responses": { "200": { "description": "Routing preview", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentRoutingPreview" } } } } } } },
+    "/inbox/{id}/department-routing": { "post": { "tags": ["Inbox Routing"], "summary": "Route an inbox item to a department", "operationId": "routeInboxDepartment", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentRoutingRequest" } } } }, "responses": { "200": { "description": "Routed inbox item", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentRoutingPreview" } } } } } } },
     "/metadata-templates": {
       "get": {
         "tags": ["Metadata Templates"],
@@ -7103,13 +7105,15 @@
       },
       "InboxItem": {
         "type": "object",
-        "required": ["id", "title", "source", "note", "status", "createdAt", "updatedAt"],
+        "required": ["id", "title", "source", "note", "status", "departmentId", "routingHistory", "createdAt", "updatedAt"],
         "properties": {
           "id": { "type": "string" },
           "title": { "type": "string" },
           "source": { "type": ["string", "null"] },
           "note": { "type": ["string", "null"] },
           "status": { "$ref": "#/components/schemas/InboxStatus" },
+          "departmentId": { "type": ["string", "null"] },
+          "routingHistory": { "type": "array", "items": { "type": "object", "required": ["from", "to", "at"], "properties": { "from": { "type": ["string", "null"] }, "to": { "type": "string" }, "at": { "type": "string", "format": "date-time" } } } },
           "createdAt": { "type": ["string", "null"], "format": "date-time" },
           "updatedAt": { "type": ["string", "null"], "format": "date-time" }
         }
@@ -7372,7 +7376,7 @@
       },
       "AutomationRule": {
         "type": "object",
-        "required": ["id", "name", "trigger", "query", "type", "tag", "status", "action", "enabled"],
+        "required": ["id", "name", "trigger", "query", "type", "tag", "status", "departmentId", "action", "enabled"],
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
@@ -7381,6 +7385,7 @@
           "type": { "type": "string" },
           "tag": { "type": "string" },
           "status": { "type": "string" },
+          "departmentId": { "type": "string" },
           "action": { "$ref": "#/components/schemas/AutomationRuleAction" },
           "enabled": { "type": "boolean" },
           "lastRunAt": { "type": ["string", "null"], "format": "date-time" },
@@ -7416,6 +7421,7 @@
           "type": { "type": "string", "maxLength": 100 },
           "tag": { "type": "string", "maxLength": 100 },
           "status": { "type": "string", "maxLength": 100 },
+          "departmentId": { "type": "string", "maxLength": 100 },
           "action": { "$ref": "#/components/schemas/AutomationRuleAction" },
           "enabled": { "type": "boolean", "default": true }
         }
@@ -7429,6 +7435,7 @@
           "type": { "type": "string", "maxLength": 100 },
           "tag": { "type": "string", "maxLength": 100 },
           "status": { "type": "string", "maxLength": 100 },
+          "departmentId": { "type": "string", "maxLength": 100 },
           "action": { "$ref": "#/components/schemas/AutomationRuleAction" },
           "enabled": { "type": "boolean" }
         },
@@ -8811,6 +8818,8 @@
       "DepartmentQualityRuleResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["rule"], "properties": { "rule": { "$ref": "#/components/schemas/DepartmentQualityRule" } } }] },
       "DepartmentQualityPreviewRequest": { "type": "object", "required": ["departmentId"], "properties": { "departmentId": { "type": "string" }, "typeId": { "type": "string", "nullable": true }, "metadata": { "type": "object", "additionalProperties": true } } },
       "DepartmentQualityPreviewResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["ready", "missingFields"], "properties": { "ready": { "type": "boolean" }, "missingFields": { "type": "array", "items": { "type": "string" } }, "ruleId": { "type": "string", "nullable": true } } }] },
+      "DepartmentRoutingRequest": { "type": "object", "required": ["departmentId"], "properties": { "departmentId": { "type": "string" } } },
+      "DepartmentRoutingPreview": { "type": "object", "required": ["blocked", "fromDepartmentId", "toDepartmentId"], "properties": { "blocked": { "type": "boolean" }, "reason": { "type": ["string", "null"] }, "fromDepartmentId": { "type": ["string", "null"] }, "toDepartmentId": { "type": "string" } } },
       "MetadataTemplate": {
         "type": "object",
         "required": ["id", "typeId", "departmentId", "name", "fields", "tags", "enabled", "usageRoles", "currentVersion", "createdAt", "updatedAt"],

@@ -265,6 +265,7 @@ class AutomationRulesController extends Controller
             // event-driven auto-trigger on import either - rules still only
             // execute via the existing manual/scheduled run() endpoint.
             'fileExtension' => ['nullable', 'string', 'max:200'],
+            'departmentId' => ['nullable', 'string', 'max:100'],
             'action' => [$requireName ? 'required' : 'sometimes', 'string', Rule::in(self::ACTIONS)],
             'enabled' => ['nullable', 'boolean'],
         ];
@@ -277,7 +278,7 @@ class AutomationRulesController extends Controller
     private function conditions(array $validated, bool $includeMissing = true): array
     {
         $conditions = [];
-        foreach (['query', 'type', 'tag', 'status', 'fileExtension'] as $field) {
+        foreach (['query', 'type', 'tag', 'status', 'fileExtension', 'departmentId'] as $field) {
             if (array_key_exists($field, $validated)) {
                 $conditions[$field] = trim((string) ($validated[$field] ?? ''));
             } elseif ($includeMissing) {
@@ -308,6 +309,7 @@ class AutomationRulesController extends Controller
             'tag' => $conditions['tag'] ?? '',
             'status' => $conditions['status'] ?? '',
             'fileExtension' => $conditions['fileExtension'] ?? '',
+            'departmentId' => $conditions['departmentId'] ?? '',
             'action' => $row->action,
             'enabled' => (bool) $row->enabled,
             'lastRunAt' => $row->last_run_at,

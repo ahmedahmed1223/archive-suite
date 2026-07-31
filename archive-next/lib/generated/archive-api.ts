@@ -731,6 +731,40 @@ export interface paths {
         patch: operations["updateInboxItem"];
         trace?: never;
     };
+    "/inbox/{id}/department-routing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Route an inbox item to a department */
+        post: operations["routeInboxDepartment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/{id}/department-routing/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview routing an inbox item to a department */
+        post: operations["previewInboxDepartmentRouting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ingest/dropbox/pull": {
         parameters: {
             query?: never;
@@ -3252,6 +3286,7 @@ export interface components {
             action: components["schemas"]["AutomationRuleAction"];
             /** Format: date-time */
             createdAt?: string | null;
+            departmentId: string;
             enabled: boolean;
             id: string;
             /** Format: date-time */
@@ -3632,6 +3667,7 @@ export interface components {
         };
         CreateAutomationRuleRequest: {
             action: components["schemas"]["AutomationRuleAction"];
+            departmentId?: string;
             /** @default true */
             enabled?: boolean;
             name: string;
@@ -3751,6 +3787,15 @@ export interface components {
         };
         DepartmentQualityRulesResponse: components["schemas"]["OkEnvelope"] & {
             rules: components["schemas"]["DepartmentQualityRule"][];
+        };
+        DepartmentRoutingPreview: {
+            blocked: boolean;
+            fromDepartmentId: string | null;
+            reason?: string | null;
+            toDepartmentId: string;
+        };
+        DepartmentRoutingRequest: {
+            departmentId: string;
         };
         DiscoverResponse: components["schemas"]["OkEnvelope"] & {
             sections: components["schemas"]["DiscoverSection"][];
@@ -3913,8 +3958,15 @@ export interface components {
         InboxItem: {
             /** Format: date-time */
             createdAt: string | null;
+            departmentId: string | null;
             id: string;
             note: string | null;
+            routingHistory: {
+                /** Format: date-time */
+                at: string;
+                from: string | null;
+                to: string;
+            }[];
             source: string | null;
             status: components["schemas"]["InboxStatus"];
             title: string;
@@ -5172,6 +5224,7 @@ export interface components {
         };
         UpdateAutomationRuleRequest: {
             action?: components["schemas"]["AutomationRuleAction"];
+            departmentId?: string;
             enabled?: boolean;
             name?: string;
             query?: string;
@@ -6911,6 +6964,58 @@ export interface operations {
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    routeInboxDepartment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentRoutingRequest"];
+            };
+        };
+        responses: {
+            /** @description Routed inbox item */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentRoutingPreview"];
+                };
+            };
+        };
+    };
+    previewInboxDepartmentRouting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentRoutingRequest"];
+            };
+        };
+        responses: {
+            /** @description Routing preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentRoutingPreview"];
+                };
+            };
         };
     };
     dropboxPullIngest: {

@@ -123,8 +123,18 @@ class InboxController extends Controller
             'source' => $row->source,
             'note' => $row->note,
             'status' => $row->status,
+            'departmentId' => $row->department_id,
+            'routingHistory' => $this->routingHistory($row->routing_history ?? null),
             'createdAt' => $row->created_at,
             'updatedAt' => $row->updated_at,
         ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function routingHistory(mixed $value): array
+    {
+        $history = is_string($value) ? json_decode($value, true) : $value;
+
+        return is_array($history) ? array_values($history) : [];
     }
 }

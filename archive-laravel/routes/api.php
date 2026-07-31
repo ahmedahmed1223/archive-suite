@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
 use App\Http\Controllers\Api\V1\LinkAuditController;
 use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\DepartmentQualityRulesController;
+use App\Http\Controllers\Api\V1\DepartmentRoutingController;
 use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
@@ -280,6 +281,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/department-quality-rules', [DepartmentQualityRulesController::class, 'index']);
         Route::put('/department-quality-rules', [DepartmentQualityRulesController::class, 'upsert']);
         Route::post('/department-quality-rules/preview', [DepartmentQualityRulesController::class, 'preview']);
+        Route::post('/inbox/{id}/department-routing/preview', [DepartmentRoutingController::class, 'preview']);
+        Route::post('/inbox/{id}/department-routing', [DepartmentRoutingController::class, 'apply']);
         Route::get('/naming-rules', [NamingRulesController::class, 'index']);
         Route::put('/naming-rules/{key}', [NamingRulesController::class, 'upsert']);
         Route::delete('/naming-rules/{key}', [NamingRulesController::class, 'destroy']);

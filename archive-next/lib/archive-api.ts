@@ -617,6 +617,8 @@ export interface InboxItem {
   source: string | null;
   note: string | null;
   status: InboxStatus;
+  departmentId?: string | null;
+  routingHistory?: Array<{ from: string | null; to: string; at: string }>;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -633,6 +635,13 @@ export interface UpdateInboxItemPayload {
   source?: string | null;
   note?: string | null;
   status?: InboxStatus;
+}
+
+export interface DepartmentRoutingPreview {
+  blocked: boolean;
+  reason: string | null;
+  fromDepartmentId: string | null;
+  toDepartmentId: string;
 }
 
 export type VocabularyKind = "type" | "tag" | "custom";
@@ -694,6 +703,7 @@ export interface AutomationRule {
   type: string;
   tag: string;
   status: string;
+  departmentId?: string;
   action: AutomationRuleAction;
   enabled: boolean;
   lastRunAt?: string | null;
@@ -720,6 +730,7 @@ export interface CreateAutomationRulePayload {
   type?: string;
   tag?: string;
   status?: string;
+  departmentId?: string;
   action: AutomationRuleAction;
   enabled?: boolean;
 }
@@ -1576,6 +1587,8 @@ export interface ArchiveApiClient {
   createInboxItem(payload: CreateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
   updateInboxItem(id: string, payload: UpdateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
   deleteInboxItem(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  previewInboxDepartmentRouting(id: string, departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<DepartmentRoutingPreview>>;
+  routeInboxDepartment(id: string, departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ departmentId: string; routingHistory: InboxItem["routingHistory"] }>>;
   vocabularyTerms(options?: AuthRequestOptions): Promise<ApiEnvelope<{ terms: VocabularyTerm[] }>>;
   createVocabularyTerm(payload: CreateVocabularyTermPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ term: VocabularyTerm }>>;
   deleteVocabularyTerm(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -2538,6 +2551,10 @@ export function createArchiveApiClient({
       patch<{ item: InboxItem }>(`/inbox/${encodeURIComponent(id)}`, payload, options),
     deleteInboxItem: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/inbox/${encodeURIComponent(id)}`, undefined, options),
+    previewInboxDepartmentRouting: (id: string, departmentId: string, options?: AuthRequestOptions) =>
+      post<DepartmentRoutingPreview>(`/inbox/${encodeURIComponent(id)}/department-routing/preview`, { departmentId }, options),
+    routeInboxDepartment: (id: string, departmentId: string, options?: AuthRequestOptions) =>
+      post<{ departmentId: string; routingHistory: InboxItem["routingHistory"] }>(`/inbox/${encodeURIComponent(id)}/department-routing`, { departmentId }, options),
     vocabularyTerms: (options?: AuthRequestOptions) => get<{ terms: VocabularyTerm[] }>("/vocabulary", options),
     createVocabularyTerm: (payload: CreateVocabularyTermPayload, options?: AuthRequestOptions) =>
       post<{ term: VocabularyTerm }>("/vocabulary", payload, options),

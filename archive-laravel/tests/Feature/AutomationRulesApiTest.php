@@ -175,6 +175,40 @@ class AutomationRulesApiTest extends TestCase
             ->assertJsonPath('run.matchedCount', 4);
     }
 
+    public function test_automation_creates_a_department_routed_item_in_the_canonical_inbox(): void
+    {
+        $this->seedRecords();
+
+        $rule = $this->postJson('/api/v1/automation/rules', [
+            'name' => 'Route Riyadh follow-up',
+            'trigger' => 'schedule.daily',
+            'query' => 'riyadh',
+            'action' => 'create-inbox-item',
+            'departmentId' => 'newsroom',
+        ], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('rule.departmentId', 'newsroom');
+
+        $ruleId = $rule->json('rule.id');
+        $this->postJson('/api/v1/automation/rules/'.$ruleId.'/run', ['dryRun' => true], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('run.executedCount', 0);
+
+        $this->getJson('/api/v1/inbox', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(0, 'items');
+
+        $this->postJson('/api/v1/automation/rules/'.$ruleId.'/run', ['dryRun' => false], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('run.executedCount', 1);
+
+        $this->getJson('/api/v1/inbox', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(1, 'items')
+            ->assertJsonPath('items.0.departmentId', 'newsroom')
+            ->assertJsonPath('items.0.source', 'automation:'.$ruleId);
+    }
+
     private function seedRecords(): void
     {
         $this->postJson('/api/v1/records/bulk', [

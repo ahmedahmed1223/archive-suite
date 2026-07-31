@@ -63,6 +63,8 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/metadata-templates/{id}/published-version/{version}/restore'] => ['metadata_templates.restore_published', 'metadata_template'],
             ['PUT', 'api/v1/department-quality-rules'] => ['department_quality_rules.upsert', 'department_quality_rule'],
             ['POST', 'api/v1/department-quality-rules/preview'] => ['department_quality_rules.preview', 'department_quality_rule'],
+            ['POST', 'api/v1/inbox/{id}/department-routing/preview'] => ['inbox_department_routing.preview', 'inbox_item'],
+            ['POST', 'api/v1/inbox/{id}/department-routing'] => ['inbox_department_routing.apply', 'inbox_item'],
             ['POST', 'api/v1/records/{id}/source-versions/{versionId}/restore'] => ['record_source.restore', 'record_source'],
             ['DELETE', 'api/v1/records/{id}/attachments/{attachmentId}'] => ['record_attachments.delete', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
@@ -109,6 +111,10 @@ class AuditArchiveApiRequest
         }
 
         if (in_array($route, ['api/v1/metadata-templates/{id}', 'api/v1/metadata-templates/{id}/versions', 'api/v1/metadata-templates/{id}/publish', 'api/v1/metadata-templates/{id}/published-version/{version}/restore'], true)) {
+            $resourceId = $request->route('id');
+        }
+
+        if (in_array($route, ['api/v1/inbox/{id}/department-routing/preview', 'api/v1/inbox/{id}/department-routing'], true)) {
             $resourceId = $request->route('id');
         }
 

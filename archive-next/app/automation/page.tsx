@@ -56,6 +56,7 @@ export default function AutomationPage() {
   const [type, setType] = useState("all");
   const [tag, setTag] = useState("all");
   const [status, setStatus] = useState("all");
+  const [departmentId, setDepartmentId] = useState("");
   const [action, setAction] = useState<AutomationRuleAction>("notify-admin");
   const canManageAutomation = useCapability("automation.manage");
 
@@ -98,6 +99,7 @@ export default function AutomationPage() {
       type,
       tag,
       status,
+      departmentId: departmentId.trim(),
       action,
       enabled: true
     });
@@ -112,6 +114,7 @@ export default function AutomationPage() {
     setType("all");
     setTag("all");
     setStatus("all");
+    setDepartmentId("");
     setAction("notify-admin");
     setStatusMessage("تم حفظ القاعدة في الخادم.");
     await refreshAutomation();
@@ -217,6 +220,10 @@ export default function AutomationPage() {
                 {(Object.keys(actionLabels) as AutomationRuleAction[]).map((item) => <option key={item} value={item}>{actionLabels[item]}</option>)}
               </select>
             </label>
+            {action === "create-inbox-item" ? <label>
+              <span>القسم المستهدف</span>
+              <input className="search-input" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} placeholder="اختياري" />
+            </label> : null}
             <div className="archive-toolbar-actions">
               <button type="submit" className="button button-primary" disabled={!name.trim()}>حفظ القاعدة</button>
             </div>
@@ -256,7 +263,7 @@ export default function AutomationPage() {
               <dl className="mobile-field-list">
                 <div><dt>المشغّل</dt><dd>{triggerLabels[rule.trigger]}</dd></div>
                 <div><dt>الشروط</dt><dd>{[rule.query, rule.type !== "all" ? rule.type : "", rule.tag !== "all" ? rule.tag : "", rule.status !== "all" ? rule.status : ""].filter(Boolean).join(" · ") || "كل السجلات"}</dd></div>
-                <div><dt>الإجراء</dt><dd>{actionLabels[rule.action]}</dd></div>
+                <div><dt>الإجراء</dt><dd>{actionLabels[rule.action]}{rule.departmentId ? ` · ${rule.departmentId}` : ""}</dd></div>
                 <div><dt>آخر تشغيل</dt><dd>{formatDate(rule.lastRunAt)}</dd></div>
               </dl>
               <div className="button-row">

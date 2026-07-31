@@ -146,17 +146,18 @@ class AutomationRuleRunner
             }
 
             if ($rule->action === 'create-inbox-item') {
-                DB::table('storage_rows')->updateOrInsert(
-                    ['store' => 'inbox-items', 'uid' => 'automation-'.$rule->id.'-'.$uid],
+                $conditions = $this->decodeJsonObject($rule->conditions);
+                $inboxId = 'automation-'.$rule->id.'-'.$uid;
+                DB::table('inbox_items')->updateOrInsert(
+                    ['id' => $inboxId],
                     [
-                        'data' => json_encode([
-                            'uid' => 'automation-'.$rule->id.'-'.$uid,
-                            'id' => 'automation-'.$rule->id.'-'.$uid,
-                            'title' => 'Automation follow-up: '.(string) ($record['title'] ?? $uid),
-                            'sourceRecordId' => $uid,
-                            'ruleId' => $rule->id,
-                            'status' => 'open',
-                        ], JSON_THROW_ON_ERROR),
+                        'user_id' => $rule->user_id,
+                        'title' => 'Automation follow-up: '.(string) ($record['title'] ?? $uid),
+                        'source' => 'automation:'.$rule->id,
+                        'note' => 'Source record: '.$uid,
+                        'status' => 'new',
+                        'department_id' => trim((string) ($conditions['departmentId'] ?? '')) ?: null,
+                        'routing_history' => json_encode([]),
                         'updated_at' => now(),
                         'created_at' => now(),
                     ],

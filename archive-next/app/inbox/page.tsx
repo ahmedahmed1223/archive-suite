@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type InboxItem, type InboxStatus } from "@/lib/archive-api";
 import { formatDate, normalizeText } from "@/lib/record-utils";
 import { toastError, toastSuccess } from "@/lib/toast";
@@ -34,6 +35,10 @@ export default function InboxPage() {
   const [filter, setFilter] = useState<InboxStatus | "all">("all");
   const [triageMode, setTriageMode] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [departmentTargets, setDepartmentTargets] = useState<Record<string, string>>({});
+  const [routingPreviews, setRoutingPreviews] = useState<Record<string, string>>({});
+  const [routingBusyId, setRoutingBusyId] = useState<string | null>(null);
+  const canRouteInbox = useCapability("records.edit");
 
   async function refreshInbox() {
     setLoadState({ status: "loading" });
@@ -134,6 +139,39 @@ export default function InboxPage() {
     await refreshInbox();
   }
 
+  async function previewRouting(item: InboxItem) {
+    const departmentId = departmentTargets[item.id]?.trim();
+    if (!departmentId) return;
+
+    setRoutingBusyId(item.id);
+    const response = await api.previewInboxDepartmentRouting(item.id, departmentId);
+    const message = !response.ok
+      ? response.error || "تعذرت معاينة التوجيه."
+      : response.blocked
+        ? response.reason || "تم منع التوجيه المتكرر."
+        : `يمكن التوجيه إلى قسم ${response.toDepartmentId}. لن يُنفذ شيء قبل التأكيد.`;
+    setRoutingPreviews((current) => ({ ...current, [item.id]: message }));
+    setRoutingBusyId(null);
+  }
+
+  async function applyRouting(item: InboxItem) {
+    const departmentId = departmentTargets[item.id]?.trim();
+    if (!departmentId) return;
+
+    setRoutingBusyId(item.id);
+    const response = await api.routeInboxDepartment(item.id, departmentId);
+    if (!response.ok) {
+      const message = response.error || "تم منع التوجيه أو تعذر تنفيذه.";
+      setRoutingPreviews((current) => ({ ...current, [item.id]: message }));
+      toastError(message);
+    } else {
+      toastSuccess(`تم توجيه العنصر إلى قسم ${response.departmentId}.`);
+      setRoutingPreviews((current) => ({ ...current, [item.id]: "تم التوجيه وتسجيله في السجل." }));
+      await refreshInbox();
+    }
+    setRoutingBusyId(null);
+  }
+
   return (
     <AppShell subtitle="صندوق الوارد" contentClassName="local-list-content" tipsPage="inbox">
       <PageToolbar
@@ -206,6 +244,7 @@ export default function InboxPage() {
               <dl className="mobile-field-list">
                 <div><dt>المصدر</dt><dd dir="auto">{item.source || "-"}</dd></div>
                 <div><dt>الملاحظة</dt><dd>{item.note || "-"}</dd></div>
+                <div><dt>القسم</dt><dd>{item.departmentId || "غير موجّه"}</dd></div>
               </dl>
               <div className="button-row">
                 <select value={item.status} onChange={(event) => void updateStatus(item.id, event.target.value as InboxStatus)} aria-label={`حالة ${item.title}`}>
@@ -216,6 +255,12 @@ export default function InboxPage() {
                 {item.status === "done" ? <a className="button button-secondary button-sm" href="/archive">فتح الأرشيف</a> : null}
                 <button className="button button-danger button-sm" type="button" onClick={() => void removeItem(item.id)}>حذف</button>
               </div>
+              <div className="button-row">
+                <input className="search-input" value={departmentTargets[item.id] || ""} onChange={(event) => setDepartmentTargets((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="معرّف القسم المستهدف" aria-label={`القسم المستهدف لـ ${item.title}`} />
+                <button className="button button-secondary button-sm" type="button" onClick={() => void previewRouting(item)} disabled={routingBusyId === item.id || !(departmentTargets[item.id] || "").trim()}>معاينة التوجيه</button>
+                {canRouteInbox ? <button className="button button-primary button-sm" type="button" onClick={() => void applyRouting(item)} disabled={routingBusyId === item.id || !(departmentTargets[item.id] || "").trim()}>توجيه للقسم</button> : null}
+              </div>
+              {routingPreviews[item.id] ? <p className="helper-text" role="status">{routingPreviews[item.id]}</p> : null}
             </article>
           ))}
         </section>
