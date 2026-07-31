@@ -326,6 +326,42 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// ponytail: shared DB-backed filename prefix rules (V1-858) — key is a project or type id.
+export interface NamingRule {
+  key: string;
+  prefix: string;
+  updatedAt: string;
+}
+
+// V1-861: lightweight grouping of records, never moves them out of type/folder.
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// V1-840: named time/topic segments on a record, no file copy.
+export interface RecordSegment {
+  id: string;
+  recordId: string;
+  title: string;
+  description: string;
+  tags: string[];
+  startSeconds: number | null;
+  endSeconds: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecordSegmentInput {
+  title?: string;
+  description?: string;
+  tags?: string[];
+  startSeconds?: number | null;
+  endSeconds?: number | null;
+}
+
 export interface CreateRecordCommentPayload {
   body: string;
 }
@@ -1147,6 +1183,20 @@ export interface ArchiveApiClient {
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  namingRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: NamingRule[] }>>;
+  upsertNamingRule(key: string, prefix: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: NamingRule }>>;
+  deleteNamingRule(key: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  projects(options?: AuthRequestOptions): Promise<ApiEnvelope<{ projects: Project[] }>>;
+  createProject(name: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ project: Project }>>;
+  deleteProject(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  projectRecords(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
+  linkProjectRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
+  unlinkProjectRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
+  recordProjects(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ projects: Project[] }>>;
+  recordSegments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segments: RecordSegment[] }>>;
+  createRecordSegment(recordId: string, payload: RecordSegmentInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segment: RecordSegment }>>;
+  updateRecordSegment(id: string, payload: RecordSegmentInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segment: RecordSegment }>>;
+  deleteRecordSegment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   recordComments(recordId: string, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: RecordComment[] }>>;
   createRecordComment(recordId: string, payload: CreateRecordCommentPayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: RecordComment }>>;
   deleteRecordComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -1673,6 +1723,32 @@ export function createArchiveApiClient({
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
+    namingRules: (options?: AuthRequestOptions) => get<{ rules: NamingRule[] }>("/naming-rules", options),
+    upsertNamingRule: (key: string, prefix: string, options?: AuthRequestOptions) =>
+      put<{ rule: NamingRule }>(`/naming-rules/${encodeURIComponent(key)}`, { prefix }, options),
+    deleteNamingRule: (key: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/naming-rules/${encodeURIComponent(key)}`, undefined, options),
+    projects: (options?: AuthRequestOptions) => get<{ projects: Project[] }>("/projects", options),
+    createProject: (name: string, options?: AuthRequestOptions) =>
+      post<{ project: Project }>("/projects", { name }, options),
+    deleteProject: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/projects/${encodeURIComponent(id)}`, undefined, options),
+    projectRecords: (id: string, options?: AuthRequestOptions) =>
+      get<{ recordIds: string[] }>(`/projects/${encodeURIComponent(id)}/records`, options),
+    linkProjectRecord: (id: string, recordId: string, options?: AuthRequestOptions) =>
+      post<Record<string, never>>(`/projects/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
+    unlinkProjectRecord: (id: string, recordId: string, options?: AuthRequestOptions) =>
+      del<Record<string, never>>(`/projects/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
+    recordProjects: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ projects: Project[] }>(`/records/${encodeURIComponent(recordId)}/projects`, options),
+    recordSegments: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ segments: RecordSegment[] }>(`/records/${encodeURIComponent(recordId)}/segments`, options),
+    createRecordSegment: (recordId: string, payload: RecordSegmentInput, options?: AuthRequestOptions) =>
+      post<{ segment: RecordSegment }>(`/records/${encodeURIComponent(recordId)}/segments`, payload, options),
+    updateRecordSegment: (id: string, payload: RecordSegmentInput, options?: AuthRequestOptions) =>
+      patch<{ segment: RecordSegment }>(`/record-segments/${encodeURIComponent(id)}`, payload, options),
+    deleteRecordSegment: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/record-segments/${encodeURIComponent(id)}`, undefined, options),
     recordComments: (recordId: string, store = "archive-items", options?: AuthRequestOptions) =>
       get<{ comments: RecordComment[] }>(`/records/${encodeURIComponent(recordId)}/comments?${new URLSearchParams({ store })}`, options),
     createRecordComment: (recordId: string, payload: CreateRecordCommentPayload, store = "archive-items", options?: AuthRequestOptions) =>

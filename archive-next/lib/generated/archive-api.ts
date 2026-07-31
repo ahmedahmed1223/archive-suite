@@ -768,6 +768,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/naming-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List filename prefix rules per project or type */
+        get: operations["listNamingRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/naming-rules/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Create or replace the naming rule for a project/type key */
+        put: operations["upsertNamingRule"];
+        post?: never;
+        /** Remove the naming rule for a project/type key */
+        delete: operations["deleteNamingRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/onboarding/progress": {
         parameters: {
             query?: never;
@@ -814,6 +849,76 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List projects */
+        get: operations["listProjects"];
+        put?: never;
+        /** Create a project */
+        post: operations["createProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a project and its record links */
+        delete: operations["deleteProject"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{id}/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List record ids linked to a project */
+        get: operations["listProjectRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{id}/records/{recordId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link a record to a project, without moving it out of its type/folder */
+        post: operations["linkProjectRecord"];
+        /** Unlink a record from a project */
+        delete: operations["unlinkProjectRecord"];
         options?: never;
         head?: never;
         patch?: never;
@@ -869,6 +974,24 @@ export interface paths {
         head?: never;
         /** Update a private archive record note */
         patch: operations["updateRecordNote"];
+        trace?: never;
+    };
+    "/record-segments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a record segment */
+        delete: operations["deleteRecordSegment"];
+        options?: never;
+        head?: never;
+        /** Update a record segment */
+        patch: operations["updateRecordSegment"];
         trace?: never;
     };
     "/records": {
@@ -1006,6 +1129,41 @@ export interface paths {
         put?: never;
         /** Create a private note for an archive record */
         post: operations["createRecordNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List projects a record is linked to */
+        get: operations["listRecordProjects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List segments defined on a record */
+        get: operations["listRecordSegments"];
+        put?: never;
+        /** Define a new segment on a record, no file copy */
+        post: operations["createRecordSegment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3189,6 +3347,21 @@ export interface components {
             pagination: components["schemas"]["PaginationMeta"];
             projects: components["schemas"]["MontageProject"][];
         };
+        NamingRule: {
+            key: string;
+            prefix: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        NamingRuleResponse: components["schemas"]["OkEnvelope"] & {
+            rule: components["schemas"]["NamingRule"];
+        };
+        NamingRulesResponse: components["schemas"]["OkEnvelope"] & {
+            rules: components["schemas"]["NamingRule"][];
+        };
+        NamingRuleUpsertRequest: {
+            prefix: string;
+        };
         OdbcProbe: {
             driverLoaded: boolean;
             dsn: string;
@@ -3296,6 +3469,26 @@ export interface components {
             executesCode: boolean;
             fileSystemAccess: boolean;
             networkAccess: boolean;
+        };
+        Project: {
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            name: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ProjectCreateRequest: {
+            name: string;
+        };
+        ProjectRecordsResponse: components["schemas"]["OkEnvelope"] & {
+            recordIds: string[];
+        };
+        ProjectResponse: components["schemas"]["OkEnvelope"] & {
+            project: components["schemas"]["Project"];
+        };
+        ProjectsResponse: components["schemas"]["OkEnvelope"] & {
+            projects: components["schemas"]["Project"][];
         };
         PublicCatalogRecord: {
             /** Format: date-time */
@@ -3448,6 +3641,9 @@ export interface components {
             region?: components["schemas"]["RecordNoteRegion"] | null;
             timestampSeconds?: number | null;
         };
+        RecordProjectsResponse: components["schemas"]["OkEnvelope"] & {
+            projects: components["schemas"]["Project"][];
+        };
         RecordRelation: {
             /** Format: date-time */
             createdAt?: string | null;
@@ -3462,6 +3658,39 @@ export interface components {
         };
         RecordRelationResponse: components["schemas"]["OkEnvelope"] & {
             relation: components["schemas"]["RecordRelation"];
+        };
+        RecordSegment: {
+            /** Format: date-time */
+            createdAt: string;
+            description: string;
+            endSeconds: number | null;
+            id: string;
+            recordId: string;
+            startSeconds: number | null;
+            tags: string[];
+            title: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        RecordSegmentCreateRequest: {
+            description?: string;
+            endSeconds?: number | null;
+            startSeconds?: number | null;
+            tags?: string[];
+            title: string;
+        };
+        RecordSegmentResponse: components["schemas"]["OkEnvelope"] & {
+            segment: components["schemas"]["RecordSegment"];
+        };
+        RecordSegmentsResponse: components["schemas"]["OkEnvelope"] & {
+            segments: components["schemas"]["RecordSegment"][];
+        };
+        RecordSegmentUpdateRequest: {
+            description?: string;
+            endSeconds?: number | null;
+            startSeconds?: number | null;
+            tags?: string[];
+            title?: string;
         };
         RecordsImportCsvResponse: components["schemas"]["OkEnvelope"] & {
             accepted: number;
@@ -5825,6 +6054,71 @@ export interface operations {
             404: components["responses"]["Error"];
         };
     };
+    listNamingRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Naming rules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NamingRulesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    upsertNamingRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NamingRuleUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved naming rule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NamingRuleResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteNamingRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
     getOnboardingProgress: {
         parameters: {
             query?: never;
@@ -5899,6 +6193,126 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listProjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Projects */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created project */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    listProjectRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Linked record ids */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRecordsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    linkProjectRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    unlinkProjectRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
         };
     };
     getPublicCatalog: {
@@ -5983,6 +6397,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecordNoteResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteRecordSegment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateRecordSegment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordSegmentUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated segment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordSegmentResponse"];
                 };
             };
             401: components["responses"]["Error"];
@@ -6331,6 +6790,80 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    listRecordProjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Projects containing this record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordProjectsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    listRecordSegments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Segments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordSegmentsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createRecordSegment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordSegmentCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created segment */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordSegmentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };

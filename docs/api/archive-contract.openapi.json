@@ -4332,6 +4332,250 @@
           "401": { "$ref": "#/components/responses/Error" }
         }
       }
+    },
+    "/naming-rules": {
+      "get": {
+        "tags": ["Naming Rules"],
+        "summary": "List filename prefix rules per project or type",
+        "operationId": "listNamingRules",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Naming rules",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NamingRulesResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/naming-rules/{key}": {
+      "put": {
+        "tags": ["Naming Rules"],
+        "summary": "Create or replace the naming rule for a project/type key",
+        "operationId": "upsertNamingRule",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "key", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NamingRuleUpsertRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved naming rule",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NamingRuleResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Naming Rules"],
+        "summary": "Remove the naming rule for a project/type key",
+        "operationId": "deleteNamingRule",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "key", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "tags": ["Projects"],
+        "summary": "List projects",
+        "operationId": "listProjects",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Projects",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectsResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Projects"],
+        "summary": "Create a project",
+        "operationId": "createProject",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectCreateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created project",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/projects/{id}": {
+      "delete": {
+        "tags": ["Projects"],
+        "summary": "Delete a project and its record links",
+        "operationId": "deleteProject",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/projects/{id}/records": {
+      "get": {
+        "tags": ["Projects"],
+        "summary": "List record ids linked to a project",
+        "operationId": "listProjectRecords",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Linked record ids",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectRecordsResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/projects/{id}/records/{recordId}": {
+      "post": {
+        "tags": ["Projects"],
+        "summary": "Link a record to a project, without moving it out of its type/folder",
+        "operationId": "linkProjectRecord",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "recordId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Projects"],
+        "summary": "Unlink a record from a project",
+        "operationId": "unlinkProjectRecord",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "recordId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/projects": {
+      "get": {
+        "tags": ["Projects"],
+        "summary": "List projects a record is linked to",
+        "operationId": "listRecordProjects",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Projects containing this record",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordProjectsResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/segments": {
+      "get": {
+        "tags": ["Record Segments"],
+        "summary": "List segments defined on a record",
+        "operationId": "listRecordSegments",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Segments",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSegmentsResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Record Segments"],
+        "summary": "Define a new segment on a record, no file copy",
+        "operationId": "createRecordSegment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSegmentCreateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created segment",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSegmentResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/record-segments/{id}": {
+      "patch": {
+        "tags": ["Record Segments"],
+        "summary": "Update a record segment",
+        "operationId": "updateRecordSegment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSegmentUpdateRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated segment",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSegmentResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Record Segments"],
+        "summary": "Delete a record segment",
+        "operationId": "deleteRecordSegment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
     }
   },
   "components": {
@@ -7759,6 +8003,172 @@
             "required": ["export"],
             "properties": {
               "export": { "$ref": "#/components/schemas/AccountExport" }
+            }
+          }
+        ]
+      },
+      "NamingRule": {
+        "type": "object",
+        "required": ["key", "prefix", "updatedAt"],
+        "properties": {
+          "key": { "type": "string" },
+          "prefix": { "type": "string" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "NamingRuleUpsertRequest": {
+        "type": "object",
+        "required": ["prefix"],
+        "properties": {
+          "prefix": { "type": "string", "maxLength": 100 }
+        }
+      },
+      "NamingRulesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["rules"],
+            "properties": {
+              "rules": { "type": "array", "items": { "$ref": "#/components/schemas/NamingRule" } }
+            }
+          }
+        ]
+      },
+      "NamingRuleResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["rule"],
+            "properties": {
+              "rule": { "$ref": "#/components/schemas/NamingRule" }
+            }
+          }
+        ]
+      },
+      "Project": {
+        "type": "object",
+        "required": ["id", "name", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ProjectCreateRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      },
+      "ProjectsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["projects"],
+            "properties": {
+              "projects": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } }
+            }
+          }
+        ]
+      },
+      "ProjectResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["project"],
+            "properties": {
+              "project": { "$ref": "#/components/schemas/Project" }
+            }
+          }
+        ]
+      },
+      "ProjectRecordsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["recordIds"],
+            "properties": {
+              "recordIds": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        ]
+      },
+      "RecordProjectsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["projects"],
+            "properties": {
+              "projects": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } }
+            }
+          }
+        ]
+      },
+      "RecordSegment": {
+        "type": "object",
+        "required": ["id", "recordId", "title", "description", "tags", "startSeconds", "endSeconds", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "recordId": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "startSeconds": { "type": "number", "nullable": true },
+          "endSeconds": { "type": "number", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecordSegmentCreateRequest": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "startSeconds": { "type": "number", "nullable": true, "minimum": 0 },
+          "endSeconds": { "type": "number", "nullable": true, "minimum": 0 }
+        }
+      },
+      "RecordSegmentUpdateRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "startSeconds": { "type": "number", "nullable": true, "minimum": 0 },
+          "endSeconds": { "type": "number", "nullable": true, "minimum": 0 }
+        }
+      },
+      "RecordSegmentsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["segments"],
+            "properties": {
+              "segments": { "type": "array", "items": { "$ref": "#/components/schemas/RecordSegment" } }
+            }
+          }
+        ]
+      },
+      "RecordSegmentResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["segment"],
+            "properties": {
+              "segment": { "$ref": "#/components/schemas/RecordSegment" }
             }
           }
         ]
