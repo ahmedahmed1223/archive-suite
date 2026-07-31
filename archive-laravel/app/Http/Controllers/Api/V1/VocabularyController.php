@@ -23,6 +23,15 @@ class VocabularyController extends Controller
         $userId = $this->userId($request);
 
         $departmentId = $request->string('departmentId')->trim()->toString();
+        $preferredTermIds = $departmentId === ''
+            ? []
+            : DB::table('department_vocabulary_preferences')
+                ->where('user_id', $userId)
+                ->where('department_id', $departmentId)
+                ->orderBy('created_at')
+                ->pluck('term_id')
+                ->values()
+                ->all();
         $terms = DB::table('vocabulary_terms')
             ->leftJoin('department_vocabulary_preferences as preferences', function ($join) use ($userId, $departmentId): void { $join->on('preferences.term_id','=','vocabulary_terms.id')->where('preferences.user_id','=',$userId)->where('preferences.department_id','=',$departmentId); })
             ->where('vocabulary_terms.user_id', $userId)
@@ -33,15 +42,47 @@ class VocabularyController extends Controller
             ->map(fn (stdClass $row): array => $this->formatTerm($row))
             ->values();
 
-        return response()->json(['ok' => true, 'terms' => $terms]);
+        return response()->json(['ok' => true, 'terms' => $terms, 'preferredTermIds' => $preferredTermIds]);
     }
 
     public function replaceDepartmentPreferences(Request $request): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
-        $v = $request->validate(['departmentId'=>['required','string','max:100'],'termIds'=>['present','array','max:200'],'termIds.*'=>['string','max:100','distinct']]); $userId=$this->userId($request);
-        if (DB::table('vocabulary_terms')->where('user_id', $userId)->whereIn('id', $v['termIds'])->count() !== count($v['termIds'])) return response()->json(ApiError::envelope('Vocabulary term not found.', 422), 422);
-        DB::transaction(function () use ($v,$userId): void { DB::table('department_vocabulary_preferences')->where('user_id',$userId)->where('department_id',$v['departmentId'])->delete(); $now=now(); $rows=array_map(fn(string $termId)=>['id'=>(string)Str::uuid(),'user_id'=>$userId,'department_id'=>$v['departmentId'],'term_id'=>$termId,'created_at'=>$now,'updated_at'=>$now],$v['termIds']); if($rows!==[]) DB::table('department_vocabulary_preferences')->insert($rows); });
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
+        $validated = $request->validate([
+            'departmentId' => ['required', 'string', 'min:1', 'max:100'],
+            'termIds' => ['present', 'array', 'max:200'],
+            'termIds.*' => ['string', 'max:100', 'distinct'],
+        ]);
+        $userId = $this->userId($request);
+
+        if (DB::table('vocabulary_terms')->where('user_id', $userId)->whereIn('id', $validated['termIds'])->count() !== count($validated['termIds'])) {
+            return response()->json(ApiError::envelope('Vocabulary term not found.', 422), 422);
+        }
+
+        DB::transaction(function () use ($validated, $userId): void {
+            DB::table('department_vocabulary_preferences')
+                ->where('user_id', $userId)
+                ->where('department_id', $validated['departmentId'])
+                ->delete();
+
+            $now = now();
+            $rows = array_map(fn (string $termId): array => [
+                'id' => (string) Str::uuid(),
+                'user_id' => $userId,
+                'department_id' => $validated['departmentId'],
+                'term_id' => $termId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], $validated['termIds']);
+
+            if ($rows !== []) {
+                DB::table('department_vocabulary_preferences')->insert($rows);
+            }
+        });
+
         return $this->index($request);
     }
 

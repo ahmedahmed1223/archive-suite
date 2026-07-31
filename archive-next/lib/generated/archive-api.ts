@@ -3157,6 +3157,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vocabulary/department-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the approved vocabulary term preferences for one department */
+        put: operations["replaceDepartmentVocabularyPreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vocabulary/export": {
         parameters: {
             query?: never;
@@ -3912,6 +3929,10 @@ export interface components {
         };
         DepartmentTemplateMetricsResponse: components["schemas"]["OkEnvelope"] & {
             metrics: components["schemas"]["DepartmentTemplateMetrics"];
+        };
+        DepartmentVocabularyPreferencesRequest: {
+            departmentId: string;
+            termIds: string[];
         };
         DiscoverResponse: components["schemas"]["OkEnvelope"] & {
             sections: components["schemas"]["DiscoverSection"][];
@@ -5550,6 +5571,7 @@ export interface components {
             term: components["schemas"]["VocabularyTerm"];
         };
         VocabularyTermsResponse: components["schemas"]["OkEnvelope"] & {
+            preferredTermIds: string[];
             terms: components["schemas"]["VocabularyTerm"][];
         };
         WatchedIngestBatch: {
@@ -11586,7 +11608,10 @@ export interface operations {
     };
     listVocabularyTerms: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Prioritize the current user's approved terms for this department. */
+                departmentId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11698,6 +11723,33 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    replaceDepartmentVocabularyPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentVocabularyPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description Vocabulary terms with the department preferences applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyTermsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     exportVocabularyTerms: {

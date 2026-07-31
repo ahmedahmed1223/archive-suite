@@ -104,7 +104,26 @@ class VocabularyApiTest extends TestCase
         $first = $this->postJson('/api/v1/vocabulary', ['term' => 'عام'], $this->authHeaders())->assertCreated()->json('term.id');
         $preferred = $this->postJson('/api/v1/vocabulary', ['term' => 'قسم'], $this->authHeaders())->assertCreated()->json('term.id');
         $this->putJson('/api/v1/vocabulary/department-preferences', ['departmentId' => 'news', 'termIds' => [$preferred]], $this->authHeaders())->assertOk();
-        $this->getJson('/api/v1/vocabulary?departmentId=news', $this->authHeaders())->assertOk()->assertJsonPath('terms.0.id', $preferred)->assertJsonCount(2, 'terms');
+        $this->assertDatabaseHas('audit_logs', ['event' => 'department_vocabulary_preferences.replace', 'resource_id' => 'news']);
+        $this->getJson('/api/v1/vocabulary?departmentId=news', $this->authHeaders())->assertOk()->assertJsonPath('terms.0.id', $preferred)->assertJsonPath('preferredTermIds.0', $preferred)->assertJsonCount(2, 'terms');
         $this->assertNotSame($first, $preferred);
+    }
+
+    public function test_department_preferences_reject_terms_owned_by_another_user(): void
+    {
+        \App\Models\User::query()->firstOrCreate(
+            ['email' => 'other-preference@example.test'],
+            ['name' => 'Other User', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password'), 'role' => 'editor']
+        );
+        $otherToken = $this->postJson('/api/v1/auth/login', [
+            'email' => 'other-preference@example.test',
+            'password' => 'secret-password',
+        ])->assertOk()->json('accessToken');
+        $otherTermId = $this->postJson('/api/v1/vocabulary', ['term' => 'خاص'], ['Authorization' => 'Bearer '.$otherToken])
+            ->assertCreated()
+            ->json('term.id');
+
+        $this->putJson('/api/v1/vocabulary/department-preferences', ['departmentId' => 'news', 'termIds' => [$otherTermId]], $this->authHeaders())
+            ->assertUnprocessable();
     }
 }

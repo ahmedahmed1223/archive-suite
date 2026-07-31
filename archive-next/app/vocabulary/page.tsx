@@ -43,6 +43,10 @@ export default function VocabularyPage() {
   const [canonicalTermId, setCanonicalTermId] = useState("");
   const [note, setNote] = useState("");
   const [filter, setFilter] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+  const [preferredTermIds, setPreferredTermIds] = useState<string[]>([]);
+  const [preferenceMessage, setPreferenceMessage] = useState("");
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [importMessage, setImportMessage] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [deleteStack, setDeleteStack] = useState<UndoStack<TermDeletion>>(emptyUndoStack);
@@ -74,8 +78,11 @@ export default function VocabularyPage() {
   }
 
   async function refreshTerms() {
-    const response = await api.vocabularyTerms();
-    if (response.ok) setTerms(response.terms);
+    const response = await api.vocabularyTerms(departmentId.trim() || undefined);
+    if (response.ok) {
+      setTerms(response.terms);
+      setPreferredTermIds(response.preferredTermIds);
+    }
     else setError(response.error || "تعذر تحميل المفردات.");
   }
 
@@ -96,8 +103,48 @@ export default function VocabularyPage() {
       return;
     }
     setTerms(termsResponse.terms);
+    setPreferredTermIds(termsResponse.preferredTermIds);
     setRecords(recordsResponse.records);
     setLoadState({ status: "ready" });
+  }
+
+  async function loadDepartmentPreferences() {
+    const currentDepartmentId = departmentId.trim();
+    if (!currentDepartmentId) {
+      setError("أدخل معرّف القسم أولاً.");
+      return;
+    }
+    setError("");
+    setPreferenceMessage("");
+    const response = await api.vocabularyTerms(currentDepartmentId);
+    if (!response.ok) {
+      setError(response.error || "تعذر تحميل تفضيلات القسم.");
+      return;
+    }
+    setTerms(response.terms);
+    setPreferredTermIds(response.preferredTermIds);
+    setPreferenceMessage(`حُمّلت تفضيلات قسم «${currentDepartmentId}».`);
+  }
+
+  function toggleDepartmentPreference(termId: string) {
+    setPreferredTermIds((current) => current.includes(termId) ? current.filter((id) => id !== termId) : [...current, termId]);
+  }
+
+  async function saveDepartmentPreferences() {
+    const currentDepartmentId = departmentId.trim();
+    if (!currentDepartmentId || isSavingPreferences) return;
+    setIsSavingPreferences(true);
+    setError("");
+    setPreferenceMessage("");
+    const response = await api.replaceDepartmentVocabularyPreferences(currentDepartmentId, preferredTermIds);
+    setIsSavingPreferences(false);
+    if (!response.ok) {
+      setError(response.error || "تعذر حفظ تفضيلات القسم.");
+      return;
+    }
+    setTerms(response.terms);
+    setPreferredTermIds(response.preferredTermIds);
+    setPreferenceMessage(`حُفظت ${response.preferredTermIds.length} تفضيلات لقسم «${currentDepartmentId}».`);
   }
 
   useEffect(() => {
@@ -274,6 +321,42 @@ export default function VocabularyPage() {
       ) : null}
 
       {importMessage ? <p className="helper-text" role="status">{importMessage}</p> : null}
+
+      {canManageVocabulary && loadState.status === "ready" ? (
+        <section className="panel panel-compact" aria-labelledby="department-vocabulary-preferences">
+          <div className="panel-title-row">
+            <div>
+              <h2 id="department-vocabulary-preferences">تفضيلات مفردات القسم</h2>
+              <p>ترفع القيم المعتمدة للقسم في قوائم الاختيار والبحث، من دون إنشاء قاموس منفصل أو إخفاء القاموس العام.</p>
+            </div>
+            <span className="badge">{preferredTermIds.length} معتمد</span>
+          </div>
+          <div className="archive-toolbar-grid">
+            <label>
+              <span>معرّف القسم</span>
+              <input className="search-input" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} placeholder="news" />
+            </label>
+            <div className="archive-toolbar-actions">
+              <button type="button" className="button button-secondary" onClick={() => void loadDepartmentPreferences()} disabled={!departmentId.trim()}>تحميل التفضيلات</button>
+              <button type="button" className="button button-primary" onClick={() => void saveDepartmentPreferences()} disabled={!departmentId.trim() || isSavingPreferences}>
+                {isSavingPreferences ? "جار الحفظ…" : "حفظ التفضيلات"}
+              </button>
+            </div>
+          </div>
+          {preferenceMessage ? <p className="helper-text" role="status">{preferenceMessage}</p> : null}
+          <div className="analytics-tag-list">
+            {terms.map((item) => (
+              <label className="analytics-tag-row" key={`department-preference-${item.id}`}>
+                <span><strong>{item.term}</strong>{item.aliases ? <small className="helper-text"> · {item.aliases}</small> : null}</span>
+                <span className="button-row">
+                  <span className="badge">{item.kind}</span>
+                  <input type="checkbox" checked={preferredTermIds.includes(item.id)} onChange={() => toggleDepartmentPreference(item.id)} aria-label={`اعتماد ${item.term} للقسم`} />
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {canManageVocabulary && (canUndo(deleteStack) || canRedo(deleteStack)) ? (
         <div className="button-row">

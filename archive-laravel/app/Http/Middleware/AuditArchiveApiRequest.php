@@ -62,6 +62,7 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/metadata-templates/{id}/publish'] => ['metadata_templates.publish', 'metadata_template'],
             ['POST', 'api/v1/metadata-templates/{id}/published-version/{version}/restore'] => ['metadata_templates.restore_published', 'metadata_template'],
             ['PUT', 'api/v1/department-quality-rules'] => ['department_quality_rules.upsert', 'department_quality_rule'],
+            ['PUT', 'api/v1/vocabulary/department-preferences'] => ['department_vocabulary_preferences.replace', 'department_vocabulary_preferences'],
             ['POST', 'api/v1/department-quality-rules/preview'] => ['department_quality_rules.preview', 'department_quality_rule'],
             ['POST', 'api/v1/inbox/{id}/department-routing/preview'] => ['inbox_department_routing.preview', 'inbox_item'],
             ['POST', 'api/v1/inbox/{id}/department-routing'] => ['inbox_department_routing.apply', 'inbox_item'],
@@ -121,6 +122,10 @@ class AuditArchiveApiRequest
 
         if ($route === 'api/v1/saved-searches/{id}/access') {
             $resourceId = $request->route('id');
+        }
+
+        if ($route === 'api/v1/vocabulary/department-preferences') {
+            $resourceId = $request->string('departmentId')->toString() ?: null;
         }
 
         if ($route === 'api/v1/metadata-templates' && $response->isSuccessful()) {

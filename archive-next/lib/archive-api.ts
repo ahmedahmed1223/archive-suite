@@ -1604,7 +1604,8 @@ export interface ArchiveApiClient {
   deleteInboxItem(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   previewInboxDepartmentRouting(id: string, departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<DepartmentRoutingPreview>>;
   routeInboxDepartment(id: string, departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ departmentId: string; routingHistory: InboxItem["routingHistory"] }>>;
-  vocabularyTerms(options?: AuthRequestOptions): Promise<ApiEnvelope<{ terms: VocabularyTerm[] }>>;
+  vocabularyTerms(departmentId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>>;
+  replaceDepartmentVocabularyPreferences(departmentId: string, termIds: string[], options?: AuthRequestOptions): Promise<ApiEnvelope<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>>;
   createVocabularyTerm(payload: CreateVocabularyTermPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ term: VocabularyTerm }>>;
   deleteVocabularyTerm(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   tagNodes(options?: AuthRequestOptions): Promise<ApiEnvelope<{ nodes: TagNode[] }>>;
@@ -2574,7 +2575,10 @@ export function createArchiveApiClient({
       post<DepartmentRoutingPreview>(`/inbox/${encodeURIComponent(id)}/department-routing/preview`, { departmentId }, options),
     routeInboxDepartment: (id: string, departmentId: string, options?: AuthRequestOptions) =>
       post<{ departmentId: string; routingHistory: InboxItem["routingHistory"] }>(`/inbox/${encodeURIComponent(id)}/department-routing`, { departmentId }, options),
-    vocabularyTerms: (options?: AuthRequestOptions) => get<{ terms: VocabularyTerm[] }>("/vocabulary", options),
+    vocabularyTerms: (departmentId?: string, options?: AuthRequestOptions) =>
+      get<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>(`/vocabulary${departmentId ? `?departmentId=${encodeURIComponent(departmentId)}` : ""}`, options),
+    replaceDepartmentVocabularyPreferences: (departmentId: string, termIds: string[], options?: AuthRequestOptions) =>
+      put<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>("/vocabulary/department-preferences", { departmentId, termIds }, options),
     createVocabularyTerm: (payload: CreateVocabularyTermPayload, options?: AuthRequestOptions) =>
       post<{ term: VocabularyTerm }>("/vocabulary", payload, options),
     deleteVocabularyTerm: (id: string, options?: AuthRequestOptions) =>

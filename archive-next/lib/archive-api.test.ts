@@ -25,6 +25,23 @@ describe("archive API uploads", () => {
   });
 });
 
+describe("department vocabulary preferences API client", () => {
+  it("loads prioritized terms and replaces the selected department preferences", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, terms: [], preferredTermIds: [] }), { status: 200 }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    await api.vocabularyTerms("news & archives");
+    await api.replaceDepartmentVocabularyPreferences("news & archives", ["term-1", "term-2"]);
+
+    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([
+      "/api/v1/vocabulary?departmentId=news%20%26%20archives",
+      "/api/v1/vocabulary/department-preferences"
+    ]);
+    expect(fetchImpl.mock.calls[1]?.[1]?.method).toBe("PUT");
+    expect(fetchImpl.mock.calls[1]?.[1]?.body).toBe(JSON.stringify({ departmentId: "news & archives", termIds: ["term-1", "term-2"] }));
+  });
+});
+
 describe("safety preview API client", () => {
   it("exposes the required synthetic marker on preview errors without changing generic errors", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({

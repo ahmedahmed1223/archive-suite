@@ -2521,6 +2521,7 @@
         "summary": "List vocabulary terms for the current user",
         "operationId": "listVocabularyTerms",
         "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "departmentId", "in": "query", "required": false, "schema": { "type": "string", "maxLength": 100 }, "description": "Prioritize the current user's approved terms for this department." }],
         "responses": {
           "200": {
             "description": "Vocabulary terms",
@@ -2556,6 +2557,21 @@
             }
           },
           "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/vocabulary/department-preferences": {
+      "put": {
+        "tags": ["Vocabulary"],
+        "summary": "Replace the approved vocabulary term preferences for one department",
+        "operationId": "replaceDepartmentVocabularyPreferences",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentVocabularyPreferencesRequest" } } } },
+        "responses": {
+          "200": { "description": "Vocabulary terms with the department preferences applied", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VocabularyTermsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
           "422": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -7204,17 +7220,26 @@
           "note": { "type": "string", "maxLength": 2000 }
         }
       },
+      "DepartmentVocabularyPreferencesRequest": {
+        "type": "object",
+        "required": ["departmentId", "termIds"],
+        "properties": {
+          "departmentId": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "termIds": { "type": "array", "maxItems": 200, "items": { "type": "string", "maxLength": 100 }, "uniqueItems": true }
+        }
+      },
       "VocabularyTermsResponse": {
         "allOf": [
           { "$ref": "#/components/schemas/OkEnvelope" },
           {
             "type": "object",
-            "required": ["terms"],
+            "required": ["terms", "preferredTermIds"],
             "properties": {
               "terms": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/VocabularyTerm" }
-              }
+              },
+              "preferredTermIds": { "type": "array", "items": { "type": "string" } }
             }
           }
         ]
