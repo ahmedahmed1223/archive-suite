@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Clock3, Hourglass, Inbox as InboxIcon, ListChecks, ShoppingBasket, Star } from "lucide-react";
+import { ArrowDown, ArrowUp, Bell, Clock3, Hourglass, Inbox as InboxIcon, ListChecks, ListOrdered, ShoppingBasket, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
@@ -12,6 +12,7 @@ import { listFavorites, type Favorite } from "@/lib/favorites";
 import { clearRecent, listRecent, type RecentItem } from "@/lib/recent-items";
 import { listDueLater, removeLater, type LaterEntry } from "@/lib/later-list";
 import { clearBasket, listBasket, removeFromBasket, type WorkBasketEntry } from "@/lib/work-basket";
+import { clearQueue, listQueue, moveInQueue, removeFromQueue, type QueueEntry } from "@/lib/personal-queue";
 import { clearRecentSearches } from "@/lib/recent-searches";
 import { isContextRecordingEnabled, setContextRecording } from "@/lib/personal-context";
 import { formatDate } from "@/lib/record-utils";
@@ -33,6 +34,7 @@ export default function DailyPage() {
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [dueLater, setDueLater] = useState<LaterEntry[]>([]);
   const [basket, setBasket] = useState<WorkBasketEntry[]>([]);
+  const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [recording, setRecording] = useState(true);
   const [contextStatus, setContextStatus] = useState("");
   // ponytail: عدّاد الحقوق فقط — نقطة `records` مقسّمة بمؤشر بلا إجمالي،
@@ -69,6 +71,7 @@ export default function DailyPage() {
     setRecent(listRecent());
     setDueLater(listDueLater());
     setBasket(listBasket());
+    setQueue(listQueue());
     setRecording(isContextRecordingEnabled());
   }, []);
 
@@ -85,6 +88,21 @@ export default function DailyPage() {
   function handleClearBasket() {
     clearBasket();
     setBasket([]);
+  }
+
+  function handleRemoveQueueItem(id: string) {
+    removeFromQueue(id);
+    setQueue(listQueue());
+  }
+
+  function handleMoveQueueItem(id: string, direction: -1 | 1) {
+    moveInQueue(id, direction);
+    setQueue(listQueue());
+  }
+
+  function handleClearQueue() {
+    clearQueue();
+    setQueue([]);
   }
 
   function handleRecordingChange(enabled: boolean) {
@@ -269,6 +287,54 @@ export default function DailyPage() {
                     <span className="dashboard-recent__title">{entry.title || entry.id}</span>
                   </Link>
                   <button type="button" className="button button-secondary button-sm" onClick={() => handleRemoveBasketItem(entry.id)}>
+                    إزالة
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="panel" aria-label="طابور التجهيز الشخصي">
+          <header className="dashboard-recent__header">
+            <h2>
+              <ListOrdered aria-hidden="true" size={18} strokeWidth={2} />
+              <span>طابور التجهيز الشخصي</span>
+            </h2>
+            {queue.length > 0 ? (
+              <button type="button" className="button button-secondary button-sm" onClick={handleClearQueue}>
+                تفريغ الطابور
+              </button>
+            ) : null}
+          </header>
+          {queue.length === 0 ? (
+            <EmptyState icon={<ListOrdered aria-hidden="true" />} title="الطابور فارغ" description="رتّب السجلات التي تنوي معالجتها لاحقًا بترتيبك الشخصي." />
+          ) : (
+            <ul className="dashboard-recent__list">
+              {queue.map((entry, index) => (
+                <li key={entry.id}>
+                  <Link className="dashboard-recent__item" href={`/archive/${encodeURIComponent(entry.id)}`}>
+                    <span className="dashboard-recent__title">{entry.title || entry.id}</span>
+                  </Link>
+                  <button
+                    type="button"
+                    className="button button-secondary button-sm"
+                    onClick={() => handleMoveQueueItem(entry.id, -1)}
+                    disabled={index === 0}
+                    title="تحريك للأعلى"
+                  >
+                    <ArrowUp aria-hidden="true" size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary button-sm"
+                    onClick={() => handleMoveQueueItem(entry.id, 1)}
+                    disabled={index === queue.length - 1}
+                    title="تحريك للأسفل"
+                  >
+                    <ArrowDown aria-hidden="true" size={14} />
+                  </button>
+                  <button type="button" className="button button-secondary button-sm" onClick={() => handleRemoveQueueItem(entry.id)}>
                     إزالة
                   </button>
                 </li>

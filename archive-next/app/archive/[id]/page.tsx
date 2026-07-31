@@ -34,6 +34,7 @@ import { clearEditDraftPosition, getEditDraftPosition, saveEditDraftPosition } f
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
 import { deferRecord, getLaterEntry, removeLater, type LaterEntry } from "@/lib/later-list";
 import { isInBasket, toggleBasket } from "@/lib/work-basket";
+import { isInQueue, toggleQueue } from "@/lib/personal-queue";
 import { deriveRecordStatus, missingDescribeFields } from "@/lib/record-status";
 import { getShortcut, isTypingTarget, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
 import { recordView } from "@/lib/recent-items";
@@ -1177,6 +1178,7 @@ export default function ArchiveDetailPage() {
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [isFav, setIsFav] = useState(false);
   const [inBasket, setInBasket] = useState(false);
+  const [inQueue, setInQueue] = useState(false);
   const [laterEntry, setLaterEntry] = useState<LaterEntry | null>(null);
   const [laterFormOpen, setLaterFormOpen] = useState(false);
   const [laterReason, setLaterReason] = useState("");
@@ -1404,6 +1406,7 @@ export default function ArchiveDetailPage() {
       });
       setIsFav(isFavorited(id));
       setInBasket(isInBasket(id));
+      setInQueue(isInQueue(id));
       setLaterEntry(getLaterEntry(id));
       recordView(id, recordResponse.record.title, recordResponse.record.type);
 
@@ -1567,6 +1570,19 @@ export default function ArchiveDetailPage() {
                 title={inBasket ? "إزالة من سلة العمل" : "إضافة إلى سلة العمل"}
               >
                 {inBasket ? "إزالة من السلة" : "أضف إلى السلة"}
+              </button>
+            ) : null}
+            {state.status === "ready" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setInQueue(toggleQueue(id, { title: state.record.title, type: state.record.type }));
+                }}
+                className={`button ${inQueue ? "button-primary" : "button-secondary"}`}
+                aria-pressed={inQueue}
+                title={inQueue ? "إزالة من طابور التجهيز" : "إضافة إلى طابور التجهيز"}
+              >
+                {inQueue ? "إزالة من الطابور" : "أضف إلى الطابور"}
               </button>
             ) : null}
             {state.status === "ready" ? (
