@@ -326,6 +326,26 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-872: field-scoped missing-info request — assignee/due date/resolution, no new task platform.
+export interface RecordFieldRequest {
+  id: string;
+  recordId: string;
+  field: string;
+  message: string;
+  assignee: string | null;
+  dueDate: string | null;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  createdAt: string;
+}
+
+export interface RecordFieldRequestInput {
+  field: string;
+  message: string;
+  assignee?: string | null;
+  dueDate?: string | null;
+}
+
 // V1-868: last recorded source per metadata field, opt-in via bulkRecords' fieldSources.
 export interface RecordFieldSource {
   field: string;
@@ -1298,6 +1318,11 @@ export interface ArchiveApiClient {
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   unusedFiles(options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: UnusedFile[] }>>;
+  openFieldRequests(assignee?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ requests: RecordFieldRequest[] }>>;
+  recordFieldRequests(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ requests: RecordFieldRequest[] }>>;
+  createRecordFieldRequest(recordId: string, payload: RecordFieldRequestInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: RecordFieldRequest }>>;
+  resolveFieldRequest(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: RecordFieldRequest }>>;
+  deleteFieldRequest(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   recordFieldSources(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sources: RecordFieldSource[] }>>;
   fileHealthChecks(attachmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ checks: FileHealthCheck[] }>>;
   runFileHealthCheck(attachmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ check: FileHealthCheck }>>;
@@ -1864,6 +1889,16 @@ export function createArchiveApiClient({
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
     unusedFiles: (options?: AuthRequestOptions) => get<{ files: UnusedFile[] }>("/files/unused", options),
+    openFieldRequests: (assignee?: string, options?: AuthRequestOptions) =>
+      get<{ requests: RecordFieldRequest[] }>(`/field-requests${assignee ? `?${new URLSearchParams({ assignee })}` : ""}`, options),
+    recordFieldRequests: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ requests: RecordFieldRequest[] }>(`/records/${encodeURIComponent(recordId)}/field-requests`, options),
+    createRecordFieldRequest: (recordId: string, payload: RecordFieldRequestInput, options?: AuthRequestOptions) =>
+      post<{ request: RecordFieldRequest }>(`/records/${encodeURIComponent(recordId)}/field-requests`, payload, options),
+    resolveFieldRequest: (id: string, options?: AuthRequestOptions) =>
+      post<{ request: RecordFieldRequest }>(`/field-requests/${encodeURIComponent(id)}/resolve`, undefined, options),
+    deleteFieldRequest: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/field-requests/${encodeURIComponent(id)}`, undefined, options),
     recordFieldSources: (recordId: string, options?: AuthRequestOptions) =>
       get<{ sources: RecordFieldSource[] }>(`/records/${encodeURIComponent(recordId)}/field-sources`, options),
     fileHealthChecks: (attachmentId: string, options?: AuthRequestOptions) =>

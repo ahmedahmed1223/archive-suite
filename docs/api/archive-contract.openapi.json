@@ -4834,6 +4834,88 @@
         }
       }
     },
+    "/field-requests": {
+      "get": {
+        "tags": ["Field Requests"],
+        "summary": "List open field requests across records, for work-list surfaces",
+        "operationId": "listOpenFieldRequests",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "assignee", "in": "query", "required": false, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Open field requests",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordFieldRequestsResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/field-requests/{id}/resolve": {
+      "post": {
+        "tags": ["Field Requests"],
+        "summary": "Resolve a field request",
+        "operationId": "resolveFieldRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Resolved request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordFieldRequestResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/field-requests/{id}": {
+      "delete": {
+        "tags": ["Field Requests"],
+        "summary": "Cancel a field request",
+        "operationId": "deleteFieldRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/field-requests": {
+      "get": {
+        "tags": ["Field Requests"],
+        "summary": "List field requests for a record",
+        "operationId": "listRecordFieldRequests",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Field requests",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordFieldRequestsResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Field Requests"],
+        "summary": "Create a field-scoped missing-info request for a record",
+        "operationId": "createRecordFieldRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordFieldRequestCreateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordFieldRequestResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/field-sources": {
       "get": {
         "tags": ["Field Sources"],
@@ -8833,6 +8915,55 @@
             "properties": {
               "primaryId": { "type": "string" },
               "merged": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        ]
+      },
+      "RecordFieldRequest": {
+        "type": "object",
+        "required": ["id", "recordId", "field", "message", "assignee", "dueDate", "resolvedAt", "resolvedBy", "createdAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "recordId": { "type": "string" },
+          "field": { "type": "string" },
+          "message": { "type": "string" },
+          "assignee": { "type": "string", "nullable": true },
+          "dueDate": { "type": "string", "format": "date", "nullable": true },
+          "resolvedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "resolvedBy": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecordFieldRequestCreateRequest": {
+        "type": "object",
+        "required": ["field", "message"],
+        "properties": {
+          "field": { "type": "string", "maxLength": 100 },
+          "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "assignee": { "type": "string", "nullable": true, "maxLength": 200 },
+          "dueDate": { "type": "string", "format": "date", "nullable": true }
+        }
+      },
+      "RecordFieldRequestsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["requests"],
+            "properties": {
+              "requests": { "type": "array", "items": { "$ref": "#/components/schemas/RecordFieldRequest" } }
+            }
+          }
+        ]
+      },
+      "RecordFieldRequestResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["request"],
+            "properties": {
+              "request": { "$ref": "#/components/schemas/RecordFieldRequest" }
             }
           }
         ]

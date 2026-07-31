@@ -452,6 +452,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/field-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List open field requests across records, for work-list surfaces */
+        get: operations["listOpenFieldRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/field-requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Cancel a field request */
+        delete: operations["deleteFieldRequest"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/field-requests/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve a field request */
+        post: operations["resolveFieldRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files": {
         parameters: {
             query?: never;
@@ -1235,6 +1286,24 @@ export interface paths {
         post: operations["claimRecordEdit"];
         /** Release the edit claim for a record */
         delete: operations["releaseRecordEditClaim"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/field-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List field requests for a record */
+        get: operations["listRecordFieldRequests"];
+        put?: never;
+        /** Create a field-scoped missing-info request for a record */
+        post: operations["createRecordFieldRequest"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3979,6 +4048,33 @@ export interface components {
         RecordEditClaimResponse: components["schemas"]["OkEnvelope"] & {
             claim: components["schemas"]["RecordEditClaim"] | null;
         };
+        RecordFieldRequest: {
+            assignee: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date */
+            dueDate: string | null;
+            field: string;
+            id: string;
+            message: string;
+            recordId: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+            resolvedBy: string | null;
+        };
+        RecordFieldRequestCreateRequest: {
+            assignee?: string | null;
+            /** Format: date */
+            dueDate?: string | null;
+            field: string;
+            message: string;
+        };
+        RecordFieldRequestResponse: components["schemas"]["OkEnvelope"] & {
+            request: components["schemas"]["RecordFieldRequest"];
+        };
+        RecordFieldRequestsResponse: components["schemas"]["OkEnvelope"] & {
+            requests: components["schemas"]["RecordFieldRequest"][];
+        };
         RecordFieldSource: {
             field: string;
             /** @enum {string} */
@@ -5915,6 +6011,69 @@ export interface operations {
             401: components["responses"]["Error"];
         };
     };
+    listOpenFieldRequests: {
+        parameters: {
+            query?: {
+                assignee?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Open field requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordFieldRequestsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    deleteFieldRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    resolveFieldRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resolved request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordFieldRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
     listFiles: {
         parameters: {
             query?: never;
@@ -7484,6 +7643,57 @@ export interface operations {
         responses: {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
+        };
+    };
+    listRecordFieldRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Field requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordFieldRequestsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createRecordFieldRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordFieldRequestCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created request */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordFieldRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listRecordFieldSources: {
