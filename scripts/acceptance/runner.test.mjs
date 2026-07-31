@@ -259,6 +259,21 @@ test("unavailable capabilities are blocked and have deterministic exit code two"
   ]);
 });
 
+test("a daily-style run may pass with declared blocked capabilities while preserving their evidence", async () => {
+  const blocked = { ...scenario, id: "V1-IA-GATE-001", capabilities: ["automation"] };
+  const result = await runAcceptance({
+    scenarios: [scenario, blocked],
+    allowBlockedCapability: true,
+    provider: providerFake(),
+    executeScenario: async ({ scenario: current }) => ({ scenarioId: current.id, status: "passed" }),
+  });
+
+  assert.equal(result.status, "passed");
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.blockedCapabilityAccepted, true);
+  assert.deepEqual(result.results.map(({ status }) => status), ["passed", "blocked-capability"]);
+});
+
 test("tag-only CLI selection executes every matching registry scenario", async () => {
   const options = parseAcceptanceArguments(["run", "--tag", "smoke"]);
   const executed = [];

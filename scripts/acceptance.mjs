@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { createEvidenceStore } from "./acceptance/evidence.mjs";
 import { createDockerProvider } from "./acceptance/providers/docker.mjs";
+import { resolveGate } from "./acceptance/gates.mjs";
 import { AcceptanceInputError, resolveAcceptanceSelection, runAcceptance } from "./acceptance/runner.mjs";
 import { createSmokeScenarioExecutor } from "./acceptance/scenarios.mjs";
 
@@ -104,6 +105,7 @@ export async function main(argv = process.argv.slice(2), {
 } = {}) {
   try {
     const options = parseAcceptanceArguments(argv);
+    const gate = options.tag && ["daily", "nightly", "rc", "ga"].includes(options.tag) ? resolveGate(options.tag) : undefined;
     const readLastFailed = () => findLastFailedManifest(evidenceRoot);
     const selectedScenarios = await resolveAcceptanceSelection({ ...options, readLastFailed });
     const runId = `run-${now().toISOString().replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "").toLowerCase()}`;
@@ -118,6 +120,7 @@ export async function main(argv = process.argv.slice(2), {
       executeScenario: executeScenario ?? createScenarioExecutor(),
       runMetadata: metadata,
       now,
+      allowBlockedCapability: gate?.allowBlockedCapability === true,
     });
     process.stdout.write(`${JSON.stringify({ status: result.status, exitCode: result.exitCode, selected: result.selected, evidenceDirectory: evidenceStore.directory })}\n`);
     return result.exitCode;

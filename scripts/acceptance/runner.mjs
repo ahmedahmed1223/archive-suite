@@ -200,8 +200,11 @@ async function executeWithOneFlakeRetry({
   return result;
 }
 
-function summarize(results, cleanup, orchestrationFailure) {
-  const outcomesPassed = results.every((result) => result.status === "passed");
+function summarize(results, cleanup, orchestrationFailure, allowBlockedCapability) {
+  const blockedCapabilityAccepted = Boolean(allowBlockedCapability)
+    && results.some((result) => result.status === "blocked-capability")
+    && results.every((result) => result.status === "passed" || result.status === "blocked-capability");
+  const outcomesPassed = results.every((result) => result.status === "passed") || blockedCapabilityAccepted;
   const cleanupFailed = !cleanup.keptForDiagnostics && !cleanup.proved;
   const status = outcomesPassed && !cleanupFailed && !orchestrationFailure
     ? "passed"
@@ -214,6 +217,7 @@ function summarize(results, cleanup, orchestrationFailure) {
     exitCode,
     results,
     cleanup,
+    ...(blockedCapabilityAccepted ? { blockedCapabilityAccepted: true } : {}),
     ...(orchestrationFailure ? {
       orchestrationFailure: {
         classification: classifyError(orchestrationFailure, "platform"),
@@ -287,6 +291,7 @@ export async function runAcceptance({
   clearTimer = clearTimeout,
   runDeadlineMs = RUN_DEADLINE_MS,
   cleanupDeadlineMs = CLEANUP_DEADLINE_MS,
+  allowBlockedCapability = false,
 } = {}) {
   if (!provider) throw new Error("acceptance provider is required");
   if (typeof executeScenario !== "function") throw new Error("executeScenario must be a function");
@@ -384,7 +389,7 @@ export async function runAcceptance({
 
   clearTimer(deadline);
   const finished = dateFrom(now());
-  const summary = summarize(results, cleanup, orchestrationFailure);
+  const summary = summarize(results, cleanup, orchestrationFailure, allowBlockedCapability);
   const finalResult = {
     ...summary,
     ...sanitize(runMetadata),
