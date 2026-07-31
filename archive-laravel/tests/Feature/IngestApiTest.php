@@ -164,6 +164,52 @@ class IngestApiTest extends TestCase
         Storage::disk($disk)->assertExists('ingest/quarantine/watched/'.$entry['id'].'.txt');
     }
 
+    public function test_watched_rule_previews_and_applies_template_tags_and_staging_destination(): void
+    {
+        config()->set('ingest.watched.min_stable_seconds', 0);
+        $templateId = 'news-template';
+        \Illuminate\Support\Facades\DB::table('metadata_templates')->insert([
+            'id' => $templateId, 'name' => 'News', 'fields' => json_encode(['department' => 'news']), 'tags' => json_encode(['editorial']), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->postJson('/api/v1/ingest/watched/rules', [
+            'matchType' => 'filename_pattern', 'pattern' => '/^NEWS-/', 'metadataTemplateId' => $templateId,
+            'tags' => ['urgent'], 'stagingDirectory' => 'ingest/watched/news',
+        ], $this->authHeaders())->assertCreated();
+        Storage::disk(config('ingest.disk'))->put(config('ingest.directory').'/watched/NEWS-001.txt', 'breaking news');
+
+        $preview = $this->postJson('/api/v1/ingest/watched/scan', [], $this->authHeaders())->assertCreated();
+        $preview->assertJsonPath('batch.entries.0.routing.metadataTemplateId', $templateId);
+        $preview->assertJsonPath('batch.entries.0.routing.stagingDirectory', 'ingest/watched/news');
+
+        $this->postJson('/api/v1/ingest/watched/batches/'.$preview->json('batch.id').'/apply', [], $this->authHeaders())->assertOk();
+        $record = \Illuminate\Support\Facades\DB::table('storage_rows')->where('store', 'archive-items')->value('data');
+        $this->assertIsString($record);
+        $data = json_decode($record, true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame('ingest/watched/news', dirname($data['filePath']));
+        $this->assertSame('news', $data['department']);
+        $this->assertSame(['editorial', 'urgent'], $data['tags']);
+    }
+
+    public function test_watched_ingest_rules_can_be_listed_updated_and_removed_by_an_editor(): void
+    {
+        $created = $this->postJson('/api/v1/ingest/watched/rules', ['matchType' => 'path_prefix', 'pattern' => 'ingest/watched/news', 'stagingDirectory' => 'ingest/watched/news'], $this->authHeaders())->assertCreated();
+        $id = $created->json('rule.id');
+        $this->getJson('/api/v1/ingest/watched/rules', $this->authHeaders())->assertOk()->assertJsonPath('rules.0.id', $id);
+        $this->patchJson('/api/v1/ingest/watched/rules/'.$id, ['matchType' => 'path_prefix', 'pattern' => 'ingest/watched/edited', 'stagingDirectory' => 'ingest/watched/edited'], $this->authHeaders())->assertOk()->assertJsonPath('rule.pattern', 'ingest/watched/edited');
+        $this->deleteJson('/api/v1/ingest/watched/rules/'.$id, [], $this->authHeaders())->assertOk();
+    }
+
+    public function test_watched_rule_matches_a_source_path_prefix(): void
+    {
+        config()->set('ingest.watched.min_stable_seconds', 0);
+        $this->postJson('/api/v1/ingest/watched/rules', ['matchType' => 'path_prefix', 'pattern' => 'ingest/watched/news/', 'stagingDirectory' => 'ingest/watched/news'], $this->authHeaders())->assertCreated();
+        Storage::disk(config('ingest.disk'))->put(config('ingest.directory').'/watched/news/report.txt', 'news report');
+
+        $this->postJson('/api/v1/ingest/watched/scan', [], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('batch.entries.0.routing.stagingDirectory', 'ingest/watched/news');
+    }
+
     public function test_scan_enqueues_media_job_for_media_files(): void
     {
         Queue::fake();

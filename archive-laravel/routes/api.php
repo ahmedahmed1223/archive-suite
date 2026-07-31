@@ -74,6 +74,7 @@ use App\Http\Controllers\Api\V1\UploadSessionsController;
 use App\Http\Controllers\Api\V1\UsersController;
 use App\Http\Controllers\Api\V1\VocabularyController;
 use App\Http\Controllers\Api\V1\WebhooksController;
+use App\Http\Controllers\Api\V1\WatchedIngestRulesController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -447,6 +448,10 @@ Route::prefix('v1')->group(function (): void {
 
         Route::post('/ingest/scan', [IngestController::class, 'scan']);
         Route::post('/ingest/watched/scan', [IngestController::class, 'watchedScan']);
+        Route::get('/ingest/watched/rules', [WatchedIngestRulesController::class, 'index']);
+        Route::post('/ingest/watched/rules', [WatchedIngestRulesController::class, 'store']);
+        Route::patch('/ingest/watched/rules/{id}', [WatchedIngestRulesController::class, 'update']);
+        Route::delete('/ingest/watched/rules/{id}', [WatchedIngestRulesController::class, 'destroy']);
         Route::post('/ingest/watched/batches/{batchId}/apply', [IngestController::class, 'watchedApply']);
         Route::post('/ingest/ftp/pull', [IngestController::class, 'ftpPull']);
         Route::post('/ingest/smb/pull', [IngestController::class, 'smbPull']);

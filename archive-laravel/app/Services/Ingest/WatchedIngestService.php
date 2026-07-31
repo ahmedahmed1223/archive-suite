@@ -3,6 +3,7 @@
 namespace App\Services\Ingest;
 
 use App\Services\Uploads\UploadFinalizer;
+use App\Repositories\StorageRowRepository;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +12,7 @@ use Throwable;
 
 final class WatchedIngestService
 {
-    public function __construct(private readonly UploadFinalizer $finalizer) {}
+    public function __construct(private readonly UploadFinalizer $finalizer, private readonly StorageRowRepository $storageRows) {}
 
     public function preview(): array
     {
@@ -20,7 +21,7 @@ final class WatchedIngestService
         $id = (string) Str::uuid(); $now = now();
         DB::table('watched_ingest_batches')->insert(['id' => $id, 'status' => 'pending', 'disk' => $disk, 'directory' => $directory, 'created_at' => $now, 'updated_at' => $now]);
         $storage = Storage::disk($disk); $entries = [];
-        foreach ($storage->files($directory) as $path) {
+        foreach ($storage->allFiles($directory) as $path) {
             $entryId = (string) Str::uuid(); $status = 'pending'; $reason = null; $checksum = null;
             try {
                 if ($storage->lastModified($path) > now()->subSeconds((int) config('ingest.watched.min_stable_seconds', 30))->timestamp) { $status = 'deferred'; $reason = 'file_not_stable'; }
@@ -28,7 +29,7 @@ final class WatchedIngestService
             } catch (Throwable) { $status = 'quarantined'; $reason = 'unreadable_file'; }
             try { $size = (int) $storage->size($path); } catch (Throwable) { $size = 0; $status = 'quarantined'; $reason = 'unreadable_file'; }
             if ($status === 'quarantined' && ! $storage->move($path, $this->quarantinePath($entryId, basename($path)))) $reason = 'isolation_failed';
-            $entry = ['id' => $entryId, 'batch_id' => $id, 'source_path' => $path, 'file_name' => basename($path), 'size' => $size, 'checksum' => $checksum, 'status' => $status, 'reason' => $reason, 'created_at' => $now, 'updated_at' => $now];
+            $entry = ['id' => $entryId, 'batch_id' => $id, 'source_path' => $path, 'file_name' => basename($path), 'size' => $size, 'checksum' => $checksum, 'status' => $status, 'reason' => $reason, 'routing' => json_encode($this->routing($path)), 'created_at' => $now, 'updated_at' => $now];
             DB::table('watched_ingest_entries')->insert($entry); $entries[] = $this->entrySummary($entry);
         }
         return ['id' => $id, 'status' => 'pending', 'entries' => $entries];
@@ -45,7 +46,9 @@ final class WatchedIngestService
                 $extension = pathinfo($entry->file_name, PATHINFO_EXTENSION);
                 $quarantinePath = $this->quarantinePath($entry->id, $entry->file_name);
                 if (! $storage->move($entry->source_path, $quarantinePath)) throw new \RuntimeException('Could not isolate watched file.');
-                $this->finalizer->finalize($batch->disk, $quarantinePath, (string) Str::uuid().($extension === '' ? '' : '.'.$extension), $entry->file_name, $entry->checksum, 'ingest/watched/accepted');
+                $routing = json_decode($entry->routing ?: '[]', true) ?: [];
+                $result = $this->finalizer->finalize($batch->disk, $quarantinePath, (string) Str::uuid().($extension === '' ? '' : '.'.$extension), $entry->file_name, $entry->checksum, $routing['stagingDirectory'] ?? 'ingest/watched/accepted');
+                $this->applyRouting($result['recordId'], $result['record'], $routing);
                 DB::table('watched_ingest_entries')->where('id', $entry->id)->update(['status' => 'applied', 'reason' => null, 'updated_at' => now()]);
             } catch (Throwable) {
                 DB::table('watched_ingest_entries')->where('id', $entry->id)->update(['status' => 'quarantined', 'reason' => 'apply_failed', 'updated_at' => now()]);
@@ -69,12 +72,30 @@ final class WatchedIngestService
     /** @param array<string, mixed> $entry */
     private function entrySummary(array $entry): array
     {
-        return ['id' => $entry['id'], 'fileName' => $entry['file_name'], 'status' => $entry['status'], 'reason' => $entry['reason'], 'checksum' => $entry['checksum']];
+        return ['id' => $entry['id'], 'fileName' => $entry['file_name'], 'status' => $entry['status'], 'reason' => $entry['reason'], 'checksum' => $entry['checksum'], 'routing' => json_decode($entry['routing'] ?? '[]', true) ?: []];
     }
 
     private function quarantinePath(string $entryId, string $fileName): string
     {
         $extension = pathinfo($fileName, PATHINFO_EXTENSION);
         return 'ingest/quarantine/watched/'.$entryId.($extension === '' ? '' : '.'.$extension);
+    }
+
+    private function routing(string $path): ?array
+    {
+        foreach (DB::table('watched_ingest_rules')->where('enabled', true)->orderBy('created_at')->get() as $rule) {
+            $matches = $rule->match_type === 'path_prefix' ? str_starts_with($path, $rule->pattern) : (@preg_match($rule->pattern, basename($path)) === 1);
+            if ($matches) return ['ruleId' => $rule->id, 'metadataTemplateId' => $rule->metadata_template_id, 'tags' => json_decode($rule->tags ?: '[]', true), 'stagingDirectory' => $rule->staging_directory];
+        }
+        return null;
+    }
+
+    private function applyRouting(string $recordId, array $record, array $routing): void
+    {
+        $template = ! empty($routing['metadataTemplateId']) ? DB::table('metadata_templates')->where('id', $routing['metadataTemplateId'])->first() : null;
+        $fields = $template?->fields ? json_decode($template->fields, true) : [];
+        $tags = array_values(array_unique(array_merge($template?->tags ? json_decode($template->tags, true) : [], $routing['tags'] ?? [])));
+        if ($fields === [] && $tags === []) return;
+        $this->storageRows->upsert('archive-items', $recordId, ['data' => json_encode([...$record, ...$fields, 'tags' => $tags], JSON_THROW_ON_ERROR), 'updated_at' => now()]);
     }
 }

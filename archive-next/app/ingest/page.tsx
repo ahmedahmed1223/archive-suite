@@ -295,8 +295,8 @@ export default function IngestPage() {
         {watchedBatch && (
           <div className="table-wrap" aria-live="polite">
             <table>
-              <thead><tr><th>الملف</th><th>الحالة</th><th>سبب المراجعة</th></tr></thead>
-              <tbody>{watchedBatch.entries.map((entry) => <tr key={entry.id}><td>{entry.fileName}</td><td>{entry.status}</td><td>{entry.reason || "جاهز"}</td></tr>)}</tbody>
+              <thead><tr><th>الملف</th><th>الحالة</th><th>قاعدة الفرز</th><th>وجهة التجهيز</th><th>سبب المراجعة</th></tr></thead>
+              <tbody>{watchedBatch.entries.map((entry) => <tr key={entry.id}><td>{entry.fileName}</td><td>{entry.status}</td><td>{entry.routing?.metadataTemplateId || "افتراضي"}</td><td>{entry.routing?.stagingDirectory || "ingest/watched/accepted"}</td><td>{entry.reason || "جاهز"}</td></tr>)}</tbody>
             </table>
           </div>
         )}

@@ -781,6 +781,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ingest/watched/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List watched ingest routing rules */
+        get: operations["listWatchedIngestRules"];
+        put?: never;
+        /** Create watched ingest routing rule */
+        post: operations["createWatchedIngestRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ingest/watched/rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete watched ingest routing rule */
+        delete: operations["deleteWatchedIngestRule"];
+        options?: never;
+        head?: never;
+        /** Update watched ingest routing rule */
+        patch: operations["updateWatchedIngestRule"];
+        trace?: never;
+    };
     "/ingest/watched/scan": {
         parameters: {
             query?: never;
@@ -5115,8 +5151,33 @@ export interface components {
             fileName: string;
             id: string;
             reason?: string | null;
+            routing?: components["schemas"]["WatchedIngestRouting"];
             /** @enum {string} */
             status: "pending" | "applied" | "deferred" | "quarantined";
+        };
+        WatchedIngestRouting: {
+            metadataTemplateId?: string | null;
+            ruleId?: string;
+            stagingDirectory?: string;
+            tags?: string[];
+        } | null;
+        WatchedIngestRule: components["schemas"]["WatchedIngestRuleInput"] & {
+            id: string;
+        };
+        WatchedIngestRuleInput: {
+            enabled?: boolean;
+            /** @enum {string} */
+            matchType: "path_prefix" | "filename_pattern";
+            metadataTemplateId?: string | null;
+            pattern: string;
+            stagingDirectory: string;
+            tags?: string[];
+        };
+        WatchedIngestRuleResponse: components["schemas"]["OkEnvelope"] & {
+            rule: components["schemas"]["WatchedIngestRule"];
+        };
+        WatchedIngestRulesResponse: components["schemas"]["OkEnvelope"] & {
+            rules: components["schemas"]["WatchedIngestRule"][];
         };
         Webhook: {
             active: boolean;
@@ -6657,6 +6718,103 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    listWatchedIngestRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedIngestRulesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createWatchedIngestRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchedIngestRuleInput"];
+            };
+        };
+        responses: {
+            /** @description Created rule */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedIngestRuleResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteWatchedIngestRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted rule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkEnvelope"];
+                };
+            };
+            404: components["responses"]["Error"];
+        };
+    };
+    updateWatchedIngestRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchedIngestRuleInput"];
+            };
+        };
+        responses: {
+            /** @description Updated rule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedIngestRuleResponse"];
+                };
+            };
             404: components["responses"]["Error"];
         };
     };

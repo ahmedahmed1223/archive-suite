@@ -3677,6 +3677,23 @@
         }
       }
     },
+    "/ingest/watched/rules": {
+      "get": {
+        "tags": ["Ingest"], "summary": "List watched ingest routing rules", "operationId": "listWatchedIngestRules",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": { "200": { "description": "Rules", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchedIngestRulesResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } }
+      },
+      "post": {
+        "tags": ["Ingest"], "summary": "Create watched ingest routing rule", "operationId": "createWatchedIngestRule",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchedIngestRuleInput" } } } },
+        "responses": { "201": { "description": "Created rule", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchedIngestRuleResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/ingest/watched/rules/{id}": {
+      "patch": { "tags": ["Ingest"], "summary": "Update watched ingest routing rule", "operationId": "updateWatchedIngestRule", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchedIngestRuleInput" } } } }, "responses": { "200": { "description": "Updated rule", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchedIngestRuleResponse" } } } }, "404": { "$ref": "#/components/responses/Error" } } },
+      "delete": { "tags": ["Ingest"], "summary": "Delete watched ingest routing rule", "operationId": "deleteWatchedIngestRule", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Deleted rule", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OkEnvelope" } } } }, "404": { "$ref": "#/components/responses/Error" } } }
+    },
     "/ingest/watched/batches/{batchId}/apply": {
       "post": {
         "tags": ["Ingest"],
@@ -7870,9 +7887,21 @@
           "fileName": { "type": "string" },
           "status": { "type": "string", "enum": ["pending", "applied", "deferred", "quarantined"] },
           "reason": { "type": ["string", "null"] },
-          "checksum": { "type": ["string", "null"] }
+          "checksum": { "type": ["string", "null"] },
+          "routing": { "$ref": "#/components/schemas/WatchedIngestRouting" }
         }
       },
+      "WatchedIngestRouting": {
+        "type": ["object", "null"],
+        "properties": { "ruleId": { "type": "string" }, "metadataTemplateId": { "type": ["string", "null"] }, "tags": { "type": "array", "items": { "type": "string" } }, "stagingDirectory": { "type": "string" } }
+      },
+      "WatchedIngestRuleInput": {
+        "type": "object", "required": ["matchType", "pattern", "stagingDirectory"],
+        "properties": { "matchType": { "type": "string", "enum": ["path_prefix", "filename_pattern"] }, "pattern": { "type": "string" }, "metadataTemplateId": { "type": ["string", "null"] }, "tags": { "type": "array", "items": { "type": "string" } }, "stagingDirectory": { "type": "string" }, "enabled": { "type": "boolean" } }
+      },
+      "WatchedIngestRule": { "allOf": [{ "$ref": "#/components/schemas/WatchedIngestRuleInput" }, { "type": "object", "required": ["id"], "properties": { "id": { "type": "string" } } }] },
+      "WatchedIngestRulesResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["rules"], "properties": { "rules": { "type": "array", "items": { "$ref": "#/components/schemas/WatchedIngestRule" } } } }] },
+      "WatchedIngestRuleResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["rule"], "properties": { "rule": { "$ref": "#/components/schemas/WatchedIngestRule" } } }] },
       "WatchedIngestBatch": {
         "type": "object",
         "required": ["id", "status", "entries"],

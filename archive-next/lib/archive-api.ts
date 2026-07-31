@@ -981,7 +981,11 @@ export interface WatchedIngestEntry {
   status: "pending" | "applied" | "deferred" | "quarantined";
   reason: string | null;
   checksum: string | null;
+  routing: { ruleId?: string; metadataTemplateId?: string | null; tags?: string[]; stagingDirectory?: string } | null;
 }
+
+export interface WatchedIngestRuleInput { matchType: "path_prefix" | "filename_pattern"; pattern: string; metadataTemplateId?: string | null; tags?: string[]; stagingDirectory: string; enabled?: boolean; }
+export interface WatchedIngestRule extends WatchedIngestRuleInput { id: string; }
 
 export interface WatchedIngestBatch {
   id: string;
@@ -1422,6 +1426,10 @@ export interface ArchiveApiClient {
   ingestSmbPull(payload: SmbPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   ingestDropboxPull(options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   previewWatchedIngest(options?: AuthRequestOptions): Promise<ApiEnvelope<{ batch: WatchedIngestBatch }>>;
+  watchedIngestRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: WatchedIngestRule[] }>>;
+  createWatchedIngestRule(payload: WatchedIngestRuleInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: WatchedIngestRule }>>;
+  updateWatchedIngestRule(id: string, payload: WatchedIngestRuleInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: WatchedIngestRule }>>;
+  deleteWatchedIngestRule(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   applyWatchedIngestBatch(batchId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ batch: WatchedIngestBatch }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[]; pagination?: PaginationMeta }>>;
@@ -2169,6 +2177,12 @@ export function createArchiveApiClient({
       post<{ ingested: unknown[]; skipped: number }>("/ingest/dropbox/pull", undefined, options),
     previewWatchedIngest: (options?: AuthRequestOptions) =>
       post<{ batch: WatchedIngestBatch }>("/ingest/watched/scan", undefined, options),
+    watchedIngestRules: (options?: AuthRequestOptions) => get<{ rules: WatchedIngestRule[] }>("/ingest/watched/rules", options),
+    createWatchedIngestRule: (payload: WatchedIngestRuleInput, options?: AuthRequestOptions) =>
+      post<{ rule: WatchedIngestRule }>("/ingest/watched/rules", payload, options),
+    updateWatchedIngestRule: (id: string, payload: WatchedIngestRuleInput, options?: AuthRequestOptions) =>
+      patch<{ rule: WatchedIngestRule }>(`/ingest/watched/rules/${encodeURIComponent(id)}`, payload, options),
+    deleteWatchedIngestRule: (id: string, options?: AuthRequestOptions) => del<{ deleted: boolean }>(`/ingest/watched/rules/${encodeURIComponent(id)}`, undefined, options),
     applyWatchedIngestBatch: (batchId: string, options?: AuthRequestOptions) =>
       post<{ batch: WatchedIngestBatch }>(`/ingest/watched/batches/${encodeURIComponent(batchId)}/apply`, undefined, options),
     mediaJob: (id: string, options?: AuthRequestOptions) => get<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}`, options),
