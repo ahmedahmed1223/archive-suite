@@ -27,7 +27,7 @@ final class DepartmentRoutingController extends Controller
 
         $validated = $request->validate(['departmentId' => ['required', 'string', 'max:100']]);
         $decision = $this->decision($item, $validated['departmentId']);
-        if ($decision['blocked']) return response()->json(['ok' => false, ...$decision], 422);
+        if ($decision['blocked']) return response()->json(['ok' => false, 'code' => 'department_routing_blocked', ...$decision], 422);
         $history = $this->history($item->routing_history);
         $history[] = ['from' => $item->department_id, 'to' => $validated['departmentId'], 'at' => now()->toISOString()];
         DB::table('inbox_items')->where('id', $id)->update([
