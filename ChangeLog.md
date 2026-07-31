@@ -109,6 +109,12 @@
   المنقحة (`accepted` و`rejected` و`dryRun`) دون محتوى CSV أو نتائج الصفوف.
   التحقق: 15 اختبارًا و79 assertion في `RecordsBulkCsvTest` و`AuditLogTest`.
 
+## CloudMediaDB Archive Suite — 2026-07-31
+
+- **AS-01 سجل المادة الأرشيفية الموحد:** السجل القانوني يضم الملف والبيانات
+  الوصفية والنوع والوسوم وحالة الاكتمال والنسخ التاريخية في مصدر واحد، من دون
+  مخزن موازٍ. التحقق: 19 اختبار Laravel/133 assertion.
+
 ## V1-817 تصحيح نطاق البوابات غير المُصادَقة — 2026-07-27
 
 - **المشكلة:** كانت `CORE_ROUTES` في `archive-next/e2e/fixtures/visual-routes.ts`
