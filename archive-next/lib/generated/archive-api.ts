@@ -6037,6 +6037,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };
@@ -8540,6 +8541,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };
@@ -8568,7 +8570,9 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listProjects: {
@@ -8631,6 +8635,7 @@ export interface operations {
         responses: {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             404: components["responses"]["Error"];
         };
     };
@@ -8659,6 +8664,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
@@ -8684,6 +8690,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             404: components["responses"]["Error"];
         };
     };
@@ -8718,6 +8725,7 @@ export interface operations {
         responses: {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
         };
     };
     reorderProjectRecords: {
@@ -8745,6 +8753,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };

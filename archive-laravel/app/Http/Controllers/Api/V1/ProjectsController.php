@@ -27,6 +27,10 @@ class ProjectsController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'min:1', 'max:200'],
             'notes' => ['nullable', 'string', 'max:5000'],
@@ -49,8 +53,12 @@ class ProjectsController extends Controller
         return response()->json(['ok' => true, 'project' => $this->formatProject($project)], 201);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $deleted = DB::table('projects')->where('id', $id)->delete();
 
         if ($deleted < 1) {
@@ -64,6 +72,10 @@ class ProjectsController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'min:1', 'max:200'],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
@@ -98,8 +110,12 @@ class ProjectsController extends Controller
         return response()->json(['ok' => true, 'recordIds' => $recordIds->pluck('recordId')->values(), 'records' => $recordIds]);
     }
 
-    public function link(string $id, string $recordId): JsonResponse
+    public function link(Request $request, string $id, string $recordId): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         if (! DB::table('projects')->where('id', $id)->exists()) {
             return response()->json(['ok' => false, 'error' => 'Project not found.', 'code' => 'not_found'], 404);
         }
@@ -112,8 +128,12 @@ class ProjectsController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function unlink(string $id, string $recordId): JsonResponse
+    public function unlink(Request $request, string $id, string $recordId): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         DB::table('project_records')->where('project_id', $id)->where('record_id', $recordId)->delete();
 
         return response()->json(['ok' => true]);
@@ -121,6 +141,10 @@ class ProjectsController extends Controller
 
     public function reorder(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         $validated = $request->validate(['recordIds' => ['required', 'array'], 'recordIds.*' => ['required', 'string', 'max:255', 'distinct']]);
         $existing = DB::table('project_records')->where('project_id', $id)->pluck('record_id')->sort()->values()->all();
         $requested = collect($validated['recordIds'])->sort()->values()->all();

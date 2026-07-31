@@ -615,6 +615,7 @@
             }
           },
           "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
           "422": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -4878,10 +4879,10 @@
     },
     "/project-tasks": {
       "get": { "tags": ["Projects"], "summary": "List project tasks", "operationId": "listProjectTasks", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "projectId", "in": "query", "schema": { "type": "string" } }], "responses": { "200": { "description": "Project tasks", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTasksResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
-      "post": { "tags": ["Projects"], "summary": "Create a project task", "operationId": "createProjectTask", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskCreateRequest" } } } }, "responses": { "201": { "description": "Created task", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+      "post": { "tags": ["Projects"], "summary": "Create a project task", "operationId": "createProjectTask", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskCreateRequest" } } } }, "responses": { "201": { "description": "Created task", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
     },
     "/project-tasks/{id}": {
-      "patch": { "tags": ["Projects"], "summary": "Update project task", "operationId": "updateProjectTask", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskUpdateRequest" } } } }, "responses": { "200": { "description": "Updated task", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } } }
+      "patch": { "tags": ["Projects"], "summary": "Update project task", "operationId": "updateProjectTask", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskUpdateRequest" } } } }, "responses": { "200": { "description": "Updated task", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
     },
     "/projects/{id}": {
       "patch": {
@@ -4891,7 +4892,7 @@
         "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectUpdateRequest" } } } },
-        "responses": { "200": { "description": "Updated project", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+        "responses": { "200": { "description": "Updated project", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
       },
       "delete": {
         "tags": ["Projects"],
@@ -4902,6 +4903,7 @@
         "responses": {
           "200": { "$ref": "#/components/responses/Ok" },
           "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -4919,6 +4921,7 @@
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectRecordsResponse" } } }
           },
           "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -4950,7 +4953,8 @@
         ],
         "responses": {
           "200": { "$ref": "#/components/responses/Ok" },
-          "401": { "$ref": "#/components/responses/Error" }
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -4962,7 +4966,7 @@
         "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectRecordOrderRequest" } } } },
-        "responses": { "200": { "description": "Ordered project records", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectRecordsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+        "responses": { "200": { "description": "Ordered project records", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectRecordsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
       }
     },
     "/records/{id}/projects": {

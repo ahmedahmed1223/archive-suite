@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -90,5 +92,20 @@ class ProjectsApiTest extends TestCase
         $this->patchJson('/api/v1/projects/'.$project['id'], ['notes' => 'ملاحظات محدثة'], $this->authHeaders())
             ->assertOk()
             ->assertJsonPath('project.notes', 'ملاحظات محدثة');
+    }
+
+    public function test_a_viewer_cannot_mutate_projects_or_their_record_links(): void
+    {
+        $project = $this->postJson('/api/v1/projects', ['name' => 'مشروع محمي'], $this->authHeaders())->json('project');
+        $viewer = User::query()->create(['name' => 'Viewer', 'email' => 'viewer@example.test', 'password' => Hash::make('secret-password'), 'role' => 'viewer']);
+        $viewerToken = $this->postJson('/api/v1/auth/login', ['email' => $viewer->email, 'password' => 'secret-password'])->assertOk()->json('accessToken');
+        $headers = ['Authorization' => 'Bearer '.$viewerToken];
+
+        $this->postJson('/api/v1/projects', ['name' => 'محظور'], $headers)->assertForbidden();
+        $this->patchJson('/api/v1/projects/'.$project['id'], ['notes' => 'محظور'], $headers)->assertForbidden();
+        $this->postJson('/api/v1/projects/'.$project['id'].'/records/record-1', [], $headers)->assertForbidden();
+        $this->deleteJson('/api/v1/projects/'.$project['id'].'/records/record-1', [], $headers)->assertForbidden();
+        $this->putJson('/api/v1/projects/'.$project['id'].'/records/order', ['recordIds' => []], $headers)->assertForbidden();
+        $this->deleteJson('/api/v1/projects/'.$project['id'], [], $headers)->assertForbidden();
     }
 }

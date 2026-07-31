@@ -73,8 +73,8 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 | DELETE | `/v1/share/{token}` | v1 | — | editor-gated immediate revocation |
 | POST/PUT | `/v1/records/{id}/transcript/srt`, `/transcript/subtitles` | v1 | — | editor-gated subtitle import and edit |
 | POST | `/v1/records/{id}/ai-assist` | v1 | — | non-mutating, review-required assistance draft |
-| GET/POST/PATCH | `/v1/project-tasks*` | v1 | — | persisted project Kanban tasks |
-| PATCH/PUT | `/v1/projects/{id}`, `/records/order` | v1 | — | project notes and explicit record ordering |
+| GET/POST/PATCH | `/v1/project-tasks*` | v1 | — | reads for authenticated users; create/update editor-gated |
+| GET/POST/PATCH/PUT/DELETE | `/v1/projects*` | v1 | — | reads for authenticated users; project and record-link mutations editor-gated |
 | GET/POST/DELETE | `/v1/favorites*` | v1 | — | current-user favorites |
 | GET/PUT | `/v1/vocabulary/kinds` | v1 | — | current-user vocabulary kind configuration |
 | GET/POST | `/v1/rights*` | v1 | — | reads لأي مستخدم مصادق؛ الكتابة editor/admin فقط |
