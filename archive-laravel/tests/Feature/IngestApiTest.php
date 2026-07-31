@@ -63,6 +63,107 @@ class IngestApiTest extends TestCase
         $this->assertEquals(2, $response2->json('skipped'));
     }
 
+    public function test_watched_scan_defers_a_file_until_it_is_stable(): void
+    {
+        config()->set('ingest.watched.min_stable_seconds', 60);
+        $disk = config('ingest.disk');
+        $dir = config('ingest.directory');
+        Storage::disk($disk)->put("$dir/still-copying.mp4", 'partial');
+
+        $result = app(\App\Services\Ingest\IngestScanner::class)->scanWatched();
+
+        $this->assertSame([], $result['ingested']);
+        $this->assertSame(1, $result['skipped']);
+    }
+
+    public function test_watched_scan_creates_a_preview_batch_without_ingesting_records(): void
+    {
+        config()->set('ingest.watched.min_stable_seconds', 0);
+        $disk = config('ingest.disk');
+        $dir = config('ingest.directory');
+        Storage::disk($disk)->put("$dir/watched/ready.mp4", 'ready media');
+
+        $response = $this->postJson('/api/v1/ingest/watched/scan', [], $this->authHeaders());
+
+        $response->assertCreated()
+            ->assertJsonPath('batch.status', 'pending')
+            ->assertJsonPath('batch.entries.0.fileName', 'ready.mp4');
+        $this->assertDatabaseCount('watched_ingest_batches', 1);
+        $this->assertDatabaseCount('watched_ingest_entries', 1);
+        $this->assertDatabaseCount('storage_rows', 0);
+    }
+
+    public function test_watched_batch_requires_explicit_apply_before_creating_records(): void
+    {
+        config()->set('ingest.watched.min_stable_seconds', 0);
+        $disk = config('ingest.disk');
+        $dir = config('ingest.directory');
+        Storage::disk($disk)->put("$dir/watched/approved.txt", 'approved content');
+        $preview = $this->postJson('/api/v1/ingest/watched/scan', [], $this->authHeaders())->assertCreated();
+
+        $this->postJson('/api/v1/ingest/watched/batches/'.$preview->json('batch.id').'/apply', [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('batch.status', 'completed');
+
+        $this->assertDatabaseCount('storage_rows', 1);
+        $this->assertDatabaseHas('watched_ingest_entries', ['status' => 'applied']);
+    }
+
+    public function test_watched_ingest_preview_is_classified_in_the_central_audit_log(): void
+    {
+        config()->set('ingest.watched.min_stable_seconds', 0);
+        Storage::disk(config('ingest.disk'))->put(config('ingest.directory').'/watched/audited.txt', 'audit me');
+
+        $response = $this->postJson('/api/v1/ingest/watched/scan', [], $this->authHeaders())->assertCreated();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'POST /api/v1/ingest/watched/scan',
+            'event' => 'watched_ingest.preview',
+            'resource_type' => 'watched_ingest_batch',
+            'outcome' => 'success',
+            'status_code' => 201,
+        ]);
+        $this->assertSame($response->json('batch.id'), \Illuminate\Support\Facades\DB::table('audit_logs')->latest('id')->value('resource_id'));
+    }
+
+    public function test_watched_batch_quarantines_a_rejected_file_instead_of_leaving_it_for_another_scan(): void
+    {
+        config()->set('ingest.watched.min_stable_seconds', 0);
+        $disk = config('ingest.disk');
+        $source = config('ingest.directory').'/watched/untrusted.jpg';
+        Storage::disk($disk)->put($source, '<?php echo "not an image";');
+
+        $preview = $this->postJson('/api/v1/ingest/watched/scan', [], $this->authHeaders())->assertCreated();
+        $entry = $preview->json('batch.entries.0');
+        $this->postJson('/api/v1/ingest/watched/batches/'.$preview->json('batch.id').'/apply', [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('batch.entries.0.status', 'quarantined')
+            ->assertJsonPath('batch.entries.0.reason', 'apply_failed');
+
+        Storage::disk($disk)->assertMissing($source);
+        Storage::disk($disk)->assertExists('ingest/quarantine/watched/'.$entry['id'].'.jpg');
+        $this->assertDatabaseCount('storage_rows', 0);
+    }
+
+    public function test_watched_preview_isolates_a_checksum_conflict_before_it_can_be_applied(): void
+    {
+        config()->set('ingest.watched.min_stable_seconds', 0);
+        $disk = config('ingest.disk');
+        $directory = config('ingest.directory');
+        Storage::disk($disk)->put("$directory/already-archived.txt", 'same content');
+        app(\App\Services\Ingest\IngestScanner::class)->scan();
+        $source = "$directory/watched/conflict.txt";
+        Storage::disk($disk)->put($source, 'same content');
+
+        $preview = $this->postJson('/api/v1/ingest/watched/scan', [], $this->authHeaders())->assertCreated();
+        $entry = $preview->json('batch.entries.0');
+
+        $this->assertSame('quarantined', $entry['status']);
+        $this->assertSame('duplicate_checksum', $entry['reason']);
+        Storage::disk($disk)->assertMissing($source);
+        Storage::disk($disk)->assertExists('ingest/quarantine/watched/'.$entry['id'].'.txt');
+    }
+
     public function test_scan_enqueues_media_job_for_media_files(): void
     {
         Queue::fake();

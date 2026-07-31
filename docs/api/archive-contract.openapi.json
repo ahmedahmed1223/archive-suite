@@ -3662,6 +3662,38 @@
         }
       }
     },
+    "/ingest/watched/scan": {
+      "post": {
+        "tags": ["Ingest"],
+        "summary": "Preview stable files from the watched ingest folder",
+        "operationId": "previewWatchedIngest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "201": {
+            "description": "Watched ingest preview batch",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchedIngestBatchResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/ingest/watched/batches/{batchId}/apply": {
+      "post": {
+        "tags": ["Ingest"],
+        "summary": "Apply an approved watched ingest batch",
+        "operationId": "applyWatchedIngestBatch",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "batchId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Completed watched ingest batch",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WatchedIngestBatchResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/ingest/ftp/pull": {
       "post": {
         "tags": ["Ingest"],
@@ -7828,6 +7860,32 @@
               "skipped": { "type": "integer", "minimum": 0 }
             }
           }
+        ]
+      },
+      "WatchedIngestEntry": {
+        "type": "object",
+        "required": ["id", "fileName", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "fileName": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "applied", "deferred", "quarantined"] },
+          "reason": { "type": ["string", "null"] },
+          "checksum": { "type": ["string", "null"] }
+        }
+      },
+      "WatchedIngestBatch": {
+        "type": "object",
+        "required": ["id", "status", "entries"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "completed"] },
+          "entries": { "type": "array", "items": { "$ref": "#/components/schemas/WatchedIngestEntry" } }
+        }
+      },
+      "WatchedIngestBatchResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          { "type": "object", "required": ["batch"], "properties": { "batch": { "$ref": "#/components/schemas/WatchedIngestBatch" } } }
         ]
       },
       "FtpPullRequest": {

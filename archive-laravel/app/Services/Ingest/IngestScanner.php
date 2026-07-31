@@ -20,6 +20,16 @@ class IngestScanner
      */
     public function scan(?string $subdir = null): array
     {
+        return $this->scanDirectory($subdir, false);
+    }
+
+    public function scanWatched(): array
+    {
+        return $this->scanDirectory(null, true);
+    }
+
+    private function scanDirectory(?string $subdir, bool $requireStable): array
+    {
         $storage = Storage::disk($this->disk);
         $scanPath = $subdir ? "{$this->directory}/{$subdir}" : $this->directory;
 
@@ -33,6 +43,10 @@ class IngestScanner
 
         foreach ($files as $filePath) {
             try {
+                if ($requireStable && ! $this->isStable($storage, $filePath)) {
+                    $skipped++;
+                    continue;
+                }
                 $checksum = $this->computeChecksum($filePath);
 
                 // Check if already ingested by checksum
@@ -88,6 +102,11 @@ class IngestScanner
         }
 
         return ['ingested' => $ingested, 'skipped' => $skipped];
+    }
+
+    private function isStable($storage, string $filePath): bool
+    {
+        return $storage->lastModified($filePath) <= now()->subSeconds((int) config('ingest.watched.min_stable_seconds', 30))->timestamp;
     }
 
     private function computeChecksum(string $filePath): string

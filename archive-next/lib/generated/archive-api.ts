@@ -764,6 +764,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ingest/watched/batches/{batchId}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply an approved watched ingest batch */
+        post: operations["applyWatchedIngestBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ingest/watched/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview stable files from the watched ingest folder */
+        post: operations["previewWatchedIngest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/intake-templates": {
         parameters: {
             query?: never;
@@ -5067,6 +5101,23 @@ export interface components {
         VocabularyTermsResponse: components["schemas"]["OkEnvelope"] & {
             terms: components["schemas"]["VocabularyTerm"][];
         };
+        WatchedIngestBatch: {
+            entries: components["schemas"]["WatchedIngestEntry"][];
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "completed";
+        };
+        WatchedIngestBatchResponse: components["schemas"]["OkEnvelope"] & {
+            batch: components["schemas"]["WatchedIngestBatch"];
+        };
+        WatchedIngestEntry: {
+            checksum?: string | null;
+            fileName: string;
+            id: string;
+            reason?: string | null;
+            /** @enum {string} */
+            status: "pending" | "applied" | "deferred" | "quarantined";
+        };
         Webhook: {
             active: boolean;
             consecutiveFailures: number;
@@ -6583,6 +6634,51 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    applyWatchedIngestBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Completed watched ingest batch */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedIngestBatchResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    previewWatchedIngest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Watched ingest preview batch */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedIngestBatchResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
         };
     };
     listIntakeTemplates: {

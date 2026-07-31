@@ -6,7 +6,7 @@ import { Cloud, FolderSearch, KeyRound, Network, RadioTower, Server, ShieldCheck
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
-import { createArchiveApiClient } from "@/lib/archive-api";
+import { createArchiveApiClient, type WatchedIngestBatch } from "@/lib/archive-api";
 import "./ingest.css";
 
 type PullResult = { ingested: number; skipped: number };
@@ -17,10 +17,11 @@ type OperationState =
   | { status: "success"; result: PullResult }
   | { status: "error"; message: string };
 
-type IngestSource = "scan" | "ftp" | "smb" | "dropbox";
+type IngestSource = "scan" | "watched" | "ftp" | "smb" | "dropbox";
 
 const sourceLabels: Record<IngestSource, string> = {
   scan: "مجلد الخادم",
+  watched: "مجلد مراقَب",
   ftp: "FTP/FTPS",
   smb: "SMB",
   dropbox: "Dropbox"
@@ -67,6 +68,8 @@ export default function IngestPage() {
   const canManageIngest = useCapability("ingest.manage");
 
   const [scanState, setScanState] = useState<OperationState>({ status: "idle" });
+  const [watchedState, setWatchedState] = useState<OperationState>({ status: "idle" });
+  const [watchedBatch, setWatchedBatch] = useState<WatchedIngestBatch | null>(null);
   const [activeSource, setActiveSource] = useState<IngestSource>("scan");
 
   // Connection params live in component state only — never persisted to localStorage.
@@ -106,6 +109,40 @@ export default function IngestPage() {
 
   const handleScan = () => void runOperation(setScanState, () => api.ingestScan());
 
+  const updateWatchedState = (batch: WatchedIngestBatch) => {
+    setWatchedBatch(batch);
+    setWatchedState({
+      status: "success",
+      result: {
+        ingested: batch.entries.filter((entry) => entry.status === "pending" || entry.status === "applied").length,
+        skipped: batch.entries.filter((entry) => entry.status === "deferred" || entry.status === "quarantined").length
+      }
+    });
+  };
+
+  const handleWatchedPreview = () => void (async () => {
+    setWatchedState({ status: "running" });
+    try {
+      const response = await api.previewWatchedIngest();
+      if (!response.ok) return setWatchedState({ status: "error", message: response.error || "تعذرت معاينة المجلد المراقَب." });
+      updateWatchedState(response.batch);
+    } catch (error) {
+      setWatchedState({ status: "error", message: error instanceof Error ? error.message : "تعذرت معاينة المجلد المراقَب." });
+    }
+  })();
+
+  const handleWatchedApply = () => void (async () => {
+    if (!watchedBatch) return;
+    setWatchedState({ status: "running" });
+    try {
+      const response = await api.applyWatchedIngestBatch(watchedBatch.id);
+      if (!response.ok) return setWatchedState({ status: "error", message: response.error || "تعذر تطبيق الدفعة." });
+      updateWatchedState(response.batch);
+    } catch (error) {
+      setWatchedState({ status: "error", message: error instanceof Error ? error.message : "تعذر تطبيق الدفعة." });
+    }
+  })();
+
   const handleFtpPull = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     void runOperation(setFtpState, () =>
@@ -135,9 +172,10 @@ export default function IngestPage() {
 
   const handleDropboxPull = () => void runOperation(setDropboxState, () => api.ingestDropboxPull());
 
-  const isAnyRunning = scanState.status === "running" || ftpState.status === "running" || smbState.status === "running" || dropboxState.status === "running";
+  const isAnyRunning = scanState.status === "running" || watchedState.status === "running" || ftpState.status === "running" || smbState.status === "running" || dropboxState.status === "running";
   const sourceStates: Record<IngestSource, OperationState> = {
     scan: scanState,
+    watched: watchedState,
     ftp: ftpState,
     smb: smbState,
     dropbox: dropboxState
@@ -182,6 +220,14 @@ export default function IngestPage() {
             <span>مجلد الخادم</span>
             <strong>{operationStatusLabel(scanState)}</strong>
             <small>فحص مباشر للملفات الجديدة</small>
+          </div>
+        </article>
+        <article className="health-metric" data-tone={operationTone(watchedState)}>
+          <span className="health-metric__icon" aria-hidden="true"><FolderSearch size={20} /></span>
+          <div className="health-metric__body">
+            <span>مجلد مراقَب</span>
+            <strong>{operationStatusLabel(watchedState)}</strong>
+            <small>معاينة ثم موافقة صريحة</small>
           </div>
         </article>
         <article className="health-metric" data-tone={operationTone(ftpState)}>
@@ -229,6 +275,31 @@ export default function IngestPage() {
         </div>
         {!canManageIngest && <p className="helper-text">لا تملك صلاحية تشغيل الاستيراد؛ يمكنك مراجعة النتائج فقط.</p>}
         <ResultBanner label="فحص مجلد الاستيراد" state={scanState} />
+      </section>
+
+      <section className="panel ingest-operation-panel" data-active={activeSource === "watched" ? "true" : "false"} aria-label="المجلد المراقَب">
+        <div className="panel-title-row">
+          <div>
+            <h2>المجلد المراقَب</h2>
+            <p>تظهر الملفات المستقرة أولاً كدفعة مراجعة. لن يُنشأ أي سجل قبل اعتمادك الصريح للدفعة.</p>
+          </div>
+          {canManageIngest && (
+            <div className="button-row">
+              <button type="button" className="button button-secondary" onClick={handleWatchedPreview} disabled={watchedState.status === "running"}>معاينة الدفعة</button>
+              <button type="button" className="button button-primary" onClick={handleWatchedApply} disabled={watchedState.status === "running" || watchedBatch?.status !== "pending"}>اعتماد وإدخال</button>
+            </div>
+          )}
+        </div>
+        {!canManageIngest && <p className="helper-text">لا تملك صلاحية معاينة أو اعتماد دفعات المجلد المراقَب.</p>}
+        {watchedState.status === "error" && <p className="helper-text" role="alert">{watchedState.message}</p>}
+        {watchedBatch && (
+          <div className="table-wrap" aria-live="polite">
+            <table>
+              <thead><tr><th>الملف</th><th>الحالة</th><th>سبب المراجعة</th></tr></thead>
+              <tbody>{watchedBatch.entries.map((entry) => <tr key={entry.id}><td>{entry.fileName}</td><td>{entry.status}</td><td>{entry.reason || "جاهز"}</td></tr>)}</tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <div className="analytics-columns">

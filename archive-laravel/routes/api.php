@@ -446,6 +446,8 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/onboarding/progress/{stage}', [OnboardingProgressController::class, 'update']);
 
         Route::post('/ingest/scan', [IngestController::class, 'scan']);
+        Route::post('/ingest/watched/scan', [IngestController::class, 'watchedScan']);
+        Route::post('/ingest/watched/batches/{batchId}/apply', [IngestController::class, 'watchedApply']);
         Route::post('/ingest/ftp/pull', [IngestController::class, 'ftpPull']);
         Route::post('/ingest/smb/pull', [IngestController::class, 'smbPull']);
         Route::post('/ingest/dropbox/pull', [IngestController::class, 'dropboxPull']);

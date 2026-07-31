@@ -51,6 +51,8 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/records'] => ['records.create', 'record'],
             ['POST', 'api/v1/records/bulk'] => ['records.bulk_upsert', 'record'],
             ['POST', 'api/v1/records/import'] => ['records.csv_import', 'record_import'],
+            ['POST', 'api/v1/ingest/watched/scan'] => ['watched_ingest.preview', 'watched_ingest_batch'],
+            ['POST', 'api/v1/ingest/watched/batches/{batchId}/apply'] => ['watched_ingest.apply', 'watched_ingest_batch'],
             ['POST', 'api/v1/records/{id}/attachments'] => ['record_attachments.create', 'record_attachment'],
             ['DELETE', 'api/v1/records/{id}/attachments/{attachmentId}'] => ['record_attachments.delete', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
@@ -94,6 +96,14 @@ class AuditArchiveApiRequest
 
         if ($route === 'api/v1/records/import') {
             $resourceId = $request->string('store')->toString() ?: null;
+        }
+
+        if ($route === 'api/v1/ingest/watched/batches/{batchId}/apply') {
+            $resourceId = $request->route('batchId');
+        }
+
+        if ($route === 'api/v1/ingest/watched/scan' && $response->isSuccessful()) {
+            $resourceId = data_get($this->responseData($response), 'batch.id');
         }
 
         if (in_array($route, ['api/v1/records/{id}/attachments', 'api/v1/records/{id}/attachments/{attachmentId}'], true)) {
@@ -203,6 +213,15 @@ class AuditArchiveApiRequest
                 'accepted' => (int) ($result['accepted'] ?? 0),
                 'rejected' => (int) ($result['rejected'] ?? 0),
                 'dryRun' => (bool) ($result['dryRun'] ?? false),
+            ];
+        }
+
+        if (str_starts_with($taxonomy['event'], 'watched_ingest.')) {
+            $batch = data_get($this->responseData($response), 'batch', []);
+            $metadata['watchedIngest'] = [
+                'batchId' => $batch['id'] ?? $taxonomy['resource_id'],
+                'status' => $batch['status'] ?? null,
+                'entryCount' => is_array($batch['entries'] ?? null) ? count($batch['entries']) : 0,
             ];
         }
 

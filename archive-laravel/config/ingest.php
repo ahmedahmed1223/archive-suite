@@ -3,6 +3,7 @@
 return [
     'disk' => env('INGEST_DISK', 'local'),
     'directory' => env('INGEST_DIR', 'ingest'),
+    'watched' => ['min_stable_seconds' => (int) env('INGEST_WATCHED_MIN_STABLE_SECONDS', 30)],
 
     // V1-112F: organizational storage limit. Null (default) = unlimited.
     // Measured as disk usage on the ingest volume (total - free), not a

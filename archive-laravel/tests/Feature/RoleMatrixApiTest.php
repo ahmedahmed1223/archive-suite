@@ -550,6 +550,12 @@ class RoleMatrixApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_viewer_cannot_preview_or_apply_a_watched_ingest_batch(): void
+    {
+        $this->postJson('/api/v1/ingest/watched/scan', [], $this->viewerHeaders())->assertForbidden();
+        $this->postJson('/api/v1/ingest/watched/batches/example/apply', [], $this->viewerHeaders())->assertForbidden();
+    }
+
     public function test_viewer_cannot_trigger_an_ftp_pull(): void
     {
         $this->postJson('/api/v1/ingest/ftp/pull', [
@@ -575,6 +581,18 @@ class RoleMatrixApiTest extends TestCase
         $this->postJson('/api/v1/ingest/scan', [], $this->editorHeaders())
             ->assertOk()
             ->assertJsonPath('ok', true);
+    }
+
+    public function test_editor_can_preview_a_watched_ingest_batch(): void
+    {
+        Storage::fake(config('ingest.disk'));
+        config()->set('ingest.watched.min_stable_seconds', 0);
+        Storage::disk(config('ingest.disk'))->put(config('ingest.directory').'/watched/editor.txt', 'editor content');
+
+        $this->postJson('/api/v1/ingest/watched/scan', [], $this->editorHeaders())
+            ->assertCreated()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('batch.entries.0.fileName', 'editor.txt');
     }
 
     // -- upload links (V1-102F gap: write ops were open to every authenticated role) --

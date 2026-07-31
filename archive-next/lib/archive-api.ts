@@ -975,6 +975,20 @@ export interface SmbPullPayload {
   localPath?: string;
 }
 
+export interface WatchedIngestEntry {
+  id: string;
+  fileName: string;
+  status: "pending" | "applied" | "deferred" | "quarantined";
+  reason: string | null;
+  checksum: string | null;
+}
+
+export interface WatchedIngestBatch {
+  id: string;
+  status: "pending" | "completed";
+  entries: WatchedIngestEntry[];
+}
+
 export type MediaOperation = "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
 export type MediaJobStatus = "queued" | "processing" | "completed" | "failed" | "canceled";
 
@@ -1407,6 +1421,8 @@ export interface ArchiveApiClient {
   ingestFtpPull(payload: FtpPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   ingestSmbPull(payload: SmbPullPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
   ingestDropboxPull(options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
+  previewWatchedIngest(options?: AuthRequestOptions): Promise<ApiEnvelope<{ batch: WatchedIngestBatch }>>;
+  applyWatchedIngestBatch(batchId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ batch: WatchedIngestBatch }>>;
   mediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[]; pagination?: PaginationMeta }>>;
   createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
@@ -2151,6 +2167,10 @@ export function createArchiveApiClient({
       post<{ ingested: unknown[]; skipped: number }>("/ingest/smb/pull", payload, options),
     ingestDropboxPull: (options?: AuthRequestOptions) =>
       post<{ ingested: unknown[]; skipped: number }>("/ingest/dropbox/pull", undefined, options),
+    previewWatchedIngest: (options?: AuthRequestOptions) =>
+      post<{ batch: WatchedIngestBatch }>("/ingest/watched/scan", undefined, options),
+    applyWatchedIngestBatch: (batchId: string, options?: AuthRequestOptions) =>
+      post<{ batch: WatchedIngestBatch }>(`/ingest/watched/batches/${encodeURIComponent(batchId)}/apply`, undefined, options),
     mediaJob: (id: string, options?: AuthRequestOptions) => get<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}`, options),
     mediaJobs: (params?: { status?: MediaJobStatus; recordId?: string; limit?: number; page?: number }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();

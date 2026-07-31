@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Services\Ingest\IngestScanner;
 use App\Services\Ingest\IngestTransport;
+use App\Services\Ingest\WatchedIngestService;
 use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,8 +15,23 @@ class IngestController extends Controller
     public function __construct(
         private readonly IngestScanner $scanner,
         private readonly IngestTransport $transport,
-        private readonly NotificationService $notificationService
+        private readonly NotificationService $notificationService,
+        private readonly WatchedIngestService $watchedIngest
     ) {
+    }
+
+    public function watchedScan(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        return response()->json(['ok' => true, 'batch' => $this->watchedIngest->preview()], 201);
+    }
+
+    public function watchedApply(Request $request, string $batchId): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        $batch = $this->watchedIngest->apply($batchId);
+        if ($batch === null) return response()->json(['message' => 'Watched ingest batch not found.'], 404);
+        return response()->json(['ok' => true, 'batch' => $batch]);
     }
 
     public function scan(Request $request): JsonResponse

@@ -61,6 +61,9 @@ services:
     command: ["nginx", "-g", "daemon off;"]
     volumes:
       - laravel_next_storage:/app/storage/app
+      # Explicitly opt-in host folder. Files are removed only after a reviewed
+      # watched-ingest batch is applied; never mount a broad host directory.
+      - ${WATCHED_INGEST_HOST_PATH:-./watched-ingest}:/app/storage/app/private/ingest/watched
     depends_on:
       laravel-fpm:
         condition: service_healthy
@@ -125,6 +128,7 @@ services:
       OCR_SERVICE_URL: http://ocr:8788
     volumes:
       - laravel_next_storage:/app/storage/app
+      - ${WATCHED_INGEST_HOST_PATH:-./watched-ingest}:/app/storage/app/private/ingest/watched
     depends_on:
       postgres:
         condition: service_healthy
@@ -181,6 +185,7 @@ services:
       OCR_SERVICE_URL: http://ocr:8788
     volumes:
       - laravel_next_storage:/app/storage/app
+      - ${WATCHED_INGEST_HOST_PATH:-./watched-ingest}:/app/storage/app/private/ingest/watched
     depends_on:
       laravel-fpm:
         condition: service_healthy
@@ -232,6 +237,7 @@ services:
       REDIS_PORT: "6379"
     volumes:
       - laravel_next_storage:/app/storage/app
+      - ${WATCHED_INGEST_HOST_PATH:-./watched-ingest}:/app/storage/app/private/ingest/watched
     depends_on:
       laravel-fpm:
         condition: service_healthy
