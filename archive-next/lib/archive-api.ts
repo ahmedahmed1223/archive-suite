@@ -349,6 +349,17 @@ export interface RecordFieldRequestInput {
   departmentId?: string | null;
 }
 
+export interface RecordAiAssist {
+  recordId: string;
+  reviewRequired: true;
+  provider: string;
+  summary: string;
+  suggestedTags: string[];
+  entities: Array<{ term: string; kind: string }>;
+  proofreading: Array<{ code: string; message: string }>;
+  changesApplied: [];
+}
+
 export interface DepartmentFieldOwner { id: string; departmentId: string; field: string; owner: string; }
 export interface DepartmentTemplateMetrics { departmentId: string; templateCount: number; publishedTemplateCount: number; qualityRuleCount: number; recordCount: number; missingFieldCounts: Record<string, number>; }
 export interface DepartmentHandoff { id: string; recordId: string; fromDepartmentId: string; toDepartmentId: string; sentBy: string; receivedBy: string | null; summary: { openFieldRequests: number; hasRights: boolean; openComments: number }; }
@@ -1399,6 +1410,7 @@ export interface ArchiveApiClient {
   plugins(params?: { status?: string; category?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ runtimePolicy: PluginRuntimePolicy; plugins: PluginCatalogItem[]; permissionScopes: PluginPermissionScopeSummary[] }>>;
   discover(params?: { limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sections: DiscoverSection[] }>>;
   suggestions(params: { context: SuggestionContext; recordId?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ context: SuggestionContext; suggestions: ArchiveSuggestion[] }>>;
+  recordAiAssist(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordAiAssist>>;
   submitSuggestionFeedback(key: string, payload: { value: SuggestionFeedbackValue; context?: SuggestionContext }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ feedback: ArchiveSuggestionFeedback }>>;
   relationGraph(params?: { recordId?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RelationGraphPayload>>;
   createRelation(payload: CreateRelationPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relation: RecordRelation }>>;
@@ -2077,6 +2089,8 @@ export function createArchiveApiClient({
       if (query?.includeDisabled) params.set("includeDisabled", "1");
       return get<{ templates: MetadataTemplate[] }>(`/metadata-templates${params.size ? `?${params}` : ""}`, options);
     },
+    recordAiAssist: (recordId: string, options?: AuthRequestOptions) =>
+      post<RecordAiAssist>(`/records/${encodeURIComponent(recordId)}/ai-assist`, undefined, options),
     createMetadataTemplate: (payload: MetadataTemplateInput, options?: AuthRequestOptions) =>
       post<{ template: MetadataTemplate }>("/metadata-templates", payload, options),
     updateMetadataTemplate: (id: string, payload: MetadataTemplateInput, options?: AuthRequestOptions) =>

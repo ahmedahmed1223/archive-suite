@@ -1497,6 +1497,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/ai-assist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a non-mutating, review-required assistance draft for an archive record */
+        post: operations["recordAiAssist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/attachments": {
         parameters: {
             query?: never;
@@ -4559,6 +4576,23 @@ export interface components {
         PublicCatalogResponse: components["schemas"]["OkEnvelope"] & {
             nextCursor?: string | null;
             records: components["schemas"]["PublicCatalogRecord"][];
+        };
+        RecordAiAssistResponse: components["schemas"]["OkEnvelope"] & {
+            changesApplied: unknown[];
+            entities: {
+                kind: string;
+                term: string;
+            }[];
+            proofreading: {
+                code: string;
+                message: string;
+            }[];
+            provider: string;
+            recordId: string;
+            /** @constant */
+            reviewRequired: true;
+            suggestedTags: string[];
+            summary: string;
         };
         RecordAttachment: {
             checksumSha256: string;
@@ -8685,6 +8719,31 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    recordAiAssist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Review-required assistance draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordAiAssistResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listRecordAttachments: {

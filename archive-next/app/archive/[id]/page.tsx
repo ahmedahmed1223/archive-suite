@@ -21,6 +21,7 @@ import {
   type ArchiveRecord,
   type ArchiveSuggestion,
   type CreateRelationPayload,
+  type RecordAiAssist,
   type RecordComment,
   type RecordFieldRequest,
   type RecordHistoryEntry,
@@ -725,6 +726,56 @@ export function RecordFieldRequestsPanel({
   );
 }
 
+function RecordAiAssistPanel({
+  onAnalyze,
+  canEdit
+}: Readonly<{
+  onAnalyze: () => Promise<RecordAiAssist>;
+  canEdit: boolean;
+}>) {
+  const [result, setResult] = useState<RecordAiAssist | null>(null);
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function analyze() {
+    if (busy) return;
+    setBusy(true);
+    setStatus("");
+    try {
+      setResult(await onAnalyze());
+      setStatus("أُنشئت مسودة المساعدة؛ راجعها قبل نسخ أي نتيجة إلى السجل.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "تعذر إنشاء مسودة المساعدة.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <article className="panel">
+      <div className="panel-section-header panel-title-row">
+        <div>
+          <h2>مساعد الذكاء الاصطناعي</h2>
+          <p className="helper-text">تلخيص ووسوم وكيانات وتدقيق أولي من النص. لا تُطبَّق أي نتيجة تلقائياً.</p>
+        </div>
+        <span className="badge">مراجعة بشرية إلزامية</span>
+      </div>
+      {canEdit ? <button type="button" className="button button-secondary" onClick={() => void analyze()} disabled={busy}>{busy ? "جار التحليل..." : "إنشاء مسودة تحليل"}</button> : null}
+      {!canEdit ? <p className="helper-text">يتطلب إنشاء المسودة صلاحية تحرير السجلات.</p> : null}
+      {status ? <p className="form-status" role="status">{status}</p> : null}
+      {result ? (
+        <div className="stack section-divider">
+          <p><strong>ملخص مقترح:</strong> {result.summary}</p>
+          <div><strong>وسوم مقترحة:</strong><div className="tags">{result.suggestedTags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div></div>
+          <div><strong>كيانات مكتشفة:</strong><div className="tags">{result.entities.length ? result.entities.map((entity) => <span className="tag" key={`${entity.kind}:${entity.term}`}>{entity.term} · {entity.kind}</span>) : <span className="helper-text">لا توجد كيانات من القاموس المطابق.</span>}</div></div>
+          <ul className="plain-list">{result.proofreading.map((issue) => <li key={issue.code}>{issue.message}</li>)}</ul>
+          <p className="helper-text">المزوّد: {result.provider} · لم يُطبَّق أي تعديل على المادة.</p>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 function historyEventLabel(entry: RecordHistoryEntry) {
   const labels: Record<string, string> = {
     "record_notes.create": "إضافة ملاحظة خاصة",
@@ -1160,6 +1211,12 @@ export default function ArchiveDetailPage() {
     const response = await api.submitSuggestionFeedback(suggestion.key, { value, context: "detail" });
     if (!response.ok) throw new Error(response.error || "تعذر حفظ تقييم الاقتراح.");
     if (value === "dismissed") setSuggestions((current) => current.filter((item) => item.key !== suggestion.key));
+  }
+
+  async function handleAiAssist(): Promise<RecordAiAssist> {
+    const response = await api.recordAiAssist(id);
+    if (!response.ok) throw new Error(response.error || "تعذر إنشاء مسودة المساعدة.");
+    return response;
   }
 
   async function handleCreateNote(payload: { body: string; timestampSeconds?: number | null }) {
@@ -1679,6 +1736,7 @@ export default function ArchiveDetailPage() {
                 </div>
               ) : null}
             </article>
+            <RecordAiAssistPanel onAnalyze={handleAiAssist} canEdit={canEditRecords} />
             <SuggestionsPanel suggestions={suggestions} title="تحسينات مقترحة لهذا السجل" onFeedback={handleSuggestionFeedback} />
             {canEditRecords && <RecordDescribeForm key={id} record={state.record} onSave={handleSaveRecord} />}
             <RecordNotesPanel

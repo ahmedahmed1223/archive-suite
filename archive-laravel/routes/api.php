@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
 use App\Http\Controllers\Api\V1\RecordChangeImpactController;
 use App\Http\Controllers\Api\V1\RecordAttachmentsController;
+use App\Http\Controllers\Api\V1\RecordAiAssistController;
 use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordsBulkCsvController;
 use App\Http\Controllers\Api\V1\RecordsController;
@@ -253,6 +254,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/records/{id}/attachments', [RecordAttachmentsController::class, 'index']);
         Route::post('/records/{id}/attachments', [RecordAttachmentsController::class, 'store']);
         Route::delete('/records/{id}/attachments/{attachmentId}', [RecordAttachmentsController::class, 'destroy']);
+        Route::post('/records/{id}/ai-assist', [RecordAiAssistController::class, 'analyze']);
         Route::post('/records/{id}/transcript/srt', [RecordTranscriptController::class, 'importSrt']);
         Route::post('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'importSrt']);
         Route::put('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'updateSubtitles']);

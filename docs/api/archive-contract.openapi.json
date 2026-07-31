@@ -1226,6 +1226,21 @@
         }
       }
     },
+    "/records/{id}/ai-assist": {
+      "post": {
+        "tags": ["Records"],
+        "summary": "Create a non-mutating, review-required assistance draft for an archive record",
+        "operationId": "recordAiAssist",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Review-required assistance draft", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordAiAssistResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/relations/graph": {
       "get": {
         "tags": ["Relations"],
@@ -6331,6 +6346,25 @@
             "type": "object",
             "required": ["feedback"],
             "properties": { "feedback": { "$ref": "#/components/schemas/SuggestionFeedback" } }
+          }
+        ]
+      },
+      "RecordAiAssistResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["recordId", "reviewRequired", "provider", "summary", "suggestedTags", "entities", "proofreading", "changesApplied"],
+            "properties": {
+              "recordId": { "type": "string" },
+              "reviewRequired": { "type": "boolean", "const": true },
+              "provider": { "type": "string" },
+              "summary": { "type": "string" },
+              "suggestedTags": { "type": "array", "items": { "type": "string" } },
+              "entities": { "type": "array", "items": { "type": "object", "required": ["term", "kind"], "properties": { "term": { "type": "string" }, "kind": { "type": "string" } } } },
+              "proofreading": { "type": "array", "items": { "type": "object", "required": ["code", "message"], "properties": { "code": { "type": "string" }, "message": { "type": "string" } } } },
+              "changesApplied": { "type": "array", "maxItems": 0, "items": {} }
+            }
           }
         ]
       },

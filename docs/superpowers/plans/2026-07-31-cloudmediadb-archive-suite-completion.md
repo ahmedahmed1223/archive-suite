@@ -96,10 +96,13 @@
 
 **Files:** `RecordTranscriptApiTest.php`, `MediaJobsApiTest.php`, `MediaJobsReliabilityTest.php`, `archive-next/app/transcriber/page.tsx`, `archive-next/app/copilot/page.tsx`.
 
-- [ ] Run the three Laravel AI/media suites.
-- [ ] Verify transcription, summaries/tags/entity suggestions and language assistance remain reviewable suggestions, never automatic approval.
-- [ ] Add a failing test before any human-review safeguard fix, then close AS-09.
-- [ ] Commit `docs(tasks): close AS-09 assisted AI services`.
+- [x] Ran the focused Laravel media/reliability/suggestions suites plus the new
+  `RecordAiAssistApiTest` (37 tests/182 assertions) and the suggestions UI test.
+- [x] Added a non-mutating assistance draft for summary, tags, controlled
+  vocabulary entities, and proofreading; it always returns reviewRequired and
+  no applied changes, and the record page makes that human-review boundary clear.
+- [x] Contract generation, API contract verification, and Next typecheck pass.
+- [x] Commit `feat(ai): complete AS-09 assisted services`.
 
 ### Task 10: AS-10 Collections and projects
 
