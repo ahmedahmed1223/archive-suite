@@ -486,6 +486,9 @@ export interface MetadataTemplateVersion {
   createdAt: string;
 }
 
+export interface DepartmentQualityRule { id: string; departmentId: string; typeId: string | null; requiredFields: string[]; enabled: boolean; }
+export interface DepartmentQualityPreview { ready: boolean; missingFields: string[]; ruleId: string | null; }
+
 // ponytail: shared DB-backed filename prefix rules (V1-858) — key is a project or type id.
 export interface NamingRule {
   key: string;
@@ -1396,6 +1399,9 @@ export interface ArchiveApiClient {
   metadataTemplateVersions(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ versions: MetadataTemplateVersion[] }>>;
   publishMetadataTemplate(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
   restorePublishedMetadataTemplate(id: string, version: number, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
+  departmentQualityRules(departmentId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: DepartmentQualityRule[] }>>;
+  upsertDepartmentQualityRule(payload: Omit<DepartmentQualityRule, "id">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: DepartmentQualityRule }>>;
+  previewDepartmentQuality(payload: { departmentId: string; typeId?: string | null; metadata?: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<DepartmentQualityPreview>>;
   namingRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: NamingRule[] }>>;
   upsertNamingRule(key: string, prefix: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: NamingRule }>>;
   deleteNamingRule(key: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -2020,6 +2026,9 @@ export function createArchiveApiClient({
       post<{ template: MetadataTemplate }>(`/metadata-templates/${encodeURIComponent(id)}/publish`, undefined, options),
     restorePublishedMetadataTemplate: (id: string, version: number, options?: AuthRequestOptions) =>
       post<{ template: MetadataTemplate }>(`/metadata-templates/${encodeURIComponent(id)}/published-version/${version}/restore`, undefined, options),
+    departmentQualityRules: (departmentId?: string, options?: AuthRequestOptions) => get<{ rules: DepartmentQualityRule[] }>(`/department-quality-rules${departmentId ? `?${new URLSearchParams({ departmentId })}` : ""}`, options),
+    upsertDepartmentQualityRule: (payload: Omit<DepartmentQualityRule, "id">, options?: AuthRequestOptions) => put<{ rule: DepartmentQualityRule }>("/department-quality-rules", payload, options),
+    previewDepartmentQuality: (payload: { departmentId: string; typeId?: string | null; metadata?: Record<string, unknown> }, options?: AuthRequestOptions) => post<DepartmentQualityPreview>("/department-quality-rules/preview", payload, options),
     namingRules: (options?: AuthRequestOptions) => get<{ rules: NamingRule[] }>("/naming-rules", options),
     upsertNamingRule: (key: string, prefix: string, options?: AuthRequestOptions) =>
       put<{ rule: NamingRule }>(`/naming-rules/${encodeURIComponent(key)}`, { prefix }, options),

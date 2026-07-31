@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
 use App\Http\Controllers\Api\V1\LinkAuditController;
 use App\Http\Controllers\Api\V1\MetadataTemplatesController;
+use App\Http\Controllers\Api\V1\DepartmentQualityRulesController;
 use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
@@ -276,6 +277,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/metadata-templates/{id}/published-version/{version}/restore', [MetadataTemplatesController::class, 'restorePublished']);
         Route::patch('/metadata-templates/{id}', [MetadataTemplatesController::class, 'update']);
         Route::delete('/metadata-templates/{id}', [MetadataTemplatesController::class, 'destroy']);
+        Route::get('/department-quality-rules', [DepartmentQualityRulesController::class, 'index']);
+        Route::put('/department-quality-rules', [DepartmentQualityRulesController::class, 'upsert']);
+        Route::post('/department-quality-rules/preview', [DepartmentQualityRulesController::class, 'preview']);
         Route::get('/naming-rules', [NamingRulesController::class, 'index']);
         Route::put('/naming-rules/{key}', [NamingRulesController::class, 'upsert']);
         Route::delete('/naming-rules/{key}', [NamingRulesController::class, 'destroy']);

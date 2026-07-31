@@ -4557,6 +4557,13 @@
         }
       }
     },
+    "/department-quality-rules": {
+      "get": { "tags": ["Department Quality"], "summary": "List department quality rules", "operationId": "listDepartmentQualityRules", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "departmentId", "in": "query", "required": false, "schema": { "type": "string" } }], "responses": { "200": { "description": "Quality rules", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentQualityRulesResponse" } } } } } },
+      "put": { "tags": ["Department Quality"], "summary": "Create or update a department quality rule", "operationId": "upsertDepartmentQualityRule", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentQualityRuleInput" } } } }, "responses": { "200": { "description": "Quality rule", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentQualityRuleResponse" } } } }, "201": { "description": "Created quality rule", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentQualityRuleResponse" } } } } } }
+    },
+    "/department-quality-rules/preview": {
+      "post": { "tags": ["Department Quality"], "summary": "Preview department quality readiness", "operationId": "previewDepartmentQuality", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentQualityPreviewRequest" } } } }, "responses": { "200": { "description": "Readiness result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentQualityPreviewResponse" } } } } } }
+    },
     "/metadata-templates": {
       "get": {
         "tags": ["Metadata Templates"],
@@ -8798,6 +8805,12 @@
           }
         ]
       },
+      "DepartmentQualityRule": { "type": "object", "required": ["id", "departmentId", "typeId", "requiredFields", "enabled"], "properties": { "id": { "type": "string" }, "departmentId": { "type": "string" }, "typeId": { "type": "string", "nullable": true }, "requiredFields": { "type": "array", "items": { "type": "string" } }, "enabled": { "type": "boolean" } } },
+      "DepartmentQualityRuleInput": { "type": "object", "required": ["departmentId", "requiredFields"], "properties": { "departmentId": { "type": "string" }, "typeId": { "type": "string", "nullable": true }, "requiredFields": { "type": "array", "items": { "type": "string" } }, "enabled": { "type": "boolean" } } },
+      "DepartmentQualityRulesResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["rules"], "properties": { "rules": { "type": "array", "items": { "$ref": "#/components/schemas/DepartmentQualityRule" } } } }] },
+      "DepartmentQualityRuleResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["rule"], "properties": { "rule": { "$ref": "#/components/schemas/DepartmentQualityRule" } } }] },
+      "DepartmentQualityPreviewRequest": { "type": "object", "required": ["departmentId"], "properties": { "departmentId": { "type": "string" }, "typeId": { "type": "string", "nullable": true }, "metadata": { "type": "object", "additionalProperties": true } } },
+      "DepartmentQualityPreviewResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["ready", "missingFields"], "properties": { "ready": { "type": "boolean" }, "missingFields": { "type": "array", "items": { "type": "string" } }, "ruleId": { "type": "string", "nullable": true } } }] },
       "MetadataTemplate": {
         "type": "object",
         "required": ["id", "typeId", "departmentId", "name", "fields", "tags", "enabled", "usageRoles", "currentVersion", "createdAt", "updatedAt"],

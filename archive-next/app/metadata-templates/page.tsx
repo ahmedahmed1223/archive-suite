@@ -8,6 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type MetadataTemplate, type MetadataTemplateVersion } from "@/lib/archive-api";
 import { previewTemplateApplication } from "@/lib/metadata-template-apply";
+import DepartmentQualityPanel from "@/components/DepartmentQualityPanel";
 
 const roles = ["viewer", "editor", "admin"] as const;
 type Role = (typeof roles)[number];
@@ -127,6 +128,7 @@ export default function MetadataTemplatesPage() {
           {versions.length ? <ol className="helper-text">{versions.map((version) => <li key={version.id}>الإصدار {version.version} — {new Date(version.createdAt).toLocaleString("ar")} — {version.snapshot.name} {canPublishTemplates ? <button className="button button-secondary button-sm" type="button" onClick={() => void restorePublished(version)}>استعادة كنشر</button> : null}</li>)}</ol> : null}
         </article>
       </section>
+      <DepartmentQualityPanel departmentId={departmentId} />
     </AppShell>
   );
 }

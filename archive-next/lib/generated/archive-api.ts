@@ -471,6 +471,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/department-quality-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List department quality rules */
+        get: operations["listDepartmentQualityRules"];
+        /** Create or update a department quality rule */
+        put: operations["upsertDepartmentQualityRule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/department-quality-rules/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview department quality readiness */
+        post: operations["previewDepartmentQuality"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/discover": {
         parameters: {
             query?: never;
@@ -3686,6 +3721,37 @@ export interface components {
             folder?: string;
             totalSize: number;
         };
+        DepartmentQualityPreviewRequest: {
+            departmentId: string;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            typeId?: string | null;
+        };
+        DepartmentQualityPreviewResponse: components["schemas"]["OkEnvelope"] & {
+            missingFields: string[];
+            ready: boolean;
+            ruleId?: string | null;
+        };
+        DepartmentQualityRule: {
+            departmentId: string;
+            enabled: boolean;
+            id: string;
+            requiredFields: string[];
+            typeId: string | null;
+        };
+        DepartmentQualityRuleInput: {
+            departmentId: string;
+            enabled?: boolean;
+            requiredFields: string[];
+            typeId?: string | null;
+        };
+        DepartmentQualityRuleResponse: components["schemas"]["OkEnvelope"] & {
+            rule: components["schemas"]["DepartmentQualityRule"];
+        };
+        DepartmentQualityRulesResponse: components["schemas"]["OkEnvelope"] & {
+            rules: components["schemas"]["DepartmentQualityRule"][];
+        };
         DiscoverResponse: components["schemas"]["OkEnvelope"] & {
             sections: components["schemas"]["DiscoverSection"][];
         };
@@ -6397,6 +6463,85 @@ export interface operations {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    listDepartmentQualityRules: {
+        parameters: {
+            query?: {
+                departmentId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quality rules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentQualityRulesResponse"];
+                };
+            };
+        };
+    };
+    upsertDepartmentQualityRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentQualityRuleInput"];
+            };
+        };
+        responses: {
+            /** @description Quality rule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentQualityRuleResponse"];
+                };
+            };
+            /** @description Created quality rule */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentQualityRuleResponse"];
+                };
+            };
+        };
+    };
+    previewDepartmentQuality: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentQualityPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Readiness result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentQualityPreviewResponse"];
+                };
+            };
         };
     };
     discoverRecords: {

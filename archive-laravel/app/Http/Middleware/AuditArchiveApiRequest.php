@@ -61,6 +61,8 @@ class AuditArchiveApiRequest
             ['DELETE', 'api/v1/metadata-templates/{id}'] => ['metadata_templates.delete', 'metadata_template'],
             ['POST', 'api/v1/metadata-templates/{id}/publish'] => ['metadata_templates.publish', 'metadata_template'],
             ['POST', 'api/v1/metadata-templates/{id}/published-version/{version}/restore'] => ['metadata_templates.restore_published', 'metadata_template'],
+            ['PUT', 'api/v1/department-quality-rules'] => ['department_quality_rules.upsert', 'department_quality_rule'],
+            ['POST', 'api/v1/department-quality-rules/preview'] => ['department_quality_rules.preview', 'department_quality_rule'],
             ['POST', 'api/v1/records/{id}/source-versions/{versionId}/restore'] => ['record_source.restore', 'record_source'],
             ['DELETE', 'api/v1/records/{id}/attachments/{attachmentId}'] => ['record_attachments.delete', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
