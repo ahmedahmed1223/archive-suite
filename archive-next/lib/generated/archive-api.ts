@@ -471,6 +471,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/files/unused": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List files with no record_attachments reference, for safe manual review */
+        get: operations["listUnusedFiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/folders": {
         parameters: {
             query?: never;
@@ -4623,6 +4640,17 @@ export interface components {
             ok: true;
             type: components["schemas"]["TypeDefinition"];
         };
+        UnusedFile: {
+            key: string;
+            /** Format: date-time */
+            modifiedAt: string;
+            name: string;
+            reason: string;
+            size: number | null;
+        };
+        UnusedFilesResponse: components["schemas"]["OkEnvelope"] & {
+            files: components["schemas"]["UnusedFile"][];
+        };
         UpdateAutomationRuleRequest: {
             action?: components["schemas"]["AutomationRuleAction"];
             enabled?: boolean;
@@ -5860,6 +5888,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileBrowserResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    listUnusedFiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unused file candidates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnusedFilesResponse"];
                 };
             };
             401: components["responses"]["Error"];

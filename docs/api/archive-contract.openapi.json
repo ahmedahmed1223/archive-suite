@@ -1312,6 +1312,21 @@
         }
       }
     },
+    "/files/unused": {
+      "get": {
+        "tags": ["Files"],
+        "summary": "List files with no record_attachments reference, for safe manual review",
+        "operationId": "listUnusedFiles",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Unused file candidates",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnusedFilesResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/files/browser": {
       "get": {
         "tags": ["Files"],
@@ -8597,6 +8612,29 @@
             "required": ["claim"],
             "properties": {
               "claim": { "anyOf": [{ "$ref": "#/components/schemas/RecordEditClaim" }, { "type": "null" }] }
+            }
+          }
+        ]
+      },
+      "UnusedFile": {
+        "type": "object",
+        "required": ["key", "name", "size", "modifiedAt", "reason"],
+        "properties": {
+          "key": { "type": "string" },
+          "name": { "type": "string" },
+          "size": { "type": "integer", "nullable": true },
+          "modifiedAt": { "type": "string", "format": "date-time" },
+          "reason": { "type": "string" }
+        }
+      },
+      "UnusedFilesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["files"],
+            "properties": {
+              "files": { "type": "array", "items": { "$ref": "#/components/schemas/UnusedFile" } }
             }
           }
         ]

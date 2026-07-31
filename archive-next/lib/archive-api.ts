@@ -326,6 +326,15 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-853: files with no record_attachments reference — read-only review candidates.
+export interface UnusedFile {
+  key: string;
+  name: string;
+  size: number | null;
+  modifiedAt: string;
+  reason: string;
+}
+
 // V1-850: preview + relink records affected by a deleted/changed vocabulary term.
 export interface VocabularyRelinkPreview {
   term: string;
@@ -1272,6 +1281,7 @@ export interface ArchiveApiClient {
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  unusedFiles(options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: UnusedFile[] }>>;
   previewVocabularyRelink(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<VocabularyRelinkPreview>>;
   relinkVocabularyTerm(id: string, replacement?: string | null, options?: AuthRequestOptions): Promise<ApiEnvelope<{ relinked: string[]; replacement: string | null }>>;
   recordFreeze(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ freeze: RecordFreeze | null }>>;
@@ -1834,6 +1844,7 @@ export function createArchiveApiClient({
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
+    unusedFiles: (options?: AuthRequestOptions) => get<{ files: UnusedFile[] }>("/files/unused", options),
     previewVocabularyRelink: (id: string, options?: AuthRequestOptions) =>
       get<VocabularyRelinkPreview>(`/vocabulary/${encodeURIComponent(id)}/relink-preview`, options),
     relinkVocabularyTerm: (id: string, replacement?: string | null, options?: AuthRequestOptions) =>
