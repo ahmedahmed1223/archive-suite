@@ -40,6 +40,31 @@ test("game-day execution writes redacted evidence and never claims external manu
   assert.doesNotMatch(JSON.stringify(evidence), /super-secret|actual-password/i);
 });
 
+test("executed drill accepts newline-delimited Compose JSON and proves scoped cleanup", () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "archive-game-day-executed-"));
+  let snapshots = 0;
+  const run = (_command, args) => {
+    if (args.includes("ps")) {
+      snapshots += 1;
+      if (snapshots === 1) return { status: 0, stdout: '{"Service":"laravel","State":"running"}\n{"Service":"postgres","State":"exited"}', stderr: "" };
+      if (snapshots === 2) return { status: 0, stdout: '{"Service":"postgres","State":"running","Health":"healthy"}', stderr: "" };
+      return { status: 0, stdout: "", stderr: "" };
+    }
+    return { status: 0, stdout: "", stderr: "" };
+  };
+
+  const result = runGameDay({
+    execute: true,
+    scenarioIds: ["GD-DB-01"],
+    outputDir,
+    now: new Date("2026-07-31T12:00:00Z"),
+    run,
+  });
+
+  assert.equal(result.status, "completed");
+  assert.equal(result.cleanup.proved, true);
+});
+
 test("evidence redaction removes secrets, credentials, tokens, and local paths", () => {
   const redacted = redactEvidence("PASSWORD=super-secret Authorization: Bearer abc.def postgres://user:actual-password@db/archive D:\\archiveaq\\private");
   assert.doesNotMatch(redacted, /super-secret|abc\.def|user:actual-password|archiveaq/i);

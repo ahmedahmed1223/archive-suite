@@ -72,12 +72,22 @@ function safeEvidence(value) {
 
 function defaultRun(command, args) { return spawnSync(command, args, { encoding: "utf8", windowsHide: true }); }
 
+function parseComposeRecords(output) {
+  const raw = String(output ?? "").trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    try { return raw.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)); } catch { return null; }
+  }
+}
+
 function satisfiesExpectation(command, result) {
   if (result.status !== 0) return false;
   if (command.expect === "success") return true;
-  let records;
-  try { const parsed = JSON.parse(String(result.stdout || "")); records = Array.isArray(parsed) ? parsed : [parsed]; } catch { return false; }
-  const service = command.purpose.replace(/^(detect|recover)-/, "").replace(/^GD-[A-Z]+-\d+$/, "");
+  const records = parseComposeRecords(result.stdout);
+  if (!records) return false;
   const scenario = SCENARIOS.find((item) => command.purpose.endsWith(item.id));
   const row = records.find((item) => item.Service === scenario?.service);
   if (!row) return false;
@@ -106,6 +116,12 @@ export function runGameDay({ execute = false, outputDir = join(ROOT, "artifacts"
         const cleanup = plan.commands.find((command) => command.purpose === "scoped-cleanup");
         const result = run(cleanup.command, cleanup.args);
         records.push({ purpose: cleanup.purpose, status: result.status, stdout: redactEvidence(result.stdout), stderr: redactEvidence(result.stderr) });
+      }
+      if (!records.some((record) => record.purpose === "verify-scoped-cleanup")) {
+        const verification = plan.commands.find((command) => command.purpose === "verify-scoped-cleanup");
+        const result = run(verification.command, verification.args);
+        cleanupProved = result.status === 0 && !String(result.stdout ?? "").trim();
+        records.push({ purpose: verification.purpose, expectation: verification.expect, status: result.status, proved: cleanupProved, stdout: redactEvidence(result.stdout), stderr: redactEvidence(result.stderr) });
       }
       if (existsSync(plan.generatedCompose.path)) unlinkSync(plan.generatedCompose.path);
     }
